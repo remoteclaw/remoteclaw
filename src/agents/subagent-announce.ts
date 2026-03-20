@@ -76,6 +76,46 @@ function resolveSubagentAnnounceTimeoutMs(cfg: ReturnType<typeof loadConfig>): n
   return Math.min(Math.max(1, Math.floor(configured)), MAX_TIMER_SAFE_TIMEOUT_MS);
 }
 
+function buildCompletionDeliveryMessage(params: {
+  findings: string;
+  subagentName: string;
+  spawnMode?: SpawnSubagentMode;
+  outcome?: SubagentRunOutcome;
+  announceType?: SubagentAnnounceType;
+}): string {
+  const findingsText = parseInlineDirectives(params.findings, {
+    stripAudioTag: false,
+    stripReplyTags: true,
+  }).text;
+  if (isAnnounceSkip(findingsText)) {
+    return "";
+  }
+  const hasFindings = findingsText.length > 0 && findingsText !== "(no output)";
+  // Cron completions are standalone messages — skip the subagent status header.
+  if (params.announceType === "cron job") {
+    return hasFindings ? findingsText : "";
+  }
+  const header = (() => {
+    if (params.outcome?.status === "error") {
+      return params.spawnMode === "session"
+        ? `❌ Subagent ${params.subagentName} failed this task (session remains active)`
+        : `❌ Subagent ${params.subagentName} failed`;
+    }
+    if (params.outcome?.status === "timeout") {
+      return params.spawnMode === "session"
+        ? `⏱️ Subagent ${params.subagentName} timed out on this task (session remains active)`
+        : `⏱️ Subagent ${params.subagentName} timed out`;
+    }
+    return params.spawnMode === "session"
+      ? `✅ Subagent ${params.subagentName} completed this task (session remains active)`
+      : `✅ Subagent ${params.subagentName} finished`;
+  })();
+  if (!hasFindings) {
+    return header;
+  }
+  return `${header}\n\n${findingsText}`;
+}
+
 function summarizeDeliveryError(error: unknown): string {
   if (error instanceof Error) {
     return error.message || "error";
@@ -738,11 +778,15 @@ async function sendSubagentAnnounceDirectly(params: {
   bestEffortDeliver?: boolean;
   directIdempotencyKey: string;
   completionDirectOrigin?: DeliveryContext;
+  completionRouteMode?: string;
   directOrigin?: DeliveryContext;
   sourceSessionKey?: string;
   sourceChannel?: string;
   sourceTool?: string;
   requesterIsSubagent: boolean;
+  spawnMode?: SpawnSubagentMode;
+  announceType?: SubagentAnnounceType;
+  currentRunId?: string;
   signal?: AbortSignal;
 }): Promise<SubagentAnnounceDeliveryResult> {
   if (params.signal?.aborted) {
@@ -839,6 +883,7 @@ async function deliverSubagentAnnouncement(params: {
   summaryLine?: string;
   requesterOrigin?: DeliveryContext;
   completionDirectOrigin?: DeliveryContext;
+  completionRouteMode?: string;
   directOrigin?: DeliveryContext;
   sourceSessionKey?: string;
   sourceChannel?: string;
@@ -848,6 +893,9 @@ async function deliverSubagentAnnouncement(params: {
   expectsCompletionMessage: boolean;
   bestEffortDeliver?: boolean;
   directIdempotencyKey: string;
+  spawnMode?: SpawnSubagentMode;
+  announceType?: SubagentAnnounceType;
+  currentRunId?: string;
   signal?: AbortSignal;
 }): Promise<SubagentAnnounceDeliveryResult> {
   if (params.signal?.aborted) {
@@ -1370,6 +1418,7 @@ export async function runSubagentAnnounceFlow(params: {
       }
     }
 
+    const subagentName = resolveAgentIdFromSessionKey(params.childSessionKey);
     const replyInstruction = buildAnnounceReplyInstruction({
       requesterIsSubagent,
       announceType,

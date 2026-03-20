@@ -930,7 +930,7 @@ describe("handleCommands subagents", () => {
     const cfg = {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const params = buildParams("/subagents list", cfg);
     const result = await handleCommands(params);
 

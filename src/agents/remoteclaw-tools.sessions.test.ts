@@ -1146,9 +1146,9 @@ describe("sessions tools", () => {
       startedAt: now - 20_000,
     });
 
-    const tool = createOpenClawTools({
+    const tool = createRemoteClawTools({
       agentSessionKey: "agent:main:main",
-    }).find((candidate) => candidate.name === "subagents");
+    }).find((candidate: { name: string }) => candidate.name === "subagents");
     expect(tool).toBeDefined();
     if (!tool) {
       throw new Error("missing subagents tool");

@@ -845,6 +845,13 @@ export function isTimeoutErrorMessage(raw: string): boolean {
  */
 const BILLING_ERROR_MAX_LENGTH = 512;
 
+const PERIODIC_USAGE_LIMIT_RE =
+  /\b(?:daily|weekly|monthly)(?:\/(?:daily|weekly|monthly))* (?:usage )?limit(?:s)?(?: (?:exhausted|reached|exceeded))?\b/i;
+
+export function isPeriodicUsageLimitErrorMessage(raw: string): boolean {
+  return PERIODIC_USAGE_LIMIT_RE.test(raw);
+}
+
 export function isBillingErrorMessage(raw: string): boolean {
   const value = raw.toLowerCase();
   if (!value) {
@@ -1046,6 +1053,9 @@ export function classifyFailoverReason(raw: string): FailoverReason | null {
   }
   if (isJsonApiInternalServerError(raw)) {
     return "timeout";
+  }
+  if (isPeriodicUsageLimitErrorMessage(raw)) {
+    return isBillingErrorMessage(raw) ? "billing" : "rate_limit";
   }
   if (isRateLimitErrorMessage(raw)) {
     return "rate_limit";

@@ -120,7 +120,7 @@ function createThreadClient(params: { threadId: string; parentId: string }): Dis
 function createGuildEvent(params: {
   channelId: string;
   guildId: string;
-  author: import("@buape/carbon").Message["author"];
+  author: { id: string; bot?: boolean; username?: string } | null;
   message: import("@buape/carbon").Message;
 }): DiscordMessageEvent {
   return {
@@ -139,10 +139,17 @@ function createMessage(params: {
   id: string;
   channelId: string;
   content: string;
-  author: import("@buape/carbon").Message["author"];
+  author: { id: string; bot?: boolean; username?: string };
   mentionedUsers?: Array<{ id: string }>;
   mentionedEveryone?: boolean;
-  attachments?: import("@buape/carbon").Message["attachments"];
+  attachments?: Array<{
+    id: string;
+    url: string;
+    content_type?: string;
+    filename?: string;
+    size?: number;
+    proxy_url?: string;
+  }>;
 }): import("@buape/carbon").Message {
   return {
     id: params.id,

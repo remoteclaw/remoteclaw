@@ -111,7 +111,7 @@ describe("resolveGraphChatId", () => {
     const result = await resolveGraphChatId({
       botFrameworkConversationId: "19:abc123@thread.tacv2",
       tokenProvider,
-      fetchFn: withFetchPreconnect(fetchFn),
+      fetchFn,
     });
     // Should short-circuit without making any API call
     expect(fetchFn).not.toHaveBeenCalled();
@@ -131,7 +131,7 @@ describe("resolveGraphChatId", () => {
       botFrameworkConversationId: "a:1abc_bot_framework_dm_id",
       userAadObjectId: "user-aad-object-id-123",
       tokenProvider,
-      fetchFn: withFetchPreconnect(fetchFn),
+      fetchFn,
     });
 
     expect(fetchFn).toHaveBeenCalledWith(
@@ -141,7 +141,7 @@ describe("resolveGraphChatId", () => {
       }),
     );
     // Should filter by user AAD object ID
-    const callUrl = (fetchFn.mock.calls[0] as [string, unknown])[0];
+    const callUrl = (fetchFn.mock.calls[0] as unknown[])[0];
     expect(callUrl).toContain("user-aad-object-id-123");
     expect(result).toBe("19:dm-chat-id@unq.gbl.spaces");
   });
@@ -158,7 +158,7 @@ describe("resolveGraphChatId", () => {
     const result = await resolveGraphChatId({
       botFrameworkConversationId: "8:orgid:user-object-id",
       tokenProvider,
-      fetchFn: withFetchPreconnect(fetchFn),
+      fetchFn,
     });
 
     expect(fetchFn).toHaveBeenCalledOnce();
@@ -178,7 +178,7 @@ describe("resolveGraphChatId", () => {
       botFrameworkConversationId: "a:1unknown_dm",
       userAadObjectId: "some-user",
       tokenProvider,
-      fetchFn: withFetchPreconnect(fetchFn),
+      fetchFn,
     });
 
     expect(result).toBeNull();
@@ -197,7 +197,7 @@ describe("resolveGraphChatId", () => {
       botFrameworkConversationId: "a:1some_dm_id",
       userAadObjectId: "some-user",
       tokenProvider,
-      fetchFn: withFetchPreconnect(fetchFn),
+      fetchFn,
     });
 
     expect(result).toBeNull();

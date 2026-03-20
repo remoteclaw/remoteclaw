@@ -1037,29 +1037,12 @@
                 "group": "Plugins",
                 "pages": [
                   "tools/plugin",
+                  "plugins/building-plugins",
                   "plugins/community",
                   "plugins/bundles",
-                  {
-                    "group": "Building Plugins",
-                    "pages": [
-                      "plugins/building-plugins",
-                      "plugins/sdk-channel-plugins",
-                      "plugins/sdk-provider-plugins"
-                    ]
-                  },
-                  {
-                    "group": "SDK Reference",
-                    "pages": [
-                      "plugins/sdk-overview",
-                      "plugins/sdk-entrypoints",
-                      "plugins/sdk-runtime",
-                      "plugins/sdk-setup",
-                      "plugins/sdk-testing",
-                      "plugins/sdk-migration",
-                      "plugins/manifest",
-                      "plugins/architecture"
-                    ]
-                  }
+                  "plugins/manifest",
+                  "plugins/sdk-migration",
+                  "plugins/architecture"
                 ]
               },
               {
@@ -1090,6 +1073,9 @@
               {
                 "group": "Tools",
                 "pages": [
+                  "tools/exec",
+                  "tools/exec-approvals",
+                  "tools/elevated",
                   "tools/apply-patch",
                   {
                     "group": "Browser",
@@ -1100,27 +1086,24 @@
                       "tools/browser-wsl2-windows-remote-cdp-troubleshooting"
                     ]
                   },
-                  "tools/btw",
-                  "tools/diffs",
-                  "tools/elevated",
-                  "tools/exec",
-                  "tools/exec-approvals",
-                  "tools/llm-task",
-                  "tools/lobster",
-                  "tools/loop-detection",
-                  "tools/pdf",
-                  "tools/reactions",
-                  "tools/thinking",
                   {
                     "group": "Web and search",
                     "pages": [
                       "tools/web",
                       "tools/brave-search",
                       "tools/firecrawl",
-                      "tools/perplexity-search",
-                      "tools/tavily"
+                      "tools/tavily",
+                      "tools/perplexity-search"
                     ]
-                  }
+                  },
+                  "tools/pdf",
+                  "tools/diffs",
+                  "tools/llm-task",
+                  "tools/lobster",
+                  "tools/reactions",
+                  "tools/thinking",
+                  "tools/loop-detection",
+                  "tools/btw"
                 ]
               },
               {

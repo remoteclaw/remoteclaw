@@ -1,179 +1,329 @@
 ---
 title: "Building Plugins"
-sidebarTitle: "Getting Started"
-summary: "Create your first RemoteClaw plugin in minutes"
+sidebarTitle: "Building Plugins"
+summary: "Step-by-step guide for creating RemoteClaw plugins with any combination of capabilities"
 read_when:
   - You want to create a new RemoteClaw plugin
-  - You need a quick-start for plugin development
+  - You need to understand the plugin SDK import patterns
   - You are adding a new channel, provider, tool, or other capability to RemoteClaw
 ---
 
 # Building Plugins
 
 Plugins extend RemoteClaw with new capabilities: channels, model providers, speech,
-image generation, web search, agent tools, or any combination.
+image generation, web search, agent tools, or any combination. A single plugin
+can register multiple capabilities.
 
-You do not need to add your plugin to the RemoteClaw repository. Publish on npm
-and users install with `remoteclaw plugins install <npm-spec>`.
+RemoteClaw encourages **external plugin development**. You do not need to add your
+plugin to the RemoteClaw repository. Publish your plugin on npm, and users install
+it with `remoteclaw plugins install <npm-spec>`. RemoteClaw also maintains a set of
+core plugins in-repo, but the plugin system is designed for independent ownership
+and distribution.
 
 ## Prerequisites
 
 - Node >= 22 and a package manager (npm or pnpm)
 - Familiarity with TypeScript (ESM)
-- For in-repo plugins: repository cloned and `pnpm install` done
+- For in-repo plugins: RemoteClaw repository cloned and `pnpm install` done
 
-## What kind of plugin?
+## Plugin capabilities
 
-<CardGroup cols={3}>
-  <Card title="Channel plugin" icon="message" href="/plugins/sdk-channel-plugins">
-    Connect RemoteClaw to a messaging platform (Discord, IRC, etc.)
-  </Card>
-  <Card title="Provider plugin" icon="microchip" href="/plugins/sdk-provider-plugins">
-    Add a model provider (LLM, proxy, or custom endpoint)
-  </Card>
-  <Card title="Tool / hook plugin" icon="wrench">
-    Register agent tools, event hooks, or services — continue below
-  </Card>
-</CardGroup>
+A plugin can register one or more capabilities. The capability you register
+determines what your plugin provides to RemoteClaw:
 
-## Quick start: tool plugin
+| Capability          | Registration method                           | What it adds                   |
+| ------------------- | --------------------------------------------- | ------------------------------ |
+| Text inference      | `api.registerProvider(...)`                   | Model provider (LLM)           |
+| Channel / messaging | `api.registerChannel(...)`                    | Chat channel (e.g. Slack, IRC) |
+| Speech              | `api.registerSpeechProvider(...)`             | Text-to-speech / STT           |
+| Media understanding | `api.registerMediaUnderstandingProvider(...)` | Image/audio/video analysis     |
+| Image generation    | `api.registerImageGenerationProvider(...)`    | Image generation               |
+| Web search          | `api.registerWebSearchProvider(...)`          | Web search provider            |
+| Agent tools         | `api.registerTool(...)`                       | Tools callable by the agent    |
 
-This walkthrough creates a minimal plugin that registers an agent tool. Channel
-and provider plugins have dedicated guides linked above.
+A plugin that registers zero capabilities but provides hooks or services is a
+**hook-only** plugin. That pattern is still supported.
+
+## Plugin structure
+
+Plugins follow this layout (whether in-repo or standalone):
+
+```
+my-plugin/
+├── package.json          # npm metadata + remoteclaw config
+├── remoteclaw.plugin.json  # Plugin manifest
+├── index.ts              # Entry point
+├── setup-entry.ts        # Setup wizard (optional)
+├── api.ts                # Public exports (optional)
+├── runtime-api.ts        # Internal exports (optional)
+└── src/
+    ├── provider.ts       # Capability implementation
+    ├── runtime.ts        # Runtime wiring
+    └── *.test.ts         # Colocated tests
+```
+
+## Create a plugin
 
 <Steps>
-  <Step title="Create the package and manifest">
-    <CodeGroup>
-    ```json package.json
+  <Step title="Create the package">
+    Create `package.json` with the `remoteclaw` metadata block. The structure
+    depends on what capabilities your plugin provides.
+
+    **Channel plugin example:**
+
+    ```json
     {
-      "name": "@myorg/remoteclaw-my-plugin",
+      "name": "@myorg/remoteclaw-my-channel",
       "version": "1.0.0",
       "type": "module",
       "remoteclaw": {
-        "extensions": ["./index.ts"]
+        "extensions": ["./index.ts"],
+        "channel": {
+          "id": "my-channel",
+          "label": "My Channel",
+          "blurb": "Short description of the channel."
+        }
       }
     }
     ```
 
-    ```json remoteclaw.plugin.json
+    **Provider plugin example:**
+
+    ```json
     {
-      "id": "my-plugin",
-      "name": "My Plugin",
-      "description": "Adds a custom tool to RemoteClaw",
-      "configSchema": {
-        "type": "object",
-        "additionalProperties": false
+      "name": "@myorg/remoteclaw-my-provider",
+      "version": "1.0.0",
+      "type": "module",
+      "remoteclaw": {
+        "extensions": ["./index.ts"],
+        "providers": ["my-provider"]
       }
     }
     ```
-    </CodeGroup>
 
-    Every plugin needs a manifest, even with no config. See
-    [Manifest](/plugins/manifest) for the full schema.
+    The `remoteclaw` field tells the plugin system what your plugin provides.
+    A plugin can declare both `channel` and `providers` if it provides multiple
+    capabilities.
 
   </Step>
 
-  <Step title="Write the entry point">
+  <Step title="Define the entry point">
+    The entry point registers your capabilities with the plugin API.
+
+    **Channel plugin:**
 
     ```typescript
-    // index.ts
-    import { definePluginEntry } from "remoteclaw/plugin-sdk/plugin-entry";
-    import { Type } from "@sinclair/typebox";
+    import { defineChannelPluginEntry } from "remoteclaw/plugin-sdk/core";
+
+    export default defineChannelPluginEntry({
+      id: "my-channel",
+      name: "My Channel",
+      description: "Connects RemoteClaw to My Channel",
+      plugin: {
+        // Channel adapter implementation
+      },
+    });
+    ```
+
+    **Provider plugin:**
+
+    ```typescript
+    import { definePluginEntry } from "remoteclaw/plugin-sdk/core";
 
     export default definePluginEntry({
-      id: "my-plugin",
-      name: "My Plugin",
-      description: "Adds a custom tool to RemoteClaw",
+      id: "my-provider",
+      name: "My Provider",
       register(api) {
-        api.registerTool({
-          name: "my_tool",
-          description: "Do a thing",
-          parameters: Type.Object({ input: Type.String() }),
-          async execute(_id, params) {
-            return { content: [{ type: "text", text: `Got: ${params.input}` }] };
-          },
+        api.registerProvider({
+          // Provider implementation
         });
       },
     });
     ```
 
-    `definePluginEntry` is for non-channel plugins. For channels, use
-    `defineChannelPluginEntry` — see [Channel Plugins](/plugins/sdk-channel-plugins).
-    For full entry point options, see [Entry Points](/plugins/sdk-entrypoints).
+    **Multi-capability plugin** (provider + tool):
+
+    ```typescript
+    import { definePluginEntry } from "remoteclaw/plugin-sdk/core";
+
+    export default definePluginEntry({
+      id: "my-plugin",
+      name: "My Plugin",
+      register(api) {
+        api.registerProvider({ /* ... */ });
+        api.registerTool({ /* ... */ });
+        api.registerImageGenerationProvider({ /* ... */ });
+      },
+    });
+    ```
+
+    Use `defineChannelPluginEntry` for channel plugins and `definePluginEntry`
+    for everything else. A single plugin can register as many capabilities as needed.
 
   </Step>
 
-  <Step title="Test and publish">
+  <Step title="Import from focused SDK subpaths">
+    Always import from specific `remoteclaw/plugin-sdk/\<subpath\>` paths. The old
+    monolithic import is deprecated (see [SDK Migration](/plugins/sdk-migration)).
 
-    **External plugins:**
+    If older plugin code still imports `remoteclaw/extension-api`, treat that as a
+    temporary compatibility bridge only. New code should use injected runtime
+    helpers such as `api.runtime.agent.*` instead of importing host-side agent
+    helpers directly.
+
+    ```typescript
+    // Correct: focused subpaths
+    import { definePluginEntry } from "remoteclaw/plugin-sdk/core";
+    import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/runtime-store";
+    import { buildOauthProviderAuthResult } from "remoteclaw/plugin-sdk/provider-oauth";
+
+    // Wrong: monolithic root (lint will reject this)
+    import { ... } from "remoteclaw/plugin-sdk";
+
+    // Deprecated: legacy host bridge
+    import { runEmbeddedPiAgent } from "remoteclaw/extension-api";
+    ```
+
+    <Accordion title="Common subpaths reference">
+      | Subpath | Purpose |
+      | --- | --- |
+      | `plugin-sdk/core` | Plugin entry definitions and base types |
+      | `plugin-sdk/channel-setup` | Setup wizard adapters |
+      | `plugin-sdk/channel-pairing` | DM pairing primitives |
+      | `plugin-sdk/channel-reply-pipeline` | Reply prefix + typing wiring |
+      | `plugin-sdk/channel-config-schema` | Config schema builders |
+      | `plugin-sdk/channel-policy` | Group/DM policy helpers |
+      | `plugin-sdk/secret-input` | Secret input parsing/helpers |
+      | `plugin-sdk/webhook-ingress` | Webhook request/target helpers |
+      | `plugin-sdk/runtime-store` | Persistent plugin storage |
+      | `plugin-sdk/allow-from` | Allowlist resolution |
+      | `plugin-sdk/reply-payload` | Message reply types |
+      | `plugin-sdk/provider-oauth` | OAuth login + PKCE helpers |
+      | `plugin-sdk/provider-onboard` | Provider onboarding config patches |
+      | `plugin-sdk/testing` | Test utilities |
+    </Accordion>
+
+    Use the narrowest subpath that matches the job.
+
+  </Step>
+
+  <Step title="Use local modules for internal imports">
+    Within your plugin, create local module files for internal code sharing
+    instead of re-importing through the plugin SDK:
+
+    ```typescript
+    // api.ts — public exports for this plugin
+    export { MyConfig } from "./src/config.js";
+    export { MyRuntime } from "./src/runtime.js";
+
+    // runtime-api.ts — internal-only exports
+    export { internalHelper } from "./src/helpers.js";
+    ```
+
+    <Warning>
+      Never import your own plugin back through its published SDK path from
+      production files. Route internal imports through local files like `./api.ts`
+      or `./runtime-api.ts`. The SDK path is for external consumers only.
+    </Warning>
+
+  </Step>
+
+  <Step title="Add a plugin manifest">
+    Create `remoteclaw.plugin.json` in your plugin root:
+
+    ```json
+    {
+      "id": "my-plugin",
+      "kind": "provider",
+      "name": "My Plugin",
+      "description": "Adds My Provider to RemoteClaw"
+    }
+    ```
+
+    For channel plugins, set `"kind": "channel"` and add `"channels": ["my-channel"]`.
+
+    See [Plugin Manifest](/plugins/manifest) for the full schema.
+
+  </Step>
+
+  <Step title="Test your plugin">
+    **External plugins:** run your own test suite against the plugin SDK contracts.
+
+    **In-repo plugins:** RemoteClaw runs contract tests against all registered plugins:
+
+    ```bash
+    pnpm test:contracts:channels   # channel plugins
+    pnpm test:contracts:plugins    # provider plugins
+    ```
+
+    For unit tests, import test helpers from the testing surface:
+
+    ```typescript
+    import { createTestRuntime } from "remoteclaw/plugin-sdk/testing";
+    ```
+
+  </Step>
+
+  <Step title="Publish and install">
+    **External plugins:** publish to npm, then install:
 
     ```bash
     npm publish
     remoteclaw plugins install @myorg/remoteclaw-my-plugin
     ```
 
-    **In-repo plugins:** place under `extensions/` — automatically discovered.
+    **In-repo plugins:** place the plugin under `extensions/` and it is
+    automatically discovered during build.
+
+    Users can browse and install community plugins with:
 
     ```bash
-    pnpm test -- extensions/my-plugin/
+    remoteclaw plugins search <query>
+    remoteclaw plugins install <npm-spec>
     ```
 
   </Step>
 </Steps>
 
-## Plugin capabilities
-
-A single plugin can register any number of capabilities via the `api` object:
-
-| Capability           | Registration method                           | Detailed guide                                                                  |
-| -------------------- | --------------------------------------------- | ------------------------------------------------------------------------------- |
-| Text inference (LLM) | `api.registerProvider(...)`                   | [Provider Plugins](/plugins/sdk-provider-plugins)                               |
-| Channel / messaging  | `api.registerChannel(...)`                    | [Channel Plugins](/plugins/sdk-channel-plugins)                                 |
-| Speech (TTS/STT)     | `api.registerSpeechProvider(...)`             | [Provider Plugins](/plugins/sdk-provider-plugins#step-5-add-extra-capabilities) |
-| Media understanding  | `api.registerMediaUnderstandingProvider(...)` | [Provider Plugins](/plugins/sdk-provider-plugins#step-5-add-extra-capabilities) |
-| Image generation     | `api.registerImageGenerationProvider(...)`    | [Provider Plugins](/plugins/sdk-provider-plugins#step-5-add-extra-capabilities) |
-| Web search           | `api.registerWebSearchProvider(...)`          | [Provider Plugins](/plugins/sdk-provider-plugins#step-5-add-extra-capabilities) |
-| Agent tools          | `api.registerTool(...)`                       | Below                                                                           |
-| Custom commands      | `api.registerCommand(...)`                    | [Entry Points](/plugins/sdk-entrypoints)                                        |
-| Event hooks          | `api.registerHook(...)`                       | [Entry Points](/plugins/sdk-entrypoints)                                        |
-| HTTP routes          | `api.registerHttpRoute(...)`                  | [Internals](/plugins/architecture#gateway-http-routes)                          |
-| CLI subcommands      | `api.registerCli(...)`                        | [Entry Points](/plugins/sdk-entrypoints)                                        |
-
-For the full registration API, see [SDK Overview](/plugins/sdk-overview#registration-api).
-
 ## Registering agent tools
 
-Tools are typed functions the LLM can call. They can be required (always
-available) or optional (user opt-in):
+Plugins can register **agent tools** — typed functions the LLM can call. Tools
+can be required (always available) or optional (users opt in via allowlists).
 
 ```typescript
-register(api) {
-  // Required tool — always available
-  api.registerTool({
-    name: "my_tool",
-    description: "Do a thing",
-    parameters: Type.Object({ input: Type.String() }),
-    async execute(_id, params) {
-      return { content: [{ type: "text", text: params.input }] };
-    },
-  });
+import { Type } from "@sinclair/typebox";
 
-  // Optional tool — user must add to allowlist
-  api.registerTool(
-    {
-      name: "workflow_tool",
-      description: "Run a workflow",
-      parameters: Type.Object({ pipeline: Type.String() }),
+export default definePluginEntry({
+  id: "my-plugin",
+  name: "My Plugin",
+  register(api) {
+    // Required tool (always available)
+    api.registerTool({
+      name: "my_tool",
+      description: "Do a thing",
+      parameters: Type.Object({ input: Type.String() }),
       async execute(_id, params) {
-        return { content: [{ type: "text", text: params.pipeline }] };
+        return { content: [{ type: "text", text: params.input }] };
       },
-    },
-    { optional: true },
-  );
-}
+    });
+
+    // Optional tool (user must add to allowlist)
+    api.registerTool(
+      {
+        name: "workflow_tool",
+        description: "Run a workflow",
+        parameters: Type.Object({ pipeline: Type.String() }),
+        async execute(_id, params) {
+          return { content: [{ type: "text", text: params.pipeline }] };
+        },
+      },
+      { optional: true },
+    );
+  },
+});
 ```
 
-Users enable optional tools in config:
+Enable optional tools in config:
 
 ```json5
 {
@@ -181,56 +331,39 @@ Users enable optional tools in config:
 }
 ```
 
-- Tool names must not clash with core tools (conflicts are skipped)
-- Use `optional: true` for tools with side effects or extra binary requirements
+Tips:
+
+- Tool names must not clash with core tool names (conflicts are skipped)
+- Use `optional: true` for tools that trigger side effects or require extra binaries
 - Users can enable all tools from a plugin by adding the plugin id to `tools.allow`
 
-## Import conventions
+## Lint enforcement (in-repo plugins)
 
-Always import from focused `remoteclaw/plugin-sdk/<subpath>` paths:
+Three scripts enforce SDK boundaries for plugins in the RemoteClaw repository:
 
-```typescript
-import { definePluginEntry } from "remoteclaw/plugin-sdk/plugin-entry";
-import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/runtime-store";
+1. **No monolithic root imports** — `remoteclaw/plugin-sdk` root is rejected
+2. **No direct src/ imports** — plugins cannot import `../../src/` directly
+3. **No self-imports** — plugins cannot import their own `plugin-sdk/\<name\>` subpath
 
-// Wrong: monolithic root (deprecated, will be removed)
-import { ... } from "remoteclaw/plugin-sdk";
-```
+Run `pnpm check` to verify all boundaries before committing.
 
-For the full subpath reference, see [SDK Overview](/plugins/sdk-overview).
-
-Within your plugin, use local barrel files (`api.ts`, `runtime-api.ts`) for
-internal imports — never import your own plugin through its SDK path.
+External plugins are not subject to these lint rules, but following the same
+patterns is strongly recommended.
 
 ## Pre-submission checklist
 
 <Check>**package.json** has correct `remoteclaw` metadata</Check>
-<Check>**remoteclaw.plugin.json** manifest is present and valid</Check>
 <Check>Entry point uses `defineChannelPluginEntry` or `definePluginEntry`</Check>
-<Check>All imports use focused `plugin-sdk/<subpath>` paths</Check>
+<Check>All imports use focused `plugin-sdk/\<subpath\>` paths</Check>
 <Check>Internal imports use local modules, not SDK self-imports</Check>
-<Check>Tests pass (`pnpm test -- extensions/my-plugin/`)</Check>
+<Check>`remoteclaw.plugin.json` manifest is present and valid</Check>
+<Check>Tests pass</Check>
 <Check>`pnpm check` passes (in-repo plugins)</Check>
 
-## Next steps
+## Related
 
-<CardGroup cols={2}>
-  <Card title="Channel Plugins" icon="message" href="/plugins/sdk-channel-plugins">
-    Build a messaging channel plugin
-  </Card>
-  <Card title="Provider Plugins" icon="microchip" href="/plugins/sdk-provider-plugins">
-    Build a model provider plugin
-  </Card>
-  <Card title="SDK Overview" icon="book" href="/plugins/sdk-overview">
-    Import map and registration API reference
-  </Card>
-  <Card title="Runtime Helpers" icon="gear" href="/plugins/sdk-runtime">
-    TTS, search, subagent via api.runtime
-  </Card>
-  <Card title="Testing" icon="flask" href="/plugins/sdk-testing">
-    Test utilities and patterns
-  </Card>
-  <Card title="Plugin Manifest" icon="file-code" href="/plugins/manifest">
-    Full manifest schema reference
-  </Card>
-</CardGroup>
+- [Plugin SDK Migration](/plugins/sdk-migration) — migrating from deprecated compat surfaces
+- [Plugin Architecture](/plugins/architecture) — internals and capability model
+- [Plugin Manifest](/plugins/manifest) — full manifest schema
+- [Plugin Agent Tools](/plugins/agent-tools) — adding agent tools in a plugin
+- [Community Plugins](/plugins/community) — listing and quality bar

@@ -214,7 +214,10 @@ if ! run_as_remoteclaw test -f "$REMOTECLAW_JSON"; then
 fi
 
 echo "Building image from $REPO_PATH..."
-podman build -t remoteclaw:local -f "$REPO_PATH/Dockerfile" "$REPO_PATH"
+BUILD_ARGS=()
+[[ -n "${REMOTECLAW_DOCKER_APT_PACKAGES:-}" ]] && BUILD_ARGS+=(--build-arg "REMOTECLAW_DOCKER_APT_PACKAGES=${REMOTECLAW_DOCKER_APT_PACKAGES}")
+[[ -n "${REMOTECLAW_EXTENSIONS:-}" ]] && BUILD_ARGS+=(--build-arg "REMOTECLAW_EXTENSIONS=${REMOTECLAW_EXTENSIONS}")
+podman build ${BUILD_ARGS[@]+"${BUILD_ARGS[@]}"} -t remoteclaw:local -f "$REPO_PATH/Dockerfile" "$REPO_PATH"
 
 echo "Loading image into $REMOTECLAW_USER's Podman store..."
 TMP_IMAGE="$(mktemp -p /tmp remoteclaw-image.XXXXXX.tar)"

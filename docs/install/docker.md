@@ -60,6 +60,7 @@ Optional env vars:
 
 - `REMOTECLAW_IMAGE` — use a remote image instead of building locally (e.g. `ghcr.io/remoteclaw/remoteclaw:latest`)
 - `REMOTECLAW_DOCKER_APT_PACKAGES` — install extra apt packages during build
+- `REMOTECLAW_EXTENSIONS` — pre-install extension dependencies at build time (space-separated extension names, e.g. `diagnostics-otel matrix`)
 - `REMOTECLAW_EXTRA_MOUNTS` — add extra host bind mounts
 - `REMOTECLAW_HOME_VOLUME` — persist `/home/node` in a named volume
 - `REMOTECLAW_SANDBOX` — opt in to Docker gateway sandbox bootstrap. Only explicit truthy values enable it: `1`, `true`, `yes`, `on`
@@ -318,6 +319,31 @@ Notes:
 
 - This accepts a space-separated list of apt package names.
 - If you change `REMOTECLAW_DOCKER_APT_PACKAGES`, rerun `docker-setup.sh` to rebuild
+  the image.
+
+### Pre-install extension dependencies (optional)
+
+Extensions with their own `package.json` (e.g. `diagnostics-otel`, `matrix`,
+`msteams`) install their npm dependencies on first load. To bake those
+dependencies into the image instead, set `OPENCLAW_EXTENSIONS` before
+running `docker-setup.sh`:
+
+```bash
+export OPENCLAW_EXTENSIONS="diagnostics-otel matrix"
+./docker-setup.sh
+```
+
+Or when building directly:
+
+```bash
+docker build --build-arg OPENCLAW_EXTENSIONS="diagnostics-otel matrix" .
+```
+
+Notes:
+
+- This accepts a space-separated list of extension directory names (under `extensions/`).
+- Only extensions with a `package.json` are affected; lightweight plugins without one are ignored.
+- If you change `OPENCLAW_EXTENSIONS`, rerun `docker-setup.sh` to rebuild
   the image.
 
 ### Power-user / full-featured container (opt-in)

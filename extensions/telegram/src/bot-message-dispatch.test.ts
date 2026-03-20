@@ -10,6 +10,10 @@ import {
 const createTelegramDraftStream = vi.hoisted(() => vi.fn());
 const dispatchReplyWithBufferedBlockDispatcher = vi.hoisted(() => vi.fn());
 const deliverReplies = vi.hoisted(() => vi.fn());
+const emitInternalMessageSentHook = vi.hoisted(() => vi.fn());
+const createForumTopicTelegram = vi.hoisted(() => vi.fn());
+const deleteMessageTelegram = vi.hoisted(() => vi.fn());
+const editForumTopicTelegram = vi.hoisted(() => vi.fn());
 const editMessageTelegram = vi.hoisted(() => vi.fn());
 const loadSessionStore = vi.hoisted(() => vi.fn());
 const resolveStorePath = vi.hoisted(() => vi.fn(() => "/tmp/sessions.json"));
@@ -33,6 +37,7 @@ vi.mock("../auto-reply/reply/auto-topic-label.js", async (importOriginal) => {
 
 vi.mock("./bot/delivery.js", () => ({
   deliverReplies,
+  emitInternalMessageSentHook,
 }));
 
 vi.mock("./send.js", () => ({
@@ -66,6 +71,10 @@ describe("dispatchTelegramMessage draft streaming", () => {
     createTelegramDraftStream.mockClear();
     dispatchReplyWithBufferedBlockDispatcher.mockClear();
     deliverReplies.mockClear();
+    emitInternalMessageSentHook.mockClear();
+    createForumTopicTelegram.mockClear();
+    deleteMessageTelegram.mockClear();
+    editForumTopicTelegram.mockClear();
     editMessageTelegram.mockClear();
     loadSessionStore.mockClear();
     resolveStorePath.mockClear();
@@ -422,6 +431,38 @@ describe("dispatchTelegramMessage draft streaming", () => {
     );
     expect(draftStream.clear).not.toHaveBeenCalled();
     expect(draftStream.stop).toHaveBeenCalled();
+  });
+
+  it("emits only the internal message:sent hook when a final answer stays in preview", async () => {
+    const draftStream = createDraftStream(999);
+    createTelegramDraftStream.mockReturnValue(draftStream);
+    dispatchReplyWithBufferedBlockDispatcher.mockImplementation(async ({ dispatcherOptions }) => {
+      await dispatcherOptions.deliver({ text: "Primary result" }, { kind: "final" });
+      return { queuedFinal: true };
+    });
+
+    await dispatchWithContext({
+      context: createContext({
+        ctxPayload: { SessionKey: "s1" } as unknown as TelegramMessageContext["ctxPayload"],
+      }),
+    });
+
+    expect(deliverReplies).not.toHaveBeenCalled();
+    expect(editMessageTelegram).toHaveBeenCalledWith(
+      123,
+      999,
+      "Primary result",
+      expect.any(Object),
+    );
+    expect(emitInternalMessageSentHook).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionKeyForInternalHooks: "s1",
+        chatId: "123",
+        content: "Primary result",
+        success: true,
+        messageId: 999,
+      }),
+    );
   });
 
   it("keeps streamed preview visible when final text regresses after a tool warning", async () => {

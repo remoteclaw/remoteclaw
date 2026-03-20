@@ -33,7 +33,7 @@ import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import { defaultTelegramBotDeps, type TelegramBotDeps } from "./bot-deps.js";
 import type { TelegramMessageContext } from "./bot-message-context.js";
 import type { TelegramBotOptions } from "./bot.js";
-import { deliverReplies } from "./bot/delivery.js";
+import { deliverReplies, emitInternalMessageSentHook } from "./bot/delivery.js";
 import type { TelegramStreamMode } from "./bot/types.js";
 import type { TelegramInlineButtons } from "./button-types.js";
 import { createTelegramDraftStream } from "./draft-stream.js";
@@ -44,6 +44,7 @@ import {
   createLaneDeliveryStateTracker,
   createLaneTextDeliverer,
   type DraftLaneState,
+  type LaneDeliveryResult,
   type LaneName,
   type LanePreviewLifecycle,
 } from "./lane-delivery.js";
@@ -479,6 +480,21 @@ export const dispatchTelegramMessage = async ({
     }
     return result.delivered;
   };
+  const emitPreviewFinalizedHook = (result: LaneDeliveryResult) => {
+    if (result.kind !== "preview-finalized") {
+      return;
+    }
+    emitInternalMessageSentHook({
+      sessionKeyForInternalHooks: deliveryBaseOptions.sessionKeyForInternalHooks,
+      chatId: deliveryBaseOptions.chatId,
+      accountId: deliveryBaseOptions.accountId,
+      content: result.delivery.content,
+      success: true,
+      messageId: result.delivery.messageId,
+      isGroup: deliveryBaseOptions.mirrorIsGroup,
+      groupId: deliveryBaseOptions.mirrorGroupId,
+    });
+  };
   const deliverLaneText = createLaneTextDeliverer({
     lanes,
     archivedAnswerPreviews,
@@ -606,8 +622,11 @@ export const dispatchTelegramMessage = async ({
               previewButtons,
               allowPreviewUpdateForNonFinal: segment.lane === "reasoning",
             });
+            if (info.kind === "final") {
+              emitPreviewFinalizedHook(result);
+            }
             if (segment.lane === "reasoning") {
-              if (result !== "skipped") {
+              if (result.kind !== "skipped") {
                 reasoningStepState.noteReasoningDelivered();
                 await flushBufferedFinalAnswer();
               }

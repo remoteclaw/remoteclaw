@@ -460,7 +460,7 @@ describe("resolveCommandAuthorization", () => {
   });
 
   it("grants senderIsOwner for internal channel with operator.admin scope", () => {
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as RemoteClawConfig;
     const ctx = {
       Provider: "webchat",
       Surface: "webchat",
@@ -475,7 +475,7 @@ describe("resolveCommandAuthorization", () => {
   });
 
   it("does not grant senderIsOwner for internal channel without admin scope", () => {
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as RemoteClawConfig;
     const ctx = {
       Provider: "webchat",
       Surface: "webchat",
@@ -490,7 +490,7 @@ describe("resolveCommandAuthorization", () => {
   });
 
   it("does not grant senderIsOwner for external channel even with admin scope", () => {
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as RemoteClawConfig;
     const ctx = {
       Provider: "telegram",
       Surface: "telegram",

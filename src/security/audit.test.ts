@@ -1352,7 +1352,7 @@ describe("security audit", () => {
 
   it("does not treat prototype properties as explicit Discord account config paths", async () => {
     await withChannelSecurityStateDir(async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           discord: {
             enabled: true,

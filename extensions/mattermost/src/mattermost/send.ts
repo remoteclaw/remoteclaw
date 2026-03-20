@@ -206,7 +206,7 @@ async function resolveTargetChannelId(params: {
 }
 
 type MattermostSendContext = {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId: string;
   token: string;
   baseUrl: string;

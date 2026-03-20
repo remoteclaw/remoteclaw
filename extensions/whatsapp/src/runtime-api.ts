@@ -1,23 +1,36 @@
 export {
+  buildChannelConfigSchema,
   createActionGate,
-  createWhatsAppOutboundBase,
   DEFAULT_ACCOUNT_ID,
   formatWhatsAppConfigAllowFromEntries,
-  isWhatsAppGroupJid,
+  getChatChannelMeta,
   jsonResult,
-  normalizeWhatsAppTarget,
+  normalizeE164,
   readReactionParams,
   readStringParam,
-  resolveWhatsAppHeartbeatRecipients,
-  resolveWhatsAppMentionStripRegexes,
+  resolveWhatsAppGroupIntroHint,
+  resolveWhatsAppGroupRequireMention,
+  resolveWhatsAppGroupToolPolicy,
   resolveWhatsAppOutboundTarget,
   ToolAuthorizationError,
+  WhatsAppConfigSchema,
   type ChannelPlugin,
+  type RemoteClawConfig,
+} from "../../../src/plugin-sdk/whatsapp-core.js";
+
+export {
+  createWhatsAppOutboundBase,
+  isWhatsAppGroupJid,
+  looksLikeWhatsAppTargetId,
+  normalizeWhatsAppAllowFromEntries,
+  normalizeWhatsAppMessagingTarget,
+  normalizeWhatsAppTarget,
+  resolveWhatsAppHeartbeatRecipients,
+  resolveWhatsAppMentionStripRegexes,
   type ChannelMessageActionName,
   type DmPolicy,
   type GroupPolicy,
-  type OpenClawConfig,
   type WhatsAppAccountConfig,
-} from "openclaw/plugin-sdk/whatsapp";
+} from "../../../src/plugin-sdk/whatsapp-shared.js";
 
-export { monitorWebChannel } from "openclaw/plugin-sdk/whatsapp";
+export { monitorWebChannel } from "./channel.runtime.js";

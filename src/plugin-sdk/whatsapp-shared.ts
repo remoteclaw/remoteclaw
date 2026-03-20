@@ -5,6 +5,11 @@ export {
   resolveWhatsAppGroupIntroHint,
   resolveWhatsAppMentionStripPatterns,
 } from "../channels/plugins/whatsapp-shared.js";
+export {
+  looksLikeWhatsAppTargetId,
+  normalizeWhatsAppAllowFromEntries,
+  normalizeWhatsAppMessagingTarget,
+} from "../channels/plugins/normalize/whatsapp.js";
 export { resolveWhatsAppHeartbeatRecipients } from "../channels/plugins/whatsapp-heartbeat.js";
 export {
   isWhatsAppGroupJid,

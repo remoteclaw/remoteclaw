@@ -3,3 +3,27 @@
 // matrix-js-sdk during plain runtime-api import.
 export * from "./src/auth-precedence.js";
 export * from "./helper-api.js";
+export {
+  assertHttpUrlTargetsPrivateNetwork,
+  closeDispatcher,
+  createPinnedDispatcher,
+  resolvePinnedHostnameWithPolicy,
+  ssrfPolicyFromAllowPrivateNetwork,
+  type LookupFn,
+  type SsrFPolicy,
+} from "remoteclaw/plugin-sdk/infra-runtime";
+export {
+  setMatrixThreadBindingIdleTimeoutBySessionKey,
+  setMatrixThreadBindingMaxAgeBySessionKey,
+} from "./thread-bindings-runtime.js";
+export { writeJsonFileAtomically } from "../../src/plugin-sdk/json-store.js";
+export type {
+  ChannelDirectoryEntry,
+  ChannelMessageActionContext,
+  RemoteClawConfig,
+  PluginRuntime,
+  RuntimeLogger,
+  RuntimeEnv,
+  WizardPrompter,
+} from "../../src/plugin-sdk/matrix.js";
+export { formatZonedTimestamp } from "../../src/plugin-sdk/matrix.js";

@@ -27,7 +27,7 @@ const RUNTIME_API_EXPORT_GUARDS: Record<string, readonly string[]> = {
     'export * from "./src/send.js";',
   ],
   "extensions/imessage/runtime-api.ts": [
-    'export { DEFAULT_ACCOUNT_ID, PAIRING_APPROVED_MESSAGE, buildChannelConfigSchema, collectStatusIssuesFromLastError, formatTrimmedAllowFromEntries, getChatChannelMeta, looksLikeIMessageTargetId, normalizeIMessageMessagingTarget, resolveChannelMediaMaxBytes, resolveIMessageConfigAllowFrom, resolveIMessageConfigDefaultTo, IMessageConfigSchema, type ChannelPlugin, type IMessageAccountConfig } from "remoteclaw/plugin-sdk/imessage";',
+    'export { DEFAULT_ACCOUNT_ID, PAIRING_APPROVED_MESSAGE, buildChannelConfigSchema, collectStatusIssuesFromLastError, formatTrimmedAllowFromEntries, getChatChannelMeta, looksLikeIMessageTargetId, normalizeIMessageMessagingTarget, resolveChannelMediaMaxBytes, resolveIMessageConfigAllowFrom, resolveIMessageConfigDefaultTo, IMessageConfigSchema, type ChannelPlugin, type IMessageAccountConfig } from "../../src/plugin-sdk/imessage.js";',
     'export { resolveIMessageGroupRequireMention, resolveIMessageGroupToolPolicy } from "./src/group-policy.js";',
     'export { monitorIMessageProvider } from "./src/monitor.js";',
     'export type { MonitorIMessageOpts } from "./src/monitor.js";',
@@ -38,6 +38,11 @@ const RUNTIME_API_EXPORT_GUARDS: Record<string, readonly string[]> = {
   "extensions/matrix/runtime-api.ts": [
     'export * from "./src/auth-precedence.js";',
     'export * from "./helper-api.js";',
+    'export { assertHttpUrlTargetsPrivateNetwork, closeDispatcher, createPinnedDispatcher, resolvePinnedHostnameWithPolicy, ssrfPolicyFromAllowPrivateNetwork, type LookupFn, type SsrFPolicy } from "remoteclaw/plugin-sdk/infra-runtime";',
+    'export { setMatrixThreadBindingIdleTimeoutBySessionKey, setMatrixThreadBindingMaxAgeBySessionKey } from "./thread-bindings-runtime.js";',
+    'export { writeJsonFileAtomically } from "../../src/plugin-sdk/json-store.js";',
+    'export type { ChannelDirectoryEntry, ChannelMessageActionContext, RemoteClawConfig, PluginRuntime, RuntimeLogger, RuntimeEnv, WizardPrompter } from "../../src/plugin-sdk/matrix.js";',
+    'export { formatZonedTimestamp } from "../../src/plugin-sdk/matrix.js";',
   ],
   "extensions/nextcloud-talk/runtime-api.ts": [
     'export * from "../../src/plugin-sdk/nextcloud-talk.js";',
@@ -51,12 +56,12 @@ const RUNTIME_API_EXPORT_GUARDS: Record<string, readonly string[]> = {
     'export * from "./src/resolve-users.js";',
   ],
   "extensions/telegram/runtime-api.ts": [
-    'export type { ChannelMessageActionAdapter, ChannelPlugin, RemoteClawConfig, RemoteClawPluginApi, PluginRuntime, TelegramAccountConfig, TelegramActionConfig, TelegramNetworkConfig } from "remoteclaw/plugin-sdk/telegram";',
+    'export type { ChannelMessageActionAdapter, ChannelPlugin, RemoteClawConfig, RemoteClawPluginApi, PluginRuntime, TelegramAccountConfig, TelegramActionConfig, TelegramNetworkConfig } from "../../src/plugin-sdk/telegram.js";',
     'export type { RemoteClawPluginService, RemoteClawPluginServiceContext, PluginLogger } from "remoteclaw/plugin-sdk/core";',
     'export type { AcpRuntime, AcpRuntimeCapabilities, AcpRuntimeDoctorReport, AcpRuntimeEnsureInput, AcpRuntimeEvent, AcpRuntimeHandle, AcpRuntimeStatus, AcpRuntimeTurnInput, AcpRuntimeErrorCode, AcpSessionUpdateTag } from "remoteclaw/plugin-sdk/acp-runtime";',
     'export { AcpRuntimeError } from "remoteclaw/plugin-sdk/acp-runtime";',
-    'export { buildTokenChannelStatusSummary, clearAccountEntryFields, DEFAULT_ACCOUNT_ID, normalizeAccountId, PAIRING_APPROVED_MESSAGE, parseTelegramTopicConversation, projectCredentialSnapshotFields, resolveConfiguredFromCredentialStatuses, resolveTelegramPollVisibility } from "remoteclaw/plugin-sdk/telegram";',
-    'export { buildChannelConfigSchema, getChatChannelMeta, jsonResult, readNumberParam, readReactionParams, readStringArrayParam, readStringOrNumberParam, readStringParam, resolvePollMaxSelections, TelegramConfigSchema } from "remoteclaw/plugin-sdk/telegram-core";',
+    'export { buildTokenChannelStatusSummary, clearAccountEntryFields, DEFAULT_ACCOUNT_ID, normalizeAccountId, PAIRING_APPROVED_MESSAGE, parseTelegramTopicConversation, projectCredentialSnapshotFields, resolveConfiguredFromCredentialStatuses, resolveTelegramPollVisibility } from "../../src/plugin-sdk/telegram.js";',
+    'export { buildChannelConfigSchema, getChatChannelMeta, jsonResult, readNumberParam, readReactionParams, readStringArrayParam, readStringOrNumberParam, readStringParam, resolvePollMaxSelections, TelegramConfigSchema } from "../../src/plugin-sdk/telegram-core.js";',
     'export type { TelegramProbe } from "./src/probe.js";',
     'export { auditTelegramGroupMembership, collectTelegramUnmentionedGroupIds } from "./src/audit.js";',
     'export { telegramMessageActions } from "./src/channel-actions.js";',

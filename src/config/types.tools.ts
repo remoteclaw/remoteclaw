@@ -1,3 +1,5 @@
+import type { SecretInput } from "./types.secrets.js";
+
 // Stub type: exec-safe-bin-policy infrastructure was gutted.
 type SafeBinProfileFixture = {
   minPositional?: number;

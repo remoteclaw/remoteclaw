@@ -446,10 +446,13 @@ describe("subagent registry steer restarts", () => {
 
   it("recovers announce cleanup when completion arrives after a kill marker", async () => {
     const childSessionKey = "agent:main:subagent:kill-race";
-    registerRun({
+    mod.registerSubagentRun({
       runId: "run-kill-race",
       childSessionKey,
+      requesterSessionKey: "agent:main:main",
+      requesterDisplayKey: "main",
       task: "race test",
+      cleanup: "keep",
     });
 
     expect(mod.markSubagentRunTerminated({ runId: "run-kill-race", reason: "manual kill" })).toBe(
@@ -459,7 +462,11 @@ describe("subagent registry steer restarts", () => {
     expect(listMainRuns()[0]?.cleanupHandled).toBe(true);
     expect(typeof listMainRuns()[0]?.cleanupCompletedAt).toBe("number");
 
-    emitLifecycleEnd("run-kill-race");
+    lifecycleHandler?.({
+      stream: "lifecycle",
+      runId: "run-kill-race",
+      data: { phase: "end" },
+    });
     await flushAnnounce();
     await flushAnnounce();
 

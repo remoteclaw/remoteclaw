@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import { SEARCH_PROVIDER_OPTIONS, setupSearch } from "./onboard-search.js";
@@ -36,14 +36,14 @@ function createPrompter(params: { selectValue?: string; textValue?: string }): {
 
 describe("setupSearch", () => {
   it("returns config unchanged when user skips", async () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: RemoteClawConfig = {};
     const { prompter } = createPrompter({ selectValue: "__skip__" });
     const result = await setupSearch(cfg, runtime, prompter);
     expect(result).toBe(cfg);
   });
 
   it("sets provider and key for perplexity", async () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: RemoteClawConfig = {};
     const { prompter } = createPrompter({
       selectValue: "perplexity",
       textValue: "pplx-test-key",
@@ -55,7 +55,7 @@ describe("setupSearch", () => {
   });
 
   it("sets provider and key for brave", async () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: RemoteClawConfig = {};
     const { prompter } = createPrompter({
       selectValue: "brave",
       textValue: "BSA-test-key",
@@ -67,7 +67,7 @@ describe("setupSearch", () => {
   });
 
   it("sets provider and key for gemini", async () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: RemoteClawConfig = {};
     const { prompter } = createPrompter({
       selectValue: "gemini",
       textValue: "AIza-test",
@@ -79,7 +79,7 @@ describe("setupSearch", () => {
   });
 
   it("sets provider and key for grok", async () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: RemoteClawConfig = {};
     const { prompter } = createPrompter({
       selectValue: "grok",
       textValue: "xai-test",
@@ -91,7 +91,7 @@ describe("setupSearch", () => {
   });
 
   it("sets provider and key for kimi", async () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: RemoteClawConfig = {};
     const { prompter } = createPrompter({
       selectValue: "kimi",
       textValue: "sk-moonshot",
@@ -103,7 +103,7 @@ describe("setupSearch", () => {
   });
 
   it("shows missing-key note when no key is provided and no env var", async () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: RemoteClawConfig = {};
     const { prompter, notes } = createPrompter({
       selectValue: "brave",
       textValue: "",
@@ -116,7 +116,7 @@ describe("setupSearch", () => {
   });
 
   it("keeps existing key when user leaves input blank", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       tools: {
         web: {
           search: {
@@ -136,7 +136,7 @@ describe("setupSearch", () => {
   });
 
   it("advanced preserves enabled:false when keeping existing key", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       tools: {
         web: {
           search: {
@@ -157,7 +157,7 @@ describe("setupSearch", () => {
   });
 
   it("quickstart skips key prompt when config key exists", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       tools: {
         web: {
           search: {
@@ -178,7 +178,7 @@ describe("setupSearch", () => {
   });
 
   it("quickstart preserves enabled:false when search was intentionally disabled", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       tools: {
         web: {
           search: {
@@ -200,7 +200,7 @@ describe("setupSearch", () => {
   });
 
   it("quickstart falls through to key prompt when no key and no env var", async () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: RemoteClawConfig = {};
     const { prompter } = createPrompter({ selectValue: "grok", textValue: "" });
     const result = await setupSearch(cfg, runtime, prompter, {
       quickstartDefaults: true,
@@ -214,7 +214,7 @@ describe("setupSearch", () => {
     const orig = process.env.BRAVE_API_KEY;
     process.env.BRAVE_API_KEY = "env-brave-key";
     try {
-      const cfg: OpenClawConfig = {};
+      const cfg: RemoteClawConfig = {};
       const { prompter } = createPrompter({ selectValue: "brave" });
       const result = await setupSearch(cfg, runtime, prompter, {
         quickstartDefaults: true,
@@ -232,7 +232,7 @@ describe("setupSearch", () => {
   });
 
   it("stores env-backed SecretRef when secretInputMode=ref for perplexity", async () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: RemoteClawConfig = {};
     const { prompter } = createPrompter({ selectValue: "perplexity" });
     const result = await setupSearch(cfg, runtime, prompter, {
       secretInputMode: "ref",
@@ -247,7 +247,7 @@ describe("setupSearch", () => {
   });
 
   it("stores env-backed SecretRef when secretInputMode=ref for brave", async () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: RemoteClawConfig = {};
     const { prompter } = createPrompter({ selectValue: "brave" });
     const result = await setupSearch(cfg, runtime, prompter, {
       secretInputMode: "ref",
@@ -262,7 +262,7 @@ describe("setupSearch", () => {
   });
 
   it("stores plaintext key when secretInputMode is unset", async () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: RemoteClawConfig = {};
     const { prompter } = createPrompter({
       selectValue: "brave",
       textValue: "BSA-plain",

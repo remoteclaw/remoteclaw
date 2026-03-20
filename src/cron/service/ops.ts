@@ -82,7 +82,7 @@ async function ensureLoadedForRead(state: CronServiceState) {
   // advance a past-due nextRunAtMs without executing the job (#16156).
   const changed = recomputeNextRunsForMaintenance(state);
   if (changed) {
-    await persist(state);
+    await persist(state, { skipBackup: true });
   }
 }
 
@@ -106,7 +106,7 @@ export async function start(state: CronServiceState) {
         startupInterruptedJobIds.add(job.id);
       }
     }
-    await persist(state);
+    await persist(state, { skipBackup: true });
   });
 
   await runMissedJobs(state, { skipJobIds: startupInterruptedJobIds });
@@ -114,7 +114,7 @@ export async function start(state: CronServiceState) {
   await locked(state, async () => {
     await ensureLoaded(state, { forceReload: true, skipRecompute: true });
     recomputeNextRuns(state);
-    await persist(state);
+    await persist(state, { skipBackup: true });
     armTimer(state);
     state.deps.log.info(
       {

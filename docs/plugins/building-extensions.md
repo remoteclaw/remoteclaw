@@ -1,79 +1,116 @@
 ---
-title: "Building Extensions"
-summary: "Step-by-step guide for creating RemoteClaw channel and provider extensions"
+title: "Building Plugins"
+sidebarTitle: "Building Plugins"
+summary: "Step-by-step guide for creating RemoteClaw plugins with any combination of capabilities"
 read_when:
-  - You want to create a new RemoteClaw plugin or extension
+  - You want to create a new RemoteClaw plugin
   - You need to understand the plugin SDK import patterns
-  - You are adding a new channel or provider to RemoteClaw
+  - You are adding a new channel, provider, tool, or other capability to RemoteClaw
 ---
 
-# Building Extensions
+# Building Plugins
 
-Extensions add channels, model providers, tools, or other capabilities to RemoteClaw.
-This guide walks through creating one from scratch.
+Plugins extend RemoteClaw with new capabilities: channels, model providers, speech,
+image generation, web search, agent tools, or any combination. A single plugin
+can register multiple capabilities.
+
+RemoteClaw encourages **external plugin development**. You do not need to add your
+plugin to the RemoteClaw repository. Publish your plugin on npm, and users install
+it with `remoteclaw plugins install <npm-spec>`. RemoteClaw also maintains a set of
+core plugins in-repo, but the plugin system is designed for independent ownership
+and distribution.
 
 ## Prerequisites
 
-- RemoteClaw repository cloned and dependencies installed (`pnpm install`)
+- Node >= 22 and a package manager (npm or pnpm)
 - Familiarity with TypeScript (ESM)
+- For in-repo plugins: RemoteClaw repository cloned and `pnpm install` done
 
-## Extension structure
+## Plugin capabilities
 
-Every extension lives under `extensions/<name>/` and follows this layout:
+A plugin can register one or more capabilities. The capability you register
+determines what your plugin provides to RemoteClaw:
+
+| Capability          | Registration method                           | What it adds                   |
+| ------------------- | --------------------------------------------- | ------------------------------ |
+| Text inference      | `api.registerProvider(...)`                   | Model provider (LLM)           |
+| Channel / messaging | `api.registerChannel(...)`                    | Chat channel (e.g. Slack, IRC) |
+| Speech              | `api.registerSpeechProvider(...)`             | Text-to-speech / STT           |
+| Media understanding | `api.registerMediaUnderstandingProvider(...)` | Image/audio/video analysis     |
+| Image generation    | `api.registerImageGenerationProvider(...)`    | Image generation               |
+| Web search          | `api.registerWebSearchProvider(...)`          | Web search provider            |
+| Agent tools         | `api.registerTool(...)`                       | Tools callable by the agent    |
+
+A plugin that registers zero capabilities but provides hooks or services is a
+**hook-only** plugin. That pattern is still supported.
+
+## Plugin structure
+
+Plugins follow this layout (whether in-repo or standalone):
 
 ```
-extensions/my-channel/
+my-plugin/
 ├── package.json          # npm metadata + remoteclaw config
-├── index.ts              # Entry point (defineChannelPluginEntry)
+├── remoteclaw.plugin.json  # Plugin manifest
+├── index.ts              # Entry point
 ├── setup-entry.ts        # Setup wizard (optional)
-├── api.ts                # Public contract barrel (optional)
-├── runtime-api.ts        # Internal runtime barrel (optional)
+├── api.ts                # Public exports (optional)
+├── runtime-api.ts        # Internal exports (optional)
 └── src/
-    ├── channel.ts        # Channel adapter implementation
+    ├── provider.ts       # Capability implementation
     ├── runtime.ts        # Runtime wiring
     └── *.test.ts         # Colocated tests
 ```
 
-## Create an extension
+## Create a plugin
 
 <Steps>
   <Step title="Create the package">
-    Create `extensions/my-channel/package.json`:
+    Create `package.json` with the `remoteclaw` metadata block. The structure
+    depends on what capabilities your plugin provides.
+
+    **Channel plugin example:**
 
     ```json
     {
-      "name": "@remoteclaw/my-channel",
-      "version": "2026.1.1",
-      "description": "RemoteClaw My Channel plugin",
+      "name": "@myorg/remoteclaw-my-channel",
+      "version": "1.0.0",
       "type": "module",
-      "dependencies": {},
       "remoteclaw": {
         "extensions": ["./index.ts"],
-        "setupEntry": "./setup-entry.ts",
         "channel": {
           "id": "my-channel",
           "label": "My Channel",
-          "selectionLabel": "My Channel (plugin)",
-          "docsPath": "/channels/my-channel",
-          "docsLabel": "my-channel",
-          "blurb": "Short description of the channel.",
-          "order": 80
-        },
-        "install": {
-          "npmSpec": "@remoteclaw/my-channel",
-          "localPath": "extensions/my-channel"
+          "blurb": "Short description of the channel."
         }
       }
     }
     ```
 
-    The `remoteclaw` field tells the plugin system what your extension provides.
-    For provider plugins, use `providers` instead of `channel`.
+    **Provider plugin example:**
+
+    ```json
+    {
+      "name": "@myorg/remoteclaw-my-provider",
+      "version": "1.0.0",
+      "type": "module",
+      "remoteclaw": {
+        "extensions": ["./index.ts"],
+        "providers": ["my-provider"]
+      }
+    }
+    ```
+
+    The `remoteclaw` field tells the plugin system what your plugin provides.
+    A plugin can declare both `channel` and `providers` if it provides multiple
+    capabilities.
 
   </Step>
 
   <Step title="Define the entry point">
-    Create `extensions/my-channel/index.ts`:
+    The entry point registers your capabilities with the plugin API.
+
+    **Channel plugin:**
 
     ```typescript
     import { defineChannelPluginEntry } from "remoteclaw/plugin-sdk/core";
@@ -88,23 +125,51 @@ extensions/my-channel/
     });
     ```
 
-    For provider plugins, use `definePluginEntry` instead.
+    **Provider plugin:**
+
+    ```typescript
+    import { definePluginEntry } from "remoteclaw/plugin-sdk/core";
+
+    export default definePluginEntry({
+      id: "my-provider",
+      name: "My Provider",
+      register(api) {
+        api.registerProvider({
+          // Provider implementation
+        });
+      },
+    });
+    ```
+
+    **Multi-capability plugin** (provider + tool):
+
+    ```typescript
+    import { definePluginEntry } from "remoteclaw/plugin-sdk/core";
+
+    export default definePluginEntry({
+      id: "my-plugin",
+      name: "My Plugin",
+      register(api) {
+        api.registerProvider({ /* ... */ });
+        api.registerTool({ /* ... */ });
+        api.registerImageGenerationProvider({ /* ... */ });
+      },
+    });
+    ```
+
+    Use `defineChannelPluginEntry` for channel plugins and `definePluginEntry`
+    for everything else. A single plugin can register as many capabilities as needed.
 
   </Step>
 
-  <Step title="Import from focused subpaths">
-    Always import from specific `remoteclaw/plugin-sdk/<subpath>` paths rather than
-    the monolithic root. The old `remoteclaw/plugin-sdk/compat` barrel is deprecated
-    (see [SDK Migration](/plugins/sdk-migration)).
+  <Step title="Import from focused SDK subpaths">
+    Always import from specific `remoteclaw/plugin-sdk/\<subpath\>` paths. The old
+    monolithic import is deprecated (see [SDK Migration](/plugins/sdk-migration)).
 
     ```typescript
     // Correct: focused subpaths
-    import { defineChannelPluginEntry } from "remoteclaw/plugin-sdk/core";
-    import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
-    import { createChannelPairingController } from "remoteclaw/plugin-sdk/channel-pairing";
+    import { definePluginEntry } from "remoteclaw/plugin-sdk/core";
     import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/runtime-store";
-    import { createOptionalChannelSetupSurface } from "remoteclaw/plugin-sdk/channel-setup";
-    import { resolveChannelGroupRequireMention } from "remoteclaw/plugin-sdk/channel-policy";
     import { buildOauthProviderAuthResult } from "remoteclaw/plugin-sdk/provider-oauth";
 
     // Wrong: monolithic root (lint will reject this)
@@ -114,10 +179,10 @@ extensions/my-channel/
     <Accordion title="Common subpaths reference">
       | Subpath | Purpose |
       | --- | --- |
-      | `plugin-sdk/core` | Plugin entry definitions, base types |
-      | `plugin-sdk/channel-setup` | Optional setup adapters/wizards |
+      | `plugin-sdk/core` | Plugin entry definitions and base types |
+      | `plugin-sdk/channel-setup` | Setup wizard adapters |
       | `plugin-sdk/channel-pairing` | DM pairing primitives |
-      | `plugin-sdk/channel-reply-pipeline` | Prefix + typing reply wiring |
+      | `plugin-sdk/channel-reply-pipeline` | Reply prefix + typing wiring |
       | `plugin-sdk/channel-config-schema` | Config schema builders |
       | `plugin-sdk/channel-policy` | Group/DM policy helpers |
       | `plugin-sdk/secret-input` | Secret input parsing/helpers |
@@ -130,95 +195,115 @@ extensions/my-channel/
       | `plugin-sdk/testing` | Test utilities |
     </Accordion>
 
-    Use the narrowest primitive that matches the job. Reach for `channel-runtime`
-    or other larger helper barrels only when a dedicated subpath does not exist yet.
+    Use the narrowest subpath that matches the job.
 
   </Step>
 
-  <Step title="Use local barrels for internal imports">
-    Within your extension, create barrel files for internal code sharing instead
-    of importing through the plugin SDK:
+  <Step title="Use local modules for internal imports">
+    Within your plugin, create local module files for internal code sharing
+    instead of re-importing through the plugin SDK:
 
     ```typescript
-    // api.ts — public contract for this extension
-    export { MyChannelConfig } from "./src/config.js";
-    export { MyChannelRuntime } from "./src/runtime.js";
+    // api.ts — public exports for this plugin
+    export { MyConfig } from "./src/config.js";
+    export { MyRuntime } from "./src/runtime.js";
 
-    // runtime-api.ts — internal-only exports (not for production consumers)
+    // runtime-api.ts — internal-only exports
     export { internalHelper } from "./src/helpers.js";
     ```
 
     <Warning>
-      Never import your own extension back through its published SDK contract
-      path from production files. Route internal imports through `./api.ts` or
-      `./runtime-api.ts` instead. The SDK contract is for external consumers only.
+      Never import your own plugin back through its published SDK path from
+      production files. Route internal imports through local files like `./api.ts`
+      or `./runtime-api.ts`. The SDK path is for external consumers only.
     </Warning>
 
   </Step>
 
   <Step title="Add a plugin manifest">
-    Create `remoteclaw.plugin.json` in your extension root:
+    Create `remoteclaw.plugin.json` in your plugin root:
 
     ```json
     {
-      "id": "my-channel",
-      "kind": "channel",
-      "channels": ["my-channel"],
-      "name": "My Channel Plugin",
-      "description": "Connects RemoteClaw to My Channel"
+      "id": "my-plugin",
+      "kind": "provider",
+      "name": "My Plugin",
+      "description": "Adds My Provider to RemoteClaw"
     }
     ```
 
-    See [Plugin manifest](/plugins/manifest) for the full schema.
+    For channel plugins, set `"kind": "channel"` and add `"channels": ["my-channel"]`.
+
+    See [Plugin Manifest](/plugins/manifest) for the full schema.
 
   </Step>
 
-  <Step title="Test with contract tests">
-    RemoteClaw runs contract tests against all registered plugins. After adding your
-    extension, run:
+  <Step title="Test your plugin">
+    **External plugins:** run your own test suite against the plugin SDK contracts.
+
+    **In-repo plugins:** RemoteClaw runs contract tests against all registered plugins:
 
     ```bash
     pnpm test:contracts:channels   # channel plugins
     pnpm test:contracts:plugins    # provider plugins
     ```
 
-    Contract tests verify your plugin conforms to the expected interface (setup
-    wizard, session binding, message handling, group policy, etc.).
-
-    For unit tests, import test helpers from the public testing surface:
+    For unit tests, import test helpers from the testing surface:
 
     ```typescript
     import { createTestRuntime } from "remoteclaw/plugin-sdk/testing";
     ```
 
   </Step>
+
+  <Step title="Publish and install">
+    **External plugins:** publish to npm, then install:
+
+    ```bash
+    npm publish
+    remoteclaw plugins install @myorg/remoteclaw-my-plugin
+    ```
+
+    **In-repo plugins:** place the plugin under `extensions/` and it is
+    automatically discovered during build.
+
+    Users can browse and install community plugins with:
+
+    ```bash
+    remoteclaw plugins search <query>
+    remoteclaw plugins install <npm-spec>
+    ```
+
+  </Step>
 </Steps>
 
-## Lint enforcement
+## Lint enforcement (in-repo plugins)
 
-Three scripts enforce SDK boundaries:
+Three scripts enforce SDK boundaries for plugins in the RemoteClaw repository:
 
 1. **No monolithic root imports** — `remoteclaw/plugin-sdk` root is rejected
-2. **No direct src/ imports** — extensions cannot import `../../src/` directly
-3. **No self-imports** — extensions cannot import their own `plugin-sdk/<name>` subpath
+2. **No direct src/ imports** — plugins cannot import `../../src/` directly
+3. **No self-imports** — plugins cannot import their own `plugin-sdk/\<name\>` subpath
 
 Run `pnpm check` to verify all boundaries before committing.
+
+External plugins are not subject to these lint rules, but following the same
+patterns is strongly recommended.
 
 ## Pre-submission checklist
 
 <Check>**package.json** has correct `remoteclaw` metadata</Check>
 <Check>Entry point uses `defineChannelPluginEntry` or `definePluginEntry`</Check>
-<Check>All imports use focused `plugin-sdk/<subpath>` paths</Check>
-<Check>Internal imports use local barrels, not SDK self-imports</Check>
+<Check>All imports use focused `plugin-sdk/\<subpath\>` paths</Check>
+<Check>Internal imports use local modules, not SDK self-imports</Check>
 <Check>`remoteclaw.plugin.json` manifest is present and valid</Check>
-<Check>Contract tests pass (`pnpm test:contracts`)</Check>
-<Check>Unit tests colocated as `*.test.ts`</Check>
-<Check>`pnpm check` passes (lint + format)</Check>
-<Check>Doc page created under `docs/channels/` or `docs/plugins/`</Check>
+<Check>Tests pass</Check>
+<Check>`pnpm check` passes (in-repo plugins)</Check>
 
 ## Related
 
-- [Plugin SDK Migration](/plugins/sdk-migration) — migrating from compat to focused subpaths
+- [Plugin SDK Migration](/plugins/sdk-migration) — migrating from the deprecated compat import
 - [Plugin Architecture](/plugins/architecture) — internals and capability model
 - [Plugin Manifest](/plugins/manifest) — full manifest schema
-- [Community Plugins](/plugins/community) — existing community extensions
+- [Plugin Agent Tools](/plugins/agent-tools) — adding agent tools in a plugin
+- [Community Plugins](/plugins/community) — listing and quality bar

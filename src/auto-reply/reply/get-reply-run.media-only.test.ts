@@ -326,5 +326,4 @@ describe("runPreparedReply media-only handling", () => {
     expect(call).toBeTruthy();
     expect(call?.followupRun.prompt).toContain("System: [t] Node connected.");
   });
-
 });

@@ -106,6 +106,7 @@ vi.mock("../../config/sessions.js", () => ({
 
 vi.mock("../../config/paths.js", () => ({
   resolveGatewayPort: vi.fn().mockReturnValue(3579),
+  resolveOAuthDir: vi.fn().mockReturnValue("/tmp/test-oauth"),
 }));
 
 vi.mock("../../gateway/credentials.js", () => ({

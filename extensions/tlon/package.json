@@ -4,8 +4,8 @@
   "description": "RemoteClaw Tlon/Urbit channel plugin",
   "type": "module",
   "dependencies": {
-    "@tloncorp/api": "git+https://github.com/tloncorp/api-beta.git#main",
-    "@tloncorp/tlon-skill": "0.1.9",
+    "@tloncorp/api": "github:tloncorp/api-beta#main",
+    "@tloncorp/tlon-skill": "0.2.2",
     "@urbit/aura": "^3.0.0",
     "zod": "^4.3.6"
   },

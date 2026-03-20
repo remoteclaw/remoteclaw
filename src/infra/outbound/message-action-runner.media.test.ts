@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { jsonResult } from "../../agents/tools/common.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
@@ -117,10 +117,12 @@ const slackPlugin: ChannelPlugin = {
 };
 
 describe("runMessageAction media behavior", () => {
-  beforeEach(async () => {
-    vi.resetModules();
+  beforeAll(async () => {
     ({ runMessageAction } = await import("./message-action-runner.js"));
     ({ loadWebMedia } = await import("../../media/web-media.js"));
+  });
+
+  beforeEach(() => {
     vi.clearAllMocks();
   });
 
@@ -426,7 +428,11 @@ describe("runMessageAction media behavior", () => {
           throw new Error("expected send result");
         }
         expect(result.sendResult?.mediaUrl).toBe(path.resolve(tmpFile));
-        const hostTmpOutsideRemoteClaw = path.join(os.tmpdir(), "outside-remoteclaw", "test-media.png");
+        const hostTmpOutsideRemoteClaw = path.join(
+          os.tmpdir(),
+          "outside-remoteclaw",
+          "test-media.png",
+        );
         await expect(
           runMessageAction({
             cfg: slackConfig,

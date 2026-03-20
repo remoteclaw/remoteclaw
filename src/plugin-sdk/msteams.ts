@@ -1,4 +1,4 @@
-// Narrow plugin-sdk surface for the bundled msteams plugin.
+// Private helper surface for the bundled msteams plugin.
 // Keep this list additive and scoped to symbols used under extensions/msteams.
 
 export type { ChunkMode } from "../auto-reply/chunk.js";

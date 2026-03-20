@@ -1,26 +1,17 @@
 ---
-summary: "Plugin internals: capability model, ownership, contracts, load pipeline, and runtime helpers"
+summary: "Plugin architecture internals: capability model, ownership, contracts, load pipeline, runtime helpers"
 read_when:
   - Building or debugging native RemoteClaw plugins
   - Understanding the plugin capability model or ownership boundaries
   - Working on the plugin load pipeline or registry
   - Implementing provider runtime hooks or channel plugins
-title: "Plugin Internals"
-sidebarTitle: "Internals"
+title: "Plugin Architecture"
 ---
 
-# Plugin Internals
+# Plugin Architecture
 
-<Info>
-  This is the **deep architecture reference**. For practical guides, see:
-  - [Install and use plugins](/tools/plugin) — user guide
-  - [Getting Started](/plugins/building-plugins) — first plugin tutorial
-  - [Channel Plugins](/plugins/sdk-channel-plugins) — build a messaging channel
-  - [Provider Plugins](/plugins/sdk-provider-plugins) — build a model provider
-  - [SDK Overview](/plugins/sdk-overview) — import map and registration API
-</Info>
-
-This page covers the internal architecture of the RemoteClaw plugin system.
+This page covers the internal architecture of the RemoteClaw plugin system. For
+user-facing setup, discovery, and configuration, see [Plugins](/tools/plugin).
 
 ## Public capability model
 
@@ -936,31 +927,25 @@ authoring plugins:
 - `remoteclaw/plugin-sdk/core` for the generic shared plugin-facing contract.
 - Stable channel primitives such as `remoteclaw/plugin-sdk/channel-setup`,
   `remoteclaw/plugin-sdk/channel-pairing`,
-  `remoteclaw/plugin-sdk/channel-contract`,
-  `remoteclaw/plugin-sdk/channel-feedback`,
-  `remoteclaw/plugin-sdk/channel-inbound`,
-  `remoteclaw/plugin-sdk/channel-lifecycle`,
   `remoteclaw/plugin-sdk/channel-reply-pipeline`,
-  `remoteclaw/plugin-sdk/command-auth`,
   `remoteclaw/plugin-sdk/secret-input`, and
   `remoteclaw/plugin-sdk/webhook-ingress` for shared setup/auth/reply/webhook
-  wiring. `channel-inbound` is the shared home for debounce, mention matching,
-  envelope formatting, and inbound envelope context helpers.
+  wiring.
 - Domain subpaths such as `remoteclaw/plugin-sdk/channel-config-helpers`,
-  `remoteclaw/plugin-sdk/allow-from`,
   `remoteclaw/plugin-sdk/channel-config-schema`,
   `remoteclaw/plugin-sdk/channel-policy`,
+  `remoteclaw/plugin-sdk/channel-runtime`,
   `remoteclaw/plugin-sdk/config-runtime`,
-  `remoteclaw/plugin-sdk/infra-runtime`,
   `remoteclaw/plugin-sdk/agent-runtime`,
   `remoteclaw/plugin-sdk/lazy-runtime`,
   `remoteclaw/plugin-sdk/reply-history`,
   `remoteclaw/plugin-sdk/routing`,
-  `remoteclaw/plugin-sdk/status-helpers`,
   `remoteclaw/plugin-sdk/runtime-store`, and
   `remoteclaw/plugin-sdk/directory-runtime` for shared runtime/config helpers.
-- `remoteclaw/plugin-sdk/channel-runtime` remains only as a compatibility shim.
-  New code should import the narrower primitives instead.
+- Narrow channel-core subpaths such as `remoteclaw/plugin-sdk/discord-core`,
+  `remoteclaw/plugin-sdk/telegram-core`, and `remoteclaw/plugin-sdk/whatsapp-core`
+  for channel-specific primitives that should stay smaller than the full
+  channel helper barrels.
 - Bundled extension internals remain private. External plugins should use only
   `remoteclaw/plugin-sdk/*` subpaths. RemoteClaw core/test code may use the repo
   public entry points under `extensions/<id>/index.js`, `api.js`, `runtime-api.js`,
@@ -971,25 +956,26 @@ authoring plugins:
   `extensions/<id>/runtime-api.js` is the runtime-only barrel,
   `extensions/<id>/index.js` is the bundled plugin entry,
   and `extensions/<id>/setup-entry.js` is the setup plugin entry.
-- No bundled channel-branded public subpaths remain. Channel-specific helper and
-  runtime seams live under `extensions/<id>/api.js` and `extensions/<id>/runtime-api.js`;
-  the public SDK contract is the generic shared primitives instead.
+- `remoteclaw/plugin-sdk/telegram` for Telegram channel plugin types and shared channel-facing helpers. Built-in Telegram implementation internals stay private to the bundled extension.
+- `remoteclaw/plugin-sdk/discord` for Discord channel plugin types and shared channel-facing helpers. Built-in Discord implementation internals stay private to the bundled extension.
+- `remoteclaw/plugin-sdk/slack` for Slack channel plugin types and shared channel-facing helpers. Built-in Slack implementation internals stay private to the bundled extension.
+- `remoteclaw/plugin-sdk/imessage` for iMessage channel plugin types and shared channel-facing helpers. Built-in iMessage implementation internals stay private to the bundled extension.
+- `remoteclaw/plugin-sdk/whatsapp` for WhatsApp channel plugin types and shared channel-facing helpers. Built-in WhatsApp implementation internals stay private to the bundled extension.
+- `remoteclaw/plugin-sdk/bluebubbles` remains public because it carries a small
+  focused helper surface that is shared intentionally.
 
 Compatibility note:
 
 - Avoid the root `remoteclaw/plugin-sdk` barrel for new code.
 - Prefer the narrow stable primitives first. The newer setup/pairing/reply/
-  feedback/contract/inbound/threading/command/secret-input/webhook/infra/
-  allowlist/status/message-tool subpaths are the intended contract for new
-  bundled and external plugin work.
-  Target parsing/matching belongs on `remoteclaw/plugin-sdk/channel-targets`.
-  Message action gates and reaction message-id helpers belong on
-  `remoteclaw/plugin-sdk/channel-actions`.
+  secret-input/webhook subpaths are the intended contract for new bundled and
+  external plugin work.
 - Bundled extension-specific helper barrels are not stable by default. If a
   helper is only needed by a bundled extension, keep it behind the extension's
   local `api.js` or `runtime-api.js` seam instead of promoting it into
   `remoteclaw/plugin-sdk/<extension>`.
-- Channel-branded bundled bars stay private unless they are explicitly added
+- Channel-branded bundled bars such as `feishu`, `googlechat`, `irc`, `line`,
+  `nostr`, `twitch`, and `zalo` stay private unless they are explicitly added
   back to the public contract.
 - Capability-specific subpaths such as `image-generation`,
   `media-understanding`, and `speech` exist because bundled/native plugins use
@@ -1002,7 +988,7 @@ Plugins should own channel-specific `describeMessageTool(...)` schema
 contributions. Keep provider-specific fields in the plugin, not in shared core.
 
 For shared portable schema fragments, reuse the generic helpers exported through
-`remoteclaw/plugin-sdk/channel-actions`:
+`remoteclaw/plugin-sdk/channel-runtime`:
 
 - `createMessageToolButtonsSchema()` for button-grid style payloads
 - `createMessageToolCardSchema()` for structured card payloads

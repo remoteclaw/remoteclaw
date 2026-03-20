@@ -67,6 +67,7 @@ export type TelegramThreadBindingManager = {
 type TelegramThreadBindingsState = {
   managersByAccountId: Map<string, TelegramThreadBindingManager>;
   bindingsByAccountConversation: Map<string, TelegramThreadBindingRecord>;
+  persistQueueByAccountId: Map<string, Promise<void>>;
 };
 
 /**
@@ -80,10 +81,12 @@ const threadBindingsState = resolveGlobalSingleton<TelegramThreadBindingsState>(
   () => ({
     managersByAccountId: new Map<string, TelegramThreadBindingManager>(),
     bindingsByAccountConversation: new Map<string, TelegramThreadBindingRecord>(),
+    persistQueueByAccountId: new Map<string, Promise<void>>(),
   }),
 );
 const MANAGERS_BY_ACCOUNT_ID = threadBindingsState.managersByAccountId;
 const BINDINGS_BY_ACCOUNT_CONVERSATION = threadBindingsState.bindingsByAccountConversation;
+const PERSIST_QUEUE_BY_ACCOUNT_ID = threadBindingsState.persistQueueByAccountId;
 
 function normalizeDurationMs(raw: unknown, fallback: number): number {
   if (typeof raw !== "number" || !Number.isFinite(raw)) {
@@ -315,21 +318,65 @@ function loadBindingsFromDisk(accountId: string): TelegramThreadBindingRecord[] 
 async function persistBindingsToDisk(params: {
   accountId: string;
   persist: boolean;
+  bindings?: TelegramThreadBindingRecord[];
 }): Promise<void> {
   if (!params.persist) {
     return;
   }
-  const bindings = [...BINDINGS_BY_ACCOUNT_CONVERSATION.values()].filter(
-    (entry) => entry.accountId === params.accountId,
-  );
   const payload: StoredTelegramBindingState = {
     version: STORE_VERSION,
-    bindings,
+    bindings:
+      params.bindings ??
+      [...BINDINGS_BY_ACCOUNT_CONVERSATION.values()].filter(
+        (entry) => entry.accountId === params.accountId,
+      ),
   };
   await writeJsonAtomic(resolveBindingsPath(params.accountId), payload, {
     mode: 0o600,
     trailingNewline: true,
     ensureDirMode: 0o700,
+  });
+}
+
+function listBindingsForAccount(accountId: string): TelegramThreadBindingRecord[] {
+  return [...BINDINGS_BY_ACCOUNT_CONVERSATION.values()].filter(
+    (entry) => entry.accountId === accountId,
+  );
+}
+
+function enqueuePersistBindings(params: {
+  accountId: string;
+  persist: boolean;
+  bindings?: TelegramThreadBindingRecord[];
+}): Promise<void> {
+  if (!params.persist) {
+    return Promise.resolve();
+  }
+  const previous = PERSIST_QUEUE_BY_ACCOUNT_ID.get(params.accountId) ?? Promise.resolve();
+  const next = previous
+    .catch(() => undefined)
+    .then(async () => {
+      await persistBindingsToDisk(params);
+    });
+  PERSIST_QUEUE_BY_ACCOUNT_ID.set(params.accountId, next);
+  void next.finally(() => {
+    if (PERSIST_QUEUE_BY_ACCOUNT_ID.get(params.accountId) === next) {
+      PERSIST_QUEUE_BY_ACCOUNT_ID.delete(params.accountId);
+    }
+  });
+  return next;
+}
+
+function persistBindingsSafely(params: {
+  accountId: string;
+  persist: boolean;
+  bindings?: TelegramThreadBindingRecord[];
+  reason: string;
+}): void {
+  void enqueuePersistBindings(params).catch((err) => {
+    logVerbose(
+      `telegram thread bindings persist failed (${params.accountId}, ${params.reason}): ${String(err)}`,
+    );
   });
 }
 
@@ -406,9 +453,6 @@ export function createTelegramThreadBindingManager(
     });
   }
 
-  const listBindingsForAccount = () =>
-    [...BINDINGS_BY_ACCOUNT_CONVERSATION.values()].filter((entry) => entry.accountId === accountId);
-
   let sweepTimer: NodeJS.Timeout | null = null;
 
   const manager: TelegramThreadBindingManager = {
@@ -433,11 +477,11 @@ export function createTelegramThreadBindingManager(
       if (!targetSessionKey) {
         return [];
       }
-      return listBindingsForAccount().filter(
+      return listBindingsForAccount(accountId).filter(
         (entry) => entry.targetSessionKey === targetSessionKey,
       );
     },
-    listBindings: () => listBindingsForAccount(),
+    listBindings: () => listBindingsForAccount(accountId),
     touchConversation: (conversationIdRaw, at) => {
       const conversationId = normalizeConversationId(conversationIdRaw);
       if (!conversationId) {
@@ -453,7 +497,12 @@ export function createTelegramThreadBindingManager(
         lastActivityAt: normalizeTimestampMs(at ?? Date.now()),
       };
       BINDINGS_BY_ACCOUNT_CONVERSATION.set(key, nextRecord);
-      void persistBindingsToDisk({ accountId, persist: manager.shouldPersistMutations() });
+      persistBindingsSafely({
+        accountId,
+        persist: manager.shouldPersistMutations(),
+        bindings: listBindingsForAccount(accountId),
+        reason: "touch",
+      });
       return nextRecord;
     },
     unbindConversation: (unbindParams) => {
@@ -467,7 +516,12 @@ export function createTelegramThreadBindingManager(
         return null;
       }
       BINDINGS_BY_ACCOUNT_CONVERSATION.delete(key);
-      void persistBindingsToDisk({ accountId, persist: manager.shouldPersistMutations() });
+      persistBindingsSafely({
+        accountId,
+        persist: manager.shouldPersistMutations(),
+        bindings: listBindingsForAccount(accountId),
+        reason: "unbind-conversation",
+      });
       return removed;
     },
     unbindBySessionKey: (unbindParams) => {
@@ -476,7 +530,7 @@ export function createTelegramThreadBindingManager(
         return [];
       }
       const removed: TelegramThreadBindingRecord[] = [];
-      for (const entry of listBindingsForAccount()) {
+      for (const entry of listBindingsForAccount(accountId)) {
         if (entry.targetSessionKey !== targetSessionKey) {
           continue;
         }
@@ -488,7 +542,12 @@ export function createTelegramThreadBindingManager(
         removed.push(entry);
       }
       if (removed.length > 0) {
-        void persistBindingsToDisk({ accountId, persist: manager.shouldPersistMutations() });
+        persistBindingsSafely({
+          accountId,
+          persist: manager.shouldPersistMutations(),
+          bindings: listBindingsForAccount(accountId),
+          reason: "unbind-session",
+        });
       }
       return removed;
     },
@@ -536,7 +595,11 @@ export function createTelegramThreadBindingManager(
         resolveBindingKey({ accountId, conversationId }),
         record,
       );
-      void persistBindingsToDisk({ accountId, persist: manager.shouldPersistMutations() });
+      await enqueuePersistBindings({
+        accountId,
+        persist: manager.shouldPersistMutations(),
+        bindings: listBindingsForAccount(accountId),
+      });
       logVerbose(
         `telegram: bound conversation ${conversationId} -> ${targetSessionKey} (${summarizeLifecycleForLog(
           record,
@@ -596,6 +659,13 @@ export function createTelegramThreadBindingManager(
           reason: input.reason,
           sendFarewell: false,
         });
+        if (removed.length > 0) {
+          await enqueuePersistBindings({
+            accountId,
+            persist: manager.shouldPersistMutations(),
+            bindings: listBindingsForAccount(accountId),
+          });
+        }
         return removed.map((entry) =>
           toSessionBindingRecord(entry, {
             idleTimeoutMs,
@@ -615,6 +685,13 @@ export function createTelegramThreadBindingManager(
         reason: input.reason,
         sendFarewell: false,
       });
+      if (removed) {
+        await enqueuePersistBindings({
+          accountId,
+          persist: manager.shouldPersistMutations(),
+          bindings: listBindingsForAccount(accountId),
+        });
+      }
       return removed
         ? [
             toSessionBindingRecord(removed, {
@@ -630,7 +707,7 @@ export function createTelegramThreadBindingManager(
   if (sweeperEnabled) {
     sweepTimer = setInterval(() => {
       const now = Date.now();
-      for (const record of listBindingsForAccount()) {
+      for (const record of listBindingsForAccount(accountId)) {
         const idleExpired = shouldExpireByIdle({
           now,
           record,
@@ -685,9 +762,11 @@ function updateTelegramBindingsBySessionKey(params: {
     updated.push(next);
   }
   if (updated.length > 0) {
-    void persistBindingsToDisk({
+    persistBindingsSafely({
       accountId: params.manager.accountId,
       persist: params.manager.shouldPersistMutations(),
+      bindings: listBindingsForAccount(params.manager.accountId),
+      reason: "session-lifecycle-update",
     });
   }
   return updated;
@@ -736,10 +815,12 @@ export function setTelegramThreadBindingMaxAgeBySessionKey(params: {
 }
 
 export const __testing = {
-  resetTelegramThreadBindingsForTests() {
+  async resetTelegramThreadBindingsForTests() {
     for (const manager of MANAGERS_BY_ACCOUNT_ID.values()) {
       manager.stop();
     }
+    await Promise.allSettled(PERSIST_QUEUE_BY_ACCOUNT_ID.values());
+    PERSIST_QUEUE_BY_ACCOUNT_ID.clear();
     MANAGERS_BY_ACCOUNT_ID.clear();
     BINDINGS_BY_ACCOUNT_CONVERSATION.clear();
   },

@@ -176,7 +176,13 @@ export const msteamsPlugin: ChannelPlugin<ResolvedMSTeamsAccount> = {
     },
   },
   directory: {
-    self: async () => null,
+    self: async ({ cfg }) => {
+      const creds = resolveMSTeamsCredentials(cfg.channels?.msteams);
+      if (!creds) {
+        return null;
+      }
+      return { kind: "user" as const, id: creds.appId, name: creds.appId };
+    },
     listPeers: async ({ cfg, query, limit }) => {
       const q = query?.trim().toLowerCase() || "";
       const ids = new Set<string>();

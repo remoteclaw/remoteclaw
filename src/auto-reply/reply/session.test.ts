@@ -492,7 +492,7 @@ describe("initSessionState RawBody", () => {
           allowFrom: ["*"],
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -536,7 +536,7 @@ describe("initSessionState RawBody", () => {
           allowFrom: ["*"],
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -596,7 +596,7 @@ describe("initSessionState RawBody", () => {
           allowFrom: ["*"],
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -640,7 +640,7 @@ describe("initSessionState RawBody", () => {
           allowFrom: ["*"],
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -698,7 +698,7 @@ describe("initSessionState RawBody", () => {
           allowFrom: ["*"],
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     sessionBindingTesting.resetSessionBindingAdaptersForTests();
     registerSessionBindingAdapter({
@@ -783,7 +783,7 @@ describe("initSessionState RawBody", () => {
           allowFrom: ["*"],
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {

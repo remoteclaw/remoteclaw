@@ -819,7 +819,6 @@ describe("handleCommands context", () => {
   });
 });
 
-
 describe("handleCommands subagents", () => {
   beforeEach(() => {
     resetSubagentRegistryForTests();

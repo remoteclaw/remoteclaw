@@ -372,7 +372,13 @@ export async function handleDiscordMessagingAction(
             { name, messageId, autoArchiveMinutes, content, appliedTags: appliedTags ?? undefined },
             { accountId },
           )
-        : await createThreadDiscord(channelId, { name, messageId, autoArchiveMinutes, content, appliedTags: appliedTags ?? undefined });
+        : await createThreadDiscord(channelId, {
+            name,
+            messageId,
+            autoArchiveMinutes,
+            content,
+            appliedTags: appliedTags ?? undefined,
+          });
       return jsonResult({ ok: true, thread });
     }
     case "threadList": {

@@ -380,31 +380,9 @@ export async function dispatchReplyFromConfig(params: {
       cfg,
     );
 
-    if (ctx.AcpDispatchTailAfterReset === true) {
-      // Command handling prepared a trailing prompt after ACP in-place reset.
-      // Route that tail through ACP now (same turn) instead of embedded dispatch.
-      ctx.AcpDispatchTailAfterReset = false;
-      const acpTailDispatch = await tryDispatchAcpReply({
-        ctx,
-        cfg,
-        dispatcher,
-        sessionKey: acpDispatchSessionKey,
-        inboundAudio,
-        sessionTtsAuto,
-        ttsChannel,
-        shouldRouteToOriginating,
-        originatingChannel,
-        originatingTo,
-        shouldSendToolSummaries,
-        bypassForCommand: false,
-        onReplyStart: params.replyOptions?.onReplyStart,
-        recordProcessed,
-        markIdle,
-      });
-      if (acpTailDispatch) {
-        return acpTailDispatch;
-      }
-    }
+    // ACP dispatch tail after reset – gutted: tryDispatchAcpReply / acpDispatchSessionKey
+    // belonged to the upstream ACP runtime which has been removed in this fork.
+    // When AgentRuntime support lands, this block should be re-implemented.
 
     const replies = replyResult ? (Array.isArray(replyResult) ? replyResult : [replyResult]) : [];
 

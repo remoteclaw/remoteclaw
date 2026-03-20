@@ -97,7 +97,6 @@ async function executeSend(params: {
     | undefined;
 }
 
-
 describe("message tool agent routing", () => {
   it("derives agentId from the session key", async () => {
     mockSendResult();

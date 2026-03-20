@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/mattermost";
-import { buildModelsProviderData } from "openclaw/plugin-sdk/mattermost";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/mattermost";
+import { buildModelsProviderData } from "remoteclaw/plugin-sdk/mattermost";
 import { describe, expect, it } from "vitest";
 import {
   buildMattermostAllowedModelRefs,
@@ -120,18 +120,15 @@ describe("Mattermost model picker", () => {
   it("falls back to the routed agent default model when no override is stored", async () => {
     const testDir = fs.mkdtempSync(path.join(os.tmpdir(), "mm-model-picker-"));
     try {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         session: {
           store: path.join(testDir, "{agentId}.json"),
         },
         agents: {
-          defaults: {
-            model: "anthropic/claude-opus-4-5",
-          },
+          defaults: {},
           list: [
             {
               id: "support",
-              model: "openai/gpt-5",
             },
           ],
         },

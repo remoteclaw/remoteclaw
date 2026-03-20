@@ -1,3 +1,12 @@
+---
+description: "Plan: persistent ACP bindings for Discord channels and Telegram forum topics"
+read_when:
+  - Working on persistent ACP conversation bindings or typed binding config
+  - Planning Telegram topic or Discord channel ACP session binding
+status: "draft"
+title: "ACP Persistent Bindings for Discord Channels and Telegram Topics"
+---
+
 # ACP Persistent Bindings for Discord Channels and Telegram Topics
 
 Status: Draft

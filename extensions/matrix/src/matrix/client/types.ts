@@ -1,3 +1,5 @@
+import type { SsrFPolicy } from "../../runtime-api.js";
+
 export type MatrixResolvedConfig = {
   homeserver: string;
   userId: string;
@@ -6,6 +8,8 @@ export type MatrixResolvedConfig = {
   deviceName?: string;
   initialSyncLimit?: number;
   encryption?: boolean;
+  allowPrivateNetwork?: boolean;
+  ssrfPolicy?: SsrFPolicy;
 };
 
 /**
@@ -22,6 +26,8 @@ export type MatrixAuth = {
   deviceName?: string;
   initialSyncLimit?: number;
   encryption?: boolean;
+  allowPrivateNetwork?: boolean;
+  ssrfPolicy?: SsrFPolicy;
 };
 
 export type MatrixStoragePaths = {

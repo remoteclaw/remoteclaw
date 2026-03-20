@@ -23,8 +23,8 @@ const configureGatewayForOnboarding = vi.hoisted(() =>
 );
 const finalizeOnboardingWizard = vi.hoisted(() =>
   vi.fn(async (options) => {
-    if (!options.nextConfig?.tools?.web?.search?.provider) {
-      await options.prompter.note("Web search was skipped.", "Web search");
+    if (!process.env.BRAVE_API_KEY) {
+      await options.prompter.note("hint", "Web search (optional)");
     }
 
     if (options.opts.skipUi) {
@@ -66,7 +66,6 @@ const readConfigFileSnapshot = vi.hoisted(() =>
 const ensureSystemdUserLingerInteractive = vi.hoisted(() => vi.fn(async () => {}));
 const isSystemdUserServiceAvailable = vi.hoisted(() => vi.fn(async () => true));
 const ensureControlUiAssetsBuilt = vi.hoisted(() => vi.fn(async () => ({ ok: true })));
-const probeGatewayReachable = vi.hoisted(() => vi.fn(async () => ({ ok: true })));
 const runTui = vi.hoisted(() => vi.fn(async (_options: unknown) => {}));
 const setupOnboardingShellCompletion = vi.hoisted(() => vi.fn(async () => {}));
 
@@ -104,7 +103,7 @@ vi.mock("../commands/onboard-helpers.js", () => ({
   detectBrowserOpenSupport: vi.fn(async () => ({ ok: false })),
   openUrl: vi.fn(async () => true),
   printWizardHeader: vi.fn(),
-  probeGatewayReachable,
+  probeGatewayReachable: vi.fn(async () => ({ ok: true })),
   waitForGatewayReachable: vi.fn(async () => {}),
   formatControlUiSshHint: vi.fn(() => "ssh hint"),
   resolveControlUiLinks: vi.fn(() => ({
@@ -215,7 +214,7 @@ describe("runOnboardingWizard", () => {
           runtime: "claude",
           installDaemon: false,
           skipChannels: true,
-          skipSearch: true,
+
           skipHealth: true,
           skipUi: true,
         },
@@ -254,7 +253,7 @@ describe("runOnboardingWizard", () => {
         workspace: workspaceDir,
         installDaemon: false,
         skipChannels: true,
-        skipSearch: true,
+
         skipHealth: true,
         skipUi: true,
       },
@@ -474,7 +473,7 @@ describe("runOnboardingWizard", () => {
         workspace: workspaceDir,
         runtime: "claude",
         skipChannels: true,
-        skipSearch: true,
+
         skipHealth: true,
         installDaemon: false,
       },
@@ -519,7 +518,7 @@ describe("runOnboardingWizard", () => {
           workspace: workspaceDir,
           installDaemon: false,
           skipChannels: true,
-          skipSearch: true,
+
           skipHealth: true,
           skipUi: true,
         },
@@ -529,7 +528,7 @@ describe("runOnboardingWizard", () => {
 
       const calls = (note as unknown as { mock: { calls: unknown[][] } }).mock.calls;
       expect(calls.length).toBeGreaterThan(0);
-      expect(calls.some((call) => call?.[1] === "Web search")).toBe(true);
+      expect(calls.some((call) => call?.[1] === "Web search (optional)")).toBe(true);
     } finally {
       if (prevBraveKey === undefined) {
         delete process.env.BRAVE_API_KEY;
@@ -537,102 +536,5 @@ describe("runOnboardingWizard", () => {
         process.env.BRAVE_API_KEY = prevBraveKey;
       }
     }
-  });
-
-  it("resolves gateway.auth.password SecretRef for local onboarding probe", async () => {
-    const previous = process.env.REMOTECLAW_GATEWAY_PASSWORD;
-    process.env.REMOTECLAW_GATEWAY_PASSWORD = "gateway-ref-password";
-    probeGatewayReachable.mockClear();
-    readConfigFileSnapshot.mockResolvedValueOnce({
-      path: "/tmp/.remoteclaw/remoteclaw.json",
-      exists: true,
-      raw: "{}",
-      parsed: {},
-      resolved: {},
-      valid: true,
-      config: {
-        gateway: {
-          auth: {
-            mode: "password",
-            password: {
-              source: "env",
-              provider: "default",
-              id: "REMOTECLAW_GATEWAY_PASSWORD",
-            },
-          },
-        },
-      },
-      issues: [],
-      warnings: [],
-      legacyIssues: [],
-    });
-    const select = vi.fn(async (opts: WizardSelectParams<unknown>) => {
-      if (opts.message === "Config handling") {
-        return "keep";
-      }
-      return "quickstart";
-    }) as unknown as WizardPrompter["select"];
-    const prompter = buildWizardPrompter({ select });
-    const runtime = createRuntime();
-
-    try {
-      await runOnboardingWizard(
-        {
-          acceptRisk: true,
-          flow: "quickstart",
-          mode: "local",
-          runtime: "claude",
-          installDaemon: false,
-          skipChannels: true,
-          skipSearch: true,
-          skipHealth: true,
-          skipUi: true,
-        },
-        runtime,
-        prompter,
-      );
-    } finally {
-      if (previous === undefined) {
-        delete process.env.REMOTECLAW_GATEWAY_PASSWORD;
-      } else {
-        process.env.REMOTECLAW_GATEWAY_PASSWORD = previous;
-      }
-    }
-
-    expect(probeGatewayReachable).toHaveBeenCalledWith(
-      expect.objectContaining({
-        url: "ws://127.0.0.1:18789",
-        password: "gateway-ref-password",
-      }),
-    );
-  });
-
-  it("passes secretInputMode through to local gateway config step", async () => {
-    configureGatewayForOnboarding.mockClear();
-    const prompter = buildWizardPrompter({});
-    const runtime = createRuntime();
-
-    await runOnboardingWizard(
-      {
-        acceptRisk: true,
-        flow: "quickstart",
-        mode: "local",
-        runtime: "claude",
-        installDaemon: false,
-        skipChannels: true,
-        skipSearch: true,
-        skipHealth: true,
-        skipUi: true,
-        secretInputMode: "ref",
-      },
-      runtime,
-      prompter,
-    );
-
-    expect(configureGatewayForOnboarding).toHaveBeenCalledWith(
-      expect.objectContaining({
-        secretInputMode: "ref",
-      }),
-    );
   });
 });

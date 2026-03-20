@@ -685,16 +685,6 @@ export async function runOnboardingWizard(
   logConfigUpdated(runtime);
   await onboardHelpers.ensureWorkspaceAndSessions(workspaceDir, runtime);
 
-  if (opts.skipSearch) {
-    await prompter.note("Skipping search setup.", "Search");
-  } else {
-    const { setupSearch } = await import("../commands/onboard-search.js");
-    nextConfig = await setupSearch(nextConfig, runtime, prompter, {
-      quickstartDefaults: flow === "quickstart",
-      secretInputMode: opts.secretInputMode,
-    });
-  }
-
   nextConfig = onboardHelpers.applyWizardMetadata(nextConfig, { command: "onboard", mode });
   await writeConfigFile(nextConfig);
 

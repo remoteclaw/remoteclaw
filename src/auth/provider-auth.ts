@@ -210,6 +210,18 @@ export async function resolveApiKeyForProvider(params: {
 export type EnvApiKeyResult = { apiKey: string; source: string };
 export type ModelAuthMode = "api-key" | "unknown";
 
+/**
+ * Map of normalized provider IDs to ordered lists of env var candidates.
+ * Providers with multi-env or priority-ordered lookups that were previously
+ * handled by individual if-blocks are consolidated here.
+ */
+const PROVIDER_ENV_API_KEY_CANDIDATES: Record<string, readonly string[]> = {
+  "github-copilot": ["COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"],
+  anthropic: ["ANTHROPIC_OAUTH_TOKEN", "ANTHROPIC_API_KEY"],
+  chutes: ["CHUTES_OAUTH_TOKEN", "CHUTES_API_KEY"],
+  zai: ["ZAI_API_KEY", "Z_AI_API_KEY"],
+};
+
 export function resolveEnvApiKey(provider: string): EnvApiKeyResult | null {
   const normalized = normalizeProviderId(provider);
   const applied = new Set(getShellEnvAppliedKeys());

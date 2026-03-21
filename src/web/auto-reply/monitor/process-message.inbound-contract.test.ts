@@ -242,7 +242,6 @@ describe("web processMessage inbound contract", () => {
     expect(getDispatcherResponsePrefix()).toBeUndefined();
   });
 
-
   it("clears pending group history when the dispatcher does not queue a final reply", async () => {
     capturedCtx = undefined;
     const groupHistories = new Map<string, Array<{ sender: string; body: string }>>([

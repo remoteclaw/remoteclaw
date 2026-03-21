@@ -99,7 +99,7 @@ describe.runIf(process.platform !== "win32")("cleanStaleGatewayProcessesSync", (
     spawnSyncMock.mockReturnValue({
       error: undefined,
       status: 0,
-      stdout: ["p7001", "copenclaw"].join("\n"),
+      stdout: ["p7001", "cremoteclaw"].join("\n"),
     });
     const killSpy = vi.spyOn(process, "kill").mockImplementation(() => true);
 

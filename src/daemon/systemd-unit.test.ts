@@ -14,8 +14,8 @@ describe("buildSystemdUnit", () => {
 
   it("renders control-group kill mode for child-process cleanup", () => {
     const unit = buildSystemdUnit({
-      description: "OpenClaw Gateway",
-      programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+      description: "RemoteClaw Gateway",
+      programArguments: ["/usr/bin/remoteclaw", "gateway", "run"],
       environment: {},
     });
     expect(unit).toContain("KillMode=control-group");

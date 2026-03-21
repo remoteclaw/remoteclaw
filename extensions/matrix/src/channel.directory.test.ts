@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { PluginRuntime, RuntimeEnv } from "../runtime-api.js";
+import { createRuntimeEnv } from "../../../test/helpers/extensions/runtime-env.js";
+import type { RuntimeEnv } from "../runtime-api.js";
 import { matrixPlugin } from "./channel.js";
-import { setMatrixRuntime } from "./runtime.js";
+import { resolveMatrixAccount } from "./matrix/accounts.js";
+import { resolveMatrixConfigForAccount } from "./matrix/client/config.js";
+import { installMatrixTestRuntime } from "./test-runtime.js";
 import type { CoreConfig } from "./types.js";
 
 vi.mock("@vector-im/matrix-bot-sdk", () => ({
@@ -27,11 +30,7 @@ describe("matrix directory", () => {
   const runtimeEnv: RuntimeEnv = createRuntimeEnv();
 
   beforeEach(() => {
-    setMatrixRuntime({
-      state: {
-        resolveStateDir: (_env, homeDir) => (homeDir ?? (() => "/tmp"))(),
-      },
-    } as PluginRuntime);
+    installMatrixTestRuntime();
   });
 
   it("lists peers and groups from config", async () => {

@@ -1,6 +1,6 @@
-import type { MatrixClient } from "@vector-im/matrix-bot-sdk";
-import type { PluginRuntime, RuntimeEnv, RuntimeLogger } from "remoteclaw/plugin-sdk";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { installMatrixMonitorTestRuntime } from "../../test-runtime.js";
+import type { MatrixClient } from "../sdk.js";
 import {
   createMatrixRoomMessageHandler,
   resolveMatrixBaseRouteSession,
@@ -8,70 +8,13 @@ import {
 } from "./handler.js";
 import { EventType, type MatrixRawEvent } from "./types.js";
 
-describe("createMatrixRoomMessageHandler BodyForAgent sender label", () => {
-  it("stores sender-labeled BodyForAgent for group thread messages", async () => {
-    const recordInboundSession = vi.fn().mockResolvedValue(undefined);
-    const formatInboundEnvelope = vi
-      .fn()
-      .mockImplementation((params: { senderLabel?: string; body: string }) => params.body);
-    const finalizeInboundContext = vi
-      .fn()
-      .mockImplementation((ctx: Record<string, unknown>) => ctx);
-
-    const core = {
-      channel: {
-        pairing: {
-          readAllowFromStore: vi.fn().mockResolvedValue([]),
-          upsertPairingRequest: vi.fn().mockResolvedValue(undefined),
-        },
-        routing: {
-          buildAgentSessionKey: vi
-            .fn()
-            .mockImplementation(
-              (params: { agentId: string; channel: string; peer?: { kind: string; id: string } }) =>
-                `agent:${params.agentId}:${params.channel}:${params.peer?.kind ?? "direct"}:${params.peer?.id ?? "unknown"}`,
-            ),
-          resolveAgentRoute: vi.fn().mockReturnValue({
-            agentId: "main",
-            accountId: undefined,
-            sessionKey: "agent:main:matrix:channel:!room:example.org",
-            mainSessionKey: "agent:main:main",
-          }),
-        },
-        session: {
-          resolveStorePath: vi.fn().mockReturnValue("/tmp/openclaw-test-session.json"),
-          readSessionUpdatedAt: vi.fn().mockReturnValue(123),
-          recordInboundSession,
-        },
-        reply: {
-          resolveEnvelopeFormatOptions: vi.fn().mockReturnValue({}),
-          formatInboundEnvelope,
-          formatAgentEnvelope: vi
-            .fn()
-            .mockImplementation((params: { body: string }) => params.body),
-          finalizeInboundContext,
-          resolveHumanDelayConfig: vi.fn().mockReturnValue(undefined),
-          createReplyDispatcherWithTyping: vi.fn().mockReturnValue({
-            dispatcher: {},
-            replyOptions: {},
-            markDispatchIdle: vi.fn(),
-          }),
-          withReplyDispatcher: vi
-            .fn()
-            .mockResolvedValue({ queuedFinal: false, counts: { final: 0, partial: 0, tool: 0 } }),
-        },
-        commands: {
-          shouldHandleTextCommands: vi.fn().mockReturnValue(true),
-        },
-        text: {
-          hasControlCommand: vi.fn().mockReturnValue(false),
-          resolveMarkdownTableMode: vi.fn().mockReturnValue("code"),
-        },
-      },
-      system: {
-        enqueueSystemEvent: vi.fn(),
-      },
-    } as unknown as PluginRuntime;
+describe("createMatrixRoomMessageHandler inbound body formatting", () => {
+  beforeEach(() => {
+    installMatrixMonitorTestRuntime({
+      matchesMentionPatterns: () => false,
+      saveMediaBuffer: vi.fn(),
+    });
+  });
 
     const runtime = {
       error: vi.fn(),

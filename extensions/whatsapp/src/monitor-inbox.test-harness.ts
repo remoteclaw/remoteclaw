@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { resetLogger, setLoggerOverride } from "remoteclaw/plugin-sdk/runtime-env";
 import { afterEach, beforeEach, expect, vi } from "vitest";
+import { monitorWebInbox } from "./inbound.js";
 
 // Avoid exporting vitest mock types (TS2742 under pnpm + d.ts emit).
 // oxlint-disable-next-line typescript/no-explicit-any
@@ -47,6 +48,10 @@ export type MockSock = {
   user: { id: string; lid?: string };
 };
 
+const sessionState = vi.hoisted(() => ({
+  sock: undefined as MockSock | undefined,
+}));
+
 function createResolvedMock() {
   return vi.fn().mockResolvedValue(undefined);
 }
@@ -70,17 +75,11 @@ function createMockSock(): MockSock {
   };
 }
 
-function getPairingStoreMocks() {
-  const readChannelAllowFromStore = (...args: unknown[]) => readAllowFromStoreMock(...args);
-  const upsertChannelPairingRequest = (...args: unknown[]) => upsertPairingRequestMock(...args);
-  return {
-    readChannelAllowFromStore,
-    upsertChannelPairingRequest,
-  };
-}
+const sock: MockSock = createMockSock();
+sessionState.sock = sock;
 
-vi.mock("openclaw/plugin-sdk/media-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/media-runtime")>();
+vi.mock("remoteclaw/plugin-sdk/media-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/media-runtime")>();
   return {
     ...actual,
     saveMediaBuffer: vi.fn().mockResolvedValue({
@@ -103,7 +102,12 @@ vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
 vi.mock("remoteclaw/plugin-sdk/conversation-runtime", () => getPairingStoreMocks());
 
 vi.mock("./session.js", () => ({
-  createWaSocket: vi.fn().mockResolvedValue(sock),
+  createWaSocket: vi.fn().mockImplementation(async () => {
+    if (!sessionState.sock) {
+      throw new Error("mock WhatsApp socket not initialized");
+    }
+    return sessionState.sock;
+  }),
   waitForWaConnection: vi.fn().mockResolvedValue(undefined),
   getStatusCode: vi.fn(() => 500),
 }));
@@ -113,6 +117,57 @@ export function getSock(): MockSock {
     throw new Error("mock WhatsApp socket not initialized");
   }
   return sessionState.sock;
+}
+
+export type InboxOnMessage = NonNullable<Parameters<typeof monitorWebInbox>[0]["onMessage"]>;
+
+export async function settleInboundWork() {
+  await new Promise((resolve) => setTimeout(resolve, 25));
+}
+
+export async function waitForMessageCalls(onMessage: ReturnType<typeof vi.fn>, count: number) {
+  await vi.waitFor(
+    () => {
+      expect(onMessage).toHaveBeenCalledTimes(count);
+    },
+    { timeout: 2_000, interval: 5 },
+  );
+}
+
+export async function startInboxMonitor(onMessage: InboxOnMessage) {
+  const listener = await monitorWebInbox({
+    verbose: false,
+    onMessage,
+    accountId: DEFAULT_ACCOUNT_ID,
+    authDir: getAuthDir(),
+  });
+  return { listener, sock: getSock() };
+}
+
+export function buildNotifyMessageUpsert(params: {
+  id: string;
+  remoteJid: string;
+  text: string;
+  timestamp: number;
+  pushName?: string;
+  participant?: string;
+}) {
+  return {
+    type: "notify",
+    messages: [
+      {
+        key: {
+          id: params.id,
+          fromMe: false,
+          remoteJid: params.remoteJid,
+          participant: params.participant,
+        },
+        message: { conversation: params.text },
+        messageTimestamp: params.timestamp,
+        pushName: params.pushName,
+      },
+    ],
+  };
 }
 
 export function expectPairingPromptSent(sock: MockSock, jid: string, senderE164: string) {

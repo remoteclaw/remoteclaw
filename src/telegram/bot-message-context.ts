@@ -448,6 +448,7 @@ export const buildTelegramMessageContext = async ({
     msg,
     chatId,
     isGroup,
+    groupConfig,
     resolvedThreadId,
     threadSpec,
     replyThreadId,

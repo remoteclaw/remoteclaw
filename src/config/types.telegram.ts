@@ -180,6 +180,10 @@ export type TelegramAccountConfig = {
    * Telegram expects unicode emoji (e.g., "👀") rather than shortcodes.
    */
   ackReaction?: string;
+  /** Custom Telegram Bot API root URL (e.g. "https://my-proxy.example.com" or a local Bot API server). */
+  apiRoot?: string;
+  /** Auto-rename DM forum topics on first message using LLM. Default: true. */
+  autoTopicLabel?: AutoTopicLabelConfig;
 };
 
 export type TelegramTopicConfig = {
@@ -215,6 +219,37 @@ export type TelegramGroupConfig = {
   systemPrompt?: string;
   /** If true, skip automatic voice-note transcription for mention detection in this group. */
   disableAudioPreflight?: boolean;
+};
+
+/** Config for LLM-based auto-topic labeling. */
+export type AutoTopicLabelConfig =
+  | boolean
+  | {
+      enabled?: boolean;
+      /** Custom prompt for LLM-based topic naming. */
+      prompt?: string;
+    };
+
+export type TelegramDirectConfig = {
+  /** Per-DM override for DM message policy (open|disabled|allowlist). */
+  dmPolicy?: DmPolicy;
+  /** Optional tool policy overrides for this DM. */
+  tools?: GroupToolPolicyConfig;
+  toolsBySender?: GroupToolPolicyBySenderConfig;
+  /** If specified, only load these skills for this DM (when no topic). Omit = all skills; empty = no skills. */
+  skills?: string[];
+  /** Per-topic configuration for DM topics (key is message_thread_id as string) */
+  topics?: Record<string, TelegramTopicConfig>;
+  /** If false, disable the bot for this DM (and its topics). */
+  enabled?: boolean;
+  /** If true, require messages to be from a topic when topics are enabled. */
+  requireTopic?: boolean;
+  /** Optional allowlist for DM senders (numeric Telegram user IDs). */
+  allowFrom?: Array<string | number>;
+  /** Optional system prompt snippet for this DM. */
+  systemPrompt?: string;
+  /** Auto-rename DM forum topics on first message using LLM. Default: true. */
+  autoTopicLabel?: AutoTopicLabelConfig;
 };
 
 export type TelegramConfig = {

@@ -1,6 +1,10 @@
 import type { Bot } from "grammy";
 import { resolveAgentDir } from "../agents/agent-scope.js";
 import { resolveChunkMode } from "../auto-reply/chunk.js";
+import {
+  generateTopicLabel,
+  resolveAutoTopicLabelConfig,
+} from "../auto-reply/reply/auto-topic-label.js";
 import { clearHistoryEntriesIfEnabled } from "../auto-reply/reply/history.js";
 import { dispatchReplyWithBufferedBlockDispatcher } from "../auto-reply/reply/provider-dispatcher.js";
 import type { ReplyPayload } from "../auto-reply/types.js";
@@ -9,7 +13,12 @@ import { logAckFailure, logTypingFailure } from "../channels/logging.js";
 import { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 import { createTypingCallbacks } from "../channels/typing.js";
 import { resolveMarkdownTableMode } from "../config/markdown-tables.js";
-import type { RemoteClawConfig, ReplyToMode, TelegramAccountConfig } from "../config/types.js";
+import type {
+  RemoteClawConfig,
+  ReplyToMode,
+  TelegramAccountConfig,
+  TelegramDirectConfig,
+} from "../config/types.js";
 import { danger, logVerbose } from "../globals.js";
 import { getAgentScopedMediaLocalRoots } from "../media/local-roots.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -94,6 +103,7 @@ export const dispatchTelegramMessage = async ({
     msg,
     chatId,
     isGroup,
+    groupConfig,
     threadSpec,
     historyKey,
     historyLimit,
@@ -378,6 +388,28 @@ export const dispatchTelegramMessage = async ({
 
   let queuedFinal = false;
 
+  // Determine if this is the first turn in session (for auto-topic-label).
+  const isDmTopic = !isGroup && threadSpec.scope === "dm" && threadSpec.id != null;
+
+  let isFirstTurnInSession = false;
+  if (isDmTopic) {
+    try {
+      const storePath = resolveStorePath(cfg.session?.store, { agentId: route.agentId });
+      const store = loadSessionStore(storePath, { skipCache: true });
+      const sessionKey = ctxPayload.SessionKey;
+      if (sessionKey) {
+        const entry = resolveSessionStoreEntry({ store, sessionKey }).existing;
+        isFirstTurnInSession = !entry?.systemSent;
+      } else {
+        logVerbose("auto-topic-label: SessionKey is absent, skipping first-turn detection");
+      }
+    } catch (err) {
+      logVerbose(
+        `auto-topic-label: session store error: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
   if (statusReactionController) {
     void statusReactionController.setThinking();
   }
@@ -557,6 +589,46 @@ export const dispatchTelegramMessage = async ({
   if (!hasFinalResponse) {
     clearGroupHistory();
     return;
+  }
+
+  // Fire-and-forget: auto-rename DM topic on first message.
+  if (isDmTopic && isFirstTurnInSession) {
+    const userMessage = (ctxPayload.RawBody ?? ctxPayload.Body ?? "").slice(0, 500);
+    if (userMessage.trim()) {
+      const agentDir = resolveAgentDir(cfg, route.agentId);
+      const directConfig = !isGroup ? (groupConfig as TelegramDirectConfig | undefined) : undefined;
+      const directAutoTopicLabel = directConfig?.autoTopicLabel;
+      const accountAutoTopicLabel = telegramCfg?.autoTopicLabel;
+      const autoTopicConfig = resolveAutoTopicLabelConfig(
+        directAutoTopicLabel,
+        accountAutoTopicLabel,
+      );
+      if (autoTopicConfig) {
+        const topicThreadId = threadSpec.id!;
+        void (async () => {
+          try {
+            const label = await generateTopicLabel({
+              userMessage,
+              prompt: autoTopicConfig.prompt,
+              cfg,
+              agentId: route.agentId,
+              agentDir,
+            });
+            if (!label) {
+              logVerbose("auto-topic-label: LLM returned empty label");
+              return;
+            }
+            logVerbose(`auto-topic-label: generated label (len=${label.length})`);
+            await bot.api.editForumTopic(chatId, topicThreadId, { name: label });
+            logVerbose(`auto-topic-label: renamed topic ${chatId}/${topicThreadId}`);
+          } catch (err) {
+            logVerbose(
+              `auto-topic-label: failed: ${err instanceof Error ? err.message : String(err)}`,
+            );
+          }
+        })();
+      }
+    }
   }
 
   if (statusReactionController) {

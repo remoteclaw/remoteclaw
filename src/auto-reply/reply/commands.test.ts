@@ -302,7 +302,7 @@ describe("handleCommands /config configWrites gating", () => {
   it("blocks /config set from gateway clients without operator.admin", async () => {
     const cfg = {
       commands: { config: true, text: true },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const params = buildParams('/config set messages.ackReaction=":)"', cfg, {
       Provider: INTERNAL_MESSAGE_CHANNEL,
       Surface: INTERNAL_MESSAGE_CHANNEL,
@@ -317,7 +317,7 @@ describe("handleCommands /config configWrites gating", () => {
   it("keeps /config show available to gateway operator.write clients", async () => {
     const cfg = {
       commands: { config: true, text: true },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     readConfigFileSnapshotMock.mockResolvedValueOnce({
       valid: true,
       parsed: { messages: { ackreaction: ":)" } },
@@ -336,7 +336,7 @@ describe("handleCommands /config configWrites gating", () => {
   it("keeps /config set working for gateway operator.admin clients", async () => {
     const cfg = {
       commands: { config: true, text: true },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     readConfigFileSnapshotMock.mockResolvedValueOnce({
       valid: true,
       parsed: { messages: { ackReaction: ":)" } },

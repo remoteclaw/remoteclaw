@@ -21,15 +21,9 @@ describe("talk config validation fail-closed behavior", () => {
         },
       },
       async () => {
-        const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+        vi.spyOn(console, "error").mockImplementation(() => {});
 
-        const config = loadConfig();
-
-        // Fork behavior: loadConfig catches INVALID_CONFIG and returns empty config
-        expect(config).toEqual({});
-        expect(consoleSpy).toHaveBeenCalled();
-        const errorMessage = consoleSpy.mock.calls.map(([msg]) => String(msg)).join("\n");
-        expect(errorMessage).toMatch(/silenceTimeoutMs|talk|Invalid config/i);
+        expect(() => loadConfig()).toThrow("Invalid config");
       },
     );
   });
@@ -48,14 +42,9 @@ describe("talk config validation fail-closed behavior", () => {
         },
       },
       async () => {
-        const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+        vi.spyOn(console, "error").mockImplementation(() => {});
 
-        const config = loadConfig();
-
-        expect(config).toEqual({});
-        expect(consoleSpy).toHaveBeenCalled();
-        const errorMessage = consoleSpy.mock.calls.map(([msg]) => String(msg)).join("\n");
-        expect(errorMessage).toMatch(/talk\.provider|talk\.providers|acme|Invalid config/i);
+        expect(() => loadConfig()).toThrow("Invalid config");
       },
     );
   });
@@ -76,14 +65,9 @@ describe("talk config validation fail-closed behavior", () => {
         },
       },
       async () => {
-        const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+        vi.spyOn(console, "error").mockImplementation(() => {});
 
-        const config = loadConfig();
-
-        expect(config).toEqual({});
-        expect(consoleSpy).toHaveBeenCalled();
-        const errorMessage = consoleSpy.mock.calls.map(([msg]) => String(msg)).join("\n");
-        expect(errorMessage).toMatch(/talk\.provider|required|Invalid config/i);
+        expect(() => loadConfig()).toThrow("Invalid config");
       },
     );
   });

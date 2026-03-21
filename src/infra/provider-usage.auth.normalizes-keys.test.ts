@@ -362,8 +362,8 @@ describe("resolveProviderAuths key normalization", () => {
     expect(auths).toEqual([]);
   });
 
-  it("keeps all-caps plaintext config keys eligible for provider usage auth resolution", async () => {
+  it("config provider apiKey lookup is gutted — plaintext config keys yield no auth", async () => {
     const auths = await resolveMinimaxAuthFromConfiguredKey("ALLCAPS_SAMPLE");
-    expect(auths).toEqual([{ provider: "minimax", token: "ALLCAPS_SAMPLE" }]);
+    expect(auths).toEqual([]);
   });
 });

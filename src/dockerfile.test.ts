@@ -7,14 +7,16 @@ const repoRoot = resolve(fileURLToPath(new URL(".", import.meta.url)), "..");
 const dockerfilePath = join(repoRoot, "Dockerfile");
 
 describe("Dockerfile", () => {
-  it("installs optional browser dependencies after pnpm install", async () => {
+  it("installs optional browser dependencies after node_modules are available", async () => {
     const dockerfile = await readFile(dockerfilePath, "utf8");
-    const installIndex = dockerfile.indexOf("RUN pnpm install --frozen-lockfile");
+    const nodeModulesCopyIndex = dockerfile.indexOf(
+      "COPY --from=build --chown=node:node /app/node_modules ./node_modules",
+    );
     const browserArgIndex = dockerfile.indexOf("ARG REMOTECLAW_INSTALL_BROWSER");
 
-    expect(installIndex).toBeGreaterThan(-1);
+    expect(nodeModulesCopyIndex).toBeGreaterThan(-1);
     expect(browserArgIndex).toBeGreaterThan(-1);
-    expect(browserArgIndex).toBeGreaterThan(installIndex);
+    expect(browserArgIndex).toBeGreaterThan(nodeModulesCopyIndex);
     expect(dockerfile).toContain(
       "node /app/node_modules/playwright-core/cli.js install --with-deps chromium",
     );

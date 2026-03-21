@@ -33,7 +33,7 @@ export async function listFeishuDirectoryPeers(params: {
     limit: params.limit,
     normalizeAllowFromId: (entry) => normalizeFeishuTarget(entry) ?? entry,
     normalizeMapKeyId: (entry) => normalizeFeishuTarget(entry) ?? entry,
-  });
+  }) as FeishuDirectoryPeer[];
 }
 
 export async function listFeishuDirectoryGroups(params: {
@@ -48,7 +48,7 @@ export async function listFeishuDirectoryGroups(params: {
     allowFrom: account.config.groupAllowFrom,
     query: params.query,
     limit: params.limit,
-  });
+  }) as FeishuDirectoryGroup[];
 }
 
 export async function listFeishuDirectoryPeersLive(params: {

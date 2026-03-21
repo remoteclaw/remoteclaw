@@ -30,7 +30,7 @@ export function expectSingleNpmInstallIgnoreScriptsCall(params: {
   const cwd = normalizeDarwinTmpPath(String(opts?.cwd));
   const expectedTargetDir = normalizeDarwinTmpPath(params.expectedTargetDir);
   expect(path.dirname(cwd)).toBe(path.dirname(expectedTargetDir));
-  expect(path.basename(cwd)).toMatch(/^\.openclaw-install-stage-/);
+  expect(path.basename(cwd)).toMatch(/^\.remoteclaw-install-stage-/);
 }
 
 export function expectSingleNpmPackIgnoreScriptsCall(params: {

@@ -2,8 +2,10 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { NON_ENV_SECRETREF_MARKER } from "../agents/model-auth-markers.js";
 import { resolveProviderAuths } from "./provider-usage.auth.js";
+
+// Upstream model-auth-markers.ts was gutted from the fork; inline the constant.
+const NON_ENV_SECRETREF_MARKER = "secretref-managed";
 
 describe("resolveProviderAuths key normalization", () => {
   let suiteRoot = "";

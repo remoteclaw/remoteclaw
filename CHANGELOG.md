@@ -27,6 +27,7 @@ Docs: https://docs.openclaw.ai
 
 ### Fixes
 
+- Memory/Hybrid search: preserve negative FTS5 BM25 relevance ordering in `bm25RankToScore()` so stronger keyword matches rank above weaker ones instead of collapsing or reversing scores. (#33757) Thanks @lsdcc01.
 - LINE/`requireMention` group gating: align inbound and reply-stage LINE group policy resolution across raw, `group:`, and `room:` keys (including account-scoped group config), preserve plugin-backed reply-stage fallback behavior, and add regression coverage for prefixed-only group/room config plus reply-stage policy resolution. (#35847) Thanks @kirisame-wang.
 - Gateway/Telegram stale-socket restart guard: only apply stale-socket restarts to channels that publish event-liveness timestamps, preventing Telegram providers from being misclassified as stale solely due to long uptime and avoiding restart/pairing storms after upgrade. (openclaw#38464)
 - TUI/token copy-safety rendering: treat long credential-like mixed alphanumeric tokens (including quoted forms) as copy-sensitive in render sanitization so formatter hard-wrap guards no longer inject visible spaces into auth-style values before display. (#26710) Thanks @jasonthane.

@@ -6,7 +6,7 @@ import {
   isNumericTelegramUserId,
   normalizeTelegramAllowFromEntry,
 } from "../channels/telegram/allow-from.js";
-import { fetchTelegramChatId } from "../channels/telegram/api.js";
+import { lookupTelegramChatId } from "../channels/telegram/api.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { listRouteBindings } from "../config/bindings.js";
 import type { RemoteClawConfig } from "../config/config.js";
@@ -14,6 +14,7 @@ import { CONFIG_PATH, migrateLegacyConfig, readConfigFileSnapshot } from "../con
 import { collectProviderDangerousNameMatchingScopes } from "../config/dangerous-name-matching.js";
 import { formatConfigIssueLines } from "../config/issue-format.js";
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
+import type { TelegramNetworkConfig } from "../config/types.telegram.js";
 import { parseToolsBySenderTypedKey } from "../config/types.tools.js";
 import { RemoteClawSchema } from "../config/zod-schema.js";
 import { readChannelAllowFromStore } from "../pairing/pairing-store.js";
@@ -165,6 +166,13 @@ type TelegramAllowFromListRef = {
   pathLabel: string;
   holder: Record<string, unknown>;
   key: "allowFrom" | "groupAllowFrom";
+};
+
+type ResolvedTelegramLookupAccount = {
+  token: string;
+  apiRoot?: string;
+  proxyUrl?: string;
+  network?: TelegramNetworkConfig;
 };
 
 function asObjectRecord(value: unknown): Record<string, unknown> | null {
@@ -423,17 +431,31 @@ async function maybeRepairTelegramAllowFromUsernames(cfg: RemoteClawConfig): Pro
     return { config: cfg, changes: [] };
   }
 
-  const tokens = Array.from(
-    new Set(
-      listTelegramAccountIds(cfg)
-        .map((accountId) => resolveTelegramAccount({ cfg, accountId }))
-        .map((account) => (account.tokenSource === "none" ? "" : account.token))
-        .map((token) => token.trim())
-        .filter(Boolean),
-    ),
-  );
+  const lookupAccounts: ResolvedTelegramLookupAccount[] = [];
+  const seenLookupAccounts = new Set<string>();
+  for (const accountId of listTelegramAccountIds(cfg)) {
+    let account: NonNullable<ReturnType<typeof resolveTelegramAccount>>;
+    try {
+      account = resolveTelegramAccount({ cfg, accountId });
+    } catch {
+      continue;
+    }
+    const token = account.tokenSource === "none" ? "" : account.token.trim();
+    if (!token) {
+      continue;
+    }
+    const apiRoot = account.config.apiRoot?.trim() || undefined;
+    const proxyUrl = account.config.proxy?.trim() || undefined;
+    const network = account.config.network;
+    const cacheKey = `${token}::${apiRoot ?? ""}::${proxyUrl ?? ""}::${JSON.stringify(network ?? {})}`;
+    if (seenLookupAccounts.has(cacheKey)) {
+      continue;
+    }
+    seenLookupAccounts.add(cacheKey);
+    lookupAccounts.push({ token, apiRoot, proxyUrl, network });
+  }
 
-  if (tokens.length === 0) {
+  if (lookupAccounts.length === 0) {
     return {
       config: cfg,
       changes: [
@@ -458,14 +480,17 @@ async function maybeRepairTelegramAllowFromUsernames(cfg: RemoteClawConfig): Pro
       return null;
     }
     const username = stripped.startsWith("@") ? stripped : `@${stripped}`;
-    for (const token of tokens) {
+    for (const account of lookupAccounts) {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 4000);
       try {
-        const id = await fetchTelegramChatId({
-          token,
+        const id = await lookupTelegramChatId({
+          token: account.token,
           chatId: username,
           signal: controller.signal,
+          apiRoot: account.apiRoot,
+          proxyUrl: account.proxyUrl,
+          network: account.network,
         });
         if (id) {
           return id;

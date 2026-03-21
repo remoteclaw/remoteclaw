@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parseMemoryTraceSummaryLines } from "./test-parallel-memory.mjs";
+import { normalizeTrackedRepoPath, tryReadJsonFile, writeJsonFile } from "./test-report-utils.mjs";
 import { unitMemoryHotspotManifestPath } from "./test-runner-manifest.mjs";
 
 function parseArgs(argv) {
@@ -57,6 +58,41 @@ function parseArgs(argv) {
   return args;
 }
 
+function mergeHotspotEntry(aggregated, file, value) {
+  if (!(Number.isFinite(value?.deltaKb) && value.deltaKb > 0)) {
+    return;
+  }
+  const normalizedFile = normalizeTrackedRepoPath(file);
+  const normalizeSourceLabel = (source) => {
+    const separator = source.lastIndexOf(":");
+    if (separator === -1) {
+      return source.endsWith(".log") ? source.slice(0, -4) : source;
+    }
+    const name = source.slice(0, separator);
+    const lane = source.slice(separator + 1);
+    return `${name.endsWith(".log") ? name.slice(0, -4) : name}:${lane}`;
+  };
+  const nextSources = Array.isArray(value?.sources)
+    ? value.sources
+        .filter((source) => typeof source === "string" && source.length > 0)
+        .map(normalizeSourceLabel)
+    : [];
+  const previous = aggregated.get(normalizedFile);
+  if (!previous) {
+    aggregated.set(normalizedFile, {
+      deltaKb: Math.round(value.deltaKb),
+      sources: [...new Set(nextSources)],
+    });
+    return;
+  }
+  previous.deltaKb = Math.max(previous.deltaKb, Math.round(value.deltaKb));
+  for (const source of nextSources) {
+    if (!previous.sources.includes(source)) {
+      previous.sources.push(source);
+    }
+  }
+}
+
 const opts = parseArgs(process.argv.slice(2));
 
 if (opts.logs.length === 0) {
@@ -65,6 +101,12 @@ if (opts.logs.length === 0) {
 }
 
 const aggregated = new Map();
+const existing = tryReadJsonFile(opts.out, null);
+if (existing) {
+  for (const [file, value] of Object.entries(existing.files ?? {})) {
+    mergeHotspotEntry(aggregated, file, value);
+  }
+}
 for (const logPath of opts.logs) {
   const text = fs.readFileSync(logPath, "utf8");
   const summaries = parseMemoryTraceSummaryLines(text).filter(
@@ -75,19 +117,10 @@ for (const logPath of opts.logs) {
       if (record.deltaKb < opts.minDeltaKb) {
         continue;
       }
-      const nextSource = `${path.basename(logPath)}:${summary.lane}`;
-      const previous = aggregated.get(record.file);
-      if (!previous) {
-        aggregated.set(record.file, {
-          deltaKb: record.deltaKb,
-          sources: [nextSource],
-        });
-        continue;
-      }
-      previous.deltaKb = Math.max(previous.deltaKb, record.deltaKb);
-      if (!previous.sources.includes(nextSource)) {
-        previous.sources.push(nextSource);
-      }
+      mergeHotspotEntry(aggregated, record.file, {
+        deltaKb: record.deltaKb,
+        sources: [`${path.basename(logPath, path.extname(logPath))}:${summary.lane}`],
+      });
     }
   }
 }
@@ -113,7 +146,7 @@ const output = {
   files,
 };
 
-fs.writeFileSync(opts.out, `${JSON.stringify(output, null, 2)}\n`);
+writeJsonFile(opts.out, output);
 console.log(
   `[test-update-memory-hotspots] wrote ${String(Object.keys(files).length)} hotspots to ${opts.out}`,
 );

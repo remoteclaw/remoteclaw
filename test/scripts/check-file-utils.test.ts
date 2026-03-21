@@ -2,12 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  collectFilesSync,
-  isCodeFile,
-  relativeToCwd,
-  toPosixPath,
-} from "../../scripts/check-file-utils.js";
+import { collectFilesSync, isCodeFile, relativeToCwd } from "../../scripts/check-file-utils.js";
 
 const tempDirs: string[] = [];
 
@@ -42,12 +37,9 @@ describe("scripts/check-file-utils collectFilesSync", () => {
 
     const files = collectFilesSync(rootDir, {
       includeFile: (filePath) => filePath.endsWith(".ts"),
-    }).map((filePath) => toPosixPath(path.relative(rootDir, filePath)));
+    }).map((filePath) => path.relative(rootDir, filePath));
 
-    expect(files.toSorted((left, right) => left.localeCompare(right))).toEqual([
-      "src/keep.ts",
-      "src/nested/keep.test.ts",
-    ]);
+    expect(files.toSorted()).toEqual(["src/keep.ts", "src/nested/keep.test.ts"]);
   });
 
   it("supports custom skipped directories", () => {
@@ -60,7 +52,7 @@ describe("scripts/check-file-utils collectFilesSync", () => {
     const files = collectFilesSync(rootDir, {
       includeFile: (filePath) => filePath.endsWith(".ts"),
       skipDirNames: new Set(["fixtures"]),
-    }).map((filePath) => toPosixPath(path.relative(rootDir, filePath)));
+    }).map((filePath) => path.relative(rootDir, filePath));
 
     expect(files).toEqual(["src/keep.ts"]);
   });

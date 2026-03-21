@@ -1,11 +1,12 @@
-import type { ClawdbotConfig, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hasControlCommand } from "../../../src/auto-reply/command-detection.js";
 import {
   createInboundDebouncer,
   resolveInboundDebounceMs,
 } from "../../../src/auto-reply/inbound-debounce.js";
-import { createPluginRuntimeMock } from "../../test-utils/plugin-runtime-mock.js";
+import { createPluginRuntimeMock } from "../../../test/helpers/extensions/plugin-runtime-mock.js";
+import { createRuntimeEnv } from "../../../test/helpers/extensions/runtime-env.js";
+import type { ClawdbotConfig, RuntimeEnv } from "../runtime-api.js";
 import { parseFeishuMessageEvent, type FeishuMessageEvent } from "./bot.js";
 import * as dedup from "./dedup.js";
 import { monitorSingleAccount } from "./monitor.account.js";
@@ -56,10 +57,11 @@ function makeReactionEvent(
   };
 }
 
-function createFetchedReactionMessage(chatId: string) {
+function createFetchedReactionMessage(chatId: string, chatType?: "p2p" | "group" | "private") {
   return {
     messageId: "om_msg1",
     chatId,
+    chatType,
     senderOpenId: "ou_bot",
     content: "hello",
     contentType: "text",
@@ -69,14 +71,35 @@ function createFetchedReactionMessage(chatId: string) {
 async function resolveReactionWithLookup(params: {
   event?: FeishuReactionCreatedEvent;
   lookupChatId: string;
+  lookupChatType?: "p2p" | "group" | "private";
 }) {
   return await resolveReactionSyntheticEvent({
     cfg,
     accountId: "default",
     event: params.event ?? makeReactionEvent(),
     botOpenId: "ou_bot",
-    fetchMessage: async () => createFetchedReactionMessage(params.lookupChatId),
+    fetchMessage: async () =>
+      createFetchedReactionMessage(params.lookupChatId, params.lookupChatType),
     uuid: () => "fixed-uuid",
+  });
+}
+
+async function resolveNonBotReaction(params?: { cfg?: ClawdbotConfig; uuid?: () => string }) {
+  return await resolveReactionSyntheticEvent({
+    cfg: params?.cfg ?? cfg,
+    accountId: "default",
+    event: makeReactionEvent(),
+    botOpenId: "ou_bot",
+    fetchMessage: async () => ({
+      messageId: "om_msg1",
+      chatId: "oc_group",
+      chatType: "group",
+      senderOpenId: "ou_other",
+      senderType: "user",
+      content: "hello",
+      contentType: "text",
+    }),
+    ...(params?.uuid ? { uuid: params.uuid } : {}),
   });
 }
 
@@ -150,11 +173,7 @@ async function setupDebounceMonitor(params?: {
   await monitorSingleAccount({
     cfg: buildDebounceConfig(),
     account: buildDebounceAccount(),
-    runtime: {
-      log: vi.fn(),
-      error: vi.fn(),
-      exit: vi.fn(),
-    } as RuntimeEnv,
+    runtime: createRuntimeEnv({ throwOnExit: false }) as RuntimeEnv,
     botOpenIdSource: {
       kind: "prefetched",
       botOpenId: params?.botOpenId ?? "ou_bot",
@@ -179,6 +198,19 @@ function getFirstDispatchedEvent(): FeishuMessageEvent {
     throw new Error("missing dispatched event payload");
   }
   return firstParams.event;
+}
+
+function expectSingleDispatchedEvent(): FeishuMessageEvent {
+  expect(handleFeishuMessageMock).toHaveBeenCalledTimes(1);
+  return getFirstDispatchedEvent();
+}
+
+function expectParsedFirstDispatchedEvent(botOpenId = "ou_bot") {
+  const dispatched = expectSingleDispatchedEvent();
+  return {
+    dispatched,
+    parsed: parseFeishuMessageEvent(dispatched, botOpenId),
+  };
 }
 
 function setDedupPassThroughMocks(): void {
@@ -269,27 +301,12 @@ describe("resolveReactionSyntheticEvent", () => {
   });
 
   it("filters reactions on non-bot messages", async () => {
-    const event = makeReactionEvent();
-    const result = await resolveReactionSyntheticEvent({
-      cfg,
-      accountId: "default",
-      event,
-      botOpenId: "ou_bot",
-      fetchMessage: async () => ({
-        messageId: "om_msg1",
-        chatId: "oc_group",
-        senderOpenId: "ou_other",
-        senderType: "user",
-        content: "hello",
-        contentType: "text",
-      }),
-    });
+    const result = await resolveNonBotReaction();
     expect(result).toBeNull();
   });
 
   it("allows non-bot reactions when reactionNotifications is all", async () => {
-    const event = makeReactionEvent();
-    const result = await resolveReactionSyntheticEvent({
+    const result = await resolveNonBotReaction({
       cfg: {
         channels: {
           feishu: {
@@ -297,17 +314,6 @@ describe("resolveReactionSyntheticEvent", () => {
           },
         },
       } as ClawdbotConfig,
-      accountId: "default",
-      event,
-      botOpenId: "ou_bot",
-      fetchMessage: async () => ({
-        messageId: "om_msg1",
-        chatId: "oc_group",
-        senderOpenId: "ou_other",
-        senderType: "user",
-        content: "hello",
-        contentType: "text",
-      }),
       uuid: () => "fixed-uuid",
     });
     expect(result?.message.message_id).toBe("om_msg1:reaction:THUMBSUP:fixed-uuid");
@@ -358,19 +364,41 @@ describe("resolveReactionSyntheticEvent", () => {
   it("falls back to reacted message chat_id when event chat_id is absent", async () => {
     const result = await resolveReactionWithLookup({
       lookupChatId: "oc_group_from_lookup",
+      lookupChatType: "group",
     });
 
     expect(result?.message.chat_id).toBe("oc_group_from_lookup");
-    expect(result?.message.chat_type).toBe("p2p");
+    expect(result?.message.chat_type).toBe("group");
   });
 
   it("falls back to sender p2p chat when lookup returns empty chat_id", async () => {
     const result = await resolveReactionWithLookup({
       lookupChatId: "",
+      lookupChatType: "p2p",
     });
 
     expect(result?.message.chat_id).toBe("p2p:ou_user1");
     expect(result?.message.chat_type).toBe("p2p");
+  });
+
+  it("drops reactions without chat context when lookup does not provide chat_type", async () => {
+    const result = await resolveReactionWithLookup({
+      lookupChatId: "oc_group_from_lookup",
+    });
+
+    expect(result).toBeNull();
+  });
+
+  it("drops reactions when event chat_type is invalid and lookup cannot recover it", async () => {
+    const result = await resolveReactionWithLookup({
+      event: makeReactionEvent({
+        chat_id: "oc_group_from_event",
+        chat_type: "bogus" as "group",
+      }),
+      lookupChatId: "oc_group_from_lookup",
+    });
+
+    expect(result).toBeNull();
   });
 
   it("logs and drops reactions when lookup throws", async () => {
@@ -421,11 +449,7 @@ describe("monitorSingleAccount lifecycle", () => {
     await monitorSingleAccount({
       cfg: buildDebounceConfig(),
       account: buildDebounceAccount(),
-      runtime: {
-        log: vi.fn(),
-        error: vi.fn(),
-        exit: vi.fn(),
-      } as RuntimeEnv,
+      runtime: createRuntimeEnv({ throwOnExit: false }) as RuntimeEnv,
       botOpenIdSource: {
         kind: "prefetched",
         botOpenId: "ou_bot",
@@ -462,11 +486,7 @@ describe("monitorSingleAccount lifecycle", () => {
       monitorSingleAccount({
         cfg: buildDebounceConfig(),
         account: buildDebounceAccount(),
-        runtime: {
-          log: vi.fn(),
-          error: vi.fn(),
-          exit: vi.fn(),
-        } as RuntimeEnv,
+        runtime: createRuntimeEnv({ throwOnExit: false }) as RuntimeEnv,
         botOpenIdSource: {
           kind: "prefetched",
           botOpenId: "ou_bot",
@@ -528,8 +548,7 @@ describe("Feishu inbound debounce regressions", () => {
     );
     await vi.advanceTimersByTimeAsync(25);
 
-    expect(handleFeishuMessageMock).toHaveBeenCalledTimes(1);
-    const dispatched = getFirstDispatchedEvent();
+    const dispatched = expectSingleDispatchedEvent();
     const mergedMentions = dispatched.message.mentions ?? [];
     expect(mergedMentions.some((mention) => mention.id.open_id === "ou_bot")).toBe(true);
     expect(mergedMentions.some((mention) => mention.id.open_id === "ou_user_a")).toBe(false);
@@ -587,9 +606,7 @@ describe("Feishu inbound debounce regressions", () => {
     );
     await vi.advanceTimersByTimeAsync(25);
 
-    expect(handleFeishuMessageMock).toHaveBeenCalledTimes(1);
-    const dispatched = getFirstDispatchedEvent();
-    const parsed = parseFeishuMessageEvent(dispatched, "ou_bot");
+    const { dispatched, parsed } = expectParsedFirstDispatchedEvent();
     expect(parsed.mentionedBot).toBe(true);
     expect(parsed.mentionTargets).toBeUndefined();
     const mergedMentions = dispatched.message.mentions ?? [];
@@ -617,9 +634,7 @@ describe("Feishu inbound debounce regressions", () => {
     );
     await vi.advanceTimersByTimeAsync(25);
 
-    expect(handleFeishuMessageMock).toHaveBeenCalledTimes(1);
-    const dispatched = getFirstDispatchedEvent();
-    const parsed = parseFeishuMessageEvent(dispatched, "ou_bot");
+    const { parsed } = expectParsedFirstDispatchedEvent();
     expect(parsed.mentionedBot).toBe(true);
   });
 
@@ -643,8 +658,7 @@ describe("Feishu inbound debounce regressions", () => {
     await Promise.resolve();
     await vi.advanceTimersByTimeAsync(25);
 
-    expect(handleFeishuMessageMock).toHaveBeenCalledTimes(1);
-    const dispatched = getFirstDispatchedEvent();
+    const dispatched = expectSingleDispatchedEvent();
     expect(dispatched.message.message_id).toBe("om_new_2");
     const combined = JSON.parse(dispatched.message.content) as { text?: string };
     expect(combined.text).toBe("first\nsecond");
@@ -664,8 +678,7 @@ describe("Feishu inbound debounce regressions", () => {
     await Promise.resolve();
     await vi.advanceTimersByTimeAsync(25);
 
-    expect(handleFeishuMessageMock).toHaveBeenCalledTimes(1);
-    const dispatched = getFirstDispatchedEvent();
+    const dispatched = expectSingleDispatchedEvent();
     expect(dispatched.message.message_id).toBe("om_new");
     const combined = JSON.parse(dispatched.message.content) as { text?: string };
     expect(combined.text).toBe("fresh");

@@ -141,6 +141,10 @@ export function shouldEnforceGatewayAuthForPluginPath(
   return route.auth === "gateway";
 }
 
+function matchedPluginRoutesRequireGatewayAuth(routes: readonly PluginHttpRouteEntry[]): boolean {
+  return routes.some((route) => route.auth === "gateway");
+}
+
 export function createGatewayPluginRequestHandler(params: {
   registry: PluginRegistry;
   log: SubsystemLogger;

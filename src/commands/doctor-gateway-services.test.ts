@@ -220,11 +220,7 @@ describe("maybeRepairGatewayServiceConfig", () => {
       gateway: {
         auth: {
           mode: "token",
-          token: {
-            source: "env",
-            provider: "default",
-            id: "REMOTECLAW_GATEWAY_TOKEN",
-          },
+          token: "REMOTECLAW_GATEWAY_TOKEN",
         },
       },
     };

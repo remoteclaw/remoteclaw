@@ -3,7 +3,11 @@ import { mapAllowFromEntries, resolveOptionalConfigString } from "./channel-conf
 
 describe("mapAllowFromEntries", () => {
   it("coerces allowFrom entries to strings", () => {
-    expect(mapAllowFromEntries(["user", 42, null])).toEqual(["user", "42", "null"]);
+    expect(mapAllowFromEntries(["user", 42, null as unknown as string])).toEqual([
+      "user",
+      "42",
+      "null",
+    ]);
   });
 
   it("returns empty list for missing input", () => {

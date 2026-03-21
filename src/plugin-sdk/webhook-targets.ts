@@ -194,6 +194,25 @@ export async function resolveSingleWebhookTargetAsync<T>(
   return finalizeMatchedWebhookTarget(matched);
 }
 
+export function resolveWebhookTargetWithAuthOrRejectSync<T>(params: {
+  targets: readonly T[];
+  res: ServerResponse;
+  isMatch: (target: T) => boolean;
+}): T | null {
+  const matched = resolveSingleWebhookTarget(params.targets, params.isMatch);
+  if (matched.kind === "single") {
+    return matched.target;
+  }
+  if (matched.kind === "ambiguous") {
+    params.res.statusCode = 409;
+    params.res.end("ambiguous webhook target");
+    return null;
+  }
+  params.res.statusCode = 401;
+  params.res.end("unauthorized");
+  return null;
+}
+
 export function rejectNonPostWebhookRequest(req: IncomingMessage, res: ServerResponse): boolean {
   if (req.method === "POST") {
     return false;

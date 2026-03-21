@@ -222,20 +222,14 @@ export function resolveEnvApiKey(provider: string): EnvApiKeyResult | null {
     return { apiKey: value, source };
   };
 
-  if (normalized === "github-copilot") {
-    return pick("COPILOT_GITHUB_TOKEN") ?? pick("GH_TOKEN") ?? pick("GITHUB_TOKEN");
-  }
-
-  if (normalized === "anthropic") {
-    return pick("ANTHROPIC_OAUTH_TOKEN") ?? pick("ANTHROPIC_API_KEY");
-  }
-
-  if (normalized === "chutes") {
-    return pick("CHUTES_OAUTH_TOKEN") ?? pick("CHUTES_API_KEY");
-  }
-
-  if (normalized === "zai") {
-    return pick("ZAI_API_KEY") ?? pick("Z_AI_API_KEY");
+  const candidates = PROVIDER_ENV_API_KEY_CANDIDATES[normalized];
+  if (candidates) {
+    for (const envVar of candidates) {
+      const resolved = pick(envVar);
+      if (resolved) {
+        return resolved;
+      }
+    }
   }
 
   if (normalized === "google-vertex") {

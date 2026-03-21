@@ -246,6 +246,7 @@ Docs: https://docs.openclaw.ai
 - Agents/OpenAI WS reconnect retry accounting: avoid double retry scheduling when reconnect failures emit both `error` and `close`, so retry budgets track actual reconnect attempts instead of exhausting early. (#39133) Thanks @scoootscooob.
 - Agents/OpenAI WS max-token zero forwarding: treat `maxTokens: 0` as an explicit value in websocket `response.create` payloads (instead of dropping it as falsy), with regression coverage for zero-token forwarding. (#39148) Thanks @scoootscooob.
 - Agents/model fallback visibility: warn when configured model IDs cannot be resolved and fallback is applied, with log-safe sanitization of model text to prevent control-sequence injection in warning output. (#39215) Thanks @ademczuk.
+- Agents/strict OpenAI turn ordering: apply assistant-first transcript bootstrap sanitization to strict OpenAI-compatible providers (for example vLLM/Gemma via `openai-completions`) without adding Google-specific session markers, preventing assistant-first history rejections. (#39252) Thanks @scoootscooob.
 
 ## 2026.3.2
 

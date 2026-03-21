@@ -1,4 +1,5 @@
 import type { RemoteClawConfig } from "../config/config.js";
+import { normalizeStringEntries } from "../shared/string-normalization.js";
 import type { ChannelAccountSnapshot } from "./plugins/types.core.js";
 import type { ChannelPlugin } from "./plugins/types.plugin.js";
 
@@ -32,7 +33,7 @@ export function formatChannelAllowFrom(params: {
       allowFrom: params.allowFrom,
     });
   }
-  return params.allowFrom.map((entry) => String(entry).trim()).filter(Boolean);
+  return normalizeStringEntries(params.allowFrom);
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {

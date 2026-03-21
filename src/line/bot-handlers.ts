@@ -27,6 +27,7 @@ import type { RuntimeEnv } from "../runtime.js";
 import {
   firstDefined,
   isSenderAllowed,
+  normalizeAllowFrom,
   normalizeAllowFromWithStore,
   type NormalizedAllowFrom,
 } from "./bot-access.js";

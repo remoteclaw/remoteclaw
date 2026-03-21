@@ -27,3 +27,5 @@ export {
   collectStatusIssuesFromLastError,
   createDefaultChannelRuntimeState,
 } from "./status-helpers.js";
+
+export { mapAllowFromEntries, resolveOptionalConfigString } from "./channel-config-helpers.js";

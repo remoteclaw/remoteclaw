@@ -315,7 +315,7 @@ export function listPluginCommands(): Array<{
 }
 
 function resolvePluginNativeName(
-  command: OpenClawPluginCommandDefinition,
+  command: RemoteClawPluginCommandDefinition,
   provider?: string,
 ): string {
   const providerName = provider?.trim().toLowerCase();

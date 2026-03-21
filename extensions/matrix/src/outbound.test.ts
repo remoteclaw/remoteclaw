@@ -1,5 +1,5 @@
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { OpenClawConfig } from "../runtime-api.js";
 
 const mocks = vi.hoisted(() => ({
   sendMessageMatrix: vi.fn(),
@@ -38,7 +38,7 @@ describe("matrixOutbound cfg threading", () => {
           accessToken: "resolved-token",
         },
       },
-    } as RemoteClawConfig;
+    } as OpenClawConfig;
 
     await matrixOutbound.sendText!({
       cfg,
@@ -68,14 +68,16 @@ describe("matrixOutbound cfg threading", () => {
           accessToken: "resolved-token",
         },
       },
-    } as RemoteClawConfig;
+    } as OpenClawConfig;
 
     await matrixOutbound.sendMedia!({
       cfg,
       to: "room:!room:example",
       text: "caption",
       mediaUrl: "file:///tmp/cat.png",
+      mediaLocalRoots: ["/tmp/openclaw"],
       accountId: "default",
+      audioAsVoice: true,
     });
 
     expect(mocks.sendMessageMatrix).toHaveBeenCalledWith(
@@ -84,19 +86,21 @@ describe("matrixOutbound cfg threading", () => {
       expect.objectContaining({
         cfg,
         mediaUrl: "file:///tmp/cat.png",
+        mediaLocalRoots: ["/tmp/openclaw"],
+        audioAsVoice: true,
       }),
     );
   });
 
-  it("passes resolved cfg through injected deps.sendMatrix", async () => {
+  it("passes resolved cfg through injected deps.matrix", async () => {
     const cfg = {
       channels: {
         matrix: {
           accessToken: "resolved-token",
         },
       },
-    } as RemoteClawConfig;
-    const sendMatrix = vi.fn(async () => ({
+    } as OpenClawConfig;
+    const matrix = vi.fn(async () => ({
       messageId: "evt-injected",
       roomId: "!room:example",
     }));
@@ -105,13 +109,13 @@ describe("matrixOutbound cfg threading", () => {
       cfg,
       to: "room:!room:example",
       text: "hello via deps",
-      deps: { sendMatrix },
+      deps: { matrix },
       accountId: "default",
       threadId: "$thread",
       replyToId: "$reply",
     });
 
-    expect(sendMatrix).toHaveBeenCalledWith(
+    expect(matrix).toHaveBeenCalledWith(
       "room:!room:example",
       "hello via deps",
       expect.objectContaining({
@@ -130,7 +134,7 @@ describe("matrixOutbound cfg threading", () => {
           accessToken: "resolved-token",
         },
       },
-    } as RemoteClawConfig;
+    } as OpenClawConfig;
 
     await matrixOutbound.sendPoll!({
       cfg,

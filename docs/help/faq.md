@@ -2437,7 +2437,7 @@ Your gateway is running with auth enabled (`gateway.auth.*`), but the UI is not 
 
 Facts (from code):
 
-- The Control UI stores the token in browser localStorage key `remoteclaw.control.settings.v1`.
+- The Control UI keeps the token in memory for the current tab; it no longer persists gateway tokens in browser localStorage.
 
 Fix:
 

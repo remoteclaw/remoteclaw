@@ -7,6 +7,7 @@ import type {
   ChannelPlugin,
   RemoteClawConfig,
 } from "remoteclaw/plugin-sdk";
+import { applyBlueBubblesConnectionConfig } from "./config-apply.js";
 import {
   applyAccountNameToChannelSection,
   buildChannelConfigSchema,

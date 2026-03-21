@@ -1,5 +1,11 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/line";
 import { describe, expect, it, vi } from "vitest";
+import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import {
+  listLineAccountIds,
+  resolveDefaultLineAccountId,
+  resolveLineAccount,
+} from "../../../src/line/accounts.js";
 import {
   createPluginSetupWizardConfigure,
   createTestWizardPrompter,
@@ -26,13 +32,10 @@ describe("line setup wizard", () => {
     });
 
     const result = await runSetupWizardConfigure({
-      configure: lineConfigure,
+      configure: lineConfigureAdapter.configure,
       cfg: {} as RemoteClawConfig,
       prompter,
       options: {},
-      accountOverrides: {},
-      shouldPromptAccountIds: false,
-      forceAllowFrom: false,
     });
 
     expect(result.accountId).toBe("default");

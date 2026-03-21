@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import {
   createPluginSetupWizardConfigure,
@@ -28,13 +29,10 @@ describe("synology-chat setup wizard", () => {
     });
 
     const result = await runSetupWizardConfigure({
-      configure: synologyChatConfigure,
+      configure: synologyChatConfigureAdapter.configure,
       cfg: {} as RemoteClawConfig,
       prompter,
       options: {},
-      accountOverrides: {},
-      shouldPromptAccountIds: false,
-      forceAllowFrom: false,
     });
 
     expect(result.accountId).toBe("default");
@@ -65,12 +63,10 @@ describe("synology-chat setup wizard", () => {
     });
 
     const result = await runSetupWizardConfigure({
-      configure: synologyChatConfigure,
+      configure: synologyChatConfigureAdapter.configure,
       cfg: {} as RemoteClawConfig,
       prompter,
       options: {},
-      accountOverrides: {},
-      shouldPromptAccountIds: false,
       forceAllowFrom: true,
     });
 

@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
 import {
-  createSetupWizardAdapter,
   createTestWizardPrompter,
   runSetupWizardConfigure,
   type WizardPrompter,

@@ -1,7 +1,7 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/googlechat";
 import { describe, expect, it, vi } from "vitest";
 import {
-  createPluginSetupWizardConfigure,
+  createPluginSetupWizardAdapter,
   createTestWizardPrompter,
   runSetupWizardConfigure,
   type WizardPrompter,
@@ -9,7 +9,7 @@ import {
 import type { RemoteClawConfig } from "../runtime-api.js";
 import { googlechatPlugin } from "./channel.js";
 
-const googlechatConfigure = createPluginSetupWizardConfigure(googlechatPlugin);
+const googlechatConfigureAdapter = createPluginSetupWizardAdapter(googlechatPlugin);
 
 describe("googlechat setup wizard", () => {
   it("configures service-account auth and webhook audience", async () => {
@@ -26,13 +26,10 @@ describe("googlechat setup wizard", () => {
     });
 
     const result = await runSetupWizardConfigure({
-      configure: googlechatConfigure,
+      configure: googlechatConfigureAdapter.configure,
       cfg: {} as RemoteClawConfig,
       prompter,
       options: {},
-      accountOverrides: {},
-      shouldPromptAccountIds: false,
-      forceAllowFrom: false,
     });
 
     expect(result.accountId).toBe("default");

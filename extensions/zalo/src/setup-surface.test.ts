@@ -1,7 +1,7 @@
 import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/zalo";
 import { describe, expect, it, vi } from "vitest";
 import {
-  createPluginSetupWizardConfigure,
+  createPluginSetupWizardAdapter,
   createTestWizardPrompter,
   runSetupWizardConfigure,
   type WizardPrompter,
@@ -9,7 +9,7 @@ import {
 import type { RemoteClawConfig } from "../runtime-api.js";
 import { zaloPlugin } from "./channel.js";
 
-const zaloConfigure = createPluginSetupWizardConfigure(zaloPlugin);
+const zaloConfigureAdapter = createPluginSetupWizardAdapter(zaloPlugin);
 
 describe("zalo setup wizard", () => {
   it("configures a polling token flow", async () => {
@@ -30,13 +30,10 @@ describe("zalo setup wizard", () => {
     });
 
     const result = await runSetupWizardConfigure({
-      configure: zaloConfigure,
+      configure: zaloConfigureAdapter.configure,
       cfg: {} as RemoteClawConfig,
       prompter,
-      options: { secretInputMode: "plaintext" },
-      accountOverrides: {},
-      shouldPromptAccountIds: false,
-      forceAllowFrom: false,
+      options: { secretInputMode: "plaintext" as const },
     });
 
     expect(result.accountId).toBe("default");

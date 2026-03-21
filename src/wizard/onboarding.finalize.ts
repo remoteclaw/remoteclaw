@@ -286,7 +286,7 @@ export async function finalizeOnboardingWizard(
         "Stored in: ~/.remoteclaw/remoteclaw.json (gateway.auth.token) or REMOTECLAW_GATEWAY_TOKEN.",
         `View token: ${formatCliCommand("remoteclaw config get gateway.auth.token")}`,
         `Generate token: ${formatCliCommand("remoteclaw doctor --generate-gateway-token")}`,
-        "Web UI stores a copy in this browser's localStorage (remoteclaw.control.settings.v1).",
+        "Web UI keeps dashboard URL tokens in memory for the current tab and strips them from the URL after load.",
         `Open the dashboard anytime: ${formatCliCommand("remoteclaw dashboard --no-open")}`,
         "If prompted: paste the token into Control UI settings (or use the tokenized dashboard URL).",
       ].join("\n"),

@@ -144,7 +144,7 @@ describe("slackPlugin config", () => {
         slack: {
           mode: "http",
           botToken: "xoxb-http",
-          signingSecret: "secret-http",
+          signingSecret: "secret-http", // pragma: allowlist secret
         },
       },
     };

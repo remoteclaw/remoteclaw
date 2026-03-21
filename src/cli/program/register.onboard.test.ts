@@ -130,7 +130,7 @@ describe("registerOnboardCommand", () => {
     await runCli(["onboard", "--anthropic-api-key", "sk-ant-test"]);
     expect(onboardCommandMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        anthropicApiKey: "sk-ant-test",
+        anthropicApiKey: "sk-ant-test", // pragma: allowlist secret
       }),
       runtime,
     );

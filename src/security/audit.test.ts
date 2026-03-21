@@ -856,7 +856,7 @@ describe("security audit", () => {
       channels: {
         feishu: {
           appId: "cli_test",
-          appSecret: "secret_test",
+          appSecret: "secret_test", // pragma: allowlist secret
         },
       },
     };
@@ -870,7 +870,7 @@ describe("security audit", () => {
       channels: {
         feishu: {
           appId: "cli_test",
-          appSecret: "secret_test",
+          appSecret: "secret_test", // pragma: allowlist secret
           tools: { doc: false },
         },
       },

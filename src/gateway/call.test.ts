@@ -586,7 +586,7 @@ describe("callGateway password resolution", () => {
   const explicitAuthCases = [
     {
       label: "password",
-      authKey: "password",
+      authKey: "password", // pragma: allowlist secret
       envKey: "REMOTECLAW_GATEWAY_PASSWORD",
       envValue: "from-env",
       configValue: "from-config",
@@ -594,7 +594,7 @@ describe("callGateway password resolution", () => {
     },
     {
       label: "token",
-      authKey: "token",
+      authKey: "token", // pragma: allowlist secret
       envKey: "REMOTECLAW_GATEWAY_TOKEN",
       envValue: "env-token",
       configValue: "local-token",

@@ -39,6 +39,13 @@ import type {
   PluginHookRegistration as TypedPluginHookRegistration,
 } from "./types.js";
 
+function describeHttpRouteOwner(route: { pluginId?: string; source?: string }): string {
+  if (route.pluginId && route.source) {
+    return `${route.pluginId} (${route.source})`;
+  }
+  return route.pluginId ?? route.source ?? "unknown";
+}
+
 export type PluginToolRegistration = {
   pluginId: string;
   factory: RemoteClawPluginToolFactory;

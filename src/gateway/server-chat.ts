@@ -367,14 +367,8 @@ export function createAgentEventHandler({
     const bufferedText = stripInlineDirectiveTagsForDisplay(
       chatRunState.buffers.get(clientRunId) ?? "",
     ).text.trim();
-    const normalizedHeartbeatText = normalizeHeartbeatChatFinalText({
-      runId: clientRunId,
-      sourceRunId,
-      text: bufferedText,
-    });
-    const text = normalizedHeartbeatText.text.trim();
-    const shouldSuppressSilent =
-      normalizedHeartbeatText.suppress || isSilentReplyText(text, SILENT_REPLY_TOKEN);
+    const text = bufferedText;
+    const shouldSuppressSilent = isSilentReplyText(text, SILENT_REPLY_TOKEN);
     // Flush any throttled delta so streaming clients receive the complete text
     // before the final event. The 150 ms throttle in emitChatDelta may have
     // suppressed the most recent chunk, leaving the client with stale text.

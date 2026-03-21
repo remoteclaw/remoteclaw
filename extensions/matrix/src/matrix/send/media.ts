@@ -158,7 +158,7 @@ export async function resolveMediaDurationMs(params: {
   buffer: Buffer;
   contentType?: string;
   fileName?: string;
-  kind: MediaKind;
+  kind?: MediaKind;
 }): Promise<number | undefined> {
   if (params.kind !== "audio" && params.kind !== "video") {
     return undefined;

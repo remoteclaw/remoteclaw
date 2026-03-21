@@ -201,7 +201,7 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
         defaultGroupPolicy,
       });
       const groupAllowlistConfigured =
-        account.config.groups && Object.keys(account.config.groups).length > 0;
+        (account.config.groups && Object.keys(account.config.groups).length > 0) ?? false;
       return collectOpenGroupPolicyRouteAllowlistWarnings({
         groupPolicy,
         routeAllowlistConfigured: groupAllowlistConfigured,

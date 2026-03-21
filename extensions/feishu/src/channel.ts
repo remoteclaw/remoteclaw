@@ -1,4 +1,4 @@
-import { collectOpenGroupPolicyRestrictSendersWarnings } from "openclaw/plugin-sdk";
+import { collectOpenGroupPolicyRestrictSendersWarnings } from "remoteclaw/plugin-sdk";
 import type { ChannelMeta, ChannelPlugin, ClawdbotConfig } from "remoteclaw/plugin-sdk";
 import {
   buildBaseChannelStatusSummary,

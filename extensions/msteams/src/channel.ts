@@ -1,4 +1,4 @@
-import { collectOpenGroupPolicyRestrictSendersWarnings } from "openclaw/plugin-sdk";
+import { collectOpenGroupPolicyRestrictSendersWarnings } from "remoteclaw/plugin-sdk";
 import type {
   ChannelMessageActionName,
   ChannelPlugin,

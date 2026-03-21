@@ -21,7 +21,7 @@ export function formatPairingApproveHint(channelId: string): string {
 }
 
 export function buildAccountScopedDmSecurityPolicy(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   channelKey: string;
   accountId?: string | null;
   fallbackAccountId?: string | null;

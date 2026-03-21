@@ -51,6 +51,16 @@ export function createTelegramRunnerOptions(cfg: RemoteClawConfig): RunOptions<u
   };
 }
 
+function normalizePersistedUpdateId(value: number | null): number | null {
+  if (value === null) {
+    return null;
+  }
+  if (!Number.isSafeInteger(value) || value < 0) {
+    return null;
+  }
+  return value;
+}
+
 /** Check if error is a Grammy HttpError (used to scope unhandled rejection handling) */
 const isGrammyHttpError = (err: unknown): boolean => {
   if (!err || typeof err !== "object") {

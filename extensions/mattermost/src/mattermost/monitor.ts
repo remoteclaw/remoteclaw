@@ -317,7 +317,7 @@ export function evaluateMattermostMentionGate(
 type MattermostMediaInfo = {
   path: string;
   contentType?: string;
-  kind: MediaKind;
+  kind?: MediaKind;
 };
 
 function buildMattermostAttachmentPlaceholder(mediaList: MattermostMediaInfo[]): string {

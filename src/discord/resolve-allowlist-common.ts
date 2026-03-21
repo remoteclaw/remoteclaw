@@ -3,7 +3,7 @@ import { normalizeDiscordSlug } from "./monitor/allow-list.js";
 import { normalizeDiscordToken } from "./token.js";
 
 export function resolveDiscordAllowlistToken(token: string): string | undefined {
-  return normalizeDiscordToken(token, "channels.discord.token");
+  return normalizeDiscordToken(token);
 }
 
 export function buildDiscordUnresolvedResults<T extends { input: string; resolved: boolean }>(

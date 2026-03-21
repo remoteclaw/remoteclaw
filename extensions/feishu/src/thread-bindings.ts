@@ -6,7 +6,6 @@ import {
   resolveThreadBindingConversationIdFromBindingId,
   unregisterSessionBindingAdapter,
   type BindingTargetKind,
-  type SessionBindingAdapter,
   type SessionBindingRecord,
 } from "remoteclaw/plugin-sdk/conversation-runtime";
 import { normalizeAccountId, resolveAgentIdFromSessionKey } from "remoteclaw/plugin-sdk/routing";
@@ -52,15 +51,16 @@ type FeishuThreadBindingsState = {
 };
 
 const FEISHU_THREAD_BINDINGS_STATE_KEY = Symbol.for("remoteclaw.feishuThreadBindingsState");
-const state = resolveGlobalSingleton<FeishuThreadBindingsState>(
-  FEISHU_THREAD_BINDINGS_STATE_KEY,
-  () => ({
-    managersByAccountId: new Map(),
-    bindingsByAccountConversation: new Map(),
-  }),
-);
+let state: FeishuThreadBindingsState | undefined;
 
 function getState(): FeishuThreadBindingsState {
+  state ??= resolveGlobalSingleton<FeishuThreadBindingsState>(
+    FEISHU_THREAD_BINDINGS_STATE_KEY,
+    () => ({
+      managersByAccountId: new Map(),
+      bindingsByAccountConversation: new Map(),
+    }),
+  );
   return state;
 }
 
@@ -233,15 +233,11 @@ export function createFeishuThreadBindingManager(params: {
         }
       }
       getState().managersByAccountId.delete(accountId);
-      unregisterSessionBindingAdapter({
-        channel: "feishu",
-        accountId,
-        adapter: sessionBindingAdapter,
-      });
+      unregisterSessionBindingAdapter({ channel: "feishu", accountId });
     },
   };
 
-  const sessionBindingAdapter: SessionBindingAdapter = {
+  registerSessionBindingAdapter({
     channel: "feishu",
     accountId,
     capabilities: {
@@ -296,9 +292,7 @@ export function createFeishuThreadBindingManager(params: {
       const removed = manager.unbindConversation(conversationId);
       return removed ? [toSessionBindingRecord(removed, { idleTimeoutMs, maxAgeMs })] : [];
     },
-  };
-
-  registerSessionBindingAdapter(sessionBindingAdapter);
+  });
 
   getState().managersByAccountId.set(accountId, manager);
   return manager;

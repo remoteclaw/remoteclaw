@@ -8,7 +8,6 @@ import {
   resolveThreadBindingEffectiveExpiresAt,
   unregisterSessionBindingAdapter,
   type BindingTargetKind,
-  type SessionBindingAdapter,
   type SessionBindingRecord,
 } from "remoteclaw/plugin-sdk/conversation-runtime";
 import { writeJsonAtomic } from "remoteclaw/plugin-sdk/infra-runtime";
@@ -77,16 +76,18 @@ type TelegramThreadBindingsState = {
  * binding lookups, and binding mutations all observe the same live registry.
  */
 const TELEGRAM_THREAD_BINDINGS_STATE_KEY = Symbol.for("remoteclaw.telegramThreadBindingsState");
-const threadBindingsState = resolveGlobalSingleton<TelegramThreadBindingsState>(
-  TELEGRAM_THREAD_BINDINGS_STATE_KEY,
-  () => ({
-    managersByAccountId: new Map<string, TelegramThreadBindingManager>(),
-    bindingsByAccountConversation: new Map<string, TelegramThreadBindingRecord>(),
-    persistQueueByAccountId: new Map<string, Promise<void>>(),
-  }),
-);
+
+let threadBindingsState: TelegramThreadBindingsState | undefined;
 
 function getThreadBindingsState(): TelegramThreadBindingsState {
+  threadBindingsState ??= resolveGlobalSingleton<TelegramThreadBindingsState>(
+    TELEGRAM_THREAD_BINDINGS_STATE_KEY,
+    () => ({
+      managersByAccountId: new Map<string, TelegramThreadBindingManager>(),
+      bindingsByAccountConversation: new Map<string, TelegramThreadBindingRecord>(),
+      persistQueueByAccountId: new Map<string, Promise<void>>(),
+    }),
+  );
   return threadBindingsState;
 }
 
@@ -541,11 +542,7 @@ export function createTelegramThreadBindingManager(
         clearInterval(sweepTimer);
         sweepTimer = null;
       }
-      unregisterSessionBindingAdapter({
-        channel: "telegram",
-        accountId,
-        adapter: sessionBindingAdapter,
-      });
+      unregisterSessionBindingAdapter({ channel: "telegram", accountId });
       const existingManager = getThreadBindingsState().managersByAccountId.get(accountId);
       if (existingManager === manager) {
         getThreadBindingsState().managersByAccountId.delete(accountId);
@@ -553,7 +550,7 @@ export function createTelegramThreadBindingManager(
     },
   };
 
-  const sessionBindingAdapter: SessionBindingAdapter = {
+  registerSessionBindingAdapter({
     channel: "telegram",
     accountId,
     capabilities: {
@@ -690,9 +687,7 @@ export function createTelegramThreadBindingManager(
           ]
         : [];
     },
-  };
-
-  registerSessionBindingAdapter(sessionBindingAdapter);
+  });
 
   const sweeperEnabled = params.enableSweeper !== false;
   if (sweeperEnabled) {

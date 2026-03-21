@@ -41,3 +41,6 @@ export {
   buildComputedAccountStatusSnapshot,
   buildTokenChannelStatusSummary,
 } from "./status-helpers.js";
+
+export { formatAllowFromLowercase } from "./allow-from.js";
+export { mapAllowFromEntries, resolveOptionalConfigString } from "./channel-config-helpers.js";

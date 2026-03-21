@@ -120,6 +120,7 @@ export {
   rejectNonPostWebhookRequest,
   resolveSingleWebhookTarget,
   resolveSingleWebhookTargetAsync,
+  resolveWebhookTargetWithAuthOrRejectSync,
   resolveWebhookTargets,
   withResolvedWebhookRequestPipeline,
 } from "./webhook-targets.js";
@@ -489,6 +490,7 @@ export {
   addWildcardAllowFrom,
   mergeAllowFromEntries,
   promptAccountId,
+  resolveAccountIdForConfigure,
 } from "../channels/plugins/onboarding/helpers.js";
 export { promptChannelAccessConfig } from "../channels/plugins/onboarding/channel-access.js";
 
@@ -511,6 +513,7 @@ export {
 } from "../security/dm-policy-shared.js";
 export type { DmGroupAccessReasonCode } from "../security/dm-policy-shared.js";
 export type { HookEntry } from "../hooks/types.js";
+export { normalizeStringEntries } from "../shared/string-normalization.js";
 export { clamp, escapeRegExp, normalizeE164, safeParseJson, sleep } from "../utils.js";
 export { stripAnsi } from "../terminal/ansi.js";
 export { missingTargetError } from "../infra/outbound/target-errors.js";

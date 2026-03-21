@@ -60,3 +60,6 @@ export { telegramOnboardingAdapter } from "../channels/plugins/onboarding/telegr
 export { TelegramConfigSchema } from "../config/zod-schema.providers-core.js";
 
 export { buildTokenChannelStatusSummary } from "./status-helpers.js";
+
+export { formatAllowFromLowercase } from "./allow-from.js";
+export { mapAllowFromEntries, resolveOptionalConfigString } from "./channel-config-helpers.js";

@@ -7,7 +7,6 @@ import type {
   ChannelPlugin,
   RemoteClawConfig,
 } from "remoteclaw/plugin-sdk";
-import { applyBlueBubblesConnectionConfig } from "./config-apply.js";
 import {
   applyAccountNameToChannelSection,
   buildChannelConfigSchema,
@@ -31,6 +30,7 @@ import {
   resolveDefaultBlueBubblesAccountId,
 } from "./accounts.js";
 import { bluebubblesMessageActions } from "./actions.js";
+import { applyBlueBubblesConnectionConfig } from "./config-apply.js";
 import { BlueBubblesConfigSchema } from "./config-schema.js";
 import { sendBlueBubblesMedia } from "./media-send.js";
 import { resolveBlueBubblesMessageId } from "./monitor.js";

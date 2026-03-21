@@ -342,7 +342,7 @@ describe("buildServiceEnvironment", () => {
     });
 
     expect(env).not.toHaveProperty("PATH");
-    expect(env.OPENCLAW_WINDOWS_TASK_NAME).toBe("OpenClaw Gateway");
+    expect(env.REMOTECLAW_WINDOWS_TASK_NAME).toBe("RemoteClaw Gateway");
   });
 });
 

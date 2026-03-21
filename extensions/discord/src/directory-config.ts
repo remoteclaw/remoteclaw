@@ -3,20 +3,7 @@ import {
   listResolvedDirectoryEntriesFromSources,
   type DirectoryConfigParams,
 } from "remoteclaw/plugin-sdk/directory-runtime";
-import { mergeDiscordAccountConfig, resolveDefaultDiscordAccountId } from "./accounts.js";
-
-function resolveDiscordDirectoryConfigAccount(
-  cfg: DirectoryConfigParams["cfg"],
-  accountId?: string | null,
-) {
-  const resolvedAccountId = normalizeAccountId(accountId ?? resolveDefaultDiscordAccountId(cfg));
-  const config = mergeDiscordAccountConfig(cfg, resolvedAccountId);
-  return {
-    accountId: resolvedAccountId,
-    config,
-    dm: config.dm,
-  };
-}
+import { inspectDiscordAccount, type InspectedDiscordAccount } from "./account-inspect.js";
 
 export async function listDiscordDirectoryPeersFromConfig(params: DirectoryConfigParams) {
   return listResolvedDirectoryEntriesFromSources({

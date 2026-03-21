@@ -6,6 +6,8 @@ import {
   buildGatewayDiscoveryTarget,
 } from "../infra/gateway-discovery-targets.js";
 import { resolveWideAreaDiscoveryDomain } from "../infra/widearea-dns.js";
+import { resolveSecretInputModeForEnvSelection } from "../plugins/provider-auth-mode.js";
+import { promptSecretRefForSetup } from "../plugins/provider-auth-ref.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import { detectBinary } from "./onboard-helpers.js";
 

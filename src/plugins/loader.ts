@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { createJiti } from "jiti";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { GatewayRequestHandler } from "../gateway/server-methods/types.js";
@@ -24,6 +23,18 @@ import { setActivePluginRegistry } from "./runtime.js";
 import { createPluginRuntime } from "./runtime/index.js";
 import type { PluginRuntime } from "./runtime/types.js";
 import { validateJsonSchemaValue } from "./schema-validator.js";
+import {
+  buildPluginLoaderAliasMap,
+  buildPluginLoaderJitiOptions,
+  listPluginSdkAliasCandidates,
+  listPluginSdkExportedSubpaths,
+  resolveExtensionApiAlias,
+  resolvePluginSdkAliasCandidateOrder,
+  resolvePluginSdkAliasFile,
+  resolvePluginRuntimeModulePath,
+  resolvePluginSdkScopedAliasMap,
+  shouldPreferNativeJiti,
+} from "./sdk-alias.js";
 import type {
   RemoteClawPluginDefinition,
   RemoteClawPluginModule,
@@ -63,40 +74,39 @@ const registryCache = new Map<string, PluginRegistry>();
 
 const defaultLogger = () => createSubsystemLogger("plugins");
 
-type PluginSdkAliasCandidateKind = "dist" | "src";
+export const __testing = {
+  buildPluginLoaderJitiOptions,
+  buildPluginLoaderAliasMap,
+  listPluginSdkAliasCandidates,
+  listPluginSdkExportedSubpaths,
+  resolveExtensionApiAlias,
+  resolvePluginSdkScopedAliasMap,
+  resolvePluginSdkAliasCandidateOrder,
+  resolvePluginSdkAliasFile,
+  resolvePluginRuntimeModulePath,
+  shouldPreferNativeJiti,
+  maxPluginRegistryCacheEntries: MAX_PLUGIN_REGISTRY_CACHE_ENTRIES,
+};
 
-function resolvePluginSdkAliasCandidateOrder(params: {
-  modulePath: string;
-  isProduction: boolean;
-}): PluginSdkAliasCandidateKind[] {
-  const normalizedModulePath = params.modulePath.replace(/\\/g, "/");
-  const isDistRuntime = normalizedModulePath.includes("/dist/");
-  return isDistRuntime || params.isProduction
-    ? (["dist", "src"] as const)
-    : (["src", "dist"] as const);
+function getCachedPluginRegistry(cacheKey: string): CachedPluginState | undefined {
+  const cached = registryCache.get(cacheKey);
+  if (!cached) {
+    return undefined;
+  }
+  // Refresh insertion order so frequently reused registries survive eviction.
+  registryCache.delete(cacheKey);
+  registryCache.set(cacheKey, cached);
+  return cached;
 }
 
-function listPluginSdkAliasCandidates(params: {
-  srcFile: string;
-  distFile: string;
-  modulePath: string;
-}) {
-  const orderedKinds = resolvePluginSdkAliasCandidateOrder({
-    modulePath: params.modulePath,
-    isProduction: process.env.NODE_ENV === "production",
-  });
-  let cursor = path.dirname(params.modulePath);
-  const candidates: string[] = [];
-  for (let i = 0; i < 6; i += 1) {
-    const candidateMap = {
-      src: path.join(cursor, "src", "plugin-sdk", params.srcFile),
-      dist: path.join(cursor, "dist", "plugin-sdk", params.distFile),
-    } as const;
-    for (const kind of orderedKinds) {
-      candidates.push(candidateMap[kind]);
-    }
-    const parent = path.dirname(cursor);
-    if (parent === cursor) {
+function setCachedPluginRegistry(cacheKey: string, state: CachedPluginState): void {
+  if (registryCache.has(cacheKey)) {
+    registryCache.delete(cacheKey);
+  }
+  registryCache.set(cacheKey, state);
+  while (registryCache.size > MAX_PLUGIN_REGISTRY_CACHE_ENTRIES) {
+    const oldestKey = registryCache.keys().next().value;
+    if (!oldestKey) {
       break;
     }
     cursor = parent;

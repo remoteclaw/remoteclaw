@@ -1,8 +1,9 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   resolveTelegramTransport,
-  shouldRetryTelegramIpv4Fallback,
+  shouldRetryTelegramTransportFallback,
 } from "../../extensions/telegram/src/fetch.js";
+import { makeProxyFetch } from "../../extensions/telegram/src/proxy.js";
 import { fetchRemoteMedia } from "./fetch.js";
 
 const undiciFetch = vi.hoisted(() => vi.fn());
@@ -42,22 +43,13 @@ describe("fetchRemoteMedia telegram network policy", () => {
   type LookupFn = NonNullable<Parameters<typeof fetchRemoteMedia>[0]["lookupFn"]>;
 
   beforeEach(() => {
-    // Inject mock constructors into the CJS runtime-deps loader used by
-    // createPinnedDispatcher inside the SSRF fetch-guard so that dispatchers
-    // created during the guarded fetch also use the mocked undici classes.
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
-      Agent: AgentCtor,
-      EnvHttpProxyAgent: EnvHttpProxyAgentCtor,
-      ProxyAgent: ProxyAgentCtor,
-    };
+    undiciMocks.fetch.mockReset();
+    undiciMocks.agentCtor.mockClear();
+    undiciMocks.envHttpProxyAgentCtor.mockClear();
+    undiciMocks.proxyAgentCtor.mockClear();
   });
 
   afterEach(() => {
-    Reflect.deleteProperty(globalThis as object, TEST_UNDICI_RUNTIME_DEPS_KEY);
-    undiciFetch.mockReset();
-    AgentCtor.mockClear();
-    EnvHttpProxyAgentCtor.mockClear();
-    ProxyAgentCtor.mockClear();
     vi.unstubAllEnvs();
   });
 
@@ -111,7 +103,6 @@ describe("fetchRemoteMedia telegram network policy", () => {
   });
 
   it("keeps explicit proxy routing for file downloads", async () => {
-    const { makeProxyFetch } = await import("../../extensions/telegram/src/proxy.js");
     const lookupFn = vi.fn(async () => [
       { address: "149.154.167.220", family: 4 },
     ]) as unknown as LookupFn;

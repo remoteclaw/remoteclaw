@@ -23,10 +23,11 @@ import { ensureAgentWorkspace } from "../../agents/workspace.js";
 import { normalizeVerboseLevel } from "../../auto-reply/thinking.js";
 import type { CliDeps } from "../../cli/outbound-send-deps.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { resolveGatewayPort } from "../../config/paths.js";
-import { updateSessionStore } from "../../config/sessions.js";
-import type { AgentDefaultsConfig } from "../../config/types.js";
-import { resolveGatewayCredentialsFromConfig } from "../../gateway/credentials.js";
+import {
+  resolveSessionTranscriptPath,
+  setSessionRuntimeModel,
+  updateSessionStore,
+} from "../../config/sessions.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
 import { logWarn } from "../../logger.js";
 import { ChannelBridge } from "../../middleware/channel-bridge.js";
@@ -53,6 +54,7 @@ import {
   pickSummaryFromOutput,
   pickSummaryFromPayloads,
 } from "./helpers.js";
+import { buildCronAgentDefaultsConfig } from "./run-config.js";
 import { resolveCronAgentSessionKey } from "./session-key.js";
 import { resolveCronSession } from "./session.js";
 import { isLikelyInterimCronMessage } from "./subagent-followup.js";

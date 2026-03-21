@@ -3,7 +3,7 @@ import {
   listResolvedDirectoryEntriesFromSources,
   type DirectoryConfigParams,
 } from "remoteclaw/plugin-sdk/directory-runtime";
-import { mergeSlackAccountConfig, resolveDefaultSlackAccountId } from "./accounts.js";
+import { inspectSlackAccount, type InspectedSlackAccount } from "./account-inspect.js";
 import { parseSlackTarget } from "./targets.js";
 
 function resolveSlackDirectoryConfigAccount(

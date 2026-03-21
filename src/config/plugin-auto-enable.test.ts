@@ -1,7 +1,14 @@
-import { describe, expect, it } from "vitest";
-import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
-import { validateConfigObject } from "./config.js";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
+import { clearPluginDiscoveryCache } from "../plugins/discovery.js";
+import {
+  clearPluginManifestRegistryCache,
+  type PluginManifestRegistry,
+} from "../plugins/manifest-registry.js";
 import { applyPluginAutoEnable } from "./plugin-auto-enable.js";
+import { validateConfigObject } from "./validation.js";
 
 /** Helper to build a minimal PluginManifestRegistry for testing. */
 function makeRegistry(plugins: Array<{ id: string; channels: string[] }>): PluginManifestRegistry {

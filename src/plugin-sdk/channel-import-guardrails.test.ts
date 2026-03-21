@@ -7,6 +7,7 @@ const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ALLOWED_EXTENSION_PUBLIC_SEAMS = new Set([
   "action-runtime.runtime.js",
   "api.js",
+  "auth-presence.js",
   "index.js",
   "login-qr-api.js",
   "runtime-api.js",

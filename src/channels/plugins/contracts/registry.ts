@@ -30,6 +30,12 @@ import {
   requireBundledChannelPlugin,
 } from "../bundled.js";
 import type { ChannelPlugin } from "../types.js";
+import {
+  channelPluginSurfaceKeys,
+  type ChannelPluginSurface,
+  sessionBindingContractChannelIds,
+  type SessionBindingContractChannelId,
+} from "./manifest.js";
 
 type PluginContractEntry = {
   id: string;
@@ -79,16 +85,6 @@ type StatusContractEntry = {
     assertSummary?: (summary: Record<string, unknown>) => void;
   }>;
 };
-
-export type ChannelPluginSurface =
-  | "actions"
-  | "setup"
-  | "status"
-  | "outbound"
-  | "messaging"
-  | "threading"
-  | "directory"
-  | "gateway";
 
 type SurfaceContractEntry = {
   id: string;
@@ -634,9 +630,11 @@ const baseSessionBindingCfg = {
   session: { mainKey: "main", scope: "per-sender" },
 } satisfies RemoteClawConfig;
 
-export const sessionBindingContractRegistry: SessionBindingContractEntry[] = [
-  {
-    id: "discord",
+const sessionBindingContractEntries: Record<
+  SessionBindingContractChannelId,
+  Omit<SessionBindingContractEntry, "id">
+> = {
+  discord: {
     expectedCapabilities: {
       adapterAvailable: true,
       bindSupported: true,
@@ -698,8 +696,7 @@ export const sessionBindingContractRegistry: SessionBindingContractEntry[] = [
       });
     },
   },
-  {
-    id: "feishu",
+  feishu: {
     expectedCapabilities: {
       adapterAvailable: true,
       bindSupported: true,
@@ -753,8 +750,7 @@ export const sessionBindingContractRegistry: SessionBindingContractEntry[] = [
       });
     },
   },
-  {
-    id: "matrix",
+  matrix: {
     expectedCapabilities: {
       adapterAvailable: true,
       bindSupported: true,
@@ -804,8 +800,7 @@ export const sessionBindingContractRegistry: SessionBindingContractEntry[] = [
       });
     },
   },
-  {
-    id: "telegram",
+  telegram: {
     expectedCapabilities: {
       adapterAvailable: true,
       bindSupported: true,
@@ -866,4 +861,10 @@ export const sessionBindingContractRegistry: SessionBindingContractEntry[] = [
       });
     },
   },
-];
+};
+
+export const sessionBindingContractRegistry: SessionBindingContractEntry[] =
+  sessionBindingContractChannelIds.map((id) => ({
+    id,
+    ...sessionBindingContractEntries[id],
+  }));

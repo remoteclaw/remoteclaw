@@ -6,17 +6,7 @@ import {
   toDirectoryEntries,
   type DirectoryConfigParams,
 } from "remoteclaw/plugin-sdk/directory-runtime";
-import { inspectTelegramAccount } from "../api.js";
-import type { InspectedTelegramAccount } from "../api.js";
-
-async function inspectTelegramDirectoryAccount(
-  params: DirectoryConfigParams,
-): Promise<InspectedTelegramAccount | null> {
-  return inspectTelegramAccount({
-    cfg: params.cfg,
-    accountId: params.accountId,
-  });
-}
+import { inspectTelegramAccount, type InspectedTelegramAccount } from "./account-inspect.js";
 
 export async function listTelegramDirectoryPeersFromConfig(params: DirectoryConfigParams) {
   const account = await inspectTelegramDirectoryAccount(params);

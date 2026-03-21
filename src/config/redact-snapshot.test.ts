@@ -120,7 +120,7 @@ describe("redactConfigSnapshot", () => {
           serviceAccount: {
             type: "service_account",
             client_email: "bot@example.iam.gserviceaccount.com",
-            private_key: "-----BEGIN PRIVATE KEY-----secret-----END PRIVATE KEY-----",
+            private_key: "-----BEGIN PRIVATE KEY-----secret-----END PRIVATE KEY-----", // pragma: allowlist secret
           },
         },
       },
@@ -257,7 +257,7 @@ describe("redactConfigSnapshot", () => {
     const config = {
       gateway: {
         mode: "local",
-        auth: { password: "local" },
+        auth: { password: "local" }, // pragma: allowlist secret
       },
     };
     const snapshot = makeSnapshot(config, JSON.stringify(config));
@@ -297,7 +297,7 @@ describe("redactConfigSnapshot", () => {
 
   it("handles overlap fallback and SecretRef in the same snapshot", () => {
     const config = {
-      gateway: { mode: "default", auth: { password: "default" } },
+      gateway: { mode: "default", auth: { password: "default" } }, // pragma: allowlist secret
       models: {
         providers: {
           default: {
@@ -778,7 +778,7 @@ describe("redactConfigSnapshot", () => {
     };
     const snapshot = makeSnapshot({
       env: {
-        GROQ_API_KEY: "gsk-secret-123",
+        GROQ_API_KEY: "gsk-secret-123", // pragma: allowlist secret
         NODE_ENV: "production",
       },
     });
@@ -796,7 +796,7 @@ describe("redactConfigSnapshot", () => {
     const hints = mainSchemaHints;
     const snapshot = makeSnapshot({
       env: {
-        GROQ_API_KEY: "gsk-contract-123",
+        GROQ_API_KEY: "gsk-contract-123", // pragma: allowlist secret
         NODE_ENV: "production",
       },
 

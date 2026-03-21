@@ -180,7 +180,7 @@ describe("ensureGatewayStartupAuth", () => {
     await expectEphemeralGeneratedTokenWhenOverridden({
       gateway: {
         auth: {
-          password: "configured-password",
+          password: "configured-password", // pragma: allowlist secret
         },
       },
     });
@@ -235,7 +235,7 @@ describe("assertHooksTokenSeparateFromGatewayAuth", () => {
         auth: {
           mode: "password",
           modeSource: "config",
-          password: "pw",
+          password: "pw", // pragma: allowlist secret
           allowTailscale: false,
         },
       }),

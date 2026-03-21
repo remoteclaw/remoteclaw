@@ -141,7 +141,7 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
         defaultGroupPolicy,
       });
       const roomAllowlistConfigured =
-        account.config.rooms && Object.keys(account.config.rooms).length > 0;
+        (account.config.rooms && Object.keys(account.config.rooms).length > 0) ?? false;
       return collectOpenGroupPolicyRouteAllowlistWarnings({
         groupPolicy,
         routeAllowlistConfigured: roomAllowlistConfigured,

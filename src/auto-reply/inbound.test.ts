@@ -471,7 +471,7 @@ describe("resolveGroupRequireMention", () => {
   });
 
   it("respects LINE prefixed group keys in reply-stage requireMention resolution", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: {
         line: {
           groups: {
@@ -495,7 +495,7 @@ describe("resolveGroupRequireMention", () => {
   });
 
   it("preserves plugin-backed channel requireMention resolution", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: {
         bluebubbles: {
           groups: {

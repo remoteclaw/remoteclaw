@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { buildAccountScopedDmSecurityPolicy, formatPairingApproveHint } from "./helpers.js";
 
-function cfgWithChannel(channelKey: string, accounts?: Record<string, unknown>): OpenClawConfig {
+function cfgWithChannel(channelKey: string, accounts?: Record<string, unknown>): RemoteClawConfig {
   return {
     channels: {
       [channelKey]: accounts ? { accounts } : {},
     },
-  } as unknown as OpenClawConfig;
+  } as unknown as RemoteClawConfig;
 }
 
 describe("buildAccountScopedDmSecurityPolicy", () => {

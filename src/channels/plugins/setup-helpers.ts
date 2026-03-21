@@ -121,11 +121,11 @@ export function migrateBaseNameToDefaultAccount(params: {
 }
 
 export function applySetupAccountConfigPatch(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   channelKey: string;
   accountId: string;
   patch: Record<string, unknown>;
-}): OpenClawConfig {
+}): RemoteClawConfig {
   const accountId = normalizeAccountId(params.accountId);
   const channels = params.cfg.channels as Record<string, unknown> | undefined;
   const channelConfig = channels?.[params.channelKey];
@@ -146,7 +146,7 @@ export function applySetupAccountConfigPatch(params: {
           ...params.patch,
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
   }
 
   const accounts = base?.accounts ?? {};
@@ -167,7 +167,7 @@ export function applySetupAccountConfigPatch(params: {
         },
       },
     },
-  } as OpenClawConfig;
+  } as RemoteClawConfig;
 }
 
 type ChannelSectionRecord = Record<string, unknown> & {

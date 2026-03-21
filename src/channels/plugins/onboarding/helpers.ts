@@ -157,11 +157,11 @@ export function setAccountAllowFromForChannel(params: {
 }
 
 export function setTopLevelChannelAllowFrom(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   channel: string;
   allowFrom: string[];
   enabled?: boolean;
-}): OpenClawConfig {
+}): RemoteClawConfig {
   const channelConfig =
     (params.cfg.channels?.[params.channel] as Record<string, unknown> | undefined) ?? {};
   return {
@@ -178,11 +178,11 @@ export function setTopLevelChannelAllowFrom(params: {
 }
 
 export function setTopLevelChannelDmPolicyWithAllowFrom(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   channel: string;
   dmPolicy: DmPolicy;
-  getAllowFrom?: (cfg: OpenClawConfig) => Array<string | number> | undefined;
-}): OpenClawConfig {
+  getAllowFrom?: (cfg: RemoteClawConfig) => Array<string | number> | undefined;
+}): RemoteClawConfig {
   const channelConfig =
     (params.cfg.channels?.[params.channel] as Record<string, unknown> | undefined) ?? {};
   const existingAllowFrom =
@@ -205,11 +205,11 @@ export function setTopLevelChannelDmPolicyWithAllowFrom(params: {
 }
 
 export function setTopLevelChannelGroupPolicy(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   channel: string;
   groupPolicy: GroupPolicy;
   enabled?: boolean;
-}): OpenClawConfig {
+}): RemoteClawConfig {
   const channelConfig =
     (params.cfg.channels?.[params.channel] as Record<string, unknown> | undefined) ?? {};
   return {

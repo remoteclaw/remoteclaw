@@ -484,6 +484,7 @@ export {
 } from "../channels/plugins/config-helpers.js";
 export {
   applyAccountNameToChannelSection,
+  applySetupAccountConfigPatch,
   migrateBaseNameToDefaultAccount,
 } from "../channels/plugins/setup-helpers.js";
 export {
@@ -507,6 +508,7 @@ export type {
 } from "../channels/plugins/onboarding-types.js";
 export {
   addWildcardAllowFrom,
+  buildSingleChannelSecretPromptState,
   mergeAllowFromEntries,
   promptAccountId,
   resolveAccountIdForConfigure,

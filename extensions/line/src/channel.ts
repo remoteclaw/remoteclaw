@@ -1,7 +1,7 @@
 import {
   buildAccountScopedDmSecurityPolicy,
   collectOpenGroupPolicyRestrictSendersWarnings,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk";
 import {
   buildChannelConfigSchema,
   buildComputedAccountStatusSnapshot,

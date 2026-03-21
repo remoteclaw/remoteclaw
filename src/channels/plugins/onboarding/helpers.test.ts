@@ -860,7 +860,7 @@ describe("setChannelDmPolicyWithAllowFrom", () => {
 
 describe("setTopLevelChannelDmPolicyWithAllowFrom", () => {
   it("adds wildcard allowFrom for open policy", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: {
         zalo: {
           dmPolicy: "pairing",
@@ -879,7 +879,7 @@ describe("setTopLevelChannelDmPolicyWithAllowFrom", () => {
   });
 
   it("supports custom allowFrom lookup callback", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: {
         "nextcloud-talk": {
           dmPolicy: "pairing",

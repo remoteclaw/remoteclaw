@@ -1,4 +1,4 @@
-import { mapAllowlistResolutionInputs } from "openclaw/plugin-sdk";
+import { mapAllowlistResolutionInputs } from "remoteclaw/plugin-sdk";
 import { searchGraphUsers } from "./graph-users.js";
 import {
   listChannelsForTeam,

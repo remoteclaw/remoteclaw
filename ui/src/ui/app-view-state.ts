@@ -58,7 +58,6 @@ export type AppViewState = {
   chatThinkingStream: string | null;
   chatStreamSegments: Array<{ text: string; ts: number }>;
   chatStream: string | null;
-  chatStreamSegments: Array<{ text: string; ts: number }>;
   chatStreamStartedAt: number | null;
   chatRunId: string | null;
   compactionStatus: CompactionStatus | null;

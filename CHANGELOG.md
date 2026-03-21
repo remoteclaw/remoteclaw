@@ -247,6 +247,7 @@ Docs: https://docs.openclaw.ai
 - Agents/OpenAI WS max-token zero forwarding: treat `maxTokens: 0` as an explicit value in websocket `response.create` payloads (instead of dropping it as falsy), with regression coverage for zero-token forwarding. (#39148) Thanks @scoootscooob.
 - Agents/model fallback visibility: warn when configured model IDs cannot be resolved and fallback is applied, with log-safe sanitization of model text to prevent control-sequence injection in warning output. (#39215) Thanks @ademczuk.
 - Agents/strict OpenAI turn ordering: apply assistant-first transcript bootstrap sanitization to strict OpenAI-compatible providers (for example vLLM/Gemma via `openai-completions`) without adding Google-specific session markers, preventing assistant-first history rejections. (#39252) Thanks @scoootscooob.
+- Gateway/systemd service restart hardening: clear stale gateway listeners by explicit run-port before service bind, add restart stale-pid port-override support, tune systemd start/stop/exit handling, and disable detached child mode only in service-managed runtime so cgroup stop semantics clean up descendants reliably. (#38463) Thanks @spirittechie.
 
 ## 2026.3.2
 

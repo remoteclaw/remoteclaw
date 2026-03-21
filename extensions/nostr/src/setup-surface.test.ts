@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  createPluginSetupWizardConfigure,
+  createPluginSetupWizardAdapter,
   createTestWizardPrompter,
   runSetupWizardConfigure,
   type WizardPrompter,
@@ -8,7 +8,7 @@ import {
 import type { RemoteClawConfig } from "../runtime-api.js";
 import { nostrPlugin } from "./channel.js";
 
-const nostrConfigure = createPluginSetupWizardConfigure(nostrPlugin);
+const nostrConfigureAdapter = createPluginSetupWizardAdapter(nostrPlugin);
 
 describe("nostr setup wizard", () => {
   it("configures a private key and relay URLs", async () => {
@@ -25,7 +25,7 @@ describe("nostr setup wizard", () => {
     });
 
     const result = await runSetupWizardConfigure({
-      configure: nostrConfigure,
+      configure: nostrConfigureAdapter.configure,
       cfg: {} as RemoteClawConfig,
       prompter,
       options: {},

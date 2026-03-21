@@ -1,14 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
+import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import {
-  createPluginSetupWizardConfigure,
   createTestWizardPrompter,
   runSetupWizardConfigure,
   type WizardPrompter,
 } from "../../../test/helpers/extensions/setup-wizard.js";
 import { synologyChatPlugin } from "./channel.js";
+import { synologyChatSetupWizard } from "./setup-surface.js";
 
-const synologyChatConfigure = createPluginSetupWizardConfigure(synologyChatPlugin);
+const synologyChatConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
+  plugin: synologyChatPlugin,
+  wizard: synologyChatSetupWizard,
+});
 
 describe("synology-chat setup wizard", () => {
   it("configures token and incoming webhook for the default account", async () => {
@@ -28,7 +32,7 @@ describe("synology-chat setup wizard", () => {
     });
 
     const result = await runSetupWizardConfigure({
-      configure: synologyChatConfigure,
+      configure: synologyChatConfigureAdapter.configure,
       cfg: {} as RemoteClawConfig,
       prompter,
       options: {},
@@ -62,7 +66,7 @@ describe("synology-chat setup wizard", () => {
     });
 
     const result = await runSetupWizardConfigure({
-      configure: synologyChatConfigure,
+      configure: synologyChatConfigureAdapter.configure,
       cfg: {} as RemoteClawConfig,
       prompter,
       options: {},

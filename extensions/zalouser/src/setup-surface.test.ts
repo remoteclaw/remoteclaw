@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  createPluginSetupWizardConfigure,
+  createPluginSetupWizardAdapter,
   createTestWizardPrompter,
   runSetupWizardConfigure,
 } from "../../../test/helpers/extensions/setup-wizard.js";
@@ -8,7 +8,7 @@ import type { RemoteClawConfig } from "../runtime-api.js";
 import "./zalo-js.test-mocks.js";
 import { zalouserPlugin } from "./channel.js";
 
-const zalouserConfigure = createPluginSetupWizardConfigure(zalouserPlugin);
+const zalouserConfigureAdapter = createPluginSetupWizardAdapter(zalouserPlugin);
 
 async function runSetup(params: {
   cfg?: RemoteClawConfig;
@@ -17,7 +17,7 @@ async function runSetup(params: {
   forceAllowFrom?: boolean;
 }) {
   return await runSetupWizardConfigure({
-    configure: zalouserConfigure,
+    configure: zalouserConfigureAdapter.configure,
     cfg: params.cfg as RemoteClawConfig | undefined,
     prompter: params.prompter,
     options: params.options,

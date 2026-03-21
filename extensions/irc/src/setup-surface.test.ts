@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import {
   createPluginSetupWizardAdapter,
   createTestWizardPrompter,
-  promptSetupWizardAllowFrom,
   runSetupWizardConfigure,
   type WizardPrompter,
 } from "../../../test/helpers/extensions/setup-wizard.js";
@@ -93,8 +92,7 @@ describe("irc setup wizard", () => {
       },
     };
 
-    const updated = (await promptSetupWizardAllowFrom({
-      promptAllowFrom,
+    const updated = (await promptAllowFrom?.({
       cfg,
       prompter,
       accountId: "work",

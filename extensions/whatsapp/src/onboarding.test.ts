@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
 import type { RuntimeEnv } from "../../../src/runtime.js";
 import {
-  createPluginSetupWizardConfigure,
   createQueuedWizardPrompter,
   runSetupWizardConfigure,
 } from "../../../test/helpers/extensions/setup-wizard.js";
@@ -43,19 +43,22 @@ function createRuntime(): RuntimeEnv {
   } as unknown as RuntimeEnv;
 }
 
-const whatsappConfigure = createPluginSetupWizardConfigure(whatsappPlugin);
+const whatsappConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
+  plugin: whatsappPlugin,
+  wizard: whatsappPlugin.setupWizard!,
+});
 
 async function runConfigureWithHarness(params: {
   harness: ReturnType<typeof createQueuedWizardPrompter>;
-  cfg?: Parameters<typeof whatsappConfigure>[0]["cfg"];
+  cfg?: Parameters<typeof whatsappConfigureAdapter.configure>[0]["cfg"];
   runtime?: RuntimeEnv;
-  options?: Parameters<typeof whatsappConfigure>[0]["options"];
-  accountOverrides?: Parameters<typeof whatsappConfigure>[0]["accountOverrides"];
+  options?: Parameters<typeof whatsappConfigureAdapter.configure>[0]["options"];
+  accountOverrides?: Parameters<typeof whatsappConfigureAdapter.configure>[0]["accountOverrides"];
   shouldPromptAccountIds?: boolean;
   forceAllowFrom?: boolean;
 }) {
   return await runSetupWizardConfigure({
-    configure: whatsappConfigure,
+    configure: whatsappConfigureAdapter.configure,
     cfg: params.cfg ?? {},
     runtime: params.runtime ?? createRuntime(),
     prompter: params.harness.prompter,

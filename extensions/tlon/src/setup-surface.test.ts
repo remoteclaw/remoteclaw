@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  createPluginSetupWizardConfigure,
+  createPluginSetupWizardAdapter,
   createTestWizardPrompter,
   runSetupWizardConfigure,
   type WizardPrompter,
@@ -8,7 +8,7 @@ import {
 import type { RemoteClawConfig } from "../api.js";
 import { tlonPlugin } from "./channel.js";
 
-const tlonConfigure = createPluginSetupWizardConfigure(tlonPlugin);
+const tlonConfigureAdapter = createPluginSetupWizardAdapter(tlonPlugin);
 
 describe("tlon setup wizard", () => {
   it("configures ship, auth, and discovery settings", async () => {
@@ -46,7 +46,7 @@ describe("tlon setup wizard", () => {
     });
 
     const result = await runSetupWizardConfigure({
-      configure: tlonConfigure,
+      configure: tlonConfigureAdapter.configure,
       cfg: {} as RemoteClawConfig,
       prompter,
       options: {},

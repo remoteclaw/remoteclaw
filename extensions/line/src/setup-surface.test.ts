@@ -1,14 +1,37 @@
 import { describe, expect, it, vi } from "vitest";
+import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import {
-  createPluginSetupWizardConfigure,
+  listLineAccountIds,
+  resolveDefaultLineAccountId,
+  resolveLineAccount,
+} from "../../../src/line/accounts.js";
+import {
   createTestWizardPrompter,
   runSetupWizardConfigure,
   type WizardPrompter,
 } from "../../../test/helpers/extensions/setup-wizard.js";
 import type { RemoteClawConfig } from "../api.js";
-import { linePlugin } from "./channel.js";
+import { lineSetupAdapter, lineSetupWizard } from "./setup-surface.js";
 
-const lineConfigure = createPluginSetupWizardConfigure(linePlugin);
+const lineConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
+  plugin: {
+    id: "line",
+    meta: { label: "LINE" },
+    config: {
+      listAccountIds: listLineAccountIds,
+      defaultAccountId: resolveDefaultLineAccountId,
+      resolveAllowFrom: ({
+        cfg,
+        accountId,
+      }: {
+        cfg: RemoteClawConfig;
+        accountId?: string | null;
+      }) => resolveLineAccount({ cfg, accountId: accountId ?? undefined }).config.allowFrom,
+    },
+    setup: lineSetupAdapter,
+  } as Parameters<typeof buildChannelSetupWizardAdapterFromSetupWizard>[0]["plugin"],
+  wizard: lineSetupWizard,
+});
 
 describe("line setup wizard", () => {
   it("configures token and secret for the default account", async () => {
@@ -25,7 +48,7 @@ describe("line setup wizard", () => {
     });
 
     const result = await runSetupWizardConfigure({
-      configure: lineConfigure,
+      configure: lineConfigureAdapter.configure,
       cfg: {} as RemoteClawConfig,
       prompter,
       options: {},

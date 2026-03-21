@@ -90,6 +90,7 @@ export type ChannelOutboundContext = {
   to: string;
   text: string;
   mediaUrl?: string;
+  audioAsVoice?: boolean;
   mediaLocalRoots?: readonly string[];
   gifPlayback?: boolean;
   replyToId?: string | null;

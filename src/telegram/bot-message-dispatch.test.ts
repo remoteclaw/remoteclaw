@@ -1,7 +1,8 @@
 import path from "node:path";
 import type { Bot } from "grammy";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { STATE_DIR } from "../config/paths.js";
+import { STATE_DIR } from "../../../src/config/paths.js";
+import type { TelegramBotDeps } from "./bot-deps.js";
 import {
   createSequencedTestDraftStream,
   createTestDraftStream,
@@ -10,7 +11,33 @@ import {
 const createTelegramDraftStream = vi.hoisted(() => vi.fn());
 const dispatchReplyWithBufferedBlockDispatcher = vi.hoisted(() => vi.fn());
 const deliverReplies = vi.hoisted(() => vi.fn());
+const emitInternalMessageSentHook = vi.hoisted(() => vi.fn());
+const createForumTopicTelegram = vi.hoisted(() => vi.fn());
+const deleteMessageTelegram = vi.hoisted(() => vi.fn());
+const editForumTopicTelegram = vi.hoisted(() => vi.fn());
 const editMessageTelegram = vi.hoisted(() => vi.fn());
+const reactMessageTelegram = vi.hoisted(() => vi.fn());
+const sendMessageTelegram = vi.hoisted(() => vi.fn());
+const sendPollTelegram = vi.hoisted(() => vi.fn());
+const sendStickerTelegram = vi.hoisted(() => vi.fn());
+const loadConfig = vi.hoisted(() => vi.fn(() => ({})));
+const readChannelAllowFromStore = vi.hoisted(() => vi.fn(async () => []));
+const upsertChannelPairingRequest = vi.hoisted(() =>
+  vi.fn(async () => ({
+    code: "PAIRCODE",
+    created: true,
+  })),
+);
+const enqueueSystemEvent = vi.hoisted(() => vi.fn());
+const buildModelsProviderData = vi.hoisted(() =>
+  vi.fn(async () => ({
+    byProvider: new Map<string, Set<string>>(),
+    providers: [],
+    resolvedDefault: { provider: "openai", model: "gpt-test" },
+  })),
+);
+const listSkillCommandsForAgents = vi.hoisted(() => vi.fn(() => []));
+const wasSentByBot = vi.hoisted(() => vi.fn(() => false));
 const loadSessionStore = vi.hoisted(() => vi.fn());
 const resolveStorePath = vi.hoisted(() => vi.fn(() => "/tmp/sessions.json"));
 const generateTopicLabel = vi.hoisted(() => vi.fn());
@@ -19,12 +46,8 @@ vi.mock("./draft-stream.js", () => ({
   createTelegramDraftStream,
 }));
 
-vi.mock("../auto-reply/reply/provider-dispatcher.js", () => ({
-  dispatchReplyWithBufferedBlockDispatcher,
-}));
-
-vi.mock("../auto-reply/reply/auto-topic-label.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../auto-reply/reply/auto-topic-label.js")>();
+vi.mock("remoteclaw/plugin-sdk/reply-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/reply-runtime")>();
   return {
     ...actual,
     generateTopicLabel,
@@ -33,16 +56,25 @@ vi.mock("../auto-reply/reply/auto-topic-label.js", async (importOriginal) => {
 
 vi.mock("./bot/delivery.js", () => ({
   deliverReplies,
+  emitInternalMessageSentHook,
 }));
 
 vi.mock("./send.js", () => ({
+  createForumTopicTelegram,
+  deleteMessageTelegram,
+  editForumTopicTelegram,
   editMessageTelegram,
+  reactMessageTelegram,
+  sendMessageTelegram,
+  sendPollTelegram,
+  sendStickerTelegram,
 }));
 
-vi.mock("../config/sessions.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/sessions.js")>();
+vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
   return {
     ...actual,
+    loadConfig,
     loadSessionStore,
     resolveStorePath,
   };
@@ -50,10 +82,30 @@ vi.mock("../config/sessions.js", async (importOriginal) => {
 
 vi.mock("./sticker-cache.js", () => ({
   cacheSticker: vi.fn(),
+  getCachedSticker: () => null,
+  getCacheStats: () => ({ count: 0 }),
+  searchStickers: () => [],
+  getAllCachedStickers: () => [],
   describeStickerImage: vi.fn(),
 }));
 
 import { dispatchTelegramMessage } from "./bot-message-dispatch.js";
+
+const telegramDepsForTest: TelegramBotDeps = {
+  loadConfig: loadConfig as TelegramBotDeps["loadConfig"],
+  resolveStorePath: resolveStorePath as TelegramBotDeps["resolveStorePath"],
+  readChannelAllowFromStore:
+    readChannelAllowFromStore as TelegramBotDeps["readChannelAllowFromStore"],
+  upsertChannelPairingRequest:
+    upsertChannelPairingRequest as TelegramBotDeps["upsertChannelPairingRequest"],
+  enqueueSystemEvent: enqueueSystemEvent as TelegramBotDeps["enqueueSystemEvent"],
+  dispatchReplyWithBufferedBlockDispatcher:
+    dispatchReplyWithBufferedBlockDispatcher as TelegramBotDeps["dispatchReplyWithBufferedBlockDispatcher"],
+  buildModelsProviderData: buildModelsProviderData as TelegramBotDeps["buildModelsProviderData"],
+  listSkillCommandsForAgents:
+    listSkillCommandsForAgents as TelegramBotDeps["listSkillCommandsForAgents"],
+  wasSentByBot: wasSentByBot as TelegramBotDeps["wasSentByBot"],
+};
 
 describe("dispatchTelegramMessage draft streaming", () => {
   type TelegramMessageContext = Parameters<typeof dispatchTelegramMessage>[0]["context"];
@@ -62,10 +114,30 @@ describe("dispatchTelegramMessage draft streaming", () => {
     createTelegramDraftStream.mockClear();
     dispatchReplyWithBufferedBlockDispatcher.mockClear();
     deliverReplies.mockClear();
+    emitInternalMessageSentHook.mockClear();
+    createForumTopicTelegram.mockClear();
+    deleteMessageTelegram.mockClear();
+    editForumTopicTelegram.mockClear();
     editMessageTelegram.mockClear();
+    reactMessageTelegram.mockClear();
+    sendMessageTelegram.mockClear();
+    sendPollTelegram.mockClear();
+    sendStickerTelegram.mockClear();
+    loadConfig.mockClear();
+    readChannelAllowFromStore.mockClear();
+    upsertChannelPairingRequest.mockClear();
+    enqueueSystemEvent.mockClear();
+    buildModelsProviderData.mockClear();
+    listSkillCommandsForAgents.mockClear();
+    wasSentByBot.mockClear();
     loadSessionStore.mockClear();
     resolveStorePath.mockClear();
     generateTopicLabel.mockClear();
+    loadConfig.mockReturnValue({});
+    dispatchReplyWithBufferedBlockDispatcher.mockResolvedValue({
+      queuedFinal: false,
+      counts: { block: 0, final: 0, tool: 0 },
+    });
     resolveStorePath.mockReturnValue("/tmp/sessions.json");
     loadSessionStore.mockReturnValue({});
     generateTopicLabel.mockResolvedValue("Topic label");
@@ -153,20 +225,23 @@ describe("dispatchTelegramMessage draft streaming", () => {
 
   async function dispatchWithContext(params: {
     context: TelegramMessageContext;
+    cfg?: Parameters<typeof dispatchTelegramMessage>[0]["cfg"];
     telegramCfg?: Parameters<typeof dispatchTelegramMessage>[0]["telegramCfg"];
     streamMode?: Parameters<typeof dispatchTelegramMessage>[0]["streamMode"];
+    telegramDeps?: TelegramBotDeps;
     bot?: Bot;
   }) {
     const bot = params.bot ?? createBot();
     await dispatchTelegramMessage({
       context: params.context,
       bot,
-      cfg: {},
+      cfg: params.cfg ?? {},
       runtime: createRuntime(),
       replyToMode: "first",
       streamMode: params.streamMode ?? "partial",
       textLimit: 4096,
       telegramCfg: params.telegramCfg ?? {},
+      telegramDeps: params.telegramDeps ?? telegramDepsForTest,
       opts: { token: "token" },
     });
   }
@@ -222,6 +297,48 @@ describe("dispatchTelegramMessage draft streaming", () => {
     );
     expect(editMessageTelegram).not.toHaveBeenCalled();
     expect(draftStream.clear).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not inject approval buttons in local dispatch once the monitor owns approvals", async () => {
+    dispatchReplyWithBufferedBlockDispatcher.mockImplementation(async ({ dispatcherOptions }) => {
+      await dispatcherOptions.deliver(
+        {
+          text: "Mode: foreground\nRun: /approve 117ba06d allow-once (or allow-always / deny).",
+        },
+        { kind: "final" },
+      );
+      return { queuedFinal: true };
+    });
+    deliverReplies.mockResolvedValue({ delivered: true });
+
+    await dispatchWithContext({
+      context: createContext(),
+      streamMode: "off",
+      cfg: {
+        channels: {
+          telegram: {
+            execApprovals: {
+              enabled: true,
+              approvers: ["123"],
+              target: "dm",
+            },
+          },
+        },
+      },
+    });
+
+    expect(deliverReplies).toHaveBeenCalledWith(
+      expect.objectContaining({
+        replies: [
+          expect.objectContaining({
+            text: "Mode: foreground\nRun: /approve 117ba06d allow-once (or allow-always / deny).",
+          }),
+        ],
+      }),
+    );
+    const deliveredPayload = (deliverReplies.mock.calls[0]?.[0] as { replies?: Array<unknown> })
+      ?.replies?.[0] as { channelData?: unknown } | undefined;
+    expect(deliveredPayload?.channelData).toBeUndefined();
   });
 
   it("uses 30-char preview debounce for legacy block stream mode", async () => {
@@ -418,6 +535,38 @@ describe("dispatchTelegramMessage draft streaming", () => {
     );
     expect(draftStream.clear).not.toHaveBeenCalled();
     expect(draftStream.stop).toHaveBeenCalled();
+  });
+
+  it("emits only the internal message:sent hook when a final answer stays in preview", async () => {
+    const draftStream = createDraftStream(999);
+    createTelegramDraftStream.mockReturnValue(draftStream);
+    dispatchReplyWithBufferedBlockDispatcher.mockImplementation(async ({ dispatcherOptions }) => {
+      await dispatcherOptions.deliver({ text: "Primary result" }, { kind: "final" });
+      return { queuedFinal: true };
+    });
+
+    await dispatchWithContext({
+      context: createContext({
+        ctxPayload: { SessionKey: "s1" } as unknown as TelegramMessageContext["ctxPayload"],
+      }),
+    });
+
+    expect(deliverReplies).not.toHaveBeenCalled();
+    expect(editMessageTelegram).toHaveBeenCalledWith(
+      123,
+      999,
+      "Primary result",
+      expect.any(Object),
+    );
+    expect(emitInternalMessageSentHook).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionKeyForInternalHooks: "s1",
+        chatId: "123",
+        content: "Primary result",
+        success: true,
+        messageId: 999,
+      }),
+    );
   });
 
   it("keeps streamed preview visible when final text regresses after a tool warning", async () => {
@@ -2134,6 +2283,122 @@ describe("dispatchTelegramMessage draft streaming", () => {
     expect(draftB.clear).toHaveBeenCalledTimes(1);
   });
 
+  it("swallows post-connect network timeout on preview edit to prevent duplicate messages", async () => {
+    const draftStream = createDraftStream(999);
+    createTelegramDraftStream.mockReturnValue(draftStream);
+    dispatchReplyWithBufferedBlockDispatcher.mockImplementation(
+      async ({ dispatcherOptions, replyOptions }) => {
+        await replyOptions?.onPartialReply?.({ text: "Streaming..." });
+        await dispatcherOptions.deliver({ text: "Final answer" }, { kind: "final" });
+        return { queuedFinal: true };
+      },
+    );
+    deliverReplies.mockResolvedValue({ delivered: true });
+    // Simulate a post-connect timeout: editMessageTelegram throws a network
+    // error even though Telegram's server already processed the edit.
+    editMessageTelegram.mockRejectedValue(new Error("timeout: request timed out after 30000ms"));
+
+    await dispatchWithContext({ context: createContext() });
+
+    expect(editMessageTelegram).toHaveBeenCalledTimes(1);
+    const deliverCalls = deliverReplies.mock.calls;
+    const finalTextSentViaDeliverReplies = deliverCalls.some((call: unknown[]) =>
+      (call[0] as { replies?: Array<{ text?: string }> })?.replies?.some(
+        (r: { text?: string }) => r.text === "Final answer",
+      ),
+    );
+    expect(finalTextSentViaDeliverReplies).toBe(false);
+  });
+
+  it("falls back to sendPayload on pre-connect error during final edit", async () => {
+    const draftStream = createDraftStream(999);
+    createTelegramDraftStream.mockReturnValue(draftStream);
+    dispatchReplyWithBufferedBlockDispatcher.mockImplementation(
+      async ({ dispatcherOptions, replyOptions }) => {
+        await replyOptions?.onPartialReply?.({ text: "Streaming..." });
+        await dispatcherOptions.deliver({ text: "Final answer" }, { kind: "final" });
+        return { queuedFinal: true };
+      },
+    );
+    deliverReplies.mockResolvedValue({ delivered: true });
+    const preConnectErr = new Error("connect ECONNREFUSED 149.154.167.220:443");
+    (preConnectErr as NodeJS.ErrnoException).code = "ECONNREFUSED";
+    editMessageTelegram.mockRejectedValue(preConnectErr);
+
+    await dispatchWithContext({ context: createContext() });
+
+    expect(editMessageTelegram).toHaveBeenCalledTimes(1);
+    const deliverCalls = deliverReplies.mock.calls;
+    const finalTextSentViaDeliverReplies = deliverCalls.some((call: unknown[]) =>
+      (call[0] as { replies?: Array<{ text?: string }> })?.replies?.some(
+        (r: { text?: string }) => r.text === "Final answer",
+      ),
+    );
+    expect(finalTextSentViaDeliverReplies).toBe(true);
+  });
+
+  it("falls back when Telegram reports the current final edit target missing", async () => {
+    const draftStream = createDraftStream(999);
+    createTelegramDraftStream.mockReturnValue(draftStream);
+    dispatchReplyWithBufferedBlockDispatcher.mockImplementation(
+      async ({ dispatcherOptions, replyOptions }) => {
+        await replyOptions?.onPartialReply?.({ text: "Streaming..." });
+        await dispatcherOptions.deliver({ text: "Final answer" }, { kind: "final" });
+        return { queuedFinal: true };
+      },
+    );
+    deliverReplies.mockResolvedValue({ delivered: true });
+    editMessageTelegram.mockRejectedValue(new Error("400: Bad Request: message to edit not found"));
+
+    await dispatchWithContext({ context: createContext() });
+
+    expect(editMessageTelegram).toHaveBeenCalledTimes(1);
+    const deliverCalls = deliverReplies.mock.calls;
+    const finalTextSentViaDeliverReplies = deliverCalls.some((call: unknown[]) =>
+      (call[0] as { replies?: Array<{ text?: string }> })?.replies?.some(
+        (r: { text?: string }) => r.text === "Final answer",
+      ),
+    );
+    expect(finalTextSentViaDeliverReplies).toBe(true);
+  });
+
+  it("shows compacting reaction during auto-compaction and resumes thinking", async () => {
+    const statusReactionController = {
+      setThinking: vi.fn(async () => {}),
+      setCompacting: vi.fn(async () => {}),
+      setTool: vi.fn(async () => {}),
+      setDone: vi.fn(async () => {}),
+      setError: vi.fn(async () => {}),
+      setQueued: vi.fn(async () => {}),
+      cancelPending: vi.fn(() => {}),
+      clear: vi.fn(async () => {}),
+      restoreInitial: vi.fn(async () => {}),
+    };
+    dispatchReplyWithBufferedBlockDispatcher.mockImplementation(async ({ replyOptions }) => {
+      await replyOptions?.onCompactionStart?.();
+      await replyOptions?.onCompactionEnd?.();
+      return { queuedFinal: true };
+    });
+    deliverReplies.mockResolvedValue({ delivered: true });
+
+    await dispatchWithContext({
+      context: createContext({
+        statusReactionController: statusReactionController as never,
+      }),
+      streamMode: "off",
+    });
+
+    expect(statusReactionController.setCompacting).toHaveBeenCalledTimes(1);
+    expect(statusReactionController.cancelPending).toHaveBeenCalledTimes(1);
+    expect(statusReactionController.setThinking).toHaveBeenCalledTimes(2);
+    expect(statusReactionController.setCompacting.mock.invocationCallOrder[0]).toBeLessThan(
+      statusReactionController.cancelPending.mock.invocationCallOrder[0],
+    );
+    expect(statusReactionController.cancelPending.mock.invocationCallOrder[0]).toBeLessThan(
+      statusReactionController.setThinking.mock.invocationCallOrder[1],
+    );
+  });
+
   it("uses resolved DM config for auto-topic-label overrides", async () => {
     dispatchReplyWithBufferedBlockDispatcher.mockResolvedValue({ queuedFinal: true });
     loadSessionStore.mockReturnValue({ s1: {} });
@@ -2151,10 +2416,19 @@ describe("dispatchTelegramMessage draft streaming", () => {
         } as TelegramMessageContext["groupConfig"],
       }),
       telegramCfg: { autoTopicLabel: true },
+      cfg: {
+        channels: {
+          telegram: {
+            direct: {
+              "123": { autoTopicLabel: true },
+            },
+          },
+        },
+      },
     });
 
     expect(generateTopicLabel).not.toHaveBeenCalled();
-    const editFn = bot.api.editForumTopic.bind(bot.api);
-    expect(editFn).not.toHaveBeenCalled();
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(bot.api.editForumTopic).not.toHaveBeenCalled();
   });
 });

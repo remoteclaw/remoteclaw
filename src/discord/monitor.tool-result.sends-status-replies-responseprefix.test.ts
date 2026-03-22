@@ -32,6 +32,9 @@ const BASE_CFG: Config = {
       workspace: "/tmp/remoteclaw",
     },
   },
+  messages: {
+    inbound: { debounceMs: 0 },
+  },
   session: { store: "/tmp/remoteclaw-sessions.json" },
 };
 

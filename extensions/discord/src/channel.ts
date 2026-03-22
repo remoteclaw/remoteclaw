@@ -619,9 +619,32 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount, DiscordProbe> 
         },
       },
     },
-    security: {
-      resolveDmPolicy: resolveDiscordDmPolicy,
-      collectWarnings: collectDiscordSecurityWarnings,
+    buildAccountSnapshot: ({ account, runtime, probe, audit }) => {
+      const configured =
+        resolveConfiguredFromCredentialStatuses(account) ?? Boolean(account.token?.trim());
+      const app = runtime?.application ?? (probe as { application?: unknown })?.application;
+      const bot = runtime?.bot ?? (probe as { bot?: unknown })?.bot;
+      return buildComputedAccountStatusSnapshot(
+        {
+          accountId: account.accountId,
+          name: account.name,
+          enabled: account.enabled,
+          configured,
+          runtime,
+          probe,
+        },
+        {
+          ...projectCredentialSnapshotFields(account),
+          connected: runtime?.connected ?? false,
+          reconnectAttempts: runtime?.reconnectAttempts,
+          lastConnectedAt: runtime?.lastConnectedAt ?? null,
+          lastDisconnect: runtime?.lastDisconnect ?? null,
+          lastEventAt: runtime?.lastEventAt ?? null,
+          application: app ?? undefined,
+          bot: bot ?? undefined,
+          audit,
+        },
+      );
     },
     threading: {
       topLevelReplyToMode: "discord",

@@ -656,20 +656,30 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount, SlackProbe> = crea
       return await getSlackRuntime().channel.slack.probeSlack(token, timeoutMs);
     },
     buildAccountSnapshot: ({ account, runtime, probe }) => {
-      const configured = isSlackAccountConfigured(account);
-      const base = buildComputedAccountStatusSnapshot({
-        accountId: account.accountId,
-        name: account.name,
-        enabled: account.enabled,
-        configured,
-        runtime,
-        probe,
-      });
-      return {
-        ...base,
-        botTokenSource: account.botTokenSource,
-        appTokenSource: account.appTokenSource,
-      };
+      const mode = account.config.mode ?? "socket";
+      const configured =
+        (mode === "http"
+          ? resolveConfiguredFromRequiredCredentialStatuses(account, [
+              "botTokenStatus",
+              "signingSecretStatus",
+            ])
+          : resolveConfiguredFromRequiredCredentialStatuses(account, [
+              "botTokenStatus",
+              "appTokenStatus",
+            ])) ?? isSlackPluginAccountConfigured(account);
+      return buildComputedAccountStatusSnapshot(
+        {
+          accountId: account.accountId,
+          name: account.name,
+          enabled: account.enabled,
+          configured,
+          runtime,
+          probe,
+        },
+        {
+          ...projectCredentialSnapshotFields(account),
+        },
+      );
     },
   },
   gateway: {

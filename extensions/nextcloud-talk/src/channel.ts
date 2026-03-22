@@ -203,15 +203,54 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
             mode: "webhook",
           },
         }),
-      }),
-      gateway: {
-        startAccount: async (ctx) => {
-          const account = ctx.account;
-          if (!account.secret || !account.baseUrl) {
-            throw new Error(
-              `Nextcloud Talk not configured for account "${account.accountId}" (missing secret or baseUrl)`,
-            );
-          }
+    }),
+  },
+  status: {
+    defaultRuntime: {
+      accountId: DEFAULT_ACCOUNT_ID,
+      running: false,
+      lastStartAt: null,
+      lastStopAt: null,
+      lastError: null,
+    },
+    buildChannelSummary: ({ snapshot }) => {
+      const base = buildBaseChannelStatusSummary(snapshot);
+      return {
+        configured: base.configured,
+        secretSource: snapshot.secretSource ?? "none",
+        running: base.running,
+        mode: "webhook",
+        lastStartAt: base.lastStartAt,
+        lastStopAt: base.lastStopAt,
+        lastError: base.lastError,
+      };
+    },
+    buildAccountSnapshot: ({ account, runtime }) => {
+      const configured = Boolean(account.secret?.trim() && account.baseUrl?.trim());
+      return buildRuntimeAccountStatusSnapshot(
+        { runtime },
+        {
+          accountId: account.accountId,
+          name: account.name,
+          enabled: account.enabled,
+          configured,
+          secretSource: account.secretSource,
+          baseUrl: account.baseUrl ? "[set]" : "[missing]",
+          mode: "webhook",
+          lastInboundAt: runtime?.lastInboundAt ?? null,
+          lastOutboundAt: runtime?.lastOutboundAt ?? null,
+        },
+      );
+    },
+  },
+  gateway: {
+    startAccount: async (ctx) => {
+      const account = ctx.account;
+      if (!account.secret || !account.baseUrl) {
+        throw new Error(
+          `Nextcloud Talk not configured for account "${account.accountId}" (missing secret or baseUrl)`,
+        );
+      }
 
       ctx.log?.info(`[${account.accountId}] starting Nextcloud Talk webhook server`);
 

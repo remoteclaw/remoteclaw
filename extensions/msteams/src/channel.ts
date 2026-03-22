@@ -435,14 +435,52 @@ export const msteamsPlugin: ChannelPlugin<ResolvedMSTeamsAccount> = {
       buildProbeChannelStatusSummary(snapshot, {
         port: snapshot.port ?? null,
       }),
-    probeAccount: async ({ cfg }) => await probeMSTeams(cfg.channels?.msteams),
-    buildAccountSnapshot: ({ account, runtime, probe }) => ({
-      accountId: account.accountId,
-      enabled: account.enabled,
-      configured: account.configured,
-      ...buildRuntimeAccountStatusSnapshot({ runtime, probe }),
-      port: runtime?.port ?? null,
-    }),
+    probeAccount: async ({ cfg }) =>
+      await (await loadMSTeamsChannelRuntime()).probeMSTeams(cfg.channels?.msteams),
+    formatCapabilitiesProbe: ({ probe }) => {
+      const teamsProbe = probe as ProbeMSTeamsResult | undefined;
+      const lines: Array<{ text: string; tone?: "error" }> = [];
+      const appId = typeof teamsProbe?.appId === "string" ? teamsProbe.appId.trim() : "";
+      if (appId) {
+        lines.push({ text: `App: ${appId}` });
+      }
+      const graph = teamsProbe?.graph;
+      if (graph) {
+        const roles = Array.isArray(graph.roles)
+          ? graph.roles.map((role) => String(role).trim()).filter(Boolean)
+          : [];
+        const scopes = Array.isArray(graph.scopes)
+          ? graph.scopes.map((scope) => String(scope).trim()).filter(Boolean)
+          : [];
+        const formatPermission = (permission: string) => {
+          const hint = TEAMS_GRAPH_PERMISSION_HINTS[permission];
+          return hint ? `${permission} (${hint})` : permission;
+        };
+        if (graph.ok === false) {
+          lines.push({ text: `Graph: ${graph.error ?? "failed"}`, tone: "error" });
+        } else if (roles.length > 0 || scopes.length > 0) {
+          if (roles.length > 0) {
+            lines.push({ text: `Graph roles: ${roles.map(formatPermission).join(", ")}` });
+          }
+          if (scopes.length > 0) {
+            lines.push({ text: `Graph scopes: ${scopes.map(formatPermission).join(", ")}` });
+          }
+        } else if (graph.ok === true) {
+          lines.push({ text: "Graph: ok" });
+        }
+      }
+      return lines;
+    },
+    buildAccountSnapshot: ({ account, runtime, probe }) =>
+      buildRuntimeAccountStatusSnapshot(
+        { runtime, probe },
+        {
+          accountId: account.accountId,
+          enabled: account.enabled,
+          configured: account.configured,
+          port: runtime?.port ?? null,
+        },
+      ),
   },
   gateway: {
     startAccount: async (ctx) => {

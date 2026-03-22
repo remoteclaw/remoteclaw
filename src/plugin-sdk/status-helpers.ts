@@ -9,6 +9,9 @@ type RuntimeLifecycleSnapshot = {
   lastOutboundAt?: number | null;
 };
 
+type StatusSnapshotExtra = Record<string, unknown>;
+
+/** Create the baseline runtime snapshot shape used by channel/account status stores. */
 export function createDefaultChannelRuntimeState<T extends Record<string, unknown>>(
   accountId: string,
   extra?: T,
@@ -65,16 +68,20 @@ export function buildProbeChannelStatusSummary<TExtra extends Record<string, unk
   };
 }
 
-export function buildBaseAccountStatusSnapshot(params: {
-  account: {
-    accountId: string;
-    name?: string;
-    enabled?: boolean;
-    configured?: boolean;
-  };
-  runtime?: RuntimeLifecycleSnapshot | null;
-  probe?: unknown;
-}) {
+/** Build the standard per-account status payload from config metadata plus runtime state. */
+export function buildBaseAccountStatusSnapshot<TExtra extends StatusSnapshotExtra>(
+  params: {
+    account: {
+      accountId: string;
+      name?: string;
+      enabled?: boolean;
+      configured?: boolean;
+    };
+    runtime?: RuntimeLifecycleSnapshot | null;
+    probe?: unknown;
+  },
+  extra?: TExtra,
+) {
   const { account, runtime, probe } = params;
   return {
     accountId: account.accountId,
@@ -84,17 +91,22 @@ export function buildBaseAccountStatusSnapshot(params: {
     ...buildRuntimeAccountStatusSnapshot({ runtime, probe }),
     lastInboundAt: runtime?.lastInboundAt ?? null,
     lastOutboundAt: runtime?.lastOutboundAt ?? null,
+    ...(extra ?? ({} as TExtra)),
   };
 }
 
-export function buildComputedAccountStatusSnapshot(params: {
-  accountId: string;
-  name?: string;
-  enabled?: boolean;
-  configured?: boolean;
-  runtime?: RuntimeLifecycleSnapshot | null;
-  probe?: unknown;
-}) {
+/** Convenience wrapper when the caller already has flattened account fields instead of an account object. */
+export function buildComputedAccountStatusSnapshot<TExtra extends StatusSnapshotExtra>(
+  params: {
+    accountId: string;
+    name?: string;
+    enabled?: boolean;
+    configured?: boolean;
+    runtime?: RuntimeLifecycleSnapshot | null;
+    probe?: unknown;
+  },
+  extra?: TExtra,
+) {
   const { accountId, name, enabled, configured, runtime, probe } = params;
   return buildBaseAccountStatusSnapshot(
     {
@@ -111,54 +123,14 @@ export function buildComputedAccountStatusSnapshot(params: {
   );
 }
 
-/** Build a full status adapter when only configured/extras vary per account. */
-export function createComputedAccountStatusAdapter<
-  ResolvedAccount,
-  Probe = unknown,
-  Audit = unknown,
-  TExtra extends StatusSnapshotExtra = StatusSnapshotExtra,
->(
-  options: Omit<ChannelStatusAdapter<ResolvedAccount, Probe, Audit>, "buildAccountSnapshot"> & {
-    resolveAccountSnapshot: (
-      params: ComputedAccountStatusAdapterParams<ResolvedAccount, Probe, Audit>,
-    ) => ComputedAccountStatusBase & { extra?: TExtra };
+/** Normalize runtime-only account state into the shared status snapshot fields. */
+export function buildRuntimeAccountStatusSnapshot<TExtra extends StatusSnapshotExtra>(
+  params: {
+    runtime?: RuntimeLifecycleSnapshot | null;
+    probe?: unknown;
   },
-): ChannelStatusAdapter<ResolvedAccount, Probe, Audit> {
-  return {
-    defaultRuntime: options.defaultRuntime,
-    buildChannelSummary: options.buildChannelSummary,
-    probeAccount: options.probeAccount,
-    formatCapabilitiesProbe: options.formatCapabilitiesProbe,
-    auditAccount: options.auditAccount,
-    buildCapabilitiesDiagnostics: options.buildCapabilitiesDiagnostics,
-    logSelfId: options.logSelfId,
-    resolveAccountState: options.resolveAccountState,
-    collectStatusIssues: options.collectStatusIssues,
-    buildAccountSnapshot: (params) => {
-      const typedParams = params as ComputedAccountStatusAdapterParams<
-        ResolvedAccount,
-        Probe,
-        Audit
-      >;
-      const { extra, ...snapshot } = options.resolveAccountSnapshot(typedParams);
-      return buildComputedAccountStatusSnapshot(
-        {
-          ...snapshot,
-          runtime: typedParams.runtime,
-          probe: typedParams.probe,
-        },
-        extra,
-      );
-    },
-    runtime,
-    probe,
-  });
-}
-
-export function buildRuntimeAccountStatusSnapshot(params: {
-  runtime?: RuntimeLifecycleSnapshot | null;
-  probe?: unknown;
-}) {
+  extra?: TExtra,
+) {
   const { runtime, probe } = params;
   return {
     running: runtime?.running ?? false,
@@ -166,6 +138,7 @@ export function buildRuntimeAccountStatusSnapshot(params: {
     lastStopAt: runtime?.lastStopAt ?? null,
     lastError: runtime?.lastError ?? null,
     probe,
+    ...(extra ?? ({} as TExtra)),
   };
 }
 

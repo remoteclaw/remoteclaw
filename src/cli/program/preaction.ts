@@ -2,6 +2,7 @@ import type { Command } from "commander";
 import { setVerbose } from "../../globals.js";
 import { isTruthyEnvValue } from "../../infra/env.js";
 import type { LogLevel } from "../../logging/levels.js";
+import { loggingState } from "../../logging/state.js";
 import { defaultRuntime } from "../../runtime.js";
 import {
   getCommandPathWithRootOptions,
@@ -132,10 +133,20 @@ export function registerPreActionHooks(program: Command, programVersion: string)
       commandPath,
       ...(suppressDoctorStdout ? { suppressDoctorStdout: true } : {}),
     });
-    // Load plugins for commands that need channel access
+    // Load plugins for commands that need channel access.
+    // When --json output is active, temporarily route logs to stderr so plugin
+    // registration messages don't corrupt the JSON payload on stdout.
     if (PLUGIN_REQUIRED_COMMANDS.has(commandPath[0])) {
       const { ensurePluginRegistryLoaded } = await loadPluginRegistryModule();
-      ensurePluginRegistryLoaded();
+      const prev = loggingState.forceConsoleToStderr;
+      if (suppressDoctorStdout) {
+        loggingState.forceConsoleToStderr = true;
+      }
+      try {
+        ensurePluginRegistryLoaded();
+      } finally {
+        loggingState.forceConsoleToStderr = prev;
+      }
     }
   });
 }

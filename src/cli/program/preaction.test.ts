@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { loggingState } from "../../logging/state.js";
 
 const setVerboseMock = vi.fn();
 const emitCliBannerMock = vi.fn();
@@ -41,6 +42,7 @@ let originalProcessArgv: string[];
 let originalProcessTitle: string;
 let originalNodeNoWarnings: string | undefined;
 let originalHideBanner: string | undefined;
+let originalForceStderr: boolean;
 
 beforeAll(async () => {
   ({ registerPreActionHooks } = await import("./preaction.js"));
@@ -52,6 +54,8 @@ beforeEach(() => {
   originalProcessTitle = process.title;
   originalNodeNoWarnings = process.env.NODE_NO_WARNINGS;
   originalHideBanner = process.env.REMOTECLAW_HIDE_BANNER;
+  originalForceStderr = loggingState.forceConsoleToStderr;
+  loggingState.forceConsoleToStderr = false;
   delete process.env.NODE_NO_WARNINGS;
   delete process.env.REMOTECLAW_HIDE_BANNER;
 });
@@ -59,6 +63,7 @@ beforeEach(() => {
 afterEach(() => {
   process.argv = originalProcessArgv;
   process.title = originalProcessTitle;
+  loggingState.forceConsoleToStderr = originalForceStderr;
   if (originalNodeNoWarnings === undefined) {
     delete process.env.NODE_NO_WARNINGS;
   } else {
@@ -223,6 +228,39 @@ describe("registerPreActionHooks", () => {
     });
 
     expect(ensureConfigReadyMock).not.toHaveBeenCalled();
+  });
+
+  it("routes logs to stderr during plugin loading in --json mode and restores after", async () => {
+    let stderrDuringPluginLoad = false;
+    ensurePluginRegistryLoadedMock.mockImplementation(() => {
+      stderrDuringPluginLoad = loggingState.forceConsoleToStderr;
+    });
+
+    await runPreAction({
+      parseArgv: ["agents"],
+      processArgv: ["node", "remoteclaw", "agents", "--json"],
+    });
+
+    expect(ensurePluginRegistryLoadedMock).toHaveBeenCalled();
+    expect(stderrDuringPluginLoad).toBe(true);
+    // Flag must be restored after plugin loading completes
+    expect(loggingState.forceConsoleToStderr).toBe(false);
+  });
+
+  it("does not route logs to stderr during plugin loading without --json", async () => {
+    let stderrDuringPluginLoad = false;
+    ensurePluginRegistryLoadedMock.mockImplementation(() => {
+      stderrDuringPluginLoad = loggingState.forceConsoleToStderr;
+    });
+
+    await runPreAction({
+      parseArgv: ["agents"],
+      processArgv: ["node", "remoteclaw", "agents"],
+    });
+
+    expect(ensurePluginRegistryLoadedMock).toHaveBeenCalled();
+    expect(stderrDuringPluginLoad).toBe(false);
+    expect(loggingState.forceConsoleToStderr).toBe(false);
   });
 
   beforeAll(() => {

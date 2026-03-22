@@ -59,6 +59,8 @@ Optional keys:
 - If plugin config exists but the plugin is **disabled**, the config is kept and
   a **warning** is surfaced in Doctor + logs.
 
+See [Configuration reference](/gateway/configuration) for the full `plugins.*` schema.
+
 ## Notes
 
 - The manifest is **required for all plugins**, including local filesystem loads.

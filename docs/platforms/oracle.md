@@ -1,19 +1,19 @@
 ---
-description: "RemoteClaw on Oracle Cloud (Always Free ARM)"
+summary: "OpenClaw on Oracle Cloud (Always Free ARM)"
 read_when:
-  - Setting up RemoteClaw on Oracle Cloud
-  - Looking for low-cost VPS hosting for RemoteClaw
-  - Want 24/7 RemoteClaw on a small server
-title: "Oracle Cloud"
+  - Setting up OpenClaw on Oracle Cloud
+  - Looking for low-cost VPS hosting for OpenClaw
+  - Want 24/7 OpenClaw on a small server
+title: "Oracle Cloud (Platform)"
 ---
 
-# RemoteClaw on Oracle Cloud (OCI)
+# OpenClaw on Oracle Cloud (OCI)
 
 ## Goal
 
-Run a persistent RemoteClaw Gateway on Oracle Cloud's **Always Free** ARM tier.
+Run a persistent OpenClaw Gateway on Oracle Cloud's **Always Free** ARM tier.
 
-Oracle’s free tier can be a great fit for RemoteClaw (especially if you already have an OCI account), but it comes with tradeoffs:
+Oracle’s free tier can be a great fit for OpenClaw (especially if you already have an OCI account), but it comes with tradeoffs:
 
 - ARM architecture (most things work, but some binaries may be x86-only)
 - Capacity and signup can be finicky
@@ -41,7 +41,7 @@ Oracle’s free tier can be a great fit for RemoteClaw (especially if you alread
 1. Log into [Oracle Cloud Console](https://cloud.oracle.com/)
 2. Navigate to **Compute → Instances → Create Instance**
 3. Configure:
-   - **Name:** `remoteclaw`
+   - **Name:** `openclaw`
    - **Image:** Ubuntu 24.04 (aarch64)
    - **Shape:** `VM.Standard.A1.Flex` (Ampere ARM)
    - **OCPUs:** 2 (or up to 4)
@@ -70,7 +70,7 @@ sudo apt install -y build-essential
 
 ```bash
 # Set hostname
-sudo hostnamectl set-hostname remoteclaw
+sudo hostnamectl set-hostname openclaw
 
 # Set password for ubuntu user
 sudo passwd ubuntu
@@ -83,10 +83,10 @@ sudo loginctl enable-linger ubuntu
 
 ```bash
 curl -fsSL https://tailscale.com/install.sh | sh
-sudo tailscale up --ssh --hostname=remoteclaw
+sudo tailscale up --ssh --hostname=openclaw
 ```
 
-This enables Tailscale SSH, so you can connect via `ssh remoteclaw` from any device on your tailnet — no public IP needed.
+This enables Tailscale SSH, so you can connect via `ssh openclaw` from any device on your tailnet — no public IP needed.
 
 Verify:
 
@@ -94,12 +94,12 @@ Verify:
 tailscale status
 ```
 
-**From now on, connect via Tailscale:** `ssh ubuntu@remoteclaw` (or use the Tailscale IP).
+**From now on, connect via Tailscale:** `ssh ubuntu@openclaw` (or use the Tailscale IP).
 
-## 5) Install RemoteClaw
+## 5) Install OpenClaw
 
 ```bash
-curl -fsSL https://remoteclaw.org/install.sh | bash
+curl -fsSL https://openclaw.ai/install.sh | bash
 source ~/.bashrc
 ```
 
@@ -113,27 +113,27 @@ Use token auth as the default. It’s predictable and avoids needing any “inse
 
 ```bash
 # Keep the Gateway private on the VM
-remoteclaw config set gateway.bind loopback
+openclaw config set gateway.bind loopback
 
 # Require auth for the Gateway + Control UI
-remoteclaw config set gateway.auth.mode token
-remoteclaw doctor --generate-gateway-token
+openclaw config set gateway.auth.mode token
+openclaw doctor --generate-gateway-token
 
 # Expose over Tailscale Serve (HTTPS + tailnet access)
-remoteclaw config set gateway.tailscale.mode serve
-remoteclaw config set gateway.trustedProxies '["127.0.0.1"]'
+openclaw config set gateway.tailscale.mode serve
+openclaw config set gateway.trustedProxies '["127.0.0.1"]'
 
-systemctl --user restart remoteclaw-gateway
+systemctl --user restart openclaw-gateway
 ```
 
 ## 7) Verify
 
 ```bash
 # Check version
-remoteclaw --version
+openclaw --version
 
 # Check daemon status
-systemctl --user status remoteclaw-gateway
+systemctl --user status openclaw-gateway
 
 # Check Tailscale Serve
 tailscale serve status
@@ -161,7 +161,7 @@ This blocks SSH on port 22, HTTP, HTTPS, and everything else at the network edge
 From any device on your Tailscale network:
 
 ```
-https://remoteclaw.<tailnet-name>.ts.net/
+https://openclaw.<tailnet-name>.ts.net/
 ```
 
 Replace `<tailnet-name>` with your tailnet name (visible in `tailscale status`).
@@ -178,7 +178,7 @@ No SSH tunnel needed. Tailscale provides:
 
 With the VCN locked down (only UDP 41641 open) and the Gateway bound to loopback, you get strong defense-in-depth: public traffic is blocked at the network edge, and admin access happens over your tailnet.
 
-This setup often removes the _need_ for extra host-based firewall rules purely to stop Internet-wide SSH brute force — but you should still keep the OS updated, run `remoteclaw security audit`, and verify you aren’t accidentally listening on public interfaces.
+This setup often removes the _need_ for extra host-based firewall rules purely to stop Internet-wide SSH brute force — but you should still keep the OS updated, run `openclaw security audit`, and verify you aren’t accidentally listening on public interfaces.
 
 ### Already protected
 
@@ -193,8 +193,8 @@ This setup often removes the _need_ for extra host-based firewall rules purely t
 
 ### Still Recommended
 
-- **Credential permissions:** `chmod 700 ~/.remoteclaw`
-- **Security audit:** `remoteclaw security audit`
+- **Credential permissions:** `chmod 700 ~/.openclaw`
+- **Security audit:** `openclaw security audit`
 - **System updates:** `sudo apt update && sudo apt upgrade` regularly
 - **Monitor Tailscale:** Review devices in [Tailscale admin console](https://login.tailscale.com/admin)
 
@@ -219,7 +219,7 @@ If Tailscale Serve isn't working, use an SSH tunnel:
 
 ```bash
 # From your local machine (via Tailscale)
-ssh -L 18789:127.0.0.1:18789 ubuntu@remoteclaw
+ssh -L 18789:127.0.0.1:18789 ubuntu@openclaw
 ```
 
 Then open `http://localhost:18789`.
@@ -243,15 +243,15 @@ Free tier ARM instances are popular. Try:
 sudo tailscale status
 
 # Re-authenticate
-sudo tailscale up --ssh --hostname=remoteclaw --reset
+sudo tailscale up --ssh --hostname=openclaw --reset
 ```
 
 ### Gateway will not start
 
 ```bash
-remoteclaw gateway status
-remoteclaw doctor --non-interactive
-journalctl --user -u remoteclaw-gateway -n 50
+openclaw gateway status
+openclaw doctor --non-interactive
+journalctl --user -u openclaw-gateway -n 50
 ```
 
 ### Cannot reach Control UI
@@ -264,7 +264,7 @@ tailscale serve status
 curl http://localhost:18789
 
 # Restart if needed
-systemctl --user restart remoteclaw-gateway
+systemctl --user restart openclaw-gateway
 ```
 
 ### ARM binary issues
@@ -283,13 +283,13 @@ Most npm packages work fine. For binaries, look for `linux-arm64` or `aarch64` r
 
 All state lives in:
 
-- `~/.remoteclaw/` — config, credentials, session data
-- `<configured workspace>` — workspace (memory, artifacts)
+- `~/.openclaw/` — config, credentials, session data
+- `~/.openclaw/workspace/` — workspace (SOUL.md, memory, artifacts)
 
 Back up periodically:
 
 ```bash
-tar -czvf remoteclaw-backup.tar.gz ~/.remoteclaw ~/.remoteclaw/workspace
+tar -czvf openclaw-backup.tar.gz ~/.openclaw ~/.openclaw/workspace
 ```
 
 ---

@@ -98,7 +98,7 @@ targets:
           - CFBundleURLName: ai.remoteclaw.ios
             CFBundleURLSchemes:
               - remoteclaw
-        CFBundleShortVersionString: "2026.3.1"
+        CFBundleShortVersionString: "2026.3.9"
         CFBundleVersion: "20260301"
         UILaunchScreen: {}
         UIApplicationSceneManifest:
@@ -156,7 +156,7 @@ targets:
       path: ShareExtension/Info.plist
       properties:
         CFBundleDisplayName: RemoteClaw Share
-        CFBundleShortVersionString: "2026.3.1"
+        CFBundleShortVersionString: "2026.3.9"
         CFBundleVersion: "20260301"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.share-services
@@ -193,7 +193,7 @@ targets:
       path: ActivityWidget/Info.plist
       properties:
         CFBundleDisplayName: RemoteClaw Activity
-        CFBundleShortVersionString: "2026.3.2"
+        CFBundleShortVersionString: "2026.3.9"
         CFBundleVersion: "20260301"
         NSSupportsLiveActivities: true
         NSExtension:
@@ -219,7 +219,7 @@ targets:
       path: WatchApp/Info.plist
       properties:
         CFBundleDisplayName: RemoteClaw
-        CFBundleShortVersionString: "2026.3.1"
+        CFBundleShortVersionString: "2026.3.9"
         CFBundleVersion: "20260301"
         WKCompanionAppBundleIdentifier: "$(REMOTECLAW_APP_BUNDLE_ID)"
         WKWatchKitApp: true
@@ -244,7 +244,7 @@ targets:
       path: WatchExtension/Info.plist
       properties:
         CFBundleDisplayName: RemoteClaw
-        CFBundleShortVersionString: "2026.3.1"
+        CFBundleShortVersionString: "2026.3.9"
         CFBundleVersion: "20260301"
         NSExtension:
           NSExtensionAttributes:
@@ -279,5 +279,5 @@ targets:
       path: Tests/Info.plist
       properties:
         CFBundleDisplayName: RemoteClawTests
-        CFBundleShortVersionString: "2026.3.1"
+        CFBundleShortVersionString: "2026.3.9"
         CFBundleVersion: "20260301"

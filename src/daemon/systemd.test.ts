@@ -649,7 +649,7 @@ describe("systemd service control", () => {
         ),
       )
       .mockImplementationOnce((_cmd, args, _opts, cb) => {
-        expect(args).toEqual(["--user", "stop", "openclaw-gateway.service"]);
+        expect(args).toEqual(["--user", "stop", "remoteclaw-gateway.service"]);
         cb(null, "", "");
       });
 

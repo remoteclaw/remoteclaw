@@ -924,7 +924,7 @@ describe("loadRemoteClawPlugins", () => {
     });
 
     const record = registry.plugins.find((entry) => entry.id === "legacy-root-import");
-    expect(record?.status).toBe("loaded");
+    expect({ status: record?.status, error: record?.error }).toMatchObject({ status: "loaded" });
   });
 
   it("prefers dist plugin-sdk alias when loader runs from dist", () => {
@@ -942,6 +942,20 @@ describe("loadRemoteClawPlugins", () => {
     const { root, srcFile } = createPluginSdkAliasFixture();
 
     const resolved = withEnv({ NODE_ENV: undefined }, () =>
+      __testing.resolvePluginSdkAliasFile({
+        srcFile: "index.ts",
+        distFile: "index.js",
+        modulePath: path.join(root, "src", "plugins", "loader.ts"),
+      }),
+    );
+    expect(resolved).toBe(srcFile);
+  });
+
+  it("falls back to src plugin-sdk alias when dist is missing in production", () => {
+    const { root, srcFile, distFile } = createPluginSdkAliasFixture();
+    fs.rmSync(distFile);
+
+    const resolved = withEnv({ NODE_ENV: "production", VITEST: undefined }, () =>
       __testing.resolvePluginSdkAliasFile({
         srcFile: "index.ts",
         distFile: "index.js",

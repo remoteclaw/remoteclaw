@@ -2,16 +2,26 @@ import { EventEmitter } from "node:events";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { RemoteClawConfig, PluginRuntime } from "remoteclaw/plugin-sdk";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createPluginRuntimeMock } from "../../test-utils/plugin-runtime-mock.js";
+import {
+  createBlueBubblesMonitorTestRuntime,
+  EMPTY_DISPATCH_RESULT,
+  resetBlueBubblesMonitorTestState,
+  type DispatchReplyParams,
+} from "../../../test/helpers/extensions/bluebubbles-monitor.js";
 import type { ResolvedBlueBubblesAccount } from "./accounts.js";
 import { fetchBlueBubblesHistory } from "./history.js";
+import { resetBlueBubblesSelfChatCache } from "./monitor-self-chat-cache.js";
+import { handleBlueBubblesWebhookRequest, resolveBlueBubblesMessageId } from "./monitor.js";
 import {
-  handleBlueBubblesWebhookRequest,
-  registerBlueBubblesWebhookTarget,
-  resolveBlueBubblesMessageId,
-  _resetBlueBubblesShortIdState,
-} from "./monitor.js";
-import { setBlueBubblesRuntime } from "./runtime.js";
+  createMockAccount,
+  createMockRequest,
+  createMockResponse,
+  dispatchWebhookPayloadForTest,
+  flushAsync,
+  setupWebhookTargetForTest,
+  setupWebhookTargetsForTest,
+} from "./monitor.webhook.test-helpers.js";
+import type { RemoteClawConfig, PluginRuntime } from "./runtime-api.js";
 
 // Mock dependencies
 vi.mock("./send.js", () => ({
@@ -70,17 +80,7 @@ const mockMatchesMentionWithExplicit = vi.fn(
   },
 );
 const mockResolveRequireMention = vi.fn(() => false);
-const mockResolveGroupPolicy = vi.fn(() => ({
-  allowlistEnabled: false,
-  allowed: true,
-}));
-type DispatchReplyParams = Parameters<
-  PluginRuntime["channel"]["reply"]["dispatchReplyWithBufferedBlockDispatcher"]
->[0];
-const EMPTY_DISPATCH_RESULT = {
-  queuedFinal: false,
-  counts: { tool: 0, block: 0, final: 0 },
-} as const;
+const mockResolveGroupPolicy = vi.fn(() => "open" as const);
 const mockDispatchReplyWithBufferedBlockDispatcher = vi.fn(
   async (_params: DispatchReplyParams) => EMPTY_DISPATCH_RESULT,
 );
@@ -103,58 +103,31 @@ const mockResolveChunkMode = vi.fn(() => "length" as const);
 const mockFetchBlueBubblesHistory = vi.mocked(fetchBlueBubblesHistory);
 
 function createMockRuntime(): PluginRuntime {
-  return createPluginRuntimeMock({
-    system: {
-      enqueueSystemEvent: mockEnqueueSystemEvent,
-    },
-    events: {
-      onAgentEvent: vi.fn() as unknown as PluginRuntime["events"]["onAgentEvent"],
-      onSessionTranscriptUpdate:
-        vi.fn() as unknown as PluginRuntime["events"]["onSessionTranscriptUpdate"],
-    },
-    channel: {
-      text: {
-        chunkMarkdownText: mockChunkMarkdownText,
-        chunkByNewline: mockChunkByNewline,
-        chunkMarkdownTextWithMode: mockChunkMarkdownTextWithMode,
-        chunkTextWithMode: mockChunkTextWithMode,
-        resolveChunkMode: mockResolveChunkMode,
-        hasControlCommand: mockHasControlCommand,
-      },
-      reply: {
-        dispatchReplyWithBufferedBlockDispatcher: mockDispatchReplyWithBufferedBlockDispatcher,
-        formatAgentEnvelope: mockFormatAgentEnvelope,
-        formatInboundEnvelope: mockFormatInboundEnvelope,
-        resolveEnvelopeFormatOptions: mockResolveEnvelopeFormatOptions,
-      },
-      routing: {
-        resolveAgentRoute: mockResolveAgentRoute,
-      },
-      pairing: {
-        buildPairingReply: mockBuildPairingReply,
-        readAllowFromStore: mockReadAllowFromStore,
-        upsertPairingRequest: mockUpsertPairingRequest,
-      },
-      media: {
-        saveMediaBuffer: mockSaveMediaBuffer,
-      },
-      session: {
-        resolveStorePath: mockResolveStorePath,
-        readSessionUpdatedAt: mockReadSessionUpdatedAt,
-      },
-      mentions: {
-        buildMentionRegexes: mockBuildMentionRegexes,
-        matchesMentionPatterns: mockMatchesMentionPatterns,
-        matchesMentionWithExplicit: mockMatchesMentionWithExplicit,
-      },
-      groups: {
-        resolveGroupPolicy: mockResolveGroupPolicy,
-        resolveRequireMention: mockResolveRequireMention,
-      },
-      commands: {
-        resolveCommandAuthorizedFromAuthorizers: mockResolveCommandAuthorizedFromAuthorizers,
-      },
-    },
+  return createBlueBubblesMonitorTestRuntime({
+    enqueueSystemEvent: mockEnqueueSystemEvent,
+    chunkMarkdownText: mockChunkMarkdownText,
+    chunkByNewline: mockChunkByNewline,
+    chunkMarkdownTextWithMode: mockChunkMarkdownTextWithMode,
+    chunkTextWithMode: mockChunkTextWithMode,
+    resolveChunkMode: mockResolveChunkMode,
+    hasControlCommand: mockHasControlCommand,
+    dispatchReplyWithBufferedBlockDispatcher: mockDispatchReplyWithBufferedBlockDispatcher,
+    formatAgentEnvelope: mockFormatAgentEnvelope,
+    formatInboundEnvelope: mockFormatInboundEnvelope,
+    resolveEnvelopeFormatOptions: mockResolveEnvelopeFormatOptions,
+    resolveAgentRoute: mockResolveAgentRoute,
+    buildPairingReply: mockBuildPairingReply,
+    readAllowFromStore: mockReadAllowFromStore,
+    upsertPairingRequest: mockUpsertPairingRequest,
+    saveMediaBuffer: mockSaveMediaBuffer,
+    resolveStorePath: mockResolveStorePath,
+    readSessionUpdatedAt: mockReadSessionUpdatedAt,
+    buildMentionRegexes: mockBuildMentionRegexes,
+    matchesMentionPatterns: mockMatchesMentionPatterns,
+    matchesMentionWithExplicit: mockMatchesMentionWithExplicit,
+    resolveGroupPolicy: mockResolveGroupPolicy,
+    resolveRequireMention: mockResolveRequireMention,
+    resolveCommandAuthorizedFromAuthorizers: mockResolveCommandAuthorizedFromAuthorizers,
   });
 }
 
@@ -243,19 +216,37 @@ function getFirstDispatchCall(): DispatchReplyParams {
 describe("BlueBubbles webhook monitor", () => {
   let unregister: () => void;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    // Reset short ID state between tests for predictable behavior
-    _resetBlueBubblesShortIdState();
-    mockFetchBlueBubblesHistory.mockResolvedValue({ entries: [], resolved: true });
-    mockReadAllowFromStore.mockResolvedValue([]);
-    mockUpsertPairingRequest.mockResolvedValue({ code: "TESTCODE", created: true });
-    mockResolveRequireMention.mockReturnValue(false);
-    mockHasControlCommand.mockReturnValue(false);
-    mockResolveCommandAuthorizedFromAuthorizers.mockReturnValue(false);
-    mockBuildMentionRegexes.mockReturnValue([/\bbert\b/i]);
+  function setupWebhookTarget(params?: {
+    account?: ReturnType<typeof createMockAccount>;
+    config?: RemoteClawConfig;
+    core?: PluginRuntime;
+  }) {
+    const registration = setupWebhookTargetForTest({
+      createCore: createMockRuntime,
+      core: params?.core,
+      account: params?.account,
+      config: params?.config,
+    });
+    unregister = registration.unregister;
+    return { core: registration.core };
+  }
 
-    setBlueBubblesRuntime(createMockRuntime());
+  async function dispatchWebhookPayload(payload: unknown, url = "/bluebubbles-webhook") {
+    return (await dispatchWebhookPayloadForTest({ body: payload, url })).res;
+  }
+
+  beforeEach(() => {
+    resetBlueBubblesMonitorTestState({
+      createRuntime: createMockRuntime,
+      fetchHistoryMock: mockFetchBlueBubblesHistory,
+      readAllowFromStoreMock: mockReadAllowFromStore,
+      upsertPairingRequestMock: mockUpsertPairingRequest,
+      resolveRequireMentionMock: mockResolveRequireMention,
+      hasControlCommandMock: mockHasControlCommand,
+      resolveCommandAuthorizedFromAuthorizersMock: mockResolveCommandAuthorizedFromAuthorizers,
+      buildMentionRegexesMock: mockBuildMentionRegexes,
+      extraReset: resetBlueBubblesSelfChatCache,
+    });
   });
 
   afterEach(() => {
@@ -1105,15 +1096,12 @@ describe("BlueBubbles webhook monitor", () => {
           };
         }) as unknown as PluginRuntime["channel"]["debounce"]["createInboundDebouncer"];
 
-        setBlueBubblesRuntime(core);
-
-        unregister = registerBlueBubblesWebhookTarget({
-          account,
-          config,
-          runtime: { log: vi.fn(), error: vi.fn() },
+        const registration = setupWebhookTargetForTest({
+          createCore: createMockRuntime,
           core,
           path: "/bluebubbles-webhook",
         });
+        unregister = registration.unregister;
 
         const messageId = "race-msg-1";
         const chatGuid = "iMessage;-;+15551234567";
@@ -2401,12 +2389,8 @@ describe("BlueBubbles webhook monitor", () => {
       };
       const config: RemoteClawConfig = {};
       const core = createMockRuntime();
-      setBlueBubblesRuntime(core);
-
-      const unregisterA = registerBlueBubblesWebhookTarget({
-        account: accountA,
-        config,
-        runtime: { log: vi.fn(), error: vi.fn() },
+      const registration = setupWebhookTargetsForTest({
+        createCore: createMockRuntime,
         core,
         path: "/bluebubbles-webhook",
       });
@@ -2417,10 +2401,7 @@ describe("BlueBubbles webhook monitor", () => {
         core,
         path: "/bluebubbles-webhook",
       });
-      unregister = () => {
-        unregisterA();
-        unregisterB();
-      };
+      unregister = registration.unregister;
 
       await handleBlueBubblesWebhookRequest(
         createMockRequest("POST", "/bluebubbles-webhook?password=password-a", {

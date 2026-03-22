@@ -13,14 +13,8 @@ import { applyCliProfileEnv, parseCliProfileArgs } from "./profile.js";
 import { tryRouteCli } from "./route.js";
 import { normalizeWindowsArgv } from "./windows-argv.js";
 
-async function closeCliMemoryManagers(): Promise<void> {
-  try {
-    const { closeAllMemorySearchManagers } = await import("../memory/search-manager.js");
-    await closeAllMemorySearchManagers();
-  } catch {
-    // Best-effort teardown for short-lived CLI processes.
-  }
-}
+// No-op: memory search managers are gutted in this fork.
+async function closeCliMemoryManagers(): Promise<void> {}
 
 export function rewriteUpdateFlagArgv(argv: string[]): string[] {
   const index = argv.indexOf("--update");

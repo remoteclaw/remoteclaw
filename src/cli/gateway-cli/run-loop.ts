@@ -1,8 +1,8 @@
-import {
-  abortEmbeddedPiRun,
-  getActiveEmbeddedRunCount,
-  waitForActiveEmbeddedRuns,
-} from "../../agents/pi-embedded-runner/runs.js";
+// Stubs for gutted pi-embedded-runner — no embedded runs exist in this fork.
+const getActiveEmbeddedRunCount = (): number => 0;
+const abortEmbeddedPiRun = (_id: unknown, _opts: unknown): void => {};
+const waitForActiveEmbeddedRuns = (_timeoutMs: number): Promise<{ drained: boolean }> =>
+  Promise.resolve({ drained: true });
 import type { startGatewayServer } from "../../gateway/server.js";
 import { acquireGatewayLock } from "../../infra/gateway-lock.js";
 import { restartGatewayProcessWithFreshPid } from "../../infra/process-respawn.js";

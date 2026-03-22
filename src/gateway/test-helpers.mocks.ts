@@ -210,6 +210,7 @@ export const getReplyFromConfig: Mock<GetReplyFromConfigFn> = hoisted.getReplyFr
 export const mockGetReplyFromConfigOnce = (impl: GetReplyFromConfigFn) => {
   getReplyFromConfig.mockImplementationOnce(impl);
 };
+export const sendWhatsAppMock = hoisted.sendWhatsAppMock;
 
 export const testState = {
   agentConfig: undefined as Record<string, unknown> | undefined,
@@ -553,8 +554,26 @@ vi.mock("../commands/agent.js", () => ({
   agentCommand,
   agentCommandFromIngress: agentCommand,
 }));
+vi.mock("../auto-reply/dispatch.js", async () => {
+  return await vi.importActual<typeof import("../auto-reply/dispatch.js")>(
+    "../auto-reply/dispatch.js",
+  );
+});
+vi.mock("/src/auto-reply/dispatch.js", async () => {
+  return await vi.importActual<typeof import("../auto-reply/dispatch.js")>(
+    "../auto-reply/dispatch.js",
+  );
+});
 vi.mock("../auto-reply/reply.js", () => ({
   getReplyFromConfig,
+}));
+vi.mock("../auto-reply/reply/get-reply-from-config.runtime.js", () => ({
+  getReplyFromConfig: (...args: Parameters<GetReplyFromConfigFn>) =>
+    hoisted.getReplyFromConfig(...args),
+}));
+vi.mock("/src/auto-reply/reply/get-reply-from-config.runtime.js", () => ({
+  getReplyFromConfig: (...args: Parameters<GetReplyFromConfigFn>) =>
+    hoisted.getReplyFromConfig(...args),
 }));
 vi.mock("../cli/deps.js", async () => {
   const actual = await vi.importActual<typeof import("../cli/deps.js")>("../cli/deps.js");
@@ -577,6 +596,14 @@ vi.mock("../plugins/loader.js", async () => {
     loadRemoteClawPlugins: () => pluginRegistryState.registry,
   };
 });
+vi.mock("../plugins/runtime/runtime-whatsapp-boundary.js", () => ({
+  sendMessageWhatsApp: (...args: unknown[]) =>
+    (hoisted.sendWhatsAppMock as (...args: unknown[]) => unknown)(...args),
+}));
+vi.mock("/src/plugins/runtime/runtime-whatsapp-boundary.js", () => ({
+  sendMessageWhatsApp: (...args: unknown[]) =>
+    (hoisted.sendWhatsAppMock as (...args: unknown[]) => unknown)(...args),
+}));
 
 process.env.REMOTECLAW_SKIP_CHANNELS = "1";
 process.env.REMOTECLAW_SKIP_CRON = "1";

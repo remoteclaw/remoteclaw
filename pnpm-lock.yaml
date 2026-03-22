@@ -237,6 +237,10 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
+    devDependencies:
+      openclaw:
+        specifier: workspace:*
+        version: link:../..
 
   extensions/diagnostics-otel:
     dependencies:
@@ -274,7 +278,43 @@ importers:
         specifier: ^1.40.0
         version: 1.40.0
 
-  extensions/discord: {}
+  extensions/diffs:
+    dependencies:
+      '@pierre/diffs':
+        specifier: 1.1.1
+        version: 1.1.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@sinclair/typebox':
+        specifier: 0.34.48
+        version: 0.34.48
+      playwright-core:
+        specifier: 1.58.2
+        version: 1.58.2
+
+  extensions/discord:
+    dependencies:
+      '@buape/carbon':
+        specifier: 0.0.0-beta-20260317045421
+        version: 0.0.0-beta-20260317045421(@discordjs/opus@0.10.0)(hono@4.12.8)(opusscript@0.1.1)
+      '@discordjs/voice':
+        specifier: ^0.19.2
+        version: 0.19.2(@discordjs/opus@0.10.0)(opusscript@0.1.1)
+      discord-api-types:
+        specifier: ^0.38.42
+        version: 0.38.42
+      https-proxy-agent:
+        specifier: ^8.0.0
+        version: 8.0.0
+      opusscript:
+        specifier: ^0.1.1
+        version: 0.1.1
+    devDependencies:
+      openclaw:
+        specifier: workspace:*
+        version: link:../..
+
+  extensions/elevenlabs: {}
+
+  extensions/fal: {}
 
   extensions/feishu:
     dependencies:
@@ -290,17 +330,24 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
+    devDependencies:
+      openclaw:
+        specifier: workspace:*
+        version: link:../..
 
   extensions/github-copilot: {}
 
   extensions/googlechat:
     dependencies:
       google-auth-library:
-        specifier: ^10.6.1
-        version: 10.6.1
-      remoteclaw:
+        specifier: ^10.6.2
+        version: 10.6.2
+    devDependencies:
+      openclaw:
         specifier: workspace:*
         version: link:../..
+
+  extensions/huggingface: {}
 
   extensions/imessage: {}
 
@@ -310,7 +357,15 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
 
-  extensions/line: {}
+  extensions/kilocode: {}
+
+  extensions/kimi-coding: {}
+
+  extensions/line:
+    devDependencies:
+      openclaw:
+        specifier: workspace:*
+        version: link:../..
 
   extensions/matrix:
     dependencies:
@@ -338,6 +393,19 @@ importers:
       ws:
         specifier: ^8.20.0
         version: 8.20.0
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      openclaw:
+        specifier: workspace:*
+        version: link:../..
+
+  extensions/mattermost:
+    dependencies:
+      ws:
+        specifier: ^8.19.0
+        version: 8.19.0
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -387,14 +455,22 @@ importers:
         specifier: ^5.2.1
         version: 5.2.1
       uuid:
-        specifier: ^13.0.0
-        version: 13.0.0
+        specifier: ^11.1.0
+        version: 11.1.0
+    devDependencies:
+      openclaw:
+        specifier: workspace:*
+        version: link:../..
 
   extensions/nextcloud-talk:
     dependencies:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
+    devDependencies:
+      openclaw:
+        specifier: workspace:*
+        version: link:../..
 
   extensions/nostr:
     dependencies:
@@ -404,6 +480,10 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
+    devDependencies:
+      openclaw:
+        specifier: workspace:*
+        version: link:../..
 
   extensions/openai-codex: {}
 
@@ -438,6 +518,10 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
+    devDependencies:
+      openclaw:
+        specifier: workspace:*
+        version: link:../..
 
   extensions/twitch:
     dependencies:
@@ -468,12 +552,26 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
+    devDependencies:
+      openclaw:
+        specifier: workspace:*
+        version: link:../..
 
   extensions/whatsapp:
     dependencies:
       '@whiskeysockets/baileys':
         specifier: 7.0.0-rc.9
-        version: 7.0.0-rc.9(audio-decode@2.2.3)(sharp@0.34.5)
+        version: 7.0.0-rc.9(audio-decode@2.2.3)(jimp@1.6.0)(sharp@0.34.5)
+    devDependencies:
+      openclaw:
+        specifier: workspace:*
+        version: link:../..
+
+  extensions/xai: {}
+
+  extensions/xiaomi: {}
+
+  extensions/zai: {}
 
   extensions/zalo:
     dependencies:
@@ -483,6 +581,10 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
+    devDependencies:
+      openclaw:
+        specifier: workspace:*
+        version: link:../..
 
   extensions/zalouser:
     dependencies:
@@ -495,6 +597,10 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
+    devDependencies:
+      openclaw:
+        specifier: workspace:*
+        version: link:../..
 
   ui:
     dependencies:

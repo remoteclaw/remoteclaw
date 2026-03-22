@@ -16,13 +16,14 @@ export {
   setMatrixThreadBindingIdleTimeoutBySessionKey,
   setMatrixThreadBindingMaxAgeBySessionKey,
 } from "./thread-bindings-runtime.js";
-export { writeJsonFileAtomically } from "../../src/plugin-sdk/json-store.js";
+export { writeJsonFileAtomically } from "remoteclaw/plugin-sdk/json-store";
 export type {
   ChannelDirectoryEntry,
   ChannelMessageActionContext,
   RemoteClawConfig,
   PluginRuntime,
   RuntimeLogger,
-} from "../../src/plugin-sdk/matrix.js";
-export type { RuntimeEnv } from "../../src/runtime.js";
-export type { WizardPrompter } from "../../src/wizard/prompts.js";
+  RuntimeEnv,
+  WizardPrompter,
+} from "remoteclaw/plugin-sdk/matrix";
+export { formatZonedTimestamp } from "remoteclaw/plugin-sdk/matrix";

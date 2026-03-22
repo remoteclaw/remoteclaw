@@ -85,6 +85,7 @@ const statusHelpersSdk = await import("remoteclaw/plugin-sdk/status-helpers");
 
 describe("plugin-sdk subpath exports", () => {
   it("keeps the curated public list free of internal implementation subpaths", () => {
+    expect(pluginSdkSubpaths).not.toContain("acpx");
     expect(pluginSdkSubpaths).not.toContain("compat");
     expect(pluginSdkSubpaths).not.toContain("device-pair");
     expect(pluginSdkSubpaths).not.toContain("google");
@@ -94,6 +95,11 @@ describe("plugin-sdk subpath exports", () => {
     expect(pluginSdkSubpaths).not.toContain("signal-core");
     expect(pluginSdkSubpaths).not.toContain("synology-chat");
     expect(pluginSdkSubpaths).not.toContain("typing");
+    expect(pluginSdkSubpaths).not.toContain("whatsapp");
+    expect(pluginSdkSubpaths).not.toContain("whatsapp-action-runtime");
+    expect(pluginSdkSubpaths).not.toContain("whatsapp-login-qr");
+    expect(pluginSdkSubpaths).not.toContain("secret-input-runtime");
+    expect(pluginSdkSubpaths).not.toContain("secret-input-schema");
     expect(pluginSdkSubpaths).not.toContain("zai");
     expect(pluginSdkSubpaths).not.toContain("provider-model-definitions");
   });

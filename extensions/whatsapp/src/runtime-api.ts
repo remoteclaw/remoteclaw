@@ -15,7 +15,7 @@ export {
   WhatsAppConfigSchema,
   type ChannelPlugin,
   type RemoteClawConfig,
-} from "../../../src/plugin-sdk/whatsapp-core.js";
+} from "remoteclaw/plugin-sdk/whatsapp-core";
 
 export {
   createWhatsAppOutboundBase,
@@ -28,12 +28,6 @@ export {
   type DmPolicy,
   type GroupPolicy,
   type WhatsAppAccountConfig,
-} from "../../../src/plugin-sdk/whatsapp-shared.js";
-export {
-  isWhatsAppGroupJid,
-  isWhatsAppUserTarget,
-  normalizeWhatsAppTarget,
-} from "./normalize-target.js";
-export { resolveWhatsAppOutboundTarget } from "./resolve-outbound-target.js";
+} from "remoteclaw/plugin-sdk/whatsapp-shared";
 
 export { monitorWebChannel } from "./channel.runtime.js";

@@ -3,8 +3,10 @@ export {
   PAIRING_APPROVED_MESSAGE,
   projectCredentialSnapshotFields,
   resolveConfiguredFromRequiredCredentialStatuses,
-} from "remoteclaw/plugin-sdk/channel-status";
-export { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/account-id";
+  type ChannelPlugin,
+  type RemoteClawConfig,
+  type SlackAccountConfig,
+} from "remoteclaw/plugin-sdk/slack";
 export {
   looksLikeSlackTargetId,
   normalizeSlackMessagingTarget,
@@ -22,3 +24,4 @@ export {
   SlackConfigSchema,
   withNormalizedTimestamp,
 } from "remoteclaw/plugin-sdk/slack-core";
+export { isSlackInteractiveRepliesEnabled } from "./interactive-replies.js";

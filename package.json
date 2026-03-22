@@ -271,6 +271,10 @@
       "types": "./dist/plugin-sdk/allowlist-config-edit.d.ts",
       "default": "./dist/plugin-sdk/allowlist-config-edit.js"
     },
+    "./plugin-sdk/bluebubbles": {
+      "types": "./dist/plugin-sdk/bluebubbles.d.ts",
+      "default": "./dist/plugin-sdk/bluebubbles.js"
+    },
     "./plugin-sdk/boolean-param": {
       "types": "./dist/plugin-sdk/boolean-param.d.ts",
       "default": "./dist/plugin-sdk/boolean-param.js"
@@ -290,6 +294,14 @@
     "./plugin-sdk/diffs": {
       "types": "./dist/plugin-sdk/diffs.d.ts",
       "default": "./dist/plugin-sdk/diffs.js"
+    },
+    "./plugin-sdk/discord": {
+      "types": "./dist/plugin-sdk/discord.d.ts",
+      "default": "./dist/plugin-sdk/discord.js"
+    },
+    "./plugin-sdk/discord-core": {
+      "types": "./dist/plugin-sdk/discord-core.d.ts",
+      "default": "./dist/plugin-sdk/discord-core.js"
     },
     "./plugin-sdk/extension-shared": {
       "types": "./dist/plugin-sdk/extension-shared.d.ts",
@@ -339,6 +351,10 @@
       "types": "./dist/plugin-sdk/channel-targets.d.ts",
       "default": "./dist/plugin-sdk/channel-targets.js"
     },
+    "./plugin-sdk/feishu": {
+      "types": "./dist/plugin-sdk/feishu.d.ts",
+      "default": "./dist/plugin-sdk/feishu.js"
+    },
     "./plugin-sdk/group-access": {
       "types": "./dist/plugin-sdk/group-access.d.ts",
       "default": "./dist/plugin-sdk/group-access.js"
@@ -347,6 +363,42 @@
       "types": "./dist/plugin-sdk/directory-runtime.d.ts",
       "default": "./dist/plugin-sdk/directory-runtime.js"
     },
+    "./plugin-sdk/googlechat": {
+      "types": "./dist/plugin-sdk/googlechat.d.ts",
+      "default": "./dist/plugin-sdk/googlechat.js"
+    },
+    "./plugin-sdk/image-generation": {
+      "types": "./dist/plugin-sdk/image-generation.d.ts",
+      "default": "./dist/plugin-sdk/image-generation.js"
+    },
+    "./plugin-sdk/imessage": {
+      "types": "./dist/plugin-sdk/imessage.d.ts",
+      "default": "./dist/plugin-sdk/imessage.js"
+    },
+    "./plugin-sdk/imessage-core": {
+      "types": "./dist/plugin-sdk/imessage-core.d.ts",
+      "default": "./dist/plugin-sdk/imessage-core.js"
+    },
+    "./plugin-sdk/irc": {
+      "types": "./dist/plugin-sdk/irc.d.ts",
+      "default": "./dist/plugin-sdk/irc.js"
+    },
+    "./plugin-sdk/reply-history": {
+      "types": "./dist/plugin-sdk/reply-history.d.ts",
+      "default": "./dist/plugin-sdk/reply-history.js"
+    },
+    "./plugin-sdk/media-understanding": {
+      "types": "./dist/plugin-sdk/media-understanding.d.ts",
+      "default": "./dist/plugin-sdk/media-understanding.js"
+    },
+    "./plugin-sdk/request-url": {
+      "types": "./dist/plugin-sdk/request-url.d.ts",
+      "default": "./dist/plugin-sdk/request-url.js"
+    },
+    "./plugin-sdk/runtime-store": {
+      "types": "./dist/plugin-sdk/runtime-store.d.ts",
+      "default": "./dist/plugin-sdk/runtime-store.js"
+    },
     "./plugin-sdk/json-store": {
       "types": "./dist/plugin-sdk/json-store.d.ts",
       "default": "./dist/plugin-sdk/json-store.js"
@@ -354,6 +406,46 @@
     "./plugin-sdk/keyed-async-queue": {
       "types": "./dist/plugin-sdk/keyed-async-queue.d.ts",
       "default": "./dist/plugin-sdk/keyed-async-queue.js"
+    },
+    "./plugin-sdk/line": {
+      "types": "./dist/plugin-sdk/line.d.ts",
+      "default": "./dist/plugin-sdk/line.js"
+    },
+    "./plugin-sdk/line-core": {
+      "types": "./dist/plugin-sdk/line-core.d.ts",
+      "default": "./dist/plugin-sdk/line-core.js"
+    },
+    "./plugin-sdk/llm-task": {
+      "types": "./dist/plugin-sdk/llm-task.d.ts",
+      "default": "./dist/plugin-sdk/llm-task.js"
+    },
+    "./plugin-sdk/matrix": {
+      "types": "./dist/plugin-sdk/matrix.d.ts",
+      "default": "./dist/plugin-sdk/matrix.js"
+    },
+    "./plugin-sdk/mattermost": {
+      "types": "./dist/plugin-sdk/mattermost.d.ts",
+      "default": "./dist/plugin-sdk/mattermost.js"
+    },
+    "./plugin-sdk/memory-core": {
+      "types": "./dist/plugin-sdk/memory-core.d.ts",
+      "default": "./dist/plugin-sdk/memory-core.js"
+    },
+    "./plugin-sdk/memory-lancedb": {
+      "types": "./dist/plugin-sdk/memory-lancedb.d.ts",
+      "default": "./dist/plugin-sdk/memory-lancedb.js"
+    },
+    "./plugin-sdk/msteams": {
+      "types": "./dist/plugin-sdk/msteams.d.ts",
+      "default": "./dist/plugin-sdk/msteams.js"
+    },
+    "./plugin-sdk/nextcloud-talk": {
+      "types": "./dist/plugin-sdk/nextcloud-talk.d.ts",
+      "default": "./dist/plugin-sdk/nextcloud-talk.js"
+    },
+    "./plugin-sdk/nostr": {
+      "types": "./dist/plugin-sdk/nostr.d.ts",
+      "default": "./dist/plugin-sdk/nostr.js"
     },
     "./plugin-sdk/provider-auth": {
       "types": "./dist/plugin-sdk/provider-auth.d.ts",
@@ -411,17 +503,13 @@
       "types": "./dist/plugin-sdk/provider-zai-endpoint.d.ts",
       "default": "./dist/plugin-sdk/provider-zai-endpoint.js"
     },
-    "./plugin-sdk/image-generation": {
-      "types": "./dist/plugin-sdk/image-generation.d.ts",
-      "default": "./dist/plugin-sdk/image-generation.js"
+    "./plugin-sdk/secret-input": {
+      "types": "./dist/plugin-sdk/secret-input.d.ts",
+      "default": "./dist/plugin-sdk/secret-input.js"
     },
-    "./plugin-sdk/reply-history": {
-      "types": "./dist/plugin-sdk/reply-history.d.ts",
-      "default": "./dist/plugin-sdk/reply-history.js"
-    },
-    "./plugin-sdk/channel-status": {
-      "types": "./dist/plugin-sdk/channel-status.d.ts",
-      "default": "./dist/plugin-sdk/channel-status.js"
+    "./plugin-sdk/signal": {
+      "types": "./dist/plugin-sdk/signal.d.ts",
+      "default": "./dist/plugin-sdk/signal.js"
     },
     "./plugin-sdk/slack": {
       "types": "./dist/plugin-sdk/slack.d.ts",
@@ -431,21 +519,17 @@
       "types": "./dist/plugin-sdk/slack-core.d.ts",
       "default": "./dist/plugin-sdk/slack-core.js"
     },
-    "./plugin-sdk/slack-targets": {
-      "types": "./dist/plugin-sdk/slack-targets.d.ts",
-      "default": "./dist/plugin-sdk/slack-targets.js"
-    },
     "./plugin-sdk/status-helpers": {
       "types": "./dist/plugin-sdk/status-helpers.d.ts",
       "default": "./dist/plugin-sdk/status-helpers.js"
     },
-    "./plugin-sdk/speech": {
-      "types": "./dist/plugin-sdk/speech.d.ts",
-      "default": "./dist/plugin-sdk/speech.js"
+    "./plugin-sdk/keyed-async-queue": {
+      "types": "./dist/plugin-sdk/keyed-async-queue.d.ts",
+      "default": "./dist/plugin-sdk/keyed-async-queue.js"
     },
-    "./plugin-sdk/state-paths": {
-      "types": "./dist/plugin-sdk/state-paths.d.ts",
-      "default": "./dist/plugin-sdk/state-paths.js"
+    "./plugin-sdk/request-url": {
+      "types": "./dist/plugin-sdk/request-url.d.ts",
+      "default": "./dist/plugin-sdk/request-url.js"
     },
     "./plugin-sdk/telegram": {
       "types": "./dist/plugin-sdk/telegram.d.ts",
@@ -479,42 +563,31 @@
       "types": "./dist/plugin-sdk/webhook-path.d.ts",
       "default": "./dist/plugin-sdk/webhook-path.js"
     },
-    "./plugin-sdk/runtime-store": {
-      "types": "./dist/plugin-sdk/runtime-store.d.ts",
-      "default": "./dist/plugin-sdk/runtime-store.js"
+    "./plugin-sdk/web-media": {
+      "types": "./dist/plugin-sdk/web-media.d.ts",
+      "default": "./dist/plugin-sdk/web-media.js"
     },
-    "./plugin-sdk/status-helpers": {
-      "types": "./dist/plugin-sdk/status-helpers.d.ts",
-      "default": "./dist/plugin-sdk/status-helpers.js"
+    "./plugin-sdk/voice-call": {
+      "types": "./dist/plugin-sdk/voice-call.d.ts",
+      "default": "./dist/plugin-sdk/voice-call.js"
     },
-    "./plugin-sdk/allow-from": {
-      "types": "./dist/plugin-sdk/allow-from.d.ts",
-      "default": "./dist/plugin-sdk/allow-from.js"
+    "./plugin-sdk/whatsapp-core": {
+      "types": "./dist/plugin-sdk/whatsapp-core.d.ts",
+      "default": "./dist/plugin-sdk/whatsapp-core.js"
     },
-    "./plugin-sdk/boolean-param": {
-      "types": "./dist/plugin-sdk/boolean-param.d.ts",
-      "default": "./dist/plugin-sdk/boolean-param.js"
+    "./plugin-sdk/whatsapp-shared": {
+      "types": "./dist/plugin-sdk/whatsapp-shared.d.ts",
+      "default": "./dist/plugin-sdk/whatsapp-shared.js"
     },
-    "./plugin-sdk/channel-config-helpers": {
-      "types": "./dist/plugin-sdk/channel-config-helpers.d.ts",
-      "default": "./dist/plugin-sdk/channel-config-helpers.js"
+    "./plugin-sdk/zalo": {
+      "types": "./dist/plugin-sdk/zalo.d.ts",
+      "default": "./dist/plugin-sdk/zalo.js"
     },
-    "./plugin-sdk/group-access": {
-      "types": "./dist/plugin-sdk/group-access.d.ts",
-      "default": "./dist/plugin-sdk/group-access.js"
+    "./plugin-sdk/zalouser": {
+      "types": "./dist/plugin-sdk/zalouser.d.ts",
+      "default": "./dist/plugin-sdk/zalouser.js"
     },
-    "./plugin-sdk/json-store": {
-      "types": "./dist/plugin-sdk/json-store.d.ts",
-      "default": "./dist/plugin-sdk/json-store.js"
-    },
-    "./plugin-sdk/keyed-async-queue": {
-      "types": "./dist/plugin-sdk/keyed-async-queue.d.ts",
-      "default": "./dist/plugin-sdk/keyed-async-queue.js"
-    },
-    "./plugin-sdk/request-url": {
-      "types": "./dist/plugin-sdk/request-url.d.ts",
-      "default": "./dist/plugin-sdk/request-url.js"
-    },
+    "./extension-api": "./dist/extensionAPI.js",
     "./cli-entry": "./openclaw.mjs"
   },
   "scripts": {

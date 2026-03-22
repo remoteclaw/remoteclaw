@@ -15,28 +15,30 @@ async function resolveRealStorePath(sessionsDir: string): Promise<string> {
 }
 
 describe("resolveSessionStoreTargets", () => {
-  it("resolves all configured agent stores", () => {
-    const cfg: RemoteClawConfig = {
-      session: {
-        store: "~/.remoteclaw/agents/{agentId}/sessions/sessions.json",
-      },
-      agents: {
-        list: [{ id: "main", default: true }, { id: "work" }],
-      },
-    };
+  it("resolves all configured agent stores", async () => {
+    await withTempHome(async (home) => {
+      const cfg: RemoteClawConfig = {
+        session: {
+          store: "~/.remoteclaw/agents/{agentId}/sessions/sessions.json",
+        },
+        agents: {
+          list: [{ id: "main", default: true }, { id: "work" }],
+        },
+      };
 
-    const targets = resolveSessionStoreTargets(cfg, { allAgents: true });
-
-    expect(targets).toEqual([
-      {
-        agentId: "main",
-        storePath: resolveStorePath(cfg.session?.store, { agentId: "main", env: process.env }),
-      },
-      {
-        agentId: "work",
-        storePath: resolveStorePath(cfg.session?.store, { agentId: "work", env: process.env }),
-      },
-    ]);
+      const env = { ...process.env };
+      const targets = resolveSessionStoreTargets(cfg, { allAgents: true }, { env });
+      expect(targets).toEqual([
+        {
+          agentId: "main",
+          storePath: resolveStorePath(cfg.session?.store, { agentId: "main", env }),
+        },
+        {
+          agentId: "work",
+          storePath: resolveStorePath(cfg.session?.store, { agentId: "work", env }),
+        },
+      ]);
+    });
   });
 
   it("dedupes shared store paths for --all-agents", () => {

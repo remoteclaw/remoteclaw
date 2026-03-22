@@ -1,9 +1,9 @@
 import type { RemoteClawConfig } from "../config/config.js";
 import type { SessionEntry, SessionMaintenanceWarning } from "../config/sessions.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
+import { deliveryContextFromSession } from "../utils/delivery-context.js";
 import { isDeliverableMessageChannel, normalizeMessageChannel } from "../utils/message-channel.js";
 import { buildOutboundSessionContext } from "./outbound/session-context.js";
-import { resolveSessionDeliveryTarget } from "./outbound/targets.js";
 import { enqueueSystemEvent } from "./system-events.js";
 
 type WarningParams = {
@@ -72,6 +72,24 @@ function buildWarningText(warning: SessionMaintenanceWarning): string {
   );
 }
 
+function resolveWarningDeliveryTarget(entry: SessionEntry): {
+  channel?: string;
+  to?: string;
+  accountId?: string;
+  threadId?: string | number;
+} {
+  const context = deliveryContextFromSession(entry);
+  const channel = context?.channel
+    ? (normalizeMessageChannel(context.channel) ?? context.channel)
+    : undefined;
+  return {
+    channel: channel && isDeliverableMessageChannel(channel) ? channel : undefined,
+    to: context?.to,
+    accountId: context?.accountId,
+    threadId: context?.threadId,
+  };
+}
+
 export async function deliverSessionMaintenanceWarning(params: WarningParams): Promise<void> {
   if (!shouldSendWarning()) {
     return;
@@ -84,10 +102,7 @@ export async function deliverSessionMaintenanceWarning(params: WarningParams): P
   warnedContexts.set(params.sessionKey, contextKey);
 
   const text = buildWarningText(params.warning);
-  const target = resolveSessionDeliveryTarget({
-    entry: params.entry,
-    requestedChannel: "last",
-  });
+  const target = resolveWarningDeliveryTarget(params.entry);
 
   if (!target.channel || !target.to) {
     enqueueSystemEvent(text, { sessionKey: params.sessionKey });

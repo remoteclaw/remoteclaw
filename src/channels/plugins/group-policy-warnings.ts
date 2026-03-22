@@ -8,6 +8,25 @@ import type { GroupPolicy } from "../../config/types.base.js";
 
 type GroupPolicyWarningCollector = (groupPolicy: GroupPolicy) => string[];
 
+export function composeAccountWarningCollectors<
+  ResolvedAccount,
+  Params extends { account: ResolvedAccount },
+>(
+  baseCollector: WarningCollector<Params>,
+  ...collectors: Array<(account: ResolvedAccount) => string | string[] | null | undefined | false>
+): WarningCollector<Params> {
+  return composeWarningCollectors(
+    baseCollector,
+    createConditionalWarningCollector<Params>(
+      ...collectors.map(
+        (collector) =>
+          ({ account }: Params) =>
+            collector(account),
+      ),
+    ),
+  );
+}
+
 export function buildOpenGroupPolicyWarning(params: {
   surface: string;
   openBehavior: string;

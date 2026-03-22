@@ -7,7 +7,7 @@ export type NormalizedPluginsConfig = {
   allow: string[];
   deny: string[];
   loadPaths: string[];
-  slots: Record<string, never>;
+  slots: { memory?: string };
   entries: Record<string, { enabled?: boolean; config?: unknown }>;
 };
 
@@ -54,7 +54,7 @@ export const normalizePluginsConfig = (
     allow: normalizeList(config?.allow),
     deny: normalizeList(config?.deny),
     loadPaths: normalizeList(config?.load?.paths),
-    slots: {} as Record<string, never>,
+    slots: { memory: config?.slots?.memory },
     entries: normalizePluginEntries(config?.entries),
   };
 };

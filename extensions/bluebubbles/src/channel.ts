@@ -13,10 +13,7 @@ import {
 import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
 import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
 import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
-import {
-  createComputedAccountStatusAdapter,
-  createDefaultChannelRuntimeState,
-} from "remoteclaw/plugin-sdk/status-helpers";
+import { createComputedAccountStatusAdapter } from "remoteclaw/plugin-sdk/status-helpers";
 import {
   listBlueBubblesAccountIds,
   type ResolvedBlueBubblesAccount,
@@ -100,8 +97,8 @@ const meta = {
   preferOver: ["imessage"],
 };
 
-export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount, BlueBubblesProbe> =
-  createChatChannelPlugin<ResolvedBlueBubblesAccount, BlueBubblesProbe>({
+export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = createChatChannelPlugin(
+  {
     base: {
       id: "bluebubbles",
       meta,
@@ -134,51 +131,92 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount, BlueBu
             },
           }),
       },
-    },
-    formatTargetDisplay: ({ target, display }) => {
-      const shouldParseDisplay = (value: string): boolean => {
-        if (looksLikeBlueBubblesTargetId(value)) {
-          return true;
-        }
-        return /^(bluebubbles:|chat_guid:|chat_id:|chat_identifier:)/i.test(value);
-      };
+      actions: bluebubblesMessageActions,
+      messaging: {
+        normalizeTarget: normalizeBlueBubblesMessagingTarget,
+        inferTargetChatType: ({ to }) => inferBlueBubblesTargetChatType(to),
+        resolveOutboundSessionRoute: (params) => resolveBlueBubblesOutboundSessionRoute(params),
+        targetResolver: {
+          looksLikeId: looksLikeBlueBubblesExplicitTargetId,
+          hint: "<handle|chat_guid:GUID|chat_id:ID|chat_identifier:ID>",
+          resolveTarget: async ({ normalized }) => {
+            const to = normalized?.trim();
+            if (!to) {
+              return null;
+            }
+            const chatType = inferBlueBubblesTargetChatType(to);
+            if (!chatType) {
+              return null;
+            }
+            return {
+              to,
+              kind: chatType === "direct" ? "user" : "group",
+              source: "normalized" as const,
+            };
+          },
+        },
+        formatTargetDisplay: ({ target, display }) => {
+          const shouldParseDisplay = (value: string): boolean => {
+            if (looksLikeBlueBubblesTargetId(value)) {
+              return true;
+            }
+            return /^(bluebubbles:|chat_guid:|chat_id:|chat_identifier:)/i.test(value);
+          };
 
-      // Helper to extract a clean handle from any BlueBubbles target format
-      const extractCleanDisplay = (value: string | undefined): string | null => {
-        const trimmed = value?.trim();
-        if (!trimmed) {
-          return null;
-        }
-        try {
-          const parsed = parseBlueBubblesTarget(trimmed);
-          if (parsed.kind === "chat_guid") {
-            const handle = extractHandleFromChatGuid(parsed.chatGuid);
+          // Helper to extract a clean handle from any BlueBubbles target format
+          const extractCleanDisplay = (value: string | undefined): string | null => {
+            const trimmed = value?.trim();
+            if (!trimmed) {
+              return null;
+            }
+            try {
+              const parsed = parseBlueBubblesTarget(trimmed);
+              if (parsed.kind === "chat_guid") {
+                const handle = extractHandleFromChatGuid(parsed.chatGuid);
+                if (handle) {
+                  return handle;
+                }
+              }
+              if (parsed.kind === "handle") {
+                return normalizeBlueBubblesHandle(parsed.to);
+              }
+            } catch {
+              // Fall through
+            }
+            // Strip common prefixes and try raw extraction
+            const stripped = trimmed
+              .replace(/^bluebubbles:/i, "")
+              .replace(/^chat_guid:/i, "")
+              .replace(/^chat_id:/i, "")
+              .replace(/^chat_identifier:/i, "");
+            const handle = extractHandleFromChatGuid(stripped);
             if (handle) {
               return handle;
             }
+            // Don't return raw chat_guid formats - they contain internal routing info
+            if (stripped.includes(";-;") || stripped.includes(";+;")) {
+              return null;
+            }
+            return stripped;
+          };
+
+          // Try to get a clean display from the display parameter first
+          const trimmedDisplay = display?.trim();
+          if (trimmedDisplay) {
+            if (!shouldParseDisplay(trimmedDisplay)) {
+              return trimmedDisplay;
+            }
+            const cleanDisplay = extractCleanDisplay(trimmedDisplay);
+            if (cleanDisplay) {
+              return cleanDisplay;
+            }
           }
-          if (parsed.kind === "handle") {
-            return normalizeBlueBubblesHandle(parsed.to);
+
+          // Fall back to extracting from target
+          const cleanTarget = extractCleanDisplay(target);
+          if (cleanTarget) {
+            return cleanTarget;
           }
-        } catch {
-          // Fall through
-        }
-        // Strip common prefixes and try raw extraction
-        const stripped = trimmed
-          .replace(/^bluebubbles:/i, "")
-          .replace(/^chat_guid:/i, "")
-          .replace(/^chat_id:/i, "")
-          .replace(/^chat_identifier:/i, "");
-        const handle = extractHandleFromChatGuid(stripped);
-        if (handle) {
-          return handle;
-        }
-        // Don't return raw chat_guid formats - they contain internal routing info
-        if (stripped.includes(";-;") || stripped.includes(";+;")) {
-          return null;
-        }
-        return stripped;
-      };
 
           // Last resort: return display or target as-is
           return display?.trim() || target?.trim() || "";
@@ -186,7 +224,13 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount, BlueBu
       },
       setup: blueBubblesSetupAdapter,
       status: createComputedAccountStatusAdapter<ResolvedBlueBubblesAccount, BlueBubblesProbe>({
-        defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID),
+        defaultRuntime: {
+          accountId: DEFAULT_ACCOUNT_ID,
+          running: false,
+          lastStartAt: null,
+          lastStopAt: null,
+          lastError: null,
+        },
         collectStatusIssues: collectBlueBubblesStatusIssues,
         buildChannelSummary: ({ snapshot }) =>
           buildProbeChannelStatusSummary(snapshot, { baseUrl: snapshot.baseUrl ?? null }),
@@ -242,33 +286,28 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount, BlueBu
         collectBlueBubblesSecurityWarnings,
       ),
     },
-  },
-  setup: blueBubblesSetupAdapter,
-  pairing: {
-    idLabel: "bluebubblesSenderId",
-    normalizeAllowEntry: (entry) => normalizeBlueBubblesHandle(entry.replace(/^bluebubbles:/i, "")),
-    notifyApproval: async ({ cfg, id }) => {
-      await sendMessageBlueBubbles(id, PAIRING_APPROVED_MESSAGE, {
-        cfg: cfg,
-      });
+    threading: {
+      buildToolContext: ({ context, hasRepliedRef }) => ({
+        currentChannelId: context.To?.trim() || undefined,
+        currentThreadTs: context.ReplyToIdFull ?? context.ReplyToId,
+        hasRepliedRef,
+      }),
     },
-    pairing: {
-      text: {
-        idLabel: "bluebubblesSenderId",
-        message: PAIRING_APPROVED_MESSAGE,
-        normalizeAllowEntry: createPairingPrefixStripper(
-          /^bluebubbles:/i,
-          normalizeBlueBubblesHandle,
-        ),
-        notify: async ({ cfg, id, message }) => {
-          await (
-            await loadBlueBubblesChannelRuntime()
-          ).sendMessageBlueBubbles(id, message, {
-            cfg: cfg,
-          });
-        },
+    pairing: createTextPairingAdapter({
+      idLabel: "bluebubblesSenderId",
+      message: PAIRING_APPROVED_MESSAGE,
+      normalizeAllowEntry: createPairingPrefixStripper(
+        /^bluebubbles:/i,
+        normalizeBlueBubblesHandle,
+      ),
+      notify: async ({ cfg, id, message }) => {
+        await (
+          await loadBlueBubblesChannelRuntime()
+        ).sendMessageBlueBubbles(id, message, {
+          cfg: cfg,
+        });
       },
-    },
+    }),
     outbound: {
       base: {
         deliveryMode: "direct",
@@ -322,42 +361,6 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount, BlueBu
           });
         },
       },
-    }),
+    },
   },
-  status: {
-    defaultRuntime: {
-      accountId: DEFAULT_ACCOUNT_ID,
-      running: false,
-      lastStartAt: null,
-      lastStopAt: null,
-      lastError: null,
-    },
-    collectStatusIssues: collectBlueBubblesStatusIssues,
-    buildChannelSummary: ({ snapshot }) =>
-      buildProbeChannelStatusSummary(snapshot, { baseUrl: snapshot.baseUrl ?? null }),
-    probeAccount: async ({ account, timeoutMs }) =>
-      probeBlueBubbles({
-        baseUrl: account.baseUrl,
-        password: account.config.password ?? null,
-        timeoutMs,
-      }),
-    buildAccountSnapshot: ({ account, runtime, probe }) => {
-      const running = runtime?.running ?? false;
-      const probeOk = (probe as BlueBubblesProbe | undefined)?.ok;
-      return {
-        accountId: account.accountId,
-        name: account.name,
-        enabled: account.enabled,
-        configured: account.configured,
-        baseUrl: account.baseUrl,
-        running,
-        connected: probeOk ?? running,
-        lastStartAt: runtime?.lastStartAt ?? null,
-        lastStopAt: runtime?.lastStopAt ?? null,
-        lastError: runtime?.lastError ?? null,
-        probe,
-        lastInboundAt: runtime?.lastInboundAt ?? null,
-        lastOutboundAt: runtime?.lastOutboundAt ?? null,
-      };
-    },
-  });
+);

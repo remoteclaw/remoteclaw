@@ -1,3 +1,4 @@
+import type { createChannelPairingChallengeIssuer } from "openclaw/plugin-sdk/channel-pairing";
 import { describe, expect, it, vi } from "vitest";
 
 const createChannelPairingChallengeIssuerMock = vi.hoisted(() => vi.fn());
@@ -93,12 +94,9 @@ describe("enforceTelegramDmAccess", () => {
       ({
         sendPairingReply,
         onCreated,
-      }: {
-        sendPairingReply: (msg: string) => Promise<void>;
-        onCreated: () => void;
-      }) =>
+      }: Parameters<ReturnType<typeof createChannelPairingChallengeIssuer>>[0]) =>
         (async () => {
-          onCreated();
+          onCreated?.({ code: "123456" });
           await sendPairingReply("Pairing code: 123456");
         })(),
     );

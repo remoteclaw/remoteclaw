@@ -283,7 +283,7 @@
     "docs:spellcheck:fix": "bash scripts/docs-spellcheck.sh --write",
     "format": "oxfmt --write",
     "format:all": "pnpm format && pnpm format:swift",
-    "format:check": "oxfmt --check",
+    "format:check": "oxfmt --check --threads=1",
     "format:diff": "oxfmt --write && git --no-pager diff",
     "format:docs": "git ls-files 'docs/**/*.md' 'docs/**/*.mdx' 'README.md' | xargs oxfmt --write",
     "format:docs:check": "git ls-files 'docs/**/*.md' 'docs/**/*.mdx' 'README.md' | xargs oxfmt --check",

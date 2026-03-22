@@ -1,5 +1,5 @@
 import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { loadConfig } from "../config/config.js";
 import { loadSessionStore, resolveStorePath } from "../config/sessions.js";
 import { listAgentsForGateway } from "../gateway/session-utils.js";
@@ -14,7 +14,7 @@ export type AgentLocalStatus = {
   lastActiveAgeMs: number | null;
 };
 
-export async function getAgentLocalStatuses(cfg: OpenClawConfig = loadConfig()): Promise<{
+export async function getAgentLocalStatuses(cfg: RemoteClawConfig = loadConfig()): Promise<{
   defaultId: string;
   agents: AgentLocalStatus[];
   totalSessions: number;

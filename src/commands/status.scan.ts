@@ -1,6 +1,6 @@
 import { withProgress } from "../cli/progress.js";
 import { readBestEffortConfig } from "../config/config.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { buildGatewayConnectionDetails, callGateway } from "../gateway/call.js";
 import { normalizeControlUiBasePath } from "../gateway/control-ui-shared.js";
 import { probeGateway } from "../gateway/probe.js";
@@ -39,7 +39,7 @@ function unwrapDeferredResult<T>(result: DeferredResult<T>): T {
 }
 
 async function resolveGatewayProbeSnapshot(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   opts: { timeoutMs?: number; all?: boolean };
 }): Promise<GatewayProbeSnapshot> {
   const gatewayConnection = buildGatewayConnectionDetails({ config: params.cfg });
@@ -59,7 +59,7 @@ async function resolveGatewayProbeSnapshot(params: {
 }
 
 async function resolveChannelsStatus(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   gatewayReachable: boolean;
   opts: { timeoutMs?: number; all?: boolean };
 }) {
@@ -78,7 +78,7 @@ async function resolveChannelsStatus(params: {
 }
 
 export type StatusScanResult = {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   osSummary: ReturnType<typeof resolveOsSummary>;
   tailscaleMode: string;
   tailscaleDns: string | null;

@@ -353,6 +353,15 @@ These run `pnpm test:live` inside the repo Docker image, mounting your local con
 - Gateway networking (two containers, WS auth + health): `pnpm test:docker:gateway-network` (script: `scripts/e2e/gateway-network-docker.sh`)
 - Plugins (custom extension load + registry smoke): `pnpm test:docker:plugins` (script: `scripts/e2e/plugins-docker.sh`)
 
+The live-model Docker runners also bind-mount the current checkout read-only and
+stage it into a temporary workdir inside the container. This keeps the runtime
+image slim while still running Vitest against your exact local source/config.
+
+Manual ACP plain-language thread smoke (not CI):
+
+- `bun scripts/dev/discord-acp-plain-language-smoke.ts --channel <discord-channel-id> ...`
+- Keep this script for regression/debug workflows. It may be needed again for ACP thread routing validation, so do not delete it.
+
 Useful env vars:
 
 - `REMOTECLAW_CONFIG_DIR=...` (default: `~/.remoteclaw`) mounted to `/home/node/.remoteclaw`

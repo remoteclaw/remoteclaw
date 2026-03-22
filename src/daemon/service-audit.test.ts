@@ -136,10 +136,10 @@ describe("auditGatewayServiceConfig", () => {
         programArguments: ["/usr/bin/node", "gateway"],
         environment: {
           PATH: "/usr/local/bin:/usr/bin:/bin",
-          OPENCLAW_GATEWAY_TOKEN: "old-token",
+          REMOTECLAW_GATEWAY_TOKEN: "old-token",
         },
         environmentValueSources: {
-          OPENCLAW_GATEWAY_TOKEN: "file",
+          REMOTECLAW_GATEWAY_TOKEN: "file",
         },
       },
     });

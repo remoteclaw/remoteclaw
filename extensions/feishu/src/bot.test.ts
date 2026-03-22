@@ -37,6 +37,7 @@ const {
     accountId: "default",
     sessionKey: "agent:main:feishu:dm:ou-attacker",
     mainSessionKey: "agent:main:main",
+    lastRoutePolicy: "session" as const,
     matchedBy: "default" as const,
   })),
 }));
@@ -121,6 +122,7 @@ describe("handleFeishuMessage command authorization", () => {
       accountId: "default",
       sessionKey: "agent:main:feishu:dm:ou-attacker",
       mainSessionKey: "agent:main:main",
+      lastRoutePolicy: "session" as const,
       matchedBy: "default" as const,
     });
     mockCreateFeishuClient.mockReturnValue({
@@ -1786,6 +1788,7 @@ describe("broadcast dispatch", () => {
       accountId: "default",
       sessionKey: "agent:main:feishu:group:oc-broadcast-group",
       mainSessionKey: "agent:main:main",
+      lastRoutePolicy: "session" as const,
       matchedBy: "default" as const,
     });
     mockCreateFeishuClient.mockReturnValue({

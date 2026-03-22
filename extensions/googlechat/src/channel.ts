@@ -21,14 +21,8 @@ import {
 } from "remoteclaw/plugin-sdk/directory-runtime";
 import { buildPassiveProbedChannelStatusSummary } from "remoteclaw/plugin-sdk/extension-shared";
 import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
+import { createComputedAccountStatusAdapter } from "remoteclaw/plugin-sdk/status-helpers";
 import {
-  createComputedAccountStatusAdapter,
-  createDefaultChannelRuntimeState,
-} from "remoteclaw/plugin-sdk/status-helpers";
-import {
-  applyAccountNameToChannelSection,
-  applySetupAccountConfigPatch,
-  buildComputedAccountStatusSnapshot,
   buildChannelConfigSchema,
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
@@ -236,7 +230,13 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
     },
     actions: googlechatActions,
     status: createComputedAccountStatusAdapter<ResolvedGoogleChatAccount>({
-      defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID),
+      defaultRuntime: {
+        accountId: DEFAULT_ACCOUNT_ID,
+        running: false,
+        lastStartAt: null,
+        lastStopAt: null,
+        lastError: null,
+      },
       collectStatusIssues: (accounts): ChannelStatusIssue[] =>
         accounts.flatMap((entry) => {
           const accountId = String(entry.accountId ?? DEFAULT_ACCOUNT_ID);
@@ -276,26 +276,21 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
         }),
       probeAccount: async ({ account }) =>
         (await loadGoogleChatChannelRuntime()).probeGoogleChat(account),
-      buildAccountSnapshot: ({ account, runtime, probe }) =>
-        buildComputedAccountStatusSnapshot(
-          {
-            accountId: account.accountId,
-            name: account.name,
-            enabled: account.enabled,
-            configured: account.credentialSource !== "none",
-            runtime,
-            probe,
-          },
-          {
-            credentialSource: account.credentialSource,
-            audienceType: account.config.audienceType,
-            audience: account.config.audience,
-            webhookPath: account.config.webhookPath,
-            webhookUrl: account.config.webhookUrl,
-            dmPolicy: account.config.dm?.policy ?? "pairing",
-          },
-        ),
-    },
+      resolveAccountSnapshot: ({ account }) => ({
+        accountId: account.accountId,
+        name: account.name,
+        enabled: account.enabled,
+        configured: account.credentialSource !== "none",
+        extra: {
+          credentialSource: account.credentialSource,
+          audienceType: account.config.audienceType,
+          audience: account.config.audience,
+          webhookPath: account.config.webhookPath,
+          webhookUrl: account.config.webhookUrl,
+          dmPolicy: account.config.dm?.policy ?? "pairing",
+        },
+      }),
+    }),
     gateway: {
       startAccount: async (ctx) => {
         const account = ctx.account;

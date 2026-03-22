@@ -9,14 +9,12 @@ import type {
   ChannelMessageToolDiscovery,
 } from "remoteclaw/plugin-sdk/channel-contract";
 import { createLoggedPairingApprovalNotifier } from "remoteclaw/plugin-sdk/channel-pairing";
-import { createRestrictSendersChannelSecurity } from "remoteclaw/plugin-sdk/channel-policy";
-import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
+import { createAllowlistProviderRestrictSendersWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
+import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
+import { createScopedAccountReplyToModeResolver } from "remoteclaw/plugin-sdk/conversation-runtime";
 import { createChannelDirectoryAdapter } from "remoteclaw/plugin-sdk/directory-runtime";
 import { buildPassiveProbedChannelStatusSummary } from "remoteclaw/plugin-sdk/extension-shared";
-import {
-  createComputedAccountStatusAdapter,
-  createDefaultChannelRuntimeState,
-} from "remoteclaw/plugin-sdk/status-helpers";
+import { createComputedAccountStatusAdapter } from "remoteclaw/plugin-sdk/status-helpers";
 import { MattermostConfigSchema } from "./config-schema.js";
 import { resolveMattermostGroupRequireMention } from "./group-mentions.js";
 import {
@@ -37,7 +35,6 @@ import { addMattermostReaction, removeMattermostReaction } from "./mattermost/re
 import { sendMessageMattermost } from "./mattermost/send.js";
 import { looksLikeMattermostTargetId, normalizeMattermostMessagingTarget } from "./normalize.js";
 import {
-  buildComputedAccountStatusSnapshot,
   buildChannelConfigSchema,
   createAccountStatusSink,
   DEFAULT_ACCOUNT_ID,
@@ -502,7 +499,7 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = create
         }),
     }),
   },
-  status: {
+  status: createComputedAccountStatusAdapter<ResolvedMattermostAccount>({
     defaultRuntime: {
       accountId: DEFAULT_ACCOUNT_ID,
       running: false,
@@ -533,78 +530,20 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = create
       }
       return await probeMattermost(baseUrl, token, timeoutMs);
     },
-    buildAccountSnapshot: ({ account, runtime, probe }) =>
-      buildComputedAccountStatusSnapshot(
-        {
-          accountId: account.accountId,
-          name: account.name,
-          enabled: account.enabled,
-          configured: Boolean(account.botToken && account.baseUrl),
-          runtime,
-          probe,
-        },
-        {
-          botTokenSource: account.botTokenSource,
-          baseUrl: account.baseUrl,
-          connected: runtime?.connected ?? false,
-          lastConnectedAt: runtime?.lastConnectedAt ?? null,
-          lastDisconnect: runtime?.lastDisconnect ?? null,
-        },
-      ),
-  },
-  setup: {
-    resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
-    applyAccountName: ({ cfg, accountId, name }) =>
-      applyAccountNameToChannelSection({
-        cfg,
-        channelKey: "mattermost",
-        accountId,
-        name,
-      }),
-    validateInput: ({ accountId, input }) => {
-      if (input.useEnv && accountId !== DEFAULT_ACCOUNT_ID) {
-        return "Mattermost env vars can only be used for the default account.";
-      }
-      const token = input.botToken ?? input.token;
-      const baseUrl = input.httpUrl;
-      if (!input.useEnv && (!token || !baseUrl)) {
-        return "Mattermost requires --bot-token and --http-url (or --use-env).";
-      }
-      if (baseUrl && !normalizeMattermostBaseUrl(baseUrl)) {
-        return "Mattermost --http-url must include a valid base URL.";
-      }
-      return null;
-    },
-    applyAccountConfig: ({ cfg, accountId, input }) => {
-      const token = input.botToken ?? input.token;
-      const baseUrl = input.httpUrl?.trim();
-      const namedConfig = applyAccountNameToChannelSection({
-        cfg,
-        channelKey: "mattermost",
-        accountId,
-        name: input.name,
-      });
-      const next =
-        accountId !== DEFAULT_ACCOUNT_ID
-          ? migrateBaseNameToDefaultAccount({
-              cfg: namedConfig,
-              channelKey: "mattermost",
-            })
-          : namedConfig;
-      const patch = input.useEnv
-        ? {}
-        : {
-            ...(token ? { botToken: token } : {}),
-            ...(baseUrl ? { baseUrl } : {}),
-          };
-      return applySetupAccountConfigPatch({
-        cfg: next,
-        channelKey: "mattermost",
-        accountId,
-        patch,
-      });
-    },
-  },
+    resolveAccountSnapshot: ({ account, runtime }) => ({
+      accountId: account.accountId,
+      name: account.name,
+      enabled: account.enabled,
+      configured: Boolean(account.botToken && account.baseUrl),
+      extra: {
+        botTokenSource: account.botTokenSource,
+        baseUrl: account.baseUrl,
+        connected: runtime?.connected ?? false,
+        lastConnectedAt: runtime?.lastConnectedAt ?? null,
+        lastDisconnect: runtime?.lastDisconnect ?? null,
+      },
+    }),
+  }),
   gateway: {
     startAccount: async (ctx) => {
       const account = ctx.account;

@@ -11,7 +11,6 @@ import {
   projectWarningCollector,
 } from "remoteclaw/plugin-sdk/channel-policy";
 import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
-import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
 import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
 import { createComputedAccountStatusAdapter } from "remoteclaw/plugin-sdk/status-helpers";
 import {
@@ -29,7 +28,6 @@ import {
 import type { ChannelAccountSnapshot, ChannelPlugin } from "./runtime-api.js";
 import {
   buildChannelConfigSchema,
-  buildComputedAccountStatusSnapshot,
   buildProbeChannelStatusSummary,
   collectBlueBubblesStatusIssues,
   DEFAULT_ACCOUNT_ID,
@@ -309,7 +307,7 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = crea
       },
     }),
   },
-  status: {
+  status: createComputedAccountStatusAdapter<ResolvedBlueBubblesAccount, BlueBubblesProbe>({
     defaultRuntime: {
       accountId: DEFAULT_ACCOUNT_ID,
       running: false,
@@ -326,25 +324,21 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = crea
         password: account.config.password ?? null,
         timeoutMs,
       }),
-    buildAccountSnapshot: ({ account, runtime, probe }) => {
+    resolveAccountSnapshot: ({ account, runtime, probe }) => {
       const running = runtime?.running ?? false;
-      const probeOk = (probe as BlueBubblesProbe | undefined)?.ok;
-      return buildComputedAccountStatusSnapshot(
-        {
-          accountId: account.accountId,
-          name: account.name,
-          enabled: account.enabled,
-          configured: account.configured,
-          runtime,
-          probe,
-        },
-        {
+      const probeOk = probe?.ok;
+      return {
+        accountId: account.accountId,
+        name: account.name,
+        enabled: account.enabled,
+        configured: account.configured,
+        extra: {
           baseUrl: account.baseUrl,
           connected: probeOk ?? running,
         },
-      );
+      };
     },
-  },
+  }),
   gateway: {
     startAccount: async (ctx) => {
       const runtime = await loadBlueBubblesChannelRuntime();

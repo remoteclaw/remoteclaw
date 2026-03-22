@@ -17,7 +17,7 @@ vi.mock("./graph-upload.js", async () => {
   };
 });
 
-import { resolvePreferredRemoteClawTmpDir } from "remoteclaw/plugin-sdk";
+import { resolvePreferredRemoteClawTmpDir } from "../../../src/infra/tmp-remoteclaw-dir.js";
 import {
   type MSTeamsAdapter,
   renderReplyPayloadsToMessages,
@@ -50,9 +50,14 @@ const runtimeStub: PluginRuntime = createPluginRuntimeMock({
   },
 });
 
+const noopUpdateActivity = async () => {};
+const noopDeleteActivity = async () => {};
+
 const createNoopAdapter = (): MSTeamsAdapter => ({
   continueConversation: async () => {},
   process: async () => {},
+  updateActivity: noopUpdateActivity,
+  deleteActivity: noopDeleteActivity,
 });
 
 const createRecordedSendActivity = (
@@ -74,6 +79,21 @@ const createRecordedSendActivity = (
 
 const REVOCATION_ERROR = "Cannot perform 'set' on a proxy that has been revoked";
 
+function requireConversationId(ref: { conversation?: { id?: string } }) {
+  if (!ref.conversation?.id) {
+    throw new Error("expected Teams top-level send to preserve conversation id");
+  }
+  return ref.conversation.id;
+}
+
+function requireSentMessage(sent: Array<{ text?: string; entities?: unknown[] }>) {
+  const firstSent = sent[0];
+  if (!firstSent?.text) {
+    throw new Error("expected Teams message send to include rendered text");
+  }
+  return firstSent;
+}
+
 const createFallbackAdapter = (proactiveSent: string[]): MSTeamsAdapter => ({
   continueConversation: async (_appId, _reference, logic) => {
     await logic({
@@ -81,6 +101,8 @@ const createFallbackAdapter = (proactiveSent: string[]): MSTeamsAdapter => ({
     });
   },
   process: async () => {},
+  updateActivity: noopUpdateActivity,
+  deleteActivity: noopDeleteActivity,
 });
 
 describe("msteams messenger", () => {
@@ -139,6 +161,22 @@ describe("msteams messenger", () => {
   });
 
   describe("sendMSTeamsMessages", () => {
+    function createRevokedThreadContext(params?: { failAfterAttempt?: number; sent?: string[] }) {
+      let attempt = 0;
+      return {
+        sendActivity: async (activity: unknown) => {
+          const { text } = activity as { text?: string };
+          const content = text ?? "";
+          attempt += 1;
+          if (params?.failAfterAttempt && attempt < params.failAfterAttempt) {
+            params.sent?.push(content);
+            return { id: `id:${content}` };
+          }
+          throw new TypeError(REVOCATION_ERROR);
+        },
+      };
+    }
+
     const baseRef: StoredConversationReference = {
       activityId: "activity123",
       user: { id: "user123", name: "User" },
@@ -179,6 +217,8 @@ describe("msteams messenger", () => {
           });
         },
         process: async () => {},
+        updateActivity: noopUpdateActivity,
+        deleteActivity: noopDeleteActivity,
       };
 
       const ids = await sendMSTeamsMessages({
@@ -197,7 +237,7 @@ describe("msteams messenger", () => {
         conversation?: { id?: string };
       };
       expect(ref.activityId).toBeUndefined();
-      expect(ref.conversation?.id).toBe("19:abc@thread.tacv2");
+      expect(requireConversationId(ref)).toBe("19:abc@thread.tacv2");
     });
 
     it("preserves parsed mentions when appending OneDrive fallback file links", async () => {
@@ -239,11 +279,12 @@ describe("msteams messenger", () => {
         expect(ids).toEqual(["id:one"]);
         expect(graphUploadMockState.uploadAndShareOneDrive).toHaveBeenCalledOnce();
         expect(sent).toHaveLength(1);
-        expect(sent[0]?.text).toContain("Hello <at>John</at>");
-        expect(sent[0]?.text).toContain(
+        const firstSent = requireSentMessage(sent);
+        expect(firstSent.text).toContain("Hello <at>John</at>");
+        expect(firstSent.text).toContain(
           "📎 [upload.txt](https://onedrive.example.com/share/item123)",
         );
-        expect(sent[0]?.entities).toEqual([
+        expect(firstSent.entities).toEqual([
           {
             type: "mention",
             text: "<at>John</at>",
@@ -307,13 +348,7 @@ describe("msteams messenger", () => {
 
     it("falls back to proactive messaging when thread context is revoked", async () => {
       const proactiveSent: string[] = [];
-
-      const ctx = {
-        sendActivity: async () => {
-          throw new TypeError(REVOCATION_ERROR);
-        },
-      };
-
+      const ctx = createRevokedThreadContext();
       const adapter = createFallbackAdapter(proactiveSent);
 
       const ids = await sendMSTeamsMessages({
@@ -333,21 +368,7 @@ describe("msteams messenger", () => {
     it("falls back only for remaining thread messages after context revocation", async () => {
       const threadSent: string[] = [];
       const proactiveSent: string[] = [];
-      let attempt = 0;
-
-      const ctx = {
-        sendActivity: async (activity: unknown) => {
-          const { text } = activity as { text?: string };
-          const content = text ?? "";
-          attempt += 1;
-          if (attempt === 1) {
-            threadSent.push(content);
-            return { id: `id:${content}` };
-          }
-          throw new TypeError(REVOCATION_ERROR);
-        },
-      };
-
+      const ctx = createRevokedThreadContext({ failAfterAttempt: 2, sent: threadSent });
       const adapter = createFallbackAdapter(proactiveSent);
 
       const ids = await sendMSTeamsMessages({
@@ -372,6 +393,8 @@ describe("msteams messenger", () => {
           await logic({ sendActivity: createRecordedSendActivity(attempts, 503) });
         },
         process: async () => {},
+        updateActivity: noopUpdateActivity,
+        deleteActivity: noopDeleteActivity,
       };
 
       const ids = await sendMSTeamsMessages({

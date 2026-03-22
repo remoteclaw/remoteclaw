@@ -307,11 +307,14 @@ const expectMediaBufferSaved = () => {
 };
 const expectFirstMedia = (media: DownloadedMedia, expected: DownloadedMediaExpectation) => {
   const first = media[0];
+  if (!first) {
+    throw new Error("expected one downloaded media item");
+  }
   if (expected.path !== undefined) {
-    expect(first?.path).toBe(expected.path);
+    expect(first.path).toBe(expected.path);
   }
   if (expected.placeholder !== undefined) {
-    expect(first?.placeholder).toBe(expected.placeholder);
+    expect(first.placeholder).toBe(expected.placeholder);
   }
 };
 const expectMSTeamsMediaPayload = (
@@ -323,6 +326,21 @@ const expectMSTeamsMediaPayload = (
   expect(payload.MediaPaths).toEqual(expected.paths);
   expect(payload.MediaUrls).toEqual(expected.paths);
   expect(payload.MediaTypes).toEqual(expected.types);
+};
+const requireFetchCall = (
+  fetchMock: { mock: { calls: unknown[][] } },
+  index: number,
+): [string, RequestInit | undefined] => {
+  const call = fetchMock.mock.calls[index];
+  if (!call) {
+    throw new Error(`expected fetch call ${index + 1}`);
+  }
+  return [String(call[0]), call[1] as RequestInit | undefined];
+};
+const expectGraphMessagePath = (url: string, expectedPath: string) => {
+  const parsed = new URL(url);
+  expect(parsed.origin).toBe(`https://${GRAPH_HOST}`);
+  expect(parsed.pathname).toBe(`/v1.0${expectedPath}`);
 };
 type AttachmentPlaceholderCase = LabeledCase & {
   attachments: AttachmentPlaceholderInput;
@@ -352,7 +370,7 @@ type AttachmentAuthRetryCase = LabeledCase & {
 };
 type GraphUrlExpectationCase = LabeledCase & {
   params: GraphMessageUrlParams;
-  expectedPath: string;
+  expectedPaths: string[];
 };
 type ChannelGraphUrlCaseParams = {
   messageId: string;
@@ -515,7 +533,12 @@ const GRAPH_URL_EXPECTATION_CASES: GraphUrlExpectationCase[] = [
   ...CHANNEL_GRAPH_URL_CASES.map<GraphUrlExpectationCase>(({ label, ...params }) =>
     withLabel(label, {
       params: createChannelGraphMessageUrlParams(params),
-      expectedPath: buildExpectedChannelMessagePath(params),
+      expectedPaths: params.replyToId
+        ? [
+            buildExpectedChannelMessagePath(params),
+            buildExpectedChannelMessagePath({ messageId: params.messageId }),
+          ]
+        : [buildExpectedChannelMessagePath(params)],
     }),
   ),
   withLabel("builds chat message urls", {
@@ -524,7 +547,7 @@ const GRAPH_URL_EXPECTATION_CASES: GraphUrlExpectationCase[] = [
       conversationId: "19:chat@thread.v2",
       messageId: "456",
     },
-    expectedPath: "/chats/19%3Achat%40thread.v2/messages/456",
+    expectedPaths: ["/chats/19%3Achat%40thread.v2/messages/456"],
   }),
 ];
 
@@ -748,7 +771,16 @@ describe("msteams attachments", () => {
 
       expectAttachmentMediaLength(media, 1);
       expect(tokenProvider.getAccessToken).toHaveBeenCalledOnce();
-      expect(fetchMock.mock.calls.map(([calledUrl]) => String(calledUrl))).toContain(redirectedUrl);
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      const [firstUrl, firstInit] = requireFetchCall(fetchMock, 0);
+      const [secondUrl, secondInit] = requireFetchCall(fetchMock, 1);
+      const [thirdUrl, thirdInit] = requireFetchCall(fetchMock, 2);
+      expect(firstUrl).toBe(TEST_URL_IMAGE);
+      expect(new Headers(firstInit?.headers).get("Authorization")).toBeNull();
+      expect(secondUrl).toBe(TEST_URL_IMAGE);
+      expect(new Headers(secondInit?.headers).get("Authorization")).toBe("Bearer token");
+      expect(thirdUrl).toBe(redirectedUrl);
+      expect(new Headers(thirdInit?.headers).get("Authorization")).toBeNull();
     });
 
     it("continues scope fallback after non-auth failure and succeeds on later scope", async () => {
@@ -814,8 +846,10 @@ describe("msteams attachments", () => {
       const redirected = seen.find(
         (entry) => entry.url === "https://attacker.azureedge.net/collect",
       );
-      expect(redirected).toBeDefined();
-      expect(redirected?.auth).toBe("");
+      if (!redirected) {
+        throw new Error("expected redirected Azure Edge fetch to be observed");
+      }
+      expect(redirected.auth).toBe("");
     });
 
     it("skips urls outside the allowlist", async () => {
@@ -859,9 +893,16 @@ describe("msteams attachments", () => {
   });
 
   describe("buildMSTeamsGraphMessageUrls", () => {
-    it.each(GRAPH_URL_EXPECTATION_CASES)("$label", ({ params, expectedPath }) => {
+    it.each(GRAPH_URL_EXPECTATION_CASES)("$label", ({ params, expectedPaths }) => {
       const urls = buildMSTeamsGraphMessageUrls(params);
-      expect(urls[0]).toContain(expectedPath);
+      expect(urls).toHaveLength(expectedPaths.length);
+      urls.forEach((url, index) => {
+        const expectedPath = expectedPaths[index];
+        if (!expectedPath) {
+          throw new Error(`missing expected graph path ${index + 1}`);
+        }
+        expectGraphMessagePath(url, expectedPath);
+      });
     });
   });
 
@@ -907,8 +948,10 @@ describe("msteams attachments", () => {
 
       expectAttachmentMediaLength(media.media, 1);
       const redirected = seen.find((entry) => entry.url === escapedUrl);
-      expect(redirected).toBeDefined();
-      expect(redirected?.auth).toBe("");
+      if (!redirected) {
+        throw new Error("expected redirected SharePoint fetch to be observed");
+      }
+      expect(redirected.auth).toBe("");
     });
 
     it("blocks SharePoint redirects to hosts outside allowHosts", async () => {

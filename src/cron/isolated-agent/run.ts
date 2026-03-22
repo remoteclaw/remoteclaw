@@ -185,6 +185,54 @@ async function resolveCronDeliveryContext(params: {
   };
 }
 
+type ResolvedAgentConfig = NonNullable<ReturnType<typeof resolveAgentConfig>>;
+
+function extractCronAgentDefaultsOverride(agentConfigOverride?: ResolvedAgentConfig) {
+  const {
+    model: overrideModel,
+    sandbox: _agentSandboxOverride,
+    ...agentOverrideRest
+  } = agentConfigOverride ?? {};
+  return {
+    overrideModel,
+    definedOverrides: Object.fromEntries(
+      Object.entries(agentOverrideRest).filter(([, value]) => value !== undefined),
+    ) as Partial<AgentDefaultsConfig>,
+  };
+}
+
+function mergeCronAgentModelOverride(params: {
+  defaults: AgentDefaultsConfig;
+  overrideModel: ResolvedAgentConfig["model"];
+}) {
+  const nextDefaults: AgentDefaultsConfig = { ...params.defaults };
+  const existingModel =
+    nextDefaults.model && typeof nextDefaults.model === "object" ? nextDefaults.model : {};
+  if (typeof params.overrideModel === "string") {
+    nextDefaults.model = { ...existingModel, primary: params.overrideModel };
+  } else if (params.overrideModel) {
+    nextDefaults.model = { ...existingModel, ...params.overrideModel };
+  }
+  return nextDefaults;
+}
+
+function buildCronAgentDefaultsConfig(params: {
+  defaults?: AgentDefaultsConfig;
+  agentConfigOverride?: ResolvedAgentConfig;
+}) {
+  const { overrideModel, definedOverrides } = extractCronAgentDefaultsOverride(
+    params.agentConfigOverride,
+  );
+  // Keep sandbox overrides out of `agents.defaults` here. Sandbox resolution
+  // already merges global defaults with per-agent overrides using `agentId`;
+  // copying the agent sandbox into defaults clobbers global defaults and can
+  // double-apply nested agent overrides during isolated cron runs.
+  return mergeCronAgentModelOverride({
+    defaults: Object.assign({}, params.defaults, definedOverrides),
+    overrideModel,
+  });
+}
+
 export async function runCronIsolatedAgentTurn(params: {
   cfg: RemoteClawConfig;
   deps: CliDeps;
@@ -218,23 +266,14 @@ export async function runCronIsolatedAgentTurn(params: {
   const agentConfigOverride = normalizedRequested
     ? resolveAgentConfig(params.cfg, normalizedRequested)
     : undefined;
-  const { sandbox: _agentSandboxOverride, ...agentOverrideRest } = agentConfigOverride ?? {};
   // Use the requested agentId even when there is no explicit agent config entry.
   // This ensures auth-profiles, workspace, and agentDir all resolve to the
   // correct per-agent paths (e.g. ~/.remoteclaw/agents/<agentId>/agent/).
   const agentId = normalizedRequested ?? defaultAgentId;
-  // Keep sandbox overrides out of `agents.defaults` here. Sandbox resolution
-  // already merges global defaults with per-agent overrides using `agentId`;
-  // copying the agent sandbox into defaults clobbers global defaults and can
-  // double-apply nested agent overrides during isolated cron runs.
-  const definedOverrides = Object.fromEntries(
-    Object.entries(agentOverrideRest).filter(([, value]) => value !== undefined),
-  );
-  const agentCfg: AgentDefaultsConfig = Object.assign(
-    {},
-    params.cfg.agents?.defaults,
-    definedOverrides as Partial<AgentDefaultsConfig>,
-  );
+  const agentCfg = buildCronAgentDefaultsConfig({
+    defaults: params.cfg.agents?.defaults,
+    agentConfigOverride,
+  });
   const cfgWithAgentDefaults: RemoteClawConfig = {
     ...params.cfg,
     agents: Object.assign({}, params.cfg.agents, { defaults: agentCfg }),

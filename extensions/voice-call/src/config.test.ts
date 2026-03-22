@@ -195,11 +195,7 @@ describe("normalizeVoiceCallConfig", () => {
       tts: {
         provider: "elevenlabs",
         elevenlabs: {
-          apiKey: {
-            source: "env",
-            provider: "elevenlabs",
-            id: "ELEVENLABS_API_KEY",
-          },
+          apiKey: "test-elevenlabs-key",
           voiceSettings: {
             speed: 1.1,
           },

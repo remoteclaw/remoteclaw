@@ -363,31 +363,26 @@ const collectSlackSecurityWarnings =
     },
   });
 
-export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
-  ...createSlackPluginBase({
-    setupWizard: slackSetupWizard,
-    setup: slackSetupAdapter,
-  }),
-  pairing: createTextPairingAdapter({
-    idLabel: "slackUserId",
-    message: PAIRING_APPROVED_MESSAGE,
-    normalizeAllowEntry: createPairingPrefixStripper(/^(slack|user):/i),
-    notify: async ({ id, message }) => {
-      const cfg = getSlackRuntime().config.loadConfig();
-      const account = resolveSlackAccount({
-        cfg,
-        accountId: DEFAULT_ACCOUNT_ID,
-      });
-      const token = getTokenForOperation(account, "write");
-      const botToken = account.botToken?.trim();
-      const tokenOverride = token && token !== botToken ? token : undefined;
-      if (tokenOverride) {
-        await getSlackRuntime().channel.slack.sendMessageSlack(`user:${id}`, message, {
-          token: tokenOverride,
-        });
-      } else {
-        await getSlackRuntime().channel.slack.sendMessageSlack(`user:${id}`, message);
-      }
+export const slackPlugin: ChannelPlugin<ResolvedSlackAccount, SlackProbe> = createChatChannelPlugin<
+  ResolvedSlackAccount,
+  SlackProbe
+>({
+  base: {
+    ...createSlackPluginBase({
+      setupWizard: slackSetupWizard,
+      setup: slackSetupAdapter,
+    }),
+    allowlist: {
+      ...buildLegacyDmAccountAllowlistAdapter({
+        channelId: "slack",
+        resolveAccount: resolveSlackAccount,
+        normalize: ({ cfg, accountId, values }) =>
+          slackConfigAdapter.formatAllowFrom!({ cfg, accountId, allowFrom: values }),
+        resolveDmAllowFrom: (account) => account.config.allowFrom ?? account.config.dm?.allowFrom,
+        resolveGroupPolicy: (account) => account.groupPolicy,
+        resolveGroupOverrides: resolveSlackAllowlistGroupOverrides,
+      }),
+      resolveNames: resolveSlackAllowlistNames,
     },
   }),
   allowlist: {

@@ -12,12 +12,14 @@ import {
 import { createAllowlistProviderRouteAllowlistWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
 import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
 import { runStoppablePassiveMonitor } from "remoteclaw/plugin-sdk/extension-shared";
-import { createDefaultChannelRuntimeState } from "remoteclaw/plugin-sdk/status-helpers";
+import {
+  createComputedAccountStatusAdapter,
+  createDefaultChannelRuntimeState,
+} from "remoteclaw/plugin-sdk/status-helpers";
 import {
   applyAccountNameToChannelSection,
   buildBaseChannelStatusSummary,
   buildChannelConfigSchema,
-  buildRuntimeAccountStatusSnapshot,
   clearAccountEntryFields,
   DEFAULT_ACCOUNT_ID,
   type ChannelPlugin,
@@ -183,102 +185,33 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
         },
       },
       setup: nextcloudTalkSetupAdapter,
-      status: {
+      status: createComputedAccountStatusAdapter<ResolvedNextcloudTalkAccount>({
         defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID),
         buildChannelSummary: ({ snapshot }) =>
           buildBaseChannelStatusSummary(snapshot, {
             secretSource: snapshot.secretSource ?? "none",
             mode: "webhook",
           }),
-        buildAccountSnapshot: ({ account, runtime }) => {
-          const configured = Boolean(account.secret?.trim() && account.baseUrl?.trim());
-          return buildRuntimeAccountStatusSnapshot(
-            { runtime },
-            {
-              accountId: account.accountId,
-              name: account.name,
-              enabled: account.enabled,
-              configured,
-              secretSource: account.secretSource,
-              baseUrl: account.baseUrl ? "[set]" : "[missing]",
-              mode: "webhook",
-              lastInboundAt: runtime?.lastInboundAt ?? null,
-              lastOutboundAt: runtime?.lastOutboundAt ?? null,
-            },
+        resolveAccountSnapshot: ({ account }) => ({
+          accountId: account.accountId,
+          name: account.name,
+          enabled: account.enabled,
+          configured: Boolean(account.secret?.trim() && account.baseUrl?.trim()),
+          extra: {
+            secretSource: account.secretSource,
+            baseUrl: account.baseUrl ? "[set]" : "[missing]",
+            mode: "webhook",
           },
-        },
-      } as RemoteClawConfig;
-    },
-  },
-  outbound: {
-    deliveryMode: "direct",
-    chunker: (text, limit) => getNextcloudTalkRuntime().channel.text.chunkMarkdownText(text, limit),
-    chunkerMode: "markdown",
-    textChunkLimit: 4000,
-    ...createAttachedChannelResultAdapter({
-      channel: "nextcloud-talk",
-      sendText: async ({ cfg, to, text, accountId, replyToId }) =>
-        await sendMessageNextcloudTalk(to, text, {
-          accountId: accountId ?? undefined,
-          replyTo: replyToId ?? undefined,
-          cfg: cfg as CoreConfig,
         }),
-      sendMedia: async ({ cfg, to, text, mediaUrl, accountId, replyToId }) =>
-        await sendMessageNextcloudTalk(to, mediaUrl ? `${text}\n\nAttachment: ${mediaUrl}` : text, {
-          accountId: accountId ?? undefined,
-          replyTo: replyToId ?? undefined,
-          cfg: cfg as CoreConfig,
-        }),
-    }),
-  },
-  status: {
-    defaultRuntime: {
-      accountId: DEFAULT_ACCOUNT_ID,
-      running: false,
-      lastStartAt: null,
-      lastStopAt: null,
-      lastError: null,
-    },
-    buildChannelSummary: ({ snapshot }) => {
-      const base = buildBaseChannelStatusSummary(snapshot);
-      return {
-        configured: base.configured,
-        secretSource: snapshot.secretSource ?? "none",
-        running: base.running,
-        mode: "webhook",
-        lastStartAt: base.lastStartAt,
-        lastStopAt: base.lastStopAt,
-        lastError: base.lastError,
-      };
-    },
-    buildAccountSnapshot: ({ account, runtime }) => {
-      const configured = Boolean(account.secret?.trim() && account.baseUrl?.trim());
-      const runtimeSnapshot = buildRuntimeAccountStatusSnapshot({ runtime });
-      return {
-        accountId: account.accountId,
-        name: account.name,
-        enabled: account.enabled,
-        configured,
-        secretSource: account.secretSource,
-        baseUrl: account.baseUrl ? "[set]" : "[missing]",
-        running: runtimeSnapshot.running,
-        lastStartAt: runtimeSnapshot.lastStartAt,
-        lastStopAt: runtimeSnapshot.lastStopAt,
-        lastError: runtimeSnapshot.lastError,
-        mode: "webhook",
-        lastInboundAt: runtime?.lastInboundAt ?? null,
-        lastOutboundAt: runtime?.lastOutboundAt ?? null,
-      };
-    },
-  },
-  gateway: {
-    startAccount: async (ctx) => {
-      const account = ctx.account;
-      if (!account.secret || !account.baseUrl) {
-        throw new Error(
-          `Nextcloud Talk not configured for account "${account.accountId}" (missing secret or baseUrl)`,
-        );
-      }
+      }),
+      gateway: {
+        startAccount: async (ctx) => {
+          const account = ctx.account;
+          if (!account.secret || !account.baseUrl) {
+            throw new Error(
+              `Nextcloud Talk not configured for account "${account.accountId}" (missing secret or baseUrl)`,
+            );
+          }
 
       ctx.log?.info(`[${account.accountId}] starting Nextcloud Talk webhook server`);
 

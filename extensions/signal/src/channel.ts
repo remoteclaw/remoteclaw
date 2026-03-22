@@ -1,16 +1,14 @@
 import { buildDmGroupAccountAllowlistAdapter } from "remoteclaw/plugin-sdk/allowlist-config-edit";
 import {
   attachChannelToResult,
-  createAttachedChannelResultAdapter,
-  createPairingPrefixStripper,
-  createTextPairingAdapter,
-  resolveOutboundSendDep,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import { attachChannelToResults } from "remoteclaw/plugin-sdk/channel-send-result";
+  attachChannelToResults,
+} from "remoteclaw/plugin-sdk/channel-send-result";
 import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
-import { buildOutboundBaseSessionKey } from "remoteclaw/plugin-sdk/core";
+import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
+import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/outbound-runtime";
 import { resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
-import { type RoutePeer } from "remoteclaw/plugin-sdk/routing";
+import { buildOutboundBaseSessionKey, type RoutePeer } from "remoteclaw/plugin-sdk/routing";
+import { createComputedAccountStatusAdapter } from "remoteclaw/plugin-sdk/status-helpers";
 import { resolveSignalAccount, type ResolvedSignalAccount } from "./accounts.js";
 import { markdownToSignalTextChunks } from "./format.js";
 import {
@@ -23,8 +21,6 @@ import { buildOutboundBaseSessionKey } from "remoteclaw/plugin-sdk/core";
 import { resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
 import { type RoutePeer } from "remoteclaw/plugin-sdk/routing";
 import {
-  applyAccountNameToChannelSection,
-  buildBaseAccountStatusSnapshot,
   buildBaseChannelStatusSummary,
   buildChannelConfigSchema,
   collectStatusIssuesFromLastError,
@@ -324,17 +320,79 @@ async function sendFormattedSignalMedia(ctx: {
   return attachChannelToResult("signal", result);
 }
 
-export const signalPlugin: ChannelPlugin<ResolvedSignalAccount> = {
-  ...createSignalPluginBase({
-    setupWizard: signalSetupWizard,
-    setup: signalSetupAdapter,
-  }),
-  pairing: createTextPairingAdapter({
-    idLabel: "signalNumber",
-    message: PAIRING_APPROVED_MESSAGE,
-    normalizeAllowEntry: createPairingPrefixStripper(/^signal:/i),
-    notify: async ({ id, message }) => {
-      await getSignalRuntime().channel.signal.sendMessageSignal(id, message);
+export const signalPlugin: ChannelPlugin<ResolvedSignalAccount, SignalProbe> =
+  createChatChannelPlugin({
+    base: {
+      ...createSignalPluginBase({
+        setupWizard: signalSetupWizard,
+        setup: signalSetupAdapter,
+      }),
+      actions: signalMessageActions,
+      allowlist: buildDmGroupAccountAllowlistAdapter({
+        channelId: "signal",
+        resolveAccount: resolveSignalAccount,
+        normalize: ({ cfg, accountId, values }) =>
+          signalConfigAdapter.formatAllowFrom!({ cfg, accountId, allowFrom: values }),
+        resolveDmAllowFrom: (account) => account.config.allowFrom,
+        resolveGroupAllowFrom: (account) => account.config.groupAllowFrom,
+        resolveDmPolicy: (account) => account.config.dmPolicy,
+        resolveGroupPolicy: (account) => account.config.groupPolicy,
+      }),
+      messaging: {
+        normalizeTarget: normalizeSignalMessagingTarget,
+        parseExplicitTarget: ({ raw }) => parseSignalExplicitTarget(raw),
+        inferTargetChatType: ({ to }) => inferSignalTargetChatType(to),
+        resolveOutboundSessionRoute: (params) => resolveSignalOutboundSessionRoute(params),
+        targetResolver: {
+          looksLikeId: looksLikeSignalTargetId,
+          hint: "<E.164|uuid:ID|group:ID|signal:group:ID|signal:+E.164>",
+        },
+      },
+      status: createComputedAccountStatusAdapter<ResolvedSignalAccount, SignalProbe>({
+        defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID),
+        collectStatusIssues: (accounts) => collectStatusIssuesFromLastError("signal", accounts),
+        buildChannelSummary: ({ snapshot }) =>
+          buildBaseChannelStatusSummary(snapshot, {
+            baseUrl: snapshot.baseUrl ?? null,
+            probe: snapshot.probe,
+            lastProbeAt: snapshot.lastProbeAt ?? null,
+          }),
+        probeAccount: async ({ account, timeoutMs }) => {
+          const baseUrl = account.baseUrl;
+          return await getSignalRuntime().channel.signal.probeSignal(baseUrl, timeoutMs);
+        },
+        formatCapabilitiesProbe: ({ probe }) =>
+          (probe as SignalProbe | undefined)?.version
+            ? [{ text: `Signal daemon: ${(probe as SignalProbe).version}` }]
+            : [],
+        resolveAccountSnapshot: ({ account }) => ({
+          accountId: account.accountId,
+          name: account.name,
+          enabled: account.enabled,
+          configured: account.configured,
+          extra: {
+            baseUrl: account.baseUrl,
+          },
+        }),
+      }),
+      gateway: {
+        startAccount: async (ctx) => {
+          const account = ctx.account;
+          ctx.setStatus({
+            accountId: account.accountId,
+            baseUrl: account.baseUrl,
+          });
+          ctx.log?.info(`[${account.accountId}] starting provider (${account.baseUrl})`);
+          // Lazy import: the monitor pulls the reply pipeline; avoid ESM init cycles.
+          return getSignalRuntime().channel.signal.monitorSignalProvider({
+            accountId: account.accountId,
+            config: ctx.cfg,
+            runtime: ctx.runtime,
+            abortSignal: ctx.abortSignal,
+            mediaMaxMb: account.config.mediaMaxMb,
+          });
+        },
+      },
     },
   }),
   actions: signalMessageActions,

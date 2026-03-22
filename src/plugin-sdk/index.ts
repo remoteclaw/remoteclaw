@@ -343,6 +343,7 @@ export {
   listDevicePairing,
   rejectDevicePairing,
 } from "../infra/device-pairing.js";
+export { waitForAbortSignal } from "../infra/abort-signal.js";
 export { createDedupeCache } from "../infra/dedupe.js";
 export type { DedupeCache } from "../infra/dedupe.js";
 export { createPersistentDedupe } from "./persistent-dedupe.js";

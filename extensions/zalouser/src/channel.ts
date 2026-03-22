@@ -661,32 +661,35 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
         dmPolicy: account.config.dmPolicy ?? "pairing",
       };
     },
-  },
-  gateway: {
-    startAccount: async (ctx) => {
-      const account = ctx.account;
-      let userLabel = "";
-      try {
-        const userInfo = await getZcaUserInfo(account.profile);
-        if (userInfo?.displayName) {
-          userLabel = ` (${userInfo.displayName})`;
-        }
-        ctx.setStatus({
-          accountId: account.accountId,
-          profile: userInfo,
-        });
-      } catch {
-        // ignore probe errors
-      }
-      ctx.log?.info(`[${account.accountId}] starting zalouser provider${userLabel}`);
-      const { monitorZalouserProvider } = await import("./monitor.js");
-      return monitorZalouserProvider({
-        account,
-        config: ctx.cfg,
-        runtime: ctx.runtime,
-        abortSignal: ctx.abortSignal,
-        statusSink: (patch) => ctx.setStatus({ accountId: ctx.accountId, ...patch }),
-      });
+    pairing: {
+      text: {
+        idLabel: "zalouserUserId",
+        message: "Your pairing request has been approved.",
+        normalizeAllowEntry: createPairingPrefixStripper(/^(zalouser|zlu):/i),
+        notify: async ({ cfg, id, message }) => {
+          const account = resolveZalouserAccountSync({ cfg: cfg });
+          const authenticated = await checkZcaAuthenticated(account.profile);
+          if (!authenticated) {
+            throw new Error("Zalouser not authenticated");
+          }
+          await sendMessageZalouser(id, message, {
+            profile: account.profile,
+          });
+        },
+      },
+    },
+    outbound: {
+      deliveryMode: "direct",
+      chunker: (text, limit) => getZalouserRuntime().channel.text.chunkMarkdownText(text, limit),
+      chunkerMode: "markdown",
+      sendPayload: async (ctx) =>
+        await sendPayloadWithChunkedTextAndMedia({
+          ctx,
+          sendText: (nextCtx) => zalouserRawSendResultAdapter.sendText!(nextCtx),
+          sendMedia: (nextCtx) => zalouserRawSendResultAdapter.sendMedia!(nextCtx),
+          emptyResult: createEmptyChannelResult("zalouser"),
+        }),
+      ...zalouserRawSendResultAdapter,
     },
     loginWithQrStart: async (params) => {
       const profile = resolveZalouserQrProfile(params.accountId);

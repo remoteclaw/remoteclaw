@@ -2,7 +2,10 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
+import packageJson from "../../package.json" with { type: "json" };
+import { emitDiagnosticEvent, resetDiagnosticEventsForTest } from "../infra/diagnostic-events.js";
+import { buildMemoryPromptSection, registerMemoryPromptSection } from "../memory/prompt-section.js";
 import { withEnv } from "../test-utils/env.js";
 async function importFreshPluginTestModules() {
   vi.resetModules();
@@ -224,7 +227,199 @@ describe("loadRemoteClawPlugins", () => {
   it("loads bundled telegram plugin when enabled", () => {
     setupBundledTelegramPlugin();
 
-    const registry = loadRemoteClawPlugins({
+    for (const testCase of cases) {
+      const registry = loadRemoteClawPlugins({
+        cache: false,
+        workspaceDir: cachedBundledTelegramDir,
+        config: testCase.config,
+      });
+      testCase.assert(registry);
+    }
+  });
+
+  it("preserves package.json metadata for bundled memory plugins", () => {
+    const registry = loadBundledMemoryPluginRegistry({
+      packageMeta: {
+        name: "@openclaw/memory-core",
+        version: "1.2.3",
+        description: "Memory plugin package",
+      },
+      pluginBody:
+        'module.exports = { id: "memory-core", kind: "memory", name: "Memory (Core)", register() {} };',
+    });
+
+    const memory = registry.plugins.find((entry) => entry.id === "memory-core");
+    expect(memory?.status).toBe("loaded");
+    expect(memory?.origin).toBe("bundled");
+    expect(memory?.name).toBe("Memory (Core)");
+    expect(memory?.version).toBe(packageJson.version);
+  });
+  it("handles config-path and scoped plugin loads", () => {
+    const scenarios = [
+      {
+        label: "loads plugins from config paths",
+        run: () => {
+          process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+          const plugin = writePlugin({
+            id: "allowed-config-path",
+            filename: "allowed-config-path.cjs",
+            body: `module.exports = {
+  id: "allowed-config-path",
+  register(api) {
+    api.registerGatewayMethod("allowed-config-path.ping", ({ respond }) => respond(true, { ok: true }));
+  },
+};`,
+          });
+
+          const registry = loadRemoteClawPlugins({
+            cache: false,
+            workspaceDir: plugin.dir,
+            config: {
+              plugins: {
+                load: { paths: [plugin.file] },
+                allow: ["allowed-config-path"],
+              },
+            },
+          });
+
+          const loaded = registry.plugins.find((entry) => entry.id === "allowed-config-path");
+          expect(loaded?.status).toBe("loaded");
+          expect(Object.keys(registry.gatewayHandlers)).toContain("allowed-config-path.ping");
+        },
+      },
+      {
+        label: "limits imports to the requested plugin ids",
+        run: () => {
+          useNoBundledPlugins();
+          const allowed = writePlugin({
+            id: "allowed-scoped-only",
+            filename: "allowed-scoped-only.cjs",
+            body: `module.exports = { id: "allowed-scoped-only", register() {} };`,
+          });
+          const skippedMarker = path.join(makeTempDir(), "skipped-loaded.txt");
+          const skipped = writePlugin({
+            id: "skipped-scoped-only",
+            filename: "skipped-scoped-only.cjs",
+            body: `require("node:fs").writeFileSync(${JSON.stringify(skippedMarker)}, "loaded", "utf-8");
+module.exports = { id: "skipped-scoped-only", register() { throw new Error("skipped plugin should not load"); } };`,
+          });
+
+          const registry = loadRemoteClawPlugins({
+            cache: false,
+            config: {
+              plugins: {
+                load: { paths: [allowed.file, skipped.file] },
+                allow: ["allowed-scoped-only", "skipped-scoped-only"],
+              },
+            },
+            onlyPluginIds: ["allowed-scoped-only"],
+          });
+
+          expect(registry.plugins.map((entry) => entry.id)).toEqual(["allowed-scoped-only"]);
+          expect(fs.existsSync(skippedMarker)).toBe(false);
+        },
+      },
+      {
+        label: "keeps scoped plugin loads in a separate cache entry",
+        run: () => {
+          useNoBundledPlugins();
+          const allowed = writePlugin({
+            id: "allowed-cache-scope",
+            filename: "allowed-cache-scope.cjs",
+            body: `module.exports = { id: "allowed-cache-scope", register() {} };`,
+          });
+          const extra = writePlugin({
+            id: "extra-cache-scope",
+            filename: "extra-cache-scope.cjs",
+            body: `module.exports = { id: "extra-cache-scope", register() {} };`,
+          });
+          const options = {
+            config: {
+              plugins: {
+                load: { paths: [allowed.file, extra.file] },
+                allow: ["allowed-cache-scope", "extra-cache-scope"],
+              },
+            },
+          };
+
+          const full = loadRemoteClawPlugins(options);
+          const scoped = loadRemoteClawPlugins({
+            ...options,
+            onlyPluginIds: ["allowed-cache-scope"],
+          });
+          const scopedAgain = loadRemoteClawPlugins({
+            ...options,
+            onlyPluginIds: ["allowed-cache-scope"],
+          });
+
+          expect(full.plugins.map((entry) => entry.id).toSorted()).toEqual([
+            "allowed-cache-scope",
+            "extra-cache-scope",
+          ]);
+          expect(scoped).not.toBe(full);
+          expect(scoped.plugins.map((entry) => entry.id)).toEqual(["allowed-cache-scope"]);
+          expect(scopedAgain).toBe(scoped);
+        },
+      },
+      {
+        label: "can load a scoped registry without replacing the active global registry",
+        run: () => {
+          useNoBundledPlugins();
+          const plugin = writePlugin({
+            id: "allowed-nonactivating-scope",
+            filename: "allowed-nonactivating-scope.cjs",
+            body: `module.exports = { id: "allowed-nonactivating-scope", register() {} };`,
+          });
+          const previousRegistry = createEmptyPluginRegistry();
+          setActivePluginRegistry(previousRegistry, "existing-registry");
+          resetGlobalHookRunner();
+
+          const scoped = loadRemoteClawPlugins({
+            cache: false,
+            activate: false,
+            workspaceDir: plugin.dir,
+            config: {
+              plugins: {
+                load: { paths: [plugin.file] },
+                allow: ["allowed-nonactivating-scope"],
+              },
+            },
+            onlyPluginIds: ["allowed-nonactivating-scope"],
+          });
+
+          expect(scoped.plugins.map((entry) => entry.id)).toEqual(["allowed-nonactivating-scope"]);
+          expect(getActivePluginRegistry()).toBe(previousRegistry);
+          expect(getActivePluginRegistryKey()).toBe("existing-registry");
+          expect(getGlobalHookRunner()).toBeNull();
+        },
+      },
+    ] as const;
+
+    for (const scenario of scenarios) {
+      scenario.run();
+    }
+  });
+
+  it("only publishes plugin commands to the global registry during activating loads", async () => {
+    useNoBundledPlugins();
+    const plugin = writePlugin({
+      id: "command-plugin",
+      filename: "command-plugin.cjs",
+      body: `module.exports = {
+        id: "command-plugin",
+        register(api) {
+          api.registerCommand({
+            name: "pair",
+            description: "Pair device",
+            acceptsArgs: true,
+            handler: async ({ args }) => ({ text: \`paired:\${args ?? ""}\` }),
+          });
+        },
+      };`,
+    });
+    clearPluginCommands();
+
+    const scoped = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {

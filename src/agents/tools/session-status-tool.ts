@@ -44,29 +44,43 @@ function resolveSessionEntry(params: {
   keyRaw: string;
   alias: string;
   mainKey: string;
+  requesterInternalKey?: string;
+  includeAliasFallback?: boolean;
 }): { key: string; entry: SessionEntry } | null {
   const keyRaw = params.keyRaw.trim();
   if (!keyRaw) {
     return null;
   }
+  const includeAliasFallback = params.includeAliasFallback ?? true;
   const internal = resolveInternalSessionKey({
     key: keyRaw,
     alias: params.alias,
     mainKey: params.mainKey,
+    requesterInternalKey: params.requesterInternalKey,
   });
 
-  const candidates = new Set<string>([keyRaw, internal]);
+  const candidates: string[] = [keyRaw];
   if (!keyRaw.startsWith("agent:")) {
-    candidates.add(`agent:${DEFAULT_AGENT_ID}:${keyRaw}`);
-    candidates.add(`agent:${DEFAULT_AGENT_ID}:${internal}`);
+    candidates.push(`agent:${DEFAULT_AGENT_ID}:${keyRaw}`);
   }
-  if (keyRaw === "main") {
-    candidates.add(
-      buildAgentMainSessionKey({
-        agentId: DEFAULT_AGENT_ID,
-        mainKey: params.mainKey,
-      }),
-    );
+  if (includeAliasFallback && internal !== keyRaw) {
+    candidates.push(internal);
+  }
+  if (includeAliasFallback && !keyRaw.startsWith("agent:")) {
+    const agentInternal = `agent:${DEFAULT_AGENT_ID}:${internal}`;
+    const agentRaw = `agent:${DEFAULT_AGENT_ID}:${keyRaw}`;
+    if (agentInternal !== agentRaw) {
+      candidates.push(agentInternal);
+    }
+  }
+  if (includeAliasFallback && (keyRaw === "main" || keyRaw === "current")) {
+    const defaultMainKey = buildAgentMainSessionKey({
+      agentId: DEFAULT_AGENT_ID,
+      mainKey: params.mainKey,
+    });
+    if (!candidates.includes(defaultMainKey)) {
+      candidates.push(defaultMainKey);
+    }
   }
 
   for (const key of candidates) {
@@ -99,6 +113,18 @@ function resolveSessionKeyFromSessionId(params: {
     return resolveAgentIdFromSessionKey(key) === params.agentId;
   });
   return match?.[0] ?? null;
+}
+
+function resolveStoreScopedRequesterKey(params: {
+  requesterKey: string;
+  agentId: string;
+  mainKey: string;
+}) {
+  const parsed = parseAgentSessionKey(params.requesterKey);
+  if (!parsed || parsed.agentId !== params.agentId) {
+    return params.requesterKey;
+  }
+  return parsed.rest === params.mainKey ? params.mainKey : params.requesterKey;
 }
 
 async function resolveModelOverride(params: {
@@ -188,6 +214,11 @@ export function createSessionStatusTool(opts?: {
         : requesterAgentId;
       let storePath = resolveStorePath(cfg.session?.store, { agentId });
       let store = loadSessionStore(storePath);
+      let storeScopedRequesterKey = resolveStoreScopedRequesterKey({
+        requesterKey: effectiveRequesterKey,
+        agentId,
+        mainKey,
+      });
 
       // Resolve against the requester-scoped store first to avoid leaking default agent data.
       let resolved = resolveSessionEntry({
@@ -195,9 +226,14 @@ export function createSessionStatusTool(opts?: {
         keyRaw: requestedKeyRaw,
         alias,
         mainKey,
+        requesterInternalKey: storeScopedRequesterKey,
+        includeAliasFallback: requestedKeyRaw !== "current",
       });
 
-      if (!resolved && shouldResolveSessionIdInput(requestedKeyRaw)) {
+      if (
+        !resolved &&
+        (requestedKeyRaw === "current" || shouldResolveSessionIdInput(requestedKeyRaw))
+      ) {
         const resolvedKey = resolveSessionKeyFromSessionId({
           cfg,
           sessionId: requestedKeyRaw,
@@ -210,13 +246,30 @@ export function createSessionStatusTool(opts?: {
           agentId = resolveAgentIdFromSessionKey(resolvedKey);
           storePath = resolveStorePath(cfg.session?.store, { agentId });
           store = loadSessionStore(storePath);
+          storeScopedRequesterKey = resolveStoreScopedRequesterKey({
+            requesterKey: effectiveRequesterKey,
+            agentId,
+            mainKey,
+          });
           resolved = resolveSessionEntry({
             store,
             keyRaw: requestedKeyRaw,
             alias,
             mainKey,
+            requesterInternalKey: storeScopedRequesterKey,
           });
         }
+      }
+
+      if (!resolved && requestedKeyRaw === "current") {
+        resolved = resolveSessionEntry({
+          store,
+          keyRaw: requestedKeyRaw,
+          alias,
+          mainKey,
+          requesterInternalKey: storeScopedRequesterKey,
+          includeAliasFallback: true,
+        });
       }
 
       if (!resolved) {

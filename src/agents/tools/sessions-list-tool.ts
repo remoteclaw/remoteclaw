@@ -215,7 +215,7 @@ export function createSessionsListTool(opts?: {
         };
         if (messageLimit > 0) {
           const resolvedKey = resolveInternalSessionKey({
-            key: displayKey,
+            key,
             alias,
             mainKey,
           });

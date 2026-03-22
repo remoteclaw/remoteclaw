@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import os from "node:os";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const execFileMock = vi.hoisted(() => vi.fn());
@@ -13,10 +14,24 @@ import {
   isNonFatalSystemdInstallProbeError,
   isSystemdUserServiceAvailable,
   parseSystemdShow,
+  readSystemdServiceExecStart,
   restartSystemdService,
   resolveSystemdUserUnitPath,
   stopSystemdService,
 } from "./systemd.js";
+
+function pathLikeToString(value: Parameters<typeof fs.readFile>[0]): string {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (value instanceof URL) {
+    return value.pathname;
+  }
+  if (Buffer.isBuffer(value)) {
+    return value.toString("utf8");
+  }
+  throw new Error(`Unexpected path type: ${typeof value}`);
+}
 
 type ExecFileError = Error & {
   stderr?: string;

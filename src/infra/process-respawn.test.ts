@@ -110,6 +110,17 @@ describe("restartGatewayProcessWithFreshPid", () => {
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
+  it("returns supervised when XPC_SERVICE_NAME is set by launchd", () => {
+    clearSupervisorHints();
+    setPlatform("darwin");
+    process.env.XPC_SERVICE_NAME = "ai.remoteclaw.gateway";
+    triggerRemoteClawRestartMock.mockReturnValue({ ok: true, method: "launchctl" });
+    const result = restartGatewayProcessWithFreshPid();
+    expect(result.mode).toBe("supervised");
+    expect(triggerRemoteClawRestartMock).toHaveBeenCalledOnce();
+    expect(spawnMock).not.toHaveBeenCalled();
+  });
+
   it("spawns detached child with current exec argv", () => {
     delete process.env.REMOTECLAW_NO_RESPAWN;
     clearSupervisorHints();

@@ -1,17 +1,29 @@
 {
   "name": "@remoteclaw/msteams",
-  "version": "0.1.0",
+  "version": "2026.3.14",
   "description": "RemoteClaw Microsoft Teams channel plugin",
   "type": "module",
   "dependencies": {
-    "@microsoft/agents-hosting": "^1.4.1",
+    "@microsoft/agents-hosting": "^1.3.1",
     "express": "^5.2.1",
-    "uuid": "^13.0.0"
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "remoteclaw": "workspace:*"
+  },
+  "peerDependencies": {
+    "remoteclaw": ">=2026.3.14"
+  },
+  "peerDependenciesMeta": {
+    "remoteclaw": {
+      "optional": true
+    }
   },
   "remoteclaw": {
     "extensions": [
       "./index.ts"
     ],
+    "setupEntry": "./setup-entry.ts",
     "channel": {
       "id": "msteams",
       "label": "Microsoft Teams",
@@ -31,11 +43,6 @@
     },
     "release": {
       "publishToNpm": true
-    },
-    "releaseChecks": {
-      "rootDependencyMirrorAllowlist": [
-        "@microsoft/agents-hosting"
-      ]
     }
   }
 }

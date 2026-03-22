@@ -1,16 +1,18 @@
 export type {
+  ChannelMessageActionAdapter,
   ChannelPlugin,
-  OpenClawConfig,
+  RemoteClawConfig,
+  RemoteClawPluginApi,
+  PluginRuntime,
+  TelegramAccountConfig,
   TelegramActionConfig,
-} from "../../src/plugin-sdk/telegram-core.js";
-export type { ChannelMessageActionAdapter } from "../../src/channels/plugins/types.js";
-export type { TelegramAccountConfig, TelegramNetworkConfig } from "../../src/config/types.js";
+  TelegramNetworkConfig,
+} from "remoteclaw/plugin-sdk/telegram";
 export type {
-  OpenClawPluginApi,
-  OpenClawPluginService,
-  OpenClawPluginServiceContext,
+  RemoteClawPluginService,
+  RemoteClawPluginServiceContext,
   PluginLogger,
-} from "../../src/plugins/types.js";
+} from "remoteclaw/plugin-sdk/core";
 export type {
   AcpRuntime,
   AcpRuntimeCapabilities,
@@ -20,12 +22,22 @@ export type {
   AcpRuntimeHandle,
   AcpRuntimeStatus,
   AcpRuntimeTurnInput,
+  AcpRuntimeErrorCode,
   AcpSessionUpdateTag,
-} from "../../src/acp/runtime/types.js";
-export type { AcpRuntimeErrorCode } from "../../src/acp/runtime/errors.js";
-export { AcpRuntimeError } from "../../src/acp/runtime/errors.js";
+} from "remoteclaw/plugin-sdk/acp-runtime";
+export { AcpRuntimeError } from "remoteclaw/plugin-sdk/acp-runtime";
 
-export { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../src/routing/session-key.js";
+export {
+  buildTokenChannelStatusSummary,
+  clearAccountEntryFields,
+  DEFAULT_ACCOUNT_ID,
+  normalizeAccountId,
+  PAIRING_APPROVED_MESSAGE,
+  parseTelegramTopicConversation,
+  projectCredentialSnapshotFields,
+  resolveConfiguredFromCredentialStatuses,
+  resolveTelegramPollVisibility,
+} from "remoteclaw/plugin-sdk/telegram";
 export {
   buildChannelConfigSchema,
   getChatChannelMeta,
@@ -37,13 +49,31 @@ export {
   readStringParam,
   resolvePollMaxSelections,
   TelegramConfigSchema,
-} from "../../src/plugin-sdk/telegram-core.js";
-export { parseTelegramTopicConversation } from "../../src/acp/conversation-id.js";
-export { clearAccountEntryFields } from "../../src/channels/plugins/config-helpers.js";
-export { buildTokenChannelStatusSummary } from "../../src/plugin-sdk/status-helpers.js";
+} from "remoteclaw/plugin-sdk/telegram-core";
+export type { TelegramProbe } from "./src/probe.js";
+export { auditTelegramGroupMembership, collectTelegramUnmentionedGroupIds } from "./src/audit.js";
+export { telegramMessageActions } from "./src/channel-actions.js";
+export { monitorTelegramProvider } from "./src/monitor.js";
+export { probeTelegram } from "./src/probe.js";
 export {
-  projectCredentialSnapshotFields,
-  resolveConfiguredFromCredentialStatuses,
-} from "../../src/channels/account-snapshot-fields.js";
-export { resolveTelegramPollVisibility } from "../../src/poll-params.js";
-export { PAIRING_APPROVED_MESSAGE } from "../../src/channels/plugins/pairing-message.js";
+  createForumTopicTelegram,
+  deleteMessageTelegram,
+  editForumTopicTelegram,
+  editMessageReplyMarkupTelegram,
+  editMessageTelegram,
+  pinMessageTelegram,
+  reactMessageTelegram,
+  renameForumTopicTelegram,
+  sendMessageTelegram,
+  sendPollTelegram,
+  sendStickerTelegram,
+  sendTypingTelegram,
+  unpinMessageTelegram,
+} from "./src/send.js";
+export {
+  createTelegramThreadBindingManager,
+  getTelegramThreadBindingManager,
+  setTelegramThreadBindingIdleTimeoutBySessionKey,
+  setTelegramThreadBindingMaxAgeBySessionKey,
+} from "./src/thread-bindings.js";
+export { resolveTelegramToken } from "./src/token.js";

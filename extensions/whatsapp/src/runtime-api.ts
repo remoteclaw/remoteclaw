@@ -11,6 +11,7 @@ export {
   resolveWhatsAppGroupIntroHint,
   resolveWhatsAppGroupRequireMention,
   resolveWhatsAppGroupToolPolicy,
+  resolveWhatsAppOutboundTarget,
   ToolAuthorizationError,
   WhatsAppConfigSchema,
   type ChannelPlugin,
@@ -19,9 +20,11 @@ export {
 
 export {
   createWhatsAppOutboundBase,
+  isWhatsAppGroupJid,
   looksLikeWhatsAppTargetId,
   normalizeWhatsAppAllowFromEntries,
   normalizeWhatsAppMessagingTarget,
+  normalizeWhatsAppTarget,
   resolveWhatsAppHeartbeatRecipients,
   resolveWhatsAppMentionStripRegexes,
   type ChannelMessageActionName,
@@ -29,11 +32,5 @@ export {
   type GroupPolicy,
   type WhatsAppAccountConfig,
 } from "remoteclaw/plugin-sdk/whatsapp-shared";
-export {
-  isWhatsAppGroupJid,
-  isWhatsAppUserTarget,
-  normalizeWhatsAppTarget,
-} from "./normalize-target.js";
-export { resolveWhatsAppOutboundTarget } from "./resolve-outbound-target.js";
 
 export { monitorWebChannel } from "./channel.runtime.js";

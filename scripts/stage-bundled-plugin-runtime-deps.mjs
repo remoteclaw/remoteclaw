@@ -82,6 +82,49 @@ function sanitizeBundledManifestForRuntimeInstall(pluginDir) {
   }
 }
 
+function sanitizeBundledManifestForRuntimeInstall(pluginDir) {
+  const manifestPath = path.join(pluginDir, "package.json");
+  const packageJson = readJson(manifestPath);
+  let changed = false;
+
+  if (packageJson.peerDependencies?.openclaw) {
+    const nextPeerDependencies = { ...packageJson.peerDependencies };
+    delete nextPeerDependencies.openclaw;
+    if (Object.keys(nextPeerDependencies).length === 0) {
+      delete packageJson.peerDependencies;
+    } else {
+      packageJson.peerDependencies = nextPeerDependencies;
+    }
+    changed = true;
+  }
+
+  if (packageJson.peerDependenciesMeta?.openclaw) {
+    const nextPeerDependenciesMeta = { ...packageJson.peerDependenciesMeta };
+    delete nextPeerDependenciesMeta.openclaw;
+    if (Object.keys(nextPeerDependenciesMeta).length === 0) {
+      delete packageJson.peerDependenciesMeta;
+    } else {
+      packageJson.peerDependenciesMeta = nextPeerDependenciesMeta;
+    }
+    changed = true;
+  }
+
+  if (packageJson.devDependencies?.openclaw) {
+    const nextDevDependencies = { ...packageJson.devDependencies };
+    delete nextDevDependencies.openclaw;
+    if (Object.keys(nextDevDependencies).length === 0) {
+      delete packageJson.devDependencies;
+    } else {
+      packageJson.devDependencies = nextDevDependencies;
+    }
+    changed = true;
+  }
+
+  if (changed) {
+    writeJson(manifestPath, packageJson);
+  }
+}
+
 function installPluginRuntimeDeps(pluginDir, pluginId) {
   sanitizeBundledManifestForRuntimeInstall(pluginDir);
   const result = spawnSync(

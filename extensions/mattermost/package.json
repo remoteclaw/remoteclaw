@@ -1,11 +1,22 @@
 {
   "name": "@remoteclaw/mattermost",
-  "version": "0.1.0",
+  "version": "2026.3.14",
   "description": "RemoteClaw Mattermost channel plugin",
   "type": "module",
   "dependencies": {
-    "ws": "^8.20.0",
+    "ws": "^8.19.0",
     "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "remoteclaw": "workspace:*"
+  },
+  "peerDependencies": {
+    "remoteclaw": ">=2026.3.14"
+  },
+  "peerDependenciesMeta": {
+    "remoteclaw": {
+      "optional": true
+    }
   },
   "remoteclaw": {
     "extensions": [

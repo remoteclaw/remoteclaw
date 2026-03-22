@@ -1,15 +1,27 @@
 {
   "name": "@remoteclaw/bluebubbles",
-  "version": "0.1.0",
+  "version": "2026.3.14",
   "description": "RemoteClaw BlueBubbles channel plugin",
   "type": "module",
   "dependencies": {
     "zod": "^4.3.6"
   },
+  "devDependencies": {
+    "remoteclaw": "workspace:*"
+  },
+  "peerDependencies": {
+    "remoteclaw": ">=2026.3.14"
+  },
+  "peerDependenciesMeta": {
+    "remoteclaw": {
+      "optional": true
+    }
+  },
   "remoteclaw": {
     "extensions": [
       "./index.ts"
     ],
+    "setupEntry": "./setup-entry.ts",
     "channel": {
       "id": "bluebubbles",
       "label": "BlueBubbles",
@@ -30,8 +42,7 @@
     "install": {
       "npmSpec": "@remoteclaw/bluebubbles",
       "localPath": "extensions/bluebubbles",
-      "defaultChoice": "npm",
-      "minHostVersion": ">=2026.3.14"
+      "defaultChoice": "npm"
     },
     "release": {
       "publishToNpm": true

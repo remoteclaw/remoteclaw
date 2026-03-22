@@ -1,11 +1,11 @@
+import { isAllowedParsedChatSender } from "remoteclaw/plugin-sdk/allow-from";
 import {
-  isAllowedParsedChatSender,
   parseChatAllowTargetPrefixes,
   parseChatTargetPrefixesOrThrow,
   type ParsedChatTarget,
   resolveServicePrefixedAllowTarget,
   resolveServicePrefixedTarget,
-} from "./runtime-api.js";
+} from "remoteclaw/plugin-sdk/imessage-core";
 
 export type BlueBubblesService = "imessage" | "sms" | "auto";
 
@@ -305,7 +305,7 @@ export function parseBlueBubblesTarget(raw: string): BlueBubblesTarget {
     trimmed,
     lower,
     servicePrefixes: SERVICE_PREFIXES,
-    isChatTarget: (remainderLower: string) =>
+    isChatTarget: (remainderLower) =>
       CHAT_ID_PREFIXES.some((p) => remainderLower.startsWith(p)) ||
       CHAT_GUID_PREFIXES.some((p) => remainderLower.startsWith(p)) ||
       CHAT_IDENTIFIER_PREFIXES.some((p) => remainderLower.startsWith(p)) ||

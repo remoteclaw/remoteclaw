@@ -1,9 +1,20 @@
 {
   "name": "@remoteclaw/line",
-  "version": "0.1.0",
+  "version": "2026.3.14",
   "private": true,
   "description": "RemoteClaw LINE channel plugin",
   "type": "module",
+  "devDependencies": {
+    "remoteclaw": "workspace:*"
+  },
+  "peerDependencies": {
+    "remoteclaw": ">=2026.3.14"
+  },
+  "peerDependenciesMeta": {
+    "remoteclaw": {
+      "optional": true
+    }
+  },
   "remoteclaw": {
     "extensions": [
       "./index.ts"

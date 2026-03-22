@@ -1,15 +1,44 @@
 {
   "name": "@remoteclaw/whatsapp",
-  "version": "0.1.0",
+  "version": "2026.3.14",
   "description": "RemoteClaw WhatsApp channel plugin",
   "type": "module",
   "dependencies": {
-    "@whiskeysockets/baileys": "7.0.0-rc.9",
-    "jimp": "^1.6.0"
+    "@whiskeysockets/baileys": "7.0.0-rc.9"
+  },
+  "devDependencies": {
+    "remoteclaw": "workspace:*"
+  },
+  "peerDependencies": {
+    "remoteclaw": ">=2026.3.14"
+  },
+  "peerDependenciesMeta": {
+    "remoteclaw": {
+      "optional": true
+    }
   },
   "remoteclaw": {
     "extensions": [
       "./index.ts"
-    ]
+    ],
+    "setupEntry": "./setup-entry.ts",
+    "channel": {
+      "id": "whatsapp",
+      "label": "WhatsApp",
+      "selectionLabel": "WhatsApp (QR link)",
+      "detailLabel": "WhatsApp Web",
+      "docsPath": "/channels/whatsapp",
+      "docsLabel": "whatsapp",
+      "blurb": "works with your own number; recommend a separate phone + eSIM.",
+      "systemImage": "message"
+    },
+    "install": {
+      "npmSpec": "@remoteclaw/whatsapp",
+      "localPath": "extensions/whatsapp",
+      "defaultChoice": "npm"
+    },
+    "release": {
+      "publishToNpm": true
+    }
   }
 }

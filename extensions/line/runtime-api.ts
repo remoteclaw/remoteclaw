@@ -2,9 +2,10 @@
 // Keep this barrel thin and aligned with the local extension surface.
 
 export * from "remoteclaw/plugin-sdk/line";
-export { resolveExactLineGroupConfigKey } from "remoteclaw/plugin-sdk/line-core";
 export {
+  DEFAULT_ACCOUNT_ID,
   formatDocsLink,
+  resolveExactLineGroupConfigKey,
   setSetupChannelEnabled,
   splitSetupEntries,
   type ChannelSetupDmPolicy,

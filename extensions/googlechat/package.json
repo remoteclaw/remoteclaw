@@ -1,14 +1,17 @@
 {
   "name": "@remoteclaw/googlechat",
-  "version": "0.1.0",
+  "version": "2026.3.14",
   "private": true,
   "description": "RemoteClaw Google Chat channel plugin",
   "type": "module",
   "dependencies": {
-    "google-auth-library": "^10.6.1"
+    "google-auth-library": "^10.6.2"
+  },
+  "devDependencies": {
+    "remoteclaw": "workspace:*"
   },
   "peerDependencies": {
-    "remoteclaw": "workspace:*"
+    "remoteclaw": ">=2026.3.14"
   },
   "peerDependenciesMeta": {
     "remoteclaw": {
@@ -19,6 +22,7 @@
     "extensions": [
       "./index.ts"
     ],
+    "setupEntry": "./setup-entry.ts",
     "channel": {
       "id": "googlechat",
       "label": "Google Chat",

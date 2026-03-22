@@ -3,6 +3,9 @@ import type {
   ChannelPlugin,
   RemoteClawConfig,
 } from "remoteclaw/plugin-sdk";
+
+import { describeAccountSnapshot } from "remoteclaw/plugin-sdk/account-helpers";
+import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
 import {
   applyAccountNameToChannelSection,
   buildAccountScopedDmSecurityPolicy,
@@ -105,13 +108,14 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = {
         clearBaseFields: ["serverUrl", "password", "name", "webhookPath"],
       }),
     isConfigured: (account) => account.configured,
-    describeAccount: (account): ChannelAccountSnapshot => ({
-      accountId: account.accountId,
-      name: account.name,
-      enabled: account.enabled,
-      configured: account.configured,
-      baseUrl: account.baseUrl,
-    }),
+    describeAccount: (account): ChannelAccountSnapshot =>
+      describeAccountSnapshot({
+        account,
+        configured: account.configured,
+        extra: {
+          baseUrl: account.baseUrl,
+        },
+      }),
     resolveAllowFrom: ({ cfg, accountId }) =>
       mapAllowFromEntries(resolveBlueBubblesAccount({ cfg: cfg, accountId }).config.allowFrom),
     formatAllowFrom: ({ allowFrom }) =>

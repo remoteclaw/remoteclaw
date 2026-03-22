@@ -1,3 +1,5 @@
+import { describeAccountSnapshot } from "remoteclaw/plugin-sdk/account-helpers";
+import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
 import {
   buildAccountScopedDmSecurityPolicy,
   buildOpenGroupPolicyConfigureRouteAllowlistWarning,
@@ -193,6 +195,20 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
         allowFromPathSuffix: "dm.",
         normalizeEntry: (raw) => formatAllowFromEntry(raw),
       });
+
+    reload: { configPrefixes: ["channels.googlechat"] },
+    configSchema: buildChannelConfigSchema(GoogleChatConfigSchema),
+    config: {
+      ...googleChatConfigAdapter,
+      isConfigured: (account) => account.credentialSource !== "none",
+      describeAccount: (account) =>
+        describeAccountSnapshot({
+          account,
+          configured: account.credentialSource !== "none",
+          extra: {
+            credentialSource: account.credentialSource,
+          },
+        }),
     },
     collectWarnings: ({ account, cfg }) => {
       const warnings = collectAllowlistProviderGroupPolicyWarnings({

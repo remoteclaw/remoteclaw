@@ -6,6 +6,23 @@ import type {
   ChannelSetupInput,
   RemoteClawConfig,
 } from "remoteclaw/plugin-sdk";
+
+import { describeAccountSnapshot } from "remoteclaw/plugin-sdk/account-helpers";
+import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/account-id";
+import { createHybridChannelConfigAdapter } from "remoteclaw/plugin-sdk/channel-config-helpers";
+import type { ChannelAccountSnapshot } from "remoteclaw/plugin-sdk/channel-contract";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type { ChannelPlugin } from "remoteclaw/plugin-sdk/core";
+import { createLazyRuntimeModule } from "remoteclaw/plugin-sdk/lazy-runtime";
+import { createRuntimeOutboundDelegates } from "remoteclaw/plugin-sdk/outbound-runtime";
+import { tlonChannelConfigSchema } from "./config-schema.js";
+import { resolveTlonOutboundSessionRoute } from "./session-route.js";
+import {
+  applyTlonSetupConfig,
+  createTlonSetupWizardBase,
+  resolveTlonSetupConfigured,
+  tlonSetupAdapter,
+} from "./setup-core.js";
 import {
   applyAccountNameToChannelSection,
   DEFAULT_ACCOUNT_ID,
@@ -361,14 +378,15 @@ export const tlonPlugin: ChannelPlugin = {
       } as RemoteClawConfig;
     },
     isConfigured: (account) => account.configured,
-    describeAccount: (account) => ({
-      accountId: account.accountId,
-      name: account.name,
-      enabled: account.enabled,
-      configured: account.configured,
-      ship: account.ship,
-      url: account.url,
-    }),
+    describeAccount: (account) =>
+      describeAccountSnapshot({
+        account,
+        configured: account.configured,
+        extra: {
+          ship: account.ship,
+          url: account.url,
+        },
+      }),
   },
   setup: {
     resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),

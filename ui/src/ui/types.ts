@@ -568,6 +568,20 @@ export type StatusSummary = Record<string, unknown>;
 
 export type HealthSnapshot = Record<string, unknown>;
 
+export type HealthSummary = {
+  ok: boolean;
+  agents?: { id: string }[];
+  sessions?: { count: number };
+  defaultAgentId?: string;
+  durationMs?: number;
+};
+
+export type ModelCatalogEntry = {
+  id: string;
+  name?: string;
+  provider?: string;
+};
+
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
 
 export type LogEntry = {

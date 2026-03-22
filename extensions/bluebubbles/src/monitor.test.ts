@@ -14,6 +14,7 @@ import { resetBlueBubblesSelfChatCache } from "./monitor-self-chat-cache.js";
 import { handleBlueBubblesWebhookRequest, resolveBlueBubblesMessageId } from "./monitor.js";
 import {
   createMockAccount,
+  createMessageReactionPayloadForTest,
   createNewMessagePayloadForTest,
   createMockRequest,
   createTimestampedNewMessagePayloadForTest,
@@ -244,10 +245,10 @@ describe("BlueBubbles webhook monitor", () => {
   }
 
   async function dispatchWebhookPayloadDirect(payload: unknown, url = "/bluebubbles-webhook") {
-    const { handled } = await dispatchWebhookRequestForTest(
+    return handleBlueBubblesWebhookRequest(
       createMockRequest("POST", url, payload),
+      createMockResponse(),
     );
-    return handled;
   }
 
   beforeEach(() => {
@@ -282,17 +283,10 @@ describe("BlueBubbles webhook monitor", () => {
         text: "hello from allowed sender",
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: "hello from allowed sender",
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "msg-1",
-          date: Date.now(),
-        },
-      };
+      const payload = createNewMessagePayloadForTest({
+        text: "hello from allowed sender",
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -319,17 +313,10 @@ describe("BlueBubbles webhook monitor", () => {
         text: "hello from blocked sender",
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: "hello from blocked sender",
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "msg-1",
-          date: Date.now(),
-        },
-      };
+      const payload = createNewMessagePayloadForTest({
+        text: "hello from blocked sender",
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -354,17 +341,10 @@ describe("BlueBubbles webhook monitor", () => {
         text: "hello from blocked sender",
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: "hello from blocked sender",
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "msg-1",
-          date: Date.now(),
-        },
-      };
+      const payload = createNewMessagePayloadForTest({
+        text: "hello from blocked sender",
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -386,13 +366,7 @@ describe("BlueBubbles webhook monitor", () => {
       const core = createMockRuntime();
       setBlueBubblesRuntime(core);
 
-      unregister = registerBlueBubblesWebhookTarget({
-        account,
-        config,
-        runtime: { log: vi.fn(), error: vi.fn() },
-        core,
-        path: "/bluebubbles-webhook",
-      });
+      const payload = createNewMessagePayloadForTest({ date: Date.now() });
 
       const payload = createTimestampedNewMessagePayloadForTest();
 
@@ -412,13 +386,7 @@ describe("BlueBubbles webhook monitor", () => {
       const core = createMockRuntime();
       setBlueBubblesRuntime(core);
 
-      unregister = registerBlueBubblesWebhookTarget({
-        account,
-        config,
-        runtime: { log: vi.fn(), error: vi.fn() },
-        core,
-        path: "/bluebubbles-webhook",
-      });
+      const payload = createNewMessagePayloadForTest({ date: Date.now() });
 
       const payload = createTimestampedNewMessagePayloadForTest();
 
@@ -445,17 +413,11 @@ describe("BlueBubbles webhook monitor", () => {
         guid: "msg-2",
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: "hello again",
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "msg-2",
-          date: Date.now(),
-        },
-      };
+      const payload = createNewMessagePayloadForTest({
+        text: "hello again",
+        guid: "msg-2",
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -483,17 +445,11 @@ describe("BlueBubbles webhook monitor", () => {
         handle: { address: "+15559999999" },
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: "hello from anyone",
-          handle: { address: "+15559999999" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "msg-1",
-          date: Date.now(),
-        },
-      };
+      const payload = createNewMessagePayloadForTest({
+        text: "hello from anyone",
+        handle: { address: "+15559999999" },
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -512,13 +468,7 @@ describe("BlueBubbles webhook monitor", () => {
       const core = createMockRuntime();
       setBlueBubblesRuntime(core);
 
-      unregister = registerBlueBubblesWebhookTarget({
-        account,
-        config,
-        runtime: { log: vi.fn(), error: vi.fn() },
-        core,
-        path: "/bluebubbles-webhook",
-      });
+      const payload = createNewMessagePayloadForTest({ date: Date.now() });
 
       const payload = createTimestampedNewMessagePayloadForTest();
 
@@ -538,10 +488,11 @@ describe("BlueBubbles webhook monitor", () => {
       const core = createMockRuntime();
       setBlueBubblesRuntime(core);
 
-      const payload = createTimestampedNewMessagePayloadForTest({
+      const payload = createNewMessagePayloadForTest({
         text: "hello from group",
         isGroup: true,
         chatGuid: "iMessage;+;chat123456",
+        date: Date.now(),
       });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
@@ -561,10 +512,11 @@ describe("BlueBubbles webhook monitor", () => {
       const core = createMockRuntime();
       setBlueBubblesRuntime(core);
 
-      const payload = createTimestampedNewMessagePayloadForTest({
+      const payload = createNewMessagePayloadForTest({
         text: "hello from group",
         isGroup: true,
         chatGuid: "iMessage;+;chat123456",
+        date: Date.now(),
       });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
@@ -585,9 +537,10 @@ describe("BlueBubbles webhook monitor", () => {
       const core = createMockRuntime();
       setBlueBubblesRuntime(core);
 
-      const payload = createTimestampedNewMessagePayloadForTest({
+      const payload = createNewMessagePayloadForTest({
         text: "hello from group",
         chatGuid: "iMessage;+;chat123456",
+        date: Date.now(),
       });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
@@ -608,10 +561,11 @@ describe("BlueBubbles webhook monitor", () => {
       const core = createMockRuntime();
       setBlueBubblesRuntime(core);
 
-      const payload = createTimestampedNewMessagePayloadForTest({
+      const payload = createNewMessagePayloadForTest({
         text: "hello from allowed group",
         isGroup: true,
         chatGuid: "iMessage;+;chat123456",
+        date: Date.now(),
       });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
@@ -637,8 +591,12 @@ describe("BlueBubbles webhook monitor", () => {
         chatGuid: "iMessage;+;chat123456",
       });
 
-      const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
-      const res = createMockResponse();
+      const payload = createNewMessagePayloadForTest({
+        text: "bert, can you help me?",
+        isGroup: true,
+        chatGuid: "iMessage;+;chat123456",
+        date: Date.now(),
+      });
 
       await handleBlueBubblesWebhookRequest(req, res);
       await flushAsync();
@@ -660,8 +618,12 @@ describe("BlueBubbles webhook monitor", () => {
         chatGuid: "iMessage;+;chat123456",
       });
 
-      const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
-      const res = createMockResponse();
+      const payload = createNewMessagePayloadForTest({
+        text: "hello everyone",
+        isGroup: true,
+        chatGuid: "iMessage;+;chat123456",
+        date: Date.now(),
+      });
 
       await handleBlueBubblesWebhookRequest(req, res);
       await flushAsync();
@@ -680,8 +642,12 @@ describe("BlueBubbles webhook monitor", () => {
         chatGuid: "iMessage;+;chat123456",
       });
 
-      const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
-      const res = createMockResponse();
+      const payload = createNewMessagePayloadForTest({
+        text: "hello everyone",
+        isGroup: true,
+        chatGuid: "iMessage;+;chat123456",
+        date: Date.now(),
+      });
 
       await handleBlueBubblesWebhookRequest(req, res);
       await flushAsync();
@@ -713,23 +679,17 @@ describe("BlueBubbles webhook monitor", () => {
         path: "/bluebubbles-webhook",
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: "hello group",
-          handle: { address: "+15551234567" },
-          isGroup: true,
-          isFromMe: false,
-          guid: "msg-1",
-          chatGuid: "iMessage;+;chat123456",
-          chatName: "Family",
-          participants: [
-            { address: "+15551234567", displayName: "Alice" },
-            { address: "+15557654321", displayName: "Bob" },
-          ],
-          date: Date.now(),
-        },
-      };
+      const payload = createNewMessagePayloadForTest({
+        text: "hello group",
+        isGroup: true,
+        chatGuid: "iMessage;+;chat123456",
+        chatName: "Family",
+        participants: [
+          { address: "+15551234567", displayName: "Alice" },
+          { address: "+15557654321", displayName: "Bob" },
+        ],
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -756,8 +716,14 @@ describe("BlueBubbles webhook monitor", () => {
         chatName: "Family Chat",
       });
 
-      const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
-      const res = createMockResponse();
+      const payload = createNewMessagePayloadForTest({
+        text: "hello everyone",
+        senderName: "Alice",
+        isGroup: true,
+        chatGuid: "iMessage;+;chat123456",
+        chatName: "Family Chat",
+        date: Date.now(),
+      });
 
       await handleBlueBubblesWebhookRequest(req, res);
       await flushAsync();
@@ -786,8 +752,11 @@ describe("BlueBubbles webhook monitor", () => {
         chatGuid: "iMessage;+;chat123456",
       });
 
-      const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
-      const res = createMockResponse();
+      const payload = createNewMessagePayloadForTest({
+        isGroup: true,
+        chatGuid: "iMessage;+;chat123456",
+        date: Date.now(),
+      });
 
       await handleBlueBubblesWebhookRequest(req, res);
       await flushAsync();
@@ -807,8 +776,9 @@ describe("BlueBubbles webhook monitor", () => {
       const core = createMockRuntime();
       setBlueBubblesRuntime(core);
 
-      const payload = createTimestampedNewMessagePayloadForTest({
+      const payload = createNewMessagePayloadForTest({
         senderName: "Alice",
+        date: Date.now(),
       });
 
       await handleBlueBubblesWebhookRequest(req, res);
@@ -903,12 +873,13 @@ describe("BlueBubbles webhook monitor", () => {
         const messageId = "race-msg-1";
         const chatGuid = "iMessage;-;+15551234567";
 
-        const payloadA = createTimestampedNewMessagePayloadForTest({
+        const payloadA = createNewMessagePayloadForTest({
           guid: messageId,
           chatGuid,
+          date: Date.now(),
         });
 
-        const payloadB = createTimestampedNewMessagePayloadForTest({
+        const payloadB = createNewMessagePayloadForTest({
           guid: messageId,
           chatGuid,
           attachments: [
@@ -918,20 +889,15 @@ describe("BlueBubbles webhook monitor", () => {
               totalBytes: 1024,
             },
           ],
+          date: Date.now(),
         });
 
-        await handleBlueBubblesWebhookRequest(
-          createMockRequest("POST", "/bluebubbles-webhook", payloadA),
-          createMockResponse(),
-        );
+        await dispatchWebhookPayloadDirect(payloadA);
 
         // Simulate the real-world delay where the attachment-bearing webhook arrives shortly after.
         await vi.advanceTimersByTimeAsync(300);
 
-        await handleBlueBubblesWebhookRequest(
-          createMockRequest("POST", "/bluebubbles-webhook", payloadB),
-          createMockResponse(),
-        );
+        await dispatchWebhookPayloadDirect(payloadB);
 
         // Not flushed yet; still within the debounce window.
         expect(mockDispatchReplyWithBufferedBlockDispatcher).not.toHaveBeenCalled();
@@ -953,7 +919,7 @@ describe("BlueBubbles webhook monitor", () => {
     it("surfaces reply fields in ctx when provided", async () => {
       setupWebhookTarget();
 
-      const payload = createTimestampedNewMessagePayloadForTest({
+      const payload = createNewMessagePayloadForTest({
         text: "replying now",
         chatGuid: "iMessage;-;+15551234567",
         replyTo: {
@@ -961,6 +927,7 @@ describe("BlueBubbles webhook monitor", () => {
           text: "original message",
           handle: { address: "+15550000000", displayName: "Alice" },
         },
+        date: Date.now(),
       });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
@@ -982,7 +949,7 @@ describe("BlueBubbles webhook monitor", () => {
     it("preserves part index prefixes in reply tags when short IDs are unavailable", async () => {
       setupWebhookTarget();
 
-      const payload = createTimestampedNewMessagePayloadForTest({
+      const payload = createNewMessagePayloadForTest({
         text: "replying now",
         chatGuid: "iMessage;-;+15551234567",
         replyTo: {
@@ -990,6 +957,7 @@ describe("BlueBubbles webhook monitor", () => {
           text: "original message",
           handle: { address: "+15550000000", displayName: "Alice" },
         },
+        date: Date.now(),
       });
 
       await handleBlueBubblesWebhookRequest(req, res);
@@ -1007,16 +975,14 @@ describe("BlueBubbles webhook monitor", () => {
 
       const chatGuid = "iMessage;+;chat-reply-cache";
 
-      const originalPayload = createTimestampedNewMessagePayloadForTest({
+      const originalPayload = createNewMessagePayloadForTest({
         text: "original message (cached)",
         handle: { address: "+15550000000" },
         isGroup: true,
         guid: "cache-msg-0",
         chatGuid,
+        date: Date.now(),
       });
-
-      const originalReq = createMockRequest("POST", "/bluebubbles-webhook", originalPayload);
-      const originalRes = createMockResponse();
 
       await handleBlueBubblesWebhookRequest(originalReq, originalRes);
       await flushAsync();
@@ -1024,17 +990,15 @@ describe("BlueBubbles webhook monitor", () => {
       // Only assert the reply message behavior below.
       mockDispatchReplyWithBufferedBlockDispatcher.mockClear();
 
-      const replyPayload = createTimestampedNewMessagePayloadForTest({
+      const replyPayload = createNewMessagePayloadForTest({
         text: "replying now",
         isGroup: true,
         guid: "cache-msg-1",
         chatGuid,
         // Only the GUID is provided; sender/body must be hydrated.
         replyToMessageGuid: "cache-msg-0",
+        date: Date.now(),
       });
-
-      const replyReq = createMockRequest("POST", "/bluebubbles-webhook", replyPayload);
-      const replyRes = createMockResponse();
 
       await handleBlueBubblesWebhookRequest(replyReq, replyRes);
       await flushAsync();
@@ -1053,10 +1017,11 @@ describe("BlueBubbles webhook monitor", () => {
     it("falls back to threadOriginatorGuid when reply metadata is absent", async () => {
       setupWebhookTarget();
 
-      const payload = createTimestampedNewMessagePayloadForTest({
+      const payload = createNewMessagePayloadForTest({
         text: "replying now",
         threadOriginatorGuid: "msg-0",
         chatGuid: "iMessage;-;+15551234567",
+        date: Date.now(),
       });
 
       await handleBlueBubblesWebhookRequest(req, res);
@@ -1077,18 +1042,11 @@ describe("BlueBubbles webhook monitor", () => {
         chatGuid: "iMessage;-;+15551234567",
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: "Loved this idea",
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "msg-1",
-          chatGuid: "iMessage;-;+15551234567",
-          date: Date.now(),
-        },
-      };
+      const payload = createNewMessagePayloadForTest({
+        text: "Loved this idea",
+        chatGuid: "iMessage;-;+15551234567",
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -1112,18 +1070,12 @@ describe("BlueBubbles webhook monitor", () => {
         chatGuid: "iMessage;-;+15551234567",
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: 'Reacted 😅 to "nice one"',
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "msg-2",
-          chatGuid: "iMessage;-;+15551234567",
-          date: Date.now(),
-        },
-      };
+      const payload = createNewMessagePayloadForTest({
+        text: 'Reacted 😅 to "nice one"',
+        guid: "msg-2",
+        chatGuid: "iMessage;-;+15551234567",
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -1159,18 +1111,10 @@ describe("BlueBubbles webhook monitor", () => {
         chatGuid: "iMessage;-;+15551234567",
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: "hello",
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "msg-1",
-          chatGuid: "iMessage;-;+15551234567",
-          date: Date.now(),
-        },
-      };
+      const payload = createNewMessagePayloadForTest({
+        chatGuid: "iMessage;-;+15551234567",
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -1204,10 +1148,11 @@ describe("BlueBubbles webhook monitor", () => {
       const core = createMockRuntime();
       setBlueBubblesRuntime(core);
 
-      const payload = createTimestampedNewMessagePayloadForTest({
+      const payload = createNewMessagePayloadForTest({
         text: "/status",
         isGroup: true,
         chatGuid: "iMessage;+;chat123456",
+        date: Date.now(),
       });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
@@ -1232,11 +1177,12 @@ describe("BlueBubbles webhook monitor", () => {
       const core = createMockRuntime();
       setBlueBubblesRuntime(core);
 
-      const payload = createTimestampedNewMessagePayloadForTest({
+      const payload = createNewMessagePayloadForTest({
         text: "/status",
         handle: { address: "+15559999999" },
         isGroup: true,
         chatGuid: "iMessage;+;chat123456",
+        date: Date.now(),
       });
 
       await handleBlueBubblesWebhookRequest(req, res);
@@ -1262,17 +1208,12 @@ describe("BlueBubbles webhook monitor", () => {
         guid: "msg-dm-open-unauthorized",
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: "/status",
-          handle: { address: "+15559999999" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "msg-dm-open-unauthorized",
-          date: Date.now(),
-        },
-      };
+      const payload = createNewMessagePayloadForTest({
+        text: "/status",
+        handle: { address: "+15559999999" },
+        guid: "msg-dm-open-unauthorized",
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -1305,18 +1246,10 @@ describe("BlueBubbles webhook monitor", () => {
         chatGuid: "iMessage;-;+15551234567",
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: "hello",
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "msg-1",
-          chatGuid: "iMessage;-;+15551234567",
-          date: Date.now(),
-        },
-      };
+      const payload = createNewMessagePayloadForTest({
+        chatGuid: "iMessage;-;+15551234567",
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -1342,18 +1275,10 @@ describe("BlueBubbles webhook monitor", () => {
         chatGuid: "iMessage;-;+15551234567",
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: "hello",
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "msg-1",
-          chatGuid: "iMessage;-;+15551234567",
-          date: Date.now(),
-        },
-      };
+      const payload = createNewMessagePayloadForTest({
+        chatGuid: "iMessage;-;+15551234567",
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -1377,18 +1302,10 @@ describe("BlueBubbles webhook monitor", () => {
         chatGuid: "iMessage;-;+15551234567",
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: "hello",
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "msg-1",
-          chatGuid: "iMessage;-;+15551234567",
-          date: Date.now(),
-        },
-      };
+      const payload = createNewMessagePayloadForTest({
+        chatGuid: "iMessage;-;+15551234567",
+        date: Date.now(),
+      });
 
       mockDispatchReplyWithBufferedBlockDispatcher.mockImplementationOnce(async (params) => {
         await params.dispatcherOptions.onReplyStart?.();
@@ -1422,18 +1339,10 @@ describe("BlueBubbles webhook monitor", () => {
         chatGuid: "iMessage;-;+15551234567",
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: "hello",
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "msg-1",
-          chatGuid: "iMessage;-;+15551234567",
-          date: Date.now(),
-        },
-      };
+      const payload = createNewMessagePayloadForTest({
+        chatGuid: "iMessage;-;+15551234567",
+        date: Date.now(),
+      });
 
       mockDispatchReplyWithBufferedBlockDispatcher.mockImplementationOnce(async (params) => {
         await params.dispatcherOptions.onReplyStart?.();
@@ -1468,18 +1377,10 @@ describe("BlueBubbles webhook monitor", () => {
         chatGuid: "iMessage;-;+15551234567",
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: "hello",
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "msg-1",
-          chatGuid: "iMessage;-;+15551234567",
-          date: Date.now(),
-        },
-      };
+      const payload = createNewMessagePayloadForTest({
+        chatGuid: "iMessage;-;+15551234567",
+        date: Date.now(),
+      });
 
       mockDispatchReplyWithBufferedBlockDispatcher.mockImplementationOnce(
         async () => EMPTY_DISPATCH_RESULT,
@@ -1517,18 +1418,10 @@ describe("BlueBubbles webhook monitor", () => {
         chatGuid: "iMessage;-;+15551234567",
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: "hello",
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "msg-1",
-          chatGuid: "iMessage;-;+15551234567",
-          date: Date.now(),
-        },
-      };
+      const payload = createNewMessagePayloadForTest({
+        chatGuid: "iMessage;-;+15551234567",
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -1565,18 +1458,10 @@ describe("BlueBubbles webhook monitor", () => {
         chatGuid: "iMessage;-;+15551234567",
       });
 
-      const inboundPayload = {
-        type: "new-message",
-        data: {
-          text: "hello",
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "msg-1",
-          chatGuid: "iMessage;-;+15551234567",
-          date: Date.now(),
-        },
-      };
+      const inboundPayload = createNewMessagePayloadForTest({
+        chatGuid: "iMessage;-;+15551234567",
+        date: Date.now(),
+      });
 
       const inboundReq = createMockRequest("POST", "/bluebubbles-webhook", inboundPayload);
       const inboundRes = createMockResponse();
@@ -1587,12 +1472,13 @@ describe("BlueBubbles webhook monitor", () => {
       // Send response did not include a message id, so nothing should be enqueued yet.
       expect(mockEnqueueSystemEvent).not.toHaveBeenCalled();
 
-      const fromMePayload = createTimestampedNewMessagePayloadForTest({
+      const fromMePayload = createNewMessagePayloadForTest({
         text: "replying now",
         handle: { address: "+15557654321" },
         isFromMe: true,
         guid: "msg-out-456",
         chatGuid: "iMessage;-;+15551234567",
+        date: Date.now(),
       });
 
       await handleBlueBubblesWebhookRequest(fromMeReq, fromMeRes);
@@ -1626,18 +1512,10 @@ describe("BlueBubbles webhook monitor", () => {
         chatGuid: "iMessage;-;+15551234567",
       });
 
-      const inboundPayload = {
-        type: "new-message",
-        data: {
-          text: "hello",
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "msg-1",
-          chatGuid: "iMessage;-;+15551234567",
-          date: Date.now(),
-        },
-      };
+      const inboundPayload = createNewMessagePayloadForTest({
+        chatGuid: "iMessage;-;+15551234567",
+        date: Date.now(),
+      });
 
       const inboundReq = createMockRequest("POST", "/bluebubbles-webhook", inboundPayload);
       const inboundRes = createMockResponse();
@@ -1647,12 +1525,13 @@ describe("BlueBubbles webhook monitor", () => {
 
       expect(mockEnqueueSystemEvent).not.toHaveBeenCalled();
 
-      const fromMePayload = createTimestampedNewMessagePayloadForTest({
+      const fromMePayload = createNewMessagePayloadForTest({
         text: "replying now",
         handle: { address: "+15557654321" },
         isFromMe: true,
         guid: "msg-out-789",
         chatIdentifier: "+15551234567",
+        date: Date.now(),
       });
 
       await handleBlueBubblesWebhookRequest(fromMeReq, fromMeRes);
@@ -1678,17 +1557,9 @@ describe("BlueBubbles webhook monitor", () => {
 
       const payload = createTimestampedMessageReactionPayloadForTest();
 
-      const payload = {
-        type: "message-reaction",
-        data: {
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          associatedMessageGuid: "msg-original-123",
-          associatedMessageType: 2000,
-          date: Date.now(),
-        },
-      };
+      const payload = createMessageReactionPayloadForTest({
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -1711,17 +1582,10 @@ describe("BlueBubbles webhook monitor", () => {
         associatedMessageType: 2000, // Heart reaction added
       });
 
-      const payload = {
-        type: "message-reaction",
-        data: {
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          associatedMessageGuid: "msg-original-123",
-          associatedMessageType: 2000, // Heart reaction added
-          date: Date.now(),
-        },
-      };
+      const payload = createMessageReactionPayloadForTest({
+        associatedMessageType: 2000, // Heart reaction added
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -1747,17 +1611,10 @@ describe("BlueBubbles webhook monitor", () => {
         associatedMessageType: 3000, // Heart reaction removed
       });
 
-      const payload = {
-        type: "message-reaction",
-        data: {
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          associatedMessageGuid: "msg-original-123",
-          associatedMessageType: 3000, // Heart reaction removed
-          date: Date.now(),
-        },
-      };
+      const payload = createMessageReactionPayloadForTest({
+        associatedMessageType: 3000, // Heart reaction removed
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -1783,17 +1640,10 @@ describe("BlueBubbles webhook monitor", () => {
         isFromMe: true, // From self
       });
 
-      const payload = {
-        type: "message-reaction",
-        data: {
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: true, // From self
-          associatedMessageGuid: "msg-original-123",
-          associatedMessageType: 2000,
-          date: Date.now(),
-        },
-      };
+      const payload = createMessageReactionPayloadForTest({
+        isFromMe: true, // From self
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -1819,17 +1669,11 @@ describe("BlueBubbles webhook monitor", () => {
       });
 
       // Test thumbs up reaction (2001)
-      const payload = {
-        type: "message-reaction",
-        data: {
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          associatedMessageGuid: "msg-123",
-          associatedMessageType: 2001, // Thumbs up
-          date: Date.now(),
-        },
-      };
+      const payload = createMessageReactionPayloadForTest({
+        associatedMessageGuid: "msg-123",
+        associatedMessageType: 2001, // Thumbs up
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -1853,18 +1697,11 @@ describe("BlueBubbles webhook monitor", () => {
         chatGuid: "iMessage;-;+15551234567",
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: "hello",
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "p:1/msg-uuid-12345",
-          chatGuid: "iMessage;-;+15551234567",
-          date: Date.now(),
-        },
-      };
+      const payload = createNewMessagePayloadForTest({
+        guid: "p:1/msg-uuid-12345",
+        chatGuid: "iMessage;-;+15551234567",
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -1887,18 +1724,11 @@ describe("BlueBubbles webhook monitor", () => {
         chatGuid: "iMessage;-;+15551234567",
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: "hello",
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "p:1/msg-uuid-12345",
-          chatGuid: "iMessage;-;+15551234567",
-          date: Date.now(),
-        },
-      };
+      const payload = createNewMessagePayloadForTest({
+        guid: "p:1/msg-uuid-12345",
+        chatGuid: "iMessage;-;+15551234567",
+        date: Date.now(),
+      });
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -1957,35 +1787,32 @@ describe("BlueBubbles webhook monitor", () => {
       };
       const config: RemoteClawConfig = {};
       const core = createMockRuntime();
-      trackWebhookRegistrationForTest(
-        setupWebhookTargetsForTest({
-          createCore: createMockRuntime,
-          core,
-          accounts: [{ account: accountA }, { account: accountB }],
-        }),
-        (nextUnregister) => {
-          unregister = nextUnregister;
-        },
-      );
+      const registration = setupWebhookTargetsForTest({
+        createCore: createMockRuntime,
+        core,
+        accounts: [{ account: accountA }, { account: accountB }],
+      });
+      unregister = registration.unregister;
 
       await dispatchWebhookPayload(
-        createTimestampedNewMessagePayloadForTest({
+        createNewMessagePayloadForTest({
           text: "message for account a",
           guid: "a-msg-1",
           chatGuid: "iMessage;-;+15551234567",
+          date: Date.now(),
         }),
-        createMockResponse(),
+        "/bluebubbles-webhook?password=password-a",
       );
 
       await dispatchWebhookPayload(
-        createTimestampedNewMessagePayloadForTest({
+        createNewMessagePayloadForTest({
           text: "message for account b",
           guid: "b-msg-1",
           chatGuid: "iMessage;-;+15551234567",
+          date: Date.now(),
         }),
-        createMockResponse(),
+        "/bluebubbles-webhook?password=password-b",
       );
-      await flushAsync();
 
       expect(mockDispatchReplyWithBufferedBlockDispatcher).toHaveBeenCalledTimes(2);
       const firstCall = mockDispatchReplyWithBufferedBlockDispatcher.mock.calls[0]?.[0];
@@ -2020,13 +1847,10 @@ describe("BlueBubbles webhook monitor", () => {
       });
 
       await dispatchWebhookPayload(
-        createTimestampedNewMessagePayloadForTest({
+        createNewMessagePayloadForTest({
           text: "current text",
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
-          guid: "msg-1",
           chatGuid: "iMessage;-;+15550002002",
+          date: Date.now(),
         }),
       );
 
@@ -2060,43 +1884,26 @@ describe("BlueBubbles webhook monitor", () => {
         path: "/bluebubbles-webhook",
       });
 
-      const mkPayload = (guid: string, text: string, now: number) => ({
-        type: "new-message",
-        data: {
+      const mkPayload = (guid: string, text: string, now: number) =>
+        createNewMessagePayloadForTest({
           text,
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: false,
           guid,
           chatGuid: "iMessage;-;+15550003003",
           date: now,
-        },
-      });
+        });
 
       let now = 1_700_000_000_000;
       const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => now);
       try {
-        await handleBlueBubblesWebhookRequest(
-          createMockRequest("POST", "/bluebubbles-webhook", mkPayload("msg-1", "first text", now)),
-          createMockResponse(),
-        );
-        await flushAsync();
+        await dispatchWebhookPayload(mkPayload("msg-1", "first text", now));
         expect(mockFetchBlueBubblesHistory).toHaveBeenCalledTimes(1);
 
         now += 1_000;
-        await handleBlueBubblesWebhookRequest(
-          createMockRequest("POST", "/bluebubbles-webhook", mkPayload("msg-2", "second text", now)),
-          createMockResponse(),
-        );
-        await flushAsync();
+        await dispatchWebhookPayload(mkPayload("msg-2", "second text", now));
         expect(mockFetchBlueBubblesHistory).toHaveBeenCalledTimes(1);
 
         now += 6_000;
-        await handleBlueBubblesWebhookRequest(
-          createMockRequest("POST", "/bluebubbles-webhook", mkPayload("msg-3", "third text", now)),
-          createMockResponse(),
-        );
-        await flushAsync();
+        await dispatchWebhookPayload(mkPayload("msg-3", "third text", now));
         expect(mockFetchBlueBubblesHistory).toHaveBeenCalledTimes(2);
 
         const thirdCall = mockDispatchReplyWithBufferedBlockDispatcher.mock.calls[2]?.[0];
@@ -2105,11 +1912,7 @@ describe("BlueBubbles webhook monitor", () => {
         expect(thirdHistory.map((entry) => entry.body)).toContain("third text");
 
         now += 10_000;
-        await handleBlueBubblesWebhookRequest(
-          createMockRequest("POST", "/bluebubbles-webhook", mkPayload("msg-4", "fourth text", now)),
-          createMockResponse(),
-        );
-        await flushAsync();
+        await dispatchWebhookPayload(mkPayload("msg-4", "fourth text", now));
         expect(mockFetchBlueBubblesHistory).toHaveBeenCalledTimes(2);
       } finally {
         nowSpy.mockRestore();
@@ -2128,20 +1931,18 @@ describe("BlueBubbles webhook monitor", () => {
         })),
       });
 
-      const account = createMockAccount({ dmHistoryLimit: 20 });
-      const config: RemoteClawConfig = {};
-      const core = createMockRuntime();
-      setBlueBubblesRuntime(core);
+      setupWebhookTarget({
+        account: createMockAccount({ dmHistoryLimit: 20 }),
+      });
 
       await dispatchWebhookPayload(
-        createTimestampedNewMessagePayloadForTest({
+        createNewMessagePayloadForTest({
           text: "latest text",
           guid: "msg-bomb-1",
           chatGuid: "iMessage;-;+15550004004",
+          date: Date.now(),
         }),
-        createMockResponse(),
       );
-      await flushAsync();
 
       const callArgs = getFirstDispatchCall();
       const inboundHistory = (callArgs.ctx.InboundHistory ?? []) as Array<{ body: string }>;
@@ -2156,9 +1957,10 @@ describe("BlueBubbles webhook monitor", () => {
     it("ignores messages from self (fromMe=true)", async () => {
       setupWebhookTarget();
 
-      const payload = createTimestampedNewMessagePayloadForTest({
+      const payload = createNewMessagePayloadForTest({
         text: "my own message",
         isFromMe: true,
+        date: Date.now(),
       });
 
       await dispatchWebhookPayload(payload);
@@ -2189,28 +1991,22 @@ describe("BlueBubbles webhook monitor", () => {
       expect(mockDispatchReplyWithBufferedBlockDispatcher).toHaveBeenCalledTimes(1);
       mockDispatchReplyWithBufferedBlockDispatcher.mockClear();
 
-      unregister = registerBlueBubblesWebhookTarget({
-        account,
-        config,
-        runtime: { log: vi.fn(), error: vi.fn() },
-        core,
-        path: "/bluebubbles-webhook",
+      const fromMePayload = createNewMessagePayloadForTest({
+        text: "replying now",
+        isFromMe: true,
+        guid: "msg-self-1",
+        chatGuid: "iMessage;-;+15551234567",
+        date: timestamp,
       });
 
-      const payload = {
-        type: "new-message",
-        data: {
-          text: "my own message",
-          handle: { address: "+15551234567" },
-          isGroup: false,
-          isFromMe: true,
-          guid: "msg-1",
-          date: Date.now(),
-        },
-      };
+      await dispatchWebhookPayload(fromMePayload);
 
-      const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
-      const res = createMockResponse();
+      const reflectedPayload = createNewMessagePayloadForTest({
+        text: "replying now",
+        guid: "msg-self-2",
+        chatGuid: "iMessage;-;+15551234567",
+        date: timestamp,
+      });
 
       await handleBlueBubblesWebhookRequest(req, res);
       await flushAsync();
@@ -2221,10 +2017,11 @@ describe("BlueBubbles webhook monitor", () => {
     it("does not drop inbound messages when no fromMe self-chat copy was seen", async () => {
       setupWebhookTarget();
 
-      const inboundPayload = createTimestampedNewMessagePayloadForTest({
+      const inboundPayload = createNewMessagePayloadForTest({
         text: "genuinely new message",
         guid: "msg-inbound-1",
         chatGuid: "iMessage;-;+15551234567",
+        date: Date.now(),
       });
 
       await dispatchWebhookPayload(inboundPayload);

@@ -32,6 +32,7 @@ final class MacNodeModeCoordinator {
     private func run() async {
         var retryDelay: UInt64 = 1_000_000_000
         var lastCameraEnabled: Bool?
+        var lastBrowserControlEnabled: Bool?
         let defaults = UserDefaults.standard
 
         while !Task.isCancelled {
@@ -45,6 +46,14 @@ final class MacNodeModeCoordinator {
                 lastCameraEnabled = cameraEnabled
             } else if lastCameraEnabled != cameraEnabled {
                 lastCameraEnabled = cameraEnabled
+                await self.session.disconnect()
+                try? await Task.sleep(nanoseconds: 200_000_000)
+            }
+            let browserControlEnabled = RemoteClawConfigFile.browserControlEnabled()
+            if lastBrowserControlEnabled == nil {
+                lastBrowserControlEnabled = browserControlEnabled
+            } else if lastBrowserControlEnabled != browserControlEnabled {
+                lastBrowserControlEnabled = browserControlEnabled
                 await self.session.disconnect()
                 try? await Task.sleep(nanoseconds: 200_000_000)
             }
@@ -108,6 +117,9 @@ final class MacNodeModeCoordinator {
 
     private func currentCaps() -> [String] {
         var caps: [String] = [RemoteClawCapability.canvas.rawValue, RemoteClawCapability.screen.rawValue]
+        if RemoteClawConfigFile.browserControlEnabled() {
+            caps.append(RemoteClawCapability.browser.rawValue)
+        }
         if UserDefaults.standard.object(forKey: cameraEnabledKey) as? Bool ?? false {
             caps.append(RemoteClawCapability.camera.rawValue)
         }
@@ -142,6 +154,9 @@ final class MacNodeModeCoordinator {
         ]
 
         let capsSet = Set(caps)
+        if capsSet.contains(RemoteClawCapability.browser.rawValue) {
+            commands.append(RemoteClawBrowserCommand.proxy.rawValue)
+        }
         if capsSet.contains(RemoteClawCapability.camera.rawValue) {
             commands.append(RemoteClawCameraCommand.list.rawValue)
             commands.append(RemoteClawCameraCommand.snap.rawValue)

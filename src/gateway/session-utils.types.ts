@@ -40,6 +40,9 @@ export type GatewaySessionRow = {
   modelProvider?: string;
   model?: string;
   contextTokens?: number;
+  thinkingLevel?: string;
+  reasoningLevel?: string;
+  elevatedLevel?: string;
   deliveryContext?: DeliveryContext;
   lastChannel?: SessionEntry["lastChannel"];
   lastTo?: string;

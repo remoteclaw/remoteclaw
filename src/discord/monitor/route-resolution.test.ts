@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import type { ResolvedAgentRoute } from "../../routing/resolve-route.js";
 import {
   resolveDiscordBoundConversationRoute,
@@ -78,7 +78,7 @@ describe("discord route resolution helpers", () => {
   });
 
   it("resolves the same route shape as the inline Discord route inputs", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       agents: {
         list: [{ id: "worker" }],
       },
@@ -110,7 +110,7 @@ describe("discord route resolution helpers", () => {
   });
 
   it("composes route building with effective-route overrides", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       agents: {
         list: [{ id: "worker" }],
       },

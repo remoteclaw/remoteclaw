@@ -24,7 +24,7 @@ vi.mock("../pairing/pairing-store.js", () => ({
 
 describe("native command auth in groups", () => {
   function setup(params: {
-    cfg?: OpenClawConfig;
+    cfg?: RemoteClawConfig;
     telegramCfg?: TelegramAccountConfig;
     allowFrom?: string[];
     groupAllowFrom?: string[];
@@ -110,7 +110,7 @@ describe("native command auth in groups", () => {
             telegram: ["12345"],
           },
         },
-      } as OpenClawConfig,
+      } as RemoteClawConfig,
       allowFrom: ["99999"],
       groupAllowFrom: ["99999"],
       useAccessGroups: true,
@@ -143,7 +143,7 @@ describe("native command auth in groups", () => {
             telegram: ["99999"],
           },
         },
-      } as OpenClawConfig,
+      } as RemoteClawConfig,
       groupAllowFrom: ["12345"],
       useAccessGroups: true,
     });
@@ -176,7 +176,7 @@ describe("native command auth in groups", () => {
             telegram: ["12345"],
           },
         },
-      } as OpenClawConfig,
+      } as RemoteClawConfig,
       telegramCfg: {
         groupPolicy: "disabled",
       } as TelegramAccountConfig,
@@ -216,7 +216,7 @@ describe("native command auth in groups", () => {
             telegram: ["12345"],
           },
         },
-      } as OpenClawConfig,
+      } as RemoteClawConfig,
       useAccessGroups: true,
       resolveGroupPolicy: () =>
         ({

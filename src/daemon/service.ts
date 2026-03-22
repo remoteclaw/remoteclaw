@@ -104,7 +104,8 @@ const GATEWAY_SERVICE_REGISTRY = {
 } satisfies Partial<Record<NodeJS.Platform, GatewayService>>;
 
 export function resolveGatewayService(): GatewayService {
-  const service = GATEWAY_SERVICE_REGISTRY[process.platform];
+  const service =
+    GATEWAY_SERVICE_REGISTRY[process.platform as keyof typeof GATEWAY_SERVICE_REGISTRY];
   if (service) {
     return service;
   }

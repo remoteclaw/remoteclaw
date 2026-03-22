@@ -7,13 +7,12 @@ import {
   type StatusReactionController,
 } from "../channels/status-reactions.js";
 import { loadConfig } from "../config/config.js";
-import type { TelegramGroupConfig } from "../config/types.js";
 import { logVerbose } from "../globals.js";
 import { recordChannelActivity } from "../infra/channel-activity.js";
 import { buildAgentSessionKey, deriveLastRoutePolicy } from "../routing/resolve-route.js";
 import { DEFAULT_ACCOUNT_ID, resolveThreadSessionKeys } from "../routing/session-key.js";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
-import { firstDefined, normalizeAllowFrom, normalizeDmAllowFromWithStore } from "./bot-access.js";
+import { firstDefined, normalizeAllowFrom, normalizeAllowFromWithStore } from "./bot-access.js";
 import { resolveTelegramInboundBody } from "./bot-message-context.body.js";
 import { buildTelegramInboundContextPayload } from "./bot-message-context.session.js";
 import type { BuildTelegramMessageContextParams } from "./bot-message-context.types.js";
@@ -77,7 +76,7 @@ export const buildTelegramMessageContext = async ({
   // Use direct config dmPolicy override if available for DMs
   const effectiveDmPolicy =
     !isGroup && groupConfig && "dmPolicy" in groupConfig
-      ? (groupConfig.dmPolicy ?? dmPolicy)
+      ? (((groupConfig as Record<string, unknown>).dmPolicy as typeof dmPolicy) ?? dmPolicy)
       : dmPolicy;
   // Fresh config for bindings lookup; other routing inputs are payload-derived.
   const freshCfg = loadConfig();
@@ -110,7 +109,7 @@ export const buildTelegramMessageContext = async ({
   const groupAllowOverride = firstDefined(topicConfig?.allowFrom, groupConfig?.allowFrom);
   // For DMs, prefer per-DM/topic allowFrom (groupAllowOverride) over account-level allowFrom
   const dmAllowFrom = groupAllowOverride ?? allowFrom;
-  const effectiveDmAllow = normalizeDmAllowFromWithStore({
+  const effectiveDmAllow = normalizeAllowFromWithStore({
     allowFrom: dmAllowFrom,
     storeAllowFrom,
     dmPolicy: effectiveDmPolicy,
@@ -149,7 +148,7 @@ export const buildTelegramMessageContext = async ({
     return null;
   }
 
-  const requireTopic = groupConfig?.requireTopic;
+  const requireTopic = (groupConfig as Record<string, unknown> | undefined)?.requireTopic;
   const topicRequiredButMissing = !isGroup && requireTopic === true && dmThreadId == null;
   if (topicRequiredButMissing) {
     logVerbose(`Blocked telegram DM ${chatId}: requireTopic=true but no topic present`);

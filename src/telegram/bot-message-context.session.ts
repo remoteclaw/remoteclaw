@@ -162,10 +162,12 @@ export async function buildTelegramInboundContextPayload(params: {
     });
   }
 
-  const { skillFilter, groupSystemPrompt } = resolveTelegramGroupPromptSettings({
+  const { groupSystemPrompt } = resolveTelegramGroupPromptSettings({
     groupConfig,
     topicConfig,
   });
+  // skillFilter is an upstream-only feature (skills marketplace) that has been gutted.
+  const skillFilter: string[] | undefined = undefined;
   const commandBody = normalizeCommandBody(rawBody, {
     botUsername: primaryCtx.me?.username?.toLowerCase(),
   });

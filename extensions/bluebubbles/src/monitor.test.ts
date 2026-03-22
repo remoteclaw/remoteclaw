@@ -54,6 +54,7 @@ const mockResolveAgentRoute = vi.fn(() => ({
   accountId: "default",
   sessionKey: "agent:main:bluebubbles:dm:+15551234567",
   mainSessionKey: "agent:main:main",
+  lastRoutePolicy: "session" as const,
   matchedBy: "default" as const,
 }));
 const mockBuildMentionRegexes = vi.fn(() => [/\bbert\b/i]);

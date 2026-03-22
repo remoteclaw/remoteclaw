@@ -1,16 +1,9 @@
-import {
-  findModelInCatalog,
-  loadModelCatalog,
-  modelSupportsVision,
-} from "../agents/model-catalog.js";
-import { resolveDefaultModelForAgent } from "../agents/model-selection.js";
 import { hasControlCommand } from "../auto-reply/command-detection.js";
 import {
   recordPendingHistoryEntryIfEnabled,
   type HistoryEntry,
 } from "../auto-reply/reply/history.js";
 import { buildMentionRegexes, matchesMentionWithExplicit } from "../auto-reply/reply/mentions.js";
-import type { MsgContext } from "../auto-reply/templating.js";
 import { resolveControlCommandGate } from "../channels/command-gating.js";
 import { formatLocationText, type NormalizedLocation } from "../channels/location.js";
 import { logInboundDrop } from "../channels/logging.js";
@@ -49,24 +42,13 @@ export type TelegramInboundBodyResult = {
   locationData?: NormalizedLocation;
 };
 
-async function resolveStickerVisionSupport(params: {
+async function resolveStickerVisionSupport(_params: {
   cfg: RemoteClawConfig;
   agentId?: string;
 }): Promise<boolean> {
-  try {
-    const catalog = await loadModelCatalog({ config: params.cfg });
-    const defaultModel = resolveDefaultModelForAgent({
-      cfg: params.cfg,
-      agentId: params.agentId,
-    });
-    const entry = findModelInCatalog(catalog, defaultModel.provider, defaultModel.model);
-    if (!entry) {
-      return false;
-    }
-    return modelSupportsVision(entry);
-  } catch {
-    return false;
-  }
+  // Model catalog and model selection modules are gutted in the fork.
+  // Vision support detection is not available; default to false.
+  return false;
 }
 
 export async function resolveTelegramInboundBody(params: {
@@ -103,8 +85,8 @@ export async function resolveTelegramInboundBody(params: {
     routeAgentId,
     effectiveGroupAllow,
     effectiveDmAllow,
-    groupConfig,
-    topicConfig,
+    groupConfig: _groupConfig,
+    topicConfig: _topicConfig,
     requireMention,
     options,
     groupHistories,
@@ -149,7 +131,6 @@ export async function resolveTelegramInboundBody(params: {
   const locationData = extractTelegramLocation(msg);
   const locationText = locationData ? formatLocationText(locationData) : undefined;
   const rawText = expandTextLinks(messageTextParts.text, messageTextParts.entities).trim();
-  const hasUserText = Boolean(rawText || locationText);
   let rawBody = [rawText, locationText].filter(Boolean).join("\n").trim();
   if (!rawBody) {
     rawBody = placeholder;
@@ -160,45 +141,9 @@ export async function resolveTelegramInboundBody(params: {
 
   let bodyText = rawBody;
   const hasAudio = allMedia.some((media) => media.contentType?.startsWith("audio/"));
-  const disableAudioPreflight =
-    (topicConfig?.disableAudioPreflight ?? groupConfig?.disableAudioPreflight) === true;
-
-  let preflightTranscript: string | undefined;
-  const needsPreflightTranscription =
-    isGroup &&
-    requireMention &&
-    hasAudio &&
-    !hasUserText &&
-    mentionRegexes.length > 0 &&
-    !disableAudioPreflight;
-
-  if (needsPreflightTranscription) {
-    try {
-      const { transcribeFirstAudio } = await import("../media-understanding/audio-preflight.js");
-      const tempCtx: MsgContext = {
-        MediaPaths: allMedia.length > 0 ? allMedia.map((m) => m.path) : undefined,
-        MediaTypes:
-          allMedia.length > 0
-            ? (allMedia.map((m) => m.contentType).filter(Boolean) as string[])
-            : undefined,
-      };
-      preflightTranscript = await transcribeFirstAudio({
-        ctx: tempCtx,
-        cfg,
-        agentDir: undefined,
-      });
-    } catch (err) {
-      logVerbose(`telegram: audio preflight transcription failed: ${String(err)}`);
-    }
-  }
-
-  if (hasAudio && bodyText === "<media:audio>" && preflightTranscript) {
-    bodyText = preflightTranscript;
-  }
-
   if (!bodyText && allMedia.length > 0) {
     if (hasAudio) {
-      bodyText = preflightTranscript || "<media:audio>";
+      bodyText = "<media:audio>";
     } else {
       bodyText = `<media:image>${allMedia.length > 1 ? ` (${allMedia.length} images)` : ""}`;
     }

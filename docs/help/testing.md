@@ -55,8 +55,7 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
 - Scheduler note:
   - `pnpm test` now keeps a small checked-in behavioral manifest for true pool/isolation overrides and a separate timing snapshot for the slowest unit files.
   - Shared unit coverage now defaults to `threads`, while the manifest keeps the measured fork-only exceptions and heavy singleton lanes explicit.
-  - The shared extension lane still defaults to `threads`; the wrapper keeps explicit fork-only exceptions in `test/fixtures/test-parallel.behavior.json` when a file cannot safely share a non-isolated worker.
-  - The channel suite (`vitest.channels.config.ts`) now also defaults to `threads`; the March 22, 2026 direct full-suite control run passed clean without channel-specific fork exceptions.
+  - The extension suite (`vitest.extensions.config.ts`) also now defaults to `threads`; the March 22, 2026 direct full-suite control run passed clean without extension-specific fork exceptions.
   - The wrapper peels the heaviest measured files into dedicated lanes instead of relying on a growing hand-maintained exclusion list.
   - Refresh the timing snapshot with `pnpm test:perf:update-timings` after major suite shape changes.
 - Embedded runner note:
@@ -72,23 +71,12 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
     sufficient substitute for those integration paths.
 - Pool note:
   - Base Vitest config still defaults to `forks`.
-  - Unit wrapper lanes default to `threads`, with explicit manifest fork-only exceptions.
+  - Unit wrapper lanes default to `threads`, with explicit manifest fork/vmFork exceptions.
   - Extension scoped config defaults to `threads`.
-  - Channel scoped config defaults to `threads`.
-  - Unit, channel, and extension configs default to `isolate: false` for faster file startup.
-  - `pnpm test` also passes `--isolate=false` at the wrapper level.
+  - `pnpm test` also defaults to `--isolate=false` at the wrapper level for faster file startup.
   - Opt back into Vitest file isolation with `OPENCLAW_TEST_ISOLATE=1 pnpm test`.
   - `OPENCLAW_TEST_NO_ISOLATE=0` or `OPENCLAW_TEST_NO_ISOLATE=false` also force isolated runs.
-- Fast-local iteration note:
-  - `pnpm test:changed` runs the wrapper with `--changed origin/main`.
-  - The base Vitest config marks the wrapper manifests/config files as `forceRerunTriggers` so changed-mode reruns stay correct when scheduler inputs change.
-  - Vitest's filesystem module cache is now enabled by default for Node-side test reruns.
-  - Opt out with `OPENCLAW_VITEST_FS_MODULE_CACHE=0` or `OPENCLAW_VITEST_FS_MODULE_CACHE=false` if you suspect stale transform cache behavior.
-- Perf-debug note:
-  - `pnpm test:perf:imports` enables Vitest import-duration reporting plus import-breakdown output.
-  - `pnpm test:perf:imports:changed` scopes the same profiling view to files changed since `origin/main`.
-  - `pnpm test:perf:profile:main` writes a main-thread CPU profile for Vitest/Vite startup and transform overhead.
-  - `pnpm test:perf:profile:runner` writes runner CPU+heap profiles for the unit suite with file parallelism disabled.
+  - `OPENCLAW_TEST_VM_FORKS=1` remains an opt-in experiment on Node 22, 23, and 24 only.
 
 ### E2E (gateway smoke)
 
@@ -142,11 +130,6 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
   - Prefer running narrowed subsets instead of “everything”
   - Live runs will source `~/.profile` to pick up missing API keys
 - API key rotation (provider-specific): set `*_API_KEYS` with comma/semicolon format or `*_API_KEY_1`, `*_API_KEY_2` (for example `OPENAI_API_KEYS`, `ANTHROPIC_API_KEYS`, `GEMINI_API_KEYS`) or per-live override via `OPENCLAW_LIVE_*_KEY`; tests retry on rate limit responses.
-- Progress/heartbeat output:
-  - Live suites now emit progress lines to stderr so long provider calls are visibly active even when Vitest console capture is quiet.
-  - `vitest.live.config.ts` disables Vitest console interception so provider/gateway progress lines stream immediately during live runs.
-  - Tune direct-model heartbeats with `OPENCLAW_LIVE_HEARTBEAT_MS`.
-  - Tune gateway/probe heartbeats with `OPENCLAW_LIVE_GATEWAY_HEARTBEAT_MS`.
 
 ## Which suite should I run?
 

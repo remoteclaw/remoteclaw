@@ -314,36 +314,24 @@ export const ircPlugin: ChannelPlugin<ResolvedIrcAccount, IrcProbe> = {
       });
     },
   },
-  directory: createChannelDirectoryAdapter({
-    listPeers: async (params) =>
-      listResolvedDirectoryEntriesFromSources<ResolvedIrcAccount>({
-        ...params,
-        kind: "user",
-        resolveAccount: adaptScopedAccountAccessor(resolveIrcAccount),
-        resolveSources: (account) => [
-          account.config.allowFrom ?? [],
-          account.config.groupAllowFrom ?? [],
-          ...Object.values(account.config.groups ?? {}).map((group) => group.allowFrom ?? []),
-        ],
-        normalizeId: (entry) => normalizePairingTarget(entry) || null,
-      }),
-    listGroups: async (params) => {
-      const entries = listResolvedDirectoryEntriesFromSources<ResolvedIrcAccount>({
-        ...params,
-        kind: "group",
-        resolveAccount: adaptScopedAccountAccessor(resolveIrcAccount),
-        resolveSources: (account) => [
-          account.config.channels ?? [],
-          Object.keys(account.config.groups ?? {}),
-        ],
-        normalizeId: (entry) => {
-          const normalized = normalizeIrcMessagingTarget(entry);
-          return normalized && isChannelTarget(normalized) ? normalized : null;
-        },
-      });
-      return entries.map((entry) => ({ ...entry, name: entry.id }));
+  pairing: {
+    text: {
+      idLabel: "ircUser",
+      message: PAIRING_APPROVED_MESSAGE,
+      normalizeAllowEntry: (entry) => normalizeIrcAllowEntry(entry),
+      notify: async ({ id, message }) => {
+        const target = normalizePairingTarget(id);
+        if (!target) {
+          throw new Error(`invalid IRC pairing id: ${id}`);
+        }
+        await sendMessageIrc(target, message);
+      },
     },
-  }),
+  },
+  security: {
+    resolveDmPolicy: resolveIrcDmPolicy,
+    collectWarnings: collectIrcSecurityWarnings,
+  },
   outbound: {
     deliveryMode: "direct",
     chunker: (text, limit) => getIrcRuntime().channel.text.chunkMarkdownText(text, limit),

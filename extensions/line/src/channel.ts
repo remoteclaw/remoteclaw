@@ -1,5 +1,5 @@
-import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { createAllowlistProviderRestrictSendersWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
+import { createPairingPrefixStripper } from "remoteclaw/plugin-sdk/channel-pairing";
+import { createRestrictSendersChannelSecurity } from "remoteclaw/plugin-sdk/channel-policy";
 import {
   createAttachedChannelResultAdapter,
   createEmptyChannelDirectoryAdapter,
@@ -199,86 +199,25 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
     ...meta,
     quickstartAllowFrom: true,
   },
-  pairing: createTextPairingAdapter({
-    idLabel: "lineUserId",
-    message: "OpenClaw: your access has been approved.",
-    // LINE IDs are case-sensitive; only strip prefix variants (line: / line:user:).
-    normalizeAllowEntry: createPairingPrefixStripper(/^line:(?:user:)?/i),
-    notify: async ({ cfg, id, message }) => {
-      const line = getLineRuntime().channel.line;
-      const account = line.resolveLineAccount({ cfg });
-      if (!account.channelAccessToken) {
-        throw new Error("LINE channel access token not configured");
-      }
-      await line.pushMessageLine(id, message, {
-        channelAccessToken: account.channelAccessToken,
-      });
-    },
-  }),
-  capabilities: {
-    chatTypes: ["direct", "group"],
-    reactions: false,
-    threads: false,
-    media: true,
-    nativeCommands: false,
-    blockStreaming: true,
-  },
-  reload: { configPrefixes: ["channels.line"] },
-  configSchema: buildChannelConfigSchema(LineConfigSchema),
-  config: {
-    ...lineConfigAdapter,
-    isConfigured: (account) =>
-      Boolean(account.channelAccessToken?.trim() && account.channelSecret?.trim()),
-    describeAccount: (account) => ({
-      accountId: account.accountId,
-      name: account.name,
-      enabled: account.enabled,
-      configured: Boolean(account.channelAccessToken?.trim() && account.channelSecret?.trim()),
-      tokenSource: account.tokenSource ?? undefined,
-    }),
-  },
-  security: {
-    resolveDmPolicy: resolveLineDmPolicy,
-    collectWarnings: collectLineSecurityWarnings,
-  },
-  groups: {
-    resolveRequireMention: ({ cfg, accountId, groupId }) => {
-      const account = getLineRuntime().channel.line.resolveLineAccount({
-        cfg,
-        accountId: accountId ?? undefined,
-      });
-      const groups = account.config.groups;
-      if (!groups || !groupId) {
-        return false;
-      }
-      const groupConfig = groups[groupId] ?? groups["*"];
-      return groupConfig?.requireMention ?? false;
-    },
-  },
-  messaging: {
-    normalizeTarget: (target) => {
-      const trimmed = target.trim();
-      if (!trimmed) {
-        return undefined;
-      }
-      return trimmed.replace(/^line:(group|room|user):/i, "").replace(/^line:/i, "");
-    },
-    targetResolver: {
-      looksLikeId: (id) => {
-        const trimmed = id?.trim();
-        if (!trimmed) {
-          return false;
+  pairing: {
+    text: {
+      idLabel: "lineUserId",
+      message: "OpenClaw: your access has been approved.",
+      // LINE IDs are case-sensitive; only strip prefix variants (line: / line:user:).
+      normalizeAllowEntry: createPairingPrefixStripper(/^line:(?:user:)?/i),
+      notify: async ({ cfg, id, message }) => {
+        const line = getLineRuntime().channel.line;
+        const account = line.resolveLineAccount({ cfg });
+        if (!account.channelAccessToken) {
+          throw new Error("LINE channel access token not configured");
         }
-        // LINE user IDs are typically U followed by 32 hex characters
-        // Group IDs are C followed by 32 hex characters
-        // Room IDs are R followed by 32 hex characters
-        return /^[UCR][a-f0-9]{32}$/i.test(trimmed) || /^line:/i.test(trimmed);
+        await line.pushMessageLine(id, message, {
+          channelAccessToken: account.channelAccessToken,
+        });
       },
-      hint: "<userId|groupId|roomId>",
     },
   },
-  directory: createEmptyChannelDirectoryAdapter(),
-  setup: lineSetupAdapter,
+  security: lineSecurityAdapter,
   outbound: {
     deliveryMode: "direct",
     chunker: (text, limit) => getLineRuntime().channel.text.chunkMarkdownText(text, limit),

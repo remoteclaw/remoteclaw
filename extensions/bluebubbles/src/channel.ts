@@ -5,6 +5,7 @@ import {
   createScopedDmSecurityResolver,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
+import { createPairingPrefixStripper } from "remoteclaw/plugin-sdk/channel-pairing";
 import {
   createOpenGroupPolicyRestrictSendersWarningCollector,
   projectWarningCollector,
@@ -251,56 +252,75 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount, BlueBu
         cfg: cfg,
       });
     },
-  }),
-  outbound: {
-    deliveryMode: "direct",
-    textChunkLimit: 4000,
-    resolveTarget: ({ to }) => {
-      const trimmed = to?.trim();
-      if (!trimmed) {
-        return {
-          ok: false,
-          error: new Error("Delivering to BlueBubbles requires --to <handle|chat_guid:GUID>"),
-        };
-      }
-      return { ok: true, to: trimmed };
-    },
-    ...createAttachedChannelResultAdapter({
-      channel: "bluebubbles",
-      sendText: async ({ cfg, to, text, accountId, replyToId }) => {
-        const runtime = await loadBlueBubblesChannelRuntime();
-        const rawReplyToId = typeof replyToId === "string" ? replyToId.trim() : "";
-        const replyToMessageGuid = rawReplyToId
-          ? runtime.resolveBlueBubblesMessageId(rawReplyToId, { requireKnownShortId: true })
-          : "";
-        return await runtime.sendMessageBlueBubbles(to, text, {
-          cfg: cfg,
-          accountId: accountId ?? undefined,
-          replyToMessageGuid: replyToMessageGuid || undefined,
-        });
+    pairing: {
+      text: {
+        idLabel: "bluebubblesSenderId",
+        message: PAIRING_APPROVED_MESSAGE,
+        normalizeAllowEntry: createPairingPrefixStripper(
+          /^bluebubbles:/i,
+          normalizeBlueBubblesHandle,
+        ),
+        notify: async ({ cfg, id, message }) => {
+          await (
+            await loadBlueBubblesChannelRuntime()
+          ).sendMessageBlueBubbles(id, message, {
+            cfg: cfg,
+          });
+        },
       },
-      sendMedia: async (ctx) => {
-        const runtime = await loadBlueBubblesChannelRuntime();
-        const { cfg, to, text, mediaUrl, accountId, replyToId } = ctx;
-        const { mediaPath, mediaBuffer, contentType, filename, caption } = ctx as {
-          mediaPath?: string;
-          mediaBuffer?: Uint8Array;
-          contentType?: string;
-          filename?: string;
-          caption?: string;
-        };
-        return await runtime.sendBlueBubblesMedia({
-          cfg: cfg,
-          to,
-          mediaUrl,
-          mediaPath,
-          mediaBuffer,
-          contentType,
-          filename,
-          caption: caption ?? text ?? undefined,
-          replyToId: replyToId ?? null,
-          accountId: accountId ?? undefined,
-        });
+    },
+    outbound: {
+      base: {
+        deliveryMode: "direct",
+        textChunkLimit: 4000,
+        resolveTarget: ({ to }) => {
+          const trimmed = to?.trim();
+          if (!trimmed) {
+            return {
+              ok: false,
+              error: new Error("Delivering to BlueBubbles requires --to <handle|chat_guid:GUID>"),
+            };
+          }
+          return { ok: true, to: trimmed };
+        },
+      },
+      attachedResults: {
+        channel: "bluebubbles",
+        sendText: async ({ cfg, to, text, accountId, replyToId }) => {
+          const runtime = await loadBlueBubblesChannelRuntime();
+          const rawReplyToId = typeof replyToId === "string" ? replyToId.trim() : "";
+          const replyToMessageGuid = rawReplyToId
+            ? runtime.resolveBlueBubblesMessageId(rawReplyToId, { requireKnownShortId: true })
+            : "";
+          return await runtime.sendMessageBlueBubbles(to, text, {
+            cfg: cfg,
+            accountId: accountId ?? undefined,
+            replyToMessageGuid: replyToMessageGuid || undefined,
+          });
+        },
+        sendMedia: async (ctx) => {
+          const runtime = await loadBlueBubblesChannelRuntime();
+          const { cfg, to, text, mediaUrl, accountId, replyToId } = ctx;
+          const { mediaPath, mediaBuffer, contentType, filename, caption } = ctx as {
+            mediaPath?: string;
+            mediaBuffer?: Uint8Array;
+            contentType?: string;
+            filename?: string;
+            caption?: string;
+          };
+          return await runtime.sendBlueBubblesMedia({
+            cfg: cfg,
+            to,
+            mediaUrl,
+            mediaPath,
+            mediaBuffer,
+            contentType,
+            filename,
+            caption: caption ?? text ?? undefined,
+            replyToId: replyToId ?? null,
+            accountId: accountId ?? undefined,
+          });
+        },
       },
     }),
   },

@@ -187,50 +187,28 @@ async function resolveCronDeliveryContext(params: {
 
 type ResolvedAgentConfig = NonNullable<ReturnType<typeof resolveAgentConfig>>;
 
+// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
+// Upstream extractCronAgentDefaultsOverride / mergeCronAgentModelOverride simplified:
+// only sandbox exclusion and defined-override merging remain.
 function extractCronAgentDefaultsOverride(agentConfigOverride?: ResolvedAgentConfig) {
-  const {
-    model: overrideModel,
-    sandbox: _agentSandboxOverride,
-    ...agentOverrideRest
-  } = agentConfigOverride ?? {};
+  const { sandbox: _agentSandboxOverride, ...agentOverrideRest } = agentConfigOverride ?? {};
   return {
-    overrideModel,
     definedOverrides: Object.fromEntries(
       Object.entries(agentOverrideRest).filter(([, value]) => value !== undefined),
     ) as Partial<AgentDefaultsConfig>,
   };
 }
 
-function mergeCronAgentModelOverride(params: {
-  defaults: AgentDefaultsConfig;
-  overrideModel: ResolvedAgentConfig["model"];
-}) {
-  const nextDefaults: AgentDefaultsConfig = { ...params.defaults };
-  const existingModel =
-    nextDefaults.model && typeof nextDefaults.model === "object" ? nextDefaults.model : {};
-  if (typeof params.overrideModel === "string") {
-    nextDefaults.model = { ...existingModel, primary: params.overrideModel };
-  } else if (params.overrideModel) {
-    nextDefaults.model = { ...existingModel, ...params.overrideModel };
-  }
-  return nextDefaults;
-}
-
 function buildCronAgentDefaultsConfig(params: {
   defaults?: AgentDefaultsConfig;
   agentConfigOverride?: ResolvedAgentConfig;
 }) {
-  const { overrideModel, definedOverrides } = extractCronAgentDefaultsOverride(
-    params.agentConfigOverride,
-  );
+  const { definedOverrides } = extractCronAgentDefaultsOverride(params.agentConfigOverride);
   // Keep sandbox overrides out of `agents.defaults` here. Sandbox resolution
   // already merges global defaults with per-agent overrides using `agentId`;
   // copying the agent sandbox into defaults clobbers global defaults and can
   // double-apply nested agent overrides during isolated cron runs.
-  return mergeCronAgentModelOverride({
-    defaults: Object.assign({}, params.defaults, definedOverrides),
-    overrideModel,
-  });
+  return Object.assign({}, params.defaults, definedOverrides) as AgentDefaultsConfig;
 }
 
 function appendCronDeliveryInstruction(params: {

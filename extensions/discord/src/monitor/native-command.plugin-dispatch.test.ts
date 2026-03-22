@@ -1,9 +1,8 @@
 import { ChannelType } from "discord-api-types/v10";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { NativeCommandSpec } from "../../../../src/auto-reply/commands-registry.js";
-import * as dispatcherModule from "../../../../src/auto-reply/reply/provider-dispatcher.js";
-import type { RemoteClawConfig } from "../../../../src/config/config.js";
-import * as pluginCommandsModule from "../../../../src/plugins/commands.js";
+import { setDefaultChannelPluginRegistryForTests } from "../../../../src/commands/channel-test-helpers.js";
+import type { OpenClawConfig } from "../../../../src/config/config.js";
 import { clearPluginCommands, registerPluginCommand } from "../../../../src/plugins/commands.js";
 import { createDiscordNativeCommand } from "./native-command.js";
 import {
@@ -14,6 +13,11 @@ import { createNoopThreadBindingManager } from "./thread-bindings.js";
 
 type EnsureConfiguredBindingRouteReadyFn =
   typeof import("openclaw/plugin-sdk/conversation-runtime").ensureConfiguredBindingRouteReady;
+type MatchPluginCommandFn = typeof import("openclaw/plugin-sdk/plugin-runtime").matchPluginCommand;
+type ExecutePluginCommandFn =
+  typeof import("openclaw/plugin-sdk/plugin-runtime").executePluginCommand;
+type DispatchReplyWithDispatcherFn =
+  typeof import("openclaw/plugin-sdk/reply-runtime").dispatchReplyWithDispatcher;
 
 const persistentBindingMocks = vi.hoisted(() => ({
   resolveConfiguredAcpBindingRecord: vi.fn<ResolveConfiguredAcpBindingRecordFn>(() => null),
@@ -22,11 +26,41 @@ const persistentBindingMocks = vi.hoisted(() => ({
     sessionKey: "agent:codex:acp:binding:discord:default:seed",
   })),
 );
-const runtimeModuleMocks = vi.hoisted(() => ({
-  matchPluginCommand: vi.fn(),
-  executePluginCommand: vi.fn(),
-  dispatchReplyWithDispatcher: vi.fn(),
+const matchPluginCommandMockState = vi.hoisted(() => ({
+  current: null as null | ReturnType<typeof vi.fn<MatchPluginCommandFn>>,
 }));
+const executePluginCommandMockState = vi.hoisted(() => ({
+  current: null as null | ReturnType<typeof vi.fn<ExecutePluginCommandFn>>,
+}));
+const dispatchReplyWithDispatcherMockState = vi.hoisted(() => ({
+  current: null as null | ReturnType<typeof vi.fn<DispatchReplyWithDispatcherFn>>,
+}));
+
+vi.mock("openclaw/plugin-sdk/plugin-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/plugin-runtime")>();
+  return {
+    ...actual,
+    matchPluginCommand: (...args: Parameters<MatchPluginCommandFn>) =>
+      matchPluginCommandMockState.current
+        ? matchPluginCommandMockState.current(...args)
+        : actual.matchPluginCommand(...args),
+    executePluginCommand: (...args: Parameters<ExecutePluginCommandFn>) =>
+      executePluginCommandMockState.current
+        ? executePluginCommandMockState.current(...args)
+        : actual.executePluginCommand(...args),
+  };
+});
+
+vi.mock("openclaw/plugin-sdk/reply-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/reply-runtime")>();
+  return {
+    ...actual,
+    dispatchReplyWithDispatcher: (...args: Parameters<DispatchReplyWithDispatcherFn>) =>
+      dispatchReplyWithDispatcherMockState.current
+        ? dispatchReplyWithDispatcherMockState.current(...args)
+        : actual.dispatchReplyWithDispatcher(...args),
+  };
+});
 
 vi.mock("openclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
   const actual = await importOriginal<typeof import("openclaw/plugin-sdk/conversation-runtime")>();
@@ -148,7 +182,8 @@ async function expectPairCommandReply(params: {
     cfg: params.cfg,
     name: params.commandName,
   });
-  const dispatchSpy = runtimeModuleMocks.dispatchReplyWithDispatcher;
+  const dispatchSpy = vi.fn<DispatchReplyWithDispatcherFn>().mockResolvedValue({} as never);
+  dispatchReplyWithDispatcherMockState.current = dispatchSpy;
 
   await (command as { run: (interaction: unknown) => Promise<void> }).run(
     Object.assign(params.interaction, {
@@ -195,13 +230,15 @@ function setConfiguredBinding(channelId: string, boundSessionKey: string) {
 }
 
 function createDispatchSpy() {
-  return runtimeModuleMocks.dispatchReplyWithDispatcher.mockResolvedValue({
+  const dispatchSpy = vi.fn<DispatchReplyWithDispatcherFn>().mockResolvedValue({
     counts: {
       final: 1,
       block: 0,
       tool: 0,
     },
   } as never);
+  dispatchReplyWithDispatcherMockState.current = dispatchSpy;
+  return dispatchSpy;
 }
 
 function expectBoundSessionDispatch(
@@ -226,7 +263,9 @@ async function expectBoundStatusCommandDispatch(params: {
   channelId: string;
   boundSessionKey: string;
 }) {
-  runtimeModuleMocks.matchPluginCommand.mockReturnValue(null);
+  const command = await createStatusCommand(params.cfg);
+
+  matchPluginCommandMockState.current = vi.fn<MatchPluginCommandFn>().mockReturnValue(null);
   const dispatchSpy = createDispatchSpy();
   const command = await createStatusCommand(params.cfg);
 
@@ -242,6 +281,9 @@ describe("Discord native plugin command dispatch", () => {
     vi.clearAllMocks();
     clearPluginCommands();
     setDefaultChannelPluginRegistryForTests();
+    matchPluginCommandMockState.current = null;
+    executePluginCommandMockState.current = null;
+    dispatchReplyWithDispatcherMockState.current = null;
     ensureConfiguredBindingRouteReadyMock.mockReset();
     ensureConfiguredBindingRouteReadyMock.mockResolvedValue({
       ok: true,
@@ -373,10 +415,9 @@ describe("Discord native plugin command dispatch", () => {
       }),
     ).toEqual({ ok: true });
 
-    const executeSpy = vi.spyOn(pluginCommandsModule, "executePluginCommand");
-    const dispatchSpy = vi
-      .spyOn(dispatcherModule, "dispatchReplyWithDispatcher")
-      .mockResolvedValue({} as never);
+    const executeSpy = vi.fn<ExecutePluginCommandFn>();
+    executePluginCommandMockState.current = executeSpy;
+    const dispatchSpy = createDispatchSpy();
 
     await (command as { run: (interaction: unknown) => Promise<void> }).run(interaction as unknown);
 
@@ -409,14 +450,14 @@ describe("Discord native plugin command dispatch", () => {
       args: undefined,
     };
 
-    runtimeModuleMocks.matchPluginCommand.mockReturnValue(pluginMatch as never);
-    const executeSpy = runtimeModuleMocks.executePluginCommand.mockResolvedValue({
-      text: "direct plugin output",
-    });
-    const dispatchSpy = runtimeModuleMocks.dispatchReplyWithDispatcher.mockResolvedValue(
-      {} as never,
-    );
-    const command = await createNativeCommand(cfg, commandSpec);
+    matchPluginCommandMockState.current = vi
+      .fn<MatchPluginCommandFn>()
+      .mockReturnValue(pluginMatch as ReturnType<MatchPluginCommandFn>);
+    const executeSpy = vi
+      .fn<ExecutePluginCommandFn>()
+      .mockResolvedValue({ text: "direct plugin output" });
+    executePluginCommandMockState.current = executeSpy;
+    const dispatchSpy = createDispatchSpy();
 
     await (command as { run: (interaction: unknown) => Promise<void> }).run(interaction as unknown);
 
@@ -502,7 +543,7 @@ describe("Discord native plugin command dispatch", () => {
       guildName: "Ops",
     });
 
-    runtimeModuleMocks.matchPluginCommand.mockReturnValue(null);
+    matchPluginCommandMockState.current = vi.fn<MatchPluginCommandFn>().mockReturnValue(null);
     const dispatchSpy = createDispatchSpy();
     const command = await createStatusCommand(cfg);
 
@@ -569,6 +610,13 @@ describe("Discord native plugin command dispatch", () => {
       description: "Start a new session.",
       acceptsArgs: true,
     });
+
+    ensureConfiguredBindingRouteReadyMock.mockResolvedValue({
+      ok: false,
+      error: "acpx exited with code 1",
+    });
+    matchPluginCommandMockState.current = vi.fn<MatchPluginCommandFn>().mockReturnValue(null);
+    const dispatchSpy = createDispatchSpy();
 
     await (command as { run: (interaction: unknown) => Promise<void> }).run(interaction as unknown);
 

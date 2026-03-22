@@ -289,11 +289,14 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = {
   setup: mattermostSetupAdapter,
   setupWizard: mattermostSetupWizard,
   pairing: {
-    idLabel: "mattermostUserId",
-    normalizeAllowEntry: (entry) => normalizeAllowEntry(entry),
-    notifyApproval: createLoggedPairingApprovalNotifier(
-      ({ id }) => `[mattermost] User ${id} approved for pairing`,
-    ),
+    text: {
+      idLabel: "mattermostUserId",
+      message: "OpenClaw: your access has been approved.",
+      normalizeAllowEntry: (entry) => normalizeAllowEntry(entry),
+      notify: createLoggedPairingApprovalNotifier(
+        ({ id }) => `[mattermost] User ${id} approved for pairing`,
+      ),
+    },
   },
   capabilities: {
     chatTypes: ["direct", "channel", "group", "thread"],

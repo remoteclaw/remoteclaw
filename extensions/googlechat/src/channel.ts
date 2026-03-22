@@ -276,21 +276,26 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
         }),
       probeAccount: async ({ account }) =>
         (await loadGoogleChatChannelRuntime()).probeGoogleChat(account),
-      resolveAccountSnapshot: ({ account }) => ({
-        accountId: account.accountId,
-        name: account.name,
-        enabled: account.enabled,
-        configured: account.credentialSource !== "none",
-        extra: {
-          credentialSource: account.credentialSource,
-          audienceType: account.config.audienceType,
-          audience: account.config.audience,
-          webhookPath: account.config.webhookPath,
-          webhookUrl: account.config.webhookUrl,
-          dmPolicy: account.config.dm?.policy ?? "pairing",
-        },
-      }),
-    }),
+      buildAccountSnapshot: ({ account, runtime, probe }) =>
+        buildComputedAccountStatusSnapshot(
+          {
+            accountId: account.accountId,
+            name: account.name,
+            enabled: account.enabled,
+            configured: account.credentialSource !== "none",
+            runtime,
+            probe,
+          },
+          {
+            credentialSource: account.credentialSource,
+            audienceType: account.config.audienceType,
+            audience: account.config.audience,
+            webhookPath: account.config.webhookPath,
+            webhookUrl: account.config.webhookUrl,
+            dmPolicy: account.config.dm?.policy ?? "pairing",
+          },
+        ),
+    },
     gateway: {
       startAccount: async (ctx) => {
         const account = ctx.account;

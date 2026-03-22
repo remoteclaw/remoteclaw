@@ -308,59 +308,64 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = crea
         });
       },
     }),
-    outbound: {
-      base: {
-        deliveryMode: "direct",
-        textChunkLimit: 4000,
-        resolveTarget: ({ to }) => {
-          const trimmed = to?.trim();
-          if (!trimmed) {
-            return {
-              ok: false,
-              error: new Error("Delivering to BlueBubbles requires --to <handle|chat_guid:GUID>"),
-            };
-          }
-          return { ok: true, to: trimmed };
+  },
+  status: {
+    defaultRuntime: {
+      accountId: DEFAULT_ACCOUNT_ID,
+      running: false,
+      lastStartAt: null,
+      lastStopAt: null,
+      lastError: null,
+    },
+    collectStatusIssues: collectBlueBubblesStatusIssues,
+    buildChannelSummary: ({ snapshot }) =>
+      buildProbeChannelStatusSummary(snapshot, { baseUrl: snapshot.baseUrl ?? null }),
+    probeAccount: async ({ account, timeoutMs }) =>
+      (await loadBlueBubblesChannelRuntime()).probeBlueBubbles({
+        baseUrl: account.baseUrl,
+        password: account.config.password ?? null,
+        timeoutMs,
+      }),
+    buildAccountSnapshot: ({ account, runtime, probe }) => {
+      const running = runtime?.running ?? false;
+      const probeOk = (probe as BlueBubblesProbe | undefined)?.ok;
+      return buildComputedAccountStatusSnapshot(
+        {
+          accountId: account.accountId,
+          name: account.name,
+          enabled: account.enabled,
+          configured: account.configured,
+          runtime,
+          probe,
         },
-      },
-      attachedResults: {
-        channel: "bluebubbles",
-        sendText: async ({ cfg, to, text, accountId, replyToId }) => {
-          const runtime = await loadBlueBubblesChannelRuntime();
-          const rawReplyToId = typeof replyToId === "string" ? replyToId.trim() : "";
-          const replyToMessageGuid = rawReplyToId
-            ? runtime.resolveBlueBubblesMessageId(rawReplyToId, { requireKnownShortId: true })
-            : "";
-          return await runtime.sendMessageBlueBubbles(to, text, {
-            cfg: cfg,
-            accountId: accountId ?? undefined,
-            replyToMessageGuid: replyToMessageGuid || undefined,
-          });
+        {
+          baseUrl: account.baseUrl,
+          connected: probeOk ?? running,
         },
-        sendMedia: async (ctx) => {
-          const runtime = await loadBlueBubblesChannelRuntime();
-          const { cfg, to, text, mediaUrl, accountId, replyToId } = ctx;
-          const { mediaPath, mediaBuffer, contentType, filename, caption } = ctx as {
-            mediaPath?: string;
-            mediaBuffer?: Uint8Array;
-            contentType?: string;
-            filename?: string;
-            caption?: string;
-          };
-          return await runtime.sendBlueBubblesMedia({
-            cfg: cfg,
-            to,
-            mediaUrl,
-            mediaPath,
-            mediaBuffer,
-            contentType,
-            filename,
-            caption: caption ?? text ?? undefined,
-            replyToId: replyToId ?? null,
-            accountId: accountId ?? undefined,
-          });
-        },
-      },
+      );
+    },
+  },
+  gateway: {
+    startAccount: async (ctx) => {
+      const runtime = await loadBlueBubblesChannelRuntime();
+      const account = ctx.account;
+      const webhookPath = runtime.resolveWebhookPathFromConfig(account.config);
+      const statusSink = createAccountStatusSink({
+        accountId: ctx.accountId,
+        setStatus: ctx.setStatus,
+      });
+      statusSink({
+        baseUrl: account.baseUrl,
+      });
+      ctx.log?.info(`[${account.accountId}] starting provider (webhook=${webhookPath})`);
+      return runtime.monitorBlueBubblesProvider({
+        account,
+        config: ctx.cfg,
+        runtime: ctx.runtime,
+        abortSignal: ctx.abortSignal,
+        statusSink,
+        webhookPath,
+      });
     },
   },
 );

@@ -492,10 +492,12 @@ export const signalPlugin: ChannelPlugin<ResolvedSignalAccount, SignalProbe> =
       const baseUrl = account.baseUrl;
       return await getSignalRuntime().channel.signal.probeSignal(baseUrl, timeoutMs);
     },
-    buildAccountSnapshot: ({ account, runtime, probe }) => ({
-      ...buildBaseAccountStatusSnapshot({ account, runtime, probe }),
-      baseUrl: account.baseUrl,
-    }),
+    formatCapabilitiesProbe: ({ probe }) =>
+      (probe as SignalProbe | undefined)?.version
+        ? [{ text: `Signal daemon: ${(probe as SignalProbe).version}` }]
+        : [],
+    buildAccountSnapshot: ({ account, runtime, probe }) =>
+      buildBaseAccountStatusSnapshot({ account, runtime, probe }, { baseUrl: account.baseUrl }),
   },
   gateway: {
     startAccount: async (ctx) => {

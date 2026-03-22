@@ -8,7 +8,10 @@ import type { ChannelAccountSnapshot } from "./types.core.js";
 
 export function createAccountListHelpers(
   channelKey: string,
-  options?: { normalizeAccountId?: (id: string) => string },
+  options?: {
+    normalizeAccountId?: (id: string) => string;
+    allowUnlistedDefaultAccount?: boolean;
+  },
 ) {
   function resolveConfiguredDefaultAccountId(cfg: RemoteClawConfig): string | undefined {
     const channel = cfg.channels?.[channelKey] as Record<string, unknown> | undefined;
@@ -19,6 +22,9 @@ export function createAccountListHelpers(
       return undefined;
     }
     const ids = listAccountIds(cfg);
+    if (options?.allowUnlistedDefaultAccount) {
+      return preferred;
+    }
     if (ids.some((id) => normalizeAccountId(id) === preferred)) {
       return preferred;
     }

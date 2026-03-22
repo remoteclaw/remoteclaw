@@ -1,5 +1,5 @@
 ---
-description: "Hooks: event-driven automation for commands and lifecycle events"
+summary: "Hooks: event-driven automation for commands and lifecycle events"
 read_when:
   - You want event-driven automation for /new, /reset, /stop, and agent lifecycle events
   - You want to build, install, or debug hooks
@@ -8,7 +8,7 @@ title: "Hooks"
 
 # Hooks
 
-Hooks provide an extensible event-driven system for automating actions in response to agent commands and events. Hooks are automatically discovered from directories and can be managed via CLI commands, similar to how skills work in RemoteClaw.
+Hooks provide an extensible event-driven system for automating actions in response to agent commands and events. Hooks are automatically discovered from directories and can be inspected with `remoteclaw hooks`, while hook-pack installation and updates now go through `remoteclaw plugins`.
 
 ## Getting Oriented
 
@@ -17,7 +17,7 @@ Hooks are small scripts that run when something happens. There are two kinds:
 - **Hooks** (this page): run inside the Gateway when agent events fire, like `/new`, `/reset`, `/stop`, or lifecycle events.
 - **Webhooks**: external HTTP webhooks that let other systems trigger work in RemoteClaw. See [Webhook Hooks](/automation/webhook) or use `remoteclaw webhooks` for Gmail helper commands.
 
-Hooks can also be bundled inside plugins; see [Plugins](/tools/plugin#plugin-hooks).
+Hooks can also be bundled inside plugins; see [Plugin hooks](/plugins/architecture#provider-runtime-hooks). `remoteclaw hooks list` shows both standalone hooks and plugin-managed hooks.
 
 Common uses:
 
@@ -26,7 +26,7 @@ Common uses:
 - Trigger follow-up automation when a session starts or ends
 - Write files into the agent workspace or call external APIs when events fire
 
-If you can write a small TypeScript function, you can write a hook. Hooks are discovered automatically, and you enable or disable them via the CLI.
+If you can write a small TypeScript function, you can write a hook. Managed and bundled hooks are trusted local code. Workspace hooks are discovered automatically, but RemoteClaw keeps them disabled until you explicitly enable them via the CLI or config.
 
 ## Overview
 
@@ -41,10 +41,12 @@ The hooks system allows you to:
 
 ### Bundled Hooks
 
-RemoteClaw ships with two bundled hooks that are automatically discovered:
+RemoteClaw ships with four bundled hooks that are automatically discovered:
 
+- **💾 session-memory**: Saves session context to your agent workspace (default `~/.remoteclaw/workspace/memory/`) when you issue `/new`
+- **📎 bootstrap-extra-files**: Injects additional workspace bootstrap files from configured glob/path patterns during `agent:bootstrap`
 - **📝 command-logger**: Logs all command events to `~/.remoteclaw/logs/commands.log`
-- **🚀 boot**: Runs the configured boot prompt when the gateway starts (requires internal hooks enabled)
+- **🚀 boot-md**: Runs `BOOT.md` when the gateway starts (requires internal hooks enabled)
 
 List available hooks:
 
@@ -55,7 +57,7 @@ remoteclaw hooks list
 Enable a hook:
 
 ```bash
-remoteclaw hooks enable command-logger
+remoteclaw hooks enable session-memory
 ```
 
 Check hook status:
@@ -67,20 +69,27 @@ remoteclaw hooks check
 Get detailed information:
 
 ```bash
-remoteclaw hooks info command-logger
+remoteclaw hooks info session-memory
 ```
 
 ### Onboarding
 
 During onboarding (`remoteclaw onboard`), you'll be prompted to enable recommended hooks. The wizard automatically discovers eligible hooks and presents them for selection.
 
+### Trust Boundary
+
+Hooks run inside the Gateway process. Treat bundled hooks, managed hooks, and `hooks.internal.load.extraDirs` as trusted local code. Workspace hooks under `<workspace>/hooks/` are repo-local code, so RemoteClaw requires an explicit enable step before loading them.
+
 ## Hook Discovery
 
-Hooks are automatically discovered from three directories (in order of precedence):
+Hooks are automatically discovered from these directories:
 
-1. **Workspace hooks**: `<workspace>/hooks/` (per-agent, highest precedence)
+1. **Workspace hooks**: `<workspace>/hooks/` (per-agent, disabled by default until explicitly enabled)
 2. **Managed hooks**: `~/.remoteclaw/hooks/` (user-installed, shared across workspaces)
-3. **Bundled hooks**: `<remoteclaw>/dist/hooks/bundled/` (shipped with RemoteClaw)
+3. **Extra hook directories**: `hooks.internal.load.extraDirs` (operator-configured shared hook folders)
+4. **Bundled hooks**: `<remoteclaw>/dist/hooks/bundled/` (shipped with RemoteClaw)
+
+Workspace hooks can add new hook names for a repo, but they cannot override bundled, managed, or plugin-provided hooks with the same name.
 
 Managed hook directories can be either a **single hook** or a **hook pack** (package directory).
 
@@ -98,14 +107,14 @@ Hook packs are standard npm packages that export one or more hooks via `remotecl
 `package.json`. Install them with:
 
 ```bash
-remoteclaw hooks install <path-or-spec>
+remoteclaw plugins install <path-or-spec>
 ```
 
 Npm specs are registry-only (package name + optional exact version or dist-tag).
 Git/URL/file specs and semver ranges are rejected.
 
 Bare specs and `@latest` stay on the stable track. If npm resolves either of
-those to a prerelease, OpenClaw stops and asks you to opt in explicitly with a
+those to a prerelease, RemoteClaw stops and asks you to opt in explicitly with a
 prerelease tag such as `@beta`/`@rc` or an exact prerelease version.
 
 Example `package.json`:
@@ -125,7 +134,7 @@ Hook packs can ship dependencies; they will be installed under `~/.remoteclaw/ho
 Each `remoteclaw.hooks` entry must stay inside the package directory after symlink
 resolution; entries that escape are rejected.
 
-Security note: `remoteclaw hooks install` installs dependencies with `npm install --ignore-scripts`
+Security note: `remoteclaw plugins install` installs hook-pack dependencies with `npm install --ignore-scripts`
 (no lifecycle scripts). Keep hook pack dependency trees "pure JS/TS" and avoid packages that rely
 on `postinstall` builds.
 
@@ -139,7 +148,7 @@ The `HOOK.md` file contains metadata in YAML frontmatter plus Markdown documenta
 ---
 name: my-hook
 description: "Short description of what this hook does"
-homepage: https://docs.remoteclaw.org/automation/hooks#my-hook
+homepage: https://docs.remoteclaw.ai/automation/hooks#my-hook
 metadata:
   { "remoteclaw": { "emoji": "🔗", "events": ["command:new"], "requires": { "bins": ["node"] } } }
 ---
@@ -171,12 +180,12 @@ The `metadata.remoteclaw` object supports:
 - **`events`**: Array of events to listen for (e.g., `["command:new", "command:reset"]`)
 - **`export`**: Named export to use (defaults to `"default"`)
 - **`homepage`**: Documentation URL
-- **`os`**: Required platforms (e.g., `["darwin", "linux"]`)
 - **`requires`**: Optional requirements
   - **`bins`**: Required binaries on PATH (e.g., `["git", "node"]`)
   - **`anyBins`**: At least one of these binaries must be present
   - **`env`**: Required environment variables
   - **`config`**: Required config paths (e.g., `["workspace.dir"]`)
+  - **`os`**: Required platforms (e.g., `["darwin", "linux"]`)
 - **`always`**: Bypass eligibility checks (boolean)
 - **`install`**: Installation methods (for bundled hooks: `[{"id":"bundled","kind":"bundled"}]`)
 
@@ -223,6 +232,7 @@ Each event includes:
     commandSource?: string,    // e.g., 'whatsapp', 'telegram'
     senderId?: string,
     workspaceDir?: string,
+    bootstrapFiles?: WorkspaceBootstrapFile[],
     cfg?: RemoteClawConfig,
     // Message events (see Message Events section for full details):
     from?: string,             // message:received
@@ -252,6 +262,10 @@ Triggered when agent commands are issued:
 
 Internal hook payloads emit these as `type: "session"` with `action: "compact:before"` / `action: "compact:after"`; listeners subscribe with the combined keys above.
 Specific handler registration uses the literal key format `${type}:${action}`. For these events, register `session:compact:before` and `session:compact:after`.
+
+### Agent Events
+
+- **`agent:bootstrap`**: Before workspace bootstrap files are injected (hooks may mutate `context.bootstrapFiles`)
 
 ### Gateway Events
 
@@ -287,11 +301,13 @@ Message events include rich context about the message:
     to?: string,
     provider?: string,
     surface?: string,
-    threadId?: string,
+    threadId?: string | number,
     senderId?: string,
     senderName?: string,
     senderUsername?: string,
     senderE164?: string,
+    guildId?: string,     // Discord guild / server ID
+    channelName?: string, // Channel name (e.g., Discord channel name)
   }
 }
 
@@ -311,22 +327,42 @@ Message events include rich context about the message:
 
 // message:transcribed context
 {
+  from?: string,          // Sender identifier
+  to?: string,            // Recipient identifier
   body?: string,          // Raw inbound body before enrichment
   bodyForAgent?: string,  // Enriched body visible to the agent
   transcript: string,     // Audio transcript text
+  timestamp?: number,     // Unix timestamp when received
   channelId: string,      // Channel (e.g., "telegram", "whatsapp")
   conversationId?: string,
   messageId?: string,
+  senderId?: string,      // Sender user ID
+  senderName?: string,    // Sender display name
+  senderUsername?: string,
+  provider?: string,      // Provider name
+  surface?: string,       // Surface name
+  mediaPath?: string,     // Path to the media file that was transcribed
+  mediaType?: string,     // MIME type of the media
 }
 
 // message:preprocessed context
 {
+  from?: string,          // Sender identifier
+  to?: string,            // Recipient identifier
   body?: string,          // Raw inbound body
   bodyForAgent?: string,  // Final enriched body after media/link understanding
   transcript?: string,    // Transcript when audio was present
+  timestamp?: number,     // Unix timestamp when received
   channelId: string,      // Channel (e.g., "telegram", "whatsapp")
   conversationId?: string,
   messageId?: string,
+  senderId?: string,      // Sender user ID
+  senderName?: string,    // Sender display name
+  senderUsername?: string,
+  provider?: string,      // Provider name
+  surface?: string,       // Surface name
+  mediaPath?: string,     // Path to the media file
+  mediaType?: string,     // MIME type of the media
   isGroup?: boolean,
   groupId?: string,
 }
@@ -440,8 +476,8 @@ remoteclaw hooks enable my-hook
     "internal": {
       "enabled": true,
       "entries": {
-        "command-logger": { "enabled": true },
-        "boot": { "enabled": true }
+        "session-memory": { "enabled": true },
+        "command-logger": { "enabled": false }
       }
     }
   }
@@ -534,10 +570,10 @@ remoteclaw hooks list --json
 
 ```bash
 # Show detailed info about a hook
-remoteclaw hooks info command-logger
+remoteclaw hooks info session-memory
 
 # JSON output
-remoteclaw hooks info command-logger --json
+remoteclaw hooks info session-memory --json
 ```
 
 ### Check Eligibility
@@ -554,23 +590,98 @@ remoteclaw hooks check --json
 
 ```bash
 # Enable a hook
-remoteclaw hooks enable command-logger
+remoteclaw hooks enable session-memory
 
 # Disable a hook
-remoteclaw hooks disable boot
+remoteclaw hooks disable command-logger
 ```
 
 ## Bundled hook reference
 
-### ~~session-memory~~ (removed)
+### session-memory
 
-The session-memory hook has been removed. Session context saving is no longer
-handled via hooks.
+Saves session context to memory when you issue `/new`.
 
-### ~~bootstrap-extra-files~~ (removed)
+**Events**: `command:new`
 
-The bootstrap-extra-files hook has been removed. Workspace template injection
-has been removed — agents bring their own configuration.
+**Requirements**: `workspace.dir` must be configured
+
+**Output**: `<workspace>/memory/YYYY-MM-DD-slug.md` (defaults to `~/.remoteclaw/workspace`)
+
+**What it does**:
+
+1. Uses the pre-reset session entry to locate the correct transcript
+2. Extracts the last 15 lines of conversation
+3. Uses LLM to generate a descriptive filename slug
+4. Saves session metadata to a dated memory file
+
+**Example output**:
+
+```markdown
+# Session: 2026-01-16 14:30:00 UTC
+
+- **Session Key**: agent:main:main
+- **Session ID**: abc123def456
+- **Source**: telegram
+
+## Conversation Summary
+
+user: Can you help me design the API?
+assistant: Sure! Let's start with the endpoints...
+```
+
+**Filename examples**:
+
+- `2026-01-16-vendor-pitch.md`
+- `2026-01-16-api-design.md`
+- `2026-01-16-1430.md` (fallback timestamp if slug generation fails)
+
+**Enable**:
+
+```bash
+remoteclaw hooks enable session-memory
+```
+
+### bootstrap-extra-files
+
+Injects additional bootstrap files (for example monorepo-local `AGENTS.md` / `TOOLS.md`) during `agent:bootstrap`.
+
+**Events**: `agent:bootstrap`
+
+**Requirements**: `workspace.dir` must be configured
+
+**Output**: No files written; bootstrap context is modified in-memory only.
+
+**Config**:
+
+```json
+{
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "bootstrap-extra-files": {
+          "enabled": true,
+          "paths": ["packages/*/AGENTS.md", "packages/*/TOOLS.md"]
+        }
+      }
+    }
+  }
+}
+```
+
+**Notes**:
+
+- Paths are resolved relative to workspace.
+- Files must stay inside workspace (realpath-checked).
+- Only recognized bootstrap basenames are loaded.
+- Subagent allowlist is preserved (`AGENTS.md` and `TOOLS.md` only).
+
+**Enable**:
+
+```bash
+remoteclaw hooks enable bootstrap-extra-files
+```
 
 ### command-logger
 
@@ -614,29 +725,25 @@ grep '"action":"new"' ~/.remoteclaw/logs/commands.log | jq .
 remoteclaw hooks enable command-logger
 ```
 
-### boot
+### boot-md
 
-Runs the configured boot prompt when the gateway starts (after channels start).
+Runs `BOOT.md` when the gateway starts (after channels start).
 Internal hooks must be enabled for this to run.
 
 **Events**: `gateway:startup`
 
+**Requirements**: `workspace.dir` must be configured
+
 **What it does**:
 
-1. Resolves the boot prompt from config (`agents.defaults.boot` or per-agent `agents.list[].boot`)
-2. Runs the prompt via the agent runner
+1. Reads `BOOT.md` from your workspace
+2. Runs the instructions via the agent runner
 3. Sends any requested outbound messages via the message tool
-
-Boot prompt is configured via:
-
-- `boot.prompt`: inline prompt text (takes precedence)
-- `boot.file`: path to a prompt file (relative to agent workspace directory)
-- Neither set: boot is skipped for that agent
 
 **Enable**:
 
 ```bash
-remoteclaw hooks enable boot
+remoteclaw hooks enable boot-md
 ```
 
 ## Best Practices
@@ -709,8 +816,10 @@ metadata: { "remoteclaw": { "events": ["command"] } } # General - more overhead
 The gateway logs hook loading at startup:
 
 ```
+Registered hook: session-memory -> command:new
+Registered hook: bootstrap-extra-files -> agent:bootstrap
 Registered hook: command-logger -> command
-Registered hook: boot -> gateway:startup
+Registered hook: boot-md -> gateway:startup
 ```
 
 ### Check Discovery
@@ -799,7 +908,7 @@ test("my handler works", async () => {
 ```
 Gateway startup
     ↓
-Scan directories (bundled → plugin → managed → workspace)
+Scan directories (workspace → managed → bundled)
     ↓
 Parse HOOK.md files
     ↓

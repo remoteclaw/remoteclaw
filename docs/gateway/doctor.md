@@ -249,6 +249,10 @@ Notes:
 - `remoteclaw doctor --yes` accepts the default repair prompts.
 - `remoteclaw doctor --repair` applies recommended fixes without prompts.
 - `remoteclaw doctor --repair --force` overwrites custom supervisor configs.
+- If token auth requires a token and `gateway.auth.token` is SecretRef-managed, doctor service install/repair validates the SecretRef but does not persist resolved plaintext token values into supervisor service environment metadata.
+- If token auth requires a token and the configured token SecretRef is unresolved, doctor blocks the install/repair path with actionable guidance.
+- If both `gateway.auth.token` and `gateway.auth.password` are configured and `gateway.auth.mode` is unset, doctor blocks install/repair until mode is set explicitly.
+- For Linux user-systemd units, doctor token drift checks now include both `Environment=` and `EnvironmentFile=` sources when comparing service auth metadata.
 - You can always force a full rewrite via `remoteclaw gateway install --force`.
 
 ### 13) Gateway runtime + port diagnostics

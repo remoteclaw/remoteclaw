@@ -81,8 +81,9 @@ remoteclaw node run --host 127.0.0.1 --port 18790 --display-name "Build Node"
 
 Notes:
 
-- The token is `gateway.auth.token` from the gateway config (`~/.remoteclaw/remoteclaw.json` on the gateway host).
-- `remoteclaw node run` reads `REMOTECLAW_GATEWAY_TOKEN` for auth.
+- `remoteclaw node run` supports token or password auth.
+- Env vars are preferred: `REMOTECLAW_GATEWAY_TOKEN` / `REMOTECLAW_GATEWAY_PASSWORD`.
+- Config fallback is `gateway.auth.token` / `gateway.auth.password`; in remote mode, `gateway.remote.token` / `gateway.remote.password` are also eligible.
 
 ### Start a node host (service)
 

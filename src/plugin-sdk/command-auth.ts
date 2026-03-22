@@ -1,5 +1,11 @@
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveDmGroupAccessWithLists } from "../security/dm-policy-shared.js";
+export {
+  createPreCryptoDirectDmAuthorizer,
+  resolveInboundDirectDmAccessWithRuntime,
+  type DirectDmCommandAuthorizationRuntime,
+  type ResolvedInboundDirectDmAccess,
+} from "./direct-dm.js";
 
 export type ResolveSenderCommandAuthorizationParams = {
   cfg: RemoteClawConfig;

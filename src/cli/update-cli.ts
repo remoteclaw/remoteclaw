@@ -32,6 +32,7 @@ function inheritedUpdateTimeout(
 }
 
 export function registerUpdateCli(program: Command) {
+  program.enablePositionalOptions();
   const update = program
     .command("update")
     .description("Update RemoteClaw and inspect update channel status")

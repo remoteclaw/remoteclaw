@@ -2175,7 +2175,7 @@ Yes. RemoteClaw ships a few default shorthands (only applied when the model exis
 - `sonnet` → `anthropic/claude-sonnet-4-6`
 - `gpt` → `openai/gpt-5.4`
 - `gpt-mini` → `openai/gpt-5-mini`
-- `gemini` → `google/gemini-3-pro-preview`
+- `gemini` → `google/gemini-3.1-pro-preview`
 - `gemini-flash` → `google/gemini-3-flash-preview`
 - `gemini-flash-lite` → `google/gemini-3.1-flash-lite-preview`
 

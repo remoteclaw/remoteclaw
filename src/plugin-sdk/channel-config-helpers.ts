@@ -27,7 +27,7 @@ export function resolveOptionalConfigString(
 }
 
 export function createScopedAccountConfigAccessors<ResolvedAccount>(params: {
-  resolveAccount: (params: { cfg: OpenClawConfig; accountId?: string | null }) => ResolvedAccount;
+  resolveAccount: (params: { cfg: RemoteClawConfig; accountId?: string | null }) => ResolvedAccount;
   resolveAllowFrom: (account: ResolvedAccount) => Array<string | number> | null | undefined;
   formatAllowFrom: (allowFrom: Array<string | number>) => string[];
   resolveDefaultTo?: (account: ResolvedAccount) => string | number | null | undefined;
@@ -36,7 +36,7 @@ export function createScopedAccountConfigAccessors<ResolvedAccount>(params: {
   "resolveAllowFrom" | "formatAllowFrom" | "resolveDefaultTo"
 > {
   const base = {
-    resolveAllowFrom: ({ cfg, accountId }: { cfg: OpenClawConfig; accountId?: string | null }) =>
+    resolveAllowFrom: ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId?: string | null }) =>
       mapAllowFromEntries(params.resolveAllowFrom(params.resolveAccount({ cfg, accountId }))),
     formatAllowFrom: ({ allowFrom }: { allowFrom: Array<string | number> }) =>
       params.formatAllowFrom(allowFrom),

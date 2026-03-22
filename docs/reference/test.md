@@ -1,5 +1,5 @@
 ---
-description: "How to run tests locally (vitest) and when to use force/coverage modes"
+summary: "How to run tests locally (vitest) and when to use force/coverage modes"
 read_when:
   - Running or fixing tests
 title: "Tests"
@@ -11,13 +11,17 @@ title: "Tests"
 
 - `pnpm test:force`: Kills any lingering gateway process holding the default control port, then runs the full Vitest suite with an isolated gateway port so server tests don’t collide with a running instance. Use this when a prior gateway run left port 18789 occupied.
 - `pnpm test:coverage`: Runs the unit suite with V8 coverage (via `vitest.unit.config.ts`). Global thresholds are 70% lines/branches/functions/statements. Coverage excludes integration-heavy entrypoints (CLI wiring, gateway/telegram bridges, webchat static server) to keep the target focused on unit-testable logic.
-- `pnpm test` on Node 24+: RemoteClaw auto-disables Vitest `vmForks` and uses `forks` to avoid `ERR_VM_MODULE_LINK_FAILURE` / `module is already linked`. You can force behavior with `REMOTECLAW_TEST_VM_FORKS=0|1`.
-- `pnpm test`: runs the fast core unit lane by default for quick local feedback.
+- `pnpm test` on Node 22, 23, and 24 uses Vitest `vmForks` by default for local runs with enough memory. CI stays on `forks` unless explicitly overridden. Node 25+ falls back to `forks` until re-validated. You can force behavior with `OPENCLAW_TEST_VM_FORKS=0|1`.
+- `pnpm test`: runs the full wrapper. It keeps only a small behavioral override manifest in git, then uses a checked-in timing snapshot to peel the heaviest measured unit files into dedicated lanes.
+- Unit files default to `threads` in the wrapper; keep fork-only or `forkBatched` exceptions documented in `test/fixtures/test-parallel.behavior.json`.
+- `pnpm test:extensions` now defaults to `threads` via `vitest.extensions.config.ts`; the March 22, 2026 direct full-suite control run passed clean without extension-specific fork exceptions.
+- Files marked `forkBatched` stay on `forks`, but the wrapper batches them into low-concurrency `forks` lanes with `maxWorkers=1` instead of spawning one fresh Vitest process per file. Tune lane count with `OPENCLAW_TEST_UNIT_FORK_BATCH_LANES=<n>`.
 - `pnpm test:channels`: runs channel-heavy suites.
 - `pnpm test:extensions`: runs extension/plugin suites.
-- Gateway integration: opt-in via `REMOTECLAW_TEST_INCLUDE_GATEWAY=1 pnpm test` or `pnpm test:gateway`.
-- `pnpm test:e2e`: Runs gateway end-to-end smoke tests (multi-instance WS/HTTP/node pairing). Defaults to `vmForks` + adaptive workers in `vitest.e2e.config.ts`; tune with `REMOTECLAW_E2E_WORKERS=<n>` and set `REMOTECLAW_E2E_VERBOSE=1` for verbose logs.
-- `pnpm test:live`: Runs live smoke tests (gateway + CLI agent pipeline). Requires API keys and `LIVE=1` (or provider-specific `*_LIVE_TEST=1`) to unskip.
+- `pnpm test:perf:update-timings`: refreshes the checked-in slow-file timing snapshot used by `scripts/test-parallel.mjs`.
+- Gateway integration: opt-in via `OPENCLAW_TEST_INCLUDE_GATEWAY=1 pnpm test` or `pnpm test:gateway`.
+- `pnpm test:e2e`: Runs gateway end-to-end smoke tests (multi-instance WS/HTTP/node pairing). Defaults to `vmForks` + adaptive workers in `vitest.e2e.config.ts`; tune with `OPENCLAW_E2E_WORKERS=<n>` and set `OPENCLAW_E2E_VERBOSE=1` for verbose logs.
+- `pnpm test:live`: Runs provider live tests (minimax/zai). Requires API keys and `LIVE=1` (or provider-specific `*_LIVE_TEST=1`) to unskip.
 
 ## Local PR gate
 
@@ -30,13 +34,11 @@ For local PR land/gate checks, run:
 
 If `pnpm test` flakes on a loaded host, rerun once before treating it as a regression, then isolate with `pnpm vitest run <path/to/test>`. For memory-constrained hosts, use:
 
-- `REMOTECLAW_TEST_PROFILE=low REMOTECLAW_TEST_SERIAL_GATEWAY=1 pnpm test`
+- `OPENCLAW_TEST_PROFILE=low OPENCLAW_TEST_SERIAL_GATEWAY=1 pnpm test`
 
-## CLI agent response latency bench (local keys)
+## Model latency bench (local keys)
 
-Script: [`scripts/bench-model.ts`](https://github.com/remoteclaw/remoteclaw/blob/main/scripts/bench-model.ts)
-
-Benchmarks round-trip latency of API calls to CLI agent backends. This measures raw provider response time for testing and capacity-planning purposes — model selection and API interaction are owned by the CLI agent, not by RemoteClaw middleware.
+Script: [`scripts/bench-model.ts`](https://github.com/openclaw/openclaw/blob/main/scripts/bench-model.ts)
 
 Usage:
 
@@ -51,7 +53,7 @@ Last run (2025-12-31, 20 runs):
 
 ## CLI startup bench
 
-Script: [`scripts/bench-cli-startup.ts`](https://github.com/remoteclaw/remoteclaw/blob/main/scripts/bench-cli-startup.ts)
+Script: [`scripts/bench-cli-startup.ts`](https://github.com/openclaw/openclaw/blob/main/scripts/bench-cli-startup.ts)
 
 Usage:
 
@@ -79,7 +81,7 @@ Full cold-start flow in a clean Linux container:
 scripts/e2e/onboard-docker.sh
 ```
 
-This script drives the interactive setup flow via a pseudo-tty, verifies config/workspace/session files, then starts the gateway and runs `remoteclaw health`.
+This script drives the interactive wizard via a pseudo-tty, verifies config/workspace/session files, then starts the gateway and runs `openclaw health`.
 
 ## QR import smoke (Docker)
 

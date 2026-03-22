@@ -60,7 +60,7 @@ export function registerNodesCameraCommands(nodes: Command) {
           const devices = Array.isArray(payload.devices) ? payload.devices : [];
 
           if (opts.json) {
-            defaultRuntime.log(JSON.stringify(devices, null, 2));
+            defaultRuntime.writeJson(devices);
             return;
           }
 
@@ -180,7 +180,7 @@ export function registerNodesCameraCommands(nodes: Command) {
           }
 
           if (opts.json) {
-            defaultRuntime.log(JSON.stringify({ files: results }, null, 2));
+            defaultRuntime.writeJson({ files: results });
             return;
           }
           defaultRuntime.log(results.map((r) => `MEDIA:${shortenHomePath(r.path)}`).join("\n"));
@@ -238,20 +238,14 @@ export function registerNodesCameraCommands(nodes: Command) {
           });
 
           if (opts.json) {
-            defaultRuntime.log(
-              JSON.stringify(
-                {
-                  file: {
-                    facing,
-                    path: filePath,
-                    durationMs: payload.durationMs,
-                    hasAudio: payload.hasAudio,
-                  },
-                },
-                null,
-                2,
-              ),
-            );
+            defaultRuntime.writeJson({
+              file: {
+                facing,
+                path: filePath,
+                durationMs: payload.durationMs,
+                hasAudio: payload.hasAudio,
+              },
+            });
             return;
           }
           defaultRuntime.log(`MEDIA:${shortenHomePath(filePath)}`);

@@ -19,7 +19,7 @@ import {
   waitForActiveTasks,
 } from "../../process/command-queue.js";
 import { createRestartIterationHook } from "../../process/restart-recovery.js";
-import type { defaultRuntime } from "../../runtime.js";
+import type { RuntimeEnv } from "../../runtime.js";
 
 const gatewayLog = createSubsystemLogger("gateway");
 
@@ -27,7 +27,7 @@ type GatewayRunSignalAction = "stop" | "restart";
 
 export async function runGatewayLoop(params: {
   start: () => Promise<Awaited<ReturnType<typeof startGatewayServer>>>;
-  runtime: typeof defaultRuntime;
+  runtime: RuntimeEnv;
   lockPort?: number;
 }) {
   let lock = await acquireGatewayLock({ port: params.lockPort });

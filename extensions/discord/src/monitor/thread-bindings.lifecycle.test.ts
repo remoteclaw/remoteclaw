@@ -116,6 +116,17 @@ describe("thread binding lifecycle", () => {
     });
   };
 
+  const requireBinding = (
+    manager: ReturnType<typeof createThreadBindingManager>,
+    threadId: string,
+  ) => {
+    const binding = manager.getByThreadId(threadId);
+    if (!binding) {
+      throw new Error(`missing thread binding: ${threadId}`);
+    }
+    return binding;
+  };
+
   it("includes idle and max-age details in intro text", () => {
     const intro = resolveThreadBindingIntroText({
       agentId: "main",
@@ -363,7 +374,11 @@ describe("thread binding lifecycle", () => {
 
       await vi.advanceTimersByTimeAsync(240_000);
 
-      expect(manager.getByThreadId("thread-1")).toBeDefined();
+      expect(requireBinding(manager, "thread-1")).toMatchObject({
+        threadId: "thread-1",
+        targetSessionKey: "agent:main:subagent:child",
+        idleTimeoutMs: 0,
+      });
     } finally {
       vi.useRealTimers();
     }
@@ -422,7 +437,10 @@ describe("thread binding lifecycle", () => {
 
       await vi.advanceTimersByTimeAsync(120_000);
 
-      expect(manager.getByThreadId("thread-2")).toBeDefined();
+      expect(requireBinding(manager, "thread-2")).toMatchObject({
+        threadId: "thread-2",
+        targetSessionKey: "agent:main:subagent:second",
+      });
       expect(hoisted.sendMessageDiscord).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
@@ -453,12 +471,11 @@ describe("thread binding lifecycle", () => {
       const touched = manager.touchThread({ threadId: "thread-1", persist: false });
       expect(touched).not.toBeNull();
 
-      const record = manager.getByThreadId("thread-1");
-      expect(record).toBeDefined();
-      expect(record?.lastActivityAt).toBe(new Date("2026-02-20T00:00:30.000Z").getTime());
+      const record = requireBinding(manager, "thread-1");
+      expect(record.lastActivityAt).toBe(new Date("2026-02-20T00:00:30.000Z").getTime());
       expect(
         resolveThreadBindingInactivityExpiresAt({
-          record: record!,
+          record,
           defaultIdleTimeoutMs: manager.getIdleTimeoutMs(),
         }),
       ).toBe(new Date("2026-02-20T00:01:30.000Z").getTime());
@@ -506,12 +523,11 @@ describe("thread binding lifecycle", () => {
         maxAgeMs: 0,
       });
 
-      const record = reloaded.getByThreadId("thread-1");
-      expect(record).toBeDefined();
-      expect(record?.lastActivityAt).toBe(touchedAt);
+      const record = requireBinding(reloaded, "thread-1");
+      expect(record.lastActivityAt).toBe(touchedAt);
       expect(
         resolveThreadBindingInactivityExpiresAt({
-          record: record!,
+          record,
           defaultIdleTimeoutMs: reloaded.getIdleTimeoutMs(),
         }),
       ).toBe(new Date("2026-02-20T00:01:30.000Z").getTime());
@@ -906,9 +922,17 @@ describe("thread binding lifecycle", () => {
     expect(result.checked).toBe(2);
     expect(result.removed).toBe(1);
     expect(result.staleSessionKeys).toContain("agent:codex:acp:stale");
-    expect(manager.getByThreadId("thread-acp-healthy")).toBeDefined();
+    expect(requireBinding(manager, "thread-acp-healthy")).toMatchObject({
+      threadId: "thread-acp-healthy",
+      targetKind: "acp",
+      targetSessionKey: "agent:codex:acp:healthy",
+    });
     expect(manager.getByThreadId("thread-acp-stale")).toBeUndefined();
-    expect(manager.getByThreadId("thread-subagent")).toBeDefined();
+    expect(requireBinding(manager, "thread-subagent")).toMatchObject({
+      threadId: "thread-subagent",
+      targetKind: "subagent",
+      targetSessionKey: "agent:main:subagent:child",
+    });
     expect(hoisted.sendMessageDiscord).not.toHaveBeenCalled();
     expect(hoisted.sendWebhookMessageDiscord).not.toHaveBeenCalled();
   });
@@ -950,7 +974,11 @@ describe("thread binding lifecycle", () => {
     expect(result.checked).toBe(1);
     expect(result.removed).toBe(0);
     expect(result.staleSessionKeys).toEqual([]);
-    expect(manager.getByThreadId("thread-acp-uncertain")).toBeDefined();
+    expect(requireBinding(manager, "thread-acp-uncertain")).toMatchObject({
+      threadId: "thread-acp-uncertain",
+      targetKind: "acp",
+      targetSessionKey: "agent:codex:acp:uncertain",
+    });
   });
 
   it("removes ACP bindings when health probe marks running session as stale", async () => {
@@ -1038,7 +1066,11 @@ describe("thread binding lifecycle", () => {
     expect(result.checked).toBe(1);
     expect(result.removed).toBe(0);
     expect(result.staleSessionKeys).toEqual([]);
-    expect(manager.getByThreadId("thread-acp-running-uncertain")).toBeDefined();
+    expect(requireBinding(manager, "thread-acp-running-uncertain")).toMatchObject({
+      threadId: "thread-acp-running-uncertain",
+      targetKind: "acp",
+      targetSessionKey: "agent:codex:acp:running-uncertain",
+    });
   });
 
   it("keeps ACP bindings in stored error state when no explicit stale probe verdict exists", async () => {
@@ -1081,7 +1113,11 @@ describe("thread binding lifecycle", () => {
     expect(result.checked).toBe(1);
     expect(result.removed).toBe(0);
     expect(result.staleSessionKeys).toEqual([]);
-    expect(manager.getByThreadId("thread-acp-error")).toBeDefined();
+    expect(requireBinding(manager, "thread-acp-error")).toMatchObject({
+      threadId: "thread-acp-error",
+      targetKind: "acp",
+      targetSessionKey: "agent:codex:acp:error",
+    });
   });
 
   it("starts ACP health probes in parallel during startup reconciliation", async () => {
@@ -1289,29 +1325,33 @@ describe("thread binding lifecycle", () => {
       });
 
       const active = manager.getByThreadId("thread-legacy-active");
-      expect(active).toBeDefined();
-      expect(active?.idleTimeoutMs).toBe(0);
-      expect(active?.maxAgeMs).toBe(expiresAt - boundAt);
+      if (!active) {
+        throw new Error("missing migrated legacy active thread binding");
+      }
+      expect(active.idleTimeoutMs).toBe(0);
+      expect(active.maxAgeMs).toBe(expiresAt - boundAt);
       expect(
         resolveThreadBindingMaxAgeExpiresAt({
-          record: active!,
+          record: active,
           defaultMaxAgeMs: manager.getMaxAgeMs(),
         }),
       ).toBe(expiresAt);
       expect(
         resolveThreadBindingInactivityExpiresAt({
-          record: active!,
+          record: active,
           defaultIdleTimeoutMs: manager.getIdleTimeoutMs(),
         }),
       ).toBeUndefined();
 
       const disabled = manager.getByThreadId("thread-legacy-disabled");
-      expect(disabled).toBeDefined();
-      expect(disabled?.idleTimeoutMs).toBe(0);
-      expect(disabled?.maxAgeMs).toBe(0);
+      if (!disabled) {
+        throw new Error("missing migrated legacy disabled thread binding");
+      }
+      expect(disabled.idleTimeoutMs).toBe(0);
+      expect(disabled.maxAgeMs).toBe(0);
       expect(
         resolveThreadBindingMaxAgeExpiresAt({
-          record: disabled!,
+          record: disabled,
           defaultMaxAgeMs: manager.getMaxAgeMs(),
         }),
       ).toBeUndefined();

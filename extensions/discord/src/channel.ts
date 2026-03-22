@@ -132,7 +132,11 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
         policy: account.config.dm?.policy,
         allowFrom: account.config.dm?.allowFrom ?? [],
         allowFromPathSuffix: "dm.",
-        normalizeEntry: (raw) => raw.replace(/^(discord|user):/i, "").replace(/^<@!?(\d+)>$/, "$1"),
+        normalizeEntry: (raw) =>
+          raw
+            .trim()
+            .replace(/^(discord|user):/i, "")
+            .replace(/^<@!?(\d+)>$/, "$1"),
       });
     },
     collectWarnings: ({ account, cfg }) => {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { ChannelGroupPolicy } from "../config/group-policy.js";
 import type { TelegramAccountConfig } from "../config/types.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -43,7 +43,7 @@ describe("native command auth in groups", () => {
 
     registerTelegramNativeCommands({
       bot: bot as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       runtime: {} as unknown as RuntimeEnv,
       accountId: "default",
       telegramCfg: {} as TelegramAccountConfig,
@@ -53,7 +53,6 @@ describe("native command auth in groups", () => {
       textLimit: 4000,
       useAccessGroups: params.useAccessGroups ?? false,
       nativeEnabled: true,
-      nativeSkillsEnabled: false,
       nativeDisabledExplicit: false,
       resolveGroupPolicy: () =>
         ({

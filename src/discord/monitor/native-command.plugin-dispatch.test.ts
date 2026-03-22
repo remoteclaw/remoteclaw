@@ -259,7 +259,7 @@ describe("Discord native plugin command dispatch", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const command = createStatusCommand(cfg);
     const interaction = createInteraction({
       channelType: ChannelType.GuildText,

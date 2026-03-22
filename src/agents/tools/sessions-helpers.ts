@@ -32,6 +32,7 @@ import { sanitizeUserFacingText } from "../agent-helpers.js";
 import {
   stripDowngradedToolCallText,
   stripMinimaxToolCallXml,
+  stripModelSpecialTokens,
   stripThinkingTagsFromText,
 } from "../agent-utils.js";
 
@@ -141,7 +142,9 @@ export function sanitizeTextContent(text: string): string {
   if (!text) {
     return text;
   }
-  return stripThinkingTagsFromText(stripDowngradedToolCallText(stripMinimaxToolCallXml(text)));
+  return stripThinkingTagsFromText(
+    stripDowngradedToolCallText(stripModelSpecialTokens(stripMinimaxToolCallXml(text))),
+  );
 }
 
 export function extractAssistantText(message: unknown): string | undefined {

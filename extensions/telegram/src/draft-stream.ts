@@ -1,5 +1,6 @@
 import type { Bot } from "grammy";
-import { createFinalizableDraftLifecycle } from "../../../src/channels/draft-stream-controls.js";
+import { createFinalizableDraftLifecycle } from "remoteclaw/plugin-sdk/channel-lifecycle";
+import { resolveGlobalSingleton } from "remoteclaw/plugin-sdk/text-runtime";
 import { buildTelegramThreadParams, type TelegramThreadSpec } from "./bot/helpers.js";
 import { isSafeToRetrySendError, isTelegramClientRejection } from "./network-errors.js";
 
@@ -21,11 +22,19 @@ type TelegramSendMessageDraft = (
   },
 ) => Promise<unknown>;
 
-let nextDraftId = 0;
+/**
+ * Keep draft-id allocation shared across bundled chunks so concurrent preview
+ * lanes do not accidentally reuse draft ids when code-split entries coexist.
+ */
+const TELEGRAM_DRAFT_STREAM_STATE_KEY = Symbol.for("remoteclaw.telegramDraftStreamState");
+const draftStreamState = resolveGlobalSingleton(TELEGRAM_DRAFT_STREAM_STATE_KEY, () => ({
+  nextDraftId: 0,
+}));
 
 function allocateTelegramDraftId(): number {
-  nextDraftId = nextDraftId >= TELEGRAM_DRAFT_ID_MAX ? 1 : nextDraftId + 1;
-  return nextDraftId;
+  draftStreamState.nextDraftId =
+    draftStreamState.nextDraftId >= TELEGRAM_DRAFT_ID_MAX ? 1 : draftStreamState.nextDraftId + 1;
+  return draftStreamState.nextDraftId;
 }
 
 function resolveSendMessageDraftApi(api: Bot["api"]): TelegramSendMessageDraft | undefined {
@@ -445,3 +454,9 @@ export function createTelegramDraftStream(params: {
     sendMayHaveLanded: () => messageSendAttempted && typeof streamMessageId !== "number",
   };
 }
+
+export const __testing = {
+  resetTelegramDraftStreamForTests() {
+    draftStreamState.nextDraftId = 0;
+  },
+};

@@ -4,7 +4,7 @@ read_when:
   - Setting up RemoteClaw on a Raspberry Pi
   - Running RemoteClaw on ARM devices
   - Building a cheap always-on personal AI
-title: "Raspberry Pi"
+title: "Raspberry Pi (Platform)"
 ---
 
 # RemoteClaw on Raspberry Pi

@@ -1,16 +1,16 @@
 ---
-description: "RemoteClaw on DigitalOcean (simple paid VPS option)"
+summary: "OpenClaw on DigitalOcean (simple paid VPS option)"
 read_when:
-  - Setting up RemoteClaw on DigitalOcean
-  - Looking for cheap VPS hosting for RemoteClaw
-title: "DigitalOcean"
+  - Setting up OpenClaw on DigitalOcean
+  - Looking for cheap VPS hosting for OpenClaw
+title: "DigitalOcean (Platform)"
 ---
 
-# RemoteClaw on DigitalOcean
+# OpenClaw on DigitalOcean
 
 ## Goal
 
-Run a persistent RemoteClaw Gateway on DigitalOcean for **$6/month** (or $4/mo with reserved pricing).
+Run a persistent OpenClaw Gateway on DigitalOcean for **$6/month** (or $4/mo with reserved pricing).
 
 If you want a $0/month option and don’t mind ARM + provider-specific setup, see the [Oracle Cloud guide](/platforms/oracle).
 
@@ -40,9 +40,9 @@ If you want a $0/month option and don’t mind ARM + provider-specific setup, se
 
 ## 1) Create a Droplet
 
-:::caution
+<Warning>
 Use a clean base image (Ubuntu 24.04 LTS). Avoid third-party Marketplace 1-click images unless you have reviewed their startup scripts and firewall defaults.
-:::
+</Warning>
 
 1. Log into [DigitalOcean](https://cloud.digitalocean.com/)
 2. Click **Create → Droplets**
@@ -60,7 +60,7 @@ Use a clean base image (Ubuntu 24.04 LTS). Avoid third-party Marketplace 1-click
 ssh root@YOUR_DROPLET_IP
 ```
 
-## 3) Install RemoteClaw
+## 3) Install OpenClaw
 
 ```bash
 # Update system
@@ -70,21 +70,22 @@ apt update && apt upgrade -y
 curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
 apt install -y nodejs
 
-# Install RemoteClaw
-curl -fsSL https://remoteclaw.org/install.sh | bash
+# Install OpenClaw
+curl -fsSL https://openclaw.ai/install.sh | bash
 
 # Verify
-remoteclaw --version
+openclaw --version
 ```
 
 ## 4) Run Onboarding
 
 ```bash
-remoteclaw onboard --install-daemon
+openclaw onboard --install-daemon
 ```
 
 The wizard will walk you through:
 
+- Model auth (API keys or OAuth)
 - Channel setup (Telegram, WhatsApp, Discord, etc.)
 - Gateway token (auto-generated)
 - Daemon installation (systemd)
@@ -93,13 +94,13 @@ The wizard will walk you through:
 
 ```bash
 # Check status
-remoteclaw status
+openclaw status
 
 # Check service
-systemctl --user status remoteclaw-gateway.service
+systemctl --user status openclaw-gateway.service
 
 # View logs
-journalctl --user -u remoteclaw-gateway.service -f
+journalctl --user -u openclaw-gateway.service -f
 ```
 
 ## 6) Access the Dashboard
@@ -123,8 +124,8 @@ curl -fsSL https://tailscale.com/install.sh | sh
 tailscale up
 
 # Configure Gateway to use Tailscale Serve
-remoteclaw config set gateway.tailscale.mode serve
-remoteclaw gateway restart
+openclaw config set gateway.tailscale.mode serve
+openclaw gateway restart
 ```
 
 Open: `https://<magicdns>/`
@@ -137,8 +138,8 @@ Notes:
 **Option C: Tailnet bind (no Serve)**
 
 ```bash
-remoteclaw config set gateway.bind tailnet
-remoteclaw gateway restart
+openclaw config set gateway.bind tailnet
+openclaw gateway restart
 ```
 
 Open: `http://<tailscale-ip>:18789` (token required).
@@ -148,14 +149,14 @@ Open: `http://<tailscale-ip>:18789` (token required).
 ### Telegram
 
 ```bash
-remoteclaw pairing list telegram
-remoteclaw pairing approve telegram <CODE>
+openclaw pairing list telegram
+openclaw pairing approve telegram <CODE>
 ```
 
 ### WhatsApp
 
 ```bash
-remoteclaw channels login whatsapp
+openclaw channels login whatsapp
 # Scan QR code
 ```
 
@@ -177,12 +178,12 @@ swapon /swapfile
 echo '/swapfile none swap sw 0 0' >> /etc/fstab
 ```
 
-### Reduce resource usage
+### Use a lighter model
 
 If you're hitting OOMs, consider:
 
-- Reducing the number of concurrent sessions
-- Choosing a lighter CLI agent runtime
+- Using API-based models (Claude, GPT) instead of local models
+- Setting `agents.defaults.model.primary` to a smaller model
 
 ### Monitor memory
 
@@ -197,13 +198,13 @@ htop
 
 All state lives in:
 
-- `~/.remoteclaw/` — config, credentials, session data
-- `<configured workspace>` — workspace (memory, etc.)
+- `~/.openclaw/` — config, credentials, session data
+- `~/.openclaw/workspace/` — workspace (SOUL.md, memory, etc.)
 
 These survive reboots. Back them up periodically:
 
 ```bash
-tar -czvf remoteclaw-backup.tar.gz ~/.remoteclaw ~/.remoteclaw/workspace
+tar -czvf openclaw-backup.tar.gz ~/.openclaw ~/.openclaw/workspace
 ```
 
 ---
@@ -233,9 +234,9 @@ For the full setup guide, see [Oracle Cloud](/platforms/oracle). For signup tips
 ### Gateway will not start
 
 ```bash
-remoteclaw gateway status
-remoteclaw doctor --non-interactive
-journalctl -u remoteclaw --no-pager -n 50
+openclaw gateway status
+openclaw doctor --non-interactive
+journalctl -u openclaw --no-pager -n 50
 ```
 
 ### Port already in use

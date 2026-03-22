@@ -1,6 +1,7 @@
 import type { Command } from "commander";
 import { setVerbose } from "../../globals.js";
 import { isTruthyEnvValue } from "../../infra/env.js";
+import { routeLogsToStderr } from "../../logging/console.js";
 import type { LogLevel } from "../../logging/levels.js";
 import { loggingState } from "../../logging/state.js";
 import { defaultRuntime } from "../../runtime.js";
@@ -106,6 +107,9 @@ export function registerPreActionHooks(program: Command, programVersion: string)
       return;
     }
     const commandPath = getCommandPathWithRootOptions(argv, 2);
+    if (isJsonOutputMode(commandPath, argv)) {
+      routeLogsToStderr();
+    }
     const hideBanner =
       isTruthyEnvValue(process.env.REMOTECLAW_HIDE_BANNER) ||
       commandPath[0] === "update" ||

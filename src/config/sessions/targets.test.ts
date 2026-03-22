@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { withTempHome } from "../../../test/helpers/temp-home.js";
-import type { RemoteClawConfig } from "../config.js";
+import type { OpenClawConfig } from "../config.js";
 import { resolveStorePath } from "./paths.js";
 import {
   resolveAllAgentSessionStoreTargets,
@@ -15,28 +15,30 @@ async function resolveRealStorePath(sessionsDir: string): Promise<string> {
 }
 
 describe("resolveSessionStoreTargets", () => {
-  it("resolves all configured agent stores", () => {
-    const cfg: RemoteClawConfig = {
-      session: {
-        store: "~/.remoteclaw/agents/{agentId}/sessions/sessions.json",
-      },
-      agents: {
-        list: [{ id: "main", default: true }, { id: "work" }],
-      },
-    };
+  it("resolves all configured agent stores", async () => {
+    await withTempHome(async (home) => {
+      const cfg: OpenClawConfig = {
+        session: {
+          store: "~/.openclaw/agents/{agentId}/sessions/sessions.json",
+        },
+        agents: {
+          list: [{ id: "main", default: true }, { id: "work" }],
+        },
+      };
 
-    const targets = resolveSessionStoreTargets(cfg, { allAgents: true });
-
-    expect(targets).toEqual([
-      {
-        agentId: "main",
-        storePath: resolveStorePath(cfg.session?.store, { agentId: "main", env: process.env }),
-      },
-      {
-        agentId: "work",
-        storePath: resolveStorePath(cfg.session?.store, { agentId: "work", env: process.env }),
-      },
-    ]);
+      const env = { ...process.env };
+      const targets = resolveSessionStoreTargets(cfg, { allAgents: true }, { env });
+      expect(targets).toEqual([
+        {
+          agentId: "main",
+          storePath: resolveStorePath(cfg.session?.store, { agentId: "main", env }),
+        },
+        {
+          agentId: "work",
+          storePath: resolveStorePath(cfg.session?.store, { agentId: "work", env }),
+        },
+      ]);
+    });
   });
 
   it("dedupes shared store paths for --all-agents", () => {

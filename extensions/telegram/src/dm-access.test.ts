@@ -1,14 +1,15 @@
+import type { createChannelPairingChallengeIssuer } from "remoteclaw/plugin-sdk/channel-pairing";
 import { describe, expect, it, vi } from "vitest";
 
 const createChannelPairingChallengeIssuerMock = vi.hoisted(() => vi.fn());
 const upsertChannelPairingRequestMock = vi.hoisted(() => vi.fn(async () => undefined));
 const withTelegramApiErrorLoggingMock = vi.hoisted(() => vi.fn(async ({ fn }) => await fn()));
 
-vi.mock("../../../src/plugin-sdk/channel-pairing.js", () => ({
+vi.mock("remoteclaw/plugin-sdk/channel-pairing", () => ({
   createChannelPairingChallengeIssuer: createChannelPairingChallengeIssuerMock,
 }));
 
-vi.mock("../../../src/pairing/pairing-store.js", () => ({
+vi.mock("remoteclaw/plugin-sdk/conversation-runtime", () => ({
   upsertChannelPairingRequest: upsertChannelPairingRequestMock,
 }));
 
@@ -93,12 +94,9 @@ describe("enforceTelegramDmAccess", () => {
       ({
         sendPairingReply,
         onCreated,
-      }: {
-        sendPairingReply: (msg: string) => Promise<void>;
-        onCreated: () => void;
-      }) =>
+      }: Parameters<ReturnType<typeof createChannelPairingChallengeIssuer>>[0]) =>
         (async () => {
-          onCreated();
+          onCreated?.({ code: "123456" });
           await sendPairingReply("Pairing code: 123456");
         })(),
     );

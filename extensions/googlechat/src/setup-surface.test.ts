@@ -1,14 +1,15 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/googlechat";
 import { describe, expect, it, vi } from "vitest";
-import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
-import { createRuntimeEnv } from "../../../test/helpers/extensions/runtime-env.js";
-import { createTestWizardPrompter, type WizardPrompter } from "../../../test/helpers/extensions/setup-wizard.js";
+import {
+  createPluginSetupWizardConfigure,
+  createTestWizardPrompter,
+  runSetupWizardConfigure,
+  type WizardPrompter,
+} from "../../../test/helpers/extensions/setup-wizard.js";
+import type { RemoteClawConfig } from "../runtime-api.js";
 import { googlechatPlugin } from "./channel.js";
 
-const googlechatConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
-  plugin: googlechatPlugin,
-  wizard: googlechatPlugin.setupWizard!,
-});
+const googlechatConfigure = createPluginSetupWizardConfigure(googlechatPlugin);
 
 describe("googlechat setup wizard", () => {
   it("configures service-account auth and webhook audience", async () => {
@@ -24,11 +25,9 @@ describe("googlechat setup wizard", () => {
       }) as WizardPrompter["text"],
     });
 
-    const runtime = createRuntimeEnv();
-
-    const result = await googlechatConfigureAdapter.configure({
+    const result = await runSetupWizardConfigure({
+      configure: googlechatConfigure,
       cfg: {} as RemoteClawConfig,
-      runtime,
       prompter,
       options: {},
       accountOverrides: {},

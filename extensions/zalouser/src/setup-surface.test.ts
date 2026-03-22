@@ -1,38 +1,30 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/zalouser";
 import { describe, expect, it, vi } from "vitest";
-import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
-import { createRuntimeEnv } from "../../../test/helpers/extensions/runtime-env.js";
-import { createTestWizardPrompter } from "../../../test/helpers/extensions/setup-wizard.js";
-
-vi.mock("./zalo-js.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./zalo-js.js")>();
-  return {
-    ...actual,
-    checkZaloAuthenticated: vi.fn(async () => false),
-    logoutZaloProfile: vi.fn(async () => {}),
-    startZaloQrLogin: vi.fn(async () => ({
-      message: "qr pending",
-      qrDataUrl: undefined,
-    })),
-    waitForZaloQrLogin: vi.fn(async () => ({
-      connected: false,
-      message: "login pending",
-    })),
-    resolveZaloAllowFromEntries: vi.fn(async ({ entries }: { entries: string[] }) =>
-      entries.map((entry) => ({ input: entry, resolved: true, id: entry, note: undefined })),
-    ),
-    resolveZaloGroupsByEntries: vi.fn(async ({ entries }: { entries: string[] }) =>
-      entries.map((entry) => ({ input: entry, resolved: true, id: entry, note: undefined })),
-    ),
-  };
-});
-
+import {
+  createPluginSetupWizardConfigure,
+  createTestWizardPrompter,
+  runSetupWizardConfigure,
+} from "../../../test/helpers/extensions/setup-wizard.js";
+import type { RemoteClawConfig } from "../runtime-api.js";
+import "./zalo-js.test-mocks.js";
 import { zalouserPlugin } from "./channel.js";
 
-const zalouserConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
-  plugin: zalouserPlugin,
-  wizard: zalouserPlugin.setupWizard!,
-});
+const zalouserConfigure = createPluginSetupWizardConfigure(zalouserPlugin);
+
+async function runSetup(params: {
+  cfg?: RemoteClawConfig;
+  prompter: ReturnType<typeof createTestWizardPrompter>;
+  options?: Record<string, unknown>;
+  forceAllowFrom?: boolean;
+}) {
+  return await runSetupWizardConfigure({
+    configure: zalouserConfigure,
+    cfg: params.cfg as RemoteClawConfig | undefined,
+    prompter: params.prompter,
+    options: params.options,
+    forceAllowFrom: params.forceAllowFrom,
+  });
+}
 
 describe("zalouser setup wizard", () => {
   it("enables the account without forcing QR login", async () => {

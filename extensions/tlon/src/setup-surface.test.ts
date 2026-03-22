@@ -1,14 +1,15 @@
 import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/tlon";
 import { describe, expect, it, vi } from "vitest";
-import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
-import { createRuntimeEnv } from "../../../test/helpers/extensions/runtime-env.js";
-import { createTestWizardPrompter, type WizardPrompter } from "../../../test/helpers/extensions/setup-wizard.js";
+import {
+  createPluginSetupWizardConfigure,
+  createTestWizardPrompter,
+  runSetupWizardConfigure,
+  type WizardPrompter,
+} from "../../../test/helpers/extensions/setup-wizard.js";
+import type { RemoteClawConfig } from "../api.js";
 import { tlonPlugin } from "./channel.js";
 
-const tlonConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
-  plugin: tlonPlugin,
-  wizard: tlonPlugin.setupWizard!,
-});
+const tlonConfigure = createPluginSetupWizardConfigure(tlonPlugin);
 
 describe("tlon setup wizard", () => {
   it("configures ship, auth, and discovery settings", async () => {
@@ -45,11 +46,9 @@ describe("tlon setup wizard", () => {
       }),
     });
 
-    const runtime: RuntimeEnv = createRuntimeEnv();
-
-    const result = await tlonConfigureAdapter.configure({
+    const result = await runSetupWizardConfigure({
+      configure: tlonConfigure,
       cfg: {} as RemoteClawConfig,
-      runtime,
       prompter,
       options: {},
       accountOverrides: {},

@@ -1,8 +1,12 @@
 import type { RuntimeEnv } from "remoteclaw/plugin-sdk/irc";
 import { describe, expect, it, vi } from "vitest";
-import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
-import { createRuntimeEnv } from "../../../test/helpers/extensions/runtime-env.js";
-import { createTestWizardPrompter, type WizardPrompter } from "../../../test/helpers/extensions/setup-wizard.js";
+import {
+  createPluginSetupWizardAdapter,
+  createTestWizardPrompter,
+  promptSetupWizardAllowFrom,
+  runSetupWizardConfigure,
+  type WizardPrompter,
+} from "../../../test/helpers/extensions/setup-wizard.js";
 import { ircPlugin } from "./channel.js";
 import type { CoreConfig } from "./types.js";
 
@@ -98,7 +102,8 @@ describe("irc setup wizard", () => {
       },
     };
 
-    const updated = (await promptAllowFrom?.({
+    const updated = (await promptSetupWizardAllowFrom({
+      promptAllowFrom,
       cfg,
       prompter,
       accountId: "work",

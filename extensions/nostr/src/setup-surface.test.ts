@@ -1,14 +1,15 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/nostr";
 import { describe, expect, it, vi } from "vitest";
-import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
-import { createRuntimeEnv } from "../../../test/helpers/extensions/runtime-env.js";
-import { createTestWizardPrompter, type WizardPrompter } from "../../../test/helpers/extensions/setup-wizard.js";
+import {
+  createPluginSetupWizardConfigure,
+  createTestWizardPrompter,
+  runSetupWizardConfigure,
+  type WizardPrompter,
+} from "../../../test/helpers/extensions/setup-wizard.js";
+import type { RemoteClawConfig } from "../runtime-api.js";
 import { nostrPlugin } from "./channel.js";
 
-const nostrConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
-  plugin: nostrPlugin,
-  wizard: nostrPlugin.setupWizard!,
-});
+const nostrConfigure = createPluginSetupWizardConfigure(nostrPlugin);
 
 describe("nostr setup wizard", () => {
   it("configures a private key and relay URLs", async () => {
@@ -24,9 +25,9 @@ describe("nostr setup wizard", () => {
       }) as WizardPrompter["text"],
     });
 
-    const result = await nostrConfigureAdapter.configure({
+    const result = await runSetupWizardConfigure({
+      configure: nostrConfigure,
       cfg: {} as RemoteClawConfig,
-      runtime: createRuntimeEnv(),
       prompter,
       options: {},
       accountOverrides: {},

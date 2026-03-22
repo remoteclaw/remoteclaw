@@ -86,18 +86,19 @@ function createRuntime(): RuntimeEnv {
   } as unknown as RuntimeEnv;
 }
 
-let whatsappConfigure: ReturnType<typeof createPluginSetupWizardConfigure>;
+const whatsappConfigure = createPluginSetupWizardConfigure(whatsappPlugin);
 
 async function runConfigureWithHarness(params: {
-  harness: ReturnType<typeof createPrompterHarness>;
-  cfg?: Parameters<typeof whatsappOnboardingAdapter.configure>[0]["cfg"];
+  harness: ReturnType<typeof createQueuedWizardPrompter>;
+  cfg?: Parameters<typeof whatsappConfigure>[0]["cfg"];
   runtime?: RuntimeEnv;
-  options?: Parameters<typeof whatsappOnboardingAdapter.configure>[0]["options"];
-  accountOverrides?: Parameters<typeof whatsappOnboardingAdapter.configure>[0]["accountOverrides"];
+  options?: Parameters<typeof whatsappConfigure>[0]["options"];
+  accountOverrides?: Parameters<typeof whatsappConfigure>[0]["accountOverrides"];
   shouldPromptAccountIds?: boolean;
   forceAllowFrom?: boolean;
 }) {
-  return await whatsappOnboardingAdapter.configure({
+  return await runSetupWizardConfigure({
+    configure: whatsappConfigure,
     cfg: params.cfg ?? {},
     runtime: params.runtime ?? createRuntime(),
     prompter: params.harness.prompter,

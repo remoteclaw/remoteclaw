@@ -1,29 +1,15 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/line";
 import { describe, expect, it, vi } from "vitest";
-import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import {
-  listLineAccountIds,
-  resolveDefaultLineAccountId,
-  resolveLineAccount,
-} from "../../../src/line/accounts.js";
-import { createRuntimeEnv } from "../../../test/helpers/extensions/runtime-env.js";
-import { createTestWizardPrompter, type WizardPrompter } from "../../../test/helpers/extensions/setup-wizard.js";
-import { lineSetupAdapter, lineSetupWizard } from "./setup-surface.js";
+  createPluginSetupWizardConfigure,
+  createTestWizardPrompter,
+  runSetupWizardConfigure,
+  type WizardPrompter,
+} from "../../../test/helpers/extensions/setup-wizard.js";
+import type { RemoteClawConfig } from "../api.js";
+import { linePlugin } from "./channel.js";
 
-const lineConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
-  plugin: {
-    id: "line",
-    meta: { label: "LINE" },
-    config: {
-      listAccountIds: listLineAccountIds,
-      defaultAccountId: resolveDefaultLineAccountId,
-      resolveAllowFrom: ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId?: string | null }) =>
-        resolveLineAccount({ cfg, accountId: accountId ?? undefined }).config.allowFrom,
-    },
-    setup: lineSetupAdapter,
-  } as Parameters<typeof buildChannelSetupWizardAdapterFromSetupWizard>[0]["plugin"],
-  wizard: lineSetupWizard,
-});
+const lineConfigure = createPluginSetupWizardConfigure(linePlugin);
 
 describe("line setup wizard", () => {
   it("configures token and secret for the default account", async () => {
@@ -39,9 +25,9 @@ describe("line setup wizard", () => {
       }) as WizardPrompter["text"],
     });
 
-    const result = await lineConfigureAdapter.configure({
+    const result = await runSetupWizardConfigure({
+      configure: lineConfigure,
       cfg: {} as RemoteClawConfig,
-      runtime: createRuntimeEnv(),
       prompter,
       options: {},
       accountOverrides: {},

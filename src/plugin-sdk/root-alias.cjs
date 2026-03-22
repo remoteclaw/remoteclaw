@@ -4,6 +4,7 @@ const path = require("node:path");
 const fs = require("node:fs");
 
 let monolithicSdk = null;
+const shouldPreferSourceInTests = Boolean(process.env.VITEST) || process.env.NODE_ENV === "test";
 
 function emptyPluginConfigSchema() {
   function error(message) {
@@ -43,7 +44,7 @@ function loadMonolithicSdk() {
   });
 
   const distCandidate = path.resolve(__dirname, "..", "..", "dist", "plugin-sdk", "index.js");
-  if (fs.existsSync(distCandidate)) {
+  if (!shouldPreferSourceInTests && fs.existsSync(distCandidate)) {
     try {
       monolithicSdk = jiti(distCandidate);
       return monolithicSdk;

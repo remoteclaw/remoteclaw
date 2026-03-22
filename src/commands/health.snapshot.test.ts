@@ -1,8 +1,17 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { telegramPlugin } from "../../extensions/telegram/src/channel.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  buildTokenChannelStatusSummary,
+  probeTelegram,
+  type ChannelPlugin as TelegramChannelPlugin,
+} from "../../extensions/telegram/runtime-api.js";
+import {
+  listTelegramAccountIds,
+  resolveTelegramAccount,
+} from "../../extensions/telegram/src/accounts.js";
+import { adaptScopedAccountAccessor } from "../plugin-sdk/channel-config-helpers.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createTestRegistry } from "../test-utils/channel-plugins.js";
 import type { HealthSummary } from "./health.js";
@@ -99,8 +108,26 @@ async function runSuccessfulTelegramProbe(
   return { calls, telegram };
 }
 
-let createPluginRuntime: typeof import("../plugins/runtime/index.js").createPluginRuntime;
-let setTelegramRuntime: typeof import("../../extensions/telegram/src/runtime.js").setTelegramRuntime;
+const telegramHealthPlugin: Pick<
+  TelegramChannelPlugin,
+  "id" | "meta" | "capabilities" | "config" | "status"
+> = {
+  ...createChannelTestPluginBase({ id: "telegram", label: "Telegram" }),
+  config: {
+    listAccountIds: (cfg) => listTelegramAccountIds(cfg),
+    resolveAccount: adaptScopedAccountAccessor(resolveTelegramAccount),
+    isConfigured: (account) => Boolean(account.token?.trim()),
+  },
+  status: {
+    buildChannelSummary: ({ snapshot }) => buildTokenChannelStatusSummary(snapshot),
+    probeAccount: async ({ account, timeoutMs }) =>
+      await probeTelegram(account.token, timeoutMs, {
+        proxyUrl: account.config.proxy,
+        network: account.config.network,
+        accountId: account.accountId,
+      }),
+  },
+};
 
 describe("getHealthSnapshot", () => {
   beforeAll(async () => {

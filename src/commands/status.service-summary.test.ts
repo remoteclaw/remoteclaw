@@ -24,7 +24,7 @@ describe("readServiceStatusSummary", () => {
       createService({
         isLoaded: vi.fn(async () => true),
         readCommand: vi.fn(async () => ({ programArguments: ["openclaw", "gateway", "run"] })),
-        readRuntime: vi.fn(async () => ({ status: "running" })),
+        readRuntime: vi.fn(async () => ({ status: "running" as const })),
       }),
       "Daemon",
     );
@@ -38,7 +38,7 @@ describe("readServiceStatusSummary", () => {
   it("marks running unmanaged services as externally managed", async () => {
     const summary = await readServiceStatusSummary(
       createService({
-        readRuntime: vi.fn(async () => ({ status: "running" })),
+        readRuntime: vi.fn(async () => ({ status: "running" as const })),
       }),
       "Daemon",
     );

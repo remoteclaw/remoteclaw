@@ -1,18 +1,33 @@
-import type { GatewayBindMode, GatewayControlUiConfig } from "../../config/types.js";
+import {
+  createConfigIO,
+  resolveConfigPath,
+  resolveGatewayPort,
+  resolveStateDir,
+} from "../../config/config.js";
+import type {
+  GatewayBindMode,
+  GatewayControlUiConfig,
+  RemoteClawConfig,
+} from "../../config/types.js";
 import { readLastGatewayErrorLine } from "../../daemon/diagnostics.js";
 import type { FindExtraGatewayServicesOptions } from "../../daemon/inspect.js";
 import { findExtraGatewayServices } from "../../daemon/inspect.js";
 import type { ServiceConfigAudit } from "../../daemon/service-audit.js";
 import { auditGatewayServiceConfig } from "../../daemon/service-audit.js";
+import type { GatewayServiceRuntime } from "../../daemon/service-runtime.js";
 import { resolveGatewayService } from "../../daemon/service.js";
+import { trimToUndefined } from "../../gateway/credentials.js";
+import { resolveGatewayBindHost } from "../../gateway/net.js";
 import {
   formatPortDiagnostics,
+  inspectPortUsage,
   type PortListener,
   type PortUsageStatus,
 } from "../../infra/ports.js";
+import { pickPrimaryTailnetIPv4 } from "../../infra/tailnet.js";
 import { loadGatewayTlsRuntime } from "../../infra/tls/gateway.js";
 import { probeGatewayStatus } from "./probe.js";
-import { normalizeListenerAddress } from "./shared.js";
+import { normalizeListenerAddress, parsePortFromArgs, pickProbeHostForBind } from "./shared.js";
 import type { GatewayRpcOpts } from "./types.js";
 
 type ConfigSummary = {
@@ -33,6 +48,29 @@ type GatewayStatusSummary = {
   probeNote?: string;
 };
 
+type PortStatusSummary = {
+  port: number;
+  status: PortUsageStatus;
+  listeners: PortListener[];
+  hints: string[];
+};
+
+type DaemonConfigContext = {
+  mergedDaemonEnv: Record<string, string | undefined>;
+  cliCfg: RemoteClawConfig;
+  daemonCfg: RemoteClawConfig;
+  cliConfigSummary: ConfigSummary;
+  daemonConfigSummary: ConfigSummary;
+  configMismatch: boolean;
+};
+
+type ResolvedGatewayStatus = {
+  gateway: GatewayStatusSummary;
+  daemonPort: number;
+  cliPort: number;
+  probeUrlOverride: string | null;
+};
+
 export type DaemonStatus = {
   service: {
     label: string;
@@ -45,19 +83,7 @@ export type DaemonStatus = {
       environment?: Record<string, string>;
       sourcePath?: string;
     } | null;
-    runtime?: {
-      status?: string;
-      state?: string;
-      subState?: string;
-      pid?: number;
-      lastExitStatus?: number;
-      lastExitReason?: string;
-      lastRunResult?: string;
-      lastRunTime?: string;
-      detail?: string;
-      cachedLabel?: boolean;
-      missingUnit?: boolean;
-    };
+    runtime?: GatewayServiceRuntime;
     configAudit?: ServiceConfigAudit;
   };
   config?: {
@@ -97,6 +123,131 @@ function shouldReportPortUsage(status: PortUsageStatus | undefined, rpcOk?: bool
   return true;
 }
 
+async function loadDaemonConfigContext(
+  serviceEnv?: Record<string, string>,
+): Promise<DaemonConfigContext> {
+  const mergedDaemonEnv = {
+    ...(process.env as Record<string, string | undefined>),
+    ...(serviceEnv ?? undefined),
+  } satisfies Record<string, string | undefined>;
+
+  const cliConfigPath = resolveConfigPath(process.env, resolveStateDir(process.env));
+  const daemonConfigPath = resolveConfigPath(
+    mergedDaemonEnv as NodeJS.ProcessEnv,
+    resolveStateDir(mergedDaemonEnv as NodeJS.ProcessEnv),
+  );
+
+  const cliIO = createConfigIO({ env: process.env, configPath: cliConfigPath });
+  const daemonIO = createConfigIO({
+    env: mergedDaemonEnv,
+    configPath: daemonConfigPath,
+  });
+
+  const [cliSnapshot, daemonSnapshot] = await Promise.all([
+    cliIO.readConfigFileSnapshot().catch(() => null),
+    daemonIO.readConfigFileSnapshot().catch(() => null),
+  ]);
+  const cliCfg = cliIO.loadConfig();
+  const daemonCfg = daemonIO.loadConfig();
+
+  const cliConfigSummary: ConfigSummary = {
+    path: cliSnapshot?.path ?? cliConfigPath,
+    exists: cliSnapshot?.exists ?? false,
+    valid: cliSnapshot?.valid ?? true,
+    ...(cliSnapshot?.issues?.length ? { issues: cliSnapshot.issues } : {}),
+    controlUi: cliCfg.gateway?.controlUi,
+  };
+  const daemonConfigSummary: ConfigSummary = {
+    path: daemonSnapshot?.path ?? daemonConfigPath,
+    exists: daemonSnapshot?.exists ?? false,
+    valid: daemonSnapshot?.valid ?? true,
+    ...(daemonSnapshot?.issues?.length ? { issues: daemonSnapshot.issues } : {}),
+    controlUi: daemonCfg.gateway?.controlUi,
+  };
+
+  return {
+    mergedDaemonEnv,
+    cliCfg,
+    daemonCfg,
+    cliConfigSummary,
+    daemonConfigSummary,
+    configMismatch: cliConfigSummary.path !== daemonConfigSummary.path,
+  };
+}
+
+async function resolveGatewayStatusSummary(params: {
+  daemonCfg: RemoteClawConfig;
+  cliCfg: RemoteClawConfig;
+  mergedDaemonEnv: Record<string, string | undefined>;
+  commandProgramArguments?: string[];
+  rpcUrlOverride?: string;
+}): Promise<ResolvedGatewayStatus> {
+  const portFromArgs = parsePortFromArgs(params.commandProgramArguments);
+  const daemonPort = portFromArgs ?? resolveGatewayPort(params.daemonCfg, params.mergedDaemonEnv);
+  const portSource: GatewayStatusSummary["portSource"] = portFromArgs
+    ? "service args"
+    : "env/config";
+  const bindMode: GatewayBindMode = params.daemonCfg.gateway?.bind ?? "loopback";
+  const customBindHost = params.daemonCfg.gateway?.customBindHost;
+  const bindHost = await resolveGatewayBindHost(bindMode, customBindHost);
+  const tailnetIPv4 = pickPrimaryTailnetIPv4();
+  const probeHost = pickProbeHostForBind(bindMode, tailnetIPv4, customBindHost);
+  const probeUrlOverride = trimToUndefined(params.rpcUrlOverride) ?? null;
+  const scheme = params.daemonCfg.gateway?.tls?.enabled === true ? "wss" : "ws";
+  const probeUrl = probeUrlOverride ?? `${scheme}://${probeHost}:${daemonPort}`;
+  const probeNote =
+    !probeUrlOverride && bindMode === "lan"
+      ? `bind=lan listens on 0.0.0.0 (all interfaces); probing via ${probeHost}.`
+      : !probeUrlOverride && bindMode === "loopback"
+        ? "Loopback-only gateway; only local clients can connect."
+        : undefined;
+
+  return {
+    gateway: {
+      bindMode,
+      bindHost,
+      customBindHost,
+      port: daemonPort,
+      portSource,
+      probeUrl,
+      ...(probeNote ? { probeNote } : {}),
+    },
+    daemonPort,
+    cliPort: resolveGatewayPort(params.cliCfg, process.env),
+    probeUrlOverride,
+  };
+}
+
+function toPortStatusSummary(
+  diagnostics: Awaited<ReturnType<typeof inspectPortUsage>> | null,
+): PortStatusSummary | undefined {
+  if (!diagnostics) {
+    return undefined;
+  }
+  return {
+    port: diagnostics.port,
+    status: diagnostics.status,
+    listeners: diagnostics.listeners,
+    hints: diagnostics.hints,
+  };
+}
+
+async function inspectDaemonPortStatuses(params: {
+  daemonPort: number;
+  cliPort: number;
+}): Promise<{ portStatus?: PortStatusSummary; portCliStatus?: PortStatusSummary }> {
+  const [portDiagnostics, portCliDiagnostics] = await Promise.all([
+    inspectPortUsage(params.daemonPort).catch(() => null),
+    params.cliPort !== params.daemonPort
+      ? inspectPortUsage(params.cliPort).catch(() => null)
+      : null,
+  ]);
+  return {
+    portStatus: toPortStatusSummary(portDiagnostics),
+    portCliStatus: toPortStatusSummary(portCliDiagnostics),
+  };
+}
+
 export async function gatherDaemonStatus(
   opts: {
     rpc: GatewayRpcOpts;
@@ -108,7 +259,9 @@ export async function gatherDaemonStatus(
   const [loaded, command, runtime] = await Promise.all([
     service.isLoaded({ env: process.env }).catch(() => false),
     service.readCommand(process.env).catch(() => null),
-    service.readRuntime(process.env).catch((err) => ({ status: "unknown", detail: String(err) })),
+    service
+      .readRuntime(process.env)
+      .catch((err) => ({ status: "unknown" as const, detail: String(err) })),
   ]);
   const configAudit = await auditGatewayServiceConfig({
     env: process.env,

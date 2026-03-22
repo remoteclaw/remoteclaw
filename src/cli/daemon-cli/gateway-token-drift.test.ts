@@ -36,7 +36,7 @@ describe("resolveGatewayTokenForDriftCheck", () => {
               token: { source: "env", provider: "default", id: "OPENCLAW_GATEWAY_TOKEN" },
             },
           },
-        } as OpenClawConfig,
+        } as unknown as RemoteClawConfig,
         env: {
           OPENCLAW_GATEWAY_TOKEN: "env-token",
         } as NodeJS.ProcessEnv,

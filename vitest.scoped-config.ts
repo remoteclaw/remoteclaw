@@ -19,7 +19,7 @@ export function createScopedVitestConfig(
   options?: {
     dir?: string;
     exclude?: string[];
-    pool?: "threads" | "forks";
+    pool?: "threads" | "forks" | "vmForks";
     passWithNoTests?: boolean;
   },
 ) {
@@ -30,7 +30,7 @@ export function createScopedVitestConfig(
         test?: {
           dir?: string;
           exclude?: string[];
-          pool?: "threads" | "forks";
+          pool?: "threads" | "forks" | "vmForks";
           passWithNoTests?: boolean;
         };
       }

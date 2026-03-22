@@ -2,6 +2,8 @@ import { writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
+import { clearConfigCache, clearRuntimeConfigSnapshot } from "../config/config.js";
+import { clearSessionStoreCacheForTest } from "../config/sessions/store.js";
 import {
   type DeviceIdentity,
   loadOrCreateDeviceIdentity,
@@ -232,6 +234,9 @@ export async function startGatewayWithClient(params: {
 }) {
   await writeFile(params.configPath, `${JSON.stringify(params.cfg, null, 2)}\n`);
   process.env.REMOTECLAW_CONFIG_PATH = params.configPath;
+  clearRuntimeConfigSnapshot();
+  clearConfigCache();
+  clearSessionStoreCacheForTest();
 
   const port = await getFreeGatewayPort();
   const { startGatewayServer } = await import("./server.js");

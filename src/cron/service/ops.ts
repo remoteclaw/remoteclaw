@@ -107,15 +107,19 @@ export async function start(state: CronServiceState) {
         startupInterruptedJobIds.add(job.id);
       }
     }
-    await persist(state, { skipBackup: true });
+    if (startupInterruptedJobIds.size > 0) {
+      await persist(state);
+    }
   });
 
   await runMissedJobs(state, { skipJobIds: startupInterruptedJobIds });
 
   await locked(state, async () => {
     await ensureLoaded(state, { forceReload: true, skipRecompute: true });
-    recomputeNextRuns(state);
-    await persist(state, { skipBackup: true });
+    const changed = recomputeNextRuns(state);
+    if (changed) {
+      await persist(state);
+    }
     armTimer(state);
     state.deps.log.info(
       {

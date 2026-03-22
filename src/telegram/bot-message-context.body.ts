@@ -159,7 +159,7 @@ export async function resolveTelegramInboundBody(params: {
       isExplicitlyMentioned: explicitlyMentioned,
       canResolveExplicit: Boolean(botUsername),
     },
-    transcript: preflightTranscript,
+    transcript: undefined,
   });
   const wasMentioned = options?.forceWasMentioned === true ? true : computedWasMentioned;
 

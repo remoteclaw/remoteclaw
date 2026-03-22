@@ -4,19 +4,19 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   buildConfigDocBaseline,
-  collectConfigDocBaselineEntries,
-  dedupeConfigDocBaselineEntries,
-  normalizeConfigDocBaselineHelpPath,
   renderConfigDocBaselineStatefile,
   writeConfigDocBaselineStatefile,
 } from "./doc-baseline.js";
 
-describe("config doc baseline", () => {
+describe("config doc baseline integration", () => {
   const tempRoots: string[] = [];
   let sharedBaselinePromise: Promise<Awaited<ReturnType<typeof buildConfigDocBaseline>>> | null =
     null;
   let sharedRenderedPromise: Promise<
     Awaited<ReturnType<typeof renderConfigDocBaselineStatefile>>
+  > | null = null;
+  let sharedByPathPromise: Promise<
+    Map<string, Awaited<ReturnType<typeof buildConfigDocBaseline>>["entries"][number]>
   > | null = null;
 
   function getSharedBaseline() {
@@ -29,6 +29,13 @@ describe("config doc baseline", () => {
     return sharedRenderedPromise;
   }
 
+  function getSharedByPath() {
+    sharedByPathPromise ??= getSharedBaseline().then(
+      (baseline) => new Map(baseline.entries.map((entry) => [entry.path, entry])),
+    );
+    return sharedByPathPromise;
+  }
+
   afterEach(async () => {
     await Promise.all(
       tempRoots.splice(0).map(async (tempRoot) => {
@@ -38,25 +45,15 @@ describe("config doc baseline", () => {
   });
 
   it("is deterministic across repeated runs", async () => {
-    const first = await renderConfigDocBaselineStatefile();
+    const first = await getSharedRendered();
     const second = await renderConfigDocBaselineStatefile();
 
     expect(second.json).toBe(first.json);
     expect(second.jsonl).toBe(first.jsonl);
   });
 
-  it("normalizes array and record paths to wildcard form", async () => {
-    const baseline = await getSharedBaseline();
-    const paths = new Set(baseline.entries.map((entry) => entry.path));
-
-    expect(paths.has("session.sendPolicy.rules.*.match.keyPrefix")).toBe(true);
-    expect(paths.has("env.*")).toBe(true);
-    expect(normalizeConfigDocBaselineHelpPath("agents.list[].skills")).toBe("agents.list.*.skills");
-  });
-
   it("includes core, channel, and plugin config metadata", async () => {
-    const baseline = await getSharedBaseline();
-    const byPath = new Map(baseline.entries.map((entry) => [entry.path, entry]));
+    const byPath = await getSharedByPath();
 
     expect(byPath.get("gateway.auth.token")).toMatchObject({
       kind: "core",
@@ -73,8 +70,7 @@ describe("config doc baseline", () => {
   });
 
   it("preserves help text and tags from merged schema hints", async () => {
-    const baseline = await getSharedBaseline();
-    const byPath = new Map(baseline.entries.map((entry) => [entry.path, entry]));
+    const byPath = await getSharedByPath();
     const tokenEntry = byPath.get("gateway.auth.token");
 
     expect(tokenEntry?.help).toContain("gateway access");
@@ -82,9 +78,27 @@ describe("config doc baseline", () => {
     expect(tokenEntry?.tags).toContain("security");
   });
 
+  it("uses human-readable channel metadata for top-level channel sections", async () => {
+    const byPath = await getSharedByPath();
+
+    expect(byPath.get("channels.discord")).toMatchObject({
+      label: "Discord",
+      help: "very well supported right now.",
+    });
+    expect(byPath.get("channels.msteams")).toMatchObject({
+      label: "Microsoft Teams",
+      help: "Bot Framework; enterprise support.",
+    });
+    expect(byPath.get("channels.matrix")).toMatchObject({
+      label: "Matrix",
+      help: "open protocol; install the plugin to enable.",
+    });
+    expect(byPath.get("channels.msteams")?.label).not.toContain("@remoteclaw/");
+    expect(byPath.get("channels.matrix")?.help).not.toContain("homeserver");
+  });
+
   it("matches array help hints that still use [] notation", async () => {
-    const baseline = await getSharedBaseline();
-    const byPath = new Map(baseline.entries.map((entry) => [entry.path, entry]));
+    const byPath = await getSharedByPath();
 
     expect(byPath.get("session.sendPolicy.rules.*.match.keyPrefix")).toMatchObject({
       help: expect.stringContaining("prefer rawKeyPrefix when exact full-key matching is required"),
@@ -93,8 +107,7 @@ describe("config doc baseline", () => {
   });
 
   it("walks union branches for nested config keys", async () => {
-    const baseline = await getSharedBaseline();
-    const byPath = new Map(baseline.entries.map((entry) => [entry.path, entry]));
+    const byPath = await getSharedByPath();
 
     expect(byPath.get("bindings.*")).toMatchObject({
       hasChildren: true,
@@ -102,35 +115,6 @@ describe("config doc baseline", () => {
     expect(byPath.get("bindings.*.type")).toBeDefined();
     expect(byPath.get("bindings.*.match.channel")).toBeDefined();
     expect(byPath.get("bindings.*.match.peer.id")).toBeDefined();
-  });
-
-  it("merges tuple item metadata instead of dropping earlier entries", () => {
-    const entries = dedupeConfigDocBaselineEntries(
-      collectConfigDocBaselineEntries(
-        {
-          type: "array",
-          items: [
-            {
-              type: "string",
-              enum: ["alpha"],
-            },
-            {
-              type: "number",
-              enum: [42],
-            },
-          ],
-        },
-        {},
-        "tupleValues",
-      ),
-    );
-    const tupleEntry = new Map(entries.map((entry) => [entry.path, entry])).get("tupleValues.*");
-
-    expect(tupleEntry).toMatchObject({
-      type: ["number", "string"],
-    });
-    expect(tupleEntry?.enumValues).toEqual(expect.arrayContaining([42, "alpha"]));
-    expect(tupleEntry?.enumValues).toHaveLength(2);
   });
 
   it("supports check mode for stale generated artifacts", async () => {

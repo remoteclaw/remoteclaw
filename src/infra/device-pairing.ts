@@ -77,6 +77,7 @@ type DevicePairingStateFile = {
 };
 
 const PENDING_TTL_MS = 5 * 60 * 1000;
+const OPERATOR_SCOPE_PREFIX = "operator.";
 
 const withLock = createAsyncLock();
 
@@ -326,6 +327,20 @@ export async function approveDevicePairing(
     const pending = state.pendingById[requestId];
     if (!pending) {
       return null;
+    }
+    const approvalRole = resolvePendingApprovalRole(pending);
+    if (approvalRole && options?.callerScopes) {
+      const requestedOperatorScopes = normalizeDeviceAuthScopes(pending.scopes).filter((scope) =>
+        scope.startsWith(OPERATOR_SCOPE_PREFIX),
+      );
+      const missingScope = resolveMissingRequestedScope({
+        role: approvalRole,
+        requestedScopes: requestedOperatorScopes,
+        allowedScopes: options.callerScopes,
+      });
+      if (missingScope) {
+        return { status: "forbidden", missingScope };
+      }
     }
     const now = Date.now();
     const existing = state.pairedByDeviceId[pending.deviceId];

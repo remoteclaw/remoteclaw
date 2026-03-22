@@ -1,7 +1,7 @@
 import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
 import {
-  createScopedAccountConfigAccessors,
-  createScopedChannelConfigBase,
+  adaptScopedAccountAccessor,
+  createScopedChannelConfigAdapter,
   createScopedDmSecurityResolver,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
@@ -57,7 +57,7 @@ const ircConfigAdapter = createScopedChannelConfigAdapter<
 >({
   sectionKey: "irc",
   listAccountIds: listIrcAccountIds,
-  resolveAccount: (cfg, accountId) => resolveIrcAccount({ cfg, accountId }),
+  resolveAccount: adaptScopedAccountAccessor(resolveIrcAccount),
   defaultAccountId: resolveDefaultIrcAccountId,
   clearBaseFields: [
     "name",
@@ -252,11 +252,10 @@ export const ircPlugin: ChannelPlugin<ResolvedIrcAccount, IrcProbe> = {
   },
   directory: createChannelDirectoryAdapter({
     listPeers: async (params) =>
-      listResolvedDirectoryEntriesFromSources({
+      listResolvedDirectoryEntriesFromSources<ResolvedIrcAccount>({
         ...params,
         kind: "user",
-        resolveAccount: (cfg, accountId) =>
-          resolveIrcAccount({ cfg: cfg as CoreConfig, accountId }),
+        resolveAccount: adaptScopedAccountAccessor(resolveIrcAccount),
         resolveSources: (account) => [
           account.config.allowFrom ?? [],
           account.config.groupAllowFrom ?? [],
@@ -265,11 +264,10 @@ export const ircPlugin: ChannelPlugin<ResolvedIrcAccount, IrcProbe> = {
         normalizeId: (entry) => normalizePairingTarget(entry) || null,
       }),
     listGroups: async (params) => {
-      const entries = listResolvedDirectoryEntriesFromSources({
+      const entries = listResolvedDirectoryEntriesFromSources<ResolvedIrcAccount>({
         ...params,
         kind: "group",
-        resolveAccount: (cfg, accountId) =>
-          resolveIrcAccount({ cfg: cfg as CoreConfig, accountId }),
+        resolveAccount: adaptScopedAccountAccessor(resolveIrcAccount),
         resolveSources: (account) => [
           account.config.channels ?? [],
           Object.keys(account.config.groups ?? {}),

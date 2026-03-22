@@ -1,10 +1,9 @@
 import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
+import { createMessageToolCardSchema } from "remoteclaw/plugin-sdk/channel-actions";
 import {
-  createHybridChannelConfigBase,
-  createScopedAccountConfigAccessors,
+  adaptScopedAccountAccessor,
+  createHybridChannelConfigAdapter,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
-import { createMessageToolCardSchema } from "remoteclaw/plugin-sdk/channel-runtime";
 import type {
   ChannelMessageActionAdapter,
   ChannelMessageToolDiscovery,
@@ -151,7 +150,7 @@ function setFeishuNamedAccountEnabled(
 const feishuConfigBase = createHybridChannelConfigBase<ResolvedFeishuAccount, ClawdbotConfig>({
   sectionKey: "feishu",
   listAccountIds: listFeishuAccountIds,
-  resolveAccount: (cfg, accountId) => resolveFeishuAccount({ cfg, accountId }),
+  resolveAccount: adaptScopedAccountAccessor(resolveFeishuAccount),
   defaultAccountId: resolveDefaultFeishuAccountId,
   clearBaseFields: [],
 });

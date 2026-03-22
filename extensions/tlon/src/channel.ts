@@ -298,7 +298,7 @@ export const tlonPlugin: ChannelPlugin = {
   config: {
     listAccountIds: (cfg) => listTlonAccountIds(cfg),
     resolveAccount: (cfg, accountId) => resolveTlonAccount(cfg, accountId ?? undefined),
-    defaultAccountId: () => "default",
+    defaultAccountId: () => DEFAULT_ACCOUNT_ID,
     setAccountEnabled: ({ cfg, accountId, enabled }) => {
       const useDefault = !accountId || accountId === "default";
       if (useDefault) {

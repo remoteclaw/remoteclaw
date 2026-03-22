@@ -89,7 +89,7 @@ function resolveSlackSendContext(params: {
 }
 
 const slackConfigAccessors = createScopedAccountConfigAccessors({
-  resolveAccount: ({ cfg, accountId }) => resolveSlackAccount({ cfg, accountId }),
+  resolveAccount: resolveSlackAccount,
   resolveAllowFrom: (account: ResolvedSlackAccount) => account.dm?.allowFrom,
   formatAllowFrom: (allowFrom) => formatAllowFromLowercase({ allowFrom }),
   resolveDefaultTo: (account: ResolvedSlackAccount) => account.config.defaultTo,

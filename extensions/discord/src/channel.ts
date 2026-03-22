@@ -56,7 +56,7 @@ const discordMessageActions: ChannelMessageActionAdapter = {
 };
 
 const discordConfigAccessors = createScopedAccountConfigAccessors({
-  resolveAccount: ({ cfg, accountId }) => resolveDiscordAccount({ cfg, accountId }),
+  resolveAccount: resolveDiscordAccount,
   resolveAllowFrom: (account: ResolvedDiscordAccount) => account.config.dm?.allowFrom,
   formatAllowFrom: (allowFrom) => formatAllowFromLowercase({ allowFrom }),
   resolveDefaultTo: (account: ResolvedDiscordAccount) => account.config.defaultTo,

@@ -92,7 +92,7 @@ const telegramMessageActions: ChannelMessageActionAdapter = {
 };
 
 const telegramConfigAccessors = createScopedAccountConfigAccessors({
-  resolveAccount: ({ cfg, accountId }) => resolveTelegramAccount({ cfg, accountId }),
+  resolveAccount: resolveTelegramAccount,
   resolveAllowFrom: (account: ResolvedTelegramAccount) => account.config.allowFrom,
   formatAllowFrom: (allowFrom) =>
     formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(telegram|tg):/i }),

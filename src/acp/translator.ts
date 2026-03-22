@@ -27,7 +27,11 @@ import type {
   ToolKind,
 } from "@agentclientprotocol/sdk";
 import { PROTOCOL_VERSION } from "@agentclientprotocol/sdk";
-import { listThinkingLevels } from "../auto-reply/thinking.js";
+// Upstream provides listThinkingLevels; stub until the prerequisite commit lands.
+const DEFAULT_THINKING_LEVELS = ["none", "low", "adaptive", "high", "xhigh", "full"] as const;
+function listThinkingLevels(_provider?: string, _model?: string): readonly string[] {
+  return DEFAULT_THINKING_LEVELS;
+}
 import type { GatewayClient } from "../gateway/client.js";
 import type { EventFrame } from "../gateway/protocol/index.js";
 import type { GatewaySessionRow, SessionsListResult } from "../gateway/session-utils.js";
@@ -507,6 +511,7 @@ export class AcpGatewayAgent implements Agent {
     try {
       await this.gateway.request("sessions.patch", {
         key: session.sessionKey,
+        thinkingLevel: params.modeId,
       });
       this.log(`setSessionMode: ${session.sessionId} -> ${params.modeId}`);
       const sessionSnapshot = await this.getSessionSnapshot(session.sessionKey, {

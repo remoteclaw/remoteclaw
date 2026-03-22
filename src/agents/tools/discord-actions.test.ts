@@ -312,6 +312,55 @@ describe("handleDiscordMessagingAction", () => {
     );
   });
 
+  it("ignores empty components objects for regular media sends", async () => {
+    sendMessageDiscord.mockClear();
+    sendDiscordComponentMessage.mockClear();
+
+    await handleDiscordMessagingAction(
+      "sendMessage",
+      {
+        to: "channel:123",
+        content: "hello",
+        mediaUrl: "/tmp/image.png",
+        components: {},
+      },
+      enableAllActions,
+      { mediaLocalRoots: ["/tmp/agent-root"] },
+    );
+
+    expect(sendDiscordComponentMessage).not.toHaveBeenCalled();
+    expect(sendMessageDiscord).toHaveBeenCalledWith(
+      "channel:123",
+      "hello",
+      expect.objectContaining({
+        mediaUrl: "/tmp/image.png",
+        mediaLocalRoots: ["/tmp/agent-root"],
+      }),
+    );
+  });
+
+  it("forwards the optional filename into sendMessageDiscord", async () => {
+    sendMessageDiscord.mockClear();
+    await handleDiscordMessagingAction(
+      "sendMessage",
+      {
+        to: "channel:123",
+        content: "hello",
+        mediaUrl: "/tmp/generated-image",
+        filename: "image.png",
+      },
+      enableAllActions,
+    );
+    expect(sendMessageDiscord).toHaveBeenCalledWith(
+      "channel:123",
+      "hello",
+      expect.objectContaining({
+        mediaUrl: "/tmp/generated-image",
+        filename: "image.png",
+      }),
+    );
+  });
+
   it("rejects voice messages that include content", async () => {
     await expect(
       handleDiscordMessagingAction(

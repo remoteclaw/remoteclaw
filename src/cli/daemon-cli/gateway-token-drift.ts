@@ -1,8 +1,8 @@
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { resolveGatewayCredentialsFromConfig } from "../../gateway/credentials.js";
 
 export function resolveGatewayTokenForDriftCheck(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   env?: NodeJS.ProcessEnv;
 }) {
   return resolveGatewayCredentialsFromConfig({

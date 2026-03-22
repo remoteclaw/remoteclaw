@@ -321,7 +321,7 @@ describe("maybeRepairGatewayServiceConfig", () => {
         });
         mocks.install.mockResolvedValue(undefined);
 
-        const cfg: OpenClawConfig = {
+        const cfg: RemoteClawConfig = {
           gateway: {},
         };
 

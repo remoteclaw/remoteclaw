@@ -230,6 +230,9 @@ export async function maybeRepairGatewayServiceConfig(
     expectedGatewayToken,
   });
   const serviceToken = readEmbeddedGatewayToken(command);
+  // In the fork, gateway.auth.token is always a plain string (no SecretRef support),
+  // so this guard is never true. Upstream had `isSecretRef(cfg.gateway?.auth?.token)`.
+  const tokenRefConfigured = false;
   if (tokenRefConfigured && serviceToken) {
     audit.issues.push({
       code: SERVICE_AUDIT_CODES.gatewayTokenMismatch,

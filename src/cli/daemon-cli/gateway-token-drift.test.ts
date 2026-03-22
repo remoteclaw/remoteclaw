@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { resolveGatewayTokenForDriftCheck } from "./gateway-token-drift.js";
 
 describe("resolveGatewayTokenForDriftCheck", () => {
@@ -12,7 +12,7 @@ describe("resolveGatewayTokenForDriftCheck", () => {
             token: "config-token",
           },
         },
-      } as OpenClawConfig,
+      } as RemoteClawConfig,
       env: {
         REMOTECLAW_GATEWAY_TOKEN: "env-token",
       } as NodeJS.ProcessEnv,

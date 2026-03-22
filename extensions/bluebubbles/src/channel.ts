@@ -99,80 +99,39 @@ const meta = {
   preferOver: ["imessage"],
 };
 
-export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = {
-  id: "bluebubbles",
-  meta,
-  capabilities: {
-    chatTypes: ["direct", "group"],
-    media: true,
-    reactions: true,
-    edit: true,
-    unsend: true,
-    reply: true,
-    effects: true,
-    groupManagement: true,
-  },
-  groups: {
-    resolveRequireMention: resolveBlueBubblesGroupRequireMention,
-    resolveToolPolicy: resolveBlueBubblesGroupToolPolicy,
-  },
-  threading: {
-    buildToolContext: ({ context, hasRepliedRef }) => ({
-      currentChannelId: context.To?.trim() || undefined,
-      currentThreadTs: context.ReplyToIdFull ?? context.ReplyToId,
-      hasRepliedRef,
-    }),
-  },
-  reload: { configPrefixes: ["channels.bluebubbles"] },
-  configSchema: buildChannelConfigSchema(BlueBubblesConfigSchema),
-  setupWizard: blueBubblesSetupWizard,
-  config: {
-    ...bluebubblesConfigBase,
-    isConfigured: (account) => account.configured,
-    describeAccount: (account): ChannelAccountSnapshot => ({
-      accountId: account.accountId,
-      name: account.name,
-      enabled: account.enabled,
-      configured: account.configured,
-      baseUrl: account.baseUrl,
-    }),
-    ...bluebubblesConfigAccessors,
-  },
-  actions: bluebubblesMessageActions,
-  security: {
-    resolveDmPolicy: resolveBlueBubblesDmPolicy,
-    collectWarnings: ({ account }) => {
-      const groupPolicy = account.config.groupPolicy ?? "allowlist";
-      return collectOpenGroupPolicyRestrictSendersWarnings({
-        groupPolicy,
-        surface: "BlueBubbles groups",
-        openScope: "any member",
-        groupPolicyPath: "channels.bluebubbles.groupPolicy",
-        groupAllowFromPath: "channels.bluebubbles.groupAllowFrom",
-        mentionGated: false,
-      });
-    },
-  },
-  messaging: {
-    normalizeTarget: normalizeBlueBubblesMessagingTarget,
-    resolveOutboundSessionRoute: (params) => resolveBlueBubblesOutboundSessionRoute(params),
-    targetResolver: {
-      looksLikeId: looksLikeBlueBubblesExplicitTargetId,
-      hint: "<handle|chat_guid:GUID|chat_id:ID|chat_identifier:ID>",
-      resolveTarget: async ({ normalized }) => {
-        const to = normalized?.trim();
-        if (!to) {
-          return null;
-        }
-        const chatType = inferBlueBubblesTargetChatType(to);
-        if (!chatType) {
-          return null;
-        }
-        return {
-          to,
-          kind: chatType === "direct" ? "user" : "group",
-          source: "normalized" as const,
-        };
+export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount, BlueBubblesProbe> =
+  createChatChannelPlugin<ResolvedBlueBubblesAccount, BlueBubblesProbe>({
+    base: {
+      id: "bluebubbles",
+      meta,
+      capabilities: {
+        chatTypes: ["direct", "group"],
+        media: true,
+        reactions: true,
+        edit: true,
+        unsend: true,
+        reply: true,
+        effects: true,
+        groupManagement: true,
+      },
+      groups: {
+        resolveRequireMention: resolveBlueBubblesGroupRequireMention,
+        resolveToolPolicy: resolveBlueBubblesGroupToolPolicy,
+      },
+      reload: { configPrefixes: ["channels.bluebubbles"] },
+      configSchema: buildChannelConfigSchema(BlueBubblesConfigSchema),
+      setupWizard: blueBubblesSetupWizard,
+      config: {
+        ...bluebubblesConfigAdapter,
+        isConfigured: (account) => account.configured,
+        describeAccount: (account): ChannelAccountSnapshot =>
+          describeAccountSnapshot({
+            account,
+            configured: account.configured,
+            extra: {
+              baseUrl: account.baseUrl,
+            },
+          }),
       },
     },
     formatTargetDisplay: ({ target, display }) => {
@@ -381,24 +340,4 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = {
         lastOutboundAt: runtime?.lastOutboundAt ?? null,
       };
     },
-  },
-  gateway: {
-    startAccount: async (ctx) => {
-      const account = ctx.account;
-      const webhookPath = resolveWebhookPathFromConfig(account.config);
-      ctx.setStatus({
-        accountId: account.accountId,
-        baseUrl: account.baseUrl,
-      });
-      ctx.log?.info(`[${account.accountId}] starting provider (webhook=${webhookPath})`);
-      return monitorBlueBubblesProvider({
-        account,
-        config: ctx.cfg,
-        runtime: ctx.runtime,
-        abortSignal: ctx.abortSignal,
-        statusSink: (patch) => ctx.setStatus({ accountId: ctx.accountId, ...patch }),
-        webhookPath,
-      });
-    },
-  },
-};
+  });

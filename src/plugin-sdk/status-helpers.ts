@@ -96,12 +96,59 @@ export function buildComputedAccountStatusSnapshot(params: {
   probe?: unknown;
 }) {
   const { accountId, name, enabled, configured, runtime, probe } = params;
-  return buildBaseAccountStatusSnapshot({
-    account: {
-      accountId,
-      name,
-      enabled,
-      configured,
+  return buildBaseAccountStatusSnapshot(
+    {
+      account: {
+        accountId,
+        name,
+        enabled,
+        configured,
+      },
+      runtime,
+      probe,
+    },
+    extra,
+  );
+}
+
+/** Build a full status adapter when only configured/extras vary per account. */
+export function createComputedAccountStatusAdapter<
+  ResolvedAccount,
+  Probe = unknown,
+  Audit = unknown,
+  TExtra extends StatusSnapshotExtra = StatusSnapshotExtra,
+>(
+  options: Omit<ChannelStatusAdapter<ResolvedAccount, Probe, Audit>, "buildAccountSnapshot"> & {
+    resolveAccountSnapshot: (
+      params: ComputedAccountStatusAdapterParams<ResolvedAccount, Probe, Audit>,
+    ) => ComputedAccountStatusBase & { extra?: TExtra };
+  },
+): ChannelStatusAdapter<ResolvedAccount, Probe, Audit> {
+  return {
+    defaultRuntime: options.defaultRuntime,
+    buildChannelSummary: options.buildChannelSummary,
+    probeAccount: options.probeAccount,
+    formatCapabilitiesProbe: options.formatCapabilitiesProbe,
+    auditAccount: options.auditAccount,
+    buildCapabilitiesDiagnostics: options.buildCapabilitiesDiagnostics,
+    logSelfId: options.logSelfId,
+    resolveAccountState: options.resolveAccountState,
+    collectStatusIssues: options.collectStatusIssues,
+    buildAccountSnapshot: (params) => {
+      const typedParams = params as ComputedAccountStatusAdapterParams<
+        ResolvedAccount,
+        Probe,
+        Audit
+      >;
+      const { extra, ...snapshot } = options.resolveAccountSnapshot(typedParams);
+      return buildComputedAccountStatusSnapshot(
+        {
+          ...snapshot,
+          runtime: typedParams.runtime,
+          probe: typedParams.probe,
+        },
+        extra,
+      );
     },
     runtime,
     probe,

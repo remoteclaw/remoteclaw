@@ -431,6 +431,8 @@ function createTelegramNonIdempotentRequestWithDiag(params: {
   account: ResolvedTelegramAccount;
   retry?: RetryConfig;
   verbose?: boolean;
+  shouldRetry?: (err: unknown) => boolean;
+  strictShouldRetry?: boolean;
   useApiErrorLogging?: boolean;
 }): TelegramRequestWithDiag {
   return createTelegramRequestWithDiag({
@@ -439,7 +441,9 @@ function createTelegramNonIdempotentRequestWithDiag(params: {
     retry: params.retry,
     verbose: params.verbose,
     useApiErrorLogging: params.useApiErrorLogging,
-    shouldRetry: (err) => isRecoverableTelegramNetworkError(err, { context: "send" }),
+    shouldRetry:
+      params.shouldRetry ?? ((err) => isRecoverableTelegramNetworkError(err, { context: "send" })),
+    ...(params.strictShouldRetry ? { strictShouldRetry: true } : {}),
   });
 }
 

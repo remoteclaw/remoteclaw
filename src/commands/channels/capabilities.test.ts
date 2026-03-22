@@ -3,11 +3,16 @@ process.env.NO_COLOR = "1";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getChannelPlugin, listChannelPlugins } from "../../channels/plugins/index.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.js";
-import { fetchSlackScopes } from "../../slack/scopes.js";
+import { DEFAULT_ACCOUNT_ID } from "../../routing/session-key.js";
 import { channelsCapabilitiesCommand } from "./capabilities.js";
 
 const logs: string[] = [];
 const errors: string[] = [];
+const resolveDefaultAccountId = () => DEFAULT_ACCOUNT_ID;
+const mocks = vi.hoisted(() => ({
+  writeConfigFile: vi.fn(),
+  resolveInstallableChannelPlugin: vi.fn(),
+}));
 
 vi.mock("./shared.js", () => ({
   requireValidConfig: vi.fn(async () => ({ channels: {} })),
@@ -63,7 +68,7 @@ function buildPlugin(params: {
     config: {
       listAccountIds: () => ["default"],
       resolveAccount: () => params.account ?? { accountId: "default" },
-      defaultAccountId: () => "default",
+      defaultAccountId: resolveDefaultAccountId,
       isConfigured: () => true,
       isEnabled: () => true,
     },

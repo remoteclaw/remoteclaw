@@ -19,7 +19,6 @@ import {
   DEFAULT_GROUP_HISTORY_LIMIT,
   recordPendingHistoryEntryIfEnabled,
   isDangerousNameMatchingEnabled,
-  parseStrictPositiveInteger,
   registerPluginHttpRoute,
   resolveControlCommandGate,
   readStoreAllowFromForDmPolicy,
@@ -30,6 +29,7 @@ import {
   warnMissingProviderGroupPolicyFallbackOnce,
   type HistoryEntry,
 } from "remoteclaw/plugin-sdk";
+import { parseStrictPositiveInteger } from "remoteclaw/plugin-sdk/mattermost";
 import { getMattermostRuntime } from "../runtime.js";
 import { resolveMattermostAccount } from "./accounts.js";
 import {

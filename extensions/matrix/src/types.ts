@@ -25,6 +25,8 @@ export type MatrixRoomConfig = {
   autoReply?: boolean;
   /** Optional allowlist for room senders (matrix user IDs). */
   users?: Array<string | number>;
+  /** Optional skills for this room. */
+  skills?: string[];
   /** Optional system prompt snippet for this room. */
   systemPrompt?: string;
 };

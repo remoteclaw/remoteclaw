@@ -265,9 +265,6 @@ export function createPluginRuntimeMock(overrides: DeepPartial<PluginRuntime> = 
       getSession: vi.fn() as unknown as PluginRuntime["subagent"]["getSession"],
       deleteSession: vi.fn() as unknown as PluginRuntime["subagent"]["deleteSession"],
     },
-    state: {
-      resolveStateDir: vi.fn(() => "/tmp/remoteclaw"),
-    },
   };
 
   return mergeDeep(base, overrides);

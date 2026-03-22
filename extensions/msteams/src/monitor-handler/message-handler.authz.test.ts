@@ -69,7 +69,7 @@ describe("msteams monitor handler authz", () => {
           groupAllowFrom: [],
         },
       },
-    } as OpenClawConfig);
+    } as RemoteClawConfig);
 
     const handler = createMSTeamsMessageHandler(deps);
     await handler({
@@ -117,7 +117,7 @@ describe("msteams monitor handler authz", () => {
           },
         },
       },
-    } as OpenClawConfig);
+    } as RemoteClawConfig);
 
     const handler = createMSTeamsMessageHandler(deps);
     await handler({

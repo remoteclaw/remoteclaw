@@ -96,16 +96,16 @@ describe("plugin-sdk subpath exports", () => {
   });
 
   it("keeps the newly added bundled plugin-sdk contracts available", async () => {
-    const bluebubbles = await import("openclaw/plugin-sdk/bluebubbles");
+    const bluebubbles = await import("remoteclaw/plugin-sdk/bluebubbles");
     expect(typeof bluebubbles.parseFiniteNumber).toBe("function");
 
-    const mattermost = await import("openclaw/plugin-sdk/mattermost");
+    const mattermost = await import("remoteclaw/plugin-sdk/mattermost");
     expect(typeof mattermost.parseStrictPositiveInteger).toBe("function");
 
-    const nextcloudTalk = await import("openclaw/plugin-sdk/nextcloud-talk");
+    const nextcloudTalk = await import("remoteclaw/plugin-sdk/nextcloud-talk");
     expect(typeof nextcloudTalk.waitForAbortSignal).toBe("function");
 
-    const twitch = await import("openclaw/plugin-sdk/twitch");
+    const twitch = await import("remoteclaw/plugin-sdk/twitch");
     expect(typeof twitch.DEFAULT_ACCOUNT_ID).toBe("string");
     expect(typeof twitch.normalizeAccountId).toBe("function");
   });

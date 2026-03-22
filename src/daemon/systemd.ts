@@ -76,6 +76,8 @@ export async function readSystemdServiceExecStart(
         execStart = line.slice("ExecStart=".length).trim();
       } else if (line.startsWith("WorkingDirectory=")) {
         workingDirectory = line.slice("WorkingDirectory=".length).trim();
+      } else if (line.startsWith("EnvironmentFile=")) {
+        environmentFileSpecs.push(line.slice("EnvironmentFile=".length).trim());
       } else if (line.startsWith("Environment=")) {
         const raw = line.slice("Environment=".length).trim();
         const parsed = parseSystemdEnvAssignment(raw);

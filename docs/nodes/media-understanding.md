@@ -333,7 +333,7 @@ When `mode: "all"`, outputs are labeled `[Image 1/2]`, `[Audio 2/2]`, etc.
         models: [
           {
             provider: "google",
-            model: "gemini-3-pro-preview",
+            model: "gemini-3.1-pro-preview",
             capabilities: ["image", "video", "audio"],
           },
         ],
@@ -342,7 +342,7 @@ When `mode: "all"`, outputs are labeled `[Image 1/2]`, `[Audio 2/2]`, etc.
         models: [
           {
             provider: "google",
-            model: "gemini-3-pro-preview",
+            model: "gemini-3.1-pro-preview",
             capabilities: ["image", "video", "audio"],
           },
         ],
@@ -351,7 +351,7 @@ When `mode: "all"`, outputs are labeled `[Image 1/2]`, `[Audio 2/2]`, etc.
         models: [
           {
             provider: "google",
-            model: "gemini-3-pro-preview",
+            model: "gemini-3.1-pro-preview",
             capabilities: ["image", "video", "audio"],
           },
         ],

@@ -1,7 +1,7 @@
 import {
   buildAccountScopedDmSecurityPolicy,
-  collectOpenGroupPolicyRestrictSendersWarnings,
   createScopedAccountConfigAccessors,
+  collectAllowlistProviderRestrictSendersWarnings,
 } from "remoteclaw/plugin-sdk";
 import {
   applyAccountNameToChannelSection,
@@ -23,8 +23,6 @@ import {
   PAIRING_APPROVED_MESSAGE,
   resolveChannelMediaMaxBytes,
   resolveDefaultSignalAccountId,
-  resolveAllowlistProviderRuntimeGroupPolicy,
-  resolveDefaultGroupPolicy,
   resolveOptionalConfigString,
   resolveSignalAccount,
   setAccountEnabledInConfigSection,
@@ -173,14 +171,10 @@ export const signalPlugin: ChannelPlugin<ResolvedSignalAccount> = {
       });
     },
     collectWarnings: ({ account, cfg }) => {
-      const defaultGroupPolicy = resolveDefaultGroupPolicy(cfg);
-      const { groupPolicy } = resolveAllowlistProviderRuntimeGroupPolicy({
+      return collectAllowlistProviderRestrictSendersWarnings({
+        cfg,
         providerConfigPresent: cfg.channels?.signal !== undefined,
-        groupPolicy: account.config.groupPolicy,
-        defaultGroupPolicy,
-      });
-      return collectOpenGroupPolicyRestrictSendersWarnings({
-        groupPolicy,
+        configuredGroupPolicy: account.config.groupPolicy,
         surface: "Signal groups",
         openScope: "any member",
         groupPolicyPath: "channels.signal.groupPolicy",

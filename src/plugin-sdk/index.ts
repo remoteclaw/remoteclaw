@@ -496,6 +496,7 @@ export {
   buildOpenGroupPolicyNoRouteAllowlistWarning,
   buildOpenGroupPolicyRestrictSendersWarning,
   buildOpenGroupPolicyWarning,
+  collectAllowlistProviderRestrictSendersWarnings,
   collectOpenGroupPolicyConfiguredRouteWarnings,
   collectOpenGroupPolicyRestrictSendersWarnings,
   collectOpenGroupPolicyRouteAllowlistWarnings,

@@ -1,4 +1,4 @@
-import { collectOpenGroupPolicyRestrictSendersWarnings } from "remoteclaw/plugin-sdk";
+import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk";
 import type {
   ChannelMessageActionName,
   ChannelPlugin,
@@ -13,8 +13,6 @@ import {
   formatAllowFromLowercase,
   MSTeamsConfigSchema,
   PAIRING_APPROVED_MESSAGE,
-  resolveAllowlistProviderRuntimeGroupPolicy,
-  resolveDefaultGroupPolicy,
 } from "remoteclaw/plugin-sdk";
 import { listMSTeamsDirectoryGroupsLive, listMSTeamsDirectoryPeersLive } from "./directory-live.js";
 import { msteamsOnboardingAdapter } from "./onboarding.js";
@@ -132,14 +130,10 @@ export const msteamsPlugin: ChannelPlugin<ResolvedMSTeamsAccount> = {
   },
   security: {
     collectWarnings: ({ cfg }) => {
-      const defaultGroupPolicy = resolveDefaultGroupPolicy(cfg);
-      const { groupPolicy } = resolveAllowlistProviderRuntimeGroupPolicy({
+      return collectAllowlistProviderRestrictSendersWarnings({
+        cfg,
         providerConfigPresent: cfg.channels?.msteams !== undefined,
-        groupPolicy: cfg.channels?.msteams?.groupPolicy,
-        defaultGroupPolicy,
-      });
-      return collectOpenGroupPolicyRestrictSendersWarnings({
-        groupPolicy,
+        configuredGroupPolicy: cfg.channels?.msteams?.groupPolicy,
         surface: "MS Teams groups",
         openScope: "any member",
         groupPolicyPath: "channels.msteams.groupPolicy",

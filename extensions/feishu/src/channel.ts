@@ -1,4 +1,4 @@
-import { collectOpenGroupPolicyRestrictSendersWarnings } from "remoteclaw/plugin-sdk";
+import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk";
 import type { ChannelMeta, ChannelPlugin, ClawdbotConfig } from "remoteclaw/plugin-sdk";
 import {
   buildBaseChannelStatusSummary,
@@ -9,8 +9,6 @@ import {
   formatAllowFromLowercase,
   mapAllowFromEntries,
   PAIRING_APPROVED_MESSAGE,
-  resolveAllowlistProviderRuntimeGroupPolicy,
-  resolveDefaultGroupPolicy,
 } from "remoteclaw/plugin-sdk";
 import {
   resolveFeishuAccount,
@@ -236,14 +234,10 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
     collectWarnings: ({ cfg, accountId }) => {
       const account = resolveFeishuAccount({ cfg, accountId });
       const feishuCfg = account.config;
-      const defaultGroupPolicy = resolveDefaultGroupPolicy(cfg);
-      const { groupPolicy } = resolveAllowlistProviderRuntimeGroupPolicy({
+      return collectAllowlistProviderRestrictSendersWarnings({
+        cfg,
         providerConfigPresent: cfg.channels?.feishu !== undefined,
-        groupPolicy: feishuCfg?.groupPolicy,
-        defaultGroupPolicy,
-      });
-      return collectOpenGroupPolicyRestrictSendersWarnings({
-        groupPolicy,
+        configuredGroupPolicy: feishuCfg?.groupPolicy,
         surface: `Feishu[${account.accountId}] groups`,
         openScope: "any member",
         groupPolicyPath: "channels.feishu.groupPolicy",

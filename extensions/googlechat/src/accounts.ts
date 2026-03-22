@@ -1,10 +1,5 @@
-import {
-  createAccountListHelpers,
-  DEFAULT_ACCOUNT_ID,
-  normalizeAccountId,
-  resolveAccountEntry,
-  resolveMergedAccountConfig,
-} from "remoteclaw/plugin-sdk/account-resolution";
+import { createAccountListHelpers, mergeAccountConfig } from "remoteclaw/plugin-sdk/account-helpers";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
 import { isSecretRef, type RemoteClawConfig } from "remoteclaw/plugin-sdk/core";
 import type { GoogleChatAccountConfig } from "./types.config.js";
 
@@ -34,17 +29,13 @@ function mergeGoogleChatAccountConfig(
   accountId: string,
 ): GoogleChatAccountConfig {
   const raw = cfg.channels?.["googlechat"] ?? {};
-  const base = resolveMergedAccountConfig<GoogleChatAccountConfig>({
+  const base = mergeAccountConfig<GoogleChatAccountConfig>({
     channelConfig: raw as GoogleChatAccountConfig,
-    accounts: raw.accounts as Record<string, Partial<GoogleChatAccountConfig>> | undefined,
-    accountId,
+    accountConfig: undefined,
     omitKeys: ["defaultAccount"],
   });
-  const defaultAccountConfig =
-    resolveAccountEntry(
-      raw.accounts as Record<string, GoogleChatAccountConfig> | undefined,
-      DEFAULT_ACCOUNT_ID,
-    ) ?? {};
+  const defaultAccountConfig = resolveAccountConfig(cfg, DEFAULT_ACCOUNT_ID) ?? {};
+  const account = resolveAccountConfig(cfg, accountId) ?? {};
   if (accountId === DEFAULT_ACCOUNT_ID) {
     return base;
   }

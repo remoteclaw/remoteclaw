@@ -179,7 +179,7 @@ describe("resolveEffectiveToolPolicy", () => {
         profile: "messaging",
         exec: { host: "sandbox" },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const result = resolveEffectiveToolPolicy({ config: cfg });
     expect(result.profileAlsoAllow).toEqual(["exec", "process"]);
   });
@@ -190,7 +190,7 @@ describe("resolveEffectiveToolPolicy", () => {
         profile: "messaging",
         fs: { workspaceOnly: false },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const result = resolveEffectiveToolPolicy({ config: cfg });
     expect(result.profileAlsoAllow).toEqual(["read", "write", "edit"]);
   });
@@ -202,7 +202,7 @@ describe("resolveEffectiveToolPolicy", () => {
         alsoAllow: ["web_search"],
         exec: { host: "sandbox" },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const result = resolveEffectiveToolPolicy({ config: cfg });
     expect(result.profileAlsoAllow).toEqual(["web_search", "exec", "process"]);
   });
@@ -222,7 +222,7 @@ describe("resolveEffectiveToolPolicy", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const result = resolveEffectiveToolPolicy({ config: cfg, agentId: "coder" });
     expect(result.profileAlsoAllow).toEqual(["read", "write", "edit"]);
   });

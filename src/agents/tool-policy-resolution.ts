@@ -207,7 +207,7 @@ function resolveProviderToolPolicy(params: {
   return undefined;
 }
 
-function resolveExplicitProfileAlsoAllow(tools?: OpenClawConfig["tools"]): string[] | undefined {
+function resolveExplicitProfileAlsoAllow(tools?: RemoteClawConfig["tools"]): string[] | undefined {
   return Array.isArray(tools?.alsoAllow) ? tools.alsoAllow : undefined;
 }
 
@@ -216,7 +216,7 @@ function hasExplicitToolSection(section: unknown): boolean {
 }
 
 function resolveImplicitProfileAlsoAllow(params: {
-  globalTools?: OpenClawConfig["tools"];
+  globalTools?: RemoteClawConfig["tools"];
   agentTools?: AgentToolsConfig;
 }): string[] | undefined {
   const implicit = new Set<string>();

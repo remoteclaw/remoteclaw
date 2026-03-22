@@ -1,5 +1,11 @@
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
-import { createAccountListHelpers, type RemoteClawConfig } from "remoteclaw/plugin-sdk/googlechat";
+import {
+  createAccountListHelpers,
+  DEFAULT_ACCOUNT_ID,
+  normalizeAccountId,
+  resolveAccountEntry,
+  resolveMergedAccountConfig,
+} from "remoteclaw/plugin-sdk/account-resolution";
+import { isSecretRef, type RemoteClawConfig } from "remoteclaw/plugin-sdk/core";
 import type { GoogleChatAccountConfig } from "./types.config.js";
 
 export type GoogleChatCredentialSource = "file" | "inline" | "env" | "none";
@@ -23,27 +29,24 @@ const {
 } = createAccountListHelpers("googlechat");
 export { listGoogleChatAccountIds, resolveDefaultGoogleChatAccountId };
 
-function resolveAccountConfig(
-  cfg: RemoteClawConfig,
-  accountId: string,
-): GoogleChatAccountConfig | undefined {
-  const accounts = cfg.channels?.["googlechat"]?.accounts;
-  if (!accounts || typeof accounts !== "object") {
-    return undefined;
-  }
-  return accounts[accountId];
-}
-
 function mergeGoogleChatAccountConfig(
   cfg: RemoteClawConfig,
   accountId: string,
 ): GoogleChatAccountConfig {
   const raw = cfg.channels?.["googlechat"] ?? {};
-  const { accounts: _ignored, defaultAccount: _ignored2, ...base } = raw;
-  const defaultAccountConfig = resolveAccountConfig(cfg, DEFAULT_ACCOUNT_ID) ?? {};
-  const account = resolveAccountConfig(cfg, accountId) ?? {};
+  const base = resolveMergedAccountConfig<GoogleChatAccountConfig>({
+    channelConfig: raw as GoogleChatAccountConfig,
+    accounts: raw.accounts as Record<string, Partial<GoogleChatAccountConfig>> | undefined,
+    accountId,
+    omitKeys: ["defaultAccount"],
+  });
+  const defaultAccountConfig =
+    resolveAccountEntry(
+      raw.accounts as Record<string, GoogleChatAccountConfig> | undefined,
+      DEFAULT_ACCOUNT_ID,
+    ) ?? {};
   if (accountId === DEFAULT_ACCOUNT_ID) {
-    return { ...base, ...defaultAccountConfig } as GoogleChatAccountConfig;
+    return base;
   }
   const {
     enabled: _ignoredEnabled,
@@ -55,7 +58,7 @@ function mergeGoogleChatAccountConfig(
   } = defaultAccountConfig;
   // In multi-account setups, allow accounts.default to provide shared defaults
   // (for example webhook/audience fields) while preserving top-level and account overrides.
-  return { ...defaultAccountShared, ...base, ...account } as GoogleChatAccountConfig;
+  return { ...defaultAccountShared, ...base } as GoogleChatAccountConfig;
 }
 
 function parseServiceAccount(value: unknown): Record<string, unknown> | null {

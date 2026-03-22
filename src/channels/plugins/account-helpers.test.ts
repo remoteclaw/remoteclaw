@@ -231,6 +231,16 @@ describe("describeAccountSnapshot", () => {
       enabled: true,
       configured: undefined,
     });
+
+    it("can preserve configured defaults that are not present in accounts", () => {
+      const preserveDefault = createAccountListHelpers("testchannel", {
+        allowUnlistedDefaultAccount: true,
+      });
+
+      expect(preserveDefault.resolveDefaultAccountId(cfg({ default: {}, zeta: {} }, "ops"))).toBe(
+        "ops",
+      );
+    });
   });
 });
 

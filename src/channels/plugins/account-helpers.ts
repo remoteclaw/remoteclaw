@@ -7,8 +7,23 @@ import {
 
 export function createAccountListHelpers(
   channelKey: string,
-  options?: { normalizeAccountId?: (id: string) => string; allowUnlistedDefaultAccount?: boolean },
+  options?: { normalizeAccountId?: (id: string) => string },
 ) {
+  function resolveConfiguredDefaultAccountId(cfg: RemoteClawConfig): string | undefined {
+    const channel = cfg.channels?.[channelKey] as Record<string, unknown> | undefined;
+    const preferred = normalizeOptionalAccountId(
+      typeof channel?.defaultAccount === "string" ? channel.defaultAccount : undefined,
+    );
+    if (!preferred) {
+      return undefined;
+    }
+    const ids = listAccountIds(cfg);
+    if (ids.some((id) => normalizeAccountId(id) === preferred)) {
+      return preferred;
+    }
+    return undefined;
+  }
+
   function listConfiguredAccountIds(cfg: RemoteClawConfig): string[] {
     const channel = cfg.channels?.[channelKey];
     const accounts = (channel as Record<string, unknown> | undefined)?.accounts;
@@ -24,76 +39,41 @@ export function createAccountListHelpers(
   }
 
   function listAccountIds(cfg: RemoteClawConfig): string[] {
-    return listCombinedAccountIds({
-      configuredAccountIds: listConfiguredAccountIds(cfg),
-      fallbackAccountIdWhenEmpty: DEFAULT_ACCOUNT_ID,
-    });
+    const ids = listConfiguredAccountIds(cfg);
+    if (ids.length === 0) {
+      return [DEFAULT_ACCOUNT_ID];
+    }
+    return ids.toSorted((a, b) => a.localeCompare(b));
   }
 
   function resolveDefaultAccountId(cfg: RemoteClawConfig): string {
-    const channel = cfg.channels?.[channelKey] as Record<string, unknown> | undefined;
-    const rawPreferred = normalizeOptionalAccountId(
-      typeof channel?.defaultAccount === "string" ? channel.defaultAccount : undefined,
-    );
-    return resolveListedDefaultAccountId({
-      accountIds: listAccountIds(cfg),
-      configuredDefaultAccountId: rawPreferred,
-      allowUnlistedDefaultAccount: options?.allowUnlistedDefaultAccount,
-    });
+    const preferred = resolveConfiguredDefaultAccountId(cfg);
+    if (preferred) {
+      return preferred;
+    }
+    const ids = listAccountIds(cfg);
+    if (ids.includes(DEFAULT_ACCOUNT_ID)) {
+      return DEFAULT_ACCOUNT_ID;
+    }
+    return ids[0] ?? DEFAULT_ACCOUNT_ID;
   }
 
   return { listConfiguredAccountIds, listAccountIds, resolveDefaultAccountId };
 }
 
-export function listCombinedAccountIds(params: {
-  configuredAccountIds: Iterable<string>;
-  additionalAccountIds?: Iterable<string>;
-  implicitAccountId?: string | undefined;
-  fallbackAccountIdWhenEmpty?: string | undefined;
-}): string[] {
-  const ids = new Set<string>();
-
-  for (const id of params.configuredAccountIds) {
-    if (id) {
-      ids.add(id);
-    }
-  }
-  for (const id of params.additionalAccountIds ?? []) {
-    if (id) {
-      ids.add(id);
-    }
-  }
-  if (params.implicitAccountId) {
-    ids.add(params.implicitAccountId);
-  }
-
-  if (ids.size === 0 && params.fallbackAccountIdWhenEmpty) {
-    return [params.fallbackAccountIdWhenEmpty];
-  }
-  return [...ids].toSorted((a, b) => a.localeCompare(b));
-}
-
-export function resolveListedDefaultAccountId(params: {
-  accountIds: readonly string[];
-  configuredDefaultAccountId?: string | undefined;
-  allowUnlistedDefaultAccount?: boolean;
-  ambiguousFallbackAccountId?: string | undefined;
-  normalizeListedAccountId?: ((accountId: string) => string) | undefined;
-}): string {
-  const preferred = params.configuredDefaultAccountId;
-  const normalizeListedAccountId = params.normalizeListedAccountId ?? normalizeAccountId;
-  if (
-    preferred &&
-    (params.allowUnlistedDefaultAccount ||
-      params.accountIds.some((accountId) => normalizeListedAccountId(accountId) === preferred))
-  ) {
-    return preferred;
-  }
-  if (params.accountIds.includes(DEFAULT_ACCOUNT_ID)) {
-    return DEFAULT_ACCOUNT_ID;
-  }
-  if (params.ambiguousFallbackAccountId && params.accountIds.length > 1) {
-    return params.ambiguousFallbackAccountId;
-  }
-  return params.accountIds[0] ?? DEFAULT_ACCOUNT_ID;
+export function mergeAccountConfig<TConfig extends Record<string, unknown>>(params: {
+  channelConfig: TConfig | undefined;
+  accountConfig: Partial<TConfig> | undefined;
+  omitKeys?: string[];
+}): TConfig {
+  const omitKeys = new Set(["accounts", ...(params.omitKeys ?? [])]);
+  const base = Object.fromEntries(
+    Object.entries((params.channelConfig ?? {}) as Record<string, unknown>).filter(
+      ([key]) => !omitKeys.has(key),
+    ),
+  ) as TConfig;
+  return {
+    ...base,
+    ...params.accountConfig,
+  };
 }

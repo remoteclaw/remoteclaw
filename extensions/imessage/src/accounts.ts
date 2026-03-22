@@ -1,10 +1,11 @@
-import type { IMessageAccountConfig } from "remoteclaw/plugin-sdk/imessage";
 import {
-  type RemoteClawConfig,
   createAccountListHelpers,
+  mergeAccountConfig,
   normalizeAccountId,
   resolveAccountEntry,
-} from "../../../src/plugin-sdk-internal/accounts.js";
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/account-resolution";
+import type { IMessageAccountConfig } from "../runtime-api.js";
 
 export type ResolvedIMessageAccount = {
   accountId: string;
@@ -29,10 +30,10 @@ function mergeIMessageAccountConfig(
   cfg: RemoteClawConfig,
   accountId: string,
 ): IMessageAccountConfig {
-  const { accounts: _ignored, ...base } = (cfg.channels?.imessage ??
-    {}) as IMessageAccountConfig & { accounts?: unknown };
-  const account = resolveAccountConfig(cfg, accountId) ?? {};
-  return { ...base, ...account };
+  return mergeAccountConfig<IMessageAccountConfig>({
+    channelConfig: cfg.channels?.imessage as IMessageAccountConfig | undefined,
+    accountConfig: resolveAccountConfig(cfg, accountId),
+  });
 }
 
 export function resolveIMessageAccount(params: {

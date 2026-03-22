@@ -1,4 +1,5 @@
 import {
+  buildComputedAccountStatusSnapshot,
   buildChannelConfigSchema,
   collectStatusIssuesFromLastError,
   createDefaultChannelRuntimeState,
@@ -168,6 +169,7 @@ export const nostrPlugin: ChannelPlugin<ResolvedNostrAccount> = {
   status: {
     defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID),
     collectStatusIssues: (accounts) => collectStatusIssuesFromLastError("nostr", accounts),
+<<<<<<< HEAD
     buildChannelSummary: ({ snapshot }) => ({
       configured: snapshot.configured ?? false,
       publicKey: snapshot.publicKey ?? null,
@@ -190,6 +192,45 @@ export const nostrPlugin: ChannelPlugin<ResolvedNostrAccount> = {
       lastInboundAt: runtime?.lastInboundAt ?? null,
       lastOutboundAt: runtime?.lastOutboundAt ?? null,
     }),
+||||||| parent of ff6e0bed5f (refactor: finish remaining status helper dedupe)
+    buildChannelSummary: ({ snapshot }) =>
+      buildPassiveChannelStatusSummary(snapshot, {
+        publicKey: snapshot.publicKey ?? null,
+      }),
+    buildAccountSnapshot: ({ account, runtime }) => ({
+      accountId: account.accountId,
+      name: account.name,
+      enabled: account.enabled,
+      configured: account.configured,
+      publicKey: account.publicKey,
+      profile: account.profile,
+      running: runtime?.running ?? false,
+      lastStartAt: runtime?.lastStartAt ?? null,
+      lastStopAt: runtime?.lastStopAt ?? null,
+      lastError: runtime?.lastError ?? null,
+      ...buildTrafficStatusSummary(runtime),
+    }),
+=======
+    buildChannelSummary: ({ snapshot }) =>
+      buildPassiveChannelStatusSummary(snapshot, {
+        publicKey: snapshot.publicKey ?? null,
+      }),
+    buildAccountSnapshot: ({ account, runtime }) =>
+      buildComputedAccountStatusSnapshot(
+        {
+          accountId: account.accountId,
+          name: account.name,
+          enabled: account.enabled,
+          configured: account.configured,
+          runtime,
+        },
+        {
+          publicKey: account.publicKey,
+          profile: account.profile,
+          ...buildTrafficStatusSummary(runtime),
+        },
+      ),
+>>>>>>> ff6e0bed5f (refactor: finish remaining status helper dedupe)
   },
 
   gateway: {

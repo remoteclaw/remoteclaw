@@ -29,6 +29,7 @@ export function createDefaultChannelRuntimeState<T extends Record<string, unknow
   };
 }
 
+<<<<<<< HEAD
 export function buildBaseChannelStatusSummary(snapshot: {
   configured?: boolean | null;
   running?: boolean | null;
@@ -36,8 +37,31 @@ export function buildBaseChannelStatusSummary(snapshot: {
   lastStopAt?: number | null;
   lastError?: string | null;
 }) {
+||||||| parent of ff6e0bed5f (refactor: finish remaining status helper dedupe)
+/** Normalize a channel-level status summary so missing lifecycle fields become explicit nulls. */
+export function buildBaseChannelStatusSummary(snapshot: {
+  configured?: boolean | null;
+  running?: boolean | null;
+  lastStartAt?: number | null;
+  lastStopAt?: number | null;
+  lastError?: string | null;
+}) {
+=======
+/** Normalize a channel-level status summary so missing lifecycle fields become explicit nulls. */
+export function buildBaseChannelStatusSummary<TExtra extends StatusSnapshotExtra>(
+  snapshot: {
+    configured?: boolean | null;
+    running?: boolean | null;
+    lastStartAt?: number | null;
+    lastStopAt?: number | null;
+    lastError?: string | null;
+  },
+  extra?: TExtra,
+) {
+>>>>>>> ff6e0bed5f (refactor: finish remaining status helper dedupe)
   return {
     configured: snapshot.configured ?? false,
+    ...(extra ?? ({} as TExtra)),
     running: snapshot.running ?? false,
     lastStartAt: snapshot.lastStartAt ?? null,
     lastStopAt: snapshot.lastStopAt ?? null,
@@ -58,8 +82,7 @@ export function buildProbeChannelStatusSummary<TExtra extends Record<string, unk
   extra?: TExtra,
 ) {
   return {
-    ...buildBaseChannelStatusSummary(snapshot),
-    ...(extra ?? ({} as TExtra)),
+    ...buildBaseChannelStatusSummary(snapshot, extra),
     probe: snapshot.probe,
     lastProbeAt: snapshot.lastProbeAt ?? null,
   };

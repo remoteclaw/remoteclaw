@@ -2,7 +2,6 @@ import {
   buildAccountScopedDmSecurityPolicy,
   buildOpenGroupPolicyWarning,
   createScopedAccountConfigAccessors,
-  formatNormalizedAllowFromEntries,
 } from "remoteclaw/plugin-sdk";
 import {
   buildBaseAccountStatusSnapshot,

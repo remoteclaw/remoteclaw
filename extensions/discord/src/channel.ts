@@ -2,7 +2,6 @@ import {
   buildAccountScopedDmSecurityPolicy,
   collectOpenGroupPolicyConfiguredRouteWarnings,
   createScopedAccountConfigAccessors,
-  formatAllowFromLowercase,
 } from "remoteclaw/plugin-sdk";
 import {
   applyAccountNameToChannelSection,

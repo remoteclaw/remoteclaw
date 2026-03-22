@@ -1,18 +1,6 @@
 import {
   buildAccountScopedDmSecurityPolicy,
   mapAllowFromEntries,
-} from "openclaw/plugin-sdk/compat";
-import type {
-  ChannelAccountSnapshot,
-  ChannelDirectoryEntry,
-  ChannelDock,
-  ChannelGroupContext,
-  ChannelMessageActionAdapter,
-  ChannelPlugin,
-  OpenClawConfig,
-  GroupToolPolicyConfig,
-} from "openclaw/plugin-sdk/zalouser";
-import {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,
   buildChannelSendResult,
@@ -27,7 +15,15 @@ import {
   normalizeAccountId,
   sendPayloadWithChunkedTextAndMedia,
   setAccountEnabledInConfigSection,
-} from "openclaw/plugin-sdk/zalouser";
+  type ChannelAccountSnapshot,
+  type ChannelDirectoryEntry,
+  type ChannelDock,
+  type ChannelGroupContext,
+  type ChannelMessageActionAdapter,
+  type ChannelPlugin,
+  type RemoteClawConfig,
+  type GroupToolPolicyConfig,
+} from "remoteclaw/plugin-sdk";
 import {
   listZalouserAccountIds,
   resolveDefaultZalouserAccountId,

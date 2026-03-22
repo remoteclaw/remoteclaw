@@ -1112,7 +1112,7 @@ describe("resolveOutboundSessionRoute", () => {
 
   it("uses resolved Discord user targets to route bare numeric ids as DMs", async () => {
     const route = await resolveOutboundSessionRoute({
-      cfg: { session: { dmScope: "per-channel-peer" } } as OpenClawConfig,
+      cfg: { session: { dmScope: "per-channel-peer" } } as RemoteClawConfig,
       channel: "discord",
       agentId: "main",
       target: "123",
@@ -1134,7 +1134,7 @@ describe("resolveOutboundSessionRoute", () => {
   it("rejects bare numeric Discord targets when the caller has no kind hint", async () => {
     await expect(
       resolveOutboundSessionRoute({
-        cfg: { session: { dmScope: "per-channel-peer" } } as OpenClawConfig,
+        cfg: { session: { dmScope: "per-channel-peer" } } as RemoteClawConfig,
         channel: "discord",
         agentId: "main",
         target: "123",

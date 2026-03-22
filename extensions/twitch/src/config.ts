@@ -1,4 +1,5 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
+import { listCombinedAccountIds } from "remoteclaw/plugin-sdk/account-resolution";
 import type { TwitchAccountConfig } from "./types.js";
 
 /**
@@ -94,13 +95,6 @@ export function listAccountIds(cfg: RemoteClawConfig): string[] {
   const twitchRaw = twitch as Record<string, unknown> | undefined;
   const accountMap = twitchRaw?.accounts as Record<string, unknown> | undefined;
 
-  const ids: string[] = [];
-
-  // Add explicit accounts
-  if (accountMap) {
-    ids.push(...Object.keys(accountMap));
-  }
-
   // Add implicit "default" if base-level config exists and "default" not already present
   const hasBaseLevelConfig =
     twitchRaw &&
@@ -108,9 +102,8 @@ export function listAccountIds(cfg: RemoteClawConfig): string[] {
       typeof twitchRaw.accessToken === "string" ||
       typeof twitchRaw.channel === "string");
 
-  if (hasBaseLevelConfig && !ids.includes(DEFAULT_ACCOUNT_ID)) {
-    ids.push(DEFAULT_ACCOUNT_ID);
-  }
-
-  return ids;
+  return listCombinedAccountIds({
+    configuredAccountIds: Object.keys(accountMap ?? {}),
+    implicitAccountId: hasBaseLevelConfig ? DEFAULT_ACCOUNT_ID : undefined,
+  });
 }

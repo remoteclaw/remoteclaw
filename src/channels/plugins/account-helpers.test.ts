@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { normalizeAccountId } from "../../routing/session-key.js";
-import { createAccountListHelpers } from "./account-helpers.js";
+import {
+  createAccountListHelpers,
+  listCombinedAccountIds,
+  resolveListedDefaultAccountId,
+} from "./account-helpers.js";
 
 const { listConfiguredAccountIds, listAccountIds, resolveDefaultAccountId } =
   createAccountListHelpers("testchannel");
@@ -107,5 +111,83 @@ describe("createAccountListHelpers", () => {
     it('returns "default" for empty config', () => {
       expect(resolveDefaultAccountId({} as RemoteClawConfig)).toBe("default");
     });
+
+    it("can preserve configured defaults that are not present in accounts", () => {
+      const preserveDefault = createAccountListHelpers("testchannel", {
+        allowUnlistedDefaultAccount: true,
+      });
+
+      expect(preserveDefault.resolveDefaultAccountId(cfg({ default: {}, zeta: {} }, "ops"))).toBe(
+        "ops",
+      );
+    });
+  });
+});
+
+describe("listCombinedAccountIds", () => {
+  it("combines configured, additional, and implicit ids once", () => {
+    expect(
+      listCombinedAccountIds({
+        configuredAccountIds: ["work", "alerts"],
+        additionalAccountIds: ["default", "alerts"],
+        implicitAccountId: "ops",
+      }),
+    ).toEqual(["alerts", "default", "ops", "work"]);
+  });
+
+  it("uses the fallback id when no accounts are present", () => {
+    expect(
+      listCombinedAccountIds({
+        configuredAccountIds: [],
+        fallbackAccountIdWhenEmpty: "default",
+      }),
+    ).toEqual(["default"]);
+  });
+});
+
+describe("resolveListedDefaultAccountId", () => {
+  it("prefers the configured default when present in the listed ids", () => {
+    expect(
+      resolveListedDefaultAccountId({
+        accountIds: ["alerts", "work"],
+        configuredDefaultAccountId: "work",
+      }),
+    ).toBe("work");
+  });
+
+  it("matches configured defaults against normalized listed ids", () => {
+    expect(
+      resolveListedDefaultAccountId({
+        accountIds: ["Router D"],
+        configuredDefaultAccountId: "router-d",
+      }),
+    ).toBe("router-d");
+  });
+
+  it("prefers the default account id when listed", () => {
+    expect(
+      resolveListedDefaultAccountId({
+        accountIds: ["default", "work"],
+      }),
+    ).toBe("default");
+  });
+
+  it("can preserve an unlisted configured default", () => {
+    expect(
+      resolveListedDefaultAccountId({
+        accountIds: ["default", "work"],
+        configuredDefaultAccountId: "ops",
+        allowUnlistedDefaultAccount: true,
+      }),
+    ).toBe("ops");
+  });
+
+  it("supports an explicit fallback id for ambiguous multi-account setups", () => {
+    expect(
+      resolveListedDefaultAccountId({
+        accountIds: ["alerts", "work"],
+        ambiguousFallbackAccountId: "default",
+      }),
+    ).toBe("default");
   });
 });

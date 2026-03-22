@@ -28,7 +28,9 @@ import {
 } from "./service/timer.js";
 import type { CronJob, CronJobState } from "./types.js";
 
-const FAST_TIMEOUT_SECONDS = 0.0025;
+// Must be >= 1 to survive Math.floor in normalizeCronJobCreate (added by
+// upstream e66c418c4 — normalize legacy delivery at ingress).
+const FAST_TIMEOUT_SECONDS = 1;
 
 describe("Cron issue regressions", () => {
   const { makeStorePath } = setupCronIssueRegressionFixtures();

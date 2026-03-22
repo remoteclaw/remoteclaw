@@ -56,7 +56,7 @@ export function createDiscordRestClient(
   cfg?: ReturnType<typeof loadConfig>,
 ) {
   const resolvedCfg = opts.cfg ?? cfg ?? loadConfig();
-  const explicitToken = normalizeDiscordToken(opts.token, "channels.discord.token");
+  const explicitToken = normalizeDiscordToken(opts.token);
   const account = explicitToken
     ? resolveAccountWithoutToken({ cfg: resolvedCfg, accountId: opts.accountId })
     : resolveDiscordAccount({ cfg: resolvedCfg, accountId: opts.accountId });

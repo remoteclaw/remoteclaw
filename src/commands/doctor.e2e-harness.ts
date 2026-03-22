@@ -140,9 +140,8 @@ function createLegacyStateMigrationDetectionResult(params?: {
       hasLegacy: false,
     },
     pairingAllowFrom: {
-      legacyTelegramPath: "",
-      targetTelegramPath: "",
       hasLegacyTelegram: false,
+      copyPlans: [],
     },
     preview: params?.preview ?? [],
   };

@@ -1,7 +1,7 @@
 import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
 import {
-  createScopedAccountConfigAccessors,
-  createScopedChannelConfigBase,
+  adaptScopedAccountAccessor,
+  createScopedChannelConfigAdapter,
   createScopedDmSecurityResolver,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
@@ -69,7 +69,7 @@ const nextcloudTalkConfigBase = createScopedChannelConfigBase<
 >({
   sectionKey: "nextcloud-talk",
   listAccountIds: listNextcloudTalkAccountIds,
-  resolveAccount: (cfg, accountId) => resolveNextcloudTalkAccount({ cfg, accountId }),
+  resolveAccount: adaptScopedAccountAccessor(resolveNextcloudTalkAccount),
   defaultAccountId: resolveDefaultNextcloudTalkAccountId,
   clearBaseFields: ["botSecret", "botSecretFile", "baseUrl", "name"],
 });

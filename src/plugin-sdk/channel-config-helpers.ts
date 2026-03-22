@@ -25,8 +25,19 @@ export function resolveOptionalConfigString(
   return normalized || undefined;
 }
 
-export function createScopedAccountConfigAccessors<ResolvedAccount>(params: {
-  resolveAccount: (params: { cfg: RemoteClawConfig; accountId?: string | null }) => ResolvedAccount;
+/** Adapt `{ cfg, accountId }` accessors to callback sites that pass positional args. */
+export function adaptScopedAccountAccessor<Result, Config extends RemoteClawConfig = RemoteClawConfig>(
+  accessor: (params: { cfg: Config; accountId?: string | null }) => Result,
+): (cfg: Config, accountId?: string | null) => Result {
+  return (cfg, accountId) => accessor({ cfg, accountId });
+}
+
+/** Build the shared allowlist/default target adapter surface for account-scoped channel configs. */
+export function createScopedAccountConfigAccessors<
+  ResolvedAccount,
+  Config extends RemoteClawConfig = RemoteClawConfig,
+>(params: {
+  resolveAccount: (params: { cfg: Config; accountId?: string | null }) => ResolvedAccount;
   resolveAllowFrom: (account: ResolvedAccount) => Array<string | number> | null | undefined;
   formatAllowFrom: (allowFrom: Array<string | number>) => string[];
   resolveDefaultTo?: (account: ResolvedAccount) => string | number | null | undefined;

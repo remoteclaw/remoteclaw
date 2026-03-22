@@ -3,8 +3,10 @@ import {
   createAccountScopedAllowlistNameResolver,
   createFlatAllowlistOverrideResolver,
 } from "remoteclaw/plugin-sdk/allowlist-config-edit";
-import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { createOpenProviderConfiguredRouteWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
+import {
+  adaptScopedAccountAccessor,
+  createScopedDmSecurityResolver,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
   createScopedDmSecurityResolver,
   collectOpenGroupPolicyConfiguredRouteWarnings,
@@ -440,8 +442,8 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
     resolveToolPolicy: resolveSlackGroupToolPolicy,
   },
   threading: {
-    resolveReplyToMode: createScopedAccountReplyToModeResolver({
-      resolveAccount: (cfg, accountId) => resolveSlackAccount({ cfg, accountId }),
+    resolveReplyToMode: createScopedAccountReplyToModeResolver<ResolvedSlackAccount>({
+      resolveAccount: adaptScopedAccountAccessor(resolveSlackAccount),
       resolveReplyToMode: (account, chatType) => resolveSlackReplyToMode(account, chatType),
     }),
     allowExplicitReplyTagsWhenOff: false,

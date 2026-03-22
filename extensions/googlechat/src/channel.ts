@@ -1,7 +1,7 @@
 import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
 import {
+  adaptScopedAccountAccessor,
   createScopedChannelConfigAdapter,
-  createScopedDmSecurityResolver,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
   composeWarningCollectors,
@@ -77,7 +77,7 @@ const formatAllowFromEntry = (entry: string) =>
 const googleChatConfigAdapter = createScopedChannelConfigAdapter<ResolvedGoogleChatAccount>({
   sectionKey: "googlechat",
   listAccountIds: listGoogleChatAccountIds,
-  resolveAccount: (cfg, accountId) => resolveGoogleChatAccount({ cfg, accountId }),
+  resolveAccount: adaptScopedAccountAccessor(resolveGoogleChatAccount),
   defaultAccountId: resolveDefaultGoogleChatAccountId,
   clearBaseFields: [
     "serviceAccount",
@@ -164,29 +164,49 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
         text: message,
       });
     },
-  }),
-  capabilities: {
-    chatTypes: ["direct", "group", "thread"],
-    reactions: true,
-    threads: true,
-    media: true,
-    nativeCommands: false,
-    blockStreaming: true,
-  },
-  streaming: {
-    blockStreamingCoalesceDefaults: { minChars: 1500, idleMs: 1000 },
-  },
-  reload: { configPrefixes: ["channels.googlechat"] },
-  configSchema: buildChannelConfigSchema(GoogleChatConfigSchema),
-  config: {
-    ...googleChatConfigAdapter,
-    isConfigured: (account) => account.credentialSource !== "none",
-    describeAccount: (account) => ({
-      accountId: account.accountId,
-      name: account.name,
-      enabled: account.enabled,
-      configured: account.credentialSource !== "none",
-      credentialSource: account.credentialSource,
+    streaming: {
+      blockStreamingCoalesceDefaults: { minChars: 1500, idleMs: 1000 },
+    },
+    reload: { configPrefixes: ["channels.googlechat"] },
+    configSchema: buildChannelConfigSchema(GoogleChatConfigSchema),
+    config: {
+      ...googleChatConfigAdapter,
+      isConfigured: (account) => account.credentialSource !== "none",
+      describeAccount: (account) => ({
+        accountId: account.accountId,
+        name: account.name,
+        enabled: account.enabled,
+        configured: account.credentialSource !== "none",
+        credentialSource: account.credentialSource,
+      }),
+    },
+    groups: {
+      resolveRequireMention: resolveGoogleChatGroupRequireMention,
+    },
+    messaging: {
+      normalizeTarget: normalizeGoogleChatTarget,
+      targetResolver: {
+        looksLikeId: (raw, normalized) => {
+          const value = normalized ?? raw.trim();
+          return isGoogleChatSpaceTarget(value) || isGoogleChatUserTarget(value);
+        },
+        hint: "<spaces/{space}|users/{user}>",
+      },
+    },
+    directory: createChannelDirectoryAdapter({
+      listPeers: async (params) =>
+        listResolvedDirectoryUserEntriesFromAllowFrom<ResolvedGoogleChatAccount>({
+          ...params,
+          resolveAccount: adaptScopedAccountAccessor(resolveGoogleChatAccount),
+          resolveAllowFrom: (account) => account.config.dm?.allowFrom,
+          normalizeId: (entry) => normalizeGoogleChatTarget(entry) ?? entry,
+        }),
+      listGroups: async (params) =>
+        listResolvedDirectoryGroupEntriesFromMapKeys<ResolvedGoogleChatAccount>({
+          ...params,
+          resolveAccount: adaptScopedAccountAccessor(resolveGoogleChatAccount),
+          resolveGroups: (account) => account.config.groups,
+        }),
     }),
   },
   security: {

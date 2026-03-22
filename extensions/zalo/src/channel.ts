@@ -1,6 +1,6 @@
 import {
-  createScopedAccountConfigAccessors,
-  createScopedChannelConfigBase,
+  adaptScopedAccountAccessor,
+  createScopedChannelConfigAdapter,
   createScopedDmSecurityResolver,
   mapAllowFromEntries,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
@@ -85,7 +85,7 @@ const zaloConfigAccessors = createScopedAccountConfigAccessors({
 const zaloConfigBase = createScopedChannelConfigBase<ResolvedZaloAccount>({
   sectionKey: "zalo",
   listAccountIds: listZaloAccountIds,
-  resolveAccount: (cfg, accountId) => resolveZaloAccount({ cfg, accountId }),
+  resolveAccount: adaptScopedAccountAccessor(resolveZaloAccount),
   defaultAccountId: resolveDefaultZaloAccountId,
   clearBaseFields: ["botToken", "tokenFile", "name"],
 });
@@ -179,9 +179,9 @@ export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
   },
   directory: createChannelDirectoryAdapter({
     listPeers: async (params) =>
-      listResolvedDirectoryUserEntriesFromAllowFrom({
+      listResolvedDirectoryUserEntriesFromAllowFrom<ResolvedZaloAccount>({
         ...params,
-        resolveAccount: (cfg, accountId) => resolveZaloAccount({ cfg, accountId }),
+        resolveAccount: adaptScopedAccountAccessor(resolveZaloAccount),
         resolveAllowFrom: (account) => account.config.allowFrom,
         normalizeId: (entry) => entry.replace(/^(zalo|zl):/i, ""),
       }),

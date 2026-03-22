@@ -1,7 +1,7 @@
 import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
 import {
-  createScopedAccountConfigAccessors,
-  createScopedChannelConfigBase,
+  adaptScopedAccountAccessor,
+  createScopedChannelConfigAdapter,
   createScopedDmSecurityResolver,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
@@ -238,7 +238,7 @@ function formatAllowEntry(entry: string): string {
 const mattermostConfigAdapter = createScopedChannelConfigAdapter<ResolvedMattermostAccount>({
   sectionKey: "mattermost",
   listAccountIds: listMattermostAccountIds,
-  resolveAccount: (cfg, accountId) => resolveMattermostAccount({ cfg, accountId }),
+  resolveAccount: adaptScopedAccountAccessor(resolveMattermostAccount),
   defaultAccountId: resolveDefaultMattermostAccountId,
   clearBaseFields: ["botToken", "baseUrl", "name"],
   resolveAllowFrom: (account: ResolvedMattermostAccount) => account.config.allowFrom,

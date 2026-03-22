@@ -4,6 +4,7 @@ import baseConfig from "./vitest.config.ts";
 export function createScopedVitestConfig(
   include: string[],
   options?: {
+    pool?: "threads" | "forks";
     passWithNoTests?: boolean;
   },
 ) {
@@ -17,6 +18,7 @@ export function createScopedVitestConfig(
       ...baseTest,
       include,
       exclude,
+      ...(options?.pool ? { pool: options.pool } : {}),
       ...(options?.passWithNoTests !== undefined
         ? { passWithNoTests: options.passWithNoTests }
         : {}),

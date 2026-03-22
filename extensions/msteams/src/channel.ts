@@ -1,4 +1,9 @@
 import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk";
+
+import { describeAccountSnapshot } from "remoteclaw/plugin-sdk/account-helpers";
+import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
+import { createMessageToolCardSchema } from "remoteclaw/plugin-sdk/channel-actions";
+import { createTopLevelChannelConfigAdapter } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import type {
   ChannelMessageActionName,
   ChannelPlugin,
@@ -119,11 +124,11 @@ export const msteamsPlugin: ChannelPlugin<ResolvedMSTeamsAccount> = {
       return next;
     },
     isConfigured: (_account, cfg) => Boolean(resolveMSTeamsCredentials(cfg.channels?.msteams)),
-    describeAccount: (account) => ({
-      accountId: account.accountId,
-      enabled: account.enabled,
-      configured: account.configured,
-    }),
+    describeAccount: (account) =>
+      describeAccountSnapshot({
+        account,
+        configured: account.configured,
+      }),
     resolveAllowFrom: ({ cfg }) => cfg.channels?.msteams?.allowFrom ?? [],
     formatAllowFrom: ({ allowFrom }) => formatAllowFromLowercase({ allowFrom }),
     resolveDefaultTo: ({ cfg }) => cfg.channels?.msteams?.defaultTo?.trim() || undefined,

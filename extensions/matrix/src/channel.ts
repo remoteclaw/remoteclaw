@@ -1,3 +1,4 @@
+import { describeAccountSnapshot } from "openclaw/plugin-sdk/account-helpers";
 import {
   buildAccountScopedDmSecurityPolicy,
   buildOpenGroupPolicyWarning,
@@ -154,13 +155,14 @@ export const matrixPlugin: ChannelPlugin<ResolvedMatrixAccount> = {
         ],
       }),
     isConfigured: (account) => account.configured,
-    describeAccount: (account) => ({
-      accountId: account.accountId,
-      name: account.name,
-      enabled: account.enabled,
-      configured: account.configured,
-      baseUrl: account.homeserver,
-    }),
+    describeAccount: (account) =>
+      describeAccountSnapshot({
+        account,
+        configured: account.configured,
+        extra: {
+          baseUrl: account.homeserver,
+        },
+      }),
     ...matrixConfigAccessors,
   },
   security: {

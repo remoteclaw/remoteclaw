@@ -1,3 +1,6 @@
+import { describeAccountSnapshot } from "remoteclaw/plugin-sdk/account-helpers";
+import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
+import { createMessageToolButtonsSchema } from "remoteclaw/plugin-sdk/channel-actions";
 import {
   buildAccountScopedDmSecurityPolicy,
   collectAllowlistProviderRestrictSendersWarnings,
@@ -290,14 +293,15 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = {
         clearBaseFields: ["botToken", "baseUrl", "name"],
       }),
     isConfigured: (account) => Boolean(account.botToken && account.baseUrl),
-    describeAccount: (account) => ({
-      accountId: account.accountId,
-      name: account.name,
-      enabled: account.enabled,
-      configured: Boolean(account.botToken && account.baseUrl),
-      botTokenSource: account.botTokenSource,
-      baseUrl: account.baseUrl,
-    }),
+    describeAccount: (account) =>
+      describeAccountSnapshot({
+        account,
+        configured: Boolean(account.botToken && account.baseUrl),
+        extra: {
+          botTokenSource: account.botTokenSource,
+          baseUrl: account.baseUrl,
+        },
+      }),
     ...mattermostConfigAccessors,
   },
   security: {

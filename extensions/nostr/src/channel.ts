@@ -1,3 +1,4 @@
+import { describeAccountSnapshot } from "openclaw/plugin-sdk/account-helpers";
 import {
   buildChannelConfigSchema,
   collectStatusIssuesFromLastError,
@@ -49,13 +50,14 @@ export const nostrPlugin: ChannelPlugin<ResolvedNostrAccount> = {
     resolveAccount: (cfg, accountId) => resolveNostrAccount({ cfg, accountId }),
     defaultAccountId: (cfg) => resolveDefaultNostrAccountId(cfg),
     isConfigured: (account) => account.configured,
-    describeAccount: (account) => ({
-      accountId: account.accountId,
-      name: account.name,
-      enabled: account.enabled,
-      configured: account.configured,
-      publicKey: account.publicKey,
-    }),
+    describeAccount: (account) =>
+      describeAccountSnapshot({
+        account,
+        configured: account.configured,
+        extra: {
+          publicKey: account.publicKey,
+        },
+      }),
     resolveAllowFrom: ({ cfg, accountId }) =>
       mapAllowFromEntries(resolveNostrAccount({ cfg, accountId }).config.allowFrom),
     formatAllowFrom: ({ allowFrom }) =>

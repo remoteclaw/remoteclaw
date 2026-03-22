@@ -1,3 +1,5 @@
+import { describeAccountSnapshot } from "remoteclaw/plugin-sdk/account-helpers";
+import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
 import {
   buildAccountScopedDmSecurityPolicy,
   collectAllowlistProviderGroupPolicyWarnings,
@@ -100,14 +102,15 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
         clearBaseFields: ["botSecret", "botSecretFile", "baseUrl", "name"],
       }),
     isConfigured: (account) => Boolean(account.secret?.trim() && account.baseUrl?.trim()),
-    describeAccount: (account) => ({
-      accountId: account.accountId,
-      name: account.name,
-      enabled: account.enabled,
-      configured: Boolean(account.secret?.trim() && account.baseUrl?.trim()),
-      secretSource: account.secretSource,
-      baseUrl: account.baseUrl ? "[set]" : "[missing]",
-    }),
+    describeAccount: (account) =>
+      describeAccountSnapshot({
+        account,
+        configured: Boolean(account.secret?.trim() && account.baseUrl?.trim()),
+        extra: {
+          secretSource: account.secretSource,
+          baseUrl: account.baseUrl ? "[set]" : "[missing]",
+        },
+      }),
     resolveAllowFrom: ({ cfg, accountId }) =>
       mapAllowFromEntries(
         resolveNextcloudTalkAccount({ cfg: cfg as CoreConfig, accountId }).config.allowFrom,

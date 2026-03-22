@@ -263,6 +263,7 @@
     "check:docs": "pnpm format:docs:check && pnpm lint:docs && pnpm docs:check-links",
     "check:host-env-policy:swift": "node scripts/generate-host-env-security-policy-swift.mjs --check",
     "check:loc": "node --import tsx scripts/check-ts-max-loc.ts --max 500",
+    "check:no-conflict-markers": "node scripts/check-no-conflict-markers.mjs",
     "deadcode:ci": "pnpm deadcode:report:ci:knip",
     "deadcode:knip": "pnpm dlx knip --config knip.config.ts --isolate-workspaces --production --no-progress --reporter compact --files --dependencies",
     "deadcode:report": "pnpm deadcode:knip; pnpm deadcode:ts-prune; pnpm deadcode:ts-unused",

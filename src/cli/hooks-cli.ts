@@ -164,6 +164,14 @@ function exitHooksCliWithError(err: unknown): never {
   process.exit(1);
 }
 
+function writeHooksOutput(value: string, json: boolean | undefined): void {
+  if (json) {
+    defaultRuntime.writeStdout(value);
+    return;
+  }
+  defaultRuntime.log(value);
+}
+
 async function runHooksCliAction(action: () => Promise<void> | void): Promise<void> {
   try {
     await action();
@@ -526,7 +534,7 @@ export function registerHooksCli(program: Command): void {
       runHooksCliAction(async () => {
         const config = loadConfig();
         const report = buildHooksReport(config);
-        defaultRuntime.log(formatHooksList(report, opts));
+        writeHooksOutput(formatHooksList(report, opts), opts.json);
       }),
     );
 
@@ -538,7 +546,7 @@ export function registerHooksCli(program: Command): void {
       runHooksCliAction(async () => {
         const config = loadConfig();
         const report = buildHooksReport(config);
-        defaultRuntime.log(formatHookInfo(report, name, opts));
+        writeHooksOutput(formatHookInfo(report, name, opts), opts.json);
       }),
     );
 
@@ -550,7 +558,7 @@ export function registerHooksCli(program: Command): void {
       runHooksCliAction(async () => {
         const config = loadConfig();
         const report = buildHooksReport(config);
-        defaultRuntime.log(formatHooksCheck(report, opts));
+        writeHooksOutput(formatHooksCheck(report, opts), opts.json);
       }),
     );
 

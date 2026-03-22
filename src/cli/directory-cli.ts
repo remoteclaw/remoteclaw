@@ -140,7 +140,7 @@ export function registerDirectoryCli(program: Command) {
       runtime: defaultRuntime,
     });
     if (params.opts.json) {
-      defaultRuntime.log(JSON.stringify(result, null, 2));
+      defaultRuntime.writeJson(result);
       return;
     }
     printDirectoryList({ title: params.title, emptyMessage: params.emptyMessage, entries: result });
@@ -159,7 +159,7 @@ export function registerDirectoryCli(program: Command) {
         }
         const result = await fn({ cfg, accountId, runtime: defaultRuntime });
         if (opts.json) {
-          defaultRuntime.log(JSON.stringify(result, null, 2));
+          defaultRuntime.writeJson(result);
           return;
         }
         if (!result) {
@@ -252,7 +252,7 @@ export function registerDirectoryCli(program: Command) {
           runtime: defaultRuntime,
         });
         if (opts.json) {
-          defaultRuntime.log(JSON.stringify(result, null, 2));
+          defaultRuntime.writeJson(result);
           return;
         }
         printDirectoryList({

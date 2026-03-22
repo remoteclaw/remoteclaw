@@ -1,6 +1,7 @@
 import { format } from "node:util";
 import type { OutputRuntimeEnv, RuntimeEnv } from "../runtime.js";
 
+/** Minimal logger contract accepted by runtime-adapter helpers. */
 type LoggerLike = {
   info: (message: string) => void;
   error: (message: string) => void;

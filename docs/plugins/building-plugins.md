@@ -128,7 +128,7 @@ my-plugin/
     **Provider plugin:**
 
     ```typescript
-    import { definePluginEntry } from "remoteclaw/plugin-sdk/core";
+    import { definePluginEntry } from "remoteclaw/plugin-sdk/plugin-entry";
 
     export default definePluginEntry({
       id: "my-provider",
@@ -144,7 +144,7 @@ my-plugin/
     **Multi-capability plugin** (provider + tool):
 
     ```typescript
-    import { definePluginEntry } from "remoteclaw/plugin-sdk/core";
+    import { definePluginEntry } from "remoteclaw/plugin-sdk/plugin-entry";
 
     export default definePluginEntry({
       id: "my-plugin",
@@ -157,8 +157,14 @@ my-plugin/
     });
     ```
 
-    Use `defineChannelPluginEntry` for channel plugins and `definePluginEntry`
-    for everything else. A single plugin can register as many capabilities as needed.
+    Use `defineChannelPluginEntry` from `plugin-sdk/core` for channel plugins
+    and `definePluginEntry` from `plugin-sdk/plugin-entry` for everything else.
+    A single plugin can register as many capabilities as needed.
+
+    For chat-style channels, `plugin-sdk/core` also exposes
+    `createChatChannelPlugin(...)` so you can compose common DM security,
+    text pairing, reply threading, and attached outbound send results without
+    wiring each adapter separately.
 
   </Step>
 
@@ -166,36 +172,46 @@ my-plugin/
     Always import from specific `remoteclaw/plugin-sdk/\<subpath\>` paths. The old
     monolithic import is deprecated (see [SDK Migration](/plugins/sdk-migration)).
 
+    If older plugin code still imports `remoteclaw/extension-api`, treat that as a
+    temporary compatibility bridge only. New code should use injected runtime
+    helpers such as `api.runtime.agent.*` instead of importing host-side agent
+    helpers directly.
+
     ```typescript
     // Correct: focused subpaths
-    import { definePluginEntry } from "remoteclaw/plugin-sdk/core";
+    import { definePluginEntry } from "remoteclaw/plugin-sdk/plugin-entry";
     import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/runtime-store";
-    import { buildOauthProviderAuthResult } from "remoteclaw/plugin-sdk/provider-oauth";
+    import { buildOauthProviderAuthResult } from "remoteclaw/plugin-sdk/provider-auth";
 
     // Wrong: monolithic root (lint will reject this)
     import { ... } from "remoteclaw/plugin-sdk";
+
+    // Deprecated: legacy host bridge
+    import { runEmbeddedPiAgent } from "remoteclaw/extension-api";
     ```
 
     <Accordion title="Common subpaths reference">
       | Subpath | Purpose |
       | --- | --- |
-      | `plugin-sdk/core` | Plugin entry definitions and base types |
-      | `plugin-sdk/channel-setup` | Setup wizard adapters |
+      | `plugin-sdk/plugin-entry` | Canonical `definePluginEntry` helper + provider/plugin entry types |
+      | `plugin-sdk/core` | Channel entry helpers, channel builders, and shared base types |
+      | `plugin-sdk/runtime-store` | Safe module-level runtime storage |
+      | `plugin-sdk/setup` | Shared setup-wizard helpers |
+      | `plugin-sdk/channel-setup` | Channel setup adapters |
       | `plugin-sdk/channel-pairing` | DM pairing primitives |
-      | `plugin-sdk/channel-reply-pipeline` | Reply prefix + typing wiring |
-      | `plugin-sdk/channel-config-schema` | Config schema builders |
-      | `plugin-sdk/channel-policy` | Group/DM policy helpers |
+      | `plugin-sdk/channel-actions` | Shared `message` tool schema helpers |
+      | `plugin-sdk/channel-contract` | Pure channel types |
       | `plugin-sdk/secret-input` | Secret input parsing/helpers |
       | `plugin-sdk/webhook-ingress` | Webhook request/target helpers |
-      | `plugin-sdk/runtime-store` | Persistent plugin storage |
-      | `plugin-sdk/allow-from` | Allowlist resolution |
       | `plugin-sdk/reply-payload` | Message reply types |
-      | `plugin-sdk/provider-oauth` | OAuth login + PKCE helpers |
+      | `plugin-sdk/provider-auth` | Provider auth and OAuth helpers |
       | `plugin-sdk/provider-onboard` | Provider onboarding config patches |
+      | `plugin-sdk/provider-models` | Model catalog helpers |
       | `plugin-sdk/testing` | Test utilities |
     </Accordion>
 
-    Use the narrowest subpath that matches the job.
+    Use the narrowest subpath that matches the job. For the curated map and
+    examples, see [Plugin SDK Overview](/plugins/sdk-overview).
 
   </Step>
 
@@ -251,7 +267,7 @@ my-plugin/
     For unit tests, import test helpers from the testing surface:
 
     ```typescript
-    import { createTestRuntime } from "remoteclaw/plugin-sdk/testing";
+    import { createWindowsCmdShimFixture } from "remoteclaw/plugin-sdk/testing";
     ```
 
   </Step>
@@ -276,6 +292,58 @@ my-plugin/
 
   </Step>
 </Steps>
+
+## Registering agent tools
+
+Plugins can register **agent tools** — typed functions the LLM can call. Tools
+can be required (always available) or optional (users opt in via allowlists).
+
+```typescript
+import { Type } from "@sinclair/typebox";
+
+export default definePluginEntry({
+  id: "my-plugin",
+  name: "My Plugin",
+  register(api) {
+    // Required tool (always available)
+    api.registerTool({
+      name: "my_tool",
+      description: "Do a thing",
+      parameters: Type.Object({ input: Type.String() }),
+      async execute(_id, params) {
+        return { content: [{ type: "text", text: params.input }] };
+      },
+    });
+
+    // Optional tool (user must add to allowlist)
+    api.registerTool(
+      {
+        name: "workflow_tool",
+        description: "Run a workflow",
+        parameters: Type.Object({ pipeline: Type.String() }),
+        async execute(_id, params) {
+          return { content: [{ type: "text", text: params.pipeline }] };
+        },
+      },
+      { optional: true },
+    );
+  },
+});
+```
+
+Enable optional tools in config:
+
+```json5
+{
+  tools: { allow: ["workflow_tool"] },
+}
+```
+
+Tips:
+
+- Tool names must not clash with core tool names (conflicts are skipped)
+- Use `optional: true` for tools that trigger side effects or require extra binaries
+- Users can enable all tools from a plugin by adding the plugin id to `tools.allow`
 
 ## Lint enforcement (in-repo plugins)
 
@@ -302,8 +370,15 @@ patterns is strongly recommended.
 
 ## Related
 
-- [Plugin SDK Migration](/plugins/sdk-migration) — migrating from the deprecated compat import
+- [Plugin SDK Migration](/plugins/sdk-migration) — migrating from deprecated compat surfaces
+- [Plugin SDK Overview](/plugins/sdk-overview) — public SDK map and subpath guidance
+- [Plugin Entry Points](/plugins/sdk-entrypoints) — `definePluginEntry` and `defineChannelPluginEntry`
+- [Plugin Runtime](/plugins/sdk-runtime) — injected runtime and runtime-store
+- [Plugin Setup](/plugins/sdk-setup) — setup, channel setup, and secret input helpers
+- [Channel Plugin SDK](/plugins/sdk-channel-plugins) — channel contracts and actions
+- [Provider Plugin SDK](/plugins/sdk-provider-plugins) — provider auth, onboarding, and catalogs
+- [Plugin SDK Testing](/plugins/sdk-testing) — public test helpers
 - [Plugin Architecture](/plugins/architecture) — internals and capability model
 - [Plugin Manifest](/plugins/manifest) — full manifest schema
-- [Plugin Agent Tools](/plugins/agent-tools) — adding agent tools in a plugin
+- [Plugin Agent Tools](/plugins/building-plugins#registering-agent-tools) — adding agent tools in a plugin
 - [Community Plugins](/plugins/community) — listing and quality bar

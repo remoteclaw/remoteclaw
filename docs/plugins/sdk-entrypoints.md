@@ -1,161 +1,159 @@
 ---
 title: "Plugin Entry Points"
 sidebarTitle: "Entry Points"
-summary: "Reference for definePluginEntry, defineChannelPluginEntry, and defineSetupPluginEntry"
+summary: "How to define plugin entry files for provider, tool, channel, and setup plugins"
 read_when:
-  - You need the exact type signature of definePluginEntry or defineChannelPluginEntry
-  - You want to understand registration mode (full vs setup)
-  - You are looking up entry point options
+  - You are writing a plugin `index.ts`
+  - You need to choose between `definePluginEntry` and `defineChannelPluginEntry`
+  - You are adding a separate `setup-entry.ts`
 ---
 
 # Plugin Entry Points
 
-Every plugin exports a default entry object. The SDK provides three helpers for
-creating them.
+RemoteClaw has two main entry helpers:
 
-<Tip>
-  **Looking for a walkthrough?** See [Channel Plugins](/plugins/sdk-channel-plugins)
-  or [Provider Plugins](/plugins/sdk-provider-plugins) for step-by-step guides.
-</Tip>
+- `definePluginEntry(...)` for general plugins
+- `defineChannelPluginEntry(...)` for native messaging channels
 
-## `definePluginEntry`
+There is also `defineSetupPluginEntry(...)` for a separate setup-only module.
 
-**Import:** `remoteclaw/plugin-sdk/plugin-entry`
+## `definePluginEntry(...)`
 
-For provider plugins, tool plugins, hook plugins, and anything that is **not**
-a messaging channel.
+Use this for providers, tools, commands, services, memory plugins, and context
+engines.
 
-```typescript
-import { definePluginEntry } from "remoteclaw/plugin-sdk/plugin-entry";
+```ts
+import { definePluginEntry, type RemoteClawPluginApi } from "remoteclaw/plugin-sdk/plugin-entry";
 
 export default definePluginEntry({
-  id: "my-plugin",
-  name: "My Plugin",
-  description: "Short summary",
-  register(api) {
-    api.registerProvider({
-      /* ... */
+  id: "example-tools",
+  name: "Example Tools",
+  description: "Adds a command and a tool",
+  register(api: RemoteClawPluginApi) {
+    api.registerCommand({
+      name: "example",
+      description: "Show plugin status",
+      handler: async () => ({ text: "example ok" }),
     });
+
     api.registerTool({
-      /* ... */
+      name: "example_lookup",
+      description: "Look up Example data",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string" },
+        },
+        required: ["query"],
+      },
+      async execute(_callId, params) {
+        return {
+          content: [{ type: "text", text: `lookup: ${String(params.query)}` }],
+        };
+      },
     });
   },
 });
 ```
 
-### Options
+## `defineChannelPluginEntry(...)`
 
-| Field          | Type                                                                 | Required | Default             |
-| -------------- | -------------------------------------------------------------------- | -------- | ------------------- |
-| `id`           | `string`                                                             | Yes      | —                   |
-| `name`         | `string`                                                             | Yes      | —                   |
-| `description`  | `string`                                                             | Yes      | —                   |
-| `kind`         | `string`                                                             | No       | —                   |
-| `configSchema` | `RemoteClawPluginConfigSchema \| () => RemoteClawPluginConfigSchema` | No       | Empty object schema |
-| `register`     | `(api: RemoteClawPluginApi) => void`                                 | Yes      | —                   |
+Use this for a plugin that registers a `ChannelPlugin`.
 
-- `id` must match your `remoteclaw.plugin.json` manifest.
-- `kind` is for exclusive slots: `"memory"` or `"context-engine"`.
-- `configSchema` can be a function for lazy evaluation.
-
-## `defineChannelPluginEntry`
-
-**Import:** `remoteclaw/plugin-sdk/core`
-
-Wraps `definePluginEntry` with channel-specific wiring. Automatically calls
-`api.registerChannel({ plugin })` and gates `registerFull` on registration mode.
-
-```typescript
+```ts
 import { defineChannelPluginEntry } from "remoteclaw/plugin-sdk/core";
+import { channelPlugin } from "./src/channel.js";
+import { setRuntime } from "./src/runtime.js";
 
 export default defineChannelPluginEntry({
-  id: "my-channel",
-  name: "My Channel",
-  description: "Short summary",
-  plugin: myChannelPlugin,
-  setRuntime: setMyRuntime,
+  id: "example-channel",
+  name: "Example Channel",
+  description: "Example messaging plugin",
+  plugin: channelPlugin,
+  setRuntime,
   registerFull(api) {
-    api.registerCli(/* ... */);
-    api.registerGatewayMethod(/* ... */);
+    api.registerTool({
+      name: "example_channel_status",
+      description: "Inspect Example Channel state",
+      parameters: { type: "object", properties: {} },
+      async execute() {
+        return { content: [{ type: "text", text: "ok" }] };
+      },
+    });
   },
 });
 ```
 
-### Options
+### Why `registerFull(...)` exists
 
-| Field          | Type                                                                 | Required | Default             |
-| -------------- | -------------------------------------------------------------------- | -------- | ------------------- |
-| `id`           | `string`                                                             | Yes      | —                   |
-| `name`         | `string`                                                             | Yes      | —                   |
-| `description`  | `string`                                                             | Yes      | —                   |
-| `plugin`       | `ChannelPlugin`                                                      | Yes      | —                   |
-| `configSchema` | `RemoteClawPluginConfigSchema \| () => RemoteClawPluginConfigSchema` | No       | Empty object schema |
-| `setRuntime`   | `(runtime: PluginRuntime) => void`                                   | No       | —                   |
-| `registerFull` | `(api: RemoteClawPluginApi) => void`                                 | No       | —                   |
+RemoteClaw can load plugins in setup-focused registration modes. `registerFull`
+lets a channel plugin skip extra runtime-only registrations such as tools while
+still registering the channel capability itself.
 
-- `setRuntime` is called during registration so you can store the runtime reference
-  (typically via `createPluginRuntimeStore`).
-- `registerFull` only runs when `api.registrationMode === "full"`. It is skipped
-  during setup-only loading.
+Use it for:
 
-## `defineSetupPluginEntry`
+- agent tools
+- gateway-only routes
+- runtime-only commands
 
-**Import:** `remoteclaw/plugin-sdk/core`
+Do not use it for the actual `ChannelPlugin`; that belongs in `plugin: ...`.
 
-For the lightweight `setup-entry.ts` file. Returns just `{ plugin }` with no
-runtime or CLI wiring.
+## `defineSetupPluginEntry(...)`
 
-```typescript
+Use this when a channel ships a second module for setup flows.
+
+```ts
 import { defineSetupPluginEntry } from "remoteclaw/plugin-sdk/core";
+import { exampleSetupPlugin } from "./src/channel.setup.js";
 
-export default defineSetupPluginEntry(myChannelPlugin);
+export default defineSetupPluginEntry(exampleSetupPlugin);
 ```
 
-RemoteClaw loads this instead of the full entry when a channel is disabled,
-unconfigured, or when deferred loading is enabled. See
-[Setup and Config](/plugins/sdk-setup#setup-entry) for when this matters.
+This keeps the setup entry shape explicit and matches the bundled channel
+pattern used in RemoteClaw.
 
-## Registration mode
+## One plugin, many capabilities
 
-`api.registrationMode` tells your plugin how it was loaded:
+A single entry file can register multiple capabilities:
 
-| Mode              | When                              | What to register              |
-| ----------------- | --------------------------------- | ----------------------------- |
-| `"full"`          | Normal gateway startup            | Everything                    |
-| `"setup-only"`    | Disabled/unconfigured channel     | Channel registration only     |
-| `"setup-runtime"` | Setup flow with runtime available | Channel + lightweight runtime |
+```ts
+import { definePluginEntry, type RemoteClawPluginApi } from "remoteclaw/plugin-sdk/plugin-entry";
 
-`defineChannelPluginEntry` handles this split automatically. If you use
-`definePluginEntry` directly for a channel, check mode yourself:
+export default definePluginEntry({
+  id: "example-hybrid",
+  name: "Example Hybrid",
+  description: "Provider plus tools",
+  register(api: RemoteClawPluginApi) {
+    api.registerProvider({
+      id: "example",
+      label: "Example",
+      auth: [],
+    });
 
-```typescript
-register(api) {
-  api.registerChannel({ plugin: myPlugin });
-  if (api.registrationMode !== "full") return;
-
-  // Heavy runtime-only registrations
-  api.registerCli(/* ... */);
-  api.registerService(/* ... */);
-}
+    api.registerTool({
+      name: "example_ping",
+      description: "Simple health check",
+      parameters: { type: "object", properties: {} },
+      async execute() {
+        return { content: [{ type: "text", text: "pong" }] };
+      },
+    });
+  },
+});
 ```
 
-## Plugin shapes
+## Entry-file checklist
 
-RemoteClaw classifies loaded plugins by their registration behavior:
-
-| Shape                 | Description                                        |
-| --------------------- | -------------------------------------------------- |
-| **plain-capability**  | One capability type (e.g. provider-only)           |
-| **hybrid-capability** | Multiple capability types (e.g. provider + speech) |
-| **hook-only**         | Only hooks, no capabilities                        |
-| **non-capability**    | Tools/commands/services but no capabilities        |
-
-Use `remoteclaw plugins inspect <id>` to see a plugin's shape.
+- Give the plugin a stable `id`.
+- Keep `name` and `description` human-readable.
+- Put schema at the entry level when the plugin has config.
+- Register only public capabilities inside `register(api)`.
+- Keep channel plugins on `plugin-sdk/core`.
+- Keep non-channel plugins on `plugin-sdk/plugin-entry`.
 
 ## Related
 
-- [SDK Overview](/plugins/sdk-overview) — registration API and subpath reference
-- [Runtime Helpers](/plugins/sdk-runtime) — `api.runtime` and `createPluginRuntimeStore`
-- [Setup and Config](/plugins/sdk-setup) — manifest, setup entry, deferred loading
-- [Channel Plugins](/plugins/sdk-channel-plugins) — building the `ChannelPlugin` object
-- [Provider Plugins](/plugins/sdk-provider-plugins) — provider registration and hooks
+- [Plugin SDK Overview](/plugins/sdk-overview)
+- [Plugin Runtime](/plugins/sdk-runtime)
+- [Channel Plugin SDK](/plugins/sdk-channel-plugins)
+- [Provider Plugin SDK](/plugins/sdk-provider-plugins)

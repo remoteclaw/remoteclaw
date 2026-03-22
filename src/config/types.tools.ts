@@ -259,6 +259,15 @@ export type ToolsConfig = {
         /** Model to use (defaults to "moonshot-v1-128k"). */
         model?: string;
       };
+      /** Perplexity-specific configuration (used when provider="perplexity"). */
+      perplexity?: {
+        /** API key for Perplexity (defaults to PERPLEXITY_API_KEY env var). */
+        apiKey?: SecretInput;
+        /** @deprecated Legacy Sonar/OpenRouter field. Ignored by Search API. */
+        baseUrl?: string;
+        /** @deprecated Legacy Sonar/OpenRouter field. Ignored by Search API. */
+        model?: string;
+      };
     };
     fetch?: {
       /** Enable web fetch tool (default: true). */

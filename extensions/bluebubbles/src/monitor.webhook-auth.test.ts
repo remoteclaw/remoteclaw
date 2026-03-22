@@ -9,22 +9,21 @@ import type { ResolvedBlueBubblesAccount } from "./accounts.js";
 import { fetchBlueBubblesHistory } from "./history.js";
 import { handleBlueBubblesWebhookRequest, resolveBlueBubblesMessageId } from "./monitor.js";
 import {
-  LOOPBACK_REMOTE_ADDRESSES_FOR_TEST,
+  handleBlueBubblesWebhookRequest,
+  registerBlueBubblesWebhookTarget,
+  resolveBlueBubblesMessageId,
+  _resetBlueBubblesShortIdState,
+} from "./monitor.js";
+import {
   createMockAccount,
-  createHangingWebhookRequestForTest,
+  createMockRequest,
   createMockResponse,
-  createLoopbackWebhookRequestParamsForTest,
-  createNewMessagePayloadForTest,
-  createPasswordQueryRequestParamsForTest,
-  createProtectedWebhookAccountForTest,
-  createRemoteWebhookRequestParamsForTest,
   dispatchWebhookPayloadForTest,
-  expectWebhookRequestStatusForTest,
-  expectWebhookStatusForTest,
-  setupWebhookTargetForTest,
-  setupWebhookTargetsForTest,
+  registerWebhookTargetForTest,
+  registerWebhookTargetsForTest,
 } from "./monitor.webhook.test-helpers.js";
 import type { RemoteClawConfig, PluginRuntime } from "./runtime-api.js";
+import { setBlueBubblesRuntime } from "./runtime.js";
 
 // Mock dependencies
 vi.mock("./send.js", () => ({
@@ -141,6 +140,14 @@ function createMockRuntime(): PluginRuntime {
   });
 }
 
+function getFirstDispatchCall(): DispatchReplyParams {
+  const callArgs = mockDispatchReplyWithBufferedBlockDispatcher.mock.calls[0]?.[0];
+  if (!callArgs) {
+    throw new Error("expected dispatch call arguments");
+  }
+  return callArgs;
+}
+
 describe("BlueBubbles webhook monitor", () => {
   let unregister: () => void;
 
@@ -178,12 +185,36 @@ describe("BlueBubbles webhook monitor", () => {
       (nextUnregister) => {
         unregister = nextUnregister;
       },
-    );
-    return {
-      account: registration.account,
-      config: registration.config,
-      core: registration.core,
     };
+  }
+
+  function setRequestRemoteAddress(req: IncomingMessage, remoteAddress: string) {
+    (req as unknown as { socket: { remoteAddress: string } }).socket = {
+      remoteAddress,
+    };
+  }
+
+  async function dispatchWebhook(req: IncomingMessage) {
+    const res = createMockResponse();
+    const handled = await handleBlueBubblesWebhookRequest(req, res);
+    return { handled, res };
+  }
+
+  function createWebhookRequestForTest(params?: {
+    method?: string;
+    url?: string;
+    body?: unknown;
+    headers?: Record<string, string>;
+    remoteAddress?: string;
+  }) {
+    const req = createMockRequest(
+      params?.method ?? "POST",
+      params?.url ?? "/bluebubbles-webhook",
+      params?.body ?? {},
+      params?.headers,
+      params?.remoteAddress,
+    );
+    return req;
   }
 
   function setupProtectedWebhookTarget(password = TEST_WEBHOOK_PASSWORD) {
@@ -198,15 +229,31 @@ describe("BlueBubbles webhook monitor", () => {
       statusSink?: (event: unknown) => void;
     }>,
   ) {
-    trackWebhookRegistrationForTest(
-      setupWebhookTargetsForTest({
-        createCore: createMockRuntime,
-        accounts: params,
-      }),
-      (nextUnregister) => {
-        unregister = nextUnregister;
-      },
-    );
+    const core = createMockRuntime();
+    const unregisterFns = registerWebhookTargetsForTest({
+      core,
+      accounts: params,
+    });
+
+    unregister = () => {
+      for (const unregisterFn of unregisterFns) {
+        unregisterFn();
+      }
+    };
+  }
+
+  async function expectWebhookStatus(
+    req: IncomingMessage,
+    expectedStatus: number,
+    expectedBody?: string,
+  ) {
+    const { handled, res } = await dispatchWebhook(req);
+    expect(handled).toBe(true);
+    expect(res.statusCode).toBe(expectedStatus);
+    if (expectedBody !== undefined) {
+      expect(res.body).toBe(expectedBody);
+    }
+    return res;
   }
 
   describe("webhook parsing + auth handling", () => {
@@ -398,10 +445,9 @@ describe("BlueBubbles webhook monitor", () => {
     });
 
     it("ignores unregistered webhook paths", async () => {
-      const req = createMockRequest("POST", "/unregistered-path", {});
-      const res = createMockResponse();
-
-      const handled = await handleBlueBubblesWebhookRequest(req, res);
+      const { handled } = await dispatchWebhookPayloadForTest({
+        url: "/unregistered-path",
+      });
 
       expect(handled).toBe(false);
     });
@@ -417,11 +463,7 @@ describe("BlueBubbles webhook monitor", () => {
         chatId: "123",
       });
 
-      const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
-      const res = createMockResponse();
-
-      await handleBlueBubblesWebhookRequest(req, res);
-      await flushAsync();
+      await dispatchWebhookPayloadForTest({ body: payload });
 
       expect(resolveChatGuidForTarget).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -447,11 +489,7 @@ describe("BlueBubbles webhook monitor", () => {
         chat: { chatGuid: "iMessage;+;chat123456" },
       });
 
-      const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
-      const res = createMockResponse();
-
-      await handleBlueBubblesWebhookRequest(req, res);
-      await flushAsync();
+      await dispatchWebhookPayloadForTest({ body: payload });
 
       expect(resolveChatGuidForTarget).not.toHaveBeenCalled();
       expect(sendMessageBlueBubbles).toHaveBeenCalledWith(

@@ -59,9 +59,19 @@ export function createRemoteClawTools(
     senderIsOwner?: boolean;
     /** Ephemeral session UUID — regenerated on /new and /reset. */
     sessionId?: string;
+    /**
+     * Workspace directory to pass to spawned subagents for inheritance.
+     * Defaults to workspaceDir. Use this to pass the actual agent workspace when the
+     * session itself is running in a copied-workspace sandbox (`ro` or `none`) so
+     * subagents inherit the real workspace path instead of the sandbox copy.
+     */
+    spawnWorkspaceDir?: string;
   } & SpawnedToolContext,
 ): AnyAgentTool[] {
   const workspaceDir = resolveWorkspaceRoot(options?.workspaceDir);
+  const spawnWorkspaceDir = resolveWorkspaceRoot(
+    options?.spawnWorkspaceDir ?? options?.workspaceDir,
+  );
   const messageTool = options?.disableMessageTool
     ? null
     : createMessageTool({
@@ -121,7 +131,7 @@ export function createRemoteClawTools(
       agentGroupSpace: options?.agentGroupSpace,
       sandboxed: options?.sandboxed,
       requesterAgentIdOverride: options?.requesterAgentIdOverride,
-      workspaceDir,
+      workspaceDir: spawnWorkspaceDir,
     }),
     createSubagentsTool({
       agentSessionKey: options?.agentSessionKey,

@@ -2,6 +2,7 @@ import type { IMessageAccountConfig } from "openclaw/plugin-sdk/imessage";
 import {
   type OpenClawConfig,
   createAccountListHelpers,
+  mergeAccountConfig,
   normalizeAccountId,
   resolveAccountEntry,
 } from "../../../src/plugin-sdk-internal/accounts.js";
@@ -25,11 +26,11 @@ function resolveAccountConfig(
   return resolveAccountEntry(cfg.channels?.imessage?.accounts, accountId);
 }
 
-function mergeIMessageAccountConfig(cfg: RemoteClawConfig, accountId: string): IMessageAccountConfig {
-  const { accounts: _ignored, ...base } = (cfg.channels?.imessage ??
-    {}) as IMessageAccountConfig & { accounts?: unknown };
-  const account = resolveAccountConfig(cfg, accountId) ?? {};
-  return { ...base, ...account };
+function mergeIMessageAccountConfig(cfg: OpenClawConfig, accountId: string): IMessageAccountConfig {
+  return mergeAccountConfig<IMessageAccountConfig>({
+    channelConfig: cfg.channels?.imessage as IMessageAccountConfig | undefined,
+    accountConfig: resolveAccountConfig(cfg, accountId),
+  });
 }
 
 export function resolveIMessageAccount(params: {

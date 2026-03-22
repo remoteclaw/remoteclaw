@@ -3,6 +3,7 @@ import {
   type OpenClawConfig,
   createAccountListHelpers,
   DEFAULT_ACCOUNT_ID,
+  mergeAccountConfig,
   normalizeAccountId,
   normalizeChatType,
   resolveAccountEntry,
@@ -40,11 +41,10 @@ export function mergeSlackAccountConfig(
   cfg: RemoteClawConfig,
   accountId: string,
 ): SlackAccountConfig {
-  const { accounts: _ignored, ...base } = (cfg.channels?.slack ?? {}) as SlackAccountConfig & {
-    accounts?: unknown;
-  };
-  const account = resolveAccountConfig(cfg, accountId) ?? {};
-  return { ...base, ...account };
+  return mergeAccountConfig<SlackAccountConfig>({
+    channelConfig: cfg.channels?.slack as SlackAccountConfig | undefined,
+    accountConfig: resolveAccountConfig(cfg, accountId),
+  });
 }
 
 export function resolveSlackAccount(params: {

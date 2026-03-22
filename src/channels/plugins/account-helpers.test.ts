@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { normalizeAccountId } from "../../routing/session-key.js";
-import {
-  createAccountListHelpers,
-  listCombinedAccountIds,
-  resolveListedDefaultAccountId,
-} from "./account-helpers.js";
+import { createAccountListHelpers, mergeAccountConfig } from "./account-helpers.js";
 
 const { listConfiguredAccountIds, listAccountIds, resolveDefaultAccountId } =
   createAccountListHelpers("testchannel");
@@ -124,70 +120,49 @@ describe("createAccountListHelpers", () => {
   });
 });
 
-describe("listCombinedAccountIds", () => {
-  it("combines configured, additional, and implicit ids once", () => {
-    expect(
-      listCombinedAccountIds({
-        configuredAccountIds: ["work", "alerts"],
-        additionalAccountIds: ["default", "alerts"],
-        implicitAccountId: "ops",
-      }),
-    ).toEqual(["alerts", "default", "ops", "work"]);
+describe("mergeAccountConfig", () => {
+  it("drops accounts from the base config before merging", () => {
+    const merged = mergeAccountConfig<{
+      enabled?: boolean;
+      name?: string;
+      accounts?: Record<string, { name?: string }>;
+    }>({
+      channelConfig: {
+        enabled: true,
+        accounts: {
+          work: { name: "Work" },
+        },
+      },
+      accountConfig: {
+        name: "Work",
+      },
+    });
+
+    expect(merged).toEqual({
+      enabled: true,
+      name: "Work",
+    });
   });
 
-  it("uses the fallback id when no accounts are present", () => {
-    expect(
-      listCombinedAccountIds({
-        configuredAccountIds: [],
-        fallbackAccountIdWhenEmpty: "default",
-      }),
-    ).toEqual(["default"]);
-  });
-});
+  it("drops caller-specified keys from the base config before merging", () => {
+    const merged = mergeAccountConfig<{
+      enabled?: boolean;
+      defaultAccount?: string;
+      name?: string;
+    }>({
+      channelConfig: {
+        enabled: true,
+        defaultAccount: "work",
+      },
+      accountConfig: {
+        name: "Work",
+      },
+      omitKeys: ["defaultAccount"],
+    });
 
-describe("resolveListedDefaultAccountId", () => {
-  it("prefers the configured default when present in the listed ids", () => {
-    expect(
-      resolveListedDefaultAccountId({
-        accountIds: ["alerts", "work"],
-        configuredDefaultAccountId: "work",
-      }),
-    ).toBe("work");
-  });
-
-  it("matches configured defaults against normalized listed ids", () => {
-    expect(
-      resolveListedDefaultAccountId({
-        accountIds: ["Router D"],
-        configuredDefaultAccountId: "router-d",
-      }),
-    ).toBe("router-d");
-  });
-
-  it("prefers the default account id when listed", () => {
-    expect(
-      resolveListedDefaultAccountId({
-        accountIds: ["default", "work"],
-      }),
-    ).toBe("default");
-  });
-
-  it("can preserve an unlisted configured default", () => {
-    expect(
-      resolveListedDefaultAccountId({
-        accountIds: ["default", "work"],
-        configuredDefaultAccountId: "ops",
-        allowUnlistedDefaultAccount: true,
-      }),
-    ).toBe("ops");
-  });
-
-  it("supports an explicit fallback id for ambiguous multi-account setups", () => {
-    expect(
-      resolveListedDefaultAccountId({
-        accountIds: ["alerts", "work"],
-        ambiguousFallbackAccountId: "default",
-      }),
-    ).toBe("default");
+    expect(merged).toEqual({
+      enabled: true,
+      name: "Work",
+    });
   });
 });

@@ -13,6 +13,8 @@ title: "Tests"
 - `pnpm test:coverage`: Runs the unit suite with V8 coverage (via `vitest.unit.config.ts`). Global thresholds are 70% lines/branches/functions/statements. Coverage excludes integration-heavy entrypoints (CLI wiring, gateway/telegram bridges, webchat static server) to keep the target focused on unit-testable logic.
 - `pnpm test` on Node 24+: RemoteClaw auto-disables Vitest `vmForks` and uses `forks` to avoid `ERR_VM_MODULE_LINK_FAILURE` / `module is already linked`. You can force behavior with `REMOTECLAW_TEST_VM_FORKS=0|1`.
 - `pnpm test`: runs the full wrapper. It keeps only a small behavioral override manifest in git, then uses a checked-in timing snapshot to peel the heaviest measured unit files into dedicated lanes.
+- Unit files default to `threads` in the wrapper; keep fork-only or singleton exceptions documented in `test/fixtures/test-parallel.behavior.json`.
+- Files marked `singletonIsolated` no longer spawn one fresh Vitest process each by default. The wrapper batches them into dedicated `forks` lanes with `maxWorkers=1`, which preserves isolation from `unit-fast` while cutting process startup overhead. Tune lane count with `REMOTECLAW_TEST_SINGLETON_ISOLATED_LANES=<n>`.
 - `pnpm test:channels`: runs channel-heavy suites.
 - `pnpm test:extensions`: runs extension/plugin suites.
 - `pnpm test:perf:update-timings`: refreshes the checked-in slow-file timing snapshot used by `scripts/test-parallel.mjs`.

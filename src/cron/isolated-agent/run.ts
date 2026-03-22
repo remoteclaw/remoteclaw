@@ -233,6 +233,16 @@ function buildCronAgentDefaultsConfig(params: {
   });
 }
 
+function appendCronDeliveryInstruction(params: {
+  commandBody: string;
+  deliveryRequested: boolean;
+}) {
+  if (!params.deliveryRequested) {
+    return params.commandBody;
+  }
+  return `${params.commandBody}\n\nReturn your summary as plain text; it will be delivered automatically. If the task explicitly calls for messaging a specific external recipient, note who/where it should go instead of sending it yourself.`.trim();
+}
+
 export async function runCronIsolatedAgentTurn(params: {
   cfg: RemoteClawConfig;
   deps: CliDeps;
@@ -422,10 +432,7 @@ export async function runCronIsolatedAgentTurn(params: {
     // Internal/trusted source - use original format
     commandBody = `${base}\n${timeLine}`.trim();
   }
-  if (deliveryRequested) {
-    commandBody =
-      `${commandBody}\n\nReturn your summary as plain text; it will be delivered automatically. If the task explicitly calls for messaging a specific external recipient, note who/where it should go instead of sending it yourself.`.trim();
-  }
+  commandBody = appendCronDeliveryInstruction({ commandBody, deliveryRequested });
 
   // Persist the intended model and systemSent before the run so that
   // sessions_list reflects the cron override even if the run fails or is

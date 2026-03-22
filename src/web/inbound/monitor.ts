@@ -18,6 +18,7 @@ import {
   extractMentionedJids,
   extractText,
 } from "./extract.js";
+import { attachEmitterListener, closeInboundMonitorSocket } from "./lifecycle.js";
 import { downloadInboundMedia } from "./media.js";
 import { createWebSendApi } from "./send-api.js";
 import type { WebInboundMessage, WebListenerCloseReason } from "./types.js";
@@ -432,8 +433,6 @@ export async function monitorWebInbox(options: {
       await enqueueInboundMessage(msg, inbound, enriched);
     }
   };
-  sock.ev.on("messages.upsert", handleMessagesUpsert);
-
   const handleConnectionUpdate = (
     update: Partial<import("@whiskeysockets/baileys").ConnectionState>,
   ) => {
@@ -451,7 +450,24 @@ export async function monitorWebInbox(options: {
       resolveClose({ status: undefined, isLoggedOut: false, error: err });
     }
   };
-  sock.ev.on("connection.update", handleConnectionUpdate);
+  const detachMessagesUpsert = attachEmitterListener(
+    sock.ev as unknown as {
+      on: (event: string, listener: (...args: unknown[]) => void) => void;
+      off?: (event: string, listener: (...args: unknown[]) => void) => void;
+      removeListener?: (event: string, listener: (...args: unknown[]) => void) => void;
+    },
+    "messages.upsert",
+    handleMessagesUpsert as unknown as (...args: unknown[]) => void,
+  );
+  const detachConnectionUpdate = attachEmitterListener(
+    sock.ev as unknown as {
+      on: (event: string, listener: (...args: unknown[]) => void) => void;
+      off?: (event: string, listener: (...args: unknown[]) => void) => void;
+      removeListener?: (event: string, listener: (...args: unknown[]) => void) => void;
+    },
+    "connection.update",
+    handleConnectionUpdate as unknown as (...args: unknown[]) => void,
+  );
 
   const sendApi = createWebSendApi({
     sock: {
@@ -464,24 +480,9 @@ export async function monitorWebInbox(options: {
   return {
     close: async () => {
       try {
-        const ev = sock.ev as unknown as {
-          off?: (event: string, listener: (...args: unknown[]) => void) => void;
-          removeListener?: (event: string, listener: (...args: unknown[]) => void) => void;
-        };
-        const messagesUpsertHandler = handleMessagesUpsert as unknown as (
-          ...args: unknown[]
-        ) => void;
-        const connectionUpdateHandler = handleConnectionUpdate as unknown as (
-          ...args: unknown[]
-        ) => void;
-        if (typeof ev.off === "function") {
-          ev.off("messages.upsert", messagesUpsertHandler);
-          ev.off("connection.update", connectionUpdateHandler);
-        } else if (typeof ev.removeListener === "function") {
-          ev.removeListener("messages.upsert", messagesUpsertHandler);
-          ev.removeListener("connection.update", connectionUpdateHandler);
-        }
-        sock.ws?.close();
+        detachMessagesUpsert();
+        detachConnectionUpdate();
+        closeInboundMonitorSocket(sock);
       } catch (err) {
         logVerbose(`Socket close failed: ${String(err)}`);
       }

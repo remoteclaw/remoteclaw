@@ -2,8 +2,9 @@ import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
 import { createTopLevelChannelConfigAdapter } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
   createAllowlistProviderGroupPolicyWarningCollector,
-  projectWarningCollector,
+  projectConfigWarningCollector,
 } from "remoteclaw/plugin-sdk/channel-policy";
+import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
 import {
   createChannelDirectoryAdapter,
   createMessageToolCardSchema,
@@ -392,16 +393,10 @@ export const msteamsPlugin: ChannelPlugin<ResolvedMSTeamsAccount> = {
 
       return results;
     },
-  },
-  actions: {
-    listActions: ({ cfg }) => {
-      const enabled =
-        cfg.channels?.msteams?.enabled !== false &&
-        Boolean(resolveMSTeamsCredentials(cfg.channels?.msteams));
-      if (!enabled) {
-        return [];
-      }
-      return ["poll"] satisfies ChannelMessageActionName[];
+    security: {
+      collectWarnings: projectConfigWarningCollector<{ cfg: RemoteClawConfig }>(
+        collectMSTeamsSecurityWarnings,
+      ),
     },
     supportsCards: ({ cfg }) => {
       return (

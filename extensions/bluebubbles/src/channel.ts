@@ -2,10 +2,23 @@ import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-fr
 import { mapAllowFromEntries } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
 import {
-  createPairingPrefixStripper,
-  createTextPairingAdapter,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+  adaptScopedAccountAccessor,
+  createScopedChannelConfigAdapter,
+  createScopedDmSecurityResolver,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
+import { createPairingPrefixStripper } from "remoteclaw/plugin-sdk/channel-pairing";
+import {
+  createOpenGroupPolicyRestrictSendersWarningCollector,
+  projectAccountWarningCollector,
+} from "remoteclaw/plugin-sdk/channel-policy";
+import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
+import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
 import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
+import {
+  createComputedAccountStatusAdapter,
+  createDefaultChannelRuntimeState,
+} from "remoteclaw/plugin-sdk/status-helpers";
 import {
   listBlueBubblesAccountIds,
   type ResolvedBlueBubblesAccount,
@@ -208,18 +221,12 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = {
       // Last resort: return display or target as-is
       return display?.trim() || target?.trim() || "";
     },
-  },
-  setup: blueBubblesSetupAdapter,
-  pairing: createTextPairingAdapter({
-    idLabel: "bluebubblesSenderId",
-    message: PAIRING_APPROVED_MESSAGE,
-    normalizeAllowEntry: createPairingPrefixStripper(/^bluebubbles:/i, normalizeBlueBubblesHandle),
-    notify: async ({ cfg, id, message }) => {
-      await (
-        await loadBlueBubblesChannelRuntime()
-      ).sendMessageBlueBubbles(id, message, {
-        cfg: cfg,
-      });
+    security: {
+      resolveDmPolicy: resolveBlueBubblesDmPolicy,
+      collectWarnings: projectAccountWarningCollector<
+        ResolvedBlueBubblesAccount,
+        { account: ResolvedBlueBubblesAccount }
+      >(collectBlueBubblesSecurityWarnings),
     },
   }),
   outbound: {

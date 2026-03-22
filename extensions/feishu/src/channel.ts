@@ -2,8 +2,9 @@ import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
 import { createHybridChannelConfigAdapter } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
   createAllowlistProviderGroupPolicyWarningCollector,
-  projectWarningCollector,
+  projectConfigAccountIdWarningCollector,
 } from "remoteclaw/plugin-sdk/channel-policy";
+import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
 import {
   createChannelDirectoryAdapter,
   createMessageToolCardSchema,
@@ -1005,24 +1006,96 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
             limit: limit ?? undefined,
             accountId: accountId ?? undefined,
           }),
-    }),
-  }),
-  outbound: {
-    deliveryMode: "direct",
-    chunker: (text, limit) => getFeishuRuntime().channel.text.chunkMarkdownText(text, limit),
-    chunkerMode: "markdown",
-    textChunkLimit: 4000,
-    ...createRuntimeOutboundDelegates({
-      getRuntime: loadFeishuChannelRuntime,
-      sendText: { resolve: (runtime) => runtime.feishuOutbound.sendText },
-      sendMedia: { resolve: (runtime) => runtime.feishuOutbound.sendMedia },
-    }),
-  },
-  status: {
-    defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID, { port: null }),
-    buildChannelSummary: ({ snapshot }) =>
-      buildProbeChannelStatusSummary(snapshot, {
-        port: snapshot.port ?? null,
+        ...createRuntimeDirectoryLiveAdapter({
+          getRuntime: loadFeishuChannelRuntime,
+          listPeersLive:
+            (runtime) =>
+            async ({ cfg, query, limit, accountId }) =>
+              await runtime.listFeishuDirectoryPeersLive({
+                cfg,
+                query: query ?? undefined,
+                limit: limit ?? undefined,
+                accountId: accountId ?? undefined,
+              }),
+          listGroupsLive:
+            (runtime) =>
+            async ({ cfg, query, limit, accountId }) =>
+              await runtime.listFeishuDirectoryGroupsLive({
+                cfg,
+                query: query ?? undefined,
+                limit: limit ?? undefined,
+                accountId: accountId ?? undefined,
+              }),
+        }),
+      }),
+      status: createComputedAccountStatusAdapter<ResolvedFeishuAccount, FeishuProbeResult>({
+        defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID, { port: null }),
+        buildChannelSummary: ({ snapshot }) =>
+          buildProbeChannelStatusSummary(snapshot, {
+            port: snapshot.port ?? null,
+          }),
+        probeAccount: async ({ account }) =>
+          await (await loadFeishuChannelRuntime()).probeFeishu(account),
+        resolveAccountSnapshot: ({ account, runtime }) => ({
+          accountId: account.accountId,
+          enabled: account.enabled,
+          configured: account.configured,
+          name: account.name,
+          extra: {
+            appId: account.appId,
+            domain: account.domain,
+            port: runtime?.port ?? null,
+          },
+        }),
+      }),
+      gateway: {
+        startAccount: async (ctx) => {
+          const { monitorFeishuProvider } = await import("./monitor.js");
+          const account = resolveFeishuAccount({ cfg: ctx.cfg, accountId: ctx.accountId });
+          const port = account.config?.webhookPort ?? null;
+          ctx.setStatus({ accountId: ctx.accountId, port });
+          ctx.log?.info(
+            `starting feishu[${ctx.accountId}] (mode: ${account.config?.connectionMode ?? "websocket"})`,
+          );
+          return monitorFeishuProvider({
+            config: ctx.cfg,
+            runtime: ctx.runtime,
+            abortSignal: ctx.abortSignal,
+            accountId: ctx.accountId,
+          });
+        },
+      },
+    },
+    security: {
+      collectWarnings: projectConfigAccountIdWarningCollector<{
+        cfg: ClawdbotConfig;
+        accountId?: string | null;
+      }>(collectFeishuSecurityWarnings),
+    },
+    pairing: {
+      text: {
+        idLabel: "feishuUserId",
+        message: PAIRING_APPROVED_MESSAGE,
+        normalizeAllowEntry: createPairingPrefixStripper(/^(feishu|user|open_id):/i),
+        notify: async ({ cfg, id, message }) => {
+          const { sendMessageFeishu } = await loadFeishuChannelRuntime();
+          await sendMessageFeishu({
+            cfg,
+            to: id,
+            text: message,
+          });
+        },
+      },
+    },
+    outbound: {
+      deliveryMode: "direct",
+      chunker: (text, limit) => getFeishuRuntime().channel.text.chunkMarkdownText(text, limit),
+      chunkerMode: "markdown",
+      textChunkLimit: 4000,
+      ...createRuntimeOutboundDelegates({
+        getRuntime: loadFeishuChannelRuntime,
+        sendText: { resolve: (runtime) => runtime.feishuOutbound.sendText },
+        sendMedia: { resolve: (runtime) => runtime.feishuOutbound.sendMedia },
       }),
     probeAccount: async ({ account }) => await probeFeishu(account),
     buildAccountSnapshot: ({ account, runtime, probe }) => ({

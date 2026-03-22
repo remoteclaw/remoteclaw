@@ -9,16 +9,11 @@ import {
   collectAllowlistProviderGroupPolicyWarnings,
 } from "remoteclaw/plugin-sdk/channel-policy";
 import {
-  buildBaseAccountStatusSnapshot,
-  buildBaseChannelStatusSummary,
-  buildChannelConfigSchema,
-  createAccountStatusSink,
-  DEFAULT_ACCOUNT_ID,
-  getChatChannelMeta,
-  PAIRING_APPROVED_MESSAGE,
-  type ChannelPlugin,
-} from "remoteclaw/plugin-sdk/irc";
-import { runStoppablePassiveMonitor } from "../../shared/passive-monitor.js";
+  createChannelDirectoryAdapter,
+  listResolvedDirectoryEntriesFromSources,
+} from "remoteclaw/plugin-sdk/directory-runtime";
+import { runStoppablePassiveMonitor } from "remoteclaw/plugin-sdk/extension-shared";
+import { createDefaultChannelRuntimeState } from "remoteclaw/plugin-sdk/status-helpers";
 import {
   listIrcAccountIds,
   resolveDefaultIrcAccountId,
@@ -233,6 +228,75 @@ export const ircPlugin: ChannelPlugin<ResolvedIrcAccount, IrcProbe> = {
             id: groupId,
             name: groupId,
           };
+        });
+      },
+    },
+    directory: createChannelDirectoryAdapter({
+      listPeers: async (params) =>
+        listResolvedDirectoryEntriesFromSources<ResolvedIrcAccount>({
+          ...params,
+          kind: "user",
+          resolveAccount: adaptScopedAccountAccessor(resolveIrcAccount),
+          resolveSources: (account) => [
+            account.config.allowFrom ?? [],
+            account.config.groupAllowFrom ?? [],
+            ...Object.values(account.config.groups ?? {}).map((group) => group.allowFrom ?? []),
+          ],
+          normalizeId: (entry) => normalizePairingTarget(entry) || null,
+        }),
+      listGroups: async (params) => {
+        const entries = listResolvedDirectoryEntriesFromSources<ResolvedIrcAccount>({
+          ...params,
+          kind: "group",
+          resolveAccount: adaptScopedAccountAccessor(resolveIrcAccount),
+          resolveSources: (account) => [
+            account.config.channels ?? [],
+            Object.keys(account.config.groups ?? {}),
+          ],
+          normalizeId: (entry) => {
+            const normalized = normalizeIrcMessagingTarget(entry);
+            return normalized && isChannelTarget(normalized) ? normalized : null;
+          },
+        });
+        return entries.map((entry) => ({ ...entry, name: entry.id }));
+      },
+    }),
+    status: {
+      defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID),
+      buildChannelSummary: ({ account, snapshot }) => ({
+        ...buildBaseChannelStatusSummary(snapshot),
+        host: account.host,
+        port: snapshot.port,
+        tls: account.tls,
+        nick: account.nick,
+        probe: snapshot.probe,
+        lastProbeAt: snapshot.lastProbeAt ?? null,
+      }),
+      probeAccount: async ({ cfg, account, timeoutMs }) =>
+        probeIrc(cfg as CoreConfig, { accountId: account.accountId, timeoutMs }),
+      buildAccountSnapshot: ({ account, runtime, probe }) =>
+        buildBaseAccountStatusSnapshot(
+          { account, runtime, probe },
+          {
+            host: account.host,
+            port: account.port,
+            tls: account.tls,
+            nick: account.nick,
+            passwordSource: account.passwordSource,
+          },
+        ),
+    },
+    gateway: {
+      startAccount: async (ctx) => {
+        const account = ctx.account;
+        const statusSink = createAccountStatusSink({
+          accountId: ctx.accountId,
+          setStatus: ctx.setStatus,
+        });
+        if (!account.configured) {
+          throw new Error(
+            `IRC is not configured for account "${account.accountId}" (need host and nick in channels.irc).`,
+          );
         }
         if (isChannelTarget(normalized)) {
           return {

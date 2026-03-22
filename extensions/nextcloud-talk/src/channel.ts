@@ -6,10 +6,13 @@ import {
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
 import {
-  collectAllowlistProviderGroupPolicyWarnings,
-  collectOpenGroupPolicyRouteAllowlistWarnings,
-} from "remoteclaw/plugin-sdk/channel-policy";
-import { runStoppablePassiveMonitor } from "../../shared/passive-monitor.js";
+  createLoggedPairingApprovalNotifier,
+  createPairingPrefixStripper,
+} from "remoteclaw/plugin-sdk/channel-pairing";
+import { createAllowlistProviderRouteAllowlistWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
+import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
+import { runStoppablePassiveMonitor } from "remoteclaw/plugin-sdk/extension-shared";
+import { createDefaultChannelRuntimeState } from "remoteclaw/plugin-sdk/status-helpers";
 import {
   applyAccountNameToChannelSection,
   buildBaseChannelStatusSummary,
@@ -167,86 +170,40 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
         return wildcardConfig.requireMention;
       }
 
-      return true;
-    },
-    resolveToolPolicy: resolveNextcloudTalkGroupToolPolicy,
-  },
-  messaging: {
-    normalizeTarget: normalizeNextcloudTalkMessagingTarget,
-    targetResolver: {
-      looksLikeId: looksLikeNextcloudTalkTargetId,
-      hint: "<roomToken>",
-    },
-  },
-  setup: {
-    resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
-    applyAccountName: ({ cfg, accountId, name }) =>
-      applyAccountNameToChannelSection({
-        cfg: cfg,
-        channelKey: "nextcloud-talk",
-        accountId,
-        name,
-      }),
-    validateInput: ({ accountId, input }) => {
-      const setupInput = input as NextcloudSetupInput;
-      if (setupInput.useEnv && accountId !== DEFAULT_ACCOUNT_ID) {
-        return "NEXTCLOUD_TALK_BOT_SECRET can only be used for the default account.";
-      }
-      if (!setupInput.useEnv && !setupInput.secret && !setupInput.secretFile) {
-        return "Nextcloud Talk requires bot secret or --secret-file (or --use-env).";
-      }
-      if (!setupInput.baseUrl) {
-        return "Nextcloud Talk requires --base-url.";
-      }
-      return null;
-    },
-    applyAccountConfig: ({ cfg, accountId, input }) => {
-      const setupInput = input as NextcloudSetupInput;
-      const namedConfig = applyAccountNameToChannelSection({
-        cfg: cfg,
-        channelKey: "nextcloud-talk",
-        accountId,
-        name: setupInput.name,
-      });
-      if (accountId === DEFAULT_ACCOUNT_ID) {
-        return {
-          ...namedConfig,
-          channels: {
-            ...namedConfig.channels,
-            "nextcloud-talk": {
-              ...namedConfig.channels?.["nextcloud-talk"],
-              enabled: true,
-              baseUrl: setupInput.baseUrl,
-              ...(setupInput.useEnv
-                ? {}
-                : setupInput.secretFile
-                  ? { botSecretFile: setupInput.secretFile }
-                  : setupInput.secret
-                    ? { botSecret: setupInput.secret }
-                    : {}),
-            },
-          },
-        } as RemoteClawConfig;
-      }
-      return {
-        ...namedConfig,
-        channels: {
-          ...namedConfig.channels,
-          "nextcloud-talk": {
-            ...namedConfig.channels?.["nextcloud-talk"],
-            enabled: true,
-            accounts: {
-              ...namedConfig.channels?.["nextcloud-talk"]?.accounts,
-              [accountId]: {
-                ...namedConfig.channels?.["nextcloud-talk"]?.accounts?.[accountId],
-                enabled: true,
-                baseUrl: setupInput.baseUrl,
-                ...(setupInput.secretFile
-                  ? { botSecretFile: setupInput.secretFile }
-                  : setupInput.secret
-                    ? { botSecret: setupInput.secret }
-                    : {}),
-              },
+          return true;
+        },
+        resolveToolPolicy: resolveNextcloudTalkGroupToolPolicy,
+      },
+      messaging: {
+        normalizeTarget: normalizeNextcloudTalkMessagingTarget,
+        resolveOutboundSessionRoute: (params) => resolveNextcloudTalkOutboundSessionRoute(params),
+        targetResolver: {
+          looksLikeId: looksLikeNextcloudTalkTargetId,
+          hint: "<roomToken>",
+        },
+      },
+      setup: nextcloudTalkSetupAdapter,
+      status: {
+        defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID),
+        buildChannelSummary: ({ snapshot }) =>
+          buildBaseChannelStatusSummary(snapshot, {
+            secretSource: snapshot.secretSource ?? "none",
+            mode: "webhook",
+          }),
+        buildAccountSnapshot: ({ account, runtime }) => {
+          const configured = Boolean(account.secret?.trim() && account.baseUrl?.trim());
+          return buildRuntimeAccountStatusSnapshot(
+            { runtime },
+            {
+              accountId: account.accountId,
+              name: account.name,
+              enabled: account.enabled,
+              configured,
+              secretSource: account.secretSource,
+              baseUrl: account.baseUrl ? "[set]" : "[missing]",
+              mode: "webhook",
+              lastInboundAt: runtime?.lastInboundAt ?? null,
+              lastOutboundAt: runtime?.lastOutboundAt ?? null,
             },
           },
         },

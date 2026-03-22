@@ -4,10 +4,14 @@ import {
   createAttachedChannelResultAdapter,
   createEmptyChannelDirectoryAdapter,
   createEmptyChannelResult,
-  createPairingPrefixStripper,
-  createTextPairingAdapter,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+} from "remoteclaw/plugin-sdk/channel-send-result";
+import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
+import { createEmptyChannelDirectoryAdapter } from "remoteclaw/plugin-sdk/directory-runtime";
 import { resolveOutboundMediaUrls } from "remoteclaw/plugin-sdk/reply-payload";
+import {
+  createComputedAccountStatusAdapter,
+  createDefaultChannelRuntimeState,
+} from "remoteclaw/plugin-sdk/status-helpers";
 import {
   buildChannelConfigSchema,
   buildComputedAccountStatusSnapshot,
@@ -48,16 +52,146 @@ const resolveLineDmPolicy = createScopedDmSecurityResolver<ResolvedLineAccount>(
   normalizeEntry: (raw) => raw.replace(/^line:(?:user:)?/i, ""),
 });
 
-const collectLineSecurityWarnings =
-  createAllowlistProviderRestrictSendersWarningCollector<ResolvedLineAccount>({
-    providerConfigPresent: (cfg) => cfg.channels?.line !== undefined,
-    resolveGroupPolicy: (account) => account.config.groupPolicy,
-    surface: "LINE groups",
-    openScope: "any member in groups",
-    groupPolicyPath: "channels.line.groupPolicy",
-    groupAllowFromPath: "channels.line.groupAllowFrom",
-    mentionGated: false,
-  });
+export const linePlugin: ChannelPlugin<ResolvedLineAccount> = createChatChannelPlugin({
+  base: {
+    id: "line",
+    ...lineChannelPluginCommon,
+    setupWizard: lineSetupWizard,
+    groups: {
+      resolveRequireMention: resolveLineGroupRequireMention,
+    },
+    messaging: {
+      normalizeTarget: (target) => {
+        const trimmed = target.trim();
+        if (!trimmed) {
+          return undefined;
+        }
+        return trimmed.replace(/^line:(group|room|user):/i, "").replace(/^line:/i, "");
+      },
+      targetResolver: {
+        looksLikeId: (id) => {
+          const trimmed = id?.trim();
+          if (!trimmed) {
+            return false;
+          }
+          // LINE user IDs are typically U followed by 32 hex characters
+          // Group IDs are C followed by 32 hex characters
+          // Room IDs are R followed by 32 hex characters
+          return /^[UCR][a-f0-9]{32}$/i.test(trimmed) || /^line:/i.test(trimmed);
+        },
+        hint: "<userId|groupId|roomId>",
+      },
+    },
+    directory: createEmptyChannelDirectoryAdapter(),
+    setup: lineSetupAdapter,
+    status: createComputedAccountStatusAdapter<ResolvedLineAccount>({
+      defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID),
+      collectStatusIssues: (accounts) => {
+        const issues: ChannelStatusIssue[] = [];
+        for (const account of accounts) {
+          const accountId = account.accountId ?? DEFAULT_ACCOUNT_ID;
+          if (!account.channelAccessToken?.trim()) {
+            issues.push({
+              channel: "line",
+              accountId,
+              kind: "config",
+              message: "LINE channel access token not configured",
+            });
+          }
+          if (!account.channelSecret?.trim()) {
+            issues.push({
+              channel: "line",
+              accountId,
+              kind: "config",
+              message: "LINE channel secret not configured",
+            });
+          }
+        }
+        return issues;
+      },
+      buildChannelSummary: ({ snapshot }) => buildTokenChannelStatusSummary(snapshot),
+      probeAccount: async ({ account, timeoutMs }) =>
+        getLineRuntime().channel.line.probeLineBot(account.channelAccessToken, timeoutMs),
+      resolveAccountSnapshot: ({ account }) => {
+        const configured = Boolean(
+          account.channelAccessToken?.trim() && account.channelSecret?.trim(),
+        );
+        return {
+          accountId: account.accountId,
+          name: account.name,
+          enabled: account.enabled,
+          configured,
+          extra: {
+            tokenSource: account.tokenSource,
+            mode: "webhook",
+          },
+        };
+      },
+    }),
+    gateway: {
+      startAccount: async (ctx) => {
+        const account = ctx.account;
+        const token = account.channelAccessToken.trim();
+        const secret = account.channelSecret.trim();
+        if (!token) {
+          throw new Error(
+            `LINE webhook mode requires a non-empty channel access token for account "${account.accountId}".`,
+          );
+        }
+        if (!secret) {
+          throw new Error(
+            `LINE webhook mode requires a non-empty channel secret for account "${account.accountId}".`,
+          );
+        }
+
+        let lineBotLabel = "";
+        try {
+          const probe = await getLineRuntime().channel.line.probeLineBot(token, 2500);
+          const displayName = probe.ok ? probe.bot?.displayName?.trim() : null;
+          if (displayName) {
+            lineBotLabel = ` (${displayName})`;
+          }
+        } catch (err) {
+          if (getLineRuntime().logging.shouldLogVerbose()) {
+            ctx.log?.debug?.(`[${account.accountId}] bot probe failed: ${String(err)}`);
+          }
+        }
+
+        ctx.log?.info(`[${account.accountId}] starting LINE provider${lineBotLabel}`);
+
+        return await getLineRuntime().channel.line.monitorLineProvider({
+          channelAccessToken: token,
+          channelSecret: secret,
+          accountId: account.accountId,
+          config: ctx.cfg,
+          runtime: ctx.runtime,
+          abortSignal: ctx.abortSignal,
+          webhookPath: account.config.webhookPath,
+        });
+      },
+      logoutAccount: async ({ accountId, cfg }) => {
+        const envToken = process.env.LINE_CHANNEL_ACCESS_TOKEN?.trim() ?? "";
+        const nextCfg = { ...cfg } as RemoteClawConfig;
+        const lineConfig = (cfg.channels?.line ?? {}) as LineConfig;
+        const nextLine = { ...lineConfig };
+        let cleared = false;
+        let changed = false;
+
+        if (accountId === DEFAULT_ACCOUNT_ID) {
+          if (
+            nextLine.channelAccessToken ||
+            nextLine.channelSecret ||
+            nextLine.tokenFile ||
+            nextLine.secretFile
+          ) {
+            delete nextLine.channelAccessToken;
+            delete nextLine.channelSecret;
+            delete nextLine.tokenFile;
+            delete nextLine.secretFile;
+            cleared = true;
+            changed = true;
+          }
+        }
 
 export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
   id: "line",

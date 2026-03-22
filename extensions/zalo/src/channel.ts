@@ -13,10 +13,13 @@ import {
   createChannelDirectoryAdapter,
   createEmptyChannelResult,
   createRawChannelSendResultAdapter,
-  createStaticReplyToModeResolver,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+} from "remoteclaw/plugin-sdk/channel-send-result";
+import { createStaticReplyToModeResolver } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
+import { createChannelDirectoryAdapter } from "remoteclaw/plugin-sdk/directory-runtime";
 import { listResolvedDirectoryUserEntriesFromAllowFrom } from "remoteclaw/plugin-sdk/directory-runtime";
 import { createLazyRuntimeModule } from "remoteclaw/plugin-sdk/lazy-runtime";
+import { createDefaultChannelRuntimeState } from "remoteclaw/plugin-sdk/status-helpers";
 import {
   listZaloAccountIds,
   resolveDefaultZaloAccountId,
@@ -111,54 +114,84 @@ export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
     nativeCommands: false,
     blockStreaming: true,
   },
-  reload: { configPrefixes: ["channels.zalo"] },
-  configSchema: buildChannelConfigSchema(ZaloConfigSchema),
-  config: {
-    ...zaloConfigBase,
-    isConfigured: (account) => Boolean(account.token?.trim()),
-    describeAccount: (account): ChannelAccountSnapshot => ({
-      accountId: account.accountId,
-      name: account.name,
-      enabled: account.enabled,
-      configured: Boolean(account.token?.trim()),
-      tokenSource: account.tokenSource,
-    }),
-    ...zaloConfigAccessors,
-  },
-  security: {
-    resolveDmPolicy: resolveZaloDmPolicy,
-    collectWarnings: ({ account, cfg }) => {
-      return collectOpenProviderGroupPolicyWarnings({
-        cfg,
-        providerConfigPresent: cfg.channels?.zalo !== undefined,
-        configuredGroupPolicy: account.config.groupPolicy,
-        collect: (groupPolicy) => {
-          if (groupPolicy !== "open") {
-            return [];
-          }
-          const explicitGroupAllowFrom = mapAllowFromEntries(account.config.groupAllowFrom);
-          const dmAllowFrom = mapAllowFromEntries(account.config.allowFrom);
-          const effectiveAllowFrom =
-            explicitGroupAllowFrom.length > 0 ? explicitGroupAllowFrom : dmAllowFrom;
-          if (effectiveAllowFrom.length > 0) {
-            return [
-              buildOpenGroupPolicyRestrictSendersWarning({
-                surface: "Zalo groups",
-                openScope: "any member",
-                groupPolicyPath: "channels.zalo.groupPolicy",
-                groupAllowFromPath: "channels.zalo.groupAllowFrom",
-              }),
-            ];
-          }
-          return [
-            buildOpenGroupPolicyWarning({
-              surface: "Zalo groups",
-              openBehavior:
-                "with no groupAllowFrom/allowFrom allowlist; any member can trigger (mention-gated)",
-              remediation:
-                'Set channels.zalo.groupPolicy="allowlist" + channels.zalo.groupAllowFrom',
-            }),
-          ];
+});
+
+export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount, ZaloProbeResult> =
+  createChatChannelPlugin({
+    base: {
+      id: "zalo",
+      meta,
+      setup: zaloSetupAdapter,
+      setupWizard: zaloSetupWizard,
+      capabilities: {
+        chatTypes: ["direct", "group"],
+        media: true,
+        reactions: false,
+        threads: false,
+        polls: false,
+        nativeCommands: false,
+        blockStreaming: true,
+      },
+      reload: { configPrefixes: ["channels.zalo"] },
+      configSchema: buildChannelConfigSchema(ZaloConfigSchema),
+      config: {
+        ...zaloConfigAdapter,
+        isConfigured: (account) => Boolean(account.token?.trim()),
+        describeAccount: (account): ChannelAccountSnapshot =>
+          describeAccountSnapshot({
+            account,
+            configured: Boolean(account.token?.trim()),
+            extra: {
+              tokenSource: account.tokenSource,
+            },
+          }),
+      },
+      groups: {
+        resolveRequireMention: () => true,
+      },
+      actions: zaloMessageActions,
+      messaging: {
+        normalizeTarget: normalizeZaloMessagingTarget,
+        resolveOutboundSessionRoute: (params) => resolveZaloOutboundSessionRoute(params),
+        targetResolver: {
+          looksLikeId: isNumericTargetId,
+          hint: "<chatId>",
+        },
+      },
+      directory: createChannelDirectoryAdapter({
+        listPeers: async (params) =>
+          listResolvedDirectoryUserEntriesFromAllowFrom<ResolvedZaloAccount>({
+            ...params,
+            resolveAccount: adaptScopedAccountAccessor(resolveZaloAccount),
+            resolveAllowFrom: (account) => account.config.allowFrom,
+            normalizeId: (entry) => entry.trim().replace(/^(zalo|zl):/i, ""),
+          }),
+        listGroups: async () => [],
+      }),
+      status: {
+        defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID),
+        collectStatusIssues: collectZaloStatusIssues,
+        buildChannelSummary: ({ snapshot }) => buildTokenChannelStatusSummary(snapshot),
+        probeAccount: async ({ account, timeoutMs }) =>
+          await (await loadZaloChannelRuntime()).probeZaloAccount({ account, timeoutMs }),
+        buildAccountSnapshot: ({ account, runtime }) => {
+          const configured = Boolean(account.token?.trim());
+          return buildBaseAccountStatusSnapshot(
+            {
+              account: {
+                accountId: account.accountId,
+                name: account.name,
+                enabled: account.enabled,
+                configured,
+              },
+              runtime,
+            },
+            {
+              tokenSource: account.tokenSource,
+              mode: account.config.webhookUrl ? "webhook" : "polling",
+              dmPolicy: account.config.dmPolicy ?? "pairing",
+            },
+          );
         },
       });
     },

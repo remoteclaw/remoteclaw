@@ -17,23 +17,11 @@ import {
   createRuntimeOutboundDelegates,
   createTextPairingAdapter,
   listResolvedDirectoryEntriesFromSources,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+} from "remoteclaw/plugin-sdk/directory-runtime";
+import { buildTrafficStatusSummary } from "remoteclaw/plugin-sdk/extension-shared";
 import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
-import { buildTrafficStatusSummary } from "../../shared/channel-status-summary.js";
-import {
-  applyAccountNameToChannelSection,
-  buildChannelConfigSchema,
-  buildProbeChannelStatusSummary,
-  collectStatusIssuesFromLastError,
-  DEFAULT_ACCOUNT_ID,
-  deleteAccountFromConfigSection,
-  mapAllowFromEntries,
-  normalizeAccountId,
-  PAIRING_APPROVED_MESSAGE,
-  setAccountEnabledInConfigSection,
-  type ChannelPlugin,
-} from "remoteclaw/plugin-sdk/matrix";
-import { buildTrafficStatusSummary } from "../../shared/channel-status-summary.js";
+import { createRuntimeOutboundDelegates } from "remoteclaw/plugin-sdk/outbound-runtime";
+import { createDefaultChannelRuntimeState } from "remoteclaw/plugin-sdk/status-helpers";
 import { matrixMessageActions } from "./actions.js";
 import { MatrixConfigSchema } from "./config-schema.js";
 import { listMatrixDirectoryGroupsLive, listMatrixDirectoryPeersLive } from "./directory-live.js";
@@ -205,26 +193,33 @@ export const matrixPlugin: ChannelPlugin<ResolvedMatrixAccount> = {
         }
         return trimmed.includes(":");
       },
-      hint: "<room|alias|user>",
-    },
-  },
-  directory: createChannelDirectoryAdapter({
-    listPeers: async (params) => {
-      const entries = listResolvedDirectoryEntriesFromSources<ResolvedMatrixAccount>({
-        ...params,
-        kind: "user",
-        resolveAccount: adaptScopedAccountAccessor(resolveMatrixAccount),
-        resolveSources: (account) => [
-          account.config.dm?.allowFrom ?? [],
-          account.config.groupAllowFrom ?? [],
-          ...Object.values(account.config.groups ?? account.config.rooms ?? {}).map(
-            (room) => room.users ?? [],
-          ),
-        ],
-        normalizeId: (entry) => {
-          const raw = entry.replace(/^matrix:/i, "").trim();
-          if (!raw || raw === "*") {
-            return null;
+      status: {
+        defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID),
+        collectStatusIssues: (accounts) => collectStatusIssuesFromLastError("matrix", accounts),
+        buildChannelSummary: ({ snapshot }) =>
+          buildProbeChannelStatusSummary(snapshot, { baseUrl: snapshot.baseUrl ?? null }),
+        probeAccount: async ({ account, timeoutMs, cfg }) => {
+          try {
+            const { probeMatrix, resolveMatrixAuth } = await loadMatrixChannelRuntime();
+            const auth = await resolveMatrixAuth({
+              cfg: cfg as CoreConfig,
+              accountId: account.accountId,
+            });
+            return await probeMatrix({
+              homeserver: auth.homeserver,
+              accessToken: auth.accessToken,
+              userId: auth.userId,
+              timeoutMs,
+              accountId: account.accountId,
+              allowPrivateNetwork: auth.allowPrivateNetwork,
+              ssrfPolicy: auth.ssrfPolicy,
+            });
+          } catch (err) {
+            return {
+              ok: false,
+              error: err instanceof Error ? err.message : String(err),
+              elapsedMs: 0,
+            };
           }
           const lowered = raw.toLowerCase();
           const cleaned = lowered.startsWith("user:") ? raw.slice("user:".length).trim() : raw;

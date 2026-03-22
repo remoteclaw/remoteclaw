@@ -12,13 +12,11 @@ import {
   createTopLevelChannelReplyToModeResolver,
   createTextPairingAdapter,
   normalizeMessageChannel,
-  type OutboundSendDeps,
-  resolveOutboundSendDep,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import { buildOutboundBaseSessionKey, normalizeOutboundThreadId } from "remoteclaw/plugin-sdk/core";
-import { resolveExecApprovalCommandDisplay } from "remoteclaw/plugin-sdk/infra-runtime";
-import { buildExecApprovalPendingReplyPayload } from "remoteclaw/plugin-sdk/infra-runtime";
-import { resolveThreadSessionKeys, type RoutePeer } from "remoteclaw/plugin-sdk/routing";
+  normalizeOutboundThreadId,
+  resolveThreadSessionKeys,
+  type RoutePeer,
+} from "remoteclaw/plugin-sdk/routing";
+import { createDefaultChannelRuntimeState } from "remoteclaw/plugin-sdk/status-helpers";
 import { parseTelegramTopicConversation } from "../runtime-api.js";
 import {
   applyAccountNameToChannelSection,
@@ -236,7 +234,232 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
         !findTelegramTokenOwnerAccountId({ cfg, accountId: account.accountId }),
       tokenSource: account.tokenSource,
     }),
-    ...telegramConfigAccessors,
+    actions: telegramMessageActions,
+    status: {
+      defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID),
+      collectStatusIssues: collectTelegramStatusIssues,
+      buildChannelSummary: ({ snapshot }) => buildTokenChannelStatusSummary(snapshot),
+      probeAccount: async ({ account, timeoutMs }) =>
+        probeTelegram(account.token, timeoutMs, {
+          accountId: account.accountId,
+          proxyUrl: account.config.proxy,
+          network: account.config.network,
+          apiRoot: account.config.apiRoot,
+        }),
+      formatCapabilitiesProbe: ({ probe }) => {
+        const lines = [];
+        if (probe?.bot?.username) {
+          const botId = probe.bot.id ? ` (${probe.bot.id})` : "";
+          lines.push({ text: `Bot: @${probe.bot.username}${botId}` });
+        }
+        const flags: string[] = [];
+        if (typeof probe?.bot?.canJoinGroups === "boolean") {
+          flags.push(`joinGroups=${probe.bot.canJoinGroups}`);
+        }
+        if (typeof probe?.bot?.canReadAllGroupMessages === "boolean") {
+          flags.push(`readAllGroupMessages=${probe.bot.canReadAllGroupMessages}`);
+        }
+        if (typeof probe?.bot?.supportsInlineQueries === "boolean") {
+          flags.push(`inlineQueries=${probe.bot.supportsInlineQueries}`);
+        }
+        if (flags.length > 0) {
+          lines.push({ text: `Flags: ${flags.join(" ")}` });
+        }
+        if (probe?.webhook?.url !== undefined) {
+          lines.push({ text: `Webhook: ${probe.webhook.url || "none"}` });
+        }
+        return lines;
+      },
+      auditAccount: async ({ account, timeoutMs, probe, cfg }) => {
+        const groups =
+          cfg.channels?.telegram?.accounts?.[account.accountId]?.groups ??
+          cfg.channels?.telegram?.groups;
+        const { groupIds, unresolvedGroups, hasWildcardUnmentionedGroups } =
+          collectTelegramUnmentionedGroupIds(groups);
+        if (!groupIds.length && unresolvedGroups === 0 && !hasWildcardUnmentionedGroups) {
+          return undefined;
+        }
+        const botId = probe?.ok && probe.bot?.id != null ? probe.bot.id : null;
+        if (!botId) {
+          return {
+            ok: unresolvedGroups === 0 && !hasWildcardUnmentionedGroups,
+            checkedGroups: 0,
+            unresolvedGroups,
+            hasWildcardUnmentionedGroups,
+            groups: [],
+            elapsedMs: 0,
+          };
+        }
+        const audit = await auditTelegramGroupMembership({
+          token: account.token,
+          botId,
+          groupIds,
+          proxyUrl: account.config.proxy,
+          network: account.config.network,
+          apiRoot: account.config.apiRoot,
+          timeoutMs,
+        });
+        return { ...audit, unresolvedGroups, hasWildcardUnmentionedGroups };
+      },
+      buildAccountSnapshot: ({ account, cfg, runtime, probe, audit }) => {
+        const configuredFromStatus = resolveConfiguredFromCredentialStatuses(account);
+        const ownerAccountId = findTelegramTokenOwnerAccountId({
+          cfg,
+          accountId: account.accountId,
+        });
+        const duplicateTokenReason = ownerAccountId
+          ? formatDuplicateTelegramTokenReason({
+              accountId: account.accountId,
+              ownerAccountId,
+            })
+          : null;
+        const configured =
+          (configuredFromStatus ?? Boolean(account.token?.trim())) && !ownerAccountId;
+        const groups =
+          cfg.channels?.telegram?.accounts?.[account.accountId]?.groups ??
+          cfg.channels?.telegram?.groups;
+        const allowUnmentionedGroups =
+          groups?.["*"]?.requireMention === false ||
+          Object.entries(groups ?? {}).some(
+            ([key, value]) => key !== "*" && value?.requireMention === false,
+          );
+        return {
+          accountId: account.accountId,
+          name: account.name,
+          enabled: account.enabled,
+          configured,
+          ...projectCredentialSnapshotFields(account),
+          running: runtime?.running ?? false,
+          lastStartAt: runtime?.lastStartAt ?? null,
+          lastStopAt: runtime?.lastStopAt ?? null,
+          lastError: runtime?.lastError ?? duplicateTokenReason,
+          mode: runtime?.mode ?? (account.config.webhookUrl ? "webhook" : "polling"),
+          probe,
+          audit,
+          allowUnmentionedGroups,
+          lastInboundAt: runtime?.lastInboundAt ?? null,
+          lastOutboundAt: runtime?.lastOutboundAt ?? null,
+        };
+      },
+    },
+    gateway: {
+      startAccount: async (ctx) => {
+        const account = ctx.account;
+        const ownerAccountId = findTelegramTokenOwnerAccountId({
+          cfg: ctx.cfg,
+          accountId: account.accountId,
+        });
+        if (ownerAccountId) {
+          const reason = formatDuplicateTelegramTokenReason({
+            accountId: account.accountId,
+            ownerAccountId,
+          });
+          ctx.log?.error?.(`[${account.accountId}] ${reason}`);
+          throw new Error(reason);
+        }
+        const token = (account.token ?? "").trim();
+        let telegramBotLabel = "";
+        try {
+          const probe = await probeTelegram(token, 2500, {
+            accountId: account.accountId,
+            proxyUrl: account.config.proxy,
+            network: account.config.network,
+            apiRoot: account.config.apiRoot,
+          });
+          const username = probe.ok ? probe.bot?.username?.trim() : null;
+          if (username) {
+            telegramBotLabel = ` (@${username})`;
+          }
+        } catch (err) {
+          if (getTelegramRuntime().logging.shouldLogVerbose()) {
+            ctx.log?.debug?.(`[${account.accountId}] bot probe failed: ${String(err)}`);
+          }
+        }
+        ctx.log?.info(`[${account.accountId}] starting provider${telegramBotLabel}`);
+        return monitorTelegramProvider({
+          token,
+          accountId: account.accountId,
+          config: ctx.cfg,
+          runtime: ctx.runtime,
+          abortSignal: ctx.abortSignal,
+          useWebhook: Boolean(account.config.webhookUrl),
+          webhookUrl: account.config.webhookUrl,
+          webhookSecret: account.config.webhookSecret,
+          webhookPath: account.config.webhookPath,
+          webhookHost: account.config.webhookHost,
+          webhookPort: account.config.webhookPort,
+          webhookCertPath: account.config.webhookCertPath,
+        });
+      },
+      logoutAccount: async ({ accountId, cfg }) => {
+        const envToken = process.env.TELEGRAM_BOT_TOKEN?.trim() ?? "";
+        const nextCfg = { ...cfg } as RemoteClawConfig;
+        const nextTelegram = cfg.channels?.telegram ? { ...cfg.channels.telegram } : undefined;
+        let cleared = false;
+        let changed = false;
+        if (nextTelegram) {
+          if (accountId === DEFAULT_ACCOUNT_ID && nextTelegram.botToken) {
+            delete nextTelegram.botToken;
+            cleared = true;
+            changed = true;
+          }
+          const accountCleanup = clearAccountEntryFields({
+            accounts: nextTelegram.accounts,
+            accountId,
+            fields: ["botToken"],
+          });
+          if (accountCleanup.changed) {
+            changed = true;
+            if (accountCleanup.cleared) {
+              cleared = true;
+            }
+            if (accountCleanup.nextAccounts) {
+              nextTelegram.accounts = accountCleanup.nextAccounts;
+            } else {
+              delete nextTelegram.accounts;
+            }
+          }
+        }
+        if (changed) {
+          if (nextTelegram && Object.keys(nextTelegram).length > 0) {
+            nextCfg.channels = { ...nextCfg.channels, telegram: nextTelegram };
+          } else {
+            const nextChannels = { ...nextCfg.channels };
+            delete nextChannels.telegram;
+            if (Object.keys(nextChannels).length > 0) {
+              nextCfg.channels = nextChannels;
+            } else {
+              delete nextCfg.channels;
+            }
+          }
+        }
+        const resolved = resolveTelegramAccount({
+          cfg: changed ? nextCfg : cfg,
+          accountId,
+        });
+        const loggedOut = resolved.tokenSource === "none";
+        if (changed) {
+          await getTelegramRuntime().config.writeConfigFile(nextCfg);
+        }
+        return { cleared, envToken: Boolean(envToken), loggedOut };
+      },
+    },
+  },
+  pairing: {
+    text: {
+      idLabel: "telegramUserId",
+      message: PAIRING_APPROVED_MESSAGE,
+      normalizeAllowEntry: createPairingPrefixStripper(/^(telegram|tg):/i),
+      notify: async ({ cfg, id, message }) => {
+        const { token } = getTelegramRuntime().channel.telegram.resolveTelegramToken(cfg);
+        if (!token) {
+          throw new Error("telegram token not configured");
+        }
+        await getTelegramRuntime().channel.telegram.sendMessageTelegram(id, message, {
+          token,
+        });
+      },
+    },
   },
   security: {
     resolveDmPolicy: resolveTelegramDmPolicy,

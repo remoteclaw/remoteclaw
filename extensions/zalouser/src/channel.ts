@@ -1,5 +1,14 @@
 import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
+import { createPairingPrefixStripper } from "remoteclaw/plugin-sdk/channel-pairing";
+import {
+  createEmptyChannelResult,
+  createRawChannelSendResultAdapter,
+} from "remoteclaw/plugin-sdk/channel-send-result";
+import { createStaticReplyToModeResolver } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
+import { buildPassiveProbedChannelStatusSummary } from "remoteclaw/plugin-sdk/extension-shared";
+import { createDefaultChannelRuntimeState } from "remoteclaw/plugin-sdk/status-helpers";
 import type {
   ChannelAccountSnapshot,
   ChannelDirectoryEntry,
@@ -586,18 +595,31 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
           textChunkLimit: resolveZalouserOutboundTextChunkLimit(cfg, account.accountId),
         });
       },
-      sendMedia: async ({ to, text, mediaUrl, accountId, cfg, mediaLocalRoots }) => {
-        const account = resolveZalouserAccountSync({ cfg: cfg, accountId });
-        const target = parseZalouserOutboundTarget(to);
-        return await sendMessageZalouser(target.threadId, text, {
-          profile: account.profile,
-          isGroup: target.isGroup,
-          mediaUrl,
-          mediaLocalRoots,
-          textMode: "markdown",
-          textChunkMode: resolveZalouserOutboundChunkMode(cfg, account.accountId),
-          textChunkLimit: resolveZalouserOutboundTextChunkLimit(cfg, account.accountId),
-        });
+      status: {
+        defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID),
+        collectStatusIssues: collectZalouserStatusIssues,
+        buildChannelSummary: ({ snapshot }) => buildPassiveProbedChannelStatusSummary(snapshot),
+        probeAccount: async ({ account, timeoutMs }) => probeZalouser(account.profile, timeoutMs),
+        buildAccountSnapshot: async ({ account, runtime }) => {
+          const configured = await checkZcaAuthenticated(account.profile);
+          const configError = "not authenticated";
+          return buildBaseAccountStatusSnapshot(
+            {
+              account: {
+                accountId: account.accountId,
+                name: account.name,
+                enabled: account.enabled,
+                configured,
+              },
+              runtime: configured
+                ? runtime
+                : { ...runtime, lastError: runtime?.lastError ?? configError },
+            },
+            {
+              dmPolicy: account.config.dmPolicy ?? "pairing",
+            },
+          );
+        },
       },
     }),
   },

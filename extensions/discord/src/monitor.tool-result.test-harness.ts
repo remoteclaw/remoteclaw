@@ -7,6 +7,7 @@ export const updateLastRouteMock: MockFn = vi.fn();
 export const dispatchMock: MockFn = vi.fn();
 export const readAllowFromStoreMock: MockFn = vi.fn();
 export const upsertPairingRequestMock: MockFn = vi.fn();
+export const loadConfigMock: MockFn = vi.fn();
 
 vi.mock("./send.js", () => ({
   sendMessageDiscord: (...args: unknown[]) => sendMock(...args),
@@ -42,7 +43,9 @@ vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
   const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
   return {
     ...actual,
-    resolveStorePath: vi.fn(() => "/tmp/remoteclaw-sessions.json"),
+    loadConfig: (...args: unknown[]) => loadConfigMock(...args),
+    readSessionUpdatedAt: vi.fn(() => undefined),
+    resolveStorePath: vi.fn(() => "/tmp/openclaw-sessions.json"),
     updateLastRoute: (...args: unknown[]) => updateLastRouteMock(...args),
     resolveSessionKey: vi.fn(),
   };

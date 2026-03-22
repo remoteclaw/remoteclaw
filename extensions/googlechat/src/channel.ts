@@ -1,6 +1,7 @@
 import {
   buildAccountScopedDmSecurityPolicy,
   buildOpenGroupPolicyConfigureRouteAllowlistWarning,
+  collectAllowlistProviderGroupPolicyWarnings,
   createScopedAccountConfigAccessors,
 } from "remoteclaw/plugin-sdk";
 import {
@@ -21,8 +22,6 @@ import {
   PAIRING_APPROVED_MESSAGE,
   resolveChannelMediaMaxBytes,
   resolveGoogleChatGroupRequireMention,
-  resolveAllowlistProviderRuntimeGroupPolicy,
-  resolveDefaultGroupPolicy,
   resolveOptionalConfigString,
   setAccountEnabledInConfigSection,
   type ChannelDock,
@@ -196,23 +195,22 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
       });
     },
     collectWarnings: ({ account, cfg }) => {
-      const warnings: string[] = [];
-      const defaultGroupPolicy = resolveDefaultGroupPolicy(cfg);
-      const { groupPolicy } = resolveAllowlistProviderRuntimeGroupPolicy({
+      const warnings = collectAllowlistProviderGroupPolicyWarnings({
+        cfg,
         providerConfigPresent: cfg.channels?.googlechat !== undefined,
-        groupPolicy: account.config.groupPolicy,
-        defaultGroupPolicy,
+        configuredGroupPolicy: account.config.groupPolicy,
+        collect: (groupPolicy) =>
+          groupPolicy === "open"
+            ? [
+                buildOpenGroupPolicyConfigureRouteAllowlistWarning({
+                  surface: "Google Chat spaces",
+                  openScope: "any space",
+                  groupPolicyPath: "channels.googlechat.groupPolicy",
+                  routeAllowlistPath: "channels.googlechat.groups",
+                }),
+              ]
+            : [],
       });
-      if (groupPolicy === "open") {
-        warnings.push(
-          buildOpenGroupPolicyConfigureRouteAllowlistWarning({
-            surface: "Google Chat spaces",
-            openScope: "any space",
-            groupPolicyPath: "channels.googlechat.groupPolicy",
-            routeAllowlistPath: "channels.googlechat.groups",
-          }),
-        );
-      }
       if (account.config.dm?.policy === "open") {
         warnings.push(
           `- Google Chat DMs are open to anyone. Set channels.googlechat.dm.policy="pairing" or "allowlist".`,

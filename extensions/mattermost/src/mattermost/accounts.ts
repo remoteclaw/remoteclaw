@@ -1,5 +1,20 @@
+<<<<<<< HEAD
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
 import { createAccountListHelpers, type RemoteClawConfig } from "remoteclaw/plugin-sdk/mattermost";
+||||||| parent of ff941b0193 (refactor: share nested account config merges)
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
+import {
+  resolveAccountEntry,
+  resolveMergedAccountConfig,
+} from "openclaw/plugin-sdk/account-resolution";
+import { createAccountListHelpers, type OpenClawConfig } from "../runtime-api.js";
+import { normalizeResolvedSecretInputString, normalizeSecretInputString } from "../secret-input.js";
+=======
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
+import { resolveMergedAccountConfig } from "openclaw/plugin-sdk/account-resolution";
+import { createAccountListHelpers, type OpenClawConfig } from "../runtime-api.js";
+import { normalizeResolvedSecretInputString, normalizeSecretInputString } from "../secret-input.js";
+>>>>>>> ff941b0193 (refactor: share nested account config merges)
 import type {
   MattermostAccountConfig,
   MattermostChatMode,
@@ -34,6 +49,7 @@ const {
 } = createAccountListHelpers("mattermost");
 export { listMattermostAccountIds, resolveDefaultMattermostAccountId };
 
+<<<<<<< HEAD
 function resolveAccountConfig(
   cfg: RemoteClawConfig,
   accountId: string,
@@ -45,10 +61,21 @@ function resolveAccountConfig(
   return accounts[accountId] as MattermostAccountConfig | undefined;
 }
 
+||||||| parent of ff941b0193 (refactor: share nested account config merges)
+function resolveAccountConfig(
+  cfg: OpenClawConfig,
+  accountId: string,
+): MattermostAccountConfig | undefined {
+  return resolveAccountEntry(cfg.channels?.mattermost?.accounts, accountId);
+}
+
+=======
+>>>>>>> ff941b0193 (refactor: share nested account config merges)
 function mergeMattermostAccountConfig(
   cfg: RemoteClawConfig,
   accountId: string,
 ): MattermostAccountConfig {
+<<<<<<< HEAD
   const {
     accounts: _ignored,
     defaultAccount: _ignoredDefaultAccount,
@@ -73,6 +100,40 @@ function mergeMattermostAccountConfig(
   }
 
   return merged;
+||||||| parent of ff941b0193 (refactor: share nested account config merges)
+  const account = resolveAccountConfig(cfg, accountId) ?? {};
+  const merged = resolveMergedAccountConfig<MattermostAccountConfig>({
+    channelConfig: cfg.channels?.mattermost as MattermostAccountConfig | undefined,
+    accounts: cfg.channels?.mattermost?.accounts as
+      | Record<string, Partial<MattermostAccountConfig>>
+      | undefined,
+    accountId,
+    omitKeys: ["defaultAccount"],
+  });
+
+  // Shallow merging is fine for most keys, but `commands` should be merged
+  // so that account-specific overrides (callbackPath/callbackUrl) do not
+  // accidentally reset global settings like `native: true`.
+  const mergedCommands = {
+    ...((cfg.channels?.mattermost as MattermostAccountConfig | undefined)?.commands ?? {}),
+    ...(account.commands ?? {}),
+  };
+  if (Object.keys(mergedCommands).length > 0) {
+    merged.commands = mergedCommands;
+  }
+
+  return merged;
+=======
+  return resolveMergedAccountConfig<MattermostAccountConfig>({
+    channelConfig: cfg.channels?.mattermost as MattermostAccountConfig | undefined,
+    accounts: cfg.channels?.mattermost?.accounts as
+      | Record<string, Partial<MattermostAccountConfig>>
+      | undefined,
+    accountId,
+    omitKeys: ["defaultAccount"],
+    nestedObjectKeys: ["commands"],
+  });
+>>>>>>> ff941b0193 (refactor: share nested account config merges)
 }
 
 function resolveMattermostRequireMention(config: MattermostAccountConfig): boolean | undefined {

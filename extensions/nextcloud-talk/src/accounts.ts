@@ -1,4 +1,15 @@
+<<<<<<< HEAD
 import { readFileSync } from "node:fs";
+||||||| parent of ff941b0193 (refactor: share nested account config merges)
+import {
+  mergeAccountConfig,
+  resolveNormalizedAccountEntry,
+} from "openclaw/plugin-sdk/account-resolution";
+import { tryReadSecretFileSync } from "openclaw/plugin-sdk/infra-runtime";
+=======
+import { resolveMergedAccountConfig } from "openclaw/plugin-sdk/account-resolution";
+import { tryReadSecretFileSync } from "openclaw/plugin-sdk/infra-runtime";
+>>>>>>> ff941b0193 (refactor: share nested account config merges)
 import {
   createAccountListHelpers,
   DEFAULT_ACCOUNT_ID,
@@ -42,6 +53,7 @@ export function listNextcloudTalkAccountIds(cfg: CoreConfig): string[] {
   return ids;
 }
 
+<<<<<<< HEAD
 function resolveAccountConfig(
   cfg: CoreConfig,
   accountId: string,
@@ -59,10 +71,27 @@ function resolveAccountConfig(
   return matchKey ? (accounts[matchKey] as NextcloudTalkAccountConfig | undefined) : undefined;
 }
 
+||||||| parent of ff941b0193 (refactor: share nested account config merges)
+function resolveAccountConfig(
+  cfg: CoreConfig,
+  accountId: string,
+): NextcloudTalkAccountConfig | undefined {
+  return resolveNormalizedAccountEntry(
+    cfg.channels?.["nextcloud-talk"]?.accounts as
+      | Record<string, NextcloudTalkAccountConfig>
+      | undefined,
+    accountId,
+    normalizeAccountId,
+  );
+}
+
+=======
+>>>>>>> ff941b0193 (refactor: share nested account config merges)
 function mergeNextcloudTalkAccountConfig(
   cfg: CoreConfig,
   accountId: string,
 ): NextcloudTalkAccountConfig {
+<<<<<<< HEAD
   const {
     accounts: _ignored,
     defaultAccount: _ignoredDefaultAccount,
@@ -73,6 +102,23 @@ function mergeNextcloudTalkAccountConfig(
   };
   const account = resolveAccountConfig(cfg, accountId) ?? {};
   return { ...base, ...account };
+||||||| parent of ff941b0193 (refactor: share nested account config merges)
+  return mergeAccountConfig<NextcloudTalkAccountConfig>({
+    channelConfig: cfg.channels?.["nextcloud-talk"] as NextcloudTalkAccountConfig | undefined,
+    accountConfig: resolveAccountConfig(cfg, accountId),
+    omitKeys: ["defaultAccount"],
+  });
+=======
+  return resolveMergedAccountConfig<NextcloudTalkAccountConfig>({
+    channelConfig: cfg.channels?.["nextcloud-talk"] as NextcloudTalkAccountConfig | undefined,
+    accounts: cfg.channels?.["nextcloud-talk"]?.accounts as
+      | Record<string, Partial<NextcloudTalkAccountConfig>>
+      | undefined,
+    accountId,
+    omitKeys: ["defaultAccount"],
+    normalizeAccountId,
+  });
+>>>>>>> ff941b0193 (refactor: share nested account config merges)
 }
 
 function resolveNextcloudTalkSecret(

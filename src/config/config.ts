@@ -2,6 +2,7 @@ export {
   clearConfigCache,
   clearRuntimeConfigSnapshot,
   createConfigIO,
+  getRuntimeConfigSnapshot,
   loadConfig,
   readBestEffortConfig,
   parseConfigJson5,

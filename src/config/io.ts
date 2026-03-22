@@ -1326,6 +1326,10 @@ export function clearConfigCache(): void {
   configCache = null;
 }
 
+export function getRuntimeConfigSnapshot(): RemoteClawConfig | null {
+  return runtimeConfigSnapshot;
+}
+
 export function setRuntimeConfigSnapshot(config: RemoteClawConfig): void {
   runtimeConfigSnapshot = config;
   clearConfigCache();

@@ -1,5 +1,16 @@
-import type { FailoverReason } from "../agents/pi-embedded-helpers.js";
 import type { ChannelId } from "../channels/plugins/types.js";
+
+type FailoverReason =
+  | "auth"
+  | "auth_permanent"
+  | "format"
+  | "rate_limit"
+  | "overloaded"
+  | "billing"
+  | "timeout"
+  | "model_not_found"
+  | "session_expired"
+  | "unknown";
 
 export type CronSchedule =
   | { kind: "at"; at: string }

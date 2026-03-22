@@ -5,8 +5,10 @@ import {
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
   createAllowlistProviderOpenWarningCollector,
-  projectWarningCollector,
+  projectAccountConfigWarningCollector,
 } from "remoteclaw/plugin-sdk/channel-policy";
+import { createScopedAccountReplyToModeResolver } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
 import {
   createChannelDirectoryAdapter,
   createPairingPrefixStripper,
@@ -274,13 +276,25 @@ export const matrixPlugin: ChannelPlugin<ResolvedMatrixAccount> = {
         resolve: (runtime) => runtime.matrixOutbound.sendText,
         unavailableMessage: "Matrix outbound text delivery is unavailable",
       },
-      sendMedia: {
-        resolve: (runtime) => runtime.matrixOutbound.sendMedia,
-        unavailableMessage: "Matrix outbound media delivery is unavailable",
-      },
-      sendPoll: {
-        resolve: (runtime) => runtime.matrixOutbound.sendPoll,
-        unavailableMessage: "Matrix outbound poll delivery is unavailable",
+    },
+    security: {
+      resolveDmPolicy: resolveMatrixDmPolicy,
+      collectWarnings: projectAccountConfigWarningCollector(
+        (cfg) => cfg as CoreConfig,
+        collectMatrixSecurityWarningsForAccount,
+      ),
+    },
+    pairing: {
+      text: {
+        idLabel: "matrixUserId",
+        message: PAIRING_APPROVED_MESSAGE,
+        normalizeAllowEntry: createPairingPrefixStripper(/^matrix:/i),
+        notify: async ({ id, message, accountId }) => {
+          const { sendMessageMatrix } = await loadMatrixChannelRuntime();
+          await sendMessageMatrix(`user:${id}`, message, {
+            ...(accountId ? { accountId } : {}),
+          });
+        },
       },
     }),
   },

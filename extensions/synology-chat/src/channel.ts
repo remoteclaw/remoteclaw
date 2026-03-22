@@ -10,12 +10,12 @@ import {
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
   createConditionalWarningCollector,
-  projectWarningCollector,
+  projectAccountWarningCollector,
 } from "remoteclaw/plugin-sdk/channel-policy";
-import {
-  createEmptyChannelDirectoryAdapter,
-  createTextPairingAdapter,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+import { attachChannelToResult } from "remoteclaw/plugin-sdk/channel-send-result";
+import { createChatChannelPlugin, type ChannelPlugin } from "remoteclaw/plugin-sdk/core";
+import { createEmptyChannelDirectoryAdapter } from "remoteclaw/plugin-sdk/directory-runtime";
+import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/setup";
 import { z } from "zod";
 import { listAccountIds, resolveAccount } from "./accounts.js";
 import { sendMessage, sendFileUrl } from "./client.js";
@@ -143,10 +143,10 @@ export function createSynologyChatPlugin() {
 
     security: {
       resolveDmPolicy: resolveSynologyChatDmPolicy,
-      collectWarnings: projectWarningCollector(
-        ({ account }: { account: ResolvedSynologyChatAccount }) => account,
-        collectSynologyChatSecurityWarnings,
-      ),
+      collectWarnings: projectAccountWarningCollector<
+        ResolvedSynologyChatAccount,
+        { account: ResolvedSynologyChatAccount }
+      >(collectSynologyChatSecurityWarnings),
     },
 
     messaging: {

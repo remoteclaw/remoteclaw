@@ -1,5 +1,5 @@
 ---
-description: "Group chat behavior across surfaces (WhatsApp/Telegram/Discord/Slack/Signal/iMessage/Microsoft Teams/Zalo)"
+summary: "Group chat behavior across surfaces (WhatsApp/Telegram/Discord/Slack/Signal/iMessage/Microsoft Teams/Zalo)"
 read_when:
   - Changing group chat behavior or mention gating
 title: "Groups"
@@ -58,29 +58,67 @@ If you want...
 
 Yes — this works well if your “personal” traffic is **DMs** and your “public” traffic is **groups**.
 
-Why: in single-agent mode, DMs typically land in the **main** session key (`agent:main:main`), while groups always use **non-main** session keys (`agent:main:<channel>:group:<id>`). Per-session tool restrictions can be configured to limit what group sessions can do.
+Why: in single-agent mode, DMs typically land in the **main** session key (`agent:main:main`), while groups always use **non-main** session keys (`agent:main:<channel>:group:<id>`). If you enable sandboxing with `mode: "non-main"`, those group sessions run in Docker while your main DM session stays on-host.
 
 This gives you one agent “brain” (shared workspace + memory), but two execution postures:
 
 - **DMs**: full tools (host)
-- **Groups**: restricted tools
+- **Groups**: sandbox + restricted tools (Docker)
 
-Example (DMs on host, groups with restricted tools):
+> If you need truly separate workspaces/personas (“personal” and “public” must never mix), use a second agent + bindings. See [Multi-Agent Routing](/concepts/multi-agent).
+
+Example (DMs on host, groups sandboxed + messaging-only tools):
 
 ```json5
 {
+  agents: {
+    defaults: {
+      sandbox: {
+        mode: "non-main", // groups/channels are non-main -> sandboxed
+        scope: "session", // strongest isolation (one container per group/channel)
+        workspaceAccess: "none",
+      },
+    },
+  },
   tools: {
-    profiles: {
-      restricted: {
-        allow: [“group:messaging”, “group:sessions”],
-        deny: [“group:runtime”, “group:fs”, “group:ui”, “nodes”, “cron”, “gateway”],
+    sandbox: {
+      tools: {
+        // If allow is non-empty, everything else is blocked (deny still wins).
+        allow: ["group:messaging", "group:sessions"],
+        deny: ["group:runtime", "group:fs", "group:ui", "nodes", "cron", "gateway"],
       },
     },
   },
 }
 ```
 
-> If you need truly separate workspaces/personas (“personal” and “public” must never mix), use a second agent + bindings. See [Multi-Agent Routing](/concepts/multi-agent).
+Want “groups can only see folder X” instead of “no host access”? Keep `workspaceAccess: "none"` and mount only allowlisted paths into the sandbox:
+
+```json5
+{
+  agents: {
+    defaults: {
+      sandbox: {
+        mode: "non-main",
+        scope: "session",
+        workspaceAccess: "none",
+        docker: {
+          binds: [
+            // hostPath:containerPath:mode
+            "/home/user/FriendsShared:/data:ro",
+          ],
+        },
+      },
+    },
+  },
+}
+```
+
+Related:
+
+- Configuration keys and defaults: [Gateway configuration](/gateway/configuration-reference#agentsdefaultssandbox)
+- Debugging why a tool is blocked: [Sandbox vs Tool Policy vs Elevated](/gateway/sandbox-vs-tool-policy-vs-elevated)
+- Bind mounts details: [Sandboxing](/gateway/sandboxing#custom-bind-mounts)
 
 ## Display labels
 
@@ -146,6 +184,7 @@ Notes:
 
 - `groupPolicy` is separate from mention-gating (which requires @mentions).
 - WhatsApp/Telegram/Signal/iMessage/Microsoft Teams/Zalo: use `groupAllowFrom` (fallback: explicit `allowFrom`).
+- DM pairing approvals (`*-allowFrom` store entries) apply to DM access only; group sender authorization stays explicit to group allowlists.
 - Discord: allowlist uses `channels.discord.guilds.<id>.channels`.
 - Slack: allowlist uses `channels.slack.channels`.
 - Matrix: allowlist uses `channels.matrix.groups` (room IDs, aliases, or names). Use `channels.matrix.groupAllowFrom` to restrict senders; per-room `users` allowlists are also supported.
@@ -204,7 +243,7 @@ Replying to a bot message counts as an implicit mention (when the channel suppor
 
 Notes:
 
-- `mentionPatterns` are case-insensitive regexes.
+- `mentionPatterns` are case-insensitive safe regex patterns; invalid patterns and unsafe nested-repetition forms are ignored.
 - Surfaces that provide explicit mentions still pass; patterns are a fallback.
 - Per-agent override: `agents.list[].groupChat.mentionPatterns` (useful when multiple agents share a group).
 - Mention gating is only enforced when mention detection is possible (native mentions or `mentionPatterns` are configured).

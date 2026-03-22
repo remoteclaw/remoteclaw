@@ -59,9 +59,90 @@ Not sandboxed:
 `agents.defaults.sandbox.backend` controls **which runtime** provides the sandbox:
 
 - `"docker"` (default): local Docker-backed sandbox runtime.
+- `"ssh"`: generic SSH-backed remote sandbox runtime.
 - `"openshell"`: OpenShell-backed sandbox runtime.
 
+SSH-specific config lives under `agents.defaults.sandbox.ssh`.
 OpenShell-specific config lives under `plugins.entries.openshell.config`.
+
+### Choosing a backend
+
+|                     | Docker                           | SSH                            | OpenShell                                           |
+| ------------------- | -------------------------------- | ------------------------------ | --------------------------------------------------- |
+| **Where it runs**   | Local container                  | Any SSH-accessible host        | OpenShell managed sandbox                           |
+| **Setup**           | `scripts/sandbox-setup.sh`       | SSH key + target host          | OpenShell plugin enabled                            |
+| **Workspace model** | Bind-mount or copy               | Remote-canonical (seed once)   | `mirror` or `remote`                                |
+| **Network control** | `docker.network` (default: none) | Depends on remote host         | Depends on OpenShell                                |
+| **Browser sandbox** | Supported                        | Not supported                  | Not supported yet                                   |
+| **Bind mounts**     | `docker.binds`                   | N/A                            | N/A                                                 |
+| **Best for**        | Local dev, full isolation        | Offloading to a remote machine | Managed remote sandboxes with optional two-way sync |
+
+### SSH backend
+
+Use `backend: "ssh"` when you want RemoteClaw to sandbox `exec`, file tools, and media reads on
+an arbitrary SSH-accessible machine.
+
+```json5
+{
+  agents: {
+    defaults: {
+      sandbox: {
+        mode: "all",
+        backend: "ssh",
+        scope: "session",
+        workspaceAccess: "rw",
+        ssh: {
+          target: "user@gateway-host:22",
+          workspaceRoot: "/tmp/remoteclaw-sandboxes",
+          strictHostKeyChecking: true,
+          updateHostKeys: true,
+          identityFile: "~/.ssh/id_ed25519",
+          certificateFile: "~/.ssh/id_ed25519-cert.pub",
+          knownHostsFile: "~/.ssh/known_hosts",
+          // Or use SecretRefs / inline contents instead of local files:
+          // identityData: { source: "env", provider: "default", id: "SSH_IDENTITY" },
+          // certificateData: { source: "env", provider: "default", id: "SSH_CERTIFICATE" },
+          // knownHostsData: { source: "env", provider: "default", id: "SSH_KNOWN_HOSTS" },
+        },
+      },
+    },
+  },
+}
+```
+
+How it works:
+
+- RemoteClaw creates a per-scope remote root under `sandbox.ssh.workspaceRoot`.
+- On first use after create or recreate, RemoteClaw seeds that remote workspace from the local workspace once.
+- After that, `exec`, `read`, `write`, `edit`, `apply_patch`, prompt media reads, and inbound media staging run directly against the remote workspace over SSH.
+- RemoteClaw does not sync remote changes back to the local workspace automatically.
+
+Authentication material:
+
+- `identityFile`, `certificateFile`, `knownHostsFile`: use existing local files and pass them through OpenSSH config.
+- `identityData`, `certificateData`, `knownHostsData`: use inline strings or SecretRefs. RemoteClaw resolves them through the normal secrets runtime snapshot, writes them to temp files with `0600`, and deletes them when the SSH session ends.
+- If both `*File` and `*Data` are set for the same item, `*Data` wins for that SSH session.
+
+This is a **remote-canonical** model. The remote SSH workspace becomes the real sandbox state after the initial seed.
+
+Important consequences:
+
+- Host-local edits made outside RemoteClaw after the seed step are not visible remotely until you recreate the sandbox.
+- `remoteclaw sandbox recreate` deletes the per-scope remote root and seeds again from local on next use.
+- Browser sandboxing is not supported on the SSH backend.
+- `sandbox.docker.*` settings do not apply to the SSH backend.
+
+### OpenShell backend
+
+Use `backend: "openshell"` when you want RemoteClaw to sandbox tools in an
+OpenShell-managed remote environment. For the full setup guide, configuration
+reference, and workspace mode comparison, see the dedicated
+[OpenShell page](/gateway/openshell).
+
+OpenShell reuses the same core SSH transport and remote filesystem bridge as the
+generic SSH backend, and adds OpenShell-specific lifecycle
+(`sandbox create/get/delete`, `sandbox ssh-config`) plus the optional `mirror`
+workspace mode.
 
 ```json5
 {
@@ -96,17 +177,23 @@ OpenShell modes:
 - `mirror` (default): local workspace stays canonical. RemoteClaw syncs local files into OpenShell before exec and syncs the remote workspace back after exec.
 - `remote`: OpenShell workspace is canonical after the sandbox is created. RemoteClaw seeds the remote workspace once from the local workspace, then file tools and exec run directly against the remote sandbox without syncing changes back.
 
+Remote transport details:
+
+- RemoteClaw asks OpenShell for sandbox-specific SSH config via `openshell sandbox ssh-config <name>`.
+- Core writes that SSH config to a temp file, opens the SSH session, and reuses the same remote filesystem bridge used by `backend: "ssh"`.
+- In `mirror` mode only the lifecycle differs: sync local to remote before exec, then sync back after exec.
+
 Current OpenShell limitations:
 
 - sandbox browser is not supported yet
 - `sandbox.docker.binds` is not supported on the OpenShell backend
 - Docker-specific runtime knobs under `sandbox.docker.*` still apply only to the Docker backend
 
-## OpenShell workspace modes
+#### Workspace modes
 
 OpenShell has two workspace models. This is the part that matters most in practice.
 
-### `mirror`
+##### `mirror`
 
 Use `plugins.entries.openshell.config.mode: "mirror"` when you want the **local workspace to stay canonical**.
 
@@ -126,7 +213,7 @@ Tradeoff:
 
 - extra sync cost before and after exec
 
-### `remote`
+##### `remote`
 
 Use `plugins.entries.openshell.config.mode: "remote"` when you want the **OpenShell workspace to become canonical**.
 
@@ -136,6 +223,7 @@ Behavior:
 - After that, `exec`, `read`, `write`, `edit`, and `apply_patch` operate directly against the remote OpenShell workspace.
 - RemoteClaw does **not** sync remote changes back into the local workspace after exec.
 - Prompt-time media reads still work because file and media tools read through the sandbox bridge instead of assuming a local host path.
+- Transport is SSH into the OpenShell sandbox returned by `openshell sandbox ssh-config`.
 
 Important consequences:
 
@@ -152,7 +240,7 @@ Use this when:
 Choose `mirror` if you think of the sandbox as a temporary execution environment.
 Choose `remote` if you think of the sandbox as the real workspace.
 
-## OpenShell lifecycle
+#### OpenShell lifecycle
 
 OpenShell sandboxes are still managed through the normal sandbox lifecycle:
 
@@ -311,7 +399,7 @@ Security defaults:
 Docker installs and the containerized gateway live here:
 [Docker](/install/docker)
 
-For Docker gateway deployments, `docker-setup.sh` can bootstrap sandbox config.
+For Docker gateway deployments, `scripts/docker/setup.sh` can bootstrap sandbox config.
 Set `OPENCLAW_SANDBOX=1` (or `true`/`yes`/`on`) to enable that path. You can
 override socket location with `OPENCLAW_DOCKER_SOCKET`. Full setup and env
 reference: [Docker](/install/docker#enable-agent-sandbox-for-docker-gateway-opt-in).
@@ -374,6 +462,8 @@ See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for preceden
 
 ## Related docs
 
-- [Sandbox Configuration](/gateway/configuration#agentsdefaults-sandbox)
-- [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools)
+- [OpenShell](/gateway/openshell) -- managed sandbox backend setup, workspace modes, and config reference
+- [Sandbox Configuration](/gateway/configuration-reference#agentsdefaultssandbox)
+- [Sandbox vs Tool Policy vs Elevated](/gateway/sandbox-vs-tool-policy-vs-elevated) -- debugging "why is this blocked?"
+- [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) -- per-agent overrides and precedence
 - [Security](/gateway/security)

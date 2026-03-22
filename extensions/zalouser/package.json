@@ -28,7 +28,8 @@
     "install": {
       "npmSpec": "@remoteclaw/zalouser",
       "localPath": "extensions/zalouser",
-      "defaultChoice": "npm"
+      "defaultChoice": "npm",
+      "minHostVersion": ">=2026.3.14"
     },
     "releaseChecks": {
       "rootDependencyMirrorAllowlist": [

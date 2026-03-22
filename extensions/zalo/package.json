@@ -27,7 +27,11 @@
     "install": {
       "npmSpec": "@remoteclaw/zalo",
       "localPath": "extensions/zalo",
-      "defaultChoice": "npm"
+      "defaultChoice": "npm",
+      "minHostVersion": ">=2026.3.14"
+    },
+    "release": {
+      "publishToNpm": true
     }
   }
 }

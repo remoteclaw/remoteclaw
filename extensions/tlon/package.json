@@ -26,14 +26,8 @@
     "install": {
       "npmSpec": "@remoteclaw/tlon",
       "localPath": "extensions/tlon",
-      "defaultChoice": "npm"
-    },
-    "releaseChecks": {
-      "rootDependencyMirrorAllowlist": [
-        "@tloncorp/api",
-        "@tloncorp/tlon-skill",
-        "@urbit/aura"
-      ]
+      "defaultChoice": "npm",
+      "minHostVersion": ">=2026.3.14"
     }
   }
 }

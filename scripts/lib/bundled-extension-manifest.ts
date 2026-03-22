@@ -1,15 +1,16 @@
+import { validateMinHostVersion } from "../../src/plugins/min-host-version.ts";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
 export type ExtensionPackageJson = {
   name?: string;
   version?: string;
   dependencies?: Record<string, string>;
   optionalDependencies?: Record<string, string>;
-  remoteclaw?: {
-    install?: {
-      npmSpec?: string;
-    };
-    releaseChecks?: {
-      rootDependencyMirrorAllowlist?: unknown[];
-    };
+  openclaw?: {
+    install?: unknown;
   };
 };
 
@@ -39,9 +40,16 @@ export function collectBundledExtensionManifestErrors(extensions: BundledExtensi
   const errors: string[] = [];
 
   for (const extension of extensions) {
-    const install = extension.packageJson.remoteclaw?.install;
+    const install = extension.packageJson.openclaw?.install;
+    if (install !== undefined && !isRecord(install)) {
+      errors.push(
+        `bundled extension '${extension.id}' manifest invalid | openclaw.install must be an object`,
+      );
+      continue;
+    }
+    const hasNpmSpec = isRecord(install) && "npmSpec" in install;
     if (
-      install &&
+      hasNpmSpec &&
       (!install.npmSpec || typeof install.npmSpec !== "string" || !install.npmSpec.trim())
     ) {
       errors.push(
@@ -65,6 +73,10 @@ export function collectBundledExtensionManifestErrors(extensions: BundledExtensi
       errors.push(
         `bundled extension '${extension.id}' manifest invalid | remoteclaw.releaseChecks.rootDependencyMirrorAllowlist must contain only non-empty strings`,
       );
+    }
+    const minHostVersionError = validateMinHostVersion(install?.minHostVersion);
+    if (minHostVersionError) {
+      errors.push(`bundled extension '${extension.id}' manifest invalid | ${minHostVersionError}`);
     }
   }
 

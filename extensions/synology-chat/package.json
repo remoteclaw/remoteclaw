@@ -22,7 +22,8 @@
     "install": {
       "npmSpec": "@remoteclaw/synology-chat",
       "localPath": "extensions/synology-chat",
-      "defaultChoice": "npm"
+      "defaultChoice": "npm",
+      "minHostVersion": ">=2026.3.14"
     }
   }
 }

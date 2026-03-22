@@ -30,7 +30,11 @@
     "install": {
       "npmSpec": "@remoteclaw/bluebubbles",
       "localPath": "extensions/bluebubbles",
-      "defaultChoice": "npm"
+      "defaultChoice": "npm",
+      "minHostVersion": ">=2026.3.14"
+    },
+    "release": {
+      "publishToNpm": true
     }
   }
 }

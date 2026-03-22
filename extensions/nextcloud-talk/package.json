@@ -27,7 +27,11 @@
     "install": {
       "npmSpec": "@remoteclaw/nextcloud-talk",
       "localPath": "extensions/nextcloud-talk",
-      "defaultChoice": "npm"
+      "defaultChoice": "npm",
+      "minHostVersion": ">=2026.3.14"
+    },
+    "release": {
+      "publishToNpm": true
     }
   }
 }

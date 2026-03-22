@@ -137,6 +137,7 @@ export type PluginPackageInstall = {
   npmSpec?: string;
   localPath?: string;
   defaultChoice?: "npm" | "local";
+  minHostVersion?: string;
 };
 
 export type RemoteClawPackageStartup = {

@@ -59,8 +59,9 @@ const state = resolveGlobalSingleton<FeishuThreadBindingsState>(
   }),
 );
 
-const MANAGERS_BY_ACCOUNT_ID = state.managersByAccountId;
-const BINDINGS_BY_ACCOUNT_CONVERSATION = state.bindingsByAccountConversation;
+function getState(): FeishuThreadBindingsState {
+  return state;
+}
 
 function resolveBindingKey(params: { accountId: string; conversationId: string }): string {
   return `${params.accountId}:${params.conversationId}`;

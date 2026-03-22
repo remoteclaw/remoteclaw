@@ -21,10 +21,7 @@ import {
   resolveThreadSessionKeys,
   type RoutePeer,
 } from "remoteclaw/plugin-sdk/routing";
-import {
-  createComputedAccountStatusAdapter,
-  createDefaultChannelRuntimeState,
-} from "remoteclaw/plugin-sdk/status-helpers";
+import { createComputedAccountStatusAdapter } from "remoteclaw/plugin-sdk/status-helpers";
 import {
   listEnabledSlackAccounts,
   resolveSlackAccount,
@@ -41,9 +38,6 @@ import { normalizeAllowListLower } from "./monitor/allow-list.js";
 import type { SlackProbe } from "./probe.js";
 import { resolveSlackUserAllowlist } from "./resolve-users.js";
 import {
-  applyAccountNameToChannelSection,
-  buildComputedAccountStatusSnapshot,
-  buildChannelConfigSchema,
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
   extractSlackToolSend,
@@ -629,7 +623,7 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount, SlackProbe> = crea
       },
     }),
   },
-  status: {
+  status: createComputedAccountStatusAdapter<ResolvedSlackAccount, SlackProbe>({
     defaultRuntime: {
       accountId: DEFAULT_ACCOUNT_ID,
       running: false,
@@ -655,7 +649,36 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount, SlackProbe> = crea
       }
       return await getSlackRuntime().channel.slack.probeSlack(token, timeoutMs);
     },
-    buildAccountSnapshot: ({ account, runtime, probe }) => {
+    formatCapabilitiesProbe: ({ probe }) => {
+      const slackProbe = probe as SlackProbe | undefined;
+      const lines = [];
+      if (slackProbe?.bot?.name) {
+        lines.push({ text: `Bot: @${slackProbe.bot.name}` });
+      }
+      if (slackProbe?.team?.name || slackProbe?.team?.id) {
+        const id = slackProbe.team?.id ? ` (${slackProbe.team.id})` : "";
+        lines.push({ text: `Team: ${slackProbe.team?.name ?? "unknown"}${id}` });
+      }
+      return lines;
+    },
+    buildCapabilitiesDiagnostics: async ({ account, timeoutMs }) => {
+      const lines = [];
+      const details: Record<string, unknown> = {};
+      const botToken = account.botToken?.trim();
+      const userToken = account.config.userToken?.trim();
+      const botScopes = botToken
+        ? await fetchSlackScopes(botToken, timeoutMs)
+        : { ok: false, error: "Slack bot token missing." };
+      lines.push(formatSlackScopeDiagnostic({ tokenType: "bot", result: botScopes }));
+      details.botScopes = botScopes;
+      if (userToken) {
+        const userScopes = await fetchSlackScopes(userToken, timeoutMs);
+        lines.push(formatSlackScopeDiagnostic({ tokenType: "user", result: userScopes }));
+        details.userScopes = userScopes;
+      }
+      return { lines, details };
+    },
+    resolveAccountSnapshot: ({ account }) => {
       const mode = account.config.mode ?? "socket";
       const configured =
         (mode === "http"
@@ -667,21 +690,17 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount, SlackProbe> = crea
               "botTokenStatus",
               "appTokenStatus",
             ])) ?? isSlackPluginAccountConfigured(account);
-      return buildComputedAccountStatusSnapshot(
-        {
-          accountId: account.accountId,
-          name: account.name,
-          enabled: account.enabled,
-          configured,
-          runtime,
-          probe,
-        },
-        {
+      return {
+        accountId: account.accountId,
+        name: account.name,
+        enabled: account.enabled,
+        configured,
+        extra: {
           ...projectCredentialSnapshotFields(account),
         },
-      );
+      };
     },
-  },
+  }),
   gateway: {
     startAccount: async (ctx) => {
       const account = ctx.account;

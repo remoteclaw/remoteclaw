@@ -5,16 +5,10 @@ import {
   createEmptyChannelDirectoryAdapter,
   createEmptyChannelResult,
 } from "remoteclaw/plugin-sdk/channel-send-result";
-import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
 import { createEmptyChannelDirectoryAdapter } from "remoteclaw/plugin-sdk/directory-runtime";
 import { resolveOutboundMediaUrls } from "remoteclaw/plugin-sdk/reply-payload";
+import { createComputedAccountStatusAdapter } from "remoteclaw/plugin-sdk/status-helpers";
 import {
-  createComputedAccountStatusAdapter,
-  createDefaultChannelRuntimeState,
-} from "remoteclaw/plugin-sdk/status-helpers";
-import {
-  buildChannelConfigSchema,
-  buildComputedAccountStatusSnapshot,
   buildTokenChannelStatusSummary,
   clearAccountEntryFields,
   DEFAULT_ACCOUNT_ID,
@@ -445,7 +439,7 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
         }),
     }),
   },
-  status: {
+  status: createComputedAccountStatusAdapter<ResolvedLineAccount>({
     defaultRuntime: {
       accountId: DEFAULT_ACCOUNT_ID,
       running: false,
@@ -479,26 +473,22 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
     buildChannelSummary: ({ snapshot }) => buildTokenChannelStatusSummary(snapshot),
     probeAccount: async ({ account, timeoutMs }) =>
       getLineRuntime().channel.line.probeLineBot(account.channelAccessToken, timeoutMs),
-    buildAccountSnapshot: ({ account, runtime, probe }) => {
+    resolveAccountSnapshot: ({ account }) => {
       const configured = Boolean(
         account.channelAccessToken?.trim() && account.channelSecret?.trim(),
       );
-      return buildComputedAccountStatusSnapshot(
-        {
-          accountId: account.accountId,
-          name: account.name,
-          enabled: account.enabled,
-          configured,
-          runtime,
-          probe,
-        },
-        {
+      return {
+        accountId: account.accountId,
+        name: account.name,
+        enabled: account.enabled,
+        configured,
+        extra: {
           tokenSource: account.tokenSource,
           mode: "webhook",
         },
-      );
+      };
     },
-  },
+  }),
   gateway: {
     startAccount: async (ctx) => {
       const account = ctx.account;

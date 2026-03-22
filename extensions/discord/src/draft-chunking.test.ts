@@ -1,5 +1,5 @@
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-runtime";
 import { resolveDiscordDraftStreamingChunking } from "./draft-chunking.js";
 
 describe("resolveDiscordDraftStreamingChunking", () => {
@@ -23,7 +23,7 @@ describe("resolveDiscordDraftStreamingChunking", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     expect(resolveDiscordDraftStreamingChunking(cfg)).toEqual({
       minChars: 500,
@@ -52,7 +52,7 @@ describe("resolveDiscordDraftStreamingChunking", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     expect(resolveDiscordDraftStreamingChunking(cfg, "ops")).toEqual({
       minChars: 25,

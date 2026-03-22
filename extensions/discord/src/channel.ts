@@ -4,12 +4,24 @@ import {
 } from "remoteclaw/plugin-sdk/allowlist-config-edit";
 import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
-  collectOpenGroupPolicyConfiguredRouteWarnings,
-  collectOpenProviderGroupPolicyWarnings,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
-import { normalizeMessageChannel } from "remoteclaw/plugin-sdk/channel-runtime";
-import { buildOutboundBaseSessionKey, normalizeOutboundThreadId } from "remoteclaw/plugin-sdk/core";
+  createChannelDirectoryAdapter,
+  createRuntimeDirectoryLiveAdapter,
+} from "remoteclaw/plugin-sdk/directory-runtime";
+import {
+  createRuntimeOutboundDelegates,
+  resolveOutboundSendDep,
+} from "remoteclaw/plugin-sdk/infra-runtime";
+import {
+  buildOutboundBaseSessionKey,
+  normalizeMessageChannel,
+  normalizeOutboundThreadId,
+  resolveThreadSessionKeys,
+  type RoutePeer,
+} from "remoteclaw/plugin-sdk/routing";
+import {
+  createComputedAccountStatusAdapter,
+  createDefaultChannelRuntimeState,
+} from "remoteclaw/plugin-sdk/status-helpers";
 import {
   applyAccountNameToChannelSection,
   buildComputedAccountStatusSnapshot,
@@ -423,50 +435,46 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
         }),
       });
     },
-  },
-  actions: discordMessageActions,
-  setup: {
-    resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
-    applyAccountName: ({ cfg, accountId, name }) =>
-      applyAccountNameToChannelSection({
-        cfg,
-        channelKey: "discord",
-        accountId,
-        name,
+    status: createComputedAccountStatusAdapter<ResolvedDiscordAccount, DiscordProbe, unknown>({
+      defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID, {
+        connected: false,
+        reconnectAttempts: 0,
+        lastConnectedAt: null,
+        lastDisconnect: null,
+        lastEventAt: null,
       }),
-    validateInput: ({ accountId, input }) => {
-      if (input.useEnv && accountId !== DEFAULT_ACCOUNT_ID) {
-        return "DISCORD_BOT_TOKEN can only be used for the default account.";
-      }
-      if (!input.useEnv && !input.token) {
-        return "Discord requires token (or --use-env).";
-      }
-      return null;
-    },
-    applyAccountConfig: ({ cfg, accountId, input }) => {
-      const namedConfig = applyAccountNameToChannelSection({
-        cfg,
-        channelKey: "discord",
-        accountId,
-        name: input.name,
-      });
-      const next =
-        accountId !== DEFAULT_ACCOUNT_ID
-          ? migrateBaseNameToDefaultAccount({
-              cfg: namedConfig,
-              channelKey: "discord",
-            })
-          : namedConfig;
-      if (accountId === DEFAULT_ACCOUNT_ID) {
-        return {
-          ...next,
-          channels: {
-            ...next.channels,
-            discord: {
-              ...next.channels?.discord,
-              enabled: true,
-              ...(input.useEnv ? {} : input.token ? { token: input.token } : {}),
-            },
+      collectStatusIssues: collectDiscordStatusIssues,
+      buildChannelSummary: ({ snapshot }) =>
+        buildTokenChannelStatusSummary(snapshot, { includeMode: false }),
+      probeAccount: async ({ account, timeoutMs }) =>
+        probeDiscord(account.token, timeoutMs, {
+          includeApplication: true,
+        }),
+      formatCapabilitiesProbe: ({ probe }) => {
+        const discordProbe = probe as DiscordProbe | undefined;
+        const lines = [];
+        if (discordProbe?.bot?.username) {
+          const botId = discordProbe.bot.id ? ` (${discordProbe.bot.id})` : "";
+          lines.push({ text: `Bot: @${discordProbe.bot.username}${botId}` });
+        }
+        if (discordProbe?.application?.intents) {
+          lines.push({
+            text: `Intents: ${formatDiscordIntents(discordProbe.application.intents)}`,
+          });
+        }
+        return lines;
+      },
+      buildCapabilitiesDiagnostics: async ({ account, timeoutMs, target }) => {
+        if (!target?.trim()) {
+          return undefined;
+        }
+        const parsedTarget = parseDiscordTarget(target.trim(), { defaultKind: "channel" });
+        const details: Record<string, unknown> = {
+          target: {
+            raw: target,
+            normalized: parsedTarget?.normalized,
+            kind: parsedTarget?.kind,
+            channelId: parsedTarget?.kind === "channel" ? parsedTarget.id : undefined,
           },
         };
       }

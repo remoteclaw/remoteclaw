@@ -19,8 +19,12 @@ import {
   listResolvedDirectoryGroupEntriesFromMapKeys,
   listResolvedDirectoryUserEntriesFromAllowFrom,
 } from "remoteclaw/plugin-sdk/directory-runtime";
+import { buildPassiveProbedChannelStatusSummary } from "remoteclaw/plugin-sdk/extension-shared";
 import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
-import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
+import {
+  createComputedAccountStatusAdapter,
+  createDefaultChannelRuntimeState,
+} from "remoteclaw/plugin-sdk/status-helpers";
 import {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,
@@ -208,23 +212,124 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
           resolveGroups: (account) => account.config.groups,
         }),
     }),
-  },
-  security: {
-    resolveDmPolicy: resolveGoogleChatDmPolicy,
-    collectWarnings: collectGoogleChatSecurityWarnings,
-  },
-  groups: {
-    resolveRequireMention: resolveGoogleChatGroupRequireMention,
-  },
-  threading: {
-    resolveReplyToMode: createTopLevelChannelReplyToModeResolver("googlechat"),
-  },
-  messaging: {
-    normalizeTarget: normalizeGoogleChatTarget,
-    targetResolver: {
-      looksLikeId: (raw, normalized) => {
-        const value = normalized ?? raw.trim();
-        return isGoogleChatSpaceTarget(value) || isGoogleChatUserTarget(value);
+    resolver: {
+      resolveTargets: async ({ inputs, kind }) => {
+        const resolved = inputs.map((input) => {
+          const normalized = normalizeGoogleChatTarget(input);
+          if (!normalized) {
+            return { input, resolved: false, note: "empty target" };
+          }
+          if (kind === "user" && isGoogleChatUserTarget(normalized)) {
+            return { input, resolved: true, id: normalized };
+          }
+          if (kind === "group" && isGoogleChatSpaceTarget(normalized)) {
+            return { input, resolved: true, id: normalized };
+          }
+          return {
+            input,
+            resolved: false,
+            note: "use spaces/{space} or users/{user}",
+          };
+        });
+        return resolved;
+      },
+    },
+    actions: googlechatActions,
+    status: createComputedAccountStatusAdapter<ResolvedGoogleChatAccount>({
+      defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID),
+      collectStatusIssues: (accounts): ChannelStatusIssue[] =>
+        accounts.flatMap((entry) => {
+          const accountId = String(entry.accountId ?? DEFAULT_ACCOUNT_ID);
+          const enabled = entry.enabled !== false;
+          const configured = entry.configured === true;
+          if (!enabled || !configured) {
+            return [];
+          }
+          const issues: ChannelStatusIssue[] = [];
+          if (!entry.audience) {
+            issues.push({
+              channel: "googlechat",
+              accountId,
+              kind: "config",
+              message: "Google Chat audience is missing (set channels.googlechat.audience).",
+              fix: "Set channels.googlechat.audienceType and channels.googlechat.audience.",
+            });
+          }
+          if (!entry.audienceType) {
+            issues.push({
+              channel: "googlechat",
+              accountId,
+              kind: "config",
+              message: "Google Chat audienceType is missing (app-url or project-number).",
+              fix: "Set channels.googlechat.audienceType and channels.googlechat.audience.",
+            });
+          }
+          return issues;
+        }),
+      buildChannelSummary: ({ snapshot }) =>
+        buildPassiveProbedChannelStatusSummary(snapshot, {
+          credentialSource: snapshot.credentialSource ?? "none",
+          audienceType: snapshot.audienceType ?? null,
+          audience: snapshot.audience ?? null,
+          webhookPath: snapshot.webhookPath ?? null,
+          webhookUrl: snapshot.webhookUrl ?? null,
+        }),
+      probeAccount: async ({ account }) =>
+        (await loadGoogleChatChannelRuntime()).probeGoogleChat(account),
+      resolveAccountSnapshot: ({ account }) => ({
+        accountId: account.accountId,
+        name: account.name,
+        enabled: account.enabled,
+        configured: account.credentialSource !== "none",
+        extra: {
+          credentialSource: account.credentialSource,
+          audienceType: account.config.audienceType,
+          audience: account.config.audience,
+          webhookPath: account.config.webhookPath,
+          webhookUrl: account.config.webhookUrl,
+          dmPolicy: account.config.dm?.policy ?? "pairing",
+        },
+      }),
+    }),
+    gateway: {
+      startAccount: async (ctx) => {
+        const account = ctx.account;
+        const statusSink = createAccountStatusSink({
+          accountId: account.accountId,
+          setStatus: ctx.setStatus,
+        });
+        ctx.log?.info(`[${account.accountId}] starting Google Chat webhook`);
+        const { resolveGoogleChatWebhookPath, startGoogleChatMonitor } =
+          await loadGoogleChatChannelRuntime();
+        statusSink({
+          running: true,
+          lastStartAt: Date.now(),
+          webhookPath: resolveGoogleChatWebhookPath({ account }),
+          audienceType: account.config.audienceType,
+          audience: account.config.audience,
+        });
+        await runPassiveAccountLifecycle({
+          abortSignal: ctx.abortSignal,
+          start: async () =>
+            await startGoogleChatMonitor({
+              account,
+              config: ctx.cfg,
+              runtime: ctx.runtime,
+              abortSignal: ctx.abortSignal,
+              webhookPath: account.config.webhookPath,
+              webhookUrl: account.config.webhookUrl,
+              statusSink,
+            }),
+          stop: async (unregister) => {
+            unregister?.();
+          },
+          onStop: async () => {
+            statusSink({
+              running: false,
+              lastStopAt: Date.now(),
+            });
+          },
+        });
       },
       hint: "<spaces/{space}|users/{user}>",
     },

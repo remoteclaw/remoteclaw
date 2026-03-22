@@ -1,4 +1,10 @@
 import { buildDmGroupAccountAllowlistAdapter } from "remoteclaw/plugin-sdk/allowlist-config-edit";
+import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
+import { buildPassiveProbedChannelStatusSummary } from "remoteclaw/plugin-sdk/extension-shared";
+import { createLazyRuntimeModule } from "remoteclaw/plugin-sdk/lazy-runtime";
+import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/outbound-runtime";
+import { buildOutboundBaseSessionKey, type RoutePeer } from "remoteclaw/plugin-sdk/routing";
+import { createDefaultChannelRuntimeState } from "remoteclaw/plugin-sdk/status-helpers";
 import {
   createAttachedChannelResultAdapter,
   resolveOutboundSendDep,
@@ -164,41 +170,28 @@ export const imessagePlugin: ChannelPlugin<ResolvedIMessageAccount> = {
           source: "normalized" as const,
         };
       },
-    },
-  },
-  setup: {
-    resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
-    applyAccountName: ({ cfg, accountId, name }) =>
-      applyAccountNameToChannelSection({
-        cfg,
-        channelKey: "imessage",
-        accountId,
-        name,
-      }),
-    applyAccountConfig: ({ cfg, accountId, input }) => {
-      const namedConfig = applyAccountNameToChannelSection({
-        cfg,
-        channelKey: "imessage",
-        accountId,
-        name: input.name,
-      });
-      const next = (
-        accountId !== DEFAULT_ACCOUNT_ID
-          ? migrateBaseNameToDefaultAccount({
-              cfg: namedConfig,
-              channelKey: "imessage",
-            })
-          : namedConfig
-      ) as typeof cfg;
-      if (accountId === DEFAULT_ACCOUNT_ID) {
-        return {
-          ...next,
-          channels: {
-            ...next.channels,
-            imessage: {
-              ...next.channels?.imessage,
-              enabled: true,
-              ...buildIMessageSetupPatch(input),
+      status: {
+        defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID, {
+          cliPath: null,
+          dbPath: null,
+        }),
+        collectStatusIssues: (accounts) => collectStatusIssuesFromLastError("imessage", accounts),
+        buildChannelSummary: ({ snapshot }) =>
+          buildPassiveProbedChannelStatusSummary(snapshot, {
+            cliPath: snapshot.cliPath ?? null,
+            dbPath: snapshot.dbPath ?? null,
+          }),
+        probeAccount: async ({ timeoutMs }) =>
+          await (await loadIMessageChannelRuntime()).probeIMessageAccount(timeoutMs),
+        buildAccountSnapshot: ({ account, runtime, probe }) =>
+          buildComputedAccountStatusSnapshot(
+            {
+              accountId: account.accountId,
+              name: account.name,
+              enabled: account.enabled,
+              configured: account.configured,
+              runtime,
+              probe,
             },
           },
         } as typeof cfg;

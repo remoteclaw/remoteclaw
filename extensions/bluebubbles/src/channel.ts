@@ -6,16 +6,16 @@ import {
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
 import {
-  createPairingPrefixStripper,
-  createTextPairingAdapter,
-} from "remoteclaw/plugin-sdk/channel-pairing";
+  createOpenGroupPolicyRestrictSendersWarningCollector,
+  projectWarningCollector,
+} from "remoteclaw/plugin-sdk/channel-policy";
+import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
+import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
+import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
 import {
-  buildAccountScopedDmSecurityPolicy,
-  collectOpenGroupPolicyRestrictSendersWarnings,
-  createAccountStatusSink,
-  formatNormalizedAllowFromEntries,
-  mapAllowFromEntries,
-} from "remoteclaw/plugin-sdk/compat";
+  createComputedAccountStatusAdapter,
+  createDefaultChannelRuntimeState,
+} from "remoteclaw/plugin-sdk/status-helpers";
 import {
   listBlueBubblesAccountIds,
   type ResolvedBlueBubblesAccount,
@@ -220,26 +220,67 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = {
         return stripped;
       };
 
-      // Try to get a clean display from the display parameter first
-      const trimmedDisplay = display?.trim();
-      if (trimmedDisplay) {
-        if (!shouldParseDisplay(trimmedDisplay)) {
-          return trimmedDisplay;
-        }
-        const cleanDisplay = extractCleanDisplay(trimmedDisplay);
-        if (cleanDisplay) {
-          return cleanDisplay;
-        }
-      }
-
-      // Fall back to extracting from target
-      const cleanTarget = extractCleanDisplay(target);
-      if (cleanTarget) {
-        return cleanTarget;
-      }
-
-      // Last resort: return display or target as-is
-      return display?.trim() || target?.trim() || "";
+          // Last resort: return display or target as-is
+          return display?.trim() || target?.trim() || "";
+        },
+      },
+      setup: blueBubblesSetupAdapter,
+      status: createComputedAccountStatusAdapter<ResolvedBlueBubblesAccount, BlueBubblesProbe>({
+        defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID),
+        collectStatusIssues: collectBlueBubblesStatusIssues,
+        buildChannelSummary: ({ snapshot }) =>
+          buildProbeChannelStatusSummary(snapshot, { baseUrl: snapshot.baseUrl ?? null }),
+        probeAccount: async ({ account, timeoutMs }) =>
+          (await loadBlueBubblesChannelRuntime()).probeBlueBubbles({
+            baseUrl: account.baseUrl,
+            password: account.config.password ?? null,
+            timeoutMs,
+          }),
+        resolveAccountSnapshot: ({ account, runtime, probe }) => {
+          const running = runtime?.running ?? false;
+          const probeOk = probe?.ok;
+          return {
+            accountId: account.accountId,
+            name: account.name,
+            enabled: account.enabled,
+            configured: account.configured,
+            extra: {
+              baseUrl: account.baseUrl,
+              connected: probeOk ?? running,
+            },
+          };
+        },
+      }),
+      gateway: {
+        startAccount: async (ctx) => {
+          const runtime = await loadBlueBubblesChannelRuntime();
+          const account = ctx.account;
+          const webhookPath = runtime.resolveWebhookPathFromConfig(account.config);
+          const statusSink = createAccountStatusSink({
+            accountId: ctx.accountId,
+            setStatus: ctx.setStatus,
+          });
+          statusSink({
+            baseUrl: account.baseUrl,
+          });
+          ctx.log?.info(`[${account.accountId}] starting provider (webhook=${webhookPath})`);
+          return runtime.monitorBlueBubblesProvider({
+            account,
+            config: ctx.cfg,
+            runtime: ctx.runtime,
+            abortSignal: ctx.abortSignal,
+            statusSink,
+            webhookPath,
+          });
+        },
+      },
+    },
+    security: {
+      resolveDmPolicy: resolveBlueBubblesDmPolicy,
+      collectWarnings: projectWarningCollector(
+        ({ account }: { account: ResolvedBlueBubblesAccount }) => account,
+        collectBlueBubblesSecurityWarnings,
+      ),
     },
   },
   setup: blueBubblesSetupAdapter,

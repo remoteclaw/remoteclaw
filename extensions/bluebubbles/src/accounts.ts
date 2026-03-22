@@ -1,8 +1,5 @@
-import {
-  createAccountListHelpers,
-  normalizeAccountId,
-  resolveMergedAccountConfig,
-} from "remoteclaw/plugin-sdk/account-resolution";
+import { createAccountListHelpers, mergeAccountConfig } from "remoteclaw/plugin-sdk/account-helpers";
+import { normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/core";
 import { hasConfiguredSecretInput, normalizeSecretInputString } from "./secret-input.js";
 import { normalizeBlueBubblesServerUrl, type BlueBubblesAccountConfig } from "./types.js";
@@ -26,15 +23,14 @@ function mergeBlueBubblesAccountConfig(
   cfg: RemoteClawConfig,
   accountId: string,
 ): BlueBubblesAccountConfig {
-  const merged = resolveMergedAccountConfig<BlueBubblesAccountConfig>({
+  const account = resolveAccountConfig(cfg, accountId) ?? {};
+  const merged = mergeAccountConfig<BlueBubblesAccountConfig>({
     channelConfig: cfg.channels?.bluebubbles as BlueBubblesAccountConfig | undefined,
-    accounts: cfg.channels?.bluebubbles?.accounts as
-      | Record<string, Partial<BlueBubblesAccountConfig>>
-      | undefined,
-    accountId,
+    accountConfig: account,
     omitKeys: ["defaultAccount"],
   });
-  return { ...merged, chunkMode: merged.chunkMode ?? "length" };
+  const chunkMode = account.chunkMode ?? merged.chunkMode ?? "length";
+  return { ...merged, chunkMode };
 }
 
 export function resolveBlueBubblesAccount(params: {

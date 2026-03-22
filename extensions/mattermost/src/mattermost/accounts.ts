@@ -1,5 +1,7 @@
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
-import { createAccountListHelpers, type RemoteClawConfig } from "remoteclaw/plugin-sdk/mattermost";
+import { mergeAccountConfig, resolveAccountEntry } from "remoteclaw/plugin-sdk/account-resolution";
+import { createAccountListHelpers, type RemoteClawConfig } from "../runtime-api.js";
+import { normalizeResolvedSecretInputString, normalizeSecretInputString } from "../secret-input.js";
 import type {
   MattermostAccountConfig,
   MattermostChatMode,
@@ -38,36 +40,27 @@ function resolveAccountConfig(
   cfg: RemoteClawConfig,
   accountId: string,
 ): MattermostAccountConfig | undefined {
-  const accounts = cfg.channels?.mattermost?.accounts;
-  if (!accounts || typeof accounts !== "object") {
-    return undefined;
-  }
-  return accounts[accountId] as MattermostAccountConfig | undefined;
+  return resolveAccountEntry(cfg.channels?.mattermost?.accounts, accountId);
 }
 
 function mergeMattermostAccountConfig(
   cfg: RemoteClawConfig,
   accountId: string,
 ): MattermostAccountConfig {
-  const {
-    accounts: _ignored,
-    defaultAccount: _ignoredDefaultAccount,
-    ...base
-  } = (cfg.channels?.mattermost ?? {}) as MattermostAccountConfig & {
-    accounts?: unknown;
-    defaultAccount?: unknown;
-  };
   const account = resolveAccountConfig(cfg, accountId) ?? {};
+  const merged = mergeAccountConfig<MattermostAccountConfig>({
+    channelConfig: cfg.channels?.mattermost as MattermostAccountConfig | undefined,
+    accountConfig: account,
+    omitKeys: ["defaultAccount"],
+  });
 
   // Shallow merging is fine for most keys, but `commands` should be merged
   // so that account-specific overrides (callbackPath/callbackUrl) do not
   // accidentally reset global settings like `native: true`.
   const mergedCommands = {
-    ...(base.commands ?? {}),
+    ...((cfg.channels?.mattermost as MattermostAccountConfig | undefined)?.commands ?? {}),
     ...(account.commands ?? {}),
   };
-
-  const merged = { ...base, ...account };
   if (Object.keys(mergedCommands).length > 0) {
     merged.commands = mergedCommands;
   }

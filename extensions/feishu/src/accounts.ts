@@ -1,9 +1,7 @@
 import {
   DEFAULT_ACCOUNT_ID,
-  createAccountListHelpers,
+  mergeAccountConfig,
   normalizeAccountId,
-  normalizeOptionalAccountId,
-  resolveMergedAccountConfig,
 } from "remoteclaw/plugin-sdk/account-resolution";
 import type { ClawdbotConfig } from "../runtime-api.js";
 import { normalizeResolvedSecretInputString, normalizeSecretInputString } from "./secret-input.js";
@@ -67,10 +65,9 @@ export function resolveDefaultFeishuAccountId(cfg: ClawdbotConfig): string {
  */
 function mergeFeishuAccountConfig(cfg: ClawdbotConfig, accountId: string): FeishuConfig {
   const feishuCfg = cfg.channels?.feishu as FeishuConfig | undefined;
-  return resolveMergedAccountConfig<FeishuConfig>({
+  return mergeAccountConfig<FeishuConfig>({
     channelConfig: feishuCfg,
-    accounts: feishuCfg?.accounts as Record<string, Partial<FeishuConfig>> | undefined,
-    accountId,
+    accountConfig: resolveAccountConfig(cfg, accountId),
     omitKeys: ["defaultAccount"],
   });
 }

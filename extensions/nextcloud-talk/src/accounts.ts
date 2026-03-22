@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { mergeAccountConfig } from "remoteclaw/plugin-sdk/account-resolution";
+import { tryReadSecretFileSync } from "remoteclaw/plugin-sdk/infra-runtime";
 import {
   createAccountListHelpers,
   DEFAULT_ACCOUNT_ID,
@@ -63,16 +64,11 @@ function mergeNextcloudTalkAccountConfig(
   cfg: CoreConfig,
   accountId: string,
 ): NextcloudTalkAccountConfig {
-  const {
-    accounts: _ignored,
-    defaultAccount: _ignoredDefaultAccount,
-    ...base
-  } = (cfg.channels?.["nextcloud-talk"] ?? {}) as NextcloudTalkAccountConfig & {
-    accounts?: unknown;
-    defaultAccount?: unknown;
-  };
-  const account = resolveAccountConfig(cfg, accountId) ?? {};
-  return { ...base, ...account };
+  return mergeAccountConfig<NextcloudTalkAccountConfig>({
+    channelConfig: cfg.channels?.["nextcloud-talk"] as NextcloudTalkAccountConfig | undefined,
+    accountConfig: resolveAccountConfig(cfg, accountId),
+    omitKeys: ["defaultAccount"],
+  });
 }
 
 function resolveNextcloudTalkSecret(

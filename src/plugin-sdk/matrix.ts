@@ -109,6 +109,7 @@ export { dispatchReplyFromConfigWithSettledDispatcher } from "./inbound-reply-di
 export { createLoggerBackedRuntime, resolveRuntimeEnv } from "./runtime.js";
 export { resolveInboundSessionEnvelopeContext } from "../channels/session-envelope.js";
 export {
+  buildComputedAccountStatusSnapshot,
   buildProbeChannelStatusSummary,
   collectStatusIssuesFromLastError,
 } from "./status-helpers.js";

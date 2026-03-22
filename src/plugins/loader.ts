@@ -7,7 +7,8 @@ import type { GatewayRequestHandler } from "../gateway/server-methods/types.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { isPathInsideWithRealpath } from "../security/scan-paths.js";
 import { resolveUserPath } from "../utils.js";
-import { clearPluginCommands } from "./commands.js";
+import { inspectBundleMcpRuntimeSupport } from "./bundle-mcp.js";
+import { clearPluginCommands } from "./command-registry-state.js";
 import {
   applyTestPluginDefaults,
   normalizePluginsConfig,

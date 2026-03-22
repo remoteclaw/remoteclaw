@@ -32,7 +32,6 @@ Docs: https://docs.openclaw.ai
 - iOS/App Store Connect release prep: align iOS bundle identifiers under `ai.openclaw.client`, refresh Watch app icons, add Fastlane metadata/screenshot automation, and support Keychain-backed ASC auth for uploads. (#38936) Thanks @ngutman.
 - Mattermost/model picker: add Telegram-style interactive provider/model browsing for `/oc_model` and `/oc_models`, fix picker callback updates, and emit a normal confirmation reply when a model is selected. (#38767) thanks @mukhtharcm.
 - Docker/multi-stage build: restructure Dockerfile as a multi-stage build to produce a minimal runtime image without build tools, source code, or Bun; add `OPENCLAW_VARIANT=slim` build arg for a bookworm-slim variant. (#38479) Thanks @sallyom.
-- Google/Gemini 3.1 Flash-Lite: add first-class `google/gemini-3.1-flash-lite-preview` support across model-id normalization, default aliases, media-understanding image lookups, Google Gemini CLI forward-compat fallback, and docs.
 
 ### Breaking
 
@@ -337,6 +336,7 @@ Docs: https://docs.openclaw.ai
 - Queue/followup dedupe across drain restarts: dedupe queued redelivery `message_id` values after queue recreation so busy-session followups no longer duplicate on replayed inbound events. Landed from contributor PR #33168 by @rylena. Thanks @rylena.
 - Telegram/preview-final edit idempotence: treat `message is not modified` errors during preview finalization as delivered so partial-stream final replies do not fall back to duplicate sends. Landed from contributor PR #34983 by @HOYALIM. Thanks @HOYALIM.
 - Telegram/DM streaming transport parity: use message preview transport for all DM streaming lanes so final delivery can edit the active preview instead of sending duplicate finals. Landed from contributor PR #38906 by @gambletan. Thanks @gambletan.
+- Telegram/DM draft streaming restoration: restore native `sendMessageDraft` preview transport for DM answer streaming while keeping reasoning on message transport, with regression coverage to keep draft finalization from sending duplicate finals. (#39398) Thanks @obviyus.
 - Telegram/send retry safety: retry non-idempotent send paths only for pre-connect failures and make custom retry predicates strict, preventing ambiguous reconnect retries from sending duplicate messages. Landed from contributor PR #34238 by @hal-crackbot. Thanks @hal-crackbot.
 - ACP/run spawn delivery bootstrap: stop reusing requester inline delivery targets for one-shot `mode: "run"` ACP spawns, so fresh run-mode workers bootstrap in isolation instead of inheriting thread-bound session delivery behavior. (#39014) Thanks @lidamao633.
 - Discord/DM session-key normalization: rewrite legacy `discord:dm:*` and phantom direct-message `discord:channel:<user>` session keys to `discord:direct:*` when the sender matches, so multi-agent Discord DMs stop falling into empty channel-shaped sessions and resume replying correctly.
@@ -348,6 +348,8 @@ Docs: https://docs.openclaw.ai
 - Gateway/health-monitor restart reason labeling: report `disconnected` instead of `stuck` for clean channel disconnect restarts, so operator logs distinguish socket drops from genuinely stuck channels. (#36436) Thanks @Sid-Qin.
 - Control UI/agents-page overrides: auto-create minimal per-agent config entries when editing inherited agents, so model/tool/skill changes enable Save and inherited model fallbacks can be cleared by writing a primary-only override. Landed from contributor PR #39326 by @dunamismax. Thanks @dunamismax.
 - Gateway/Telegram webhook-mode recovery: add `webhookCertPath` to re-upload self-signed certificates during webhook registration and skip stale-socket detection for webhook-mode channels, so Telegram webhook setups survive health-monitor restarts. Landed from contributor PR #39313 by @fellanH. Thanks @fellanH.
+- Discord/config schema parity: add `channels.discord.agentComponents` to the strict Zod config schema so valid `agentComponents.enabled` settings (root and account-scoped) no longer fail with unrecognized-key validation errors. Landed from contributor PR #39378 by @gambletan. Thanks @gambletan and @thewilloftheshadow.
+- ACPX/MCP session bootstrap: inject configured MCP servers into ACP `session/new` and `session/load` for acpx-backed sessions, restoring Canva and other external MCP tools. Landed from contributor PR #39337. Thanks @goodspeed-apps.
 
 ## 2026.3.2
 

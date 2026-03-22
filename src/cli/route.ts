@@ -1,4 +1,5 @@
 import { isTruthyEnvValue } from "../infra/env.js";
+import { loggingState } from "../logging/state.js";
 import { defaultRuntime } from "../runtime.js";
 import { VERSION } from "../version.js";
 import { getCommandPathWithRootOptions, hasFlag, hasHelpOrVersion } from "./argv.js";
@@ -22,7 +23,15 @@ async function prepareRoutedCommand(params: {
   const shouldLoadPlugins =
     typeof params.loadPlugins === "function" ? params.loadPlugins(params.argv) : params.loadPlugins;
   if (shouldLoadPlugins) {
-    ensurePluginRegistryLoaded();
+    const prev = loggingState.forceConsoleToStderr;
+    if (suppressDoctorStdout) {
+      loggingState.forceConsoleToStderr = true;
+    }
+    try {
+      ensurePluginRegistryLoaded();
+    } finally {
+      loggingState.forceConsoleToStderr = prev;
+    }
   }
 }
 

@@ -15,24 +15,591 @@
       }
     ]
   },
-  "extensions": {
+  "unit": {
     "isolated": [
       {
-        "file": "extensions/matrix/src/matrix/sdk.test.ts",
-        "reason": "This suite hoists a matrix-js-sdk module mock that can leak into later Matrix extension files when they share a non-isolated worker."
-      },
-      {
-        "file": "extensions/matrix/src/matrix/client/file-sync-store.test.ts",
-        "reason": "Matrix sdk.test.ts hoists a matrix-js-sdk module mock; keep the sync-store persistence regression in its own forked lane so non-isolated extension workers stay deterministic."
-      },
-      {
-        "file": "extensions/nextcloud-talk/src/monitor.replay.test.ts",
-        "reason": "The replay-handling regression is green alone but can inherit disturbed global stream/Response state from the shared extensions lane, so keep it in its own forked lane for deterministic CI."
+        "file": "extensions/imessage/src/monitor.shutdown.unhandled-rejection.test.ts",
+        "reason": "Touches process-level unhandledRejection listeners."
       }
-    ]
+    ],
+    "forkBatched": [],
+    "threadPinned": [
+      {
+        "file": "src/cli/secrets-cli.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on base config while keeping secrets CLI coverage green."
+      },
+      {
+        "file": "src/cli/plugin-registry.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on base config while keeping plugin registry CLI coverage green."
+      },
+      {
+        "file": "src/cli/exec-approvals-cli.test.ts",
+        "reason": "Measured ~15% faster under threads than forks on base config while keeping approvals CLI coverage green."
+      },
+      {
+        "file": "src/cli/browser-cli-manage.timeout-option.test.ts",
+        "reason": "Measured ~14% faster under threads than forks on base config while keeping browser manage timeout coverage green."
+      },
+      {
+        "file": "src/cli/browser-cli-manage.test.ts",
+        "reason": "Measured ~14% faster under threads than forks on base config while keeping browser manage coverage green."
+      },
+      {
+        "file": "src/cli/deps.test.ts",
+        "reason": "Measured ~81% faster under threads than forks on base config while keeping dependency checks green."
+      },
+      {
+        "file": "src/cli/nodes-cli.coverage.test.ts",
+        "reason": "Measured ~12% faster under threads than forks on base config while keeping nodes CLI coverage green."
+      },
+      {
+        "file": "src/cli/daemon-cli/restart-health.test.ts",
+        "reason": "Measured ~35% faster under threads than forks on base config while keeping daemon restart health coverage green."
+      },
+      {
+        "file": "src/cli/program/config-guard.test.ts",
+        "reason": "Measured ~14% faster under threads than forks on base config while keeping program config guard coverage green."
+      },
+      {
+        "file": "src/cli/update-cli/restart-helper.test.ts",
+        "reason": "Measured ~12% faster under threads than forks on base config while keeping update restart helper coverage green."
+      },
+      {
+        "file": "src/cli/security-cli.test.ts",
+        "reason": "Measured ~31% faster under threads than forks on base config while keeping security CLI coverage green."
+      },
+      {
+        "file": "src/cli/plugin-install-plan.test.ts",
+        "reason": "Measured ~14% faster under threads than forks on base config while keeping plugin install planning coverage green."
+      },
+      {
+        "file": "src/cli/memory-cli.test.ts",
+        "reason": "Measured ~50% faster under threads than forks on base config while keeping memory CLI coverage green."
+      },
+      {
+        "file": "src/cli/program.nodes-test-helpers.test.ts",
+        "reason": "Measured ~22% faster under threads than forks on base config while keeping nodes test helper coverage green."
+      },
+      {
+        "file": "src/cli/skills-cli.test.ts",
+        "reason": "Measured ~27% faster under threads than forks on base config while keeping skills CLI coverage green."
+      },
+      {
+        "file": "src/cli/run-main.exit.test.ts",
+        "reason": "Measured ~12% faster under threads than forks on base config while keeping run-main exit coverage green."
+      },
+      {
+        "file": "src/cli/completion-fish.test.ts",
+        "reason": "Measured ~41% faster under threads than forks on base config while keeping fish completion coverage green."
+      },
+      {
+        "file": "src/cli/config-set-mode.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on base config while keeping config set mode coverage green."
+      },
+      {
+        "file": "src/cli/program/build-program.version-alias.test.ts",
+        "reason": "Measured ~13% faster under threads than forks on base config while keeping version alias coverage green."
+      },
+      {
+        "file": "src/cli/program/register.agent.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on base config while keeping register agent coverage green."
+      },
+      {
+        "file": "test/vitest-unit-paths.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on base config while keeping unit path checks green."
+      },
+      {
+        "file": "test/scripts/check-channel-agnostic-boundaries.test.ts",
+        "reason": "Measured ~29% faster under threads than forks on base config while keeping channel-agnostic boundary checks green."
+      },
+      {
+        "file": "test/plugin-npm-release.test.ts",
+        "reason": "Measured ~10% faster under threads than forks on base config while keeping npm release checks green."
+      },
+      {
+        "file": "src/cli/daemon-cli-compat.test.ts",
+        "reason": "Measured ~12% faster under threads than forks on base config while keeping daemon CLI compatibility coverage green."
+      },
+      {
+        "file": "src/cli/program/command-registry.test.ts",
+        "reason": "Measured ~10% faster under threads than forks on base config while keeping command registry coverage green."
+      },
+      {
+        "file": "src/cli/program.force.test.ts",
+        "reason": "Measured ~14% faster under threads than forks on base config while keeping force option coverage green."
+      },
+      {
+        "file": "src/cli/cli-utils.test.ts",
+        "reason": "Measured ~15% faster under threads than forks on base config while keeping CLI utility coverage green."
+      },
+      {
+        "file": "src/cli/devices-cli.test.ts",
+        "reason": "Measured ~21% faster under threads than forks on base config while keeping devices CLI coverage green."
+      },
+      {
+        "file": "src/cli/message-secret-scope.test.ts",
+        "reason": "Measured ~16% faster under threads than forks on base config while keeping message secret scope coverage green."
+      },
+      {
+        "file": "src/cli/banner.test.ts",
+        "reason": "Measured ~30% faster under threads than forks on base config while keeping banner rendering coverage green."
+      },
+      {
+        "file": "src/cli/gateway-cli.coverage.test.ts",
+        "reason": "Measured ~18% faster under threads than forks on base config while keeping gateway CLI coverage green."
+      },
+      {
+        "file": "src/channels/plugins/actions/actions.test.ts",
+        "reason": "Terminates cleanly under threads, but not process forks on this host."
+      },
+      {
+        "file": "test/extension-plugin-sdk-boundary.test.ts",
+        "reason": "Measured ~12% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/hooks/install.test.ts",
+        "reason": "Measured ~14% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/hooks/plugin-hooks.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/hooks/hooks-install.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/hooks/workspace.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/hooks/loader.test.ts",
+        "reason": "Measured ~13% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/plugins/conversation-binding.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/hooks/bundled/session-memory/handler.test.ts",
+        "reason": "Measured ~16% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/plugin-sdk/subpaths.test.ts",
+        "reason": "Measured ~23% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/plugin-sdk/channel-import-guardrails.test.ts",
+        "reason": "Measured ~30% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/plugins/contracts/wizard.contract.test.ts",
+        "reason": "Measured ~9% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/plugins/contracts/auth-choice.contract.test.ts",
+        "reason": "Measured ~13% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/channels/plugins/contracts/outbound-payload.contract.test.ts",
+        "reason": "Measured ~15% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/plugins/install.test.ts",
+        "reason": "Measured ~18% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/plugins/interactive.test.ts",
+        "reason": "Measured ~9% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/plugins/marketplace.test.ts",
+        "reason": "Measured ~13% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/plugins/status.test.ts",
+        "reason": "Measured ~10% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/plugins/bundled-dir.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/plugins/sdk-alias.test.ts",
+        "reason": "Measured ~17% faster under threads than forks on this host after removing process.chdir() from the test."
+      },
+      {
+        "file": "src/config/config.plugin-validation.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/config/config.web-search-provider.test.ts",
+        "reason": "Measured ~14% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/config/config-misc.test.ts",
+        "reason": "Measured ~13% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/config/schema.help.quality.test.ts",
+        "reason": "Measured ~13% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/config/sessions/store.pruning.integration.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/config/sessions.test.ts",
+        "reason": "Measured ~16% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/config/sessions/store.pruning.test.ts",
+        "reason": "Measured ~13% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/config/sessions/sessions.test.ts",
+        "reason": "Measured ~14% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/config/sessions/targets.test.ts",
+        "reason": "Measured ~12% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/config/config.nix-integration-u3-u5-u9.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/config/config.legacy-config-detection.accepts-imessage-dmpolicy.test.ts",
+        "reason": "Measured ~13% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cron/isolated-agent.uses-last-non-empty-agent-text-as.test.ts",
+        "reason": "Measured ~15% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cron/isolated-agent.skips-delivery-without-whatsapp-recipient-besteffortdeliver-true.test.ts",
+        "reason": "Measured ~13% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cron/isolated-agent/run.cron-model-override.test.ts",
+        "reason": "Measured ~25% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cron/isolated-agent/run.skill-filter.test.ts",
+        "reason": "Measured ~15% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cron/isolated-agent/run.owner-auth.test.ts",
+        "reason": "Measured ~19% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cron/isolated-agent.lane.test.ts",
+        "reason": "Measured ~14% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cron/isolated-agent.direct-delivery-forum-topics.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cron/isolated-agent.auth-profile-propagation.test.ts",
+        "reason": "Measured ~22% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cron/isolated-agent.delivers-response-has-heartbeat-ok-but-includes.test.ts",
+        "reason": "Measured ~12% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cron/isolated-agent/delivery-dispatch.named-agent.test.ts",
+        "reason": "Measured ~14% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cron/isolated-agent.subagent-model.test.ts",
+        "reason": "Measured ~21% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cron/service.store-load-invalid-main-job.test.ts",
+        "reason": "Measured ~16% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cron/service.store-migration.test.ts",
+        "reason": "Measured ~14% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cron/service.failure-alert.test.ts",
+        "reason": "Measured ~17% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cron/service.persists-delivered-status.test.ts",
+        "reason": "Measured ~15% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cron/session-reaper.test.ts",
+        "reason": "Measured ~12% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cron/service.session-reaper-in-finally.test.ts",
+        "reason": "Measured ~21% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/plugins/loader.test.ts",
+        "reason": "Measured ~13% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/plugins/discovery.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/plugins/manifest-registry.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/plugins/providers.test.ts",
+        "reason": "Measured ~10% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/plugins/stage-bundled-plugin-runtime.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/infra/outbound/deliver.test.ts",
+        "reason": "Terminates cleanly under threads, but not process forks on this host."
+      },
+      {
+        "file": "src/infra/outbound/deliver.lifecycle.test.ts",
+        "reason": "Terminates cleanly under threads, but not process forks on this host."
+      },
+      {
+        "file": "src/infra/outbound/message.channels.test.ts",
+        "reason": "Terminates cleanly under threads, but not process forks on this host."
+      },
+      {
+        "file": "src/infra/outbound/message-action-runner.poll.test.ts",
+        "reason": "Terminates cleanly under threads, but not process forks on this host."
+      },
+      {
+        "file": "src/infra/outbound/message-action-runner.context.test.ts",
+        "reason": "Terminates cleanly under threads, but not process forks on this host."
+      },
+      {
+        "file": "src/infra/provider-usage.test.ts",
+        "reason": "Measured ~17% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/infra/git-commit.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host after removing process.chdir() from related thread-blocking tests."
+      },
+      {
+        "file": "src/infra/provider-usage.auth.normalizes-keys.test.ts",
+        "reason": "Measured ~12% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/infra/provider-usage.auth.plugin.test.ts",
+        "reason": "Measured ~13% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/infra/provider-usage.load.plugin.test.ts",
+        "reason": "Measured ~12% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/infra/outbound/targets.test.ts",
+        "reason": "Measured ~14% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/infra/outbound/agent-delivery.test.ts",
+        "reason": "Measured ~17% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/infra/outbound/outbound-policy.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/infra/outbound/outbound.test.ts",
+        "reason": "Measured ~14% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/infra/update-runner.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/infra/device-pairing.test.ts",
+        "reason": "Measured ~13% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/infra/fs-pinned-write-helper.test.ts",
+        "reason": "Measured ~13% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/infra/run-node.test.ts",
+        "reason": "Measured ~9% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/infra/fs-safe.test.ts",
+        "reason": "Measured ~17% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/infra/archive-staging.test.ts",
+        "reason": "Measured ~12% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/infra/state-migrations.test.ts",
+        "reason": "Measured ~17% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/infra/matrix-legacy-crypto.test.ts",
+        "reason": "Measured ~15% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/infra/matrix-migration-config.test.ts",
+        "reason": "Measured ~14% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/media/store.outside-workspace.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/media/input-files.fetch-guard.test.ts",
+        "reason": "Measured ~13% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/config/io.write-config.test.ts",
+        "reason": "Measured ~12% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/acp/server.startup.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/acp/client.test.ts",
+        "reason": "Measured ~18% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/acp/translator.cancel-scoping.test.ts",
+        "reason": "Measured ~10% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/node-host/invoke-browser.test.ts",
+        "reason": "Measured ~10% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/node-host/invoke-system-run-plan.test.ts",
+        "reason": "Measured ~10% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cli/daemon-cli/install.integration.test.ts",
+        "reason": "Measured ~12% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cli/mcp-cli.test.ts",
+        "reason": "Measured ~12% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/channels/channels-misc.test.ts",
+        "reason": "Measured ~12% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/channels/plugins/contracts/registry-backed.contract.test.ts",
+        "reason": "Measured ~19% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/pairing/setup-code.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/daemon/schtasks.startup-fallback.test.ts",
+        "reason": "Measured ~15% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/memory/embeddings.test.ts",
+        "reason": "Measured ~10% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/memory/batch-gemini.test.ts",
+        "reason": "Measured ~10% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/memory/embeddings-voyage.test.ts",
+        "reason": "Measured ~14% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/canvas-host/server.test.ts",
+        "reason": "Measured ~10% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/plugins/web-search-providers.runtime.test.ts",
+        "reason": "Measured ~17% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/plugins/contracts/registry.contract.test.ts",
+        "reason": "Measured ~14% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/media-understanding/runtime.test.ts",
+        "reason": "Measured ~13% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/media-understanding/resolve.test.ts",
+        "reason": "Measured ~9% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/media-understanding/runner.skip-tiny-audio.test.ts",
+        "reason": "Measured ~23% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/media-understanding/runner.proxy.test.ts",
+        "reason": "Measured ~55% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/media-understanding/runner.auto-audio.test.ts",
+        "reason": "Measured ~23% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/media-understanding/runner.video.test.ts",
+        "reason": "Measured ~25% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/secrets/audit.test.ts",
+        "reason": "Measured ~14% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/secrets/runtime-web-tools.test.ts",
+        "reason": "Measured ~13% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/entry.version-fast-path.test.ts",
+        "reason": "Measured ~13% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/security/audit.test.ts",
+        "reason": "Measured ~40% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "ui/src/ui/views/chat.test.ts",
+        "reason": "Measured ~25% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/tui/tui-session-actions.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/tui/gateway-chat.test.ts",
+        "reason": "Measured ~11% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cli/program/preaction.test.ts",
+        "reason": "Measured ~21% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/cli/program.smoke.test.ts",
+        "reason": "Measured ~13% faster under threads than forks on this host while keeping the file green."
+      },
+      {
+        "file": "src/tts/tts.test.ts",
+        "reason": "Terminates cleanly under threads, but not process forks on this host."
+      }
+    ],
+    "vmForkPinned": []
   },
-  "unit": {
-    "isolated": [],
-    "threadPinned": []
+  "extensions": {
+    "isolated": []
   }
 }

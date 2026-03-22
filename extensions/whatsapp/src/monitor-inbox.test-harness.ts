@@ -79,10 +79,8 @@ function getPairingStoreMocks() {
   };
 }
 
-const sock: MockSock = createMockSock();
-
-vi.mock("remoteclaw/plugin-sdk/media-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/media-runtime")>();
+vi.mock("openclaw/plugin-sdk/media-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/media-runtime")>();
   return {
     ...actual,
     saveMediaBuffer: vi.fn().mockResolvedValue({
@@ -111,7 +109,10 @@ vi.mock("./session.js", () => ({
 }));
 
 export function getSock(): MockSock {
-  return sock;
+  if (!sessionState.sock) {
+    throw new Error("mock WhatsApp socket not initialized");
+  }
+  return sessionState.sock;
 }
 
 export function expectPairingPromptSent(sock: MockSock, jid: string, senderE164: string) {
@@ -138,6 +139,7 @@ export function installWebMonitorInboxUnitTestHooks(opts?: { authDir?: boolean }
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    sessionState.sock = createMockSock();
     mockLoadConfig.mockReturnValue(DEFAULT_WEB_INBOX_CONFIG);
     readAllowFromStoreMock.mockResolvedValue([]);
     upsertPairingRequestMock.mockResolvedValue({

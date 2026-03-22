@@ -12,10 +12,8 @@ import {
 } from "./native-command.test-helpers.js";
 import { createNoopThreadBindingManager } from "./thread-bindings.js";
 
-type ResolveConfiguredAcpBindingRecordFn =
-  typeof import("../../../../src/acp/persistent-bindings.js").resolveConfiguredAcpBindingRecord;
-type EnsureConfiguredAcpBindingSessionFn =
-  typeof import("../../../../src/acp/persistent-bindings.js").ensureConfiguredAcpBindingSession;
+type EnsureConfiguredBindingRouteReadyFn =
+  typeof import("openclaw/plugin-sdk/conversation-runtime").ensureConfiguredBindingRouteReady;
 
 const persistentBindingMocks = vi.hoisted(() => ({
   resolveConfiguredAcpBindingRecord: vi.fn<ResolveConfiguredAcpBindingRecordFn>(() => null),
@@ -23,15 +21,39 @@ const persistentBindingMocks = vi.hoisted(() => ({
     ok: true,
     sessionKey: "agent:codex:acp:binding:discord:default:seed",
   })),
+);
+const runtimeModuleMocks = vi.hoisted(() => ({
+  matchPluginCommand: vi.fn(),
+  executePluginCommand: vi.fn(),
+  dispatchReplyWithDispatcher: vi.fn(),
 }));
 
-vi.mock("../../../../src/acp/persistent-bindings.js", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("../../../../src/acp/persistent-bindings.js")>();
+vi.mock("openclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/conversation-runtime")>();
   return {
     ...actual,
-    resolveConfiguredAcpBindingRecord: persistentBindingMocks.resolveConfiguredAcpBindingRecord,
-    ensureConfiguredAcpBindingSession: persistentBindingMocks.ensureConfiguredAcpBindingSession,
+    ensureConfiguredBindingRouteReady: (...args: unknown[]) =>
+      ensureConfiguredBindingRouteReadyMock(
+        ...(args as Parameters<EnsureConfiguredBindingRouteReadyFn>),
+      ),
+  };
+});
+
+vi.mock("openclaw/plugin-sdk/plugin-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/plugin-runtime")>();
+  return {
+    ...actual,
+    matchPluginCommand: (...args: unknown[]) => runtimeModuleMocks.matchPluginCommand(...args),
+    executePluginCommand: (...args: unknown[]) => runtimeModuleMocks.executePluginCommand(...args),
+  };
+});
+
+vi.mock("openclaw/plugin-sdk/reply-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/reply-runtime")>();
+  return {
+    ...actual,
+    dispatchReplyWithDispatcher: (...args: unknown[]) =>
+      runtimeModuleMocks.dispatchReplyWithDispatcher(...args),
   };
 });
 
@@ -63,12 +85,13 @@ function createConfig(): RemoteClawConfig {
   } as RemoteClawConfig;
 }
 
-function createStatusCommand(cfg: RemoteClawConfig) {
-  const commandSpec: NativeCommandSpec = {
-    name: "status",
-    description: "Status",
-    acceptsArgs: false,
-  };
+async function loadCreateDiscordNativeCommand() {
+  vi.resetModules();
+  return (await import("./native-command.js")).createDiscordNativeCommand;
+}
+
+async function createNativeCommand(cfg: OpenClawConfig, commandSpec: NativeCommandSpec) {
+  const createDiscordNativeCommand = await loadCreateDiscordNativeCommand();
   return createDiscordNativeCommand({
     command: commandSpec,
     cfg,
@@ -125,9 +148,7 @@ async function expectPairCommandReply(params: {
     cfg: params.cfg,
     name: params.commandName,
   });
-  const dispatchSpy = vi
-    .spyOn(dispatcherModule, "dispatchReplyWithDispatcher")
-    .mockResolvedValue({} as never);
+  const dispatchSpy = runtimeModuleMocks.dispatchReplyWithDispatcher;
 
   await (command as { run: (interaction: unknown) => Promise<void> }).run(
     Object.assign(params.interaction, {
@@ -174,7 +195,7 @@ function setConfiguredBinding(channelId: string, boundSessionKey: string) {
 }
 
 function createDispatchSpy() {
-  return vi.spyOn(dispatcherModule, "dispatchReplyWithDispatcher").mockResolvedValue({
+  return runtimeModuleMocks.dispatchReplyWithDispatcher.mockResolvedValue({
     counts: {
       final: 1,
       block: 0,
@@ -203,11 +224,9 @@ async function expectBoundStatusCommandDispatch(params: {
   channelId: string;
   boundSessionKey: string;
 }) {
-  const command = createStatusCommand(params.cfg);
-  setConfiguredBinding(params.channelId, params.boundSessionKey);
-
-  vi.spyOn(pluginCommandsModule, "matchPluginCommand").mockReturnValue(null);
+  runtimeModuleMocks.matchPluginCommand.mockReturnValue(null);
   const dispatchSpy = createDispatchSpy();
+  const command = await createStatusCommand(params.cfg);
 
   await (command as { run: (interaction: unknown) => Promise<void> }).run(
     params.interaction as unknown,
@@ -217,16 +236,34 @@ async function expectBoundStatusCommandDispatch(params: {
 }
 
 describe("Discord native plugin command dispatch", () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
+  beforeEach(async () => {
+    vi.clearAllMocks();
     clearPluginCommands();
-    persistentBindingMocks.resolveConfiguredAcpBindingRecord.mockReset();
-    persistentBindingMocks.resolveConfiguredAcpBindingRecord.mockReturnValue(null);
-    persistentBindingMocks.ensureConfiguredAcpBindingSession.mockReset();
-    persistentBindingMocks.ensureConfiguredAcpBindingSession.mockResolvedValue({
+    setDefaultChannelPluginRegistryForTests();
+    ensureConfiguredBindingRouteReadyMock.mockReset();
+    ensureConfiguredBindingRouteReadyMock.mockResolvedValue({
       ok: true,
       sessionKey: "agent:codex:acp:binding:discord:default:seed",
     });
+    const actualPluginRuntime = await vi.importActual<
+      typeof import("openclaw/plugin-sdk/plugin-runtime")
+    >("openclaw/plugin-sdk/plugin-runtime");
+    runtimeModuleMocks.matchPluginCommand.mockReset();
+    runtimeModuleMocks.matchPluginCommand.mockImplementation(
+      actualPluginRuntime.matchPluginCommand,
+    );
+    runtimeModuleMocks.executePluginCommand.mockReset();
+    runtimeModuleMocks.executePluginCommand.mockImplementation(
+      actualPluginRuntime.executePluginCommand,
+    );
+    runtimeModuleMocks.dispatchReplyWithDispatcher.mockReset();
+    runtimeModuleMocks.dispatchReplyWithDispatcher.mockResolvedValue({
+      counts: {
+        final: 1,
+        block: 0,
+        tool: 0,
+      },
+    } as never);
   });
 
   it("executes plugin commands from the real registry through the native Discord command path", async () => {
@@ -257,9 +294,10 @@ describe("Discord native plugin command dispatch", () => {
       }),
     ).toEqual({ ok: true });
 
-    const dispatchSpy = vi
-      .spyOn(dispatcherModule, "dispatchReplyWithDispatcher")
-      .mockResolvedValue({} as never);
+    const executeSpy = runtimeModuleMocks.executePluginCommand;
+    const dispatchSpy = runtimeModuleMocks.dispatchReplyWithDispatcher.mockResolvedValue(
+      {} as never,
+    );
 
     await (command as { run: (interaction: unknown) => Promise<void> }).run(
       Object.assign(interaction, {
@@ -284,15 +322,6 @@ describe("Discord native plugin command dispatch", () => {
       description: "List cron jobs",
       acceptsArgs: false,
     };
-    const command = createDiscordNativeCommand({
-      command: commandSpec,
-      cfg,
-      discordConfig: cfg.channels?.discord ?? {},
-      accountId: "default",
-      sessionPrefix: "discord:slash",
-      ephemeralDefault: true,
-      threadBindings: createNoopThreadBindingManager("default"),
-    });
     const interaction = createInteraction();
     const pluginMatch = {
       command: {
@@ -305,15 +334,14 @@ describe("Discord native plugin command dispatch", () => {
       args: undefined,
     };
 
-    vi.spyOn(pluginCommandsModule, "matchPluginCommand").mockReturnValue(
-      pluginMatch as ReturnType<typeof pluginCommandsModule.matchPluginCommand>,
+    runtimeModuleMocks.matchPluginCommand.mockReturnValue(pluginMatch as never);
+    const executeSpy = runtimeModuleMocks.executePluginCommand.mockResolvedValue({
+      text: "direct plugin output",
+    });
+    const dispatchSpy = runtimeModuleMocks.dispatchReplyWithDispatcher.mockResolvedValue(
+      {} as never,
     );
-    const executeSpy = vi
-      .spyOn(pluginCommandsModule, "executePluginCommand")
-      .mockResolvedValue({ text: "direct plugin output" });
-    const dispatchSpy = vi
-      .spyOn(dispatcherModule, "dispatchReplyWithDispatcher")
-      .mockResolvedValue({} as never);
+    const command = await createNativeCommand(cfg, commandSpec);
 
     await (command as { run: (interaction: unknown) => Promise<void> }).run(interaction as unknown);
 
@@ -391,8 +419,7 @@ describe("Discord native plugin command dispatch", () => {
           },
         },
       },
-    } as RemoteClawConfig;
-    const command = createStatusCommand(cfg);
+    } as OpenClawConfig;
     const interaction = createInteraction({
       channelType: ChannelType.GuildText,
       channelId,
@@ -400,8 +427,9 @@ describe("Discord native plugin command dispatch", () => {
       guildName: "Ops",
     });
 
-    vi.spyOn(pluginCommandsModule, "matchPluginCommand").mockReturnValue(null);
+    runtimeModuleMocks.matchPluginCommand.mockReturnValue(null);
     const dispatchSpy = createDispatchSpy();
+    const command = await createStatusCommand(cfg);
 
     await (command as { run: (interaction: unknown) => Promise<void> }).run(interaction as unknown);
 
@@ -455,5 +483,33 @@ describe("Discord native plugin command dispatch", () => {
       channelId,
       boundSessionKey,
     });
+    ensureConfiguredBindingRouteReadyMock.mockResolvedValue({
+      ok: false,
+      error: "acpx exited with code 1",
+    });
+    runtimeModuleMocks.matchPluginCommand.mockReturnValue(null);
+    const dispatchSpy = createDispatchSpy();
+    const command = await createNativeCommand(cfg, {
+      name: "new",
+      description: "Start a new session.",
+      acceptsArgs: true,
+    });
+
+    await (command as { run: (interaction: unknown) => Promise<void> }).run(interaction as unknown);
+
+    expect(dispatchSpy).toHaveBeenCalledTimes(1);
+    const dispatchCall = dispatchSpy.mock.calls[0]?.[0] as {
+      ctx?: { SessionKey?: string; CommandTargetSessionKey?: string };
+    };
+    expect(dispatchCall.ctx?.SessionKey).toMatch(/^agent:codex:acp:binding:discord:default:/);
+    expect(dispatchCall.ctx?.CommandTargetSessionKey).toMatch(
+      /^agent:codex:acp:binding:discord:default:/,
+    );
+    expect(ensureConfiguredBindingRouteReadyMock).not.toHaveBeenCalled();
+    expect(interaction.reply).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: "Configured ACP binding is unavailable right now. Please try again.",
+      }),
+    );
   });
 });

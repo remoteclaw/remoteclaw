@@ -10,6 +10,13 @@ import {
   installWebMonitorInboxUnitTestHooks,
 } from "./monitor-inbox.test-harness.js";
 
+let nextMessageSequence = 0;
+
+function nextMessageId(label: string): string {
+  nextMessageSequence += 1;
+  return `${label}-${nextMessageSequence}`;
+}
+
 describe("web monitor inbox", () => {
   installWebMonitorInboxUnitTestHooks();
   type InboxOnMessage = NonNullable<Parameters<typeof monitorWebInbox>[0]["onMessage"]>;
@@ -64,7 +71,11 @@ describe("web monitor inbox", () => {
       type: "notify",
       messages: [
         {
-          key: { id: "abc", fromMe: false, remoteJid: "999@s.whatsapp.net" },
+          key: {
+            id: nextMessageId("quoted"),
+            fromMe: false,
+            remoteJid: "999@s.whatsapp.net",
+          },
           message: {
             extendedTextMessage: {
               text: "reply",
@@ -106,8 +117,9 @@ describe("web monitor inbox", () => {
 
     const { listener, sock } = await startInboxMonitor(onMessage);
     expect(sock.sendPresenceUpdate).toHaveBeenCalledWith("available");
-    const upsert = buildMessageUpsert({
-      id: "abc",
+    const messageId = nextMessageId("stream");
+    const upsert = buildNotifyMessageUpsert({
+      id: messageId,
       remoteJid: "999@s.whatsapp.net",
       text: "ping",
       timestamp: 1_700_000_000,
@@ -128,7 +140,7 @@ describe("web monitor inbox", () => {
     expect(sock.readMessages).toHaveBeenCalledWith([
       {
         remoteJid: "999@s.whatsapp.net",
-        id: "abc",
+        id: messageId,
         participant: undefined,
         fromMe: false,
       },
@@ -147,9 +159,9 @@ describe("web monitor inbox", () => {
       return;
     });
 
-    const { listener, sock } = await startInboxMonitor(onMessage);
-    const upsert = buildMessageUpsert({
-      id: "abc",
+    const { listener, sock } = await startInboxMonitor(onMessage as InboxOnMessage);
+    const upsert = buildNotifyMessageUpsert({
+      id: nextMessageId("dedupe"),
       remoteJid: "999@s.whatsapp.net",
       text: "ping",
       timestamp: 1_700_000_000,
@@ -173,8 +185,8 @@ describe("web monitor inbox", () => {
     const { listener, sock } = await startInboxMonitor(onMessage);
     const getPNForLID = vi.spyOn(sock.signalRepository.lidMapping, "getPNForLID");
     sock.signalRepository.lidMapping.getPNForLID.mockResolvedValueOnce("999:0@s.whatsapp.net");
-    const upsert = buildMessageUpsert({
-      id: "abc",
+    const upsert = buildNotifyMessageUpsert({
+      id: nextMessageId("lid-store"),
       remoteJid: "999@lid",
       text: "ping",
       timestamp: 1_700_000_000,
@@ -208,8 +220,8 @@ describe("web monitor inbox", () => {
 
     const { listener, sock } = await startInboxMonitor(onMessage);
     const getPNForLID = vi.spyOn(sock.signalRepository.lidMapping, "getPNForLID");
-    const upsert = buildMessageUpsert({
-      id: "abc",
+    const upsert = buildNotifyMessageUpsert({
+      id: nextMessageId("lid-authdir"),
       remoteJid: "555@lid",
       text: "ping",
       timestamp: 1_700_000_000,
@@ -235,8 +247,8 @@ describe("web monitor inbox", () => {
     const { listener, sock } = await startInboxMonitor(onMessage);
     const getPNForLID = vi.spyOn(sock.signalRepository.lidMapping, "getPNForLID");
     sock.signalRepository.lidMapping.getPNForLID.mockResolvedValueOnce("444:0@s.whatsapp.net");
-    const upsert = buildMessageUpsert({
-      id: "abc",
+    const upsert = buildNotifyMessageUpsert({
+      id: nextMessageId("group-lid"),
       remoteJid: "123@g.us",
       participant: "444@lid",
       text: "ping",

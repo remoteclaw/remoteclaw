@@ -1,3 +1,4 @@
+import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 import { createEmptyPluginRegistry, type PluginRegistry } from "./registry.js";
 
 const REGISTRY_STATE = Symbol.for("remoteclaw.pluginRegistryState");
@@ -10,21 +11,13 @@ type RegistryState = {
   version: number;
 };
 
-const state: RegistryState = (() => {
-  const globalState = globalThis as typeof globalThis & {
-    [REGISTRY_STATE]?: RegistryState;
-  };
-  if (!globalState[REGISTRY_STATE]) {
-    globalState[REGISTRY_STATE] = {
-      registry: createEmptyPluginRegistry(),
-      httpRouteRegistry: null,
-      httpRouteRegistryPinned: false,
-      key: null,
-      version: 0,
-    };
-  }
-  return globalState[REGISTRY_STATE];
-})();
+const state = resolveGlobalSingleton<RegistryState>(REGISTRY_STATE, () => ({
+  registry: createEmptyPluginRegistry(),
+  httpRouteRegistry: null,
+  httpRouteRegistryPinned: false,
+  key: null,
+  version: 0,
+}));
 
 export function setActivePluginRegistry(registry: PluginRegistry, cacheKey?: string) {
   state.registry = registry;

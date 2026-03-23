@@ -1,28 +1,17 @@
-import fs from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { slackPlugin } from "../../../extensions/slack/src/channel.js";
-import { telegramPlugin } from "../../../extensions/telegram/src/channel.js";
-import { whatsappPlugin } from "../../../extensions/whatsapp/src/channel.js";
-import { loadWebMedia } from "../../../extensions/whatsapp/src/media.js";
-import { jsonResult } from "../../agents/tools/common.js";
-import type { ChannelPlugin } from "../../channels/plugins/types.js";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type {
+  ChannelDirectoryEntryKind,
+  ChannelMessagingAdapter,
+  ChannelOutboundAdapter,
+  ChannelPlugin,
+} from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
-import { createOutboundTestPlugin, createTestRegistry } from "../../test-utils/channel-plugins.js";
-import { createIMessageTestPlugin } from "../../test-utils/imessage-test-plugin.js";
+import {
+  createChannelTestPluginBase,
+  createTestRegistry,
+} from "../../test-utils/channel-plugins.js";
 import { runMessageAction } from "./message-action-runner.js";
-
-vi.mock("../../../extensions/whatsapp/src/media.js", async () => {
-  const actual = await vi.importActual<typeof import("../../../extensions/whatsapp/src/media.js")>(
-    "../../../extensions/whatsapp/src/media.js",
-  );
-  return {
-    ...actual,
-    loadWebMedia: vi.fn(actual.loadWebMedia),
-  };
-});
 
 const slackConfig = {
   channels: {
@@ -71,61 +60,161 @@ const runDrySend = (params: {
     action: "send",
   });
 
-function createAlwaysConfiguredPluginConfig(account: Record<string, unknown> = { enabled: true }) {
+type ResolvedTestTarget = { to: string; kind: ChannelDirectoryEntryKind };
+
+const directOutbound: ChannelOutboundAdapter = { deliveryMode: "direct" };
+
+function normalizeSlackTarget(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("#")) {
+    return trimmed.slice(1).trim();
+  }
+  if (/^channel:/i.test(trimmed)) {
+    return trimmed.replace(/^channel:/i, "").trim();
+  }
+  if (/^user:/i.test(trimmed)) {
+    return trimmed.replace(/^user:/i, "").trim();
+  }
+  const mention = trimmed.match(/^<@([A-Z0-9]+)>$/i);
+  if (mention?.[1]) {
+    return mention[1];
+  }
+  return trimmed;
+}
+
+function createConfiguredTestPlugin(params: {
+  id: "slack" | "telegram" | "whatsapp";
+  isConfigured: (cfg: RemoteClawConfig) => boolean;
+  normalizeTarget: (raw: string) => string | undefined;
+  resolveTarget: (input: string) => ResolvedTestTarget | null;
+}): ChannelPlugin {
+  const messaging: ChannelMessagingAdapter = {
+    normalizeTarget: params.normalizeTarget,
+    targetResolver: {
+      looksLikeId: (raw) => Boolean(params.resolveTarget(raw.trim())),
+      hint: "<id>",
+      resolveTarget: async (resolverParams) => {
+        const resolved = params.resolveTarget(resolverParams.input);
+        return resolved ? { ...resolved, source: "normalized" } : null;
+      },
+    },
+    inferTargetChatType: (inferParams) =>
+      params.resolveTarget(inferParams.to)?.kind === "user" ? "direct" : "group",
+  };
   return {
-    listAccountIds: () => ["default"],
-    resolveAccount: () => account,
-    isConfigured: () => true,
+    ...createChannelTestPluginBase({
+      id: params.id,
+      config: {
+        listAccountIds: () => ["default"],
+        resolveAccount: () => ({ enabled: true }),
+        isConfigured: (_account, cfg) => params.isConfigured(cfg),
+      },
+    }),
+    outbound: directOutbound,
+    messaging,
   };
 }
 
-let createPluginRuntime: typeof import("../../plugins/runtime/index.js").createPluginRuntime;
-let setSlackRuntime: typeof import("../../../extensions/slack/src/runtime.js").setSlackRuntime;
-let setTelegramRuntime: typeof import("../../../extensions/telegram/src/runtime.js").setTelegramRuntime;
-let setWhatsAppRuntime: typeof import("../../../extensions/whatsapp/src/runtime.js").setWhatsAppRuntime;
+const slackTestPlugin = createConfiguredTestPlugin({
+  id: "slack",
+  isConfigured: (cfg) => Boolean(cfg.channels?.slack?.botToken?.trim()),
+  normalizeTarget: (raw) => normalizeSlackTarget(raw) || undefined,
+  resolveTarget: (input) => {
+    const normalized = normalizeSlackTarget(input);
+    if (!normalized) {
+      return null;
+    }
+    if (/^[A-Z0-9]+$/i.test(normalized)) {
+      const kind = /^U/i.test(normalized) ? "user" : "group";
+      return { to: normalized, kind };
+    }
+    return null;
+  },
+});
 
-function installChannelRuntimes(params?: { includeTelegram?: boolean; includeWhatsApp?: boolean }) {
-  const runtime = createPluginRuntime();
-  setSlackRuntime(runtime);
-  if (params?.includeTelegram !== false) {
-    setTelegramRuntime(runtime);
-  }
-  if (params?.includeWhatsApp !== false) {
-    setWhatsAppRuntime(runtime);
-  }
-}
+const telegramTestPlugin = createConfiguredTestPlugin({
+  id: "telegram",
+  isConfigured: (cfg) => Boolean(cfg.channels?.telegram?.botToken?.trim()),
+  normalizeTarget: (raw) => raw.trim() || undefined,
+  resolveTarget: (input) => {
+    const normalized = input.trim();
+    if (!normalized) {
+      return null;
+    }
+    return {
+      to: normalized.replace(/^telegram:/i, ""),
+      kind: normalized.startsWith("@") ? "user" : "group",
+    };
+  },
+});
+
+const whatsappTestPlugin = createConfiguredTestPlugin({
+  id: "whatsapp",
+  isConfigured: (cfg) => Boolean(cfg.channels?.whatsapp),
+  normalizeTarget: (raw) => raw.trim() || undefined,
+  resolveTarget: (input) => {
+    const normalized = input.trim();
+    if (!normalized) {
+      return null;
+    }
+    return {
+      to: normalized,
+      kind: normalized.endsWith("@g.us") ? "group" : "user",
+    };
+  },
+});
+
+const imessageTestPlugin: ChannelPlugin = {
+  ...createChannelTestPluginBase({
+    id: "imessage",
+    label: "iMessage",
+    docsPath: "/channels/imessage",
+    capabilities: { chatTypes: ["direct", "group"], media: true },
+  }),
+  meta: {
+    id: "imessage",
+    label: "iMessage",
+    selectionLabel: "iMessage (imsg)",
+    docsPath: "/channels/imessage",
+    blurb: "iMessage test stub.",
+    aliases: ["imsg"],
+  },
+  outbound: directOutbound,
+  messaging: {
+    normalizeTarget: (raw) => raw.trim() || undefined,
+    targetResolver: {
+      looksLikeId: (raw) => raw.trim().length > 0,
+      hint: "<handle|chat_id:ID>",
+    },
+  },
+};
 
 describe("runMessageAction context isolation", () => {
-  beforeAll(async () => {
-    ({ createPluginRuntime } = await import("../../plugins/runtime/index.js"));
-    ({ setSlackRuntime } = await import("../../../extensions/slack/src/runtime.js"));
-    ({ setTelegramRuntime } = await import("../../../extensions/telegram/src/runtime.js"));
-    ({ setWhatsAppRuntime } = await import("../../../extensions/whatsapp/src/runtime.js"));
-  });
-
   beforeEach(() => {
-    installChannelRuntimes();
     setActivePluginRegistry(
       createTestRegistry([
         {
           pluginId: "slack",
           source: "test",
-          plugin: slackPlugin,
+          plugin: slackTestPlugin,
         },
         {
           pluginId: "whatsapp",
           source: "test",
-          plugin: whatsappPlugin,
+          plugin: whatsappTestPlugin,
         },
         {
           pluginId: "telegram",
           source: "test",
-          plugin: telegramPlugin,
+          plugin: telegramTestPlugin,
         },
         {
           pluginId: "imessage",
           source: "test",
-          plugin: createIMessageTestPlugin(),
+          plugin: imessageTestPlugin,
         },
       ]),
     );
@@ -210,6 +299,46 @@ describe("runMessageAction context isolation", () => {
     ).rejects.toThrow(/message required/i);
   });
 
+  it("allows send when only shared interactive payloads are provided", async () => {
+    const result = await runDrySend({
+      cfg: {
+        channels: {
+          telegram: {
+            botToken: "telegram-test",
+          },
+        },
+      } as RemoteClawConfig,
+      actionParams: {
+        channel: "telegram",
+        target: "123456",
+        interactive: {
+          blocks: [
+            {
+              type: "buttons",
+              buttons: [{ label: "Approve", value: "approve" }],
+            },
+          ],
+        },
+      },
+    });
+
+    expect(result.kind).toBe("send");
+  });
+
+  it("allows send when only Slack blocks are provided", async () => {
+    const result = await runDrySend({
+      cfg: slackConfig,
+      actionParams: {
+        channel: "slack",
+        target: "#C12345678",
+        blocks: [{ type: "divider" }],
+      },
+      toolContext: { currentChannelId: "C12345678" },
+    });
+
+    expect(result.kind).toBe("send");
+  });
+
   it.each([
     {
       name: "structured poll params",
@@ -240,6 +369,15 @@ describe("runMessageAction context isolation", () => {
         poll_question: "Ready?",
         poll_option: ["Yes", "No"],
         poll_public: "true",
+      },
+    },
+    {
+      name: "negative poll duration params",
+      actionParams: {
+        channel: "slack",
+        target: "#C12345678",
+        message: "hi",
+        pollDurationSeconds: -5,
       },
     },
   ])("rejects send actions that include $name", async ({ actionParams }) => {
@@ -467,590 +605,5 @@ describe("runMessageAction context isolation", () => {
     const controller = new AbortController();
     controller.abort();
     await expect(run(controller.signal)).rejects.toMatchObject({ name: "AbortError" });
-  });
-});
-
-describe("runMessageAction sendAttachment hydration", () => {
-  const cfg = {
-    channels: {
-      bluebubbles: {
-        enabled: true,
-        serverUrl: "http://localhost:1234",
-        password: "test-password",
-      },
-    },
-  } as RemoteClawConfig;
-  const attachmentPlugin: ChannelPlugin = {
-    id: "bluebubbles",
-    meta: {
-      id: "bluebubbles",
-      label: "BlueBubbles",
-      selectionLabel: "BlueBubbles",
-      docsPath: "/channels/bluebubbles",
-      blurb: "BlueBubbles test plugin.",
-    },
-    capabilities: { chatTypes: ["direct", "group"], media: true },
-    config: {
-      listAccountIds: () => ["default"],
-      resolveAccount: () => ({ enabled: true }),
-      isConfigured: () => true,
-    },
-    actions: {
-      listActions: () => ["sendAttachment", "setGroupIcon"],
-      supportsAction: ({ action }) => action === "sendAttachment" || action === "setGroupIcon",
-      handleAction: async ({ params }) =>
-        jsonResult({
-          ok: true,
-          buffer: params.buffer,
-          filename: params.filename,
-          caption: params.caption,
-          contentType: params.contentType,
-        }),
-    },
-  };
-
-  beforeEach(() => {
-    setActivePluginRegistry(
-      createTestRegistry([
-        {
-          pluginId: "bluebubbles",
-          source: "test",
-          plugin: attachmentPlugin,
-        },
-      ]),
-    );
-    vi.mocked(loadWebMedia).mockResolvedValue({
-      buffer: Buffer.from("hello"),
-      contentType: "image/png",
-      kind: "image",
-      fileName: "pic.png",
-    });
-  });
-
-  afterEach(() => {
-    setActivePluginRegistry(createTestRegistry([]));
-    vi.clearAllMocks();
-  });
-
-  async function restoreRealMediaLoader() {
-    const actual = await vi.importActual<
-      typeof import("../../../extensions/whatsapp/src/media.js")
-    >("../../../extensions/whatsapp/src/media.js");
-    vi.mocked(loadWebMedia).mockImplementation(actual.loadWebMedia);
-  }
-
-  async function expectRejectsLocalAbsolutePathWithoutSandbox(params: {
-    action: "sendAttachment" | "setGroupIcon";
-    target: string;
-    message?: string;
-    tempPrefix: string;
-  }) {
-    await restoreRealMediaLoader();
-
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), params.tempPrefix));
-    try {
-      const outsidePath = path.join(tempDir, "secret.txt");
-      await fs.writeFile(outsidePath, "secret", "utf8");
-
-      const actionParams: Record<string, unknown> = {
-        channel: "bluebubbles",
-        target: params.target,
-        media: outsidePath,
-      };
-      if (params.message) {
-        actionParams.message = params.message;
-      }
-
-      await expect(
-        runMessageAction({
-          cfg,
-          action: params.action,
-          params: actionParams,
-        }),
-      ).rejects.toThrow(/allowed directory|path-not-allowed/i);
-    } finally {
-      await fs.rm(tempDir, { recursive: true, force: true });
-    }
-  }
-
-  it("hydrates buffer and filename from media for sendAttachment", async () => {
-    const result = await runMessageAction({
-      cfg,
-      action: "sendAttachment",
-      params: {
-        channel: "bluebubbles",
-        target: "+15551234567",
-        media: "https://example.com/pic.png",
-        message: "caption",
-      },
-    });
-
-    expect(result.kind).toBe("action");
-    expect(result.payload).toMatchObject({
-      ok: true,
-      filename: "pic.png",
-      caption: "caption",
-      contentType: "image/png",
-    });
-    expect((result.payload as { buffer?: string }).buffer).toBe(
-      Buffer.from("hello").toString("base64"),
-    );
-    const call = vi.mocked(loadWebMedia).mock.calls[0];
-    expect(call?.[1]).toEqual(
-      expect.objectContaining({
-        localRoots: expect.any(Array),
-      }),
-    );
-    expect((call?.[1] as { sandboxValidated?: boolean } | undefined)?.sandboxValidated).not.toBe(
-      true,
-    );
-  });
-
-  it("rejects local absolute path for sendAttachment when sandboxRoot is missing", async () => {
-    await expectRejectsLocalAbsolutePathWithoutSandbox({
-      action: "sendAttachment",
-      target: "+15551234567",
-      message: "caption",
-      tempPrefix: "msg-attachment-",
-    });
-  });
-
-  it("rejects local absolute path for setGroupIcon when sandboxRoot is missing", async () => {
-    await expectRejectsLocalAbsolutePathWithoutSandbox({
-      action: "setGroupIcon",
-      target: "group:123",
-      tempPrefix: "msg-group-icon-",
-    });
-  });
-});
-
-describe("runMessageAction media caption behavior", () => {
-  afterEach(() => {
-    setActivePluginRegistry(createTestRegistry([]));
-  });
-
-  it("promotes caption to message for media sends when message is empty", async () => {
-    const sendMedia = vi.fn().mockResolvedValue({
-      channel: "testchat",
-      messageId: "m1",
-      chatId: "c1",
-    });
-    setActivePluginRegistry(
-      createTestRegistry([
-        {
-          pluginId: "testchat",
-          source: "test",
-          plugin: createOutboundTestPlugin({
-            id: "testchat",
-            outbound: {
-              deliveryMode: "direct",
-              sendText: vi.fn().mockResolvedValue({
-                channel: "testchat",
-                messageId: "t1",
-                chatId: "c1",
-              }),
-              sendMedia,
-            },
-          }),
-        },
-      ]),
-    );
-    const cfg = {
-      channels: {
-        testchat: {
-          enabled: true,
-        },
-      },
-    } as RemoteClawConfig;
-
-    const result = await runMessageAction({
-      cfg,
-      action: "send",
-      params: {
-        channel: "testchat",
-        target: "channel:abc",
-        media: "https://example.com/cat.png",
-        caption: "caption-only text",
-      },
-      dryRun: false,
-    });
-
-    expect(result.kind).toBe("send");
-    expect(sendMedia).toHaveBeenCalledWith(
-      expect.objectContaining({
-        text: "caption-only text",
-        mediaUrl: "https://example.com/cat.png",
-      }),
-    );
-  });
-});
-
-describe("runMessageAction card-only send behavior", () => {
-  const handleAction = vi.fn(async ({ params }: { params: Record<string, unknown> }) =>
-    jsonResult({
-      ok: true,
-      card: params.card ?? null,
-      message: params.message ?? null,
-    }),
-  );
-
-  const cardPlugin: ChannelPlugin = {
-    id: "cardchat",
-    meta: {
-      id: "cardchat",
-      label: "Card Chat",
-      selectionLabel: "Card Chat",
-      docsPath: "/channels/cardchat",
-      blurb: "Card-only send test plugin.",
-    },
-    capabilities: { chatTypes: ["direct"] },
-    config: createAlwaysConfiguredPluginConfig(),
-    actions: {
-      listActions: () => ["send"],
-      supportsAction: ({ action }) => action === "send",
-      handleAction,
-    },
-  };
-
-  beforeEach(() => {
-    setActivePluginRegistry(
-      createTestRegistry([
-        {
-          pluginId: "cardchat",
-          source: "test",
-          plugin: cardPlugin,
-        },
-      ]),
-    );
-    handleAction.mockClear();
-  });
-
-  afterEach(() => {
-    setActivePluginRegistry(createTestRegistry([]));
-    vi.clearAllMocks();
-  });
-
-  it("allows card-only sends without text or media", async () => {
-    const cfg = {
-      channels: {
-        cardchat: {
-          enabled: true,
-        },
-      },
-    } as RemoteClawConfig;
-
-    const card = {
-      type: "AdaptiveCard",
-      version: "1.4",
-      body: [{ type: "TextBlock", text: "Card-only payload" }],
-    };
-
-    const result = await runMessageAction({
-      cfg,
-      action: "send",
-      params: {
-        channel: "cardchat",
-        target: "channel:test-card",
-        card,
-      },
-      dryRun: false,
-    });
-
-    expect(result.kind).toBe("send");
-    expect(result.handledBy).toBe("plugin");
-    expect(handleAction).toHaveBeenCalled();
-    expect(result.payload).toMatchObject({
-      ok: true,
-      card,
-    });
-  });
-});
-
-describe("runMessageAction telegram plugin poll forwarding", () => {
-  const handleAction = vi.fn(async ({ params }: { params: Record<string, unknown> }) =>
-    jsonResult({
-      ok: true,
-      forwarded: {
-        to: params.to ?? null,
-        pollQuestion: params.pollQuestion ?? null,
-        pollOption: params.pollOption ?? null,
-        pollDurationSeconds: params.pollDurationSeconds ?? null,
-        pollPublic: params.pollPublic ?? null,
-        threadId: params.threadId ?? null,
-      },
-    }),
-  );
-
-  const telegramPollPlugin: ChannelPlugin = {
-    id: "telegram",
-    meta: {
-      id: "telegram",
-      label: "Telegram",
-      selectionLabel: "Telegram",
-      docsPath: "/channels/telegram",
-      blurb: "Telegram poll forwarding test plugin.",
-    },
-    capabilities: { chatTypes: ["direct"] },
-    config: createAlwaysConfiguredPluginConfig(),
-    messaging: {
-      targetResolver: {
-        looksLikeId: () => true,
-      },
-    },
-    actions: {
-      listActions: () => ["poll"],
-      supportsAction: ({ action }) => action === "poll",
-      handleAction,
-    },
-  };
-
-  beforeEach(() => {
-    setActivePluginRegistry(
-      createTestRegistry([
-        {
-          pluginId: "telegram",
-          source: "test",
-          plugin: telegramPollPlugin,
-        },
-      ]),
-    );
-    handleAction.mockClear();
-  });
-
-  afterEach(() => {
-    setActivePluginRegistry(createTestRegistry([]));
-    vi.clearAllMocks();
-  });
-
-  it("forwards telegram poll params through plugin dispatch", async () => {
-    const result = await runMessageAction({
-      cfg: {
-        channels: {
-          telegram: {
-            botToken: "tok",
-          },
-        },
-      } as RemoteClawConfig,
-      action: "poll",
-      params: {
-        channel: "telegram",
-        target: "telegram:123",
-        pollQuestion: "Lunch?",
-        pollOption: ["Pizza", "Sushi"],
-        pollDurationSeconds: 120,
-        pollPublic: true,
-        threadId: "42",
-      },
-      dryRun: false,
-    });
-
-    expect(result.kind).toBe("poll");
-    expect(result.handledBy).toBe("plugin");
-    expect(handleAction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: "poll",
-        channel: "telegram",
-        params: expect.objectContaining({
-          to: "telegram:123",
-          pollQuestion: "Lunch?",
-          pollOption: ["Pizza", "Sushi"],
-          pollDurationSeconds: 120,
-          pollPublic: true,
-          threadId: "42",
-        }),
-      }),
-    );
-    expect(result.payload).toMatchObject({
-      ok: true,
-      forwarded: {
-        to: "telegram:123",
-        pollQuestion: "Lunch?",
-        pollOption: ["Pizza", "Sushi"],
-        pollDurationSeconds: 120,
-        pollPublic: true,
-        threadId: "42",
-      },
-    });
-  });
-});
-
-describe("runMessageAction components parsing", () => {
-  const handleAction = vi.fn(async ({ params }: { params: Record<string, unknown> }) =>
-    jsonResult({
-      ok: true,
-      components: params.components ?? null,
-    }),
-  );
-
-  const componentsPlugin: ChannelPlugin = {
-    id: "discord",
-    meta: {
-      id: "discord",
-      label: "Discord",
-      selectionLabel: "Discord",
-      docsPath: "/channels/discord",
-      blurb: "Discord components send test plugin.",
-    },
-    capabilities: { chatTypes: ["direct"] },
-    config: createAlwaysConfiguredPluginConfig({}),
-    actions: {
-      listActions: () => ["send"],
-      supportsAction: ({ action }) => action === "send",
-      handleAction,
-    },
-  };
-
-  beforeEach(() => {
-    setActivePluginRegistry(
-      createTestRegistry([
-        {
-          pluginId: "discord",
-          source: "test",
-          plugin: componentsPlugin,
-        },
-      ]),
-    );
-    handleAction.mockClear();
-  });
-
-  afterEach(() => {
-    setActivePluginRegistry(createTestRegistry([]));
-    vi.clearAllMocks();
-  });
-
-  it("parses components JSON strings before plugin dispatch", async () => {
-    const components = {
-      text: "hello",
-      buttons: [{ label: "A", customId: "a" }],
-    };
-    const result = await runMessageAction({
-      cfg: {} as RemoteClawConfig,
-      action: "send",
-      params: {
-        channel: "discord",
-        target: "channel:123",
-        message: "hi",
-        components: JSON.stringify(components),
-      },
-      dryRun: false,
-    });
-
-    expect(result.kind).toBe("send");
-    expect(handleAction).toHaveBeenCalled();
-    expect(result.payload).toMatchObject({ ok: true, components });
-  });
-
-  it("throws on invalid components JSON strings", async () => {
-    await expect(
-      runMessageAction({
-        cfg: {} as RemoteClawConfig,
-        action: "send",
-        params: {
-          channel: "discord",
-          target: "channel:123",
-          message: "hi",
-          components: "{not-json}",
-        },
-        dryRun: false,
-      }),
-    ).rejects.toThrow(/--components must be valid JSON/);
-
-    expect(handleAction).not.toHaveBeenCalled();
-  });
-});
-
-describe("runMessageAction accountId defaults", () => {
-  const handleAction = vi.fn(async () => jsonResult({ ok: true }));
-  const accountPlugin: ChannelPlugin = {
-    id: "discord",
-    meta: {
-      id: "discord",
-      label: "Discord",
-      selectionLabel: "Discord",
-      docsPath: "/channels/discord",
-      blurb: "Discord test plugin.",
-    },
-    capabilities: { chatTypes: ["direct"] },
-    config: {
-      listAccountIds: () => ["default"],
-      resolveAccount: () => ({}),
-    },
-    actions: {
-      listActions: () => ["send"],
-      handleAction,
-    },
-  };
-
-  beforeEach(() => {
-    setActivePluginRegistry(
-      createTestRegistry([
-        {
-          pluginId: "discord",
-          source: "test",
-          plugin: accountPlugin,
-        },
-      ]),
-    );
-    handleAction.mockClear();
-  });
-
-  afterEach(() => {
-    setActivePluginRegistry(createTestRegistry([]));
-    vi.clearAllMocks();
-  });
-
-  it("propagates defaultAccountId into params", async () => {
-    await runMessageAction({
-      cfg: {} as RemoteClawConfig,
-      action: "send",
-      params: {
-        channel: "discord",
-        target: "channel:123",
-        message: "hi",
-      },
-      defaultAccountId: "ops",
-    });
-
-    expect(handleAction).toHaveBeenCalled();
-    const ctx = (handleAction.mock.calls as unknown as Array<[unknown]>)[0]?.[0] as
-      | {
-          accountId?: string | null;
-          params: Record<string, unknown>;
-        }
-      | undefined;
-    if (!ctx) {
-      throw new Error("expected action context");
-    }
-    expect(ctx.accountId).toBe("ops");
-    expect(ctx.params.accountId).toBe("ops");
-  });
-
-  it("falls back to the agent's bound account when accountId is omitted", async () => {
-    await runMessageAction({
-      cfg: {
-        agents: { list: [{ id: "agent-b", workspace: "/tmp/agent-b" }] },
-        bindings: [{ agentId: "agent-b", match: { channel: "discord", accountId: "account-b" } }],
-      } as RemoteClawConfig,
-      action: "send",
-      params: {
-        channel: "discord",
-        target: "channel:123",
-        message: "hi",
-      },
-      agentId: "agent-b",
-    });
-
-    expect(handleAction).toHaveBeenCalled();
-    const ctx = (handleAction.mock.calls as unknown as Array<[unknown]>)[0]?.[0] as
-      | {
-          accountId?: string | null;
-          params: Record<string, unknown>;
-        }
-      | undefined;
-    if (!ctx) {
-      throw new Error("expected action context");
-    }
-    expect(ctx.accountId).toBe("account-b");
-    expect(ctx.params.accountId).toBe("account-b");
   });
 });

@@ -253,13 +253,15 @@ describe("gateway bonjour advertiser", () => {
     await Promise.resolve();
     expect(logWarn).toHaveBeenCalledWith(expect.stringContaining("advertise failed"));
 
-    // watchdog should attempt re-advertise at the 60s interval tick
-    await vi.advanceTimersByTimeAsync(60_000);
+    // The watchdog runs every 5 s. After ~10 s the service has been stuck in
+    // "unannounced" for longer than STUCK_ANNOUNCING_MS (8 s), so the watchdog
+    // tears down the cycle and recreates it, which calls advertise() again.
+    await vi.advanceTimersByTimeAsync(10_000);
     expect(advertise).toHaveBeenCalledTimes(2);
 
     await started.stop();
 
-    await vi.advanceTimersByTimeAsync(60_000);
+    await vi.advanceTimersByTimeAsync(10_000);
     expect(advertise).toHaveBeenCalledTimes(2);
   });
 

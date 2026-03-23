@@ -384,6 +384,7 @@ export async function startGatewayServer(
   });
   const {
     canvasHost,
+    releasePluginRouteRegistry,
     httpServer,
     httpServers,
     httpBindHosts,
@@ -416,6 +417,10 @@ export async function startGatewayServer(
     rateLimiter: authRateLimiter,
     gatewayTls,
     hooksConfig: () => hooksConfig,
+    getHookClientIpConfig: () => ({
+      trustedProxies: cfgAtStart.gateway?.trustedProxies,
+      allowRealIpFallback: cfgAtStart.gateway?.allowRealIpFallback === true,
+    }),
     pluginRegistry,
     deps,
     canvasRuntime,
@@ -724,6 +729,7 @@ export async function startGatewayServer(
     tailscaleCleanup,
     canvasHost,
     canvasHostServer,
+    releasePluginRouteRegistry,
     stopChannel,
     pluginServices,
     cron,

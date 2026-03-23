@@ -118,7 +118,7 @@ function resolveHandshakeBrowserSecurityContext(params: {
   );
   return {
     hasBrowserOriginHeader,
-    enforceOriginCheckForAnyClient: hasBrowserOriginHeader && !params.hasProxyHeaders,
+    enforceOriginCheckForAnyClient: hasBrowserOriginHeader,
     rateLimitClientIp:
       hasBrowserOriginHeader && isLoopbackAddress(params.clientIp)
         ? BROWSER_ORIGIN_LOOPBACK_RATE_LIMIT_IP
@@ -578,6 +578,31 @@ export function attachGatewayWsMessageHandler(params: {
           clientIp: browserRateLimitClientIp,
         });
         const rejectUnauthorized = (failedAuth: GatewayAuthResult) => {
+          const canRetryWithDeviceToken =
+            failedAuth.reason === "token_mismatch" &&
+            Boolean(device) &&
+            hasSharedAuth &&
+            !connectParams.auth?.deviceToken;
+          const recommendedNextStep = (() => {
+            if (canRetryWithDeviceToken) {
+              return "retry_with_device_token";
+            }
+            switch (failedAuth.reason) {
+              case "token_missing":
+              case "token_missing_config":
+              case "password_missing":
+              case "password_missing_config":
+                return "update_auth_configuration";
+              case "token_mismatch":
+              case "password_mismatch":
+              case "device_token_mismatch":
+                return "update_auth_credentials";
+              case "rate_limited":
+                return "wait_then_retry";
+              default:
+                return "review_auth_configuration";
+            }
+          })();
           markHandshakeFailure("unauthorized", {
             authMode: resolvedAuth.mode,
             authProvided: connectParams.auth?.password
@@ -610,6 +635,8 @@ export function attachGatewayWsMessageHandler(params: {
             details: {
               code: resolveAuthConnectErrorDetailCode(failedAuth.reason),
               authReason: failedAuth.reason,
+              canRetryWithDeviceToken,
+              recommendedNextStep,
             },
           });
           close(1008, truncateCloseReason(authMessage));
@@ -642,6 +669,12 @@ export function attachGatewayWsMessageHandler(params: {
             hasSharedAuth,
             isLocalClient,
           });
+          // Shared token/password auth can bypass pairing for trusted operators, but
+          // device-less clients must not keep self-declared scopes unless the
+          // operator explicitly chose a local break-glass Control UI mode.
+          if (!device && (!isControlUi || decision.kind !== "allow" || trustedProxyAuthOk)) {
+            clearUnboundScopes();
+          }
           if (decision.kind === "allow") {
             return true;
           }
@@ -769,14 +802,23 @@ export function attachGatewayWsMessageHandler(params: {
           authOk,
           authMethod,
         });
+        // auth.mode=none disables all authentication — device pairing is an
+        // auth mechanism and must also be skipped when the operator opted out.
         const skipPairing =
+          resolvedAuth.mode === "none" ||
           shouldSkipBackendSelfPairing({
             connectParams,
             isLocalClient,
             hasBrowserOriginHeader,
             sharedAuthOk,
             authMethod,
-          }) || shouldSkipControlUiPairing(controlUiAuthPolicy, sharedAuthOk, trustedProxyAuthOk);
+          }) ||
+          shouldSkipControlUiPairing(
+            controlUiAuthPolicy,
+            sharedAuthOk,
+            trustedProxyAuthOk,
+            resolvedAuth.mode,
+          );
         if (device && devicePublicKey && !skipPairing) {
           const formatAuditList = (items: string[] | undefined): string => {
             if (!items || items.length === 0) {

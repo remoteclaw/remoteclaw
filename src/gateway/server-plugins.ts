@@ -1,6 +1,40 @@
 import type { loadConfig } from "../config/config.js";
 import { loadRemoteClawPlugins } from "../plugins/loader.js";
-import type { GatewayRequestHandler } from "./server-methods/types.js";
+import type { GatewayRequestContext, GatewayRequestHandler } from "./server-methods/types.js";
+
+// ── Fallback gateway context for non-WS paths (Telegram, WhatsApp, etc.) ──
+// The WS path sets a per-request scope via AsyncLocalStorage, but channel
+// adapters (Telegram polling, etc.) invoke the agent directly without going
+// through handleGatewayRequest. We store the gateway context at startup so
+// plugin subagent dispatch can use it as a fallback.
+
+const FALLBACK_GATEWAY_CONTEXT_STATE_KEY: unique symbol = Symbol.for(
+  "openclaw.fallbackGatewayContextState",
+);
+
+type FallbackGatewayContextState = {
+  context: GatewayRequestContext | undefined;
+};
+
+const fallbackGatewayContextState = (() => {
+  const globalState = globalThis as typeof globalThis & {
+    [FALLBACK_GATEWAY_CONTEXT_STATE_KEY]?: FallbackGatewayContextState;
+  };
+  const existing = globalState[FALLBACK_GATEWAY_CONTEXT_STATE_KEY];
+  if (existing) {
+    return existing;
+  }
+  const created: FallbackGatewayContextState = { context: undefined };
+  globalState[FALLBACK_GATEWAY_CONTEXT_STATE_KEY] = created;
+  return created;
+})();
+
+export function setFallbackGatewayContext(ctx: GatewayRequestContext): void {
+  // TODO: This startup snapshot can become stale if runtime config/context changes.
+  fallbackGatewayContextState.context = ctx;
+}
+
+// ── Plugin loading ──────────────────────────────────────────────────
 
 export function loadGatewayPlugins(params: {
   cfg: ReturnType<typeof loadConfig>;
@@ -18,10 +52,10 @@ export function loadGatewayPlugins(params: {
     config: params.cfg,
     workspaceDir: params.workspaceDir,
     logger: {
-      info: (msg) => params.log.info(msg),
-      warn: (msg) => params.log.warn(msg),
-      error: (msg) => params.log.error(msg),
-      debug: (msg) => params.log.debug(msg),
+      info: (msg: string) => params.log.info(msg),
+      warn: (msg: string) => params.log.warn(msg),
+      error: (msg: string) => params.log.error(msg),
+      debug: (msg: string) => params.log.debug(msg),
     },
     coreGatewayHandlers: params.coreGatewayHandlers,
   });

@@ -28,6 +28,7 @@ import {
 import {
   authorizeHttpGatewayConnect,
   isLocalDirectRequest,
+  resolveRequestClientIp,
   type GatewayAuthResult,
   type ResolvedGatewayAuth,
 } from "./auth.js";
@@ -400,7 +401,7 @@ function shouldEnforceDefaultPluginGatewayAuth(pathContext: PluginRoutePathConte
   return (
     pathContext.malformedEncoding ||
     pathContext.decodePassLimitReached ||
-    pathContext.candidates.some((c) => c.startsWith("/plugins/"))
+    pathContext.candidates.some((c: string) => c.startsWith("/plugins/"))
   );
 }
 
@@ -468,15 +469,21 @@ function buildPluginRequestStages(params: {
   ];
 }
 
+export type HookClientIpConfig = {
+  trustedProxies?: string[];
+  allowRealIpFallback?: boolean;
+};
+
 export function createHooksRequestHandler(
   opts: {
     getHooksConfig: () => HooksConfigResolved | null;
     bindHost: string;
     port: number;
     logHooks: SubsystemLogger;
+    getClientIpConfig?: () => HookClientIpConfig;
   } & HookDispatchers,
 ): HooksRequestHandler {
-  const { getHooksConfig, logHooks, dispatchAgentHook, dispatchWakeHook } = opts;
+  const { getHooksConfig, logHooks, dispatchAgentHook, dispatchWakeHook, getClientIpConfig } = opts;
   const hookAuthLimiter = createAuthRateLimiter({
     maxAttempts: HOOK_AUTH_FAILURE_LIMIT,
     windowMs: HOOK_AUTH_FAILURE_WINDOW_MS,
@@ -487,7 +494,14 @@ export function createHooksRequestHandler(
   });
 
   const resolveHookClientKey = (req: IncomingMessage): string => {
-    return normalizeRateLimitClientIp(req.socket?.remoteAddress);
+    const clientIpConfig = getClientIpConfig?.();
+    const clientIp =
+      resolveRequestClientIp(
+        req,
+        clientIpConfig?.trustedProxies,
+        clientIpConfig?.allowRealIpFallback === true,
+      ) ?? req.socket?.remoteAddress;
+    return normalizeRateLimitClientIp(clientIp);
   };
 
   return async (req, res) => {

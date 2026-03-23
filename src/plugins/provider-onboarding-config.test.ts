@@ -84,8 +84,8 @@ describe("provider onboarding preset appliers", () => {
         api: "openai-completions" as const,
         baseUrl: "https://catalog.test/v1",
         catalogModels: [
-          createModel("default", "Catalog Default"),
-          createModel("backup", "Catalog Backup"),
+          { id: "default", name: "Catalog Default" },
+          { id: "backup", name: "Catalog Backup" },
         ],
         aliases: ["catalog/default", { modelRef: "catalog/default", alias: "Catalog Default" }],
       }),

@@ -12,13 +12,14 @@ import {
   type HookAgentDispatchPayload,
   type HooksConfigResolved,
 } from "../hooks.js";
-import { createHooksRequestHandler } from "../server-http.js";
+import { createHooksRequestHandler, type HookClientIpConfig } from "../server-http.js";
 
 type SubsystemLogger = ReturnType<typeof createSubsystemLogger>;
 
 export function createGatewayHooksRequestHandler(params: {
   deps: CliDeps;
   getHooksConfig: () => HooksConfigResolved | null;
+  getClientIpConfig?: () => HookClientIpConfig;
   bindHost: string;
   port: number;
   logHooks: SubsystemLogger;
@@ -108,13 +109,15 @@ export function createGatewayHooksRequestHandler(params: {
     bindHost,
     port,
     logHooks,
-    getClientIpConfig: () => {
-      const cfg = loadConfig();
-      return {
-        trustedProxies: cfg.gateway?.trustedProxies,
-        allowRealIpFallback: cfg.gateway?.allowRealIpFallback === true,
-      };
-    },
+    getClientIpConfig:
+      params.getClientIpConfig ??
+      (() => {
+        const cfg = loadConfig();
+        return {
+          trustedProxies: cfg.gateway?.trustedProxies,
+          allowRealIpFallback: cfg.gateway?.allowRealIpFallback === true,
+        };
+      }),
     dispatchAgentHook,
     dispatchWakeHook,
   });

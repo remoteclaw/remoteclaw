@@ -192,7 +192,8 @@ async function closeAcpRuntimeForSession(params: {
   entry?: SessionEntry;
   reason: "session-reset" | "session-delete";
 }) {
-  if (!params.entry?.acp) {
+  // ACP is gutted in the RemoteClaw fork — always skip ACP cleanup.
+  if (!params.entry) {
     return undefined;
   }
   const acpManager = getAcpSessionManager();
@@ -325,9 +326,7 @@ export async function performGatewaySessionReset(params: {
       updatedAt: now,
       systemSent: false,
       abortedLastRun: false,
-      thinkingLevel: currentEntry?.thinkingLevel,
       verboseLevel: currentEntry?.verboseLevel,
-      reasoningLevel: currentEntry?.reasoningLevel,
       responseUsage: currentEntry?.responseUsage,
       model: resolvedModel.model,
       modelProvider: resolvedModel.provider,
@@ -337,7 +336,6 @@ export async function performGatewaySessionReset(params: {
       origin: snapshotSessionOrigin(currentEntry),
       lastChannel: currentEntry?.lastChannel,
       lastTo: currentEntry?.lastTo,
-      skillsSnapshot: currentEntry?.skillsSnapshot,
       inputTokens: 0,
       outputTokens: 0,
       totalTokens: 0,

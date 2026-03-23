@@ -401,7 +401,7 @@ function shouldEnforceDefaultPluginGatewayAuth(pathContext: PluginRoutePathConte
   return (
     pathContext.malformedEncoding ||
     pathContext.decodePassLimitReached ||
-    pathContext.candidates.some((c) => c.startsWith("/plugins/"))
+    pathContext.candidates.some((c: string) => c.startsWith("/plugins/"))
   );
 }
 
@@ -469,16 +469,18 @@ function buildPluginRequestStages(params: {
   ];
 }
 
+export type HookClientIpConfig = {
+  trustedProxies?: string[];
+  allowRealIpFallback?: boolean;
+};
+
 export function createHooksRequestHandler(
   opts: {
     getHooksConfig: () => HooksConfigResolved | null;
     bindHost: string;
     port: number;
     logHooks: SubsystemLogger;
-    getClientIpConfig?: () => {
-      trustedProxies?: string[];
-      allowRealIpFallback?: boolean;
-    };
+    getClientIpConfig?: () => HookClientIpConfig;
   } & HookDispatchers,
 ): HooksRequestHandler {
   const { getHooksConfig, logHooks, dispatchAgentHook, dispatchWakeHook, getClientIpConfig } = opts;

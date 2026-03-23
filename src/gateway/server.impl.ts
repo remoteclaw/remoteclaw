@@ -417,6 +417,10 @@ export async function startGatewayServer(
     rateLimiter: authRateLimiter,
     gatewayTls,
     hooksConfig: () => hooksConfig,
+    getHookClientIpConfig: () => ({
+      trustedProxies: cfgAtStart.gateway?.trustedProxies,
+      allowRealIpFallback: cfgAtStart.gateway?.allowRealIpFallback === true,
+    }),
     pluginRegistry,
     deps,
     canvasRuntime,

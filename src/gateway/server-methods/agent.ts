@@ -386,12 +386,9 @@ export const agentHandlers: GatewayRequestHandlers = {
       const nextEntryPatch: SessionEntry = {
         sessionId,
         updatedAt: now,
-        thinkingLevel: entry?.thinkingLevel,
         verboseLevel: entry?.verboseLevel,
-        reasoningLevel: entry?.reasoningLevel,
         systemSent: entry?.systemSent,
         sendPolicy: entry?.sendPolicy,
-        skillsSnapshot: entry?.skillsSnapshot,
         deliveryContext: deliveryFields.deliveryContext,
         lastChannel: deliveryFields.lastChannel ?? entry?.lastChannel,
         lastTo: deliveryFields.lastTo ?? entry?.lastTo,
@@ -623,7 +620,6 @@ export const agentHandlers: GatewayRequestHandlers = {
         runId,
         lane: request.lane,
         extraSystemPrompt: request.extraSystemPrompt,
-        internalEvents: request.internalEvents,
         inputProvenance,
         // Internal-only: allow workspace override for spawned subagent runs.
         workspaceDir: resolveIngressWorkspaceOverrideForSpawnedRun({

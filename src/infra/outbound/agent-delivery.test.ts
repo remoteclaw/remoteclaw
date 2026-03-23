@@ -70,14 +70,14 @@ vi.mock("./targets.js", () => ({
 }));
 
 import type { RemoteClawConfig } from "../../config/config.js";
-type AgentDeliveryModule = typeof import("./agent-delivery.js");
-
-let resolveAgentDeliveryPlan: AgentDeliveryModule["resolveAgentDeliveryPlan"];
-let resolveAgentOutboundTarget: AgentDeliveryModule["resolveAgentOutboundTarget"];
+let resolveAgentDeliveryPlan: typeof import("./agent-delivery.js").resolveAgentDeliveryPlan;
+let resolveAgentOutboundTarget: typeof import("./agent-delivery.js").resolveAgentOutboundTarget;
 
 beforeEach(async () => {
   vi.resetModules();
   ({ resolveAgentDeliveryPlan, resolveAgentOutboundTarget } = await import("./agent-delivery.js"));
+  mocks.resolveOutboundTarget.mockClear();
+  mocks.resolveSessionDeliveryTarget.mockClear();
 });
 
 describe("agent delivery helpers", () => {

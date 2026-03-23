@@ -4,7 +4,6 @@ const {
   GatewayIntents,
   baseRegisterClientSpy,
   GatewayPlugin,
-  globalFetchMock,
   HttpsProxyAgent,
   getLastAgent,
   restProxyAgentSpy,
@@ -18,7 +17,6 @@ const {
   const undiciProxyAgentSpy = vi.fn();
   const restProxyAgentSpy = vi.fn();
   const undiciFetchMock = vi.fn();
-  const globalFetchMock = vi.fn();
   const baseRegisterClientSpy = vi.fn();
   const webSocketSpy = vi.fn();
 
@@ -62,7 +60,6 @@ const {
     baseRegisterClientSpy,
     GatewayIntents,
     GatewayPlugin,
-    globalFetchMock,
     HttpsProxyAgent,
     getLastAgent: () => HttpsProxyAgent.lastCreated,
     restProxyAgentSpy,
@@ -123,107 +120,14 @@ describe("createDiscordGatewayPlugin", () => {
     };
   }
 
-  async function registerGatewayClient(plugin: unknown) {
-    await (
-      plugin as {
-        registerClient: (client: { options: { token: string } }) => Promise<void>;
-      }
-    ).registerClient({
-      options: { token: "token-123" },
-    });
-  }
-
-  async function expectGatewayRegisterFetchFailure(response: Response) {
-    const runtime = createRuntime();
-    globalFetchMock.mockResolvedValue(response);
-    const plugin = createDiscordGatewayPlugin({
-      discordConfig: {},
-      runtime,
-    });
-
-    await expect(registerGatewayClient(plugin)).rejects.toThrow(
-      "Failed to get gateway information from Discord",
-    );
-    expect(baseRegisterClientSpy).not.toHaveBeenCalled();
-  }
-
-  async function expectGatewayRegisterFallback(response: Response) {
-    const runtime = createRuntime();
-    globalFetchMock.mockResolvedValue(response);
-    const plugin = createDiscordGatewayPlugin({
-      discordConfig: {},
-      runtime,
-    });
-
-    await registerGatewayClient(plugin);
-
-    expect(baseRegisterClientSpy).toHaveBeenCalledTimes(1);
-    expect((plugin as unknown as { gatewayInfo?: { url?: string } }).gatewayInfo?.url).toBe(
-      "wss://gateway.discord.gg/",
-    );
-    expect(runtime.log).toHaveBeenCalledWith(
-      expect.stringContaining("discord: gateway metadata lookup failed transiently"),
-    );
-  }
-
-  async function registerGatewayClientWithMetadata(params: {
-    plugin: unknown;
-    fetchMock: typeof globalFetchMock;
-  }) {
-    params.fetchMock.mockResolvedValue({
-      ok: true,
-      status: 200,
-      text: async () => JSON.stringify({ url: "wss://gateway.discord.gg" }),
-    } as Response);
-    await registerGatewayClient(params.plugin);
-  }
-
   beforeEach(() => {
-    vi.stubGlobal("fetch", globalFetchMock);
-    vi.useRealTimers();
     baseRegisterClientSpy.mockClear();
-    globalFetchMock.mockClear();
     restProxyAgentSpy.mockClear();
     undiciFetchMock.mockClear();
     undiciProxyAgentSpy.mockClear();
     wsProxyAgentSpy.mockClear();
     webSocketSpy.mockClear();
     resetLastAgent();
-  });
-
-  it("uses safe gateway metadata lookup without proxy", async () => {
-    const runtime = createRuntime();
-    const plugin = createDiscordGatewayPlugin({
-      discordConfig: {},
-      runtime,
-    });
-
-    await registerGatewayClientWithMetadata({ plugin, fetchMock: globalFetchMock });
-
-    expect(globalFetchMock).toHaveBeenCalledWith(
-      "https://discord.com/api/v10/gateway/bot",
-      expect.objectContaining({
-        headers: { Authorization: "Bot token-123" },
-      }),
-    );
-    expect(baseRegisterClientSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it("maps plain-text Discord 503 responses to fetch failed", async () => {
-    await expectGatewayRegisterFallback({
-      ok: false,
-      status: 503,
-      text: async () =>
-        "upstream connect error or disconnect/reset before headers. reset reason: overflow",
-    } as Response);
-  });
-
-  it("keeps fatal Discord metadata failures fatal", async () => {
-    await expectGatewayRegisterFetchFailure({
-      ok: false,
-      status: 401,
-      text: async () => "401: Unauthorized",
-    } as Response);
   });
 
   it("uses proxy agent for gateway WebSocket when configured", async () => {
@@ -257,19 +161,28 @@ describe("createDiscordGatewayPlugin", () => {
       runtime,
     });
 
-    expect(Object.getPrototypeOf(plugin)).not.toBe(GatewayPlugin.prototype);
+    expect(Object.getPrototypeOf(plugin)).toBe(GatewayPlugin.prototype);
     expect(runtime.error).toHaveBeenCalled();
     expect(runtime.log).not.toHaveBeenCalled();
   });
 
   it("uses proxy fetch for gateway metadata lookup before registering", async () => {
     const runtime = createRuntime();
+    undiciFetchMock.mockResolvedValue({
+      json: async () => ({ url: "wss://gateway.discord.gg" }),
+    } as Response);
     const plugin = createDiscordGatewayPlugin({
       discordConfig: { proxy: "http://proxy.test:8080" },
       runtime,
     });
 
-    await registerGatewayClientWithMetadata({ plugin, fetchMock: undiciFetchMock });
+    await (
+      plugin as unknown as {
+        registerClient: (client: { options: { token: string } }) => Promise<void>;
+      }
+    ).registerClient({
+      options: { token: "token-123" },
+    });
 
     expect(restProxyAgentSpy).toHaveBeenCalledWith("http://proxy.test:8080");
     expect(undiciFetchMock).toHaveBeenCalledWith(
@@ -280,79 +193,5 @@ describe("createDiscordGatewayPlugin", () => {
       }),
     );
     expect(baseRegisterClientSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it("maps body read failures to fetch failed", async () => {
-    await expectGatewayRegisterFallback({
-      ok: true,
-      status: 200,
-      text: async () => {
-        throw new Error("body stream closed");
-      },
-    } as unknown as Response);
-  });
-
-  it("falls back to the default gateway url when metadata lookup times out", async () => {
-    vi.useFakeTimers();
-    const runtime = createRuntime();
-    globalFetchMock.mockImplementation(() => new Promise(() => {}));
-    const plugin = createDiscordGatewayPlugin({
-      discordConfig: {},
-      runtime,
-    });
-
-    const registerPromise = registerGatewayClient(plugin);
-    await vi.advanceTimersByTimeAsync(10_000);
-    await registerPromise;
-
-    expect(baseRegisterClientSpy).toHaveBeenCalledTimes(1);
-    expect((plugin as unknown as { gatewayInfo?: { url?: string } }).gatewayInfo?.url).toBe(
-      "wss://gateway.discord.gg/",
-    );
-    expect(runtime.log).toHaveBeenCalledWith(
-      expect.stringContaining("discord: gateway metadata lookup failed transiently"),
-    );
-  });
-
-  it("refreshes fallback gateway metadata on the next register attempt", async () => {
-    const runtime = createRuntime();
-    globalFetchMock
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        text: async () =>
-          "upstream connect error or disconnect/reset before headers. reset reason: overflow",
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () =>
-          JSON.stringify({
-            url: "wss://gateway.discord.gg/?v=10",
-            shards: 8,
-            session_start_limit: {
-              total: 1000,
-              remaining: 999,
-              reset_after: 120_000,
-              max_concurrency: 16,
-            },
-          }),
-      } as Response);
-    const plugin = createDiscordGatewayPlugin({
-      discordConfig: {},
-      runtime,
-    });
-
-    await registerGatewayClient(plugin);
-    await registerGatewayClient(plugin);
-
-    expect(globalFetchMock).toHaveBeenCalledTimes(2);
-    expect(baseRegisterClientSpy).toHaveBeenCalledTimes(2);
-    expect(
-      (plugin as unknown as { gatewayInfo?: { url?: string; shards?: number } }).gatewayInfo,
-    ).toMatchObject({
-      url: "wss://gateway.discord.gg/?v=10",
-      shards: 8,
-    });
   });
 });

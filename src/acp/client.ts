@@ -18,10 +18,6 @@ import {
   materializeWindowsSpawnProgram,
   resolveWindowsSpawnProgram,
 } from "../plugin-sdk/windows-spawn.js";
-import {
-  listKnownProviderAuthEnvVarNames,
-  omitEnvKeysCaseInsensitive,
-} from "../secrets/provider-env-vars.js";
 import { DANGEROUS_ACP_TOOLS } from "../security/dangerous-tools.js";
 
 const SAFE_AUTO_APPROVE_TOOL_IDS = new Set(["search"]);
@@ -97,22 +93,7 @@ function resolveToolNameForPermission(params: RequestPermissionRequest): string 
   const fromMeta = readFirstStringValue(toolMeta, ["toolName", "tool_name", "name"]);
   const fromRawInput = readFirstStringValue(rawInput, ["tool", "toolName", "tool_name", "name"]);
   const fromTitle = parseToolNameFromTitle(toolCall?.title);
-  const metaName = fromMeta ? normalizeToolName(fromMeta) : undefined;
-  const rawInputName = fromRawInput ? normalizeToolName(fromRawInput) : undefined;
-  const titleName = fromTitle;
-  if ((fromMeta && !metaName) || (fromRawInput && !rawInputName)) {
-    return undefined;
-  }
-  if (metaName && titleName && metaName !== titleName) {
-    return undefined;
-  }
-  if (rawInputName && metaName && rawInputName !== metaName) {
-    return undefined;
-  }
-  if (rawInputName && titleName && rawInputName !== titleName) {
-    return undefined;
-  }
-  return metaName ?? titleName ?? rawInputName;
+  return normalizeToolName(fromMeta ?? fromRawInput ?? fromTitle ?? "");
 }
 
 function shouldAutoApproveToolCall(toolName: string | undefined): boolean {
@@ -264,54 +245,18 @@ function buildServerArgs(opts: AcpClientOptions): string[] {
   return args;
 }
 
-type AcpClientSpawnEnvOptions = {
-  stripKeys?: Iterable<string>;
-};
-
 export function resolveAcpClientSpawnEnv(
   baseEnv: NodeJS.ProcessEnv = process.env,
-  options: AcpClientSpawnEnvOptions = {},
+  options?: { stripKeys?: ReadonlySet<string> },
 ): NodeJS.ProcessEnv {
-  const env = omitEnvKeysCaseInsensitive(baseEnv, options.stripKeys ?? []);
-  env.REMOTECLAW_SHELL = "acp-client";
-  return env;
-}
-
-export function shouldStripProviderAuthEnvVarsForAcpServer(
-  params: {
-    serverCommand?: string;
-    serverArgs?: string[];
-    defaultServerCommand?: string;
-    defaultServerArgs?: string[];
-  } = {},
-): boolean {
-  const serverCommand = params.serverCommand?.trim();
-  if (!serverCommand) {
-    return true;
-  }
-  const defaultServerCommand = params.defaultServerCommand?.trim();
-  if (!defaultServerCommand || serverCommand !== defaultServerCommand) {
-    return false;
-  }
-  const serverArgs = params.serverArgs ?? [];
-  const defaultServerArgs = params.defaultServerArgs ?? [];
-  return (
-    serverArgs.length === defaultServerArgs.length &&
-    serverArgs.every((arg, index) => arg === defaultServerArgs[index])
-  );
-}
-
-export function buildAcpClientStripKeys(params: {
-  stripProviderAuthEnvVars?: boolean;
-  activeSkillEnvKeys?: Iterable<string>;
-}): Set<string> {
-  const stripKeys = new Set<string>(params.activeSkillEnvKeys ?? []);
-  if (params.stripProviderAuthEnvVars) {
-    for (const key of listKnownProviderAuthEnvVarNames()) {
-      stripKeys.add(key);
+  const env: NodeJS.ProcessEnv = { ...baseEnv };
+  if (options?.stripKeys) {
+    for (const key of options.stripKeys) {
+      delete env[key];
     }
   }
-  return stripKeys;
+  env.REMOTECLAW_SHELL = "acp-client";
+  return env;
 }
 
 type AcpSpawnRuntime = {
@@ -410,21 +355,9 @@ export async function createAcpClient(opts: AcpClientOptions = {}): Promise<AcpC
   const serverArgs = buildServerArgs(opts);
 
   const entryPath = resolveSelfEntryPath();
-  const defaultServerCommand = entryPath ? process.execPath : "remoteclaw";
-  const defaultServerArgs = entryPath ? [entryPath, ...serverArgs] : serverArgs;
-  const serverCommand = opts.serverCommand ?? defaultServerCommand;
-  const effectiveArgs = opts.serverCommand || !entryPath ? serverArgs : defaultServerArgs;
-  const stripProviderAuthEnvVars = shouldStripProviderAuthEnvVarsForAcpServer({
-    serverCommand,
-    serverArgs: effectiveArgs,
-    defaultServerCommand,
-    defaultServerArgs,
-  });
-  const stripKeys = buildAcpClientStripKeys({
-    stripProviderAuthEnvVars,
-    activeSkillEnvKeys: [],
-  });
-  const spawnEnv = resolveAcpClientSpawnEnv(process.env, { stripKeys });
+  const serverCommand = opts.serverCommand ?? (entryPath ? process.execPath : "remoteclaw");
+  const effectiveArgs = opts.serverCommand || !entryPath ? serverArgs : [entryPath, ...serverArgs];
+  const spawnEnv = resolveAcpClientSpawnEnv(process.env);
   const spawnInvocation = resolveAcpClientSpawnInvocation(
     { serverCommand, serverArgs: effectiveArgs },
     {

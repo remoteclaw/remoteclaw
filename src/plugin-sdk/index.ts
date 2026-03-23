@@ -97,8 +97,6 @@ export { registerPluginHttpRoute } from "../plugins/http-registry.js";
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 export type { RemoteClawConfig } from "../config/config.js";
 /** @deprecated Use RemoteClawConfig instead */
-export type { RemoteClawConfig as OpenClawConfig } from "../config/config.js";
-/** @deprecated Use RemoteClawConfig instead */
 export type { RemoteClawConfig as ClawdbotConfig } from "../config/config.js";
 export { isDangerousNameMatchingEnabled } from "../config/dangerous-name-matching.js";
 

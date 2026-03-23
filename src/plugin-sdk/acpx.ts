@@ -1,29 +1,11 @@
-// Private ACPX runtime backend helpers for bundled extensions.
-// Keep this surface narrow and limited to the ACP runtime/backend contract.
+// Narrow plugin-sdk surface for the bundled acpx plugin.
+// Keep this list additive and scoped to symbols used under extensions/acpx.
 
-export type { AcpRuntimeErrorCode } from "../acp/runtime/errors.js";
-export { AcpRuntimeError } from "../acp/runtime/errors.js";
-export { registerAcpRuntimeBackend, unregisterAcpRuntimeBackend } from "../acp/runtime/registry.js";
-export type {
-  AcpRuntime,
-  AcpRuntimeCapabilities,
-  AcpRuntimeDoctorReport,
-  AcpRuntimeEnsureInput,
-  AcpRuntimeEvent,
-  AcpRuntimeHandle,
-  AcpRuntimeStatus,
-  AcpRuntimeTurnInput,
-  AcpSessionUpdateTag,
-} from "../acp/runtime/types.js";
 export type {
   RemoteClawPluginApi,
-  RemoteClawPluginApi as OpenClawPluginApi,
   RemoteClawPluginConfigSchema,
-  RemoteClawPluginConfigSchema as OpenClawPluginConfigSchema,
   RemoteClawPluginService,
-  RemoteClawPluginService as OpenClawPluginService,
   RemoteClawPluginServiceContext,
-  RemoteClawPluginServiceContext as OpenClawPluginServiceContext,
   PluginLogger,
 } from "../plugins/types.js";
 export type {
@@ -36,7 +18,3 @@ export {
   materializeWindowsSpawnProgram,
   resolveWindowsSpawnProgramCandidate,
 } from "./windows-spawn.js";
-export {
-  listKnownProviderAuthEnvVarNames,
-  omitEnvKeysCaseInsensitive,
-} from "../secrets/provider-env-vars.js";

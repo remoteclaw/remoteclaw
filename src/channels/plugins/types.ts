@@ -1,41 +1,27 @@
 import type { ChannelMessageActionName as ChannelMessageActionNameFromList } from "./message-action-names.js";
 
 export { CHANNEL_MESSAGE_ACTION_NAMES } from "./message-action-names.js";
-export { CHANNEL_MESSAGE_CAPABILITIES } from "./message-capabilities.js";
 
 export type ChannelMessageActionName = ChannelMessageActionNameFromList;
-export type { ChannelMessageCapability } from "./message-capabilities.js";
 
 export type {
   ChannelAuthAdapter,
   ChannelCommandAdapter,
-  ChannelCapabilitiesDiagnostics,
-  ChannelCapabilitiesDisplayLine,
-  ChannelCapabilitiesDisplayTone,
   ChannelConfigAdapter,
   ChannelDirectoryAdapter,
-  ChannelExecApprovalAdapter,
-  ChannelExecApprovalForwardTarget,
-  ChannelExecApprovalInitiatingSurfaceState,
   ChannelResolveKind,
   ChannelResolveResult,
   ChannelResolverAdapter,
-  ChannelElevatedAdapter,
   ChannelGatewayAdapter,
   ChannelGatewayContext,
   ChannelGroupAdapter,
   ChannelHeartbeatAdapter,
-  ChannelLifecycleAdapter,
   ChannelLoginWithQrStartResult,
   ChannelLoginWithQrWaitResult,
   ChannelLogoutContext,
   ChannelLogoutResult,
   ChannelOutboundAdapter,
   ChannelOutboundContext,
-  ChannelAllowlistAdapter,
-  ChannelConfiguredBindingConversationRef,
-  ChannelConfiguredBindingMatch,
-  ChannelConfiguredBindingProvider,
   ChannelPairingAdapter,
   ChannelSecurityAdapter,
   ChannelSetupAdapter,

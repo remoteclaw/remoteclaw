@@ -1,27 +1,27 @@
-import { resolveAckReaction } from "remoteclaw/plugin-sdk/agent-runtime";
-import { shouldAckReaction as shouldAckReactionGate } from "remoteclaw/plugin-sdk/channel-runtime";
-import { logInboundDrop } from "remoteclaw/plugin-sdk/channel-runtime";
+import { ensureConfiguredAcpRouteReady } from "../acp/persistent-bindings.route.js";
+import { resolveAckReaction } from "../agents/identity.js";
+import { shouldAckReaction as shouldAckReactionGate } from "../channels/ack-reactions.js";
+import { logInboundDrop } from "../channels/logging.js";
 import {
   createStatusReactionController,
   type StatusReactionController,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import type { TelegramDirectConfig, TelegramGroupConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { ensureConfiguredBindingRouteReady } from "remoteclaw/plugin-sdk/conversation-runtime";
-import { recordChannelActivity } from "remoteclaw/plugin-sdk/infra-runtime";
-import { deriveLastRoutePolicy } from "remoteclaw/plugin-sdk/routing";
-import { DEFAULT_ACCOUNT_ID, resolveThreadSessionKeys } from "remoteclaw/plugin-sdk/routing";
-import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
+} from "../channels/status-reactions.js";
+import { loadConfig } from "../config/config.js";
+import { logVerbose } from "../globals.js";
+import { recordChannelActivity } from "../infra/channel-activity.js";
+import { buildAgentSessionKey, deriveLastRoutePolicy } from "../routing/resolve-route.js";
+import { DEFAULT_ACCOUNT_ID, resolveThreadSessionKeys } from "../routing/session-key.js";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
-import { firstDefined, normalizeAllowFrom, normalizeDmAllowFromWithStore } from "./bot-access.js";
+import { firstDefined, normalizeAllowFrom, normalizeAllowFromWithStore } from "./bot-access.js";
 import { resolveTelegramInboundBody } from "./bot-message-context.body.js";
 import { buildTelegramInboundContextPayload } from "./bot-message-context.session.js";
 import type { BuildTelegramMessageContextParams } from "./bot-message-context.types.js";
-import { buildTypingThreadParams, resolveTelegramThreadSpec } from "./bot/helpers.js";
 import {
-  resolveTelegramConversationBaseSessionKey,
-  resolveTelegramConversationRoute,
-} from "./conversation-route.js";
+  buildTypingThreadParams,
+  resolveTelegramDirectPeerId,
+  resolveTelegramThreadSpec,
+} from "./bot/helpers.js";
+import { resolveTelegramConversationRoute } from "./conversation-route.js";
 import { enforceTelegramDmAccess } from "./dm-access.js";
 import { evaluateTelegramGroupBaseAccess } from "./group-access.js";
 import {
@@ -76,7 +76,7 @@ export const buildTelegramMessageContext = async ({
   // Use direct config dmPolicy override if available for DMs
   const effectiveDmPolicy =
     !isGroup && groupConfig && "dmPolicy" in groupConfig
-      ? (groupConfig.dmPolicy ?? dmPolicy)
+      ? (((groupConfig as Record<string, unknown>).dmPolicy as typeof dmPolicy) ?? dmPolicy)
       : dmPolicy;
   // Fresh config for bindings lookup; other routing inputs are payload-derived.
   const freshCfg = loadConfig();
@@ -109,7 +109,7 @@ export const buildTelegramMessageContext = async ({
   const groupAllowOverride = firstDefined(topicConfig?.allowFrom, groupConfig?.allowFrom);
   // For DMs, prefer per-DM/topic allowFrom (groupAllowOverride) over account-level allowFrom
   const dmAllowFrom = groupAllowOverride ?? allowFrom;
-  const effectiveDmAllow = normalizeDmAllowFromWithStore({
+  const effectiveDmAllow = normalizeAllowFromWithStore({
     allowFrom: dmAllowFrom,
     storeAllowFrom,
     dmPolicy: effectiveDmPolicy,
@@ -148,7 +148,7 @@ export const buildTelegramMessageContext = async ({
     return null;
   }
 
-  const requireTopic = (groupConfig as TelegramDirectConfig | undefined)?.requireTopic;
+  const requireTopic = (groupConfig as Record<string, unknown> | undefined)?.requireTopic;
   const topicRequiredButMissing = !isGroup && requireTopic === true && dmThreadId == null;
   if (topicRequiredButMissing) {
     logVerbose(`Blocked telegram DM ${chatId}: requireTopic=true but no topic present`);
@@ -201,35 +201,44 @@ export const buildTelegramMessageContext = async ({
     if (!configuredBinding) {
       return true;
     }
-    const ensured = await ensureConfiguredBindingRouteReady({
+    const ensured = await ensureConfiguredAcpRouteReady({
       cfg: freshCfg,
-      bindingResolution: configuredBinding,
+      configuredBinding,
     });
     if (ensured.ok) {
       logVerbose(
-        `telegram: using configured ACP binding for ${configuredBinding.record.conversation.conversationId} -> ${configuredBindingSessionKey}`,
+        `telegram: using configured ACP binding for ${configuredBinding.spec.conversationId} -> ${configuredBindingSessionKey}`,
       );
       return true;
     }
     logVerbose(
-      `telegram: configured ACP binding unavailable for ${configuredBinding.record.conversation.conversationId}: ${ensured.error}`,
+      `telegram: configured ACP binding unavailable for ${configuredBinding.spec.conversationId}: ${ensured.error}`,
     );
     logInboundDrop({
       log: logVerbose,
       channel: "telegram",
       reason: "configured ACP binding unavailable",
-      target: configuredBinding.record.conversation.conversationId,
+      target: configuredBinding.spec.conversationId,
     });
     return false;
   };
 
-  const baseSessionKey = resolveTelegramConversationBaseSessionKey({
-    cfg: freshCfg,
-    route,
-    chatId,
-    isGroup,
-    senderId,
-  });
+  const baseSessionKey = isNamedAccountFallback
+    ? buildAgentSessionKey({
+        agentId: route.agentId,
+        channel: "telegram",
+        accountId: route.accountId,
+        peer: {
+          kind: "direct",
+          id: resolveTelegramDirectPeerId({
+            chatId,
+            senderId,
+          }),
+        },
+        dmScope: "per-account-channel-peer",
+        identityLinks: freshCfg.session?.identityLinks,
+      }).toLowerCase()
+    : route.sessionKey;
   // DMs: use thread suffix for session isolation (works regardless of dmScope)
   const threadKeys =
     dmThreadId != null
@@ -255,7 +264,7 @@ export const buildTelegramMessageContext = async ({
   const requireMention = firstDefined(
     activationOverride,
     topicConfig?.requireMention,
-    (groupConfig as TelegramGroupConfig | undefined)?.requireMention,
+    groupConfig?.requireMention,
     baseRequireMention,
   );
 
@@ -439,6 +448,7 @@ export const buildTelegramMessageContext = async ({
     msg,
     chatId,
     isGroup,
+    groupConfig,
     resolvedThreadId,
     threadSpec,
     replyThreadId,

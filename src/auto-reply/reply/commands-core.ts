@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { resetConfiguredBindingTargetInPlace } from "../../channels/plugins/binding-targets.js";
+import { resetAcpSessionInPlace } from "../../acp/persistent-bindings.js";
 import { logVerbose } from "../../globals.js";
 import { createInternalHookEvent, triggerInternalHook } from "../../hooks/internal-hooks.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
@@ -210,7 +210,7 @@ export async function handleCommands(params: HandleCommandsParams): Promise<Comm
         ? boundAcpSessionKey.trim()
         : undefined;
     if (boundAcpKey) {
-      const resetResult = await resetConfiguredBindingTargetInPlace({
+      const resetResult = await resetAcpSessionInPlace({
         cfg: params.cfg,
         sessionKey: boundAcpKey,
         reason: commandAction,

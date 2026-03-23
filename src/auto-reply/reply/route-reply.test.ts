@@ -80,7 +80,6 @@ const createRegistry = (channels: PluginRegistry["channels"]): PluginRegistry =>
   httpRoutes: [],
   cliRegistrars: [],
   services: [],
-  conversationBindingResolvedHandlers: [],
   diagnostics: [],
 });
 
@@ -250,7 +249,7 @@ describe("routeReply", () => {
   });
 
   it("passes thread id to Telegram sends", async () => {
-    mocks.deliverOutboundPayloads.mockResolvedValue([]);
+    mocks.sendMessageTelegram.mockClear();
     await routeReply({
       payload: { text: "hi" },
       channel: "telegram",
@@ -258,29 +257,25 @@ describe("routeReply", () => {
       threadId: 42,
       cfg: {} as never,
     });
-    expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(
-      expect.objectContaining({
-        channel: "telegram",
-        to: "telegram:123",
-        threadId: 42,
-      }),
+    expect(mocks.sendMessageTelegram).toHaveBeenCalledWith(
+      "telegram:123",
+      "hi",
+      expect.objectContaining({ messageThreadId: 42 }),
     );
   });
 
   it("passes replyToId to Telegram sends", async () => {
-    mocks.deliverOutboundPayloads.mockResolvedValue([]);
+    mocks.sendMessageTelegram.mockClear();
     await routeReply({
       payload: { text: "hi", replyToId: "123" },
       channel: "telegram",
       to: "telegram:123",
       cfg: {} as never,
     });
-    expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(
-      expect.objectContaining({
-        channel: "telegram",
-        to: "telegram:123",
-        replyToId: "123",
-      }),
+    expect(mocks.sendMessageTelegram).toHaveBeenCalledWith(
+      "telegram:123",
+      "hi",
+      expect.objectContaining({ replyToMessageId: 123 }),
     );
   });
 

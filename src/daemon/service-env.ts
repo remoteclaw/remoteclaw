@@ -247,49 +247,47 @@ export function buildServiceEnvironment(params: {
   port: number;
   launchdLabel?: string;
   platform?: NodeJS.Platform;
-  extraPathDirs?: string[];
 }): Record<string, string | undefined> {
-  const { env, port, launchdLabel, extraPathDirs } = params;
+  const { env, port, launchdLabel } = params;
   const platform = params.platform ?? process.platform;
-  const sharedEnv = resolveSharedServiceEnvironmentFields(env, platform, extraPathDirs);
-  const profile = env.OPENCLAW_PROFILE;
+  const sharedEnv = resolveSharedServiceEnvironmentFields(env, platform);
+  const profile = env.REMOTECLAW_PROFILE;
   const resolvedLaunchdLabel =
     launchdLabel || (platform === "darwin" ? resolveGatewayLaunchAgentLabel(profile) : undefined);
   const systemdUnit = `${resolveGatewaySystemdServiceName(profile)}.service`;
   return {
     ...buildCommonServiceEnvironment(env, sharedEnv),
-    OPENCLAW_PROFILE: profile,
-    OPENCLAW_GATEWAY_PORT: String(port),
-    OPENCLAW_LAUNCHD_LABEL: resolvedLaunchdLabel,
-    OPENCLAW_SYSTEMD_UNIT: systemdUnit,
-    OPENCLAW_WINDOWS_TASK_NAME: resolveGatewayWindowsTaskName(profile),
-    OPENCLAW_SERVICE_MARKER: GATEWAY_SERVICE_MARKER,
-    OPENCLAW_SERVICE_KIND: GATEWAY_SERVICE_KIND,
-    OPENCLAW_SERVICE_VERSION: VERSION,
+    REMOTECLAW_PROFILE: profile,
+    REMOTECLAW_GATEWAY_PORT: String(port),
+    REMOTECLAW_LAUNCHD_LABEL: resolvedLaunchdLabel,
+    REMOTECLAW_SYSTEMD_UNIT: systemdUnit,
+    REMOTECLAW_WINDOWS_TASK_NAME: resolveGatewayWindowsTaskName(profile),
+    REMOTECLAW_SERVICE_MARKER: GATEWAY_SERVICE_MARKER,
+    REMOTECLAW_SERVICE_KIND: GATEWAY_SERVICE_KIND,
+    REMOTECLAW_SERVICE_VERSION: VERSION,
   };
 }
 
 export function buildNodeServiceEnvironment(params: {
   env: Record<string, string | undefined>;
   platform?: NodeJS.Platform;
-  extraPathDirs?: string[];
 }): Record<string, string | undefined> {
-  const { env, extraPathDirs } = params;
+  const { env } = params;
   const platform = params.platform ?? process.platform;
-  const sharedEnv = resolveSharedServiceEnvironmentFields(env, platform, extraPathDirs);
+  const sharedEnv = resolveSharedServiceEnvironmentFields(env, platform);
   const gatewayToken =
-    env.OPENCLAW_GATEWAY_TOKEN?.trim() || env.CLAWDBOT_GATEWAY_TOKEN?.trim() || undefined;
+    env.REMOTECLAW_GATEWAY_TOKEN?.trim() || env.CLAWDBOT_GATEWAY_TOKEN?.trim() || undefined;
   return {
     ...buildCommonServiceEnvironment(env, sharedEnv),
-    OPENCLAW_GATEWAY_TOKEN: gatewayToken,
-    OPENCLAW_LAUNCHD_LABEL: resolveNodeLaunchAgentLabel(),
-    OPENCLAW_SYSTEMD_UNIT: resolveNodeSystemdServiceName(),
-    OPENCLAW_WINDOWS_TASK_NAME: resolveNodeWindowsTaskName(),
-    OPENCLAW_TASK_SCRIPT_NAME: NODE_WINDOWS_TASK_SCRIPT_NAME,
-    OPENCLAW_LOG_PREFIX: "node",
-    OPENCLAW_SERVICE_MARKER: NODE_SERVICE_MARKER,
-    OPENCLAW_SERVICE_KIND: NODE_SERVICE_KIND,
-    OPENCLAW_SERVICE_VERSION: VERSION,
+    REMOTECLAW_GATEWAY_TOKEN: gatewayToken,
+    REMOTECLAW_LAUNCHD_LABEL: resolveNodeLaunchAgentLabel(),
+    REMOTECLAW_SYSTEMD_UNIT: resolveNodeSystemdServiceName(),
+    REMOTECLAW_WINDOWS_TASK_NAME: resolveNodeWindowsTaskName(),
+    REMOTECLAW_TASK_SCRIPT_NAME: NODE_WINDOWS_TASK_SCRIPT_NAME,
+    REMOTECLAW_LOG_PREFIX: "node",
+    REMOTECLAW_SERVICE_MARKER: NODE_SERVICE_MARKER,
+    REMOTECLAW_SERVICE_KIND: NODE_SERVICE_KIND,
+    REMOTECLAW_SERVICE_VERSION: VERSION,
   };
 }
 
@@ -303,8 +301,8 @@ function buildCommonServiceEnvironment(
     ...sharedEnv.proxyEnv,
     NODE_EXTRA_CA_CERTS: sharedEnv.nodeCaCerts,
     NODE_USE_SYSTEM_CA: sharedEnv.nodeUseSystemCa,
-    OPENCLAW_STATE_DIR: sharedEnv.stateDir,
-    OPENCLAW_CONFIG_PATH: sharedEnv.configPath,
+    REMOTECLAW_STATE_DIR: sharedEnv.stateDir,
+    REMOTECLAW_CONFIG_PATH: sharedEnv.configPath,
   };
   if (sharedEnv.minimalPath) {
     serviceEnv.PATH = sharedEnv.minimalPath;
@@ -315,10 +313,9 @@ function buildCommonServiceEnvironment(
 function resolveSharedServiceEnvironmentFields(
   env: Record<string, string | undefined>,
   platform: NodeJS.Platform,
-  extraPathDirs: string[] | undefined,
 ): SharedServiceEnvironmentFields {
-  const stateDir = env.OPENCLAW_STATE_DIR;
-  const configPath = env.OPENCLAW_CONFIG_PATH;
+  const stateDir = env.REMOTECLAW_STATE_DIR;
+  const configPath = env.REMOTECLAW_CONFIG_PATH;
   // Keep a usable temp directory for supervised services even when the host env omits TMPDIR.
   const tmpDir = env.TMPDIR?.trim() || os.tmpdir();
   const proxyEnv = readServiceProxyEnvironment(env);
@@ -334,10 +331,7 @@ function resolveSharedServiceEnvironmentFields(
     tmpDir,
     // On Windows, Scheduled Tasks should inherit the current task PATH instead of
     // freezing the install-time snapshot into gateway.cmd/node-host.cmd.
-    minimalPath:
-      platform === "win32"
-        ? undefined
-        : buildMinimalServicePath({ env, platform, extraDirs: extraPathDirs }),
+    minimalPath: platform === "win32" ? undefined : buildMinimalServicePath({ env, platform }),
     proxyEnv,
     nodeCaCerts,
     nodeUseSystemCa,

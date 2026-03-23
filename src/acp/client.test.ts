@@ -4,11 +4,9 @@ import type { RequestPermissionRequest } from "@agentclientprotocol/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createTrackedTempDirs } from "../test-utils/tracked-temp-dirs.js";
 import {
-  buildAcpClientStripKeys,
   resolveAcpClientSpawnEnv,
   resolveAcpClientSpawnInvocation,
   resolvePermissionRequest,
-  shouldStripProviderAuthEnvVarsForAcpServer,
 } from "./client.js";
 import { extractAttachmentsFromPrompt, extractTextFromPrompt } from "./event-mapper.js";
 
@@ -22,7 +20,7 @@ function makePermissionRequest(
     sessionId: "session-1",
     toolCall: {
       toolCallId: "tool-1",
-      title: "read: src/index.ts",
+      title: "search: foo",
       status: "pending",
     },
     options: [
@@ -112,120 +110,6 @@ describe("resolveAcpClientSpawnEnv", () => {
     expect(env.REMOTECLAW_SHELL).toBe("acp-client");
     expect(env.OPENAI_API_KEY).toBeUndefined();
   });
-
-  it("strips provider auth env vars for the default OpenClaw bridge", () => {
-    const stripKeys = new Set(["OPENAI_API_KEY", "GITHUB_TOKEN", "HF_TOKEN"]);
-    const env = resolveAcpClientSpawnEnv(
-      {
-        OPENAI_API_KEY: "openai-secret", // pragma: allowlist secret
-        GITHUB_TOKEN: "gh-secret", // pragma: allowlist secret
-        HF_TOKEN: "hf-secret", // pragma: allowlist secret
-        OPENCLAW_API_KEY: "keep-me",
-        PATH: "/usr/bin",
-      },
-      { stripKeys },
-    );
-
-    expect(env.OPENAI_API_KEY).toBeUndefined();
-    expect(env.GITHUB_TOKEN).toBeUndefined();
-    expect(env.HF_TOKEN).toBeUndefined();
-    expect(env.OPENCLAW_API_KEY).toBe("keep-me");
-    expect(env.PATH).toBe("/usr/bin");
-    expect(env.REMOTECLAW_SHELL).toBe("acp-client");
-  });
-
-  it("strips provider auth env vars case-insensitively", () => {
-    const env = resolveAcpClientSpawnEnv(
-      {
-        OpenAI_Api_Key: "openai-secret", // pragma: allowlist secret
-        Github_Token: "gh-secret", // pragma: allowlist secret
-        OPENCLAW_API_KEY: "keep-me",
-      },
-      { stripKeys: new Set(["OPENAI_API_KEY", "GITHUB_TOKEN"]) },
-    );
-
-    expect(env.OpenAI_Api_Key).toBeUndefined();
-    expect(env.Github_Token).toBeUndefined();
-    expect(env.OPENCLAW_API_KEY).toBe("keep-me");
-    expect(env.REMOTECLAW_SHELL).toBe("acp-client");
-  });
-
-  it("preserves provider auth env vars for explicit custom ACP servers", () => {
-    const env = resolveAcpClientSpawnEnv({
-      OPENAI_API_KEY: "openai-secret", // pragma: allowlist secret
-      GITHUB_TOKEN: "gh-secret", // pragma: allowlist secret
-      HF_TOKEN: "hf-secret", // pragma: allowlist secret
-      OPENCLAW_API_KEY: "keep-me",
-    });
-
-    expect(env.OPENAI_API_KEY).toBe("openai-secret");
-    expect(env.GITHUB_TOKEN).toBe("gh-secret");
-    expect(env.HF_TOKEN).toBe("hf-secret");
-    expect(env.OPENCLAW_API_KEY).toBe("keep-me");
-    expect(env.REMOTECLAW_SHELL).toBe("acp-client");
-  });
-});
-
-describe("shouldStripProviderAuthEnvVarsForAcpServer", () => {
-  it("strips provider auth env vars for the default bridge", () => {
-    expect(shouldStripProviderAuthEnvVarsForAcpServer()).toBe(true);
-    expect(
-      shouldStripProviderAuthEnvVarsForAcpServer({
-        serverCommand: "openclaw",
-        serverArgs: ["acp"],
-        defaultServerCommand: "openclaw",
-        defaultServerArgs: ["acp"],
-      }),
-    ).toBe(true);
-  });
-
-  it("preserves provider auth env vars for explicit custom ACP servers", () => {
-    expect(
-      shouldStripProviderAuthEnvVarsForAcpServer({
-        serverCommand: "custom-acp-server",
-        serverArgs: ["serve"],
-        defaultServerCommand: "openclaw",
-        defaultServerArgs: ["acp"],
-      }),
-    ).toBe(false);
-  });
-
-  it("preserves provider auth env vars when an explicit override uses the default executable with different args", () => {
-    expect(
-      shouldStripProviderAuthEnvVarsForAcpServer({
-        serverCommand: process.execPath,
-        serverArgs: ["custom-entry.js"],
-        defaultServerCommand: process.execPath,
-        defaultServerArgs: ["dist/entry.js", "acp"],
-      }),
-    ).toBe(false);
-  });
-});
-
-describe("buildAcpClientStripKeys", () => {
-  it("always includes active skill env keys", () => {
-    const stripKeys = buildAcpClientStripKeys({
-      stripProviderAuthEnvVars: false,
-      activeSkillEnvKeys: ["SKILL_SECRET", "OPENAI_API_KEY"],
-    });
-
-    expect(stripKeys.has("SKILL_SECRET")).toBe(true);
-    expect(stripKeys.has("OPENAI_API_KEY")).toBe(true);
-    expect(stripKeys.has("GITHUB_TOKEN")).toBe(false);
-  });
-
-  it("adds provider auth env vars for the default bridge", () => {
-    const stripKeys = buildAcpClientStripKeys({
-      stripProviderAuthEnvVars: true,
-      activeSkillEnvKeys: ["SKILL_SECRET"],
-    });
-
-    expect(stripKeys.has("SKILL_SECRET")).toBe(true);
-    expect(stripKeys.has("OPENAI_API_KEY")).toBe(true);
-    expect(stripKeys.has("GITHUB_TOKEN")).toBe(true);
-    expect(stripKeys.has("HF_TOKEN")).toBe(true);
-    expect(stripKeys.has("OPENCLAW_API_KEY")).toBe(false);
-  });
 });
 
 describe("resolveAcpClientSpawnInvocation", () => {
@@ -307,20 +191,6 @@ describe("resolvePermissionRequest", () => {
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
   }
 
-  async function expectAutoAllowWithoutPrompt(params: {
-    request: Partial<RequestPermissionRequest>;
-    cwd?: string;
-  }) {
-    const prompt = vi.fn(async () => true);
-    const res = await resolvePermissionRequest(makePermissionRequest(params.request), {
-      prompt,
-      log: () => {},
-      cwd: params.cwd,
-    });
-    expect(prompt).not.toHaveBeenCalled();
-    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "allow" } });
-  }
-
   it("auto-approves safe tools without prompting", async () => {
     const prompt = vi.fn(async () => true);
     const res = await resolvePermissionRequest(makePermissionRequest(), { prompt, log: () => {} });
@@ -341,7 +211,7 @@ describe("resolvePermissionRequest", () => {
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "allow" } });
   });
 
-  it("prompts for non-read/search tools (write)", async () => {
+  it("prompts for non-search tools (write)", async () => {
     const prompt = vi.fn(async () => true);
     const res = await resolvePermissionRequest(
       makePermissionRequest({
@@ -366,120 +236,16 @@ describe("resolvePermissionRequest", () => {
     expect(prompt).not.toHaveBeenCalled();
   });
 
-  it("auto-approves safe tools when rawInput is the only identity hint", async () => {
-    const prompt = vi.fn(async () => true);
-    const res = await resolvePermissionRequest(
-      makePermissionRequest({
-        toolCall: {
-          toolCallId: "tool-raw-only",
-          title: "Searching files",
-          status: "pending",
-          rawInput: {
-            name: "search",
-            query: "foo",
-          },
-        },
-      }),
-      { prompt, log: () => {} },
-    );
-    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "allow" } });
-    expect(prompt).not.toHaveBeenCalled();
-  });
-
-  it("prompts when raw input spoofs a safe tool name for a dangerous title", async () => {
+  it("prompts for read tool (no longer auto-approved)", async () => {
     const prompt = vi.fn(async () => false);
     const res = await resolvePermissionRequest(
       makePermissionRequest({
-        toolCall: {
-          toolCallId: "tool-exec-spoof",
-          title: "exec: cat /etc/passwd",
-          status: "pending",
-          rawInput: {
-            command: "cat /etc/passwd",
-            name: "search",
-          },
-        },
+        toolCall: { toolCallId: "tool-r", title: "read: src/index.ts", status: "pending" },
       }),
       { prompt, log: () => {} },
     );
     expect(prompt).toHaveBeenCalledTimes(1);
-    expect(prompt).toHaveBeenCalledWith(undefined, "exec: cat /etc/passwd");
-    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
-  });
-
-  it("prompts for read outside cwd scope", async () => {
-    const prompt = vi.fn(async () => false);
-    const res = await resolvePermissionRequest(
-      makePermissionRequest({
-        toolCall: { toolCallId: "tool-r", title: "read: ~/.ssh/id_rsa", status: "pending" },
-      }),
-      { prompt, log: () => {} },
-    );
-    expect(prompt).toHaveBeenCalledTimes(1);
-    expect(prompt).toHaveBeenCalledWith("read", "read: ~/.ssh/id_rsa");
-    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
-  });
-
-  it("auto-approves read when rawInput path resolves inside cwd", async () => {
-    await expectAutoAllowWithoutPrompt({
-      request: {
-        toolCall: {
-          toolCallId: "tool-read-inside-cwd",
-          title: "read: ignored-by-raw-input",
-          status: "pending",
-          rawInput: { path: "docs/security.md" },
-        },
-      },
-      cwd: "/tmp/openclaw-acp-cwd",
-    });
-  });
-
-  it("auto-approves read when rawInput file URL resolves inside cwd", async () => {
-    await expectAutoAllowWithoutPrompt({
-      request: {
-        toolCall: {
-          toolCallId: "tool-read-inside-cwd-file-url",
-          title: "read: ignored-by-raw-input",
-          status: "pending",
-          rawInput: { path: "file:///tmp/openclaw-acp-cwd/docs/security.md" },
-        },
-      },
-      cwd: "/tmp/openclaw-acp-cwd",
-    });
-  });
-
-  it("prompts for read when rawInput path escapes cwd via traversal", async () => {
-    const prompt = vi.fn(async () => false);
-    const res = await resolvePermissionRequest(
-      makePermissionRequest({
-        toolCall: {
-          toolCallId: "tool-read-escape-cwd",
-          title: "read: ignored-by-raw-input",
-          status: "pending",
-          rawInput: { path: "../.ssh/id_rsa" },
-        },
-      }),
-      { prompt, log: () => {}, cwd: "/tmp/openclaw-acp-cwd/workspace" },
-    );
-    expect(prompt).toHaveBeenCalledTimes(1);
-    expect(prompt).toHaveBeenCalledWith("read", "read: ignored-by-raw-input");
-    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
-  });
-
-  it("prompts for read when scoped path is missing", async () => {
-    const prompt = vi.fn(async () => false);
-    const res = await resolvePermissionRequest(
-      makePermissionRequest({
-        toolCall: {
-          toolCallId: "tool-read-no-path",
-          title: "read",
-          status: "pending",
-        },
-      }),
-      { prompt, log: () => {} },
-    );
-    expect(prompt).toHaveBeenCalledTimes(1);
-    expect(prompt).toHaveBeenCalledWith("read", "read");
+    expect(prompt).toHaveBeenCalledWith("read", "read: src/index.ts");
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
   });
 

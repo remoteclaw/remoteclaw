@@ -3,6 +3,10 @@ import { extractText } from "../chat/message-extract.ts";
 import type { GatewayBrowserClient } from "../gateway.ts";
 import type { ChatAttachment } from "../ui-types.ts";
 import { generateUUID } from "../uuid.ts";
+import {
+  formatMissingOperatorReadScopeMessage,
+  isMissingOperatorReadScopeError,
+} from "./scope-errors.ts";
 
 const SILENT_REPLY_PATTERN = /^\s*NO_REPLY\s*$/;
 
@@ -81,7 +85,13 @@ export async function loadChatHistory(state: ChatState) {
     state.chatStream = null;
     state.chatStreamStartedAt = null;
   } catch (err) {
-    state.lastError = String(err);
+    if (isMissingOperatorReadScopeError(err)) {
+      state.chatMessages = [];
+      state.chatThinkingLevel = null;
+      state.lastError = formatMissingOperatorReadScopeMessage("existing chat history");
+    } else {
+      state.lastError = String(err);
+    }
   } finally {
     state.chatLoading = false;
   }

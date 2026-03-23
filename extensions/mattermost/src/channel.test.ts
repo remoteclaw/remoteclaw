@@ -72,7 +72,7 @@ describe("mattermostPlugin", () => {
         return;
       }
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           mattermost: {
             replyToMode: "all",

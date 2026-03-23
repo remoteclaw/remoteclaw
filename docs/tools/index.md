@@ -120,7 +120,7 @@ Use `group:*` shorthands in allow/deny lists:
 | `group:automation` | cron, gateway                                                                                             |
 | `group:messaging`  | message                                                                                                   |
 | `group:nodes`      | nodes                                                                                                     |
-| `group:remoteclaw` | All built-in RemoteClaw tools (excludes plugin tools)                                                     |
+| `group:remoteclaw`   | All built-in RemoteClaw tools (excludes plugin tools)                                                       |
 
 ### Provider-specific restrictions
 

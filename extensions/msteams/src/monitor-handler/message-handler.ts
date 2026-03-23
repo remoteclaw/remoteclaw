@@ -578,9 +578,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
         cfg,
         ctxPayload,
         dispatcher,
-        onSettled: () => {
-          markDispatchIdle();
-        },
+        onSettled: () => markDispatchIdle(),
         replyOptions,
       });
 

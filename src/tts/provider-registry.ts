@@ -1,8 +1,84 @@
-/**
- * Normalize a speech provider ID to a canonical form.
- * Fork stub — upstream has a full provider registry; the fork
- * passes through the provider string as-is.
- */
-export function normalizeSpeechProviderId(raw: string): string {
-  return raw.trim().toLowerCase();
+import { buildElevenLabsSpeechProvider } from "../../extensions/elevenlabs/speech-provider.js";
+import { buildMicrosoftSpeechProvider } from "../../extensions/microsoft/speech-provider.js";
+import { buildOpenAISpeechProvider } from "../../extensions/openai/speech-provider.js";
+import type { RemoteClawConfig } from "../config/config.js";
+import { loadRemoteClawPlugins } from "../plugins/loader.js";
+import { getActivePluginRegistry } from "../plugins/runtime.js";
+import type { SpeechProviderPlugin } from "../plugins/types.js";
+import type { SpeechProviderId } from "./provider-types.js";
+
+const BUILTIN_SPEECH_PROVIDER_BUILDERS = [
+  buildOpenAISpeechProvider,
+  buildElevenLabsSpeechProvider,
+  buildMicrosoftSpeechProvider,
+] as const satisfies readonly (() => SpeechProviderPlugin)[];
+
+function trimToUndefined(value: string | undefined): string | undefined {
+  const trimmed = value?.trim().toLowerCase();
+  return trimmed ? trimmed : undefined;
+}
+
+export function normalizeSpeechProviderId(
+  providerId: string | undefined,
+): SpeechProviderId | undefined {
+  const normalized = trimToUndefined(providerId);
+  if (!normalized) {
+    return undefined;
+  }
+  return normalized === "edge" ? "microsoft" : normalized;
+}
+
+function resolveSpeechProviderPluginEntries(cfg?: RemoteClawConfig): SpeechProviderPlugin[] {
+  const active = getActivePluginRegistry();
+  const registry =
+    (active?.speechProviders?.length ?? 0) > 0 || !cfg
+      ? active
+      : loadRemoteClawPlugins({ config: cfg });
+  return registry?.speechProviders?.map((entry) => entry.provider) ?? [];
+}
+
+function buildProviderMaps(cfg?: RemoteClawConfig): {
+  canonical: Map<string, SpeechProviderPlugin>;
+  aliases: Map<string, SpeechProviderPlugin>;
+} {
+  const canonical = new Map<string, SpeechProviderPlugin>();
+  const aliases = new Map<string, SpeechProviderPlugin>();
+  const register = (provider: SpeechProviderPlugin) => {
+    const id = normalizeSpeechProviderId(provider.id);
+    if (!id) {
+      return;
+    }
+    canonical.set(id, provider);
+    aliases.set(id, provider);
+    for (const alias of provider.aliases ?? []) {
+      const normalizedAlias = normalizeSpeechProviderId(alias);
+      if (normalizedAlias) {
+        aliases.set(normalizedAlias, provider);
+      }
+    }
+  };
+
+  for (const buildProvider of BUILTIN_SPEECH_PROVIDER_BUILDERS) {
+    register(buildProvider());
+  }
+  for (const provider of resolveSpeechProviderPluginEntries(cfg)) {
+    register(provider);
+  }
+
+  return { canonical, aliases };
+}
+
+export function listSpeechProviders(cfg?: RemoteClawConfig): SpeechProviderPlugin[] {
+  return [...buildProviderMaps(cfg).canonical.values()];
+}
+
+export function getSpeechProvider(
+  providerId: string | undefined,
+  cfg?: RemoteClawConfig,
+): SpeechProviderPlugin | undefined {
+  const normalized = normalizeSpeechProviderId(providerId);
+  if (!normalized) {
+    return undefined;
+  }
+  return buildProviderMaps(cfg).aliases.get(normalized);
 }

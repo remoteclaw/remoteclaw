@@ -3,7 +3,7 @@ export type {
   ChannelGatewayContext,
   ChannelMessageActionAdapter,
 } from "../channels/plugins/types.js";
-export type { OpenClawConfig } from "../config/config.js";
+export type { RemoteClawConfig as OpenClawConfig } from "../config/config.js";
 export type { DiscordAccountConfig, DiscordActionConfig } from "../config/types.js";
 export type { DiscordPluralKitConfig } from "../../extensions/discord/src/pluralkit.js";
 export type { InspectedDiscordAccount } from "../../extensions/discord/src/account-inspect.js";

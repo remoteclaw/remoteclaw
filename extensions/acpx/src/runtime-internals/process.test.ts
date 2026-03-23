@@ -333,7 +333,7 @@ describe("spawnAndCollect", () => {
       command: process.execPath,
       args: [
         "-e",
-        `process.stdout.write(JSON.stringify({openai:process.env.${openAiEnvKey},github:process.env.${githubEnvKey},hf:process.env.${hfEnvKey},openclaw:process.env.OPENCLAW_API_KEY,shell:process.env.OPENCLAW_SHELL}))`,
+        `process.stdout.write(JSON.stringify({openai:process.env.${openAiEnvKey},github:process.env.${githubEnvKey},hf:process.env.${hfEnvKey},openclaw:process.env.OPENCLAW_API_KEY,shell:process.env.REMOTECLAW_SHELL}))`,
       ],
       cwd: process.cwd(),
       stripProviderAuthEnvVars: options?.stripProviderAuthEnvVars,

@@ -47,22 +47,22 @@ afterEach(async () => {
 });
 
 describe("resolveAcpClientSpawnEnv", () => {
-  it("sets OPENCLAW_SHELL marker and preserves existing env values", () => {
+  it("sets REMOTECLAW_SHELL marker and preserves existing env values", () => {
     const env = resolveAcpClientSpawnEnv({
       PATH: "/usr/bin",
       USER: "openclaw",
     });
 
-    expect(env.OPENCLAW_SHELL).toBe("acp-client");
+    expect(env.REMOTECLAW_SHELL).toBe("acp-client");
     expect(env.PATH).toBe("/usr/bin");
     expect(env.USER).toBe("openclaw");
   });
 
-  it("overrides pre-existing OPENCLAW_SHELL to acp-client", () => {
+  it("overrides pre-existing REMOTECLAW_SHELL to acp-client", () => {
     const env = resolveAcpClientSpawnEnv({
-      OPENCLAW_SHELL: "wrong",
+      REMOTECLAW_SHELL: "wrong",
     });
-    expect(env.OPENCLAW_SHELL).toBe("acp-client");
+    expect(env.REMOTECLAW_SHELL).toBe("acp-client");
   });
 
   it("strips skill-injected env keys when stripKeys is provided", () => {
@@ -81,7 +81,7 @@ describe("resolveAcpClientSpawnEnv", () => {
     );
 
     expect(env.PATH).toBe("/usr/bin");
-    expect(env.OPENCLAW_SHELL).toBe("acp-client");
+    expect(env.REMOTECLAW_SHELL).toBe("acp-client");
     expect(env.ANTHROPIC_API_KEY).toBe("anthropic-test-value");
     expect(env.OPENAI_API_KEY).toBeUndefined();
     expect(env.ELEVENLABS_API_KEY).toBeUndefined();
@@ -99,17 +99,17 @@ describe("resolveAcpClientSpawnEnv", () => {
     expect(baseEnv.OPENAI_API_KEY).toBe("openai-original");
   });
 
-  it("preserves OPENCLAW_SHELL even when stripKeys contains it", () => {
+  it("preserves REMOTECLAW_SHELL even when stripKeys contains it", () => {
     const openAiApiKeyEnv = envVar("OPENAI", "API", "KEY");
     const env = resolveAcpClientSpawnEnv(
       {
-        OPENCLAW_SHELL: "skill-overridden",
+        REMOTECLAW_SHELL: "skill-overridden",
         [openAiApiKeyEnv]: "openai-leaked", // pragma: allowlist secret
       },
-      { stripKeys: new Set(["OPENCLAW_SHELL", openAiApiKeyEnv]) },
+      { stripKeys: new Set(["REMOTECLAW_SHELL", openAiApiKeyEnv]) },
     );
 
-    expect(env.OPENCLAW_SHELL).toBe("acp-client");
+    expect(env.REMOTECLAW_SHELL).toBe("acp-client");
     expect(env.OPENAI_API_KEY).toBeUndefined();
   });
 
@@ -131,7 +131,7 @@ describe("resolveAcpClientSpawnEnv", () => {
     expect(env.HF_TOKEN).toBeUndefined();
     expect(env.OPENCLAW_API_KEY).toBe("keep-me");
     expect(env.PATH).toBe("/usr/bin");
-    expect(env.OPENCLAW_SHELL).toBe("acp-client");
+    expect(env.REMOTECLAW_SHELL).toBe("acp-client");
   });
 
   it("strips provider auth env vars case-insensitively", () => {
@@ -147,7 +147,7 @@ describe("resolveAcpClientSpawnEnv", () => {
     expect(env.OpenAI_Api_Key).toBeUndefined();
     expect(env.Github_Token).toBeUndefined();
     expect(env.OPENCLAW_API_KEY).toBe("keep-me");
-    expect(env.OPENCLAW_SHELL).toBe("acp-client");
+    expect(env.REMOTECLAW_SHELL).toBe("acp-client");
   });
 
   it("preserves provider auth env vars for explicit custom ACP servers", () => {
@@ -162,7 +162,7 @@ describe("resolveAcpClientSpawnEnv", () => {
     expect(env.GITHUB_TOKEN).toBe("gh-secret");
     expect(env.HF_TOKEN).toBe("hf-secret");
     expect(env.OPENCLAW_API_KEY).toBe("keep-me");
-    expect(env.OPENCLAW_SHELL).toBe("acp-client");
+    expect(env.REMOTECLAW_SHELL).toBe("acp-client");
   });
 });
 

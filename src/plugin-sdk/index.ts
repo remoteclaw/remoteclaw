@@ -54,9 +54,10 @@ export type {
   SubagentRunParams,
   SubagentRunResult,
 } from "../plugins/runtime/types.js";
-export type { OpenClawConfig } from "../config/config.js";
-/** @deprecated Use OpenClawConfig instead */
-export type { OpenClawConfig as ClawdbotConfig } from "../config/config.js";
+export type { RemoteClawConfig } from "../config/config.js";
+export type { RemoteClawConfig as OpenClawConfig } from "../config/config.js";
+/** @deprecated Use RemoteClawConfig instead */
+export type { RemoteClawConfig as ClawdbotConfig } from "../config/config.js";
 export * from "./image-generation.js";
 export type { SecretInput, SecretRef } from "../config/types.secrets.js";
 export type { RuntimeEnv } from "../runtime.js";

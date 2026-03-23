@@ -1,10 +1,14 @@
+import type { MockFn } from "remoteclaw/plugin-sdk/testing";
 import { beforeEach, vi } from "vitest";
-import type { MockFn } from "../../../src/test-utils/vitest-mock-fn.js";
 
 const { botApi, botCtorSpy } = vi.hoisted(() => ({
   botApi: {
     deleteMessage: vi.fn(),
+    editForumTopic: vi.fn(),
     editMessageText: vi.fn(),
+    editMessageReplyMarkup: vi.fn(),
+    pinChatMessage: vi.fn(),
+    sendChatAction: vi.fn(),
     sendMessage: vi.fn(),
     sendPoll: vi.fn(),
     sendPhoto: vi.fn(),
@@ -15,6 +19,7 @@ const { botApi, botCtorSpy } = vi.hoisted(() => ({
     sendAnimation: vi.fn(),
     setMessageReaction: vi.fn(),
     sendSticker: vi.fn(),
+    unpinChatMessage: vi.fn(),
   },
   botCtorSpy: vi.fn(),
 }));
@@ -39,11 +44,15 @@ type TelegramSendTestMocks = {
   maybePersistResolvedTelegramTarget: MockFn;
 };
 
-vi.mock("../../../src/web/media.js", () => ({
+vi.mock("remoteclaw/plugin-sdk/web-media", () => ({
   loadWebMedia,
 }));
 
 vi.mock("grammy", () => ({
+  API_CONSTANTS: {
+    DEFAULT_UPDATE_TYPES: ["message"],
+    ALL_UPDATE_TYPES: ["message"],
+  },
   Bot: class {
     api = botApi;
     catch = vi.fn();
@@ -56,11 +65,22 @@ vi.mock("grammy", () => ({
       botCtorSpy(token, options);
     }
   },
+  HttpError: class HttpError extends Error {
+    constructor(
+      message = "HttpError",
+      public error?: unknown,
+    ) {
+      super(message);
+    }
+  },
+  GrammyError: class GrammyError extends Error {
+    description = "";
+  },
   InputFile: class {},
 }));
 
-vi.mock("../../../src/config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../../src/config/config.js")>();
+vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
   return {
     ...actual,
     loadConfig,
@@ -89,5 +109,6 @@ export function installTelegramSendTestHooks() {
 }
 
 export async function importTelegramSendModule() {
+  vi.resetModules();
   return await import("./send.js");
 }

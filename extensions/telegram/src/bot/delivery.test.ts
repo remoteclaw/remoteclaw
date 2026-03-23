@@ -43,6 +43,10 @@ vi.mock("../../../../src/hooks/internal-hooks.js", async () => {
 });
 
 vi.mock("grammy", () => ({
+  API_CONSTANTS: {
+    DEFAULT_UPDATE_TYPES: ["message"],
+    ALL_UPDATE_TYPES: ["message"],
+  },
   InputFile: class {
     constructor(
       public buffer: Buffer,

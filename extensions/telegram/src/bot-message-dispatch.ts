@@ -476,6 +476,7 @@ export const dispatchTelegramMessage = async ({
       replies: [payload],
       onVoiceRecording: sendRecordVoice,
       silent: silentErrorReplies && payload.isError === true,
+      mediaLoader: telegramDeps.loadWebMedia,
     });
     if (result.delivered) {
       deliveryState.markDelivered();
@@ -832,7 +833,8 @@ export const dispatchTelegramMessage = async ({
     const result = await deliverReplies({
       replies: [{ text: fallbackText }],
       ...deliveryBaseOptions,
-      silent: silentErrorReplies && dispatchError != null,
+      silent: silentErrorReplies && (dispatchError != null || hadErrorReplyFailureOrSkip),
+      mediaLoader: telegramDeps.loadWebMedia,
     });
     sentFallback = result.delivered;
   }

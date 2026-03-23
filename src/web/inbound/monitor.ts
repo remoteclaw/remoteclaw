@@ -66,6 +66,7 @@ export async function monitorWebInbox(options: {
   }
 
   const selfJid = sock.user?.id;
+  const selfLid = sock.user?.lid;
   const selfE164 = selfJid ? jidToE164(selfJid) : null;
   const debouncer = createInboundDebouncer<WebInboundMessage>({
     debounceMs: options.debounceMs ?? 0,
@@ -372,6 +373,7 @@ export async function monitorWebInbox(options: {
       groupParticipants: inbound.groupParticipants,
       mentionedJids: mentionedJids ?? undefined,
       selfJid,
+      selfLid,
       selfE164,
       fromMe: Boolean(msg.key?.fromMe),
       location: enriched.location ?? undefined,
@@ -413,7 +415,13 @@ export async function monitorWebInbox(options: {
 
       // If this is history/offline catch-up, mark read above but skip auto-reply.
       if (upsert.type === "append") {
-        continue;
+        const APPEND_RECENT_GRACE_MS = 60_000;
+        const msgTsRaw = msg.messageTimestamp;
+        const msgTsNum = msgTsRaw != null ? Number(msgTsRaw) : NaN;
+        const msgTsMs = Number.isFinite(msgTsNum) ? msgTsNum * 1000 : 0;
+        if (msgTsMs < connectedAtMs - APPEND_RECENT_GRACE_MS) {
+          continue;
+        }
       }
 
       const enriched = await enrichInboundMessage(msg);

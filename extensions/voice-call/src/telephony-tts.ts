@@ -8,6 +8,7 @@ export type TelephonyTtsRuntime = {
     text: string;
     cfg: CoreConfig;
     prefsPath?: string;
+    ttsProviders?: unknown[];
   }) => Promise<{
     success: boolean;
     audioBuffer?: Buffer;

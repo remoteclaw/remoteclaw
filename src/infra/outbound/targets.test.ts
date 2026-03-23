@@ -1,5 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../../config/config.js";
+
+vi.mock("./channel-resolution.js", async () => {
+  const { getActivePluginRegistry } = await import("../../plugins/runtime.js");
+
+  return {
+    normalizeDeliverableOutboundChannel: (raw?: string | null) =>
+      typeof raw === "string" && raw.trim() ? raw.trim().toLowerCase() : undefined,
+    resolveOutboundChannelPlugin: ({ channel }: { channel: string }) =>
+      getActivePluginRegistry()?.channels.find((entry) => entry?.plugin?.id === channel)?.plugin,
+  };
+});
+
 import {
   resolveHeartbeatDeliveryTarget,
   resolveOutboundTarget,

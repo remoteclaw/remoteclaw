@@ -22,7 +22,7 @@ export {
   setSetupChannelEnabled,
   splitSetupEntries,
 } from "remoteclaw/plugin-sdk/setup";
-export * from "../../src/plugin-sdk/line-runtime.js";
+export * from "remoteclaw/plugin-sdk/line-runtime";
 
 export * from "./src/accounts.js";
 export * from "./src/bot-access.js";

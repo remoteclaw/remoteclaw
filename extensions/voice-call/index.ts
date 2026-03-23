@@ -177,7 +177,8 @@ const voiceCallPlugin = {
         runtimePromise = createVoiceCallRuntime({
           config,
           coreConfig: api.config as CoreConfig,
-          ttsRuntime: api.runtime.tts,
+          ttsRuntime: api.runtime
+            .tts as unknown as import("./src/telephony-tts.js").TelephonyTtsRuntime,
           logger: api.logger,
         });
       }

@@ -1104,7 +1104,7 @@ describe("resolveOutboundSessionRoute", () => {
           sessionKey: "agent:main:slack:channel:c999xyz",
           from: "slack:channel:C999XYZ",
           to: "channel:C999XYZ",
-          chatType: "channel",
+          chatType: "group",
         },
       },
     ];

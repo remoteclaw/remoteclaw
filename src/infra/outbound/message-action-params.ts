@@ -1,74 +1,14 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { parseSlackTarget } from "../../../extensions/slack/src/targets.js";
-import { parseTelegramTarget } from "../../../extensions/telegram/src/targets.js";
-import { loadWebMedia } from "../../../extensions/whatsapp/src/media.js";
+import { assertMediaNotDataUrl, resolveSandboxedMediaSource } from "../../agents/sandbox-paths.js";
 import { readStringParam } from "../../agents/tools/common.js";
-import type {
-  ChannelId,
-  ChannelMessageActionName,
-  ChannelThreadingToolContext,
-} from "../../channels/plugins/types.js";
+import type { ChannelId, ChannelMessageActionName } from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
+import { createRootScopedReadFile } from "../../infra/fs-safe.js";
+import { basenameFromMediaSource } from "../../infra/local-file-access.js";
 import { extensionForMime } from "../../media/mime.js";
+import { loadWebMedia } from "../../media/web-media.js";
 import { readBooleanParam as readBooleanParamShared } from "../../plugin-sdk/boolean-param.js";
 
 export const readBooleanParam = readBooleanParamShared;
-
-export function resolveSlackAutoThreadId(params: {
-  to: string;
-  toolContext?: ChannelThreadingToolContext;
-}): string | undefined {
-  const context = params.toolContext;
-  if (!context?.currentThreadTs || !context.currentChannelId) {
-    return undefined;
-  }
-  // Only mirror auto-threading when Slack would reply in the active thread for this channel.
-  if (context.replyToMode !== "all" && context.replyToMode !== "first") {
-    return undefined;
-  }
-  const parsedTarget = parseSlackTarget(params.to, { defaultKind: "channel" });
-  if (!parsedTarget || parsedTarget.kind !== "channel") {
-    return undefined;
-  }
-  if (parsedTarget.id.toLowerCase() !== context.currentChannelId.toLowerCase()) {
-    return undefined;
-  }
-  if (context.replyToMode === "first" && context.hasRepliedRef?.value) {
-    return undefined;
-  }
-  return context.currentThreadTs;
-}
-
-/**
- * Auto-inject Telegram forum topic thread ID when the message tool targets
- * the same chat the session originated from.  Mirrors the Slack auto-threading
- * pattern so media, buttons, and other tool-sent messages land in the correct
- * topic instead of the General Topic.
- *
- * Unlike Slack, we do not gate on `replyToMode` here: Telegram forum topics
- * are persistent sub-channels (not ephemeral reply threads), so auto-injection
- * should always apply when the target chat matches.
- */
-export function resolveTelegramAutoThreadId(params: {
-  to: string;
-  toolContext?: ChannelThreadingToolContext;
-}): string | undefined {
-  const context = params.toolContext;
-  if (!context?.currentThreadTs || !context.currentChannelId) {
-    return undefined;
-  }
-  // Use parseTelegramTarget to extract canonical chatId from both sides,
-  // mirroring how Slack uses parseSlackTarget. This handles format variations
-  // like `telegram:group:123:topic:456` vs `telegram:123`.
-  const parsedTo = parseTelegramTarget(params.to);
-  const parsedChannel = parseTelegramTarget(context.currentChannelId);
-  if (parsedTo.chatId.toLowerCase() !== parsedChannel.chatId.toLowerCase()) {
-    return undefined;
-  }
-  return context.currentThreadTs;
-}
 
 function resolveAttachmentMaxBytes(params: {
   cfg: RemoteClawConfig;
@@ -106,27 +46,9 @@ function inferAttachmentFilename(params: {
 }): string | undefined {
   const mediaHint = params.mediaHint?.trim();
   if (mediaHint) {
-    try {
-      if (mediaHint.startsWith("file://")) {
-        const filePath = fileURLToPath(mediaHint);
-        const base = path.basename(filePath);
-        if (base) {
-          return base;
-        }
-      } else if (/^https?:\/\//i.test(mediaHint)) {
-        const url = new URL(mediaHint);
-        const base = path.basename(url.pathname);
-        if (base) {
-          return base;
-        }
-      } else {
-        const base = path.basename(mediaHint);
-        if (base) {
-          return base;
-        }
-      }
-    } catch {
-      // fall through to content-type based default
+    const base = basenameFromMediaSource(mediaHint);
+    if (base) {
+      return base;
     }
   }
   const ext = params.contentType ? extensionForMime(params.contentType) : undefined;
@@ -192,10 +114,13 @@ function buildAttachmentMediaLoadOptions(params: {
       localRoots?: readonly string[];
     } {
   if (params.policy.mode === "sandbox") {
+    const readSandboxFile = createRootScopedReadFile({
+      rootDir: params.policy.sandboxRoot.trim(),
+    });
     return {
       maxBytes: params.maxBytes,
       sandboxValidated: true,
-      readFile: (filePath: string) => fs.readFile(filePath),
+      readFile: readSandboxFile,
     };
   }
   return {
@@ -259,10 +184,34 @@ async function hydrateAttachmentPayload(params: {
   }
 }
 
+export async function normalizeSandboxMediaParams(params: {
+  args: Record<string, unknown>;
+  mediaPolicy: AttachmentMediaPolicy;
+}): Promise<void> {
+  const sandboxRoot =
+    params.mediaPolicy.mode === "sandbox" ? params.mediaPolicy.sandboxRoot.trim() : undefined;
+  const mediaKeys: Array<"media" | "path" | "filePath"> = ["media", "path", "filePath"];
+  for (const key of mediaKeys) {
+    const raw = readStringParam(params.args, key, { trim: false });
+    if (!raw) {
+      continue;
+    }
+    assertMediaNotDataUrl(raw);
+    if (!sandboxRoot) {
+      continue;
+    }
+    const normalized = await resolveSandboxedMediaSource({ media: raw, sandboxRoot });
+    if (normalized !== raw) {
+      params.args[key] = normalized;
+    }
+  }
+}
+
 export async function normalizeSandboxMediaList(params: {
   values: string[];
   sandboxRoot?: string;
 }): Promise<string[]> {
+  const sandboxRoot = params.sandboxRoot?.trim();
   const normalized: string[] = [];
   const seen = new Set<string>();
   for (const value of params.values) {
@@ -270,11 +219,15 @@ export async function normalizeSandboxMediaList(params: {
     if (!raw) {
       continue;
     }
-    if (seen.has(raw)) {
+    assertMediaNotDataUrl(raw);
+    const resolved = sandboxRoot
+      ? await resolveSandboxedMediaSource({ media: raw, sandboxRoot })
+      : raw;
+    if (seen.has(resolved)) {
       continue;
     }
-    seen.add(raw);
-    normalized.push(raw);
+    seen.add(resolved);
+    normalized.push(resolved);
   }
   return normalized;
 }

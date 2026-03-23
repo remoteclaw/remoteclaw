@@ -7,8 +7,8 @@ import { emitAgentEvent, registerAgentRunContext } from "../infra/agent-events.j
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import {
   connectOk,
-  getReplyFromConfig,
   installGatewayTestHooks,
+  mockGetReplyFromConfigOnce,
   onceMessage,
   rpcReq,
   testState,
@@ -161,8 +161,7 @@ describe("gateway server chat", () => {
     const blockedReply = new Promise<void>((resolve) => {
       releaseBlockedReply = resolve;
     });
-    const replySpy = vi.mocked(getReplyFromConfig);
-    replySpy.mockImplementationOnce(async (_ctx, opts) => {
+    mockGetReplyFromConfigOnce(async (_ctx, opts) => {
       await new Promise<void>((resolve) => {
         let settled = false;
         const finish = () => {

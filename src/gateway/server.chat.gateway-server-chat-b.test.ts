@@ -8,6 +8,7 @@ import {
   connectOk,
   getReplyFromConfig,
   installGatewayTestHooks,
+  mockGetReplyFromConfigOnce,
   onceMessage,
   rpcReq,
   startServerWithClient,
@@ -152,9 +153,8 @@ describe("gateway server chat", () => {
       await writeMainSessionStore();
       testState.agentConfig = { blockStreamingDefault: "on" };
       try {
-        spy.mockClear();
         let capturedOpts: GetReplyOptions | undefined;
-        spy.mockImplementationOnce(async (_ctx: unknown, opts?: GetReplyOptions) => {
+        mockGetReplyFromConfigOnce(async (_ctx, opts) => {
           capturedOpts = opts;
           return undefined;
         });
@@ -372,8 +372,7 @@ describe("gateway server chat", () => {
       await createSessionDir();
       await writeMainSessionStore();
 
-      spy.mockClear();
-      spy.mockImplementationOnce(async (_ctx, opts) => {
+      mockGetReplyFromConfigOnce(async (_ctx, opts) => {
         opts?.onAgentRunStart?.(opts.runId ?? "idem-abort-1");
         const signal = opts?.abortSignal;
         await new Promise<void>((resolve) => {

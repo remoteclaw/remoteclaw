@@ -9,7 +9,7 @@ title: "Testing"
 
 # Testing
 
-RemoteClaw has three Vitest suites (unit/integration, e2e, live) and a small set of Docker runners.
+OpenClaw has three Vitest suites (unit/integration, e2e, live) and a small set of Docker runners.
 
 This doc is a “how we test” guide:
 
@@ -55,7 +55,8 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
 - Scheduler note:
   - `pnpm test` now keeps a small checked-in behavioral manifest for true pool/isolation overrides and a separate timing snapshot for the slowest unit files.
   - Shared unit coverage now defaults to `threads`, while the manifest keeps the measured fork-only exceptions and heavy singleton lanes explicit.
-  - The extension suite (`vitest.extensions.config.ts`) also now defaults to `threads`; the March 22, 2026 direct full-suite control run passed clean without extension-specific fork exceptions.
+  - The shared extension lane still defaults to `threads`; the wrapper keeps explicit fork-only exceptions in `test/fixtures/test-parallel.behavior.json` when a file cannot safely share a non-isolated worker.
+  - The channel suite (`vitest.channels.config.ts`) now also defaults to `threads`; the March 22, 2026 direct full-suite control run passed clean without channel-specific fork exceptions.
   - The wrapper peels the heaviest measured files into dedicated lanes instead of relying on a growing hand-maintained exclusion list.
   - Refresh the timing snapshot with `pnpm test:perf:update-timings` after major suite shape changes.
 - Embedded runner note:
@@ -71,12 +72,23 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
     sufficient substitute for those integration paths.
 - Pool note:
   - Base Vitest config still defaults to `forks`.
-  - Unit wrapper lanes default to `threads`, with explicit manifest fork/vmFork exceptions.
+  - Unit wrapper lanes default to `threads`, with explicit manifest fork-only exceptions.
   - Extension scoped config defaults to `threads`.
-  - `pnpm test` also defaults to `--isolate=false` at the wrapper level for faster file startup.
+  - Channel scoped config defaults to `threads`.
+  - Unit, channel, and extension configs default to `isolate: false` for faster file startup.
+  - `pnpm test` also passes `--isolate=false` at the wrapper level.
   - Opt back into Vitest file isolation with `OPENCLAW_TEST_ISOLATE=1 pnpm test`.
   - `OPENCLAW_TEST_NO_ISOLATE=0` or `OPENCLAW_TEST_NO_ISOLATE=false` also force isolated runs.
-  - `OPENCLAW_TEST_VM_FORKS=1` remains an opt-in experiment on Node 22, 23, and 24 only.
+- Fast-local iteration note:
+  - `pnpm test:changed` runs the wrapper with `--changed origin/main`.
+  - The base Vitest config marks the wrapper manifests/config files as `forceRerunTriggers` so changed-mode reruns stay correct when scheduler inputs change.
+  - Vitest's filesystem module cache is now enabled by default for Node-side test reruns.
+  - Opt out with `OPENCLAW_VITEST_FS_MODULE_CACHE=0` or `OPENCLAW_VITEST_FS_MODULE_CACHE=false` if you suspect stale transform cache behavior.
+- Perf-debug note:
+  - `pnpm test:perf:imports` enables Vitest import-duration reporting plus import-breakdown output.
+  - `pnpm test:perf:imports:changed` scopes the same profiling view to files changed since `origin/main`.
+  - `pnpm test:perf:profile:main` writes a main-thread CPU profile for Vitest/Vite startup and transform overhead.
+  - `pnpm test:perf:profile:runner` writes runner CPU+heap profiles for the unit suite with file parallelism disabled.
 
 ### E2E (gateway smoke)
 
@@ -105,7 +117,7 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
 - Scope:
   - Starts an isolated OpenShell gateway on the host via Docker
   - Creates a sandbox from a temporary local Dockerfile
-  - Exercises RemoteClaw's OpenShell backend over real `sandbox ssh-config` + SSH exec
+  - Exercises OpenClaw's OpenShell backend over real `sandbox ssh-config` + SSH exec
   - Verifies remote-canonical filesystem behavior through the sandbox fs bridge
 - Expectations:
   - Opt-in only; not part of the default `pnpm test:e2e` run
@@ -191,7 +203,7 @@ Live tests are split into two layers so we can isolate failures:
   - Separates “provider API is broken / key is invalid” from “gateway agent pipeline is broken”
   - Contains small, isolated regressions (example: OpenAI Responses/Codex Responses reasoning replay + tool-call flows)
 
-### Layer 2: Gateway + dev agent smoke (what "@remoteclaw" actually does)
+### Layer 2: Gateway + dev agent smoke (what "@openclaw" actually does)
 
 - Test: `src/gateway/gateway-models.profiles.live.test.ts`
 - Goal:
@@ -228,8 +240,8 @@ Live tests are split into two layers so we can isolate failures:
 Tip: to see what you can test on your machine (and the exact `provider/model` ids), run:
 
 ```bash
-remoteclaw models list
-remoteclaw models list --json
+openclaw models list
+openclaw models list --json
 ```
 
 ## Live: Anthropic setup-token smoke
@@ -248,7 +260,7 @@ remoteclaw models list --json
 Setup example:
 
 ```bash
-remoteclaw models auth paste-token --provider anthropic --profile-id anthropic:setup-token-test
+openclaw models auth paste-token --provider anthropic --profile-id anthropic:setup-token-test
 OPENCLAW_LIVE_SETUP_TOKEN=1 OPENCLAW_LIVE_SETUP_TOKEN_PROFILE=anthropic:setup-token-test pnpm test:live src/agents/anthropic.setup-token.live.test.ts
 ```
 
@@ -306,8 +318,8 @@ Notes:
 - `google-antigravity/...` uses the Antigravity OAuth bridge (Cloud Code Assist-style agent endpoint).
 - `google-gemini-cli/...` uses the local Gemini CLI on your machine (separate auth + tooling quirks).
 - Gemini API vs Gemini CLI:
-  - API: RemoteClaw calls Google’s hosted Gemini API over HTTP (API key / profile auth); this is what most users mean by “Gemini”.
-  - CLI: RemoteClaw shells out to a local `gemini` binary; it has its own auth and can behave differently (streaming/tool support/version skew).
+  - API: OpenClaw calls Google’s hosted Gemini API over HTTP (API key / profile auth); this is what most users mean by “Gemini”.
+  - CLI: OpenClaw shells out to a local `gemini` binary; it has its own auth and can behave differently (streaming/tool support/version skew).
 
 ## Live: model matrix (what we cover)
 
@@ -353,7 +365,7 @@ Include at least one image-capable model in `OPENCLAW_LIVE_GATEWAY_MODELS` (Clau
 
 If you have keys enabled, we also support testing via:
 
-- OpenRouter: `openrouter/...` (hundreds of models; use `remoteclaw models scan` to find tool+image capable candidates)
+- OpenRouter: `openrouter/...` (hundreds of models; use `openclaw models scan` to find tool+image capable candidates)
 - OpenCode: `opencode/...` for Zen and `opencode-go/...` for Go (auth via `OPENCODE_API_KEY` / `OPENCODE_ZEN_API_KEY`)
 
 More providers you can include in the live matrix (if you have creds/config):
@@ -368,10 +380,10 @@ Tip: don’t try to hardcode “all models” in docs. The authoritative list is
 Live tests discover credentials the same way the CLI does. Practical implications:
 
 - If the CLI works, live tests should find the same keys.
-- If a live test says “no creds”, debug the same way you’d debug `remoteclaw models list` / model selection.
+- If a live test says “no creds”, debug the same way you’d debug `openclaw models list` / model selection.
 
-- Profile store: `~/.remoteclaw/credentials/` (preferred; what “profile keys” means in the tests)
-- Config: `~/.remoteclaw/remoteclaw.json` (or `OPENCLAW_CONFIG_PATH`)
+- Profile store: `~/.openclaw/credentials/` (preferred; what “profile keys” means in the tests)
+- Config: `~/.openclaw/openclaw.json` (or `OPENCLAW_CONFIG_PATH`)
 
 If you want to rely on env keys (e.g. exported in your `~/.profile`), run local tests after `source ~/.profile`, or use the Docker runners below (they can mount `~/.profile` into the container).
 
@@ -434,8 +446,8 @@ Manual ACP plain-language thread smoke (not CI):
 
 Useful env vars:
 
-- `OPENCLAW_CONFIG_DIR=...` (default: `~/.remoteclaw`) mounted to `/home/node/.remoteclaw`
-- `OPENCLAW_WORKSPACE_DIR=...` (default: `~/.remoteclaw/workspace`) mounted to `/home/node/.remoteclaw/workspace`
+- `OPENCLAW_CONFIG_DIR=...` (default: `~/.openclaw`) mounted to `/home/node/.openclaw`
+- `OPENCLAW_WORKSPACE_DIR=...` (default: `~/.openclaw/workspace`) mounted to `/home/node/.openclaw/workspace`
 - `OPENCLAW_PROFILE_FILE=...` (default: `~/.profile`) mounted to `/home/node/.profile` and sourced before running tests
 - External CLI auth dirs under `$HOME` (`.codex`, `.claude`, `.qwen`, `.minimax`) are mounted read-only under `/host-auth/...`, then copied into `/home/node/...` before tests start
 - `OPENCLAW_LIVE_GATEWAY_MODELS=...` / `OPENCLAW_LIVE_MODELS=...` to narrow the run

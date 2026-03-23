@@ -1,3 +1,5 @@
+import { resolveGlobalSingleton } from "../shared/global-singleton.js";
+
 const warningFilterKey = Symbol.for("remoteclaw.warning-filter");
 
 export type ProcessWarning = {
@@ -63,10 +65,10 @@ function normalizeWarningArgs(args: unknown[]): ProcessWarning {
 }
 
 export function installProcessWarningFilter(): void {
-  const globalState = globalThis as typeof globalThis & {
-    [warningFilterKey]?: ProcessWarningInstallState;
-  };
-  if (globalState[warningFilterKey]?.installed) {
+  const state = resolveGlobalSingleton<ProcessWarningInstallState>(warningFilterKey, () => ({
+    installed: false,
+  }));
+  if (state.installed) {
     return;
   }
 
@@ -79,7 +81,5 @@ export function installProcessWarningFilter(): void {
   }) as typeof process.emitWarning;
 
   process.emitWarning = wrappedEmitWarning;
-  globalState[warningFilterKey] = {
-    installed: true,
-  };
+  state.installed = true;
 }

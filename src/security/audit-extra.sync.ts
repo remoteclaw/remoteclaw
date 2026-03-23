@@ -116,6 +116,13 @@ function looksLikeEnvRef(value: string): boolean {
   return v.startsWith("${") && v.endsWith("}");
 }
 
+function isHookAgentRoutingUnrestricted(allowedAgentIds: string[] | undefined): boolean {
+  if (!allowedAgentIds) {
+    return true;
+  }
+  return allowedAgentIds.some((agentId) => agentId === "*");
+}
+
 function isGatewayRemotelyExposed(cfg: RemoteClawConfig): boolean {
   const bind = typeof cfg.gateway?.bind === "string" ? cfg.gateway.bind : "loopback";
   if (bind !== "loopback") {
@@ -644,12 +651,29 @@ export function collectHooksHardeningFindings(
   const allowRequestSessionKey = cfg.hooks?.allowRequestSessionKey === true;
   const defaultSessionKey =
     typeof cfg.hooks?.defaultSessionKey === "string" ? cfg.hooks.defaultSessionKey.trim() : "";
+  const allowedAgentIds = Array.isArray(cfg.hooks?.allowedAgentIds)
+    ? cfg.hooks.allowedAgentIds
+        .map((agentId) => agentId.trim())
+        .filter((agentId) => agentId.length > 0)
+    : undefined;
   const allowedPrefixes = Array.isArray(cfg.hooks?.allowedSessionKeyPrefixes)
     ? cfg.hooks.allowedSessionKeyPrefixes
         .map((prefix) => prefix.trim())
         .filter((prefix) => prefix.length > 0)
     : [];
   const remoteExposure = isGatewayRemotelyExposed(cfg);
+
+  if (isHookAgentRoutingUnrestricted(allowedAgentIds)) {
+    findings.push({
+      checkId: "hooks.allowed_agent_ids_unset",
+      severity: remoteExposure ? "critical" : "warn",
+      title: "Hook agent routing allows any configured agent",
+      detail:
+        "hooks.allowedAgentIds is unset or includes '*', so authenticated hook callers may route to any configured agent id.",
+      remediation:
+        'Set hooks.allowedAgentIds to an explicit allowlist (for example, ["hooks", "main"]) or [] to deny explicit agent routing.',
+    });
+  }
 
   if (!defaultSessionKey) {
     findings.push({

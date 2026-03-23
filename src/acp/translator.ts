@@ -71,6 +71,8 @@ type PendingPrompt = {
   reject: (err: Error) => void;
   sentTextLength?: number;
   sentText?: string;
+  sentThoughtLength?: number;
+  sentThought?: string;
   toolCalls?: Map<string, PendingToolCall>;
 };
 
@@ -126,6 +128,17 @@ type SessionSnapshot = SessionPresentation & {
 type GatewayTranscriptMessage = {
   role?: unknown;
   content?: unknown;
+};
+
+type GatewayChatContentBlock = {
+  type?: string;
+  text?: string;
+  thinking?: string;
+};
+
+type ReplayChunk = {
+  sessionUpdate: "user_message_chunk" | "agent_message_chunk" | "agent_thought_chunk";
+  text: string;
 };
 
 const SESSION_CREATE_RATE_LIMIT_DEFAULT_MAX_REQUESTS = 120;
@@ -248,25 +261,51 @@ function buildSessionPresentation(params: {
   return { configOptions, modes };
 }
 
-function extractReplayText(content: unknown): string | undefined {
-  if (typeof content === "string") {
-    return content.length > 0 ? content : undefined;
+function extractReplayChunks(message: GatewayTranscriptMessage): ReplayChunk[] {
+  const role = typeof message.role === "string" ? message.role : "";
+  if (role !== "user" && role !== "assistant") {
+    return [];
   }
-  if (!Array.isArray(content)) {
-    return undefined;
+  if (typeof message.content === "string") {
+    return message.content.length > 0
+      ? [
+          {
+            sessionUpdate: role === "user" ? "user_message_chunk" : "agent_message_chunk",
+            text: message.content,
+          },
+        ]
+      : [];
   }
-  const text = content
-    .map((block) => {
-      if (!block || typeof block !== "object" || Array.isArray(block)) {
-        return "";
-      }
-      const typedBlock = block as { type?: unknown; text?: unknown };
-      return typedBlock.type === "text" && typeof typedBlock.text === "string"
-        ? typedBlock.text
-        : "";
-    })
-    .join("");
-  return text.length > 0 ? text : undefined;
+  if (!Array.isArray(message.content)) {
+    return [];
+  }
+
+  const replayChunks: ReplayChunk[] = [];
+  for (const block of message.content) {
+    if (!block || typeof block !== "object" || Array.isArray(block)) {
+      continue;
+    }
+    const typedBlock = block as GatewayChatContentBlock;
+    if (typedBlock.type === "text" && typeof typedBlock.text === "string" && typedBlock.text) {
+      replayChunks.push({
+        sessionUpdate: role === "user" ? "user_message_chunk" : "agent_message_chunk",
+        text: typedBlock.text,
+      });
+      continue;
+    }
+    if (
+      role === "assistant" &&
+      typedBlock.type === "thinking" &&
+      typeof typedBlock.thinking === "string" &&
+      typedBlock.thinking
+    ) {
+      replayChunks.push({
+        sessionUpdate: "agent_thought_chunk",
+        text: typedBlock.thinking,
+      });
+    }
+  }
+  return replayChunks;
 }
 
 function buildSessionMetadata(params: {
@@ -636,14 +675,25 @@ export class AcpGatewayAgent implements Agent {
     if (!session) {
       return;
     }
+    // Capture runId before cancelActiveRun clears session.activeRunId.
+    const activeRunId = session.activeRunId;
+
     this.sessionStore.cancelActiveRun(params.sessionId);
+    const pending = this.pendingPrompts.get(params.sessionId);
+    const scopedRunId = activeRunId ?? pending?.idempotencyKey;
+    if (!scopedRunId) {
+      return;
+    }
+
     try {
-      await this.gateway.request("chat.abort", { sessionKey: session.sessionKey });
+      await this.gateway.request("chat.abort", {
+        sessionKey: session.sessionKey,
+        runId: scopedRunId,
+      });
     } catch (err) {
       this.log(`cancel error: ${String(err)}`);
     }
 
-    const pending = this.pendingPrompts.get(params.sessionId);
     if (pending) {
       this.pendingPrompts.delete(params.sessionId);
       pending.resolve({ stopReason: "cancelled" });
@@ -675,6 +725,7 @@ export class AcpGatewayAgent implements Agent {
       return;
     }
     const stream = payload.stream as string | undefined;
+    const runId = payload.runId as string | undefined;
     const data = payload.data as Record<string, unknown> | undefined;
     const sessionKey = payload.sessionKey as string | undefined;
     if (!stream || !data || !sessionKey) {
@@ -691,7 +742,7 @@ export class AcpGatewayAgent implements Agent {
       return;
     }
 
-    const pending = this.findPendingBySessionKey(sessionKey);
+    const pending = this.findPendingBySessionKey(sessionKey, runId);
     if (!pending) {
       return;
     }
@@ -777,17 +828,20 @@ export class AcpGatewayAgent implements Agent {
       return;
     }
 
-    const pending = this.findPendingBySessionKey(sessionKey);
+    const pending = this.findPendingBySessionKey(sessionKey, runId);
     if (!pending) {
       return;
     }
-    if (runId && pending.idempotencyKey !== runId) {
-      return;
-    }
 
-    if (state === "delta" && messageData) {
+    const shouldHandleMessageSnapshot = messageData && (state === "delta" || state === "final");
+    if (shouldHandleMessageSnapshot) {
+      // Gateway chat events can carry the latest full assistant snapshot on both
+      // incremental updates and the terminal final event. Process the snapshot
+      // first so ACP clients never drop the last visible assistant text.
       await this.handleDeltaEvent(pending.sessionId, messageData);
-      return;
+      if (state === "delta") {
+        return;
+      }
     }
 
     if (state === "final") {
@@ -813,22 +867,44 @@ export class AcpGatewayAgent implements Agent {
     sessionId: string,
     messageData: Record<string, unknown>,
   ): Promise<void> {
-    const content = messageData.content as Array<{ type: string; text?: string }> | undefined;
-    const fullText = content?.find((c) => c.type === "text")?.text ?? "";
+    const content = messageData.content as GatewayChatContentBlock[] | undefined;
     const pending = this.pendingPrompts.get(sessionId);
     if (!pending) {
       return;
     }
 
+    const fullThought = content
+      ?.filter((block) => block?.type === "thinking")
+      .map((block) => block.thinking ?? "")
+      .join("\n")
+      .trimEnd();
+    const sentThoughtSoFar = pending.sentThoughtLength ?? 0;
+    if (fullThought && fullThought.length > sentThoughtSoFar) {
+      const newThought = fullThought.slice(sentThoughtSoFar);
+      pending.sentThoughtLength = fullThought.length;
+      pending.sentThought = fullThought;
+      await this.connection.sessionUpdate({
+        sessionId,
+        update: {
+          sessionUpdate: "agent_thought_chunk",
+          content: { type: "text", text: newThought },
+        },
+      });
+    }
+
+    const fullText = content
+      ?.filter((block) => block?.type === "text")
+      .map((block) => block.text ?? "")
+      .join("\n")
+      .trimEnd();
     const sentSoFar = pending.sentTextLength ?? 0;
-    if (fullText.length <= sentSoFar) {
+    if (!fullText || fullText.length <= sentSoFar) {
       return;
     }
 
     const newText = fullText.slice(sentSoFar);
     pending.sentTextLength = fullText.length;
     pending.sentText = fullText;
-
     await this.connection.sessionUpdate({
       sessionId,
       update: {
@@ -856,11 +932,15 @@ export class AcpGatewayAgent implements Agent {
     pending.resolve({ stopReason });
   }
 
-  private findPendingBySessionKey(sessionKey: string): PendingPrompt | undefined {
+  private findPendingBySessionKey(sessionKey: string, runId?: string): PendingPrompt | undefined {
     for (const pending of this.pendingPrompts.values()) {
-      if (pending.sessionKey === sessionKey) {
-        return pending;
+      if (pending.sessionKey !== sessionKey) {
+        continue;
       }
+      if (runId && pending.idempotencyKey !== runId) {
+        continue;
+      }
+      return pending;
     }
     return undefined;
   }
@@ -979,21 +1059,16 @@ export class AcpGatewayAgent implements Agent {
     transcript: ReadonlyArray<GatewayTranscriptMessage>,
   ): Promise<void> {
     for (const message of transcript) {
-      const role = typeof message.role === "string" ? message.role : "";
-      if (role !== "user" && role !== "assistant") {
-        continue;
+      const replayChunks = extractReplayChunks(message);
+      for (const chunk of replayChunks) {
+        await this.connection.sessionUpdate({
+          sessionId,
+          update: {
+            sessionUpdate: chunk.sessionUpdate,
+            content: { type: "text", text: chunk.text },
+          },
+        });
       }
-      const text = extractReplayText(message.content);
-      if (!text) {
-        continue;
-      }
-      await this.connection.sessionUpdate({
-        sessionId,
-        update: {
-          sessionUpdate: role === "user" ? "user_message_chunk" : "agent_message_chunk",
-          content: { type: "text", text },
-        },
-      });
     }
   }
 

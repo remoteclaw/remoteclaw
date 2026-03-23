@@ -170,10 +170,14 @@ describe("config plugin validation", () => {
       ).toBe(true);
       expect(res.issues).toEqual(
         expect.arrayContaining([
-          { path: "plugins.allow", message: "plugin not found: missing-allow" },
           { path: "plugins.deny", message: "plugin not found: missing-deny" },
         ]),
       );
+      expect(res.warnings).toContainEqual({
+        path: "plugins.allow",
+        message:
+          "plugin not found: missing-allow (stale config entry ignored; remove it from plugins config)",
+      });
       expect(res.warnings).toContainEqual({
         path: "plugins.entries.missing-plugin",
         message:

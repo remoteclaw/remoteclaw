@@ -63,7 +63,7 @@ describe("voice-call outbound helpers", () => {
       providerCallIdMap: new Map(),
       config: {
         maxConcurrentCalls: 1,
-        outbound: { defaultMode: "conversation" },
+        outbound: { defaultMode: "conversation", notifyHangupDelaySec: 0 },
       },
       storePath: "/tmp/voice-call.json",
       webhookUrl: "https://example.com/webhook",

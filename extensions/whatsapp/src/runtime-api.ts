@@ -11,26 +11,29 @@ export {
   resolveWhatsAppGroupIntroHint,
   resolveWhatsAppGroupRequireMention,
   resolveWhatsAppGroupToolPolicy,
-  resolveWhatsAppOutboundTarget,
   ToolAuthorizationError,
   WhatsAppConfigSchema,
   type ChannelPlugin,
   type RemoteClawConfig,
-} from "../../../src/plugin-sdk/whatsapp-core.js";
+} from "remoteclaw/plugin-sdk/whatsapp-core";
 
 export {
   createWhatsAppOutboundBase,
-  isWhatsAppGroupJid,
   looksLikeWhatsAppTargetId,
   normalizeWhatsAppAllowFromEntries,
   normalizeWhatsAppMessagingTarget,
-  normalizeWhatsAppTarget,
   resolveWhatsAppHeartbeatRecipients,
   resolveWhatsAppMentionStripRegexes,
   type ChannelMessageActionName,
   type DmPolicy,
   type GroupPolicy,
   type WhatsAppAccountConfig,
-} from "../../../src/plugin-sdk/whatsapp-shared.js";
+} from "remoteclaw/plugin-sdk/whatsapp-shared";
+export {
+  isWhatsAppGroupJid,
+  isWhatsAppUserTarget,
+  normalizeWhatsAppTarget,
+} from "./normalize-target.js";
+export { resolveWhatsAppOutboundTarget } from "./resolve-outbound-target.js";
 
 export { monitorWebChannel } from "./channel.runtime.js";

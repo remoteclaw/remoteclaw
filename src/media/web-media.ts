@@ -1,30 +1,24 @@
-import fs from "node:fs/promises";
 import path from "node:path";
-import {
-  SafeOpenError,
-  readLocalFileSafely,
-  assertNoWindowsNetworkPath,
-  safeFileURLToPath,
-} from "remoteclaw/plugin-sdk/infra-runtime";
-import type { SsrFPolicy } from "remoteclaw/plugin-sdk/infra-runtime";
-import {
-  assertLocalMediaAllowed,
-  getDefaultLocalRoots,
-  LocalMediaAccessError,
-  type LocalMediaAccessErrorCode,
-  type MediaKind,
-  maxBytesForKind,
-} from "remoteclaw/plugin-sdk/media-runtime";
-import { fetchRemoteMedia } from "remoteclaw/plugin-sdk/media-runtime";
+import { logVerbose, shouldLogVerbose } from "../globals.js";
+import { SafeOpenError, readLocalFileSafely } from "../infra/fs-safe.js";
+import { assertNoWindowsNetworkPath, safeFileURLToPath } from "../infra/local-file-access.js";
+import type { SsrFPolicy } from "../infra/net/ssrf.js";
+import { resolveUserPath } from "../utils.js";
+import { maxBytesForKind, type MediaKind } from "./constants.js";
+import { fetchRemoteMedia } from "./fetch.js";
 import {
   convertHeicToJpeg,
   hasAlphaChannel,
   optimizeImageToPng,
   resizeToJpeg,
-} from "remoteclaw/plugin-sdk/media-runtime";
-import { detectMime, extensionForMime, kindFromMime } from "remoteclaw/plugin-sdk/media-runtime";
-import { logVerbose, shouldLogVerbose } from "remoteclaw/plugin-sdk/runtime-env";
-import { resolveUserPath } from "remoteclaw/plugin-sdk/text-runtime";
+} from "./image-ops.js";
+import {
+  assertLocalMediaAllowed,
+  getDefaultLocalRoots,
+  LocalMediaAccessError,
+  type LocalMediaAccessErrorCode,
+} from "./local-media-access.js";
+import { detectMime, extensionForMime, kindFromMime } from "./mime.js";
 
 export { getDefaultLocalRoots, LocalMediaAccessError };
 export type { LocalMediaAccessErrorCode };
@@ -127,12 +121,12 @@ function logOptimizedImage(params: { originalSize: number; optimized: OptimizedI
   }
   if (params.optimized.format === "png") {
     logVerbose(
-      `Optimized PNG (preserving alpha) from ${formatMb(params.originalSize)}MB to ${formatMb(params.optimized.optimizedSize)}MB (side≤${params.optimized.resizeSide}px)`,
+      `Optimized PNG (preserving alpha) from ${formatMb(params.originalSize)}MB to ${formatMb(params.optimized.optimizedSize)}MB (side<=${params.optimized.resizeSide}px)`,
     );
     return;
   }
   logVerbose(
-    `Optimized media from ${formatMb(params.originalSize)}MB to ${formatMb(params.optimized.optimizedSize)}MB (side≤${params.optimized.resizeSide}px, q=${params.optimized.quality})`,
+    `Optimized media from ${formatMb(params.originalSize)}MB to ${formatMb(params.optimized.optimizedSize)}MB (side<=${params.optimized.resizeSide}px, q=${params.optimized.quality})`,
   );
 }
 
@@ -179,9 +173,9 @@ async function loadWebMediaInternal(
   // Use fileURLToPath for proper handling of file:// URLs (handles file://localhost/path, etc.)
   if (mediaUrl.startsWith("file://")) {
     try {
-      mediaUrl = fileURLToPath(mediaUrl);
-    } catch {
-      throw new LocalMediaAccessError("invalid-file-url", `Invalid file:// URL: ${mediaUrl}`);
+      mediaUrl = safeFileURLToPath(mediaUrl);
+    } catch (err) {
+      throw new LocalMediaAccessError("invalid-file-url", (err as Error).message, { cause: err });
     }
   }
 
@@ -271,6 +265,13 @@ async function loadWebMediaInternal(
   // Expand tilde paths to absolute paths (e.g., ~/Downloads/photo.jpg)
   if (mediaUrl.startsWith("~")) {
     mediaUrl = resolveUserPath(mediaUrl);
+  }
+  try {
+    assertNoWindowsNetworkPath(mediaUrl, "Local media path");
+  } catch (err) {
+    throw new LocalMediaAccessError("network-path-not-allowed", (err as Error).message, {
+      cause: err,
+    });
   }
 
   if ((sandboxValidated || localRoots === "any") && !readFileOverride) {

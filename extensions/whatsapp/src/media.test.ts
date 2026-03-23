@@ -27,6 +27,16 @@ vi.mock("../../../src/media/image-ops.js", async () => {
   };
 });
 
+vi.mock("remoteclaw/plugin-sdk/media-runtime", async () => {
+  const actual = await vi.importActual<typeof import("remoteclaw/plugin-sdk/media-runtime")>(
+    "remoteclaw/plugin-sdk/media-runtime",
+  );
+  return {
+    ...actual,
+    convertHeicToJpeg: (...args: unknown[]) => convertHeicToJpegMock(...args),
+  };
+});
+
 let fixtureRoot = "";
 let fixtureFileCount = 0;
 let largeJpegBuffer: Buffer;

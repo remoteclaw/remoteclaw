@@ -5,7 +5,7 @@ import { shouldSkipHeartbeatOnlyDelivery } from "../heartbeat-policy.js";
 
 type DeliveryPayload = Pick<
   ReplyPayload,
-  "text" | "mediaUrl" | "mediaUrls" | "interactive" | "channelData" | "isError"
+  "text" | "mediaUrl" | "mediaUrls" | "channelData" | "isError"
 >;
 
 export function pickSummaryFromOutput(text: string | undefined) {
@@ -63,9 +63,8 @@ export function pickLastDeliverablePayload(payloads: DeliveryPayload[]) {
   const isDeliverable = (p: DeliveryPayload) => {
     const text = (p?.text ?? "").trim();
     const hasMedia = Boolean(p?.mediaUrl) || (p?.mediaUrls?.length ?? 0) > 0;
-    const hasInteractive = (p?.interactive?.blocks?.length ?? 0) > 0;
     const hasChannelData = Object.keys(p?.channelData ?? {}).length > 0;
-    return text || hasMedia || hasInteractive || hasChannelData;
+    return text || hasMedia || hasChannelData;
   };
   for (let i = payloads.length - 1; i >= 0; i--) {
     if (payloads[i]?.isError) {

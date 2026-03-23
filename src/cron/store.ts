@@ -20,6 +20,14 @@ function stripRuntimeOnlyCronFields(store: CronStoreFile): unknown {
   };
 }
 
+function parseJsonWithJson5Fallback(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return JSON5.parse(raw);
+  }
+}
+
 function parseCronStoreForBackupComparison(raw: string): CronStoreFile | null {
   try {
     const parsed = parseJsonWithJson5Fallback(raw);

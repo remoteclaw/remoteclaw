@@ -9,6 +9,7 @@ import {
   connectOk,
   cronIsolatedRun,
   installGatewayTestHooks,
+  onceMessage,
   rpcReq,
   startServerWithClient,
   testState,
@@ -187,6 +188,25 @@ async function runCronJobForce(ws: WebSocket, id: string) {
   expect(response.ok).toBe(true);
   expect(response.payload).toEqual({ ok: true, enqueued: true, runId: expect.any(String) });
   return response;
+}
+
+function waitForCronEvent(
+  ws: WebSocket,
+  predicate: (payload: Record<string, unknown>) => boolean,
+  timeoutMs = 15_000,
+) {
+  return onceMessage(
+    ws,
+    (msg) => {
+      const rec = msg as Record<string, unknown>;
+      if (rec.type !== "event") {
+        return false;
+      }
+      const payload = rec.payload as Record<string, unknown> | undefined;
+      return payload ? predicate(payload) : false;
+    },
+    timeoutMs,
+  );
 }
 
 async function runCronJobAndWaitForFinished(ws: WebSocket, jobId: string) {
@@ -619,6 +639,7 @@ describe("gateway server cron", () => {
         payload: { kind: "systemEvent", text: "send webhook" },
         delivery: { mode: "webhook", to: "https://example.invalid/cron-finished" },
       });
+      const notifyJobId = expectCronJobIdFromResponse(notifyRes);
       await runCronJobAndWaitForFinished(ws, notifyJobId);
       const notifyCall = getWebhookCall(0);
       expect(notifyCall.url).toBe("https://example.invalid/cron-finished");

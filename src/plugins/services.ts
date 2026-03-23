@@ -6,6 +6,7 @@ import type { RemoteClawPluginServiceContext, PluginLogger } from "./types.js";
 
 const log = createSubsystemLogger("plugins");
 
+
 function createPluginLogger(): PluginLogger {
   return {
     info: (msg) => log.info(msg),

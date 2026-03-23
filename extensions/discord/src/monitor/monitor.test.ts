@@ -12,7 +12,7 @@ import type { DiscordAccountConfig } from "remoteclaw/plugin-sdk/config-runtime"
 import { buildPluginBindingApprovalCustomId } from "remoteclaw/plugin-sdk/conversation-runtime";
 import { buildAgentSessionKey } from "remoteclaw/plugin-sdk/routing";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { peekSystemEvents, resetSystemEventsForTest } from "../../../../src/infra/system-events.js";
+import { peekSystemEvents, resetSystemEventsForTest } from "../../../../src/infra/system-events.ts";
 import {
   clearDiscordComponentEntries,
   registerDiscordComponentEntries,
@@ -51,6 +51,7 @@ import {
 
 const readAllowFromStoreMock = vi.hoisted(() => vi.fn());
 const upsertPairingRequestMock = vi.hoisted(() => vi.fn());
+const enqueueSystemEventMock = vi.hoisted(() => vi.fn());
 const dispatchReplyMock = vi.hoisted(() => vi.fn());
 const recordInboundSessionMock = vi.hoisted(() => vi.fn());
 const readSessionUpdatedAtMock = vi.hoisted(() => vi.fn());
@@ -88,6 +89,35 @@ vi.mock("remoteclaw/plugin-sdk/conversation-runtime", async (importOriginal) => 
       resolvePluginConversationBindingApprovalMock(...args),
     buildPluginBindingResolvedText: (...args: unknown[]) =>
       buildPluginBindingResolvedTextMock(...args),
+    recordInboundSession: (...args: unknown[]) => recordInboundSessionMock(...args),
+  };
+});
+vi.mock("remoteclaw/plugin-sdk/conversation-runtime.js", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("remoteclaw/plugin-sdk/conversation-runtime")>();
+  return {
+    ...actual,
+    upsertChannelPairingRequest: (...args: unknown[]) => upsertPairingRequestMock(...args),
+    resolvePluginConversationBindingApproval: (...args: unknown[]) =>
+      resolvePluginConversationBindingApprovalMock(...args),
+    buildPluginBindingResolvedText: (...args: unknown[]) =>
+      buildPluginBindingResolvedTextMock(...args),
+    recordInboundSession: (...args: unknown[]) => recordInboundSessionMock(...args),
+  };
+});
+
+vi.mock("remoteclaw/plugin-sdk/infra-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/infra-runtime")>();
+  return {
+    ...actual,
+    enqueueSystemEvent: (...args: unknown[]) => enqueueSystemEventMock(...args),
+  };
+});
+vi.mock("remoteclaw/plugin-sdk/infra-runtime.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/infra-runtime")>();
+  return {
+    ...actual,
+    enqueueSystemEvent: (...args: unknown[]) => enqueueSystemEventMock(...args),
   };
 });
 
@@ -112,15 +142,6 @@ vi.mock("../../../../src/auto-reply/reply/provider-dispatcher.js", async (import
   };
 });
 
-vi.mock("remoteclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("remoteclaw/plugin-sdk/conversation-runtime")>();
-  return {
-    ...actual,
-    recordInboundSession: (...args: unknown[]) => recordInboundSessionMock(...args),
-  };
-});
-
 vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
   const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
   return {
@@ -140,13 +161,14 @@ vi.mock("remoteclaw/plugin-sdk/plugin-runtime", async (importOriginal) => {
 });
 
 describe("agent components", () => {
-  const createCfg = (): RemoteClawConfig => ({}) as RemoteClawConfig;
-  const dmSessionKey = buildAgentSessionKey({
+  const defaultDmSessionKey = buildAgentSessionKey({
     agentId: "main",
     channel: "discord",
     accountId: "default",
     peer: { kind: "direct", id: "123456789" },
   });
+
+  const createCfg = (): RemoteClawConfig => ({}) as RemoteClawConfig;
 
   const createBaseDmInteraction = (overrides: Record<string, unknown> = {}) => {
     const reply = vi.fn().mockResolvedValue(undefined);
@@ -207,7 +229,7 @@ describe("agent components", () => {
     const code = pairingText.match(/Pairing code:\s*([A-Z2-9]{8})/)?.[1];
     expect(code).toBeDefined();
     expect(pairingText).toContain(`remoteclaw pairing approve discord ${code}`);
-    expect(peekSystemEvents(dmSessionKey)).toEqual([]);
+    expect(peekSystemEvents(defaultDmSessionKey)).toEqual([]);
     expect(readAllowFromStoreMock).toHaveBeenCalledWith("discord", "default");
   });
 
@@ -226,7 +248,7 @@ describe("agent components", () => {
       content: "You are not authorized to use this button.",
       ephemeral: true,
     });
-    expect(peekSystemEvents(dmSessionKey)).toEqual([]);
+    expect(peekSystemEvents(defaultDmSessionKey)).toEqual([]);
     expect(readAllowFromStoreMock).not.toHaveBeenCalled();
   });
 
@@ -243,7 +265,7 @@ describe("agent components", () => {
 
     expect(defer).not.toHaveBeenCalled();
     expect(reply).toHaveBeenCalledWith({ content: "✓", ephemeral: true });
-    expect(peekSystemEvents(dmSessionKey)).toEqual([
+    expect(peekSystemEvents(defaultDmSessionKey)).toEqual([
       "[Discord component: hello clicked by Alice#1234 (123456789)]",
     ]);
     expect(upsertPairingRequestMock).not.toHaveBeenCalled();
@@ -263,7 +285,7 @@ describe("agent components", () => {
 
     expect(defer).not.toHaveBeenCalled();
     expect(reply).toHaveBeenCalledWith({ content: "✓", ephemeral: true });
-    expect(peekSystemEvents(dmSessionKey)).toEqual([
+    expect(peekSystemEvents(defaultDmSessionKey)).toEqual([
       "[Discord component: hello clicked by Alice#1234 (123456789)]",
     ]);
     expect(readAllowFromStoreMock).not.toHaveBeenCalled();
@@ -285,7 +307,7 @@ describe("agent components", () => {
       content: "DM interactions are disabled.",
       ephemeral: true,
     });
-    expect(peekSystemEvents(dmSessionKey)).toEqual([]);
+    expect(peekSystemEvents(defaultDmSessionKey)).toEqual([]);
     expect(readAllowFromStoreMock).not.toHaveBeenCalled();
   });
 
@@ -303,7 +325,7 @@ describe("agent components", () => {
 
     expect(defer).not.toHaveBeenCalled();
     expect(reply).toHaveBeenCalledWith({ content: "✓", ephemeral: true });
-    expect(peekSystemEvents(dmSessionKey)).toEqual([
+    expect(peekSystemEvents(defaultDmSessionKey)).toEqual([
       "[Discord select menu: hello interacted by Alice#1234 (123456789) (selected: alpha)]",
     ]);
     expect(readAllowFromStoreMock).not.toHaveBeenCalled();
@@ -322,7 +344,7 @@ describe("agent components", () => {
 
     expect(defer).not.toHaveBeenCalled();
     expect(reply).toHaveBeenCalledWith({ content: "✓", ephemeral: true });
-    expect(peekSystemEvents(dmSessionKey)).toEqual([
+    expect(peekSystemEvents(defaultDmSessionKey)).toEqual([
       "[Discord component: hello_cid clicked by Alice#1234 (123456789)]",
     ]);
     expect(readAllowFromStoreMock).not.toHaveBeenCalled();
@@ -341,7 +363,7 @@ describe("agent components", () => {
 
     expect(defer).not.toHaveBeenCalled();
     expect(reply).toHaveBeenCalledWith({ content: "✓", ephemeral: true });
-    expect(peekSystemEvents(dmSessionKey)).toEqual([
+    expect(peekSystemEvents(defaultDmSessionKey)).toEqual([
       "[Discord component: hello%2G clicked by Alice#1234 (123456789)]",
     ]);
     expect(readAllowFromStoreMock).not.toHaveBeenCalled();
@@ -502,7 +524,7 @@ describe("discord component interactions", () => {
     lastDispatchCtx = undefined;
     readAllowFromStoreMock.mockClear().mockResolvedValue([]);
     upsertPairingRequestMock.mockClear().mockResolvedValue({ code: "PAIRCODE", created: true });
-    resetSystemEventsForTest();
+    enqueueSystemEventMock.mockClear();
     dispatchReplyMock.mockClear().mockImplementation(async (params: DispatchParams) => {
       lastDispatchCtx = params.ctx;
       await params.dispatcherOptions.deliver({ text: "ok" });

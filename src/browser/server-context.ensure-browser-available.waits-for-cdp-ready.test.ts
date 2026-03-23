@@ -127,4 +127,32 @@ describe("browser server-context ensureBrowserAvailable", () => {
     expect(launchRemoteClawChrome).toHaveBeenCalledTimes(1);
     expect(stopRemoteClawChrome).toHaveBeenCalledTimes(1);
   });
+
+  it("reuses a pre-existing loopback browser after an initial short probe miss", async () => {
+    const { launchOpenClawChrome, stopOpenClawChrome, isChromeCdpReady, profile } =
+      setupEnsureBrowserAvailableHarness();
+    const isChromeReachable = vi.mocked(chromeModule.isChromeReachable);
+
+    isChromeReachable
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+    isChromeCdpReady.mockResolvedValueOnce(true);
+
+    await expect(profile.ensureBrowserAvailable()).resolves.toBeUndefined();
+
+    expect(isChromeReachable).toHaveBeenNthCalledWith(
+      1,
+      "http://127.0.0.1:18800",
+      undefined,
+      { allowPrivateNetwork: true },
+    );
+    expect(isChromeReachable).toHaveBeenNthCalledWith(
+      2,
+      "http://127.0.0.1:18800",
+      1000,
+      { allowPrivateNetwork: true },
+    );
+    expect(launchOpenClawChrome).not.toHaveBeenCalled();
+    expect(stopOpenClawChrome).not.toHaveBeenCalled();
+  });
 });

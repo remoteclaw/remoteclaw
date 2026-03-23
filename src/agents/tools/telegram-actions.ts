@@ -1,7 +1,6 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import { readBooleanParam } from "remoteclaw/plugin-sdk/boolean-param";
-import { resolveReactionMessageId } from "remoteclaw/plugin-sdk/channel-actions";
-import { resolveTelegramPollVisibility } from "../runtime-api.js";
+import { readBooleanParam } from "openclaw/plugin-sdk/boolean-param";
+import { resolveReactionMessageId } from "openclaw/plugin-sdk/channel-actions";
 import {
   jsonResult,
   readNumberParam,
@@ -12,6 +11,22 @@ import {
 } from "./common.js";
 
 const TELEGRAM_BUTTON_STYLES: readonly TelegramButtonStyle[] = ["danger", "success", "primary"];
+
+function resolveTelegramPollVisibility(params: {
+  pollAnonymous?: boolean;
+  pollPublic?: boolean;
+}): boolean | undefined {
+  if (params.pollAnonymous && params.pollPublic) {
+    throw new Error("pollAnonymous and pollPublic are mutually exclusive");
+  }
+  if (params.pollAnonymous) {
+    return true;
+  }
+  if (params.pollPublic) {
+    return false;
+  }
+  return undefined;
+}
 
 export function readTelegramButtons(
   params: Record<string, unknown>,

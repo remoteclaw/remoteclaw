@@ -4,22 +4,23 @@ import type {
   ReactionType,
   ReactionTypeEmoji,
 } from "@grammyjs/types";
-import { type ApiClientOptions, Bot, HttpError, InputFile } from "grammy";
-import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
-import { recordChannelActivity } from "remoteclaw/plugin-sdk/infra-runtime";
-import { isDiagnosticFlagEnabled } from "remoteclaw/plugin-sdk/infra-runtime";
-import { formatErrorMessage, formatUncaughtError } from "remoteclaw/plugin-sdk/infra-runtime";
-import { createTelegramRetryRunner } from "remoteclaw/plugin-sdk/infra-runtime";
-import type { RetryConfig } from "remoteclaw/plugin-sdk/infra-runtime";
-import type { MediaKind } from "remoteclaw/plugin-sdk/media-runtime";
-import { buildOutboundMediaLoadOptions } from "remoteclaw/plugin-sdk/media-runtime";
-import { isGifMedia, kindFromMime } from "remoteclaw/plugin-sdk/media-runtime";
-import { normalizePollInput, type PollInput } from "remoteclaw/plugin-sdk/media-runtime";
-import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
-import { createSubsystemLogger } from "remoteclaw/plugin-sdk/runtime-env";
-import { redactSensitiveText } from "remoteclaw/plugin-sdk/text-runtime";
-import { loadWebMedia } from "../../whatsapp/src/media.js";
+import { type ApiClientOptions, Bot, HttpError } from "grammy";
+import * as grammy from "grammy";
+import { loadConfig } from "openclaw/plugin-sdk/config-runtime";
+import { resolveMarkdownTableMode } from "openclaw/plugin-sdk/config-runtime";
+import { recordChannelActivity } from "openclaw/plugin-sdk/infra-runtime";
+import { isDiagnosticFlagEnabled } from "openclaw/plugin-sdk/infra-runtime";
+import { formatErrorMessage, formatUncaughtError } from "openclaw/plugin-sdk/infra-runtime";
+import { createTelegramRetryRunner } from "openclaw/plugin-sdk/infra-runtime";
+import type { RetryConfig } from "openclaw/plugin-sdk/infra-runtime";
+import type { MediaKind } from "openclaw/plugin-sdk/media-runtime";
+import { buildOutboundMediaLoadOptions } from "openclaw/plugin-sdk/media-runtime";
+import { isGifMedia, kindFromMime } from "openclaw/plugin-sdk/media-runtime";
+import { normalizePollInput, type PollInput } from "openclaw/plugin-sdk/media-runtime";
+import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
+import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
+import { redactSensitiveText } from "openclaw/plugin-sdk/text-runtime";
+import { loadWebMedia } from "openclaw/plugin-sdk/web-media";
 import { type ResolvedTelegramAccount, resolveTelegramAccount } from "./accounts.js";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import { buildTelegramThreadParams, buildTypingThreadParams } from "./bot/helpers.js";
@@ -44,6 +45,15 @@ import { resolveTelegramVoiceSend } from "./voice.js";
 
 type TelegramApi = Bot["api"];
 type TelegramApiOverride = Partial<TelegramApi>;
+const InputFileCtor: typeof grammy.InputFile =
+  typeof grammy.InputFile === "function"
+    ? grammy.InputFile
+    : (class InputFileFallback {
+        constructor(
+          public readonly buffer: Buffer,
+          public readonly fileName?: string,
+        ) {}
+      } as unknown as typeof grammy.InputFile);
 
 type TelegramSendOpts = {
   cfg?: ReturnType<typeof loadConfig>;
@@ -776,7 +786,7 @@ export async function sendMessageTelegram(
     const isVideoNote = kind === "video" && opts.asVideoNote === true;
     const fileName =
       media.fileName ?? (isGif ? "animation.gif" : inferFilename(kind ?? "document")) ?? "file";
-    const file = new InputFile(media.buffer, fileName);
+    const file = new InputFileCtor(media.buffer, fileName);
     let caption: string | undefined;
     let followUpText: string | undefined;
 

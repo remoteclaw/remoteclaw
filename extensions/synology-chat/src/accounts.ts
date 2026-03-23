@@ -3,6 +3,7 @@
  * merges per-account overrides, falls back to environment variables.
  */
 
+import { resolveDangerousNameMatchingEnabled } from "remoteclaw/plugin-sdk";
 import type { SynologyChatChannelConfig, ResolvedSynologyChatAccount } from "./types.js";
 
 /** Extract the channel config from the full RemoteClaw config object. */
@@ -84,6 +85,10 @@ export function resolveAccount(cfg: any, accountId?: string | null): ResolvedSyn
     incomingUrl: accountOverride.incomingUrl ?? channelCfg.incomingUrl ?? envIncomingUrl,
     nasHost: accountOverride.nasHost ?? channelCfg.nasHost ?? envNasHost,
     webhookPath: accountOverride.webhookPath ?? channelCfg.webhookPath ?? "/webhook/synology",
+    dangerouslyAllowNameMatching: resolveDangerousNameMatchingEnabled({
+      providerConfig: channelCfg,
+      accountConfig: id === "default" ? undefined : (accountOverride ?? undefined),
+    }),
     dmPolicy: accountOverride.dmPolicy ?? channelCfg.dmPolicy ?? "allowlist",
     allowedUserIds: parseAllowedUserIds(
       accountOverride.allowedUserIds ?? channelCfg.allowedUserIds ?? envAllowedUserIds,

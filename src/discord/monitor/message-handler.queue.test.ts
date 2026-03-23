@@ -82,6 +82,14 @@ async function createLifecycleStopScenario(params: {
   };
 }
 
+function createHandlerWithDefaultPreflight() {
+  preflightDiscordMessageMock.mockImplementation(async (params: { data: { channel_id: string } }) =>
+    createPreflightContext(params.data.channel_id),
+  );
+  const setStatus = vi.fn();
+  return createDiscordMessageHandler(createDiscordHandlerParams({ setStatus }));
+}
+
 describe("createDiscordMessageHandler queue behavior", () => {
   it("resets busy counters when the handler is created", () => {
     preflightDiscordMessageMock.mockReset();

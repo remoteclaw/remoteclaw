@@ -121,6 +121,15 @@ const createAbortTask = (
 const makeAbortRunner = (abort: AbortController, beforeAbort?: () => void): RunnerStub =>
   makeRunnerStub({ task: createAbortTask(abort, beforeAbort) });
 
+function mockRunOnceWithStalledPollingRunner() {
+  runSpy.mockImplementationOnce(() =>
+    makeRunnerStub({
+      task: () => new Promise<void>(() => {}),
+      isRunning: () => true,
+    }),
+  );
+}
+
 function mockRunOnceAndAbort(abort: AbortController) {
   runSpy.mockImplementationOnce(() => makeAbortRunner(abort));
 }

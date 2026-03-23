@@ -31,6 +31,7 @@ import type { TelegramStreamMode } from "./bot/types.js";
 import type { TelegramInlineButtons } from "./button-types.js";
 import { createTelegramDraftStream } from "./draft-stream.js";
 import { renderTelegramHtmlText } from "./format.js";
+import type { LanePreviewLifecycle } from "./lane-delivery-text-deliverer.js";
 import {
   type ArchivedPreview,
   createLaneDeliveryStateTracker,
@@ -180,6 +181,14 @@ export const dispatchTelegramMessage = async ({
     reasoning: { stream: undefined, lastPartialText: "", hasStreamedMessage: false },
   };
   const finalizedPreviewByLane: Record<LaneName, boolean> = {
+    answer: false,
+    reasoning: false,
+  };
+  const activePreviewLifecycleByLane: Record<LaneName, LanePreviewLifecycle> = {
+    answer: "transient",
+    reasoning: "transient",
+  };
+  const retainPreviewOnCleanupByLane: Record<LaneName, boolean> = {
     answer: false,
     reasoning: false,
   };
@@ -362,7 +371,8 @@ export const dispatchTelegramMessage = async ({
   const deliverLaneText = createLaneTextDeliverer({
     lanes,
     archivedAnswerPreviews,
-    finalizedPreviewByLane,
+    activePreviewLifecycleByLane,
+    retainPreviewOnCleanupByLane,
     draftMaxChars,
     applyTextToPayload,
     sendPayload,

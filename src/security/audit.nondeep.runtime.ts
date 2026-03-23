@@ -17,7 +17,6 @@ export {
 } from "./audit-extra.sync.js";
 
 export {
-  collectSandboxBrowserHashLabelFindings,
   collectIncludeFilePermFindings,
   collectPluginsTrustFindings,
   collectStateDeepFilesystemFindings,

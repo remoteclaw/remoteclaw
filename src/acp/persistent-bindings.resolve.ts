@@ -116,7 +116,7 @@ function toConfiguredBindingSpec(params: {
 }
 
 function resolveConfiguredBindingRecord(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   bindings: AgentAcpBinding[];
   channel: ConfiguredAcpBindingChannel;
   accountId: string;

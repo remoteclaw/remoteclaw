@@ -5,10 +5,11 @@ const MOCK_USERNAME = "MockUser";
 
 vi.mock("node:os", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:os")>();
+  const actualRecord = actual as Record<string, unknown>;
   return {
     ...actual,
     default: {
-      ...actual.default,
+      ...(actualRecord["default"] as Record<string, unknown> | undefined),
       userInfo: () => ({ username: MOCK_USERNAME }),
     },
     userInfo: () => ({ username: MOCK_USERNAME }),

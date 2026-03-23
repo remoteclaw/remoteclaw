@@ -1768,10 +1768,10 @@ describe("security audit", () => {
       enabled: true,
       token: "shared-gateway-token-1234567890",
       defaultSessionKey: "hook:ingress",
-    } satisfies NonNullable<OpenClawConfig["hooks"]>;
+    } satisfies NonNullable<RemoteClawConfig["hooks"]>;
     const cases: Array<{
       name: string;
-      cfg: OpenClawConfig;
+      cfg: RemoteClawConfig;
       expectedSeverity: "warn" | "critical";
     }> = [
       {

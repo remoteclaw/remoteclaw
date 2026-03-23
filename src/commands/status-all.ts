@@ -314,6 +314,7 @@ export async function statusAllCommand(
         channelIssues,
         gatewayReachable,
         health,
+        secretDiagnostics: [],
       },
     });
 

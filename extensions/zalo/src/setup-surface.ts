@@ -1,40 +1,32 @@
-import type {
-  ChannelOnboardingAdapter,
-  ChannelOnboardingDmPolicy,
-  RemoteClawConfig,
-  WizardPrompter,
-} from "remoteclaw/plugin-sdk";
 import {
   buildSingleChannelSecretPromptState,
+  createTopLevelChannelDmPolicy,
+  createStandardChannelSetupStatus,
   DEFAULT_ACCOUNT_ID,
+  formatDocsLink,
+  hasConfiguredSecretInput,
   mergeAllowFromEntries,
   normalizeAccountId,
-  resolveAccountIdForConfigure,
-  setTopLevelChannelDmPolicyWithAllowFrom,
-} from "remoteclaw/plugin-sdk";
+  promptSingleChannelSecretInput,
+  runSingleChannelSecretStep,
+  type ChannelSetupDmPolicy,
+  type ChannelSetupWizard,
+  type RemoteClawConfig,
+  type SecretInput,
+} from "remoteclaw/plugin-sdk/setup";
 import { listZaloAccountIds, resolveDefaultZaloAccountId, resolveZaloAccount } from "./accounts.js";
+import { zaloSetupAdapter } from "./setup-core.js";
 
 const channel = "zalo" as const;
 
 type UpdateMode = "polling" | "webhook";
-
-function setZaloDmPolicy(
-  cfg: RemoteClawConfig,
-  dmPolicy: "pairing" | "allowlist" | "open" | "disabled",
-) {
-  return setTopLevelChannelDmPolicyWithAllowFrom({
-    cfg,
-    channel: "zalo",
-    dmPolicy,
-  }) as RemoteClawConfig;
-}
 
 function setZaloUpdateMode(
   cfg: RemoteClawConfig,
   accountId: string,
   mode: UpdateMode,
   webhookUrl?: string,
-  webhookSecret?: string,
+  webhookSecret?: SecretInput,
   webhookPath?: string,
 ): RemoteClawConfig {
   const isDefault = accountId === DEFAULT_ACCOUNT_ID;
@@ -104,14 +96,16 @@ function setZaloUpdateMode(
   } as RemoteClawConfig;
 }
 
-async function noteZaloTokenHelp(prompter: WizardPrompter): Promise<void> {
+async function noteZaloTokenHelp(
+  prompter: Parameters<NonNullable<ChannelSetupWizard["finalize"]>>[0]["prompter"],
+): Promise<void> {
   await prompter.note(
     [
       "1) Open Zalo Bot Platform: https://bot.zaloplatforms.com",
       "2) Create a bot and get the token",
       "3) Token looks like 12345689:abc-xyz",
       "Tip: you can also set ZALO_BOT_TOKEN in your env.",
-      "Docs: https://docs.remoteclaw.org/channels/zalo",
+      `Docs: ${formatDocsLink("/channels/zalo", "zalo")}`,
     ].join("\n"),
     "Zalo bot token",
   );
@@ -119,7 +113,7 @@ async function noteZaloTokenHelp(prompter: WizardPrompter): Promise<void> {
 
 async function promptZaloAllowFrom(params: {
   cfg: RemoteClawConfig;
-  prompter: WizardPrompter;
+  prompter: Parameters<NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]>>[0]["prompter"];
   accountId: string;
 }): Promise<RemoteClawConfig> {
   const { cfg, prompter, accountId } = params;
@@ -179,167 +173,136 @@ async function promptZaloAllowFrom(params: {
   } as RemoteClawConfig;
 }
 
-const dmPolicy: ChannelOnboardingDmPolicy = {
+const zaloDmPolicy: ChannelSetupDmPolicy = createTopLevelChannelDmPolicy({
   label: "Zalo",
   channel,
   policyKey: "channels.zalo.dmPolicy",
   allowFromKey: "channels.zalo.allowFrom",
   getCurrent: (cfg) => (cfg.channels?.zalo?.dmPolicy ?? "pairing") as "pairing",
-  setPolicy: (cfg, policy) => setZaloDmPolicy(cfg, policy),
   promptAllowFrom: async ({ cfg, prompter, accountId }) => {
     const id =
       accountId && normalizeAccountId(accountId)
         ? (normalizeAccountId(accountId) ?? DEFAULT_ACCOUNT_ID)
-        : resolveDefaultZaloAccountId(cfg);
-    return promptZaloAllowFrom({
-      cfg: cfg,
+        : resolveDefaultZaloAccountId(cfg as RemoteClawConfig);
+    return await promptZaloAllowFrom({
+      cfg: cfg as RemoteClawConfig,
       prompter,
       accountId: id,
     });
   },
-};
+});
 
-export const zaloOnboardingAdapter: ChannelOnboardingAdapter = {
+export { zaloSetupAdapter } from "./setup-core.js";
+
+export const zaloSetupWizard: ChannelSetupWizard = {
   channel,
-  dmPolicy,
-  getStatus: async ({ cfg }) => {
-    const configured = listZaloAccountIds(cfg).some((accountId) =>
-      Boolean(resolveZaloAccount({ cfg: cfg, accountId }).token),
-    );
-    return {
-      channel,
-      configured,
-      statusLines: [`Zalo: ${configured ? "configured" : "needs token"}`],
-      selectionHint: configured ? "recommended · configured" : "recommended · newcomer-friendly",
-      quickstartScore: configured ? 1 : 10,
-    };
-  },
-  configure: async ({
-    cfg,
-    prompter,
-    accountOverrides,
-    shouldPromptAccountIds,
-    forceAllowFrom,
-  }) => {
-    const defaultZaloAccountId = resolveDefaultZaloAccountId(cfg);
-    const zaloAccountId = await resolveAccountIdForConfigure({
-      cfg,
-      prompter,
-      label: "Zalo",
-      accountOverride: accountOverrides.zalo,
-      shouldPromptAccountIds,
-      listAccountIds: listZaloAccountIds,
-      defaultAccountId: defaultZaloAccountId,
-    });
-
+  status: createStandardChannelSetupStatus({
+    channelLabel: "Zalo",
+    configuredLabel: "configured",
+    unconfiguredLabel: "needs token",
+    configuredHint: "recommended · configured",
+    unconfiguredHint: "recommended · newcomer-friendly",
+    configuredScore: 1,
+    unconfiguredScore: 10,
+    includeStatusLine: true,
+    resolveConfigured: ({ cfg }) =>
+      listZaloAccountIds(cfg).some((accountId) => {
+        const account = resolveZaloAccount({
+          cfg,
+          accountId,
+          allowUnresolvedSecretRef: true,
+        });
+        return (
+          Boolean(account.token) ||
+          hasConfiguredSecretInput(account.config.botToken) ||
+          Boolean(account.config.tokenFile?.trim())
+        );
+      }),
+  }),
+  credentials: [],
+  finalize: async ({ cfg, accountId, forceAllowFrom, options, prompter }) => {
     let next = cfg;
-    const resolvedAccount = resolveZaloAccount({ cfg: next, accountId: zaloAccountId });
+    const resolvedAccount = resolveZaloAccount({
+      cfg: next,
+      accountId,
+      allowUnresolvedSecretRef: true,
+    });
     const accountConfigured = Boolean(resolvedAccount.token);
-    const allowEnv = zaloAccountId === DEFAULT_ACCOUNT_ID;
+    const allowEnv = accountId === DEFAULT_ACCOUNT_ID;
     const hasConfigToken = Boolean(
-      resolvedAccount.config.botToken || resolvedAccount.config.tokenFile,
+      hasConfiguredSecretInput(resolvedAccount.config.botToken) || resolvedAccount.config.tokenFile,
     );
-    const tokenPromptState = buildSingleChannelSecretPromptState({
+    const tokenStep = await runSingleChannelSecretStep({
+      cfg: next,
+      prompter,
+      providerHint: "zalo",
+      credentialLabel: "bot token",
+      secretInputMode: options?.secretInputMode,
       accountConfigured,
       hasConfigToken,
       allowEnv,
       envValue: process.env.ZALO_BOT_TOKEN,
-    });
-    const canUseEnv = tokenPromptState.canUseEnv;
-
-    let token: string | null = null;
-    if (!accountConfigured) {
-      await noteZaloTokenHelp(prompter);
-    }
-    if (canUseEnv && !resolvedAccount.config.botToken) {
-      const keepEnv = await prompter.confirm({
-        message: "ZALO_BOT_TOKEN detected. Use env var?",
-        initialValue: true,
-      });
-      if (keepEnv) {
-        next = {
-          ...next,
-          channels: {
-            ...next.channels,
-            zalo: {
-              ...next.channels?.zalo,
-              enabled: true,
-            },
-          },
-        } as RemoteClawConfig;
-      } else {
-        token = String(
-          await prompter.text({
-            message: "Enter Zalo bot token",
-            validate: (value) => (value?.trim() ? undefined : "Required"),
-          }),
-        ).trim();
-      }
-    } else if (hasConfigToken) {
-      const keep = await prompter.confirm({
-        message: "Zalo token already configured. Keep it?",
-        initialValue: true,
-      });
-      if (!keep) {
-        token = String(
-          await prompter.text({
-            message: "Enter Zalo bot token",
-            validate: (value) => (value?.trim() ? undefined : "Required"),
-          }),
-        ).trim();
-      }
-    } else {
-      token = String(
-        await prompter.text({
-          message: "Enter Zalo bot token",
-          validate: (value) => (value?.trim() ? undefined : "Required"),
-        }),
-      ).trim();
-    }
-
-    if (token) {
-      if (zaloAccountId === DEFAULT_ACCOUNT_ID) {
-        next = {
-          ...next,
-          channels: {
-            ...next.channels,
-            zalo: {
-              ...next.channels?.zalo,
-              enabled: true,
-              botToken: token,
-            },
-          },
-        } as RemoteClawConfig;
-      } else {
-        next = {
-          ...next,
-          channels: {
-            ...next.channels,
-            zalo: {
-              ...next.channels?.zalo,
-              enabled: true,
-              accounts: {
-                ...next.channels?.zalo?.accounts,
-                [zaloAccountId]: {
-                  ...next.channels?.zalo?.accounts?.[zaloAccountId],
+      envPrompt: "ZALO_BOT_TOKEN detected. Use env var?",
+      keepPrompt: "Zalo token already configured. Keep it?",
+      inputPrompt: "Enter Zalo bot token",
+      preferredEnvVar: "ZALO_BOT_TOKEN",
+      onMissingConfigured: async () => await noteZaloTokenHelp(prompter),
+      applyUseEnv: async (currentCfg) =>
+        accountId === DEFAULT_ACCOUNT_ID
+          ? ({
+              ...currentCfg,
+              channels: {
+                ...currentCfg.channels,
+                zalo: {
+                  ...currentCfg.channels?.zalo,
                   enabled: true,
-                  botToken: token,
                 },
               },
-            },
-          },
-        } as RemoteClawConfig;
-      }
-    }
+            } as RemoteClawConfig)
+          : currentCfg,
+      applySet: async (currentCfg, value) =>
+        accountId === DEFAULT_ACCOUNT_ID
+          ? ({
+              ...currentCfg,
+              channels: {
+                ...currentCfg.channels,
+                zalo: {
+                  ...currentCfg.channels?.zalo,
+                  enabled: true,
+                  botToken: value,
+                },
+              },
+            } as RemoteClawConfig)
+          : ({
+              ...currentCfg,
+              channels: {
+                ...currentCfg.channels,
+                zalo: {
+                  ...currentCfg.channels?.zalo,
+                  enabled: true,
+                  accounts: {
+                    ...currentCfg.channels?.zalo?.accounts,
+                    [accountId]: {
+                      ...currentCfg.channels?.zalo?.accounts?.[accountId],
+                      enabled: true,
+                      botToken: value,
+                    },
+                  },
+                },
+              },
+            } as RemoteClawConfig),
+    });
+    next = tokenStep.cfg;
 
     const wantsWebhook = await prompter.confirm({
       message: "Use webhook mode for Zalo?",
-      initialValue: false,
+      initialValue: Boolean(resolvedAccount.config.webhookUrl),
     });
     if (wantsWebhook) {
       const webhookUrl = String(
         await prompter.text({
           message: "Webhook URL (https://...) ",
+          initialValue: resolvedAccount.config.webhookUrl,
           validate: (value) =>
             value?.trim()?.startsWith("https://") ? undefined : "HTTPS URL required",
         }),
@@ -351,44 +314,77 @@ export const zaloOnboardingAdapter: ChannelOnboardingAdapter = {
           return "/zalo-webhook";
         }
       })();
-      const webhookSecret = String(
-        await prompter.text({
-          message: "Webhook secret (8-256 chars)",
-          validate: (value) => {
-            const raw = String(value ?? "");
-            if (raw.length < 8 || raw.length > 256) {
-              return "8-256 chars";
-            }
-            return undefined;
-          },
+
+      let webhookSecretResult = await promptSingleChannelSecretInput({
+        cfg: next,
+        prompter,
+        providerHint: "zalo-webhook",
+        credentialLabel: "webhook secret",
+        secretInputMode: options?.secretInputMode,
+        ...buildSingleChannelSecretPromptState({
+          accountConfigured: hasConfiguredSecretInput(resolvedAccount.config.webhookSecret),
+          hasConfigToken: hasConfiguredSecretInput(resolvedAccount.config.webhookSecret),
+          allowEnv: false,
         }),
-      ).trim();
+        envPrompt: "",
+        keepPrompt: "Zalo webhook secret already configured. Keep it?",
+        inputPrompt: "Webhook secret (8-256 chars)",
+        preferredEnvVar: "ZALO_WEBHOOK_SECRET",
+      });
+      while (
+        webhookSecretResult.action === "set" &&
+        typeof webhookSecretResult.value === "string" &&
+        (webhookSecretResult.value.length < 8 || webhookSecretResult.value.length > 256)
+      ) {
+        await prompter.note("Webhook secret must be between 8 and 256 characters.", "Zalo webhook");
+        webhookSecretResult = await promptSingleChannelSecretInput({
+          cfg: next,
+          prompter,
+          providerHint: "zalo-webhook",
+          credentialLabel: "webhook secret",
+          secretInputMode: options?.secretInputMode,
+          ...buildSingleChannelSecretPromptState({
+            accountConfigured: false,
+            hasConfigToken: false,
+            allowEnv: false,
+          }),
+          envPrompt: "",
+          keepPrompt: "Zalo webhook secret already configured. Keep it?",
+          inputPrompt: "Webhook secret (8-256 chars)",
+          preferredEnvVar: "ZALO_WEBHOOK_SECRET",
+        });
+      }
+      const webhookSecret =
+        webhookSecretResult.action === "set"
+          ? webhookSecretResult.value
+          : resolvedAccount.config.webhookSecret;
       const webhookPath = String(
         await prompter.text({
           message: "Webhook path (optional)",
-          initialValue: defaultPath,
+          initialValue: resolvedAccount.config.webhookPath ?? defaultPath,
         }),
       ).trim();
       next = setZaloUpdateMode(
         next,
-        zaloAccountId,
+        accountId,
         "webhook",
         webhookUrl,
         webhookSecret,
         webhookPath || undefined,
       );
     } else {
-      next = setZaloUpdateMode(next, zaloAccountId, "polling");
+      next = setZaloUpdateMode(next, accountId, "polling");
     }
 
     if (forceAllowFrom) {
       next = await promptZaloAllowFrom({
         cfg: next,
         prompter,
-        accountId: zaloAccountId,
+        accountId,
       });
     }
 
-    return { cfg: next, accountId: zaloAccountId };
+    return { cfg: next };
   },
+  dmPolicy: zaloDmPolicy,
 };

@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let page: Record<string, unknown> | null = null;
 let locator: Record<string, unknown> | null = null;
@@ -42,11 +42,9 @@ vi.mock("./paths.js", () => {
 let setInputFilesViaPlaywright: typeof import("./pw-tools-core.interactions.js").setInputFilesViaPlaywright;
 
 describe("setInputFilesViaPlaywright", () => {
-  beforeAll(async () => {
+  beforeEach(async () => {
+    vi.resetModules();
     ({ setInputFilesViaPlaywright } = await import("./pw-tools-core.interactions.js"));
-  });
-
-  beforeEach(() => {
     vi.clearAllMocks();
     page = null;
     locator = null;

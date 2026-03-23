@@ -30,7 +30,6 @@ vi.mock("./bot/delivery.js", () => ({
 
 import { registerTelegramNativeCommands } from "./bot-native-commands.js";
 import {
-  createCommandBot,
   createNativeCommandTestParams as createNativeCommandTestParamsBase,
   createPrivateCommandContext,
   deliverReplies,
@@ -38,6 +37,52 @@ import {
   resetNativeCommandMenuMocks,
   waitForRegisteredCommands,
 } from "./bot-native-commands.menu-test-support.js";
+
+function createNativeCommandTestParams(
+  cfg: RemoteClawConfig,
+  params: Partial<Parameters<typeof registerTelegramNativeCommands>[0]> = {},
+) {
+  const dispatchResult: Awaited<
+    ReturnType<TelegramBotDeps["dispatchReplyWithBufferedBlockDispatcher"]>
+  > = {
+    queuedFinal: false,
+    counts: { block: 0, final: 0, tool: 0 },
+  };
+  const telegramDeps: TelegramBotDeps = {
+    loadConfig: vi.fn(() => cfg) as TelegramBotDeps["loadConfig"],
+    resolveStorePath: vi.fn(
+      (storePath?: string) => storePath ?? "/tmp/sessions.json",
+    ) as TelegramBotDeps["resolveStorePath"],
+    readChannelAllowFromStore: vi.fn(
+      async () => [],
+    ) as TelegramBotDeps["readChannelAllowFromStore"],
+    upsertChannelPairingRequest: vi.fn(async () => ({
+      code: "PAIRCODE",
+      created: true,
+    })) as TelegramBotDeps["upsertChannelPairingRequest"],
+    enqueueSystemEvent: vi.fn() as TelegramBotDeps["enqueueSystemEvent"],
+    dispatchReplyWithBufferedBlockDispatcher: vi.fn(
+      async () => dispatchResult,
+    ) as TelegramBotDeps["dispatchReplyWithBufferedBlockDispatcher"],
+    buildModelsProviderData: vi.fn(async () => ({
+      byProvider: new Map<string, Set<string>>(),
+      providers: [],
+      resolvedDefault: { provider: "openai", model: "gpt-4.1" },
+    })) as TelegramBotDeps["buildModelsProviderData"],
+    listSkillCommandsForAgents: skillCommandMocks.listSkillCommandsForAgents,
+    wasSentByBot: vi.fn(() => false) as TelegramBotDeps["wasSentByBot"],
+  };
+  return createNativeCommandTestParamsBase(cfg, {
+    telegramDeps,
+    ...params,
+  });
+}
+
+function resolveDeliverRepliesCalls() {
+  return deliveryMocks.deliverReplies.mock.calls.length > 0
+    ? deliveryMocks.deliverReplies.mock.calls
+    : registeredDeliverReplies.mock.calls;
+}
 
 describe("registerTelegramNativeCommands", () => {
   beforeEach(() => {
@@ -228,7 +273,8 @@ describe("registerTelegramNativeCommands", () => {
     expect(handler).toBeTruthy();
     await handler?.(createPrivateCommandContext());
 
-    expect(deliverReplies).toHaveBeenCalledWith(
+    const firstDeliverRepliesCall = resolveDeliverRepliesCalls().at(0) as [unknown] | undefined;
+    expect(firstDeliverRepliesCall?.[0]).toEqual(
       expect.objectContaining({
         mediaLocalRoots: expect.arrayContaining([path.resolve("/tmp/test-workspace")]),
       }),
@@ -280,7 +326,8 @@ describe("registerTelegramNativeCommands", () => {
       },
     });
 
-    expect(deliveryMocks.deliverReplies).toHaveBeenCalledWith(
+    const firstDeliverRepliesCall = resolveDeliverRepliesCalls().at(0) as [unknown] | undefined;
+    expect(firstDeliverRepliesCall?.[0]).toEqual(
       expect.objectContaining({
         silent: true,
         replies: [expect.objectContaining({ isError: true })],

@@ -154,7 +154,12 @@ describe("web monitor inbox", () => {
     });
 
     sock.ev.emit("messages.upsert", upsertBlocked);
-    await new Promise((resolve) => setImmediate(resolve));
+    await vi.waitFor(
+      () => {
+        expect(sock.sendMessage).toHaveBeenCalledTimes(1);
+      },
+      { timeout: 5_000, interval: 5 },
+    );
     expect(onMessage).not.toHaveBeenCalled();
     expectPairingPromptSent(sock, "999@s.whatsapp.net", "+999");
 
@@ -239,7 +244,8 @@ describe("web monitor inbox", () => {
         participant: undefined,
         fromMe: false,
       },
-    ]);
+      { timeout: 5_000, interval: 5 },
+    );
 
     // Verify it WAS NOT passed to onMessage
     expect(onMessage).not.toHaveBeenCalled();

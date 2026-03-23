@@ -253,6 +253,7 @@ export async function executePluginCommand(params: {
   channel: string;
   channelId?: PluginCommandContext["channelId"];
   isAuthorizedSender: boolean;
+  gatewayClientScopes?: PluginCommandContext["gatewayClientScopes"];
   commandBody: string;
   config: RemoteClawConfig;
   from?: PluginCommandContext["from"];
@@ -279,6 +280,7 @@ export async function executePluginCommand(params: {
     channel,
     channelId: params.channelId,
     isAuthorizedSender,
+    gatewayClientScopes: params.gatewayClientScopes,
     args: sanitizedArgs,
     commandBody,
     config,

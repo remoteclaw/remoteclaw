@@ -13,7 +13,7 @@ function isToolAllowedByPolicies(..._args: any[]): boolean {
 function resolveSandboxConfigForAgent(
   _cfg: RemoteClawConfig,
   _agentId?: string,
-): Record<string, any> {
+): Record<string, unknown> {
   return { mode: "off" };
 }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- gutted module stubs
@@ -550,7 +550,7 @@ function collectRiskyToolExposureContexts(cfg: RemoteClawConfig): {
       hasRuntimeRisk = true;
     }
     riskyContexts.push(
-      `${context.label} (sandbox=${sandboxMode}; runtime=[${runtimeTools.join(", ") || "off"}]; fs=[${fsTools.join(", ") || "off"}]; fs.workspaceOnly=${
+      `${context.label} (sandbox=${String(sandboxMode)}; runtime=[${runtimeTools.join(", ") || "off"}]; fs=[${fsTools.join(", ") || "off"}]; fs.workspaceOnly=${
         fsWorkspaceOnly === true ? "true" : "false"
       })`,
     );
@@ -1304,7 +1304,7 @@ export function collectSmallModelRiskFindings(params: {
     for (const tool of exposed) {
       exposureSet.add(tool);
     }
-    const sandboxLabel = sandboxMode === "all" ? "sandbox=all" : `sandbox=${sandboxMode}`;
+    const sandboxLabel = sandboxMode === "all" ? "sandbox=all" : `sandbox=${String(sandboxMode)}`;
     const exposureLabel = exposed.length > 0 ? ` web=[${exposed.join(", ")}]` : " web=[off]";
     const safe = sandboxMode === "all" && exposed.length === 0;
     if (!safe) {

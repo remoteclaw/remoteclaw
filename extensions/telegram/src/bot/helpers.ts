@@ -389,6 +389,7 @@ export function describeReplyTarget(msg: Message): TelegramReplyTarget | null {
 
   const replyLike = reply ?? externalReply;
   if (!body && replyLike) {
+<<<<<<< HEAD
     const replyBody = (
       typeof replyLike.text === "string"
         ? replyLike.text
@@ -396,6 +397,12 @@ export function describeReplyTarget(msg: Message): TelegramReplyTarget | null {
           ? replyLike.caption
           : ""
     ).trim();
+||||||| parent of 988bd782f7 (fix: restore Telegram topic announce delivery (#51688) (thanks @mvanhorn))
+    const replyBody = (replyLike.text ?? replyLike.caption ?? "").trim();
+=======
+    const rawText = replyLike.text ?? replyLike.caption ?? "";
+    const replyBody = (typeof rawText === "string" ? rawText : "").trim();
+>>>>>>> 988bd782f7 (fix: restore Telegram topic announce delivery (#51688) (thanks @mvanhorn))
     body = replyBody;
     if (!body) {
       body = resolveTelegramMediaPlaceholder(replyLike) ?? "";

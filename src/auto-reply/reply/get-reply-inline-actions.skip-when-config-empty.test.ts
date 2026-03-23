@@ -7,10 +7,9 @@ import type { TypingController } from "./typing.js";
 
 const handleCommandsMock = vi.fn();
 
-vi.mock("./commands.js", () => ({
+vi.mock("./commands.runtime.js", () => ({
   handleCommands: (...args: unknown[]) => handleCommandsMock(...args),
   buildStatusReply: vi.fn(),
-  buildCommandContext: vi.fn(),
 }));
 
 // Import after mocks.

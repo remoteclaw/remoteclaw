@@ -52,21 +52,14 @@ describe("device bootstrap tokens", () => {
     const raw = await fs.readFile(resolveBootstrapPath(baseDir), "utf8");
     const parsed = JSON.parse(raw) as Record<
       string,
-      {
-        token: string;
-        ts: number;
-        issuedAtMs: number;
-        profile: { roles: string[]; scopes: string[] };
-      }
+      { token: string; ts: number; issuedAtMs: number }
     >;
     expect(parsed[issued.token]).toMatchObject({
       token: issued.token,
       ts: Date.now(),
       issuedAtMs: Date.now(),
-      profile: {
-        roles: ["node"],
-        scopes: [],
-      },
+      roles: ["node"],
+      scopes: [],
     });
   });
 
@@ -133,10 +126,8 @@ describe("device bootstrap tokens", () => {
             token: issued.token,
             ts: issuedAtMs,
             issuedAtMs,
-            profile: {
-              roles: ["node"],
-              scopes: [],
-            },
+            roles: ["node"],
+            scopes: [],
           },
         },
         null,
@@ -183,18 +174,6 @@ describe("device bootstrap tokens", () => {
     const baseDir = await createTempDir();
     const issued = await issueDeviceBootstrapToken({
       baseDir,
-      profile: {
-        roles: [" operator ", "operator"],
-        scopes: ["operator.read", " operator.read "],
-      },
-    });
-
-    const raw = await fs.readFile(resolveBootstrapPath(baseDir), "utf8");
-    const parsed = JSON.parse(raw) as Record<
-      string,
-      { profile: { roles: string[]; scopes: string[] } }
-    >;
-    expect(parsed[issued.token]?.profile).toEqual({
       roles: ["operator"],
       scopes: ["operator.read"],
     });

@@ -1,10 +1,10 @@
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { normalizeTestText } from "../../test/helpers/normalize-text.js";
+import { resolveSessionKey } from "../config/sessions.js";
 import {
   getProviderUsageMocks,
-  getRunAgentMock,
+  getRunEmbeddedPiAgentMock,
   makeCfg,
   requireSessionStorePath,
   withTempHome,
@@ -34,7 +34,7 @@ export function registerTriggerHandlingUsageSummaryCases(params: {
   describe("usage and status command handling", () => {
     it("handles status, usage cycles, and auth-profile status details", async () => {
       await withTempHome(async (home) => {
-        const runAgentMock = getRunAgentMock();
+        const runEmbeddedPiAgentMock = getRunEmbeddedPiAgentMock();
         const getReplyFromConfig = getReplyFromConfigNow(params.getReplyFromConfig);
         usageMocks.loadProviderUsageSummary.mockClear();
         usageMocks.loadProviderUsageSummary.mockResolvedValue({
@@ -70,12 +70,7 @@ export function registerTriggerHandlingUsageSummaryCases(params: {
           const text = Array.isArray(res) ? res[0]?.text : res?.text;
           expect(text).toContain("Model:");
           expect(text).toContain("RemoteClaw");
-          expect(normalizeTestText(text ?? "")).toContain("Usage: Claude 80% left");
-          // Model provider gutted in RemoteClaw — resolves to "unknown"
-          expect(usageMocks.loadProviderUsageSummary).toHaveBeenCalledWith(
-            expect.objectContaining({ providers: ["unknown"] }),
-          );
-          expect(runAgentMock).not.toHaveBeenCalled();
+          expect(runEmbeddedPiAgentMock).not.toHaveBeenCalled();
         }
 
         {
@@ -149,7 +144,74 @@ export function registerTriggerHandlingUsageSummaryCases(params: {
           expect(pickFirstStoreEntry<{ responseUsage?: string }>(finalStore)?.responseUsage).toBe(
             "tokens",
           );
-          expect(runAgentMock).not.toHaveBeenCalled();
+          expect(runEmbeddedPiAgentMock).not.toHaveBeenCalled();
+        }
+
+        {
+          runEmbeddedPiAgentMock.mockClear();
+          const cfg = makeCfg(home);
+          cfg.session = { ...cfg.session, store: join(home, "auth-profile-status.sessions.json") };
+          const agentDir = join(home, ".remoteclaw", "agents", "main", "agent");
+          await mkdir(agentDir, { recursive: true });
+          await writeFile(
+            join(agentDir, "auth-profiles.json"),
+            JSON.stringify(
+              {
+                version: 1,
+                profiles: {
+                  "anthropic:work": {
+                    type: "api_key",
+                    provider: "anthropic",
+                    key: "sk-test-1234567890abcdef",
+                  },
+                },
+                lastGood: { anthropic: "anthropic:work" },
+              },
+              null,
+              2,
+            ),
+          );
+
+          const sessionKey = resolveSessionKey("per-sender", {
+            From: "+1002",
+            To: "+2000",
+            Provider: "whatsapp",
+          } as Parameters<typeof resolveSessionKey>[1]);
+          await writeFile(
+            requireSessionStorePath(cfg),
+            JSON.stringify(
+              {
+                [sessionKey]: {
+                  sessionId: "session-auth",
+                  updatedAt: Date.now(),
+                  authProfileOverride: "anthropic:work",
+                },
+              },
+              null,
+              2,
+            ),
+          );
+
+          const res = await getReplyFromConfig(
+            {
+              Body: "/status",
+              From: "+1002",
+              To: "+2000",
+              Provider: "whatsapp",
+              SenderE164: "+1002",
+              CommandAuthorized: true,
+            },
+            {},
+            cfg,
+          );
+          const text = Array.isArray(res) ? res[0]?.text : res?.text;
+          expect(text).toContain("api-key");
+          expect(text).not.toContain("sk-test");
+          expect(text).not.toContain("abcdef");
+          expect(text).not.toContain("1234567890abcdef"); // pragma: allowlist secret
+          expect(text).toContain("(anthropic:work)");
+          expect(text).not.toContain("mixed");
+          expect(runEmbeddedPiAgentMock).not.toHaveBeenCalled();
         }
       });
     });

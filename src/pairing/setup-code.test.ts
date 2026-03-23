@@ -56,10 +56,8 @@ describe("pairing setup code", () => {
     expect(resolved.payload.bootstrapToken).toBe("bootstrap-123");
     expect(issueDeviceBootstrapTokenMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        profile: {
-          roles: ["node"],
-          scopes: [],
-        },
+        roles: ["node"],
+        scopes: [],
       }),
     );
     if (params.url) {

@@ -4,11 +4,43 @@
  */
 
 import { resolveDangerousNameMatchingEnabled } from "remoteclaw/plugin-sdk";
-import type { SynologyChatChannelConfig, ResolvedSynologyChatAccount } from "./types.js";
+import type {
+  SynologyChatChannelConfig,
+  ResolvedSynologyChatAccount,
+  SynologyWebhookPathSource,
+} from "./types.js";
 
 /** Extract the channel config from the full RemoteClaw config object. */
 function getChannelConfig(cfg: any): SynologyChatChannelConfig | undefined {
   return cfg?.channels?.["synology-chat"];
+}
+
+function getRawAccountConfig(
+  channelCfg: SynologyChatChannelConfig,
+  accountId: string,
+): SynologyChatChannelConfig {
+  if (accountId === "default") {
+    return channelCfg;
+  }
+  return channelCfg.accounts?.[accountId] ?? {};
+}
+
+function hasExplicitWebhookPath(rawAccount: SynologyChatChannelConfig | undefined): boolean {
+  return typeof rawAccount?.webhookPath === "string" && rawAccount.webhookPath.trim().length > 0;
+}
+
+function resolveWebhookPathSource(params: {
+  accountId: string;
+  channelCfg: SynologyChatChannelConfig;
+  rawAccount: SynologyChatChannelConfig;
+}): SynologyWebhookPathSource {
+  if (hasExplicitWebhookPath(params.rawAccount)) {
+    return "explicit";
+  }
+  if (params.accountId !== "default" && hasExplicitWebhookPath(params.channelCfg)) {
+    return "inherited-base";
+  }
+  return "default";
 }
 
 /** Parse allowedUserIds from string or array to string[]. */
@@ -68,6 +100,7 @@ export function resolveAccount(cfg: any, accountId?: string | null): ResolvedSyn
 
   // Account-specific overrides (if named account exists)
   const accountOverride = channelCfg.accounts?.[id] ?? {};
+  const rawAccount = getRawAccountConfig(channelCfg, id);
 
   // Env var fallbacks (primarily for the "default" account)
   const envToken = process.env.SYNOLOGY_CHAT_TOKEN ?? "";
@@ -76,6 +109,11 @@ export function resolveAccount(cfg: any, accountId?: string | null): ResolvedSyn
   const envAllowedUserIds = process.env.SYNOLOGY_ALLOWED_USER_IDS ?? "";
   const envRateLimitValue = parseRateLimitPerMinute(process.env.SYNOLOGY_RATE_LIMIT);
   const envBotName = process.env.REMOTECLAW_BOT_NAME ?? "RemoteClaw";
+  const webhookPathSource = resolveWebhookPathSource({ accountId: id, channelCfg, rawAccount });
+  const dangerouslyAllowInheritedWebhookPath =
+    rawAccount.dangerouslyAllowInheritedWebhookPath ??
+    channelCfg.dangerouslyAllowInheritedWebhookPath ??
+    false;
 
   // Merge: account override > base channel config > env var
   return {
@@ -85,10 +123,12 @@ export function resolveAccount(cfg: any, accountId?: string | null): ResolvedSyn
     incomingUrl: accountOverride.incomingUrl ?? channelCfg.incomingUrl ?? envIncomingUrl,
     nasHost: accountOverride.nasHost ?? channelCfg.nasHost ?? envNasHost,
     webhookPath: accountOverride.webhookPath ?? channelCfg.webhookPath ?? "/webhook/synology",
+    webhookPathSource,
     dangerouslyAllowNameMatching: resolveDangerousNameMatchingEnabled({
       providerConfig: channelCfg,
       accountConfig: id === "default" ? undefined : (accountOverride ?? undefined),
     }),
+    dangerouslyAllowInheritedWebhookPath,
     dmPolicy: accountOverride.dmPolicy ?? channelCfg.dmPolicy ?? "allowlist",
     allowedUserIds: parseAllowedUserIds(
       accountOverride.allowedUserIds ?? channelCfg.allowedUserIds ?? envAllowedUserIds,

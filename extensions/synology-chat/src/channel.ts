@@ -153,6 +153,14 @@ export function createSynologyChatPlugin() {
             "- Synology Chat: SSL verification is disabled (allowInsecureSsl=true). Only use this for local NAS with self-signed certificates.",
           );
         }
+        if (
+          account.dangerouslyAllowInheritedWebhookPath &&
+          account.webhookPathSource === "inherited-base"
+        ) {
+          warnings.push(
+            "- Synology Chat: dangerouslyAllowInheritedWebhookPath=true opts a named account into a shared inherited webhook path. Prefer an explicit per-account webhookPath.",
+          );
+        }
         if (account.dmPolicy === "open") {
           warnings.push(
             '- Synology Chat: dmPolicy="open" allows any user to message the bot. Consider "allowlist" for production use.',

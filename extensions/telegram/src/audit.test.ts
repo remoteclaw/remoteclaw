@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 let collectTelegramUnmentionedGroupIds: typeof import("./audit.js").collectTelegramUnmentionedGroupIds;
 let auditTelegramGroupMembership: typeof import("./audit.js").auditTelegramGroupMembership;
@@ -31,10 +31,12 @@ async function auditSingleGroup() {
 }
 
 describe("telegram audit", () => {
-  beforeEach(async () => {
-    vi.resetModules();
+  beforeAll(async () => {
     ({ collectTelegramUnmentionedGroupIds, auditTelegramGroupMembership } =
       await import("./audit.js"));
+  });
+
+  beforeEach(() => {
     fetchWithTimeoutMock.mockReset();
   });
 

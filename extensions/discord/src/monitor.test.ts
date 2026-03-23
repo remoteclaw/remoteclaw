@@ -61,11 +61,6 @@ function createAutoThreadMentionContext() {
   return { guildInfo, channelConfig };
 }
 
-beforeEach(() => {
-  vi.useRealTimers();
-  readAllowFromStoreMock.mockReset().mockResolvedValue([]);
-});
-
 describe("registerDiscordListener", () => {
   class FakeListener {}
 

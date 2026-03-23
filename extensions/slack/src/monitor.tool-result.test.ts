@@ -1,7 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { HISTORY_CONTEXT_MARKER } from "../../../src/auto-reply/reply/history.js";
-import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
-import { CURRENT_MESSAGE_MARKER } from "../../../src/auto-reply/reply/mentions.js";
 import {
   defaultSlackTestConfig,
   getSlackTestState,
@@ -15,12 +12,23 @@ import {
   stopSlackMonitor,
 } from "./monitor.test-helpers.js";
 
-const { monitorSlackProvider } = await import("./monitor.js");
+let resetInboundDedupe: typeof import("../../../src/auto-reply/reply/inbound-dedupe.js").resetInboundDedupe;
+let HISTORY_CONTEXT_MARKER: typeof import("../../../src/auto-reply/reply/history.js").HISTORY_CONTEXT_MARKER;
+let CURRENT_MESSAGE_MARKER: typeof import("../../../src/auto-reply/reply/mentions.js").CURRENT_MESSAGE_MARKER;
+let monitorSlackProvider: typeof import("./monitor.js").monitorSlackProvider;
 
 const slackTestState = getSlackTestState();
 const { sendMock, replyMock, reactMock, upsertPairingRequestMock } = slackTestState;
 
 beforeEach(() => {
+  vi.resetModules();
+});
+
+beforeEach(async () => {
+  ({ resetInboundDedupe } = await import("../../../src/auto-reply/reply/inbound-dedupe.js"));
+  ({ HISTORY_CONTEXT_MARKER } = await import("../../../src/auto-reply/reply/history.js"));
+  ({ CURRENT_MESSAGE_MARKER } = await import("../../../src/auto-reply/reply/mentions.js"));
+  ({ monitorSlackProvider } = await import("./monitor.js"));
   resetInboundDedupe();
   resetSlackTestState(defaultSlackTestConfig());
 });
@@ -209,7 +217,9 @@ describe("monitorSlackProvider tool results", () => {
 
   function expectSingleSendWithThread(threadTs: string | undefined) {
     expect(sendMock).toHaveBeenCalledTimes(1);
-    expect(sendMock.mock.calls[0][2]).toMatchObject({ threadTs });
+    expect((sendMock.mock.calls[0]?.[2] as { threadTs?: string } | undefined)?.threadTs).toBe(
+      threadTs,
+    );
   }
 
   async function runDefaultMessageAndExpectSentText(expectedText: string) {

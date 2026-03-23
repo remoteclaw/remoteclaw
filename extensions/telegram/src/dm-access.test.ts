@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import type { createChannelPairingChallengeIssuer } from "remoteclaw/plugin-sdk/channel-pairing";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const createChannelPairingChallengeIssuerMock = vi.hoisted(() => vi.fn());
 const upsertChannelPairingRequestMock = vi.hoisted(() => vi.fn(async () => undefined));
@@ -18,7 +19,7 @@ vi.mock("./api-logging.js", () => ({
 
 import type { Message } from "@grammyjs/types";
 import { normalizeAllowFrom } from "./bot-access.js";
-import { enforceTelegramDmAccess } from "./dm-access.js";
+let enforceTelegramDmAccess: typeof import("./dm-access.js").enforceTelegramDmAccess;
 
 function createDmMessage(overrides: Partial<Message> = {}): Message {
   return {
@@ -37,6 +38,12 @@ function createDmMessage(overrides: Partial<Message> = {}): Message {
 }
 
 describe("enforceTelegramDmAccess", () => {
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    ({ enforceTelegramDmAccess } = await import("./dm-access.js"));
+  });
+
   it("allows DMs when policy is open", async () => {
     const bot = { api: { sendMessage: vi.fn(async () => undefined) } };
 
@@ -90,16 +97,14 @@ describe("enforceTelegramDmAccess", () => {
     const sendMessage = vi.fn(async () => undefined);
     const logger = { info: vi.fn() };
     createChannelPairingChallengeIssuerMock.mockReturnValueOnce(
-      async ({
+      ({
         sendPairingReply,
         onCreated,
-      }: {
-        sendPairingReply: (text: string) => Promise<void>;
-        onCreated: () => void;
-      }) => {
-        onCreated();
-        await sendPairingReply("Pairing code: 123456");
-      },
+      }: Parameters<ReturnType<typeof createChannelPairingChallengeIssuer>>[0]) =>
+        (async () => {
+          onCreated?.({ code: "123456" });
+          await sendPairingReply("Pairing code: 123456");
+        })(),
     );
 
     const allowed = await enforceTelegramDmAccess({

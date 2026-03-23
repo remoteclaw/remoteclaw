@@ -23,7 +23,7 @@ type DispatchReplyWithBufferedBlockDispatcherResult = Awaited<
   ReturnType<DispatchReplyWithBufferedBlockDispatcherFn>
 >;
 type RecordInboundSessionMetaSafeFn =
-  typeof import("remoteclaw/plugin-sdk/channel-runtime").recordInboundSessionMetaSafe;
+  typeof import("remoteclaw/plugin-sdk/conversation-runtime").recordInboundSessionMetaSafe;
 type AnyMock = MockFn<(...args: unknown[]) => unknown>;
 type AnyAsyncMock = MockFn<(...args: unknown[]) => Promise<unknown>>;
 type NativeCommandHarness = {
@@ -75,11 +75,13 @@ vi.mock("remoteclaw/plugin-sdk/reply-runtime", async (importOriginal) => {
       replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher,
   };
 });
-vi.mock("remoteclaw/plugin-sdk/channel-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/channel-runtime")>();
+vi.mock("remoteclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("remoteclaw/plugin-sdk/conversation-runtime")>();
   return {
     ...actual,
     recordInboundSessionMetaSafe: replyPipelineMocks.recordInboundSessionMetaSafe,
+    readChannelAllowFromStore: vi.fn(async () => []),
   };
 });
 vi.mock("remoteclaw/plugin-sdk/channel-reply-pipeline", async (importOriginal) => {
@@ -96,14 +98,7 @@ const deliveryMocks = vi.hoisted(() => ({
 }));
 export const deliverReplies = deliveryMocks.deliverReplies;
 vi.mock("./bot/delivery.js", () => ({ deliverReplies: deliveryMocks.deliverReplies }));
-vi.mock("remoteclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("remoteclaw/plugin-sdk/conversation-runtime")>();
-  return {
-    ...actual,
-    readChannelAllowFromStore: vi.fn(async () => []),
-  };
-});
+vi.mock("./bot/delivery.replies.js", () => ({ deliverReplies: deliveryMocks.deliverReplies }));
 export { createNativeCommandTestParams };
 
 export function createNativeCommandsHarness(params?: {
@@ -125,9 +120,15 @@ export function createNativeCommandsHarness(params?: {
     loadConfig: vi.fn(() => params?.cfg ?? ({} as RemoteClawConfig)),
     resolveStorePath: vi.fn((storePath?: string) => storePath ?? "/tmp/sessions.json"),
     readChannelAllowFromStore: vi.fn(async () => []),
+    upsertChannelPairingRequest: vi.fn(async () => ({ code: "PAIRCODE", created: true })),
     enqueueSystemEvent: vi.fn(),
     dispatchReplyWithBufferedBlockDispatcher:
       replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher,
+    buildModelsProviderData: vi.fn(async () => ({
+      byProvider: new Map<string, Set<string>>(),
+      providers: [],
+      resolvedDefault: { provider: "openai", model: "gpt-4.1" },
+    })),
     listSkillCommandsForAgents: vi.fn(() => []),
     wasSentByBot: vi.fn(() => false),
   };

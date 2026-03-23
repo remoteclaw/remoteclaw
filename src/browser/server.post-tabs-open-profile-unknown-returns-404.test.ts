@@ -6,6 +6,7 @@ import {
   installBrowserControlServerHooks,
   makeResponse,
   resetBrowserControlServerTestContext,
+  setBrowserControlServerReachable,
   startBrowserControlServerFromConfig,
 } from "./server.control-server.test-harness.js";
 
@@ -27,6 +28,7 @@ describe("browser control server", () => {
   });
 
   it("POST /tabs/open returns 400 for invalid URLs", async () => {
+    setBrowserControlServerReachable(true);
     await startBrowserControlServerFromConfig();
     const base = getBrowserControlServerBaseUrl();
 

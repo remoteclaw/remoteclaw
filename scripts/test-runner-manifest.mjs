@@ -36,9 +36,13 @@ export function loadTestRunnerBehavior() {
   const raw = readJson(behaviorManifestPath, {});
   const unit = raw.unit ?? {};
   const base = raw.base ?? {};
+  const extensions = raw.extensions ?? {};
   return {
     base: {
       threadSingleton: normalizeManifestEntries(base.threadSingleton ?? []),
+    },
+    extensions: {
+      isolated: mergeManifestEntries(extensions, ["isolated"]),
     },
     unit: {
       isolated: normalizeManifestEntries(unit.isolated ?? []),

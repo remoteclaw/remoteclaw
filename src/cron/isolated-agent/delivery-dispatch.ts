@@ -133,46 +133,6 @@ const PERMANENT_DIRECT_CRON_DELIVERY_ERROR_PATTERNS: readonly RegExp[] = [
 
 const STALE_CRON_DELIVERY_MAX_START_DELAY_MS = 3 * 60 * 60_000;
 
-type CompletedDirectCronDelivery = {
-  ts: number;
-  results: OutboundDeliveryResult[];
-};
-
-const COMPLETED_DIRECT_CRON_DELIVERIES = new Map<string, CompletedDirectCronDelivery>();
-
-function cloneDeliveryResults(
-  results: readonly OutboundDeliveryResult[],
-): OutboundDeliveryResult[] {
-  return results.map((result) => ({
-    ...result,
-    ...(result.meta ? { meta: { ...result.meta } } : {}),
-  }));
-}
-
-function pruneCompletedDirectCronDeliveries(now: number) {
-  const ttlMs = process.env.OPENCLAW_TEST_FAST === "1" ? 60_000 : 24 * 60 * 60 * 1000;
-  for (const [key, entry] of COMPLETED_DIRECT_CRON_DELIVERIES) {
-    if (now - entry.ts >= ttlMs) {
-      COMPLETED_DIRECT_CRON_DELIVERIES.delete(key);
-    }
-  }
-  const maxEntries = 2000;
-  if (COMPLETED_DIRECT_CRON_DELIVERIES.size <= maxEntries) {
-    return;
-  }
-  const entries = [...COMPLETED_DIRECT_CRON_DELIVERIES.entries()].toSorted(
-    (a, b) => a[1].ts - b[1].ts,
-  );
-  const toDelete = COMPLETED_DIRECT_CRON_DELIVERIES.size - maxEntries;
-  for (let i = 0; i < toDelete; i += 1) {
-    const oldest = entries[i];
-    if (!oldest) {
-      break;
-    }
-    COMPLETED_DIRECT_CRON_DELIVERIES.delete(oldest[0]);
-  }
-}
-
 function resolveCronDeliveryScheduledAtMs(params: { job: CronJob; runStartedAt: number }): number {
   const scheduledAt = params.job.state?.nextRunAtMs;
   return typeof scheduledAt === "number" && Number.isFinite(scheduledAt)
@@ -188,49 +148,8 @@ function isStaleCronDelivery(params: { job: CronJob; runStartedAt: number }): bo
   return resolveCronDeliveryStartDelayMs(params) > STALE_CRON_DELIVERY_MAX_START_DELAY_MS;
 }
 
-function rememberCompletedDirectCronDelivery(
-  idempotencyKey: string,
-  results: readonly OutboundDeliveryResult[],
-) {
-  const now = Date.now();
-  COMPLETED_DIRECT_CRON_DELIVERIES.set(idempotencyKey, {
-    ts: now,
-    results: cloneDeliveryResults(results),
-  });
-  pruneCompletedDirectCronDeliveries(now);
-}
-
-function getCompletedDirectCronDelivery(
-  idempotencyKey: string,
-): OutboundDeliveryResult[] | undefined {
-  const now = Date.now();
-  pruneCompletedDirectCronDeliveries(now);
-  const cached = COMPLETED_DIRECT_CRON_DELIVERIES.get(idempotencyKey);
-  if (!cached) {
-    return undefined;
-  }
-  return cloneDeliveryResults(cached.results);
-}
-
-function buildDirectCronDeliveryIdempotencyKey(params: {
-  runSessionId: string;
-  delivery: SuccessfulDeliveryTarget;
-}): string {
-  const threadId =
-    params.delivery.threadId == null || params.delivery.threadId === ""
-      ? ""
-      : String(params.delivery.threadId);
-  const accountId = params.delivery.accountId?.trim() ?? "";
-  const normalizedTo = normalizeDeliveryTarget(params.delivery.channel, params.delivery.to);
-  return `cron-direct-delivery:v1:${params.runSessionId}:${params.delivery.channel}:${accountId}:${normalizedTo}:${threadId}`;
-}
-
-export function resetCompletedDirectCronDeliveriesForTests() {
-  COMPLETED_DIRECT_CRON_DELIVERIES.clear();
-}
-
 export function getCompletedDirectCronDeliveriesCountForTests(): number {
-  return COMPLETED_DIRECT_CRON_DELIVERIES.size;
+  return 0;
 }
 
 function summarizeDirectCronDeliveryError(error: unknown): string {

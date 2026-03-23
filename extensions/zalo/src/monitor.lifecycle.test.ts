@@ -37,7 +37,7 @@ const TEST_ACCOUNT = {
   config: {},
 } as unknown as ResolvedZaloAccount;
 
-const TEST_CONFIG = {} as OpenClawConfig;
+const TEST_CONFIG = {} as RemoteClawConfig;
 
 function createLifecycleRuntime() {
   return {

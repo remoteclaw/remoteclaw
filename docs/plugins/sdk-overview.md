@@ -27,9 +27,6 @@ Always import from a specific subpath:
 ```typescript
 import { definePluginEntry } from "remoteclaw/plugin-sdk/plugin-entry";
 import { defineChannelPluginEntry } from "remoteclaw/plugin-sdk/core";
-
-// Deprecated — will be removed in the next major release
-import { definePluginEntry } from "remoteclaw/plugin-sdk";
 ```
 
 Each subpath is a small, self-contained module. This keeps startup fast and
@@ -161,6 +158,10 @@ methods:
 | ------------------------ | ------------------------- | --------------------------------------------------------- |
 | `api.id`                 | `string`                  | Plugin id                                                 |
 | `api.name`               | `string`                  | Display name                                              |
+| `api.version`            | `string?`                 | Plugin version (optional)                                 |
+| `api.description`        | `string?`                 | Plugin description (optional)                             |
+| `api.source`             | `string`                  | Plugin source path                                        |
+| `api.rootDir`            | `string?`                 | Plugin root directory (optional)                          |
 | `api.config`             | `RemoteClawConfig`        | Current config snapshot                                   |
 | `api.pluginConfig`       | `Record<string, unknown>` | Plugin-specific config from `plugins.entries.<id>.config` |
 | `api.runtime`            | `PluginRuntime`           | [Runtime helpers](/plugins/sdk-runtime)                   |

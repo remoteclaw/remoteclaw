@@ -98,7 +98,10 @@ export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 export type { RemoteClawConfig } from "../config/config.js";
 /** @deprecated Use RemoteClawConfig instead */
 export type { RemoteClawConfig as ClawdbotConfig } from "../config/config.js";
-export { isDangerousNameMatchingEnabled } from "../config/dangerous-name-matching.js";
+export {
+  isDangerousNameMatchingEnabled,
+  resolveDangerousNameMatchingEnabled,
+} from "../config/dangerous-name-matching.js";
 
 export type { FileLockHandle, FileLockOptions } from "./file-lock.js";
 export { acquireFileLock, withFileLock } from "./file-lock.js";

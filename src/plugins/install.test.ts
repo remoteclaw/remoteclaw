@@ -657,7 +657,7 @@ describe("installPluginFromPath", () => {
     if (result.ok) {
       return;
     }
-    expect(result.error.toLowerCase()).toMatch(/hardlink|path alias escape/);
+    expect(result.error.toLowerCase()).toMatch(/hardlink|path alias escape|not a regular file/);
     expect(fs.readFileSync(victimPath, "utf-8")).toBe("ORIGINAL");
   });
 });

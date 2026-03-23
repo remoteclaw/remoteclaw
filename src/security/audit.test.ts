@@ -2329,10 +2329,10 @@ describe("security audit", () => {
     const makeProbeEnv = (env?: { token?: string; password?: string }) => {
       const probeEnv: NodeJS.ProcessEnv = {};
       if (env?.token !== undefined) {
-        probeEnv.REMOTECLAW_GATEWAY_TOKEN = env.token;
+        probeEnv.OPENCLAW_GATEWAY_TOKEN = env.token;
       }
       if (env?.password !== undefined) {
-        probeEnv.REMOTECLAW_GATEWAY_PASSWORD = env.password;
+        probeEnv.OPENCLAW_GATEWAY_PASSWORD = env.password;
       }
       return probeEnv;
     };

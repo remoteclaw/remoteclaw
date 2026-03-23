@@ -35,11 +35,11 @@ describe("createPinnedDispatcher", () => {
     const dispatcher = createPinnedDispatcher(pinned);
 
     expect(dispatcher).toBeDefined();
+    // Pinned dispatcher passes lookup directly without auto-select defaults;
+    // caller supplies transport hints via policy.connect when needed.
     expect(agentCtor).toHaveBeenCalledWith({
       connect: {
         lookup,
-        autoSelectFamily: true,
-        autoSelectFamilyAttemptTimeout: 300,
       },
     });
   });

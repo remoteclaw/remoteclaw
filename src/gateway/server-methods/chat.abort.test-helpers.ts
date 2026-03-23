@@ -24,6 +24,7 @@ export function createChatAbortContext(overrides: Record<string, unknown> = {}):
   chatAbortControllers: Map<string, unknown>;
   chatRunBuffers: Map<string, string>;
   chatDeltaSentAt: Map<string, number>;
+  chatDeltaLastBroadcastLen: Map<string, number>;
   chatAbortedRuns: Map<string, number>;
   removeChatRun: Mock;
   agentRunSeq: Map<string, number>;
@@ -37,6 +38,7 @@ export function createChatAbortContext(overrides: Record<string, unknown> = {}):
     chatAbortControllers: new Map(),
     chatRunBuffers: new Map(),
     chatDeltaSentAt: new Map(),
+    chatDeltaLastBroadcastLen: new Map(),
     chatAbortedRuns: new Map<string, number>(),
     removeChatRun: vi
       .fn()

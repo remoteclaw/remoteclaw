@@ -20,6 +20,7 @@ function createModel(id: string, name: string): ModelDefinitionConfig {
     maxTokens: 8_192,
   };
 }
+
 function createCatalogContext(
   config: ProviderCatalogContext["config"] = {},
 ): ProviderCatalogContext {

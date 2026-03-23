@@ -186,7 +186,9 @@ export async function appendAssistantMessageToSessionTranscript(params: {
     try {
       const existing = await fs.promises.readFile(sessionFile, "utf-8");
       for (const line of existing.split("\n")) {
-        if (!line.trim()) continue;
+        if (!line.trim()) {
+          continue;
+        }
         try {
           const parsed = JSON.parse(line) as {
             type?: string;

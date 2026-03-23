@@ -142,7 +142,12 @@ vi.mock("../../security/external-content.js", () => ({
 }));
 
 vi.mock("../delivery.js", () => ({
-  resolveCronDeliveryPlan: vi.fn().mockReturnValue({ requested: false }),
+  resolveCronDeliveryPlan: vi.fn().mockReturnValue({
+    requested: true,
+    channel: "telegram",
+    to: "chat-123",
+    accountId: "bot-456",
+  }),
 }));
 
 vi.mock("./delivery-target.js", () => ({

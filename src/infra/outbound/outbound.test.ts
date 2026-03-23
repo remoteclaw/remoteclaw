@@ -956,7 +956,7 @@ describe("resolveOutboundSessionRoute", () => {
         from?: string;
         to?: string;
         threadId?: string | number;
-        chatType?: "direct" | "group";
+        chatType?: "direct" | "group" | "channel";
       };
     }> = [
       {
@@ -1104,7 +1104,7 @@ describe("resolveOutboundSessionRoute", () => {
           sessionKey: "agent:main:slack:channel:c999xyz",
           from: "slack:channel:C999XYZ",
           to: "channel:C999XYZ",
-          chatType: "group",
+          chatType: "channel",
         },
       },
     ];

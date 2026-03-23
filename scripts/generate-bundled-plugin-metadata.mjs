@@ -8,6 +8,10 @@ const GENERATED_BY = "scripts/generate-bundled-plugin-metadata.mjs";
 const DEFAULT_OUTPUT_PATH = "src/plugins/bundled-plugin-metadata.generated.ts";
 const MANIFEST_KEY = "remoteclaw";
 const FORMATTER_CWD = path.resolve(import.meta.dirname, "..");
+<<<<<<< HEAD
+const OXFMT_BIN = path.join(FORMATTER_CWD, "node_modules", ".bin", "oxfmt");
+=======
+>>>>>>> 521b33dd85 (fix(plugins): make metadata generator formatter portable)
 const CANONICAL_PACKAGE_ID_ALIASES = {
   "elevenlabs-speech": "elevenlabs",
   "microsoft-speech": "microsoft",
@@ -128,17 +132,18 @@ function normalizePluginManifest(raw) {
 
 function formatTypeScriptModule(source, { outputPath }) {
   const formatterPath = path.relative(FORMATTER_CWD, outputPath) || outputPath;
-  const formatter = spawnSync(
-    process.platform === "win32" ? "pnpm" : "pnpm",
-    ["exec", "oxfmt", "--stdin-filepath", formatterPath],
-    {
-      cwd: FORMATTER_CWD,
-      input: source,
-      encoding: "utf8",
-      // Windows requires a shell to launch package-manager shim scripts reliably.
-      ...(process.platform === "win32" ? { shell: true } : {}),
-    },
-  );
+  const useDirectFormatter = process.platform !== "win32" && fs.existsSync(OXFMT_BIN);
+  const command = useDirectFormatter ? OXFMT_BIN : "pnpm";
+  const args = useDirectFormatter
+    ? ["--stdin-filepath", formatterPath]
+    : ["exec", "oxfmt", "--stdin-filepath", formatterPath];
+  const formatter = spawnSync(command, args, {
+    cwd: FORMATTER_CWD,
+    input: source,
+    encoding: "utf8",
+    // Windows requires a shell to launch package-manager shim scripts reliably.
+    ...(process.platform === "win32" ? { shell: true } : {}),
+  });
   if (formatter.status !== 0) {
     const details =
       formatter.stderr?.trim() ||

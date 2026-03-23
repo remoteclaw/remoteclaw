@@ -322,6 +322,8 @@ export type {
 export type { ChatType } from "../channels/chat-type.js";
 /** @deprecated Use ChatType instead */
 export type { RoutePeerKind } from "../routing/resolve-route.js";
+export { resolveAgentOutboundIdentity } from "../infra/outbound/identity.js";
+export type { OutboundIdentity } from "../infra/outbound/identity.js";
 export { resolveAckReaction } from "../agents/identity.js";
 export type { ReplyPayload } from "../auto-reply/types.js";
 export type { ChunkMode } from "../auto-reply/chunk.js";

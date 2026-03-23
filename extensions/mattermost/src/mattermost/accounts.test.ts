@@ -57,7 +57,7 @@ describe("resolveDefaultMattermostAccountId", () => {
 
 describe("resolveMattermostReplyToMode", () => {
   it("uses the configured mode for channel and group messages", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: {
         mattermost: {
           replyToMode: "all",
@@ -71,7 +71,7 @@ describe("resolveMattermostReplyToMode", () => {
   });
 
   it("keeps direct messages off even when replyToMode is enabled", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: {
         mattermost: {
           replyToMode: "all",

@@ -548,7 +548,7 @@ describe("telegramMessageActions", () => {
           actions: { editForumTopic: true },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const actions = telegramMessageActions.listActions?.({ cfg }) ?? [];
 

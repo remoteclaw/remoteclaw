@@ -13,6 +13,8 @@ import { logAckFailure, logTypingFailure } from "../channels/logging.js";
 import { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 import { createTypingCallbacks } from "../channels/typing.js";
 import { resolveMarkdownTableMode } from "../config/markdown-tables.js";
+import { resolveStorePath } from "../config/sessions/paths.js";
+import { loadSessionStore, resolveSessionStoreEntry } from "../config/sessions/store.js";
 import type {
   RemoteClawConfig,
   ReplyToMode,

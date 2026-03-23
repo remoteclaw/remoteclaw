@@ -1928,15 +1928,6 @@ describe("dispatchTelegramMessage draft streaming", () => {
         } as TelegramMessageContext["groupConfig"],
       }),
       telegramCfg: { autoTopicLabel: true },
-      cfg: {
-        channels: {
-          telegram: {
-            direct: {
-              "123": { autoTopicLabel: true },
-            },
-          },
-        },
-      },
     });
 
     expect(generateTopicLabel).not.toHaveBeenCalled();

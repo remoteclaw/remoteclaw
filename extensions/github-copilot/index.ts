@@ -1,17 +1,8 @@
-import {
-  emptyPluginConfigSchema,
-  type RemoteClawPluginApi,
-  type ProviderAuthContext,
-  type ProviderResolveDynamicModelContext,
-  type ProviderRuntimeModel,
-} from "remoteclaw/plugin-sdk/core";
-import {
-  coerceSecretRef,
-  ensureAuthProfileStore,
-  githubCopilotLoginCommand,
-  listProfilesForProvider,
-} from "remoteclaw/plugin-sdk/provider-auth";
-import { normalizeModelCompat } from "remoteclaw/plugin-sdk/provider-models";
+import { ensureAuthProfileStore, listProfilesForProvider } from "remoteclaw/plugin-sdk/agent-runtime";
+import { definePluginEntry, type ProviderAuthContext } from "remoteclaw/plugin-sdk/plugin-entry";
+import { coerceSecretRef } from "remoteclaw/plugin-sdk/provider-auth";
+import { githubCopilotLoginCommand } from "./login.js";
+import { PROVIDER_ID, resolveCopilotForwardCompatModel } from "./models.js";
 import { DEFAULT_COPILOT_API_BASE_URL, resolveCopilotApiToken } from "./token.js";
 import { fetchCopilotUsage } from "./usage.js";
 

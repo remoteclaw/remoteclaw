@@ -27,7 +27,12 @@ import {
   resolveDefaultLineAccountId,
   resolveLineAccount,
   listLineAccountIds,
-} from "../../../line/accounts.js";
+} from "../../../../extensions/line/runtime-api.js";
+import {
+  bundledChannelPlugins,
+  bundledChannelRuntimeSetters,
+  requireBundledChannelPlugin,
+} from "../bundled.js";
 import type { ChannelPlugin } from "../types.js";
 
 type PluginContractEntry = {

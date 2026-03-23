@@ -11,7 +11,6 @@ export {
   resolveWhatsAppGroupIntroHint,
   resolveWhatsAppGroupRequireMention,
   resolveWhatsAppGroupToolPolicy,
-  resolveWhatsAppOutboundTarget,
   ToolAuthorizationError,
   WhatsAppConfigSchema,
   type ChannelPlugin,
@@ -20,8 +19,9 @@ export {
 
 export {
   createWhatsAppOutboundBase,
-  isWhatsAppGroupJid,
-  normalizeWhatsAppTarget,
+  looksLikeWhatsAppTargetId,
+  normalizeWhatsAppAllowFromEntries,
+  normalizeWhatsAppMessagingTarget,
   resolveWhatsAppHeartbeatRecipients,
   resolveWhatsAppMentionStripRegexes,
   type ChannelMessageActionName,
@@ -30,9 +30,10 @@ export {
   type WhatsAppAccountConfig,
 } from "../../../src/plugin-sdk/whatsapp-shared.js";
 export {
-  looksLikeWhatsAppTargetId,
-  normalizeWhatsAppAllowFromEntries,
-  normalizeWhatsAppMessagingTarget,
-} from "../../../src/channels/plugins/normalize/whatsapp.js";
+  isWhatsAppGroupJid,
+  isWhatsAppUserTarget,
+  normalizeWhatsAppTarget,
+} from "./normalize-target.js";
+export { resolveWhatsAppOutboundTarget } from "./resolve-outbound-target.js";
 
 export { monitorWebChannel } from "./channel.runtime.js";

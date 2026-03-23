@@ -1,8 +1,8 @@
 {
-  "name": "@openclaw/openai-codex-provider",
+  "name": "@openclaw/groq-provider",
   "version": "2026.3.14",
   "private": true,
-  "description": "OpenClaw OpenAI Codex provider plugin",
+  "description": "OpenClaw Groq media-understanding provider",
   "type": "module",
   "openclaw": {
     "extensions": [

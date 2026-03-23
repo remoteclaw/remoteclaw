@@ -1,7 +1,9 @@
 import { type Context, complete } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
-import { loadWebMedia } from "../../../extensions/whatsapp/src/media.js";
 import type { RemoteClawConfig } from "../../config/config.js";
+import { getMediaUnderstandingProvider } from "../../media-understanding/provider-registry.js";
+import { buildProviderRegistry } from "../../media-understanding/runner.js";
+import { loadWebMedia } from "../../media/web-media.js";
 import { resolveUserPath } from "../../utils.js";
 import { isMinimaxVlmModel, isMinimaxVlmProvider, minimaxUnderstandImage } from "../minimax-vlm.js";
 import {

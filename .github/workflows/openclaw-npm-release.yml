@@ -1,15 +1,17 @@
 name: RemoteClaw NPM Release
 
 on:
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
     inputs:
       tag:
-        description: Release tag to publish (for example v2026.3.14 or v2026.3.14-beta.1)
+        description: Release tag to publish (for example v2026.3.22, v2026.3.22-beta.1, or fallback v2026.3.22-1)
         required: true
         type: string
+      preflight_only:
+        description: Run validation/build only and skip the gated publish job
+        required: true
+        default: false
+        type: boolean
 
 concurrency:
   group: remoteclaw-npm-release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
@@ -21,16 +23,25 @@ env:
   PNPM_VERSION: "10.23.0"
 
 jobs:
-  preview_remoteclaw_npm:
-    if: github.event_name == 'push'
+  preflight_remoteclaw_npm:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
     steps:
+      - name: Validate tag input format
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [[ ! "${RELEASE_TAG}" =~ ^v[0-9]{4}\.[1-9][0-9]*\.[1-9][0-9]*((-beta\.[1-9][0-9]*)|(-[1-9][0-9]*))?$ ]]; then
+            echo "Invalid release tag format: ${RELEASE_TAG}"
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
         with:
+          ref: refs/tags/${{ inputs.tag }}
           fetch-depth: 0
 
       - name: Setup Node environment
@@ -41,22 +52,9 @@ jobs:
           install-bun: "false"
           use-sticky-disk: "false"
 
-      - name: Print release plan
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-          echo "Release plan for ${RELEASE_TAG}:"
-          echo "git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main"
-          echo "pnpm release:remoteclaw:npm:check"
-          echo "pnpm check"
-          echo "pnpm build"
-          echo "pnpm release:check"
-          bash scripts/remoteclaw-npm-publish.sh --dry-run
-
       - name: Validate release tag and package metadata
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ inputs.tag }}
           RELEASE_MAIN_REF: origin/main
         run: |
           set -euo pipefail
@@ -68,16 +66,22 @@ jobs:
           pnpm release:remoteclaw:npm:check
 
       - name: Ensure version is not already published
+        env:
+          PREFLIGHT_ONLY: ${{ inputs.preflight_only }}
         run: |
           set -euo pipefail
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
 
           if npm view "remoteclaw@${PACKAGE_VERSION}" version >/dev/null 2>&1; then
+            if [[ "${PREFLIGHT_ONLY}" == "true" ]]; then
+              echo "remoteclaw@${PACKAGE_VERSION} is already published on npm; continuing because preflight_only=true."
+              exit 0
+            fi
             echo "remoteclaw@${PACKAGE_VERSION} is already published on npm."
             exit 1
           fi
 
-          echo "Previewing remoteclaw@${PACKAGE_VERSION}"
+          echo "Publishing remoteclaw@${PACKAGE_VERSION}"
 
       - name: Check
         run: pnpm check
@@ -88,18 +92,42 @@ jobs:
       - name: Verify release contents
         run: pnpm release:check
 
-      - name: Preview publish command
-        run: bash scripts/remoteclaw-npm-publish.sh --dry-run
+  validate_publish_dispatch_ref:
+    if: ${{ !inputs.preflight_only }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Require main workflow ref for publish
+        env:
+          WORKFLOW_REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          if [[ "${WORKFLOW_REF}" != "refs/heads/main" ]]; then
+            echo "Real publish runs must be dispatched from main. Use preflight_only=true for branch validation."
+            exit 1
+          fi
 
   publish_remoteclaw_npm:
-    if: github.event_name == 'workflow_dispatch'
     # npm trusted publishing + provenance requires a GitHub-hosted runner.
+    needs: [preflight_remoteclaw_npm, validate_publish_dispatch_ref]
+    if: ${{ !inputs.preflight_only }}
     runs-on: ubuntu-latest
     environment: npm-release
     permissions:
       contents: read
       id-token: write
     steps:
+      - name: Validate tag input format
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [[ ! "${RELEASE_TAG}" =~ ^v[0-9]{4}\.[1-9][0-9]*\.[1-9][0-9]*((-beta\.[1-9][0-9]*)|(-[1-9][0-9]*))?$ ]]; then
+            echo "Invalid release tag format: ${RELEASE_TAG}"
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
         with:
@@ -139,16 +167,5 @@ jobs:
 
           echo "Publishing remoteclaw@${PACKAGE_VERSION}"
 
-      - name: Check
-        run: pnpm check
-
-      - name: Build
-        run: pnpm build
-
-      - name: Verify release contents
-        run: pnpm release:check
-
       - name: Publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: bash scripts/remoteclaw-npm-publish.sh --publish

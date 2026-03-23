@@ -69,12 +69,12 @@ function applyWithBluebubblesImessageConfig(extra?: {
 }
 
 describe("applyPluginAutoEnable", () => {
-  it("auto-enables built-in channels and appends to existing allowlist", () => {
+  it("auto-enables built-in channels without appending to plugins.allow", () => {
     const result = applyWithSlackConfig({ plugins: { allow: ["telegram"] } });
 
     expect(result.config.channels?.slack?.enabled).toBe(true);
     expect(result.config.plugins?.entries?.slack).toBeUndefined();
-    expect(result.config.plugins?.allow).toEqual(["telegram", "slack"]);
+    expect(result.config.plugins?.allow).toEqual(["telegram"]);
     expect(result.changes.join("\n")).toContain("Slack configured, enabled automatically.");
   });
 
@@ -117,6 +117,27 @@ describe("applyPluginAutoEnable", () => {
     });
 
     expect(result.config.channels?.whatsapp?.enabled).toBe(true);
+    const validated = validateConfigObject(result.config);
+    expect(validated.ok).toBe(true);
+  });
+
+  it("does not append built-in WhatsApp to plugins.allow during auto-enable", () => {
+    const result = applyPluginAutoEnable({
+      config: {
+        channels: {
+          whatsapp: {
+            allowFrom: ["+15555550123"],
+          },
+        },
+        plugins: {
+          allow: ["telegram"],
+        },
+      },
+      env: {},
+    });
+
+    expect(result.config.channels?.whatsapp?.enabled).toBe(true);
+    expect(result.config.plugins?.allow).toEqual(["telegram"]);
     const validated = validateConfigObject(result.config);
     expect(validated.ok).toBe(true);
   });

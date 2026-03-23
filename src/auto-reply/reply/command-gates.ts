@@ -5,6 +5,13 @@ import { isInternalMessageChannel } from "../../utils/message-channel.js";
 import type { ReplyPayload } from "../types.js";
 import type { CommandHandlerResult, HandleCommandsParams } from "./commands-types.js";
 
+function buildNativeCommandGateReply(text: string): CommandHandlerResult {
+  return {
+    shouldContinue: false,
+    reply: { text },
+  };
+}
+
 export function rejectUnauthorizedCommand(
   params: HandleCommandsParams,
   commandLabel: string,
@@ -15,6 +22,9 @@ export function rejectUnauthorizedCommand(
   logVerbose(
     `Ignoring ${commandLabel} from unauthorized sender: ${params.command.senderId || "<unknown>"}`,
   );
+  if (params.ctx.CommandSource === "native") {
+    return buildNativeCommandGateReply("You are not authorized to use this command.");
+  }
   return { shouldContinue: false };
 }
 

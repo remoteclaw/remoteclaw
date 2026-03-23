@@ -345,6 +345,48 @@ describe("handleCommands /config configWrites gating", () => {
     expect(writeConfigFileMock.mock.calls.length).toBe(previousWriteCount);
   });
 
+  it("returns an explicit unauthorized reply for native privileged commands", async () => {
+    const configParams = buildParams(
+      "/config show",
+      {
+        commands: { config: true, text: true },
+        channels: { discord: { dm: { enabled: true, policy: "open" } } },
+      } as RemoteClawConfig,
+      {
+        Provider: "discord",
+        Surface: "discord",
+        CommandSource: "native",
+      },
+    );
+    configParams.command.senderIsOwner = false;
+
+    const configResult = await handleCommands(configParams);
+    expect(configResult).toEqual({
+      shouldContinue: false,
+      reply: { text: "You are not authorized to use this command." },
+    });
+
+    const pluginParams = buildParams(
+      "/plugins list",
+      {
+        commands: { plugins: true, text: true },
+        channels: { discord: { dm: { enabled: true, policy: "open" } } },
+      } as RemoteClawConfig,
+      {
+        Provider: "discord",
+        Surface: "discord",
+        CommandSource: "native",
+      },
+    );
+    pluginParams.command.senderIsOwner = false;
+
+    const pluginResult = await handleCommands(pluginParams);
+    expect(pluginResult).toEqual({
+      shouldContinue: false,
+      reply: { text: "You are not authorized to use this command." },
+    });
+  });
+
   it("blocks /config set from gateway clients without operator.admin", async () => {
     const cfg = {
       commands: { config: true, text: true },

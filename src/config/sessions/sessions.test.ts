@@ -283,6 +283,19 @@ describe("session store lock (Promise chain mutex)", () => {
 
 describe("appendAssistantMessageToSessionTranscript", () => {
   const fixture = useTempSessionsFixture("transcript-test-");
+  const sessionId = "test-session-id";
+  const sessionKey = "test-session";
+
+  function writeTranscriptStore() {
+    const store = {
+      [sessionKey]: {
+        sessionId,
+        chatType: "direct",
+        channel: "discord",
+      },
+    };
+    fs.writeFileSync(fixture.storePath(), JSON.stringify(store), "utf-8");
+  }
 
   it("creates transcript file and appends message for valid session", async () => {
     const sessionId = "test-session-id";

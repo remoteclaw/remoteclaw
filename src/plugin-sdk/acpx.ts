@@ -1,11 +1,29 @@
-// Public ACPX runtime backend helpers.
+// Private ACPX runtime backend helpers for bundled extensions.
 // Keep this surface narrow and limited to the ACP runtime/backend contract.
 
+export type { AcpRuntimeErrorCode } from "../acp/runtime/errors.js";
+export { AcpRuntimeError } from "../acp/runtime/errors.js";
+export { registerAcpRuntimeBackend, unregisterAcpRuntimeBackend } from "../acp/runtime/registry.js";
+export type {
+  AcpRuntime,
+  AcpRuntimeCapabilities,
+  AcpRuntimeDoctorReport,
+  AcpRuntimeEnsureInput,
+  AcpRuntimeEvent,
+  AcpRuntimeHandle,
+  AcpRuntimeStatus,
+  AcpRuntimeTurnInput,
+  AcpSessionUpdateTag,
+} from "../acp/runtime/types.js";
 export type {
   RemoteClawPluginApi,
+  RemoteClawPluginApi as OpenClawPluginApi,
   RemoteClawPluginConfigSchema,
+  RemoteClawPluginConfigSchema as OpenClawPluginConfigSchema,
   RemoteClawPluginService,
+  RemoteClawPluginService as OpenClawPluginService,
   RemoteClawPluginServiceContext,
+  RemoteClawPluginServiceContext as OpenClawPluginServiceContext,
   PluginLogger,
 } from "../plugins/types.js";
 export type {

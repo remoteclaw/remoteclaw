@@ -13,6 +13,23 @@ export async function writeRemoteClawConfig(home: string, config: unknown): Prom
   return configPath;
 }
 
+export async function writeStateDirDotEnv(
+  content: string,
+  params?: {
+    env?: NodeJS.ProcessEnv;
+    stateDir?: string;
+  },
+): Promise<{ dotEnvPath: string; stateDir: string }> {
+  const stateDir = params?.stateDir ?? params?.env?.OPENCLAW_STATE_DIR?.trim();
+  if (!stateDir) {
+    throw new Error("Expected OPENCLAW_STATE_DIR or explicit stateDir for .env test setup");
+  }
+  const dotEnvPath = path.join(stateDir, ".env");
+  await fs.mkdir(path.dirname(dotEnvPath), { recursive: true });
+  await fs.writeFile(dotEnvPath, content, "utf-8");
+  return { dotEnvPath, stateDir };
+}
+
 export async function withTempHomeConfig<T>(
   config: unknown,
   fn: (params: { home: string; configPath: string }) => Promise<T>,

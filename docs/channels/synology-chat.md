@@ -1,5 +1,5 @@
 ---
-description: "Synology Chat webhook setup and RemoteClaw config"
+summary: "Synology Chat webhook setup and RemoteClaw config"
 read_when:
   - Setting up Synology Chat with RemoteClaw
   - Debugging Synology Chat webhook routing
@@ -27,8 +27,8 @@ Details: [Plugins](/tools/plugin)
 ## Quick setup
 
 1. Install and enable the Synology Chat plugin.
-   - `openclaw onboard` now shows Synology Chat in the same channel setup list as `openclaw channels add`.
-   - Non-interactive setup: `openclaw channels add --channel synology-chat --token <token> --url <incoming-webhook-url>`
+   - `remoteclaw onboard` now shows Synology Chat in the same channel setup list as `remoteclaw channels add`.
+   - Non-interactive setup: `remoteclaw channels add --channel synology-chat --token <token> --url <incoming-webhook-url>`
 2. In Synology Chat integrations:
    - Create an incoming webhook and copy its URL.
    - Create an outgoing webhook with your secret token.
@@ -68,7 +68,7 @@ For the default account, you can use env vars:
 - `SYNOLOGY_NAS_HOST`
 - `SYNOLOGY_ALLOWED_USER_IDS` (comma-separated)
 - `SYNOLOGY_RATE_LIMIT`
-- `REMOTECLAW_BOT_NAME`
+- `OPENCLAW_BOT_NAME`
 
 Config values override env vars.
 
@@ -79,6 +79,7 @@ Config values override env vars.
 - In `allowlist` mode, an empty `allowedUserIds` list is treated as misconfiguration and the webhook route will not start (use `dmPolicy: "open"` for allow-all).
 - `dmPolicy: "open"` allows any sender.
 - `dmPolicy: "disabled"` blocks DMs.
+- Reply recipient binding stays on stable numeric `user_id` by default. `channels.synology-chat.dangerouslyAllowNameMatching: true` is break-glass compatibility mode that re-enables mutable username/nickname lookup for reply delivery.
 - Pairing approvals work with:
   - `remoteclaw pairing list synology-chat`
   - `remoteclaw pairing approve synology-chat <CODE>`
@@ -100,6 +101,13 @@ Media sends are supported by URL-based file delivery.
 
 Multiple Synology Chat accounts are supported under `channels.synology-chat.accounts`.
 Each account can override token, incoming URL, webhook path, DM policy, and limits.
+Direct-message sessions are isolated per account and user, so the same numeric `user_id`
+on two different Synology accounts does not share transcript state.
+Give each enabled account a distinct `webhookPath`. RemoteClaw now rejects duplicate exact paths
+and refuses to start named accounts that only inherit a shared webhook path in multi-account setups.
+If you intentionally need legacy inheritance for a named account, set
+`dangerouslyAllowInheritedWebhookPath: true` on that account or at `channels.synology-chat`,
+but duplicate exact paths are still rejected fail-closed. Prefer explicit per-account paths.
 
 ```json5
 {
@@ -130,3 +138,5 @@ Each account can override token, incoming URL, webhook path, DM policy, and limi
 - Keep `allowInsecureSsl: false` unless you explicitly trust a self-signed local NAS cert.
 - Inbound webhook requests are token-verified and rate-limited per sender.
 - Prefer `dmPolicy: "allowlist"` for production.
+- Keep `dangerouslyAllowNameMatching` off unless you explicitly need legacy username-based reply delivery.
+- Keep `dangerouslyAllowInheritedWebhookPath` off unless you explicitly accept shared-path routing risk in a multi-account setup.

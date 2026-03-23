@@ -73,7 +73,7 @@ function withRuntimeDefaults(resolved: RemoteClawConfig): RemoteClawConfig {
     agents: {
       ...resolved.agents,
       defaults: {
-        model: "gpt-5.2",
+        model: "gpt-5.4",
       } as never,
     } as never,
   };
@@ -167,7 +167,7 @@ describe("config cli", () => {
         ...resolved,
         agents: {
           defaults: {
-            model: "gpt-5.2",
+            model: "gpt-5.4",
             contextWindow: 128_000,
             maxTokens: 16_000,
           },

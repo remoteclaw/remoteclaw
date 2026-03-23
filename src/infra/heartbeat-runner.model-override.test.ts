@@ -130,7 +130,7 @@ describe("runHeartbeatOnce – heartbeat model override", () => {
           defaults: {
             heartbeat: {
               every: "30m",
-              model: "openai/gpt-4o-mini",
+              model: "openai/gpt-5.4",
               prompt: "Check status",
             },
           },

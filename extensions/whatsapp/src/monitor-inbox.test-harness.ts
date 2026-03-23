@@ -4,7 +4,6 @@ import os from "node:os";
 import path from "node:path";
 import { resetLogger, setLoggerOverride } from "remoteclaw/plugin-sdk/runtime-env";
 import { afterEach, beforeEach, expect, vi } from "vitest";
-import { monitorWebInbox } from "./inbound.js";
 
 // Avoid exporting vitest mock types (TS2742 under pnpm + d.ts emit).
 // oxlint-disable-next-line typescript/no-explicit-any
@@ -119,7 +118,9 @@ export function getSock(): MockSock {
   return sessionState.sock;
 }
 
-export type InboxOnMessage = NonNullable<Parameters<typeof monitorWebInbox>[0]["onMessage"]>;
+type MonitorWebInbox = typeof import("./inbound.js").monitorWebInbox;
+export type InboxOnMessage = NonNullable<Parameters<MonitorWebInbox>[0]["onMessage"]>;
+let monitorWebInbox: MonitorWebInbox;
 
 export async function settleInboundWork() {
   await new Promise((resolve) => setTimeout(resolve, 25));
@@ -136,6 +137,9 @@ export async function waitForMessageCalls(onMessage: ReturnType<typeof vi.fn>, c
 }
 
 export async function startInboxMonitor(onMessage: InboxOnMessage) {
+  if (!monitorWebInbox) {
+    ({ monitorWebInbox } = await import("./inbound.js"));
+  }
   const listener = await monitorWebInbox({
     verbose: false,
     onMessage,
@@ -194,7 +198,6 @@ export function installWebMonitorInboxUnitTestHooks(opts?: { authDir?: boolean }
   const createAuthDir = opts?.authDir ?? true;
 
   beforeEach(async () => {
-    vi.useRealTimers();
     vi.resetModules();
     vi.clearAllMocks();
     sessionState.sock = createMockSock();
@@ -204,7 +207,9 @@ export function installWebMonitorInboxUnitTestHooks(opts?: { authDir?: boolean }
       code: "PAIRCODE",
       created: true,
     });
-    const { resetWebInboundDedupe } = await import("./inbound.js");
+    const inboundModule = await import("./inbound.js");
+    monitorWebInbox = inboundModule.monitorWebInbox;
+    const { resetWebInboundDedupe } = inboundModule;
     resetWebInboundDedupe();
     if (createAuthDir) {
       authDir = fsSync.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-auth-"));

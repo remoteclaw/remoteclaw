@@ -1,75 +1,35 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
-import type { TelegramAccountConfig } from "../../../src/config/types.js";
-import { clearPluginCommands, registerPluginCommand } from "../../../src/plugins/commands.js";
 const deliveryMocks = vi.hoisted(() => ({
   deliverReplies: vi.fn(async () => ({ delivered: true })),
 }));
 
-vi.mock("./bot/delivery.js", () => ({
-  deliverReplies: deliveryMocks.deliverReplies,
-}));
-
-import { registerTelegramNativeCommands } from "./bot-native-commands.js";
-import {
-  createCommandBot,
-  createNativeCommandTestParams,
-  createPrivateCommandContext,
-  waitForRegisteredCommands,
-} from "./bot-native-commands.menu-test-support.js";
+let registerTelegramNativeCommands: typeof import("./bot-native-commands.js").registerTelegramNativeCommands;
+let clearPluginCommands: typeof import("../../../src/plugins/commands.js").clearPluginCommands;
+let registerPluginCommand: typeof import("../../../src/plugins/commands.js").registerPluginCommand;
+let createCommandBot: typeof import("./bot-native-commands.menu-test-support.js").createCommandBot;
+let createNativeCommandTestParams: typeof import("./bot-native-commands.menu-test-support.js").createNativeCommandTestParams;
+let createPrivateCommandContext: typeof import("./bot-native-commands.menu-test-support.js").createPrivateCommandContext;
+let waitForRegisteredCommands: typeof import("./bot-native-commands.menu-test-support.js").waitForRegisteredCommands;
 
 describe("registerTelegramNativeCommands real plugin registry", () => {
-  type RegisteredCommand = {
-    command: string;
-    description: string;
-  };
-
-  async function waitForRegisteredCommands(
-    setMyCommands: ReturnType<typeof vi.fn>,
-  ): Promise<RegisteredCommand[]> {
-    await vi.waitFor(() => {
-      expect(setMyCommands).toHaveBeenCalled();
-    });
-    return setMyCommands.mock.calls[0]?.[0] as RegisteredCommand[];
-  }
-
-  const buildParams = (cfg: RemoteClawConfig, accountId = "default") =>
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.doMock("./bot/delivery.js", () => ({
+      deliverReplies: deliveryMocks.deliverReplies,
+    }));
+    vi.doMock("./bot/delivery.replies.js", () => ({
+      deliverReplies: deliveryMocks.deliverReplies,
+    }));
+    ({ clearPluginCommands, registerPluginCommand } =
+      await import("../../../src/plugins/commands.js"));
+    ({ registerTelegramNativeCommands } = await import("./bot-native-commands.js"));
     ({
-      bot: {
-        api: {
-          setMyCommands: vi.fn().mockResolvedValue(undefined),
-          sendMessage: vi.fn().mockResolvedValue(undefined),
-        },
-        command: vi.fn(),
-      } as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
-      cfg,
-      runtime: {} as RuntimeEnv,
-      accountId,
-      telegramCfg: {} as TelegramAccountConfig,
-      allowFrom: [],
-      groupAllowFrom: [],
-      replyToMode: "off",
-      textLimit: 4000,
-      useAccessGroups: false,
-      nativeEnabled: true,
-      nativeSkillsEnabled: true,
-      nativeDisabledExplicit: false,
-      resolveGroupPolicy: () =>
-        ({
-          allowlistEnabled: false,
-          allowed: true,
-        }) as ReturnType<
-          Parameters<typeof registerTelegramNativeCommands>[0]["resolveGroupPolicy"]
-        >,
-      resolveTelegramGroupConfig: () => ({
-        groupConfig: undefined,
-        topicConfig: undefined,
-      }),
-      shouldSkipUpdate: () => false,
-      opts: { token: "token" },
-    }) satisfies Parameters<typeof registerTelegramNativeCommands>[0];
-
-  beforeEach(() => {
+      createCommandBot,
+      createNativeCommandTestParams,
+      createPrivateCommandContext,
+      waitForRegisteredCommands,
+    } = await import("./bot-native-commands.menu-test-support.js"));
     clearPluginCommands();
     deliveryMocks.deliverReplies.mockClear();
     deliveryMocks.deliverReplies.mockResolvedValue({ delivered: true });
@@ -211,7 +171,7 @@ describe("registerTelegramNativeCommands real plugin registry", () => {
 
     registerTelegramNativeCommands({
       ...createNativeCommandTestParams({
-        commands: { allowFrom: { telegram: ["999"] } } as OpenClawConfig["commands"],
+        commands: { allowFrom: { telegram: ["999"] } } as RemoteClawConfig["commands"],
       }),
       bot,
       allowFrom: ["999"],

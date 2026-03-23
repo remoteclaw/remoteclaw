@@ -897,6 +897,22 @@ const { enqueueSystemEventSpy, resolveAgentRouteMock } = vi.hoisted(() => ({
   })),
 }));
 
+vi.mock("remoteclaw/plugin-sdk/infra-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/infra-runtime")>();
+  return {
+    ...actual,
+    enqueueSystemEvent: enqueueSystemEventSpy,
+  };
+});
+
+vi.mock("remoteclaw/plugin-sdk/routing", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/routing")>();
+  return {
+    ...actual,
+    resolveAgentRoute: resolveAgentRouteMock,
+  };
+});
+
 vi.mock("../../../src/infra/system-events.js", () => ({
   enqueueSystemEvent: enqueueSystemEventSpy,
 }));

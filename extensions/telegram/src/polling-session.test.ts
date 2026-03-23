@@ -22,8 +22,8 @@ vi.mock("./api-logging.js", () => ({
   withTelegramApiErrorLogging: async ({ fn }: { fn: () => Promise<unknown> }) => await fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/infra-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/infra-runtime")>();
+vi.mock("remoteclaw/plugin-sdk/infra-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/infra-runtime")>();
   return {
     ...actual,
     computeBackoff: computeBackoffMock,
@@ -31,15 +31,17 @@ vi.mock("openclaw/plugin-sdk/infra-runtime", async (importOriginal) => {
   };
 });
 
-import { TelegramPollingSession } from "./polling-session.js";
+let TelegramPollingSession: typeof import("./polling-session.js").TelegramPollingSession;
 
 describe("TelegramPollingSession", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    vi.resetModules();
     runMock.mockReset();
     createTelegramBotMock.mockReset();
     isRecoverableTelegramNetworkErrorMock.mockReset().mockReturnValue(true);
     computeBackoffMock.mockReset().mockReturnValue(0);
     sleepWithAbortMock.mockReset().mockResolvedValue(undefined);
+    ({ TelegramPollingSession } = await import("./polling-session.js"));
   });
 
   it("uses backoff helpers for recoverable polling retries", async () => {

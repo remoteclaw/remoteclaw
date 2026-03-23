@@ -2,18 +2,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let collectTelegramUnmentionedGroupIds: typeof import("./audit.js").collectTelegramUnmentionedGroupIds;
 let auditTelegramGroupMembership: typeof import("./audit.js").auditTelegramGroupMembership;
-const undiciFetch = vi.hoisted(() => vi.fn());
+const fetchWithTimeoutMock = vi.hoisted(() => vi.fn());
 
-vi.mock("undici", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("undici")>();
+vi.mock("remoteclaw/plugin-sdk/text-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/text-runtime")>();
   return {
     ...actual,
-    fetch: undiciFetch,
+    fetchWithTimeout: fetchWithTimeoutMock,
   };
 });
 
 function mockGetChatMemberStatus(status: string) {
-  undiciFetch.mockResolvedValueOnce(
+  fetchWithTimeoutMock.mockResolvedValueOnce(
     new Response(JSON.stringify({ ok: true, result: { status } }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -35,6 +35,9 @@ describe("telegram audit", () => {
     vi.resetModules();
     ({ collectTelegramUnmentionedGroupIds, auditTelegramGroupMembership } =
       await import("./audit.js"));
+  });
+
+  beforeEach(() => {
     fetchWithTimeoutMock.mockReset();
   });
 

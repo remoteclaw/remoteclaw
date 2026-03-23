@@ -10,7 +10,7 @@ vi.mock("../../../src/acp/persistent-bindings.js", () => ({
     resolveConfiguredAcpBindingRecordMock(...args),
 }));
 
-import { buildTelegramMessageContextForTest } from "./bot-message-context.test-harness.js";
+let buildTelegramMessageContextForTest: typeof import("./bot-message-context.test-harness.js").buildTelegramMessageContextForTest;
 
 function createConfiguredTelegramBinding() {
   return {
@@ -44,14 +44,14 @@ function createConfiguredTelegramBinding() {
 }
 
 describe("buildTelegramMessageContext ACP configured bindings", () => {
-  beforeEach(() => {
-    ensureConfiguredAcpBindingSessionMock.mockReset();
-    resolveConfiguredAcpBindingRecordMock.mockReset();
-    resolveConfiguredAcpBindingRecordMock.mockReturnValue(createConfiguredTelegramBinding());
-    ensureConfiguredAcpBindingSessionMock.mockResolvedValue({
-      ok: true,
-      sessionKey: "agent:codex:acp:binding:telegram:work:abc123",
-    });
+  beforeEach(async () => {
+    vi.resetModules();
+    ensureConfiguredBindingRouteReadyMock.mockReset();
+    resolveConfiguredBindingRouteMock.mockReset();
+    resolveConfiguredBindingRouteMock.mockReturnValue(createConfiguredTelegramRoute());
+    ensureConfiguredBindingRouteReadyMock.mockResolvedValue({ ok: true });
+    ({ buildTelegramMessageContextForTest } =
+      await import("./bot-message-context.test-harness.js"));
   });
 
   it("treats configured topic bindings as explicit route matches on non-default accounts", async () => {

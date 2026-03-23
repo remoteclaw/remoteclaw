@@ -14,15 +14,17 @@ const sessionMocks = getPwToolsCoreSessionMocks();
 const tmpDirMocks = vi.hoisted(() => ({
   resolvePreferredRemoteClawTmpDir: vi.fn(() => "/tmp/remoteclaw"),
 }));
-vi.mock("../infra/tmp-remoteclaw-dir.js", () => tmpDirMocks);
-const mod = await import("./pw-tools-core.js");
+vi.mock("../infra/tmp-openclaw-dir.js", () => tmpDirMocks);
+let mod: typeof import("./pw-tools-core.js");
 
 describe("pw-tools-core", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    vi.resetModules();
     for (const fn of Object.values(tmpDirMocks)) {
       fn.mockClear();
     }
-    tmpDirMocks.resolvePreferredRemoteClawTmpDir.mockReturnValue("/tmp/remoteclaw");
+    tmpDirMocks.resolvePreferredOpenClawTmpDir.mockReturnValue("/tmp/openclaw");
+    mod = await import("./pw-tools-core.js");
   });
 
   async function withTempDir<T>(run: (tempDir: string) => Promise<T>): Promise<T> {

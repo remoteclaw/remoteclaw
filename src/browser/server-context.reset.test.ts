@@ -1,8 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { createProfileResetOps } from "./server-context.reset.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const relayMocks = vi.hoisted(() => ({
   stopChromeExtensionRelayServer: vi.fn(async () => true),
@@ -20,9 +19,45 @@ vi.mock("./extension-relay.js", () => relayMocks);
 vi.mock("./trash.js", () => trashMocks);
 vi.mock("./pw-ai.js", () => pwAiMocks);
 
+let createProfileResetOps: typeof import("./server-context.reset.js").createProfileResetOps;
+
 afterEach(() => {
   vi.clearAllMocks();
 });
+
+beforeEach(async () => {
+  vi.resetModules();
+  ({ createProfileResetOps } = await import("./server-context.reset.js"));
+});
+
+function localOpenClawProfile(): Parameters<typeof createProfileResetOps>[0]["profile"] {
+  return {
+    name: "openclaw",
+    cdpUrl: "http://127.0.0.1:18800",
+    cdpHost: "127.0.0.1",
+    cdpIsLoopback: true,
+    cdpPort: 18800,
+    color: "#f60",
+    driver: "openclaw",
+    attachOnly: false,
+  };
+}
+
+function createLocalOpenClawResetOps(
+  params: Omit<Parameters<typeof createProfileResetOps>[0], "profile">,
+) {
+  return createProfileResetOps({ profile: localOpenClawProfile(), ...params });
+}
+
+function createStatelessResetOps(profile: Parameters<typeof createProfileResetOps>[0]["profile"]) {
+  return createProfileResetOps({
+    profile,
+    getProfileState: () => ({ profile: {} as never, running: null }),
+    stopRunningBrowser: vi.fn(async () => ({ stopped: false })),
+    isHttpReachable: vi.fn(async () => false),
+    resolveOpenClawUserDataDir: (name: string) => `/tmp/${name}`,
+  });
+}
 
 describe("createProfileResetOps", () => {
   it("stops extension relay for extension profiles", async () => {

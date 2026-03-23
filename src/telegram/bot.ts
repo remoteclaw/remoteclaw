@@ -13,9 +13,8 @@ import {
 import {
   isNativeCommandsExplicitlyDisabled,
   resolveNativeCommandsEnabled,
-  resolveNativeSkillsEnabled,
 } from "../config/commands.js";
-import type { OpenClawConfig, ReplyToMode } from "../config/config.js";
+import type { RemoteClawConfig, ReplyToMode, TelegramGroupConfig } from "../config/config.js";
 import { loadConfig } from "../config/config.js";
 import {
   resolveChannelGroupPolicy,
@@ -39,7 +38,7 @@ import {
 } from "./bot-updates.js";
 import { buildTelegramGroupPeerId, resolveTelegramStreamMode } from "./bot/helpers.js";
 import { resolveTelegramTransport } from "./fetch.js";
-import { tagTelegramNetworkError } from "./network-errors.js";
+// tagTelegramNetworkError export removed in fork
 import { createTelegramSendChatActionHandler } from "./sendchataction-401-backoff.js";
 import { getTelegramSequentialKey } from "./sequential-key.js";
 import { createTelegramThreadBindingManager } from "./thread-bindings.js";
@@ -54,7 +53,7 @@ export type TelegramBotOptions = {
   mediaMaxMb?: number;
   replyToMode?: ReplyToMode;
   proxyFetch?: typeof fetch;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   /** Signal to abort in-flight Telegram API fetch requests (e.g. getUpdates) on shutdown. */
   fetchAbortSignal?: AbortSignal;
   updateOffset?: {
@@ -74,33 +73,8 @@ type TelegramFetchInit = Parameters<NonNullable<ApiClientOptions["fetch"]>>[1];
 type GlobalFetchInput = Parameters<typeof globalThis.fetch>[0];
 type GlobalFetchInit = Parameters<typeof globalThis.fetch>[1];
 
-function readRequestUrl(input: TelegramFetchInput): string | null {
-  if (typeof input === "string") {
-    return input;
-  }
-  if (input instanceof URL) {
-    return input.toString();
-  }
-  if (typeof input === "object" && input !== null && "url" in input) {
-    const url = (input as { url?: unknown }).url;
-    return typeof url === "string" ? url : null;
-  }
-  return null;
-}
-
-function extractTelegramApiMethod(input: TelegramFetchInput): string | null {
-  const url = readRequestUrl(input);
-  if (!url) {
-    return null;
-  }
-  try {
-    const pathname = new URL(url).pathname;
-    const segments = pathname.split("/").filter(Boolean);
-    return segments.length > 0 ? (segments.at(-1) ?? null) : null;
-  } catch {
-    return null;
-  }
-}
+// readRequestUrl and extractTelegramApiMethod removed in fork
+// (were only used by tagTelegramNetworkError which was gutted)
 
 export function createTelegramBot(opts: TelegramBotOptions) {
   const runtime: RuntimeEnv = opts.runtime ?? createNonExitingRuntime();
@@ -190,15 +164,7 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     const baseFetch = finalFetch;
     finalFetch = ((input: TelegramFetchInput, init?: TelegramFetchInit) => {
       return Promise.resolve(baseFetch(input, init)).catch((err: unknown) => {
-        try {
-          tagTelegramNetworkError(err, {
-            method: extractTelegramApiMethod(input),
-            url: readRequestUrl(input),
-          });
-        } catch {
-          // Tagging is best-effort; preserve the original fetch failure if the
-          // error object cannot accept extra metadata.
-        }
+        // tagTelegramNetworkError removed in fork; re-throw as-is
         throw err;
       });
     }) as unknown as NonNullable<ApiClientOptions["fetch"]>;
@@ -352,11 +318,8 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     providerSetting: telegramCfg.commands?.native,
     globalSetting: cfg.commands?.native,
   });
-  const nativeSkillsEnabled = resolveNativeSkillsEnabled({
-    providerId: "telegram",
-    providerSetting: telegramCfg.commands?.nativeSkills,
-    globalSetting: cfg.commands?.nativeSkills,
-  });
+  // nativeSkills concept removed in fork
+  const nativeSkillsEnabled = false;
   const nativeDisabledExplicit = isNativeCommandsExplicitlyDisabled({
     providerSetting: telegramCfg.commands?.native,
     globalSetting: cfg.commands?.native,
@@ -409,7 +372,8 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     });
   const resolveTelegramGroupConfig = (chatId: string | number, messageThreadId?: number) => {
     const groups = telegramCfg.groups;
-    const direct = telegramCfg.direct;
+    // `direct` config removed in fork (TelegramAccountConfig has no `direct` field)
+    const direct = undefined as Record<string, TelegramGroupConfig> | undefined;
     const chatIdStr = String(chatId);
     const isDm = !chatIdStr.startsWith("-");
 

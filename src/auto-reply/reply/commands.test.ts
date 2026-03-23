@@ -311,7 +311,7 @@ describe("handleCommands /config configWrites gating", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const params = buildPolicyParams(
       "/config set channels.telegram.accounts.work.enabled=false",
       cfg,
@@ -332,7 +332,7 @@ describe("handleCommands /config configWrites gating", () => {
     const cfg = {
       commands: { config: true, text: true },
       channels: { telegram: { configWrites: true } },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const params = buildPolicyParams('/config set channels.telegram={"enabled":false}', cfg, {
       Provider: "telegram",
       Surface: "telegram",
@@ -431,7 +431,7 @@ describe("handleCommands /config configWrites gating", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as RemoteClawConfig,
       {
         Provider: INTERNAL_MESSAGE_CHANNEL,
         Surface: INTERNAL_MESSAGE_CHANNEL,
@@ -442,7 +442,7 @@ describe("handleCommands /config configWrites gating", () => {
     const result = await handleCommands(params);
     expect(result.shouldContinue).toBe(false);
     expect(result.reply?.text).toContain("Config updated");
-    const written = writeConfigFileMock.mock.calls.at(-1)?.[0] as OpenClawConfig;
+    const written = writeConfigFileMock.mock.calls.at(-1)?.[0] as RemoteClawConfig;
     expect(written.channels?.telegram?.accounts?.work?.enabled).toBe(false);
   });
 });
@@ -590,7 +590,7 @@ describe("handleCommands /allowlist", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const params = buildPolicyParams("/allowlist add dm --account work --config 789", cfg, {
       AccountId: "default",
       Provider: "telegram",

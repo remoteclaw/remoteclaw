@@ -56,6 +56,7 @@ describe("native command auth in groups", () => {
       textLimit: 4000,
       useAccessGroups: params.useAccessGroups ?? false,
       nativeEnabled: true,
+      nativeSkillsEnabled: false,
       nativeDisabledExplicit: false,
       resolveGroupPolicy:
         params.resolveGroupPolicy ??

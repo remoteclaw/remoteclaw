@@ -25,6 +25,7 @@ export type SystemRunApprovalPlanV2 = {
   argv: string[];
   cwd: string | null;
   rawCommand: string | null;
+  commandPreview: string | null;
   agentId: string | null;
   sessionKey: string | null;
   mutableFileOperand?: SystemRunApprovalFileOperand;

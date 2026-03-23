@@ -1,23 +1,20 @@
 import { isIP } from "node:net";
 import path from "node:path";
-import { resolveSandboxConfigForAgent } from "../agents/sandbox.js";
-import { redactCdpUrl } from "../browser/cdp.helpers.js";
+// resolveSandboxConfigForAgent removed in fork (agents/sandbox module gutted)
+// redactCdpUrl removed in fork
 import { resolveBrowserConfig, resolveProfile } from "../browser/config.js";
 import { resolveBrowserControlAuth } from "../browser/control-auth.js";
-import { hasPotentialConfiguredChannels } from "../channels/config-presence.js";
+// hasPotentialConfiguredChannels removed in fork (channels/config-presence module gutted)
 import type { listChannelPlugins } from "../channels/plugins/index.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { ConfigFileSnapshot, OpenClawConfig } from "../config/config.js";
+import type { ConfigFileSnapshot, RemoteClawConfig } from "../config/config.js";
 import { resolveConfigPath, resolveStateDir } from "../config/paths.js";
 import { hasConfiguredSecretInput } from "../config/types.secrets.js";
 import { resolveGatewayAuth } from "../gateway/auth.js";
-import { type ExecApprovalsFile, loadExecApprovals } from "../infra/exec-approvals.js";
+// ExecApprovalsFile / loadExecApprovals removed in fork (infra/exec-approvals module gutted)
 import { isInterpreterLikeAllowlistPattern } from "../infra/exec-inline-eval.js";
-import {
-  listInterpreterLikeSafeBins,
-  resolveMergedSafeBinProfileFixtures,
-} from "../infra/exec-safe-bin-runtime-policy.js";
-import { normalizeTrustedSafeBinDirs } from "../infra/exec-safe-bin-trust.js";
+// listInterpreterLikeSafeBins / resolveMergedSafeBinProfileFixtures removed in fork (infra/exec-safe-bin-runtime-policy module gutted)
+// normalizeTrustedSafeBinDirs removed in fork (infra/exec-safe-bin-trust module gutted)
 import { isBlockedHostnameOrIp, isPrivateNetworkAllowedByPolicy } from "../infra/net/ssrf.js";
 import { DEFAULT_AGENT_ID } from "../routing/session-key.js";
 import {
@@ -29,8 +26,47 @@ import { collectEnabledInsecureOrDangerousFlags } from "./dangerous-config-flags
 import { DEFAULT_GATEWAY_HTTP_TOOL_DENY } from "./dangerous-tools.js";
 import type { ExecFn } from "./windows-acl.js";
 
-type ExecDockerRawFn = typeof import("../agents/sandbox/docker.js").execDockerRaw;
+// agents/sandbox/docker module gutted in fork
+type ExecDockerRawFn = (...args: unknown[]) => Promise<unknown>;
 type ProbeGatewayFn = typeof import("../gateway/probe.js").probeGateway;
+
+// Stubs for modules gutted in fork
+function resolveSandboxConfigForAgent(_cfg: RemoteClawConfig, _agentId?: string): { mode: string } {
+  return { mode: "off" };
+}
+
+type ExecApprovalAgent = {
+  autoAllowSkills?: boolean;
+  allowlist?: Array<{ pattern: string }>;
+  [key: string]: unknown;
+};
+
+type ExecApprovalsFile = {
+  defaults?: { autoAllowSkills?: boolean; [key: string]: unknown };
+  agents?: Record<string, ExecApprovalAgent | undefined>;
+};
+
+function loadExecApprovals(): ExecApprovalsFile {
+  return {};
+}
+
+function normalizeTrustedSafeBinDirs(_dirs: unknown): string[] {
+  return [];
+}
+
+function resolveMergedSafeBinProfileFixtures(
+  _params: Record<string, unknown>,
+): Record<string, unknown> | null {
+  return null;
+}
+
+function listInterpreterLikeSafeBins(_bins: string[]): string[] {
+  return [];
+}
+
+function hasPotentialConfiguredChannels(_cfg: RemoteClawConfig, _env?: NodeJS.ProcessEnv): boolean {
+  return false;
+}
 
 export type SecurityAuditSeverity = "info" | "warn" | "critical";
 
@@ -64,8 +100,8 @@ export type SecurityAuditReport = {
 };
 
 export type SecurityAuditOptions = {
-  config: OpenClawConfig;
-  sourceConfig?: OpenClawConfig;
+  config: RemoteClawConfig;
+  sourceConfig?: RemoteClawConfig;
   env?: NodeJS.ProcessEnv;
   platform?: NodeJS.Platform;
   deep?: boolean;
@@ -94,8 +130,8 @@ export type SecurityAuditOptions = {
 };
 
 type AuditExecutionContext = {
-  cfg: OpenClawConfig;
-  sourceConfig: OpenClawConfig;
+  cfg: RemoteClawConfig;
+  sourceConfig: RemoteClawConfig;
   env: NodeJS.ProcessEnv;
   platform: NodeJS.Platform;
   includeFilesystem: boolean;
@@ -114,15 +150,20 @@ type AuditExecutionContext = {
 };
 
 let channelPluginsModulePromise: Promise<typeof import("../channels/plugins/index.js")> | undefined;
-let auditNonDeepModulePromise: Promise<typeof import("./audit.nondeep.runtime.js")> | undefined;
-let auditDeepModulePromise: Promise<typeof import("./audit.deep.runtime.js")> | undefined;
-let auditChannelModulePromise:
-  | Promise<typeof import("./audit-channel.collect.runtime.js")>
-  | undefined;
+// audit.nondeep.runtime, audit.deep.runtime, audit-channel.collect.runtime modules gutted in fork
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- gutted module stubs
+type AuditNonDeepModule = Record<string, (...args: any[]) => any>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- gutted module stubs
+type AuditDeepModule = Record<string, (...args: any[]) => any>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- gutted module stubs
+type AuditChannelModule = Record<string, (...args: any[]) => any>;
+let auditNonDeepModulePromise: Promise<AuditNonDeepModule> | undefined;
+let auditDeepModulePromise: Promise<AuditDeepModule> | undefined;
+let auditChannelModulePromise: Promise<AuditChannelModule> | undefined;
 let gatewayProbeDepsPromise:
   | Promise<{
       buildGatewayConnectionDetails: typeof import("../gateway/call.js").buildGatewayConnectionDetails;
-      resolveGatewayProbeAuthSafe: typeof import("../gateway/probe-auth.js").resolveGatewayProbeAuthSafe;
+      resolveGatewayProbeAuth: typeof import("../gateway/probe-auth.js").resolveGatewayProbeAuth;
       probeGateway: typeof import("../gateway/probe.js").probeGateway;
     }>
   | undefined;
@@ -132,18 +173,27 @@ async function loadChannelPlugins() {
   return await channelPluginsModulePromise;
 }
 
-async function loadAuditNonDeepModule() {
-  auditNonDeepModulePromise ??= import("./audit.nondeep.runtime.js");
+async function loadAuditNonDeepModule(): Promise<AuditNonDeepModule> {
+  // Module gutted in fork; return no-op stub
+  auditNonDeepModulePromise ??= Promise.resolve({
+    collectNonDeepFindings: async () => [],
+  });
   return await auditNonDeepModulePromise;
 }
 
-async function loadAuditDeepModule() {
-  auditDeepModulePromise ??= import("./audit.deep.runtime.js");
+async function loadAuditDeepModule(): Promise<AuditDeepModule> {
+  // Module gutted in fork; return no-op stub
+  auditDeepModulePromise ??= Promise.resolve({
+    collectDeepFindings: async () => [],
+  });
   return await auditDeepModulePromise;
 }
 
-async function loadAuditChannelModule() {
-  auditChannelModulePromise ??= import("./audit-channel.collect.runtime.js");
+async function loadAuditChannelModule(): Promise<AuditChannelModule> {
+  // Module gutted in fork; return no-op stub
+  auditChannelModulePromise ??= Promise.resolve({
+    collectChannelFindings: async () => [],
+  });
   return await auditChannelModulePromise;
 }
 
@@ -154,7 +204,7 @@ async function loadGatewayProbeDeps() {
     import("../gateway/probe.js"),
   ]).then(([callModule, probeAuthModule, probeModule]) => ({
     buildGatewayConnectionDetails: callModule.buildGatewayConnectionDetails,
-    resolveGatewayProbeAuthSafe: probeAuthModule.resolveGatewayProbeAuthSafe,
+    resolveGatewayProbeAuth: probeAuthModule.resolveGatewayProbeAuth,
     probeGateway: probeModule.probeGateway,
   }));
   return await gatewayProbeDepsPromise;
@@ -194,7 +244,7 @@ function hasNonEmptyString(value: unknown): boolean {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function isFeishuDocToolEnabled(cfg: OpenClawConfig): boolean {
+function isFeishuDocToolEnabled(cfg: RemoteClawConfig): boolean {
   const channels = asRecord(cfg.channels);
   const feishu = asRecord(channels?.feishu);
   if (!feishu || feishu.enabled === false) {
@@ -204,7 +254,7 @@ function isFeishuDocToolEnabled(cfg: OpenClawConfig): boolean {
   const baseTools = asRecord(feishu.tools);
   const baseDocEnabled = baseTools?.doc !== false;
   const baseAppId = hasNonEmptyString(feishu.appId);
-  const baseAppSecret = hasConfiguredSecretInput(feishu.appSecret, cfg.secrets?.defaults);
+  const baseAppSecret = hasConfiguredSecretInput(feishu.appSecret);
   const baseConfigured = baseAppId && baseAppSecret;
 
   const accounts = asRecord(feishu.accounts);
@@ -225,7 +275,7 @@ function isFeishuDocToolEnabled(cfg: OpenClawConfig): boolean {
     }
     const accountConfigured =
       (hasNonEmptyString(account.appId) || baseAppId) &&
-      (hasConfiguredSecretInput(account.appSecret, cfg.secrets?.defaults) || baseAppSecret);
+      (hasConfiguredSecretInput(account.appSecret) || baseAppSecret);
     if (accountConfigured) {
       return true;
     }
@@ -366,8 +416,8 @@ async function collectFilesystemFindings(params: {
 }
 
 function collectGatewayConfigFindings(
-  cfg: OpenClawConfig,
-  sourceConfig: OpenClawConfig,
+  cfg: RemoteClawConfig,
+  sourceConfig: RemoteClawConfig,
   env: NodeJS.ProcessEnv,
 ): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
@@ -391,18 +441,11 @@ function collectGatewayConfigFindings(
   const envPasswordConfigured =
     hasNonEmptyString(env.OPENCLAW_GATEWAY_PASSWORD) ||
     hasNonEmptyString(env.CLAWDBOT_GATEWAY_PASSWORD);
-  const tokenConfiguredFromConfig = hasConfiguredSecretInput(
-    sourceConfig.gateway?.auth?.token,
-    sourceConfig.secrets?.defaults,
-  );
+  const tokenConfiguredFromConfig = hasConfiguredSecretInput(sourceConfig.gateway?.auth?.token);
   const passwordConfiguredFromConfig = hasConfiguredSecretInput(
     sourceConfig.gateway?.auth?.password,
-    sourceConfig.secrets?.defaults,
   );
-  const remoteTokenConfigured = hasConfiguredSecretInput(
-    sourceConfig.gateway?.remote?.token,
-    sourceConfig.secrets?.defaults,
-  );
+  const remoteTokenConfigured = hasConfiguredSecretInput(sourceConfig.gateway?.remote?.token);
   const explicitAuthMode = sourceConfig.gateway?.auth?.mode;
   const tokenCanWin =
     hasToken || envTokenConfigured || tokenConfiguredFromConfig || remoteTokenConfigured;
@@ -746,7 +789,7 @@ function isStrictLoopbackTrustedProxyEntry(entry: string): boolean {
 }
 
 function collectBrowserControlFindings(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   env: NodeJS.ProcessEnv,
 ): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
@@ -775,7 +818,7 @@ function collectBrowserControlFindings(
     Boolean(browserAuth.token) ||
     hasNonEmptyString(env.OPENCLAW_GATEWAY_TOKEN) ||
     hasNonEmptyString(env.CLAWDBOT_GATEWAY_TOKEN) ||
-    hasConfiguredSecretInput(cfg.gateway?.auth?.token, cfg.secrets?.defaults);
+    hasConfiguredSecretInput(cfg.gateway?.auth?.token);
   const passwordCanWin =
     explicitAuthMode === "password" ||
     (explicitAuthMode !== "token" &&
@@ -787,7 +830,7 @@ function collectBrowserControlFindings(
     (passwordCanWin &&
       (hasNonEmptyString(env.OPENCLAW_GATEWAY_PASSWORD) ||
         hasNonEmptyString(env.CLAWDBOT_GATEWAY_PASSWORD) ||
-        hasConfiguredSecretInput(cfg.gateway?.auth?.password, cfg.secrets?.defaults)));
+        hasConfiguredSecretInput(cfg.gateway?.auth?.password)));
   if (!tokenConfigured && !passwordConfigured) {
     findings.push({
       checkId: "browser.control_no_auth",
@@ -812,7 +855,8 @@ function collectBrowserControlFindings(
     } catch {
       continue;
     }
-    const redactedCdpUrl = redactCdpUrl(profile.cdpUrl) ?? profile.cdpUrl;
+    // redactCdpUrl removed in fork; use raw URL
+    const redactedCdpUrl = profile.cdpUrl;
     if (url.protocol === "http:") {
       findings.push({
         checkId: "browser.remote_cdp_http",
@@ -842,7 +886,7 @@ function collectBrowserControlFindings(
   return findings;
 }
 
-function collectLoggingFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
+function collectLoggingFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] {
   const redact = cfg.logging?.redactSensitive;
   if (redact !== "off") {
     return [];
@@ -858,10 +902,14 @@ function collectLoggingFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
   ];
 }
 
-function collectElevatedFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
+function collectElevatedFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
-  const enabled = cfg.tools?.elevated?.enabled;
-  const allowFrom = cfg.tools?.elevated?.allowFrom ?? {};
+  // tools.elevated removed in fork; access via untyped cast for cherry-picked security checks
+  const elevated = (cfg.tools as Record<string, unknown> | undefined)?.elevated as
+    | { enabled?: boolean; allowFrom?: Record<string, unknown> }
+    | undefined;
+  const enabled = elevated?.enabled;
+  const allowFrom = elevated?.allowFrom ?? {};
   const anyAllowFromKeys = Object.keys(allowFrom).length > 0;
 
   if (enabled === false) {
@@ -872,7 +920,7 @@ function collectElevatedFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
   }
 
   for (const [provider, list] of Object.entries(allowFrom)) {
-    const normalized = normalizeAllowFromList(list);
+    const normalized = normalizeAllowFromList(list as Array<string | number> | null | undefined);
     if (normalized.includes("*")) {
       findings.push({
         checkId: `tools.elevated.allowFrom.${provider}.wildcard`,
@@ -893,7 +941,7 @@ function collectElevatedFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
   return findings;
 }
 
-function collectExecRuntimeFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
+function collectExecRuntimeFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
   const globalExecHost = cfg.tools?.exec?.host;
   const globalStrictInlineEval = cfg.tools?.exec?.strictInlineEval === true;
@@ -1174,7 +1222,7 @@ function collectExecRuntimeFindings(cfg: OpenClawConfig): SecurityAuditFinding[]
   return findings;
 }
 
-function collectOpenExecSurfacePaths(cfg: OpenClawConfig): string[] {
+function collectOpenExecSurfacePaths(cfg: RemoteClawConfig): string[] {
   const channels = asRecord(cfg.channels);
   if (!channels) {
     return [];
@@ -1242,7 +1290,7 @@ function collectInterpreterAllowlistHits(params: {
 }
 
 async function maybeProbeGateway(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   env: NodeJS.ProcessEnv;
   timeoutMs: number;
   probe: ProbeGatewayFn;
@@ -1251,8 +1299,7 @@ async function maybeProbeGateway(params: {
   deep: SecurityAuditReport["deep"];
   authWarning?: string;
 }> {
-  const { buildGatewayConnectionDetails, resolveGatewayProbeAuthSafe } =
-    await loadGatewayProbeDeps();
+  const { buildGatewayConnectionDetails, resolveGatewayProbeAuth } = await loadGatewayProbeDeps();
   const connection = buildGatewayConnectionDetails({ config: params.cfg });
   const url = connection.url;
   const isRemoteMode = params.cfg.gateway?.mode === "remote";
@@ -1260,37 +1307,35 @@ async function maybeProbeGateway(params: {
     typeof params.cfg.gateway?.remote?.url === "string" ? params.cfg.gateway.remote.url.trim() : "";
   const remoteUrlMissing = isRemoteMode && !remoteUrlRaw;
 
-  const authResolution =
+  // Fork's resolveGatewayProbeAuth returns { token?, password? } directly (no .auth/.warning wrapper)
+  const resolvedAuth =
     !isRemoteMode || remoteUrlMissing
-      ? resolveGatewayProbeAuthSafe({
+      ? resolveGatewayProbeAuth({
           cfg: params.cfg,
           env: params.env,
           mode: "local",
-          explicitAuth: params.explicitAuth,
         })
-      : resolveGatewayProbeAuthSafe({
+      : resolveGatewayProbeAuth({
           cfg: params.cfg,
           env: params.env,
           mode: "remote",
-          explicitAuth: params.explicitAuth,
         });
-  const res = await params
-    .probe({ url, auth: authResolution.auth, timeoutMs: params.timeoutMs })
-    .catch((err) => ({
-      ok: false,
-      url,
-      connectLatencyMs: null,
-      error: String(err),
-      close: null,
-      health: null,
-      status: null,
-      presence: null,
-      configSnapshot: null,
-    }));
-
-  if (authResolution.warning && !res.ok) {
-    res.error = res.error ? `${res.error}; ${authResolution.warning}` : authResolution.warning;
-  }
+  // Merge explicit auth overrides if provided
+  const auth = {
+    token: params.explicitAuth?.token ?? resolvedAuth.token,
+    password: params.explicitAuth?.password ?? resolvedAuth.password,
+  };
+  const res = await params.probe({ url, auth, timeoutMs: params.timeoutMs }).catch((err) => ({
+    ok: false,
+    url,
+    connectLatencyMs: null,
+    error: String(err),
+    close: null,
+    health: null,
+    status: null,
+    presence: null,
+    configSnapshot: null,
+  }));
 
   return {
     deep: {
@@ -1302,7 +1347,6 @@ async function maybeProbeGateway(params: {
         close: res.close ? { code: res.close.code, reason: res.close.reason } : null,
       },
     },
-    authWarning: authResolution.warning,
   };
 }
 

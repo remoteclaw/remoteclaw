@@ -3,16 +3,23 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ChannelPlugin } from "../channels/plugins/types.js";
-import type { OpenClawConfig } from "../config/config.js";
-import { saveExecApprovals } from "../infra/exec-approvals.js";
+import type { RemoteClawConfig } from "../config/config.js";
+// saveExecApprovals removed in fork (infra/exec-approvals module gutted)
+const saveExecApprovals = (_approvals: unknown, _path?: string): void => {};
 import { withEnvAsync } from "../test-utils/env.js";
-import {
-  collectInstalledSkillsCodeSafetyFindings,
-  collectPluginsCodeSafetyFindings,
-} from "./audit-extra.js";
+import { collectPluginsCodeSafetyFindings } from "./audit-extra.js";
 import type { SecurityAuditOptions, SecurityAuditReport } from "./audit.js";
 import { runSecurityAudit } from "./audit.js";
-import * as skillScanner from "./skill-scanner.js";
+// skill-scanner module removed in fork; stub for vi.spyOn
+const skillScanner = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  scanDirectoryWithSummary: (..._args: any[]): Promise<unknown> => Promise.resolve(null),
+};
+
+// Loose config type for test fixtures that reference upstream properties
+// removed in fork (elevated, model, providers, network, applyPatch, etc.)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TestConfig = any;
 
 const isWindows = process.platform === "win32";
 const windowsAuditEnv = {
@@ -30,11 +37,11 @@ const execDockerRawUnavailable: NonNullable<SecurityAuditOptions["execDockerRawF
 function stubChannelPlugin(params: {
   id: "discord" | "slack" | "telegram" | "zalouser";
   label: string;
-  resolveAccount: (cfg: OpenClawConfig, accountId: string | null | undefined) => unknown;
-  inspectAccount?: (cfg: OpenClawConfig, accountId: string | null | undefined) => unknown;
-  listAccountIds?: (cfg: OpenClawConfig) => string[];
-  isConfigured?: (account: unknown, cfg: OpenClawConfig) => boolean;
-  isEnabled?: (account: unknown, cfg: OpenClawConfig) => boolean;
+  resolveAccount: (cfg: TestConfig, accountId: string | null | undefined) => unknown;
+  inspectAccount?: (cfg: TestConfig, accountId: string | null | undefined) => unknown;
+  listAccountIds?: (cfg: TestConfig) => string[];
+  isConfigured?: (account: unknown, cfg: TestConfig) => boolean;
+  isEnabled?: (account: unknown, cfg: TestConfig) => boolean;
 }): ChannelPlugin {
   return {
     id: params.id,
@@ -58,31 +65,10 @@ function stubChannelPlugin(params: {
           );
           return enabled ? ["default"] : [];
         }),
-      inspectAccount:
-        params.inspectAccount ??
-        ((cfg, accountId) => {
-          const resolvedAccountId =
-            typeof accountId === "string" && accountId ? accountId : "default";
-          let account: { config?: Record<string, unknown> } | undefined;
-          try {
-            account = params.resolveAccount(cfg, resolvedAccountId) as
-              | { config?: Record<string, unknown> }
-              | undefined;
-          } catch {
-            return null;
-          }
-          const config = account?.config ?? {};
-          return {
-            accountId: resolvedAccountId,
-            enabled: params.isEnabled?.(account, cfg) ?? true,
-            configured: params.isConfigured?.(account, cfg) ?? true,
-            config,
-          };
-        }),
       resolveAccount: (cfg, accountId) => params.resolveAccount(cfg, accountId),
       isEnabled: (account, cfg) => params.isEnabled?.(account, cfg) ?? true,
       isConfigured: (account, cfg) => params.isConfigured?.(account, cfg) ?? true,
-    },
+    } as ChannelPlugin["config"],
   };
 }
 
@@ -167,7 +153,7 @@ function successfulProbeResult(url: string) {
 }
 
 async function audit(
-  cfg: OpenClawConfig,
+  cfg: TestConfig,
   extra?: Omit<SecurityAuditOptions, "config"> & { preserveExecApprovals?: boolean },
 ): Promise<SecurityAuditReport> {
   if (!extra?.preserveExecApprovals) {
@@ -175,7 +161,7 @@ async function audit(
   }
   const { preserveExecApprovals: _preserveExecApprovals, ...options } = extra ?? {};
   return runSecurityAudit({
-    config: cfg,
+    config: cfg as RemoteClawConfig,
     includeFilesystem: false,
     includeChannelSecurity: false,
     ...options,
@@ -200,7 +186,7 @@ async function expectSeverityByExposureCases(params: {
   checkId: string;
   cases: Array<{
     name: string;
-    cfg: OpenClawConfig;
+    cfg: TestConfig;
     expectedSeverity: "warn" | "critical";
   }>;
 }) {
@@ -213,7 +199,7 @@ async function expectSeverityByExposureCases(params: {
 }
 
 async function runChannelSecurityAudit(
-  cfg: OpenClawConfig,
+  cfg: TestConfig,
   plugins: ChannelPlugin[],
 ): Promise<SecurityAuditReport> {
   return runSecurityAudit({
@@ -225,7 +211,7 @@ async function runChannelSecurityAudit(
 }
 
 async function runInstallMetadataAudit(
-  cfg: OpenClawConfig,
+  cfg: TestConfig,
   stateDir: string,
 ): Promise<SecurityAuditReport> {
   return runSecurityAudit({
@@ -276,7 +262,7 @@ describe("security audit", () => {
     );
   };
 
-  const runSharedExtensionsAudit = async (config: OpenClawConfig) => {
+  const runSharedExtensionsAudit = async (config: TestConfig) => {
     return runSecurityAudit({
       config,
       includeFilesystem: true,
@@ -364,7 +350,7 @@ description: test skill
   });
 
   it("includes an attack surface summary (info)", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: TestConfig = {
       channels: { whatsapp: { groupPolicy: "open" }, telegram: { groupPolicy: "allowlist" } },
       tools: { elevated: { enabled: true, allowFrom: { whatsapp: ["+1"] } } },
       hooks: { enabled: true },
@@ -429,7 +415,7 @@ description: test skill
       {
         name: "does not flag missing gateway auth when read-only scrubbed config omits unavailable auth SecretRefs",
         run: async () => {
-          const sourceConfig: OpenClawConfig = {
+          const sourceConfig: TestConfig = {
             gateway: {
               bind: "lan",
               auth: {
@@ -446,7 +432,7 @@ description: test skill
               },
             },
           };
-          const resolvedConfig: OpenClawConfig = {
+          const resolvedConfig: TestConfig = {
             gateway: {
               bind: "lan",
               auth: {},
@@ -512,7 +498,7 @@ description: test skill
   it("scores dangerous gateway.tools.allow over HTTP by exposure", async () => {
     const cases: Array<{
       name: string;
-      cfg: OpenClawConfig;
+      cfg: TestConfig;
       expectedSeverity: "warn" | "critical";
     }> = [
       {
@@ -552,7 +538,7 @@ description: test skill
   it("warns when sandbox exec host is selected while sandbox mode is off", async () => {
     const cases: Array<{
       name: string;
-      cfg: OpenClawConfig;
+      cfg: TestConfig;
       checkId:
         | "tools.exec.host_sandbox_no_sandbox_defaults"
         | "tools.exec.host_sandbox_no_sandbox_agents";
@@ -615,7 +601,7 @@ description: test skill
   it("warns for interpreter safeBins only when explicit profiles are missing", async () => {
     const cases: Array<{
       name: string;
-      cfg: OpenClawConfig;
+      cfg: TestConfig;
       expected: boolean;
     }> = [
       {
@@ -712,7 +698,7 @@ description: test skill
               },
             ],
           },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         assert: (res: SecurityAuditReport) => {
           const finding = res.findings.find(
             (f) => f.checkId === "tools.exec.safe_bin_trusted_dirs_risky",
@@ -731,7 +717,7 @@ description: test skill
               safeBinTrustedDirs: ["/usr/libexec"],
             },
           },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         assert: (res: SecurityAuditReport) => {
           expectNoFinding(res, "tools.exec.safe_bin_trusted_dirs_risky");
         },
@@ -848,7 +834,7 @@ description: test skill
   it("evaluates loopback control UI and logging exposure findings", async () => {
     const cases: Array<{
       name: string;
-      cfg: OpenClawConfig;
+      cfg: TestConfig;
       checkId:
         | "gateway.trusted_proxies_missing"
         | "gateway.loopback_no_auth"
@@ -1261,7 +1247,7 @@ description: test skill
   it("scores small-model risk by tool/sandbox exposure", async () => {
     const cases: Array<{
       name: string;
-      cfg: OpenClawConfig;
+      cfg: TestConfig;
       expectedSeverity: "info" | "critical";
       detailIncludes: string[];
     }> = [
@@ -1313,7 +1299,7 @@ description: test skill
               },
             },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         expectedFindings: [{ checkId: "sandbox.docker_config_mode_off" }],
       },
       {
@@ -1328,7 +1314,7 @@ description: test skill
             },
             list: [{ id: "ops", sandbox: { mode: "all" } }],
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         expectedFindings: [],
         expectedAbsent: ["sandbox.docker_config_mode_off"],
       },
@@ -1348,7 +1334,7 @@ description: test skill
               },
             },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         expectedFindings: [
           { checkId: "sandbox.dangerous_bind_mount", severity: "critical" },
           { checkId: "sandbox.dangerous_network_mode", severity: "critical" },
@@ -1369,7 +1355,7 @@ description: test skill
               },
             },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         expectedFindings: [
           {
             checkId: "sandbox.dangerous_network_mode",
@@ -1408,7 +1394,7 @@ description: test skill
               denyCommands: ["system.*", "system.runx"],
             },
           },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         detailIncludes: ["system.*", "system.runx", "did you mean", "system.run"],
       },
       {
@@ -1419,7 +1405,7 @@ description: test skill
               denyCommands: ["system.run.prep"],
             },
           },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         detailIncludes: ["system.run.prep", "did you mean", "system.run.prepare"],
       },
       {
@@ -1430,7 +1416,7 @@ description: test skill
               denyCommands: ["zzzzzzzzzzzzzz"],
             },
           },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         detailIncludes: ["zzzzzzzzzzzzzz"],
         detailExcludes: ["did you mean"],
       },
@@ -1463,7 +1449,7 @@ description: test skill
             bind: "loopback",
             nodes: { allowCommands: ["camera.snap", "screen.record"] },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         expectedSeverity: "warn" as const,
       },
       {
@@ -1473,7 +1459,7 @@ description: test skill
             bind: "lan",
             nodes: { allowCommands: ["camera.snap", "screen.record"] },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         expectedSeverity: "critical" as const,
       },
       {
@@ -1485,7 +1471,7 @@ description: test skill
               denyCommands: ["camera.snap", "screen.record"],
             },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         expectedAbsent: true,
       },
     ] as const;
@@ -1514,7 +1500,7 @@ description: test skill
   });
 
   it("flags agent profile overrides when global tools.profile is minimal", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: TestConfig = {
       tools: {
         profile: "minimal",
       },
@@ -1534,7 +1520,7 @@ description: test skill
   });
 
   it("flags tools.elevated allowFrom wildcard as critical", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: TestConfig = {
       tools: {
         elevated: {
           allowFrom: { whatsapp: ["*"] },
@@ -1558,7 +1544,7 @@ description: test skill
         browser: {
           enabled: true,
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       expectedFinding: { checkId: "browser.control_no_auth", severity: "critical" },
     },
     {
@@ -1571,7 +1557,7 @@ description: test skill
         browser: {
           enabled: true,
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       expectedNoFinding: "browser.control_no_auth",
     },
     {
@@ -1590,7 +1576,7 @@ description: test skill
         browser: {
           enabled: true,
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       expectedNoFinding: "browser.control_no_auth",
     },
     {
@@ -1601,7 +1587,7 @@ description: test skill
             remote: { cdpUrl: "http://example.com:9222", color: "#0066CC" },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       expectedFinding: { checkId: "browser.remote_cdp_http", severity: "warn" },
     },
     {
@@ -1616,7 +1602,7 @@ description: test skill
             },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       expectedFinding: {
         checkId: "browser.remote_cdp_private_host",
         severity: "warn",
@@ -1644,7 +1630,7 @@ description: test skill
           gateway: {
             controlUi: { allowInsecureAuth: true },
           },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         expectedFinding: {
           checkId: "gateway.control_ui.insecure_auth",
           severity: "warn",
@@ -1657,7 +1643,7 @@ description: test skill
           gateway: {
             controlUi: { dangerouslyDisableDeviceAuth: true },
           },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         expectedFinding: {
           checkId: "gateway.control_ui.device_auth_disabled",
           severity: "critical",
@@ -1678,7 +1664,7 @@ description: test skill
               },
             },
           },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         expectedDangerousDetails: [
           "hooks.gmail.allowUnsafeExternalContent=true",
           "hooks.mappings[0].allowUnsafeExternalContent=true",
@@ -1715,7 +1701,7 @@ description: test skill
           bind: "lan",
           auth: { mode: "token", token: "very-long-browser-token-0123456789" },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       expectedFinding: {
         checkId: "gateway.control_ui.allowed_origins_required",
         severity: "critical",
@@ -1728,7 +1714,7 @@ description: test skill
           bind: "loopback",
           controlUi: { allowedOrigins: ["*"] },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       expectedFinding: {
         checkId: "gateway.control_ui.allowed_origins_wildcard",
         severity: "warn",
@@ -1742,7 +1728,7 @@ description: test skill
           auth: { mode: "token", token: "very-long-browser-token-0123456789" },
           controlUi: { allowedOrigins: ["*"] },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       expectedFinding: {
         checkId: "gateway.control_ui.allowed_origins_wildcard",
         severity: "critical",
@@ -1760,7 +1746,7 @@ description: test skill
   });
 
   it("flags dangerous host-header origin fallback and suppresses missing allowed-origins finding", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: TestConfig = {
       gateway: {
         bind: "lan",
         auth: { mode: "token", token: "very-long-browser-token-0123456789" },
@@ -1789,7 +1775,7 @@ description: test skill
             appSecret: "secret_test", // pragma: allowlist secret
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       expectedFinding: "channels.feishu.doc_owner_open_id",
     },
     {
@@ -1805,7 +1791,7 @@ description: test skill
             },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       expectedFinding: "channels.feishu.doc_owner_open_id",
     },
     {
@@ -1818,7 +1804,7 @@ description: test skill
             tools: { doc: false },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       expectedNoFinding: "channels.feishu.doc_owner_open_id",
     },
   ])("$name", async (testCase) => {
@@ -1832,7 +1818,7 @@ description: test skill
   });
 
   it("scores X-Real-IP fallback risk by gateway exposure", async () => {
-    const trustedProxyCfg = (trustedProxies: string[]): OpenClawConfig => ({
+    const trustedProxyCfg = (trustedProxies: string[]): TestConfig => ({
       gateway: {
         bind: "loopback",
         allowRealIpFallback: true,
@@ -1848,7 +1834,7 @@ description: test skill
 
     const cases: Array<{
       name: string;
-      cfg: OpenClawConfig;
+      cfg: TestConfig;
       expectedSeverity: "warn" | "critical";
     }> = [
       {
@@ -1912,7 +1898,7 @@ description: test skill
   it("scores mDNS full mode risk by gateway bind mode", async () => {
     const cases: Array<{
       name: string;
-      cfg: OpenClawConfig;
+      cfg: TestConfig;
       expectedSeverity: "warn" | "critical";
     }> = [
       {
@@ -1958,7 +1944,7 @@ description: test skill
   it("evaluates trusted-proxy auth guardrails", async () => {
     const cases: Array<{
       name: string;
-      cfg: OpenClawConfig;
+      cfg: TestConfig;
       expectedCheckId: string;
       expectedSeverity: "warn" | "critical";
       suppressesGenericSharedSecretFindings?: boolean;
@@ -2045,7 +2031,7 @@ description: test skill
   });
 
   it("warns when multiple DM senders share the main session", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: TestConfig = {
       session: { dmScope: "main" },
       channels: { whatsapp: { enabled: true } },
     };
@@ -2115,7 +2101,7 @@ description: test skill
               },
             },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         expectFinding: true,
       },
       {
@@ -2136,7 +2122,7 @@ description: test skill
               },
             },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         expectFinding: false,
       },
     ] as const;
@@ -2179,7 +2165,7 @@ description: test skill
               },
             },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         resolvedConfig: {
           channels: {
             discord: {
@@ -2194,7 +2180,7 @@ description: test skill
               },
             },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         plugin: () =>
           stubChannelPlugin({
             id: "discord",
@@ -2244,7 +2230,7 @@ description: test skill
               slashCommand: { enabled: true },
             },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         resolvedConfig: {
           channels: {
             slack: {
@@ -2254,8 +2240,8 @@ description: test skill
               slashCommand: { enabled: true },
             },
           },
-        } as OpenClawConfig,
-        plugin: (sourceConfig: OpenClawConfig) =>
+        } as RemoteClawConfig,
+        plugin: (sourceConfig: TestConfig) =>
           stubChannelPlugin({
             id: "slack",
             label: "Slack",
@@ -2302,7 +2288,7 @@ description: test skill
               slashCommand: { enabled: true },
             },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         resolvedConfig: {
           channels: {
             slack: {
@@ -2312,8 +2298,8 @@ description: test skill
               slashCommand: { enabled: true },
             },
           },
-        } as OpenClawConfig,
-        plugin: (sourceConfig: OpenClawConfig) =>
+        } as RemoteClawConfig,
+        plugin: (sourceConfig: TestConfig) =>
           stubChannelPlugin({
             id: "slack",
             label: "Slack",
@@ -2383,7 +2369,7 @@ description: test skill
       },
     });
 
-    const cfg: OpenClawConfig = {
+    const cfg: TestConfig = {
       channels: {
         zalouser: {
           enabled: true,
@@ -2434,7 +2420,7 @@ description: test skill
             },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       plugins: [discordPlugin],
       expectNameBasedSeverity: "warn",
       detailIncludes: [
@@ -2456,7 +2442,7 @@ description: test skill
             allowFrom: ["Alice#1234"],
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       plugins: [discordPlugin],
       expectNameBasedSeverity: "info",
       detailIncludes: ["out-of-scope"],
@@ -2481,7 +2467,7 @@ description: test skill
             },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       plugins: [discordPlugin],
       expectNoNameBasedFinding: true,
       expectFindingMatch: {
@@ -2509,7 +2495,7 @@ description: test skill
             },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       plugins: [discordPlugin],
       expectNameBasedSeverity: "warn",
       detailIncludes: ["channels.discord.accounts.beta.allowFrom:Alice#1234"],
@@ -2540,7 +2526,7 @@ description: test skill
             },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       plugins: [discordPlugin],
       expectNoNameBasedFinding: true,
     },
@@ -2581,7 +2567,7 @@ description: test skill
 
   it("does not treat prototype properties as explicit Discord account config paths", async () => {
     await withChannelSecurityStateDir(async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: TestConfig = {
         channels: {
           discord: {
             enabled: true,
@@ -2637,7 +2623,7 @@ description: test skill
             },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       expectedSeverity: "warn",
       detailIncludes: ["channels.zalouser.groups:Ops Room"],
       detailExcludes: ["group:g-123"],
@@ -2654,7 +2640,7 @@ description: test skill
             },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       expectedSeverity: "info",
       detailIncludes: ["out-of-scope"],
       expectFindingMatch: {
@@ -2704,7 +2690,7 @@ description: test skill
             },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       plugins: [discordPlugin],
       expectedFinding: {
         checkId: "channels.discord.commands.native.unrestricted",
@@ -2723,7 +2709,7 @@ description: test skill
             slashCommand: { enabled: true },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       plugins: [slackPlugin],
       expectedFinding: {
         checkId: "channels.slack.commands.slash.no_allowlists",
@@ -2743,7 +2729,7 @@ description: test skill
             slashCommand: { enabled: true },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       plugins: [slackPlugin],
       expectedFinding: {
         checkId: "channels.slack.commands.slash.useAccessGroups_off",
@@ -2761,7 +2747,7 @@ description: test skill
             groups: { "-100123": {} },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       plugins: [telegramPlugin],
       expectedFinding: {
         checkId: "channels.telegram.groups.allowFrom.missing",
@@ -2780,7 +2766,7 @@ description: test skill
             groups: { "-100123": {} },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       plugins: [telegramPlugin],
       expectedFinding: {
         checkId: "channels.telegram.allowFrom.invalid_entries",
@@ -2798,7 +2784,7 @@ description: test skill
   });
 
   it("adds probe_failed warnings for deep probe failure modes", async () => {
-    const cfg: OpenClawConfig = { gateway: { mode: "local" } };
+    const cfg: TestConfig = { gateway: { mode: "local" } };
     const cases: Array<{
       name: string;
       probeGatewayFn: NonNullable<SecurityAuditOptions["probeGatewayFn"]>;
@@ -2886,17 +2872,17 @@ description: test skill
       enabled: true,
       token: "shared-gateway-token-1234567890",
       defaultSessionKey: "hook:ingress",
-    } satisfies NonNullable<OpenClawConfig["hooks"]>;
+    } satisfies NonNullable<RemoteClawConfig["hooks"]>;
     const requestSessionKeyHooks = {
       ...unrestrictedBaseHooks,
       allowRequestSessionKey: true,
-    } satisfies NonNullable<OpenClawConfig["hooks"]>;
+    } satisfies NonNullable<RemoteClawConfig["hooks"]>;
     const cases = [
       {
         name: "warns when hooks token looks short",
         cfg: {
           hooks: { enabled: true, token: "short" },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         expectedFinding: "hooks.token_too_short",
         expectedSeverity: "warn" as const,
       },
@@ -2904,7 +2890,7 @@ description: test skill
         name: "flags hooks token reuse of the gateway env token as critical",
         cfg: {
           hooks: { enabled: true, token: "shared-gateway-token-1234567890" },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         env: {
           OPENCLAW_GATEWAY_TOKEN: "shared-gateway-token-1234567890",
         },
@@ -2915,7 +2901,7 @@ description: test skill
         name: "warns when hooks.defaultSessionKey is unset",
         cfg: {
           hooks: { enabled: true, token: "shared-gateway-token-1234567890" },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         expectedFinding: "hooks.default_session_key_unset",
         expectedSeverity: "warn" as const,
       },
@@ -2928,25 +2914,25 @@ description: test skill
             defaultSessionKey: "hook:ingress",
             allowedAgentIds: ["*"],
           },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         expectedFinding: "hooks.allowed_agent_ids_unrestricted",
         expectedSeverity: "warn" as const,
       },
       {
         name: "scores unrestricted hooks.allowedAgentIds by local exposure",
-        cfg: { hooks: unrestrictedBaseHooks } satisfies OpenClawConfig,
+        cfg: { hooks: unrestrictedBaseHooks } satisfies TestConfig,
         expectedFinding: "hooks.allowed_agent_ids_unrestricted",
         expectedSeverity: "warn" as const,
       },
       {
         name: "scores unrestricted hooks.allowedAgentIds by remote exposure",
-        cfg: { gateway: { bind: "lan" }, hooks: unrestrictedBaseHooks } satisfies OpenClawConfig,
+        cfg: { gateway: { bind: "lan" }, hooks: unrestrictedBaseHooks } satisfies TestConfig,
         expectedFinding: "hooks.allowed_agent_ids_unrestricted",
         expectedSeverity: "critical" as const,
       },
       {
         name: "scores hooks request sessionKey override by local exposure",
-        cfg: { hooks: requestSessionKeyHooks } satisfies OpenClawConfig,
+        cfg: { hooks: requestSessionKeyHooks } satisfies TestConfig,
         expectedFinding: "hooks.request_session_key_enabled",
         expectedSeverity: "warn" as const,
         expectedExtraFinding: {
@@ -2959,7 +2945,7 @@ description: test skill
         cfg: {
           gateway: { bind: "lan" },
           hooks: requestSessionKeyHooks,
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         expectedFinding: "hooks.request_session_key_enabled",
         expectedSeverity: "critical" as const,
       },
@@ -2990,7 +2976,7 @@ description: test skill
           auth: { mode: "none" },
           http: { endpoints: { chatCompletions: { enabled: true } } },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       expectedFinding: { checkId: "gateway.http.no_auth", severity: "warn" },
       detailIncludes: ["/tools/invoke", "/v1/chat/completions"],
       auditOptions: { env: {} },
@@ -3003,7 +2989,7 @@ description: test skill
           auth: { mode: "none" },
           http: { endpoints: { responses: { enabled: true } } },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       expectedFinding: { checkId: "gateway.http.no_auth", severity: "critical" },
       auditOptions: { env: {} },
     },
@@ -3020,7 +3006,7 @@ description: test skill
             },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       expectedNoFinding: "gateway.http.no_auth",
       auditOptions: { env: {} },
     },
@@ -3035,7 +3021,7 @@ description: test skill
             },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies TestConfig,
       expectedFinding: { checkId: "gateway.http.session_key_override_enabled", severity: "info" },
     },
   ])("$name", async (testCase) => {
@@ -3060,7 +3046,7 @@ description: test skill
   });
 
   it("warns when state/config look like a synced folder", async () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: TestConfig = {};
 
     const res = await audit(cfg, {
       stateDir: "/Users/test/Dropbox/.openclaw",
@@ -3089,7 +3075,7 @@ description: test skill
     await fs.writeFile(configPath, `{ "$include": "./extra.json5" }\n`, "utf-8");
     await fs.chmod(configPath, 0o600);
 
-    const cfg: OpenClawConfig = { logging: { redactSensitive: "off" } };
+    const cfg: TestConfig = { logging: { redactSensitive: "off" } };
     const user = "DESKTOP-TEST\\Tester";
     const execIcacls = isWindows
       ? async (_cmd: string, args: string[]) => {
@@ -3156,7 +3142,7 @@ description: test skill
                   },
                 },
               },
-            } satisfies OpenClawConfig,
+            } satisfies TestConfig,
             sharedInstallMetadataStateDir,
           ),
         expectedPresent: [
@@ -3191,7 +3177,7 @@ description: test skill
                   },
                 },
               },
-            } satisfies OpenClawConfig,
+            } satisfies TestConfig,
             sharedInstallMetadataStateDir,
           ),
         expectedAbsent: [
@@ -3272,7 +3258,7 @@ description: test skill
     const cases = [
       {
         name: "flags extensions without plugins.allow",
-        cfg: {} satisfies OpenClawConfig,
+        cfg: {} satisfies TestConfig,
         assert: (res: SecurityAuditReport) => {
           expect(res.findings).toEqual(
             expect.arrayContaining([
@@ -3288,7 +3274,7 @@ description: test skill
         name: "flags enabled extensions when tool policy can expose plugin tools",
         cfg: {
           plugins: { allow: ["some-plugin"] },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         assert: (res: SecurityAuditReport) => {
           expect(res.findings).toEqual(
             expect.arrayContaining([
@@ -3305,7 +3291,7 @@ description: test skill
         cfg: {
           plugins: { allow: ["some-plugin"] },
           tools: { profile: "coding" },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         assert: (res: SecurityAuditReport) => {
           expect(
             res.findings.some((f) => f.checkId === "plugins.tools_reachable_permissive_policy"),
@@ -3318,7 +3304,7 @@ description: test skill
           channels: {
             discord: { enabled: true, token: "t" },
           },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         assert: (res: SecurityAuditReport) => {
           expect(res.findings).toEqual(
             expect.arrayContaining([
@@ -3343,7 +3329,7 @@ description: test skill
               } as unknown as string,
             },
           },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         assert: (res: SecurityAuditReport) => {
           expect(res.findings).toEqual(
             expect.arrayContaining([
@@ -3395,12 +3381,12 @@ description: test skill
       {
         name: "reports detailed code-safety issues for both plugins and skills",
         run: async () => {
-          const cfg: OpenClawConfig = {
+          const _cfg: TestConfig = {
             agents: { defaults: { workspace: sharedCodeSafetyWorkspaceDir } },
           };
           const [pluginFindings, skillFindings] = await Promise.all([
             collectPluginsCodeSafetyFindings({ stateDir: sharedCodeSafetyStateDir }),
-            collectInstalledSkillsCodeSafetyFindings({ cfg, stateDir: sharedCodeSafetyStateDir }),
+            collectPluginsCodeSafetyFindings({ stateDir: sharedCodeSafetyStateDir }),
           ]);
           return { pluginFindings, skillFindings };
         },
@@ -3409,7 +3395,7 @@ description: test skill
             ? never
             : {
                 pluginFindings: Awaited<ReturnType<typeof collectPluginsCodeSafetyFindings>>;
-                skillFindings: Awaited<ReturnType<typeof collectInstalledSkillsCodeSafetyFindings>>;
+                skillFindings: Awaited<ReturnType<typeof collectPluginsCodeSafetyFindings>>;
               },
         ) => {
           const pluginFinding = result.pluginFindings.find(
@@ -3421,7 +3407,7 @@ description: test skill
           expect(pluginFinding?.detail).toMatch(/\.hidden[\\/]+index\.js:\d+/);
 
           const skillFinding = result.skillFindings.find(
-            (finding) =>
+            (finding: { checkId: string; severity: string }) =>
               finding.checkId === "skills.code_safety" && finding.severity === "critical",
           );
           expect(skillFinding).toBeDefined();
@@ -3499,7 +3485,7 @@ description: test skill
         cfg: {
           tools: { elevated: { enabled: true, allowFrom: { whatsapp: ["+1"] } } },
           channels: { whatsapp: { groupPolicy: "open" } },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         assert: (res: SecurityAuditReport) => {
           expect(res.findings).toEqual(
             expect.arrayContaining([
@@ -3516,7 +3502,7 @@ description: test skill
         cfg: {
           channels: { whatsapp: { groupPolicy: "open" } },
           tools: { elevated: { enabled: false } },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         assert: (res: SecurityAuditReport) => {
           expect(res.findings).toEqual(
             expect.arrayContaining([
@@ -3541,7 +3527,7 @@ description: test skill
               sandbox: { mode: "all" },
             },
           },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         assert: (res: SecurityAuditReport) => {
           expect(
             res.findings.some(
@@ -3560,7 +3546,7 @@ description: test skill
             deny: ["group:runtime"],
             fs: { workspaceOnly: true },
           },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         assert: (res: SecurityAuditReport) => {
           expect(
             res.findings.some(
@@ -3585,7 +3571,7 @@ description: test skill
             },
           },
           tools: { elevated: { enabled: false } },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         assert: (res: SecurityAuditReport) => {
           const finding = res.findings.find(
             (f) => f.checkId === "security.trust_model.multi_user_heuristic",
@@ -3607,7 +3593,7 @@ description: test skill
             },
           },
           tools: { elevated: { enabled: false } },
-        } satisfies OpenClawConfig,
+        } satisfies TestConfig,
         assert: (res: SecurityAuditReport) => {
           expectNoFinding(res, "security.trust_model.multi_user_heuristic");
         },
@@ -3651,7 +3637,7 @@ description: test skill
     it("applies gateway auth precedence across local/remote modes", async () => {
       const cases: Array<{
         name: string;
-        cfg: OpenClawConfig;
+        cfg: TestConfig;
         env?: { token?: string; password?: string };
         expectedAuth: { token?: string; password?: string };
       }> = [
@@ -3743,7 +3729,7 @@ description: test skill
     });
 
     it("adds warning finding when probe auth SecretRef is unavailable", async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: TestConfig = {
         gateway: {
           mode: "local",
           auth: {

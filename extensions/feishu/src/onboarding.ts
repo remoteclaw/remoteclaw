@@ -3,21 +3,18 @@ import type {
   ChannelOnboardingDmPolicy,
   ClawdbotConfig,
   DmPolicy,
-  SecretInput,
   WizardPrompter,
-} from "openclaw/plugin-sdk/feishu";
+} from "remoteclaw/plugin-sdk";
 import {
   buildSingleChannelSecretPromptState,
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
-  hasConfiguredSecretInput,
   mergeAllowFromEntries,
-  promptSingleChannelSecretInput,
   setTopLevelChannelAllowFrom,
   setTopLevelChannelDmPolicyWithAllowFrom,
   setTopLevelChannelGroupPolicy,
   splitOnboardingEntries,
-} from "openclaw/plugin-sdk/feishu";
+} from "remoteclaw/plugin-sdk";
 import { resolveFeishuCredentials } from "./accounts.js";
 import { probeFeishu } from "./probe.js";
 import type { FeishuConfig } from "./types.js";
@@ -97,18 +94,23 @@ async function noteFeishuCredentialHelp(prompter: WizardPrompter): Promise<void>
   );
 }
 
-async function promptFeishuAppId(params: {
-  prompter: WizardPrompter;
-  initialValue?: string;
-}): Promise<string> {
+async function promptFeishuCredentials(prompter: WizardPrompter): Promise<{
+  appId: string;
+  appSecret: string;
+}> {
   const appId = String(
-    await params.prompter.text({
+    await prompter.text({
       message: "Enter Feishu App ID",
-      initialValue: params.initialValue,
       validate: (value) => (value?.trim() ? undefined : "Required"),
     }),
   ).trim();
-  return appId;
+  const appSecret = String(
+    await prompter.text({
+      message: "Enter Feishu App Secret",
+      validate: (value) => (value?.trim() ? undefined : "Required"),
+    }),
+  ).trim();
+  return { appId, appSecret };
 }
 
 function setFeishuGroupPolicy(
@@ -150,53 +152,13 @@ export const feishuOnboardingAdapter: ChannelOnboardingAdapter = {
   channel,
   getStatus: async ({ cfg }) => {
     const feishuCfg = cfg.channels?.feishu as FeishuConfig | undefined;
-
-    const isAppIdConfigured = (value: unknown): boolean => {
-      const asString = normalizeString(value);
-      if (asString) {
-        return true;
-      }
-      if (!value || typeof value !== "object") {
-        return false;
-      }
-      const rec = value as Record<string, unknown>;
-      const source = normalizeString(rec.source)?.toLowerCase();
-      const id = normalizeString(rec.id);
-      if (source === "env" && id) {
-        return Boolean(normalizeString(process.env[id]));
-      }
-      return hasConfiguredSecretInput(value);
-    };
-
-    const topLevelConfigured = Boolean(
-      isAppIdConfigured(feishuCfg?.appId) && hasConfiguredSecretInput(feishuCfg?.appSecret),
-    );
-
-    const accountConfigured = Object.values(feishuCfg?.accounts ?? {}).some((account) => {
-      if (!account || typeof account !== "object") {
-        return false;
-      }
-      const hasOwnAppId = Object.prototype.hasOwnProperty.call(account, "appId");
-      const hasOwnAppSecret = Object.prototype.hasOwnProperty.call(account, "appSecret");
-      const accountAppIdConfigured = hasOwnAppId
-        ? isAppIdConfigured((account as Record<string, unknown>).appId)
-        : isAppIdConfigured(feishuCfg?.appId);
-      const accountSecretConfigured = hasOwnAppSecret
-        ? hasConfiguredSecretInput((account as Record<string, unknown>).appSecret)
-        : hasConfiguredSecretInput(feishuCfg?.appSecret);
-      return Boolean(accountAppIdConfigured && accountSecretConfigured);
-    });
-
-    const configured = topLevelConfigured || accountConfigured;
-    const resolvedCredentials = resolveFeishuCredentials(feishuCfg, {
-      allowUnresolvedSecretRef: true,
-    });
+    const configured = Boolean(resolveFeishuCredentials(feishuCfg));
 
     // Try to probe if configured
     let probeResult = null;
-    if (configured && resolvedCredentials) {
+    if (configured && feishuCfg) {
       try {
-        probeResult = await probeFeishu(resolvedCredentials);
+        probeResult = await probeFeishu(feishuCfg);
       } catch {
         // Ignore probe errors
       }
@@ -224,59 +186,52 @@ export const feishuOnboardingAdapter: ChannelOnboardingAdapter = {
 
   configure: async ({ cfg, prompter }) => {
     const feishuCfg = cfg.channels?.feishu as FeishuConfig | undefined;
-    const resolved = resolveFeishuCredentials(feishuCfg, {
-      allowUnresolvedSecretRef: true,
-    });
-    const hasConfigSecret = hasConfiguredSecretInput(feishuCfg?.appSecret);
-    const hasConfigCreds = Boolean(
-      typeof feishuCfg?.appId === "string" && feishuCfg.appId.trim() && hasConfigSecret,
+    const resolved = resolveFeishuCredentials(feishuCfg);
+    const hasConfigCreds = Boolean(feishuCfg?.appId?.trim() && feishuCfg?.appSecret?.trim());
+    const canUseEnv = Boolean(
+      !hasConfigCreds && process.env.FEISHU_APP_ID?.trim() && process.env.FEISHU_APP_SECRET?.trim(),
     );
-    const appSecretPromptState = buildSingleChannelSecretPromptState({
-      accountConfigured: Boolean(resolved),
-      hasConfigToken: hasConfigSecret,
-      allowEnv: !hasConfigCreds && Boolean(process.env.FEISHU_APP_ID?.trim()),
-      envValue: process.env.FEISHU_APP_SECRET,
-    });
 
     let next = cfg;
     let appId: string | null = null;
-    let appSecret: SecretInput | null = null;
-    let appSecretProbeValue: string | null = null;
+    let appSecret: string | null = null;
 
     if (!resolved) {
       await noteFeishuCredentialHelp(prompter);
     }
 
-    const appSecretResult = await promptSingleChannelSecretInput({
-      cfg: next,
-      prompter,
-      providerHint: "feishu",
-      credentialLabel: "App Secret",
-      accountConfigured: appSecretPromptState.accountConfigured,
-      canUseEnv: appSecretPromptState.canUseEnv,
-      hasConfigToken: appSecretPromptState.hasConfigToken,
-      envPrompt: "FEISHU_APP_ID + FEISHU_APP_SECRET detected. Use env vars?",
-      keepPrompt: "Feishu App Secret already configured. Keep it?",
-      inputPrompt: "Enter Feishu App Secret",
-      preferredEnvVar: "FEISHU_APP_SECRET",
-    });
-
-    if (appSecretResult.action === "use-env") {
-      next = {
-        ...next,
-        channels: {
-          ...next.channels,
-          feishu: { ...next.channels?.feishu, enabled: true },
-        },
-      };
-    } else if (appSecretResult.action === "set") {
-      appSecret = appSecretResult.value;
-      appSecretProbeValue = appSecretResult.resolvedValue;
-      appId = await promptFeishuAppId({
-        prompter,
-        initialValue:
-          normalizeString(feishuCfg?.appId) ?? normalizeString(process.env.FEISHU_APP_ID),
+    if (canUseEnv) {
+      const keepEnv = await prompter.confirm({
+        message: "FEISHU_APP_ID + FEISHU_APP_SECRET detected. Use env vars?",
+        initialValue: true,
       });
+      if (keepEnv) {
+        next = {
+          ...next,
+          channels: {
+            ...next.channels,
+            feishu: { ...next.channels?.feishu, enabled: true },
+          },
+        };
+      } else {
+        const entered = await promptFeishuCredentials(prompter);
+        appId = entered.appId;
+        appSecret = entered.appSecret;
+      }
+    } else if (hasConfigCreds) {
+      const keep = await prompter.confirm({
+        message: "Feishu credentials already configured. Keep them?",
+        initialValue: true,
+      });
+      if (!keep) {
+        const entered = await promptFeishuCredentials(prompter);
+        appId = entered.appId;
+        appSecret = entered.appSecret;
+      }
+    } else {
+      const entered = await promptFeishuCredentials(prompter);
+      appId = entered.appId;
+      appSecret = entered.appSecret;
     }
 
     if (appId && appSecret) {
@@ -294,12 +249,9 @@ export const feishuOnboardingAdapter: ChannelOnboardingAdapter = {
       };
 
       // Test connection
+      const testCfg = next.channels?.feishu as FeishuConfig;
       try {
-        const probe = await probeFeishu({
-          appId,
-          appSecret: appSecretProbeValue ?? undefined,
-          domain: (next.channels?.feishu as FeishuConfig | undefined)?.domain,
-        });
+        const probe = await probeFeishu(testCfg);
         if (probe.ok) {
           await prompter.note(
             `Connected as ${probe.botName ?? probe.botOpenId ?? "bot"}`,
@@ -314,111 +266,6 @@ export const feishuOnboardingAdapter: ChannelOnboardingAdapter = {
       } catch (err) {
         await prompter.note(`Connection test failed: ${String(err)}`, "Feishu connection test");
       }
-    }
-
-    const currentMode =
-      (next.channels?.feishu as FeishuConfig | undefined)?.connectionMode ?? "websocket";
-    const connectionMode = (await prompter.select({
-      message: "Feishu connection mode",
-      options: [
-        { value: "websocket", label: "WebSocket (default)" },
-        { value: "webhook", label: "Webhook" },
-      ],
-      initialValue: currentMode,
-    })) as "websocket" | "webhook";
-    next = {
-      ...next,
-      channels: {
-        ...next.channels,
-        feishu: {
-          ...next.channels?.feishu,
-          connectionMode,
-        },
-      },
-    };
-
-    if (connectionMode === "webhook") {
-      const currentVerificationToken = (next.channels?.feishu as FeishuConfig | undefined)
-        ?.verificationToken;
-      const verificationTokenPromptState = buildSingleChannelSecretPromptState({
-        accountConfigured: hasConfiguredSecretInput(currentVerificationToken),
-        hasConfigToken: hasConfiguredSecretInput(currentVerificationToken),
-        allowEnv: false,
-      });
-      const verificationTokenResult = await promptSingleChannelSecretInput({
-        cfg: next,
-        prompter,
-        providerHint: "feishu-webhook",
-        credentialLabel: "verification token",
-        accountConfigured: verificationTokenPromptState.accountConfigured,
-        canUseEnv: verificationTokenPromptState.canUseEnv,
-        hasConfigToken: verificationTokenPromptState.hasConfigToken,
-        envPrompt: "",
-        keepPrompt: "Feishu verification token already configured. Keep it?",
-        inputPrompt: "Enter Feishu verification token",
-        preferredEnvVar: "FEISHU_VERIFICATION_TOKEN",
-      });
-      if (verificationTokenResult.action === "set") {
-        next = {
-          ...next,
-          channels: {
-            ...next.channels,
-            feishu: {
-              ...next.channels?.feishu,
-              verificationToken: verificationTokenResult.value,
-            },
-          },
-        };
-      }
-      const currentEncryptKey = (next.channels?.feishu as FeishuConfig | undefined)?.encryptKey;
-      const encryptKeyPromptState = buildSingleChannelSecretPromptState({
-        accountConfigured: hasConfiguredSecretInput(currentEncryptKey),
-        hasConfigToken: hasConfiguredSecretInput(currentEncryptKey),
-        allowEnv: false,
-      });
-      const encryptKeyResult = await promptSingleChannelSecretInput({
-        cfg: next,
-        prompter,
-        providerHint: "feishu-webhook",
-        credentialLabel: "encrypt key",
-        accountConfigured: encryptKeyPromptState.accountConfigured,
-        canUseEnv: encryptKeyPromptState.canUseEnv,
-        hasConfigToken: encryptKeyPromptState.hasConfigToken,
-        envPrompt: "",
-        keepPrompt: "Feishu encrypt key already configured. Keep it?",
-        inputPrompt: "Enter Feishu encrypt key",
-        preferredEnvVar: "FEISHU_ENCRYPT_KEY",
-      });
-      if (encryptKeyResult.action === "set") {
-        next = {
-          ...next,
-          channels: {
-            ...next.channels,
-            feishu: {
-              ...next.channels?.feishu,
-              encryptKey: encryptKeyResult.value,
-            },
-          },
-        };
-      }
-      const currentWebhookPath = (next.channels?.feishu as FeishuConfig | undefined)?.webhookPath;
-      const webhookPath = String(
-        await prompter.text({
-          message: "Feishu webhook path",
-          initialValue: currentWebhookPath ?? "/feishu/events",
-          validate: (value) => (String(value ?? "").trim() ? undefined : "Required"),
-        }),
-      ).trim();
-      next = {
-        ...next,
-        channels: {
-          ...next.channels,
-          feishu: {
-            ...next.channels?.feishu,
-            webhookPath,
-          },
-        },
-      };
     }
 
     // Domain selection

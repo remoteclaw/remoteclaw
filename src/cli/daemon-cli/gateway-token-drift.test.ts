@@ -63,7 +63,7 @@ describe("resolveGatewayTokenForDriftCheck", () => {
               token: "remote-token",
             },
           },
-        } as OpenClawConfig,
+        } as unknown as RemoteClawConfig,
         env: {} as NodeJS.ProcessEnv,
       }),
     ).toThrow(/gateway\.auth\.token/i);

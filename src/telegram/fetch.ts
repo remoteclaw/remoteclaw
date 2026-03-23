@@ -2,7 +2,7 @@ import * as dns from "node:dns";
 import { Agent, EnvHttpProxyAgent, ProxyAgent, fetch as undiciFetch } from "undici";
 import type { TelegramNetworkConfig } from "../config/types.telegram.js";
 import { resolveFetch } from "../infra/fetch.js";
-import { hasEnvHttpProxyConfigured } from "../infra/net/proxy-env.js";
+import { hasProxyEnvConfigured } from "../infra/net/proxy-env.js";
 import type { PinnedDispatcherPolicy } from "../infra/net/ssrf.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
@@ -179,7 +179,7 @@ function shouldBypassEnvProxyForTelegramApi(env: NodeJS.ProcessEnv = process.env
 }
 
 function hasEnvHttpProxyForTelegramApi(env: NodeJS.ProcessEnv = process.env): boolean {
-  return hasEnvHttpProxyConfigured("https", env);
+  return hasProxyEnvConfigured(env);
 }
 
 function resolveTelegramDispatcherPolicy(params: {

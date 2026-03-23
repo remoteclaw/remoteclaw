@@ -44,7 +44,7 @@ export {
 } from "../config/runtime-group-policy.js";
 export type { DmPolicy, GroupToolPolicyConfig } from "../config/types.js";
 export type { SecretInput } from "../config/types.secrets.js";
-export { normalizeSecretInputString } from "../config/types.secrets.js";
+export { hasConfiguredSecretInput, normalizeSecretInputString } from "../config/types.secrets.js";
 export { buildSecretInputSchema } from "./secret-input-schema.js";
 export { createDedupeCache } from "../infra/dedupe.js";
 export { installRequestBodyLimitGuard } from "../infra/http-body.js";

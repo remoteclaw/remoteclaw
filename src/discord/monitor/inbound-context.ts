@@ -17,6 +17,7 @@ export function buildDiscordGroupSystemPrompt(
 export function buildDiscordUntrustedContext(params: {
   isGuild: boolean;
   channelTopic?: string;
+  messageBody?: string;
 }): string[] | undefined {
   if (!params.isGuild) {
     return undefined;
@@ -40,6 +41,7 @@ export function buildDiscordInboundAccessContext(params: {
   allowNameMatching?: boolean;
   isGuild: boolean;
   channelTopic?: string;
+  messageBody?: string;
 }) {
   return {
     groupSystemPrompt: params.isGuild

@@ -26,6 +26,12 @@ const hookMocks = vi.hoisted(() => ({
     runMessageReceived: vi.fn(async () => {}),
   },
 }));
+const sessionStoreMocks = vi.hoisted(() => ({
+  loadSessionStore: vi.fn(async () => ({})),
+  resolveStorePath: vi.fn(() => "/tmp/test-store"),
+  resolveSessionStoreEntry: vi.fn(async () => undefined as Record<string, unknown> | undefined),
+  currentEntry: undefined as Record<string, unknown> | undefined,
+}));
 const internalHookMocks = vi.hoisted(() => ({
   createInternalHookEvent: vi.fn(),
   triggerInternalHook: vi.fn(async () => {}),

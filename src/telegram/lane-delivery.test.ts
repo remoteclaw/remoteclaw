@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ReplyPayload } from "../auto-reply/types.js";
 import { createTestDraftStream } from "./draft-stream.test-helpers.js";
+import type { LanePreviewLifecycle } from "./lane-delivery-text-deliverer.js";
 import { createLaneTextDeliverer, type DraftLaneState, type LaneName } from "./lane-delivery.js";
 
 function createHarness(params?: {
@@ -42,7 +43,14 @@ function createHarness(params?: {
   const deletePreviewMessage = vi.fn().mockResolvedValue(undefined);
   const log = vi.fn();
   const markDelivered = vi.fn();
-  const finalizedPreviewByLane: Record<LaneName, boolean> = { answer: false, reasoning: false };
+  const activePreviewLifecycleByLane: Record<LaneName, LanePreviewLifecycle> = {
+    answer: "transient",
+    reasoning: "transient",
+  };
+  const retainPreviewOnCleanupByLane: Record<LaneName, boolean> = {
+    answer: false,
+    reasoning: false,
+  };
   const archivedAnswerPreviews: Array<{
     messageId: number;
     textSnapshot: string;
@@ -52,7 +60,8 @@ function createHarness(params?: {
   const deliverLaneText = createLaneTextDeliverer({
     lanes,
     archivedAnswerPreviews,
-    finalizedPreviewByLane,
+    activePreviewLifecycleByLane,
+    retainPreviewOnCleanupByLane,
     draftMaxChars: params?.draftMaxChars ?? 4_096,
     applyTextToPayload: (payload: ReplyPayload, text: string) => ({ ...payload, text }),
     sendPayload,

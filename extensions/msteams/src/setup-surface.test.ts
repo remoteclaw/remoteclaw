@@ -63,8 +63,7 @@ describe("msteams setup surface", () => {
     ).toBe(true);
 
     hasConfiguredMSTeamsCredentials.mockReturnValue(false);
-    expect(msteamsSetupWizard.status.resolveStatusLines).toBeTypeOf("function");
-    await expect(
+    expect(
       msteamsSetupWizard.status.resolveStatusLines?.({
         cfg: { channels: { msteams: {} } },
       } as never),

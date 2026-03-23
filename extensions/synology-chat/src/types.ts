@@ -2,6 +2,8 @@
  * Type definitions for the Synology Chat channel plugin.
  */
 
+export type SynologyWebhookPathSource = "default" | "inherited-base" | "explicit";
+
 /** Raw channel config from remoteclaw.json channels.synology-chat */
 export interface SynologyChatChannelConfig {
   enabled?: boolean;
@@ -9,6 +11,8 @@ export interface SynologyChatChannelConfig {
   incomingUrl?: string;
   nasHost?: string;
   webhookPath?: string;
+  dangerouslyAllowNameMatching?: boolean;
+  dangerouslyAllowInheritedWebhookPath?: boolean;
   dmPolicy?: "open" | "allowlist" | "disabled";
   allowedUserIds?: string | string[];
   rateLimitPerMinute?: number;
@@ -24,6 +28,8 @@ export interface SynologyChatAccountRaw {
   incomingUrl?: string;
   nasHost?: string;
   webhookPath?: string;
+  dangerouslyAllowNameMatching?: boolean;
+  dangerouslyAllowInheritedWebhookPath?: boolean;
   dmPolicy?: "open" | "allowlist" | "disabled";
   allowedUserIds?: string | string[];
   rateLimitPerMinute?: number;
@@ -39,7 +45,9 @@ export interface ResolvedSynologyChatAccount {
   incomingUrl: string;
   nasHost: string;
   webhookPath: string;
+  webhookPathSource: SynologyWebhookPathSource;
   dangerouslyAllowNameMatching: boolean;
+  dangerouslyAllowInheritedWebhookPath: boolean;
   dmPolicy: "open" | "allowlist" | "disabled";
   allowedUserIds: string[];
   rateLimitPerMinute: number;

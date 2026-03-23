@@ -725,6 +725,14 @@ describe("gateway server cron", () => {
       const noSummaryJobId = typeof noSummaryJobIdValue === "string" ? noSummaryJobIdValue : "";
       expect(noSummaryJobId.length > 0).toBe(true);
 
+      await runCronJobAndWaitForFinished(ws, noSummaryJobId);
+      expect(fetchWithSsrFGuardMock).toHaveBeenCalledTimes(1);
+    } finally {
+      await cleanupCronTestRun({ ws, server, prevSkipCron });
+    }
+  }, 60_000);
+
+  test("omits webhook Authorization header when webhookToken is opaque object", async () => {
     await writeCronConfig({
       cron: {
         webhookToken: {
@@ -737,6 +745,11 @@ describe("gateway server cron", () => {
 
     const { server, ws } = await startServerWithClient();
     await connectOk(ws);
+
+    const { prevSkipCron } = await setupCronTestRun({
+      tempPrefix: "remoteclaw-gw-cron-opaque-webhook-",
+      cronEnabled: false,
+    });
 
     try {
       const notifyJobId = await addWebhookCronJob({

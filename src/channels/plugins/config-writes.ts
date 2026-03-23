@@ -45,7 +45,7 @@ export function resolveChannelConfigWrites(params: {
 }
 
 export function authorizeConfigWrite(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   origin?: ConfigWriteScope;
   targets?: ConfigWriteScope[];
   allowBypass?: boolean;

@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { containsEnvVarReference } from "../config/env-substitution.js";
 import { hasConfiguredSecretInput, resolveSecretInputRef } from "../config/types.secrets.js";
 
@@ -16,7 +16,7 @@ export type GatewayCredentialMode = "local" | "remote";
 export type GatewayCredentialPrecedence = "env-first" | "config-first";
 export type GatewayRemoteCredentialPrecedence = "remote-first" | "env-first";
 export type GatewayRemoteCredentialFallback = "remote-env-local" | "remote-only";
-type GatewaySecretDefaults = NonNullable<OpenClawConfig["secrets"]>["defaults"];
+type GatewaySecretDefaults = NonNullable<RemoteClawConfig["secrets"]>["defaults"];
 
 type GatewayConfiguredCredentialInput = {
   configured: boolean;
@@ -180,7 +180,7 @@ export function resolveGatewayCredentialsFromValues(params: {
 }
 
 export function resolveGatewayCredentialsFromConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   env?: NodeJS.ProcessEnv;
   explicitAuth?: ExplicitGatewayAuth;
   urlOverride?: string;

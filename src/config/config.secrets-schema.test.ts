@@ -5,6 +5,18 @@ import {
 } from "../test-utils/secret-ref-test-vectors.js";
 import { validateConfigObjectRaw } from "./validation.js";
 
+function validateOpenAiApiKeyRef(ref: { source: string; provider?: string; id: string }) {
+  return validateConfigObjectRaw({
+    models: {
+      providers: {
+        openai: {
+          apiKey: ref,
+        },
+      },
+    },
+  });
+}
+
 describe("config secret refs schema", () => {
   it("accepts top-level secrets sources and googlechat serviceAccountRef", () => {
     const result = validateConfigObjectRaw({

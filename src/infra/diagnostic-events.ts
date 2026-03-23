@@ -1,5 +1,6 @@
 import type { RemoteClawConfig } from "../config/config.js";
 
+
 export type DiagnosticSessionState = "idle" | "processing" | "waiting";
 
 type DiagnosticBaseEvent = {

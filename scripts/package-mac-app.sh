@@ -8,7 +8,7 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 APP_ROOT="$ROOT_DIR/dist/RemoteClaw.app"
 BUILD_ROOT="$ROOT_DIR/apps/macos/.build"
 PRODUCT="RemoteClaw"
-BUNDLE_ID="${BUNDLE_ID:-org.remoteclaw.mac.debug}"
+BUNDLE_ID="${BUNDLE_ID:-ai.remoteclaw.mac.debug}"
 PKG_VERSION="$(cd "$ROOT_DIR" && node -p "require('./package.json').version" 2>/dev/null || echo "0.0.0")"
 BUILD_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 GIT_COMMIT=$(cd "$ROOT_DIR" && git rev-parse --short HEAD 2>/dev/null || echo "unknown")
@@ -114,8 +114,12 @@ merge_framework_machos() {
   done < <(find "$primary" -type f -print0)
 }
 
-echo "📦 Ensuring deps (pnpm install)"
-(cd "$ROOT_DIR" && pnpm install --no-frozen-lockfile --config.node-linker=hoisted)
+if [[ "${SKIP_PNPM_INSTALL:-0}" != "1" ]]; then
+  echo "📦 Ensuring deps (pnpm install)"
+  (cd "$ROOT_DIR" && pnpm install --no-frozen-lockfile --config.node-linker=hoisted)
+else
+  echo "📦 Skipping pnpm install (SKIP_PNPM_INSTALL=1)"
+fi
 
 if [[ -z "${APP_BUILD:-}" ]]; then
   APP_BUILD="$GIT_BUILD_NUMBER"
@@ -233,13 +237,33 @@ echo "📦 Copying device model resources"
 rm -rf "$APP_ROOT/Contents/Resources/DeviceModels"
 cp -R "$ROOT_DIR/apps/macos/Sources/RemoteClaw/Resources/DeviceModels" "$APP_ROOT/Contents/Resources/DeviceModels"
 
-echo "📦 Copying RemoteClawKit resources"
-REMOTECLAWKIT_BUNDLE="$(build_path_for_arch "$PRIMARY_ARCH")/$BUILD_CONFIG/RemoteClawKit_RemoteClawKit.bundle"
-if [ -d "$REMOTECLAWKIT_BUNDLE" ]; then
-  rm -rf "$APP_ROOT/Contents/Resources/RemoteClawKit_RemoteClawKit.bundle"
-  cp -R "$REMOTECLAWKIT_BUNDLE" "$APP_ROOT/Contents/Resources/RemoteClawKit_RemoteClawKit.bundle"
+echo "📦 Copying model catalog"
+MODEL_CATALOG_SRC="$ROOT_DIR/node_modules/@mariozechner/pi-ai/dist/models.generated.js"
+MODEL_CATALOG_DEST="$APP_ROOT/Contents/Resources/models.generated.js"
+if [ -f "$MODEL_CATALOG_SRC" ]; then
+  cp "$MODEL_CATALOG_SRC" "$MODEL_CATALOG_DEST"
 else
-  echo "WARN: RemoteClawKit resource bundle not found at $REMOTECLAWKIT_BUNDLE (continuing)" >&2
+  echo "WARN: model catalog missing at $MODEL_CATALOG_SRC (continuing)" >&2
+fi
+
+echo "📦 Copying Control UI assets"
+CONTROL_UI_SRC="$ROOT_DIR/dist/control-ui"
+CONTROL_UI_DEST="$APP_ROOT/Contents/Resources/control-ui"
+if [ -d "$CONTROL_UI_SRC" ] && [ -f "$CONTROL_UI_SRC/index.html" ]; then
+  rm -rf "$CONTROL_UI_DEST"
+  cp -R "$CONTROL_UI_SRC" "$CONTROL_UI_DEST"
+else
+  echo "ERROR: Control UI assets missing at $CONTROL_UI_SRC. Run pnpm ui:build first." >&2
+  exit 1
+fi
+
+echo "📦 Copying RemoteClawKit resources"
+OPENCLAWKIT_BUNDLE="$(build_path_for_arch "$PRIMARY_ARCH")/$BUILD_CONFIG/RemoteClawKit_RemoteClawKit.bundle"
+if [ -d "$OPENCLAWKIT_BUNDLE" ]; then
+  rm -rf "$APP_ROOT/Contents/Resources/RemoteClawKit_RemoteClawKit.bundle"
+  cp -R "$OPENCLAWKIT_BUNDLE" "$APP_ROOT/Contents/Resources/RemoteClawKit_RemoteClawKit.bundle"
+else
+  echo "WARN: RemoteClawKit resource bundle not found at $OPENCLAWKIT_BUNDLE (continuing)" >&2
 fi
 
 echo "📦 Copying Textual resources"

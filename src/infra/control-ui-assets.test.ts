@@ -76,9 +76,10 @@ vi.mock("./remoteclaw-root.js", () => ({
 let resolveControlUiRepoRoot: typeof import("./control-ui-assets.js").resolveControlUiRepoRoot;
 let resolveControlUiDistIndexPath: typeof import("./control-ui-assets.js").resolveControlUiDistIndexPath;
 let resolveControlUiDistIndexHealth: typeof import("./control-ui-assets.js").resolveControlUiDistIndexHealth;
+let isPackageProvenControlUiRootSync: typeof import("./control-ui-assets.js").isPackageProvenControlUiRootSync;
 let resolveControlUiRootOverrideSync: typeof import("./control-ui-assets.js").resolveControlUiRootOverrideSync;
 let resolveControlUiRootSync: typeof import("./control-ui-assets.js").resolveControlUiRootSync;
-let remoteClawRoot: typeof import("./remoteclaw-root.js");
+let remoteclawRoot: typeof import("./remoteclaw-root.js");
 
 describe("control UI assets helpers (fs-mocked)", () => {
   beforeAll(async () => {
@@ -86,10 +87,11 @@ describe("control UI assets helpers (fs-mocked)", () => {
       resolveControlUiRepoRoot,
       resolveControlUiDistIndexPath,
       resolveControlUiDistIndexHealth,
+      isPackageProvenControlUiRootSync,
       resolveControlUiRootOverrideSync,
       resolveControlUiRootSync,
     } = await import("./control-ui-assets.js"));
-    remoteClawRoot = await import("./remoteclaw-root.js");
+    remoteclawRoot = await import("./remoteclaw-root.js");
   });
 
   beforeEach(() => {
@@ -123,10 +125,22 @@ describe("control UI assets helpers (fs-mocked)", () => {
     );
   });
 
+  it("resolves dist control-ui index path for symlinked argv1 via realpath", async () => {
+    const pkgRoot = abs("fixtures/bun-global/remoteclaw");
+    const wrapperArgv1 = abs("fixtures/bin/remoteclaw");
+    const realEntrypoint = path.join(pkgRoot, "dist", "index.js");
+
+    state.realpaths.set(wrapperArgv1, realEntrypoint);
+
+    await expect(resolveControlUiDistIndexPath(wrapperArgv1)).resolves.toBe(
+      path.join(pkgRoot, "dist", "control-ui", "index.html"),
+    );
+  });
+
   it("uses resolveRemoteClawPackageRoot when available", async () => {
     const pkgRoot = abs("fixtures/remoteclaw");
     (
-      remoteClawRoot.resolveRemoteClawPackageRoot as unknown as ReturnType<typeof vi.fn>
+      remoteclawRoot.resolveRemoteClawPackageRoot as unknown as ReturnType<typeof vi.fn>
     ).mockResolvedValueOnce(pkgRoot);
 
     await expect(resolveControlUiDistIndexPath(abs("fixtures/bin/remoteclaw"))).resolves.toBe(
@@ -184,7 +198,7 @@ describe("control UI assets helpers (fs-mocked)", () => {
   it("resolves control-ui root for dist bundle argv1 and moduleUrl candidates", async () => {
     const pkgRoot = abs("fixtures/remoteclaw-bundle");
     (
-      remoteClawRoot.resolveRemoteClawPackageRootSync as unknown as ReturnType<typeof vi.fn>
+      remoteclawRoot.resolveRemoteClawPackageRootSync as unknown as ReturnType<typeof vi.fn>
     ).mockReturnValueOnce(pkgRoot);
 
     const uiDir = path.join(pkgRoot, "dist", "control-ui");
@@ -198,5 +212,59 @@ describe("control UI assets helpers (fs-mocked)", () => {
     // moduleUrl candidate: <moduleDir>/control-ui
     const moduleUrl = pathToFileURL(path.join(pkgRoot, "dist", "bundle.js")).toString();
     expect(resolveControlUiRootSync({ moduleUrl })).toBe(uiDir);
+  });
+
+  it("prefers packaged app Control UI assets in Contents/Resources", () => {
+    const execPath = abs("fixtures/RemoteClaw.app/Contents/MacOS/RemoteClaw");
+    const bundledUiDir = abs("fixtures/RemoteClaw.app/Contents/Resources/control-ui");
+    setFile(path.join(bundledUiDir, "index.html"), "<html></html>\n");
+
+    state.realpaths.set(execPath, execPath);
+
+    expect(resolveControlUiRootSync({ execPath })).toBe(bundledUiDir);
+  });
+
+  it("resolves control-ui root for symlinked argv1 via realpath", () => {
+    const pkgRoot = abs("fixtures/bun-global/remoteclaw");
+    const wrapperArgv1 = abs("fixtures/bin/remoteclaw");
+    const realEntrypoint = path.join(pkgRoot, "dist", "index.js");
+    const uiDir = path.join(pkgRoot, "dist", "control-ui");
+
+    state.realpaths.set(wrapperArgv1, realEntrypoint);
+    setFile(path.join(uiDir, "index.html"), "<html></html>\n");
+
+    expect(resolveControlUiRootSync({ argv1: wrapperArgv1 })).toBe(uiDir);
+  });
+
+  it("detects package-proven control-ui roots", () => {
+    const pkgRoot = abs("fixtures/remoteclaw-package-root");
+    const uiDir = path.join(pkgRoot, "dist", "control-ui");
+    setDir(uiDir);
+    setFile(path.join(uiDir, "index.html"), "<html></html>\n");
+    (
+      remoteclawRoot.resolveRemoteClawPackageRootSync as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValueOnce(pkgRoot);
+
+    expect(
+      isPackageProvenControlUiRootSync(uiDir, {
+        cwd: abs("fixtures/cwd"),
+      }),
+    ).toBe(true);
+  });
+
+  it("does not treat fallback roots as package-proven", () => {
+    const pkgRoot = abs("fixtures/remoteclaw-package-root");
+    const fallbackRoot = abs("fixtures/fallback-root/dist/control-ui");
+    setDir(fallbackRoot);
+    setFile(path.join(fallbackRoot, "index.html"), "<html></html>\n");
+    (
+      remoteclawRoot.resolveRemoteClawPackageRootSync as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValueOnce(pkgRoot);
+
+    expect(
+      isPackageProvenControlUiRootSync(fallbackRoot, {
+        cwd: abs("fixtures/fallback-root"),
+      }),
+    ).toBe(false);
   });
 });

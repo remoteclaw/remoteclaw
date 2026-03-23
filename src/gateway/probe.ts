@@ -41,12 +41,23 @@ export async function probeGateway(opts: {
 
   return await new Promise<GatewayProbeResult>((resolve) => {
     let settled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const clearProbeTimer = () => {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+    };
+    const armProbeTimer = (onTimeout: () => void) => {
+      clearProbeTimer();
+      timer = setTimeout(onTimeout, clampProbeTimeoutMs(opts.timeoutMs));
+    };
     const settle = (result: Omit<GatewayProbeResult, "url">) => {
       if (settled) {
         return;
       }
       settled = true;
-      clearTimeout(timer);
+      clearProbeTimer();
       client.stop();
       resolve({ url: opts.url, ...result });
     };
@@ -68,6 +79,20 @@ export async function probeGateway(opts: {
       },
       onHelloOk: async () => {
         connectLatencyMs = Date.now() - startedAt;
+        // Once the gateway has accepted the session, a slow follow-up RPC should no longer
+        // downgrade the probe to "unreachable". Give detail fetching its own budget.
+        armProbeTimer(() => {
+          settle({
+            ok: false,
+            connectLatencyMs,
+            error: "timeout",
+            close,
+            health: null,
+            status: null,
+            presence: null,
+            configSnapshot: null,
+          });
+        });
         try {
           const [health, status, presence, configSnapshot] = await Promise.all([
             client.request("health"),
@@ -100,21 +125,18 @@ export async function probeGateway(opts: {
       },
     });
 
-    const timer = setTimeout(
-      () => {
-        settle({
-          ok: false,
-          connectLatencyMs,
-          error: connectError ? `connect failed: ${connectError}` : "timeout",
-          close,
-          health: null,
-          status: null,
-          presence: null,
-          configSnapshot: null,
-        });
-      },
-      Math.max(250, opts.timeoutMs),
-    );
+    armProbeTimer(() => {
+      settle({
+        ok: false,
+        connectLatencyMs,
+        error: connectError ? `connect failed: ${connectError}` : "timeout",
+        close,
+        health: null,
+        status: null,
+        presence: null,
+        configSnapshot: null,
+      });
+    });
 
     client.start();
   });

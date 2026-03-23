@@ -1,20 +1,20 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath, URL } from "node:url";
-import { SafeOpenError, readLocalFileSafely } from "remoteclaw/plugin-sdk/infra-runtime";
-import type { SsrFPolicy } from "remoteclaw/plugin-sdk/infra-runtime";
-import { type MediaKind, maxBytesForKind } from "remoteclaw/plugin-sdk/media-runtime";
-import { fetchRemoteMedia } from "remoteclaw/plugin-sdk/media-runtime";
+import { logVerbose, shouldLogVerbose } from "../globals.js";
+import { SafeOpenError, readLocalFileSafely } from "../infra/fs-safe.js";
+import { assertNoWindowsNetworkPath, safeFileURLToPath } from "../infra/local-file-access.js";
+import type { SsrFPolicy } from "../infra/net/ssrf.js";
+import { resolveUserPath } from "../utils.js";
+import { maxBytesForKind, type MediaKind } from "./constants.js";
+import { fetchRemoteMedia } from "./fetch.js";
 import {
   convertHeicToJpeg,
   hasAlphaChannel,
   optimizeImageToPng,
   resizeToJpeg,
-} from "remoteclaw/plugin-sdk/media-runtime";
-import { getDefaultMediaLocalRoots } from "remoteclaw/plugin-sdk/media-runtime";
-import { detectMime, extensionForMime, kindFromMime } from "remoteclaw/plugin-sdk/media-runtime";
-import { logVerbose, shouldLogVerbose } from "remoteclaw/plugin-sdk/runtime-env";
-import { resolveUserPath } from "remoteclaw/plugin-sdk/text-runtime";
+} from "./image-ops.js";
+import { getDefaultMediaLocalRoots } from "./local-roots.js";
+import { detectMime, extensionForMime, kindFromMime } from "./mime.js";
 
 export type WebMediaResult = {
   buffer: Buffer;
@@ -53,38 +53,6 @@ function resolveWebMediaOptions(params: {
       ? (params.maxBytesOrOptions.optimizeImages ?? true)
       : false,
   };
-}
-
-function isWindowsNetworkPath(filePath: string): boolean {
-  if (process.platform !== "win32") {
-    return false;
-  }
-  const normalized = filePath.replace(/\//g, "\\");
-  return normalized.startsWith("\\\\?\\UNC\\") || normalized.startsWith("\\\\");
-}
-
-function assertNoWindowsNetworkPath(filePath: string, label = "Path"): void {
-  if (isWindowsNetworkPath(filePath)) {
-    throw new Error(`${label} cannot use Windows network paths: ${filePath}`);
-  }
-}
-
-function safeFileURLToPath(fileUrl: string): string {
-  let parsed: URL;
-  try {
-    parsed = new URL(fileUrl);
-  } catch {
-    throw new Error(`Invalid file:// URL: ${fileUrl}`);
-  }
-  if (parsed.protocol !== "file:") {
-    throw new Error(`Invalid file:// URL: ${fileUrl}`);
-  }
-  if (parsed.hostname !== "" && parsed.hostname.toLowerCase() !== "localhost") {
-    throw new Error(`file:// URLs with remote hosts are not allowed: ${fileUrl}`);
-  }
-  const filePath = fileURLToPath(parsed);
-  assertNoWindowsNetworkPath(filePath, "Local file URL");
-  return filePath;
 }
 
 export type LocalMediaAccessErrorCode =
@@ -236,12 +204,12 @@ function logOptimizedImage(params: { originalSize: number; optimized: OptimizedI
   }
   if (params.optimized.format === "png") {
     logVerbose(
-      `Optimized PNG (preserving alpha) from ${formatMb(params.originalSize)}MB to ${formatMb(params.optimized.optimizedSize)}MB (side≤${params.optimized.resizeSide}px)`,
+      `Optimized PNG (preserving alpha) from ${formatMb(params.originalSize)}MB to ${formatMb(params.optimized.optimizedSize)}MB (side<=${params.optimized.resizeSide}px)`,
     );
     return;
   }
   logVerbose(
-    `Optimized media from ${formatMb(params.originalSize)}MB to ${formatMb(params.optimized.optimizedSize)}MB (side≤${params.optimized.resizeSide}px, q=${params.optimized.quality})`,
+    `Optimized media from ${formatMb(params.originalSize)}MB to ${formatMb(params.optimized.optimizedSize)}MB (side<=${params.optimized.resizeSide}px, q=${params.optimized.quality})`,
   );
 }
 

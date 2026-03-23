@@ -17,6 +17,13 @@ import type { FollowupRun } from "./types.js";
 // enqueueFollowupRun can restart a drain that finished and deleted the queue.
 const FOLLOWUP_RUN_CALLBACKS = new Map<string, (run: FollowupRun) => Promise<void>>();
 
+export function rememberFollowupDrainCallback(
+  key: string,
+  runFollowup: (run: FollowupRun) => Promise<void>,
+): void {
+  FOLLOWUP_RUN_CALLBACKS.set(key, runFollowup);
+}
+
 export function clearFollowupDrainCallback(key: string): void {
   FOLLOWUP_RUN_CALLBACKS.delete(key);
 }
@@ -73,7 +80,7 @@ export function scheduleFollowupDrain(
   }
   // Cache callback only when a drain actually starts. Avoid keeping stale
   // callbacks around from finalize calls where no queue work is pending.
-  FOLLOWUP_RUN_CALLBACKS.set(key, runFollowup);
+  rememberFollowupDrainCallback(key, runFollowup);
   void (async () => {
     try {
       const collectState = { forceIndividualCollect: false };

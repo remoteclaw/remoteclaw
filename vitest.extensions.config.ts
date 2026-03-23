@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { channelTestExclude } from "./vitest.channel-paths.mjs";
 import { createScopedVitestConfig } from "./vitest.scoped-config.ts";
 
 function loadPatternListFile(filePath: string, label: string): string[] {
@@ -12,18 +13,25 @@ function loadPatternListFile(filePath: string, label: string): string[] {
 export function loadIncludePatternsFromEnv(
   env: Record<string, string | undefined> = process.env,
 ): string[] | null {
-  const includeFile = env.REMOTECLAW_VITEST_INCLUDE_FILE?.trim();
+  const includeFile = env.OPENCLAW_VITEST_INCLUDE_FILE?.trim();
   if (!includeFile) {
     return null;
   }
-  return loadPatternListFile(includeFile, "REMOTECLAW_VITEST_INCLUDE_FILE");
+  return loadPatternListFile(includeFile, "OPENCLAW_VITEST_INCLUDE_FILE");
 }
 
-export default createScopedVitestConfig(
-  loadIncludePatternsFromEnv() ?? ["extensions/**/*.test.ts"],
-  {
+export function createExtensionsVitestConfig(
+  env: Record<string, string | undefined> = process.env,
+) {
+  return createScopedVitestConfig(loadIncludePatternsFromEnv(env) ?? ["extensions/**/*.test.ts"], {
     dir: "extensions",
     pool: "threads",
     passWithNoTests: true,
-  },
-);
+    // Channel implementations live under extensions/ but are tested by
+    // vitest.channels.config.ts (pnpm test:channels) which provides
+    // the heavier mock scaffolding they need.
+    exclude: channelTestExclude.filter((pattern) => pattern.startsWith("extensions/")),
+  });
+}
+
+export default createExtensionsVitestConfig();

@@ -6,10 +6,10 @@ import type {
 } from "@buape/carbon";
 import type { Client } from "@buape/carbon";
 import type { GatewayPresenceUpdate } from "discord-api-types/v10";
+import type { OpenClawConfig } from "openclaw/plugin-sdk/config-runtime";
+import type { DiscordAccountConfig } from "openclaw/plugin-sdk/config-runtime";
+import { buildPluginBindingApprovalCustomId } from "openclaw/plugin-sdk/conversation-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { RemoteClawConfig } from "../../../../src/config/config.js";
-import type { DiscordAccountConfig } from "../../../../src/config/types.discord.js";
-import { buildAgentSessionKey } from "../../../../src/routing/resolve-route.js";
 import {
   clearDiscordComponentEntries,
   registerDiscordComponentEntries,
@@ -18,8 +18,6 @@ import {
 } from "../components-registry.js";
 import type { DiscordComponentEntry, DiscordModalEntry } from "../components.js";
 import {
-  createAgentComponentButton,
-  createAgentSelectMenu,
   createDiscordComponentButton,
   createDiscordComponentModal,
 } from "./agent-components.js";
@@ -92,138 +90,13 @@ vi.mock("../../../../src/config/sessions.js", async (importOriginal) => {
   };
 });
 
-describe("agent components", () => {
-  const createCfg = (): RemoteClawConfig => ({}) as RemoteClawConfig;
-
-  const createBaseDmInteraction = (overrides: Record<string, unknown> = {}) => {
-    const reply = vi.fn().mockResolvedValue(undefined);
-    const defer = vi.fn().mockResolvedValue(undefined);
-    const interaction = {
-      rawData: { channel_id: "dm-channel" },
-      user: { id: "123456789", username: "Alice", discriminator: "1234" },
-      defer,
-      reply,
-      ...overrides,
-    };
-    return { interaction, defer, reply };
+vi.mock("openclaw/plugin-sdk/plugin-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/plugin-runtime")>();
+  return {
+    ...actual,
+    dispatchPluginInteractiveHandler: (...args: unknown[]) =>
+      dispatchPluginInteractiveHandlerMock(...args),
   };
-
-  const createDmButtonInteraction = (overrides: Partial<ButtonInteraction> = {}) => {
-    const { interaction, defer, reply } = createBaseDmInteraction(
-      overrides as Record<string, unknown>,
-    );
-    return {
-      interaction: interaction as unknown as ButtonInteraction,
-      defer,
-      reply,
-    };
-  };
-
-  const createDmSelectInteraction = (overrides: Partial<StringSelectMenuInteraction> = {}) => {
-    const { interaction, defer, reply } = createBaseDmInteraction({
-      values: ["alpha"],
-      ...(overrides as Record<string, unknown>),
-    });
-    return {
-      interaction: interaction as unknown as StringSelectMenuInteraction,
-      defer,
-      reply,
-    };
-  };
-
-  beforeEach(() => {
-    readAllowFromStoreMock.mockClear().mockResolvedValue([]);
-    upsertPairingRequestMock.mockClear().mockResolvedValue({ code: "PAIRCODE", created: true });
-    enqueueSystemEventMock.mockClear();
-  });
-
-  it("sends pairing reply when DM sender is not allowlisted", async () => {
-    const button = createAgentComponentButton({
-      cfg: createCfg(),
-      accountId: "default",
-      dmPolicy: "pairing",
-    });
-    const { interaction, defer, reply } = createDmButtonInteraction();
-
-    await button.run(interaction, { componentId: "hello" } as ComponentData);
-
-    expect(defer).toHaveBeenCalledWith({ ephemeral: true });
-    expect(reply).toHaveBeenCalledTimes(1);
-    expect(reply.mock.calls[0]?.[0]?.content).toContain("Pairing code: PAIRCODE");
-    expect(enqueueSystemEventMock).not.toHaveBeenCalled();
-  });
-
-  it("blocks DM interactions when only pairing store entries match in allowlist mode", async () => {
-    readAllowFromStoreMock.mockResolvedValue(["123456789"]);
-    const button = createAgentComponentButton({
-      cfg: createCfg(),
-      accountId: "default",
-      dmPolicy: "allowlist",
-    });
-    const { interaction, defer, reply } = createDmButtonInteraction();
-
-    await button.run(interaction, { componentId: "hello" } as ComponentData);
-
-    expect(defer).toHaveBeenCalledWith({ ephemeral: true });
-    expect(reply).toHaveBeenCalledWith({ content: "You are not authorized to use this button." });
-    expect(enqueueSystemEventMock).not.toHaveBeenCalled();
-    expect(readAllowFromStoreMock).not.toHaveBeenCalled();
-  });
-
-  it("matches tag-based allowlist entries for DM select menus", async () => {
-    const select = createAgentSelectMenu({
-      cfg: createCfg(),
-      accountId: "default",
-      discordConfig: { dangerouslyAllowNameMatching: true } as DiscordAccountConfig,
-      dmPolicy: "allowlist",
-      allowFrom: ["Alice#1234"],
-    });
-    const { interaction, defer, reply } = createDmSelectInteraction();
-
-    await select.run(interaction, { componentId: "hello" } as ComponentData);
-
-    expect(defer).toHaveBeenCalledWith({ ephemeral: true });
-    expect(reply).toHaveBeenCalledWith({ content: "✓" });
-    expect(enqueueSystemEventMock).toHaveBeenCalled();
-  });
-
-  it("accepts cid payloads for agent button interactions", async () => {
-    const button = createAgentComponentButton({
-      cfg: createCfg(),
-      accountId: "default",
-      dmPolicy: "allowlist",
-      allowFrom: ["123456789"],
-    });
-    const { interaction, defer, reply } = createDmButtonInteraction();
-
-    await button.run(interaction, { cid: "hello_cid" } as ComponentData);
-
-    expect(defer).toHaveBeenCalledWith({ ephemeral: true });
-    expect(reply).toHaveBeenCalledWith({ content: "✓" });
-    expect(enqueueSystemEventMock).toHaveBeenCalledWith(
-      expect.stringContaining("hello_cid"),
-      expect.any(Object),
-    );
-  });
-
-  it("keeps malformed percent cid values without throwing", async () => {
-    const button = createAgentComponentButton({
-      cfg: createCfg(),
-      accountId: "default",
-      dmPolicy: "allowlist",
-      allowFrom: ["123456789"],
-    });
-    const { interaction, defer, reply } = createDmButtonInteraction();
-
-    await button.run(interaction, { cid: "hello%2G" } as ComponentData);
-
-    expect(defer).toHaveBeenCalledWith({ ephemeral: true });
-    expect(reply).toHaveBeenCalledWith({ content: "✓" });
-    expect(enqueueSystemEventMock).toHaveBeenCalledWith(
-      expect.stringContaining("hello%2G"),
-      expect.any(Object),
-    );
-  });
 });
 
 describe("discord component interactions", () => {

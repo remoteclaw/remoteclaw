@@ -1,34 +1,27 @@
 import { describe, expect, it } from "vitest";
+import { isValidExecSecretRefId, validateExecSecretRefId } from "../secrets/ref-contract.js";
 import {
   INVALID_EXEC_SECRET_REF_IDS,
   VALID_EXEC_SECRET_REF_IDS,
 } from "../test-utils/secret-ref-test-vectors.js";
 import { validateConfigObjectRaw } from "./validation.js";
 
-function validateOpenAiApiKeyRef(ref: { source: string; provider?: string; id: string }) {
-  return validateConfigObjectRaw({
-    models: {
-      providers: {
-        openai: {
-          apiKey: ref,
-        },
-      },
-    },
-  });
-}
-
 describe("config secret refs schema", () => {
-  it("accepts top-level secrets sources and googlechat serviceAccountRef", () => {
+  it("accepts top-level secrets providers and googlechat serviceAccountRef", () => {
     const result = validateConfigObjectRaw({
       secrets: {
-        sources: {
-          env: { type: "env" },
-          file: { type: "sops", path: "~/.remoteclaw/secrets.enc.json", timeoutMs: 10_000 },
+        providers: {
+          env: { source: "env" },
+          file: {
+            source: "file",
+            path: "~/.remoteclaw/secrets.enc.json",
+            timeoutMs: 10_000,
+          },
         },
       },
       channels: {
         googlechat: {
-          serviceAccountRef: { source: "env", id: "GOOGLE_SERVICE_ACCOUNT" },
+          serviceAccountRef: { source: "env", provider: "env", id: "GOOGLE_SERVICE_ACCOUNT" },
         },
       },
     });
@@ -40,7 +33,11 @@ describe("config secret refs schema", () => {
     const result = validateConfigObjectRaw({
       channels: {
         googlechat: {
-          serviceAccountRef: { source: "file", id: "/channels/googlechat/serviceAccount" },
+          serviceAccountRef: {
+            source: "file",
+            provider: "default",
+            id: "/channels/googlechat/serviceAccount",
+          },
         },
       },
     });
@@ -52,7 +49,7 @@ describe("config secret refs schema", () => {
     const result = validateConfigObjectRaw({
       channels: {
         googlechat: {
-          serviceAccountRef: { source: "env", id: "bad id with spaces" },
+          serviceAccountRef: { source: "env", provider: "default", id: "bad id with spaces" },
         },
       },
     });
@@ -69,7 +66,11 @@ describe("config secret refs schema", () => {
     const result = validateConfigObjectRaw({
       channels: {
         googlechat: {
-          serviceAccountRef: { source: "env", id: "/channels/googlechat/serviceAccount" },
+          serviceAccountRef: {
+            source: "env",
+            provider: "default",
+            id: "/channels/googlechat/serviceAccount",
+          },
         },
       },
     });
@@ -90,7 +91,11 @@ describe("config secret refs schema", () => {
     const result = validateConfigObjectRaw({
       channels: {
         googlechat: {
-          serviceAccountRef: { source: "file", id: "channels/googlechat/serviceAccount" },
+          serviceAccountRef: {
+            source: "file",
+            provider: "default",
+            id: "channels/googlechat/serviceAccount",
+          },
         },
       },
     });
@@ -109,28 +114,14 @@ describe("config secret refs schema", () => {
 
   it("accepts valid exec secret reference ids", () => {
     for (const id of VALID_EXEC_SECRET_REF_IDS) {
-      const result = validateOpenAiApiKeyRef({
-        source: "exec",
-        provider: "vault",
-        id,
-      });
-      expect(result.ok, `expected valid exec ref id: ${id}`).toBe(true);
+      expect(isValidExecSecretRefId(id), `expected valid exec ref id: ${id}`).toBe(true);
     }
   });
 
   it("rejects invalid exec secret reference ids", () => {
     for (const id of INVALID_EXEC_SECRET_REF_IDS) {
-      const result = validateOpenAiApiKeyRef({
-        source: "exec",
-        provider: "vault",
-        id,
-      });
+      const result = validateExecSecretRefId(id);
       expect(result.ok, `expected invalid exec ref id: ${id}`).toBe(false);
-      if (!result.ok) {
-        expect(
-          result.issues.some((issue) => issue.path.includes("models.providers.openai.apiKey")),
-        ).toBe(true);
-      }
     }
   });
 });

@@ -4,12 +4,4 @@
 export { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
 export { isWSL2Sync } from "../infra/wsl.js";
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
-export type {
-  RemoteClawPluginApi,
-  ProviderAuthContext,
-  ProviderFetchUsageSnapshotContext,
-  ProviderResolveDynamicModelContext,
-  ProviderRuntimeModel,
-} from "../plugins/types.js";
-export type { ProviderUsageSnapshot } from "../infra/provider-usage.types.js";
-export { buildOauthProviderAuthResult } from "./provider-auth-result.js";
+export type { RemoteClawPluginApi, ProviderAuthContext } from "../plugins/types.js";

@@ -11,7 +11,9 @@ export const registerPluginHttpRouteMock = vi.fn<(params: RegisteredRoute) => ()
   vi.fn(),
 );
 
-export const dispatchReplyWithBufferedBlockDispatcher = vi.fn().mockResolvedValue({ counts: {} });
+export const dispatchReplyWithBufferedBlockDispatcher: ReturnType<typeof vi.fn> = vi
+  .fn()
+  .mockResolvedValue({ counts: {} });
 
 async function readRequestBodyWithLimitForTest(req: IncomingMessage): Promise<string> {
   return await new Promise<string>((resolve, reject) => {

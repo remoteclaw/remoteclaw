@@ -15,7 +15,7 @@ vi.mock("../../../agents/tools/telegram-actions.js", () => ({
   handleTelegramAction,
 }));
 
-vi.mock("../../../../extensions/signal/src/send-reactions.js", () => ({
+vi.mock("../../../signal/send-reactions.js", () => ({
   sendReactionSignal,
   removeReactionSignal,
 }));
@@ -1290,6 +1290,25 @@ describe("slack actions adapter", () => {
       handleSlackAction.mockClear();
       await expectSlackSendRejected(testCase.params, testCase.error);
     }
+  });
+
+  it("does not attach empty blocks to plain media sends", async () => {
+    handleSlackAction.mockClear();
+
+    await runSlackAction("send", {
+      to: "channel:C1",
+      message: "",
+      media: "https://example.com/image.png",
+    });
+
+    const [params] = handleSlackAction.mock.calls[0] ?? [];
+    expect(params).toMatchObject({
+      action: "sendMessage",
+      to: "channel:C1",
+      content: "",
+      mediaUrl: "https://example.com/image.png",
+    });
+    expect(params).not.toHaveProperty("blocks");
   });
 
   it("rejects edit when both message and blocks are missing", async () => {

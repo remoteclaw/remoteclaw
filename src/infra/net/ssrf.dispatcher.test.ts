@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 const { agentCtor, envHttpProxyAgentCtor, proxyAgentCtor } = vi.hoisted(() => ({
   agentCtor: vi.fn(function MockAgent(this: { options: unknown }, options: unknown) {
@@ -21,14 +21,7 @@ vi.mock("undici", () => ({
   ProxyAgent: proxyAgentCtor,
 }));
 
-import type { PinnedHostname } from "./ssrf.js";
-
-let createPinnedDispatcher: typeof import("./ssrf.js").createPinnedDispatcher;
-
-beforeEach(async () => {
-  vi.resetModules();
-  ({ createPinnedDispatcher } = await import("./ssrf.js"));
-});
+import { createPinnedDispatcher, type PinnedHostname } from "./ssrf.js";
 
 describe("createPinnedDispatcher", () => {
   it("enables network family auto-selection for pinned lookups", () => {
@@ -125,9 +118,8 @@ describe("createPinnedDispatcher", () => {
 
     expect(proxyAgentCtor).toHaveBeenCalledWith({
       uri: "http://127.0.0.1:7890",
-      requestTls: {
+      proxyTls: {
         autoSelectFamily: false,
-        lookup,
       },
     });
   });

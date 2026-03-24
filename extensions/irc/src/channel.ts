@@ -18,6 +18,26 @@ import {
   setAccountEnabledInConfigSection,
   type ChannelPlugin,
 } from "remoteclaw/plugin-sdk";
+import {
+  listIrcAccountIds,
+  resolveDefaultIrcAccountId,
+  resolveIrcAccount,
+  type ResolvedIrcAccount,
+} from "./accounts.js";
+import { IrcConfigSchema } from "./config-schema.js";
+import { monitorIrcProvider } from "./monitor.js";
+import {
+  normalizeIrcMessagingTarget,
+  looksLikeIrcTargetId,
+  isChannelTarget,
+  normalizeIrcAllowEntry,
+} from "./normalize.js";
+import { ircOnboardingAdapter } from "./onboarding.js";
+import { resolveIrcGroupMatch, resolveIrcRequireMention } from "./policy.js";
+import { probeIrc } from "./probe.js";
+import { getIrcRuntime } from "./runtime.js";
+import { sendMessageIrc } from "./send.js";
+import type { CoreConfig, IrcProbe } from "./types.js";
 
 const meta = getChatChannelMeta("irc");
 

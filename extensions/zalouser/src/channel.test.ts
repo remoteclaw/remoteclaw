@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import "./zalo-js.test-mocks.js";
 import { zalouserPlugin } from "./channel.js";
 import { sendReactionZalouser } from "./send.js";
 

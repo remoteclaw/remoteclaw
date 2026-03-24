@@ -1,6 +1,7 @@
 import type { RemoteClawConfig, PluginRuntime, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
 import "./monitor.send-mocks.js";
+import "./zalo-js.test-mocks.js";
 import { __testing } from "./monitor.js";
 import { sendMessageZalouserMock } from "./monitor.send-mocks.js";
 import { setZalouserRuntime } from "./runtime.js";

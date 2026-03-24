@@ -1,5 +1,6 @@
 import type { PluginRuntime, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRuntimeEnv } from "../../test-utils/runtime-env.js";
 import { matrixPlugin } from "./channel.js";
 import { setMatrixRuntime } from "./runtime.js";
 import type { CoreConfig } from "./types.js";
@@ -24,13 +25,7 @@ vi.mock("@vector-im/matrix-bot-sdk", () => ({
 }));
 
 describe("matrix directory", () => {
-  const runtimeEnv: RuntimeEnv = {
-    log: vi.fn(),
-    error: vi.fn(),
-    exit: vi.fn((code: number): never => {
-      throw new Error(`exit ${code}`);
-    }),
-  };
+  const runtimeEnv: RuntimeEnv = createRuntimeEnv();
 
   beforeEach(() => {
     setMatrixRuntime({

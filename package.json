@@ -430,6 +430,9 @@
   "peerDependencies": {
     "@napi-rs/canvas": "^0.1.89"
   },
+  "optionalDependencies": {
+    "openshell": "0.1.0"
+  },
   "engines": {
     "node": ">=22.12.0"
   },

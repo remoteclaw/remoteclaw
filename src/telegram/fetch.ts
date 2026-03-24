@@ -234,11 +234,10 @@ function createTelegramDispatcher(policy: PinnedDispatcherPolicy): {
   effectivePolicy: PinnedDispatcherPolicy;
 } {
   if (policy.mode === "explicit-proxy") {
-    const requestTlsOptions = withPinnedLookup(policy.proxyTls, policy.pinnedHostname);
-    const proxyOptions = requestTlsOptions
+    const proxyOptions = policy.proxyTls
       ? ({
           uri: policy.proxyUrl,
-          requestTls: requestTlsOptions,
+          requestTls: { ...policy.proxyTls },
         } satisfies ConstructorParameters<typeof ProxyAgent>[0])
       : policy.proxyUrl;
     try {

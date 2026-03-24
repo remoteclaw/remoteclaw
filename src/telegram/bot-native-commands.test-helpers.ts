@@ -7,7 +7,7 @@ import { registerTelegramNativeCommands } from "./bot-native-commands.js";
 
 const pluginCommandMocks = vi.hoisted(() => ({
   getPluginCommandSpecs: vi.fn(() => []),
-  matchPluginCommand: vi.fn(() => null),
+  matchPluginCommand: vi.fn((): unknown => null),
   executePluginCommand: vi.fn(async () => ({ text: "ok" })),
 }));
 export const getPluginCommandSpecs = pluginCommandMocks.getPluginCommandSpecs;

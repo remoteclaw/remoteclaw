@@ -1,21 +1,20 @@
 {
-  "name": "@openclaw/matrix",
-  "version": "2026.3.14",
-  "description": "OpenClaw Matrix channel plugin",
+  "name": "@remoteclaw/matrix",
+  "version": "0.1.0",
+  "description": "RemoteClaw Matrix channel plugin",
   "type": "module",
   "dependencies": {
-    "@mariozechner/pi-agent-core": "0.60.0",
+    "@mariozechner/pi-agent-core": "0.55.3",
     "@matrix-org/matrix-sdk-crypto-nodejs": "^0.4.0",
     "@vector-im/matrix-bot-sdk": "0.8.0-element.3",
     "markdown-it": "14.1.1",
     "music-metadata": "^11.12.3",
     "zod": "^4.3.6"
   },
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ],
-    "setupEntry": "./setup-entry.ts",
     "channel": {
       "id": "matrix",
       "label": "Matrix",
@@ -27,7 +26,7 @@
       "quickstartAllowFrom": true
     },
     "install": {
-      "npmSpec": "@openclaw/matrix",
+      "npmSpec": "@remoteclaw/matrix",
       "localPath": "extensions/matrix",
       "defaultChoice": "npm"
     },

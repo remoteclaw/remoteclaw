@@ -1,24 +1,21 @@
 {
-  "name": "@openclaw/googlechat",
-  "version": "2026.3.11",
+  "name": "@remoteclaw/googlechat",
+  "version": "0.1.0",
   "private": true,
-  "description": "OpenClaw Google Chat channel plugin",
+  "description": "RemoteClaw Google Chat channel plugin",
   "type": "module",
   "dependencies": {
-    "google-auth-library": "^10.6.2"
-  },
-  "devDependencies": {
-    "openclaw": "workspace:*"
+    "google-auth-library": "^10.6.1"
   },
   "peerDependencies": {
-    "openclaw": ">=2026.3.11"
+    "remoteclaw": "workspace:*"
   },
   "peerDependenciesMeta": {
-    "openclaw": {
+    "remoteclaw": {
       "optional": true
     }
   },
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ],
@@ -37,14 +34,9 @@
       "order": 55
     },
     "install": {
-      "npmSpec": "@openclaw/googlechat",
+      "npmSpec": "@remoteclaw/googlechat",
       "localPath": "extensions/googlechat",
       "defaultChoice": "npm"
-    },
-    "releaseChecks": {
-      "rootDependencyMirrorAllowlist": [
-        "google-auth-library"
-      ]
     }
   }
 }

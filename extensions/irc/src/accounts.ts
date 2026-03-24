@@ -1,12 +1,12 @@
 import { readFileSync } from "node:fs";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
-import { createAccountListHelpers } from "remoteclaw/plugin-sdk/irc";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
 import { tryReadSecretFileSync } from "openclaw/plugin-sdk/core";
 import {
   createAccountListHelpers,
   normalizeResolvedSecretInputString,
 } from "openclaw/plugin-sdk/irc";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
+import { createAccountListHelpers } from "remoteclaw/plugin-sdk/irc";
 import type { CoreConfig, IrcAccountConfig, IrcNickServConfig } from "./types.js";
 
 const TRUTHY_ENV = new Set(["true", "1", "yes", "on"]);

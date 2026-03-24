@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { buildAccountScopedDmSecurityPolicy, formatPairingApproveHint } from "./helpers.js";
+import {
+  buildAccountScopedDmSecurityPolicy,
+  formatPairingApproveHint,
+  parseOptionalDelimitedEntries,
+} from "./helpers.js";
 
 function cfgWithChannel(channelKey: string, accounts?: Record<string, unknown>): RemoteClawConfig {
   return {

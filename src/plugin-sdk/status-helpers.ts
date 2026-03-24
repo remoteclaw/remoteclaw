@@ -29,13 +29,16 @@ export function createDefaultChannelRuntimeState<T extends Record<string, unknow
   };
 }
 
-export function buildBaseChannelStatusSummary(snapshot: {
-  configured?: boolean | null;
-  running?: boolean | null;
-  lastStartAt?: number | null;
-  lastStopAt?: number | null;
-  lastError?: string | null;
-}) {
+export function buildBaseChannelStatusSummary<TExtra extends Record<string, unknown>>(
+  snapshot: {
+    configured?: boolean | null;
+    running?: boolean | null;
+    lastStartAt?: number | null;
+    lastStopAt?: number | null;
+    lastError?: string | null;
+  },
+  extra?: TExtra,
+) {
   return {
     configured: snapshot.configured ?? false,
     ...(extra ?? ({} as TExtra)),
@@ -59,7 +62,8 @@ export function buildProbeChannelStatusSummary<TExtra extends Record<string, unk
   extra?: TExtra,
 ) {
   return {
-    ...buildBaseChannelStatusSummary(snapshot, extra),
+    ...buildBaseChannelStatusSummary(snapshot),
+    ...(extra ?? ({} as TExtra)),
     probe: snapshot.probe,
     lastProbeAt: snapshot.lastProbeAt ?? null,
   };

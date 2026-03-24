@@ -24,7 +24,7 @@ async function readRequestBodyWithLimitForTest(req: IncomingMessage): Promise<st
   });
 }
 
-vi.mock("openclaw/plugin-sdk/synology-chat", () => ({
+vi.mock("remoteclaw/plugin-sdk/synology-chat", () => ({
   DEFAULT_ACCOUNT_ID: "default",
   setAccountEnabledInConfigSection: vi.fn((_opts: unknown) => ({})),
   registerPluginHttpRoute: registerPluginHttpRouteMock,

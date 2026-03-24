@@ -1,4 +1,4 @@
-import { registerPluginHttpRoute } from "openclaw/plugin-sdk/webhook-ingress";
+import { registerPluginHttpRoute } from "remoteclaw/plugin-sdk/webhook-ingress";
 import { dispatchSynologyChatInboundTurn } from "./inbound-turn.js";
 import type { ResolvedSynologyChatAccount } from "./types.js";
 import { createWebhookHandler, type WebhookHandlerDeps } from "./webhook-handler.js";

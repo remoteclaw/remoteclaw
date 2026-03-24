@@ -1036,24 +1036,6 @@ export async function renameForumTopicTelegram(
     name: result.name ?? name.trim(),
   };
 }
-
-export async function renameForumTopicTelegram(
-  chatIdInput: string | number,
-  messageThreadIdInput: string | number,
-  name: string,
-  opts: TelegramDeleteOpts = {},
-): Promise<{ ok: true; chatId: string; messageThreadId: number; name: string }> {
-  const result = await editForumTopicTelegram(chatIdInput, messageThreadIdInput, {
-    ...opts,
-    name,
-  });
-  return {
-    ok: true,
-    chatId: result.chatId,
-    messageThreadId: result.messageThreadId,
-    name: result.name ?? name.trim(),
-  };
-}
 type TelegramEditOpts = {
   token?: string;
   accountId?: string;

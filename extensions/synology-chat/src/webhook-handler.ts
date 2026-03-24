@@ -10,7 +10,10 @@ import {
   readRequestBodyWithLimit,
   requestBodyErrorToText,
 } from "remoteclaw/plugin-sdk";
-import { sendMessage, resolveChatUserId } from "./client.js";
+import {
+  sendMessage,
+  resolveLegacyWebhookNameToChatUserId as resolveChatUserId,
+} from "./client.js";
 import { validateToken, authorizeUserForDm, sanitizeInput, RateLimiter } from "./security.js";
 import type { SynologyWebhookPayload, ResolvedSynologyChatAccount } from "./types.js";
 

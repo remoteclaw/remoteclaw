@@ -3,9 +3,8 @@ import {
   setSetupChannelEnabled,
   splitSetupEntries,
 } from "../../../src/channels/plugins/setup-flow-helpers.js";
-import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
 import { formatDocsLink } from "../../../src/terminal/links.js";
 import { listAccountIds, resolveAccount } from "./accounts.js";
@@ -31,11 +30,11 @@ const SYNOLOGY_ALLOW_FROM_HELP_LINES = [
   `Docs: ${formatDocsLink("/channels/synology-chat", "channels/synology-chat")}`,
 ];
 
-function getChannelConfig(cfg: OpenClawConfig): SynologyChatChannelConfig {
+function getChannelConfig(cfg: RemoteClawConfig): SynologyChatChannelConfig {
   return (cfg.channels?.[channel] as SynologyChatChannelConfig | undefined) ?? {};
 }
 
-function getRawAccountConfig(cfg: OpenClawConfig, accountId: string): SynologyChatAccountRaw {
+function getRawAccountConfig(cfg: RemoteClawConfig, accountId: string): SynologyChatAccountRaw {
   const channelConfig = getChannelConfig(cfg);
   if (accountId === DEFAULT_ACCOUNT_ID) {
     return channelConfig;
@@ -44,12 +43,12 @@ function getRawAccountConfig(cfg: OpenClawConfig, accountId: string): SynologyCh
 }
 
 function patchSynologyChatAccountConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId: string;
   patch: Record<string, unknown>;
   clearFields?: string[];
   enabled?: boolean;
-}): OpenClawConfig {
+}): RemoteClawConfig {
   const channelConfig = getChannelConfig(params.cfg);
   if (params.accountId === DEFAULT_ACCOUNT_ID) {
     const nextChannelConfig = { ...channelConfig } as Record<string, unknown>;
@@ -96,7 +95,7 @@ function patchSynologyChatAccountConfig(params: {
   };
 }
 
-function isSynologyChatConfigured(cfg: OpenClawConfig, accountId: string): boolean {
+function isSynologyChatConfigured(cfg: RemoteClawConfig, accountId: string): boolean {
   const account = resolveAccount(cfg, accountId);
   return Boolean(account.token.trim() && account.incomingUrl.trim());
 }
@@ -126,7 +125,7 @@ function parseSynologyUserId(value: string): string | null {
   return /^\d+$/.test(cleaned) ? cleaned : null;
 }
 
-function resolveExistingAllowedUserIds(cfg: OpenClawConfig, accountId: string): string[] {
+function resolveExistingAllowedUserIds(cfg: RemoteClawConfig, accountId: string): string[] {
   const raw = getRawAccountConfig(cfg, accountId).allowedUserIds;
   if (Array.isArray(raw)) {
     return raw.map((value) => String(value).trim()).filter(Boolean);
@@ -172,7 +171,7 @@ export const synologyChatSetupAdapter: ChannelSetupAdapter = {
     }),
 };
 
-export const synologyChatSetupWizard: ChannelSetupWizard = {
+export const synologyChatSetupWizard = {
   channel,
   status: {
     configuredLabel: "configured",
@@ -181,9 +180,9 @@ export const synologyChatSetupWizard: ChannelSetupWizard = {
     unconfiguredHint: "needs token + incoming webhook",
     configuredScore: 1,
     unconfiguredScore: 0,
-    resolveConfigured: ({ cfg }) =>
+    resolveConfigured: ({ cfg }: { cfg: RemoteClawConfig }) =>
       listAccountIds(cfg).some((accountId) => isSynologyChatConfigured(cfg, accountId)),
-    resolveStatusLines: ({ cfg, configured }) => [
+    resolveStatusLines: ({ cfg, configured }: { cfg: RemoteClawConfig; configured: boolean }) => [
       `Synology Chat: ${configured ? "configured" : "needs token + incoming webhook"}`,
       `Accounts: ${listAccountIds(cfg).length || 0}`,
     ],
@@ -203,8 +202,8 @@ export const synologyChatSetupWizard: ChannelSetupWizard = {
       envPrompt: "SYNOLOGY_CHAT_TOKEN detected. Use env var?",
       keepPrompt: "Synology Chat webhook token already configured. Keep it?",
       inputPrompt: "Enter Synology Chat outgoing webhook token",
-      allowEnv: ({ accountId }) => accountId === DEFAULT_ACCOUNT_ID,
-      inspect: ({ cfg, accountId }) => {
+      allowEnv: ({ accountId }: { accountId: string }) => accountId === DEFAULT_ACCOUNT_ID,
+      inspect: ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId: string }) => {
         const account = resolveAccount(cfg, accountId);
         const raw = getRawAccountConfig(cfg, accountId);
         return {
@@ -217,7 +216,7 @@ export const synologyChatSetupWizard: ChannelSetupWizard = {
               : undefined,
         };
       },
-      applyUseEnv: async ({ cfg, accountId }) =>
+      applyUseEnv: async ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId: string }) =>
         patchSynologyChatAccountConfig({
           cfg,
           accountId,
@@ -225,7 +224,15 @@ export const synologyChatSetupWizard: ChannelSetupWizard = {
           clearFields: ["token"],
           patch: {},
         }),
-      applySet: async ({ cfg, accountId, resolvedValue }) =>
+      applySet: async ({
+        cfg,
+        accountId,
+        resolvedValue,
+      }: {
+        cfg: RemoteClawConfig;
+        accountId: string;
+        resolvedValue: string;
+      }) =>
         patchSynologyChatAccountConfig({
           cfg,
           accountId,
@@ -245,10 +252,19 @@ export const synologyChatSetupWizard: ChannelSetupWizard = {
         "Use the incoming webhook URL from Synology Chat integrations.",
         "This is the URL OpenClaw uses to send replies back to Chat.",
       ],
-      currentValue: ({ cfg, accountId }) => getRawAccountConfig(cfg, accountId).incomingUrl?.trim(),
-      keepPrompt: (value) => `Incoming webhook URL set (${value}). Keep it?`,
-      validate: ({ value }) => validateWebhookUrl(value),
-      applySet: async ({ cfg, accountId, value }) =>
+      currentValue: ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId: string }) =>
+        getRawAccountConfig(cfg, accountId).incomingUrl?.trim(),
+      keepPrompt: (value: string) => `Incoming webhook URL set (${value}). Keep it?`,
+      validate: ({ value }: { value: string }) => validateWebhookUrl(value),
+      applySet: async ({
+        cfg,
+        accountId,
+        value,
+      }: {
+        cfg: RemoteClawConfig;
+        accountId: string;
+        value: string;
+      }) =>
         patchSynologyChatAccountConfig({
           cfg,
           accountId,
@@ -267,10 +283,19 @@ export const synologyChatSetupWizard: ChannelSetupWizard = {
         `Default path: ${DEFAULT_WEBHOOK_PATH}`,
         "Change this only if you need multiple Synology Chat webhook routes.",
       ],
-      currentValue: ({ cfg, accountId }) => getRawAccountConfig(cfg, accountId).webhookPath?.trim(),
-      keepPrompt: (value) => `Outgoing webhook path set (${value}). Keep it?`,
-      validate: ({ value }) => validateWebhookPath(value),
-      applySet: async ({ cfg, accountId, value }) =>
+      currentValue: ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId: string }) =>
+        getRawAccountConfig(cfg, accountId).webhookPath?.trim(),
+      keepPrompt: (value: string) => `Outgoing webhook path set (${value}). Keep it?`,
+      validate: ({ value }: { value: string }) => validateWebhookPath(value),
+      applySet: async ({
+        cfg,
+        accountId,
+        value,
+      }: {
+        cfg: RemoteClawConfig;
+        accountId: string;
+        value: string;
+      }) =>
         patchSynologyChatAccountConfig({
           cfg,
           accountId,
@@ -288,8 +313,8 @@ export const synologyChatSetupWizard: ChannelSetupWizard = {
     invalidWithoutCredentialNote: "Synology Chat user ids must be numeric.",
     parseInputs: splitSetupEntries,
     parseId: parseSynologyUserId,
-    resolveEntries: async ({ entries }) =>
-      entries.map((entry) => {
+    resolveEntries: async ({ entries }: { entries: string[] }) =>
+      entries.map((entry: string) => {
         const id = parseSynologyUserId(entry);
         return {
           input: entry,
@@ -297,7 +322,15 @@ export const synologyChatSetupWizard: ChannelSetupWizard = {
           id,
         };
       }),
-    apply: async ({ cfg, accountId, allowFrom }) =>
+    apply: async ({
+      cfg,
+      accountId,
+      allowFrom,
+    }: {
+      cfg: RemoteClawConfig;
+      accountId: string;
+      allowFrom: string[];
+    }) =>
       patchSynologyChatAccountConfig({
         cfg,
         accountId,
@@ -320,5 +353,5 @@ export const synologyChatSetupWizard: ChannelSetupWizard = {
       `Docs: ${formatDocsLink("/channels/synology-chat", "channels/synology-chat")}`,
     ],
   },
-  disable: (cfg) => setSetupChannelEnabled(cfg, channel, false),
+  disable: (cfg: RemoteClawConfig) => setSetupChannelEnabled(cfg, channel, false),
 };

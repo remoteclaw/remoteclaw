@@ -1,33 +1,61 @@
-import { isToolAllowedByPolicies } from "../agents/pi-tools.policy.js";
-import {
-  resolveSandboxConfigForAgent,
-  resolveSandboxToolPolicyForAgent,
-} from "../agents/sandbox.js";
-import { isDangerousNetworkMode, normalizeNetworkMode } from "../agents/sandbox/network-mode.js";
+import { isToolAllowedByPolicies } from "../agents/tool-policy-resolution.js";
+// Sandbox infrastructure removed (#68)
+type ToolPolicy = { allow?: string[]; deny?: string[] };
+const resolveSandboxConfigForAgent = (_cfg: unknown, _agentId?: string) =>
+  ({
+    mode: "off",
+    workspaceAccess: undefined,
+    docker: undefined,
+    browser: { enabled: false, network: "", cdpSourceRange: undefined as string | undefined },
+    prune: undefined,
+    scope: undefined,
+  }) as {
+    mode: "off" | "non-main" | "all";
+    workspaceAccess: unknown;
+    docker: unknown;
+    browser: { enabled: boolean; network: string; cdpSourceRange: string | undefined };
+    prune: unknown;
+    scope: unknown;
+  };
+const resolveToolPolicyForAgent = (_cfg: unknown, _agentId?: string) =>
+  undefined as ToolPolicy | undefined;
+const isDangerousNetworkMode = (_mode: string) => false;
+const normalizeNetworkMode = (_mode?: string) => undefined as string | undefined;
+const getBlockedBindReason = (_bind: string) =>
+  undefined as
+    | { kind: "non_absolute"; sourcePath: string }
+    | { kind: "covers" | "targets"; blockedPath: string }
+    | undefined;
+function normalizeToolPolicy(config?: {
+  allow?: string[];
+  deny?: string[];
+}): ToolPolicy | undefined {
+  if (!config) {
+    return undefined;
+  }
+  const allow = Array.isArray(config.allow) ? config.allow : undefined;
+  const deny = Array.isArray(config.deny) ? config.deny : undefined;
+  if (!allow && !deny) {
+    return undefined;
+  }
+  return { allow, deny };
+}
 /**
  * Synchronous security audit collector functions.
  *
  * These functions analyze config-based security properties without I/O.
  */
-import type { SandboxToolPolicy } from "../agents/sandbox/types.js";
-import { getBlockedBindReason } from "../agents/sandbox/validate-sandbox-security.js";
 import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
 import { resolveBrowserConfig } from "../browser/config.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import {
-  resolveAgentModelFallbackValues,
-  resolveAgentModelPrimaryValue,
-} from "../config/model-input.js";
 import type { AgentToolsConfig } from "../config/types.tools.js";
 import { resolveGatewayAuth } from "../gateway/auth.js";
-import { resolveAllowedAgentIds } from "../gateway/hooks.js";
 import {
   DEFAULT_DANGEROUS_NODE_COMMANDS,
   resolveNodeCommandAllowlist,
 } from "../gateway/node-command-policy.js";
 import { inferParamBFromIdOrName } from "../shared/model-param-b.js";
-import { pickSandboxToolPolicy } from "./audit-tool-policy.js";
 
 export type SecurityAuditFinding = {
   checkId: string;
@@ -88,6 +116,13 @@ function looksLikeEnvRef(value: string): boolean {
   return v.startsWith("${") && v.endsWith("}");
 }
 
+function isHookAgentRoutingUnrestricted(allowedAgentIds: string[] | undefined): boolean {
+  if (!allowedAgentIds) {
+    return true;
+  }
+  return allowedAgentIds.some((agentId) => agentId === "*");
+}
+
 function isGatewayRemotelyExposed(cfg: RemoteClawConfig): boolean {
   const bind = typeof cfg.gateway?.bind === "string" ? cfg.gateway.bind : "loopback";
   if (bind !== "loopback") {
@@ -110,44 +145,14 @@ function addModel(models: ModelRef[], raw: unknown, source: string) {
   models.push({ id, source });
 }
 
+// Model config gutted from per-agent and defaults — only legacy imageModel
+// and per-model settings map still contribute refs for auditing.
 function collectModels(cfg: RemoteClawConfig): ModelRef[] {
   const out: ModelRef[] = [];
-  addModel(
-    out,
-    resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model),
-    "agents.defaults.model.primary",
-  );
-  for (const f of resolveAgentModelFallbackValues(cfg.agents?.defaults?.model)) {
-    addModel(out, f, "agents.defaults.model.fallbacks");
-  }
-  addModel(
-    out,
-    resolveAgentModelPrimaryValue(cfg.agents?.defaults?.imageModel),
-    "agents.defaults.imageModel.primary",
-  );
-  for (const f of resolveAgentModelFallbackValues(cfg.agents?.defaults?.imageModel)) {
-    addModel(out, f, "agents.defaults.imageModel.fallbacks");
-  }
-
-  const list = Array.isArray(cfg.agents?.list) ? cfg.agents?.list : [];
-  for (const agent of list ?? []) {
-    if (!agent || typeof agent !== "object") {
-      continue;
-    }
-    const id =
-      typeof (agent as { id?: unknown }).id === "string" ? (agent as { id: string }).id : "";
-    const model = (agent as { model?: unknown }).model;
-    if (typeof model === "string") {
-      addModel(out, model, `agents.list.${id}.model`);
-    } else if (model && typeof model === "object") {
-      addModel(out, (model as { primary?: unknown }).primary, `agents.list.${id}.model.primary`);
-      const fallbacks = (model as { fallbacks?: unknown }).fallbacks;
-      if (Array.isArray(fallbacks)) {
-        for (const f of fallbacks) {
-          addModel(out, f, `agents.list.${id}.model.fallbacks`);
-        }
-      }
-    }
+  // imageModel is a legacy field kept for config compat — still audit if present.
+  const imageModel = cfg.agents?.defaults?.imageModel;
+  if (typeof imageModel === "string" && imageModel.trim()) {
+    addModel(out, imageModel, "agents.defaults.imageModel");
   }
   return out;
 }
@@ -301,27 +306,29 @@ function resolveToolPolicies(params: {
   agentTools?: AgentToolsConfig;
   sandboxMode?: "off" | "non-main" | "all";
   agentId?: string | null;
-}): SandboxToolPolicy[] {
-  const policies: SandboxToolPolicy[] = [];
+}): ToolPolicy[] {
+  const policies: ToolPolicy[] = [];
   const profile = params.agentTools?.profile ?? params.cfg.tools?.profile;
   const profilePolicy = resolveToolProfilePolicy(profile);
   if (profilePolicy) {
     policies.push(profilePolicy);
   }
 
-  const globalPolicy = pickSandboxToolPolicy(params.cfg.tools ?? undefined);
+  const globalPolicy = normalizeToolPolicy(params.cfg.tools ?? undefined);
   if (globalPolicy) {
     policies.push(globalPolicy);
   }
 
-  const agentPolicy = pickSandboxToolPolicy(params.agentTools);
+  const agentPolicy = normalizeToolPolicy(params.agentTools);
   if (agentPolicy) {
     policies.push(agentPolicy);
   }
 
   if (params.sandboxMode === "all") {
-    const sandboxPolicy = resolveSandboxToolPolicyForAgent(params.cfg, params.agentId ?? undefined);
-    policies.push(sandboxPolicy);
+    const sandboxPolicy = resolveToolPolicyForAgent(params.cfg, params.agentId ?? undefined);
+    if (sandboxPolicy) {
+      policies.push(sandboxPolicy);
+    }
   }
 
   return policies;
@@ -491,31 +498,14 @@ function collectRiskyToolExposureContexts(cfg: RemoteClawConfig): {
   let hasRuntimeRisk = false;
   for (const context of contexts) {
     const sandboxMode = resolveSandboxConfigForAgent(cfg, context.agentId).mode;
-    const policies = resolveToolPolicies({
-      cfg,
-      agentTools: context.tools,
-      sandboxMode,
-      agentId: context.agentId ?? null,
-    });
-    const runtimeTools = ["exec", "process"].filter((tool) =>
-      isToolAllowedByPolicies(tool, policies),
-    );
-    const fsTools = ["read", "write", "edit", "apply_patch"].filter((tool) =>
-      isToolAllowedByPolicies(tool, policies),
-    );
-    const fsWorkspaceOnly = context.tools?.fs?.workspaceOnly ?? cfg.tools?.fs?.workspaceOnly;
+    const runtimeTools: string[] = [];
     const runtimeUnguarded = runtimeTools.length > 0 && sandboxMode !== "all";
-    const fsUnguarded = fsTools.length > 0 && sandboxMode !== "all" && fsWorkspaceOnly !== true;
-    if (!runtimeUnguarded && !fsUnguarded) {
+    if (!runtimeUnguarded) {
       continue;
     }
-    if (runtimeUnguarded) {
-      hasRuntimeRisk = true;
-    }
+    hasRuntimeRisk = true;
     riskyContexts.push(
-      `${context.label} (sandbox=${sandboxMode}; runtime=[${runtimeTools.join(", ") || "off"}]; fs=[${fsTools.join(", ") || "off"}]; fs.workspaceOnly=${
-        fsWorkspaceOnly === true ? "true" : "false"
-      })`,
+      `${context.label} (sandbox=${sandboxMode}; runtime=[${runtimeTools.join(", ") || "off"}])`,
     );
   }
 
@@ -528,15 +518,12 @@ function collectRiskyToolExposureContexts(cfg: RemoteClawConfig): {
 
 export function collectAttackSurfaceSummaryFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] {
   const group = summarizeGroupPolicy(cfg);
-  const elevated = cfg.tools?.elevated?.enabled !== false;
   const webhooksEnabled = cfg.hooks?.enabled === true;
   const internalHooksEnabled = cfg.hooks?.internal?.enabled === true;
   const browserEnabled = cfg.browser?.enabled ?? true;
 
   const detail =
     `groups: open=${group.open}, allowlist=${group.allowlist}` +
-    `\n` +
-    `tools.elevated: ${elevated ? "enabled" : "disabled"}` +
     `\n` +
     `hooks.webhooks: ${webhooksEnabled ? "enabled" : "disabled"}` +
     `\n` +
@@ -585,7 +572,7 @@ export function collectSecretsInConfigFindings(cfg: RemoteClawConfig): SecurityA
       detail:
         "gateway.auth.password is set in the config file; prefer environment variables for secrets when possible.",
       remediation:
-        "Prefer OPENCLAW_GATEWAY_PASSWORD (env) and remove gateway.auth.password from disk.",
+        "Prefer REMOTECLAW_GATEWAY_PASSWORD (env) and remove gateway.auth.password from disk.",
     });
   }
 
@@ -627,17 +614,17 @@ export function collectHooksHardeningFindings(
     tailscaleMode: cfg.gateway?.tailscale?.mode ?? "off",
     env,
   });
-  const openclawGatewayToken =
-    typeof env.OPENCLAW_GATEWAY_TOKEN === "string" && env.OPENCLAW_GATEWAY_TOKEN.trim()
-      ? env.OPENCLAW_GATEWAY_TOKEN.trim()
+  const remoteclawGatewayToken =
+    typeof env.REMOTECLAW_GATEWAY_TOKEN === "string" && env.REMOTECLAW_GATEWAY_TOKEN.trim()
+      ? env.REMOTECLAW_GATEWAY_TOKEN.trim()
       : null;
   const gatewayToken =
     gatewayAuth.mode === "token" &&
     typeof gatewayAuth.token === "string" &&
     gatewayAuth.token.trim()
       ? gatewayAuth.token.trim()
-      : openclawGatewayToken
-        ? openclawGatewayToken
+      : remoteclawGatewayToken
+        ? remoteclawGatewayToken
         : null;
   if (token && gatewayToken && token === gatewayToken) {
     findings.push({
@@ -664,13 +651,29 @@ export function collectHooksHardeningFindings(
   const allowRequestSessionKey = cfg.hooks?.allowRequestSessionKey === true;
   const defaultSessionKey =
     typeof cfg.hooks?.defaultSessionKey === "string" ? cfg.hooks.defaultSessionKey.trim() : "";
-  const allowedAgentIds = resolveAllowedAgentIds(cfg.hooks?.allowedAgentIds);
+  const allowedAgentIds = Array.isArray(cfg.hooks?.allowedAgentIds)
+    ? cfg.hooks.allowedAgentIds
+        .map((agentId) => agentId.trim())
+        .filter((agentId) => agentId.length > 0)
+    : undefined;
   const allowedPrefixes = Array.isArray(cfg.hooks?.allowedSessionKeyPrefixes)
     ? cfg.hooks.allowedSessionKeyPrefixes
         .map((prefix) => prefix.trim())
         .filter((prefix) => prefix.length > 0)
     : [];
   const remoteExposure = isGatewayRemotelyExposed(cfg);
+
+  if (isHookAgentRoutingUnrestricted(allowedAgentIds)) {
+    findings.push({
+      checkId: "hooks.allowed_agent_ids_unset",
+      severity: remoteExposure ? "critical" : "warn",
+      title: "Hook agent routing allows any configured agent",
+      detail:
+        "hooks.allowedAgentIds is unset or includes '*', so authenticated hook callers may route to any configured agent id.",
+      remediation:
+        'Set hooks.allowedAgentIds to an explicit allowlist (for example, ["hooks", "main"]) or [] to deny explicit agent routing.',
+    });
+  }
 
   if (!defaultSessionKey) {
     findings.push({
@@ -680,18 +683,6 @@ export function collectHooksHardeningFindings(
       detail:
         "Hook agent runs without explicit sessionKey use generated per-request keys. Set hooks.defaultSessionKey to keep hook ingress scoped to a known session.",
       remediation: 'Set hooks.defaultSessionKey (for example, "hook:ingress").',
-    });
-  }
-
-  if (allowedAgentIds === undefined) {
-    findings.push({
-      checkId: "hooks.allowed_agent_ids_unrestricted",
-      severity: remoteExposure ? "critical" : "warn",
-      title: "Hook agent routing allows any configured agent",
-      detail:
-        "hooks.allowedAgentIds is unset or includes '*', so authenticated hook callers may route to any configured agent id.",
-      remediation:
-        'Set hooks.allowedAgentIds to an explicit allowlist (for example, ["hooks", "main"]) or [] to deny explicit agent routing.',
     });
   }
 
@@ -899,7 +890,7 @@ export function collectSandboxDangerousConfigFindings(
 
     const network = typeof docker.network === "string" ? docker.network : undefined;
     const normalizedNetwork = normalizeNetworkMode(network);
-    if (isDangerousNetworkMode(network)) {
+    if (network && isDangerousNetworkMode(network)) {
       const modeLabel = normalizedNetwork === "host" ? '"host"' : `"${network}"`;
       const detail =
         normalizedNetwork === "host"
@@ -975,7 +966,7 @@ export function collectSandboxDangerousConfigFindings(
         "These sandbox browser configs use Docker bridge networking with no CDP source restriction:\n" +
         browserExposurePaths.map((entry) => `- ${entry}`).join("\n"),
       remediation:
-        "Set sandbox.browser.network to a dedicated bridge network (recommended default: openclaw-sandbox-browser), " +
+        "Set sandbox.browser.network to a dedicated bridge network (recommended default: remoteclaw-sandbox-browser), " +
         "or set sandbox.browser.cdpSourceRange (for example 172.21.0.1/32) to restrict container-edge CDP ingress.",
     });
   }
@@ -1032,11 +1023,11 @@ export function collectNodeDenyCommandPatternFindings(
     severity: "warn",
     title: "Some gateway.nodes.denyCommands entries are ineffective",
     detail:
-      "gateway.nodes.denyCommands uses exact node command-name matching only (for example `system.run`), not shell-text filtering inside a command payload.\n" +
+      "gateway.nodes.denyCommands uses exact command-name matching only.\n" +
       detailParts.map((entry) => `- ${entry}`).join("\n"),
     remediation:
       `Use exact command names (for example: ${examples.join(", ")}). ` +
-      "If you need broader restrictions, remove risky command IDs from allowCommands/default workflows and tighten tools.exec policy.",
+      "If you need broader restrictions, remove risky commands from allowCommands/default workflows.",
   });
 
   return findings;
@@ -1291,7 +1282,7 @@ export function collectSmallModelRiskFindings(params: {
       `\n` +
       "Small models are not recommended for untrusted inputs.",
     remediation:
-      'If you must use small models, enable sandboxing for all sessions (agents.defaults.sandbox.mode="all") and disable web_search/web_fetch/browser (tools.deny=["group:web","browser"]).',
+      'If you must use small models, enable sandboxing for all sessions (agents.defaults.sandbox.mode="all") and disable web_fetch/browser (tools.deny=["group:web","browser"]).',
   });
 
   return findings;
@@ -1302,19 +1293,6 @@ export function collectExposureMatrixFindings(cfg: RemoteClawConfig): SecurityAu
   const openGroups = listGroupPolicyOpen(cfg);
   if (openGroups.length === 0) {
     return findings;
-  }
-
-  const elevatedEnabled = cfg.tools?.elevated?.enabled !== false;
-  if (elevatedEnabled) {
-    findings.push({
-      checkId: "security.exposure.open_groups_with_elevated",
-      severity: "critical",
-      title: "Open groupPolicy with elevated tools enabled",
-      detail:
-        `Found groupPolicy="open" at:\n${openGroups.map((p) => `- ${p}`).join("\n")}\n` +
-        "With tools.elevated enabled, a prompt injection in those rooms can become a high-impact incident.",
-      remediation: `Set groupPolicy="allowlist" and keep elevated allowlists extremely tight.`,
-    });
   }
 
   const { riskyContexts, hasRuntimeRisk } = collectRiskyToolExposureContexts(cfg);
@@ -1360,7 +1338,7 @@ export function collectLikelyMultiUserSetupFindings(cfg: RemoteClawConfig): Secu
       "Heuristic signals indicate this gateway may be reachable by multiple users:\n" +
       signals.map((signal) => `- ${signal}`).join("\n") +
       `\n${impactLine}\n${riskyContextsDetail}\n` +
-      "OpenClaw's default security model is personal-assistant (one trusted operator boundary), not hostile multi-tenant isolation on one shared gateway.",
+      "RemoteClaw's default security model is personal-assistant (one trusted operator boundary), not hostile multi-tenant isolation on one shared gateway.",
     remediation:
       'If users may be mutually untrusted, split trust boundaries (separate gateways + credentials, ideally separate OS users/hosts). If you intentionally run shared-user access, set agents.defaults.sandbox.mode="all", keep tools.fs.workspaceOnly=true, deny runtime/fs/web tools unless required, and keep personal/private identities + credentials off that runtime.',
   });

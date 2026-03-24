@@ -33,9 +33,9 @@ vi.mock("node:fs", async (importOriginal) => {
   return { ...wrapped, default: wrapped };
 });
 
-let ensureOpenClawCliOnPath: typeof import("./path-env.js").ensureOpenClawCliOnPath;
+let ensureRemoteClawCliOnPath: typeof import("./path-env.js").ensureRemoteClawCliOnPath;
 
-describe("ensureOpenClawCliOnPath", () => {
+describe("ensureRemoteClawCliOnPath", () => {
   const envKeys = [
     "PATH",
     "REMOTECLAW_PATH_BOOTSTRAPPED",
@@ -48,7 +48,7 @@ describe("ensureOpenClawCliOnPath", () => {
   let envSnapshot: Record<(typeof envKeys)[number], string | undefined>;
 
   beforeAll(async () => {
-    ({ ensureOpenClawCliOnPath } = await import("./path-env.js"));
+    ({ ensureRemoteClawCliOnPath } = await import("./path-env.js"));
   });
 
   beforeEach(() => {
@@ -89,7 +89,7 @@ describe("ensureOpenClawCliOnPath", () => {
     platform: NodeJS.Platform;
     allowProjectLocalBin?: boolean;
   }) {
-    ensureOpenClawCliOnPath(params);
+    ensureRemoteClawCliOnPath(params);
     return (process.env.PATH ?? "").split(path.delimiter);
   }
 
@@ -110,7 +110,7 @@ describe("ensureOpenClawCliOnPath", () => {
   it("is idempotent", () => {
     process.env.PATH = "/bin";
     process.env.REMOTECLAW_PATH_BOOTSTRAPPED = "1";
-    ensureOpenClawCliOnPath({
+    ensureRemoteClawCliOnPath({
       execPath: "/tmp/does-not-matter",
       cwd: "/tmp",
       homeDir: "/tmp",

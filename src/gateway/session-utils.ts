@@ -501,7 +501,7 @@ export function canonicalizeSpawnedByForAgent(
 }
 
 function buildGatewaySessionStoreScanTargets(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   key: string;
   canonicalKey: string;
   agentId: string;
@@ -524,7 +524,7 @@ function buildGatewaySessionStoreScanTargets(params: {
 }
 
 function resolveGatewaySessionStoreCandidates(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   agentId: string,
 ): SessionStoreTarget[] {
   const storeConfig = cfg.session?.store;
@@ -532,21 +532,11 @@ function resolveGatewaySessionStoreCandidates(
     agentId,
     storePath: resolveStorePath(storeConfig, { agentId }),
   };
-  if (!isStorePathTemplate(storeConfig)) {
-    return [defaultTarget];
-  }
-  const targets = new Map<string, SessionStoreTarget>();
-  targets.set(defaultTarget.storePath, defaultTarget);
-  for (const target of resolveAllAgentSessionStoreTargetsSync(cfg)) {
-    if (target.agentId === agentId) {
-      targets.set(target.storePath, target);
-    }
-  }
-  return [...targets.values()];
+  return [defaultTarget];
 }
 
 function resolveGatewaySessionStoreLookup(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   key: string;
   canonicalKey: string;
   agentId: string;

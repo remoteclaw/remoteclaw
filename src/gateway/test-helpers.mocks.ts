@@ -9,7 +9,7 @@ import type { GetReplyOptions, ReplyPayload } from "../auto-reply/types.js";
 import type { ChannelPlugin, ChannelOutboundAdapter } from "../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
-import type { AgentBinding } from "../config/types.agents.js";
+import type { AgentBinding, AgentConfig } from "../config/types.agents.js";
 import type { HooksConfig } from "../config/types.hooks.js";
 import type { TailscaleWhoisIdentity } from "../infra/tailscale.js";
 import type { PluginRegistry } from "../plugins/registry.js";
@@ -144,18 +144,14 @@ const createStubPluginRegistry = (): PluginRegistry => ({
       plugin: createStubChannelPlugin({ id: "bluebubbles", label: "BlueBubbles" }),
     },
   ],
-  channelSetups: [],
   providers: [],
-  speechProviders: [],
-  mediaUnderstandingProviders: [],
-  imageGenerationProviders: [],
-  webSearchProviders: [],
+  sttProviders: [],
+  ttsProviders: [],
   gatewayHandlers: {},
   httpRoutes: [],
   cliRegistrars: [],
   services: [],
   commands: [],
-  conversationBindingResolvedHandlers: [],
   diagnostics: [],
 });
 
@@ -176,35 +172,9 @@ const hoisted = vi.hoisted(() => ({
   agentCommand: vi.fn().mockResolvedValue(undefined),
   testIsNixMode: { value: false },
   sessionStoreSaveDelayMs: { value: 0 },
-  embeddedRunMock: {
-    activeIds: new Set<string>(),
-    abortCalls: [] as string[],
-    waitCalls: [] as string[],
-    waitResults: new Map<string, boolean>(),
-  },
   testTailscaleWhois: { value: null as TailscaleWhoisIdentity | null },
   getReplyFromConfig: vi.fn<GetReplyFromConfigFn>().mockResolvedValue(undefined),
   sendWhatsAppMock: vi.fn().mockResolvedValue({ messageId: "msg-1", toJid: "jid-1" }),
-  testState: {
-    agentConfig: undefined as Record<string, unknown> | undefined,
-    agentsConfig: undefined as Record<string, unknown> | undefined,
-    bindingsConfig: undefined as AgentBinding[] | undefined,
-    channelsConfig: undefined as Record<string, unknown> | undefined,
-    sessionStorePath: undefined as string | undefined,
-    sessionConfig: undefined as Record<string, unknown> | undefined,
-    allowFrom: undefined as string[] | undefined,
-    cronStorePath: undefined as string | undefined,
-    cronEnabled: false as boolean | undefined,
-    gatewayBind: undefined as "auto" | "lan" | "tailnet" | "loopback" | undefined,
-    gatewayAuth: undefined as Record<string, unknown> | undefined,
-    gatewayControlUi: undefined as Record<string, unknown> | undefined,
-    hooksConfig: undefined as HooksConfig | undefined,
-    canvasHostPort: undefined as number | undefined,
-    legacyIssues: [] as Array<{ path: string; message: string }>,
-    legacyParsed: {} as Record<string, unknown>,
-    migrationConfig: null as Record<string, unknown> | null,
-    migrationChanges: [] as string[],
-  },
 }));
 
 const pluginRegistryState = {
@@ -223,12 +193,12 @@ export const resetTestPluginRegistry = () => {
 };
 
 const testConfigRoot = {
-  value: path.join(os.tmpdir(), `openclaw-gateway-test-${process.pid}-${crypto.randomUUID()}`),
+  value: path.join(os.tmpdir(), `remoteclaw-gateway-test-${process.pid}-${crypto.randomUUID()}`),
 };
 
 export const setTestConfigRoot = (root: string) => {
   testConfigRoot.value = root;
-  process.env.REMOTECLAW_CONFIG_PATH = path.join(root, "openclaw.json");
+  process.env.REMOTECLAW_CONFIG_PATH = path.join(root, "remoteclaw.json");
 };
 
 export const testTailnetIPv4 = hoisted.testTailnetIPv4;
@@ -237,35 +207,33 @@ export const piSdkMock = hoisted.piSdkMock;
 export const cronIsolatedRun = hoisted.cronIsolatedRun;
 export const agentCommand: Mock<() => void> = hoisted.agentCommand;
 export const getReplyFromConfig: Mock<GetReplyFromConfigFn> = hoisted.getReplyFromConfig;
+export const mockGetReplyFromConfigOnce = (impl: GetReplyFromConfigFn) => {
+  getReplyFromConfig.mockImplementationOnce(impl);
+};
 
-export const testState = hoisted.testState;
+export const testState = {
+  agentConfig: undefined as Record<string, unknown> | undefined,
+  agentsConfig: undefined as Record<string, unknown> | undefined,
+  bindingsConfig: undefined as AgentBinding[] | undefined,
+  channelsConfig: undefined as Record<string, unknown> | undefined,
+  sessionStorePath: undefined as string | undefined,
+  sessionConfig: undefined as Record<string, unknown> | undefined,
+  allowFrom: undefined as string[] | undefined,
+  cronStorePath: undefined as string | undefined,
+  cronEnabled: false as boolean | undefined,
+  gatewayBind: undefined as "auto" | "lan" | "tailnet" | "loopback" | undefined,
+  gatewayAuth: undefined as Record<string, unknown> | undefined,
+  gatewayControlUi: undefined as Record<string, unknown> | undefined,
+  hooksConfig: undefined as HooksConfig | undefined,
+  canvasHostPort: undefined as number | undefined,
+  legacyIssues: [] as Array<{ path: string; message: string }>,
+  legacyParsed: {} as Record<string, unknown>,
+  migrationConfig: null as Record<string, unknown> | null,
+  migrationChanges: [] as string[],
+};
 
 export const testIsNixMode = hoisted.testIsNixMode;
 export const sessionStoreSaveDelayMs = hoisted.sessionStoreSaveDelayMs;
-export const embeddedRunMock = hoisted.embeddedRunMock;
-
-vi.mock("../agents/pi-model-discovery.js", async () => {
-  const actual = await vi.importActual<typeof import("../agents/pi-model-discovery.js")>(
-    "../agents/pi-model-discovery.js",
-  );
-
-  class MockModelRegistry extends actual.ModelRegistry {
-    override getAll(): ReturnType<typeof actual.ModelRegistry.prototype.getAll> {
-      if (!piSdkMock.enabled) {
-        return super.getAll();
-      }
-      piSdkMock.discoverCalls += 1;
-      // Cast to expected type for testing purposes
-      return piSdkMock.models as ReturnType<typeof actual.ModelRegistry.prototype.getAll>;
-    }
-  }
-
-  return {
-    ...actual,
-    ModelRegistry: MockModelRegistry,
-  };
-});
-
 vi.mock("../cron/isolated-agent.js", () => ({
   runCronIsolatedAgentTurn: (...args: unknown[]) =>
     (cronIsolatedRun as (...args: unknown[]) => unknown)(...args),
@@ -302,7 +270,7 @@ vi.mock("../config/sessions.js", async () => {
 
 vi.mock("../config/config.js", async () => {
   const actual = await vi.importActual<typeof import("../config/config.js")>("../config/config.js");
-  const resolveConfigPath = () => path.join(testConfigRoot.value, "openclaw.json");
+  const resolveConfigPath = () => path.join(testConfigRoot.value, "remoteclaw.json");
   const hashConfigRaw = (raw: string | null) =>
     crypto
       .createHash("sha256")
@@ -372,130 +340,6 @@ vi.mock("../config/config.js", async () => {
     }
   };
 
-  const composeTestConfig = (baseConfig: Record<string, unknown>) => {
-    const fileAgents =
-      baseConfig.agents &&
-      typeof baseConfig.agents === "object" &&
-      !Array.isArray(baseConfig.agents)
-        ? (baseConfig.agents as Record<string, unknown>)
-        : {};
-    const fileDefaults =
-      fileAgents.defaults &&
-      typeof fileAgents.defaults === "object" &&
-      !Array.isArray(fileAgents.defaults)
-        ? (fileAgents.defaults as Record<string, unknown>)
-        : {};
-    const defaults = {
-      model: { primary: "anthropic/claude-opus-4-6" },
-      workspace: path.join(os.tmpdir(), "openclaw-gateway-test"),
-      ...fileDefaults,
-      ...testState.agentConfig,
-    };
-    const agents = testState.agentsConfig
-      ? { ...fileAgents, ...testState.agentsConfig, defaults }
-      : { ...fileAgents, defaults };
-
-    const fileBindings = Array.isArray(baseConfig.bindings)
-      ? (baseConfig.bindings as AgentBinding[])
-      : undefined;
-
-    const fileChannels =
-      baseConfig.channels &&
-      typeof baseConfig.channels === "object" &&
-      !Array.isArray(baseConfig.channels)
-        ? ({ ...(baseConfig.channels as Record<string, unknown>) } as Record<string, unknown>)
-        : {};
-    const overrideChannels =
-      testState.channelsConfig && typeof testState.channelsConfig === "object"
-        ? { ...testState.channelsConfig }
-        : {};
-    const mergedChannels = { ...fileChannels, ...overrideChannels };
-    if (testState.allowFrom !== undefined) {
-      const existing =
-        mergedChannels.whatsapp &&
-        typeof mergedChannels.whatsapp === "object" &&
-        !Array.isArray(mergedChannels.whatsapp)
-          ? (mergedChannels.whatsapp as Record<string, unknown>)
-          : {};
-      mergedChannels.whatsapp = {
-        ...existing,
-        allowFrom: testState.allowFrom,
-      };
-    }
-    const channels = Object.keys(mergedChannels).length > 0 ? mergedChannels : undefined;
-
-    const fileSession =
-      baseConfig.session &&
-      typeof baseConfig.session === "object" &&
-      !Array.isArray(baseConfig.session)
-        ? (baseConfig.session as Record<string, unknown>)
-        : {};
-    const session: Record<string, unknown> = {
-      ...fileSession,
-      mainKey: fileSession.mainKey ?? "main",
-    };
-    if (typeof testState.sessionStorePath === "string") {
-      session.store = testState.sessionStorePath;
-    }
-    if (testState.sessionConfig) {
-      Object.assign(session, testState.sessionConfig);
-    }
-
-    const fileGateway =
-      baseConfig.gateway &&
-      typeof baseConfig.gateway === "object" &&
-      !Array.isArray(baseConfig.gateway)
-        ? ({ ...(baseConfig.gateway as Record<string, unknown>) } as Record<string, unknown>)
-        : {};
-    if (testState.gatewayBind) {
-      fileGateway.bind = testState.gatewayBind;
-    }
-    if (testState.gatewayAuth) {
-      fileGateway.auth = testState.gatewayAuth;
-    }
-    if (testState.gatewayControlUi) {
-      fileGateway.controlUi = testState.gatewayControlUi;
-    }
-    const gateway = Object.keys(fileGateway).length > 0 ? fileGateway : undefined;
-
-    const fileCanvasHost =
-      baseConfig.canvasHost &&
-      typeof baseConfig.canvasHost === "object" &&
-      !Array.isArray(baseConfig.canvasHost)
-        ? ({ ...(baseConfig.canvasHost as Record<string, unknown>) } as Record<string, unknown>)
-        : {};
-    if (typeof testState.canvasHostPort === "number") {
-      fileCanvasHost.port = testState.canvasHostPort;
-    }
-    const canvasHost = Object.keys(fileCanvasHost).length > 0 ? fileCanvasHost : undefined;
-
-    const hooks = testState.hooksConfig ?? (baseConfig.hooks as HooksConfig | undefined);
-
-    const fileCron =
-      baseConfig.cron && typeof baseConfig.cron === "object" && !Array.isArray(baseConfig.cron)
-        ? ({ ...(baseConfig.cron as Record<string, unknown>) } as Record<string, unknown>)
-        : {};
-    if (typeof testState.cronEnabled === "boolean") {
-      fileCron.enabled = testState.cronEnabled;
-    }
-    if (typeof testState.cronStorePath === "string") {
-      fileCron.store = testState.cronStorePath;
-    }
-    const cron = Object.keys(fileCron).length > 0 ? fileCron : undefined;
-
-    return {
-      ...baseConfig,
-      agents,
-      bindings: testState.bindingsConfig ?? fileBindings,
-      channels,
-      session,
-      gateway,
-      canvasHost,
-      hooks,
-      cron,
-    } as RemoteClawConfig;
-  };
-
   const writeConfigFile = vi.fn(async (cfg: Record<string, unknown>) => {
     const configPath = resolveConfigPath();
     await fs.mkdir(path.dirname(configPath), { recursive: true });
@@ -518,8 +362,6 @@ vi.mock("../config/config.js", async () => {
       config: testState.migrationConfig ?? (raw as Record<string, unknown>),
       changes: testState.migrationChanges,
     }),
-    applyConfigOverrides: (cfg: RemoteClawConfig) =>
-      composeTestConfig(cfg as Record<string, unknown>),
     loadConfig: () => {
       const configPath = resolveConfigPath();
       let fileConfig: Record<string, unknown> = {};
@@ -531,11 +373,142 @@ vi.mock("../config/config.js", async () => {
       } catch {
         fileConfig = {};
       }
-      const config = applyPluginAutoEnable({
-        config: composeTestConfig(fileConfig),
-        env: process.env,
-      }).config;
-      return config;
+
+      const fileAgents =
+        fileConfig.agents &&
+        typeof fileConfig.agents === "object" &&
+        !Array.isArray(fileConfig.agents)
+          ? (fileConfig.agents as Record<string, unknown>)
+          : {};
+      const fileDefaults =
+        fileAgents.defaults &&
+        typeof fileAgents.defaults === "object" &&
+        !Array.isArray(fileAgents.defaults)
+          ? (fileAgents.defaults as Record<string, unknown>)
+          : {};
+      const defaults = {
+        ...fileDefaults,
+        ...testState.agentConfig,
+      };
+      const gatewayTestWorkspace = path.join(os.tmpdir(), "remoteclaw-gateway-test");
+      const agentsConfigList =
+        testState.agentsConfig && Array.isArray(testState.agentsConfig.list)
+          ? (testState.agentsConfig.list as Array<Record<string, unknown>>)
+          : [];
+      const fileList = Array.isArray(fileAgents.list)
+        ? (fileAgents.list as Array<Record<string, unknown>>)
+        : [];
+      const resolvedList = (
+        agentsConfigList.length > 0
+          ? agentsConfigList.map((a) => ({ workspace: gatewayTestWorkspace, ...a }))
+          : fileList.length > 0
+            ? fileList
+            : [{ id: "main", workspace: gatewayTestWorkspace }]
+      ) as AgentConfig[];
+      const agents = testState.agentsConfig
+        ? { ...fileAgents, ...testState.agentsConfig, defaults, list: resolvedList }
+        : { ...fileAgents, defaults, list: resolvedList };
+
+      const fileBindings = Array.isArray(fileConfig.bindings)
+        ? (fileConfig.bindings as AgentBinding[])
+        : undefined;
+
+      const fileChannels =
+        fileConfig.channels &&
+        typeof fileConfig.channels === "object" &&
+        !Array.isArray(fileConfig.channels)
+          ? ({ ...(fileConfig.channels as Record<string, unknown>) } as Record<string, unknown>)
+          : {};
+      const overrideChannels =
+        testState.channelsConfig && typeof testState.channelsConfig === "object"
+          ? { ...testState.channelsConfig }
+          : {};
+      const mergedChannels = { ...fileChannels, ...overrideChannels };
+      if (testState.allowFrom !== undefined) {
+        const existing =
+          mergedChannels.whatsapp &&
+          typeof mergedChannels.whatsapp === "object" &&
+          !Array.isArray(mergedChannels.whatsapp)
+            ? (mergedChannels.whatsapp as Record<string, unknown>)
+            : {};
+        mergedChannels.whatsapp = {
+          ...existing,
+          allowFrom: testState.allowFrom,
+        };
+      }
+      const channels = Object.keys(mergedChannels).length > 0 ? mergedChannels : undefined;
+
+      const fileSession =
+        fileConfig.session &&
+        typeof fileConfig.session === "object" &&
+        !Array.isArray(fileConfig.session)
+          ? (fileConfig.session as Record<string, unknown>)
+          : {};
+      const session: Record<string, unknown> = {
+        ...fileSession,
+        mainKey: fileSession.mainKey ?? "main",
+      };
+      if (typeof testState.sessionStorePath === "string") {
+        session.store = testState.sessionStorePath;
+      }
+      if (testState.sessionConfig) {
+        Object.assign(session, testState.sessionConfig);
+      }
+
+      const fileGateway =
+        fileConfig.gateway &&
+        typeof fileConfig.gateway === "object" &&
+        !Array.isArray(fileConfig.gateway)
+          ? ({ ...(fileConfig.gateway as Record<string, unknown>) } as Record<string, unknown>)
+          : {};
+      if (testState.gatewayBind) {
+        fileGateway.bind = testState.gatewayBind;
+      }
+      if (testState.gatewayAuth) {
+        fileGateway.auth = testState.gatewayAuth;
+      }
+      if (testState.gatewayControlUi) {
+        fileGateway.controlUi = testState.gatewayControlUi;
+      }
+      const gateway = Object.keys(fileGateway).length > 0 ? fileGateway : undefined;
+
+      const fileCanvasHost =
+        fileConfig.canvasHost &&
+        typeof fileConfig.canvasHost === "object" &&
+        !Array.isArray(fileConfig.canvasHost)
+          ? ({ ...(fileConfig.canvasHost as Record<string, unknown>) } as Record<string, unknown>)
+          : {};
+      if (typeof testState.canvasHostPort === "number") {
+        fileCanvasHost.port = testState.canvasHostPort;
+      }
+      const canvasHost = Object.keys(fileCanvasHost).length > 0 ? fileCanvasHost : undefined;
+
+      const hooks = testState.hooksConfig ?? (fileConfig.hooks as HooksConfig | undefined);
+
+      const fileCron =
+        fileConfig.cron && typeof fileConfig.cron === "object" && !Array.isArray(fileConfig.cron)
+          ? ({ ...(fileConfig.cron as Record<string, unknown>) } as Record<string, unknown>)
+          : {};
+      if (typeof testState.cronEnabled === "boolean") {
+        fileCron.enabled = testState.cronEnabled;
+      }
+      if (typeof testState.cronStorePath === "string") {
+        fileCron.store = testState.cronStorePath;
+      }
+      const cron = Object.keys(fileCron).length > 0 ? fileCron : undefined;
+
+      const config = {
+        ...fileConfig,
+        agents,
+        bindings: testState.bindingsConfig ?? fileBindings,
+        channels,
+        session,
+        gateway,
+        canvasHost,
+        hooks,
+        cron,
+      };
+      return applyPluginAutoEnable({ config, env: process.env }).config;
     },
     parseConfigJson5: (raw: string) => {
       try {
@@ -554,31 +527,13 @@ vi.mock("../config/config.js", async () => {
   };
 });
 
-vi.mock("../agents/pi-embedded.js", async () => {
-  const actual = await vi.importActual<typeof import("../agents/pi-embedded.js")>(
-    "../agents/pi-embedded.js",
-  );
-  return {
-    ...actual,
-    isEmbeddedPiRunActive: (sessionId: string) => embeddedRunMock.activeIds.has(sessionId),
-    abortEmbeddedPiRun: (sessionId: string) => {
-      embeddedRunMock.abortCalls.push(sessionId);
-      return embeddedRunMock.activeIds.has(sessionId);
-    },
-    waitForEmbeddedPiRunEnd: async (sessionId: string) => {
-      embeddedRunMock.waitCalls.push(sessionId);
-      return embeddedRunMock.waitResults.get(sessionId) ?? true;
-    },
-  };
-});
-
 vi.mock("../commands/health.js", () => ({
   getHealthSnapshot: vi.fn().mockResolvedValue({ ok: true, stub: true }),
 }));
 vi.mock("../commands/status.js", () => ({
   getStatusSummary: vi.fn().mockResolvedValue({ ok: true }),
 }));
-vi.mock("../../extensions/whatsapp/runtime-api.js", () => ({
+vi.mock("../web/outbound.js", () => ({
   sendMessageWhatsApp: (...args: unknown[]) =>
     (hoisted.sendWhatsAppMock as (...args: unknown[]) => unknown)(...args),
   sendPollWhatsApp: (...args: unknown[]) =>
@@ -599,8 +554,7 @@ vi.mock("../commands/agent.js", () => ({
   agentCommandFromIngress: agentCommand,
 }));
 vi.mock("../auto-reply/reply.js", () => ({
-  getReplyFromConfig: (...args: Parameters<GetReplyFromConfigFn>) =>
-    hoisted.getReplyFromConfig(...args),
+  getReplyFromConfig,
 }));
 vi.mock("../cli/deps.js", async () => {
   const actual = await vi.importActual<typeof import("../cli/deps.js")>("../cli/deps.js");
@@ -624,7 +578,7 @@ vi.mock("../plugins/loader.js", async () => {
   };
 });
 
-process.env.OPENCLAW_SKIP_CHANNELS = "1";
-process.env.OPENCLAW_SKIP_CRON = "1";
-process.env.OPENCLAW_SKIP_CHANNELS = "1";
-process.env.OPENCLAW_SKIP_CRON = "1";
+process.env.REMOTECLAW_SKIP_CHANNELS = "1";
+process.env.REMOTECLAW_SKIP_CRON = "1";
+process.env.REMOTECLAW_SKIP_CHANNELS = "1";
+process.env.REMOTECLAW_SKIP_CRON = "1";

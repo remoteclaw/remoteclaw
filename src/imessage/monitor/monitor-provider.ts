@@ -30,11 +30,11 @@ import {
   resolveIMessageRemoteAttachmentRoots,
 } from "../../media/inbound-path-policy.js";
 import { kindFromMime } from "../../media/mime.js";
-import { issuePairingChallenge } from "../../pairing/pairing-challenge.js";
 import {
   readChannelAllowFromStore,
   upsertChannelPairingRequest,
 } from "../../pairing/pairing-store.js";
+import { createChannelPairingChallengeIssuer } from "../../plugin-sdk/channel-pairing.js";
 import { resolvePinnedMainDmOwnerFromAllowlist } from "../../security/dm-policy-shared.js";
 import { truncateUtf16Safe } from "../../utils.js";
 import { resolveIMessageAccount } from "../accounts.js";
@@ -288,14 +288,8 @@ export async function monitorIMessageProvider(opts: MonitorIMessageOpts = {}): P
       if (!sender) {
         return;
       }
-      await issuePairingChallenge({
+      await createChannelPairingChallengeIssuer({
         channel: "imessage",
-        senderId: decision.senderId,
-        senderIdLine: `Your iMessage sender id: ${decision.senderId}`,
-        meta: {
-          sender: decision.senderId,
-          chatId: chatId ? String(chatId) : undefined,
-        },
         upsertPairingRequest: async ({ id, meta }) =>
           await upsertChannelPairingRequest({
             channel: "imessage",
@@ -303,6 +297,13 @@ export async function monitorIMessageProvider(opts: MonitorIMessageOpts = {}): P
             accountId: accountInfo.accountId,
             meta,
           }),
+      })({
+        senderId: decision.senderId,
+        senderIdLine: `Your iMessage sender id: ${decision.senderId}`,
+        meta: {
+          sender: decision.senderId,
+          chatId: chatId ? String(chatId) : undefined,
+        },
         onCreated: () => {
           logVerbose(`imessage pairing request sender=${decision.senderId}`);
         },

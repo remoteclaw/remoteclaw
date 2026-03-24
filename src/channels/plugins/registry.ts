@@ -5,12 +5,6 @@ import {
 import { CHAT_CHANNEL_ORDER, type ChatChannelId, normalizeAnyChannelId } from "../registry.js";
 import type { ChannelId, ChannelPlugin } from "./types.js";
 
-// Channel plugins registry (runtime).
-//
-// This module is intentionally "heavy" (plugins may import channel monitors, web login, etc).
-// Shared code paths should prefer narrower adapters and helpers instead of reaching into
-// channel-specific runtime modules directly.
-//
 function dedupeChannels(channels: ChannelPlugin[]): ChannelPlugin[] {
   const seen = new Set<string>();
   const resolved: ChannelPlugin[] = [];
@@ -84,24 +78,5 @@ export function getChannelPlugin(id: ChannelId): ChannelPlugin | undefined {
 }
 
 export function normalizeChannelId(raw?: string | null): ChannelId | null {
-  // Channel docking: keep input normalization centralized in src/channels/registry.ts.
-  // Plugin registry must be initialized before calling.
   return normalizeAnyChannelId(raw);
 }
-export {
-  applyChannelMatchMeta,
-  buildChannelKeyCandidates,
-  normalizeChannelSlug,
-  resolveChannelEntryMatch,
-  resolveChannelEntryMatchWithFallback,
-  resolveChannelMatchConfig,
-  resolveNestedAllowlistDecision,
-  type ChannelEntryMatch,
-  type ChannelMatchSource,
-} from "./channel-config.js";
-export {
-  formatAllowlistMatchMeta,
-  type AllowlistMatch,
-  type AllowlistMatchSource,
-} from "./allowlist-match.js";
-export type { ChannelId, ChannelPlugin } from "./types.js";

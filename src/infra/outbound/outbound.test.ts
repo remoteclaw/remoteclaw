@@ -504,7 +504,9 @@ describe("delivery-queue", () => {
       expect(remaining).toHaveLength(3);
 
       // Should have logged a warning about deferred entries.
-      expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("deferred to next restart"));
+      expect(log.warn).toHaveBeenCalledWith(
+        expect.stringContaining("deferred (retryCount incremented)"),
+      );
     });
 
     it("defers entries until backoff becomes eligible", async () => {

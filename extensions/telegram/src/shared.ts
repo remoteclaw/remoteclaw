@@ -1,8 +1,8 @@
-import { createScopedChannelConfigBase } from "openclaw/plugin-sdk/compat";
+import { createScopedChannelConfigBase } from "remoteclaw/plugin-sdk/compat";
 import {
   createScopedAccountConfigAccessors,
   formatAllowFromLowercase,
-} from "openclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk/compat";
 import {
   buildChannelConfigSchema,
   getChatChannelMeta,
@@ -10,7 +10,7 @@ import {
   TelegramConfigSchema,
   type ChannelPlugin,
   type RemoteClawConfig,
-} from "openclaw/plugin-sdk/telegram";
+} from "remoteclaw/plugin-sdk/telegram";
 import { inspectTelegramAccount } from "./account-inspect.js";
 import {
   listTelegramAccountIds,

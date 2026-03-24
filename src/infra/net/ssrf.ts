@@ -370,16 +370,12 @@ export function createPinnedDispatcher(
   }
 
   const proxyUrl = policy.proxyUrl.trim();
-  const requestTls = withPinnedLookup(lookup, policy.proxyTls);
-  if (!requestTls) {
+  if (!policy.proxyTls) {
     return new ProxyAgent(proxyUrl);
   }
   return new ProxyAgent({
     uri: proxyUrl,
-    // `PinnedDispatcherPolicy.proxyTls` historically carried target-hop
-    // transport hints for explicit proxies. Translate that to undici's
-    // `requestTls` so HTTPS proxy tunnels keep the pinned DNS lookup.
-    requestTls,
+    proxyTls: { ...policy.proxyTls },
   });
 }
 

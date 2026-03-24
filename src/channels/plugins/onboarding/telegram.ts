@@ -1,8 +1,6 @@
 import { formatCliCommand } from "../../../cli/command-format.js";
 import type { RemoteClawConfig } from "../../../config/config.js";
-import { hasConfiguredSecretInput } from "../../../config/types.secrets.js";
 import { DEFAULT_ACCOUNT_ID } from "../../../routing/session-key.js";
-import { inspectTelegramAccount } from "../../../telegram/account-inspect.js";
 import {
   listTelegramAccountIds,
   resolveDefaultTelegramAccountId,
@@ -14,11 +12,12 @@ import { fetchTelegramChatId } from "../../telegram/api.js";
 import type { ChannelOnboardingAdapter, ChannelOnboardingDmPolicy } from "../onboarding-types.js";
 import {
   applySingleTokenPromptResult,
+  buildSingleChannelSecretPromptState,
   patchChannelConfigForAccount,
+  promptSingleChannelToken,
   promptResolvedAllowFrom,
   resolveAccountIdForConfigure,
   resolveOnboardingAccountId,
-  runSingleChannelSecretStep,
   setChannelDmPolicyWithAllowFrom,
   setOnboardingChannelEnabled,
   splitOnboardingEntries,
@@ -34,7 +33,7 @@ async function noteTelegramTokenHelp(prompter: WizardPrompter): Promise<void> {
       "3) Copy the token (looks like 123456:ABC...)",
       "Tip: you can also set TELEGRAM_BOT_TOKEN in your env.",
       `Docs: ${formatDocsLink("/telegram")}`,
-      "Website: https://openclaw.ai",
+      "Website: https://remoteclaw.org",
     ].join("\n"),
     "Telegram bot token",
   );
@@ -43,11 +42,11 @@ async function noteTelegramTokenHelp(prompter: WizardPrompter): Promise<void> {
 async function noteTelegramUserIdHelp(prompter: WizardPrompter): Promise<void> {
   await prompter.note(
     [
-      `1) DM your bot, then read from.id in \`${formatCliCommand("openclaw logs --follow")}\` (safest)`,
+      `1) DM your bot, then read from.id in \`${formatCliCommand("remoteclaw logs --follow")}\` (safest)`,
       "2) Or call https://api.telegram.org/bot<bot_token>/getUpdates and read message.from.id",
       "3) Third-party: DM @userinfobot or @getidsbot",
       `Docs: ${formatDocsLink("/telegram")}`,
-      "Website: https://openclaw.ai",
+      "Website: https://remoteclaw.org",
     ].join("\n"),
     "Telegram user id",
   );
@@ -69,14 +68,13 @@ async function promptTelegramAllowFrom(params: {
   cfg: RemoteClawConfig;
   prompter: WizardPrompter;
   accountId: string;
-  tokenOverride?: string;
 }): Promise<RemoteClawConfig> {
   const { cfg, prompter, accountId } = params;
   const resolved = resolveTelegramAccount({ cfg, accountId });
   const existingAllowFrom = resolved.config.allowFrom ?? [];
   await noteTelegramUserIdHelp(prompter);
 
-  const token = params.tokenOverride?.trim() || resolved.token;
+  const token = resolved.token;
   if (!token) {
     await prompter.note("Telegram token missing; username lookup is unavailable.", "Telegram");
   }
@@ -153,10 +151,9 @@ const dmPolicy: ChannelOnboardingDmPolicy = {
 export const telegramOnboardingAdapter: ChannelOnboardingAdapter = {
   channel,
   getStatus: async ({ cfg }) => {
-    const configured = listTelegramAccountIds(cfg).some((accountId) => {
-      const account = inspectTelegramAccount({ cfg, accountId });
-      return account.configured;
-    });
+    const configured = listTelegramAccountIds(cfg).some((accountId) =>
+      Boolean(resolveTelegramAccount({ cfg, accountId }).token),
+    );
     return {
       channel,
       configured,
@@ -168,7 +165,6 @@ export const telegramOnboardingAdapter: ChannelOnboardingAdapter = {
   configure: async ({
     cfg,
     prompter,
-    options,
     accountOverrides,
     shouldPromptAccountIds,
     forceAllowFrom,
@@ -189,50 +185,43 @@ export const telegramOnboardingAdapter: ChannelOnboardingAdapter = {
       cfg: next,
       accountId: telegramAccountId,
     });
-    const hasConfiguredBotToken = hasConfiguredSecretInput(resolvedAccount.config.botToken);
     const hasConfigToken =
-      hasConfiguredBotToken || Boolean(resolvedAccount.config.tokenFile?.trim());
+      Boolean(resolvedAccount.config.botToken) || Boolean(resolvedAccount.config.tokenFile?.trim());
     const allowEnv = telegramAccountId === DEFAULT_ACCOUNT_ID;
-    const tokenStep = await runSingleChannelSecretStep({
-      cfg: next,
-      prompter,
-      providerHint: "telegram",
-      credentialLabel: "Telegram bot token",
-      secretInputMode: options?.secretInputMode,
+    const tokenPromptState = buildSingleChannelSecretPromptState({
       accountConfigured: Boolean(resolvedAccount.token) || hasConfigToken,
       hasConfigToken,
       allowEnv,
       envValue: process.env.TELEGRAM_BOT_TOKEN,
+    });
+
+    if (!tokenPromptState.accountConfigured) {
+      await noteTelegramTokenHelp(prompter);
+    }
+
+    const tokenResult = await promptSingleChannelToken({
+      prompter,
+      accountConfigured: tokenPromptState.accountConfigured,
+      canUseEnv: tokenPromptState.canUseEnv,
+      hasConfigToken: tokenPromptState.hasConfigToken,
       envPrompt: "TELEGRAM_BOT_TOKEN detected. Use env var?",
       keepPrompt: "Telegram token already configured. Keep it?",
       inputPrompt: "Enter Telegram bot token",
-      preferredEnvVar: allowEnv ? "TELEGRAM_BOT_TOKEN" : undefined,
-      onMissingConfigured: async () => await noteTelegramTokenHelp(prompter),
-      applyUseEnv: async (cfg) =>
-        applySingleTokenPromptResult({
-          cfg,
-          channel: "telegram",
-          accountId: telegramAccountId,
-          tokenPatchKey: "botToken",
-          tokenResult: { useEnv: true, token: null },
-        }),
-      applySet: async (cfg, value) =>
-        applySingleTokenPromptResult({
-          cfg,
-          channel: "telegram",
-          accountId: telegramAccountId,
-          tokenPatchKey: "botToken",
-          tokenResult: { useEnv: false, token: value },
-        }),
     });
-    next = tokenStep.cfg;
+
+    next = applySingleTokenPromptResult({
+      cfg: next,
+      channel: "telegram",
+      accountId: telegramAccountId,
+      tokenPatchKey: "botToken",
+      tokenResult,
+    });
 
     if (forceAllowFrom) {
       next = await promptTelegramAllowFrom({
         cfg: next,
         prompter,
         accountId: telegramAccountId,
-        tokenOverride: tokenStep.resolvedValue,
       });
     }
 

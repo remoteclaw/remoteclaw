@@ -7,19 +7,10 @@ import {
   clearHistoryEntriesIfEnabled,
   recordPendingHistoryEntryIfEnabled,
   resolveDmGroupAccessWithLists,
-} from "remoteclaw/plugin-sdk/compat";
-import type {
-  MarkdownTableMode,
-  RemoteClawConfig,
-  OutboundReplyPayload,
-  RuntimeEnv,
-} from "remoteclaw/plugin-sdk/zalouser";
-import {
   createTypingCallbacks,
   createScopedPairingAccess,
   createReplyPrefixOptions,
   evaluateGroupRouteAccessForPolicy,
-  isDangerousNameMatchingEnabled,
   issuePairingChallenge,
   resolveOutboundMediaUrls,
   mergeAllowlist,
@@ -30,7 +21,11 @@ import {
   sendMediaWithLeadingCaption,
   summarizeMapping,
   warnMissingProviderGroupPolicyFallbackOnce,
-} from "remoteclaw/plugin-sdk/zalouser";
+  type MarkdownTableMode,
+  type RemoteClawConfig,
+  type OutboundReplyPayload,
+  type RuntimeEnv,
+} from "remoteclaw/plugin-sdk";
 import {
   buildZalouserGroupCandidates,
   findZalouserGroupEntry,
@@ -213,7 +208,6 @@ function resolveGroupRequireMention(params: {
   groupId: string;
   groupName?: string | null;
   groups: Record<string, { allow?: boolean; enabled?: boolean; requireMention?: boolean }>;
-  allowNameMatching?: boolean;
 }): boolean {
   const entry = findZalouserGroupEntry(
     params.groups ?? {},
@@ -222,7 +216,6 @@ function resolveGroupRequireMention(params: {
       groupName: params.groupName,
       includeGroupIdAlias: true,
       includeWildcard: true,
-      allowNameMatching: params.allowNameMatching,
     }),
   );
   if (typeof entry?.requireMention === "boolean") {
@@ -319,7 +312,6 @@ async function processMessage(
   });
 
   const groups = account.config.groups ?? {};
-  const allowNameMatching = isDangerousNameMatchingEnabled(account.config);
   if (isGroup) {
     const groupEntry = findZalouserGroupEntry(
       groups,
@@ -328,7 +320,6 @@ async function processMessage(
         groupName,
         includeGroupIdAlias: true,
         includeWildcard: true,
-        allowNameMatching,
       }),
     );
     const routeAccess = evaluateGroupRouteAccessForPolicy({
@@ -471,7 +462,6 @@ async function processMessage(
         groupId: chatId,
         groupName,
         groups,
-        allowNameMatching,
       })
     : false;
   const mentionRegexes = core.channel.mentions.buildMentionRegexes(config, route.agentId);
@@ -709,10 +699,6 @@ async function deliverZalouserReply(params: {
     params;
   const tableMode = params.tableMode ?? "code";
   const text = core.channel.text.convertMarkdownTables(payload.text ?? "", tableMode);
-  const chunkMode = core.channel.text.resolveChunkMode(config, "zalouser", accountId);
-  const textChunkLimit = core.channel.text.resolveTextChunkLimit(config, "zalouser", accountId, {
-    fallbackLimit: ZALOUSER_TEXT_LIMIT,
-  });
 
   const sentMedia = await sendMediaWithLeadingCaption({
     mediaUrls: resolveOutboundMediaUrls(payload),
@@ -723,9 +709,6 @@ async function deliverZalouserReply(params: {
         profile,
         mediaUrl,
         isGroup,
-        textMode: "markdown",
-        textChunkMode: chunkMode,
-        textChunkLimit,
       });
       statusSink?.({ lastOutboundAt: Date.now() });
     },
@@ -738,17 +721,20 @@ async function deliverZalouserReply(params: {
   }
 
   if (text) {
-    try {
-      await sendMessageZalouser(chatId, text, {
-        profile,
-        isGroup,
-        textMode: "markdown",
-        textChunkMode: chunkMode,
-        textChunkLimit,
-      });
-      statusSink?.({ lastOutboundAt: Date.now() });
-    } catch (err) {
-      runtime.error(`Zalouser message send failed: ${String(err)}`);
+    const chunkMode = core.channel.text.resolveChunkMode(config, "zalouser", accountId);
+    const chunks = core.channel.text.chunkMarkdownTextWithMode(
+      text,
+      ZALOUSER_TEXT_LIMIT,
+      chunkMode,
+    );
+    logVerbose(core, runtime, `Sending ${chunks.length} text chunk(s) to ${chatId}`);
+    for (const chunk of chunks) {
+      try {
+        await sendMessageZalouser(chatId, chunk, { profile, isGroup });
+        statusSink?.({ lastOutboundAt: Date.now() });
+      } catch (err) {
+        runtime.error(`Zalouser message send failed: ${String(err)}`);
+      }
     }
   }
 }

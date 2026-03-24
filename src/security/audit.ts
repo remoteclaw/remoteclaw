@@ -1,7 +1,6 @@
 import { isIP } from "node:net";
 import { resolveBrowserConfig, resolveProfile } from "../browser/config.js";
 import { resolveBrowserControlAuth } from "../browser/control-auth.js";
-import { hasPotentialConfiguredChannels } from "../channels/config-presence.js";
 import { listChannelPlugins } from "../channels/plugins/index.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { ConfigFileSnapshot, RemoteClawConfig } from "../config/config.js";
@@ -879,7 +878,7 @@ export async function runSecurityAudit(opts: SecurityAuditOptions): Promise<Secu
     }
   }
 
-  if (context.includeChannelSecurity && hasPotentialConfiguredChannels(cfg, env)) {
+  if (context.includeChannelSecurity) {
     const plugins = context.plugins ?? listChannelPlugins();
     findings.push(...(await collectChannelSecurityFindings({ cfg, plugins })));
   }

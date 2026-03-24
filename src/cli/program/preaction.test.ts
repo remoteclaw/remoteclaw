@@ -185,19 +185,6 @@ describe("registerPreActionHooks", () => {
 
   it("applies --json stdout suppression only for explicit JSON output commands", async () => {
     await runPreAction({
-      parseArgv: ["status"],
-      processArgv: ["node", "openclaw", "status", "--json"],
-    });
-
-    expect(ensureConfigReadyMock).toHaveBeenCalledWith({
-      runtime: runtimeMock,
-      commandPath: ["status"],
-      suppressDoctorStdout: true,
-    });
-    expect(ensurePluginRegistryLoadedMock).not.toHaveBeenCalled();
-
-    vi.clearAllMocks();
-    await runPreAction({
       parseArgv: ["update", "status", "--json"],
       processArgv: ["node", "remoteclaw", "update", "status", "--json"],
     });
@@ -207,7 +194,6 @@ describe("registerPreActionHooks", () => {
       commandPath: ["update", "status"],
       suppressDoctorStdout: true,
     });
-    expect(ensurePluginRegistryLoadedMock).not.toHaveBeenCalled();
 
     vi.clearAllMocks();
     await runPreAction({

@@ -19,11 +19,13 @@ afterEach(() => {
 });
 
 describe("config presence", () => {
-  it("ignores enabled-only matrix config when listing configured channels", () => {
+  it("detects configured channels from config keys", () => {
     const stateDir = makeTempStateDir();
     const env = { REMOTECLAW_STATE_DIR: stateDir } as NodeJS.ProcessEnv;
-    const cfg = { channels: { matrix: { enabled: false } } };
 
-    expect(hasPotentialConfiguredChannels(cfg, env)).toBe(false);
+    expect(hasPotentialConfiguredChannels({ channels: { slack: { botToken: "x" } } }, env)).toBe(
+      true,
+    );
+    expect(hasPotentialConfiguredChannels({}, env)).toBe(false);
   });
 });

@@ -1,13 +1,26 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
+import type { ChannelGroupPolicy } from "../config/group-policy.js";
 import type { TelegramAccountConfig } from "../config/types.js";
-import {
-  createNativeCommandsHarness,
-  deliverReplies,
-  executePluginCommand,
+import type { RuntimeEnv } from "../runtime.js";
+import { registerTelegramNativeCommands } from "./bot-native-commands.js";
+
+const getPluginCommandSpecs = vi.hoisted(() => vi.fn());
+const matchPluginCommand = vi.hoisted(() => vi.fn());
+const executePluginCommand = vi.hoisted(() => vi.fn());
+
+vi.mock("../plugins/commands.js", () => ({
   getPluginCommandSpecs,
   matchPluginCommand,
-} from "./bot-native-commands.test-helpers.js";
+  executePluginCommand,
+}));
+
+const deliverReplies = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock("./bot/delivery.js", () => ({ deliverReplies }));
+
+vi.mock("../pairing/pairing-store.js", () => ({
+  readChannelAllowFromStore: vi.fn(async () => []),
+}));
 
 describe("registerTelegramNativeCommands (plugin auth)", () => {
   it("does not register plugin commands in menu when native=false but keeps handlers available", () => {
@@ -17,10 +30,46 @@ describe("registerTelegramNativeCommands (plugin auth)", () => {
     }));
     getPluginCommandSpecs.mockReturnValue(specs);
 
-    const { handlers, setMyCommands, log } = createNativeCommandsHarness({
-      cfg: {} as RemoteClawConfig,
+    const handlers: Record<string, (ctx: unknown) => Promise<void>> = {};
+    const setMyCommands = vi.fn().mockResolvedValue(undefined);
+    const log = vi.fn();
+    const bot = {
+      api: {
+        setMyCommands,
+        sendMessage: vi.fn(),
+      },
+      command: (name: string, handler: (ctx: unknown) => Promise<void>) => {
+        handlers[name] = handler;
+      },
+    } as const;
+
+    registerTelegramNativeCommands({
+      bot: bot as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
+      cfg: {
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
+      } as RemoteClawConfig,
+      runtime: { log } as unknown as RuntimeEnv,
+      accountId: "default",
       telegramCfg: {} as TelegramAccountConfig,
+      allowFrom: [],
+      groupAllowFrom: [],
+      replyToMode: "off",
+      textLimit: 4000,
+      useAccessGroups: false,
       nativeEnabled: false,
+      nativeSkillsEnabled: false,
+      nativeDisabledExplicit: false,
+      resolveGroupPolicy: () =>
+        ({
+          allowlistEnabled: false,
+          allowed: true,
+        }) as ChannelGroupPolicy,
+      resolveTelegramGroupConfig: () => ({
+        groupConfig: undefined,
+        topicConfig: undefined,
+      }),
+      shouldSkipUpdate: () => false,
+      opts: { token: "token" },
     });
 
     expect(setMyCommands).not.toHaveBeenCalled();
@@ -40,11 +89,48 @@ describe("registerTelegramNativeCommands (plugin auth)", () => {
     matchPluginCommand.mockReturnValue({ command, args: undefined });
     executePluginCommand.mockResolvedValue({ text: "ok" });
 
-    const { handlers, bot } = createNativeCommandsHarness({
-      cfg: {} as RemoteClawConfig,
-      telegramCfg: {} as TelegramAccountConfig,
+    const handlers: Record<string, (ctx: unknown) => Promise<void>> = {};
+    const bot = {
+      api: {
+        setMyCommands: vi.fn().mockResolvedValue(undefined),
+        sendMessage: vi.fn(),
+      },
+      command: (name: string, handler: (ctx: unknown) => Promise<void>) => {
+        handlers[name] = handler;
+      },
+    } as const;
+
+    const cfg = {
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
+    } as RemoteClawConfig;
+    const telegramCfg = {} as TelegramAccountConfig;
+    const resolveGroupPolicy = () =>
+      ({
+        allowlistEnabled: false,
+        allowed: true,
+      }) as ChannelGroupPolicy;
+
+    registerTelegramNativeCommands({
+      bot: bot as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
+      cfg,
+      runtime: {} as unknown as RuntimeEnv,
+      accountId: "default",
+      telegramCfg,
       allowFrom: ["999"],
+      groupAllowFrom: [],
+      replyToMode: "off",
+      textLimit: 4000,
+      useAccessGroups: false,
       nativeEnabled: false,
+      nativeSkillsEnabled: false,
+      nativeDisabledExplicit: false,
+      resolveGroupPolicy,
+      resolveTelegramGroupConfig: () => ({
+        groupConfig: undefined,
+        topicConfig: undefined,
+      }),
+      shouldSkipUpdate: () => false,
+      opts: { token: "token" },
     });
 
     const ctx = {

@@ -1,4 +1,4 @@
-import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/routing";
+import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/routing";
 import { describe, expect, it } from "vitest";
 import {
   clearNextcloudTalkAccountFields,

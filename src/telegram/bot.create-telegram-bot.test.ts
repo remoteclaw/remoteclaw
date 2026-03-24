@@ -3,6 +3,8 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { escapeRegExp, formatEnvelopeTimestamp } from "../../test/helpers/envelope-timestamp.js";
+import type { MsgContext } from "../auto-reply/templating.js";
+import type { GetReplyOptions } from "../auto-reply/types.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { useFrozenTime, useRealTime } from "../test-utils/frozen-time.js";
 import {

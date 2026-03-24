@@ -159,8 +159,13 @@ function applyTlonSetupConfig(params: {
 }
 
 type ResolvedTlonAccount = ReturnType<typeof resolveTlonAccount>;
+type ConfiguredTlonAccount = ResolvedTlonAccount & {
+  ship: string;
+  url: string;
+  code: string;
+};
 
-function resolveOutboundContext(params: { cfg: OpenClawConfig; accountId?: string; to: string }) {
+function resolveOutboundContext(params: { cfg: RemoteClawConfig; accountId?: string; to: string }) {
   const account = resolveTlonAccount(params.cfg, params.accountId ?? undefined);
   if (!account.configured || !account.ship || !account.url || !account.code) {
     throw new Error("Tlon account not configured");
@@ -171,11 +176,12 @@ function resolveOutboundContext(params: { cfg: OpenClawConfig; accountId?: strin
     throw new Error(`Invalid Tlon target. Use ${formatTargetHint()}`);
   }
 
-  return { account, parsed };
+  return { account: account as ConfiguredTlonAccount, parsed };
 }
 
-function resolveReplyId(replyToId?: string, threadId?: string) {
-  return (replyToId ?? threadId) ? String(replyToId ?? threadId) : undefined;
+function resolveReplyId(replyToId?: string | number | null, threadId?: string | number | null) {
+  const id = replyToId ?? threadId;
+  return id != null ? String(id) : undefined;
 }
 
 async function withHttpPokeAccountApi<T>(
@@ -205,7 +211,11 @@ const tlonOutbound: ChannelOutboundAdapter = {
   textChunkLimit: 10000,
   resolveTarget: ({ to }) => resolveTlonOutboundTarget(to),
   sendText: async ({ cfg, to, text, accountId, replyToId, threadId }) => {
-    const { account, parsed } = resolveOutboundContext({ cfg, accountId, to });
+    const { account, parsed } = resolveOutboundContext({
+      cfg,
+      accountId: accountId ?? undefined,
+      to,
+    });
     return withHttpPokeAccountApi(account, async (api) => {
       const fromShip = normalizeShip(account.ship);
       if (parsed.kind === "dm") {
@@ -222,12 +232,16 @@ const tlonOutbound: ChannelOutboundAdapter = {
         hostShip: parsed.hostShip,
         channelName: parsed.channelName,
         text,
-        replyToId: resolveReplyId(replyToId, threadId),
+        replyToId: resolveReplyId(replyToId ?? undefined, threadId ?? undefined),
       });
     });
   },
   sendMedia: async ({ cfg, to, text, mediaUrl, accountId, replyToId, threadId }) => {
-    const { account, parsed } = resolveOutboundContext({ cfg, accountId, to });
+    const { account, parsed } = resolveOutboundContext({
+      cfg,
+      accountId: accountId ?? undefined,
+      to,
+    });
 
     // Configure the API client for uploads
     configureClient({
@@ -256,7 +270,7 @@ const tlonOutbound: ChannelOutboundAdapter = {
         hostShip: parsed.hostShip,
         channelName: parsed.channelName,
         story,
-        replyToId: resolveReplyId(replyToId, threadId),
+        replyToId: resolveReplyId(replyToId ?? undefined, threadId ?? undefined),
       });
     });
   },

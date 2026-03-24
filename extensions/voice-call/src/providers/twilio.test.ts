@@ -21,7 +21,7 @@ function createContext(rawBody: string, query?: WebhookContext["query"]): Webhoo
   };
 }
 
-function expectStreamingTwiml(body: string) {
+function expectStreamingTwiml(body: string | undefined) {
   expect(body).toContain(STREAM_URL);
   expect(body).toContain('<Parameter name="token" value="');
   expect(body).toContain("<Connect>");

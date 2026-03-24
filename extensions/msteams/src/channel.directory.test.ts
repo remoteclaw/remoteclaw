@@ -11,6 +11,29 @@ describe("msteams directory", () => {
     },
   };
 
+  describe("self()", () => {
+    it("returns bot identity when credentials are configured", async () => {
+      const cfg = {
+        channels: {
+          msteams: {
+            appId: "test-app-id-1234",
+            appPassword: "secret",
+            tenantId: "tenant-id-5678",
+          },
+        },
+      } as unknown as RemoteClawConfig;
+
+      const result = await msteamsPlugin.directory?.self?.({ cfg, runtime: runtimeEnv });
+      expect(result).toEqual({ kind: "user", id: "test-app-id-1234", name: "test-app-id-1234" });
+    });
+
+    it("returns null when credentials are not configured", async () => {
+      const cfg = { channels: {} } as unknown as RemoteClawConfig;
+      const result = await msteamsPlugin.directory?.self?.({ cfg, runtime: runtimeEnv });
+      expect(result).toBeNull();
+    });
+  });
+
   it("lists peers and groups from config", async () => {
     const cfg = {
       channels: {

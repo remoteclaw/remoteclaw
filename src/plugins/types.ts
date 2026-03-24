@@ -3,6 +3,7 @@ import type { Command } from "commander";
 import type { AnyAgentTool } from "../agents/tools/common.js";
 import type { AuthProfileCredential } from "../auth/types.js";
 import type { ReplyPayload } from "../auto-reply/types.js";
+import type { ChannelDock } from "../channels/dock.js";
 import type { ChannelId, ChannelPlugin } from "../channels/plugins/types.js";
 import type { createVpsAwareOAuthHandlers } from "../commands/oauth-flow.js";
 import type { RemoteClawConfig } from "../config/config.js";
@@ -244,6 +245,7 @@ export type RemoteClawPluginService = {
 
 export type RemoteClawPluginChannelRegistration = {
   plugin: ChannelPlugin;
+  dock?: ChannelDock;
 };
 
 export type RemoteClawPluginDefinition = {

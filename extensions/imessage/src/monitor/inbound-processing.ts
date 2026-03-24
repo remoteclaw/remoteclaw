@@ -17,7 +17,7 @@ import {
 } from "../../../../src/auto-reply/reply/mentions.js";
 import { resolveDualTextControlCommandGate } from "../../../../src/channels/command-gating.js";
 import { logInboundDrop } from "../../../../src/channels/logging.js";
-import type { OpenClawConfig } from "../../../../src/config/config.js";
+import type { RemoteClawConfig } from "../../../../src/config/config.js";
 import {
   resolveChannelGroupPolicy,
   resolveChannelGroupRequireMention,
@@ -92,7 +92,7 @@ export type IMessageInboundDecision =
   | IMessageInboundDispatchDecision;
 
 export function resolveIMessageInboundDecision(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId: string;
   message: IMessagePayload;
   opts?: Pick<MonitorIMessageOpts, "requireMention">;
@@ -377,7 +377,7 @@ export function resolveIMessageInboundDecision(params: {
 }
 
 export function buildIMessageInboundContext(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   decision: IMessageInboundDispatchDecision;
   message: IMessagePayload;
   envelopeOptions?: EnvelopeFormatOptions;

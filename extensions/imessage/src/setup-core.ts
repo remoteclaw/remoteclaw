@@ -11,7 +11,7 @@ import {
 } from "../../../src/channels/plugins/setup-helpers.js";
 import { type ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
 import { formatDocsLink } from "../../../src/terminal/links.js";
 import type { WizardPrompter } from "../../../src/wizard/prompts.js";
@@ -68,10 +68,10 @@ function buildIMessageSetupPatch(input: {
 }
 
 async function promptIMessageAllowFrom(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   prompter: WizardPrompter;
   accountId?: string;
-}): Promise<OpenClawConfig> {
+}): Promise<RemoteClawConfig> {
   return promptParsedAllowFromForScopedChannel({
     cfg: params.cfg,
     channel,
@@ -92,21 +92,21 @@ async function promptIMessageAllowFrom(params: {
     message: "iMessage allowFrom (handle or chat_id)",
     placeholder: "+15555550123, user@example.com, chat_id:123",
     parseEntries: parseIMessageAllowFromEntries,
-    getExistingAllowFrom: ({ cfg, accountId }) =>
+    getExistingAllowFrom: ({ cfg, accountId }: any) =>
       resolveIMessageAccount({ cfg, accountId }).config.allowFrom ?? [],
   });
 }
 
 export const imessageSetupAdapter: ChannelSetupAdapter = {
-  resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
-  applyAccountName: ({ cfg, accountId, name }) =>
+  resolveAccountId: ({ accountId }: any) => normalizeAccountId(accountId),
+  applyAccountName: ({ cfg, accountId, name }: any) =>
     applyAccountNameToChannelSection({
       cfg,
       channelKey: channel,
       accountId,
       name,
     }),
-  applyAccountConfig: ({ cfg, accountId, input }) => {
+  applyAccountConfig: ({ cfg, accountId, input }: any) => {
     const namedConfig = applyAccountNameToChannelSection({
       cfg,
       channelKey: channel,
@@ -162,8 +162,8 @@ export function createIMessageSetupWizardProxy(
     channel,
     policyKey: "channels.imessage.dmPolicy",
     allowFromKey: "channels.imessage.allowFrom",
-    getCurrent: (cfg: OpenClawConfig) => cfg.channels?.imessage?.dmPolicy ?? "pairing",
-    setPolicy: (cfg: OpenClawConfig, policy) =>
+    getCurrent: (cfg: RemoteClawConfig) => cfg.channels?.imessage?.dmPolicy ?? "pairing",
+    setPolicy: (cfg: RemoteClawConfig, policy) =>
       setChannelDmPolicyWithAllowFrom({
         cfg,
         channel,
@@ -181,7 +181,7 @@ export function createIMessageSetupWizardProxy(
       unconfiguredHint: "imsg missing",
       configuredScore: 1,
       unconfiguredScore: 0,
-      resolveConfigured: ({ cfg }) =>
+      resolveConfigured: ({ cfg }: any) =>
         listIMessageAccountIds(cfg).some((accountId) => {
           const account = resolveIMessageAccount({ cfg, accountId });
           return Boolean(
@@ -192,11 +192,11 @@ export function createIMessageSetupWizardProxy(
             account.config.region,
           );
         }),
-      resolveStatusLines: async (params) =>
+      resolveStatusLines: async (params: any) =>
         (await loadWizard()).imessageSetupWizard.status.resolveStatusLines?.(params) ?? [],
-      resolveSelectionHint: async (params) =>
+      resolveSelectionHint: async (params: any) =>
         await (await loadWizard()).imessageSetupWizard.status.resolveSelectionHint?.(params),
-      resolveQuickstartScore: async (params) =>
+      resolveQuickstartScore: async (params: any) =>
         await (await loadWizard()).imessageSetupWizard.status.resolveQuickstartScore?.(params),
     },
     credentials: [],
@@ -204,13 +204,13 @@ export function createIMessageSetupWizardProxy(
       {
         inputKey: "cliPath",
         message: "imsg CLI path",
-        initialValue: ({ cfg, accountId }) =>
+        initialValue: ({ cfg, accountId }: any) =>
           resolveIMessageAccount({ cfg, accountId }).config.cliPath ?? "imsg",
-        currentValue: ({ cfg, accountId }) =>
+        currentValue: ({ cfg, accountId }: any) =>
           resolveIMessageAccount({ cfg, accountId }).config.cliPath ?? "imsg",
-        shouldPrompt: async (params) => {
+        shouldPrompt: async (params: any) => {
           const input = (await loadWizard()).imessageSetupWizard.textInputs?.find(
-            (entry) => entry.inputKey === "cliPath",
+            (entry: any) => entry.inputKey === "cliPath",
           );
           return (await input?.shouldPrompt?.(params)) ?? false;
         },
@@ -231,6 +231,6 @@ export function createIMessageSetupWizardProxy(
       ],
     },
     dmPolicy: imessageDmPolicy,
-    disable: (cfg: OpenClawConfig) => setOnboardingChannelEnabled(cfg, channel, false),
+    disable: (cfg: RemoteClawConfig) => setOnboardingChannelEnabled(cfg, channel, false),
   } satisfies ChannelSetupWizard;
 }

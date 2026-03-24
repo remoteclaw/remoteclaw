@@ -1,7 +1,7 @@
 import {
   buildAccountScopedDmSecurityPolicy,
   collectAllowlistProviderRestrictSendersWarnings,
-} from "openclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk/compat";
 import {
   buildChannelConfigSchema,
   DEFAULT_ACCOUNT_ID,
@@ -13,7 +13,7 @@ import {
   resolveIMessageConfigDefaultTo,
   setAccountEnabledInConfigSection,
   type ChannelPlugin,
-} from "openclaw/plugin-sdk/imessage";
+} from "remoteclaw/plugin-sdk/imessage";
 import {
   listIMessageAccountIds,
   resolveDefaultIMessageAccountId,

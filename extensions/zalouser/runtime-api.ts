@@ -1,1 +1,1 @@
-export * from "openclaw/plugin-sdk/zalouser";
+export * from "remoteclaw/plugin-sdk/zalouser";

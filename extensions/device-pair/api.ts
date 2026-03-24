@@ -1,1 +1,1 @@
-export * from "openclaw/plugin-sdk/device-pair";
+export * from "remoteclaw/plugin-sdk/device-pair";

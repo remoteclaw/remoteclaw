@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../../../src/config/config.js";
+import type { RemoteClawConfig } from "../../../../src/config/config.js";
 import type { RuntimeEnv } from "../../../../src/runtime.js";
 
 export type IMessageAttachment = {
@@ -31,7 +31,7 @@ export type MonitorIMessageOpts = {
   cliPath?: string;
   dbPath?: string;
   accountId?: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   allowFrom?: Array<string | number>;
   groupAllowFrom?: Array<string | number>;
   includeAttachments?: boolean;

@@ -14,7 +14,7 @@ import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.ad
 import { formatCliCommand } from "../../../src/cli/command-format.js";
 import { detectBinary } from "../../../src/commands/onboard-helpers.js";
 import { installSignalCli } from "../../../src/commands/signal-install.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
 import { formatDocsLink } from "../../../src/terminal/links.js";
 import { normalizeE164 } from "../../../src/utils.js";
@@ -89,10 +89,10 @@ function buildSignalSetupPatch(input: {
 }
 
 async function promptSignalAllowFrom(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   prompter: WizardPrompter;
   accountId?: string;
-}): Promise<OpenClawConfig> {
+}): Promise<RemoteClawConfig> {
   return promptParsedAllowFromForScopedChannel({
     cfg: params.cfg,
     channel,
@@ -111,7 +111,7 @@ async function promptSignalAllowFrom(params: {
     message: "Signal allowFrom (E.164 or uuid)",
     placeholder: "+15555550123, uuid:123e4567-e89b-12d3-a456-426614174000",
     parseEntries: parseSignalAllowFromEntries,
-    getExistingAllowFrom: ({ cfg, accountId }) =>
+    getExistingAllowFrom: ({ cfg, accountId }: any) =>
       resolveSignalAccount({ cfg, accountId }).config.allowFrom ?? [],
   });
 }
@@ -121,7 +121,7 @@ const signalDmPolicy: ChannelOnboardingDmPolicy = {
   channel,
   policyKey: "channels.signal.dmPolicy",
   allowFromKey: "channels.signal.allowFrom",
-  getCurrent: (cfg) => cfg.channels?.signal?.dmPolicy ?? "pairing",
+  getCurrent: (cfg: any) => cfg.channels?.signal?.dmPolicy ?? "pairing",
   setPolicy: (cfg, policy) =>
     setChannelDmPolicyWithAllowFrom({
       cfg,
@@ -132,15 +132,15 @@ const signalDmPolicy: ChannelOnboardingDmPolicy = {
 };
 
 export const signalSetupAdapter: ChannelSetupAdapter = {
-  resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
-  applyAccountName: ({ cfg, accountId, name }) =>
+  resolveAccountId: ({ accountId }: any) => normalizeAccountId(accountId),
+  applyAccountName: ({ cfg, accountId, name }: any) =>
     applyAccountNameToChannelSection({
       cfg,
       channelKey: channel,
       accountId,
       name,
     }),
-  validateInput: ({ input }) => {
+  validateInput: ({ input }: any) => {
     if (
       !input.signalNumber &&
       !input.httpUrl &&
@@ -152,7 +152,7 @@ export const signalSetupAdapter: ChannelSetupAdapter = {
     }
     return null;
   },
-  applyAccountConfig: ({ cfg, accountId, input }) => {
+  applyAccountConfig: ({ cfg, accountId, input }: any) => {
     const namedConfig = applyAccountNameToChannelSection({
       cfg,
       channelKey: channel,
@@ -209,11 +209,11 @@ export const signalSetupWizard: ChannelSetupWizard = {
     unconfiguredHint: "signal-cli missing",
     configuredScore: 1,
     unconfiguredScore: 0,
-    resolveConfigured: ({ cfg }) =>
+    resolveConfigured: ({ cfg }: any) =>
       listSignalAccountIds(cfg).some(
-        (accountId) => resolveSignalAccount({ cfg, accountId }).configured,
+        (accountId: any) => resolveSignalAccount({ cfg, accountId }).configured,
       ),
-    resolveStatusLines: async ({ cfg, configured }) => {
+    resolveStatusLines: async ({ cfg, configured }: any) => {
       const signalCliPath = cfg.channels?.signal?.cliPath ?? "signal-cli";
       const signalCliDetected = await detectBinary(signalCliPath);
       return [
@@ -221,16 +221,16 @@ export const signalSetupWizard: ChannelSetupWizard = {
         `signal-cli: ${signalCliDetected ? "found" : "missing"} (${signalCliPath})`,
       ];
     },
-    resolveSelectionHint: async ({ cfg }) => {
+    resolveSelectionHint: async ({ cfg }: any) => {
       const signalCliPath = cfg.channels?.signal?.cliPath ?? "signal-cli";
       return (await detectBinary(signalCliPath)) ? "signal-cli found" : "signal-cli missing";
     },
-    resolveQuickstartScore: async ({ cfg }) => {
+    resolveQuickstartScore: async ({ cfg }: any) => {
       const signalCliPath = cfg.channels?.signal?.cliPath ?? "signal-cli";
       return (await detectBinary(signalCliPath)) ? 1 : 0;
     },
   },
-  prepare: async ({ cfg, accountId, credentialValues, runtime, prompter, options }) => {
+  prepare: async ({ cfg, accountId, credentialValues, runtime, prompter, options }: any) => {
     if (!options?.allowSignalInstall) {
       return;
     }
@@ -270,15 +270,16 @@ export const signalSetupWizard: ChannelSetupWizard = {
     {
       inputKey: "cliPath",
       message: "signal-cli path",
-      currentValue: ({ cfg, accountId, credentialValues }) =>
+      currentValue: ({ cfg, accountId, credentialValues }: any) =>
         (typeof credentialValues.cliPath === "string" ? credentialValues.cliPath : undefined) ??
         resolveSignalAccount({ cfg, accountId }).config.cliPath ??
         "signal-cli",
-      initialValue: ({ cfg, accountId, credentialValues }) =>
+      initialValue: ({ cfg, accountId, credentialValues }: any) =>
         (typeof credentialValues.cliPath === "string" ? credentialValues.cliPath : undefined) ??
         resolveSignalAccount({ cfg, accountId }).config.cliPath ??
         "signal-cli",
-      shouldPrompt: async ({ currentValue }) => !(await detectBinary(currentValue ?? "signal-cli")),
+      shouldPrompt: async ({ currentValue }: any) =>
+        !(await detectBinary(currentValue ?? "signal-cli")),
       confirmCurrentValue: false,
       applyCurrentValue: true,
       helpTitle: "Signal",
@@ -289,13 +290,13 @@ export const signalSetupWizard: ChannelSetupWizard = {
     {
       inputKey: "signalNumber",
       message: "Signal bot number (E.164)",
-      currentValue: ({ cfg, accountId }) =>
+      currentValue: ({ cfg, accountId }: any) =>
         normalizeSignalAccountInput(resolveSignalAccount({ cfg, accountId }).config.account) ??
         undefined,
-      keepPrompt: (value) => `Signal account set (${value}). Keep it?`,
-      validate: ({ value }) =>
+      keepPrompt: (value: any) => `Signal account set (${value}). Keep it?`,
+      validate: ({ value }: any) =>
         normalizeSignalAccountInput(value) ? undefined : INVALID_SIGNAL_ACCOUNT_ERROR,
-      normalizeValue: ({ value }) => normalizeSignalAccountInput(value) ?? value,
+      normalizeValue: ({ value }: any) => normalizeSignalAccountInput(value) ?? value,
     },
   ],
   completionNote: {
@@ -308,5 +309,5 @@ export const signalSetupWizard: ChannelSetupWizard = {
     ],
   },
   dmPolicy: signalDmPolicy,
-  disable: (cfg) => setOnboardingChannelEnabled(cfg, channel, false),
+  disable: (cfg: any) => setOnboardingChannelEnabled(cfg, channel, false),
 };

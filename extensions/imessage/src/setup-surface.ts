@@ -7,7 +7,7 @@ import {
 } from "../../../src/channels/plugins/onboarding/helpers.js";
 import { type ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import { detectBinary } from "../../../src/commands/onboard-helpers.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
 import { formatDocsLink } from "../../../src/terminal/links.js";
 import type { WizardPrompter } from "../../../src/wizard/prompts.js";
@@ -21,10 +21,10 @@ import { imessageSetupAdapter, parseIMessageAllowFromEntries } from "./setup-cor
 const channel = "imessage" as const;
 
 async function promptIMessageAllowFrom(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   prompter: WizardPrompter;
   accountId?: string;
-}): Promise<OpenClawConfig> {
+}): Promise<RemoteClawConfig> {
   return promptParsedAllowFromForScopedChannel({
     cfg: params.cfg,
     channel,
@@ -45,7 +45,7 @@ async function promptIMessageAllowFrom(params: {
     message: "iMessage allowFrom (handle or chat_id)",
     placeholder: "+15555550123, user@example.com, chat_id:123",
     parseEntries: parseIMessageAllowFromEntries,
-    getExistingAllowFrom: ({ cfg, accountId }) =>
+    getExistingAllowFrom: ({ cfg, accountId }: any) =>
       resolveIMessageAccount({ cfg, accountId }).config.allowFrom ?? [],
   });
 }
@@ -55,7 +55,7 @@ const imessageDmPolicy: ChannelOnboardingDmPolicy = {
   channel,
   policyKey: "channels.imessage.dmPolicy",
   allowFromKey: "channels.imessage.allowFrom",
-  getCurrent: (cfg) => cfg.channels?.imessage?.dmPolicy ?? "pairing",
+  getCurrent: (cfg: any) => cfg.channels?.imessage?.dmPolicy ?? "pairing",
   setPolicy: (cfg, policy) =>
     setChannelDmPolicyWithAllowFrom({
       cfg,
@@ -74,7 +74,7 @@ export const imessageSetupWizard: ChannelSetupWizard = {
     unconfiguredHint: "imsg missing",
     configuredScore: 1,
     unconfiguredScore: 0,
-    resolveConfigured: ({ cfg }) =>
+    resolveConfigured: ({ cfg }: any) =>
       listIMessageAccountIds(cfg).some((accountId) => {
         const account = resolveIMessageAccount({ cfg, accountId });
         return Boolean(
@@ -85,7 +85,7 @@ export const imessageSetupWizard: ChannelSetupWizard = {
           account.config.region,
         );
       }),
-    resolveStatusLines: async ({ cfg, configured }) => {
+    resolveStatusLines: async ({ cfg, configured }: any) => {
       const cliPath = cfg.channels?.imessage?.cliPath ?? "imsg";
       const cliDetected = await detectBinary(cliPath);
       return [
@@ -93,11 +93,11 @@ export const imessageSetupWizard: ChannelSetupWizard = {
         `imsg: ${cliDetected ? "found" : "missing"} (${cliPath})`,
       ];
     },
-    resolveSelectionHint: async ({ cfg }) => {
+    resolveSelectionHint: async ({ cfg }: any) => {
       const cliPath = cfg.channels?.imessage?.cliPath ?? "imsg";
       return (await detectBinary(cliPath)) ? "imsg found" : "imsg missing";
     },
-    resolveQuickstartScore: async ({ cfg }) => {
+    resolveQuickstartScore: async ({ cfg }: any) => {
       const cliPath = cfg.channels?.imessage?.cliPath ?? "imsg";
       return (await detectBinary(cliPath)) ? 1 : 0;
     },
@@ -107,11 +107,11 @@ export const imessageSetupWizard: ChannelSetupWizard = {
     {
       inputKey: "cliPath",
       message: "imsg CLI path",
-      initialValue: ({ cfg, accountId }) =>
+      initialValue: ({ cfg, accountId }: any) =>
         resolveIMessageAccount({ cfg, accountId }).config.cliPath ?? "imsg",
-      currentValue: ({ cfg, accountId }) =>
+      currentValue: ({ cfg, accountId }: any) =>
         resolveIMessageAccount({ cfg, accountId }).config.cliPath ?? "imsg",
-      shouldPrompt: async ({ currentValue }) => !(await detectBinary(currentValue ?? "imsg")),
+      shouldPrompt: async ({ currentValue }: any) => !(await detectBinary(currentValue ?? "imsg")),
       confirmCurrentValue: false,
       applyCurrentValue: true,
       helpTitle: "iMessage",
@@ -129,7 +129,7 @@ export const imessageSetupWizard: ChannelSetupWizard = {
     ],
   },
   dmPolicy: imessageDmPolicy,
-  disable: (cfg) => setOnboardingChannelEnabled(cfg, channel, false),
+  disable: (cfg: any) => setOnboardingChannelEnabled(cfg, channel, false),
 };
 
 export { imessageSetupAdapter, parseIMessageAllowFromEntries };

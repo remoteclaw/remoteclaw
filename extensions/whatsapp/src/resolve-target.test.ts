@@ -1,4 +1,4 @@
-import { installCommonResolveTargetErrorCases } from "openclaw/plugin-sdk/testing";
+import { installCommonResolveTargetErrorCases } from "remoteclaw/plugin-sdk/testing";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("remoteclaw/plugin-sdk/whatsapp", async () => {

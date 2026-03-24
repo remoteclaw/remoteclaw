@@ -57,7 +57,7 @@ export type {
 export type { ChannelPlugin } from "../../src/channels/plugins/types.plugin.js";
 export { getChatChannelMeta } from "../../src/channels/registry.js";
 export { createReplyPrefixOptions } from "../../src/channels/reply-prefix.js";
-export type { OpenClawConfig } from "../../src/config/config.js";
+export type { RemoteClawConfig } from "../../src/config/config.js";
 export { isDangerousNameMatchingEnabled } from "../../src/config/dangerous-name-matching.js";
 export {
   GROUP_POLICY_BLOCKED_LABEL,
@@ -76,7 +76,7 @@ export { fetchWithSsrFGuard } from "../../src/infra/net/fetch-guard.js";
 export { missingTargetError } from "../../src/infra/outbound/target-errors.js";
 export { emptyPluginConfigSchema } from "../../src/plugins/config-schema.js";
 export type { PluginRuntime } from "../../src/plugins/runtime/types.js";
-export type { OpenClawPluginApi } from "../../src/plugins/types.js";
+export type { RemoteClawPluginApi } from "../../src/plugins/types.js";
 export { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../src/routing/session-key.js";
 export { resolveDmGroupAccessWithLists } from "../../src/security/dm-policy-shared.js";
 export { formatDocsLink } from "../../src/terminal/links.js";

@@ -94,24 +94,28 @@ async function fetchTalkConfig(
   return rpcReq<TalkConfigPayload>(ws, "talk.config", params ?? {});
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function expectElevenLabsTalkConfig(
-  talk: any,
+  rawTalk: unknown,
   expected: {
     voiceId?: string;
     apiKey?: string | SecretRef;
     silenceTimeoutMs?: number;
   },
 ) {
+  const talk = rawTalk as Record<string, unknown> | undefined;
+  const providers = talk?.providers as Record<string, Record<string, unknown>> | undefined;
+  const resolved = talk?.resolved as Record<string, unknown> | undefined;
+  const resolvedConfig = resolved?.config as Record<string, unknown> | undefined;
+
   expect(talk?.provider).toBe("elevenlabs");
-  expect(talk?.providers?.elevenlabs?.voiceId).toBe(expected.voiceId);
-  expect(talk?.resolved?.provider).toBe("elevenlabs");
-  expect(talk?.resolved?.config?.voiceId).toBe(expected.voiceId);
+  expect(providers?.elevenlabs?.voiceId).toBe(expected.voiceId);
+  expect(resolved?.provider).toBe("elevenlabs");
+  expect(resolvedConfig?.voiceId).toBe(expected.voiceId);
   expect(talk?.voiceId).toBe(expected.voiceId);
 
   if ("apiKey" in expected) {
-    expect(talk?.providers?.elevenlabs?.apiKey).toEqual(expected.apiKey);
-    expect(talk?.resolved?.config?.apiKey).toEqual(expected.apiKey);
+    expect(providers?.elevenlabs?.apiKey).toEqual(expected.apiKey);
+    expect(resolvedConfig?.apiKey).toEqual(expected.apiKey);
     expect(talk?.apiKey).toEqual(expected.apiKey);
   }
   if ("silenceTimeoutMs" in expected) {

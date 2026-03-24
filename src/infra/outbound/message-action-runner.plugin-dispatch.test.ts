@@ -315,7 +315,9 @@ describe("runMessageAction plugin dispatch", () => {
         buttons: [{ label: "A", customId: "a" }],
       };
       const result = await runMessageAction({
-        cfg: {} as RemoteClawConfig,
+        cfg: {
+          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
+        } as RemoteClawConfig,
         action: "send",
         params: {
           channel: "discord",
@@ -334,7 +336,9 @@ describe("runMessageAction plugin dispatch", () => {
     it("throws on invalid components JSON strings", async () => {
       await expect(
         runMessageAction({
-          cfg: {} as RemoteClawConfig,
+          cfg: {
+            agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
+          } as RemoteClawConfig,
           action: "send",
           params: {
             channel: "discord",
@@ -394,7 +398,9 @@ describe("runMessageAction plugin dispatch", () => {
       {
         name: "uses defaultAccountId override",
         args: {
-          cfg: {} as RemoteClawConfig,
+          cfg: {
+            agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
+          } as RemoteClawConfig,
           defaultAccountId: "ops",
         },
         expectedAccountId: "ops",
@@ -403,6 +409,7 @@ describe("runMessageAction plugin dispatch", () => {
         name: "falls back to agent binding account",
         args: {
           cfg: {
+            agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
             bindings: [
               { agentId: "agent-b", match: { channel: "discord", accountId: "account-b" } },
             ],

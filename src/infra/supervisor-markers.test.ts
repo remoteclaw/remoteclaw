@@ -7,9 +7,9 @@ describe("SUPERVISOR_HINT_ENV_VARS", () => {
       expect.arrayContaining([
         "LAUNCH_JOB_LABEL",
         "INVOCATION_ID",
-        "OPENCLAW_WINDOWS_TASK_NAME",
-        "OPENCLAW_SERVICE_MARKER",
-        "OPENCLAW_SERVICE_KIND",
+        "REMOTECLAW_WINDOWS_TASK_NAME",
+        "REMOTECLAW_SERVICE_MARKER",
+        "REMOTECLAW_SERVICE_KIND",
       ]),
     );
   });
@@ -17,9 +17,9 @@ describe("SUPERVISOR_HINT_ENV_VARS", () => {
 
 describe("detectRespawnSupervisor", () => {
   it("detects launchd and systemd only from non-blank platform-specific hints", () => {
-    expect(detectRespawnSupervisor({ LAUNCH_JOB_LABEL: " ai.openclaw.gateway " }, "darwin")).toBe(
-      "launchd",
-    );
+    expect(
+      detectRespawnSupervisor({ LAUNCH_JOB_LABEL: " org.remoteclaw.gateway " }, "darwin"),
+    ).toBe("launchd");
     expect(detectRespawnSupervisor({ LAUNCH_JOB_LABEL: "   " }, "darwin")).toBeNull();
 
     expect(detectRespawnSupervisor({ INVOCATION_ID: "abc123" }, "linux")).toBe("systemd");
@@ -28,13 +28,13 @@ describe("detectRespawnSupervisor", () => {
 
   it("detects scheduled-task supervision on Windows from either hint family", () => {
     expect(
-      detectRespawnSupervisor({ OPENCLAW_WINDOWS_TASK_NAME: "OpenClaw Gateway" }, "win32"),
+      detectRespawnSupervisor({ REMOTECLAW_WINDOWS_TASK_NAME: "RemoteClaw Gateway" }, "win32"),
     ).toBe("schtasks");
     expect(
       detectRespawnSupervisor(
         {
-          OPENCLAW_SERVICE_MARKER: "openclaw",
-          OPENCLAW_SERVICE_KIND: "gateway",
+          REMOTECLAW_SERVICE_MARKER: "remoteclaw",
+          REMOTECLAW_SERVICE_KIND: "gateway",
         },
         "win32",
       ),
@@ -42,8 +42,8 @@ describe("detectRespawnSupervisor", () => {
     expect(
       detectRespawnSupervisor(
         {
-          OPENCLAW_SERVICE_MARKER: "openclaw",
-          OPENCLAW_SERVICE_KIND: "worker",
+          REMOTECLAW_SERVICE_MARKER: "remoteclaw",
+          REMOTECLAW_SERVICE_KIND: "worker",
         },
         "win32",
       ),
@@ -54,14 +54,14 @@ describe("detectRespawnSupervisor", () => {
     expect(
       detectRespawnSupervisor(
         {
-          OPENCLAW_SERVICE_MARKER: "openclaw",
-          OPENCLAW_SERVICE_KIND: "gateway",
+          REMOTECLAW_SERVICE_MARKER: "remoteclaw",
+          REMOTECLAW_SERVICE_KIND: "gateway",
         },
         "linux",
       ),
     ).toBeNull();
     expect(
-      detectRespawnSupervisor({ LAUNCH_JOB_LABEL: "ai.openclaw.gateway" }, "freebsd"),
+      detectRespawnSupervisor({ LAUNCH_JOB_LABEL: "org.remoteclaw.gateway" }, "freebsd"),
     ).toBeNull();
   });
 });

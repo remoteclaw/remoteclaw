@@ -105,7 +105,7 @@ describe("wide-area DNS-SD zone rendering", () => {
 
     expect(txt).toContain(`$ORIGIN openclaw.internal.`);
     expect(txt).toContain(`studio-london IN A 100.123.224.76`);
-    expect(txt).toContain(`studio-london._openclaw-gw._tcp IN TXT`);
+    expect(txt).toContain(`studio-london._remoteclaw-gw._tcp IN TXT`);
     expect(txt).toContain(`displayName=Mac Studio (OpenClaw)`);
     expect(txt).toContain(`gatewayTls=1`);
     expect(txt).toContain(`gatewayTlsSha256=abc123`);

@@ -409,7 +409,12 @@ describe("runMessageAction plugin dispatch", () => {
         name: "falls back to agent binding account",
         args: {
           cfg: {
-            agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
+            agents: {
+              list: [
+                { id: "main", workspace: "/tmp/test-workspace" },
+                { id: "agent-b", workspace: "/tmp/test-workspace-b" },
+              ],
+            },
             bindings: [
               { agentId: "agent-b", match: { channel: "discord", accountId: "account-b" } },
             ],

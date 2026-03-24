@@ -18,14 +18,6 @@ export function resolveBundledInstallPlanForCatalogEntry(params: {
     return null;
   }
 
-  const bundledById = params.findBundledSource({
-    kind: "pluginId",
-    value: pluginId,
-  });
-  if (bundledById?.pluginId === pluginId) {
-    return { bundledSource: bundledById };
-  }
-
   const bundledBySpec = params.findBundledSource({
     kind: "npmSpec",
     value: npmSpec,
@@ -34,7 +26,18 @@ export function resolveBundledInstallPlanForCatalogEntry(params: {
     return { bundledSource: bundledBySpec };
   }
 
-  return null;
+  const bundledById = params.findBundledSource({
+    kind: "pluginId",
+    value: pluginId,
+  });
+  if (bundledById?.pluginId !== pluginId) {
+    return null;
+  }
+  if (bundledById.npmSpec && bundledById.npmSpec !== npmSpec) {
+    return null;
+  }
+
+  return { bundledSource: bundledById };
 }
 
 function isBareNpmPackageName(spec: string): boolean {

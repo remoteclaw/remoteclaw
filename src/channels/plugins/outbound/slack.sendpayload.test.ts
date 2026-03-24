@@ -89,4 +89,7 @@ describe("slackOutbound sendPayload", () => {
     expect(ctx.deps.sendSlack).toHaveBeenCalledWith("C12345", "a".repeat(5000), expect.any(Object));
     expect(result).toMatchObject({ channel: "slack" });
   });
+
+  // Note: interactive blocks harness tests removed — fork does not have
+  // the blocks-aware sendPayload path (upstream feature not yet ported).
 });

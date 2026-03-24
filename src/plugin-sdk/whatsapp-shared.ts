@@ -3,7 +3,7 @@ export type { DmPolicy, GroupPolicy, WhatsAppAccountConfig } from "../config/typ
 export {
   createWhatsAppOutboundBase,
   resolveWhatsAppGroupIntroHint,
-  resolveWhatsAppMentionStripRegexes,
+  resolveWhatsAppMentionStripPatterns,
 } from "../channels/plugins/whatsapp-shared.js";
 export { resolveWhatsAppHeartbeatRecipients } from "../channels/plugins/whatsapp-heartbeat.js";
 export { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../whatsapp/normalize.js";

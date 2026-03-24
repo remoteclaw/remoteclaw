@@ -17,7 +17,7 @@ vi.mock("../../pairing/pairing-store.js", () => ({
   readChannelAllowFromStoreSync: vi.fn(() => []),
 }));
 
-vi.mock("../../../extensions/whatsapp/src/accounts.js", () => ({
+vi.mock("../../web/accounts.js", () => ({
   resolveWhatsAppAccount: vi.fn(() => ({ allowFrom: [] })),
 }));
 

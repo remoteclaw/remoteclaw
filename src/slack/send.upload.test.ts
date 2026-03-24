@@ -22,7 +22,7 @@ vi.mock("../infra/net/fetch-guard.js", () => ({
   }),
 }));
 
-vi.mock("../../extensions/whatsapp/src/media.js", () => ({
+vi.mock("../web/media.js", () => ({
   loadWebMedia: vi.fn(async () => ({
     buffer: Buffer.from("fake-image"),
     contentType: "image/png",

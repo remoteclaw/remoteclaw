@@ -28,6 +28,7 @@ import { fetchAllChannels, fetchInitData } from "./discovery.js";
 import { cacheMessage, getChannelHistory, fetchThreadHistory } from "./history.js";
 import { downloadMessageImages } from "./media.js";
 import { createProcessedMessageTracker } from "./processed-messages.js";
+import { applyTlonSettingsOverrides } from "./settings-helpers.js";
 import {
   extractMessageText,
   extractCites,

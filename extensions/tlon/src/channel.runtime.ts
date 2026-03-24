@@ -5,7 +5,6 @@ import type {
   RemoteClawConfig,
 } from "remoteclaw/plugin-sdk";
 import { monitorTlonProvider } from "./monitor/index.js";
-import { tlonSetupWizard } from "./setup-surface.js";
 import { formatTargetHint, normalizeShip, parseTlonTarget } from "./targets.js";
 import { configureClient } from "./tlon-api.js";
 import { resolveTlonAccount } from "./types.js";
@@ -230,7 +229,7 @@ export async function probeTlonAccount(account: ConfiguredTlonAccount) {
 }
 
 export async function startTlonGatewayAccount(
-  ctx: Parameters<NonNullable<ChannelPlugin["gateway"]>["startAccount"]>[0],
+  ctx: Parameters<NonNullable<NonNullable<ChannelPlugin["gateway"]>["startAccount"]>>[0],
 ) {
   const account = ctx.account;
   ctx.setStatus({
@@ -245,5 +244,3 @@ export async function startTlonGatewayAccount(
     accountId: account.accountId,
   });
 }
-
-export { tlonSetupWizard };

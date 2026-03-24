@@ -31,7 +31,7 @@ const {
   clearPluginLoaderCache,
   createHookRunner,
   getGlobalHookRunner,
-  loadOpenClawPlugins,
+  loadRemoteClawPlugins,
   resetGlobalHookRunner,
 } = await importFreshPluginTestModules();
 const previousUmask = process.umask(0o022);
@@ -125,7 +125,7 @@ function loadBundledMemoryPluginRegistry(options?: {
 }) {
   if (!options && cachedBundledMemoryDir) {
     process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = cachedBundledMemoryDir;
-    return loadOpenClawPlugins({
+    return loadRemoteClawPlugins({
       cache: false,
       workspaceDir: cachedBundledMemoryDir,
       config: {
@@ -175,7 +175,7 @@ function loadBundledMemoryPluginRegistry(options?: {
   }
   process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
 
-  return loadOpenClawPlugins({
+  return loadRemoteClawPlugins({
     cache: false,
     workspaceDir: bundledDir,
     config: {
@@ -201,7 +201,7 @@ function setupBundledTelegramPlugin() {
   process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = cachedBundledTelegramDir;
 }
 
-function expectTelegramLoaded(registry: ReturnType<typeof loadOpenClawPlugins>) {
+function expectTelegramLoaded(registry: ReturnType<typeof loadRemoteClawPlugins>) {
   const telegram = registry.plugins.find((entry) => entry.id === "telegram");
   expect(telegram?.status).toBe("loaded");
   expect(registry.channels.some((entry) => entry.plugin.id === "telegram")).toBe(true);
@@ -215,10 +215,10 @@ function loadRegistryFromSinglePlugin(params: {
   plugin: TempPlugin;
   pluginConfig?: Record<string, unknown>;
   includeWorkspaceDir?: boolean;
-  options?: Omit<Parameters<typeof loadOpenClawPlugins>[0], "cache" | "workspaceDir" | "config">;
+  options?: Omit<Parameters<typeof loadRemoteClawPlugins>[0], "cache" | "workspaceDir" | "config">;
 }) {
   const pluginConfig = params.pluginConfig ?? {};
-  return loadOpenClawPlugins({
+  return loadRemoteClawPlugins({
     cache: false,
     ...(params.includeWorkspaceDir === false ? {} : { workspaceDir: params.plugin.dir }),
     ...params.options,
@@ -306,7 +306,7 @@ afterAll(() => {
   }
 });
 
-describe("loadOpenClawPlugins", () => {
+describe("loadRemoteClawPlugins", () => {
   it("disables bundled plugins by default", () => {
     const bundledDir = makeTempDir();
     writePlugin({
@@ -317,7 +317,7 @@ describe("loadOpenClawPlugins", () => {
     });
     process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {
@@ -333,7 +333,7 @@ describe("loadOpenClawPlugins", () => {
   it("loads bundled telegram plugin when enabled", () => {
     setupBundledTelegramPlugin();
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir: cachedBundledTelegramDir,
       config: {
@@ -352,7 +352,7 @@ describe("loadOpenClawPlugins", () => {
   it("loads bundled channel plugins when channels.<id>.enabled=true", () => {
     setupBundledTelegramPlugin();
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir: cachedBundledTelegramDir,
       config: {
@@ -373,7 +373,7 @@ describe("loadOpenClawPlugins", () => {
   it("still respects explicit disable via plugins.entries for bundled channels", () => {
     setupBundledTelegramPlugin();
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir: cachedBundledTelegramDir,
       config: {
@@ -425,7 +425,7 @@ describe("loadOpenClawPlugins", () => {
 };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir: plugin.dir,
       config: {
@@ -459,13 +459,13 @@ describe("loadOpenClawPlugins", () => {
       },
     };
 
-    const first = loadOpenClawPlugins(options);
+    const first = loadRemoteClawPlugins(options);
     expect(getGlobalHookRunner()).not.toBeNull();
 
     resetGlobalHookRunner();
     expect(getGlobalHookRunner()).toBeNull();
 
-    const second = loadOpenClawPlugins(options);
+    const second = loadRemoteClawPlugins(options);
     expect(second).toBe(first);
     expect(getGlobalHookRunner()).not.toBeNull();
 
@@ -499,14 +499,14 @@ describe("loadOpenClawPlugins", () => {
       },
     };
 
-    const first = loadOpenClawPlugins({
+    const first = loadRemoteClawPlugins({
       ...options,
       env: {
         ...process.env,
         OPENCLAW_BUNDLED_PLUGINS_DIR: bundledA,
       },
     });
-    const second = loadOpenClawPlugins({
+    const second = loadRemoteClawPlugins({
       ...options,
       env: {
         ...process.env,
@@ -555,7 +555,7 @@ describe("loadOpenClawPlugins", () => {
       },
     };
 
-    const first = loadOpenClawPlugins({
+    const first = loadRemoteClawPlugins({
       ...options,
       env: {
         ...process.env,
@@ -565,7 +565,7 @@ describe("loadOpenClawPlugins", () => {
         OPENCLAW_BUNDLED_PLUGINS_DIR: bundledDir,
       },
     });
-    const second = loadOpenClawPlugins({
+    const second = loadRemoteClawPlugins({
       ...options,
       env: {
         ...process.env,
@@ -615,7 +615,7 @@ describe("loadOpenClawPlugins", () => {
       },
     };
 
-    const first = loadOpenClawPlugins({
+    const first = loadRemoteClawPlugins({
       ...options,
       env: {
         ...process.env,
@@ -638,8 +638,8 @@ describe("loadOpenClawPlugins", () => {
         OPENCLAW_BUNDLED_PLUGINS_DIR: "/nonexistent/bundled/plugins",
       },
     };
-    const second = loadOpenClawPlugins(secondOptions);
-    const third = loadOpenClawPlugins(secondOptions);
+    const second = loadRemoteClawPlugins(secondOptions);
+    const third = loadRemoteClawPlugins(secondOptions);
 
     expect(second).not.toBe(first);
     expect(third).toBe(second);
@@ -657,7 +657,7 @@ describe("loadOpenClawPlugins", () => {
     );
 
     const loadWithStateDir = (stateDir: string) =>
-      loadOpenClawPlugins({
+      loadRemoteClawPlugins({
         env: {
           ...process.env,
           OPENCLAW_STATE_DIR: stateDir,
@@ -697,7 +697,7 @@ describe("loadOpenClawPlugins", () => {
       body: `module.exports = { id: "tilde-bundled", register() {} };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       env: {
         ...process.env,
         HOME: homeDir,
@@ -731,7 +731,7 @@ describe("loadOpenClawPlugins", () => {
       body: `module.exports = { id: "openclaw-home-demo", register() {} };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       env: {
         ...process.env,
         HOME: ignoredHome,
@@ -1049,7 +1049,7 @@ describe("loadOpenClawPlugins", () => {
 } };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {
@@ -1128,7 +1128,7 @@ describe("loadOpenClawPlugins", () => {
       body: `module.exports = { id: "config-disable", register() {} };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {
@@ -1271,7 +1271,7 @@ describe("loadOpenClawPlugins", () => {
       body: `module.exports = { id: "memory-b", kind: "memory", register() {} };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {
@@ -1333,7 +1333,7 @@ describe("loadOpenClawPlugins", () => {
     );
     process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {
@@ -1361,7 +1361,7 @@ describe("loadOpenClawPlugins", () => {
       body: `module.exports = { id: "memory-off", kind: "memory", register() {} };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {
@@ -1390,7 +1390,7 @@ describe("loadOpenClawPlugins", () => {
       body: `module.exports = { id: "shadow", register() {} };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {
@@ -1430,7 +1430,7 @@ describe("loadOpenClawPlugins", () => {
         filename: "index.cjs",
       });
 
-      const registry = loadOpenClawPlugins({
+      const registry = loadRemoteClawPlugins({
         cache: false,
         config: {
           plugins: {
@@ -1458,7 +1458,7 @@ describe("loadOpenClawPlugins", () => {
       body: `module.exports = { id: "warn-open-allow", register() {} };`,
     });
     const warnings: string[] = [];
-    loadOpenClawPlugins({
+    loadRemoteClawPlugins({
       cache: false,
       logger: createWarningLogger(warnings),
       config: {
@@ -1490,8 +1490,8 @@ describe("loadOpenClawPlugins", () => {
       },
     } as const;
 
-    loadOpenClawPlugins(options);
-    loadOpenClawPlugins(options);
+    loadRemoteClawPlugins(options);
+    loadRemoteClawPlugins(options);
 
     expect(warnings.filter((msg) => msg.includes("plugins.allow is empty"))).toHaveLength(1);
   });
@@ -1508,7 +1508,7 @@ describe("loadOpenClawPlugins", () => {
       filename: "index.cjs",
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir,
       config: {
@@ -1536,7 +1536,7 @@ describe("loadOpenClawPlugins", () => {
       filename: "index.cjs",
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir,
       config: {
@@ -1572,7 +1572,7 @@ describe("loadOpenClawPlugins", () => {
       filename: "index.cjs",
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir,
       config: {
@@ -1604,7 +1604,7 @@ describe("loadOpenClawPlugins", () => {
       });
 
       const warnings: string[] = [];
-      const registry = loadOpenClawPlugins({
+      const registry = loadRemoteClawPlugins({
         cache: false,
         logger: createWarningLogger(warnings),
         config: {
@@ -1640,7 +1640,7 @@ describe("loadOpenClawPlugins", () => {
     });
 
     const warnings: string[] = [];
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       logger: createWarningLogger(warnings),
       env: {
@@ -1682,7 +1682,7 @@ describe("loadOpenClawPlugins", () => {
     });
 
     const warnings: string[] = [];
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       logger: createWarningLogger(warnings),
       env: {
@@ -1729,7 +1729,7 @@ describe("loadOpenClawPlugins", () => {
       return;
     }
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {
@@ -1763,7 +1763,7 @@ describe("loadOpenClawPlugins", () => {
       throw err;
     }
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {
@@ -1810,7 +1810,7 @@ describe("loadOpenClawPlugins", () => {
     }
 
     process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir: bundledDir,
       config: {
@@ -1877,8 +1877,8 @@ describe("loadOpenClawPlugins", () => {
       path.join(process.cwd(), "src", "plugins", "loader.ts"),
     ).href;
     const script = `
-      import { loadOpenClawPlugins } from ${JSON.stringify(loaderModuleUrl)};
-      const registry = loadOpenClawPlugins({
+      import { loadRemoteClawPlugins } from ${JSON.stringify(loaderModuleUrl)};
+      const registry = loadRemoteClawPlugins({
         cache: false,
         workspaceDir: ${JSON.stringify(plugin.dir)},
         config: {

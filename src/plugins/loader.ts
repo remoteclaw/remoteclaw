@@ -163,7 +163,7 @@ const resolvePluginSdkScopedAliasMap = (): Record<string, string> => {
       distFile: `${subpath}.js`,
     });
     if (resolved) {
-      aliasMap[`openclaw/plugin-sdk/${subpath}`] = resolved;
+      aliasMap[`remoteclaw/plugin-sdk/${subpath}`] = resolved;
     }
   }
   return aliasMap;
@@ -521,7 +521,7 @@ function activatePluginRegistry(registry: PluginRegistry, cacheKey: string): voi
   initializeGlobalHookRunner(registry);
 }
 
-export function loadOpenClawPlugins(options: PluginLoadOptions = {}): PluginRegistry {
+export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRegistry {
   const env = options.env ?? process.env;
   // Test env: default-disable plugins unless explicitly configured.
   // This keeps unit/gateway suites fast and avoids loading heavyweight plugin deps by accident.
@@ -626,7 +626,7 @@ export function loadOpenClawPlugins(options: PluginLoadOptions = {}): PluginRegi
     }
     const pluginSdkAlias = resolvePluginSdkAlias();
     const aliasMap = {
-      ...(pluginSdkAlias ? { "openclaw/plugin-sdk": pluginSdkAlias } : {}),
+      ...(pluginSdkAlias ? { "remoteclaw/plugin-sdk": pluginSdkAlias } : {}),
       ...resolvePluginSdkScopedAliasMap(),
     };
     jitiLoader = createJiti(import.meta.url, {

@@ -38,7 +38,7 @@ export const logoutZaloProfileMock = zaloJsMocks.logoutZaloProfileMock;
 export const resolveZaloAllowFromEntriesMock = zaloJsMocks.resolveZaloAllowFromEntriesMock;
 export const resolveZaloGroupContextMock = zaloJsMocks.resolveZaloGroupContextMock;
 export const resolveZaloGroupsByEntriesMock = zaloJsMocks.resolveZaloGroupsByEntriesMock;
-export const startZaloListenerMock = zaloJsMocks.startZaloListenerMock;
+export const startZaloListenerMock: ReturnType<typeof vi.fn> = zaloJsMocks.startZaloListenerMock;
 export const startZaloQrLoginMock = zaloJsMocks.startZaloQrLoginMock;
 export const waitForZaloQrLoginMock = zaloJsMocks.waitForZaloQrLoginMock;
 

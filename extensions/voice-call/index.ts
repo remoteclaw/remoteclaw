@@ -294,7 +294,7 @@ const voiceCallPlugin = {
           await respondToCallMessageAction({
             requestParams: params,
             respond,
-            action: (request) => request.rt.manager.continueCall(request.callId, request.message),
+            action: (request) => request.rt!.manager.continueCall(request.callId!, request.message!),
             failure: "continue failed",
             includeTranscript: true,
           });
@@ -311,7 +311,7 @@ const voiceCallPlugin = {
           await respondToCallMessageAction({
             requestParams: params,
             respond,
-            action: (request) => request.rt.manager.speak(request.callId, request.message),
+            action: (request) => request.rt!.manager.speak(request.callId!, request.message!),
             failure: "speak failed",
           });
         } catch (err) {

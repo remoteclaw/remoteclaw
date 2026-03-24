@@ -3,4 +3,3 @@ export { probeSignal } from "./probe.js";
 export { sendMessageSignal } from "./send.js";
 export { sendReactionSignal, removeReactionSignal } from "./send-reactions.js";
 export { resolveSignalReactionLevel } from "./reaction-level.js";
-export { signalMessageActions } from "./message-actions.js";

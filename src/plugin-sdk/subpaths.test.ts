@@ -70,14 +70,12 @@ describe("plugin-sdk subpath exports", () => {
 
   it("exports Signal helpers", () => {
     expect(typeof signalSdk.resolveSignalAccount).toBe("function");
-    expect(typeof signalSdk.signalSetupWizard).toBe("object");
-    expect(typeof signalSdk.signalSetupAdapter).toBe("object");
+    expect(typeof signalSdk.signalOnboardingAdapter).toBe("object");
   });
 
   it("exports iMessage helpers", () => {
     expect(typeof imessageSdk.resolveIMessageAccount).toBe("function");
-    expect(typeof imessageSdk.imessageSetupWizard).toBe("object");
-    expect(typeof imessageSdk.imessageSetupAdapter).toBe("object");
+    expect(typeof imessageSdk.imessageOnboardingAdapter).toBe("object");
   });
 
   it("exports WhatsApp helpers", () => {

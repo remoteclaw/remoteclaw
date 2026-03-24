@@ -237,7 +237,7 @@ function createTelegramDispatcher(policy: PinnedDispatcherPolicy): {
     const proxyOptions = policy.proxyTls
       ? ({
           uri: policy.proxyUrl,
-          proxyTls: { ...policy.proxyTls },
+          requestTls: { ...policy.proxyTls },
         } satisfies ConstructorParameters<typeof ProxyAgent>[0])
       : policy.proxyUrl;
     try {

@@ -924,6 +924,38 @@ type TelegramEditForumTopicOpts = TelegramDeleteOpts & {
   iconCustomEmojiId?: string;
 };
 
+export async function unpinMessageTelegram(
+  chatIdInput: string | number,
+  messageIdInput?: string | number,
+  opts: TelegramDeleteOpts = {},
+): Promise<{ ok: true; chatId: string; messageId?: string }> {
+  const { cfg, account, api } = resolveTelegramApiContext(opts);
+  const rawTarget = String(chatIdInput);
+  const chatId = await resolveAndPersistChatId({
+    cfg,
+    api,
+    lookupTarget: rawTarget,
+    persistTarget: rawTarget,
+    verbose: opts.verbose,
+  });
+  const messageId = messageIdInput === undefined ? undefined : normalizeMessageId(messageIdInput);
+  const requestWithDiag = createTelegramRequestWithDiag({
+    cfg,
+    account,
+    retry: opts.retry,
+    verbose: opts.verbose,
+  });
+  await requestWithDiag(() => api.unpinChatMessage(chatId, messageId), "unpinChatMessage");
+  logVerbose(
+    `[telegram] Unpinned ${messageId != null ? `message ${messageId}` : "active message"} in chat ${chatId}`,
+  );
+  return {
+    ok: true,
+    chatId,
+    ...(messageId != null ? { messageId: String(messageId) } : {}),
+  };
+}
+
 export async function editForumTopicTelegram(
   chatIdInput: string | number,
   messageThreadIdInput: string | number,

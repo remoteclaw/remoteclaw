@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ReplyPayload } from "../auto-reply/types.js";
 import { createTestDraftStream } from "./draft-stream.test-helpers.js";
-import type { LanePreviewLifecycle } from "./lane-delivery-text-deliverer.js";
 import { createLaneTextDeliverer, type DraftLaneState, type LaneName } from "./lane-delivery.js";
 
 function createHarness(params?: {
@@ -43,14 +42,8 @@ function createHarness(params?: {
   const deletePreviewMessage = vi.fn().mockResolvedValue(undefined);
   const log = vi.fn();
   const markDelivered = vi.fn();
-  const activePreviewLifecycleByLane: Record<LaneName, LanePreviewLifecycle> = {
-    answer: "transient",
-    reasoning: "transient",
-  };
-  const retainPreviewOnCleanupByLane: Record<LaneName, boolean> = {
-    answer: false,
-    reasoning: false,
-  };
+  const activePreviewLifecycleByLane = { answer: "transient", reasoning: "transient" } as const;
+  const retainPreviewOnCleanupByLane = { answer: false, reasoning: false } as const;
   const archivedAnswerPreviews: Array<{
     messageId: number;
     textSnapshot: string;
@@ -60,8 +53,8 @@ function createHarness(params?: {
   const deliverLaneText = createLaneTextDeliverer({
     lanes,
     archivedAnswerPreviews,
-    activePreviewLifecycleByLane,
-    retainPreviewOnCleanupByLane,
+    activePreviewLifecycleByLane: { ...activePreviewLifecycleByLane },
+    retainPreviewOnCleanupByLane: { ...retainPreviewOnCleanupByLane },
     draftMaxChars: params?.draftMaxChars ?? 4_096,
     applyTextToPayload: (payload: ReplyPayload, text: string) => ({ ...payload, text }),
     sendPayload,
@@ -138,7 +131,7 @@ describe("createLaneTextDeliverer", () => {
     expect(harness.sendPayload).not.toHaveBeenCalled();
   });
 
-  it("treats stop-created preview edit failures as delivered", async () => {
+  it("keeps stop-created preview when follow-up final edit fails", async () => {
     const harness = createHarness({ answerMessageIdAfterStop: 777 });
     harness.editPreview.mockRejectedValue(new Error("500: edit failed after stop flush"));
 
@@ -149,10 +142,12 @@ describe("createLaneTextDeliverer", () => {
       infoKind: "final",
     });
 
-    expect(result).toBe("preview-finalized");
+    expect(result).toBe("preview-retained");
     expect(harness.editPreview).toHaveBeenCalledTimes(1);
     expect(harness.sendPayload).not.toHaveBeenCalled();
-    expect(harness.log).toHaveBeenCalledWith(expect.stringContaining("treating as delivered"));
+    expect(harness.log).toHaveBeenCalledWith(
+      expect.stringContaining("failed after stop flush; keeping existing preview"),
+    );
   });
 
   it("treats 'message is not modified' preview edit errors as delivered", async () => {
@@ -543,7 +538,7 @@ describe("createLaneTextDeliverer", () => {
     );
   });
 
-  it("falls back when the first preview send may have landed without a message id", async () => {
+  it("retains when the first preview send may have landed without a message id", async () => {
     const stream = createTestDraftStream();
     stream.sendMayHaveLanded.mockReturnValue(true);
     const harness = createHarness({ answerStream: stream });
@@ -555,9 +550,10 @@ describe("createLaneTextDeliverer", () => {
       infoKind: "final",
     });
 
-    expect(result).toBe("sent");
-    expect(harness.sendPayload).toHaveBeenCalledWith(
-      expect.objectContaining({ text: "Hello final" }),
+    expect(result).toBe("preview-retained");
+    expect(harness.sendPayload).not.toHaveBeenCalled();
+    expect(harness.log).toHaveBeenCalledWith(
+      expect.stringContaining("first preview send may have landed despite missing message id"),
     );
   });
 

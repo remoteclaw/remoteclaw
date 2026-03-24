@@ -35,7 +35,7 @@ export { createAccountListHelpers } from "../channels/plugins/account-helpers.js
 export type { ChannelGroupContext, ChannelSetupInput } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
-export type { OpenClawConfig } from "../config/config.js";
+export type { RemoteClawConfig } from "../config/config.js";
 export { mapAllowFromEntries } from "./channel-config-helpers.js";
 export { evaluateMatchedGroupAccessForPolicy } from "./group-access.js";
 export {

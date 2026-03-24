@@ -44,7 +44,7 @@ export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 export { logTypingFailure } from "../channels/logging.js";
 export { createTypingCallbacks } from "../channels/typing.js";
-export type { OpenClawConfig } from "../config/config.js";
+export type { RemoteClawConfig } from "../config/config.js";
 export {
   resolveDefaultGroupPolicy,
   resolveOpenProviderRuntimeGroupPolicy,

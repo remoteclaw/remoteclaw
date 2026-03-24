@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPluginRuntimeMock } from "../../../test/helpers/extensions/plugin-runtime-mock.js";
 import { createEmptyPluginRegistry } from "../../../src/plugins/registry.js";
 import { setActivePluginRegistry } from "../../../src/plugins/runtime.js";
-import type { OpenClawConfig, PluginRuntime } from "../runtime-api.js";
+import type { RemoteClawConfig, PluginRuntime } from "../runtime-api.js";
 import {
   clearZaloWebhookSecurityStateForTest,
   monitorZaloProvider,
@@ -56,7 +56,7 @@ async function withServer(handler: RequestListener, fn: (baseUrl: string) => Pro
   }
 }
 
-function createLifecycleConfig(): OpenClawConfig {
+function createLifecycleConfig(): RemoteClawConfig {
   return {
     channels: {
       zalo: {
@@ -71,7 +71,7 @@ function createLifecycleConfig(): OpenClawConfig {
         },
       },
     },
-  } as OpenClawConfig;
+  } as RemoteClawConfig;
 }
 
 function createLifecycleAccount(): ResolvedZaloAccount {

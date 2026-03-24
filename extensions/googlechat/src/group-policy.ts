@@ -1,8 +1,8 @@
-import { resolveChannelGroupRequireMention } from "openclaw/plugin-sdk/channel-policy";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/googlechat";
+import { resolveChannelGroupRequireMention } from "remoteclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/googlechat";
 
 type GoogleChatGroupContext = {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId?: string | null;
   groupId?: string | null;
 };

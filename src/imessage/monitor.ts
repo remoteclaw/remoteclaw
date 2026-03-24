@@ -1,2 +1,2 @@
-// Shim: re-exports from extensions/imessage/src/monitor
-export * from "../../extensions/imessage/src/monitor.js";
+export { monitorIMessageProvider } from "./monitor/monitor-provider.js";
+export type { MonitorIMessageOpts } from "./monitor/types.js";

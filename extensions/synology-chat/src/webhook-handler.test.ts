@@ -10,7 +10,7 @@ import {
 // Mock sendMessage and resolveChatUserId to prevent real HTTP calls
 vi.mock("./client.js", () => ({
   sendMessage: vi.fn().mockResolvedValue(true),
-  resolveChatUserId: vi.fn().mockResolvedValue(undefined),
+  resolveLegacyWebhookNameToChatUserId: vi.fn().mockResolvedValue(undefined),
 }));
 
 function makeAccount(
@@ -23,6 +23,9 @@ function makeAccount(
     incomingUrl: "https://nas.example.com/incoming",
     nasHost: "nas.example.com",
     webhookPath: "/webhook/synology",
+    webhookPathSource: "default" as const,
+    dangerouslyAllowNameMatching: false,
+    dangerouslyAllowInheritedWebhookPath: false,
     dmPolicy: "open",
     allowedUserIds: [],
     rateLimitPerMinute: 30,
@@ -123,7 +126,7 @@ describe("createWebhookHandler", () => {
     const deliver = params.deliver ?? vi.fn();
     const handler = createWebhookHandler({
       account: makeAccount(params.account),
-      deliver,
+      deliver: deliver as any,
       log,
     });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { buildChannelSetupFlowAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
+import type { RemoteClawConfig as OpenClawConfig } from "../../../src/config/config.js";
 import type { WizardPrompter } from "../../../src/wizard/prompts.js";
 import { createRuntimeEnv } from "../../test-utils/runtime-env.js";
 import { synologyChatPlugin } from "./channel.js";

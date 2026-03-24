@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/core";
+import type { RemoteClawConfig as OpenClawConfig } from "openclaw/plugin-sdk/core";
 import { sendMessage } from "./client.js";
 import { buildSynologyChatInboundContext, type SynologyInboundMessage } from "./inbound-context.js";
 import { getSynologyRuntime } from "./runtime.js";

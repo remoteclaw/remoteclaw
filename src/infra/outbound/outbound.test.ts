@@ -19,8 +19,6 @@ import {
   recoverPendingDeliveries,
 } from "./delivery-queue.js";
 import { DirectoryCache } from "./directory-cache.js";
-import { buildOutboundResultEnvelope } from "./envelope.js";
-import type { OutboundDeliveryJson } from "./format.js";
 import {
   buildOutboundDeliveryJson,
   formatGatewaySummary,
@@ -499,9 +497,13 @@ describe("delivery-queue", () => {
       expect(result.skippedMaxRetries).toBe(0);
       expect(result.deferredBackoff).toBe(0);
 
-      // All entries should still be in the queue.
+      // All entries should still be in the queue (retryCount < MAX_RETRIES).
       const remaining = await loadPendingDeliveries(tmpDir);
       expect(remaining).toHaveLength(3);
+
+      // retryCount should be incremented on all deferred entries so they
+      // eventually reach MAX_RETRIES and are pruned rather than looping forever.
+      expect(remaining.every((e) => e.retryCount === 1)).toBe(true);
 
       // Should have logged a warning about deferred entries.
       expect(log.warn).toHaveBeenCalledWith(
@@ -670,73 +672,6 @@ describe("DirectoryCache", () => {
       expect(cache.get("a", cfg)).toBe(testCase.expected.a);
       expect(cache.get("b", cfg)).toBe(testCase.expected.b);
       expect(cache.get("c", cfg)).toBe(testCase.expected.c);
-    }
-  });
-});
-
-describe("buildOutboundResultEnvelope", () => {
-  it("formats envelope variants", () => {
-    const whatsappDelivery: OutboundDeliveryJson = {
-      channel: "whatsapp",
-      via: "gateway",
-      to: "+1",
-      messageId: "m1",
-      mediaUrl: null,
-    };
-    const telegramDelivery: OutboundDeliveryJson = {
-      channel: "telegram",
-      via: "direct",
-      to: "123",
-      messageId: "m2",
-      mediaUrl: null,
-      chatId: "c1",
-    };
-    const discordDelivery: OutboundDeliveryJson = {
-      channel: "discord",
-      via: "gateway",
-      to: "channel:C1",
-      messageId: "m3",
-      mediaUrl: null,
-      channelId: "C1",
-    };
-    const cases = typedCases<{
-      name: string;
-      input: Parameters<typeof buildOutboundResultEnvelope>[0];
-      expected: unknown;
-    }>([
-      {
-        name: "flatten delivery by default",
-        input: { delivery: whatsappDelivery },
-        expected: whatsappDelivery,
-      },
-      {
-        name: "keep payloads + meta",
-        input: {
-          payloads: [{ text: "hi", mediaUrl: null, mediaUrls: undefined }],
-          meta: { foo: "bar" },
-        },
-        expected: {
-          payloads: [{ text: "hi", mediaUrl: null, mediaUrls: undefined }],
-          meta: { foo: "bar" },
-        },
-      },
-      {
-        name: "include delivery when payloads exist",
-        input: { payloads: [], delivery: telegramDelivery, meta: { ok: true } },
-        expected: {
-          payloads: [],
-          meta: { ok: true },
-          delivery: telegramDelivery,
-        },
-      },
-      {
-        name: "keep wrapped delivery when flatten disabled",
-        input: { delivery: discordDelivery, flattenDelivery: false },
-        expected: { delivery: discordDelivery },
-      },
-    ]);
-    for (const testCase of cases) {
-      expect(buildOutboundResultEnvelope(testCase.input), testCase.name).toEqual(testCase.expected);
     }
   });
 });

@@ -304,14 +304,18 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
       senderName,
       allowNameMatching: isDangerousNameMatchingEnabled(msteamsCfg),
     });
-    const { commandAuthorized, shouldBlock } = resolveControlCommandGate({
+    const hasControlCommandInMessage = core.channel.text.hasControlCommand(text, cfg);
+    const commandGate = resolveControlCommandGate({
       useAccessGroups,
-      primaryConfigured: commandDmAllowFrom.length > 0,
-      primaryAllowed: ownerAllowedForCommands,
-      secondaryConfigured: effectiveGroupAllowFrom.length > 0,
-      secondaryAllowed: groupAllowedForCommands,
-      hasControlCommand: core.channel.text.hasControlCommand(text, cfg),
+      authorizers: [
+        { configured: commandDmAllowFrom.length > 0, allowed: ownerAllowedForCommands },
+        { configured: effectiveGroupAllowFrom.length > 0, allowed: groupAllowedForCommands },
+      ],
+      allowTextCommands: true,
+      hasControlCommand: hasControlCommandInMessage,
     });
+    const commandAuthorized = commandGate.commandAuthorized;
+    const shouldBlock = commandGate.shouldBlock;
     if (shouldBlock) {
       logInboundDrop({
         log: logVerboseMessage,

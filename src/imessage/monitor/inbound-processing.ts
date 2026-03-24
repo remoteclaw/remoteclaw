@@ -12,7 +12,7 @@ import {
 } from "../../auto-reply/reply/history.js";
 import { finalizeInboundContext } from "../../auto-reply/reply/inbound-context.js";
 import { buildMentionRegexes, matchesMentionPatterns } from "../../auto-reply/reply/mentions.js";
-import { resolveDualTextControlCommandGate } from "../../channels/command-gating.js";
+import { resolveControlCommandGate } from "../../channels/command-gating.js";
 import { logInboundDrop } from "../../channels/logging.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
@@ -288,15 +288,18 @@ export function resolveIMessageInboundDecision(params: {
           chatIdentifier,
         })
       : false;
-  const { commandAuthorized, shouldBlock } = resolveDualTextControlCommandGate({
+  const hasControlCommandInMessage = hasControlCommand(messageText, params.cfg);
+  const commandGate = resolveControlCommandGate({
     useAccessGroups,
-    primaryConfigured: commandDmAllowFrom.length > 0,
-    primaryAllowed: ownerAllowedForCommands,
-    secondaryConfigured: effectiveGroupAllowFrom.length > 0,
-    secondaryAllowed: groupAllowedForCommands,
-    hasControlCommand: hasControlCommand(messageText, params.cfg),
+    authorizers: [
+      { configured: commandDmAllowFrom.length > 0, allowed: ownerAllowedForCommands },
+      { configured: effectiveGroupAllowFrom.length > 0, allowed: groupAllowedForCommands },
+    ],
+    allowTextCommands: true,
+    hasControlCommand: hasControlCommandInMessage,
   });
-  if (isGroup && shouldBlock) {
+  const commandAuthorized = commandGate.commandAuthorized;
+  if (isGroup && commandGate.shouldBlock) {
     if (params.logVerbose) {
       logInboundDrop({
         log: params.logVerbose,

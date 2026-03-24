@@ -1,10 +1,15 @@
 import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { describe, expect, it } from "vitest";
-import { createDirectoryTestRuntime, expectDirectorySurface } from "../../test-utils/directory.js";
 import { zaloPlugin } from "./channel.js";
 
 describe("zalo directory", () => {
-  const runtimeEnv = createDirectoryTestRuntime() as RuntimeEnv;
+  const runtimeEnv: RuntimeEnv = {
+    log: () => {},
+    error: () => {},
+    exit: (code: number): never => {
+      throw new Error(`exit ${code}`);
+    },
+  };
 
   it("lists peers from allowFrom", async () => {
     const cfg = {
@@ -15,10 +20,12 @@ describe("zalo directory", () => {
       },
     } as unknown as RemoteClawConfig;
 
-    const directory = expectDirectorySurface(zaloPlugin.directory);
+    expect(zaloPlugin.directory).toBeTruthy();
+    expect(zaloPlugin.directory?.listPeers).toBeTruthy();
+    expect(zaloPlugin.directory?.listGroups).toBeTruthy();
 
     await expect(
-      directory.listPeers({
+      zaloPlugin.directory!.listPeers!({
         cfg,
         accountId: undefined,
         query: undefined,
@@ -34,7 +41,7 @@ describe("zalo directory", () => {
     );
 
     await expect(
-      directory.listGroups({
+      zaloPlugin.directory!.listGroups!({
         cfg,
         accountId: undefined,
         query: undefined,

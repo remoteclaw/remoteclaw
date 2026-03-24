@@ -573,7 +573,7 @@ export class AcpGatewayAgent implements Agent {
     if (!session) {
       throw new Error(`Session ${params.sessionId} not found`);
     }
-    const sessionPatch = this.resolveSessionConfigPatch(params.configId, params.value);
+    const sessionPatch = this.resolveSessionConfigPatch(params.configId, String(params.value));
 
     try {
       await this.gateway.request("sessions.patch", {

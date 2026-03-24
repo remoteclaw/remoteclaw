@@ -1,3 +1,4 @@
+import type { BaseProbeResult } from "remoteclaw/plugin-sdk";
 import type {
   BlockStreamingCoalesceConfig,
   DmConfig,
@@ -6,15 +7,13 @@ import type {
   GroupToolPolicyBySenderConfig,
   GroupToolPolicyConfig,
   MarkdownConfig,
-  OpenClawConfig,
-  BaseProbeResult,
-} from "./runtime-api.js";
+  RemoteClawConfig,
+} from "remoteclaw/plugin-sdk";
 
 export type IrcChannelConfig = {
   requireMention?: boolean;
   tools?: GroupToolPolicyConfig;
   toolsBySender?: GroupToolPolicyBySenderConfig;
-  skills?: string[];
   enabled?: boolean;
   allowFrom?: Array<string | number>;
   systemPrompt?: string;
@@ -71,8 +70,8 @@ export type IrcConfig = IrcAccountConfig & {
   defaultAccount?: string;
 };
 
-export type CoreConfig = OpenClawConfig & {
-  channels?: OpenClawConfig["channels"] & {
+export type CoreConfig = RemoteClawConfig & {
+  channels?: RemoteClawConfig["channels"] & {
     irc?: IrcConfig;
   };
 };

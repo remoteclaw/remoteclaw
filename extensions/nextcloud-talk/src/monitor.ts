@@ -5,7 +5,7 @@ import {
   isRequestBodyLimitError,
   readRequestBodyWithLimit,
   requestBodyErrorToText,
-} from "openclaw/plugin-sdk/nextcloud-talk";
+} from "remoteclaw/plugin-sdk/nextcloud-talk";
 import { resolveLoggerBackedRuntime } from "../../shared/runtime.js";
 import { resolveNextcloudTalkAccount } from "./accounts.js";
 import { handleNextcloudTalkInbound } from "./inbound.js";

@@ -8,7 +8,7 @@ import {
   type HistoryEntry,
 } from "../../../src/auto-reply/reply/history.js";
 import type { ReplyPayload } from "../../../src/auto-reply/types.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { loadConfig } from "../../../src/config/config.js";
 import {
   resolveAllowlistProviderRuntimeGroupPolicy,
@@ -40,7 +40,7 @@ export type MonitorSignalOpts = {
   abortSignal?: AbortSignal;
   account?: string;
   accountId?: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   baseUrl?: string;
   autoStart?: boolean;
   startupTimeoutMs?: number;

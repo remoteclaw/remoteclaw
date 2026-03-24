@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import type { IncomingMessage } from "node:http";
-import type { OpenClawConfig, PluginRuntime } from "openclaw/plugin-sdk/googlechat";
+import type { RemoteClawConfig, PluginRuntime } from "remoteclaw/plugin-sdk/googlechat";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEmptyPluginRegistry } from "../../../src/plugins/registry.js";
 import { setActivePluginRegistry } from "../../../src/plugins/runtime.js";
@@ -86,7 +86,7 @@ function registerTwoTargets() {
   const sinkA = vi.fn();
   const sinkB = vi.fn();
   const core = {} as PluginRuntime;
-  const config = {} as OpenClawConfig;
+  const config = {} as RemoteClawConfig;
 
   const unregisterA = registerGoogleChatWebhookTarget({
     account: baseAccount("A"),
@@ -155,7 +155,7 @@ describe("Google Chat webhook routing", () => {
     setActivePluginRegistry(registry);
     const unregisterA = registerGoogleChatWebhookTarget({
       account: baseAccount("A"),
-      config: {} as OpenClawConfig,
+      config: {} as RemoteClawConfig,
       runtime: {},
       core: {} as PluginRuntime,
       path: "/googlechat",
@@ -164,7 +164,7 @@ describe("Google Chat webhook routing", () => {
     });
     const unregisterB = registerGoogleChatWebhookTarget({
       account: baseAccount("B"),
-      config: {} as OpenClawConfig,
+      config: {} as RemoteClawConfig,
       runtime: {},
       core: {} as PluginRuntime,
       path: "/googlechat",

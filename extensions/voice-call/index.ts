@@ -1,9 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import {
-  definePluginEntry,
-  type GatewayRequestHandlerOptions,
-  type OpenClawPluginApi,
-} from "./api.js";
+import type { GatewayRequestHandlerOptions, RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
 import { registerVoiceCallCli } from "./src/cli.js";
 import {
   VoiceCallConfigSchema,
@@ -144,12 +140,12 @@ const VoiceCallToolSchema = Type.Union([
   }),
 ]);
 
-export default definePluginEntry({
+const voiceCallPlugin = {
   id: "voice-call",
   name: "Voice Call",
   description: "Voice-call plugin with Telnyx/Twilio/Plivo providers",
   configSchema: voiceCallConfigSchema,
-  register(api: OpenClawPluginApi) {
+  register(api: RemoteClawPluginApi) {
     const config = resolveVoiceCallConfig(voiceCallConfigSchema.parse(api.pluginConfig));
     const validation = validateProviderConfig(config);
 
@@ -181,8 +177,8 @@ export default definePluginEntry({
         runtimePromise = createVoiceCallRuntime({
           config,
           coreConfig: api.config as CoreConfig,
-          agentRuntime: api.runtime.agent,
-          ttsRuntime: api.runtime.tts,
+          ttsRuntime: api.runtime
+            .tts as unknown as import("./src/telephony-tts.js").TelephonyTtsRuntime,
           logger: api.logger,
         });
       }
@@ -229,37 +225,6 @@ export default definePluginEntry({
       params.respond(true, { callId: result.callId, initiated: true });
     };
 
-    const respondToCallMessageAction = async (params: {
-      requestParams: GatewayRequestHandlerOptions["params"];
-      respond: GatewayRequestHandlerOptions["respond"];
-      action: (
-        request: Exclude<Awaited<ReturnType<typeof resolveCallMessageRequest>>, { error: string }>,
-      ) => Promise<{
-        success: boolean;
-        error?: string;
-        transcript?: string;
-      }>;
-      failure: string;
-      includeTranscript?: boolean;
-    }) => {
-      const request = await resolveCallMessageRequest(params.requestParams);
-      if ("error" in request) {
-        params.respond(false, { error: request.error });
-        return;
-      }
-      const result = await params.action(request);
-      if (!result.success) {
-        params.respond(false, { error: result.error || params.failure });
-        return;
-      }
-      params.respond(
-        true,
-        params.includeTranscript
-          ? { success: true, transcript: result.transcript }
-          : { success: true },
-      );
-    };
-
     api.registerGatewayMethod(
       "voicecall.initiate",
       async ({ params, respond }: GatewayRequestHandlerOptions) => {
@@ -297,13 +262,17 @@ export default definePluginEntry({
       "voicecall.continue",
       async ({ params, respond }: GatewayRequestHandlerOptions) => {
         try {
-          await respondToCallMessageAction({
-            requestParams: params,
-            respond,
-            action: (request) => request.rt.manager.continueCall(request.callId, request.message),
-            failure: "continue failed",
-            includeTranscript: true,
-          });
+          const request = await resolveCallMessageRequest(params);
+          if ("error" in request) {
+            respond(false, { error: request.error });
+            return;
+          }
+          const result = await request.rt.manager.continueCall(request.callId, request.message);
+          if (!result.success) {
+            respond(false, { error: result.error || "continue failed" });
+            return;
+          }
+          respond(true, { success: true, transcript: result.transcript });
         } catch (err) {
           sendError(respond, err);
         }
@@ -314,12 +283,17 @@ export default definePluginEntry({
       "voicecall.speak",
       async ({ params, respond }: GatewayRequestHandlerOptions) => {
         try {
-          await respondToCallMessageAction({
-            requestParams: params,
-            respond,
-            action: (request) => request.rt.manager.speak(request.callId, request.message),
-            failure: "speak failed",
-          });
+          const request = await resolveCallMessageRequest(params);
+          if ("error" in request) {
+            respond(false, { error: request.error });
+            return;
+          }
+          const result = await request.rt.manager.speak(request.callId, request.message);
+          if (!result.success) {
+            respond(false, { error: result.error || "speak failed" });
+            return;
+          }
+          respond(true, { success: true });
         } catch (err) {
           sendError(respond, err);
         }
@@ -561,4 +535,6 @@ export default definePluginEntry({
       },
     });
   },
-});
+};
+
+export default voiceCallPlugin;

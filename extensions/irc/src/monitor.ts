@@ -1,4 +1,4 @@
-import type { RuntimeEnv } from "openclaw/plugin-sdk/irc";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/irc";
 import { resolveLoggerBackedRuntime } from "../../shared/runtime.js";
 import { resolveIrcAccount } from "./accounts.js";
 import { connectIrcClient, type IrcClient } from "./client.js";

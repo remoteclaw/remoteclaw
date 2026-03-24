@@ -1,4 +1,4 @@
-import { loadConfig, type OpenClawConfig } from "../../../src/config/config.js";
+import { loadConfig, type RemoteClawConfig } from "../../../src/config/config.js";
 import { resolveMarkdownTableMode } from "../../../src/config/markdown-tables.js";
 import { kindFromMime } from "../../../src/media/mime.js";
 import { resolveOutboundAttachmentFromUrl } from "../../../src/media/outbound-attachment.js";
@@ -8,7 +8,7 @@ import { markdownToSignalText, type SignalTextStyleRange } from "./format.js";
 import { resolveSignalRpcContext } from "./rpc-context.js";
 
 export type SignalSendOpts = {
-  cfg?: OpenClawConfig;
+  cfg?: RemoteClawConfig;
   baseUrl?: string;
   account?: string;
   accountId?: string;

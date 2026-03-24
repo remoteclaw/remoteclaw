@@ -1,4 +1,4 @@
-import type { ChannelAccountSnapshot, ChannelStatusIssue } from "openclaw/plugin-sdk/zalouser";
+import type { ChannelAccountSnapshot, ChannelStatusIssue } from "remoteclaw/plugin-sdk/zalouser";
 import { coerceStatusIssueAccountId, readStatusIssueFields } from "../../shared/status-issues.js";
 
 const ZALOUSER_STATUS_FIELDS = [

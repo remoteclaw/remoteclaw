@@ -1,4 +1,3 @@
-<<<<<<<< HEAD:extensions/discord/src/monitor/exec-approvals.ts
 import {
   Button,
   Row,
@@ -1748,6 +1747,3 @@ export class ExecApprovalButton extends Button {
 export function createExecApprovalButton(ctx: ExecApprovalButtonContext): Button {
   return new ExecApprovalButton(ctx);
 }
-========
-export * from "../../../extensions/discord/src/monitor/exec-approvals.js";
->>>>>>>> 5682ec37fa (refactor: move Discord channel implementation to extensions/ (#45660)):src/discord/monitor/exec-approvals.ts

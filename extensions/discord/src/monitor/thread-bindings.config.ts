@@ -1,4 +1,3 @@
-<<<<<<<< HEAD:extensions/discord/src/monitor/thread-bindings.config.ts
 import {
   resolveThreadBindingIdleTimeoutMs,
   resolveThreadBindingMaxAgeMs,
@@ -78,6 +77,3 @@ export function resolveDiscordThreadBindingMaxAgeMs(params: {
     sessionMaxAgeHoursRaw: params.cfg.session?.threadBindings?.maxAgeHours,
   });
 }
-========
-export * from "../../../extensions/discord/src/monitor/thread-bindings.config.js";
->>>>>>>> 5682ec37fa (refactor: move Discord channel implementation to extensions/ (#45660)):src/discord/monitor/thread-bindings.config.ts

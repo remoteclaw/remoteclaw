@@ -1,4 +1,3 @@
-<<<<<<<< HEAD:extensions/discord/src/monitor/thread-bindings.persona.ts
 import { SYSTEM_MARK } from "../../../../src/infra/system-message.js";
 import type { ThreadBindingRecord } from "./thread-bindings.types.js";
 
@@ -50,6 +49,3 @@ export function resolveThreadBindingPersonaFromRecord(record: ThreadBindingRecor
     agentId: record.agentId,
   });
 }
-========
-export * from "../../../extensions/discord/src/monitor/thread-bindings.persona.js";
->>>>>>>> 5682ec37fa (refactor: move Discord channel implementation to extensions/ (#45660)):src/discord/monitor/thread-bindings.persona.ts

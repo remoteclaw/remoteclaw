@@ -1,4 +1,3 @@
-<<<<<<<< HEAD:extensions/discord/src/monitor/model-picker.ts
 import {
   Button,
   Container,
@@ -1878,6 +1877,3 @@ export function toDiscordModelPickerMessagePayload(
     components: view.components,
   };
 }
-========
-export * from "../../../extensions/discord/src/monitor/model-picker.js";
->>>>>>>> 5682ec37fa (refactor: move Discord channel implementation to extensions/ (#45660)):src/discord/monitor/model-picker.ts

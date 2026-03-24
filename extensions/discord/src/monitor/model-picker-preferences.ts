@@ -1,4 +1,3 @@
-<<<<<<<< HEAD:extensions/discord/src/monitor/model-picker-preferences.ts
 import os from "node:os";
 import path from "node:path";
 import { normalizeProviderId } from "../../../../src/agents/model-selection.js";
@@ -327,6 +326,3 @@ export async function recordDiscordModelPickerRecentModel(params: {
     await writeJsonFileAtomically(filePath, store);
   });
 }
-========
-export * from "../../../extensions/discord/src/monitor/model-picker-preferences.js";
->>>>>>>> 5682ec37fa (refactor: move Discord channel implementation to extensions/ (#45660)):src/discord/monitor/model-picker-preferences.ts

@@ -229,17 +229,6 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
     targetResolver: {
       looksLikeId: looksLikeSlackTargetId,
       hint: "<channelId|user:ID|channel:ID>",
-      resolveTarget: async ({ input }) => {
-        const parsed = parseSlackExplicitTarget(input);
-        if (!parsed) {
-          return null;
-        }
-        return {
-          to: parsed.to,
-          kind: parsed.chatType === "direct" ? "user" : "group",
-          source: "normalized",
-        };
-      },
     },
   },
   directory: {
@@ -252,18 +241,6 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
   },
   resolver: {
     resolveTargets: async ({ cfg, accountId, inputs, kind }) => {
-      const toResolvedTarget = <
-        T extends { input: string; resolved: boolean; id?: string; name?: string },
-      >(
-        entry: T,
-        note?: string,
-      ) => ({
-        input: entry.input,
-        resolved: entry.resolved,
-        id: entry.id,
-        name: entry.name,
-        note,
-      });
       const account = resolveSlackAccount({ cfg, accountId });
       const token = account.config.userToken?.trim() || account.botToken?.trim();
       if (!token) {
@@ -278,15 +255,25 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
           token,
           entries: inputs,
         });
-        return resolved.map((entry) =>
-          toResolvedTarget(entry, entry.archived ? "archived" : undefined),
-        );
+        return resolved.map((entry) => ({
+          input: entry.input,
+          resolved: entry.resolved,
+          id: entry.id,
+          name: entry.name,
+          note: entry.archived ? "archived" : undefined,
+        }));
       }
       const resolved = await getSlackRuntime().channel.slack.resolveUserAllowlist({
         token,
         entries: inputs,
       });
-      return resolved.map((entry) => toResolvedTarget(entry, entry.note));
+      return resolved.map((entry) => ({
+        input: entry.input,
+        resolved: entry.resolved,
+        id: entry.id,
+        name: entry.name,
+        note: entry.note,
+      }));
     },
   },
   actions: {

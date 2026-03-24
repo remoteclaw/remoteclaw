@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { handleSlackMessageAction } from "./message-action-dispatch.js";
+import { handleSlackMessageAction } from "./slack-message-actions.js";
 
 function createInvokeSpy() {
   return vi.fn(async (action: Record<string, unknown>) => ({

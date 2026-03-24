@@ -29,14 +29,6 @@ vi.mock("../config/sessions.js", () => ({
   updateLastRoute: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../../extensions/telegram/src/fetch.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../extensions/telegram/src/fetch.js")>();
-  return {
-    ...actual,
-    resolveTelegramFetch: () => fetch,
-  };
-});
-
 vi.mock("../web/auth-store.js", () => ({
   webAuthExists: vi.fn(async () => true),
   getWebAuthAgeMs: vi.fn(() => 1234),

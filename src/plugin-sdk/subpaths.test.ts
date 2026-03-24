@@ -82,8 +82,8 @@ describe("plugin-sdk subpath exports", () => {
     // WhatsApp-specific functions (resolveWhatsAppAccount, whatsappOnboardingAdapter) moved to extensions/whatsapp/src/
     expect(typeof whatsappSdk.WhatsAppConfigSchema).toBe("object");
     expect(typeof whatsappSdk.resolveWhatsAppOutboundTarget).toBe("function");
-    expect(typeof whatsappSdk.resolveWhatsAppMentionStripRegexes).toBe("function");
-    expect("resolveWhatsAppMentionStripPatterns" in whatsappSdk).toBe(false);
+    expect(typeof whatsappSdk.resolveWhatsAppMentionStripPatterns).toBe("function");
+    expect("resolveWhatsAppMentionStripRegexes" in whatsappSdk).toBe(false);
   });
 
   it("exports LINE helpers", () => {

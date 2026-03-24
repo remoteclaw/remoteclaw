@@ -3,7 +3,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createTrackedTempDirs } from "../test-utils/tracked-temp-dirs.js";
 import {
-  createTarEntryPreflightChecker,
+  createTarEntrySafetyChecker,
   fileExists,
   readJsonFile,
   resolveArchiveKind,
@@ -70,7 +70,7 @@ describe("archive helpers", () => {
   });
 
   it("preflights tar entries for blocked link types, path escapes, and size budgets", () => {
-    const checker = createTarEntryPreflightChecker({
+    const checker = createTarEntrySafetyChecker({
       rootDir: "/tmp/dest",
       limits: {
         maxEntries: 1,
@@ -93,7 +93,7 @@ describe("archive helpers", () => {
   });
 
   it("treats stripped-away tar entries as no-ops and enforces extracted byte budgets", () => {
-    const checker = createTarEntryPreflightChecker({
+    const checker = createTarEntrySafetyChecker({
       rootDir: "/tmp/dest",
       stripComponents: 1,
       limits: {

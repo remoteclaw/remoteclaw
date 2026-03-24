@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import {
   isDiagnosticFlagEnabled,
   matchesDiagnosticFlag,
@@ -10,7 +10,7 @@ describe("resolveDiagnosticFlags", () => {
   it("normalizes and dedupes config and env flags", () => {
     const cfg = {
       diagnostics: { flags: [" Telegram.Http ", "cache.*", "CACHE.*"] },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const env = {
       OPENCLAW_DIAGNOSTICS: " foo, Cache.*  telegram.http  ",
     } as NodeJS.ProcessEnv;
@@ -21,7 +21,7 @@ describe("resolveDiagnosticFlags", () => {
   it("treats false-like env values as no extra flags", () => {
     const cfg = {
       diagnostics: { flags: ["telegram.http"] },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     for (const raw of ["0", "false", "off", "none", "   "]) {
       expect(
@@ -53,7 +53,7 @@ describe("isDiagnosticFlagEnabled", () => {
   it("resolves config and env together before matching", () => {
     const cfg = {
       diagnostics: { flags: ["gateway.*"] },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const env = {
       OPENCLAW_DIAGNOSTICS: "telegram.http",
     } as NodeJS.ProcessEnv;

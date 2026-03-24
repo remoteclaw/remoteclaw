@@ -25,7 +25,6 @@ import {
   normalizeMessageChannel,
 } from "../../utils/message-channel.js";
 import { throwIfAborted } from "./abort.js";
-import { resolveOutboundChannelPlugin } from "./channel-resolution.js";
 import {
   listConfiguredMessageChannels,
   resolveMessageChannelSelection,
@@ -685,11 +684,6 @@ async function handlePluginAction(ctx: ResolvedActionContext): Promise<MessageAc
       payload: { ok: true, dryRun: true, channel, action },
       dryRun: true,
     };
-  }
-
-  const plugin = resolveOutboundChannelPlugin({ channel, cfg });
-  if (!plugin?.actions?.handleAction) {
-    throw new Error(`Channel ${channel} is unavailable for message actions (plugin not loaded).`);
   }
 
   const handled = await dispatchChannelMessageAction({

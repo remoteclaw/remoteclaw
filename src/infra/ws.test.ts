@@ -1,10 +1,11 @@
 import { Buffer } from "node:buffer";
 import { describe, expect, it } from "vitest";
+import type WebSocket from "ws";
 import { rawDataToString } from "./ws.js";
 
 describe("rawDataToString", () => {
   it("returns string input unchanged", () => {
-    expect(rawDataToString("hello")).toBe("hello");
+    expect(rawDataToString("hello" as unknown as WebSocket.RawData)).toBe("hello");
   });
 
   it("decodes Buffer, Buffer[] and ArrayBuffer inputs", () => {

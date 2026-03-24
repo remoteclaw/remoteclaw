@@ -82,10 +82,9 @@ describe("getProxyUrlFromFetch", () => {
 
   it("returns undefined for plain fetch functions or blank metadata", () => {
     const plainFetch = vi.fn() as unknown as typeof fetch;
-    const blankMetadataFetch = vi.fn() as unknown as typeof fetch & {
-      [Symbol.for("openclaw.proxyFetch.proxyUrl")]?: string;
-    };
-    blankMetadataFetch[Symbol.for("openclaw.proxyFetch.proxyUrl")] = "   ";
+    const proxyUrlSymbol = Symbol.for("openclaw.proxyFetch.proxyUrl");
+    const blankMetadataFetch = vi.fn() as unknown as typeof fetch & Record<symbol, string>;
+    blankMetadataFetch[proxyUrlSymbol] = "   ";
 
     expect(getProxyUrlFromFetch(plainFetch)).toBeUndefined();
     expect(getProxyUrlFromFetch(blankMetadataFetch)).toBeUndefined();

@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/line";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/line";
 import { describe, expect, it, vi } from "vitest";
 import { buildChannelOnboardingAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import {
@@ -37,8 +37,13 @@ const lineConfigureAdapter = buildChannelOnboardingAdapterFromSetupWizard({
     config: {
       listAccountIds: listLineAccountIds,
       defaultAccountId: resolveDefaultLineAccountId,
-      resolveAllowFrom: ({ cfg, accountId }: { cfg: OpenClawConfig; accountId?: string | null }) =>
-        resolveLineAccount({ cfg, accountId: accountId ?? undefined }).config.allowFrom,
+      resolveAllowFrom: ({
+        cfg,
+        accountId,
+      }: {
+        cfg: RemoteClawConfig;
+        accountId?: string | null;
+      }) => resolveLineAccount({ cfg, accountId: accountId ?? undefined }).config.allowFrom,
     },
     setup: lineSetupAdapter,
   } as Parameters<typeof buildChannelOnboardingAdapterFromSetupWizard>[0]["plugin"],
@@ -60,7 +65,7 @@ describe("line setup wizard", () => {
     });
 
     const result = await lineConfigureAdapter.configure({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       runtime: createRuntimeEnv(),
       prompter,
       options: {},

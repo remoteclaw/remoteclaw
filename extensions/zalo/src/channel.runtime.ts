@@ -1,12 +1,12 @@
-import { createAccountStatusSink } from "openclaw/plugin-sdk/compat";
-import { PAIRING_APPROVED_MESSAGE } from "openclaw/plugin-sdk/zalo";
+import { createAccountStatusSink } from "remoteclaw/plugin-sdk/compat";
+import { PAIRING_APPROVED_MESSAGE } from "remoteclaw/plugin-sdk/zalo";
 import { probeZalo } from "./probe.js";
 import { resolveZaloProxyFetch } from "./proxy.js";
 import { normalizeSecretInputString } from "./secret-input.js";
 import { sendMessageZalo } from "./send.js";
 
 export async function notifyZaloPairingApproval(params: {
-  cfg: import("openclaw/plugin-sdk/zalo").OpenClawConfig;
+  cfg: import("remoteclaw/plugin-sdk/zalo").RemoteClawConfig;
   id: string;
 }) {
   const { resolveZaloAccount } = await import("./accounts.js");
@@ -41,7 +41,7 @@ export async function probeZaloAccount(params: {
 
 export async function startZaloGatewayAccount(
   ctx: Parameters<
-    NonNullable<import("openclaw/plugin-sdk/zalo").ChannelPlugin["gateway"]>["startAccount"]
+    NonNullable<import("remoteclaw/plugin-sdk/zalo").ChannelPlugin["gateway"]>["startAccount"]
   >[0],
 ) {
   const account = ctx.account;

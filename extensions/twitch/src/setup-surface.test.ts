@@ -11,7 +11,7 @@
  * - setTwitchAccount config updates
  */
 
-import type { WizardPrompter } from "openclaw/plugin-sdk/twitch";
+import type { WizardPrompter } from "remoteclaw/plugin-sdk/twitch";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TwitchAccountConfig } from "./types.js";
 

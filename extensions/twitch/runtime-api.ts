@@ -1,1 +1,1 @@
-export * from "openclaw/plugin-sdk/twitch";
+export * from "remoteclaw/plugin-sdk/twitch";

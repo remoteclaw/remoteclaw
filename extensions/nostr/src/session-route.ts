@@ -2,7 +2,7 @@ import {
   buildChannelOutboundSessionRoute,
   stripChannelTargetPrefix,
   type ChannelOutboundSessionRouteParams,
-} from "openclaw/plugin-sdk/core";
+} from "remoteclaw/plugin-sdk/core";
 
 export function resolveNostrOutboundSessionRoute(params: ChannelOutboundSessionRouteParams) {
   const target = stripChannelTargetPrefix(params.target, "nostr");

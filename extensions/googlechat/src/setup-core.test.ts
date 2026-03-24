@@ -1,4 +1,4 @@
-import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/setup";
+import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/setup";
 import { describe, expect, it } from "vitest";
 import { googlechatSetupAdapter } from "./setup-core.js";
 

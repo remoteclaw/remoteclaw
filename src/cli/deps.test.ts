@@ -74,7 +74,9 @@ describe("createDefaultDeps", () => {
     expect(moduleLoads.signal).not.toHaveBeenCalled();
     expect(moduleLoads.imessage).not.toHaveBeenCalled();
 
-    const sendTelegram = deps["telegram"] as (...args: unknown[]) => Promise<unknown>;
+    const sendTelegram = deps.sendMessageTelegram as unknown as (
+      ...args: unknown[]
+    ) => Promise<unknown>;
     await sendTelegram("chat", "hello", { verbose: false });
 
     expect(moduleLoads.telegram).toHaveBeenCalledTimes(1);
@@ -84,7 +86,9 @@ describe("createDefaultDeps", () => {
 
   it("reuses module cache after first dynamic import", async () => {
     const deps = createDefaultDeps();
-    const sendDiscord = deps["discord"] as (...args: unknown[]) => Promise<unknown>;
+    const sendDiscord = deps.sendMessageDiscord as unknown as (
+      ...args: unknown[]
+    ) => Promise<unknown>;
 
     await sendDiscord("channel", "first", { verbose: false });
     await sendDiscord("channel", "second", { verbose: false });

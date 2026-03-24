@@ -43,10 +43,8 @@ describe("resolveWhatsAppHeartbeatRecipients", () => {
     vi.resetModules();
     loadSessionStoreMock.mockReset();
     readChannelAllowFromStoreSyncMock.mockReset();
-    vi.doMock("../../config/sessions/store-summary.js", () => ({
-      loadSessionStoreSummary: loadSessionStoreMock,
-    }));
-    vi.doMock("../../config/sessions/paths.js", () => ({
+    vi.doMock("../../config/sessions.js", () => ({
+      loadSessionStore: loadSessionStoreMock,
       resolveStorePath: vi.fn(() => "/tmp/test-sessions.json"),
     }));
     vi.doMock("../../pairing/pairing-store.js", () => ({

@@ -7,7 +7,6 @@ import type {
 } from "../types.core.js";
 import type {
   ChannelMessageActionName,
-  ChannelMessageCapability,
   ChannelPlugin,
 } from "../types.js";
 

@@ -51,8 +51,7 @@ function startLineAccount(params: { account: ResolvedLineAccount; abortSignal?: 
     task: linePlugin.gateway!.startAccount!(
       createStartAccountContext({
         account: params.account,
-        abortSignal: params.abortSignal,
-        runtime: createRuntimeEnv(),
+        abortSignal: params.abortSignal ?? new AbortController().signal,
       }),
     ),
   };

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 
 const telegramGetCapabilitiesMock = vi.fn();
 const discordGetCapabilitiesMock = vi.fn();
@@ -50,7 +50,7 @@ describe("channel action capability matrix", () => {
           appToken: "xapp-test",
         },
       },
-    } as OpenClawConfig;
+    } as unknown as RemoteClawConfig;
     const interactiveCfg = {
       channels: {
         slack: {
@@ -59,7 +59,7 @@ describe("channel action capability matrix", () => {
           capabilities: { interactiveReplies: true },
         },
       },
-    } as OpenClawConfig;
+    } as unknown as RemoteClawConfig;
 
     expect(slackPlugin.actions?.getCapabilities?.({ cfg: baseCfg })).toEqual(["blocks"]);
     expect(slackPlugin.actions?.getCapabilities?.({ cfg: interactiveCfg })).toEqual([
@@ -71,7 +71,7 @@ describe("channel action capability matrix", () => {
   it("forwards Telegram action capabilities through the channel wrapper", () => {
     telegramGetCapabilitiesMock.mockReturnValue(["interactive", "buttons"]);
 
-    const result = telegramPlugin.actions?.getCapabilities?.({ cfg: {} as OpenClawConfig });
+    const result = telegramPlugin.actions?.getCapabilities?.({ cfg: {} as RemoteClawConfig });
 
     expect(result).toEqual(["interactive", "buttons"]);
     expect(telegramGetCapabilitiesMock).toHaveBeenCalledWith({ cfg: {} });
@@ -80,7 +80,7 @@ describe("channel action capability matrix", () => {
   it("forwards Discord action capabilities through the channel wrapper", () => {
     discordGetCapabilitiesMock.mockReturnValue(["interactive", "components"]);
 
-    const result = discordPlugin.actions?.getCapabilities?.({ cfg: {} as OpenClawConfig });
+    const result = discordPlugin.actions?.getCapabilities?.({ cfg: {} as RemoteClawConfig });
 
     expect(result).toEqual(["interactive", "components"]);
     expect(discordGetCapabilitiesMock).toHaveBeenCalledWith({ cfg: {} });
@@ -95,14 +95,14 @@ describe("channel action capability matrix", () => {
           baseUrl: "https://chat.example.com",
         },
       },
-    } as OpenClawConfig;
+    } as unknown as RemoteClawConfig;
     const unconfiguredCfg = {
       channels: {
         mattermost: {
           enabled: true,
         },
       },
-    } as OpenClawConfig;
+    } as unknown as RemoteClawConfig;
 
     expect(mattermostPlugin.actions?.getCapabilities?.({ cfg: configuredCfg })).toEqual([
       "buttons",
@@ -119,7 +119,7 @@ describe("channel action capability matrix", () => {
           appSecret: "secret",
         },
       },
-    } as OpenClawConfig;
+    } as unknown as RemoteClawConfig;
     const disabledCfg = {
       channels: {
         feishu: {
@@ -128,7 +128,7 @@ describe("channel action capability matrix", () => {
           appSecret: "secret",
         },
       },
-    } as OpenClawConfig;
+    } as unknown as RemoteClawConfig;
 
     expect(feishuPlugin.actions?.getCapabilities?.({ cfg: configuredCfg })).toEqual(["cards"]);
     expect(feishuPlugin.actions?.getCapabilities?.({ cfg: disabledCfg })).toEqual([]);
@@ -144,7 +144,7 @@ describe("channel action capability matrix", () => {
           appPassword: "secret",
         },
       },
-    } as OpenClawConfig;
+    } as unknown as RemoteClawConfig;
     const disabledCfg = {
       channels: {
         msteams: {
@@ -154,7 +154,7 @@ describe("channel action capability matrix", () => {
           appPassword: "secret",
         },
       },
-    } as OpenClawConfig;
+    } as unknown as RemoteClawConfig;
 
     expect(msteamsPlugin.actions?.getCapabilities?.({ cfg: configuredCfg })).toEqual(["cards"]);
     expect(msteamsPlugin.actions?.getCapabilities?.({ cfg: disabledCfg })).toEqual([]);
@@ -168,7 +168,7 @@ describe("channel action capability matrix", () => {
           botToken: "zl-token",
         },
       },
-    } as OpenClawConfig;
+    } as unknown as RemoteClawConfig;
 
     expect(zaloPlugin.actions?.getCapabilities?.({ cfg })).toEqual([]);
   });

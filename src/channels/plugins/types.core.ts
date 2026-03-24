@@ -358,6 +358,7 @@ export type ChannelMessageActionAdapter = {
    * create polls should include `"poll"` here when enabled.
    */
   listActions?: (params: { cfg: RemoteClawConfig }) => ChannelMessageActionName[];
+  getCapabilities?: (params: { cfg: RemoteClawConfig }) => string[];
   supportsAction?: (params: { action: ChannelMessageActionName }) => boolean;
   supportsButtons?: (params: { cfg: RemoteClawConfig }) => boolean;
   supportsCards?: (params: { cfg: RemoteClawConfig }) => boolean;

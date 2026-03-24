@@ -53,7 +53,10 @@ describe("handleControlUiHttpRequest", () => {
       res,
       {
         ...(params.basePath ? { basePath: params.basePath } : {}),
-        root: { kind: params.rootKind ?? "resolved", path: params.rootPath },
+        root: { kind: params.rootKind ?? "resolved", path: params.rootPath } as {
+          kind: "resolved";
+          path: string;
+        },
       },
     );
     return { res, end, handled };

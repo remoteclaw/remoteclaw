@@ -438,7 +438,7 @@ describe("GatewayClient connect auth payload", () => {
   }
 
   async function expectNoReconnectAfterConnectFailure(params: {
-    client: GatewayClient;
+    client: InstanceType<typeof GatewayClient>;
     firstWs: MockWebSocket;
     connectId: string | undefined;
     failureDetails: Record<string, unknown>;

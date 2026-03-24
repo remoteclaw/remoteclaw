@@ -276,76 +276,74 @@ describe("BlueBubbles webhook monitor", () => {
       await expectWebhookStatus(req, 405);
     });
 
-  function createPasswordlessWebhookTarget() {
-    return createWebhookTarget(createMockAccount({ password: undefined }));
-  }
+    function createPasswordlessWebhookTarget() {
+      return createWebhookTarget(createMockAccount({ password: undefined }));
+    }
 
-  function createProtectedPasswordQueryRequestParams(password = TEST_WEBHOOK_PASSWORD) {
-    return createPasswordQueryRequestParamsForTest({ password });
-  }
+    function createProtectedPasswordQueryRequestParams(password = TEST_WEBHOOK_PASSWORD) {
+      return createPasswordQueryRequestParamsForTest({ password });
+    }
 
-  async function expectWebhookRequestStatusWithSetup(
-    setup: () => void,
-    params: WebhookRequestParams,
-    expectedStatus: number,
-    expectedBody?: string,
-  ) {
-    setup();
-    return expectWebhookRequestStatusForTest(params, expectedStatus, expectedBody);
-  }
+    async function expectWebhookRequestStatusWithSetup(
+      setup: () => void,
+      params: WebhookRequestParams,
+      expectedStatus: number,
+      expectedBody?: string,
+    ) {
+      setup();
+      return expectWebhookRequestStatusForTest(params, expectedStatus, expectedBody);
+    }
 
-  async function dispatchWebhookPayloadWithSetup(setup: () => void, payload: unknown) {
-    setup();
-    return dispatchWebhookPayloadForTest({ body: payload });
-  }
+    async function dispatchWebhookPayloadWithSetup(setup: () => void, payload: unknown) {
+      setup();
+      return dispatchWebhookPayloadForTest({ body: payload });
+    }
 
-  async function expectProtectedPasswordQueryRequestStatus(
-    expectedStatus: number,
-    password = TEST_WEBHOOK_PASSWORD,
-  ) {
-    return expectWebhookRequestStatusForTest(
-      createProtectedPasswordQueryRequestParams(password),
-      expectedStatus,
-    );
-  }
+    async function expectProtectedPasswordQueryRequestStatus(
+      expectedStatus: number,
+      password = TEST_WEBHOOK_PASSWORD,
+    ) {
+      return expectWebhookRequestStatusForTest(
+        createProtectedPasswordQueryRequestParams(password),
+        expectedStatus,
+      );
+    }
 
-  async function expectProtectedWebhookRequestStatus(
-    params: WebhookRequestParams,
-    expectedStatus: number,
-    expectedBody?: string,
-  ) {
-    return expectWebhookRequestStatusWithSetup(
-      () => {
-        setupProtectedWebhookTarget();
-      },
-      params,
-      expectedStatus,
-      expectedBody,
-    );
-  }
+    async function expectProtectedWebhookRequestStatus(
+      params: WebhookRequestParams,
+      expectedStatus: number,
+      expectedBody?: string,
+    ) {
+      return expectWebhookRequestStatusWithSetup(
+        () => {
+          setupProtectedWebhookTarget();
+        },
+        params,
+        expectedStatus,
+        expectedBody,
+      );
+    }
 
-  async function expectRegisteredWebhookRequestStatus(
-    params: WebhookRequestParams,
-    expectedStatus: number,
-    expectedBody?: string,
-  ) {
-    return expectWebhookRequestStatusWithSetup(
-      () => {
+    async function expectRegisteredWebhookRequestStatus(
+      params: WebhookRequestParams,
+      expectedStatus: number,
+      expectedBody?: string,
+    ) {
+      return expectWebhookRequestStatusWithSetup(
+        () => {
+          setupWebhookTarget();
+        },
+        params,
+        expectedStatus,
+        expectedBody,
+      );
+    }
+
+    async function dispatchRegisteredWebhookPayload(payload: unknown) {
+      return dispatchWebhookPayloadWithSetup(() => {
         setupWebhookTarget();
-      },
-      params,
-      expectedStatus,
-      expectedBody,
-    );
-  }
-
-  async function dispatchRegisteredWebhookPayload(payload: unknown) {
-    return dispatchWebhookPayloadWithSetup(async () => {
-      setupWebhookTarget();
-      const payload = createNewMessagePayload({ date: Date.now() });
-      const req = createWebhookRequestForTest({ body: payload });
-      await expectWebhookStatus(req, 200, "ok");
-    });
+      }, payload);
+    }
 
     it("rejects requests with invalid JSON", async () => {
       setupWebhookTarget();

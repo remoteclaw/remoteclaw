@@ -1,7 +1,6 @@
-import type { PluginRuntime } from "openclaw/plugin-sdk/matrix";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { setMatrixRuntime } from "../runtime.js";
-import { createMatrixBotSdkMock } from "../test-mocks.js";
 
 vi.mock("music-metadata", () => ({
   // `resolveMediaDurationMs` lazily imports `music-metadata`; in tests we don't
@@ -9,13 +8,21 @@ vi.mock("music-metadata", () => ({
   parseBuffer: vi.fn().mockResolvedValue({ format: {} }),
 }));
 
-vi.mock("@vector-im/matrix-bot-sdk", () =>
-  createMatrixBotSdkMock({
-    matrixClient: vi.fn(),
-    simpleFsStorageProvider: vi.fn(),
-    rustSdkCryptoStorageProvider: vi.fn(),
-  }),
-);
+vi.mock("@vector-im/matrix-bot-sdk", () => ({
+  ConsoleLogger: class {
+    trace = vi.fn();
+    debug = vi.fn();
+    info = vi.fn();
+    warn = vi.fn();
+    error = vi.fn();
+  },
+  LogService: {
+    setLogger: vi.fn(),
+  },
+  MatrixClient: vi.fn(),
+  SimpleFsStorageProvider: vi.fn(),
+  RustSdkCryptoStorageProvider: vi.fn(),
+}));
 
 vi.mock("./send-queue.js", () => ({
   enqueueSend: async <T>(_roomId: string, fn: () => Promise<T>) => await fn(),

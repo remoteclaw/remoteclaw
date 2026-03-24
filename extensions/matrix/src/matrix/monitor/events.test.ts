@@ -12,8 +12,6 @@ vi.mock("../send.js", () => ({
 }));
 
 describe("registerMatrixMonitorEvents", () => {
-  const roomId = "!room:example.org";
-
   beforeEach(() => {
     sendReadReceiptMatrixMock.mockClear();
   });
@@ -55,16 +53,6 @@ describe("registerMatrixMonitorEvents", () => {
     return { client, getUserId, onRoomMessage, roomMessageHandler, logVerboseMessage };
   }
 
-  async function expectForwardedWithoutReadReceipt(event: MatrixRawEvent) {
-    const { onRoomMessage, roomMessageHandler } = createHarness();
-
-    roomMessageHandler(roomId, event);
-    await vi.waitFor(() => {
-      expect(onRoomMessage).toHaveBeenCalledWith(roomId, event);
-    });
-    expect(sendReadReceiptMatrixMock).not.toHaveBeenCalled();
-  }
-
   it("sends read receipt immediately for non-self messages", async () => {
     const { client, onRoomMessage, roomMessageHandler } = createHarness();
     const event = {
@@ -81,16 +69,30 @@ describe("registerMatrixMonitorEvents", () => {
   });
 
   it("does not send read receipts for self messages", async () => {
-    await expectForwardedWithoutReadReceipt({
+    const { onRoomMessage, roomMessageHandler } = createHarness();
+    const event = {
       event_id: "$e2",
       sender: "@bot:example.org",
+    } as MatrixRawEvent;
+
+    roomMessageHandler("!room:example.org", event);
+    await vi.waitFor(() => {
+      expect(onRoomMessage).toHaveBeenCalledWith("!room:example.org", event);
     });
+    expect(sendReadReceiptMatrixMock).not.toHaveBeenCalled();
   });
 
   it("skips receipt when message lacks sender or event id", async () => {
-    await expectForwardedWithoutReadReceipt({
+    const { onRoomMessage, roomMessageHandler } = createHarness();
+    const event = {
       sender: "@alice:example.org",
+    } as MatrixRawEvent;
+
+    roomMessageHandler("!room:example.org", event);
+    await vi.waitFor(() => {
+      expect(onRoomMessage).toHaveBeenCalledWith("!room:example.org", event);
     });
+    expect(sendReadReceiptMatrixMock).not.toHaveBeenCalled();
   });
 
   it("caches self user id across messages", async () => {

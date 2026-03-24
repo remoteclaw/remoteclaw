@@ -1,41 +1,42 @@
-import type { ChannelOnboardingDmPolicy } from "../../../src/channels/plugins/onboarding-types.js";
-import { promptChannelAccessConfig } from "../../../src/channels/plugins/onboarding/channel-access.js";
+import type {
+  ChannelOnboardingAdapter,
+  ChannelOnboardingDmPolicy,
+  RemoteClawConfig,
+  DmPolicy,
+  WizardPrompter,
+  MSTeamsTeamConfig,
+} from "remoteclaw/plugin-sdk";
 import {
+  DEFAULT_ACCOUNT_ID,
+  formatDocsLink,
   mergeAllowFromEntries,
+  promptChannelAccessConfig,
   setTopLevelChannelAllowFrom,
   setTopLevelChannelDmPolicyWithAllowFrom,
   setTopLevelChannelGroupPolicy,
   splitOnboardingEntries,
-} from "../../../src/channels/plugins/onboarding/helpers.js";
-import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
-import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import type { DmPolicy, MSTeamsTeamConfig } from "../../../src/config/types.js";
-import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
-import type { WizardPrompter } from "../../../src/wizard/prompts.js";
+} from "remoteclaw/plugin-sdk";
 import {
   parseMSTeamsTeamEntry,
   resolveMSTeamsChannelAllowlist,
   resolveMSTeamsUserAllowlist,
 } from "./resolve-allowlist.js";
-import { normalizeSecretInputString } from "./secret-input.js";
-import { hasConfiguredMSTeamsCredentials, resolveMSTeamsCredentials } from "./token.js";
+import { resolveMSTeamsCredentials } from "./token.js";
 
 const channel = "msteams" as const;
 
-function setMSTeamsDmPolicy(cfg: OpenClawConfig, dmPolicy: DmPolicy) {
+function setMSTeamsDmPolicy(cfg: RemoteClawConfig, dmPolicy: DmPolicy) {
   return setTopLevelChannelDmPolicyWithAllowFrom({
     cfg,
-    channel,
+    channel: "msteams",
     dmPolicy,
   });
 }
 
-function setMSTeamsAllowFrom(cfg: OpenClawConfig, allowFrom: string[]): OpenClawConfig {
+function setMSTeamsAllowFrom(cfg: RemoteClawConfig, allowFrom: string[]): RemoteClawConfig {
   return setTopLevelChannelAllowFrom({
     cfg,
-    channel,
+    channel: "msteams",
     allowFrom,
   });
 }
@@ -71,9 +72,9 @@ async function promptMSTeamsCredentials(prompter: WizardPrompter): Promise<{
 }
 
 async function promptMSTeamsAllowFrom(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   prompter: WizardPrompter;
-}): Promise<OpenClawConfig> {
+}): Promise<RemoteClawConfig> {
   const existing = params.cfg.channels?.msteams?.allowFrom ?? [];
   await params.prompter.note(
     [
@@ -136,7 +137,7 @@ async function promptMSTeamsAllowFrom(params: {
 async function noteMSTeamsCredentialHelp(prompter: WizardPrompter): Promise<void> {
   await prompter.note(
     [
-      "1) Azure Bot registration -> get App ID + Tenant ID",
+      "1) Azure Bot registration → get App ID + Tenant ID",
       "2) Add a client secret (App Password)",
       "3) Set webhook URL + messaging endpoint",
       "Tip: you can also set MSTEAMS_APP_ID / MSTEAMS_APP_PASSWORD / MSTEAMS_TENANT_ID.",
@@ -147,21 +148,21 @@ async function noteMSTeamsCredentialHelp(prompter: WizardPrompter): Promise<void
 }
 
 function setMSTeamsGroupPolicy(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   groupPolicy: "open" | "allowlist" | "disabled",
-): OpenClawConfig {
+): RemoteClawConfig {
   return setTopLevelChannelGroupPolicy({
     cfg,
-    channel,
+    channel: "msteams",
     groupPolicy,
     enabled: true,
   });
 }
 
 function setMSTeamsTeamsAllowlist(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   entries: Array<{ teamKey: string; channelKey?: string }>,
-): OpenClawConfig {
+): RemoteClawConfig {
   const baseTeams = cfg.channels?.msteams?.teams ?? {};
   const teams: Record<string, { channels?: Record<string, unknown> }> = { ...baseTeams };
   for (const entry of entries) {
@@ -191,7 +192,7 @@ function setMSTeamsTeamsAllowlist(
   };
 }
 
-const msteamsDmPolicy: ChannelOnboardingDmPolicy = {
+const dmPolicy: ChannelOnboardingDmPolicy = {
   label: "MS Teams",
   channel,
   policyKey: "channels.msteams.dmPolicy",
@@ -201,53 +202,30 @@ const msteamsDmPolicy: ChannelOnboardingDmPolicy = {
   promptAllowFrom: promptMSTeamsAllowFrom,
 };
 
-export const msteamsSetupAdapter: ChannelSetupAdapter = {
-  resolveAccountId: () => DEFAULT_ACCOUNT_ID,
-  applyAccountConfig: ({ cfg }) => ({
-    ...cfg,
-    channels: {
-      ...cfg.channels,
-      msteams: {
-        ...cfg.channels?.msteams,
-        enabled: true,
-      },
-    },
-  }),
-};
-
-export const msteamsSetupWizard: ChannelSetupWizard = {
+export const msteamsOnboardingAdapter: ChannelOnboardingAdapter = {
   channel,
-  resolveAccountIdForConfigure: () => DEFAULT_ACCOUNT_ID,
-  resolveShouldPromptAccountIds: () => false,
-  status: {
-    configuredLabel: "configured",
-    unconfiguredLabel: "needs app credentials",
-    configuredHint: "configured",
-    unconfiguredHint: "needs app creds",
-    configuredScore: 2,
-    unconfiguredScore: 0,
-    resolveConfigured: ({ cfg }) => {
-      return (
-        Boolean(resolveMSTeamsCredentials(cfg.channels?.msteams)) ||
-        hasConfiguredMSTeamsCredentials(cfg.channels?.msteams)
-      );
-    },
-    resolveStatusLines: ({ cfg }) => {
-      const configured =
-        Boolean(resolveMSTeamsCredentials(cfg.channels?.msteams)) ||
-        hasConfiguredMSTeamsCredentials(cfg.channels?.msteams);
-      return [`MS Teams: ${configured ? "configured" : "needs app credentials"}`];
-    },
+  getStatus: async ({ cfg }) => {
+    const configured = Boolean(resolveMSTeamsCredentials(cfg.channels?.msteams));
+    return {
+      channel,
+      configured,
+      statusLines: [`MS Teams: ${configured ? "configured" : "needs app credentials"}`],
+      selectionHint: configured ? "configured" : "needs app creds",
+      quickstartScore: configured ? 2 : 0,
+    };
   },
-  credentials: [],
-  finalize: async ({ cfg, prompter }) => {
+  configure: async ({ cfg, prompter }) => {
     const resolved = resolveMSTeamsCredentials(cfg.channels?.msteams);
-    const hasConfigCreds = hasConfiguredMSTeamsCredentials(cfg.channels?.msteams);
+    const hasConfigCreds = Boolean(
+      cfg.channels?.msteams?.appId?.trim() &&
+      cfg.channels?.msteams?.appPassword?.trim() &&
+      cfg.channels?.msteams?.tenantId?.trim(),
+    );
     const canUseEnv = Boolean(
       !hasConfigCreds &&
-      normalizeSecretInputString(process.env.MSTEAMS_APP_ID) &&
-      normalizeSecretInputString(process.env.MSTEAMS_APP_PASSWORD) &&
-      normalizeSecretInputString(process.env.MSTEAMS_TENANT_ID),
+      process.env.MSTEAMS_APP_ID?.trim() &&
+      process.env.MSTEAMS_APP_PASSWORD?.trim() &&
+      process.env.MSTEAMS_TENANT_ID?.trim(),
     );
 
     let next = cfg;
@@ -255,7 +233,7 @@ export const msteamsSetupWizard: ChannelSetupWizard = {
     let appPassword: string | null = null;
     let tenantId: string | null = null;
 
-    if (!resolved && !hasConfigCreds) {
+    if (!resolved) {
       await noteMSTeamsCredentialHelp(prompter);
     }
 
@@ -266,11 +244,13 @@ export const msteamsSetupWizard: ChannelSetupWizard = {
         initialValue: true,
       });
       if (keepEnv) {
-        next = msteamsSetupAdapter.applyAccountConfig({
-          cfg: next,
-          accountId: DEFAULT_ACCOUNT_ID,
-          input: {},
-        });
+        next = {
+          ...next,
+          channels: {
+            ...next.channels,
+            msteams: { ...next.channels?.msteams, enabled: true },
+          },
+        };
       } else {
         ({ appId, appPassword, tenantId } = await promptMSTeamsCredentials(prompter));
       }
@@ -329,17 +309,17 @@ export const msteamsSetupWizard: ChannelSetupWizard = {
           .filter(Boolean) as Array<{ teamKey: string; channelKey?: string }>;
         if (accessConfig.entries.length > 0 && resolveMSTeamsCredentials(next.channels?.msteams)) {
           try {
-            const resolvedEntries = await resolveMSTeamsChannelAllowlist({
+            const resolved = await resolveMSTeamsChannelAllowlist({
               cfg: next,
               entries: accessConfig.entries,
             });
-            const resolvedChannels = resolvedEntries.filter(
+            const resolvedChannels = resolved.filter(
               (entry) => entry.resolved && entry.teamId && entry.channelId,
             );
-            const resolvedTeams = resolvedEntries.filter(
+            const resolvedTeams = resolved.filter(
               (entry) => entry.resolved && entry.teamId && !entry.channelId,
             );
-            const unresolved = resolvedEntries
+            const unresolved = resolved
               .filter((entry) => !entry.resolved)
               .map((entry) => entry.input);
 
@@ -391,7 +371,7 @@ export const msteamsSetupWizard: ChannelSetupWizard = {
 
     return { cfg: next, accountId: DEFAULT_ACCOUNT_ID };
   },
-  dmPolicy: msteamsDmPolicy,
+  dmPolicy,
   disable: (cfg) => ({
     ...cfg,
     channels: {

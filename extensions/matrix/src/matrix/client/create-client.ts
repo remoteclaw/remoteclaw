@@ -4,7 +4,6 @@ import type {
   ICryptoStorageProvider,
   MatrixClient,
 } from "@vector-im/matrix-bot-sdk";
-import { ensureMatrixCryptoRuntime } from "../deps.js";
 import { loadMatrixSdk } from "../sdk-runtime.js";
 import { ensureMatrixSdkLoggingConfigured } from "./logging.js";
 import {
@@ -45,7 +44,6 @@ export async function createMatrixClient(params: {
   localTimeoutMs?: number;
   accountId?: string | null;
 }): Promise<MatrixClient> {
-  await ensureMatrixCryptoRuntime();
   const { MatrixClient, SimpleFsStorageProvider, RustSdkCryptoStorageProvider, LogService } =
     loadMatrixSdk();
   ensureMatrixSdkLoggingConfigured();

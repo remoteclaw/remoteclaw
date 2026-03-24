@@ -9,21 +9,6 @@ export function createAccountListHelpers(
   channelKey: string,
   options?: { normalizeAccountId?: (id: string) => string; allowUnlistedDefaultAccount?: boolean },
 ) {
-  function resolveConfiguredDefaultAccountId(cfg: RemoteClawConfig): string | undefined {
-    const channel = cfg.channels?.[channelKey] as Record<string, unknown> | undefined;
-    const preferred = normalizeOptionalAccountId(
-      typeof channel?.defaultAccount === "string" ? channel.defaultAccount : undefined,
-    );
-    if (!preferred) {
-      return undefined;
-    }
-    const ids = listAccountIds(cfg);
-    if (ids.some((id) => normalizeAccountId(id) === preferred)) {
-      return preferred;
-    }
-    return undefined;
-  }
-
   function listConfiguredAccountIds(cfg: RemoteClawConfig): string[] {
     const channel = cfg.channels?.[channelKey];
     const accounts = (channel as Record<string, unknown> | undefined)?.accounts;
@@ -46,9 +31,13 @@ export function createAccountListHelpers(
   }
 
   function resolveDefaultAccountId(cfg: RemoteClawConfig): string {
+    const channel = cfg.channels?.[channelKey] as Record<string, unknown> | undefined;
+    const rawPreferred = normalizeOptionalAccountId(
+      typeof channel?.defaultAccount === "string" ? channel.defaultAccount : undefined,
+    );
     return resolveListedDefaultAccountId({
       accountIds: listAccountIds(cfg),
-      configuredDefaultAccountId: resolveConfiguredDefaultAccountId(cfg),
+      configuredDefaultAccountId: rawPreferred,
       allowUnlistedDefaultAccount: options?.allowUnlistedDefaultAccount,
     });
   }

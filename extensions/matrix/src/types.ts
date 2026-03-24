@@ -1,4 +1,4 @@
-import type { DmPolicy, GroupPolicy, SecretInput } from "./runtime-api.js";
+import type { DmPolicy, GroupPolicy } from "remoteclaw/plugin-sdk";
 export type { DmPolicy, GroupPolicy };
 
 export type ReplyToMode = "off" | "first" | "all";
@@ -25,7 +25,7 @@ export type MatrixRoomConfig = {
   autoReply?: boolean;
   /** Optional allowlist for room senders (matrix user IDs). */
   users?: Array<string | number>;
-  /** Optional skill filter for this room. */
+  /** Optional skills for this room. */
   skills?: string[];
   /** Optional system prompt snippet for this room. */
   systemPrompt?: string;
@@ -35,18 +35,8 @@ export type MatrixActionConfig = {
   reactions?: boolean;
   messages?: boolean;
   pins?: boolean;
-  profile?: boolean;
   memberInfo?: boolean;
   channelInfo?: boolean;
-  verification?: boolean;
-};
-
-export type MatrixThreadBindingsConfig = {
-  enabled?: boolean;
-  idleHours?: number;
-  maxAgeHours?: number;
-  spawnSubagentSessions?: boolean;
-  spawnAcpSessions?: boolean;
 };
 
 /** Per-account Matrix config (excludes the accounts field to prevent recursion). */
@@ -68,14 +58,10 @@ export type MatrixConfig = {
   /** Matrix access token. */
   accessToken?: string;
   /** Matrix password (used only to fetch access token). */
-  password?: SecretInput;
-  /** Optional Matrix device id (recommended when using access tokens + E2EE). */
-  deviceId?: string;
+  password?: string;
   /** Optional device name when logging in via password. */
   deviceName?: string;
-  /** Optional desired Matrix avatar source (mxc:// or http(s) URL). */
-  avatarUrl?: string;
-  /** Initial sync limit for startup (defaults to matrix-js-sdk behavior). */
+  /** Initial sync limit for startup (default: @vector-im/matrix-bot-sdk default). */
   initialSyncLimit?: number;
   /** Enable end-to-end encryption (E2EE). Default: false. */
   encryption?: boolean;
@@ -95,21 +81,9 @@ export type MatrixConfig = {
   chunkMode?: "length" | "newline";
   /** Outbound response prefix override for this channel/account. */
   responsePrefix?: string;
-  /** Ack reaction emoji override for this channel/account. */
-  ackReaction?: string;
-  /** Ack reaction scope override for this channel/account. */
-  ackReactionScope?: "group-mentions" | "group-all" | "direct" | "all" | "none" | "off";
-  /** Inbound reaction notifications for bot-authored Matrix messages. */
-  reactionNotifications?: "off" | "own";
-  /** Thread/session binding behavior for Matrix room threads. */
-  threadBindings?: MatrixThreadBindingsConfig;
-  /** Whether Matrix should auto-request self verification on startup when unverified. */
-  startupVerification?: "off" | "if-unverified";
-  /** Cooldown window for automatic startup verification requests. Default: 24 hours. */
-  startupVerificationCooldownHours?: number;
   /** Max outbound media size in MB. */
   mediaMaxMb?: number;
-  /** Auto-join invites (always|allowlist|off). Default: off. */
+  /** Auto-join invites (always|allowlist|off). Default: always. */
   autoJoin?: "always" | "allowlist" | "off";
   /** Allowlist for auto-join invites (room IDs, aliases). */
   autoJoinAllowlist?: Array<string | number>;
@@ -138,7 +112,7 @@ export type CoreConfig = {
   };
   messages?: {
     ackReaction?: string;
-    ackReactionScope?: "group-mentions" | "group-all" | "direct" | "all" | "none" | "off";
+    ackReactionScope?: "group-mentions" | "group-all" | "direct" | "all" | "off" | "none";
   };
   [key: string]: unknown;
 };

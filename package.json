@@ -55,6 +55,10 @@
       "types": "./dist/plugin-sdk/account-id.d.ts",
       "default": "./dist/plugin-sdk/account-id.js"
     },
+    "./plugin-sdk/account-resolution": {
+      "types": "./dist/plugin-sdk/account-resolution.d.ts",
+      "default": "./dist/plugin-sdk/account-resolution.js"
+    },
     "./plugin-sdk/acpx": {
       "types": "./dist/plugin-sdk/acpx.d.ts",
       "default": "./dist/plugin-sdk/acpx.js"

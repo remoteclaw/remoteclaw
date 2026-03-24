@@ -3,15 +3,19 @@ import {
   collectAllowlistProviderRestrictSendersWarnings,
 } from "remoteclaw/plugin-sdk";
 import {
+  applyAccountNameToChannelSection,
   buildChannelConfigSchema,
   collectStatusIssuesFromLastError,
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
   formatTrimmedAllowFromEntries,
   getChatChannelMeta,
+  imessageOnboardingAdapter,
   IMessageConfigSchema,
   listIMessageAccountIds,
   looksLikeIMessageTargetId,
+  migrateBaseNameToDefaultAccount,
+  normalizeAccountId,
   normalizeIMessageMessagingTarget,
   PAIRING_APPROVED_MESSAGE,
   resolveChannelMediaMaxBytes,
@@ -26,17 +30,22 @@ import {
   type ResolvedIMessageAccount,
 } from "remoteclaw/plugin-sdk/imessage";
 import { getIMessageRuntime } from "./runtime.js";
-import { createIMessageSetupWizardProxy, imessageSetupAdapter } from "./setup-core.js";
 
 const meta = getChatChannelMeta("imessage");
 
-async function loadIMessageChannelRuntime() {
-  return await import("./channel.runtime.js");
+function buildIMessageSetupPatch(input: {
+  cliPath?: string;
+  dbPath?: string;
+  service?: string;
+  region?: string;
+}) {
+  return {
+    ...(input.cliPath ? { cliPath: input.cliPath } : {}),
+    ...(input.dbPath ? { dbPath: input.dbPath } : {}),
+    ...(input.service ? { service: input.service } : {}),
+    ...(input.region ? { region: input.region } : {}),
+  };
 }
-
-const imessageSetupWizard = createIMessageSetupWizardProxy(async () => ({
-  imessageSetupWizard: (await loadIMessageChannelRuntime()).imessageSetupWizard,
-}));
 
 type IMessageSendFn = ReturnType<
   typeof getIMessageRuntime
@@ -78,7 +87,7 @@ export const imessagePlugin: ChannelPlugin<ResolvedIMessageAccount> = {
     aliases: ["imsg"],
     showConfigured: false,
   },
-  setupWizard: imessageSetupWizard,
+  onboarding: imessageOnboardingAdapter,
   pairing: {
     idLabel: "imessageSenderId",
     notifyApproval: async ({ id }) => {
@@ -157,7 +166,63 @@ export const imessagePlugin: ChannelPlugin<ResolvedIMessageAccount> = {
       hint: "<handle|chat_id:ID>",
     },
   },
-  setup: imessageSetupAdapter,
+  setup: {
+    resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
+    applyAccountName: ({ cfg, accountId, name }) =>
+      applyAccountNameToChannelSection({
+        cfg,
+        channelKey: "imessage",
+        accountId,
+        name,
+      }),
+    applyAccountConfig: ({ cfg, accountId, input }) => {
+      const namedConfig = applyAccountNameToChannelSection({
+        cfg,
+        channelKey: "imessage",
+        accountId,
+        name: input.name,
+      });
+      const next = (
+        accountId !== DEFAULT_ACCOUNT_ID
+          ? migrateBaseNameToDefaultAccount({
+              cfg: namedConfig,
+              channelKey: "imessage",
+            })
+          : namedConfig
+      ) as typeof cfg;
+      if (accountId === DEFAULT_ACCOUNT_ID) {
+        return {
+          ...next,
+          channels: {
+            ...next.channels,
+            imessage: {
+              ...next.channels?.imessage,
+              enabled: true,
+              ...buildIMessageSetupPatch(input),
+            },
+          },
+        } as typeof cfg;
+      }
+      return {
+        ...next,
+        channels: {
+          ...next.channels,
+          imessage: {
+            ...next.channels?.imessage,
+            enabled: true,
+            accounts: {
+              ...next.channels?.imessage?.accounts,
+              [accountId]: {
+                ...next.channels?.imessage?.accounts?.[accountId],
+                enabled: true,
+                ...buildIMessageSetupPatch(input),
+              },
+            },
+          },
+        },
+      } as typeof cfg;
+    },
+  },
   outbound: {
     deliveryMode: "direct",
     chunker: (text, limit) => getIMessageRuntime().channel.text.chunkText(text, limit),

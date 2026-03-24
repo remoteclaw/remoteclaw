@@ -397,7 +397,10 @@ describe("GatewayClient connect auth payload", () => {
     );
   }
 
-  function startClientAndConnect(params: { client: GatewayClient; nonce?: string }) {
+  function startClientAndConnect(params: {
+    client: InstanceType<typeof GatewayClient>;
+    nonce?: string;
+  }) {
     params.client.start();
     const ws = getLatestWs();
     ws.emitOpen();

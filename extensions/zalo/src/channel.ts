@@ -1,24 +1,24 @@
-import { describeAccountSnapshot } from "openclaw/plugin-sdk/account-helpers";
+import { describeAccountSnapshot } from "remoteclaw/plugin-sdk/account-helpers";
 import {
   adaptScopedAccountAccessor,
   createScopedChannelConfigAdapter,
   createScopedDmSecurityResolver,
   mapAllowFromEntries,
-} from "openclaw/plugin-sdk/channel-config-helpers";
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
   buildOpenGroupPolicyRestrictSendersWarning,
   buildOpenGroupPolicyWarning,
   createOpenProviderGroupPolicyWarningCollector,
-} from "openclaw/plugin-sdk/channel-policy";
+} from "remoteclaw/plugin-sdk/channel-policy";
 import {
   createEmptyChannelResult,
   createRawChannelSendResultAdapter,
-} from "openclaw/plugin-sdk/channel-send-result";
-import { createStaticReplyToModeResolver } from "openclaw/plugin-sdk/conversation-runtime";
-import { createChatChannelPlugin } from "openclaw/plugin-sdk/core";
-import { createChannelDirectoryAdapter } from "openclaw/plugin-sdk/directory-runtime";
-import { listResolvedDirectoryUserEntriesFromAllowFrom } from "openclaw/plugin-sdk/directory-runtime";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+} from "remoteclaw/plugin-sdk/channel-send-result";
+import { createStaticReplyToModeResolver } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
+import { createChannelDirectoryAdapter } from "remoteclaw/plugin-sdk/directory-runtime";
+import { listResolvedDirectoryUserEntriesFromAllowFrom } from "remoteclaw/plugin-sdk/directory-runtime";
+import { createLazyRuntimeModule } from "remoteclaw/plugin-sdk/lazy-runtime";
 import {
   listZaloAccountIds,
   resolveDefaultZaloAccountId,
@@ -40,7 +40,7 @@ import {
   sendPayloadWithChunkedTextAndMedia,
   type ChannelAccountSnapshot,
   type ChannelPlugin,
-  type OpenClawConfig,
+  type RemoteClawConfig,
 } from "./runtime-api.js";
 import { resolveZaloOutboundSessionRoute } from "./session-route.js";
 import { zaloSetupAdapter } from "./setup-core.js";
@@ -113,7 +113,7 @@ const resolveZaloDmPolicy = createScopedDmSecurityResolver<ResolvedZaloAccount>(
 });
 
 const collectZaloSecurityWarnings = createOpenProviderGroupPolicyWarningCollector<{
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   account: ResolvedZaloAccount;
 }>({
   providerConfigPresent: (cfg) => cfg.channels?.zalo !== undefined,

@@ -14,7 +14,6 @@ import { z } from "zod";
 import { listAccountIds, resolveAccount } from "./accounts.js";
 import { sendMessage, sendFileUrl } from "./client.js";
 import { getSynologyRuntime } from "./runtime.js";
-import { synologyChatSetupAdapter, synologyChatSetupWizard } from "./setup-surface.js";
 import type { ResolvedSynologyChatAccount } from "./types.js";
 import { createWebhookHandler } from "./webhook-handler.js";
 
@@ -69,8 +68,6 @@ export function createSynologyChatPlugin() {
     reload: { configPrefixes: [`channels.${CHANNEL_ID}`] },
 
     configSchema: SynologyChatConfigSchema,
-    setup: synologyChatSetupAdapter,
-    setupWizard: synologyChatSetupWizard,
 
     config: {
       listAccountIds: (cfg: any) => listAccountIds(cfg),
@@ -154,14 +151,6 @@ export function createSynologyChatPlugin() {
         if (account.allowInsecureSsl) {
           warnings.push(
             "- Synology Chat: SSL verification is disabled (allowInsecureSsl=true). Only use this for local NAS with self-signed certificates.",
-          );
-        }
-        if (
-          account.dangerouslyAllowInheritedWebhookPath &&
-          account.webhookPathSource === "inherited-base"
-        ) {
-          warnings.push(
-            "- Synology Chat: dangerouslyAllowInheritedWebhookPath=true opts a named account into a shared inherited webhook path. Prefer an explicit per-account webhookPath.",
           );
         }
         if (account.dmPolicy === "open") {
@@ -387,5 +376,3 @@ export function createSynologyChatPlugin() {
     },
   };
 }
-
-export const synologyChatPlugin = createSynologyChatPlugin();

@@ -1,4 +1,4 @@
-import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/setup";
+import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/mattermost";
 import { describe, expect, it, vi } from "vitest";
 
 const resolveMattermostAccount = vi.hoisted(() => vi.fn());
@@ -58,7 +58,6 @@ describe("mattermost setup core", () => {
     expect(resolveMattermostAccount).toHaveBeenCalledWith({
       cfg,
       accountId: "default",
-      allowUnresolvedSecretRef: true,
     });
   });
 
@@ -66,7 +65,7 @@ describe("mattermost setup core", () => {
     const { mattermostSetupAdapter } = await import("./setup-core.js");
 
     expect(
-      mattermostSetupAdapter.validateInput({
+      mattermostSetupAdapter.validateInput!({
         accountId: "secondary",
         input: { useEnv: true },
       } as never),
@@ -74,7 +73,7 @@ describe("mattermost setup core", () => {
 
     normalizeMattermostBaseUrl.mockReturnValue(undefined);
     expect(
-      mattermostSetupAdapter.validateInput({
+      mattermostSetupAdapter.validateInput!({
         accountId: DEFAULT_ACCOUNT_ID,
         input: { useEnv: false, botToken: "tok", httpUrl: "not-a-url" },
       } as never),
@@ -82,7 +81,7 @@ describe("mattermost setup core", () => {
 
     normalizeMattermostBaseUrl.mockReturnValue("https://chat.example.com");
     expect(
-      mattermostSetupAdapter.validateInput({
+      mattermostSetupAdapter.validateInput!({
         accountId: DEFAULT_ACCOUNT_ID,
         input: { useEnv: false, botToken: "tok", httpUrl: "https://chat.example.com" },
       } as never),

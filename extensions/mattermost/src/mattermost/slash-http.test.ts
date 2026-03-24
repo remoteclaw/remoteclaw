@@ -65,7 +65,7 @@ async function runSlashRequest(params: {
 }) {
   const handler = createSlashCommandHttpHandler({
     account: accountFixture,
-    cfg: {} as OpenClawConfig,
+    cfg: {} as RemoteClawConfig,
     runtime: {} as RuntimeEnv,
     commandTokens: params.commandTokens,
   });

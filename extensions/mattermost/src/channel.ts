@@ -42,7 +42,6 @@ import { sendMessageMattermost } from "./mattermost/send.js";
 import { looksLikeMattermostTargetId, normalizeMattermostMessagingTarget } from "./normalize.js";
 import { mattermostOnboardingAdapter } from "./onboarding.js";
 import { getMattermostRuntime } from "./runtime.js";
-import { resolveMattermostOutboundSessionRoute } from "./session-route.js";
 import { mattermostSetupAdapter } from "./setup-core.js";
 
 const mattermostMessageActions: ChannelMessageActionAdapter = {
@@ -339,7 +338,6 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = {
   },
   messaging: {
     normalizeTarget: normalizeMattermostMessagingTarget,
-    resolveOutboundSessionRoute: (params) => resolveMattermostOutboundSessionRoute(params),
     targetResolver: {
       looksLikeId: looksLikeMattermostTargetId,
       hint: "<channelId|user:ID|channel:ID>",

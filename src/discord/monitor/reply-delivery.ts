@@ -1,22 +1,13 @@
 import type { RequestClient } from "@buape/carbon";
-import { resolveAgentAvatar } from "remoteclaw/plugin-sdk/agent-runtime";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import type { MarkdownTableMode, ReplyToMode } from "remoteclaw/plugin-sdk/config-runtime";
-import { createDiscordRetryRunner, type RetryRunner } from "remoteclaw/plugin-sdk/infra-runtime";
-import {
-  resolveRetryConfig,
-  retryAsync,
-  type RetryConfig,
-} from "remoteclaw/plugin-sdk/infra-runtime";
-import {
-  resolveOutboundMediaUrls,
-  resolveTextChunksWithFallback,
-  sendMediaWithLeadingCaption,
-} from "remoteclaw/plugin-sdk/reply-payload";
-import type { ChunkMode } from "remoteclaw/plugin-sdk/reply-runtime";
-import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
-import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
-import { convertMarkdownTables } from "remoteclaw/plugin-sdk/text-runtime";
+import { resolveAgentAvatar } from "../../agents/identity-avatar.js";
+import type { ChunkMode } from "../../auto-reply/chunk.js";
+import type { ReplyPayload } from "../../auto-reply/types.js";
+import type { RemoteClawConfig } from "../../config/config.js";
+import type { MarkdownTableMode, ReplyToMode } from "../../config/types.base.js";
+import { createDiscordRetryRunner, type RetryRunner } from "../../infra/retry-policy.js";
+import { resolveRetryConfig, retryAsync, type RetryConfig } from "../../infra/retry.js";
+import { convertMarkdownTables } from "../../markdown/tables.js";
+import type { RuntimeEnv } from "../../runtime.js";
 import { resolveDiscordAccount } from "../accounts.js";
 import { chunkDiscordTextWithMode } from "../chunk.js";
 import { sendMessageDiscord, sendVoiceMessageDiscord, sendWebhookMessageDiscord } from "../send.js";
@@ -201,6 +192,35 @@ async function sendDiscordChunkWithFallback(params: {
   );
 }
 
+async function sendAdditionalDiscordMedia(params: {
+  cfg: RemoteClawConfig;
+  target: string;
+  token: string;
+  rest?: RequestClient;
+  accountId?: string;
+  mediaUrls: string[];
+  mediaLocalRoots?: readonly string[];
+  resolveReplyTo: () => string | undefined;
+  retryConfig: ResolvedRetryConfig;
+}) {
+  for (const mediaUrl of params.mediaUrls) {
+    const replyTo = params.resolveReplyTo();
+    await sendWithRetry(
+      () =>
+        sendMessageDiscord(params.target, "", {
+          cfg: params.cfg,
+          token: params.token,
+          rest: params.rest,
+          mediaUrl,
+          accountId: params.accountId,
+          mediaLocalRoots: params.mediaLocalRoots,
+          replyTo,
+        }),
+      params.retryConfig,
+    );
+  }
+}
+
 export async function deliverDiscordReply(params: {
   cfg: RemoteClawConfig;
   replies: ReplyPayload[];
@@ -255,7 +275,7 @@ export async function deliverDiscordReply(params: {
     : undefined;
   let deliveredAny = false;
   for (const payload of params.replies) {
-    const mediaList = resolveOutboundMediaUrls(payload);
+    const mediaList = payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []);
     const rawText = payload.text ?? "";
     const tableMode = params.tableMode ?? "code";
     const text = convertMarkdownTables(rawText, tableMode);
@@ -264,14 +284,14 @@ export async function deliverDiscordReply(params: {
     }
     if (mediaList.length === 0) {
       const mode = params.chunkMode ?? "length";
-      const chunks = resolveTextChunksWithFallback(
-        text,
-        chunkDiscordTextWithMode(text, {
-          maxChars: chunkLimit,
-          maxLines: params.maxLinesPerMessage,
-          chunkMode: mode,
-        }),
-      );
+      const chunks = chunkDiscordTextWithMode(text, {
+        maxChars: chunkLimit,
+        maxLines: params.maxLinesPerMessage,
+        chunkMode: mode,
+      });
+      if (!chunks.length && text) {
+        chunks.push(text);
+      }
       for (const chunk of chunks) {
         if (!chunk.trim()) {
           continue;
@@ -303,6 +323,19 @@ export async function deliverDiscordReply(params: {
     if (!firstMedia) {
       continue;
     }
+    const sendRemainingMedia = () =>
+      sendAdditionalDiscordMedia({
+        cfg: params.cfg,
+        target: params.target,
+        token: params.token,
+        rest: params.rest,
+        accountId: params.accountId,
+        mediaUrls: mediaList.slice(1),
+        mediaLocalRoots: params.mediaLocalRoots,
+        resolveReplyTo,
+        retryConfig,
+      });
+
     // Voice message path: audioAsVoice flag routes through sendVoiceMessageDiscord.
     if (payload.audioAsVoice) {
       const replyTo = resolveReplyTo();
@@ -333,50 +366,22 @@ export async function deliverDiscordReply(params: {
         retryConfig,
       });
       // Additional media items are sent as regular attachments (voice is single-file only).
-      await sendMediaWithLeadingCaption({
-        mediaUrls: mediaList.slice(1),
-        caption: "",
-        send: async ({ mediaUrl }) => {
-          const replyTo = resolveReplyTo();
-          await sendWithRetry(
-            () =>
-              sendMessageDiscord(params.target, "", {
-                cfg: params.cfg,
-                token: params.token,
-                rest: params.rest,
-                mediaUrl,
-                accountId: params.accountId,
-                mediaLocalRoots: params.mediaLocalRoots,
-                replyTo,
-              }),
-            retryConfig,
-          );
-        },
-      });
+      await sendRemainingMedia();
       continue;
     }
 
-    await sendMediaWithLeadingCaption({
-      mediaUrls: mediaList,
-      caption: text,
-      send: async ({ mediaUrl, caption }) => {
-        const replyTo = resolveReplyTo();
-        await sendWithRetry(
-          () =>
-            sendMessageDiscord(params.target, caption ?? "", {
-              cfg: params.cfg,
-              token: params.token,
-              rest: params.rest,
-              mediaUrl,
-              accountId: params.accountId,
-              mediaLocalRoots: params.mediaLocalRoots,
-              replyTo,
-            }),
-          retryConfig,
-        );
-      },
+    const replyTo = resolveReplyTo();
+    await sendMessageDiscord(params.target, text, {
+      cfg: params.cfg,
+      token: params.token,
+      rest: params.rest,
+      mediaUrl: firstMedia,
+      accountId: params.accountId,
+      mediaLocalRoots: params.mediaLocalRoots,
+      replyTo,
     });
     deliveredAny = true;
+    await sendRemainingMedia();
   }
 
   if (binding && deliveredAny) {

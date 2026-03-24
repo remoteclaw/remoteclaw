@@ -1,12 +1,7 @@
-import {
-  AllowFromListSchema,
-  buildCatchallMultiAccountChannelSchema,
-  DmPolicySchema,
-  GroupPolicySchema,
-} from "remoteclaw/plugin-sdk/compat";
+import { MarkdownConfigSchema, ToolPolicySchema } from "remoteclaw/plugin-sdk";
 import { z } from "zod";
-import { MarkdownConfigSchema, ToolPolicySchema } from "./runtime-api.js";
-import { buildSecretInputSchema, hasConfiguredSecretInput } from "./secret-input.js";
+
+const allowFromEntry = z.union([z.string(), z.number()]);
 
 const bluebubblesActionSchema = z
   .object({
@@ -37,10 +32,10 @@ const bluebubblesAccountSchema = z
     serverUrl: z.string().optional(),
     password: z.string().optional(),
     webhookPath: z.string().optional(),
-    dmPolicy: DmPolicySchema.optional(),
-    allowFrom: AllowFromListSchema,
-    groupAllowFrom: AllowFromListSchema,
-    groupPolicy: GroupPolicySchema.optional(),
+    dmPolicy: z.enum(["pairing", "allowlist", "open", "disabled"]).optional(),
+    allowFrom: z.array(allowFromEntry).optional(),
+    groupAllowFrom: z.array(allowFromEntry).optional(),
+    groupPolicy: z.enum(["open", "disabled", "allowlist"]).optional(),
     historyLimit: z.number().int().min(0).optional(),
     dmHistoryLimit: z.number().int().min(0).optional(),
     textChunkLimit: z.number().int().positive().optional(),

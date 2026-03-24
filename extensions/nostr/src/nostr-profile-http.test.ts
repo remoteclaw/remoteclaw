@@ -115,13 +115,6 @@ function createMockContext(overrides?: Partial<NostrProfileHttpContext>): NostrP
   };
 }
 
-function expectOkResponse(res: ReturnType<typeof createMockResponse>) {
-  expect(res._getStatusCode()).toBe(200);
-  const data = JSON.parse(res._getData());
-  expect(data.ok).toBe(true);
-  return data;
-}
-
 function mockSuccessfulProfileImport() {
   vi.mocked(importProfileFromRelays).mockResolvedValue({
     ok: true,
@@ -215,22 +208,6 @@ describe("nostr-profile-http", () => {
   });
 
   describe("PUT /api/channels/nostr/:accountId/profile", () => {
-    function mockPublishSuccess() {
-      vi.mocked(publishNostrProfile).mockResolvedValue({
-        eventId: "event123",
-        createdAt: 1234567890,
-        successes: ["wss://relay.damus.io"],
-        failures: [],
-      });
-    }
-
-    function expectBadRequestResponse(res: ReturnType<typeof createMockResponse>) {
-      expect(res._getStatusCode()).toBe(400);
-      const data = JSON.parse(res._getData());
-      expect(data.ok).toBe(false);
-      return data;
-    }
-
     async function expectPrivatePictureRejected(pictureUrl: string) {
       const ctx = createMockContext();
       const handler = createNostrProfileHttpHandler(ctx);

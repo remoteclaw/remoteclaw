@@ -26,60 +26,9 @@ export async function promptAccountId(params: PromptAccountIdParams): Promise<st
     initialValue: initial,
   });
 
-  export {
-    applyAccountNameToChannelSection,
-    applySetupAccountConfigPatch,
-    createEnvPatchedAccountSetupAdapter,
-    createPatchedAccountSetupAdapter,
-    migrateBaseNameToDefaultAccount,
-    patchScopedAccountConfig,
-    prepareScopedSetupConfig,
-  } from "../channels/plugins/setup-helpers.js";
-  export {
-    addWildcardAllowFrom,
-    buildSingleChannelSecretPromptState,
-    createAccountScopedAllowFromSection,
-    createAccountScopedGroupAccessSection,
-    createLegacyCompatChannelDmPolicy,
-    createNestedChannelAllowFromSetter,
-    createNestedChannelDmPolicy,
-    createNestedChannelDmPolicySetter,
-    createTopLevelChannelAllowFromSetter,
-    createTopLevelChannelDmPolicy,
-    createTopLevelChannelDmPolicySetter,
-    createTopLevelChannelGroupPolicySetter,
-    mergeAllowFromEntries,
-    normalizeAllowFromEntries,
-    noteChannelLookupFailure,
-    noteChannelLookupSummary,
-    parseMentionOrPrefixedId,
-    parseSetupEntriesAllowingWildcard,
-    parseSetupEntriesWithParser,
-    patchNestedChannelConfigSection,
-    patchTopLevelChannelConfigSection,
-    patchChannelConfigForAccount,
-    promptLegacyChannelAllowFrom,
-    promptLegacyChannelAllowFromForAccount,
-    promptParsedAllowFromForScopedChannel,
-    promptSingleChannelSecretInput,
-    promptResolvedAllowFrom,
-    resolveEntriesWithOptionalToken,
-    resolveSetupAccountId,
-    resolveGroupAllowlistWithLookupNotes,
-    runSingleChannelSecretStep,
-    setAccountDmAllowFromForChannel,
-    setAccountGroupPolicyForChannel,
-    setChannelDmPolicyWithAllowFrom,
-    setLegacyChannelDmPolicyWithAllowFrom,
-    setNestedChannelAllowFrom,
-    setNestedChannelDmPolicyWithAllowFrom,
-    setSetupChannelEnabled,
-    setTopLevelChannelAllowFrom,
-    setTopLevelChannelDmPolicyWithAllowFrom,
-    setTopLevelChannelGroupPolicy,
-    splitSetupEntries,
-  } from "../channels/plugins/setup-wizard-helpers.js";
-  export { createAllowlistSetupWizardProxy } from "../channels/plugins/setup-wizard-proxy.js";
+  if (choice !== "__new__") {
+    return normalizeAccountId(choice);
+  }
 
   const entered = await params.prompter.text({
     message: `New ${params.label} account id`,

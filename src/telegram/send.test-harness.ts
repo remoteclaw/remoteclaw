@@ -39,7 +39,7 @@ type TelegramSendTestMocks = {
   maybePersistResolvedTelegramTarget: MockFn;
 };
 
-vi.mock("remoteclaw/plugin-sdk/web-media", () => ({
+vi.mock("../web/media.js", () => ({
   loadWebMedia,
 }));
 

@@ -7,9 +7,6 @@ import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
 import { tlonPlugin } from "./src/channel.js";
 import { setTlonRuntime } from "./src/runtime.js";
 
-export { tlonPlugin } from "./src/channel.js";
-export { setTlonRuntime } from "./src/runtime.js";
-
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Whitelist of allowed tlon subcommands

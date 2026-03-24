@@ -3,7 +3,6 @@ import type { RemoteClawConfig } from "../../../config/config.js";
 
 const hoisted = vi.hoisted(() => ({
   sendPollWhatsApp: vi.fn(async () => ({ messageId: "poll-1", toJid: "1555@s.whatsapp.net" })),
-  sendReactionWhatsApp: vi.fn(async () => undefined),
 }));
 
 vi.mock("../../../globals.js", () => ({
@@ -12,7 +11,6 @@ vi.mock("../../../globals.js", () => ({
 
 vi.mock("../../../web/outbound.js", () => ({
   sendPollWhatsApp: hoisted.sendPollWhatsApp,
-  sendReactionWhatsApp: hoisted.sendReactionWhatsApp,
 }));
 
 import { whatsappOutbound } from "./whatsapp.js";
@@ -38,10 +36,6 @@ describe("whatsappOutbound sendPoll", () => {
       accountId: "work",
       cfg,
     });
-    expect(result).toEqual({
-      channel: "whatsapp",
-      messageId: "poll-1",
-      toJid: "1555@s.whatsapp.net",
-    });
+    expect(result).toEqual({ messageId: "poll-1", toJid: "1555@s.whatsapp.net" });
   });
 });

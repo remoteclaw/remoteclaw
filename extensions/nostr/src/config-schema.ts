@@ -1,6 +1,7 @@
-import { AllowFromListSchema, DmPolicySchema } from "remoteclaw/plugin-sdk/compat";
-import { MarkdownConfigSchema, buildChannelConfigSchema } from "remoteclaw/plugin-sdk/nostr";
+import { MarkdownConfigSchema, buildChannelConfigSchema } from "remoteclaw/plugin-sdk";
 import { z } from "zod";
+
+const allowFromEntry = z.union([z.string(), z.number()]);
 
 /**
  * Validates https:// URLs only (no javascript:, data:, file:, etc.)
@@ -75,10 +76,10 @@ export const NostrConfigSchema = z.object({
   relays: z.array(z.string()).optional(),
 
   /** DM access policy: pairing, allowlist, open, or disabled */
-  dmPolicy: DmPolicySchema.optional(),
+  dmPolicy: z.enum(["pairing", "allowlist", "open", "disabled"]).optional(),
 
   /** Allowed sender pubkeys (npub or hex format) */
-  allowFrom: AllowFromListSchema,
+  allowFrom: z.array(allowFromEntry).optional(),
 
   /** Profile metadata (NIP-01 kind:0 content) */
   profile: NostrProfileSchema.optional(),

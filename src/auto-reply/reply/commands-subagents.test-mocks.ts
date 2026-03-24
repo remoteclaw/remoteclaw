@@ -10,7 +10,7 @@ export function installSubagentsCommandCoreMocks() {
   });
 
   // Prevent transitive import chain from reaching discord/monitor which needs https-proxy-agent.
-  vi.mock("../../../extensions/discord/runtime-api.js", () => ({
+  vi.mock("../../discord/monitor/gateway-plugin.js", () => ({
     createDiscordGatewayPlugin: () => ({}),
   }));
 }

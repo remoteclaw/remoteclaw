@@ -40,7 +40,7 @@ function setupSuccessClient() {
 
 async function expectDefaultSuccessResult(
   creds = DEFAULT_CREDS,
-  expected: Awaited<ReturnType<typeof probeFeishu>> = DEFAULT_SUCCESS_RESULT,
+  expected = DEFAULT_SUCCESS_RESULT,
 ) {
   const result = await probeFeishu(creds);
   expect(result).toEqual(expected);

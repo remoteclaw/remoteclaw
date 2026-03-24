@@ -1,7 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
-
-const resolveDefaultAccountId = () => DEFAULT_ACCOUNT_ID;
 
 const callGateway = vi.fn();
 const resolveCommandSecretRefsViaGateway = vi.fn();
@@ -54,7 +51,7 @@ function createTokenOnlyPlugin() {
     capabilities: { chatTypes: ["direct"] },
     config: {
       listAccountIds: () => ["default"],
-      defaultAccountId: resolveDefaultAccountId,
+      defaultAccountId: () => "default",
       inspectAccount: (cfg: { secretResolved?: boolean }) =>
         cfg.secretResolved
           ? {
@@ -95,7 +92,7 @@ function createTokenOnlyPlugin() {
       isEnabled: () => true,
     },
     actions: {
-      describeMessageTool: () => ({ actions: ["send"] }),
+      listActions: () => ["send"],
     },
   };
 }

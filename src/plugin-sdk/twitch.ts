@@ -39,4 +39,3 @@ export type { RemoteClawPluginApi } from "../plugins/types.js";
 export type { RuntimeEnv } from "../runtime.js";
 export { formatDocsLink } from "../terminal/links.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
-export { twitchSetupAdapter, twitchSetupWizard } from "../../extensions/twitch/api.js";

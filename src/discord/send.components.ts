@@ -5,9 +5,9 @@ import {
   type RequestClient,
 } from "@buape/carbon";
 import { ChannelType, Routes } from "discord-api-types/v10";
-import { loadConfig, type RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { recordChannelActivity } from "remoteclaw/plugin-sdk/infra-runtime";
-import { loadWebMedia } from "remoteclaw/plugin-sdk/web-media";
+import { loadConfig, type RemoteClawConfig } from "../config/config.js";
+import { recordChannelActivity } from "../infra/channel-activity.js";
+import { loadWebMedia } from "../web/media.js";
 import { resolveDiscordAccount } from "./accounts.js";
 import { registerDiscordComponentEntries } from "./components-registry.js";
 import {

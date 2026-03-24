@@ -352,18 +352,16 @@ export type ChannelToolSend = {
 
 export type ChannelMessageActionAdapter = {
   /**
-   * Unified discovery surface for the shared `message` tool.
-   * This returns the scoped actions,
-   * capabilities, and schema fragments together so they cannot drift.
+   * Advertise agent-discoverable actions for this channel.
+   * Keep this aligned with any gated capability checks. Poll discovery is
+   * not inferred from `outbound.sendPoll`, so channels that want agents to
+   * create polls should include `"poll"` here when enabled.
    */
-  describeMessageTool: (
-    params: ChannelMessageActionDiscoveryContext,
-  ) => ChannelMessageToolDiscovery | null | undefined;
+  listActions?: (params: { cfg: RemoteClawConfig }) => ChannelMessageActionName[];
+  getCapabilities?: (params: { cfg: RemoteClawConfig }) => string[];
   supportsAction?: (params: { action: ChannelMessageActionName }) => boolean;
-  requiresTrustedRequesterSender?: (params: {
-    action: ChannelMessageActionName;
-    toolContext?: ChannelThreadingToolContext;
-  }) => boolean;
+  supportsButtons?: (params: { cfg: RemoteClawConfig }) => boolean;
+  supportsCards?: (params: { cfg: RemoteClawConfig }) => boolean;
   extractToolSend?: (params: { args: Record<string, unknown> }) => ChannelToolSend | null;
   handleAction?: (ctx: ChannelMessageActionContext) => Promise<AgentToolResult>;
 };

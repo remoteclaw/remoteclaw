@@ -29,10 +29,6 @@ import {
 import type { sendMessageIMessage } from "../../imessage/send.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
-import {
-  resolveOutboundMediaUrls,
-  sendMediaWithLeadingCaption,
-} from "../../plugin-sdk/reply-payload.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { markdownToSignalTextChunks, type SignalTextStyleRange } from "../../signal/format.js";
 import { sendMessageSignal } from "../../signal/send.js";
@@ -328,8 +324,7 @@ function normalizePayloadsForChannelDelivery(
 function buildPayloadSummary(payload: ReplyPayload): NormalizedOutboundPayload {
   return {
     text: payload.text ?? "",
-    mediaUrls: resolveOutboundMediaUrls(payload),
-    interactive: payload.interactive,
+    mediaUrls: payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []),
     channelData: payload.channelData,
   };
 }
@@ -770,27 +765,22 @@ async function deliverOutboundPayloadsCore(
         continue;
       }
 
+      let first = true;
       let lastMessageId: string | undefined;
-      await sendMediaWithLeadingCaption({
-        mediaUrls: payloadSummary.mediaUrls,
-        caption: payloadSummary.text,
-        send: async ({ mediaUrl, caption }) => {
-          throwIfAborted(abortSignal);
-          if (handler.sendFormattedMedia) {
-            const delivery = await handler.sendFormattedMedia(
-              caption ?? "",
-              mediaUrl,
-              sendOverrides,
-            );
-            results.push(delivery);
-            lastMessageId = delivery.messageId;
-            return;
-          }
-          const delivery = await handler.sendMedia(caption ?? "", mediaUrl, sendOverrides);
+      for (const url of payloadSummary.mediaUrls) {
+        throwIfAborted(abortSignal);
+        const caption = first ? payloadSummary.text : "";
+        first = false;
+        if (isSignalChannel) {
+          const delivery = await sendSignalMedia(caption, url);
           results.push(delivery);
           lastMessageId = delivery.messageId;
-        },
-      });
+        } else {
+          const delivery = await handler.sendMedia(caption, url, sendOverrides);
+          results.push(delivery);
+          lastMessageId = delivery.messageId;
+        }
+      }
       emitMessageSent({
         success: true,
         content: payloadSummary.text,

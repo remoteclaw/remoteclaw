@@ -1,5 +1,6 @@
 import {
-  createChannelReplyPipeline,
+  createReplyPrefixOptions,
+  createTypingCallbacks,
   logTypingFailure,
   resolveChannelMediaMaxBytes,
   type RemoteClawConfig,
@@ -72,28 +73,28 @@ export function createMSTeamsReplyDispatcher(params: {
     });
   };
 
-  const { onModelSelected, typingCallbacks, ...replyPipeline } = createChannelReplyPipeline({
+  const typingCallbacks = createTypingCallbacks({
+    start: sendTypingIndicator,
+    onStartError: (err) => {
+      logTypingFailure({
+        log: (message) => params.log.debug?.(message),
+        channel: "msteams",
+        action: "start",
+        error: err,
+      });
+    },
+  });
+  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
     cfg: params.cfg,
     agentId: params.agentId,
     channel: "msteams",
     accountId: params.accountId,
-    typing: {
-      start: sendTypingIndicator,
-      onStartError: (err) => {
-        logTypingFailure({
-          log: (message) => params.log.debug?.(message),
-          channel: "msteams",
-          action: "start",
-          error: err,
-        });
-      },
-    },
   });
   const chunkMode = core.channel.text.resolveChunkMode(params.cfg, "msteams");
 
   const { dispatcher, replyOptions, markDispatchIdle } =
     core.channel.reply.createReplyDispatcherWithTyping({
-      ...replyPipeline,
+      ...prefixOptions,
       humanDelay: core.channel.reply.resolveHumanDelayConfig(params.cfg, params.agentId),
       typingCallbacks,
       deliver: async (payload: any) => {

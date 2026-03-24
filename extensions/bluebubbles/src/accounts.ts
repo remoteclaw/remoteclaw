@@ -1,10 +1,5 @@
-import {
-  createAccountListHelpers,
-  mergeAccountConfig,
-} from "remoteclaw/plugin-sdk/account-helpers";
-import { normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/core";
-import { hasConfiguredSecretInput, normalizeSecretInputString } from "./secret-input.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
+import { createAccountListHelpers, type RemoteClawConfig } from "remoteclaw/plugin-sdk/bluebubbles";
 import { normalizeBlueBubblesServerUrl, type BlueBubblesAccountConfig } from "./types.js";
 
 export type ResolvedBlueBubblesAccount = {
@@ -22,18 +17,29 @@ const {
 } = createAccountListHelpers("bluebubbles");
 export { listBlueBubblesAccountIds, resolveDefaultBlueBubblesAccountId };
 
+function resolveAccountConfig(
+  cfg: RemoteClawConfig,
+  accountId: string,
+): BlueBubblesAccountConfig | undefined {
+  const accounts = cfg.channels?.bluebubbles?.accounts;
+  if (!accounts || typeof accounts !== "object") {
+    return undefined;
+  }
+  return accounts[accountId] as BlueBubblesAccountConfig | undefined;
+}
+
 function mergeBlueBubblesAccountConfig(
   cfg: RemoteClawConfig,
   accountId: string,
 ): BlueBubblesAccountConfig {
+  const base = (cfg.channels?.bluebubbles ?? {}) as BlueBubblesAccountConfig & {
+    accounts?: unknown;
+    defaultAccount?: unknown;
+  };
+  const { accounts: _ignored, defaultAccount: _ignoredDefaultAccount, ...rest } = base;
   const account = resolveAccountConfig(cfg, accountId) ?? {};
-  const merged = mergeAccountConfig<BlueBubblesAccountConfig>({
-    channelConfig: cfg.channels?.bluebubbles as BlueBubblesAccountConfig | undefined,
-    accountConfig: account,
-    omitKeys: ["defaultAccount"],
-  });
-  const chunkMode = account.chunkMode ?? merged.chunkMode ?? "length";
-  return { ...merged, chunkMode };
+  const chunkMode = account.chunkMode ?? rest.chunkMode ?? "length";
+  return { ...rest, ...account, chunkMode };
 }
 
 export function resolveBlueBubblesAccount(params: {

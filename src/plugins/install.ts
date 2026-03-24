@@ -29,15 +29,7 @@ import {
 import { validateRegistryNpmSpec } from "../infra/npm-registry-spec.js";
 import { extensionUsesSkippedScannerPath, isPathInside } from "../security/scan-paths.js";
 import { CONFIG_DIR, resolveUserPath } from "../utils.js";
-import { resolveRuntimeServiceVersion } from "../version.js";
-import { detectBundleManifestFormat, loadBundleManifest } from "./bundle-manifest.js";
-import {
-  getPackageManifestMetadata,
-  loadPluginManifest,
-  resolvePackageExtensionEntries,
-  type PackageManifest as PluginPackageManifest,
-} from "./manifest.js";
-import { checkMinHostVersion } from "./min-host-version.js";
+import { loadPluginManifest } from "./manifest.js";
 
 type PluginInstallLogger = {
   info?: (message: string) => void;
@@ -55,11 +47,8 @@ type PackageManifest = {
 
 export const PLUGIN_INSTALL_ERROR_CODE = {
   INVALID_NPM_SPEC: "invalid_npm_spec",
-  INVALID_MIN_HOST_VERSION: "invalid_min_host_version",
-  UNKNOWN_HOST_VERSION: "unknown_host_version",
-  INCOMPATIBLE_HOST_VERSION: "incompatible_host_version",
-  MISSING_OPENCLAW_EXTENSIONS: "missing_openclaw_extensions",
-  EMPTY_OPENCLAW_EXTENSIONS: "empty_openclaw_extensions",
+  MISSING_REMOTECLAW_EXTENSIONS: "missing_remoteclaw_extensions",
+  EMPTY_REMOTECLAW_EXTENSIONS: "empty_remoteclaw_extensions",
   NPM_PACKAGE_NOT_FOUND: "npm_package_not_found",
   PLUGIN_ID_MISMATCH: "plugin_id_mismatch",
 } as const;
@@ -270,33 +259,6 @@ async function installPluginFromPackageDir(
     logger.info?.(
       `Plugin manifest id "${manifestPluginId}" differs from npm package name "${npmPluginId}"; using manifest id as the config key.`,
     );
-  }
-
-  const packageMetadata = getPackageManifestMetadata(manifest);
-  const minHostVersionCheck = checkMinHostVersion({
-    currentVersion: resolveRuntimeServiceVersion(),
-    minHostVersion: packageMetadata?.install?.minHostVersion,
-  });
-  if (!minHostVersionCheck.ok) {
-    if (minHostVersionCheck.kind === "invalid") {
-      return {
-        ok: false,
-        error: `invalid package.json openclaw.install.minHostVersion: ${minHostVersionCheck.error}`,
-        code: PLUGIN_INSTALL_ERROR_CODE.INVALID_MIN_HOST_VERSION,
-      };
-    }
-    if (minHostVersionCheck.kind === "unknown_host_version") {
-      return {
-        ok: false,
-        error: `plugin "${pluginId}" requires OpenClaw >=${minHostVersionCheck.requirement.minimumLabel}, but this host version could not be determined. Re-run from a released build or set OPENCLAW_VERSION and retry.`,
-        code: PLUGIN_INSTALL_ERROR_CODE.UNKNOWN_HOST_VERSION,
-      };
-    }
-    return {
-      ok: false,
-      error: `plugin "${pluginId}" requires OpenClaw >=${minHostVersionCheck.requirement.minimumLabel}, but this host is ${minHostVersionCheck.currentVersion}. Upgrade OpenClaw and retry.`,
-      code: PLUGIN_INSTALL_ERROR_CODE.INCOMPATIBLE_HOST_VERSION,
-    };
   }
 
   const packageDir = path.resolve(params.packageDir);

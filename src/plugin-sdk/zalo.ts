@@ -58,8 +58,6 @@ export { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.j
 export type { RuntimeEnv } from "../runtime.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
 export { formatAllowFromLowercase, isNormalizedSenderAllowed } from "./allow-from.js";
-export { zaloSetupAdapter } from "../../extensions/zalo/api.js";
-export { zaloSetupWizard } from "../../extensions/zalo/api.js";
 export {
   resolveDirectDmAuthorizationOutcome,
   resolveSenderCommandAuthorizationWithRuntime,
@@ -74,7 +72,6 @@ export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
 export { buildChannelSendResult } from "./channel-send-result.js";
 export type { OutboundReplyPayload } from "./reply-payload.js";
 export {
-  deliverTextOrMediaReply,
   isNumericTargetId,
   resolveOutboundMediaUrls,
   sendMediaWithLeadingCaption,

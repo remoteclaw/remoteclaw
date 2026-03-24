@@ -1,7 +1,6 @@
 import {
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
-  patchScopedAccountConfig,
   promptChannelAccessConfig,
   resolveAccountIdForConfigure,
   setTopLevelChannelAllowFrom,
@@ -60,14 +59,35 @@ function updateIrcAccountConfig(
   accountId: string,
   patch: Partial<IrcAccountConfig>,
 ): CoreConfig {
-  return patchScopedAccountConfig({
-    cfg,
-    channelKey: channel,
-    accountId,
-    patch,
-    ensureChannelEnabled: false,
-    ensureAccountEnabled: false,
-  }) as CoreConfig;
+  const current = cfg.channels?.irc ?? {};
+  if (accountId === DEFAULT_ACCOUNT_ID) {
+    return {
+      ...cfg,
+      channels: {
+        ...cfg.channels,
+        irc: {
+          ...current,
+          ...patch,
+        },
+      },
+    };
+  }
+  return {
+    ...cfg,
+    channels: {
+      ...cfg.channels,
+      irc: {
+        ...current,
+        accounts: {
+          ...current.accounts,
+          [accountId]: {
+            ...current.accounts?.[accountId],
+            ...patch,
+          },
+        },
+      },
+    },
+  };
 }
 
 function setIrcDmPolicy(cfg: CoreConfig, dmPolicy: DmPolicy): CoreConfig {

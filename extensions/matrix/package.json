@@ -28,8 +28,7 @@
     "install": {
       "npmSpec": "@remoteclaw/matrix",
       "localPath": "extensions/matrix",
-      "defaultChoice": "npm",
-      "minHostVersion": ">=2026.3.14"
+      "defaultChoice": "npm"
     },
     "releaseChecks": {
       "rootDependencyMirrorAllowlist": [

@@ -2,7 +2,6 @@ import { EventEmitter } from "node:events";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ResolvedSynologyChatAccount } from "./types.js";
-import type { WebhookHandlerDeps } from "./webhook-handler.js";
 import {
   clearSynologyWebhookRateLimiterStateForTest,
   createWebhookHandler,
@@ -125,7 +124,6 @@ describe("createWebhookHandler", () => {
   async function expectForbiddenByPolicy(params: {
     account: Partial<ResolvedSynologyChatAccount>;
     bodyContains: string;
-    deliver?: WebhookHandlerDeps["deliver"];
   }) {
     const handler = createWebhookHandler({
       account: makeAccount(params.account),

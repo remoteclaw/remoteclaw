@@ -1,14 +1,9 @@
-import { sendTextMediaPayload } from "remoteclaw/plugin-sdk/channel-runtime";
-import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
-import {
-  createAttachedChannelResultAdapter,
-  createEmptyChannelResult,
-} from "remoteclaw/plugin-sdk/channel-send-result";
-import { chunkText } from "remoteclaw/plugin-sdk/reply-runtime";
-import { shouldLogVerbose } from "remoteclaw/plugin-sdk/runtime-env";
-import { resolveWhatsAppOutboundTarget } from "./runtime-api.js";
-import { sendMessageWhatsApp, sendPollWhatsApp } from "./send.js";
+import { chunkText } from "../../../auto-reply/chunk.js";
+import { shouldLogVerbose } from "../../../globals.js";
+import { sendPollWhatsApp } from "../../../web/outbound.js";
+import { resolveWhatsAppOutboundTarget } from "../../../whatsapp/resolve-outbound-target.js";
+import type { ChannelOutboundAdapter } from "../types.js";
+import { sendTextMediaPayload } from "./direct-text-media.js";
 
 function trimLeadingWhitespace(text: string | undefined): string {
   return text?.trimStart() ?? "";
@@ -26,7 +21,7 @@ export const whatsappOutbound: ChannelOutboundAdapter = {
     const text = trimLeadingWhitespace(ctx.payload.text);
     const hasMedia = Boolean(ctx.payload.mediaUrl) || (ctx.payload.mediaUrls?.length ?? 0) > 0;
     if (!text && !hasMedia) {
-      return createEmptyChannelResult("whatsapp");
+      return { channel: "whatsapp", messageId: "" };
     }
     return await sendTextMediaPayload({
       channel: "whatsapp",
@@ -40,51 +35,39 @@ export const whatsappOutbound: ChannelOutboundAdapter = {
       adapter: whatsappOutbound,
     });
   },
-  ...createAttachedChannelResultAdapter({
-    channel: "whatsapp",
-    sendText: async ({ cfg, to, text, accountId, deps, gifPlayback }) => {
-      const normalizedText = trimLeadingWhitespace(text);
-      if (!normalizedText) {
-        return createEmptyChannelResult("whatsapp");
-      }
-      const send =
-        resolveOutboundSendDep<typeof import("./send.js").sendMessageWhatsApp>(deps, "whatsapp") ??
-        (await import("./send.js")).sendMessageWhatsApp;
-      return await send(to, normalizedText, {
-        verbose: false,
-        cfg,
-        accountId: accountId ?? undefined,
-        gifPlayback,
-      });
-    },
-    sendMedia: async ({
+  sendText: async ({ cfg, to, text, accountId, deps, gifPlayback }) => {
+    const normalizedText = trimLeadingWhitespace(text);
+    if (!normalizedText) {
+      return { channel: "whatsapp", messageId: "" };
+    }
+    const send =
+      deps?.sendWhatsApp ?? (await import("../../../web/outbound.js")).sendMessageWhatsApp;
+    const result = await send(to, normalizedText, {
+      verbose: false,
       cfg,
-      to,
-      text,
+      accountId: accountId ?? undefined,
+      gifPlayback,
+    });
+    return { channel: "whatsapp", ...result };
+  },
+  sendMedia: async ({ cfg, to, text, mediaUrl, mediaLocalRoots, accountId, deps, gifPlayback }) => {
+    const normalizedText = trimLeadingWhitespace(text);
+    const send =
+      deps?.sendWhatsApp ?? (await import("../../../web/outbound.js")).sendMessageWhatsApp;
+    const result = await send(to, normalizedText, {
+      verbose: false,
+      cfg,
       mediaUrl,
       mediaLocalRoots,
-      accountId,
-      deps,
+      accountId: accountId ?? undefined,
       gifPlayback,
-    }) => {
-      const normalizedText = trimLeadingWhitespace(text);
-      const send =
-        resolveOutboundSendDep<typeof import("./send.js").sendMessageWhatsApp>(deps, "whatsapp") ??
-        (await import("./send.js")).sendMessageWhatsApp;
-      return await send(to, normalizedText, {
-        verbose: false,
-        cfg,
-        mediaUrl,
-        mediaLocalRoots,
-        accountId: accountId ?? undefined,
-        gifPlayback,
-      });
-    },
-    sendPoll: async ({ cfg, to, poll, accountId }) =>
-      await sendPollWhatsApp(to, poll, {
-        verbose: shouldLogVerbose(),
-        accountId: accountId ?? undefined,
-        cfg,
-      }),
-  }),
+    });
+    return { channel: "whatsapp", ...result };
+  },
+  sendPoll: async ({ cfg, to, poll, accountId }) =>
+    await sendPollWhatsApp(to, poll, {
+      verbose: shouldLogVerbose(),
+      accountId: accountId ?? undefined,
+      cfg,
+    }),
 };

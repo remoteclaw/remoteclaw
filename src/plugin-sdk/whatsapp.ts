@@ -1,14 +1,14 @@
 export type { ChannelMessageActionName } from "../channels/plugins/types.js";
+export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export type { RemoteClawConfig } from "../config/config.js";
-export type { DmPolicy, GroupPolicy, WhatsAppAccountConfig } from "../config/types.js";
-export type { WebChannelStatus, WebMonitorTuning } from "../../extensions/whatsapp/api.js";
-export type { WebInboundMessage, WebListenerCloseReason } from "../../extensions/whatsapp/api.js";
-export type {
-  ChannelMessageActionContext,
-  ChannelPlugin,
-  OpenClawPluginApi,
-  PluginRuntime,
-} from "./channel-plugin-common.js";
+export type { ResolvedWhatsAppAccount } from "../web/accounts.js";
+export type { PluginRuntime } from "../plugins/runtime/types.js";
+export type { RemoteClawPluginApi } from "../plugins/types.js";
+
+export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
+
+export { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
+
 export {
   applyAccountNameToChannelSection,
   migrateBaseNameToDefaultAccount,
@@ -56,47 +56,4 @@ export { WhatsAppConfigSchema } from "../config/zod-schema.providers-whatsapp.js
 
 export { createActionGate, readStringParam } from "../agents/tools/common.js";
 
-export {
-  hasAnyWhatsAppAuth,
-  listEnabledWhatsAppAccounts,
-  resolveWhatsAppAccount,
-} from "../../extensions/whatsapp/api.js";
-export {
-  WA_WEB_AUTH_DIR,
-  logWebSelfId,
-  logoutWeb,
-  pickWebChannel,
-  webAuthExists,
-} from "../../extensions/whatsapp/api.js";
-export {
-  DEFAULT_WEB_MEDIA_BYTES,
-  HEARTBEAT_PROMPT,
-  HEARTBEAT_TOKEN,
-  monitorWebChannel,
-  resolveHeartbeatRecipients,
-  runWebHeartbeatOnce,
-} from "../../extensions/whatsapp/api.js";
-export {
-  extractMediaPlaceholder,
-  extractText,
-  monitorWebInbox,
-} from "../../extensions/whatsapp/api.js";
-export { loginWeb } from "../../extensions/whatsapp/api.js";
-export {
-  getDefaultLocalRoots,
-  loadWebMedia,
-  loadWebMediaRaw,
-  optimizeImageToJpeg,
-} from "../../extensions/whatsapp/api.js";
-export {
-  sendMessageWhatsApp,
-  sendPollWhatsApp,
-  sendReactionWhatsApp,
-} from "../../extensions/whatsapp/api.js";
-export {
-  createWaSocket,
-  formatError,
-  getStatusCode,
-  waitForWaConnection,
-} from "../../extensions/whatsapp/api.js";
-export { createWhatsAppLoginTool } from "../../extensions/whatsapp/api.js";
+export { normalizeE164 } from "../utils.js";

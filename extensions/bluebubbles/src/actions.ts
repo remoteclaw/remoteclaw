@@ -1,4 +1,3 @@
-import { createLazyRuntimeNamedExport } from "openclaw/plugin-sdk/lazy-runtime";
 import {
   BLUEBUBBLES_ACTION_NAMES,
   BLUEBUBBLES_ACTIONS,
@@ -11,22 +10,24 @@ import {
   readStringParam,
   type ChannelMessageActionAdapter,
   type ChannelMessageActionName,
-} from "remoteclaw/plugin-sdk/bluebubbles";
-import { createLazyRuntimeSurface } from "remoteclaw/plugin-sdk/lazy-runtime";
+} from "remoteclaw/plugin-sdk";
 import { resolveBlueBubblesAccount } from "./accounts.js";
-import { resolveBlueBubblesAccount } from "./accounts.js";
+import { sendBlueBubblesAttachment } from "./attachments.js";
+import {
+  editBlueBubblesMessage,
+  unsendBlueBubblesMessage,
+  renameBlueBubblesChat,
+  setGroupIconBlueBubbles,
+  addBlueBubblesParticipant,
+  removeBlueBubblesParticipant,
+  leaveBlueBubblesChat,
+} from "./chat.js";
+import { resolveBlueBubblesMessageId } from "./monitor.js";
 import { getCachedBlueBubblesPrivateApiStatus, isMacOS26OrHigher } from "./probe.js";
-import { getCachedBlueBubblesPrivateApiStatus, isMacOS26OrHigher } from "./probe.js";
-import { normalizeSecretInputString } from "./secret-input.js";
+import { sendBlueBubblesReaction } from "./reactions.js";
+import { resolveChatGuidForTarget, sendMessageBlueBubbles } from "./send.js";
 import { normalizeBlueBubblesHandle, parseBlueBubblesTarget } from "./targets.js";
 import type { BlueBubblesSendTarget } from "./types.js";
-
-let actionsRuntimePromise: Promise<typeof import("./actions.runtime.js")> | null = null;
-
-function loadBlueBubblesActionsRuntime() {
-  actionsRuntimePromise ??= import("./actions.runtime.js");
-  return actionsRuntimePromise;
-}
 
 const providerId = "bluebubbles";
 
@@ -68,10 +69,10 @@ const PRIVATE_API_ACTIONS = new Set<ChannelMessageActionName>([
 ]);
 
 export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
-  listActions: ({ cfg, currentChannelId }) => {
+  listActions: ({ cfg }) => {
     const account = resolveBlueBubblesAccount({ cfg: cfg });
     if (!account.enabled || !account.configured) {
-      return null;
+      return [];
     }
     const gate = createActionGate(cfg.channels?.bluebubbles?.actions);
     const actions = new Set<ChannelMessageActionName>();
@@ -92,28 +93,11 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
         actions.add(action);
       }
     }
-    const normalizedTarget = currentChannelId
-      ? normalizeBlueBubblesMessagingTarget(currentChannelId)
-      : undefined;
-    const lowered = normalizedTarget?.trim().toLowerCase() ?? "";
-    const isGroupTarget =
-      lowered.startsWith("chat_guid:") ||
-      lowered.startsWith("chat_id:") ||
-      lowered.startsWith("chat_identifier:") ||
-      lowered.startsWith("group:");
-    if (!isGroupTarget) {
-      for (const action of BLUEBUBBLES_ACTION_NAMES) {
-        if ("groupOnly" in BLUEBUBBLES_ACTIONS[action] && BLUEBUBBLES_ACTIONS[action].groupOnly) {
-          actions.delete(action);
-        }
-      }
-    }
     return Array.from(actions);
   },
   supportsAction: ({ action }) => SUPPORTED_ACTIONS.has(action),
   extractToolSend: ({ args }) => extractToolSend(args, "sendMessage"),
   handleAction: async ({ action, params, cfg, accountId, toolContext }) => {
-    const runtime = await loadBlueBubblesActionsRuntime();
     const account = resolveBlueBubblesAccount({
       cfg: cfg,
       accountId: accountId ?? undefined,
@@ -162,7 +146,7 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
         throw new Error(`BlueBubbles ${action} requires serverUrl and password.`);
       }
 
-      const resolved = await runtime.resolveChatGuidForTarget({ baseUrl, password, target });
+      const resolved = await resolveChatGuidForTarget({ baseUrl, password, target });
       if (!resolved) {
         throw new Error(`BlueBubbles ${action} failed: chatGuid not found for target.`);
       }
@@ -188,13 +172,11 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
         );
       }
       // Resolve short ID (e.g., "1", "2") to full UUID
-      const messageId = runtime.resolveBlueBubblesMessageId(rawMessageId, {
-        requireKnownShortId: true,
-      });
+      const messageId = resolveBlueBubblesMessageId(rawMessageId, { requireKnownShortId: true });
       const partIndex = readNumberParam(params, "partIndex", { integer: true });
       const resolvedChatGuid = await resolveChatGuid();
 
-      await runtime.sendBlueBubblesReaction({
+      await sendBlueBubblesReaction({
         chatGuid: resolvedChatGuid,
         messageGuid: messageId,
         emoji,
@@ -235,13 +217,11 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
         );
       }
       // Resolve short ID (e.g., "1", "2") to full UUID
-      const messageId = runtime.resolveBlueBubblesMessageId(rawMessageId, {
-        requireKnownShortId: true,
-      });
+      const messageId = resolveBlueBubblesMessageId(rawMessageId, { requireKnownShortId: true });
       const partIndex = readNumberParam(params, "partIndex", { integer: true });
       const backwardsCompatMessage = readStringParam(params, "backwardsCompatMessage");
 
-      await runtime.editBlueBubblesMessage(messageId, newText, {
+      await editBlueBubblesMessage(messageId, newText, {
         ...opts,
         partIndex: typeof partIndex === "number" ? partIndex : undefined,
         backwardsCompatMessage: backwardsCompatMessage ?? undefined,
@@ -261,12 +241,10 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
         );
       }
       // Resolve short ID (e.g., "1", "2") to full UUID
-      const messageId = runtime.resolveBlueBubblesMessageId(rawMessageId, {
-        requireKnownShortId: true,
-      });
+      const messageId = resolveBlueBubblesMessageId(rawMessageId, { requireKnownShortId: true });
       const partIndex = readNumberParam(params, "partIndex", { integer: true });
 
-      await runtime.unsendBlueBubblesMessage(messageId, {
+      await unsendBlueBubblesMessage(messageId, {
         ...opts,
         partIndex: typeof partIndex === "number" ? partIndex : undefined,
       });
@@ -297,12 +275,10 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
         );
       }
       // Resolve short ID (e.g., "1", "2") to full UUID
-      const messageId = runtime.resolveBlueBubblesMessageId(rawMessageId, {
-        requireKnownShortId: true,
-      });
+      const messageId = resolveBlueBubblesMessageId(rawMessageId, { requireKnownShortId: true });
       const partIndex = readNumberParam(params, "partIndex", { integer: true });
 
-      const result = await runtime.sendMessageBlueBubbles(to, text, {
+      const result = await sendMessageBlueBubbles(to, text, {
         ...opts,
         replyToMessageGuid: messageId,
         replyToPartIndex: typeof partIndex === "number" ? partIndex : undefined,
@@ -336,7 +312,7 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
         );
       }
 
-      const result = await runtime.sendMessageBlueBubbles(to, text, {
+      const result = await sendMessageBlueBubbles(to, text, {
         ...opts,
         effectId,
       });
@@ -353,7 +329,7 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
         throw new Error("BlueBubbles renameGroup requires displayName or name parameter.");
       }
 
-      await runtime.renameBlueBubblesChat(resolvedChatGuid, displayName, opts);
+      await renameBlueBubblesChat(resolvedChatGuid, displayName, opts);
 
       return jsonResult({ ok: true, renamed: resolvedChatGuid, displayName });
     }
@@ -378,7 +354,7 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
       // Decode base64 to buffer
       const buffer = Uint8Array.from(atob(base64Buffer), (c) => c.charCodeAt(0));
 
-      await runtime.setGroupIconBlueBubbles(resolvedChatGuid, buffer, filename, {
+      await setGroupIconBlueBubbles(resolvedChatGuid, buffer, filename, {
         ...opts,
         contentType: contentType ?? undefined,
       });
@@ -395,7 +371,7 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
         throw new Error("BlueBubbles addParticipant requires address or participant parameter.");
       }
 
-      await runtime.addBlueBubblesParticipant(resolvedChatGuid, address, opts);
+      await addBlueBubblesParticipant(resolvedChatGuid, address, opts);
 
       return jsonResult({ ok: true, added: address, chatGuid: resolvedChatGuid });
     }
@@ -409,7 +385,7 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
         throw new Error("BlueBubbles removeParticipant requires address or participant parameter.");
       }
 
-      await runtime.removeBlueBubblesParticipant(resolvedChatGuid, address, opts);
+      await removeBlueBubblesParticipant(resolvedChatGuid, address, opts);
 
       return jsonResult({ ok: true, removed: address, chatGuid: resolvedChatGuid });
     }
@@ -419,7 +395,7 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
       assertPrivateApiEnabled();
       const resolvedChatGuid = await resolveChatGuid();
 
-      await runtime.leaveBlueBubblesChat(resolvedChatGuid, opts);
+      await leaveBlueBubblesChat(resolvedChatGuid, opts);
 
       return jsonResult({ ok: true, left: resolvedChatGuid });
     }
@@ -450,7 +426,7 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
         throw new Error("BlueBubbles sendAttachment requires buffer (base64) parameter.");
       }
 
-      const result = await runtime.sendBlueBubblesAttachment({
+      const result = await sendBlueBubblesAttachment({
         to,
         buffer,
         filename,

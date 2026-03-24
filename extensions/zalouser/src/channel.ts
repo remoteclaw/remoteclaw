@@ -37,7 +37,7 @@ import { resolveZalouserReactionMessageIds } from "./message-sid.js";
 import { probeZalouser } from "./probe.js";
 import { writeQrDataUrlToTempFile } from "./qr-temp-file.js";
 import { sendMessageZalouser, sendReactionZalouser } from "./send.js";
-import { zalouserSetupAdapter, zalouserSetupWizard } from "./setup-surface.js";
+import { zalouserOnboardingAdapter } from "./setup-surface.js";
 import { collectZalouserStatusIssues } from "./status-issues.js";
 import {
   listZaloFriendsMatching,
@@ -313,8 +313,7 @@ export const zalouserDock: ChannelDock = {
 export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
   id: "zalouser",
   meta,
-  setup: zalouserSetupAdapter,
-  setupWizard: zalouserSetupWizard,
+  onboarding: zalouserOnboardingAdapter,
   capabilities: {
     chatTypes: ["direct", "group"],
     media: true,

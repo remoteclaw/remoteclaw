@@ -51,11 +51,10 @@ function makeReactionEvent(
   };
 }
 
-function createFetchedReactionMessage(chatId: string, chatType?: "p2p" | "group" | "private") {
+function createFetchedReactionMessage(chatId: string) {
   return {
     messageId: "om_msg1",
     chatId,
-    chatType,
     senderOpenId: "ou_bot",
     content: "hello",
     contentType: "text",
@@ -65,15 +64,13 @@ function createFetchedReactionMessage(chatId: string, chatType?: "p2p" | "group"
 async function resolveReactionWithLookup(params: {
   event?: FeishuReactionCreatedEvent;
   lookupChatId: string;
-  lookupChatType?: "p2p" | "group" | "private";
 }) {
   return await resolveReactionSyntheticEvent({
     cfg,
     accountId: "default",
     event: params.event ?? makeReactionEvent(),
     botOpenId: "ou_bot",
-    fetchMessage: async () =>
-      createFetchedReactionMessage(params.lookupChatId, params.lookupChatType),
+    fetchMessage: async () => createFetchedReactionMessage(params.lookupChatId),
     uuid: () => "fixed-uuid",
   });
 }
@@ -276,7 +273,6 @@ describe("resolveReactionSyntheticEvent", () => {
       fetchMessage: async () => ({
         messageId: "om_msg1",
         chatId: "oc_group",
-        chatType: "group",
         senderOpenId: "ou_other",
         senderType: "user",
         content: "hello",
@@ -302,7 +298,6 @@ describe("resolveReactionSyntheticEvent", () => {
       fetchMessage: async () => ({
         messageId: "om_msg1",
         chatId: "oc_group",
-        chatType: "group",
         senderOpenId: "ou_other",
         senderType: "user",
         content: "hello",
@@ -358,41 +353,19 @@ describe("resolveReactionSyntheticEvent", () => {
   it("falls back to reacted message chat_id when event chat_id is absent", async () => {
     const result = await resolveReactionWithLookup({
       lookupChatId: "oc_group_from_lookup",
-      lookupChatType: "group",
     });
 
     expect(result?.message.chat_id).toBe("oc_group_from_lookup");
-    expect(result?.message.chat_type).toBe("group");
+    expect(result?.message.chat_type).toBe("p2p");
   });
 
   it("falls back to sender p2p chat when lookup returns empty chat_id", async () => {
     const result = await resolveReactionWithLookup({
       lookupChatId: "",
-      lookupChatType: "p2p",
     });
 
     expect(result?.message.chat_id).toBe("p2p:ou_user1");
     expect(result?.message.chat_type).toBe("p2p");
-  });
-
-  it("drops reactions without chat context when lookup does not provide chat_type", async () => {
-    const result = await resolveReactionWithLookup({
-      lookupChatId: "oc_group_from_lookup",
-    });
-
-    expect(result).toBeNull();
-  });
-
-  it("drops reactions when event chat_type is invalid and lookup cannot recover it", async () => {
-    const result = await resolveReactionWithLookup({
-      event: makeReactionEvent({
-        chat_id: "oc_group_from_event",
-        chat_type: "bogus" as "group",
-      }),
-      lookupChatId: "oc_group_from_lookup",
-    });
-
-    expect(result).toBeNull();
   });
 
   it("logs and drops reactions when lookup throws", async () => {

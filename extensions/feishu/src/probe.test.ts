@@ -14,11 +14,11 @@ const DEFAULT_SUCCESS_RESPONSE = {
   bot: { bot_name: "TestBot", open_id: "ou_abc123" },
 } as const;
 const DEFAULT_SUCCESS_RESULT = {
-  ok: true,
+  ok: true as const,
   appId: "cli_123",
   botName: "TestBot",
   botOpenId: "ou_abc123",
-} as const;
+};
 const BOT1_RESPONSE = {
   code: 0,
   bot: { bot_name: "Bot1", open_id: "ou_1" },

@@ -484,21 +484,6 @@ describe("createFeishuReplyDispatcher streaming behavior", () => {
     );
   });
 
-  function createRuntimeLogger() {
-    return { log: vi.fn(), error: vi.fn() } as never;
-  }
-
-  function createDispatcherHarness(params: { runtime: unknown }) {
-    const result = createFeishuReplyDispatcher({
-      cfg: {} as never,
-      agentId: "agent",
-      runtime: params.runtime as never,
-      chatId: "oc_chat",
-    });
-    const options = createReplyDispatcherWithTypingMock.mock.calls.at(-1)?.[0];
-    return { result, options };
-  }
-
   it("streams reasoning content as blockquote before answer", async () => {
     const { result, options } = createDispatcherHarness({
       runtime: createRuntimeLogger(),

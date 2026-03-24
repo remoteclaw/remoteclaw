@@ -328,7 +328,6 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
 
         if (shouldDeliverText) {
           const useCard = renderMode === "card" || (renderMode === "auto" && shouldUseCard(text));
-          let first = true;
 
           if (info?.kind === "block") {
             // Drop internal block chunks unless we can safely consume them as

@@ -1,13 +1,13 @@
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
 import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
 import type { FeishuConfig } from "./types.js";
 
 export function setFeishuNamedAccountEnabled(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   accountId: string,
   enabled: boolean,
-): OpenClawConfig {
+): RemoteClawConfig {
   const feishuCfg = cfg.channels?.feishu as FeishuConfig | undefined;
   return {
     ...cfg,

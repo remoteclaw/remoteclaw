@@ -38,7 +38,7 @@ import { ZaloConfigSchema } from "./config-schema.js";
 import { probeZalo } from "./probe.js";
 import { resolveZaloProxyFetch } from "./proxy.js";
 import { sendMessageZalo } from "./send.js";
-import { zaloSetupAdapter, zaloSetupWizard } from "./setup-surface.js";
+import { zaloOnboardingAdapter } from "./setup-surface.js";
 import { collectZaloStatusIssues } from "./status-issues.js";
 
 const meta = {
@@ -86,8 +86,7 @@ export const zaloDock: ChannelDock = {
 export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
   id: "zalo",
   meta,
-  setup: zaloSetupAdapter,
-  setupWizard: zaloSetupWizard,
+  onboarding: zaloOnboardingAdapter,
   capabilities: {
     chatTypes: ["direct", "group"],
     media: true,

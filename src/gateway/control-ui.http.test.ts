@@ -165,12 +165,7 @@ describe("handleControlUiHttpRequest", () => {
             root: { kind: "resolved", path: tmp },
             config: {
               agents: { list: [{ id: "main", workspace: tmp }] },
-              ui: {
-                assistant: {
-                  name: testCase.assistantName,
-                  avatar: testCase.assistantAvatar,
-                },
-              },
+              ui: { assistant: { name: "</script><script>alert(1)//", avatar: "</script>.png" } },
             },
           },
         );

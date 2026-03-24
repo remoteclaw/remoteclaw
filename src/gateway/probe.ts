@@ -28,6 +28,10 @@ export type GatewayProbeResult = {
   configSnapshot: unknown;
 };
 
+function clampProbeTimeoutMs(ms: number): number {
+  return Math.max(250, ms);
+}
+
 export async function probeGateway(opts: {
   url: string;
   auth?: GatewayProbeAuth;

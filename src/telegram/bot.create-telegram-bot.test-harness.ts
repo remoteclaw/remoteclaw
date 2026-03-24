@@ -2,14 +2,14 @@ import { beforeEach, vi } from "vitest";
 import { resetInboundDedupe } from "../auto-reply/reply/inbound-dedupe.js";
 import type { MsgContext } from "../auto-reply/templating.js";
 import type { GetReplyOptions, ReplyPayload } from "../auto-reply/types.js";
-import type { RemoteClawConfig } from "../config/types.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { MockFn } from "../test-utils/vitest-mock-fn.js";
 
 type AnyMock = MockFn<(...args: unknown[]) => unknown>;
 type AnyAsyncMock = MockFn<(...args: unknown[]) => Promise<unknown>>;
 
 const { sessionStorePath } = vi.hoisted(() => ({
-  sessionStorePath: `/tmp/openclaw-telegram-${process.pid}-${process.env.VITEST_POOL_ID ?? "0"}.json`,
+  sessionStorePath: `/tmp/remoteclaw-telegram-${process.pid}-${process.env.VITEST_POOL_ID ?? "0"}.json`,
 }));
 
 const { loadWebMedia } = vi.hoisted((): { loadWebMedia: AnyMock } => ({
@@ -20,27 +20,29 @@ export function getLoadWebMediaMock(): AnyMock {
   return loadWebMedia;
 }
 
-vi.mock("../../whatsapp/src/media.js", () => ({
+vi.mock("../web/media.js", () => ({
   loadWebMedia,
 }));
 
 const { loadConfig } = vi.hoisted((): { loadConfig: AnyMock } => ({
-  loadConfig: vi.fn(() => ({})),
+  loadConfig: vi.fn(() => ({
+    agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
+  })),
 }));
 
 export function getLoadConfigMock(): AnyMock {
   return loadConfig;
 }
-vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
+vi.mock("../config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../config/config.js")>();
   return {
     ...actual,
     loadConfig,
   };
 });
 
-vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
+vi.mock("../config/sessions.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../config/sessions.js")>();
   return {
     ...actual,
     resolveStorePath: vi.fn((storePath) => storePath ?? sessionStorePath),
@@ -68,60 +70,19 @@ export function getUpsertChannelPairingRequestMock(): AnyAsyncMock {
   return upsertChannelPairingRequest;
 }
 
-vi.mock("remoteclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("remoteclaw/plugin-sdk/conversation-runtime")>();
-  return {
-    ...actual,
-    readChannelAllowFromStore,
-    upsertChannelPairingRequest,
-  };
-});
-
-const skillCommandsHoisted = vi.hoisted(() => ({
-  listSkillCommandsForAgents: vi.fn(() => []),
-  replySpy: vi.fn(async (_ctx: MsgContext, opts?: GetReplyOptions) => {
-    await opts?.onReplyStart?.();
-    return undefined;
-  }) as MockFn<
-    (
-      ctx: MsgContext,
-      opts?: GetReplyOptions,
-      configOverride?: RemoteClawConfig,
-    ) => Promise<ReplyPayload | ReplyPayload[] | undefined>
-  >,
+vi.mock("../pairing/pairing-store.js", () => ({
+  readChannelAllowFromStore,
+  upsertChannelPairingRequest,
 }));
-export const listSkillCommandsForAgents = skillCommandsHoisted.listSkillCommandsForAgents;
-export const replySpy = skillCommandsHoisted.replySpy;
-
-vi.mock("../auto-reply/reply/inbound-dedupe.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../auto-reply/reply/inbound-dedupe.js")>();
-  return {
-    ...actual,
-    listSkillCommandsForAgents: skillCommandsHoisted.listSkillCommandsForAgents,
-    getReplyFromConfig: skillCommandsHoisted.replySpy,
-    __replySpy: skillCommandsHoisted.replySpy,
-    dispatchReplyWithBufferedBlockDispatcher: vi.fn(
-      async ({ ctx, replyOptions }: { ctx: MsgContext; replyOptions?: GetReplyOptions }) => {
-        await skillCommandsHoisted.replySpy(ctx, replyOptions);
-        return { queuedFinal: false };
-      },
-    ),
-  };
-});
 
 const systemEventsHoisted = vi.hoisted(() => ({
   enqueueSystemEventSpy: vi.fn(),
 }));
 export const enqueueSystemEventSpy: AnyMock = systemEventsHoisted.enqueueSystemEventSpy;
 
-vi.mock("remoteclaw/plugin-sdk/infra-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/infra-runtime")>();
-  return {
-    ...actual,
-    enqueueSystemEvent: systemEventsHoisted.enqueueSystemEventSpy,
-  };
-});
+vi.mock("../infra/system-events.js", () => ({
+  enqueueSystemEvent: enqueueSystemEventSpy,
+}));
 
 const sentMessageCacheHoisted = vi.hoisted(() => ({
   wasSentByBot: vi.fn(() => false),
@@ -129,109 +90,110 @@ const sentMessageCacheHoisted = vi.hoisted(() => ({
 export const wasSentByBot = sentMessageCacheHoisted.wasSentByBot;
 
 vi.mock("./sent-message-cache.js", () => ({
-  wasSentByBot: sentMessageCacheHoisted.wasSentByBot,
+  wasSentByBot,
   recordSentMessage: vi.fn(),
   clearSentMessageCache: vi.fn(),
 }));
 
-// All spy variables used inside vi.mock("grammy", ...) must be created via
-// vi.hoisted() so they are available when the hoisted factory runs, regardless
-// of module evaluation order across different test files.
-const grammySpies = vi.hoisted(() => ({
-  useSpy: vi.fn() as MockFn<(arg: unknown) => void>,
-  middlewareUseSpy: vi.fn() as AnyMock,
-  onSpy: vi.fn() as AnyMock,
-  stopSpy: vi.fn() as AnyMock,
-  commandSpy: vi.fn() as AnyMock,
-  botCtorSpy: vi.fn() as AnyMock,
-  answerCallbackQuerySpy: vi.fn(async () => undefined) as AnyAsyncMock,
-  sendChatActionSpy: vi.fn() as AnyMock,
-  editMessageTextSpy: vi.fn(async () => ({ message_id: 88 })) as AnyAsyncMock,
-  editMessageReplyMarkupSpy: vi.fn(async () => ({ message_id: 88 })) as AnyAsyncMock,
-  sendMessageDraftSpy: vi.fn(async () => true) as AnyAsyncMock,
-  setMessageReactionSpy: vi.fn(async () => undefined) as AnyAsyncMock,
-  setMyCommandsSpy: vi.fn(async () => undefined) as AnyAsyncMock,
-  getMeSpy: vi.fn(async () => ({
-    username: "openclaw_bot",
-    has_topics_enabled: true,
-  })) as AnyAsyncMock,
-  sendMessageSpy: vi.fn(async () => ({ message_id: 77 })) as AnyAsyncMock,
-  sendAnimationSpy: vi.fn(async () => ({ message_id: 78 })) as AnyAsyncMock,
-  sendPhotoSpy: vi.fn(async () => ({ message_id: 79 })) as AnyAsyncMock,
-  getFileSpy: vi.fn(async () => ({ file_path: "media/file.jpg" })) as AnyAsyncMock,
+export const useSpy: MockFn<(arg: unknown) => void> = vi.fn();
+export const middlewareUseSpy: AnyMock = vi.fn();
+export const onSpy: AnyMock = vi.fn();
+export const stopSpy: AnyMock = vi.fn();
+export const commandSpy: AnyMock = vi.fn();
+export const botCtorSpy: AnyMock = vi.fn();
+export const answerCallbackQuerySpy: AnyAsyncMock = vi.fn(async () => undefined);
+export const sendChatActionSpy: AnyMock = vi.fn();
+export const editMessageTextSpy: AnyAsyncMock = vi.fn(async () => ({ message_id: 88 }));
+export const sendMessageDraftSpy: AnyAsyncMock = vi.fn(async () => true);
+export const setMessageReactionSpy: AnyAsyncMock = vi.fn(async () => undefined);
+export const setMyCommandsSpy: AnyAsyncMock = vi.fn(async () => undefined);
+export const getMeSpy: AnyAsyncMock = vi.fn(async () => ({
+  username: "remoteclaw_bot",
+  has_topics_enabled: true,
 }));
+export const sendMessageSpy: AnyAsyncMock = vi.fn(async () => ({ message_id: 77 }));
+export const sendAnimationSpy: AnyAsyncMock = vi.fn(async () => ({ message_id: 78 }));
+export const sendPhotoSpy: AnyAsyncMock = vi.fn(async () => ({ message_id: 79 }));
+export const getFileSpy: AnyAsyncMock = vi.fn(async () => ({ file_path: "media/file.jpg" }));
 
-export const {
-  useSpy,
-  middlewareUseSpy,
-  onSpy,
-  stopSpy,
-  commandSpy,
-  botCtorSpy,
-  answerCallbackQuerySpy,
-  sendChatActionSpy,
-  editMessageTextSpy,
-  editMessageReplyMarkupSpy,
-  sendMessageDraftSpy,
-  setMessageReactionSpy,
-  setMyCommandsSpy,
-  getMeSpy,
-  sendMessageSpy,
-  sendAnimationSpy,
-  sendPhotoSpy,
-  getFileSpy,
-} = grammySpies;
+type ApiStub = {
+  config: { use: (arg: unknown) => void };
+  answerCallbackQuery: typeof answerCallbackQuerySpy;
+  sendChatAction: typeof sendChatActionSpy;
+  editMessageText: typeof editMessageTextSpy;
+  sendMessageDraft: typeof sendMessageDraftSpy;
+  setMessageReaction: typeof setMessageReactionSpy;
+  setMyCommands: typeof setMyCommandsSpy;
+  getMe: typeof getMeSpy;
+  sendMessage: typeof sendMessageSpy;
+  sendAnimation: typeof sendAnimationSpy;
+  sendPhoto: typeof sendPhotoSpy;
+  getFile: typeof getFileSpy;
+};
+
+const apiStub: ApiStub = {
+  config: { use: useSpy },
+  answerCallbackQuery: answerCallbackQuerySpy,
+  sendChatAction: sendChatActionSpy,
+  editMessageText: editMessageTextSpy,
+  sendMessageDraft: sendMessageDraftSpy,
+  setMessageReaction: setMessageReactionSpy,
+  setMyCommands: setMyCommandsSpy,
+  getMe: getMeSpy,
+  sendMessage: sendMessageSpy,
+  sendAnimation: sendAnimationSpy,
+  sendPhoto: sendPhotoSpy,
+  getFile: getFileSpy,
+};
 
 vi.mock("grammy", () => ({
   Bot: class {
-    api = {
-      config: { use: grammySpies.useSpy },
-      answerCallbackQuery: grammySpies.answerCallbackQuerySpy,
-      sendChatAction: grammySpies.sendChatActionSpy,
-      editMessageText: grammySpies.editMessageTextSpy,
-      editMessageReplyMarkup: grammySpies.editMessageReplyMarkupSpy,
-      sendMessageDraft: grammySpies.sendMessageDraftSpy,
-      setMessageReaction: grammySpies.setMessageReactionSpy,
-      setMyCommands: grammySpies.setMyCommandsSpy,
-      getMe: grammySpies.getMeSpy,
-      sendMessage: grammySpies.sendMessageSpy,
-      sendAnimation: grammySpies.sendAnimationSpy,
-      sendPhoto: grammySpies.sendPhotoSpy,
-      getFile: grammySpies.getFileSpy,
-    };
-    use = grammySpies.middlewareUseSpy;
-    on = grammySpies.onSpy;
-    stop = grammySpies.stopSpy;
-    command = grammySpies.commandSpy;
+    api = apiStub;
+    use = middlewareUseSpy;
+    on = onSpy;
+    stop = stopSpy;
+    command = commandSpy;
     catch = vi.fn();
     constructor(
       public token: string,
       public options?: { client?: { fetch?: typeof fetch } },
     ) {
-      grammySpies.botCtorSpy(token, options);
+      botCtorSpy(token, options);
     }
   },
   InputFile: class {},
 }));
 
-const runnerHoisted = vi.hoisted(() => ({
-  sequentializeMiddleware: vi.fn(),
-  sequentializeSpy: vi.fn(),
-  throttlerSpy: vi.fn(() => "throttler"),
-}));
-export const sequentializeSpy: AnyMock = runnerHoisted.sequentializeSpy;
+const sequentializeMiddleware = vi.fn();
+export const sequentializeSpy: AnyMock = vi.fn(() => sequentializeMiddleware);
 export let sequentializeKey: ((ctx: unknown) => string) | undefined;
 vi.mock("@grammyjs/runner", () => ({
   sequentialize: (keyFn: (ctx: unknown) => string) => {
     sequentializeKey = keyFn;
-    return runnerHoisted.sequentializeSpy();
+    return sequentializeSpy();
   },
 }));
 
-export const throttlerSpy: AnyMock = runnerHoisted.throttlerSpy;
+export const throttlerSpy: AnyMock = vi.fn(() => "throttler");
 
 vi.mock("@grammyjs/transformer-throttler", () => ({
-  apiThrottler: () => runnerHoisted.throttlerSpy(),
+  apiThrottler: () => throttlerSpy(),
+}));
+
+export const replySpy: MockFn<
+  (
+    ctx: MsgContext,
+    opts?: GetReplyOptions,
+    configOverride?: RemoteClawConfig,
+  ) => Promise<ReplyPayload | ReplyPayload[] | undefined>
+> = vi.fn(async (_ctx, opts) => {
+  await opts?.onReplyStart?.();
+  return undefined;
+});
+
+vi.mock("../auto-reply/reply.js", () => ({
+  getReplyFromConfig: replySpy,
+  __replySpy: replySpy,
 }));
 
 export const getOnHandler = (event: string) => {
@@ -247,6 +209,7 @@ const DEFAULT_TELEGRAM_TEST_CONFIG: RemoteClawConfig = {
     defaults: {
       envelopeTimezone: "utc",
     },
+    list: [{ id: "main", workspace: "/tmp/test-workspace" }],
   },
   channels: {
     telegram: { dmPolicy: "open", allowFrom: ["*"] },
@@ -277,7 +240,7 @@ export function makeTelegramMessageCtx(params: {
         ? {}
         : { message_thread_id: params.messageThreadId }),
     },
-    me: { username: "openclaw_bot" },
+    me: { username: "remoteclaw_bot" },
     getFile: async () => ({ download: async () => new Uint8Array() }),
   };
 }
@@ -341,20 +304,17 @@ beforeEach(() => {
   setMyCommandsSpy.mockResolvedValue(undefined);
   getMeSpy.mockReset();
   getMeSpy.mockResolvedValue({
-    username: "openclaw_bot",
+    username: "remoteclaw_bot",
     has_topics_enabled: true,
   });
   editMessageTextSpy.mockReset();
   editMessageTextSpy.mockResolvedValue({ message_id: 88 });
-  editMessageReplyMarkupSpy.mockReset();
-  editMessageReplyMarkupSpy.mockResolvedValue({ message_id: 88 });
   sendMessageDraftSpy.mockReset();
   sendMessageDraftSpy.mockResolvedValue(true);
   enqueueSystemEventSpy.mockReset();
   wasSentByBot.mockReset();
   wasSentByBot.mockReturnValue(false);
-  listSkillCommandsForAgents.mockReset();
-  listSkillCommandsForAgents.mockReturnValue([]);
+
   middlewareUseSpy.mockReset();
   sequentializeSpy.mockReset();
   botCtorSpy.mockReset();

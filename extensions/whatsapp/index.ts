@@ -3,10 +3,7 @@ import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/whatsapp";
 import { whatsappPlugin } from "./src/channel.js";
 import { setWhatsAppRuntime } from "./src/runtime.js";
 
-export { whatsappPlugin } from "./src/channel.js";
-export { setWhatsAppRuntime } from "./src/runtime.js";
-
-export default defineChannelPluginEntry({
+const plugin = {
   id: "whatsapp",
   name: "WhatsApp",
   description: "WhatsApp channel plugin",

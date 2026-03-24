@@ -3,10 +3,7 @@ import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
 import { msteamsPlugin } from "./src/channel.js";
 import { setMSTeamsRuntime } from "./src/runtime.js";
 
-export { msteamsPlugin } from "./src/channel.js";
-export { setMSTeamsRuntime } from "./src/runtime.js";
-
-export default defineChannelPluginEntry({
+const plugin = {
   id: "msteams",
   name: "Microsoft Teams",
   description: "Microsoft Teams channel plugin (Bot Framework)",

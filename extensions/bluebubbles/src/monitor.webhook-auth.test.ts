@@ -185,7 +185,7 @@ describe("BlueBubbles webhook monitor", () => {
       (nextUnregister) => {
         unregister = nextUnregister;
       },
-    };
+    );
   }
 
   function setupProtectedWebhookTarget(password = TEST_WEBHOOK_PASSWORD) {

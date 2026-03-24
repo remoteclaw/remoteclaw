@@ -3,10 +3,7 @@ import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/slack";
 import { slackPlugin } from "./src/channel.js";
 import { setSlackRuntime } from "./src/runtime.js";
 
-export { slackPlugin } from "./src/channel.js";
-export { setSlackRuntime } from "./src/runtime.js";
-
-export default defineChannelPluginEntry({
+const plugin = {
   id: "slack",
   name: "Slack",
   description: "Slack channel plugin",

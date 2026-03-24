@@ -6,7 +6,7 @@ import { setBlueBubblesRuntime } from "./src/runtime.js";
 export { bluebubblesPlugin } from "./src/channel.js";
 export { setBlueBubblesRuntime } from "./src/runtime.js";
 
-export default defineChannelPluginEntry({
+const plugin = {
   id: "bluebubbles",
   name: "BlueBubbles",
   description: "BlueBubbles channel plugin (macOS app)",

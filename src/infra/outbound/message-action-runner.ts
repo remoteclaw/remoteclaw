@@ -12,7 +12,6 @@ import type {
   ChannelThreadingToolContext,
 } from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { normalizeInteractiveReply } from "../../interactive/payload.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
 import { hasPollCreationParams, resolveTelegramPollVisibility } from "../../poll-params.js";
 import { resolvePollMaxSelections } from "../../polls.js";
@@ -38,7 +37,6 @@ import {
   parseButtonsParam,
   parseCardParam,
   parseComponentsParam,
-  parseInteractiveParam,
   readBooleanParam,
   resolveAttachmentMediaPolicy,
   resolveSlackAutoThreadId,
@@ -416,7 +414,7 @@ async function handleSendAction(ctx: ResolvedActionContext): Promise<MessageActi
     readStringParam(params, "filePath", { trim: false });
   const hasCard = params.card != null && typeof params.card === "object";
   const hasComponents = params.components != null && typeof params.components === "object";
-  const hasInteractive = normalizeInteractiveReply(params.interactive) != null;
+  const hasInteractive = params.interactive != null && typeof params.interactive === "object";
   const caption = readStringParam(params, "caption", { allowEmpty: true }) ?? "";
   let message =
     readStringParam(params, "message", {
@@ -726,7 +724,6 @@ export async function runMessageAction(
   parseButtonsParam(params);
   parseCardParam(params);
   parseComponentsParam(params);
-  parseInteractiveParam(params);
 
   const action = input.action;
   if (action === "broadcast") {

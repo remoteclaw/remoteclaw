@@ -1,11 +1,6 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  expandHomePrefix,
-  resolveEffectiveHomeDir,
-  resolveHomeRelativePath,
-  resolveRequiredHomeDir,
-} from "./home-dir.js";
+import { expandHomePrefix, resolveEffectiveHomeDir, resolveRequiredHomeDir } from "./home-dir.js";
 
 describe("resolveEffectiveHomeDir", () => {
   it.each([
@@ -126,35 +121,5 @@ describe("expandHomePrefix", () => {
     },
   ])("$name", ({ input, opts, expected }) => {
     expect(expandHomePrefix(input, opts)).toBe(expected);
-  });
-});
-
-describe("resolveHomeRelativePath", () => {
-  it("returns blank input unchanged", () => {
-    expect(resolveHomeRelativePath("   ")).toBe("");
-  });
-
-  it("resolves trimmed relative and absolute paths", () => {
-    expect(resolveHomeRelativePath(" ./tmp/file.txt ")).toBe(path.resolve("./tmp/file.txt"));
-    expect(resolveHomeRelativePath(" /tmp/file.txt ")).toBe(path.resolve("/tmp/file.txt"));
-  });
-
-  it("expands tilde paths using the resolved home directory", () => {
-    expect(
-      resolveHomeRelativePath("~/docs", {
-        env: { REMOTECLAW_HOME: "/srv/remoteclaw-home" } as NodeJS.ProcessEnv,
-      }),
-    ).toBe(path.resolve("/srv/remoteclaw-home/docs"));
-  });
-
-  it("falls back to cwd when tilde paths have no home source", () => {
-    expect(
-      resolveHomeRelativePath("~", {
-        env: {} as NodeJS.ProcessEnv,
-        homedir: () => {
-          throw new Error("no home");
-        },
-      }),
-    ).toBe(path.resolve(process.cwd()));
   });
 });

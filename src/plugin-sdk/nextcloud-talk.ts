@@ -17,25 +17,26 @@ export {
 } from "../channels/plugins/config-helpers.js";
 export { buildChannelConfigSchema } from "../channels/plugins/config-schema.js";
 export { formatPairingApproveHint } from "../channels/plugins/helpers.js";
+export type {
+  ChannelOnboardingAdapter,
+  ChannelOnboardingDmPolicy,
+} from "../channels/plugins/onboarding-types.js";
 export {
   buildSingleChannelSecretPromptState,
   addWildcardAllowFrom,
   mergeAllowFromEntries,
   promptAccountId,
-  promptSingleChannelSecretInput,
-  runSingleChannelSecretStep,
+  promptSingleChannelToken,
   resolveAccountIdForConfigure,
   setTopLevelChannelDmPolicyWithAllowFrom,
 } from "../channels/plugins/onboarding/helpers.js";
-export {
-  applyAccountNameToChannelSection,
-  patchScopedAccountConfig,
-} from "../channels/plugins/setup-helpers.js";
+export { applyAccountNameToChannelSection } from "../channels/plugins/setup-helpers.js";
 export { createAccountListHelpers } from "../channels/plugins/account-helpers.js";
 export type { ChannelGroupContext, ChannelSetupInput } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 export type { RemoteClawConfig } from "../config/config.js";
+
 export { mapAllowFromEntries } from "./channel-config-helpers.js";
 export { evaluateMatchedGroupAccessForPolicy } from "./group-access.js";
 export {
@@ -52,11 +53,7 @@ export type {
   GroupToolPolicyConfig,
 } from "../config/types.js";
 export type { SecretInput } from "../config/types.secrets.js";
-export {
-  hasConfiguredSecretInput,
-  normalizeResolvedSecretInputString,
-  normalizeSecretInputString,
-} from "../config/types.secrets.js";
+export { normalizeSecretInputString } from "../config/types.secrets.js";
 export { buildSecretInputSchema } from "./secret-input-schema.js";
 export { ToolPolicySchema } from "../config/zod-schema.agent-runtime.js";
 export {
@@ -77,7 +74,7 @@ export { waitForAbortSignal } from "../infra/abort-signal.js";
 export { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 export type { PluginRuntime } from "../plugins/runtime/types.js";
-export type { OpenClawPluginApi } from "../plugins/types.js";
+export type { RemoteClawPluginApi } from "../plugins/types.js";
 export { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
 export type { RuntimeEnv } from "../runtime.js";
 export {
@@ -92,6 +89,7 @@ export {
 } from "./account-resolution.js";
 export { createScopedPairingAccess } from "./pairing-access.js";
 export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
+
 export { createPersistentDedupe } from "./persistent-dedupe.js";
 export type { OutboundReplyPayload } from "./reply-payload.js";
 export {

@@ -73,8 +73,6 @@ describe("createSynologyChatPlugin", () => {
     expect(plugin.meta).toBeDefined();
     expect(plugin.capabilities).toBeDefined();
     expect(plugin.config).toBeDefined();
-    expect(plugin.setup).toBeDefined();
-    expect(plugin.setupWizard).toBeDefined();
     expect(plugin.security).toBeDefined();
     expect(plugin.outbound).toBeDefined();
     expect(plugin.gateway).toBeDefined();

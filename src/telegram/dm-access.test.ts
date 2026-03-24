@@ -89,11 +89,18 @@ describe("enforceTelegramDmAccess", () => {
   it("issues a pairing challenge for unauthorized DMs under pairing policy", async () => {
     const sendMessage = vi.fn(async () => undefined);
     const logger = { info: vi.fn() };
-    createChannelPairingChallengeIssuerMock.mockReturnValueOnce(({ sendPairingReply, onCreated }) =>
-      (async () => {
-        onCreated();
-        await sendPairingReply("Pairing code: 123456");
-      })(),
+    createChannelPairingChallengeIssuerMock.mockReturnValueOnce(
+      ({
+        sendPairingReply,
+        onCreated,
+      }: {
+        sendPairingReply: (msg: string) => Promise<void>;
+        onCreated: () => void;
+      }) =>
+        (async () => {
+          onCreated();
+          await sendPairingReply("Pairing code: 123456");
+        })(),
     );
 
     const allowed = await enforceTelegramDmAccess({

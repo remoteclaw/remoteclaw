@@ -70,7 +70,6 @@ function createSubagentRuntimeRegistry() {
 
 async function createSubagentRuntime(): Promise<PluginRuntime["subagent"]> {
   const serverPlugins = await import("../server-plugins.js");
-  const runtimeModule = await import("../../plugins/runtime/index.js");
   loadRemoteClawPlugins.mockReturnValue(createSubagentRuntimeRegistry());
   serverPlugins.loadGatewayPlugins({
     cfg: {},
@@ -86,12 +85,12 @@ async function createSubagentRuntime(): Promise<PluginRuntime["subagent"]> {
   });
   serverPlugins.setFallbackGatewayContext({} as GatewayRequestContext);
   const call = loadRemoteClawPlugins.mock.calls.at(-1)?.[0] as
-    | { runtimeOptions?: { allowGatewaySubagentBinding?: boolean } }
+    | { runtimeOptions?: { subagent?: PluginRuntime["subagent"] } }
     | undefined;
-  if (call?.runtimeOptions?.allowGatewaySubagentBinding !== true) {
-    throw new Error("Expected loadGatewayPlugins to opt into gateway subagent binding");
+  if (!call?.runtimeOptions?.subagent) {
+    throw new Error("Expected subagent runtime from loadGatewayPlugins");
   }
-  return runtimeModule.createPluginRuntime({ allowGatewaySubagentBinding: true }).subagent;
+  return call.runtimeOptions.subagent;
 }
 
 describe("createGatewayPluginRequestHandler", () => {

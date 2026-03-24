@@ -1,29 +1,16 @@
-import type { ChannelOnboardingDmPolicy } from "../../../src/channels/plugins/onboarding-types.js";
-import { promptChannelAccessConfig } from "../../../src/channels/plugins/onboarding/channel-access.js";
+import type { DmPolicy } from "remoteclaw/plugin-sdk";
 import {
   addWildcardAllowFrom,
   buildSingleChannelSecretPromptState,
+  formatResolvedUnresolvedNote,
+  formatDocsLink,
   mergeAllowFromEntries,
-  promptSingleChannelSecretInput,
+  promptChannelAccessConfig,
   setTopLevelChannelGroupPolicy,
-} from "../../../src/channels/plugins/onboarding/helpers.js";
-import {
-  applyAccountNameToChannelSection,
-  migrateBaseNameToDefaultAccount,
-} from "../../../src/channels/plugins/setup-helpers.js";
-import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
-import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import type { DmPolicy } from "../../../src/config/types.js";
-import type { SecretInput } from "../../../src/config/types.secrets.js";
-import {
-  hasConfiguredSecretInput,
-  normalizeSecretInputString,
-} from "../../../src/config/types.secrets.js";
-import { formatResolvedUnresolvedNote } from "../../../src/plugin-sdk/resolution-notes.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
-import type { WizardPrompter } from "../../../src/wizard/prompts.js";
+  type ChannelOnboardingAdapter,
+  type ChannelOnboardingDmPolicy,
+  type WizardPrompter,
+} from "remoteclaw/plugin-sdk";
 import { listMatrixDirectoryGroupsLive } from "./directory-live.js";
 import { resolveMatrixAccount } from "./matrix/accounts.js";
 import { ensureMatrixSdkInstalled, isMatrixSdkAvailable } from "./matrix/deps.js";
@@ -31,38 +18,6 @@ import { resolveMatrixTargets } from "./resolve-targets.js";
 import type { CoreConfig } from "./types.js";
 
 const channel = "matrix" as const;
-
-function buildMatrixConfigUpdate(
-  cfg: CoreConfig,
-  input: {
-    homeserver?: string;
-    userId?: string;
-    accessToken?: string;
-    password?: string;
-    deviceName?: string;
-    initialSyncLimit?: number;
-  },
-): CoreConfig {
-  const existing = cfg.channels?.matrix ?? {};
-  return {
-    ...cfg,
-    channels: {
-      ...cfg.channels,
-      matrix: {
-        ...existing,
-        enabled: true,
-        ...(input.homeserver ? { homeserver: input.homeserver } : {}),
-        ...(input.userId ? { userId: input.userId } : {}),
-        ...(input.accessToken ? { accessToken: input.accessToken } : {}),
-        ...(input.password ? { password: input.password } : {}),
-        ...(input.deviceName ? { deviceName: input.deviceName } : {}),
-        ...(typeof input.initialSyncLimit === "number"
-          ? { initialSyncLimit: input.initialSyncLimit }
-          : {}),
-      },
-    },
-  };
-}
 
 function setMatrixDmPolicy(cfg: CoreConfig, policy: DmPolicy) {
   const allowFrom =
@@ -210,7 +165,7 @@ function setMatrixGroupRooms(cfg: CoreConfig, roomKeys: string[]) {
   };
 }
 
-const matrixDmPolicy: ChannelOnboardingDmPolicy = {
+const dmPolicy: ChannelOnboardingDmPolicy = {
   label: "Matrix",
   channel,
   policyKey: "channels.matrix.dm.policy",
@@ -220,100 +175,26 @@ const matrixDmPolicy: ChannelOnboardingDmPolicy = {
   promptAllowFrom: promptMatrixAllowFrom,
 };
 
-export const matrixSetupAdapter: ChannelSetupAdapter = {
-  resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
-  applyAccountName: ({ cfg, accountId, name }) =>
-    applyAccountNameToChannelSection({
-      cfg: cfg as CoreConfig,
-      channelKey: channel,
-      accountId,
-      name,
-    }),
-  validateInput: ({ input }) => {
-    if (input.useEnv) {
-      return null;
-    }
-    if (!input.homeserver?.trim()) {
-      return "Matrix requires --homeserver";
-    }
-    const accessToken = input.accessToken?.trim();
-    const password = normalizeSecretInputString(input.password);
-    const userId = input.userId?.trim();
-    if (!accessToken && !password) {
-      return "Matrix requires --access-token or --password";
-    }
-    if (!accessToken) {
-      if (!userId) {
-        return "Matrix requires --user-id when using --password";
-      }
-      if (!password) {
-        return "Matrix requires --password when using --user-id";
-      }
-    }
-    return null;
-  },
-  applyAccountConfig: ({ cfg, accountId, input }) => {
-    const namedConfig = applyAccountNameToChannelSection({
-      cfg: cfg as CoreConfig,
-      channelKey: channel,
-      accountId,
-      name: input.name,
-    });
-    const next =
-      accountId !== DEFAULT_ACCOUNT_ID
-        ? migrateBaseNameToDefaultAccount({
-            cfg: namedConfig,
-            channelKey: channel,
-          })
-        : namedConfig;
-    if (input.useEnv) {
-      return {
-        ...next,
-        channels: {
-          ...next.channels,
-          matrix: {
-            ...next.channels?.matrix,
-            enabled: true,
-          },
-        },
-      } as CoreConfig;
-    }
-    return buildMatrixConfigUpdate(next as CoreConfig, {
-      homeserver: input.homeserver?.trim(),
-      userId: input.userId?.trim(),
-      accessToken: input.accessToken?.trim(),
-      password: normalizeSecretInputString(input.password),
-      deviceName: input.deviceName?.trim(),
-      initialSyncLimit: input.initialSyncLimit,
-    });
-  },
-};
-
-export const matrixSetupWizard: ChannelSetupWizard = {
+export const matrixOnboardingAdapter: ChannelOnboardingAdapter = {
   channel,
-  resolveAccountIdForConfigure: () => DEFAULT_ACCOUNT_ID,
-  resolveShouldPromptAccountIds: () => false,
-  status: {
-    configuredLabel: "configured",
-    unconfiguredLabel: "needs homeserver + access token or password",
-    configuredHint: "configured",
-    unconfiguredHint: "needs auth",
-    resolveConfigured: ({ cfg }) => resolveMatrixAccount({ cfg: cfg as CoreConfig }).configured,
-    resolveStatusLines: ({ cfg }) => {
-      const configured = resolveMatrixAccount({ cfg: cfg as CoreConfig }).configured;
-      return [
+  getStatus: async ({ cfg }) => {
+    const account = resolveMatrixAccount({ cfg: cfg as CoreConfig });
+    const configured = account.configured;
+    const sdkReady = isMatrixSdkAvailable();
+    return {
+      channel,
+      configured,
+      statusLines: [
         `Matrix: ${configured ? "configured" : "needs homeserver + access token or password"}`,
-      ];
-    },
-    resolveSelectionHint: ({ cfg, configured }) => {
-      if (!isMatrixSdkAvailable()) {
-        return "install @vector-im/matrix-bot-sdk";
-      }
-      return configured ? "configured" : "needs auth";
-    },
+      ],
+      selectionHint: !sdkReady
+        ? "install @vector-im/matrix-bot-sdk"
+        : configured
+          ? "configured"
+          : "needs auth",
+    };
   },
-  credentials: [],
-  finalize: async ({ cfg, runtime, prompter, forceAllowFrom }) => {
+  configure: async ({ cfg, runtime, prompter, forceAllowFrom }) => {
     let next = cfg as CoreConfig;
     await ensureMatrixSdkInstalled({
       runtime,
@@ -347,11 +228,16 @@ export const matrixSetupWizard: ChannelSetupWizard = {
         initialValue: true,
       });
       if (useEnv) {
-        next = matrixSetupAdapter.applyAccountConfig({
-          cfg: next,
-          accountId: DEFAULT_ACCOUNT_ID,
-          input: { useEnv: true },
-        }) as CoreConfig;
+        next = {
+          ...next,
+          channels: {
+            ...next.channels,
+            matrix: {
+              ...next.channels?.matrix,
+              enabled: true,
+            },
+          },
+        };
         if (forceAllowFrom) {
           next = await promptMatrixAllowFrom({ cfg: next, prompter });
         }
@@ -377,24 +263,23 @@ export const matrixSetupWizard: ChannelSetupWizard = {
     ).trim();
 
     let accessToken = existing.accessToken ?? "";
-    let password: SecretInput | undefined = existing.password;
+    let password = existing.password ?? "";
     let userId = existing.userId ?? "";
-    const existingPasswordConfigured = hasConfiguredSecretInput(existing.password);
-    const passwordConfigured = () => hasConfiguredSecretInput(password);
 
-    if (accessToken || passwordConfigured()) {
+    if (accessToken || password) {
       const keep = await prompter.confirm({
         message: "Matrix credentials already configured. Keep them?",
         initialValue: true,
       });
       if (!keep) {
         accessToken = "";
-        password = undefined;
+        password = "";
         userId = "";
       }
     }
 
-    if (!accessToken && !passwordConfigured()) {
+    if (!accessToken && !password) {
+      // Ask auth method FIRST before asking for user ID
       const authMode = await prompter.select({
         message: "Matrix auth method",
         options: [
@@ -410,8 +295,11 @@ export const matrixSetupWizard: ChannelSetupWizard = {
             validate: (value) => (value?.trim() ? undefined : "Required"),
           }),
         ).trim();
+        // With access token, we can fetch the userId automatically - don't prompt for it
+        // The client.ts will use whoami() to get it
         userId = "";
       } else {
+        // Password auth requires user ID upfront
         userId = String(
           await prompter.text({
             message: "Matrix user ID",
@@ -431,41 +319,23 @@ export const matrixSetupWizard: ChannelSetupWizard = {
             },
           }),
         ).trim();
-        const passwordPromptState = buildSingleChannelSecretPromptState({
-          accountConfigured: Boolean(existingPasswordConfigured),
-          hasConfigToken: existingPasswordConfigured,
-          allowEnv: true,
-          envValue: envPassword,
-        });
-        const passwordResult = await promptSingleChannelSecretInput({
-          cfg: next,
-          prompter,
-          providerHint: channel,
-          credentialLabel: "password",
-          accountConfigured: passwordPromptState.accountConfigured,
-          canUseEnv: passwordPromptState.canUseEnv,
-          hasConfigToken: passwordPromptState.hasConfigToken,
-          envPrompt: "MATRIX_PASSWORD detected. Use env var?",
-          keepPrompt: "Matrix password already configured. Keep it?",
-          inputPrompt: "Matrix password",
-          preferredEnvVar: "MATRIX_PASSWORD",
-        });
-        if (passwordResult.action === "set") {
-          password = passwordResult.value;
-        }
-        if (passwordResult.action === "use-env") {
-          password = undefined;
-        }
+        password = String(
+          await prompter.text({
+            message: "Matrix password",
+            validate: (value) => (value?.trim() ? undefined : "Required"),
+          }),
+        ).trim();
       }
     }
 
     const deviceName = String(
       await prompter.text({
         message: "Matrix device name (optional)",
-        initialValue: existing.deviceName ?? "OpenClaw Gateway",
+        initialValue: existing.deviceName ?? "RemoteClaw Gateway",
       }),
     ).trim();
 
+    // Ask about E2EE encryption
     const enableEncryption = await prompter.confirm({
       message: "Enable end-to-end encryption (E2EE)?",
       initialValue: existing.encryption ?? false,
@@ -481,7 +351,7 @@ export const matrixSetupWizard: ChannelSetupWizard = {
           homeserver,
           userId: userId || undefined,
           accessToken: accessToken || undefined,
-          password,
+          password: password || undefined,
           deviceName: deviceName || undefined,
           encryption: enableEncryption || undefined,
         },
@@ -557,7 +427,7 @@ export const matrixSetupWizard: ChannelSetupWizard = {
 
     return { cfg: next };
   },
-  dmPolicy: matrixDmPolicy,
+  dmPolicy,
   disable: (cfg) => ({
     ...(cfg as CoreConfig),
     channels: {

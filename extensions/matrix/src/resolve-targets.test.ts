@@ -8,15 +8,6 @@ vi.mock("./directory-live.js", () => ({
   listMatrixDirectoryGroupsLive: vi.fn(),
 }));
 
-async function resolveUserTarget(input = "Alice") {
-  const [result] = await resolveMatrixTargets({
-    cfg: {},
-    inputs: [input],
-    kind: "user",
-  });
-  return result;
-}
-
 describe("resolveMatrixTargets (users)", () => {
   beforeEach(() => {
     vi.mocked(listMatrixDirectoryPeersLive).mockReset();
@@ -29,7 +20,11 @@ describe("resolveMatrixTargets (users)", () => {
     ];
     vi.mocked(listMatrixDirectoryPeersLive).mockResolvedValue(matches);
 
-    const result = await resolveUserTarget();
+    const [result] = await resolveMatrixTargets({
+      cfg: {},
+      inputs: ["Alice"],
+      kind: "user",
+    });
 
     expect(result?.resolved).toBe(true);
     expect(result?.id).toBe("@alice:example.org");
@@ -42,7 +37,11 @@ describe("resolveMatrixTargets (users)", () => {
     ];
     vi.mocked(listMatrixDirectoryPeersLive).mockResolvedValue(matches);
 
-    const result = await resolveUserTarget();
+    const [result] = await resolveMatrixTargets({
+      cfg: {},
+      inputs: ["Alice"],
+      kind: "user",
+    });
 
     expect(result?.resolved).toBe(false);
     expect(result?.note).toMatch(/use full Matrix ID/i);

@@ -56,123 +56,123 @@ const meta = {
 };
 
 export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = {
-      id: "bluebubbles",
-      meta,
-      capabilities: {
-        chatTypes: ["direct", "group"],
-        media: true,
-        reactions: true,
-        edit: true,
-        unsend: true,
-        reply: true,
-        effects: true,
-        groupManagement: true,
-      },
-      groups: {
-        resolveRequireMention: resolveBlueBubblesGroupRequireMention,
-        resolveToolPolicy: resolveBlueBubblesGroupToolPolicy,
-      },
-      reload: { configPrefixes: ["channels.bluebubbles"] },
-      configSchema: buildChannelConfigSchema(BlueBubblesConfigSchema),
-      setupWizard: blueBubblesSetupWizard,
-      config: {
-        ...bluebubblesConfigAdapter,
-        isConfigured: (account) => account.configured,
-        describeAccount: (account): ChannelAccountSnapshot =>
-          describeAccountSnapshot({
-            account,
-            configured: account.configured,
-            extra: {
-              baseUrl: account.baseUrl,
-            },
-          }),
-      },
-      actions: bluebubblesMessageActions,
-      messaging: {
-        normalizeTarget: normalizeBlueBubblesMessagingTarget,
-        inferTargetChatType: ({ to }) => inferBlueBubblesTargetChatType(to),
-        resolveOutboundSessionRoute: (params) => resolveBlueBubblesOutboundSessionRoute(params),
-        targetResolver: {
-          looksLikeId: looksLikeBlueBubblesExplicitTargetId,
-          hint: "<handle|chat_guid:GUID|chat_id:ID|chat_identifier:ID>",
-          resolveTarget: async ({ normalized }) => {
-            const to = normalized?.trim();
-            if (!to) {
-              return null;
-            }
-            const chatType = inferBlueBubblesTargetChatType(to);
-            if (!chatType) {
-              return null;
-            }
-            return {
-              to,
-              kind: chatType === "direct" ? "user" : "group",
-              source: "normalized" as const,
-            };
-          },
+  id: "bluebubbles",
+  meta,
+  capabilities: {
+    chatTypes: ["direct", "group"],
+    media: true,
+    reactions: true,
+    edit: true,
+    unsend: true,
+    reply: true,
+    effects: true,
+    groupManagement: true,
+  },
+  groups: {
+    resolveRequireMention: resolveBlueBubblesGroupRequireMention,
+    resolveToolPolicy: resolveBlueBubblesGroupToolPolicy,
+  },
+  reload: { configPrefixes: ["channels.bluebubbles"] },
+  configSchema: buildChannelConfigSchema(BlueBubblesConfigSchema),
+  setupWizard: blueBubblesSetupWizard,
+  config: {
+    ...bluebubblesConfigAdapter,
+    isConfigured: (account) => account.configured,
+    describeAccount: (account): ChannelAccountSnapshot =>
+      describeAccountSnapshot({
+        account,
+        configured: account.configured,
+        extra: {
+          baseUrl: account.baseUrl,
         },
-        formatTargetDisplay: ({ target, display }) => {
-          const shouldParseDisplay = (value: string): boolean => {
-            if (looksLikeBlueBubblesTargetId(value)) {
-              return true;
-            }
-            return /^(bluebubbles:|chat_guid:|chat_id:|chat_identifier:)/i.test(value);
-          };
+      }),
+  },
+  actions: bluebubblesMessageActions,
+  messaging: {
+    normalizeTarget: normalizeBlueBubblesMessagingTarget,
+    inferTargetChatType: ({ to }) => inferBlueBubblesTargetChatType(to),
+    resolveOutboundSessionRoute: (params) => resolveBlueBubblesOutboundSessionRoute(params),
+    targetResolver: {
+      looksLikeId: looksLikeBlueBubblesExplicitTargetId,
+      hint: "<handle|chat_guid:GUID|chat_id:ID|chat_identifier:ID>",
+      resolveTarget: async ({ normalized }) => {
+        const to = normalized?.trim();
+        if (!to) {
+          return null;
+        }
+        const chatType = inferBlueBubblesTargetChatType(to);
+        if (!chatType) {
+          return null;
+        }
+        return {
+          to,
+          kind: chatType === "direct" ? "user" : "group",
+          source: "normalized" as const,
+        };
+      },
+    },
+    formatTargetDisplay: ({ target, display }) => {
+      const shouldParseDisplay = (value: string): boolean => {
+        if (looksLikeBlueBubblesTargetId(value)) {
+          return true;
+        }
+        return /^(bluebubbles:|chat_guid:|chat_id:|chat_identifier:)/i.test(value);
+      };
 
-          // Helper to extract a clean handle from any BlueBubbles target format
-          const extractCleanDisplay = (value: string | undefined): string | null => {
-            const trimmed = value?.trim();
-            if (!trimmed) {
-              return null;
-            }
-            try {
-              const parsed = parseBlueBubblesTarget(trimmed);
-              if (parsed.kind === "chat_guid") {
-                const handle = extractHandleFromChatGuid(parsed.chatGuid);
-                if (handle) {
-                  return handle;
-                }
-              }
-              if (parsed.kind === "handle") {
-                return normalizeBlueBubblesHandle(parsed.to);
-              }
-            } catch {
-              // Fall through
-            }
-            // Strip common prefixes and try raw extraction
-            const stripped = trimmed
-              .replace(/^bluebubbles:/i, "")
-              .replace(/^chat_guid:/i, "")
-              .replace(/^chat_id:/i, "")
-              .replace(/^chat_identifier:/i, "");
-            const handle = extractHandleFromChatGuid(stripped);
+      // Helper to extract a clean handle from any BlueBubbles target format
+      const extractCleanDisplay = (value: string | undefined): string | null => {
+        const trimmed = value?.trim();
+        if (!trimmed) {
+          return null;
+        }
+        try {
+          const parsed = parseBlueBubblesTarget(trimmed);
+          if (parsed.kind === "chat_guid") {
+            const handle = extractHandleFromChatGuid(parsed.chatGuid);
             if (handle) {
               return handle;
             }
-            // Don't return raw chat_guid formats - they contain internal routing info
-            if (stripped.includes(";-;") || stripped.includes(";+;")) {
-              return null;
-            }
-            return stripped;
-          };
-
-          // Try to get a clean display from the display parameter first
-          const trimmedDisplay = display?.trim();
-          if (trimmedDisplay) {
-            if (!shouldParseDisplay(trimmedDisplay)) {
-              return trimmedDisplay;
-            }
-            const cleanDisplay = extractCleanDisplay(trimmedDisplay);
-            if (cleanDisplay) {
-              return cleanDisplay;
-            }
           }
-
-          // Fall back to extracting from target
-          const cleanTarget = extractCleanDisplay(target);
-          if (cleanTarget) {
-            return cleanTarget;
+          if (parsed.kind === "handle") {
+            return normalizeBlueBubblesHandle(parsed.to);
           }
+        } catch {
+          // Fall through
+        }
+        // Strip common prefixes and try raw extraction
+        const stripped = trimmed
+          .replace(/^bluebubbles:/i, "")
+          .replace(/^chat_guid:/i, "")
+          .replace(/^chat_id:/i, "")
+          .replace(/^chat_identifier:/i, "");
+        const handle = extractHandleFromChatGuid(stripped);
+        if (handle) {
+          return handle;
+        }
+        // Don't return raw chat_guid formats - they contain internal routing info
+        if (stripped.includes(";-;") || stripped.includes(";+;")) {
+          return null;
+        }
+        return stripped;
+      };
+
+      // Try to get a clean display from the display parameter first
+      const trimmedDisplay = display?.trim();
+      if (trimmedDisplay) {
+        if (!shouldParseDisplay(trimmedDisplay)) {
+          return trimmedDisplay;
+        }
+        const cleanDisplay = extractCleanDisplay(trimmedDisplay);
+        if (cleanDisplay) {
+          return cleanDisplay;
+        }
+      }
+
+      // Fall back to extracting from target
+      const cleanTarget = extractCleanDisplay(target);
+      if (cleanTarget) {
+        return cleanTarget;
+      }
 
       // Last resort: return display or target as-is
       return display?.trim() || target?.trim() || "";

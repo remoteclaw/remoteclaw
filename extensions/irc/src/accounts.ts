@@ -1,4 +1,7 @@
-import { createAccountListHelpers, mergeAccountConfig } from "remoteclaw/plugin-sdk/account-helpers";
+import {
+  createAccountListHelpers,
+  mergeAccountConfig,
+} from "remoteclaw/plugin-sdk/account-helpers";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
 import { parseOptionalDelimitedEntries } from "remoteclaw/plugin-sdk/core";
 import { tryReadSecretFileSync } from "remoteclaw/plugin-sdk/infra-runtime";

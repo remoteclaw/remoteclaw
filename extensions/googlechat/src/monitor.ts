@@ -1,6 +1,4 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { deliverTextOrMediaReply } from "remoteclaw/plugin-sdk/reply-payload";
-import type { RemoteClawConfig } from "../runtime-api.js";
 import {
   GROUP_POLICY_BLOCKED_LABEL,
   createScopedPairingAccess,
@@ -21,6 +19,8 @@ import {
   resolveMentionGatingWithBypass,
   resolveDmGroupAccessWithLists,
 } from "remoteclaw/plugin-sdk";
+import { deliverTextOrMediaReply } from "remoteclaw/plugin-sdk/reply-payload";
+import type { RemoteClawConfig } from "../runtime-api.js";
 import { type ResolvedGoogleChatAccount } from "./accounts.js";
 import {
   downloadGoogleChatMedia,

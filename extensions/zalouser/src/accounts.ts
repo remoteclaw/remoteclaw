@@ -26,7 +26,10 @@ function resolveAccountConfig(
   return accounts[accountId] as ZalouserAccountConfig | undefined;
 }
 
-function mergeZalouserAccountConfig(cfg: RemoteClawConfig, accountId: string): ZalouserAccountConfig {
+function mergeZalouserAccountConfig(
+  cfg: RemoteClawConfig,
+  accountId: string,
+): ZalouserAccountConfig {
   const merged = mergeAccountConfig<ZalouserAccountConfig>({
     channelConfig: cfg.channels?.zalouser as ZalouserAccountConfig | undefined,
     accountConfig: resolveAccountConfig(cfg, accountId),

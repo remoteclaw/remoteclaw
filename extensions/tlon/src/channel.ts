@@ -1,3 +1,8 @@
+import {
+  applyAccountNameToChannelSection,
+  DEFAULT_ACCOUNT_ID,
+  normalizeAccountId,
+} from "remoteclaw/plugin-sdk";
 import { describeAccountSnapshot } from "remoteclaw/plugin-sdk/account-helpers";
 import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/account-id";
 import { createHybridChannelConfigAdapter } from "remoteclaw/plugin-sdk/channel-config-helpers";
@@ -9,7 +14,11 @@ import {
   createComputedAccountStatusAdapter,
   createDefaultChannelRuntimeState,
 } from "remoteclaw/plugin-sdk/status-helpers";
+import { buildTlonAccountFields } from "./account-fields.js";
 import { tlonChannelConfigSchema } from "./config-schema.js";
+import { tlonChannelConfigSchema } from "./config-schema.js";
+import { monitorTlonProvider } from "./monitor/index.js";
+import { tlonOnboardingAdapter } from "./onboarding.js";
 import { resolveTlonOutboundSessionRoute } from "./session-route.js";
 import {
   applyTlonSetupConfig,
@@ -17,15 +26,6 @@ import {
   resolveTlonSetupConfigured,
   tlonSetupAdapter,
 } from "./setup-core.js";
-import {
-  applyAccountNameToChannelSection,
-  DEFAULT_ACCOUNT_ID,
-  normalizeAccountId,
-} from "remoteclaw/plugin-sdk";
-import { buildTlonAccountFields } from "./account-fields.js";
-import { tlonChannelConfigSchema } from "./config-schema.js";
-import { monitorTlonProvider } from "./monitor/index.js";
-import { tlonOnboardingAdapter } from "./onboarding.js";
 import { formatTargetHint, normalizeShip, parseTlonTarget } from "./targets.js";
 import { resolveTlonAccount, listTlonAccountIds } from "./types.js";
 import { authenticate } from "./urbit/auth.js";

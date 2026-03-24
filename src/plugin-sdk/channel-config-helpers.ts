@@ -26,7 +26,10 @@ export function resolveOptionalConfigString(
 }
 
 /** Adapt `{ cfg, accountId }` accessors to callback sites that pass positional args. */
-export function adaptScopedAccountAccessor<Result, Config extends RemoteClawConfig = RemoteClawConfig>(
+export function adaptScopedAccountAccessor<
+  Result,
+  Config extends RemoteClawConfig = RemoteClawConfig,
+>(
   accessor: (params: { cfg: Config; accountId?: string | null }) => Result,
 ): (cfg: Config, accountId?: string | null) => Result {
   return (cfg, accountId) => accessor({ cfg, accountId });

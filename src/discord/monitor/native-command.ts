@@ -23,13 +23,6 @@ import {
   resolveTextChunksWithFallback,
 } from "remoteclaw/plugin-sdk/reply-payload";
 import { resolveChunkMode, resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
-import type {
-  ChatCommandDefinition,
-  CommandArgDefinition,
-  CommandArgValues,
-  CommandArgs,
-  NativeCommandSpec,
-} from "../../auto-reply/commands-registry.js";
 import {
   buildCommandTextFromArgs,
   findCommandByNativeName,
@@ -48,6 +41,13 @@ import { createSubsystemLogger } from "remoteclaw/plugin-sdk/runtime-env";
 import { chunkItems } from "remoteclaw/plugin-sdk/text-runtime";
 import { withTimeout } from "remoteclaw/plugin-sdk/text-runtime";
 import { loadWebMedia } from "remoteclaw/plugin-sdk/web-media";
+import type {
+  ChatCommandDefinition,
+  CommandArgDefinition,
+  CommandArgValues,
+  CommandArgs,
+  NativeCommandSpec,
+} from "../../auto-reply/commands-registry.js";
 import { resolveDiscordMaxLinesPerMessage } from "../accounts.js";
 import { chunkDiscordTextWithMode } from "../chunk.js";
 import {

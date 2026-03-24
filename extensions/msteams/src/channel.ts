@@ -11,7 +11,6 @@ import type {
 } from "remoteclaw/plugin-sdk/channel-runtime";
 import { listDirectoryEntriesFromSources } from "remoteclaw/plugin-sdk/directory-runtime";
 import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
-import type { ChannelMessageActionName, ChannelPlugin, RemoteClawConfig } from "../runtime-api.js";
 import {
   buildProbeChannelStatusSummary,
   buildRuntimeAccountStatusSnapshot,
@@ -22,6 +21,7 @@ import {
   MSTeamsConfigSchema,
   PAIRING_APPROVED_MESSAGE,
 } from "remoteclaw/plugin-sdk/msteams";
+import type { ChannelMessageActionName, ChannelPlugin, RemoteClawConfig } from "../runtime-api.js";
 import { resolveMSTeamsGroupToolPolicy } from "./policy.js";
 import { probeMSTeams } from "./probe.js";
 import {

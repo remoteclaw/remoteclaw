@@ -1,4 +1,3 @@
-import { setTopLevelChannelDmPolicyWithAllowFrom } from "../../../src/channels/plugins/onboarding/helpers.js";
 import {
   createTopLevelChannelDmPolicySetter,
   normalizeAccountId,
@@ -8,6 +7,7 @@ import {
   type DmPolicy,
   type RemoteClawConfig,
 } from "remoteclaw/plugin-sdk/setup";
+import { setTopLevelChannelDmPolicyWithAllowFrom } from "../../../src/channels/plugins/onboarding/helpers.js";
 import { applyBlueBubblesConnectionConfig } from "./config-apply.js";
 
 const channel = "bluebubbles" as const;

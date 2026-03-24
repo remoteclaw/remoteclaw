@@ -1,4 +1,7 @@
-import { createAccountListHelpers, mergeAccountConfig } from "remoteclaw/plugin-sdk/account-helpers";
+import {
+  createAccountListHelpers,
+  mergeAccountConfig,
+} from "remoteclaw/plugin-sdk/account-helpers";
 import { normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/core";
 import { hasConfiguredSecretInput, normalizeSecretInputString } from "./secret-input.js";

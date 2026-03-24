@@ -1,4 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { slackPlugin } from "../../../extensions/slack/src/channel.js";
+import { telegramPlugin } from "../../../extensions/telegram/src/channel.js";
+import type { RemoteClawConfig } from "../../config/config.js";
+import { setActivePluginRegistry } from "../../plugins/runtime.js";
+import { createTestRegistry } from "../../test-utils/channel-plugins.js";
+
 const mocks = vi.hoisted(() => ({
   executeSendAction: vi.fn(),
   recordSessionMetaFromInbound: vi.fn(async () => ({ ok: true })),
@@ -24,18 +30,29 @@ vi.mock("../../config/sessions.js", async () => {
   };
 });
 
-type MessageActionRunnerModule = typeof import("./message-action-runner.js");
-type MessageActionRunnerTestHelpersModule =
-  typeof import("./message-action-runner.test-helpers.js");
+import { runMessageAction } from "./message-action-runner.js";
 
-let runMessageAction: MessageActionRunnerModule["runMessageAction"];
-let installMessageActionRunnerTestRegistry: MessageActionRunnerTestHelpersModule["installMessageActionRunnerTestRegistry"];
-let resetMessageActionRunnerTestRegistry: MessageActionRunnerTestHelpersModule["resetMessageActionRunnerTestRegistry"];
-let slackConfig: MessageActionRunnerTestHelpersModule["slackConfig"];
-let telegramConfig: MessageActionRunnerTestHelpersModule["telegramConfig"];
+const slackConfig = {
+  agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
+  channels: {
+    slack: {
+      botToken: "xoxb-test",
+      appToken: "xapp-test",
+    },
+  },
+} as RemoteClawConfig;
+
+const telegramConfig = {
+  agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
+  channels: {
+    telegram: {
+      botToken: "telegram-test",
+    },
+  },
+} as RemoteClawConfig;
 
 async function runThreadingAction(params: {
-  cfg: MessageActionRunnerTestHelpersModule["slackConfig"];
+  cfg: RemoteClawConfig;
   actionParams: Record<string, unknown>;
   toolContext?: Record<string, unknown>;
 }) {
@@ -65,21 +82,39 @@ const defaultTelegramToolContext = {
   currentThreadTs: "42",
 } as const;
 
+let createPluginRuntime: typeof import("../../plugins/runtime/index.js").createPluginRuntime;
+let setSlackRuntime: typeof import("../../../extensions/slack/src/runtime.js").setSlackRuntime;
+let setTelegramRuntime: typeof import("../../../extensions/telegram/src/runtime.js").setTelegramRuntime;
+
 describe("runMessageAction threading auto-injection", () => {
-  beforeEach(async () => {
-    vi.resetModules();
-    ({ runMessageAction } = await import("./message-action-runner.js"));
-    ({
-      installMessageActionRunnerTestRegistry,
-      resetMessageActionRunnerTestRegistry,
-      slackConfig,
-      telegramConfig,
-    } = await import("./message-action-runner.test-helpers.js"));
-    installMessageActionRunnerTestRegistry();
+  beforeAll(async () => {
+    ({ createPluginRuntime } = await import("../../plugins/runtime/index.js"));
+    ({ setSlackRuntime } = await import("../../../extensions/slack/src/runtime.js"));
+    ({ setTelegramRuntime } = await import("../../../extensions/telegram/src/runtime.js"));
+  });
+
+  beforeEach(() => {
+    const runtime = createPluginRuntime();
+    setSlackRuntime(runtime);
+    setTelegramRuntime(runtime);
+    setActivePluginRegistry(
+      createTestRegistry([
+        {
+          pluginId: "slack",
+          source: "test",
+          plugin: slackPlugin,
+        },
+        {
+          pluginId: "telegram",
+          source: "test",
+          plugin: telegramPlugin,
+        },
+      ]),
+    );
   });
 
   afterEach(() => {
-    resetMessageActionRunnerTestRegistry?.();
+    setActivePluginRegistry(createTestRegistry([]));
     mocks.executeSendAction.mockClear();
     mocks.recordSessionMetaFromInbound.mockClear();
   });

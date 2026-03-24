@@ -4,7 +4,12 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, vi } from "vitest";
 import { WebSocket } from "ws";
-import { resolveMainSessionKeyFromConfig, type SessionEntry } from "../config/sessions.js";
+import { clearConfigCache, clearRuntimeConfigSnapshot } from "../config/config.js";
+import {
+  clearSessionStoreCacheForTest,
+  resolveMainSessionKeyFromConfig,
+  type SessionEntry,
+} from "../config/sessions.js";
 import { resetAgentRunContextForTest } from "../infra/agent-events.js";
 import {
   loadOrCreateDeviceIdentity,
@@ -63,6 +68,29 @@ let tempConfigRoot: string | undefined;
 let suiteConfigRootSeq = 0;
 let _lastSyncedSessionStorePath: string | undefined;
 let _lastSyncedSessionConfigJson: string | undefined;
+
+function serializeGatewayTestSessionConfig(): string {
+  return JSON.stringify({
+    sessionConfig: testState.sessionConfig,
+    sessionStorePath: testState.sessionStorePath,
+  });
+}
+
+function hasUnsyncedGatewayTestSessionConfig(): boolean {
+  return (
+    serializeGatewayTestSessionConfig() !== _lastSyncedSessionConfigJson ||
+    testState.sessionStorePath !== _lastSyncedSessionStorePath
+  );
+}
+
+async function persistTestSessionConfig(): Promise<void> {
+  _lastSyncedSessionConfigJson = serializeGatewayTestSessionConfig();
+  _lastSyncedSessionStorePath = testState.sessionStorePath;
+}
+
+function resolveGatewayTestMainSessionKeys(): string[] {
+  return [resolveMainSessionKeyFromConfig()];
+}
 
 export async function writeSessionStore(params: {
   entries: Record<string, Partial<SessionEntry>>;

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { GatewayRequestError } from "../gateway.ts";
 import { handleChatEvent, loadChatHistory, type ChatEventPayload, type ChatState } from "./chat.ts";
 
 function createState(overrides: Partial<ChatState> = {}): ChatState {
@@ -11,6 +12,7 @@ function createState(overrides: Partial<ChatState> = {}): ChatState {
     chatSending: false,
     chatStream: null,
     chatStreamStartedAt: null,
+    chatThinkingLevel: null,
     client: null,
     connected: true,
     lastError: null,

@@ -176,6 +176,9 @@ export type TtsDirectiveOverrides = {
     languageCode?: string;
     voiceSettings?: Partial<ResolvedTtsConfig["elevenlabs"]["voiceSettings"]>;
   };
+  microsoft?: {
+    voice?: string;
+  };
 };
 
 export type TtsDirectiveParseResult = {
@@ -1054,3 +1057,26 @@ export const _test = {
   resolveOutputFormat,
   resolveEdgeOutputFormat,
 };
+
+/**
+ * Synthesize speech from text using the configured TTS provider.
+ * Fork stub — the full implementation dispatches to provider backends;
+ * this placeholder allows the talk RPC type-check to pass.
+ */
+export async function synthesizeSpeech(_params: {
+  text: string;
+  cfg: RemoteClawConfig;
+  overrides?: TtsDirectiveOverrides;
+  disableFallback?: boolean;
+}): Promise<{
+  success: boolean;
+  audioBuffer?: Buffer;
+  error?: string;
+  mimeType?: string;
+  provider?: string;
+  outputFormat?: string;
+  voiceCompatible?: boolean;
+  fileExtension?: string;
+}> {
+  return { success: false, error: "TTS synthesis not yet implemented in fork" };
+}

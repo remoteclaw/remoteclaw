@@ -60,6 +60,8 @@ export type TtsConfig = {
     baseUrl?: string;
     model?: string;
     voice?: string;
+    speed?: number;
+    instructions?: string;
   };
   /** Microsoft Edge (node-edge-tts) configuration. */
   edge?: {
@@ -74,6 +76,14 @@ export type TtsConfig = {
     saveSubtitles?: boolean;
     proxy?: string;
     timeoutMs?: number;
+  };
+  /** Microsoft Azure Speech configuration. */
+  microsoft?: {
+    enabled?: boolean;
+    voice?: string;
+    lang?: string;
+    subscriptionKey?: string;
+    region?: string;
   };
   /** Optional path for local TTS user preferences JSON. */
   prefsPath?: string;

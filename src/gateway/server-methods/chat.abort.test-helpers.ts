@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { type Mock, vi } from "vitest";
 import type { GatewayRequestHandler } from "./types.js";
 
 export function createActiveRun(
@@ -20,7 +20,19 @@ export function createActiveRun(
   };
 }
 
-export function createChatAbortContext(overrides: Record<string, unknown> = {}) {
+export function createChatAbortContext(overrides: Record<string, unknown> = {}): {
+  chatAbortControllers: Map<string, unknown>;
+  chatRunBuffers: Map<string, string>;
+  chatDeltaSentAt: Map<string, number>;
+  chatAbortedRuns: Map<string, number>;
+  removeChatRun: Mock;
+  agentRunSeq: Map<string, number>;
+  broadcast: Mock;
+  nodeSendToSession: Mock;
+  logGateway: { warn: Mock };
+  dedupe?: { get: Mock };
+  [key: string]: unknown;
+} {
   return {
     chatAbortControllers: new Map(),
     chatRunBuffers: new Map(),
@@ -48,8 +60,8 @@ export async function invokeChatAbortHandler(params: {
       scopes?: string[];
     };
   } | null;
-  respond?: ReturnType<typeof vi.fn>;
-}) {
+  respond?: Mock;
+}): Promise<Mock> {
   const respond = params.respond ?? vi.fn();
   await params.handler({
     params: params.request,

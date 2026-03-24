@@ -8,7 +8,7 @@ import {
 
 describe("agent wait dedupe helper", () => {
   function setRunEntry(params: {
-    dedupe: Map<unknown, unknown>;
+    dedupe: Map<string, import("../server-shared.js").DedupeEntry>;
     kind: "agent" | "chat";
     runId: string;
     ts?: number;

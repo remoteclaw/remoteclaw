@@ -1,5 +1,5 @@
 import { ConnectErrorDetailCodes } from "../../../../src/gateway/protocol/connect-error-details.js";
-import { GatewayRequestError } from "../gateway.ts";
+import { GatewayRequestError, resolveGatewayErrorDetailCode } from "../gateway.ts";
 
 export function isMissingOperatorReadScopeError(err: unknown): boolean {
   if (!(err instanceof GatewayRequestError)) {
@@ -7,6 +7,7 @@ export function isMissingOperatorReadScopeError(err: unknown): boolean {
   }
   // AUTH_UNAUTHORIZED is the current server signal for scope failures in RPC responses.
   // The message-based fallback below catches cases where no detail code is set.
+  const detailCode = resolveGatewayErrorDetailCode(err);
   if (detailCode === ConnectErrorDetailCodes.AUTH_UNAUTHORIZED) {
     return true;
   }

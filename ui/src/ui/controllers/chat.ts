@@ -43,6 +43,7 @@ export type ChatState = {
   chatRunId: string | null;
   chatStream: string | null;
   chatStreamStartedAt: number | null;
+  chatThinkingLevel?: string | null;
   lastError: string | null;
 };
 

@@ -104,7 +104,7 @@ export async function connectGatewayClient(params: {
 }
 
 export async function disconnectGatewayClient(client: GatewayClient): Promise<void> {
-  await client.stopAndWait();
+  client.stop();
 }
 
 export async function connectDeviceAuthReq(params: { url: string; token?: string }) {

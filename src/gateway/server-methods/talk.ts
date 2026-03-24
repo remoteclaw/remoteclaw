@@ -2,7 +2,7 @@ import { readConfigFileSnapshot } from "../../config/config.js";
 import { redactConfigObject } from "../../config/redact-snapshot.js";
 import { buildTalkConfigResponse, resolveActiveTalkProviderConfig } from "../../config/talk.js";
 import type { TalkProviderConfig } from "../../config/types.gateway.js";
-import type { OpenClawConfig, TtsConfig } from "../../config/types.js";
+import type { RemoteClawConfig, TtsConfig } from "../../config/types.js";
 import { normalizeSpeechProviderId } from "../../tts/provider-registry.js";
 import { synthesizeSpeech, type TtsDirectiveOverrides } from "../../tts/tts.js";
 import {
@@ -95,12 +95,12 @@ function readTalkVoiceSettings(
 }
 
 function buildTalkTtsConfig(
-  config: OpenClawConfig,
+  config: RemoteClawConfig,
 ):
-  | { cfg: OpenClawConfig; provider: string; providerConfig: TalkProviderConfig }
+  | { cfg: RemoteClawConfig; provider: string; providerConfig: TalkProviderConfig }
   | { error: string } {
   const resolved = resolveActiveTalkProviderConfig(config.talk);
-  const provider = normalizeSpeechProviderId(resolved?.provider);
+  const provider = resolved?.provider ? normalizeSpeechProviderId(resolved.provider) : "";
   if (!resolved || !provider) {
     return { error: "talk.speak unavailable: talk provider not configured" };
   }
@@ -116,7 +116,7 @@ function buildTalkTtsConfig(
   if (provider === "elevenlabs") {
     talkTts.elevenlabs = {
       ...baseTts.elevenlabs,
-      ...(providerConfig.apiKey === undefined ? {} : { apiKey: providerConfig.apiKey }),
+      ...(typeof providerConfig.apiKey === "string" ? { apiKey: providerConfig.apiKey } : {}),
       ...(trimString(providerConfig.baseUrl) == null
         ? {}
         : { baseUrl: trimString(providerConfig.baseUrl) }),
@@ -146,7 +146,7 @@ function buildTalkTtsConfig(
   } else if (provider === "openai") {
     talkTts.openai = {
       ...baseTts.openai,
-      ...(providerConfig.apiKey === undefined ? {} : { apiKey: providerConfig.apiKey }),
+      ...(typeof providerConfig.apiKey === "string" ? { apiKey: providerConfig.apiKey } : {}),
       ...(trimString(providerConfig.baseUrl) == null
         ? {}
         : { baseUrl: trimString(providerConfig.baseUrl) }),

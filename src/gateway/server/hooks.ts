@@ -16,6 +16,13 @@ import { createHooksRequestHandler, type HookClientIpConfig } from "../server-ht
 
 type SubsystemLogger = ReturnType<typeof createSubsystemLogger>;
 
+export function resolveHookClientIpConfig(cfg: ReturnType<typeof loadConfig>): HookClientIpConfig {
+  return {
+    trustedProxies: cfg.gateway?.trustedProxies,
+    allowRealIpFallback: cfg.gateway?.allowRealIpFallback === true,
+  };
+}
+
 export function createGatewayHooksRequestHandler(params: {
   deps: CliDeps;
   getHooksConfig: () => HooksConfigResolved | null;

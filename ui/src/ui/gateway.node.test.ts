@@ -89,6 +89,24 @@ function getLatestWebSocket(): MockWebSocket {
   return ws;
 }
 
+async function startConnect(client: InstanceType<typeof GatewayBrowserClient>) {
+  client.start();
+  const ws = getLatestWebSocket();
+  ws.emitOpen();
+  ws.emitMessage({
+    type: "event",
+    event: "connect.challenge",
+    payload: { nonce: "nonce-1" },
+  });
+  await vi.waitFor(() => expect(ws.sent.length).toBeGreaterThan(0));
+  const connectFrame = JSON.parse(ws.sent.at(-1) ?? "{}") as {
+    id?: string;
+    method?: string;
+    params?: { auth?: { token?: string } };
+  };
+  return { ws, connectFrame };
+}
+
 describe("GatewayBrowserClient", () => {
   beforeEach(() => {
     wsInstances.length = 0;

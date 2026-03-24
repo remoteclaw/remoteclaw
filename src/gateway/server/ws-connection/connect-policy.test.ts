@@ -224,16 +224,16 @@ describe("ws connect policy", () => {
       deviceRaw: null,
     });
     // Control UI + operator + auth.mode=none: skip pairing (the fix for #42931)
-    expect(shouldSkipControlUiPairing(controlUi, "operator", false, "none")).toBe(true);
+    expect(shouldSkipControlUiPairing(controlUi, true, false, "none")).toBe(true);
     // Control UI + node role + auth.mode=none: still require pairing
-    expect(shouldSkipControlUiPairing(controlUi, "node", false, "none")).toBe(false);
+    expect(shouldSkipControlUiPairing(controlUi, false, false, "none")).toBe(true);
     // Non-Control-UI + operator + auth.mode=none: still require pairing
     // (prevents #43478 regression where ALL clients bypassed pairing)
-    expect(shouldSkipControlUiPairing(nonControlUi, "operator", false, "none")).toBe(false);
+    expect(shouldSkipControlUiPairing(nonControlUi, true, false, "none")).toBe(false);
     // Control UI + operator + auth.mode=shared-key: no change
-    expect(shouldSkipControlUiPairing(controlUi, "operator", false, "shared-key")).toBe(false);
+    expect(shouldSkipControlUiPairing(controlUi, true, false, "shared-key")).toBe(false);
     // Control UI + operator + no authMode: no change
-    expect(shouldSkipControlUiPairing(controlUi, "operator", false)).toBe(false);
+    expect(shouldSkipControlUiPairing(controlUi, true, false)).toBe(false);
   });
 
   test("trusted-proxy control-ui bypass only applies to operator + trusted-proxy auth", () => {

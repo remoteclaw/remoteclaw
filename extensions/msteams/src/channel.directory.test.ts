@@ -1,10 +1,15 @@
 import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { describe, expect, it } from "vitest";
-import { createDirectoryTestRuntime, expectDirectorySurface } from "../../test-utils/directory.js";
 import { msteamsPlugin } from "./channel.js";
 
 describe("msteams directory", () => {
-  const runtimeEnv = createDirectoryTestRuntime() as RuntimeEnv;
+  const runtimeEnv: RuntimeEnv = {
+    log: () => {},
+    error: () => {},
+    exit: (code: number): never => {
+      throw new Error(`exit ${code}`);
+    },
+  };
 
   describe("self()", () => {
     it("returns bot identity when credentials are configured", async () => {
@@ -47,10 +52,12 @@ describe("msteams directory", () => {
       },
     } as unknown as RemoteClawConfig;
 
-    const directory = expectDirectorySurface(msteamsPlugin.directory);
+    expect(msteamsPlugin.directory).toBeTruthy();
+    expect(msteamsPlugin.directory?.listPeers).toBeTruthy();
+    expect(msteamsPlugin.directory?.listGroups).toBeTruthy();
 
     await expect(
-      directory.listPeers({
+      msteamsPlugin.directory!.listPeers!({
         cfg,
         query: undefined,
         limit: undefined,
@@ -66,7 +73,7 @@ describe("msteams directory", () => {
     );
 
     await expect(
-      directory.listGroups({
+      msteamsPlugin.directory!.listGroups!({
         cfg,
         query: undefined,
         limit: undefined,

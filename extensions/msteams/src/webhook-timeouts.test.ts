@@ -7,7 +7,7 @@ describe("applyMSTeamsWebhookTimeouts", () => {
       setTimeout: vi.fn(),
       requestTimeout: 0,
       headersTimeout: 0,
-    } as never;
+    } as any;
 
     applyMSTeamsWebhookTimeouts(httpServer);
 
@@ -21,7 +21,7 @@ describe("applyMSTeamsWebhookTimeouts", () => {
       setTimeout: vi.fn(),
       requestTimeout: 0,
       headersTimeout: 0,
-    } as never;
+    } as any;
 
     applyMSTeamsWebhookTimeouts(httpServer, {
       inactivityTimeoutMs: 12_000,

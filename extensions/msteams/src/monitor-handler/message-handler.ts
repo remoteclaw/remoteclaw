@@ -9,7 +9,7 @@ import {
   evaluateSenderGroupAccessForPolicy,
   resolveSenderScopedGroupPolicy,
   recordPendingHistoryEntryIfEnabled,
-  resolveDualTextControlCommandGate,
+  resolveControlCommandGate,
   resolveDefaultGroupPolicy,
   isDangerousNameMatchingEnabled,
   readStoreAllowFromForDmPolicy,
@@ -304,7 +304,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
       senderName,
       allowNameMatching: isDangerousNameMatchingEnabled(msteamsCfg),
     });
-    const { commandAuthorized, shouldBlock } = resolveDualTextControlCommandGate({
+    const { commandAuthorized, shouldBlock } = resolveControlCommandGate({
       useAccessGroups,
       primaryConfigured: commandDmAllowFrom.length > 0,
       primaryAllowed: ownerAllowedForCommands,

@@ -294,7 +294,8 @@ const voiceCallPlugin = {
           await respondToCallMessageAction({
             requestParams: params,
             respond,
-            action: (request) => request.rt!.manager.continueCall(request.callId!, request.message!),
+            action: (request) =>
+              request.rt!.manager.continueCall(request.callId!, request.message!),
             failure: "continue failed",
             includeTranscript: true,
           });

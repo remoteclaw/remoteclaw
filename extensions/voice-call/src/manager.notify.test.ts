@@ -187,7 +187,9 @@ describe("CallManager notify and mapping", () => {
 
   it("speaks on answered when Twilio streaming is enabled but stream-connect path is unavailable", async () => {
     const twilioProvider = new FakeProvider("twilio");
-    (twilioProvider as FakeProvider & { twilioStreamConnectEnabled: boolean }).twilioStreamConnectEnabled = false;
+    (
+      twilioProvider as FakeProvider & { twilioStreamConnectEnabled: boolean }
+    ).twilioStreamConnectEnabled = false;
     const { manager, provider } = await createManagerHarness(
       { streaming: { enabled: true } },
       twilioProvider,

@@ -1,15 +1,15 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/mattermost";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
 import { deliverMattermostReplyPayload } from "./reply-delivery.js";
 
 describe("deliverMattermostReplyPayload", () => {
   it("passes agent-scoped mediaLocalRoots when sending media paths", async () => {
-    const previousStateDir = process.env.REMOTECLAW_STATE_DIR;
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-mm-state-"));
-    process.env.REMOTECLAW_STATE_DIR = stateDir;
+    const previousStateDir = process.env.OPENCLAW_STATE_DIR;
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-mm-state-"));
+    process.env.OPENCLAW_STATE_DIR = stateDir;
 
     try {
       const sendMessage = vi.fn(async () => undefined);
@@ -53,9 +53,9 @@ describe("deliverMattermostReplyPayload", () => {
       );
     } finally {
       if (previousStateDir === undefined) {
-        delete process.env.REMOTECLAW_STATE_DIR;
+        delete process.env.OPENCLAW_STATE_DIR;
       } else {
-        process.env.REMOTECLAW_STATE_DIR = previousStateDir;
+        process.env.OPENCLAW_STATE_DIR = previousStateDir;
       }
       await fs.rm(stateDir, { recursive: true, force: true });
     }

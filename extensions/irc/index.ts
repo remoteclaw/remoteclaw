@@ -3,10 +3,7 @@ import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
 import { ircPlugin } from "./src/channel.js";
 import { setIrcRuntime } from "./src/runtime.js";
 
-export { ircPlugin } from "./src/channel.js";
-export { setIrcRuntime } from "./src/runtime.js";
-
-export default defineChannelPluginEntry({
+const plugin = {
   id: "irc",
   name: "IRC",
   description: "IRC channel plugin",

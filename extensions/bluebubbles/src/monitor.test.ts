@@ -827,7 +827,7 @@ describe("BlueBubbles webhook monitor", () => {
           text: "original message",
           handle: { address: "+15550000000", displayName: "Alice" },
         },
-      };
+      });
 
       await dispatchWebhookPayload(payload);
 

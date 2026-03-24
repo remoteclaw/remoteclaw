@@ -191,20 +191,7 @@ async function expectSlackSendRejected(params: Record<string, unknown>, error: R
   expect(handleSlackAction).not.toHaveBeenCalled();
 }
 
-  ({ discordMessageActions } = await import("../../../../extensions/discord/runtime-api.js"));
-  ({ handleDiscordMessageAction } = await import("./discord/handle-action.js"));
-  ({ telegramMessageActions } = await import("../../../../extensions/telegram/runtime-api.js"));
->>>>>>> 69827439b1 (fix: stabilize rebased full gate)
-  ({ signalMessageActions } = await import("../../../../extensions/signal/src/message-actions.js"));
-  ({ createSlackActions } = await import("../../../../extensions/slack/src/channel-actions.js"));
-=======
-beforeEach(async () => {
-  vi.resetModules();
-  ({ discordMessageActions } = await import("../../../../extensions/discord/runtime-api.js"));
-  ({ handleDiscordMessageAction } = await import("./discord/handle-action.js"));
-  ({ telegramMessageActions } = await import("../../../../extensions/telegram/runtime-api.js"));
-  ({ signalMessageActions } = await import("../../../../extensions/signal/src/message-actions.js"));
-  ({ createSlackActions } = await import("../../../../extensions/slack/src/channel-actions.js"));
+beforeEach(() => {
   vi.clearAllMocks();
 });
 
@@ -1046,7 +1033,7 @@ describe("signalMessageActions", () => {
 
     for (const testCase of cases) {
       expect(
-        signalMessageActions.describeMessageTool?.({ cfg: testCase.cfg })?.actions ?? [],
+        signalMessageActions.listActions?.({ cfg: testCase.cfg }) ?? [],
         testCase.name,
       ).toEqual(testCase.expected);
     }

@@ -3,10 +3,7 @@ import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
 import { nextcloudTalkPlugin } from "./src/channel.js";
 import { setNextcloudTalkRuntime } from "./src/runtime.js";
 
-export { nextcloudTalkPlugin } from "./src/channel.js";
-export { setNextcloudTalkRuntime } from "./src/runtime.js";
-
-export default defineChannelPluginEntry({
+const plugin = {
   id: "nextcloud-talk",
   name: "Nextcloud Talk",
   description: "Nextcloud Talk channel plugin",

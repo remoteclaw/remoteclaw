@@ -1,1 +1,1 @@
-export * from "openclaw/plugin-sdk/nextcloud-talk";
+export * from "remoteclaw/plugin-sdk/nextcloud-talk";

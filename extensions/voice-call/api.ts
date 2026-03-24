@@ -1,1 +1,1 @@
-export * from "openclaw/plugin-sdk/voice-call";
+export * from "remoteclaw/plugin-sdk/voice-call";

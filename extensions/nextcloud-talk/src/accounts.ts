@@ -1,15 +1,10 @@
-import {
-  mergeAccountConfig,
-  resolveNormalizedAccountEntry,
-} from "openclaw/plugin-sdk/account-resolution";
-import { tryReadSecretFileSync } from "openclaw/plugin-sdk/infra-runtime";
+import { readFileSync } from "node:fs";
 import {
   createAccountListHelpers,
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
   resolveAccountWithDefaultFallback,
-} from "../runtime-api.js";
-import { normalizeResolvedSecretInputString } from "./secret-input.js";
+} from "remoteclaw/plugin-sdk/nextcloud-talk";
 import type { CoreConfig, NextcloudTalkAccountConfig } from "./types.js";
 
 function isTruthyEnvValue(value?: string): boolean {
@@ -51,24 +46,33 @@ function resolveAccountConfig(
   cfg: CoreConfig,
   accountId: string,
 ): NextcloudTalkAccountConfig | undefined {
-  return resolveNormalizedAccountEntry(
-    cfg.channels?.["nextcloud-talk"]?.accounts as
-      | Record<string, NextcloudTalkAccountConfig>
-      | undefined,
-    accountId,
-    normalizeAccountId,
-  );
+  const accounts = cfg.channels?.["nextcloud-talk"]?.accounts;
+  if (!accounts || typeof accounts !== "object") {
+    return undefined;
+  }
+  const direct = accounts[accountId] as NextcloudTalkAccountConfig | undefined;
+  if (direct) {
+    return direct;
+  }
+  const normalized = normalizeAccountId(accountId);
+  const matchKey = Object.keys(accounts).find((key) => normalizeAccountId(key) === normalized);
+  return matchKey ? (accounts[matchKey] as NextcloudTalkAccountConfig | undefined) : undefined;
 }
 
 function mergeNextcloudTalkAccountConfig(
   cfg: CoreConfig,
   accountId: string,
 ): NextcloudTalkAccountConfig {
-  return mergeAccountConfig<NextcloudTalkAccountConfig>({
-    channelConfig: cfg.channels?.["nextcloud-talk"] as NextcloudTalkAccountConfig | undefined,
-    accountConfig: resolveAccountConfig(cfg, accountId),
-    omitKeys: ["defaultAccount"],
-  });
+  const {
+    accounts: _ignored,
+    defaultAccount: _ignoredDefaultAccount,
+    ...base
+  } = (cfg.channels?.["nextcloud-talk"] ?? {}) as NextcloudTalkAccountConfig & {
+    accounts?: unknown;
+    defaultAccount?: unknown;
+  };
+  const account = resolveAccountConfig(cfg, accountId) ?? {};
+  return { ...base, ...account };
 }
 
 function resolveNextcloudTalkSecret(
@@ -83,22 +87,18 @@ function resolveNextcloudTalkSecret(
   }
 
   if (merged.botSecretFile) {
-    const fileSecret = tryReadSecretFileSync(
-      merged.botSecretFile,
-      "Nextcloud Talk bot secret file",
-      { rejectSymlink: true },
-    );
-    if (fileSecret) {
-      return { secret: fileSecret, source: "secretFile" };
+    try {
+      const fileSecret = readFileSync(merged.botSecretFile, "utf-8").trim();
+      if (fileSecret) {
+        return { secret: fileSecret, source: "secretFile" };
+      }
+    } catch {
+      // File not found or unreadable, fall through.
     }
   }
 
-  const inlineSecret = normalizeResolvedSecretInputString({
-    value: merged.botSecret,
-    path: `channels.nextcloud-talk.accounts.${opts.accountId ?? DEFAULT_ACCOUNT_ID}.botSecret`,
-  });
-  if (inlineSecret) {
-    return { secret: inlineSecret, source: "config" };
+  if (merged.botSecret && String(merged.botSecret).trim()) {
+    return { secret: String(merged.botSecret).trim(), source: "config" };
   }
 
   return { secret: "", source: "none" };

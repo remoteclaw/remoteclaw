@@ -1,14 +1,13 @@
 import os from "node:os";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/device-pair";
+import qrcode from "qrcode-terminal";
+import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
 import {
   approveDevicePairing,
-  issueDeviceBootstrapToken,
   listDevicePairing,
   resolveGatewayBindUrl,
   runPluginCommandWithTimeout,
   resolveTailnetHostWithRunner,
-} from "openclaw/plugin-sdk/device-pair";
-import qrcode from "qrcode-terminal";
+} from "remoteclaw/plugin-sdk";
 import {
   armPairNotifyOnce,
   formatPendingRequests,
@@ -32,7 +31,8 @@ type DevicePairPluginConfig = {
 
 type SetupPayload = {
   url: string;
-  bootstrapToken: string;
+  token?: string;
+  password?: string;
 };
 
 type ResolveUrlResult = {
@@ -41,8 +41,10 @@ type ResolveUrlResult = {
   error?: string;
 };
 
-type ResolveAuthLabelResult = {
-  label?: "token" | "password";
+type ResolveAuthResult = {
+  token?: string;
+  password?: string;
+  label?: string;
   error?: string;
 };
 
@@ -84,9 +86,9 @@ function parsePositiveInteger(raw: string | undefined): number | null {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-function resolveGatewayPort(cfg: OpenClawPluginApi["config"]): number {
+function resolveGatewayPort(cfg: RemoteClawPluginApi["config"]): number {
   const envPort =
-    parsePositiveInteger(process.env.OPENCLAW_GATEWAY_PORT?.trim()) ??
+    parsePositiveInteger(process.env.REMOTECLAW_GATEWAY_PORT?.trim()) ??
     parsePositiveInteger(process.env.CLAWDBOT_GATEWAY_PORT?.trim());
   if (envPort) {
     return envPort;
@@ -99,7 +101,7 @@ function resolveGatewayPort(cfg: OpenClawPluginApi["config"]): number {
 }
 
 function resolveScheme(
-  cfg: OpenClawPluginApi["config"],
+  cfg: RemoteClawPluginApi["config"],
   opts?: { forceSecure?: boolean },
 ): "ws" | "wss" {
   if (opts?.forceSecure) {
@@ -185,39 +187,36 @@ async function resolveTailnetHost(): Promise<string | null> {
   );
 }
 
-function resolveAuthLabel(cfg: OpenClawPluginApi["config"]): ResolveAuthLabelResult {
+function resolveAuth(cfg: RemoteClawPluginApi["config"]): ResolveAuthResult {
   const mode = cfg.gateway?.auth?.mode;
   const token =
     pickFirstDefined([
-      process.env.OPENCLAW_GATEWAY_TOKEN,
+      process.env.REMOTECLAW_GATEWAY_TOKEN,
       process.env.CLAWDBOT_GATEWAY_TOKEN,
       cfg.gateway?.auth?.token,
     ]) ?? undefined;
   const password =
     pickFirstDefined([
-      process.env.OPENCLAW_GATEWAY_PASSWORD,
+      process.env.REMOTECLAW_GATEWAY_PASSWORD,
       process.env.CLAWDBOT_GATEWAY_PASSWORD,
       cfg.gateway?.auth?.password,
     ]) ?? undefined;
 
   if (mode === "token" || mode === "password") {
-    return resolveRequiredAuthLabel(mode, { token, password });
+    return resolveRequiredAuth(mode, { token, password });
   }
   if (token) {
-    return { label: "token" };
+    return { token, label: "token" };
   }
   if (password) {
-    return { label: "password" };
+    return { password, label: "password" };
   }
   return { error: "Gateway auth is not configured (no token or password)." };
 }
 
-function pickFirstDefined(candidates: Array<unknown>): string | null {
+function pickFirstDefined(candidates: Array<string | undefined>): string | null {
   for (const value of candidates) {
-    if (typeof value !== "string") {
-      continue;
-    }
-    const trimmed = value.trim();
+    const trimmed = value?.trim();
     if (trimmed) {
       return trimmed;
     }
@@ -225,21 +224,21 @@ function pickFirstDefined(candidates: Array<unknown>): string | null {
   return null;
 }
 
-function resolveRequiredAuthLabel(
+function resolveRequiredAuth(
   mode: "token" | "password",
   values: { token?: string; password?: string },
-): ResolveAuthLabelResult {
+): ResolveAuthResult {
   if (mode === "token") {
     return values.token
-      ? { label: "token" }
+      ? { token: values.token, label: "token" }
       : { error: "Gateway auth is set to token, but no token is configured." };
   }
   return values.password
-    ? { label: "password" }
+    ? { password: values.password, label: "password" }
     : { error: "Gateway auth is set to password, but no password is configured." };
 }
 
-async function resolveGatewayUrl(api: OpenClawPluginApi): Promise<ResolveUrlResult> {
+async function resolveGatewayUrl(api: RemoteClawPluginApi): Promise<ResolveUrlResult> {
   const cfg = api.config;
   const pluginCfg = (api.pluginConfig ?? {}) as DevicePairPluginConfig;
   const scheme = resolveScheme(cfg);
@@ -321,7 +320,7 @@ function formatSetupInstructions(): string {
   ].join("\n");
 }
 
-export default function register(api: OpenClawPluginApi) {
+export default function register(api: RemoteClawPluginApi) {
   registerPairingNotifierService(api);
 
   api.registerCommand({
@@ -391,9 +390,9 @@ export default function register(api: OpenClawPluginApi) {
         return { text: `✅ Paired ${label}${platformLabel}.` };
       }
 
-      const authLabelResult = resolveAuthLabel(api.config);
-      if (authLabelResult.error) {
-        return { text: `Error: ${authLabelResult.error}` };
+      const auth = resolveAuth(api.config);
+      if (auth.error) {
+        return { text: `Error: ${auth.error}` };
       }
 
       const urlResult = await resolveGatewayUrl(api);
@@ -403,13 +402,14 @@ export default function register(api: OpenClawPluginApi) {
 
       const payload: SetupPayload = {
         url: urlResult.url,
-        bootstrapToken: (await issueDeviceBootstrapToken()).token,
+        token: auth.token,
+        password: auth.password,
       };
 
       if (action === "qr") {
         const setupCode = encodeSetupCode(payload);
         const qrAscii = await renderQrAscii(setupCode);
-        const authLabel = authLabelResult.label ?? "auth";
+        const authLabel = auth.label ?? "auth";
 
         const channel = ctx.channel;
         const target = ctx.senderId?.trim() || ctx.from?.trim() || ctx.to?.trim() || "";
@@ -433,7 +433,7 @@ export default function register(api: OpenClawPluginApi) {
             if (send) {
               await send(
                 target,
-                ["Scan this QR code with the OpenClaw iOS app:", "", "```", qrAscii, "```"].join(
+                ["Scan this QR code with the RemoteClaw iOS app:", "", "```", qrAscii, "```"].join(
                   "\n",
                 ),
                 {
@@ -487,7 +487,7 @@ export default function register(api: OpenClawPluginApi) {
         // WebUI + CLI/TUI: ASCII QR
         return {
           text: [
-            "Scan this QR code with the OpenClaw iOS app:",
+            "Scan this QR code with the RemoteClaw iOS app:",
             "",
             "```",
             qrAscii,
@@ -500,7 +500,7 @@ export default function register(api: OpenClawPluginApi) {
 
       const channel = ctx.channel;
       const target = ctx.senderId?.trim() || ctx.from?.trim() || ctx.to?.trim() || "";
-      const authLabel = authLabelResult.label ?? "auth";
+      const authLabel = auth.label ?? "auth";
 
       if (channel === "telegram" && target) {
         try {

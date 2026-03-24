@@ -1,10 +1,6 @@
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
-import { tryReadSecretFileSync } from "openclaw/plugin-sdk/infra-runtime";
-import {
-  createAccountListHelpers,
-  normalizeResolvedSecretInputString,
-  parseOptionalDelimitedEntries,
-} from "./runtime-api.js";
+import { readFileSync } from "node:fs";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
+import { createAccountListHelpers } from "remoteclaw/plugin-sdk/irc";
 import type { CoreConfig, IrcAccountConfig, IrcNickServConfig } from "./types.js";
 
 const TRUTHY_ENV = new Set(["true", "1", "yes", "on"]);
@@ -41,6 +37,17 @@ function parseIntEnv(value?: string): number | undefined {
     return undefined;
   }
   return parsed;
+}
+
+function parseListEnv(value?: string): string[] | undefined {
+  if (!value?.trim()) {
+    return undefined;
+  }
+  const parsed = value
+    .split(/[\n,;]+/g)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  return parsed.length > 0 ? parsed : undefined;
 }
 
 const { listAccountIds: listIrcAccountIds, resolveDefaultAccountId: resolveDefaultIrcAccountId } =
@@ -90,18 +97,17 @@ function resolvePassword(accountId: string, merged: IrcAccountConfig) {
   }
 
   if (merged.passwordFile?.trim()) {
-    const filePassword = tryReadSecretFileSync(merged.passwordFile, "IRC password file", {
-      rejectSymlink: true,
-    });
-    if (filePassword) {
-      return { password: filePassword, source: "passwordFile" as const };
+    try {
+      const filePassword = readFileSync(merged.passwordFile.trim(), "utf-8").trim();
+      if (filePassword) {
+        return { password: filePassword, source: "passwordFile" as const };
+      }
+    } catch {
+      // Ignore unreadable files here; status will still surface missing configuration.
     }
   }
 
-  const configPassword = normalizeResolvedSecretInputString({
-    value: merged.password,
-    path: `channels.irc.accounts.${accountId}.password`,
-  });
+  const configPassword = merged.password?.trim();
   if (configPassword) {
     return { password: configPassword, source: "config" as const };
   }
@@ -117,18 +123,13 @@ function resolveNickServConfig(accountId: string, nickserv?: IrcNickServConfig):
     accountId === DEFAULT_ACCOUNT_ID ? process.env.IRC_NICKSERV_REGISTER_EMAIL?.trim() : undefined;
 
   const passwordFile = base.passwordFile?.trim();
-  let resolvedPassword =
-    normalizeResolvedSecretInputString({
-      value: base.password,
-      path: `channels.irc.accounts.${accountId}.nickserv.password`,
-    }) ||
-    envPassword ||
-    "";
+  let resolvedPassword = base.password?.trim() || envPassword || "";
   if (!resolvedPassword && passwordFile) {
-    resolvedPassword =
-      tryReadSecretFileSync(passwordFile, "IRC NickServ password file", {
-        rejectSymlink: true,
-      }) ?? "";
+    try {
+      resolvedPassword = readFileSync(passwordFile, "utf-8").trim();
+    } catch {
+      // Ignore unreadable files; monitor/probe status will surface failures.
+    }
   }
 
   const merged: IrcNickServConfig = {
@@ -164,9 +165,7 @@ export function resolveIrcAccount(params: {
       accountId === DEFAULT_ACCOUNT_ID ? parseIntEnv(process.env.IRC_PORT) : undefined;
     const port = merged.port ?? envPort ?? (tls ? 6697 : 6667);
     const envChannels =
-      accountId === DEFAULT_ACCOUNT_ID
-        ? parseOptionalDelimitedEntries(process.env.IRC_CHANNELS)
-        : undefined;
+      accountId === DEFAULT_ACCOUNT_ID ? parseListEnv(process.env.IRC_CHANNELS) : undefined;
 
     const host = (
       merged.host?.trim() ||

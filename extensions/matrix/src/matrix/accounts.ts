@@ -1,6 +1,5 @@
-import { normalizeAccountId } from "openclaw/plugin-sdk/account-id";
-import { createAccountListHelpers } from "openclaw/plugin-sdk/matrix";
-import { hasConfiguredSecretInput } from "../secret-input.js";
+import { normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
+import { createAccountListHelpers } from "remoteclaw/plugin-sdk/matrix";
 import type { CoreConfig, MatrixConfig } from "../types.js";
 import { resolveMatrixConfigForAccount } from "./client.js";
 import { credentialsMatchConfig, loadMatrixCredentials } from "./credentials.js";
@@ -71,7 +70,7 @@ export function resolveMatrixAccount(params: {
   const hasUserId = Boolean(resolved.userId);
   const hasAccessToken = Boolean(resolved.accessToken);
   const hasPassword = Boolean(resolved.password);
-  const hasPasswordAuth = hasUserId && (hasPassword || hasConfiguredSecretInput(base.password));
+  const hasPasswordAuth = hasUserId && hasPassword;
   const stored = loadMatrixCredentials(process.env, accountId);
   const hasStored =
     stored && resolved.homeserver

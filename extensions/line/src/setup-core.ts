@@ -1,17 +1,22 @@
-import type { ChannelSetupAdapter, OpenClawConfig } from "openclaw/plugin-sdk/setup";
-import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/setup";
-import { normalizeAccountId, resolveLineAccount } from "../../../src/line/accounts.js";
+import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
+import {
+  listLineAccountIds,
+  normalizeAccountId,
+  resolveLineAccount,
+} from "../../../src/line/accounts.js";
 import type { LineConfig } from "../../../src/line/types.js";
+import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
 
 const channel = "line" as const;
 
 export function patchLineAccountConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId: string;
   patch: Record<string, unknown>;
   clearFields?: string[];
   enabled?: boolean;
-}): OpenClawConfig {
+}): RemoteClawConfig {
   const accountId = normalizeAccountId(params.accountId);
   const lineConfig = (params.cfg.channels?.line ?? {}) as LineConfig;
   const clearFields = params.clearFields ?? [];
@@ -61,7 +66,7 @@ export function patchLineAccountConfig(params: {
   };
 }
 
-export function isLineConfigured(cfg: OpenClawConfig, accountId: string): boolean {
+export function isLineConfigured(cfg: RemoteClawConfig, accountId: string): boolean {
   const resolved = resolveLineAccount({ cfg, accountId });
   return Boolean(resolved.channelAccessToken.trim() && resolved.channelSecret.trim());
 }
@@ -154,4 +159,4 @@ export const lineSetupAdapter: ChannelSetupAdapter = {
   },
 };
 
-export { listLineAccountIds } from "../../../src/line/accounts.js";
+export { listLineAccountIds };

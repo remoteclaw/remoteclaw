@@ -1,14 +1,23 @@
-import { formatNormalizedAllowFromEntries } from "openclaw/plugin-sdk/allow-from";
 import {
-  createScopedAccountConfigAccessors,
-  createScopedChannelConfigBase,
-  createScopedDmSecurityResolver,
-} from "openclaw/plugin-sdk/channel-config-helpers";
-import {
+  buildAccountScopedDmSecurityPolicy,
   buildOpenGroupPolicyWarning,
   collectAllowlistProviderGroupPolicyWarnings,
-} from "openclaw/plugin-sdk/channel-policy";
-import { runStoppablePassiveMonitor } from "../../shared/passive-monitor.js";
+  createScopedAccountConfigAccessors,
+} from "remoteclaw/plugin-sdk";
+import {
+  buildBaseAccountStatusSnapshot,
+  buildBaseChannelStatusSummary,
+  buildChannelConfigSchema,
+  DEFAULT_ACCOUNT_ID,
+  deleteAccountFromConfigSection,
+  formatNormalizedAllowFromEntries,
+  getChatChannelMeta,
+  mapAllowFromEntries,
+  PAIRING_APPROVED_MESSAGE,
+  resolveOptionalConfigString,
+  setAccountEnabledInConfigSection,
+  type ChannelPlugin,
+} from "remoteclaw/plugin-sdk";
 import {
   listIrcAccountIds,
   resolveDefaultIrcAccountId,
@@ -23,22 +32,11 @@ import {
   isChannelTarget,
   normalizeIrcAllowEntry,
 } from "./normalize.js";
+import { ircOnboardingAdapter } from "./onboarding.js";
 import { resolveIrcGroupMatch, resolveIrcRequireMention } from "./policy.js";
 import { probeIrc } from "./probe.js";
-import {
-  buildBaseAccountStatusSnapshot,
-  buildBaseChannelStatusSummary,
-  buildChannelConfigSchema,
-  createAccountStatusSink,
-  DEFAULT_ACCOUNT_ID,
-  getChatChannelMeta,
-  PAIRING_APPROVED_MESSAGE,
-  type ChannelPlugin,
-} from "./runtime-api.js";
 import { getIrcRuntime } from "./runtime.js";
 import { sendMessageIrc } from "./send.js";
-import { ircSetupAdapter } from "./setup-core.js";
-import { ircSetupWizard } from "./setup-surface.js";
 import type { CoreConfig, IrcProbe } from "./types.js";
 
 const meta = getChatChannelMeta("irc");
@@ -62,41 +60,13 @@ const ircConfigAccessors = createScopedAccountConfigAccessors({
   resolveDefaultTo: (account: ResolvedIrcAccount) => account.config.defaultTo,
 });
 
-const ircConfigBase = createScopedChannelConfigBase<ResolvedIrcAccount, CoreConfig>({
-  sectionKey: "irc",
-  listAccountIds: listIrcAccountIds,
-  resolveAccount: (cfg, accountId) => resolveIrcAccount({ cfg, accountId }),
-  defaultAccountId: resolveDefaultIrcAccountId,
-  clearBaseFields: [
-    "name",
-    "host",
-    "port",
-    "tls",
-    "nick",
-    "username",
-    "realname",
-    "password",
-    "passwordFile",
-    "channels",
-  ],
-});
-
-const resolveIrcDmPolicy = createScopedDmSecurityResolver<ResolvedIrcAccount>({
-  channelKey: "irc",
-  resolvePolicy: (account) => account.config.dmPolicy,
-  resolveAllowFrom: (account) => account.config.allowFrom,
-  policyPathSuffix: "dmPolicy",
-  normalizeEntry: (raw) => normalizeIrcAllowEntry(raw),
-});
-
 export const ircPlugin: ChannelPlugin<ResolvedIrcAccount, IrcProbe> = {
   id: "irc",
   meta: {
     ...meta,
     quickstartAllowFrom: true,
   },
-  setup: ircSetupAdapter,
-  setupWizard: ircSetupWizard,
+  onboarding: ircOnboardingAdapter,
   pairing: {
     idLabel: "ircUser",
     normalizeAllowEntry: (entry) => normalizeIrcAllowEntry(entry),
@@ -116,7 +86,35 @@ export const ircPlugin: ChannelPlugin<ResolvedIrcAccount, IrcProbe> = {
   reload: { configPrefixes: ["channels.irc"] },
   configSchema: buildChannelConfigSchema(IrcConfigSchema),
   config: {
-    ...ircConfigBase,
+    listAccountIds: (cfg) => listIrcAccountIds(cfg as CoreConfig),
+    resolveAccount: (cfg, accountId) => resolveIrcAccount({ cfg: cfg as CoreConfig, accountId }),
+    defaultAccountId: (cfg) => resolveDefaultIrcAccountId(cfg as CoreConfig),
+    setAccountEnabled: ({ cfg, accountId, enabled }) =>
+      setAccountEnabledInConfigSection({
+        cfg: cfg as CoreConfig,
+        sectionKey: "irc",
+        accountId,
+        enabled,
+        allowTopLevel: true,
+      }),
+    deleteAccount: ({ cfg, accountId }) =>
+      deleteAccountFromConfigSection({
+        cfg: cfg as CoreConfig,
+        sectionKey: "irc",
+        accountId,
+        clearBaseFields: [
+          "name",
+          "host",
+          "port",
+          "tls",
+          "nick",
+          "username",
+          "realname",
+          "password",
+          "passwordFile",
+          "channels",
+        ],
+      }),
     isConfigured: (account) => account.configured,
     describeAccount: (account) => ({
       accountId: account.accountId,
@@ -132,7 +130,18 @@ export const ircPlugin: ChannelPlugin<ResolvedIrcAccount, IrcProbe> = {
     ...ircConfigAccessors,
   },
   security: {
-    resolveDmPolicy: resolveIrcDmPolicy,
+    resolveDmPolicy: ({ cfg, accountId, account }) => {
+      return buildAccountScopedDmSecurityPolicy({
+        cfg,
+        channelKey: "irc",
+        accountId,
+        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
+        policy: account.config.dmPolicy,
+        allowFrom: account.config.allowFrom ?? [],
+        policyPathSuffix: "dmPolicy",
+        normalizeEntry: (raw) => normalizeIrcAllowEntry(raw),
+      });
+    },
     collectWarnings: ({ account, cfg }) => {
       const warnings = collectAllowlistProviderGroupPolicyWarnings({
         cfg,
@@ -346,10 +355,6 @@ export const ircPlugin: ChannelPlugin<ResolvedIrcAccount, IrcProbe> = {
   gateway: {
     startAccount: async (ctx) => {
       const account = ctx.account;
-      const statusSink = createAccountStatusSink({
-        accountId: ctx.accountId,
-        setStatus: ctx.setStatus,
-      });
       if (!account.configured) {
         throw new Error(
           `IRC is not configured for account "${account.accountId}" (need host and nick in channels.irc).`,
@@ -358,17 +363,14 @@ export const ircPlugin: ChannelPlugin<ResolvedIrcAccount, IrcProbe> = {
       ctx.log?.info(
         `[${account.accountId}] starting IRC provider (${account.host}:${account.port}${account.tls ? " tls" : ""})`,
       );
-      await runStoppablePassiveMonitor({
+      const { stop } = await monitorIrcProvider({
+        accountId: account.accountId,
+        config: ctx.cfg as CoreConfig,
+        runtime: ctx.runtime,
         abortSignal: ctx.abortSignal,
-        start: async () =>
-          await monitorIrcProvider({
-            accountId: account.accountId,
-            config: ctx.cfg as CoreConfig,
-            runtime: ctx.runtime,
-            abortSignal: ctx.abortSignal,
-            statusSink,
-          }),
+        statusSink: (patch) => ctx.setStatus({ accountId: ctx.accountId, ...patch }),
       });
+      return { stop };
     },
   },
 };

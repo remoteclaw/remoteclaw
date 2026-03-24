@@ -1,9 +1,8 @@
 import {
-  collectAllowlistProviderRestrictSendersWarnings,
+  buildAccountScopedDmSecurityPolicy,
   createScopedAccountConfigAccessors,
-  createScopedChannelConfigBase,
-  createScopedDmSecurityResolver,
-} from "openclaw/plugin-sdk/compat";
+  collectAllowlistProviderRestrictSendersWarnings,
+} from "remoteclaw/plugin-sdk";
 import {
   buildChannelConfigSchema,
   buildComputedAccountStatusSnapshot,
@@ -11,14 +10,15 @@ import {
   clearAccountEntryFields,
   DEFAULT_ACCOUNT_ID,
   LineConfigSchema,
+  mapAllowFromEntries,
   processLineMessage,
   type ChannelPlugin,
   type ChannelStatusIssue,
-  type OpenClawConfig,
+  type RemoteClawConfig,
   type LineConfig,
   type LineChannelData,
   type ResolvedLineAccount,
-} from "openclaw/plugin-sdk/line";
+} from "remoteclaw/plugin-sdk/line";
 import { getLineRuntime } from "./runtime.js";
 
 // LINE channel metadata
@@ -44,30 +44,12 @@ const lineConfigAccessors = createScopedAccountConfigAccessors({
       .map((entry) => entry.replace(/^line:(?:user:)?/i, "")),
 });
 
-const lineConfigBase = createScopedChannelConfigBase<ResolvedLineAccount, OpenClawConfig>({
-  sectionKey: "line",
-  listAccountIds: (cfg) => getLineRuntime().channel.line.listLineAccountIds(cfg),
-  resolveAccount: (cfg, accountId) =>
-    getLineRuntime().channel.line.resolveLineAccount({ cfg, accountId: accountId ?? undefined }),
-  defaultAccountId: (cfg) => getLineRuntime().channel.line.resolveDefaultLineAccountId(cfg),
-  clearBaseFields: ["channelSecret", "tokenFile", "secretFile"],
-});
-
-const resolveLineDmPolicy = createScopedDmSecurityResolver<ResolvedLineAccount>({
-  channelKey: "line",
-  resolvePolicy: (account) => account.config.dmPolicy,
-  resolveAllowFrom: (account) => account.config.allowFrom,
-  policyPathSuffix: "dmPolicy",
-  approveHint: "openclaw pairing approve line <code>",
-  normalizeEntry: (raw) => raw.replace(/^line:(?:user:)?/i, ""),
-});
-
 function patchLineAccountConfig(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   lineConfig: LineConfig,
   accountId: string,
   patch: Record<string, unknown>,
-): OpenClawConfig {
+): RemoteClawConfig {
   if (accountId === DEFAULT_ACCOUNT_ID) {
     return {
       ...cfg,
@@ -132,7 +114,40 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
   reload: { configPrefixes: ["channels.line"] },
   configSchema: buildChannelConfigSchema(LineConfigSchema),
   config: {
-    ...lineConfigBase,
+    listAccountIds: (cfg) => getLineRuntime().channel.line.listLineAccountIds(cfg),
+    resolveAccount: (cfg, accountId) =>
+      getLineRuntime().channel.line.resolveLineAccount({ cfg, accountId: accountId ?? undefined }),
+    defaultAccountId: (cfg) => getLineRuntime().channel.line.resolveDefaultLineAccountId(cfg),
+    setAccountEnabled: ({ cfg, accountId, enabled }) => {
+      const lineConfig = (cfg.channels?.line ?? {}) as LineConfig;
+      return patchLineAccountConfig(cfg, lineConfig, accountId, { enabled });
+    },
+    deleteAccount: ({ cfg, accountId }) => {
+      const lineConfig = (cfg.channels?.line ?? {}) as LineConfig;
+      if (accountId === DEFAULT_ACCOUNT_ID) {
+        // oxlint-disable-next-line no-unused-vars
+        const { channelSecret, tokenFile, secretFile, ...rest } = lineConfig;
+        return {
+          ...cfg,
+          channels: {
+            ...cfg.channels,
+            line: rest,
+          },
+        };
+      }
+      const accounts = { ...lineConfig.accounts };
+      delete accounts[accountId];
+      return {
+        ...cfg,
+        channels: {
+          ...cfg.channels,
+          line: {
+            ...lineConfig,
+            accounts: Object.keys(accounts).length > 0 ? accounts : undefined,
+          },
+        },
+      };
+    },
     isConfigured: (account) =>
       Boolean(account.channelAccessToken?.trim() && account.channelSecret?.trim()),
     describeAccount: (account) => ({
@@ -145,7 +160,19 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
     ...lineConfigAccessors,
   },
   security: {
-    resolveDmPolicy: resolveLineDmPolicy,
+    resolveDmPolicy: ({ cfg, accountId, account }) => {
+      return buildAccountScopedDmSecurityPolicy({
+        cfg,
+        channelKey: "line",
+        accountId,
+        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
+        policy: account.config.dmPolicy,
+        allowFrom: account.config.allowFrom ?? [],
+        policyPathSuffix: "dmPolicy",
+        approveHint: "openclaw pairing approve line <code>",
+        normalizeEntry: (raw) => raw.replace(/^line:(?:user:)?/i, ""),
+      });
+    },
     collectWarnings: ({ account, cfg }) => {
       return collectAllowlistProviderRestrictSendersWarnings({
         cfg,
@@ -347,16 +374,6 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
         : [];
       const mediaUrls = payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []);
       const shouldSendQuickRepliesInline = chunks.length === 0 && hasQuickReplies;
-      const sendMediaMessages = async () => {
-        for (const url of mediaUrls) {
-          lastResult = await runtime.channel.line.sendMessageLine(to, "", {
-            verbose: false,
-            mediaUrl: url,
-            cfg,
-            accountId: accountId ?? undefined,
-          });
-        }
-      };
 
       if (!shouldSendQuickRepliesInline) {
         if (lineData.flexMessage) {
@@ -401,7 +418,14 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
 
       const sendMediaAfterText = !(hasQuickReplies && chunks.length > 0);
       if (mediaUrls.length > 0 && !shouldSendQuickRepliesInline && !sendMediaAfterText) {
-        await sendMediaMessages();
+        for (const url of mediaUrls) {
+          lastResult = await runtime.channel.line.sendMessageLine(to, "", {
+            verbose: false,
+            mediaUrl: url,
+            cfg,
+            accountId: accountId ?? undefined,
+          });
+        }
       }
 
       if (chunks.length > 0) {
@@ -474,7 +498,14 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
       }
 
       if (mediaUrls.length > 0 && !shouldSendQuickRepliesInline && sendMediaAfterText) {
-        await sendMediaMessages();
+        for (const url of mediaUrls) {
+          lastResult = await runtime.channel.line.sendMessageLine(to, "", {
+            verbose: false,
+            mediaUrl: url,
+            cfg,
+            accountId: accountId ?? undefined,
+          });
+        }
       }
 
       if (lastResult) {
@@ -625,7 +656,7 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
     },
     logoutAccount: async ({ accountId, cfg }) => {
       const envToken = process.env.LINE_CHANNEL_ACCESS_TOKEN?.trim() ?? "";
-      const nextCfg = { ...cfg } as OpenClawConfig;
+      const nextCfg = { ...cfg } as RemoteClawConfig;
       const lineConfig = (cfg.channels?.line ?? {}) as LineConfig;
       const nextLine = { ...lineConfig };
       let cleared = false;

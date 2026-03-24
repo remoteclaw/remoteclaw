@@ -1,8 +1,0 @@
-{
-  "id": "web-search-brave",
-  "configSchema": {
-    "type": "object",
-    "additionalProperties": false,
-    "properties": {}
-  }
-}

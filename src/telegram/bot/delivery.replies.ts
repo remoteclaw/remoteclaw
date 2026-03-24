@@ -1,23 +1,15 @@
 import { type Bot, GrammyError, InputFile } from "grammy";
-import type { ReplyToMode } from "remoteclaw/plugin-sdk/config-runtime";
-import type { MarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
-import { fireAndForgetHook } from "remoteclaw/plugin-sdk/hook-runtime";
-import { createInternalHookEvent, triggerInternalHook } from "remoteclaw/plugin-sdk/hook-runtime";
-import {
-  buildCanonicalSentMessageHookContext,
-  toInternalMessageSentContext,
-  toPluginMessageContext,
-  toPluginMessageSentEvent,
-} from "remoteclaw/plugin-sdk/hook-runtime";
-import { formatErrorMessage } from "remoteclaw/plugin-sdk/infra-runtime";
-import { buildOutboundMediaLoadOptions } from "remoteclaw/plugin-sdk/media-runtime";
-import { isGifMedia, kindFromMime } from "remoteclaw/plugin-sdk/media-runtime";
-import { getGlobalHookRunner } from "remoteclaw/plugin-sdk/plugin-runtime";
-import { chunkMarkdownTextWithMode, type ChunkMode } from "remoteclaw/plugin-sdk/reply-runtime";
-import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
-import { danger, logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
-import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
-import { loadWebMedia } from "remoteclaw/plugin-sdk/web-media";
+import { chunkMarkdownTextWithMode, type ChunkMode } from "../../auto-reply/chunk.js";
+import type { ReplyPayload } from "../../auto-reply/types.js";
+import type { ReplyToMode } from "../../config/config.js";
+import type { MarkdownTableMode } from "../../config/types.base.js";
+import { danger, logVerbose } from "../../globals.js";
+import { formatErrorMessage } from "../../infra/errors.js";
+import { buildOutboundMediaLoadOptions } from "../../media/load-options.js";
+import { isGifMedia, kindFromMime } from "../../media/mime.js";
+import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
+import type { RuntimeEnv } from "../../runtime.js";
+import { loadWebMedia } from "../../web/media.js";
 import type { TelegramInlineButtons } from "../button-types.js";
 import { splitTelegramCaption } from "../caption.js";
 import {

@@ -15,7 +15,3 @@ export type { RemoteClawPluginApi } from "../plugins/types.js";
 export { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 export type { FixedWindowRateLimiter } from "./webhook-memory-guards.js";
 export { createFixedWindowRateLimiter } from "./webhook-memory-guards.js";
-export {
-  synologyChatSetupAdapter,
-  synologyChatSetupWizard,
-} from "../../extensions/synology-chat/api.js";

@@ -20,7 +20,6 @@ export {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,
   migrateBaseNameToDefaultAccount,
-  patchScopedAccountConfig,
 } from "../channels/plugins/setup-helpers.js";
 export { createAccountListHelpers } from "../channels/plugins/account-helpers.js";
 export type {
@@ -54,12 +53,7 @@ export type { WizardPrompter } from "../wizard/prompts.js";
 export { formatAllowFromLowercase } from "./allow-from.js";
 export { resolveSenderCommandAuthorization } from "./command-auth.js";
 export { resolveChannelAccountConfigBasePath } from "./config-paths.js";
-export { zalouserSetupAdapter } from "../../extensions/zalouser/api.js";
-export { zalouserSetupWizard } from "../../extensions/zalouser/api.js";
-export {
-  evaluateGroupRouteAccessForPolicy,
-  resolveSenderScopedGroupPolicy,
-} from "./group-access.js";
+export { evaluateGroupRouteAccessForPolicy } from "./group-access.js";
 export { loadOutboundMediaFromUrl } from "./outbound-media.js";
 export { createScopedPairingAccess } from "./pairing-access.js";
 export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
@@ -67,7 +61,6 @@ export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
 export { buildChannelSendResult } from "./channel-send-result.js";
 export type { OutboundReplyPayload } from "./reply-payload.js";
 export {
-  deliverTextOrMediaReply,
   isNumericTargetId,
   resolveOutboundMediaUrls,
   sendMediaWithLeadingCaption,

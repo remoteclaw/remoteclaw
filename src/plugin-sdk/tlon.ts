@@ -8,10 +8,7 @@ export {
   promptAccountId,
   resolveAccountIdForConfigure,
 } from "../channels/plugins/onboarding/helpers.js";
-export {
-  applyAccountNameToChannelSection,
-  patchScopedAccountConfig,
-} from "../channels/plugins/setup-helpers.js";
+export { applyAccountNameToChannelSection } from "../channels/plugins/setup-helpers.js";
 export type {
   ChannelAccountSnapshot,
   ChannelOutboundAdapter,
@@ -33,5 +30,3 @@ export type { RuntimeEnv } from "../runtime.js";
 export { formatDocsLink } from "../terminal/links.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
 export { createLoggerBackedRuntime } from "./runtime.js";
-export { tlonSetupAdapter } from "../../extensions/tlon/api.js";
-export { tlonSetupWizard } from "../../extensions/tlon/api.js";

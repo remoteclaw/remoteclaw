@@ -6,22 +6,28 @@ import type {
 } from "remoteclaw/plugin-sdk";
 import {
   buildSingleChannelSecretPromptState,
-  createTopLevelChannelDmPolicy,
   DEFAULT_ACCOUNT_ID,
   mergeAllowFromEntries,
   normalizeAccountId,
-  promptSingleChannelSecretInput,
-  runSingleChannelSecretStep,
-  type ChannelSetupDmPolicy,
-  type ChannelSetupWizard,
-  type RemoteClawConfig,
-  type SecretInput,
-} from "remoteclaw/plugin-sdk/setup";
+  resolveAccountIdForConfigure,
+  setTopLevelChannelDmPolicyWithAllowFrom,
+} from "remoteclaw/plugin-sdk";
 import { listZaloAccountIds, resolveDefaultZaloAccountId, resolveZaloAccount } from "./accounts.js";
 
 const channel = "zalo" as const;
 
 type UpdateMode = "polling" | "webhook";
+
+function setZaloDmPolicy(
+  cfg: RemoteClawConfig,
+  dmPolicy: "pairing" | "allowlist" | "open" | "disabled",
+) {
+  return setTopLevelChannelDmPolicyWithAllowFrom({
+    cfg,
+    channel: "zalo",
+    dmPolicy,
+  }) as RemoteClawConfig;
+}
 
 function setZaloUpdateMode(
   cfg: RemoteClawConfig,
@@ -173,12 +179,13 @@ async function promptZaloAllowFrom(params: {
   } as RemoteClawConfig;
 }
 
-const zaloDmPolicy: ChannelSetupDmPolicy = createTopLevelChannelDmPolicy({
+const dmPolicy: ChannelOnboardingDmPolicy = {
   label: "Zalo",
   channel,
   policyKey: "channels.zalo.dmPolicy",
   allowFromKey: "channels.zalo.allowFrom",
   getCurrent: (cfg) => (cfg.channels?.zalo?.dmPolicy ?? "pairing") as "pairing",
+  setPolicy: (cfg, policy) => setZaloDmPolicy(cfg, policy),
   promptAllowFrom: async ({ cfg, prompter, accountId }) => {
     const id =
       accountId && normalizeAccountId(accountId)
@@ -190,7 +197,7 @@ const zaloDmPolicy: ChannelSetupDmPolicy = createTopLevelChannelDmPolicy({
       accountId: id,
     });
   },
-});
+};
 
 export const zaloOnboardingAdapter: ChannelOnboardingAdapter = {
   channel,

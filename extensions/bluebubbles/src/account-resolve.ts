@@ -1,6 +1,5 @@
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import { resolveBlueBubblesAccount } from "./accounts.js";
-import type { RemoteClawConfig } from "./runtime-api.js";
-import { normalizeResolvedSecretInputString } from "./secret-input.js";
 
 export type BlueBubblesAccountResolveOpts = {
   serverUrl?: string;

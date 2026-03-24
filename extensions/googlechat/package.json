@@ -36,8 +36,7 @@
     "install": {
       "npmSpec": "@remoteclaw/googlechat",
       "localPath": "extensions/googlechat",
-      "defaultChoice": "npm",
-      "minHostVersion": ">=2026.3.14"
+      "defaultChoice": "npm"
     }
   }
 }

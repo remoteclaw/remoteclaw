@@ -12,17 +12,19 @@ import {
 } from "@buape/carbon";
 import { ApplicationCommandOptionType, ButtonStyle } from "discord-api-types/v10";
 import {
-  ensureConfiguredBindingRouteReady,
-  resolveConfiguredBindingRoute,
-} from "remoteclaw/plugin-sdk/conversation-runtime";
-import { buildPairingReply } from "remoteclaw/plugin-sdk/conversation-runtime";
-import { getAgentScopedMediaLocalRoots } from "remoteclaw/plugin-sdk/media-runtime";
-import { executePluginCommand, matchPluginCommand } from "remoteclaw/plugin-sdk/plugin-runtime";
-import {
-  resolveOutboundMediaUrls,
-  resolveTextChunksWithFallback,
-} from "remoteclaw/plugin-sdk/reply-payload";
-import { resolveChunkMode, resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
+  ensureConfiguredAcpRouteReady,
+  resolveConfiguredAcpRoute,
+} from "../../acp/persistent-bindings.route.js";
+import { resolveHumanDelayConfig } from "../../agents/identity.js";
+import { resolveChunkMode, resolveTextChunkLimit } from "../../auto-reply/chunk.js";
+import { resolveCommandAuthorization } from "../../auto-reply/command-auth.js";
+import type {
+  ChatCommandDefinition,
+  CommandArgDefinition,
+  CommandArgValues,
+  CommandArgs,
+  NativeCommandSpec,
+} from "../../auto-reply/commands-registry.js";
 import {
   buildCommandTextFromArgs,
   findCommandByNativeName,
@@ -31,23 +33,22 @@ import {
   resolveCommandArgChoices,
   resolveCommandArgMenu,
   serializeCommandArgs,
-} from "remoteclaw/plugin-sdk/reply-runtime";
-import { resolveStoredModelOverride } from "remoteclaw/plugin-sdk/reply-runtime";
-import { dispatchReplyWithDispatcher } from "remoteclaw/plugin-sdk/reply-runtime";
-import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
-import type { ResolvedAgentRoute } from "remoteclaw/plugin-sdk/routing";
-import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
-import { createSubsystemLogger } from "remoteclaw/plugin-sdk/runtime-env";
-import { chunkItems } from "remoteclaw/plugin-sdk/text-runtime";
-import { withTimeout } from "remoteclaw/plugin-sdk/text-runtime";
-import { loadWebMedia } from "remoteclaw/plugin-sdk/web-media";
-import type {
-  ChatCommandDefinition,
-  CommandArgDefinition,
-  CommandArgValues,
-  CommandArgs,
-  NativeCommandSpec,
 } from "../../auto-reply/commands-registry.js";
+import { dispatchReplyWithDispatcher } from "../../auto-reply/reply/provider-dispatcher.js";
+import type { ReplyPayload } from "../../auto-reply/types.js";
+import { resolveCommandAuthorizedFromAuthorizers } from "../../channels/command-gating.js";
+import { resolveNativeCommandSessionTargets } from "../../channels/native-command-session-targets.js";
+import { createReplyPrefixOptions } from "../../channels/reply-prefix.js";
+import type { RemoteClawConfig, loadConfig } from "../../config/config.js";
+import { isDangerousNameMatchingEnabled } from "../../config/dangerous-name-matching.js";
+import { resolveOpenProviderRuntimeGroupPolicy } from "../../config/runtime-group-policy.js";
+import { logVerbose } from "../../globals.js";
+import { createSubsystemLogger } from "../../logging/subsystem.js";
+import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
+import { buildPairingReply } from "../../pairing/pairing-messages.js";
+import { executePluginCommand, matchPluginCommand } from "../../plugins/commands.js";
+import { chunkItems } from "../../utils/chunk-items.js";
+import { loadWebMedia } from "../../web/media.js";
 import { resolveDiscordMaxLinesPerMessage } from "../accounts.js";
 import { chunkDiscordTextWithMode } from "../chunk.js";
 import {
@@ -1047,7 +1048,7 @@ async function deliverDiscordInteractionReply(params: {
   chunkMode: "length" | "newline";
 }) {
   const { interaction, payload, textLimit, maxLinesPerMessage, preferFollowUp, chunkMode } = params;
-  const mediaList = resolveOutboundMediaUrls(payload);
+  const mediaList = payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []);
   const text = payload.text ?? "";
 
   let hasReplied = false;
@@ -1088,14 +1089,14 @@ async function deliverDiscordInteractionReply(params: {
         };
       }),
     );
-    const chunks = resolveTextChunksWithFallback(
-      text,
-      chunkDiscordTextWithMode(text, {
-        maxChars: textLimit,
-        maxLines: maxLinesPerMessage,
-        chunkMode,
-      }),
-    );
+    const chunks = chunkDiscordTextWithMode(text, {
+      maxChars: textLimit,
+      maxLines: maxLinesPerMessage,
+      chunkMode,
+    });
+    if (!chunks.length && text) {
+      chunks.push(text);
+    }
     const caption = chunks[0] ?? "";
     await sendMessage(caption, media);
     for (const chunk of chunks.slice(1)) {
@@ -1110,17 +1111,14 @@ async function deliverDiscordInteractionReply(params: {
   if (!text.trim()) {
     return;
   }
-  const chunks =
-    text || firstMessageComponents
-      ? resolveTextChunksWithFallback(
-          text,
-          chunkDiscordTextWithMode(text, {
-            maxChars: textLimit,
-            maxLines: maxLinesPerMessage,
-            chunkMode,
-          }),
-        )
-      : [];
+  const chunks = chunkDiscordTextWithMode(text, {
+    maxChars: textLimit,
+    maxLines: maxLinesPerMessage,
+    chunkMode,
+  });
+  if (!chunks.length && text) {
+    chunks.push(text);
+  }
   for (const chunk of chunks) {
     if (!chunk.trim()) {
       continue;

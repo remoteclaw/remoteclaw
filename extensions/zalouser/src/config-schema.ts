@@ -1,10 +1,4 @@
-import {
-  AllowFromListSchema,
-  buildCatchallMultiAccountChannelSchema,
-  DmPolicySchema,
-  GroupPolicySchema,
-} from "remoteclaw/plugin-sdk/compat";
-import { MarkdownConfigSchema, ToolPolicySchema } from "remoteclaw/plugin-sdk/zalouser";
+import { MarkdownConfigSchema, ToolPolicySchema } from "remoteclaw/plugin-sdk";
 import { z } from "zod";
 
 const allowFromEntry = z.union([z.string(), z.number()]);
@@ -21,11 +15,11 @@ const zalouserAccountSchema = z.object({
   enabled: z.boolean().optional(),
   markdown: MarkdownConfigSchema,
   profile: z.string().optional(),
-  dmPolicy: DmPolicySchema.optional(),
-  allowFrom: AllowFromListSchema,
+  dmPolicy: z.enum(["pairing", "allowlist", "open", "disabled"]).optional(),
+  allowFrom: z.array(allowFromEntry).optional(),
   historyLimit: z.number().int().min(0).optional(),
-  groupAllowFrom: AllowFromListSchema,
-  groupPolicy: GroupPolicySchema.optional(),
+  groupAllowFrom: z.array(allowFromEntry).optional(),
+  groupPolicy: z.enum(["disabled", "allowlist", "open"]).optional(),
   groups: z.object({}).catchall(groupConfigSchema).optional(),
   messagePrefix: z.string().optional(),
   responsePrefix: z.string().optional(),

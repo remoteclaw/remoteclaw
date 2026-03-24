@@ -17,7 +17,7 @@ vi.mock("../../../pairing/pairing-store.js", () => ({
 }));
 
 type MessageHandler = (args: { event: Record<string, unknown>; body: unknown }) => Promise<void>;
-type RegisteredEventName = "message" | "app_mention";
+type AppMentionHandler = MessageHandler;
 
 type MessageCase = {
   overrides?: SlackSystemEventTestOverrides;

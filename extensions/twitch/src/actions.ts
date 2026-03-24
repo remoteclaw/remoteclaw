@@ -68,7 +68,7 @@ export const twitchMessageActions: ChannelMessageActionAdapter = {
   /**
    * List available actions for this channel.
    */
-  describeMessageTool: () => ({ actions: [...TWITCH_ACTIONS] }),
+  listActions: () => [...TWITCH_ACTIONS],
 
   /**
    * Check if an action is supported.

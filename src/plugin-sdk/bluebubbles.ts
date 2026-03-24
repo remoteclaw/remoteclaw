@@ -28,9 +28,13 @@ export { buildChannelConfigSchema } from "../channels/plugins/config-schema.js";
 export {
   resolveBlueBubblesGroupRequireMention,
   resolveBlueBubblesGroupToolPolicy,
-} from "../../extensions/bluebubbles/src/group-policy.js";
+} from "../channels/plugins/group-mentions.js";
 export { formatPairingApproveHint } from "../channels/plugins/helpers.js";
 export { resolveChannelMediaMaxBytes } from "../channels/plugins/media-limits.js";
+export type {
+  ChannelOnboardingAdapter,
+  ChannelOnboardingDmPolicy,
+} from "../channels/plugins/onboarding-types.js";
 export {
   addWildcardAllowFrom,
   mergeAllowFromEntries,
@@ -42,7 +46,6 @@ export { PAIRING_APPROVED_MESSAGE } from "../channels/plugins/pairing-message.js
 export {
   applyAccountNameToChannelSection,
   migrateBaseNameToDefaultAccount,
-  patchScopedAccountConfig,
 } from "../channels/plugins/setup-helpers.js";
 export { createAccountListHelpers } from "../channels/plugins/account-helpers.js";
 export { collectBlueBubblesStatusIssues } from "../channels/plugins/status-issues/bluebubbles.js";
@@ -53,18 +56,20 @@ export type {
   ChannelMessageActionName,
 } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
-export { createChannelReplyPipeline } from "./channel-reply-pipeline.js";
+export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 export type { RemoteClawConfig } from "../config/config.js";
 export type { DmPolicy, GroupPolicy } from "../config/types.js";
+export { normalizeSecretInputString } from "../config/types.secrets.js";
+export { buildSecretInputSchema } from "./secret-input-schema.js";
 export { ToolPolicySchema } from "../config/zod-schema.agent-runtime.js";
 export { MarkdownConfigSchema } from "../config/zod-schema.core.js";
-export type { ParsedChatTarget } from "../../extensions/imessage/api.js";
+export type { ParsedChatTarget } from "../imessage/target-parsing-helpers.js";
 export {
   parseChatAllowTargetPrefixes,
   parseChatTargetPrefixesOrThrow,
   resolveServicePrefixedAllowTarget,
   resolveServicePrefixedTarget,
-} from "../../extensions/imessage/api.js";
+} from "../imessage/target-parsing-helpers.js";
 export { stripMarkdown } from "../line/markdown-to-line.js";
 export { parseFiniteNumber } from "../infra/parse-finite-number.js";
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
@@ -81,19 +86,18 @@ export type { WizardPrompter } from "../wizard/prompts.js";
 export { isAllowedParsedChatSender } from "./allow-from.js";
 export { readBooleanParam } from "./boolean-param.js";
 export { mapAllowFromEntries } from "./channel-config-helpers.js";
-export { createChannelPairingController } from "./channel-pairing.js";
+export { createScopedPairingAccess } from "./pairing-access.js";
+export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
 export { resolveRequestUrl } from "./request-url.js";
 export {
   buildComputedAccountStatusSnapshot,
   buildProbeChannelStatusSummary,
 } from "./status-helpers.js";
 export { extractToolSend } from "./tool-send.js";
+export { normalizeWebhookPath } from "./webhook-path.js";
 export {
+  beginWebhookRequestPipelineOrReject,
   createWebhookInFlightLimiter,
-  normalizeWebhookPath,
   readWebhookBodyOrReject,
-  registerWebhookTargetWithPluginRoute,
-  resolveWebhookTargets,
-  resolveWebhookTargetWithAuthOrRejectSync,
-  withResolvedWebhookRequestPipeline,
-} from "./webhook-ingress.js";
+} from "./webhook-request-guards.js";
+export { resolveWebhookTargets } from "./webhook-targets.js";

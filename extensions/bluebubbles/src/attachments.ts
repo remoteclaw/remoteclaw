@@ -1,13 +1,13 @@
 import crypto from "node:crypto";
 import path from "node:path";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import { resolveBlueBubblesServerAccount } from "./account-resolve.js";
-import { assertMultipartActionOk, postMultipartFormData } from "./multipart.js";
+import { postMultipartFormData } from "./multipart.js";
 import {
   getCachedBlueBubblesPrivateApiStatus,
   isBlueBubblesPrivateApiStatusEnabled,
 } from "./probe.js";
 import { resolveRequestUrl } from "./request-url.js";
-import type { OpenClawConfig } from "./runtime-api.js";
 import { getBlueBubblesRuntime, warnBlueBubbles } from "./runtime.js";
 import { extractBlueBubblesMessageId, resolveBlueBubblesSendTarget } from "./send-helpers.js";
 import { resolveChatGuidForTarget, createChatForHandle } from "./send.js";
@@ -283,7 +283,12 @@ export async function sendBlueBubblesAttachment(params: {
     timeoutMs: opts.timeoutMs ?? 60_000, // longer timeout for file uploads
   });
 
-  await assertMultipartActionOk(res, "attachment send");
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(
+      `BlueBubbles attachment send failed (${res.status}): ${errorText || "unknown"}`,
+    );
+  }
 
   const responseBody = await res.text();
   if (!responseBody) {

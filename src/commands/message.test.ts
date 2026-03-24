@@ -136,7 +136,7 @@ const createDiscordPollPluginRegistration = () => ({
     id: "discord",
     label: "Discord",
     actions: {
-      describeMessageTool: () => ({ actions: ["poll"] }),
+      listActions: () => ["poll"],
       handleAction: (async ({ action, params, cfg, accountId }: ChannelActionParams) => {
         return await handleDiscordAction(
           { action, to: params.to, accountId: accountId ?? undefined },
@@ -154,7 +154,7 @@ const createTelegramSendPluginRegistration = () => ({
     id: "telegram",
     label: "Telegram",
     actions: {
-      describeMessageTool: () => ({ actions: ["send"] }),
+      listActions: () => ["send"],
       handleAction: (async ({ action, params, cfg, accountId }: ChannelActionParams) => {
         return await handleTelegramAction(
           { action, to: params.to, accountId: accountId ?? undefined },
@@ -172,7 +172,7 @@ const createTelegramPollPluginRegistration = () => ({
     id: "telegram",
     label: "Telegram",
     actions: {
-      describeMessageTool: () => ({ actions: ["poll"] }),
+      listActions: () => ["poll"],
       handleAction: (async ({ action, params, cfg, accountId }: ChannelActionParams) => {
         return await handleTelegramAction(
           { action, to: params.to, accountId: accountId ?? undefined },

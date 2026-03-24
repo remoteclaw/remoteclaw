@@ -104,5 +104,3 @@ export {
   buildProbeChannelStatusSummary,
   collectStatusIssuesFromLastError,
 } from "./status-helpers.js";
-export { matrixSetupWizard } from "../../extensions/matrix/api.js";
-export { matrixSetupAdapter } from "../../extensions/matrix/api.js";

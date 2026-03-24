@@ -1,10 +1,8 @@
 import {
-  AllowFromListSchema,
+  AllowFromEntrySchema,
   buildCatchallMultiAccountChannelSchema,
-  DmPolicySchema,
-  GroupPolicySchema,
-} from "remoteclaw/plugin-sdk/compat";
-import { MarkdownConfigSchema } from "remoteclaw/plugin-sdk/zalo";
+  MarkdownConfigSchema,
+} from "remoteclaw/plugin-sdk";
 import { z } from "zod";
 
 const zaloAccountSchema = z.object({
@@ -16,10 +14,10 @@ const zaloAccountSchema = z.object({
   webhookUrl: z.string().optional(),
   webhookSecret: z.string().optional(),
   webhookPath: z.string().optional(),
-  dmPolicy: DmPolicySchema.optional(),
-  allowFrom: AllowFromListSchema,
-  groupPolicy: GroupPolicySchema.optional(),
-  groupAllowFrom: AllowFromListSchema,
+  dmPolicy: z.enum(["pairing", "allowlist", "open", "disabled"]).optional(),
+  allowFrom: z.array(AllowFromEntrySchema).optional(),
+  groupPolicy: z.enum(["disabled", "allowlist", "open"]).optional(),
+  groupAllowFrom: z.array(AllowFromEntrySchema).optional(),
   mediaMaxMb: z.number().optional(),
   proxy: z.string().optional(),
   responsePrefix: z.string().optional(),

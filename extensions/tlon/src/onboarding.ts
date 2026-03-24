@@ -1,7 +1,6 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import {
   formatDocsLink,
-  patchScopedAccountConfig,
   resolveAccountIdForConfigure,
   DEFAULT_ACCOUNT_ID,
   type ChannelOnboardingAdapter,
@@ -33,30 +32,46 @@ function applyAccountConfig(params: {
   };
 }): RemoteClawConfig {
   const { cfg, accountId, input } = params;
+  const useDefault = accountId === DEFAULT_ACCOUNT_ID;
+  const base = cfg.channels?.tlon ?? {};
   const nextValues = {
     enabled: true,
     ...(input.name ? { name: input.name } : {}),
     ...buildTlonAccountFields(input),
   };
-  if (accountId === DEFAULT_ACCOUNT_ID) {
-    return patchScopedAccountConfig({
-      cfg,
-      channelKey: channel,
-      accountId,
-      patch: nextValues,
-      ensureChannelEnabled: false,
-      ensureAccountEnabled: false,
-    });
+
+  if (useDefault) {
+    return {
+      ...cfg,
+      channels: {
+        ...cfg.channels,
+        tlon: {
+          ...base,
+          ...nextValues,
+        },
+      },
+    };
   }
-  return patchScopedAccountConfig({
-    cfg,
-    channelKey: channel,
-    accountId,
-    patch: { enabled: cfg.channels?.tlon?.enabled ?? true },
-    accountPatch: nextValues,
-    ensureChannelEnabled: false,
-    ensureAccountEnabled: false,
-  });
+
+  return {
+    ...cfg,
+    channels: {
+      ...cfg.channels,
+      tlon: {
+        ...base,
+        enabled: base.enabled ?? true,
+        accounts: {
+          ...(base as { accounts?: Record<string, unknown> }).accounts,
+          [accountId]: {
+            ...(base as { accounts?: Record<string, Record<string, unknown>> }).accounts?.[
+              accountId
+            ],
+            ...nextValues,
+          },
+        },
+      },
+    },
+  };
 }
 
 async function noteTlonHelp(prompter: WizardPrompter): Promise<void> {

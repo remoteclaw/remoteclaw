@@ -92,17 +92,7 @@ describe("createSynologyChatPlugin", () => {
 
     it("defaultAccountId returns 'default'", () => {
       const plugin = createSynologyChatPlugin();
-      expect(plugin.config.defaultAccountId?.({})).toBe("default");
-    });
-
-    it("formats allowFrom entries through the shared adapter", () => {
-      const plugin = createSynologyChatPlugin();
-      expect(
-        plugin.config.formatAllowFrom?.({
-          cfg: {},
-          allowFrom: ["  USER1  ", 42],
-        }),
-      ).toEqual(["user1", "42"]);
+      expect(plugin.config.defaultAccountId({})).toBe("default");
     });
   });
 
@@ -126,7 +116,7 @@ describe("createSynologyChatPlugin", () => {
       expect(result.policy).toBe("allowlist");
       expect(result.allowFrom).toEqual(["user1"]);
       expect(typeof result.normalizeEntry).toBe("function");
-      expect(result.normalizeEntry?.("  USER1  ")).toBe("user1");
+      expect(result.normalizeEntry("  USER1  ")).toBe("user1");
     });
   });
 
@@ -134,11 +124,8 @@ describe("createSynologyChatPlugin", () => {
     it("has notifyApproval and normalizeAllowEntry", () => {
       const plugin = createSynologyChatPlugin();
       expect(plugin.pairing.idLabel).toBe("synologyChatUserId");
-      const normalize = plugin.pairing.normalizeAllowEntry;
-      expect(typeof normalize).toBe("function");
-      if (normalize) {
-        expect(normalize("  USER1  ")).toBe("user1");
-      }
+      expect(typeof plugin.pairing.normalizeAllowEntry).toBe("function");
+      expect(plugin.pairing.normalizeAllowEntry("  USER1  ")).toBe("user1");
       expect(typeof plugin.pairing.notifyApproval).toBe("function");
     });
   });
@@ -260,10 +247,9 @@ describe("createSynologyChatPlugin", () => {
   describe("directory", () => {
     it("returns empty stubs", async () => {
       const plugin = createSynologyChatPlugin();
-      const params = { cfg: {}, runtime: {} as never };
-      expect(await plugin.directory.self?.(params)).toBeNull();
-      expect(await plugin.directory.listPeers?.(params)).toEqual([]);
-      expect(await plugin.directory.listGroups?.(params)).toEqual([]);
+      expect(await plugin.directory.self()).toBeNull();
+      expect(await plugin.directory.listPeers()).toEqual([]);
+      expect(await plugin.directory.listGroups()).toEqual([]);
     });
   });
 

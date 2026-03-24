@@ -1,10 +1,9 @@
-import { createLazyRuntimeSurface } from "openclaw/plugin-sdk/lazy-runtime";
 import type {
   ChannelMessageActionAdapter,
   ChannelMessageActionName,
   RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/zalo";
-import { extractToolSend, jsonResult, readStringParam } from "remoteclaw/plugin-sdk/zalo";
+} from "remoteclaw/plugin-sdk";
+import { extractToolSend, jsonResult, readStringParam } from "remoteclaw/plugin-sdk";
 import { listEnabledZaloAccounts } from "./accounts.js";
 import { sendMessageZalo } from "./send.js";
 
@@ -17,14 +16,15 @@ function listEnabledAccounts(cfg: RemoteClawConfig) {
 }
 
 export const zaloMessageActions: ChannelMessageActionAdapter = {
-  describeMessageTool: ({ cfg }) => {
+  listActions: ({ cfg }) => {
     const accounts = listEnabledAccounts(cfg);
     if (accounts.length === 0) {
-      return null;
+      return [];
     }
     const actions = new Set<ChannelMessageActionName>(["send"]);
-    return { actions: Array.from(actions), capabilities: [] };
+    return Array.from(actions);
   },
+  supportsButtons: () => false,
   extractToolSend: ({ args }) => extractToolSend(args, "sendMessage"),
   handleAction: async ({ action, params, cfg, accountId }) => {
     if (action === "send") {

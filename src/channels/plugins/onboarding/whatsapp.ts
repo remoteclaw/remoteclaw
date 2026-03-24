@@ -1,15 +1,4 @@
 import path from "node:path";
-import {
-  normalizeAllowFromEntries,
-  normalizeE164,
-  pathExists,
-  splitSetupEntries,
-  setSetupChannelEnabled,
-  type DmPolicy,
-  type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/setup";
-import type { ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
-import { formatCliCommand, formatDocsLink } from "remoteclaw/plugin-sdk/setup-tools";
 import { loginWeb } from "../../../channel-web.js";
 import { formatCliCommand } from "../../../cli/command-format.js";
 import type { RemoteClawConfig } from "../../../config/config.js";
@@ -26,9 +15,12 @@ import {
 } from "../../../web/accounts.js";
 import type { WizardPrompter } from "../../../wizard/prompts.js";
 import type { ChannelOnboardingAdapter } from "../onboarding-types.js";
-import { listWhatsAppAccountIds, resolveWhatsAppAuthDir } from "./accounts.js";
-import { loginWeb } from "./login.js";
-import { whatsappSetupAdapter } from "./setup-core.js";
+import {
+  normalizeAllowFromEntries,
+  resolveAccountIdForConfigure,
+  resolveOnboardingAccountId,
+  splitOnboardingEntries,
+} from "./helpers.js";
 
 const channel = "whatsapp" as const;
 

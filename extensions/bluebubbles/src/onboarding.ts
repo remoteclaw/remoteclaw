@@ -6,10 +6,10 @@ import type {
   WizardPrompter,
 } from "remoteclaw/plugin-sdk";
 import {
+  DEFAULT_ACCOUNT_ID,
   formatDocsLink,
   mergeAllowFromEntries,
   normalizeAccountId,
-  patchScopedAccountConfig,
   resolveAccountIdForConfigure,
   setTopLevelChannelDmPolicyWithAllowFrom,
 } from "remoteclaw/plugin-sdk";
@@ -36,14 +36,34 @@ function setBlueBubblesAllowFrom(
   accountId: string,
   allowFrom: string[],
 ): RemoteClawConfig {
-  return patchScopedAccountConfig({
-    cfg,
-    channelKey: channel,
-    accountId,
-    patch: { allowFrom },
-    ensureChannelEnabled: false,
-    ensureAccountEnabled: false,
-  });
+  if (accountId === DEFAULT_ACCOUNT_ID) {
+    return {
+      ...cfg,
+      channels: {
+        ...cfg.channels,
+        bluebubbles: {
+          ...cfg.channels?.bluebubbles,
+          allowFrom,
+        },
+      },
+    };
+  }
+  return {
+    ...cfg,
+    channels: {
+      ...cfg.channels,
+      bluebubbles: {
+        ...cfg.channels?.bluebubbles,
+        accounts: {
+          ...cfg.channels?.bluebubbles?.accounts,
+          [accountId]: {
+            ...cfg.channels?.bluebubbles?.accounts?.[accountId],
+            allowFrom,
+          },
+        },
+      },
+    },
+  };
 }
 
 function parseBlueBubblesAllowFromInput(raw: string): string[] {

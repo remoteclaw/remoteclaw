@@ -1,13 +1,15 @@
 import {
   GROUP_POLICY_BLOCKED_LABEL,
   createScopedPairingAccess,
-  deliverFormattedTextWithAttachments,
-  dispatchInboundReplyWithBase,
+  createNormalizedOutboundDeliverer,
+  createReplyPrefixOptions,
+  formatTextWithAttachmentLinks,
   issuePairingChallenge,
   logInboundDrop,
   isDangerousNameMatchingEnabled,
   readStoreAllowFromForDmPolicy,
   resolveControlCommandGate,
+  resolveOutboundMediaUrls,
   resolveAllowlistProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
   warnMissingProviderGroupPolicyFallbackOnce,
@@ -53,23 +55,23 @@ async function deliverIrcReply(params: {
   sendReply?: (target: string, text: string, replyToId?: string) => Promise<void>;
   statusSink?: (patch: { lastOutboundAt?: number }) => void;
 }) {
-  const delivered = await deliverFormattedTextWithAttachments({
-    payload: params.payload,
-    send: async ({ text, replyToId }) => {
-      if (params.sendReply) {
-        await params.sendReply(params.target, text, replyToId);
-      } else {
-        await sendMessageIrc(params.target, text, {
-          accountId: params.accountId,
-          replyTo: replyToId,
-        });
-      }
-      params.statusSink?.({ lastOutboundAt: Date.now() });
-    },
-  });
-  if (!delivered) {
+  const combined = formatTextWithAttachmentLinks(
+    params.payload.text,
+    resolveOutboundMediaUrls(params.payload),
+  );
+  if (!combined) {
     return;
   }
+
+  if (params.sendReply) {
+    await params.sendReply(params.target, combined, params.payload.replyToId);
+  } else {
+    await sendMessageIrc(params.target, combined, {
+      accountId: params.accountId,
+      replyTo: params.payload.replyToId,
+    });
+  }
+  params.statusSink?.({ lastOutboundAt: Date.now() });
 }
 
 export async function handleIrcInbound(params: {

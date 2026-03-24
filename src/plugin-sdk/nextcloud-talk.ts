@@ -30,10 +30,7 @@ export {
   resolveAccountIdForConfigure,
   setTopLevelChannelDmPolicyWithAllowFrom,
 } from "../channels/plugins/onboarding/helpers.js";
-export {
-  applyAccountNameToChannelSection,
-  patchScopedAccountConfig,
-} from "../channels/plugins/setup-helpers.js";
+export { applyAccountNameToChannelSection } from "../channels/plugins/setup-helpers.js";
 export { createAccountListHelpers } from "../channels/plugins/account-helpers.js";
 export type { ChannelGroupContext, ChannelSetupInput } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
@@ -97,7 +94,6 @@ export { createPersistentDedupe } from "./persistent-dedupe.js";
 export type { OutboundReplyPayload } from "./reply-payload.js";
 export {
   createNormalizedOutboundDeliverer,
-  deliverFormattedTextWithAttachments,
   formatTextWithAttachmentLinks,
   resolveOutboundMediaUrls,
 } from "./reply-payload.js";

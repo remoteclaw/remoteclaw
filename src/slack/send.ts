@@ -1,19 +1,18 @@
 import { type Block, type KnownBlock, type WebClient } from "@slack/web-api";
-import { loadConfig, type RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
-import {
-  fetchWithSsrFGuard,
-  withTrustedEnvProxyGuardedFetchMode,
-} from "remoteclaw/plugin-sdk/infra-runtime";
-import { resolveTextChunksWithFallback } from "remoteclaw/plugin-sdk/reply-payload";
 import {
   chunkMarkdownTextWithMode,
   resolveChunkMode,
   resolveTextChunkLimit,
-} from "remoteclaw/plugin-sdk/reply-runtime";
-import { isSilentReplyText } from "remoteclaw/plugin-sdk/reply-runtime";
-import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
-import { loadWebMedia } from "remoteclaw/plugin-sdk/web-media";
+} from "../auto-reply/chunk.js";
+import { isSilentReplyText } from "../auto-reply/tokens.js";
+import { loadConfig, type RemoteClawConfig } from "../config/config.js";
+import { resolveMarkdownTableMode } from "../config/markdown-tables.js";
+import { logVerbose } from "../globals.js";
+import {
+  fetchWithSsrFGuard,
+  withTrustedEnvProxyGuardedFetchMode,
+} from "../infra/net/fetch-guard.js";
+import { loadWebMedia } from "../web/media.js";
 import type { SlackTokenSource } from "./accounts.js";
 import { resolveSlackAccount } from "./accounts.js";
 import { buildSlackBlocksFallbackText } from "./blocks-fallback.js";
@@ -311,7 +310,9 @@ export async function sendMessageSlack(
   const chunks = markdownChunks.flatMap((markdown) =>
     markdownToSlackMrkdwnChunks(markdown, chunkLimit, { tableMode }),
   );
-  const resolvedChunks = resolveTextChunksWithFallback(trimmedMessage, chunks);
+  if (!chunks.length && trimmedMessage) {
+    chunks.push(trimmedMessage);
+  }
   const mediaMaxBytes =
     typeof account.config.mediaMaxMb === "number"
       ? account.config.mediaMaxMb * 1024 * 1024
@@ -319,7 +320,7 @@ export async function sendMessageSlack(
 
   let lastMessageId = "";
   if (opts.mediaUrl) {
-    const [firstChunk, ...rest] = resolvedChunks;
+    const [firstChunk, ...rest] = chunks;
     lastMessageId = await uploadSlackFile({
       client,
       channelId,
@@ -340,7 +341,7 @@ export async function sendMessageSlack(
       lastMessageId = response.ts ?? lastMessageId;
     }
   } else {
-    for (const chunk of resolvedChunks.length ? resolvedChunks : [""]) {
+    for (const chunk of chunks.length ? chunks : [""]) {
       const response = await postSlackMessageBestEffort({
         client,
         channelId,

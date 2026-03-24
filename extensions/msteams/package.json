@@ -26,8 +26,7 @@
     "install": {
       "npmSpec": "@remoteclaw/msteams",
       "localPath": "extensions/msteams",
-      "defaultChoice": "npm",
-      "minHostVersion": ">=2026.3.14"
+      "defaultChoice": "npm"
     },
     "releaseChecks": {
       "rootDependencyMirrorAllowlist": [

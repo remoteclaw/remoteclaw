@@ -1,23 +1,11 @@
 import fs from "node:fs";
-import path from "node:path";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveUserPath } from "../utils.js";
-import { resolveRuntimeServiceVersion } from "../version.js";
-import { loadBundleManifest } from "./bundle-manifest.js";
 import { normalizePluginsConfig, type NormalizedPluginsConfig } from "./config-state.js";
 import { discoverRemoteClawPlugins, type PluginCandidate } from "./discovery.js";
 import { loadPluginManifest, type PluginManifest } from "./manifest.js";
-import { checkMinHostVersion } from "./min-host-version.js";
-import { isPathInside, safeRealpathSync } from "./path-safety.js";
-import { resolvePluginCacheInputs } from "./roots.js";
-import type {
-  PluginBundleFormat,
-  PluginConfigUiHint,
-  PluginDiagnostic,
-  PluginFormat,
-  PluginKind,
-  PluginOrigin,
-} from "./types.js";
+import { safeRealpathSync } from "./path-safety.js";
+import type { PluginConfigUiHint, PluginDiagnostic, PluginKind, PluginOrigin } from "./types.js";
 
 type SeenIdEntry = {
   candidate: PluginCandidate;
@@ -94,18 +82,15 @@ function buildCacheKey(params: {
   workspaceDir?: string;
   plugins: NormalizedPluginsConfig;
 }): string {
-  const { roots, loadPaths } = resolvePluginCacheInputs({
-    workspaceDir: params.workspaceDir,
-    loadPaths: params.plugins.loadPaths,
-    env: params.env,
-  });
-  const workspaceKey = roots.workspace ?? "";
-  const configExtensionsRoot = roots.global;
-  const bundledRoot = roots.stock ?? "";
-  const runtimeServiceVersion = resolveRuntimeServiceVersion(params.env);
+  const workspaceKey = params.workspaceDir ? resolveUserPath(params.workspaceDir) : "";
   // The manifest registry only depends on where plugins are discovered from (workspace + load paths).
   // It does not depend on allow/deny/entries enable-state, so exclude those for higher cache hit rates.
-  return `${workspaceKey}::${configExtensionsRoot}::${bundledRoot}::${runtimeServiceVersion}::${JSON.stringify(loadPaths)}`;
+  const loadPaths = params.plugins.loadPaths
+    .map((p) => resolveUserPath(p))
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .toSorted();
+  return `${workspaceKey}::${JSON.stringify(loadPaths)}`;
 }
 
 function safeStatMtimeMs(filePath: string): number | null {
@@ -198,7 +183,6 @@ export function loadPluginManifestRegistry(params: {
   const records: PluginManifestRecord[] = [];
   const seenIds = new Map<string, SeenIdEntry>();
   const realpathCache = new Map<string, string>();
-  const currentHostVersion = resolveRuntimeServiceVersion(env);
 
   for (const candidate of candidates) {
     const rejectHardlinks = candidate.origin !== "bundled";
@@ -212,28 +196,6 @@ export function loadPluginManifestRegistry(params: {
       continue;
     }
     const manifest = manifestRes.manifest;
-    const minHostVersionCheck = checkMinHostVersion({
-      currentVersion: currentHostVersion,
-      minHostVersion: candidate.packageManifest?.install?.minHostVersion,
-    });
-    if (!minHostVersionCheck.ok) {
-      const packageManifestSource = path.join(
-        candidate.packageDir ?? candidate.rootDir,
-        "package.json",
-      );
-      diagnostics.push({
-        level: minHostVersionCheck.kind === "unknown_host_version" ? "warn" : "error",
-        pluginId: manifest.id,
-        source: packageManifestSource,
-        message:
-          minHostVersionCheck.kind === "invalid"
-            ? `plugin manifest invalid | ${minHostVersionCheck.error}`
-            : minHostVersionCheck.kind === "unknown_host_version"
-              ? `plugin requires OpenClaw >=${minHostVersionCheck.requirement.minimumLabel}, but this host version could not be determined; skipping load`
-              : `plugin requires OpenClaw >=${minHostVersionCheck.requirement.minimumLabel}, but this host is ${minHostVersionCheck.currentVersion}; skipping load`,
-      });
-      continue;
-    }
 
     if (!isCompatiblePluginIdHint(candidate.idHint, manifest.id)) {
       diagnostics.push({

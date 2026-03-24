@@ -126,23 +126,6 @@ export function applySetupAccountConfigPatch(params: {
   accountId: string;
   patch: Record<string, unknown>;
 }): RemoteClawConfig {
-  return patchScopedAccountConfig({
-    cfg: params.cfg,
-    channelKey: params.channelKey,
-    accountId: params.accountId,
-    patch: params.patch,
-  });
-}
-
-export function patchScopedAccountConfig(params: {
-  cfg: RemoteClawConfig;
-  channelKey: string;
-  accountId: string;
-  patch: Record<string, unknown>;
-  accountPatch?: Record<string, unknown>;
-  ensureChannelEnabled?: boolean;
-  ensureAccountEnabled?: boolean;
-}): RemoteClawConfig {
   const accountId = normalizeAccountId(params.accountId);
   const channels = params.cfg.channels as Record<string, unknown> | undefined;
   const channelConfig = channels?.[params.channelKey];
@@ -152,10 +135,6 @@ export function patchScopedAccountConfig(params: {
           accounts?: Record<string, Record<string, unknown>>;
         })
       : undefined;
-  const ensureChannelEnabled = params.ensureChannelEnabled ?? true;
-  const ensureAccountEnabled = params.ensureAccountEnabled ?? ensureChannelEnabled;
-  const patch = params.patch;
-  const accountPatch = params.accountPatch ?? patch;
   if (accountId === DEFAULT_ACCOUNT_ID) {
     return {
       ...params.cfg,
@@ -163,33 +142,27 @@ export function patchScopedAccountConfig(params: {
         ...params.cfg.channels,
         [params.channelKey]: {
           ...base,
-          ...(ensureChannelEnabled ? { enabled: true } : {}),
-          ...patch,
+          enabled: true,
+          ...params.patch,
         },
       },
     } as RemoteClawConfig;
   }
 
   const accounts = base?.accounts ?? {};
-  const existingAccount = accounts[accountId] ?? {};
   return {
     ...params.cfg,
     channels: {
       ...params.cfg.channels,
       [params.channelKey]: {
         ...base,
-        ...(ensureChannelEnabled ? { enabled: true } : {}),
+        enabled: true,
         accounts: {
           ...accounts,
           [accountId]: {
-            ...existingAccount,
-            ...(ensureAccountEnabled
-              ? {
-                  enabled:
-                    typeof existingAccount.enabled === "boolean" ? existingAccount.enabled : true,
-                }
-              : {}),
-            ...accountPatch,
+            ...accounts[accountId],
+            enabled: true,
+            ...params.patch,
           },
         },
       },

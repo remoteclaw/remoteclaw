@@ -23,7 +23,6 @@ export {
   setTopLevelChannelDmPolicyWithAllowFrom,
 } from "../channels/plugins/onboarding/helpers.js";
 export { PAIRING_APPROVED_MESSAGE } from "../channels/plugins/pairing-message.js";
-export { patchScopedAccountConfig } from "../channels/plugins/setup-helpers.js";
 export type { BaseProbeResult } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export { getChatChannelMeta } from "../channels/registry.js";
@@ -62,7 +61,6 @@ export type { PluginRuntime } from "../plugins/runtime/types.js";
 export type { RemoteClawPluginApi } from "../plugins/types.js";
 export { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 export type { RuntimeEnv } from "../runtime.js";
-export { createAccountStatusSink, runPassiveAccountLifecycle } from "./channel-lifecycle.js";
 export {
   readStoreAllowFromForDmPolicy,
   resolveEffectiveAllowFromLists,
@@ -73,11 +71,9 @@ export { createScopedPairingAccess } from "./pairing-access.js";
 export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
 
 export { dispatchInboundReplyWithBase } from "./inbound-reply-dispatch.js";
-export { ircSetupAdapter, ircSetupWizard } from "../../extensions/irc/api.js";
 export type { OutboundReplyPayload } from "./reply-payload.js";
 export {
   createNormalizedOutboundDeliverer,
-  deliverFormattedTextWithAttachments,
   formatTextWithAttachmentLinks,
   resolveOutboundMediaUrls,
 } from "./reply-payload.js";

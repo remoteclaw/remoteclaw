@@ -1,5 +1,4 @@
-import type { DiscordSendResult } from "../../extensions/discord/api.js";
-import { attachChannelToResult } from "./channel-send-result.js";
+import type { DiscordSendResult } from "../discord/send.types.js";
 
 type DiscordSendOptionInput = {
   replyToId?: string | null;
@@ -30,5 +29,5 @@ export function buildDiscordSendMediaOptions(input: DiscordSendMediaOptionInput)
 }
 
 export function tagDiscordChannelResult(result: DiscordSendResult) {
-  return attachChannelToResult("discord", result);
+  return { channel: "discord" as const, ...result };
 }

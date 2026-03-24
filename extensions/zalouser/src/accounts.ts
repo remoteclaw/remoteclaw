@@ -1,11 +1,5 @@
-import {
-  createAccountListHelpers,
-  DEFAULT_ACCOUNT_ID,
-  mergeAccountConfig,
-  normalizeAccountId,
-  resolveAccountEntry,
-} from "remoteclaw/plugin-sdk/account-resolution";
-import type { RemoteClawConfig } from "../runtime-api.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
+import { createAccountListHelpers, type RemoteClawConfig } from "remoteclaw/plugin-sdk/zalouser";
 import type { ResolvedZalouserAccount, ZalouserAccountConfig, ZalouserConfig } from "./types.js";
 import { checkZaloAuthenticated, getZaloUserInfo } from "./zalo-js.js";
 
@@ -30,16 +24,10 @@ function mergeZalouserAccountConfig(
   cfg: RemoteClawConfig,
   accountId: string,
 ): ZalouserAccountConfig {
-  const merged = mergeAccountConfig<ZalouserAccountConfig>({
-    channelConfig: cfg.channels?.zalouser as ZalouserAccountConfig | undefined,
-    accountConfig: resolveAccountConfig(cfg, accountId),
-    omitKeys: ["defaultAccount"],
-  });
-  return {
-    ...merged,
-    // Match Telegram's safe default: groups stay allowlisted unless explicitly opened.
-    groupPolicy: merged.groupPolicy ?? "allowlist",
-  };
+  const raw = (cfg.channels?.zalouser ?? {}) as ZalouserConfig;
+  const { accounts: _ignored, defaultAccount: _ignored2, ...base } = raw;
+  const account = resolveAccountConfig(cfg, accountId) ?? {};
+  return { ...base, ...account };
 }
 
 function resolveProfile(config: ZalouserAccountConfig, accountId: string): string {

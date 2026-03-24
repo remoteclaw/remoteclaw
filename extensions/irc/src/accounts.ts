@@ -1,11 +1,6 @@
-import {
-  createAccountListHelpers,
-  mergeAccountConfig,
-} from "remoteclaw/plugin-sdk/account-helpers";
+import { readFileSync } from "node:fs";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
-import { parseOptionalDelimitedEntries } from "remoteclaw/plugin-sdk/core";
-import { tryReadSecretFileSync } from "remoteclaw/plugin-sdk/infra-runtime";
-import { normalizeResolvedSecretInputString } from "remoteclaw/plugin-sdk/secret-input";
+import { createAccountListHelpers } from "remoteclaw/plugin-sdk/irc";
 import type { CoreConfig, IrcAccountConfig, IrcNickServConfig } from "./types.js";
 
 const TRUTHY_ENV = new Set(["true", "1", "yes", "on"]);
@@ -74,16 +69,19 @@ function resolveAccountConfig(cfg: CoreConfig, accountId: string): IrcAccountCon
 }
 
 function mergeIrcAccountConfig(cfg: CoreConfig, accountId: string): IrcAccountConfig {
+  const {
+    accounts: _ignored,
+    defaultAccount: _ignoredDefaultAccount,
+    ...base
+  } = (cfg.channels?.irc ?? {}) as IrcAccountConfig & {
+    accounts?: unknown;
+    defaultAccount?: unknown;
+  };
   const account = resolveAccountConfig(cfg, accountId) ?? {};
-  const merged: IrcAccountConfig = mergeAccountConfig<IrcAccountConfig>({
-    channelConfig: cfg.channels?.irc as IrcAccountConfig | undefined,
-    accountConfig: account,
-    omitKeys: ["defaultAccount"],
-  });
-  const baseNickServ = (cfg.channels?.irc as IrcAccountConfig | undefined)?.nickserv;
-  if (baseNickServ || account.nickserv) {
+  const merged: IrcAccountConfig = { ...base, ...account };
+  if (base.nickserv || account.nickserv) {
     merged.nickserv = {
-      ...baseNickServ,
+      ...base.nickserv,
       ...account.nickserv,
     };
   }

@@ -12,12 +12,6 @@
   "remoteclaw": {
     "extensions": [
       "./index.ts"
-    ],
-    "install": {
-      "minHostVersion": ">=2026.3.14"
-    },
-    "release": {
-      "publishToNpm": true
-    }
+    ]
   }
 }

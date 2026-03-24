@@ -5,7 +5,7 @@ import { TELEGRAM_COMMAND_NAME_PATTERN } from "../config/telegram-custom-command
 import type { TelegramAccountConfig } from "../config/types.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { registerTelegramNativeCommands } from "./bot-native-commands.js";
-import { createNativeCommandsHarness } from "./bot-native-commands.test-helpers.js";
+import { createNativeCommandTestParams } from "./bot-native-commands.test-helpers.js";
 
 const pluginCommandMocks = vi.hoisted(() => ({
   getPluginCommandSpecs: vi.fn(() => []),
@@ -52,7 +52,7 @@ describe("registerTelegramNativeCommands", () => {
   });
 
   const buildParams = (cfg: RemoteClawConfig, accountId = "default") =>
-    createNativeCommandsHarness({
+    createNativeCommandTestParams({
       bot: {
         api: {
           setMyCommands: vi.fn().mockResolvedValue(undefined),

@@ -94,8 +94,9 @@ async function fetchTalkConfig(
   return rpcReq<TalkConfigPayload>(ws, "talk.config", params ?? {});
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function expectElevenLabsTalkConfig(
-  talk: TalkConfigPayload["config"] extends { talk?: infer T } ? T : never,
+  talk: any,
   expected: {
     voiceId?: string;
     apiKey?: string | SecretRef;

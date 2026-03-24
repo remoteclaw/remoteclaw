@@ -14,10 +14,11 @@ import {
   resolveMainSessionKey,
   resolveStorePath,
   type SessionEntry,
-  type SessionStoreTarget,
   type SessionScope,
 } from "../config/sessions.js";
 import { openVerifiedFileSync } from "../infra/safe-open-sync.js";
+
+type SessionStoreTarget = { agentId: string; storePath: string };
 import {
   normalizeAgentId,
   normalizeMainKey,

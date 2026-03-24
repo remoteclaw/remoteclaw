@@ -1,4 +1,3 @@
-import type { RemoteClawConfig } from "../../../config/config.js";
 import {
   resolvePayloadMediaUrls,
   sendPayloadMediaSequenceOrFallback,
@@ -12,9 +11,7 @@ import {
 } from "remoteclaw/plugin-sdk/channel-send-result";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import type { OutboundIdentity } from "remoteclaw/plugin-sdk/infra-runtime";
-import type { DiscordComponentMessageSpec } from "./components.js";
-import { getThreadBindingManager, type ThreadBindingRecord } from "./monitor/thread-bindings.js";
-import { normalizeDiscordOutboundTarget } from "./normalize.js";
+import type { RemoteClawConfig } from "../../../config/config.js";
 import {
   sendMessageDiscord,
   sendPollDiscord,
@@ -23,7 +20,10 @@ import {
 import type { OutboundIdentity } from "../../../infra/outbound/identity.js";
 import { normalizeDiscordOutboundTarget } from "../normalize/discord.js";
 import type { ChannelOutboundAdapter } from "../types.js";
+import type { DiscordComponentMessageSpec } from "./components.js";
 import { sendTextMediaPayload } from "./direct-text-media.js";
+import { getThreadBindingManager, type ThreadBindingRecord } from "./monitor/thread-bindings.js";
+import { normalizeDiscordOutboundTarget } from "./normalize.js";
 
 function resolveDiscordOutboundTarget(params: {
   to: string;

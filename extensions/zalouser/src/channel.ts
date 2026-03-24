@@ -1,20 +1,3 @@
-import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
-import { createPairingPrefixStripper } from "remoteclaw/plugin-sdk/channel-pairing";
-import {
-  buildAccountScopedDmSecurityPolicy,
-  createAccountStatusSink,
-  mapAllowFromEntries,
-} from "remoteclaw/plugin-sdk/compat";
-import type {
-  ChannelAccountSnapshot,
-  ChannelDirectoryEntry,
-  ChannelGroupContext,
-  ChannelMessageActionAdapter,
-  ChannelPlugin,
-  RemoteClawConfig,
-  GroupToolPolicyConfig,
-} from "../runtime-api.js";
 import {
   buildBaseAccountStatusSnapshot,
   buildChannelConfigSchema,
@@ -35,6 +18,23 @@ import {
   type RemoteClawConfig,
   type GroupToolPolicyConfig,
 } from "remoteclaw/plugin-sdk";
+import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
+import { createPairingPrefixStripper } from "remoteclaw/plugin-sdk/channel-pairing";
+import {
+  buildAccountScopedDmSecurityPolicy,
+  createAccountStatusSink,
+  mapAllowFromEntries,
+} from "remoteclaw/plugin-sdk/compat";
+import type {
+  ChannelAccountSnapshot,
+  ChannelDirectoryEntry,
+  ChannelGroupContext,
+  ChannelMessageActionAdapter,
+  ChannelPlugin,
+  RemoteClawConfig,
+  GroupToolPolicyConfig,
+} from "../runtime-api.js";
 import {
   listZalouserAccountIds,
   resolveDefaultZalouserAccountId,

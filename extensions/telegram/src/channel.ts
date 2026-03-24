@@ -17,7 +17,6 @@ import {
   type RoutePeer,
 } from "remoteclaw/plugin-sdk/routing";
 import { createDefaultChannelRuntimeState } from "remoteclaw/plugin-sdk/status-helpers";
-import { parseTelegramTopicConversation } from "../runtime-api.js";
 import {
   applyAccountNameToChannelSection,
   buildChannelConfigSchema,
@@ -53,6 +52,7 @@ import {
   type ResolvedTelegramAccount,
   type TelegramProbe,
 } from "remoteclaw/plugin-sdk/telegram";
+import { parseTelegramTopicConversation } from "../runtime-api.js";
 import { getTelegramRuntime } from "./runtime.js";
 import { sendTypingTelegram } from "./send.js";
 import { telegramSetupAdapter } from "./setup-core.js";

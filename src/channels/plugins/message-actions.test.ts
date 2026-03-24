@@ -95,9 +95,9 @@ describe("message action capability checks", () => {
         "cards",
       ),
     ).toBe(true);
-    expect(channelSupportsMessageCapabilityForChannel({ cfg: {} as RemoteClawConfig }, "cards")).toBe(
-      false,
-    );
+    expect(
+      channelSupportsMessageCapabilityForChannel({ cfg: {} as RemoteClawConfig }, "cards"),
+    ).toBe(false);
   });
 
   it("normalizes channel aliases for per-channel capability checks", () => {
@@ -149,7 +149,11 @@ describe("message action capability checks", () => {
       createTestRegistry([{ pluginId: "discord", source: "test", plugin: unifiedPlugin }]),
     );
 
-    expect(listChannelMessageActions({} as RemoteClawConfig)).toEqual(["send", "broadcast", "react"]);
+    expect(listChannelMessageActions({} as RemoteClawConfig)).toEqual([
+      "send",
+      "broadcast",
+      "react",
+    ]);
     expect(listChannelMessageCapabilities({} as RemoteClawConfig)).toEqual(["interactive"]);
     expect(
       resolveChannelMessageToolSchemaProperties({

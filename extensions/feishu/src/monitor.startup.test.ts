@@ -71,6 +71,12 @@ function buildMultiAccountWebsocketConfig(accountIds: string[]): ClawdbotConfig 
   } as ClawdbotConfig;
 }
 
+async function waitForStartedAccount(started: string[], accountId: string) {
+  for (let i = 0; i < 10 && !started.includes(accountId); i += 1) {
+    await Promise.resolve();
+  }
+}
+
 afterEach(() => {
   stopFeishuMonitor();
 });
@@ -135,10 +141,7 @@ describe("Feishu monitor startup preflight", () => {
     });
 
     try {
-      for (let i = 0; i < 10 && !started.includes("beta"); i += 1) {
-        await Promise.resolve();
-      }
-
+      await waitForStartedAccount(started, "beta");
       expect(started).toEqual(["alpha", "beta"]);
       expect(started.filter((accountId) => accountId === "alpha")).toHaveLength(1);
     } finally {
@@ -172,10 +175,7 @@ describe("Feishu monitor startup preflight", () => {
     });
 
     try {
-      for (let i = 0; i < 10 && !started.includes("beta"); i += 1) {
-        await Promise.resolve();
-      }
-
+      await waitForStartedAccount(started, "beta");
       expect(started).toEqual(["alpha", "beta"]);
       expect(runtime.error).toHaveBeenCalledWith(
         expect.stringContaining("bot info probe timed out"),

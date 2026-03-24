@@ -89,7 +89,7 @@ function resolveSlackSendContext(params: {
 }
 
 const slackConfigAccessors = createScopedAccountConfigAccessors({
-  resolveAccount: ({ cfg, accountId }) => resolveSlackAccount({ cfg, accountId }),
+  resolveAccount: resolveSlackAccount,
   resolveAllowFrom: (account: ResolvedSlackAccount) => account.dm?.allowFrom,
   formatAllowFrom: (allowFrom) => formatAllowFromLowercase({ allowFrom }),
   resolveDefaultTo: (account: ResolvedSlackAccount) => account.config.defaultTo,
@@ -225,6 +225,7 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
   },
   messaging: {
     normalizeTarget: normalizeSlackMessagingTarget,
+    resolveSessionTarget: ({ id }) => normalizeSlackMessagingTarget(`channel:${id}`),
     targetResolver: {
       looksLikeId: looksLikeSlackTargetId,
       hint: "<channelId|user:ID|channel:ID>",

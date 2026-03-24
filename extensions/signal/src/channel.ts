@@ -50,7 +50,7 @@ const signalMessageActions: ChannelMessageActionAdapter = {
 const meta = getChatChannelMeta("signal");
 
 const signalConfigAccessors = createScopedAccountConfigAccessors({
-  resolveAccount: ({ cfg, accountId }) => resolveSignalAccount({ cfg, accountId }),
+  resolveAccount: resolveSignalAccount,
   resolveAllowFrom: (account: ResolvedSignalAccount) => account.config.allowFrom,
   formatAllowFrom: (allowFrom) =>
     allowFrom

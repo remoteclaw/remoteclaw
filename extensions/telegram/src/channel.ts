@@ -80,6 +80,8 @@ function formatDuplicateTelegramTokenReason(params: {
 const telegramMessageActions: ChannelMessageActionAdapter = {
   listActions: (ctx) =>
     getTelegramRuntime().channel.telegram.messageActions?.listActions?.(ctx) ?? [],
+  getCapabilities: (ctx) =>
+    getTelegramRuntime().channel.telegram.messageActions?.getCapabilities?.(ctx) ?? [],
   extractToolSend: (ctx) =>
     getTelegramRuntime().channel.telegram.messageActions?.extractToolSend?.(ctx) ?? null,
   handleAction: async (ctx) => {
@@ -92,7 +94,7 @@ const telegramMessageActions: ChannelMessageActionAdapter = {
 };
 
 const telegramConfigAccessors = createScopedAccountConfigAccessors({
-  resolveAccount: ({ cfg, accountId }) => resolveTelegramAccount({ cfg, accountId }),
+  resolveAccount: resolveTelegramAccount,
   resolveAllowFrom: (account: ResolvedTelegramAccount) => account.config.allowFrom,
   formatAllowFrom: (allowFrom) =>
     formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(telegram|tg):/i }),

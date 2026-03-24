@@ -34,3 +34,12 @@ export type {
   TailscaleStatusCommandResult,
   TailscaleStatusCommandRunner,
 } from "../shared/tailscale-status.js";
+export {
+  buildAgentSessionKey,
+  type RoutePeer,
+  type RoutePeerKind,
+} from "../routing/resolve-route.js";
+export { buildOutboundBaseSessionKey } from "../infra/outbound/base-session-key.js";
+export { normalizeOutboundThreadId } from "../infra/outbound/thread-id.js";
+export { resolveThreadSessionKeys } from "../routing/session-key.js";
+export { createLoggerBackedRuntime } from "./runtime.js";

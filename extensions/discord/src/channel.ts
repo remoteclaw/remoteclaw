@@ -44,6 +44,8 @@ const meta = getChatChannelMeta("discord");
 const discordMessageActions: ChannelMessageActionAdapter = {
   listActions: (ctx) =>
     getDiscordRuntime().channel.discord.messageActions?.listActions?.(ctx) ?? [],
+  getCapabilities: (ctx) =>
+    getDiscordRuntime().channel.discord.messageActions?.getCapabilities?.(ctx) ?? [],
   extractToolSend: (ctx) =>
     getDiscordRuntime().channel.discord.messageActions?.extractToolSend?.(ctx) ?? null,
   handleAction: async (ctx) => {
@@ -56,7 +58,7 @@ const discordMessageActions: ChannelMessageActionAdapter = {
 };
 
 const discordConfigAccessors = createScopedAccountConfigAccessors({
-  resolveAccount: ({ cfg, accountId }) => resolveDiscordAccount({ cfg, accountId }),
+  resolveAccount: resolveDiscordAccount,
   resolveAllowFrom: (account: ResolvedDiscordAccount) => account.config.dm?.allowFrom,
   formatAllowFrom: (allowFrom) => formatAllowFromLowercase({ allowFrom }),
   resolveDefaultTo: (account: ResolvedDiscordAccount) => account.config.defaultTo,
@@ -130,7 +132,11 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
         policy: account.config.dm?.policy,
         allowFrom: account.config.dm?.allowFrom ?? [],
         allowFromPathSuffix: "dm.",
-        normalizeEntry: (raw) => raw.replace(/^(discord|user):/i, "").replace(/^<@!?(\d+)>$/, "$1"),
+        normalizeEntry: (raw) =>
+          raw
+            .trim()
+            .replace(/^(discord|user):/i, "")
+            .replace(/^<@!?(\d+)>$/, "$1"),
       });
     },
     collectWarnings: ({ account, cfg }) => {
@@ -181,6 +187,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
   },
   messaging: {
     normalizeTarget: normalizeDiscordMessagingTarget,
+    resolveSessionTarget: ({ id }) => normalizeDiscordMessagingTarget(`channel:${id}`),
     targetResolver: {
       looksLikeId: looksLikeDiscordTargetId,
       hint: "<channelId|user:ID|channel:ID>",

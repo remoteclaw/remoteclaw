@@ -286,6 +286,11 @@ export type ChannelThreadingToolContext = {
 
 export type ChannelMessagingAdapter = {
   normalizeTarget?: (raw: string) => string | undefined;
+  resolveSessionTarget?: (params: {
+    kind: "group" | "channel";
+    id: string;
+    threadId?: string | null;
+  }) => string | undefined;
   targetResolver?: {
     looksLikeId?: (raw: string, normalized?: string) => boolean;
     hint?: string;
@@ -353,6 +358,7 @@ export type ChannelMessageActionAdapter = {
    * create polls should include `"poll"` here when enabled.
    */
   listActions?: (params: { cfg: RemoteClawConfig }) => ChannelMessageActionName[];
+  getCapabilities?: (params: { cfg: RemoteClawConfig }) => string[];
   supportsAction?: (params: { action: ChannelMessageActionName }) => boolean;
   supportsButtons?: (params: { cfg: RemoteClawConfig }) => boolean;
   supportsCards?: (params: { cfg: RemoteClawConfig }) => boolean;

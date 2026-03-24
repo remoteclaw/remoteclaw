@@ -1,7 +1,7 @@
 import {
   buildAccountScopedDmSecurityPolicy,
   collectAllowlistProviderRestrictSendersWarnings,
-} from "remoteclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk";
 import {
   applyAccountNameToChannelSection,
   buildChannelConfigSchema,
@@ -29,7 +29,6 @@ import {
   type ChannelPlugin,
   type ResolvedIMessageAccount,
 } from "remoteclaw/plugin-sdk/imessage";
-import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import { getIMessageRuntime } from "./runtime.js";
 
 const meta = getChatChannelMeta("imessage");
@@ -265,11 +264,17 @@ export const imessagePlugin: ChannelPlugin<ResolvedIMessageAccount> = {
       dbPath: null,
     },
     collectStatusIssues: (accounts) => collectStatusIssuesFromLastError("imessage", accounts),
-    buildChannelSummary: ({ snapshot }) =>
-      buildPassiveProbedChannelStatusSummary(snapshot, {
-        cliPath: snapshot.cliPath ?? null,
-        dbPath: snapshot.dbPath ?? null,
-      }),
+    buildChannelSummary: ({ snapshot }) => ({
+      configured: snapshot.configured ?? false,
+      running: snapshot.running ?? false,
+      lastStartAt: snapshot.lastStartAt ?? null,
+      lastStopAt: snapshot.lastStopAt ?? null,
+      lastError: snapshot.lastError ?? null,
+      cliPath: snapshot.cliPath ?? null,
+      dbPath: snapshot.dbPath ?? null,
+      probe: snapshot.probe,
+      lastProbeAt: snapshot.lastProbeAt ?? null,
+    }),
     probeAccount: async ({ timeoutMs }) =>
       getIMessageRuntime().channel.imessage.probeIMessage(timeoutMs),
     buildAccountSnapshot: ({ account, runtime, probe }) => ({

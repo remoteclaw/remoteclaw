@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { registerTelegramNativeCommands } from "./bot-native-commands.js";
-import { createNativeCommandsHarness } from "./bot-native-commands.test-helpers.js";
+import { createNativeCommandTestParams } from "./bot-native-commands.test-helpers.js";
 
 // All mocks scoped to this file only — does not affect bot-native-commands.test.ts
 
@@ -110,7 +110,7 @@ function registerAndResolveStatusHandler(params: {
   const commandHandlers = new Map<string, TelegramCommandHandler>();
   const sendMessage = vi.fn().mockResolvedValue(undefined);
   registerTelegramNativeCommands({
-    ...createNativeCommandsHarness({
+    ...createNativeCommandTestParams({
       bot: {
         api: {
           setMyCommands: vi.fn().mockResolvedValue(undefined),
@@ -145,7 +145,7 @@ function registerAndResolveCommandHandler(params: {
   const commandHandlers = new Map<string, TelegramCommandHandler>();
   const sendMessage = vi.fn().mockResolvedValue(undefined);
   registerTelegramNativeCommands({
-    ...createNativeCommandsHarness({
+    ...createNativeCommandTestParams({
       bot: {
         api: {
           setMyCommands: vi.fn().mockResolvedValue(undefined),

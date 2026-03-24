@@ -87,7 +87,7 @@ describe("telegramOutbound.sendPayload", () => {
           },
         },
       },
-      deps: { telegram: sendTelegram },
+      deps: { sendTelegram },
     });
 
     expect(sendTelegram).toHaveBeenCalledTimes(1);
@@ -121,7 +121,7 @@ describe("telegramOutbound.sendPayload", () => {
           },
         },
       },
-      deps: { telegram: sendTelegram },
+      deps: { sendTelegram },
     });
 
     expect(sendTelegram).toHaveBeenCalledTimes(2);

@@ -105,7 +105,7 @@ async function processTwitchMessage(params: {
     channel: "twitch",
     accountId,
   });
-  const { onModelSelected, ...replyPipeline } = createChannelReplyPipeline({
+  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
     cfg,
     agentId: route.agentId,
     channel: "twitch",

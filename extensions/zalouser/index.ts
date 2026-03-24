@@ -12,9 +12,6 @@ const plugin = {
   register(api: RemoteClawPluginApi) {
     setZalouserRuntime(api.runtime);
     api.registerChannel({ plugin: zalouserPlugin, dock: zalouserDock });
-    if (api.registrationMode !== "full") {
-      return;
-    }
 
     api.registerTool({
       name: "zalouser",

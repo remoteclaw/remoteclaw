@@ -8,7 +8,6 @@ import {
   sendPollDiscord,
   sendWebhookMessageDiscord,
 } from "../../../discord/send.js";
-import { resolveOutboundSendDep } from "../../../infra/outbound/deliver.js";
 import type { OutboundIdentity } from "../../../infra/outbound/identity.js";
 import { normalizeDiscordOutboundTarget } from "../normalize/discord.js";
 import type { ChannelOutboundAdapter } from "../types.js";
@@ -101,8 +100,7 @@ export const discordOutbound: ChannelOutboundAdapter = {
         return { channel: "discord", ...webhookResult };
       }
     }
-    const send =
-      resolveOutboundSendDep<typeof sendMessageDiscord>(deps, "discord") ?? sendMessageDiscord;
+    const send = deps?.sendDiscord ?? sendMessageDiscord;
     const target = resolveDiscordOutboundTarget({ to, threadId });
     const result = await send(target, text, {
       verbose: false,
@@ -125,8 +123,7 @@ export const discordOutbound: ChannelOutboundAdapter = {
     threadId,
     silent,
   }) => {
-    const send =
-      resolveOutboundSendDep<typeof sendMessageDiscord>(deps, "discord") ?? sendMessageDiscord;
+    const send = deps?.sendDiscord ?? sendMessageDiscord;
     const target = resolveDiscordOutboundTarget({ to, threadId });
     const result = await send(target, text, {
       verbose: false,

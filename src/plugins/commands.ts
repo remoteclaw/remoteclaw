@@ -200,11 +200,7 @@ export function matchPluginCommand(
   const args = spaceIndex === -1 ? undefined : trimmed.slice(spaceIndex + 1).trim();
 
   const key = commandName.toLowerCase();
-  const command =
-    pluginCommands.get(key) ??
-    Array.from(pluginCommands.values()).find((candidate) =>
-      listPluginInvocationNames(candidate).includes(key),
-    );
+  const command = pluginCommands.get(key);
 
   if (!command) {
     return null;
@@ -340,24 +336,6 @@ function resolvePluginNativeName(
     return defaultOverride.trim();
   }
   return command.name;
-}
-
-function listPluginInvocationNames(command: OpenClawPluginCommandDefinition): string[] {
-  const names = new Set<string>();
-  const push = (value: string | undefined) => {
-    const normalized = value?.trim().toLowerCase();
-    if (!normalized) {
-      return;
-    }
-    names.add(`/${normalized}`);
-  };
-
-  push(command.name);
-  push(command.nativeNames?.default);
-  push(command.nativeNames?.telegram);
-  push(command.nativeNames?.discord);
-
-  return [...names];
 }
 
 /**

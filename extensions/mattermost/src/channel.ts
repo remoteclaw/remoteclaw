@@ -73,11 +73,11 @@ const mattermostMessageActions: ChannelMessageActionAdapter = {
   supportsAction: ({ action }) => {
     return action === "send" || action === "react";
   },
-  getCapabilities: ({ cfg }) => {
+  supportsButtons: ({ cfg }) => {
     const accounts = listMattermostAccountIds(cfg)
       .map((id) => resolveMattermostAccount({ cfg, accountId: id }))
       .filter((a) => a.enabled && a.botToken?.trim() && a.baseUrl?.trim());
-    return accounts.length > 0 ? (["buttons"] as const) : [];
+    return accounts.length > 0;
   },
   handleAction: async ({ action, params, cfg, accountId }) => {
     if (action === "react") {

@@ -1,4 +1,4 @@
-import { resolveOutboundSendDep, type OutboundSendDeps } from "../../../infra/outbound/deliver.js";
+import type { OutboundSendDeps } from "../../../infra/outbound/deliver.js";
 import { sendMessageSignal } from "../../../signal/send.js";
 import {
   createScopedChannelMediaMaxBytesResolver,
@@ -6,7 +6,7 @@ import {
 } from "./direct-text-media.js";
 
 function resolveSignalSender(deps: OutboundSendDeps | undefined) {
-  return resolveOutboundSendDep<typeof sendMessageSignal>(deps, "signal") ?? sendMessageSignal;
+  return deps?.sendSignal ?? sendMessageSignal;
 }
 
 export const signalOutbound = createDirectTextMediaOutbound({

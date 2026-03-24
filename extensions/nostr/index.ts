@@ -14,9 +14,6 @@ const plugin = {
   register(api: RemoteClawPluginApi) {
     setNostrRuntime(api.runtime);
     api.registerChannel({ plugin: nostrPlugin });
-    if (api.registrationMode !== "full") {
-      return;
-    }
 
     // Register HTTP handler for profile management
     const httpHandler = createNostrProfileHttpHandler({

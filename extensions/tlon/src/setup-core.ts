@@ -4,7 +4,7 @@ import {
 } from "../../../src/channels/plugins/setup-helpers.js";
 import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
 import type { ChannelSetupInput } from "../../../src/channels/plugins/types.core.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
 import { buildTlonAccountFields } from "./account-fields.js";
 import { resolveTlonAccount } from "./types.js";
@@ -23,10 +23,10 @@ export type TlonSetupInput = ChannelSetupInput & {
 };
 
 export function applyTlonSetupConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId: string;
   input: TlonSetupInput;
-}): OpenClawConfig {
+}): RemoteClawConfig {
   const { cfg, accountId, input } = params;
   const useDefault = accountId === DEFAULT_ACCOUNT_ID;
   const namedConfig = applyAccountNameToChannelSection({

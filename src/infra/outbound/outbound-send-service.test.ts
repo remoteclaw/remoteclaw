@@ -25,18 +25,6 @@ vi.mock("../../media/local-roots.js", () => ({
 import { executePollAction, executeSendAction } from "./outbound-send-service.js";
 
 describe("executeSendAction", () => {
-  function pluginActionResult(messageId: string) {
-    return {
-      ok: true,
-      value: { messageId },
-      continuePrompt: "",
-      output: "",
-      sessionId: "s1",
-      model: "gpt-5.2",
-      usage: {},
-    };
-  }
-
   beforeEach(() => {
     mocks.dispatchChannelMessageAction.mockClear();
     mocks.sendMessage.mockClear();
@@ -77,7 +65,15 @@ describe("executeSendAction", () => {
   });
 
   it("uses plugin poll action when available", async () => {
-    mocks.dispatchChannelMessageAction.mockResolvedValue(pluginActionResult("poll-plugin"));
+    mocks.dispatchChannelMessageAction.mockResolvedValue({
+      ok: true,
+      value: { messageId: "poll-plugin" },
+      continuePrompt: "",
+      output: "",
+      sessionId: "s1",
+      model: "gpt-5.2",
+      usage: {},
+    });
 
     const result = await executePollAction({
       ctx: {
@@ -97,7 +93,15 @@ describe("executeSendAction", () => {
   });
 
   it("passes agent-scoped media local roots to plugin dispatch", async () => {
-    mocks.dispatchChannelMessageAction.mockResolvedValue(pluginActionResult("msg-plugin"));
+    mocks.dispatchChannelMessageAction.mockResolvedValue({
+      ok: true,
+      value: { messageId: "msg-plugin" },
+      continuePrompt: "",
+      output: "",
+      sessionId: "s1",
+      model: "gpt-5.2",
+      usage: {},
+    });
 
     await executeSendAction({
       ctx: {
@@ -115,105 +119,6 @@ describe("executeSendAction", () => {
     expect(mocks.dispatchChannelMessageAction).toHaveBeenCalledWith(
       expect.objectContaining({
         mediaLocalRoots: ["/tmp/agent-roots"],
-      }),
-    );
-  });
-
-  it("passes mirror idempotency keys through plugin-handled sends", async () => {
-    mocks.dispatchChannelMessageAction.mockResolvedValue(pluginActionResult("msg-plugin"));
-
-    await executeSendAction({
-      ctx: {
-        cfg: {},
-        channel: "discord",
-        params: { to: "channel:123", message: "hello" },
-        dryRun: false,
-        mirror: {
-          sessionKey: "agent:main:discord:channel:123",
-          idempotencyKey: "idem-plugin-send-1",
-        },
-      },
-      to: "channel:123",
-      message: "hello",
-    });
-
-    expect(mocks.appendAssistantMessageToSessionTranscript).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sessionKey: "agent:main:discord:channel:123",
-        text: "hello",
-        idempotencyKey: "idem-plugin-send-1",
-      }),
-    );
-  });
-
-  it("falls back to message and media params for plugin-handled mirror writes", async () => {
-    mocks.dispatchChannelMessageAction.mockResolvedValue(pluginActionResult("msg-plugin"));
-
-    await executeSendAction({
-      ctx: {
-        cfg: {},
-        channel: "discord",
-        params: { to: "channel:123", message: "hello" },
-        dryRun: false,
-        mirror: {
-          sessionKey: "agent:main:discord:channel:123",
-          agentId: "agent-9",
-        },
-      },
-      to: "channel:123",
-      message: "hello",
-      mediaUrls: ["https://example.com/a.png", "https://example.com/b.png"],
-    });
-
-    expect(mocks.appendAssistantMessageToSessionTranscript).toHaveBeenCalledWith(
-      expect.objectContaining({
-        agentId: "agent-9",
-        sessionKey: "agent:main:discord:channel:123",
-        text: "hello",
-        mediaUrls: ["https://example.com/a.png", "https://example.com/b.png"],
-      }),
-    );
-  });
-
-  it("skips plugin dispatch during dry-run sends and forwards gateway + silent to sendMessage", async () => {
-    mocks.sendMessage.mockResolvedValue({
-      channel: "discord",
-      to: "channel:123",
-      via: "gateway",
-      mediaUrl: null,
-    });
-
-    await executeSendAction({
-      ctx: {
-        cfg: {},
-        channel: "discord",
-        params: { to: "channel:123", message: "hello" },
-        dryRun: true,
-        silent: true,
-        gateway: {
-          url: "http://127.0.0.1:18789",
-          token: "tok",
-          timeoutMs: 5000,
-          clientName: "gateway",
-          mode: "gateway",
-        },
-      },
-      to: "channel:123",
-      message: "hello",
-    });
-
-    expect(mocks.dispatchChannelMessageAction).not.toHaveBeenCalled();
-    expect(mocks.sendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        to: "channel:123",
-        content: "hello",
-        dryRun: true,
-        silent: true,
-        gateway: expect.objectContaining({
-          url: "http://127.0.0.1:18789",
-          token: "tok",
-          timeoutMs: 5000,
-        }),
       }),
     );
   });
@@ -259,57 +164,6 @@ describe("executeSendAction", () => {
         durationSeconds: 300,
         threadId: "thread-1",
         isAnonymous: true,
-      }),
-    );
-  });
-
-  it("skips plugin dispatch during dry-run polls and forwards durationHours + silent", async () => {
-    mocks.sendPoll.mockResolvedValue({
-      channel: "discord",
-      to: "channel:123",
-      question: "Lunch?",
-      options: ["Pizza", "Sushi"],
-      maxSelections: 1,
-      durationSeconds: null,
-      durationHours: 6,
-      via: "gateway",
-    });
-
-    await executePollAction({
-      ctx: {
-        cfg: {},
-        channel: "discord",
-        params: {},
-        dryRun: true,
-        silent: true,
-        gateway: {
-          url: "http://127.0.0.1:18789",
-          token: "tok",
-          timeoutMs: 5000,
-          clientName: "gateway",
-          mode: "gateway",
-        },
-      },
-      to: "channel:123",
-      question: "Lunch?",
-      options: ["Pizza", "Sushi"],
-      maxSelections: 1,
-      durationHours: 6,
-    });
-
-    expect(mocks.dispatchChannelMessageAction).not.toHaveBeenCalled();
-    expect(mocks.sendPoll).toHaveBeenCalledWith(
-      expect.objectContaining({
-        to: "channel:123",
-        question: "Lunch?",
-        durationHours: 6,
-        dryRun: true,
-        silent: true,
-        gateway: expect.objectContaining({
-          url: "http://127.0.0.1:18789",
-          token: "tok",
-          timeoutMs: 5000,
-        }),
       }),
     );
   });

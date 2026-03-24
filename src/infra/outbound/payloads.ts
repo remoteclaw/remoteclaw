@@ -9,6 +9,12 @@ export type NormalizedOutboundPayload = {
   text: string;
   mediaUrls: string[];
   audioAsVoice?: boolean;
+  interactive?: {
+    blocks: Array<{
+      type: string;
+      buttons?: Array<{ label: string; value: string; style?: string }>;
+    }>;
+  };
   channelData?: Record<string, unknown>;
 };
 

@@ -2,7 +2,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ReplyPayload } from "../../auto-reply/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
+import { typedCases } from "../../test-utils/typed-cases.js";
 import {
   ackDelivery,
   computeBackoffMs,
@@ -30,6 +32,11 @@ import {
   enforceCrossContextPolicy,
 } from "./outbound-policy.js";
 import { resolveOutboundSessionRoute } from "./outbound-session.js";
+import {
+  formatOutboundPayloadLog,
+  normalizeOutboundPayloads,
+  normalizeOutboundPayloadsForJson,
+} from "./payloads.js";
 import { runResolveOutboundTargetCoreTests } from "./targets.shared-test.js";
 
 describe("delivery-queue", () => {

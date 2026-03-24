@@ -33,7 +33,7 @@ describe("rejectPendingPairingRequest", () => {
         idKey: "accountId",
         loadState: async () => state,
         persistState,
-        getId: (pending) => pending.accountId,
+        getId: (pending: Record<string, unknown>) => pending.accountId as string,
       }),
     ).resolves.toEqual({
       requestId: "reject",

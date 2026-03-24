@@ -1,9 +1,8 @@
 import { expect, it } from "vitest";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { RemoteClawConfig } from "../../../config/config.js";
 import type {
   ChannelAccountSnapshot,
   ChannelAccountState,
-  ChannelMessageCapability,
   ChannelSetupInput,
 } from "../types.core.js";
 import type { ChannelPlugin } from "../types.js";
@@ -37,9 +36,9 @@ export function installChannelPluginContractSuite(params: {
 
 type ChannelActionsContractCase = {
   name: string;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   expectedActions: readonly ChannelMessageActionName[];
-  expectedCapabilities?: readonly ChannelMessageCapability[];
+  expectedCapabilities?: readonly string[];
   beforeTest?: () => void;
 };
 
@@ -58,7 +57,13 @@ export function installChannelActionsContractSuite(params: {
       testCase.beforeTest?.();
 
       const actions = params.plugin.actions?.listActions?.({ cfg: testCase.cfg }) ?? [];
-      const capabilities = params.plugin.actions?.getCapabilities?.({ cfg: testCase.cfg }) ?? [];
+      const capabilities: string[] = [];
+      if (params.plugin.actions?.supportsButtons?.({ cfg: testCase.cfg })) {
+        capabilities.push("buttons");
+      }
+      if (params.plugin.actions?.supportsCards?.({ cfg: testCase.cfg })) {
+        capabilities.push("cards");
+      }
 
       expect(actions).toEqual([...new Set(actions)]);
       expect(capabilities).toEqual([...new Set(capabilities)]);
@@ -84,14 +89,14 @@ export function installChannelActionsContractSuite(params: {
 
 type ChannelSetupContractCase<ResolvedAccount> = {
   name: string;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId?: string;
   input: ChannelSetupInput;
   expectedAccountId?: string;
   expectedValidation?: string | null;
   beforeTest?: () => void;
-  assertPatchedConfig?: (cfg: OpenClawConfig) => void;
-  assertResolvedAccount?: (account: ResolvedAccount, cfg: OpenClawConfig) => void;
+  assertPatchedConfig?: (cfg: RemoteClawConfig) => void;
+  assertResolvedAccount?: (account: ResolvedAccount, cfg: RemoteClawConfig) => void;
 };
 
 export function installChannelSetupContractSuite<ResolvedAccount>(params: {
@@ -142,7 +147,7 @@ export function installChannelSetupContractSuite<ResolvedAccount>(params: {
 
 type ChannelStatusContractCase<Probe> = {
   name: string;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId?: string;
   runtime?: ChannelAccountSnapshot;
   probe?: Probe;

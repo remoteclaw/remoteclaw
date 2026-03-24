@@ -15,14 +15,14 @@ import { nextcloudTalkPlugin } from "../../../../extensions/nextcloud-talk/src/c
 import { nostrPlugin } from "../../../../extensions/nostr/src/channel.js";
 import { signalPlugin } from "../../../../extensions/signal/src/channel.js";
 import { slackPlugin } from "../../../../extensions/slack/src/channel.js";
-import { synologyChatPlugin } from "../../../../extensions/synology-chat/src/channel.js";
+import { createSynologyChatPlugin } from "../../../../extensions/synology-chat/src/channel.js";
 import { telegramPlugin } from "../../../../extensions/telegram/src/channel.js";
 import { setTelegramRuntime } from "../../../../extensions/telegram/src/runtime.js";
 import { tlonPlugin } from "../../../../extensions/tlon/src/channel.js";
 import { whatsappPlugin } from "../../../../extensions/whatsapp/src/channel.js";
 import { zaloPlugin } from "../../../../extensions/zalo/src/channel.js";
 import { zalouserPlugin } from "../../../../extensions/zalouser/src/channel.js";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { RemoteClawConfig } from "../../../config/config.js";
 import {
   resolveDefaultLineAccountId,
   resolveLineAccount,
@@ -41,7 +41,7 @@ type ActionsContractEntry = {
   unsupportedAction?: string;
   cases: Array<{
     name: string;
-    cfg: OpenClawConfig;
+    cfg: RemoteClawConfig;
     expectedActions: string[];
     expectedCapabilities?: string[];
     beforeTest?: () => void;
@@ -53,14 +53,14 @@ type SetupContractEntry = {
   plugin: Pick<ChannelPlugin, "id" | "config" | "setup">;
   cases: Array<{
     name: string;
-    cfg: OpenClawConfig;
+    cfg: RemoteClawConfig;
     accountId?: string;
     input: Record<string, unknown>;
     expectedAccountId?: string;
     expectedValidation?: string | null;
     beforeTest?: () => void;
-    assertPatchedConfig?: (cfg: OpenClawConfig) => void;
-    assertResolvedAccount?: (account: unknown, cfg: OpenClawConfig) => void;
+    assertPatchedConfig?: (cfg: RemoteClawConfig) => void;
+    assertResolvedAccount?: (account: unknown, cfg: RemoteClawConfig) => void;
   }>;
 };
 
@@ -69,7 +69,7 @@ type StatusContractEntry = {
   plugin: Pick<ChannelPlugin, "id" | "config" | "status">;
   cases: Array<{
     name: string;
-    cfg: OpenClawConfig;
+    cfg: RemoteClawConfig;
     accountId?: string;
     runtime?: Record<string, unknown>;
     probe?: unknown;
@@ -111,7 +111,7 @@ setLineRuntime({
     line: {
       listLineAccountIds,
       resolveDefaultLineAccountId,
-      resolveLineAccount: ({ cfg, accountId }: { cfg: OpenClawConfig; accountId?: string }) =>
+      resolveLineAccount: ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId?: string }) =>
         resolveLineAccount({ cfg, accountId }),
     },
   },
@@ -132,7 +132,7 @@ export const pluginContractRegistry: PluginContractEntry[] = [
   { id: "nostr", plugin: nostrPlugin },
   { id: "signal", plugin: signalPlugin },
   { id: "slack", plugin: slackPlugin },
-  { id: "synology-chat", plugin: synologyChatPlugin },
+  { id: "synology-chat", plugin: createSynologyChatPlugin() },
   { id: "telegram", plugin: telegramPlugin },
   { id: "tlon", plugin: tlonPlugin },
   { id: "whatsapp", plugin: whatsappPlugin },
@@ -155,7 +155,7 @@ export const actionContractRegistry: ActionsContractEntry[] = [
               appToken: "xapp-test",
             },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         expectedActions: [
           "send",
           "react",
@@ -184,7 +184,7 @@ export const actionContractRegistry: ActionsContractEntry[] = [
               },
             },
           },
-        } as OpenClawConfig,
+        } as unknown as RemoteClawConfig,
         expectedActions: [
           "send",
           "react",
@@ -209,7 +209,7 @@ export const actionContractRegistry: ActionsContractEntry[] = [
               enabled: true,
             },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         expectedActions: [],
         expectedCapabilities: [],
       },
@@ -230,7 +230,7 @@ export const actionContractRegistry: ActionsContractEntry[] = [
               baseUrl: "https://chat.example.com",
             },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         expectedActions: ["send", "react"],
         expectedCapabilities: ["buttons"],
       },
@@ -245,7 +245,7 @@ export const actionContractRegistry: ActionsContractEntry[] = [
               actions: { reactions: false },
             },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         expectedActions: ["send"],
         expectedCapabilities: ["buttons"],
       },
@@ -257,7 +257,7 @@ export const actionContractRegistry: ActionsContractEntry[] = [
               enabled: true,
             },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         expectedActions: [],
         expectedCapabilities: [],
       },
@@ -269,7 +269,7 @@ export const actionContractRegistry: ActionsContractEntry[] = [
     cases: [
       {
         name: "forwards runtime-backed Telegram actions and capabilities",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as RemoteClawConfig,
         expectedActions: ["send", "poll", "react"],
         expectedCapabilities: ["interactive", "buttons"],
         beforeTest: () => {
@@ -287,7 +287,7 @@ export const actionContractRegistry: ActionsContractEntry[] = [
     cases: [
       {
         name: "forwards runtime-backed Discord actions and capabilities",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as RemoteClawConfig,
         expectedActions: ["send", "react", "poll"],
         expectedCapabilities: ["interactive", "components"],
         beforeTest: () => {
@@ -308,7 +308,7 @@ export const setupContractRegistry: SetupContractEntry[] = [
     cases: [
       {
         name: "default account stores tokens and enables the channel",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as RemoteClawConfig,
         input: {
           botToken: "xoxb-test",
           appToken: "xapp-test",
@@ -322,7 +322,7 @@ export const setupContractRegistry: SetupContractEntry[] = [
       },
       {
         name: "non-default env setup is rejected",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as RemoteClawConfig,
         accountId: "ops",
         input: {
           useEnv: true,
@@ -338,7 +338,7 @@ export const setupContractRegistry: SetupContractEntry[] = [
     cases: [
       {
         name: "default account stores token and normalized base URL",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as RemoteClawConfig,
         input: {
           botToken: "test-token",
           httpUrl: "https://chat.example.com/",
@@ -352,7 +352,7 @@ export const setupContractRegistry: SetupContractEntry[] = [
       },
       {
         name: "missing credentials are rejected",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as RemoteClawConfig,
         input: {
           httpUrl: "",
         },
@@ -367,7 +367,7 @@ export const setupContractRegistry: SetupContractEntry[] = [
     cases: [
       {
         name: "default account stores token and secret",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as RemoteClawConfig,
         input: {
           channelAccessToken: "line-token",
           channelSecret: "line-secret",
@@ -381,7 +381,7 @@ export const setupContractRegistry: SetupContractEntry[] = [
       },
       {
         name: "non-default env setup is rejected",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as RemoteClawConfig,
         accountId: "ops",
         input: {
           useEnv: true,
@@ -407,7 +407,7 @@ export const statusContractRegistry: StatusContractEntry[] = [
               appToken: "xapp-test",
             },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         runtime: {
           accountId: "default",
           connected: true,
@@ -436,7 +436,7 @@ export const statusContractRegistry: StatusContractEntry[] = [
               baseUrl: "https://chat.example.com",
             },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         runtime: {
           accountId: "default",
           connected: true,
@@ -467,7 +467,7 @@ export const statusContractRegistry: StatusContractEntry[] = [
               channelSecret: "line-secret",
             },
           },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
         runtime: {
           accountId: "default",
           running: true,

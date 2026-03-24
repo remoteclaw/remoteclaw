@@ -105,7 +105,7 @@ export type CommandRegistrationResult = {
  * Shared by both the global registration path and snapshot (non-activating) loads.
  */
 export function validatePluginCommandDefinition(
-  command: OpenClawPluginCommandDefinition,
+  command: RemoteClawPluginCommandDefinition,
 ): string | null {
   if (typeof command.handler !== "function") {
     return "Command handler must be a function";

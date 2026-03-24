@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolveOAuthDir } from "../config/paths.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 
@@ -76,7 +76,7 @@ function hasEnvConfiguredChannel(env: NodeJS.ProcessEnv): boolean {
 }
 
 export function hasPotentialConfiguredChannels(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   env: NodeJS.ProcessEnv = process.env,
 ): boolean {
   const channels = isRecord(cfg.channels) ? cfg.channels : null;

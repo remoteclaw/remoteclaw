@@ -79,7 +79,7 @@ describe("inbound-path-policy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     expect(resolveIMessageAttachmentRoots({ cfg, accountId: "work" })).toEqual([
       "/Users/work/Library/Messages/Attachments",

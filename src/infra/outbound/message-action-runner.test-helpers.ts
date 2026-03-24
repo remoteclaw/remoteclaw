@@ -2,7 +2,7 @@ import { slackPlugin } from "../../../extensions/slack/src/channel.js";
 import { setSlackRuntime } from "../../../extensions/slack/src/runtime.js";
 import { telegramPlugin } from "../../../extensions/telegram/src/channel.js";
 import { setTelegramRuntime } from "../../../extensions/telegram/src/runtime.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createPluginRuntime } from "../../plugins/runtime/index.js";
 import { createTestRegistry } from "../../test-utils/channel-plugins.js";
@@ -14,7 +14,7 @@ export const slackConfig = {
       appToken: "xapp-test",
     },
   },
-} as OpenClawConfig;
+} as RemoteClawConfig;
 
 export const telegramConfig = {
   channels: {
@@ -22,7 +22,7 @@ export const telegramConfig = {
       botToken: "telegram-test",
     },
   },
-} as OpenClawConfig;
+} as RemoteClawConfig;
 
 export function installMessageActionRunnerTestRegistry() {
   const runtime = createPluginRuntime();

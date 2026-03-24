@@ -18,7 +18,7 @@ import type { ChannelDock } from "../channels/dock.js";
 import type { ChannelId, ChannelPlugin } from "../channels/plugins/types.js";
 import type { createVpsAwareOAuthHandlers } from "../commands/oauth-flow.js";
 import type { OnboardOptions } from "../commands/onboard-types.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { ModelProviderConfig } from "../config/types.js";
 import type { GatewayRequestHandler } from "../gateway/server-methods/types.js";
 import type { InternalHookHandler } from "../hooks/internal-hooks.js";
@@ -68,7 +68,7 @@ export type OpenClawPluginConfigSchema = {
 };
 
 export type OpenClawPluginToolContext = {
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   workspaceDir?: string;
   agentDir?: string;
   agentId?: string;
@@ -105,13 +105,13 @@ export type ProviderAuthKind = "oauth" | "api_key" | "token" | "device_code" | "
 
 export type ProviderAuthResult = {
   profiles: Array<{ profileId: string; credential: AuthProfileCredential }>;
-  configPatch?: Partial<OpenClawConfig>;
+  configPatch?: Partial<RemoteClawConfig>;
   defaultModel?: string;
   notes?: string[];
 };
 
 export type ProviderAuthContext = {
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   agentDir?: string;
   workspaceDir?: string;
   prompter: WizardPrompter;
@@ -148,8 +148,8 @@ export type ProviderNonInteractiveApiKeyCredentialParams = {
 
 export type ProviderAuthMethodNonInteractiveContext = {
   authChoice: string;
-  config: OpenClawConfig;
-  baseConfig: OpenClawConfig;
+  config: RemoteClawConfig;
+  baseConfig: RemoteClawConfig;
   opts: OnboardOptions;
   runtime: RuntimeEnv;
   agentDir?: string;
@@ -170,13 +170,13 @@ export type ProviderAuthMethod = {
   run: (ctx: ProviderAuthContext) => Promise<ProviderAuthResult>;
   runNonInteractive?: (
     ctx: ProviderAuthMethodNonInteractiveContext,
-  ) => Promise<OpenClawConfig | null>;
+  ) => Promise<RemoteClawConfig | null>;
 };
 
 export type ProviderCatalogOrder = "simple" | "profile" | "paired" | "late";
 
 export type ProviderCatalogContext = {
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   agentDir?: string;
   workspaceDir?: string;
   env: NodeJS.ProcessEnv;
@@ -222,7 +222,7 @@ export type ProviderRuntimeProviderConfig = {
  * belong in `prepareDynamicModel`.
  */
 export type ProviderResolveDynamicModelContext = {
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   agentDir?: string;
   workspaceDir?: string;
   provider: string;
@@ -248,7 +248,7 @@ export type ProviderPrepareDynamicModelContext = ProviderResolveDynamicModelCont
  * patch provider-specific compat bits.
  */
 export type ProviderNormalizeResolvedModelContext = {
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   agentDir?: string;
   workspaceDir?: string;
   provider: string;
@@ -263,7 +263,7 @@ export type ProviderNormalizeResolvedModelContext = {
  * for the request.
  */
 export type ProviderPrepareRuntimeAuthContext = {
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   agentDir?: string;
   workspaceDir?: string;
   env: NodeJS.ProcessEnv;
@@ -305,7 +305,7 @@ export type ProviderPreparedRuntimeAuth = {
  * token blob, read a legacy credential file, or pick between aliases).
  */
 export type ProviderResolveUsageAuthContext = {
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   agentDir?: string;
   workspaceDir?: string;
   env: NodeJS.ProcessEnv;
@@ -339,7 +339,7 @@ export type ProviderResolvedUsageAuth = {
  * Return `null`/`undefined` to fall back to legacy core fetchers.
  */
 export type ProviderFetchUsageSnapshotContext = {
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   agentDir?: string;
   workspaceDir?: string;
   env: NodeJS.ProcessEnv;
@@ -358,7 +358,7 @@ export type ProviderFetchUsageSnapshotContext = {
  * into the merged `extraParams` object. Return the full next extraParams object.
  */
 export type ProviderPrepareExtraParamsContext = {
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   agentDir?: string;
   workspaceDir?: string;
   provider: string;
@@ -431,7 +431,7 @@ export type ProviderPluginWizard = {
 };
 
 export type ProviderModelSelectedContext = {
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   model: string;
   prompter: WizardPrompter;
   agentDir?: string;
@@ -591,7 +591,7 @@ export type PluginCommandContext = {
   /** The full normalized command body */
   commandBody: string;
   /** Current OpenClaw configuration */
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   /** Raw "From" value (channel-scoped id) */
   from?: string;
   /** Raw "To" value (channel-scoped id) */
@@ -799,7 +799,7 @@ export type OpenClawPluginHttpRouteParams = {
 
 export type OpenClawPluginCliContext = {
   program: Command;
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   workspaceDir?: string;
   logger: PluginLogger;
 };
@@ -807,7 +807,7 @@ export type OpenClawPluginCliContext = {
 export type OpenClawPluginCliRegistrar = (ctx: OpenClawPluginCliContext) => void | Promise<void>;
 
 export type OpenClawPluginServiceContext = {
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   workspaceDir?: string;
   stateDir: string;
   logger: PluginLogger;
@@ -846,7 +846,7 @@ export type OpenClawPluginApi = {
   description?: string;
   source: string;
   rootDir?: string;
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   pluginConfig?: Record<string, unknown>;
   runtime: PluginRuntime;
   logger: PluginLogger;

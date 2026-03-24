@@ -4,7 +4,7 @@ import { signalOutbound } from "../../channels/plugins/outbound/signal.js";
 import { telegramOutbound } from "../../channels/plugins/outbound/telegram.js";
 import { whatsappOutbound } from "../../channels/plugins/outbound/whatsapp.js";
 import type { ChannelOutboundAdapter } from "../../channels/plugins/types.adapters.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { STATE_DIR } from "../../config/paths.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { markdownToSignalTextChunks } from "../../signal/format.js";
@@ -24,7 +24,7 @@ import {
 
 const { deliverOutboundPayloads, normalizeOutboundPayloads } = await import("./deliver.js");
 
-const telegramChunkConfig: OpenClawConfig = {
+const telegramChunkConfig: RemoteClawConfig = {
   channels: { telegram: { botToken: "tok-1", textChunkLimit: 2 } },
 };
 
@@ -71,7 +71,7 @@ async function deliverWhatsAppPayload(params: {
     NonNullable<Parameters<typeof deliverOutboundPayloads>[0]["deps"]>["sendWhatsApp"]
   >;
   payload: { text: string; mediaUrl?: string };
-  cfg?: OpenClawConfig;
+  cfg?: RemoteClawConfig;
 }) {
   return deliverOutboundPayloads({
     cfg: params.cfg ?? whatsappChunkConfig,
@@ -85,7 +85,7 @@ async function deliverWhatsAppPayload(params: {
 async function deliverTelegramPayload(params: {
   sendTelegram: NonNullable<NonNullable<DeliverOutboundArgs["deps"]>["sendTelegram"]>;
   payload: DeliverOutboundPayload;
-  cfg?: OpenClawConfig;
+  cfg?: RemoteClawConfig;
   accountId?: string;
   session?: DeliverSession;
 }) {
@@ -133,7 +133,7 @@ describe("deliverOutboundPayloads", () => {
 
   it("clamps telegram text chunk size to protocol max even with higher config", async () => {
     const sendTelegram = vi.fn().mockResolvedValue({ messageId: "m1", chatId: "c1" });
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: { telegram: { botToken: "tok-1", textChunkLimit: 10_000 } },
     };
     const text = "<".repeat(3_000);
@@ -236,7 +236,7 @@ describe("deliverOutboundPayloads", () => {
 
   it("preserves explicit telegram buttons when sender path provides them", async () => {
     const sendTelegram = vi.fn().mockResolvedValue({ messageId: "m1", chatId: "c1" });
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: {
         telegram: {
           execApprovals: {
@@ -375,7 +375,7 @@ describe("deliverOutboundPayloads", () => {
 
   it("uses signal media maxBytes from config", async () => {
     const sendSignal = vi.fn().mockResolvedValue({ messageId: "s1", timestamp: 123 });
-    const cfg: OpenClawConfig = { channels: { signal: { mediaMaxMb: 2 } } };
+    const cfg: RemoteClawConfig = { channels: { signal: { mediaMaxMb: 2 } } };
 
     const results = await deliverOutboundPayloads({
       cfg,
@@ -400,7 +400,7 @@ describe("deliverOutboundPayloads", () => {
 
   it("chunks Signal markdown using the format-first chunker", async () => {
     const sendSignal = vi.fn().mockResolvedValue({ messageId: "s1", timestamp: 123 });
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: { signal: { textChunkLimit: 20 } },
     };
     const text = `Intro\\n\\n\`\`\`\`md\\n${"y".repeat(60)}\\n\`\`\`\\n\\nOutro`;
@@ -440,7 +440,7 @@ describe("deliverOutboundPayloads", () => {
 
   it("respects newline chunk mode for WhatsApp", async () => {
     const sendWhatsApp = vi.fn().mockResolvedValue({ messageId: "w1", toJid: "jid" });
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: { whatsapp: { textChunkLimit: 4000, chunkMode: "newline" } },
     };
 
@@ -570,7 +570,7 @@ describe("deliverOutboundPayloads", () => {
       ]),
     );
 
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: { matrix: { textChunkLimit: 4000, chunkMode: "newline" } },
     };
     const text = "```js\nconst a = 1;\nconst b = 2;\n```\nAfter";
@@ -597,7 +597,7 @@ describe("deliverOutboundPayloads", () => {
         },
       ]),
     );
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       agents: { defaults: { mediaMaxMb: 3 } },
     };
 

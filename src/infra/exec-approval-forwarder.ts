@@ -1,6 +1,6 @@
 import type { ReplyPayload } from "../auto-reply/types.js";
 import { getChannelPlugin } from "../channels/plugins/index.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { loadConfig } from "../config/config.js";
 import type {
   ExecApprovalForwardingConfig,
@@ -43,11 +43,11 @@ export type ExecApprovalForwarder = {
 };
 
 export type ExecApprovalForwarderDeps = {
-  getConfig?: () => OpenClawConfig;
+  getConfig?: () => RemoteClawConfig;
   deliver?: typeof deliverOutboundPayloads;
   nowMs?: () => number;
   resolveSessionTarget?: (params: {
-    cfg: OpenClawConfig;
+    cfg: RemoteClawConfig;
     request: ExecApprovalRequest;
   }) => ExecApprovalForwardTarget | null;
 };
@@ -112,7 +112,7 @@ function buildTargetKey(target: ExecApprovalForwardTarget): string {
 
 function shouldSkipForwardingFallback(params: {
   target: ExecApprovalForwardTarget;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   request: ExecApprovalRequest;
 }): boolean {
   const channel = normalizeMessageChannel(params.target.channel) ?? params.target.channel;
@@ -210,7 +210,7 @@ function normalizeTurnSourceChannel(value?: string | null): DeliverableMessageCh
 }
 
 function defaultResolveSessionTarget(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   request: ExecApprovalRequest;
 }): ExecApprovalForwardTarget | null {
   const resolvedTarget = resolveExecApprovalSessionTarget({
@@ -237,7 +237,7 @@ function defaultResolveSessionTarget(params: {
 }
 
 async function deliverToTargets(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   targets: ForwardTarget[];
   buildPayload: (target: ForwardTarget) => ReplyPayload;
   deliver: typeof deliverOutboundPayloads;
@@ -271,7 +271,7 @@ async function deliverToTargets(params: {
 }
 
 function buildRequestPayloadForTarget(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   request: ExecApprovalRequest,
   nowMsValue: number,
   target: ForwardTarget,
@@ -294,7 +294,7 @@ function buildRequestPayloadForTarget(
 }
 
 function buildResolvedPayloadForTarget(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   resolved: ExecApprovalResolved,
   target: ForwardTarget,
 ): ReplyPayload {
@@ -313,11 +313,11 @@ function buildResolvedPayloadForTarget(
 }
 
 function resolveForwardTargets(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   config?: ExecApprovalForwardingConfig;
   request: ExecApprovalRequest;
   resolveSessionTarget: (params: {
-    cfg: OpenClawConfig;
+    cfg: RemoteClawConfig;
     request: ExecApprovalRequest;
   }) => ExecApprovalForwardTarget | null;
 }): ForwardTarget[] {

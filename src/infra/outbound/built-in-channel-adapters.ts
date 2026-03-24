@@ -14,7 +14,7 @@ import {
 import type { ChannelExecApprovalAdapter } from "../../channels/plugins/types.adapters.js";
 import type { ChannelCrossContextComponentsFactory } from "../../channels/plugins/types.core.js";
 import type { ChannelId } from "../../channels/plugins/types.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { normalizeMessageChannel } from "../../utils/message-channel.js";
 import { resolveExecApprovalCommandDisplay } from "../exec-approval-command-display.js";
 import { buildExecApprovalPendingReplyPayload } from "../exec-approval-reply.js";
@@ -32,7 +32,7 @@ const BUILT_IN_DISCORD_CROSS_CONTEXT_COMPONENTS: ChannelCrossContextComponentsFa
   return [new DiscordUiContainer({ cfg: params.cfg, accountId: params.accountId, components })];
 };
 
-function hasDiscordExecApprovalDmRoute(cfg: OpenClawConfig): boolean {
+function hasDiscordExecApprovalDmRoute(cfg: RemoteClawConfig): boolean {
   return listDiscordAccountIds(cfg).some((accountId) => {
     const execApprovals = resolveDiscordAccount({ cfg, accountId }).config.execApprovals;
     if (!execApprovals?.enabled || (execApprovals.approvers?.length ?? 0) === 0) {
@@ -43,7 +43,7 @@ function hasDiscordExecApprovalDmRoute(cfg: OpenClawConfig): boolean {
   });
 }
 
-function hasTelegramExecApprovalDmRoute(cfg: OpenClawConfig): boolean {
+function hasTelegramExecApprovalDmRoute(cfg: RemoteClawConfig): boolean {
   return listTelegramAccountIds(cfg).some((accountId) => {
     if (!isTelegramExecApprovalClientEnabled({ cfg, accountId })) {
       return false;

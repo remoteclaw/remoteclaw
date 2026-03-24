@@ -1,5 +1,5 @@
 import { normalizeProviderId } from "../agents/model-selection.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolvePluginProviders } from "./providers.js";
 import type {
   ProviderCacheTtlEligibilityContext,
@@ -27,7 +27,7 @@ function matchesProviderId(provider: ProviderPlugin, providerId: string): boolea
 
 export function resolveProviderRuntimePlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
 }): ProviderPlugin | undefined {
@@ -39,7 +39,7 @@ export function resolveProviderRuntimePlugin(params: {
 
 export function runProviderDynamicModel(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderResolveDynamicModelContext;
@@ -49,7 +49,7 @@ export function runProviderDynamicModel(params: {
 
 export async function prepareProviderDynamicModel(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderPrepareDynamicModelContext;
@@ -59,11 +59,11 @@ export async function prepareProviderDynamicModel(params: {
 
 export function normalizeProviderResolvedModelWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: {
-    config?: OpenClawConfig;
+    config?: RemoteClawConfig;
     agentDir?: string;
     workspaceDir?: string;
     provider: string;
@@ -78,7 +78,7 @@ export function normalizeProviderResolvedModelWithPlugin(params: {
 
 export function resolveProviderCapabilitiesWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
 }) {
@@ -87,7 +87,7 @@ export function resolveProviderCapabilitiesWithPlugin(params: {
 
 export function prepareProviderExtraParams(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderPrepareExtraParamsContext;
@@ -97,7 +97,7 @@ export function prepareProviderExtraParams(params: {
 
 export function wrapProviderStreamFn(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderWrapStreamFnContext;
@@ -107,7 +107,7 @@ export function wrapProviderStreamFn(params: {
 
 export async function prepareProviderRuntimeAuth(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderPrepareRuntimeAuthContext;
@@ -117,7 +117,7 @@ export async function prepareProviderRuntimeAuth(params: {
 
 export async function resolveProviderUsageAuthWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderResolveUsageAuthContext;
@@ -127,7 +127,7 @@ export async function resolveProviderUsageAuthWithPlugin(params: {
 
 export async function resolveProviderUsageSnapshotWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderFetchUsageSnapshotContext;
@@ -137,7 +137,7 @@ export async function resolveProviderUsageSnapshotWithPlugin(params: {
 
 export function resolveProviderCacheTtlEligibility(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderCacheTtlEligibilityContext;

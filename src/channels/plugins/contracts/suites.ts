@@ -5,10 +5,7 @@ import type {
   ChannelAccountState,
   ChannelSetupInput,
 } from "../types.core.js";
-import type {
-  ChannelMessageActionName,
-  ChannelPlugin,
-} from "../types.js";
+import type { ChannelMessageActionName, ChannelPlugin } from "../types.js";
 
 function sortStrings(values: readonly string[]) {
   return [...values].toSorted((left, right) => left.localeCompare(right));

@@ -1,41 +1,12 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
 import { readFileSync } from "node:fs";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
 import { createAccountListHelpers } from "remoteclaw/plugin-sdk/irc";
-||||||| parent of d55fa78e40 (refactor: share delimited channel entry parsing)
-||||||| parent of ff941b0193 (refactor: share nested account config merges)
-import { createAccountListHelpers, mergeAccountConfig } from "openclaw/plugin-sdk/account-helpers";
-=======
-import { createAccountListHelpers } from "openclaw/plugin-sdk/account-helpers";
->>>>>>> ff941b0193 (refactor: share nested account config merges)
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
-<<<<<<< HEAD
-import { tryReadSecretFileSync } from "openclaw/plugin-sdk/core";
-import {
-  createAccountListHelpers,
-  normalizeResolvedSecretInputString,
-} from "openclaw/plugin-sdk/irc";
-=======
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
 import { tryReadSecretFileSync } from "openclaw/plugin-sdk/core";
 import {
   createAccountListHelpers,
   normalizeResolvedSecretInputString,
-  parseOptionalDelimitedEntries,
 } from "openclaw/plugin-sdk/irc";
->>>>>>> d55fa78e40 (refactor: share delimited channel entry parsing)
-||||||| parent of ff941b0193 (refactor: share nested account config merges)
-import { resolveNormalizedAccountEntry } from "openclaw/plugin-sdk/account-resolution";
-import { parseOptionalDelimitedEntries } from "openclaw/plugin-sdk/core";
-import { tryReadSecretFileSync } from "openclaw/plugin-sdk/infra-runtime";
-import { normalizeResolvedSecretInputString } from "openclaw/plugin-sdk/secret-input";
-=======
-import { resolveMergedAccountConfig } from "openclaw/plugin-sdk/account-resolution";
-import { parseOptionalDelimitedEntries } from "openclaw/plugin-sdk/core";
-import { tryReadSecretFileSync } from "openclaw/plugin-sdk/infra-runtime";
-import { normalizeResolvedSecretInputString } from "openclaw/plugin-sdk/secret-input";
->>>>>>> ff941b0193 (refactor: share nested account config merges)
 import type { CoreConfig, IrcAccountConfig, IrcNickServConfig } from "./types.js";
 
 const TRUTHY_ENV = new Set(["true", "1", "yes", "on"]);
@@ -78,7 +49,6 @@ const { listAccountIds: listIrcAccountIds, resolveDefaultAccountId: resolveDefau
   createAccountListHelpers("irc", { normalizeAccountId });
 export { listIrcAccountIds, resolveDefaultIrcAccountId };
 
-<<<<<<< HEAD
 function resolveAccountConfig(cfg: CoreConfig, accountId: string): IrcAccountConfig | undefined {
   const accounts = cfg.channels?.irc?.accounts;
   if (!accounts || typeof accounts !== "object") {
@@ -93,19 +63,7 @@ function resolveAccountConfig(cfg: CoreConfig, accountId: string): IrcAccountCon
   return matchKey ? (accounts[matchKey] as IrcAccountConfig | undefined) : undefined;
 }
 
-||||||| parent of ff941b0193 (refactor: share nested account config merges)
-function resolveAccountConfig(cfg: CoreConfig, accountId: string): IrcAccountConfig | undefined {
-  return resolveNormalizedAccountEntry(
-    cfg.channels?.irc?.accounts as Record<string, IrcAccountConfig> | undefined,
-    accountId,
-    normalizeAccountId,
-  );
-}
-
-=======
->>>>>>> ff941b0193 (refactor: share nested account config merges)
 function mergeIrcAccountConfig(cfg: CoreConfig, accountId: string): IrcAccountConfig {
-<<<<<<< HEAD
   const {
     accounts: _ignored,
     defaultAccount: _ignoredDefaultAccount,
@@ -123,31 +81,6 @@ function mergeIrcAccountConfig(cfg: CoreConfig, accountId: string): IrcAccountCo
     };
   }
   return merged;
-||||||| parent of ff941b0193 (refactor: share nested account config merges)
-  const account = resolveAccountConfig(cfg, accountId) ?? {};
-  const merged: IrcAccountConfig = mergeAccountConfig<IrcAccountConfig>({
-    channelConfig: cfg.channels?.irc as IrcAccountConfig | undefined,
-    accountConfig: account,
-    omitKeys: ["defaultAccount"],
-  });
-  const baseNickServ = (cfg.channels?.irc as IrcAccountConfig | undefined)?.nickserv;
-  if (baseNickServ || account.nickserv) {
-    merged.nickserv = {
-      ...baseNickServ,
-      ...account.nickserv,
-    };
-  }
-  return merged;
-=======
-  return resolveMergedAccountConfig<IrcAccountConfig>({
-    channelConfig: cfg.channels?.irc as IrcAccountConfig | undefined,
-    accounts: cfg.channels?.irc?.accounts as Record<string, Partial<IrcAccountConfig>> | undefined,
-    accountId,
-    omitKeys: ["defaultAccount"],
-    normalizeAccountId,
-    nestedObjectKeys: ["nickserv"],
-  });
->>>>>>> ff941b0193 (refactor: share nested account config merges)
 }
 
 function resolvePassword(accountId: string, merged: IrcAccountConfig) {

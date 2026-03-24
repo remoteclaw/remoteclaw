@@ -1,18 +1,6 @@
 import { describe, expect, it } from "vitest";
-<<<<<<< HEAD
 import type { RemoteClawConfig } from "../../config/config.js";
 import { buildAccountScopedDmSecurityPolicy, formatPairingApproveHint } from "./helpers.js";
-||||||| parent of d55fa78e40 (refactor: share delimited channel entry parsing)
-import type { OpenClawConfig } from "../../config/config.js";
-import { buildAccountScopedDmSecurityPolicy, formatPairingApproveHint } from "./helpers.js";
-=======
-import type { OpenClawConfig } from "../../config/config.js";
-import {
-  buildAccountScopedDmSecurityPolicy,
-  formatPairingApproveHint,
-  parseOptionalDelimitedEntries,
-} from "./helpers.js";
->>>>>>> d55fa78e40 (refactor: share delimited channel entry parsing)
 
 function cfgWithChannel(channelKey: string, accounts?: Record<string, unknown>): RemoteClawConfig {
   return {

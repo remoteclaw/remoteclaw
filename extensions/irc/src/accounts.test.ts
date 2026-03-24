@@ -81,7 +81,6 @@ describe("resolveDefaultIrcAccountId", () => {
 });
 
 describe("resolveIrcAccount", () => {
-<<<<<<< HEAD
   it("matches normalized configured account ids", () => {
     const account = resolveIrcAccount({
       cfg: asConfig({
@@ -131,35 +130,6 @@ describe("resolveIrcAccount", () => {
     }
   });
 
-||||||| parent of d55fa78e40 (refactor: share delimited channel entry parsing)
-=======
-  it("parses delimited IRC_CHANNELS env values for the default account", () => {
-    const previousChannels = process.env.IRC_CHANNELS;
-    process.env.IRC_CHANNELS = "alpha, beta\ngamma; delta";
-
-    try {
-      const account = resolveIrcAccount({
-        cfg: asConfig({
-          channels: {
-            irc: {
-              host: "irc.example.com",
-              nick: "claw",
-            },
-          },
-        }),
-      });
-
-      expect(account.config.channels).toEqual(["alpha", "beta", "gamma", "delta"]);
-    } finally {
-      if (previousChannels === undefined) {
-        delete process.env.IRC_CHANNELS;
-      } else {
-        process.env.IRC_CHANNELS = previousChannels;
-      }
-    }
-  });
-
->>>>>>> d55fa78e40 (refactor: share delimited channel entry parsing)
   it.runIf(process.platform !== "win32")("rejects symlinked password files", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-irc-account-"));
     const passwordFile = path.join(dir, "password.txt");

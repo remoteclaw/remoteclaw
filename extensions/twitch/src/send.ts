@@ -5,13 +5,7 @@
  * They support dependency injection via the `deps` parameter for testability.
  */
 
-<<<<<<< HEAD
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
-||||||| parent of d1fe30b35f (Plugins: add Twitch runtime barrel)
-import type { OpenClawConfig } from "../api.js";
-=======
-import type { OpenClawConfig } from "../runtime-api.js";
->>>>>>> d1fe30b35f (Plugins: add Twitch runtime barrel)
 import { getClientManager as getRegistryClientManager } from "./client-manager-registry.js";
 import { DEFAULT_ACCOUNT_ID, resolveTwitchAccountContext } from "./config.js";
 import { stripMarkdownForTwitch } from "./utils/markdown.js";

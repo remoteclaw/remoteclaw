@@ -1,39 +1,9 @@
-<<<<<<< HEAD
 import { normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
 import { createAccountListHelpers } from "remoteclaw/plugin-sdk/matrix";
-||||||| parent of ff941b0193 (refactor: share nested account config merges)
-import {
-  resolveConfiguredMatrixAccountIds,
-  resolveMatrixDefaultOrOnlyAccountId,
-} from "../account-selection.js";
-import {
-  DEFAULT_ACCOUNT_ID,
-  hasConfiguredSecretInput,
-  normalizeAccountId,
-} from "../runtime-api.js";
-=======
-import { resolveMergedAccountConfig } from "openclaw/plugin-sdk/account-resolution";
-import {
-  resolveConfiguredMatrixAccountIds,
-  resolveMatrixDefaultOrOnlyAccountId,
-} from "../account-selection.js";
-import {
-  DEFAULT_ACCOUNT_ID,
-  hasConfiguredSecretInput,
-  normalizeAccountId,
-} from "../runtime-api.js";
->>>>>>> ff941b0193 (refactor: share nested account config merges)
 import type { CoreConfig, MatrixConfig } from "../types.js";
-<<<<<<< HEAD
-||||||| parent of ff941b0193 (refactor: share nested account config merges)
-import { findMatrixAccountConfig, resolveMatrixBaseConfig } from "./account-config.js";
-=======
-import { resolveMatrixBaseConfig } from "./account-config.js";
->>>>>>> ff941b0193 (refactor: share nested account config merges)
 import { resolveMatrixConfigForAccount } from "./client.js";
 import { credentialsMatchConfig, loadMatrixCredentials } from "./credentials.js";
 
-<<<<<<< HEAD
 /** Merge account config with top-level defaults, preserving nested objects. */
 function mergeAccountConfig(base: MatrixConfig, account: MatrixConfig): MatrixConfig {
   const merged = { ...base, ...account };
@@ -51,25 +21,6 @@ function mergeAccountConfig(base: MatrixConfig, account: MatrixConfig): MatrixCo
   return merged;
 }
 
-||||||| parent of ff941b0193 (refactor: share nested account config merges)
-/** Merge account config with top-level defaults, preserving nested objects. */
-function mergeAccountConfig(base: MatrixConfig, account: MatrixConfig): MatrixConfig {
-  const merged = { ...base, ...account };
-  // Deep-merge known nested objects so partial overrides inherit base fields
-  for (const key of ["dm", "actions"] as const) {
-    const b = base[key];
-    const o = account[key];
-    if (typeof b === "object" && b != null && typeof o === "object" && o != null) {
-      (merged as Record<string, unknown>)[key] = { ...b, ...o };
-    }
-  }
-  // Don't propagate the accounts map into the merged per-account config
-  delete (merged as Record<string, unknown>).accounts;
-  return merged;
-}
-
-=======
->>>>>>> ff941b0193 (refactor: share nested account config merges)
 export type ResolvedMatrixAccount = {
   accountId: string;
   enabled: boolean;
@@ -145,7 +96,6 @@ export function resolveMatrixAccountConfig(params: {
   accountId?: string | null;
 }): MatrixConfig {
   const accountId = normalizeAccountId(params.accountId);
-<<<<<<< HEAD
   const matrixBase = params.cfg.channels?.matrix ?? {};
   const accountConfig = resolveAccountConfig(params.cfg, accountId);
   if (!accountConfig) {
@@ -154,26 +104,6 @@ export function resolveMatrixAccountConfig(params: {
   // Merge account-specific config with top-level defaults so settings like
   // groupPolicy and blockStreaming inherit when not overridden.
   return mergeAccountConfig(matrixBase, accountConfig);
-||||||| parent of ff941b0193 (refactor: share nested account config merges)
-  const matrixBase = resolveMatrixBaseConfig(params.cfg);
-  const accountConfig = findMatrixAccountConfig(params.cfg, accountId);
-  if (!accountConfig) {
-    return matrixBase;
-  }
-  // Merge account-specific config with top-level defaults so settings like
-  // groupPolicy and blockStreaming inherit when not overridden.
-  return mergeAccountConfig(matrixBase, accountConfig);
-=======
-  return resolveMergedAccountConfig<MatrixConfig>({
-    channelConfig: resolveMatrixBaseConfig(params.cfg),
-    accounts: params.cfg.channels?.matrix?.accounts as
-      | Record<string, Partial<MatrixConfig>>
-      | undefined,
-    accountId,
-    normalizeAccountId,
-    nestedObjectKeys: ["dm", "actions"],
-  });
->>>>>>> ff941b0193 (refactor: share nested account config merges)
 }
 
 export function listEnabledMatrixAccounts(cfg: CoreConfig): ResolvedMatrixAccount[] {

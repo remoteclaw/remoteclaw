@@ -77,7 +77,6 @@ function resolveValidatedSendContext(
   return { ok: true, chatId: trimmedChatId, token, fetcher };
 }
 
-<<<<<<< HEAD
 function resolveSendContextOrFailure(
   chatId: string,
   options: ZaloSendOptions,
@@ -92,34 +91,14 @@ function resolveSendContextOrFailure(
       };
 }
 
-||||||| parent of f5b9095108 (refactor: share zalo send result handling)
-=======
-function toInvalidContextResult(
-  context: ReturnType<typeof resolveValidatedSendContext>,
-): ZaloSendResult | null {
-  return context.ok ? null : { ok: false, error: context.error };
-}
-
->>>>>>> f5b9095108 (refactor: share zalo send result handling)
 export async function sendMessageZalo(
   chatId: string,
   text: string,
   options: ZaloSendOptions = {},
 ): Promise<ZaloSendResult> {
-<<<<<<< HEAD
   const resolved = resolveSendContextOrFailure(chatId, options);
   if ("failure" in resolved) {
     return resolved.failure;
-||||||| parent of f5b9095108 (refactor: share zalo send result handling)
-  const context = resolveValidatedSendContext(chatId, options);
-  if (!context.ok) {
-    return { ok: false, error: context.error };
-=======
-  const context = resolveValidatedSendContext(chatId, options);
-  const invalidResult = toInvalidContextResult(context);
-  if (invalidResult) {
-    return invalidResult;
->>>>>>> f5b9095108 (refactor: share zalo send result handling)
   }
   const { context } = resolved;
 
@@ -148,20 +127,9 @@ export async function sendPhotoZalo(
   photoUrl: string,
   options: ZaloSendOptions = {},
 ): Promise<ZaloSendResult> {
-<<<<<<< HEAD
   const resolved = resolveSendContextOrFailure(chatId, options);
   if ("failure" in resolved) {
     return resolved.failure;
-||||||| parent of f5b9095108 (refactor: share zalo send result handling)
-  const context = resolveValidatedSendContext(chatId, options);
-  if (!context.ok) {
-    return { ok: false, error: context.error };
-=======
-  const context = resolveValidatedSendContext(chatId, options);
-  const invalidResult = toInvalidContextResult(context);
-  if (invalidResult) {
-    return invalidResult;
->>>>>>> f5b9095108 (refactor: share zalo send result handling)
   }
   const { context } = resolved;
 

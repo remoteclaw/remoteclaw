@@ -30,7 +30,6 @@ export type ChannelsAddOptions = {
   dmAllowlist?: string;
 } & Omit<ChannelSetupInput, "groupChannels" | "dmAllowlist" | "initialSyncLimit">;
 
-<<<<<<< HEAD
 function parseList(value: string | undefined): string[] | undefined {
   if (!value?.trim()) {
     return undefined;
@@ -43,22 +42,6 @@ function parseList(value: string | undefined): string[] | undefined {
 }
 
 function resolveCatalogChannelEntry(raw: string, cfg: RemoteClawConfig | null) {
-||||||| parent of d55fa78e40 (refactor: share delimited channel entry parsing)
-function parseList(value: string | undefined): string[] | undefined {
-  if (!value?.trim()) {
-    return undefined;
-  }
-  const parsed = value
-    .split(/[\n,;]+/g)
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-  return parsed.length > 0 ? parsed : undefined;
-}
-
-function resolveCatalogChannelEntry(raw: string, cfg: OpenClawConfig | null) {
-=======
-function resolveCatalogChannelEntry(raw: string, cfg: OpenClawConfig | null) {
->>>>>>> d55fa78e40 (refactor: share delimited channel entry parsing)
   const trimmed = raw.trim().toLowerCase();
   if (!trimmed) {
     return undefined;

@@ -4,13 +4,7 @@
  * Detects and reports configuration issues for Twitch accounts.
  */
 
-<<<<<<< HEAD
 import type { ChannelStatusIssue } from "remoteclaw/plugin-sdk";
-||||||| parent of d1fe30b35f (Plugins: add Twitch runtime barrel)
-import type { ChannelStatusIssue } from "../api.js";
-=======
-import type { ChannelStatusIssue } from "../runtime-api.js";
->>>>>>> d1fe30b35f (Plugins: add Twitch runtime barrel)
 import { getAccountConfig } from "./config.js";
 import { resolveTwitchToken } from "./token.js";
 import type { ChannelAccountSnapshot } from "./types.js";

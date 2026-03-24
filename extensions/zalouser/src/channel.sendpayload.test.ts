@@ -1,26 +1,5 @@
 import type { ReplyPayload } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of d7aa3cc1c3 (test: share zalouser test helpers)
-import {
-  installSendPayloadContractSuite,
-  primeSendMock,
-} from "../../../src/test-utils/send-payload-contract.js";
-=======
-import "./accounts.test-mocks.js";
-import {
-  installSendPayloadContractSuite,
-  primeSendMock,
-} from "../../../src/test-utils/send-payload-contract.js";
->>>>>>> d7aa3cc1c3 (test: share zalouser test helpers)
-||||||| parent of f209a9be80 (test: extract sendpayload outbound contract suite)
-=======
-import {
-  installSendPayloadContractSuite,
-  primeSendMock,
-} from "../../../src/test-utils/send-payload-contract.js";
->>>>>>> f209a9be80 (test: extract sendpayload outbound contract suite)
 import { zalouserPlugin } from "./channel.js";
 
 vi.mock("./send.js", () => ({

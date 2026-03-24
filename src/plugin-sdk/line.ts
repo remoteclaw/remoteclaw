@@ -7,14 +7,7 @@ export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export type { RemoteClawConfig } from "../config/config.js";
 export type { ReplyPayload } from "../auto-reply/types.js";
 export type { PluginRuntime } from "../plugins/runtime/types.js";
-<<<<<<< HEAD
 export type { RemoteClawPluginApi } from "../plugins/types.js";
-||||||| parent of ec93398d7b (refactor: move line to setup wizard)
-export type { OpenClawPluginApi } from "../plugins/types.js";
-=======
-export type { OpenClawPluginApi } from "../plugins/types.js";
-export type { ChannelSetupAdapter } from "../channels/plugins/types.adapters.js";
->>>>>>> ec93398d7b (refactor: move line to setup wizard)
 
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 

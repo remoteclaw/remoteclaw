@@ -1,12 +1,6 @@
 import { StaticAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
-<<<<<<< HEAD
 import type { BaseProbeResult } from "remoteclaw/plugin-sdk";
-||||||| parent of d1fe30b35f (Plugins: add Twitch runtime barrel)
-import type { BaseProbeResult } from "../api.js";
-=======
-import type { BaseProbeResult } from "../runtime-api.js";
->>>>>>> d1fe30b35f (Plugins: add Twitch runtime barrel)
 import type { TwitchAccountConfig } from "./types.js";
 import { normalizeToken } from "./utils/twitch.js";
 

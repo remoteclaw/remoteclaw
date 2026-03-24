@@ -1,9 +1,4 @@
-<<<<<<< HEAD
 import type { RuntimeEnv } from "remoteclaw/plugin-sdk";
-||||||| parent of d7aa3cc1c3 (test: share zalouser test helpers)
-import type { RuntimeEnv } from "openclaw/plugin-sdk/zalouser";
-=======
->>>>>>> d7aa3cc1c3 (test: share zalouser test helpers)
 import { describe, expect, it, vi } from "vitest";
 import "./accounts.test-mocks.js";
 import { createZalouserRuntimeEnv } from "./test-helpers.js";

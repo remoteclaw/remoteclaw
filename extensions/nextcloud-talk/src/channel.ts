@@ -2,20 +2,7 @@ import {
   buildAccountScopedDmSecurityPolicy,
   collectAllowlistProviderGroupPolicyWarnings,
   collectOpenGroupPolicyRouteAllowlistWarnings,
-<<<<<<< HEAD
 } from "remoteclaw/plugin-sdk";
-||||||| parent of e885f1999f (refactor: reduce extension channel setup duplication)
-  createAccountStatusSink,
-  formatAllowFromLowercase,
-  mapAllowFromEntries,
-  runPassiveAccountLifecycle,
-} from "openclaw/plugin-sdk/compat";
-=======
-  createAccountStatusSink,
-  formatAllowFromLowercase,
-  mapAllowFromEntries,
-} from "openclaw/plugin-sdk/compat";
->>>>>>> e885f1999f (refactor: reduce extension channel setup duplication)
 import {
   applyAccountNameToChannelSection,
   buildBaseChannelStatusSummary,
@@ -32,14 +19,7 @@ import {
   type ChannelPlugin,
   type RemoteClawConfig,
   type ChannelSetupInput,
-<<<<<<< HEAD
 } from "remoteclaw/plugin-sdk";
-||||||| parent of e885f1999f (refactor: reduce extension channel setup duplication)
-} from "openclaw/plugin-sdk/nextcloud-talk";
-=======
-} from "openclaw/plugin-sdk/nextcloud-talk";
-import { runStoppablePassiveMonitor } from "../../shared/passive-monitor.js";
->>>>>>> e885f1999f (refactor: reduce extension channel setup duplication)
 import {
   listNextcloudTalkAccountIds,
   resolveDefaultNextcloudTalkAccountId,
@@ -359,38 +339,9 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
         statusSink: (patch) => ctx.setStatus({ accountId: ctx.accountId, ...patch }),
       });
 
-<<<<<<< HEAD
       // Keep webhook channels pending for the account lifecycle.
       await waitForAbortSignal(ctx.abortSignal);
       stop();
-||||||| parent of e885f1999f (refactor: reduce extension channel setup duplication)
-      await runPassiveAccountLifecycle({
-        abortSignal: ctx.abortSignal,
-        start: async () =>
-          await monitorNextcloudTalkProvider({
-            accountId: account.accountId,
-            config: ctx.cfg as CoreConfig,
-            runtime: ctx.runtime,
-            abortSignal: ctx.abortSignal,
-            statusSink,
-          }),
-        stop: async (monitor) => {
-          monitor.stop();
-        },
-      });
-=======
-      await runStoppablePassiveMonitor({
-        abortSignal: ctx.abortSignal,
-        start: async () =>
-          await monitorNextcloudTalkProvider({
-            accountId: account.accountId,
-            config: ctx.cfg as CoreConfig,
-            runtime: ctx.runtime,
-            abortSignal: ctx.abortSignal,
-            statusSink,
-          }),
-      });
->>>>>>> e885f1999f (refactor: reduce extension channel setup duplication)
     },
     logoutAccount: async ({ accountId, cfg }) => {
       const nextCfg = { ...cfg } as RemoteClawConfig;

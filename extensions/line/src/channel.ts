@@ -45,7 +45,6 @@ const lineConfigAccessors = createScopedAccountConfigAccessors({
       .map((entry) => entry.replace(/^line:(?:user:)?/i, "")),
 });
 
-<<<<<<< HEAD
 function patchLineAccountConfig(
   cfg: RemoteClawConfig,
   lineConfig: LineConfig,
@@ -82,81 +81,6 @@ function patchLineAccountConfig(
   };
 }
 
-||||||| parent of ec93398d7b (refactor: move line to setup wizard)
-const lineConfigBase = createScopedChannelConfigBase<ResolvedLineAccount, OpenClawConfig>({
-  sectionKey: "line",
-  listAccountIds: (cfg) => getLineRuntime().channel.line.listLineAccountIds(cfg),
-  resolveAccount: (cfg, accountId) =>
-    getLineRuntime().channel.line.resolveLineAccount({ cfg, accountId: accountId ?? undefined }),
-  defaultAccountId: (cfg) => getLineRuntime().channel.line.resolveDefaultLineAccountId(cfg),
-  clearBaseFields: ["channelSecret", "tokenFile", "secretFile"],
-});
-
-const resolveLineDmPolicy = createScopedDmSecurityResolver<ResolvedLineAccount>({
-  channelKey: "line",
-  resolvePolicy: (account) => account.config.dmPolicy,
-  resolveAllowFrom: (account) => account.config.allowFrom,
-  policyPathSuffix: "dmPolicy",
-  approveHint: "openclaw pairing approve line <code>",
-  normalizeEntry: (raw) => raw.replace(/^line:(?:user:)?/i, ""),
-});
-
-function patchLineAccountConfig(
-  cfg: OpenClawConfig,
-  lineConfig: LineConfig,
-  accountId: string,
-  patch: Record<string, unknown>,
-): OpenClawConfig {
-  if (accountId === DEFAULT_ACCOUNT_ID) {
-    return {
-      ...cfg,
-      channels: {
-        ...cfg.channels,
-        line: {
-          ...lineConfig,
-          ...patch,
-        },
-      },
-    };
-  }
-  return {
-    ...cfg,
-    channels: {
-      ...cfg.channels,
-      line: {
-        ...lineConfig,
-        accounts: {
-          ...lineConfig.accounts,
-          [accountId]: {
-            ...lineConfig.accounts?.[accountId],
-            ...patch,
-          },
-        },
-      },
-    },
-  };
-}
-
-=======
-const lineConfigBase = createScopedChannelConfigBase<ResolvedLineAccount, OpenClawConfig>({
-  sectionKey: "line",
-  listAccountIds: (cfg) => getLineRuntime().channel.line.listLineAccountIds(cfg),
-  resolveAccount: (cfg, accountId) =>
-    getLineRuntime().channel.line.resolveLineAccount({ cfg, accountId: accountId ?? undefined }),
-  defaultAccountId: (cfg) => getLineRuntime().channel.line.resolveDefaultLineAccountId(cfg),
-  clearBaseFields: ["channelSecret", "tokenFile", "secretFile"],
-});
-
-const resolveLineDmPolicy = createScopedDmSecurityResolver<ResolvedLineAccount>({
-  channelKey: "line",
-  resolvePolicy: (account) => account.config.dmPolicy,
-  resolveAllowFrom: (account) => account.config.allowFrom,
-  policyPathSuffix: "dmPolicy",
-  approveHint: "openclaw pairing approve line <code>",
-  normalizeEntry: (raw) => raw.replace(/^line:(?:user:)?/i, ""),
-});
-
->>>>>>> ec93398d7b (refactor: move line to setup wizard)
 export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
   id: "line",
   meta: {

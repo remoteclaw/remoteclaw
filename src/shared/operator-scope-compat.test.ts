@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { roleScopesAllow } from "./operator-scope-compat.js";
+import { resolveMissingRequestedScope, roleScopesAllow } from "./operator-scope-compat.js";
 
 describe("roleScopesAllow", () => {
   it("treats operator.read as satisfied by read/write/admin scopes", () => {
@@ -85,5 +85,25 @@ describe("roleScopesAllow", () => {
         allowedScopes: ["operator.admin"],
       }),
     ).toBe(false);
+  });
+
+  it("returns the first missing requested scope with operator compatibility", () => {
+    expect(
+      resolveMissingRequestedScope({
+        role: "operator",
+        requestedScopes: ["operator.read", "operator.write", "operator.approvals"],
+        allowedScopes: ["operator.write"],
+      }),
+    ).toBe("operator.approvals");
+  });
+
+  it("returns null when all requested scopes are satisfied", () => {
+    expect(
+      resolveMissingRequestedScope({
+        role: "node",
+        requestedScopes: ["system.run"],
+        allowedScopes: ["system.run", "operator.admin"],
+      }),
+    ).toBeNull();
   });
 });

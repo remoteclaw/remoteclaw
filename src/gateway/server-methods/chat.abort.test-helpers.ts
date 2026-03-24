@@ -1,0 +1,75 @@
+import { type Mock, vi } from "vitest";
+import type { GatewayRequestHandler } from "./types.js";
+
+export function createActiveRun(
+  sessionKey: string,
+  params: {
+    sessionId?: string;
+    owner?: { connId?: string; deviceId?: string };
+  } = {},
+) {
+  const now = Date.now();
+  return {
+    controller: new AbortController(),
+    sessionId: params.sessionId ?? `${sessionKey}-session`,
+    sessionKey,
+    startedAtMs: now,
+    expiresAtMs: now + 30_000,
+    ownerConnId: params.owner?.connId,
+    ownerDeviceId: params.owner?.deviceId,
+  };
+}
+
+export function createChatAbortContext(overrides: Record<string, unknown> = {}): {
+  chatAbortControllers: Map<string, unknown>;
+  chatRunBuffers: Map<string, string>;
+  chatDeltaSentAt: Map<string, number>;
+  chatAbortedRuns: Map<string, number>;
+  removeChatRun: Mock;
+  agentRunSeq: Map<string, number>;
+  broadcast: Mock;
+  nodeSendToSession: Mock;
+  logGateway: { warn: Mock };
+  dedupe?: { get: Mock };
+  [key: string]: unknown;
+} {
+  return {
+    chatAbortControllers: new Map(),
+    chatRunBuffers: new Map(),
+    chatDeltaSentAt: new Map(),
+    chatAbortedRuns: new Map<string, number>(),
+    removeChatRun: vi
+      .fn()
+      .mockImplementation((run: string) => ({ sessionKey: "main", clientRunId: run })),
+    agentRunSeq: new Map<string, number>(),
+    broadcast: vi.fn(),
+    nodeSendToSession: vi.fn(),
+    logGateway: { warn: vi.fn() },
+    ...overrides,
+  };
+}
+
+export async function invokeChatAbortHandler(params: {
+  handler: GatewayRequestHandler;
+  context: ReturnType<typeof createChatAbortContext>;
+  request: { sessionKey: string; runId?: string };
+  client?: {
+    connId?: string;
+    connect?: {
+      device?: { id?: string };
+      scopes?: string[];
+    };
+  } | null;
+  respond?: Mock;
+}): Promise<Mock> {
+  const respond = params.respond ?? vi.fn();
+  await params.handler({
+    params: params.request,
+    respond: respond as never,
+    context: params.context as never,
+    req: {} as never,
+    client: (params.client ?? null) as never,
+    isWebchatConnect: () => false,
+  });
+  return respond;
+}

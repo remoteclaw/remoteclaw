@@ -139,10 +139,19 @@ export type PluginPackageInstall = {
   defaultChoice?: "npm" | "local";
 };
 
+export type RemoteClawPackageStartup = {
+  /**
+   * Opt-in for channel plugins whose `setupEntry` fully covers the gateway
+   * startup surface needed before the server starts listening.
+   */
+  deferConfiguredChannelFullLoadUntilAfterListen?: boolean;
+};
+
 export type RemoteClawPackageManifest = {
   extensions?: string[];
   channel?: PluginPackageChannel;
   install?: PluginPackageInstall;
+  startup?: RemoteClawPackageStartup;
 };
 
 export const DEFAULT_PLUGIN_ENTRY_CANDIDATES = [

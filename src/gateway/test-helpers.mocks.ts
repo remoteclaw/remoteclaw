@@ -207,6 +207,9 @@ export const piSdkMock = hoisted.piSdkMock;
 export const cronIsolatedRun = hoisted.cronIsolatedRun;
 export const agentCommand: Mock<() => void> = hoisted.agentCommand;
 export const getReplyFromConfig: Mock<GetReplyFromConfigFn> = hoisted.getReplyFromConfig;
+export const mockGetReplyFromConfigOnce = (impl: GetReplyFromConfigFn) => {
+  getReplyFromConfig.mockImplementationOnce(impl);
+};
 
 export const testState = {
   agentConfig: undefined as Record<string, unknown> | undefined,

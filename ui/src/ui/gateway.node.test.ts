@@ -89,6 +89,24 @@ function getLatestWebSocket(): MockWebSocket {
   return ws;
 }
 
+async function startConnect(client: InstanceType<typeof GatewayBrowserClient>) {
+  client.start();
+  const ws = getLatestWebSocket();
+  ws.emitOpen();
+  ws.emitMessage({
+    type: "event",
+    event: "connect.challenge",
+    payload: { nonce: "nonce-1" },
+  });
+  await vi.waitFor(() => expect(ws.sent.length).toBeGreaterThan(0));
+  const connectFrame = JSON.parse(ws.sent.at(-1) ?? "{}") as {
+    id?: string;
+    method?: string;
+    params?: { auth?: { token?: string } };
+  };
+  return { ws, connectFrame };
+}
+
 describe("GatewayBrowserClient", () => {
   beforeEach(() => {
     wsInstances.length = 0;
@@ -172,6 +190,27 @@ describe("GatewayBrowserClient", () => {
     expect(signDevicePayloadMock).toHaveBeenCalledWith("private-key", expect.any(String));
     const signedPayload = signDevicePayloadMock.mock.calls[0]?.[1];
     expect(signedPayload).toContain("|stored-device-token|nonce-1");
+  });
+
+  it("ignores cached operator device tokens that do not include read access", async () => {
+    localStorage.clear();
+    storeDeviceAuthToken({
+      deviceId: "device-1",
+      role: "operator",
+      token: "under-scoped-device-token",
+      scopes: [],
+    });
+
+    const client = new GatewayBrowserClient({
+      url: "ws://127.0.0.1:18789",
+    });
+
+    const { connectFrame } = await startConnect(client);
+
+    expect(connectFrame.method).toBe("connect");
+    expect(connectFrame.params?.auth?.token).toBeUndefined();
+    const signedPayload = signDevicePayloadMock.mock.calls[0]?.[1];
+    expect(signedPayload).not.toContain("under-scoped-device-token");
   });
 
   it("retries once with device token after token mismatch when shared token is explicit", async () => {

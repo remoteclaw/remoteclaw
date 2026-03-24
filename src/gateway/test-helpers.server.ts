@@ -4,7 +4,12 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, vi } from "vitest";
 import { WebSocket } from "ws";
-import { resolveMainSessionKeyFromConfig, type SessionEntry } from "../config/sessions.js";
+import { clearConfigCache, clearRuntimeConfigSnapshot } from "../config/config.js";
+import {
+  clearSessionStoreCacheForTest,
+  resolveMainSessionKeyFromConfig,
+  type SessionEntry,
+} from "../config/sessions.js";
 import { resetAgentRunContextForTest } from "../infra/agent-events.js";
 import {
   loadOrCreateDeviceIdentity,
@@ -61,6 +66,31 @@ let gatewayEnvSnapshot: ReturnType<typeof captureEnv> | undefined;
 let tempHome: string | undefined;
 let tempConfigRoot: string | undefined;
 let suiteConfigRootSeq = 0;
+let _lastSyncedSessionStorePath: string | undefined;
+let _lastSyncedSessionConfigJson: string | undefined;
+
+function serializeGatewayTestSessionConfig(): string {
+  return JSON.stringify({
+    sessionConfig: testState.sessionConfig,
+    sessionStorePath: testState.sessionStorePath,
+  });
+}
+
+function hasUnsyncedGatewayTestSessionConfig(): boolean {
+  return (
+    serializeGatewayTestSessionConfig() !== _lastSyncedSessionConfigJson ||
+    testState.sessionStorePath !== _lastSyncedSessionStorePath
+  );
+}
+
+async function persistTestSessionConfig(): Promise<void> {
+  _lastSyncedSessionConfigJson = serializeGatewayTestSessionConfig();
+  _lastSyncedSessionStorePath = testState.sessionStorePath;
+}
+
+function resolveGatewayTestMainSessionKeys(): string[] {
+  return [resolveMainSessionKeyFromConfig()];
+}
 
 export async function writeSessionStore(params: {
   entries: Record<string, Partial<SessionEntry>>;
@@ -153,6 +183,8 @@ async function resetGatewayTestState(options: { uniqueConfigRoot: boolean }) {
   testState.bindingsConfig = undefined;
   testState.channelsConfig = undefined;
   testState.allowFrom = undefined;
+  _lastSyncedSessionStorePath = testState.sessionStorePath;
+  _lastSyncedSessionConfigJson = serializeGatewayTestSessionConfig();
   testIsNixMode.value = false;
   cronIsolatedRun.mockClear();
   agentCommand.mockClear();
@@ -702,6 +734,15 @@ export async function rpcReq<T extends Record<string, unknown>>(
   params?: unknown,
   timeoutMs?: number,
 ) {
+  if (hasUnsyncedGatewayTestSessionConfig()) {
+    await persistTestSessionConfig();
+  }
+  // Gateway suites often mutate testState-backed config/session inputs between
+  // RPCs while reusing one server instance; flush caches so the next request
+  // observes the updated test fixture state.
+  clearRuntimeConfigSnapshot();
+  clearConfigCache();
+  clearSessionStoreCacheForTest();
   const { randomUUID } = await import("node:crypto");
   const id = randomUUID();
   ws.send(JSON.stringify({ type: "req", id, method, params }));
@@ -725,12 +766,14 @@ export async function rpcReq<T extends Record<string, unknown>>(
 }
 
 export async function waitForSystemEvent(timeoutMs = 2000) {
-  const sessionKey = resolveMainSessionKeyFromConfig();
+  const sessionKeys = resolveGatewayTestMainSessionKeys();
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    const events = peekSystemEvents(sessionKey);
-    if (events.length > 0) {
-      return events;
+    for (const sessionKey of sessionKeys) {
+      const events = peekSystemEvents(sessionKey);
+      if (events.length > 0) {
+        return events;
+      }
     }
     await new Promise((resolve) => setTimeout(resolve, 10));
   }

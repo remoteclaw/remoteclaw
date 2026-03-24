@@ -157,7 +157,13 @@ describe("device pairing tokens", () => {
     const paired = await getPairedDevice("device-1", baseDir);
     expect(paired?.scopes).toEqual(["operator.admin"]);
     expect(paired?.approvedScopes).toEqual(["operator.admin"]);
-    expect(paired?.tokens?.operator?.scopes).toEqual(["operator.admin"]);
+    // Token scopes include normalized expansions from the initial pairing
+    // (operator.admin → operator.read + operator.write via normalizeDeviceAuthScopes).
+    expect(paired?.tokens?.operator?.scopes).toEqual([
+      "operator.admin",
+      "operator.read",
+      "operator.write",
+    ]);
   });
 
   test("rejects scope escalation when rotating a token and leaves state unchanged", async () => {

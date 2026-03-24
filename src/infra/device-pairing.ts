@@ -342,12 +342,10 @@ export async function approveDevicePairing(
       const nextScopes =
         requestedScopes.length > 0
           ? requestedScopes
-          : normalizeDeviceAuthScopes(
-              existingToken?.scopes ??
-                approvedScopes ??
-                existing?.approvedScopes ??
-                existing?.scopes,
-            );
+          : (existingToken?.scopes ??
+            normalizeDeviceAuthScopes(
+              approvedScopes ?? existing?.approvedScopes ?? existing?.scopes,
+            ));
       const now = Date.now();
       tokens[roleForToken] = {
         token: newToken(),

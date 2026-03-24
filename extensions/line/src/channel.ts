@@ -20,7 +20,6 @@ import {
   type ResolvedLineAccount,
 } from "remoteclaw/plugin-sdk/line";
 import { getLineRuntime } from "./runtime.js";
-import { lineSetupAdapter, lineSetupWizard } from "./setup-surface.js";
 
 // LINE channel metadata
 const meta = {
@@ -114,7 +113,6 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
   },
   reload: { configPrefixes: ["channels.line"] },
   configSchema: buildChannelConfigSchema(LineConfigSchema),
-  setupWizard: lineSetupWizard,
   config: {
     listAccountIds: (cfg) => getLineRuntime().channel.line.listLineAccountIds(cfg),
     resolveAccount: (cfg, accountId) =>
@@ -229,7 +227,101 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
     listPeers: async () => [],
     listGroups: async () => [],
   },
-  setup: lineSetupAdapter,
+  setup: {
+    resolveAccountId: ({ accountId }) =>
+      getLineRuntime().channel.line.normalizeAccountId(accountId),
+    applyAccountName: ({ cfg, accountId, name }) => {
+      const lineConfig = (cfg.channels?.line ?? {}) as LineConfig;
+      return patchLineAccountConfig(cfg, lineConfig, accountId, { name });
+    },
+    validateInput: ({ accountId, input }) => {
+      const typedInput = input as {
+        useEnv?: boolean;
+        channelAccessToken?: string;
+        channelSecret?: string;
+        tokenFile?: string;
+        secretFile?: string;
+      };
+      if (typedInput.useEnv && accountId !== DEFAULT_ACCOUNT_ID) {
+        return "LINE_CHANNEL_ACCESS_TOKEN can only be used for the default account.";
+      }
+      if (!typedInput.useEnv && !typedInput.channelAccessToken && !typedInput.tokenFile) {
+        return "LINE requires channelAccessToken or --token-file (or --use-env).";
+      }
+      if (!typedInput.useEnv && !typedInput.channelSecret && !typedInput.secretFile) {
+        return "LINE requires channelSecret or --secret-file (or --use-env).";
+      }
+      return null;
+    },
+    applyAccountConfig: ({ cfg, accountId, input }) => {
+      const typedInput = input as {
+        name?: string;
+        useEnv?: boolean;
+        channelAccessToken?: string;
+        channelSecret?: string;
+        tokenFile?: string;
+        secretFile?: string;
+      };
+      const lineConfig = (cfg.channels?.line ?? {}) as LineConfig;
+
+      if (accountId === DEFAULT_ACCOUNT_ID) {
+        return {
+          ...cfg,
+          channels: {
+            ...cfg.channels,
+            line: {
+              ...lineConfig,
+              enabled: true,
+              ...(typedInput.name ? { name: typedInput.name } : {}),
+              ...(typedInput.useEnv
+                ? {}
+                : typedInput.tokenFile
+                  ? { tokenFile: typedInput.tokenFile }
+                  : typedInput.channelAccessToken
+                    ? { channelAccessToken: typedInput.channelAccessToken }
+                    : {}),
+              ...(typedInput.useEnv
+                ? {}
+                : typedInput.secretFile
+                  ? { secretFile: typedInput.secretFile }
+                  : typedInput.channelSecret
+                    ? { channelSecret: typedInput.channelSecret }
+                    : {}),
+            },
+          },
+        };
+      }
+
+      return {
+        ...cfg,
+        channels: {
+          ...cfg.channels,
+          line: {
+            ...lineConfig,
+            enabled: true,
+            accounts: {
+              ...lineConfig.accounts,
+              [accountId]: {
+                ...lineConfig.accounts?.[accountId],
+                enabled: true,
+                ...(typedInput.name ? { name: typedInput.name } : {}),
+                ...(typedInput.tokenFile
+                  ? { tokenFile: typedInput.tokenFile }
+                  : typedInput.channelAccessToken
+                    ? { channelAccessToken: typedInput.channelAccessToken }
+                    : {}),
+                ...(typedInput.secretFile
+                  ? { secretFile: typedInput.secretFile }
+                  : typedInput.channelSecret
+                    ? { channelSecret: typedInput.channelSecret }
+                    : {}),
+              },
+            },
+          },
+        },
+      };
+    },
+  },
   outbound: {
     deliveryMode: "direct",
     chunker: (text, limit) => getLineRuntime().channel.text.chunkMarkdownText(text, limit),

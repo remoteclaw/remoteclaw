@@ -1,5 +1,4 @@
 import {
-  buildComputedAccountStatusSnapshot,
   buildChannelConfigSchema,
   collectStatusIssuesFromLastError,
   createDefaultChannelRuntimeState,
@@ -130,7 +129,6 @@ export const nostrPlugin: ChannelPlugin<ResolvedNostrAccount> = {
       },
       hint: "<npub|hex pubkey|nostr:npub...>",
     },
-    resolveOutboundSessionRoute: (params) => resolveNostrOutboundSessionRoute(params),
   },
 
   outbound: {

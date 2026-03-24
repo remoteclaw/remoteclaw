@@ -22,6 +22,8 @@ import {
   mapAllowFromEntries,
   listDirectoryUserEntriesFromAllowFrom,
   isNumericTargetId,
+  PAIRING_APPROVED_MESSAGE,
+  resolveOutboundMediaUrls,
   sendPayloadWithChunkedTextAndMedia,
   setAccountEnabledInConfigSection,
 } from "remoteclaw/plugin-sdk";
@@ -207,8 +209,13 @@ export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
   pairing: {
     idLabel: "zaloUserId",
     normalizeAllowEntry: (entry) => entry.replace(/^(zalo|zl):/i, ""),
-    notifyApproval: async (params) =>
-      await (await loadZaloChannelRuntime()).notifyZaloPairingApproval(params),
+    notifyApproval: async ({ cfg, id }) => {
+      const account = resolveZaloAccount({ cfg: cfg });
+      if (!account.token) {
+        throw new Error("Zalo token not configured");
+      }
+      await sendMessageZalo(id, PAIRING_APPROVED_MESSAGE, { token: account.token });
+    },
   },
   outbound: {
     deliveryMode: "direct",
@@ -225,22 +232,14 @@ export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
         emptyResult: { channel: "zalo", messageId: "" },
       }),
     sendText: async ({ to, text, accountId, cfg }) => {
-      const result = await (
-        await loadZaloChannelRuntime()
-      ).sendZaloText({
-        to,
-        text,
+      const result = await sendMessageZalo(to, text, {
         accountId: accountId ?? undefined,
         cfg: cfg,
       });
       return buildChannelSendResult("zalo", result);
     },
     sendMedia: async ({ to, text, mediaUrl, accountId, cfg }) => {
-      const result = await (
-        await loadZaloChannelRuntime()
-      ).sendZaloText({
-        to,
-        text,
+      const result = await sendMessageZalo(to, text, {
         accountId: accountId ?? undefined,
         mediaUrl,
         cfg: cfg,
@@ -259,7 +258,7 @@ export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
     collectStatusIssues: collectZaloStatusIssues,
     buildChannelSummary: ({ snapshot }) => buildTokenChannelStatusSummary(snapshot),
     probeAccount: async ({ account, timeoutMs }) =>
-      await (await loadZaloChannelRuntime()).probeZaloAccount({ account, timeoutMs }),
+      probeZalo(account.token, timeoutMs, resolveZaloProxyFetch(account.config.proxy)),
     buildAccountSnapshot: ({ account, runtime }) => {
       const configured = Boolean(account.token?.trim());
       const base = buildBaseAccountStatusSnapshot({

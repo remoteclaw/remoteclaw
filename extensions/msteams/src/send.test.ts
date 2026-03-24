@@ -177,7 +177,7 @@ describe("sendMessageMSTeams", () => {
     });
 
     await sendMessageMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       to: "conversation:19:bot-framework-id@thread.tacv2",
       text: "here is a file",
       mediaUrl: "https://example.com/doc.pdf",
@@ -243,7 +243,7 @@ describe("sendMessageMSTeams", () => {
     });
 
     await sendMessageMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       to: "conversation:19:fallback-id@thread.tacv2",
       text: "report",
       mediaUrl: "https://example.com/report.pdf",

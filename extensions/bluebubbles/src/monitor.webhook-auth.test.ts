@@ -340,7 +340,7 @@ describe("BlueBubbles webhook monitor", () => {
   }
 
   async function dispatchRegisteredWebhookPayload(payload: unknown) {
-    return dispatchWebhookPayloadWithSetup(() => {
+    return dispatchWebhookPayloadWithSetup(async () => {
       setupWebhookTarget();
       const payload = createNewMessagePayload({ date: Date.now() });
       const req = createWebhookRequestForTest({ body: payload });

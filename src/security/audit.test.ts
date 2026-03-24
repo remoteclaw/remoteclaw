@@ -16,6 +16,7 @@ function stubChannelPlugin(params: {
   label: string;
   resolveAccount: (cfg: RemoteClawConfig, accountId: string | null | undefined) => unknown;
   listAccountIds?: (cfg: RemoteClawConfig) => string[];
+  inspectAccount?: (cfg: RemoteClawConfig, accountId: string) => unknown;
 }): ChannelPlugin {
   return {
     id: params.id,
@@ -1447,7 +1448,7 @@ describe("security audit", () => {
             dangerouslyAllowNameMatching: true,
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies RemoteClawConfig,
       expectedMatch: {
         checkId: "channels.synology-chat.reply.dangerous_name_matching_enabled",
         severity: "info",
@@ -1474,7 +1475,7 @@ describe("security audit", () => {
             },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies RemoteClawConfig,
       expectedMatch: {
         checkId: "channels.synology-chat.reply.dangerous_name_matching_enabled",
         severity: "info",
@@ -1483,7 +1484,12 @@ describe("security audit", () => {
     },
   ])("$name", async (testCase) => {
     await withChannelSecurityStateDir(async () => {
-      const res = await runChannelSecurityAudit(testCase.cfg, [synologyChatPlugin]);
+      const res = await runSecurityAudit({
+        config: testCase.cfg,
+        includeFilesystem: false,
+        includeChannelSecurity: true,
+        plugins: [synologyChatPlugin],
+      });
       expect(res.findings).toEqual(
         expect.arrayContaining([expect.objectContaining(testCase.expectedMatch)]),
       );

@@ -12,10 +12,11 @@ import { runSecurityAudit } from "./audit.js";
 const isWindows = process.platform === "win32";
 
 function stubChannelPlugin(params: {
-  id: "discord" | "slack" | "telegram";
+  id: "discord" | "slack" | "synology-chat" | "telegram";
   label: string;
   resolveAccount: (cfg: RemoteClawConfig, accountId: string | null | undefined) => unknown;
   listAccountIds?: (cfg: RemoteClawConfig) => string[];
+  inspectAccount?: (cfg: RemoteClawConfig, accountId: string) => unknown;
 }): ChannelPlugin {
   return {
     id: params.id,
@@ -88,6 +89,30 @@ const telegramPlugin = stubChannelPlugin({
     const base = cfg.channels?.telegram ?? {};
     const account = cfg.channels?.telegram?.accounts?.[resolvedAccountId] ?? {};
     return { config: { ...base, ...account } };
+  },
+});
+
+const synologyChatPlugin = stubChannelPlugin({
+  id: "synology-chat",
+  label: "Synology Chat",
+  listAccountIds: (cfg) => {
+    const ids = Object.keys(cfg.channels?.["synology-chat"]?.accounts ?? {});
+    return ids.length > 0 ? ids : ["default"];
+  },
+  inspectAccount: () => null,
+  resolveAccount: (cfg, accountId) => {
+    const resolvedAccountId = typeof accountId === "string" && accountId ? accountId : "default";
+    const base = cfg.channels?.["synology-chat"] ?? {};
+    const account = cfg.channels?.["synology-chat"]?.accounts?.[resolvedAccountId] ?? {};
+    const dangerouslyAllowNameMatching =
+      typeof account.dangerouslyAllowNameMatching === "boolean"
+        ? account.dangerouslyAllowNameMatching
+        : base.dangerouslyAllowNameMatching === true;
+    return {
+      accountId: resolvedAccountId,
+      enabled: true,
+      dangerouslyAllowNameMatching,
+    };
   },
 });
 
@@ -550,6 +575,40 @@ describe("security audit", () => {
     const res = await audit(cfg);
     const finding = res.findings.find((f) => f.checkId === "models.small_params");
     expect(finding).toBeUndefined();
+  });
+
+  it("flags dangerous sandbox docker config (seccomp and apparmor)", async () => {
+    // Note: bind mount and network mode checks are stubbed in the fork
+    // (isDangerousNetworkMode/getBlockedBindReason return false/undefined).
+    // Only seccomp and apparmor profile checks are active.
+    const cfg = {
+      agents: {
+        defaults: {
+          sandbox: {
+            mode: "all",
+            docker: {
+              seccompProfile: "unconfined",
+              apparmorProfile: "unconfined",
+            },
+          },
+        },
+      },
+    } as RemoteClawConfig;
+
+    const res = await audit(cfg);
+
+    expect(res.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          checkId: "sandbox.dangerous_seccomp_profile",
+          severity: "critical",
+        }),
+        expect.objectContaining({
+          checkId: "sandbox.dangerous_apparmor_profile",
+          severity: "critical",
+        }),
+      ]),
+    );
   });
 
   it("flags ineffective gateway.nodes.denyCommands entries", async () => {
@@ -1346,6 +1405,65 @@ describe("security audit", () => {
             severity: "info",
           }),
         ]),
+      );
+    });
+  });
+
+  it.each([
+    {
+      name: "audits Synology Chat base dangerous name matching",
+      cfg: {
+        channels: {
+          "synology-chat": {
+            token: "t",
+            incomingUrl: "https://nas.example.com/incoming",
+            dangerouslyAllowNameMatching: true,
+          },
+        },
+      } satisfies RemoteClawConfig,
+      expectedMatch: {
+        checkId: "channels.synology-chat.reply.dangerous_name_matching_enabled",
+        severity: "info",
+        title: "Synology Chat dangerous name matching is enabled",
+      },
+    },
+    {
+      name: "audits non-default Synology Chat accounts for dangerous name matching",
+      cfg: {
+        channels: {
+          "synology-chat": {
+            token: "t",
+            incomingUrl: "https://nas.example.com/incoming",
+            accounts: {
+              alpha: {
+                token: "a",
+                incomingUrl: "https://nas.example.com/incoming-alpha",
+              },
+              beta: {
+                token: "b",
+                incomingUrl: "https://nas.example.com/incoming-beta",
+                dangerouslyAllowNameMatching: true,
+              },
+            },
+          },
+        },
+      } satisfies RemoteClawConfig,
+      expectedMatch: {
+        checkId: "channels.synology-chat.reply.dangerous_name_matching_enabled",
+        severity: "info",
+        title: expect.stringContaining("(account: beta)"),
+      },
+    },
+  ])("$name", async (testCase) => {
+    await withChannelSecurityStateDir(async () => {
+      const res = await runSecurityAudit({
+        config: testCase.cfg,
+        includeFilesystem: false,
+        includeChannelSecurity: true,
+        plugins: [synologyChatPlugin],
+      });
+      expect(res.findings).toEqual(
+        expect.arrayContaining([expect.objectContaining(testCase.expectedMatch)]),
       );
     });
   });

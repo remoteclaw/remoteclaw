@@ -1,7 +1,15 @@
-import { createDeferred } from "remoteclaw/plugin-sdk/extension-shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createDeferred } from "../../../shared/deferred.js";
 import { DEFAULT_SEND_GAP_MS, enqueueSend } from "./send-queue.js";
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
 
 describe("enqueueSend", () => {
   beforeEach(() => {
@@ -13,7 +21,7 @@ describe("enqueueSend", () => {
   });
 
   it("serializes sends per room", async () => {
-    const gate = createDeferred<void>();
+    const gate = deferred<void>();
     const events: string[] = [];
 
     const first = enqueueSend("!room:example.org", async () => {
@@ -83,7 +91,7 @@ describe("enqueueSend", () => {
   });
 
   it("continues queued work when the head task fails", async () => {
-    const gate = createDeferred<void>();
+    const gate = deferred<void>();
     const events: string[] = [];
 
     const first = enqueueSend("!room:example.org", async () => {

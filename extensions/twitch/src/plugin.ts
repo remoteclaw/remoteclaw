@@ -1,13 +1,12 @@
 /**
- * Twitch channel plugin for OpenClaw.
+ * Twitch channel plugin for RemoteClaw.
  *
  * Main plugin export combining all adapters (outbound, actions, status, gateway).
  * This is the primary entry point for the Twitch channel integration.
  */
 
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/twitch";
-import { buildChannelConfigSchema } from "remoteclaw/plugin-sdk/twitch";
-import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
+import { buildChannelConfigSchema } from "remoteclaw/plugin-sdk";
 import { twitchMessageActions } from "./actions.js";
 import { removeClientManager } from "./client-manager-registry.js";
 import { TwitchConfigSchema } from "./config-schema.js";
@@ -34,7 +33,7 @@ import { isAccountConfigured } from "./utils/twitch.js";
  * Twitch channel plugin.
  *
  * Implements the ChannelPlugin interface to provide Twitch chat integration
- * for OpenClaw. Supports message sending, receiving, access control, and
+ * for RemoteClaw. Supports message sending, receiving, access control, and
  * status monitoring.
  */
 export const twitchPlugin: ChannelPlugin<TwitchAccountConfig> = {
@@ -57,7 +56,7 @@ export const twitchPlugin: ChannelPlugin<TwitchAccountConfig> = {
   /** Pairing configuration */
   pairing: {
     idLabel: "twitchUserId",
-    normalizeAllowEntry: (entry) => entry.replace(/^(twitch:)?user:?/i, ""),
+    normalizeAllowEntry: (entry) => entry.trim().replace(/^(twitch:)?user:?/i, ""),
     notifyApproval: async ({ id }) => {
       // Note: Twitch doesn't support DMs from bots, so pairing approval is limited
       // We'll log the approval instead
@@ -170,8 +169,15 @@ export const twitchPlugin: ChannelPlugin<TwitchAccountConfig> = {
     },
 
     /** Build channel summary from snapshot */
-    buildChannelSummary: ({ snapshot }: { snapshot: ChannelAccountSnapshot }) =>
-      buildPassiveProbedChannelStatusSummary(snapshot),
+    buildChannelSummary: ({ snapshot }: { snapshot: ChannelAccountSnapshot }) => ({
+      configured: snapshot.configured ?? false,
+      running: snapshot.running ?? false,
+      lastStartAt: snapshot.lastStartAt ?? null,
+      lastStopAt: snapshot.lastStopAt ?? null,
+      lastError: snapshot.lastError ?? null,
+      probe: snapshot.probe,
+      lastProbeAt: snapshot.lastProbeAt ?? null,
+    }),
 
     /** Probe account connection */
     probeAccount: async ({

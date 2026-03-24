@@ -1,4 +1,5 @@
 import { isToolAllowedByPolicies } from "../agents/tool-policy-resolution.js";
+import { resolveAllowedAgentIds } from "../gateway/hooks.js";
 // Sandbox infrastructure removed (#68)
 type ToolPolicy = { allow?: string[]; deny?: string[] };
 const resolveSandboxConfigForAgent = (_cfg: unknown, _agentId?: string) =>
@@ -116,11 +117,8 @@ function looksLikeEnvRef(value: string): boolean {
   return v.startsWith("${") && v.endsWith("}");
 }
 
-function isHookAgentRoutingUnrestricted(allowedAgentIds: string[] | undefined): boolean {
-  if (!allowedAgentIds) {
-    return true;
-  }
-  return allowedAgentIds.some((agentId) => agentId === "*");
+function isHookAgentRoutingUnrestricted(resolved: Set<string> | undefined): boolean {
+  return resolved === undefined;
 }
 
 function isGatewayRemotelyExposed(cfg: RemoteClawConfig): boolean {
@@ -651,11 +649,7 @@ export function collectHooksHardeningFindings(
   const allowRequestSessionKey = cfg.hooks?.allowRequestSessionKey === true;
   const defaultSessionKey =
     typeof cfg.hooks?.defaultSessionKey === "string" ? cfg.hooks.defaultSessionKey.trim() : "";
-  const allowedAgentIds = Array.isArray(cfg.hooks?.allowedAgentIds)
-    ? cfg.hooks.allowedAgentIds
-        .map((agentId) => agentId.trim())
-        .filter((agentId) => agentId.length > 0)
-    : undefined;
+  const allowedAgentIds = resolveAllowedAgentIds(cfg.hooks?.allowedAgentIds);
   const allowedPrefixes = Array.isArray(cfg.hooks?.allowedSessionKeyPrefixes)
     ? cfg.hooks.allowedSessionKeyPrefixes
         .map((prefix) => prefix.trim())
@@ -665,7 +659,7 @@ export function collectHooksHardeningFindings(
 
   if (isHookAgentRoutingUnrestricted(allowedAgentIds)) {
     findings.push({
-      checkId: "hooks.allowed_agent_ids_unset",
+      checkId: "hooks.allowed_agent_ids_unrestricted",
       severity: remoteExposure ? "critical" : "warn",
       title: "Hook agent routing allows any configured agent",
       detail:

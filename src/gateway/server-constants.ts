@@ -21,7 +21,7 @@ export const __setMaxChatHistoryMessagesBytesForTest = (value?: number) => {
     maxChatHistoryMessagesBytes = value;
   }
 };
-export const DEFAULT_HANDSHAKE_TIMEOUT_MS = 10_000;
+export const DEFAULT_HANDSHAKE_TIMEOUT_MS = 3_000;
 export const getHandshakeTimeoutMs = () => {
   // User-facing env var (works in all environments); test-only var gated behind VITEST
   const envKey =

@@ -16,33 +16,17 @@ export const TalkConfigParamsSchema = Type.Object(
   { additionalProperties: false },
 );
 
-export const TalkSpeakParamsSchema = Type.Object(
-  {
-    text: NonEmptyString,
-    voiceId: Type.Optional(Type.String()),
-    modelId: Type.Optional(Type.String()),
-    speed: Type.Optional(Type.Number()),
-    stability: Type.Optional(Type.Number()),
-    similarity: Type.Optional(Type.Number()),
-    style: Type.Optional(Type.Number()),
-    speakerBoost: Type.Optional(Type.Boolean()),
-    seed: Type.Optional(Type.Integer({ minimum: 0 })),
-    normalize: Type.Optional(Type.String()),
-    language: Type.Optional(Type.String()),
-  },
-  { additionalProperties: false },
-);
+const talkProviderFieldSchemas = {
+  voiceId: Type.Optional(Type.String()),
+  voiceAliases: Type.Optional(Type.Record(Type.String(), Type.String())),
+  modelId: Type.Optional(Type.String()),
+  outputFormat: Type.Optional(Type.String()),
+  apiKey: Type.Optional(SecretInputSchema),
+};
 
-const TalkProviderConfigSchema = Type.Object(
-  {
-    voiceId: Type.Optional(Type.String()),
-    voiceAliases: Type.Optional(Type.Record(Type.String(), Type.String())),
-    modelId: Type.Optional(Type.String()),
-    outputFormat: Type.Optional(Type.String()),
-    apiKey: Type.Optional(SecretInputSchema),
-  },
-  { additionalProperties: true },
-);
+const TalkProviderConfigSchema = Type.Object(talkProviderFieldSchemas, {
+  additionalProperties: true,
+});
 
 const ResolvedTalkConfigSchema = Type.Object(
   {
@@ -54,11 +38,7 @@ const ResolvedTalkConfigSchema = Type.Object(
 
 const LegacyTalkConfigSchema = Type.Object(
   {
-    voiceId: Type.Optional(Type.String()),
-    voiceAliases: Type.Optional(Type.Record(Type.String(), Type.String())),
-    modelId: Type.Optional(Type.String()),
-    outputFormat: Type.Optional(Type.String()),
-    apiKey: Type.Optional(SecretInputSchema),
+    ...talkProviderFieldSchemas,
     interruptOnSpeech: Type.Optional(Type.Boolean()),
     silenceTimeoutMs: Type.Optional(Type.Integer({ minimum: 1 })),
   },
@@ -70,11 +50,7 @@ const NormalizedTalkConfigSchema = Type.Object(
     provider: Type.Optional(Type.String()),
     providers: Type.Optional(Type.Record(Type.String(), TalkProviderConfigSchema)),
     resolved: ResolvedTalkConfigSchema,
-    voiceId: Type.Optional(Type.String()),
-    voiceAliases: Type.Optional(Type.Record(Type.String(), Type.String())),
-    modelId: Type.Optional(Type.String()),
-    outputFormat: Type.Optional(Type.String()),
-    apiKey: Type.Optional(SecretInputSchema),
+    ...talkProviderFieldSchemas,
     interruptOnSpeech: Type.Optional(Type.Boolean()),
     silenceTimeoutMs: Type.Optional(Type.Integer({ minimum: 1 })),
   },
@@ -105,18 +81,6 @@ export const TalkConfigResultSchema = Type.Object(
       },
       { additionalProperties: false },
     ),
-  },
-  { additionalProperties: false },
-);
-
-export const TalkSpeakResultSchema = Type.Object(
-  {
-    audioBase64: NonEmptyString,
-    provider: NonEmptyString,
-    outputFormat: Type.Optional(Type.String()),
-    voiceCompatible: Type.Optional(Type.Boolean()),
-    mimeType: Type.Optional(Type.String()),
-    fileExtension: Type.Optional(Type.String()),
   },
   { additionalProperties: false },
 );

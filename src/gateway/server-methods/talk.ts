@@ -11,7 +11,6 @@ import {
   formatValidationErrors,
   validateTalkConfigParams,
   validateTalkModeParams,
-  validateTalkSpeakParams,
 } from "../protocol/index.js";
 import { formatForLog } from "../ws-log.js";
 import type { GatewayRequestHandlers } from "./types.js";
@@ -340,14 +339,11 @@ export const talkHandlers: GatewayRequestHandlers = {
     respond(true, { config: configPayload }, undefined);
   },
   "talk.speak": async ({ params, respond }) => {
-    if (!validateTalkSpeakParams(params)) {
+    if (!params || typeof params !== "object") {
       respond(
         false,
         undefined,
-        errorShape(
-          ErrorCodes.INVALID_REQUEST,
-          `invalid talk.speak params: ${formatValidationErrors(validateTalkSpeakParams.errors)}`,
-        ),
+        errorShape(ErrorCodes.INVALID_REQUEST, "invalid talk.speak params"),
       );
       return;
     }

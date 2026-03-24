@@ -45,7 +45,7 @@ describe("wide-area DNS discovery domain helpers", () => {
     {
       name: "prefers config domain over env",
       params: {
-        env: { OPENCLAW_WIDE_AREA_DOMAIN: "env.internal" } as NodeJS.ProcessEnv,
+        env: { REMOTECLAW_WIDE_AREA_DOMAIN: "env.internal" } as NodeJS.ProcessEnv,
         configDomain: "config.internal",
       },
       expected: "config.internal.",
@@ -53,14 +53,14 @@ describe("wide-area DNS discovery domain helpers", () => {
     {
       name: "falls back to env domain",
       params: {
-        env: { OPENCLAW_WIDE_AREA_DOMAIN: "env.internal" } as NodeJS.ProcessEnv,
+        env: { REMOTECLAW_WIDE_AREA_DOMAIN: "env.internal" } as NodeJS.ProcessEnv,
       },
       expected: "env.internal.",
     },
     {
       name: "returns null when both sources are blank",
       params: {
-        env: { OPENCLAW_WIDE_AREA_DOMAIN: "   " } as NodeJS.ProcessEnv,
+        env: { REMOTECLAW_WIDE_AREA_DOMAIN: "   " } as NodeJS.ProcessEnv,
         configDomain: " ",
       },
       expected: null,

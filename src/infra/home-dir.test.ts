@@ -142,9 +142,9 @@ describe("resolveHomeRelativePath", () => {
   it("expands tilde paths using the resolved home directory", () => {
     expect(
       resolveHomeRelativePath("~/docs", {
-        env: { OPENCLAW_HOME: "/srv/openclaw-home" } as NodeJS.ProcessEnv,
+        env: { REMOTECLAW_HOME: "/srv/remoteclaw-home" } as NodeJS.ProcessEnv,
       }),
-    ).toBe(path.resolve("/srv/openclaw-home/docs"));
+    ).toBe(path.resolve("/srv/remoteclaw-home/docs"));
   });
 
   it("falls back to cwd when tilde paths have no home source", () => {

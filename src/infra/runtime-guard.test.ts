@@ -52,7 +52,8 @@ describe("runtime-guard", () => {
     expect(runtimeSatisfies(nodeTooOld)).toBe(false);
     expect(runtimeSatisfies(unknown)).toBe(false);
     expect(isSupportedNodeVersion("22.16.0")).toBe(true);
-    expect(isSupportedNodeVersion("22.15.9")).toBe(false);
+    expect(isSupportedNodeVersion("22.12.0")).toBe(true);
+    expect(isSupportedNodeVersion("22.11.9")).toBe(false);
     expect(isSupportedNodeVersion(null)).toBe(false);
   });
 

@@ -6,6 +6,9 @@
   "remoteclaw": {
     "extensions": [
       "./index.ts"
-    ]
+    ],
+    "release": {
+      "publishToNpm": true
+    }
   }
 }

@@ -1,0 +1,1170 @@
+[
+  {
+    "file": "extensions/discord/src/monitor.tool-result.test-harness.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/test-utils/vitest-mock-fn.js",
+    "resolvedPath": "src/test-utils/vitest-mock-fn.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/discord/src/send.test-harness.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/test-utils/vitest-mock-fn.js",
+    "resolvedPath": "src/test-utils/vitest-mock-fn.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/googlechat/src/setup-core.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/setup-helpers.js",
+    "resolvedPath": "src/channels/plugins/setup-helpers.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/googlechat/src/setup-core.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/types.adapters.js",
+    "resolvedPath": "src/channels/plugins/types.adapters.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/googlechat/src/setup-core.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/line/src/setup-core.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/types.adapters.js",
+    "resolvedPath": "src/channels/plugins/types.adapters.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/line/src/setup-core.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/line/src/setup-core.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/line/accounts.js",
+    "resolvedPath": "src/line/accounts.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/line/src/setup-core.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../src/line/types.js",
+    "resolvedPath": "src/line/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/line/src/setup-core.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/mattermost/src/setup-core.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/types.adapters.js",
+    "resolvedPath": "src/channels/plugins/types.adapters.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/mattermost/src/setup-core.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../src/config/types.secrets.js",
+    "resolvedPath": "src/config/types.secrets.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/accounts.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/account-helpers.js",
+    "resolvedPath": "src/channels/plugins/account-helpers.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/accounts.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/accounts.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/config/types.js",
+    "resolvedPath": "src/config/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/accounts.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/routing/account-lookup.js",
+    "resolvedPath": "src/routing/account-lookup.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/accounts.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/client.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/infra/fetch.js",
+    "resolvedPath": "src/infra/fetch.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/client.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/infra/secure-random.js",
+    "resolvedPath": "src/infra/secure-random.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/client.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/utils/fetch-timeout.js",
+    "resolvedPath": "src/utils/fetch-timeout.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/daemon.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/format.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/config/types.base.js",
+    "resolvedPath": "src/config/types.base.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/format.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/markdown/ir.js",
+    "resolvedPath": "src/markdown/ir.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/identity.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor.tool-result.test-harness.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/reply/inbound-dedupe.js",
+    "resolvedPath": "src/auto-reply/reply/inbound-dedupe.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor.tool-result.test-harness.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/infra/system-events.js",
+    "resolvedPath": "src/infra/system-events.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor.tool-result.test-harness.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/test-utils/vitest-mock-fn.js",
+    "resolvedPath": "src/test-utils/vitest-mock-fn.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/chunk.js",
+    "resolvedPath": "src/auto-reply/chunk.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/reply/history.js",
+    "resolvedPath": "src/auto-reply/reply/history.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/types.js",
+    "resolvedPath": "src/auto-reply/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor.ts",
+    "line": 11,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor.ts",
+    "line": 12,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor.ts",
+    "line": 17,
+    "kind": "import",
+    "specifier": "../../../src/config/runtime-group-policy.js",
+    "resolvedPath": "src/config/runtime-group-policy.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor.ts",
+    "line": 18,
+    "kind": "import",
+    "specifier": "../../../src/config/types.js",
+    "resolvedPath": "src/config/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor.ts",
+    "line": 19,
+    "kind": "import",
+    "specifier": "../../../src/infra/backoff.js",
+    "resolvedPath": "src/infra/backoff.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor.ts",
+    "line": 20,
+    "kind": "import",
+    "specifier": "../../../src/infra/transport-ready.js",
+    "resolvedPath": "src/infra/transport-ready.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor.ts",
+    "line": 21,
+    "kind": "import",
+    "specifier": "../../../src/media/store.js",
+    "resolvedPath": "src/media/store.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor.ts",
+    "line": 22,
+    "kind": "import",
+    "specifier": "../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor.ts",
+    "line": 23,
+    "kind": "import",
+    "specifier": "../../../src/shared/string-normalization.js",
+    "resolvedPath": "src/shared/string-normalization.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor.ts",
+    "line": 24,
+    "kind": "import",
+    "specifier": "../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/access-policy.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../src/pairing/pairing-challenge.js",
+    "resolvedPath": "src/pairing/pairing-challenge.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/access-policy.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../../src/pairing/pairing-store.js",
+    "resolvedPath": "src/pairing/pairing-store.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/access-policy.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../../src/security/dm-policy-shared.js",
+    "resolvedPath": "src/security/dm-policy-shared.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../src/agents/identity.js",
+    "resolvedPath": "src/agents/identity.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/command-detection.js",
+    "resolvedPath": "src/auto-reply/command-detection.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/dispatch.js",
+    "resolvedPath": "src/auto-reply/dispatch.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/envelope.js",
+    "resolvedPath": "src/auto-reply/envelope.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 13,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/reply/history.js",
+    "resolvedPath": "src/auto-reply/reply/history.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 14,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/reply/inbound-context.js",
+    "resolvedPath": "src/auto-reply/reply/inbound-context.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 18,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/reply/mentions.js",
+    "resolvedPath": "src/auto-reply/reply/mentions.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 19,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/reply/reply-dispatcher.js",
+    "resolvedPath": "src/auto-reply/reply/reply-dispatcher.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 20,
+    "kind": "import",
+    "specifier": "../../../../src/channels/command-gating.js",
+    "resolvedPath": "src/channels/command-gating.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 24,
+    "kind": "import",
+    "specifier": "../../../../src/channels/inbound-debounce-policy.js",
+    "resolvedPath": "src/channels/inbound-debounce-policy.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 25,
+    "kind": "import",
+    "specifier": "../../../../src/channels/logging.js",
+    "resolvedPath": "src/channels/logging.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 26,
+    "kind": "import",
+    "specifier": "../../../../src/channels/mention-gating.js",
+    "resolvedPath": "src/channels/mention-gating.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 27,
+    "kind": "import",
+    "specifier": "../../../../src/channels/plugins/normalize/signal.js",
+    "resolvedPath": "src/channels/plugins/normalize/signal.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 28,
+    "kind": "import",
+    "specifier": "../../../../src/channels/reply-prefix.js",
+    "resolvedPath": "src/channels/reply-prefix.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 29,
+    "kind": "import",
+    "specifier": "../../../../src/channels/session.js",
+    "resolvedPath": "src/channels/session.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 30,
+    "kind": "import",
+    "specifier": "../../../../src/channels/typing.js",
+    "resolvedPath": "src/channels/typing.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 31,
+    "kind": "import",
+    "specifier": "../../../../src/config/group-policy.js",
+    "resolvedPath": "src/config/group-policy.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 32,
+    "kind": "import",
+    "specifier": "../../../../src/config/sessions.js",
+    "resolvedPath": "src/config/sessions.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 33,
+    "kind": "import",
+    "specifier": "../../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 34,
+    "kind": "import",
+    "specifier": "../../../../src/infra/system-events.js",
+    "resolvedPath": "src/infra/system-events.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 35,
+    "kind": "import",
+    "specifier": "../../../../src/media/mime.js",
+    "resolvedPath": "src/media/mime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 36,
+    "kind": "import",
+    "specifier": "../../../../src/routing/resolve-route.js",
+    "resolvedPath": "src/routing/resolve-route.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 40,
+    "kind": "import",
+    "specifier": "../../../../src/security/dm-policy-shared.js",
+    "resolvedPath": "src/security/dm-policy-shared.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.ts",
+    "line": 41,
+    "kind": "import",
+    "specifier": "../../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.types.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/reply/history.js",
+    "resolvedPath": "src/auto-reply/reply/history.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.types.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/types.js",
+    "resolvedPath": "src/auto-reply/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.types.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.types.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../../src/config/types.js",
+    "resolvedPath": "src/config/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/monitor/event-handler.types.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/probe.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/types.js",
+    "resolvedPath": "src/channels/plugins/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/reaction-level.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/reaction-level.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/utils/reaction-level.js",
+    "resolvedPath": "src/utils/reaction-level.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/rpc-context.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/send-reactions.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/send-reactions.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/send.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/send.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/config/markdown-tables.js",
+    "resolvedPath": "src/config/markdown-tables.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/send.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/media/mime.js",
+    "resolvedPath": "src/media/mime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/send.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/media/outbound-attachment.js",
+    "resolvedPath": "src/media/outbound-attachment.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/sse-reconnect.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/sse-reconnect.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/infra/backoff.js",
+    "resolvedPath": "src/infra/backoff.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/sse-reconnect.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/infra/backoff.js",
+    "resolvedPath": "src/infra/backoff.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/signal/src/sse-reconnect.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/active-listener.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/cli/command-format.js",
+    "resolvedPath": "src/cli/command-format.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/active-listener.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/polls.js",
+    "resolvedPath": "src/polls.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/active-listener.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auth-store.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/cli/command-format.js",
+    "resolvedPath": "src/cli/command-format.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auth-store.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/config/paths.js",
+    "resolvedPath": "src/config/paths.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auth-store.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auth-store.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/logging.js",
+    "resolvedPath": "src/logging.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auth-store.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auth-store.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auth-store.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auth-store.ts",
+    "line": 11,
+    "kind": "import",
+    "specifier": "../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/loggers.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../src/logging/subsystem.js",
+    "resolvedPath": "src/logging/subsystem.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/group-activation.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../../src/auto-reply/group-activation.js",
+    "resolvedPath": "src/auto-reply/group-activation.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/group-activation.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/group-activation.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../../../src/config/group-policy.js",
+    "resolvedPath": "src/config/group-policy.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/group-activation.ts",
+    "line": 11,
+    "kind": "import",
+    "specifier": "../../../../../src/config/sessions.js",
+    "resolvedPath": "src/config/sessions.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/group-members.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/last-route.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../../src/auto-reply/templating.js",
+    "resolvedPath": "src/auto-reply/templating.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/last-route.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/last-route.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../../../src/config/sessions.js",
+    "resolvedPath": "src/config/sessions.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/session-snapshot.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/session-snapshot.ts",
+    "line": 11,
+    "kind": "import",
+    "specifier": "../../../../src/config/sessions.js",
+    "resolvedPath": "src/config/sessions.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/session-snapshot.ts",
+    "line": 12,
+    "kind": "import",
+    "specifier": "../../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/dedupe.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../src/infra/dedupe.js",
+    "resolvedPath": "src/infra/dedupe.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/extract.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../../src/channels/location.js",
+    "resolvedPath": "src/channels/location.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/extract.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/extract.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/media.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/send-api.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../../src/infra/channel-activity.js",
+    "resolvedPath": "src/infra/channel-activity.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/send-api.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/types.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../../src/channels/location.js",
+    "resolvedPath": "src/channels/location.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/media.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/media.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/infra/fs-safe.js",
+    "resolvedPath": "src/infra/fs-safe.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/media.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/infra/net/ssrf.js",
+    "resolvedPath": "src/infra/net/ssrf.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/media.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/media/constants.js",
+    "resolvedPath": "src/media/constants.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/media.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../src/media/fetch.js",
+    "resolvedPath": "src/media/fetch.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/media.ts",
+    "line": 14,
+    "kind": "import",
+    "specifier": "../../../src/media/image-ops.js",
+    "resolvedPath": "src/media/image-ops.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/media.ts",
+    "line": 15,
+    "kind": "import",
+    "specifier": "../../../src/media/local-roots.js",
+    "resolvedPath": "src/media/local-roots.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/media.ts",
+    "line": 16,
+    "kind": "import",
+    "specifier": "../../../src/media/mime.js",
+    "resolvedPath": "src/media/mime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/media.ts",
+    "line": 17,
+    "kind": "import",
+    "specifier": "../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/normalize.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/normalize/shared.js",
+    "resolvedPath": "src/channels/plugins/normalize/shared.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/normalize.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/whatsapp/normalize.js",
+    "resolvedPath": "src/whatsapp/normalize.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/qr-image.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/media/png-encode.js",
+    "resolvedPath": "src/media/png-encode.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/session.ts",
+    "line": 11,
+    "kind": "import",
+    "specifier": "../../../src/cli/command-format.js",
+    "resolvedPath": "src/cli/command-format.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/session.ts",
+    "line": 12,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/session.ts",
+    "line": 13,
+    "kind": "import",
+    "specifier": "../../../src/logging.js",
+    "resolvedPath": "src/logging.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/session.ts",
+    "line": 14,
+    "kind": "import",
+    "specifier": "../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/session.ts",
+    "line": 15,
+    "kind": "import",
+    "specifier": "../../../src/version.js",
+    "resolvedPath": "src/version.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/setup-core.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/setup-helpers.js",
+    "resolvedPath": "src/channels/plugins/setup-helpers.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/setup-core.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/types.adapters.js",
+    "resolvedPath": "src/channels/plugins/types.adapters.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/setup-core.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/status-issues.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/status-issues/shared.js",
+    "resolvedPath": "src/channels/plugins/status-issues/shared.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/status-issues.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/types.js",
+    "resolvedPath": "src/channels/plugins/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/status-issues.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../src/cli/command-format.js",
+    "resolvedPath": "src/cli/command-format.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/zalo/src/setup-core.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/setup-helpers.js",
+    "resolvedPath": "src/channels/plugins/setup-helpers.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/zalo/src/setup-core.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/types.adapters.js",
+    "resolvedPath": "src/channels/plugins/types.adapters.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/zalo/src/setup-core.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/zalouser/src/setup-core.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/setup-helpers.js",
+    "resolvedPath": "src/channels/plugins/setup-helpers.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/zalouser/src/setup-core.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/types.adapters.js",
+    "resolvedPath": "src/channels/plugins/types.adapters.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/zalouser/src/setup-core.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  }
+]

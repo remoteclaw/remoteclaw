@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Rootless RemoteClaw in Podman: run after one-time setup.
 #
-# One-time setup (from repo root): ./setup-podman.sh
+# One-time setup (from repo root): ./scripts/podman/setup.sh
 # Then:
 #   ./scripts/run-remoteclaw-podman.sh launch           # Start gateway
 #   ./scripts/run-remoteclaw-podman.sh launch setup      # Onboarding wizard
@@ -10,7 +10,7 @@
 #   sudo -u remoteclaw /home/remoteclaw/run-remoteclaw-podman.sh
 #   sudo -u remoteclaw /home/remoteclaw/run-remoteclaw-podman.sh setup
 #
-# Legacy: "setup-host" delegates to ../setup-podman.sh
+# Legacy: "setup-host" delegates to the Podman setup script
 
 set -euo pipefail
 
@@ -35,15 +35,19 @@ REMOTECLAW_HOME="$(resolve_user_home "$REMOTECLAW_USER")"
 REMOTECLAW_UID="$(id -u "$REMOTECLAW_USER" 2>/dev/null || true)"
 LAUNCH_SCRIPT="$REMOTECLAW_HOME/run-remoteclaw-podman.sh"
 
-# Legacy: setup-host → run setup-podman.sh
+# Legacy: setup-host → run the Podman setup script
 if [[ "${1:-}" == "setup-host" ]]; then
   shift
   REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  SETUP_PODMAN="$REPO_ROOT/scripts/podman/setup.sh"
+  if [[ -f "$SETUP_PODMAN" ]]; then
+    exec "$SETUP_PODMAN" "$@"
+  fi
   SETUP_PODMAN="$REPO_ROOT/setup-podman.sh"
   if [[ -f "$SETUP_PODMAN" ]]; then
     exec "$SETUP_PODMAN" "$@"
   fi
-  echo "setup-podman.sh not found at $SETUP_PODMAN. Run from repo root: ./setup-podman.sh" >&2
+  echo "Podman setup script not found. Run from repo root: ./scripts/podman/setup.sh" >&2
   exit 1
 fi
 
@@ -233,4 +237,4 @@ podman run --pull="$PODMAN_PULL" -d --replace \
 
 echo "Container $CONTAINER_NAME started. Dashboard: http://127.0.0.1:${HOST_GATEWAY_PORT}/"
 echo "Logs: podman logs -f $CONTAINER_NAME"
-echo "For auto-start/restarts, use: ./setup-podman.sh --quadlet (Quadlet + systemd user service)."
+echo "For auto-start/restarts, use: ./scripts/podman/setup.sh --quadlet (Quadlet + systemd user service)."

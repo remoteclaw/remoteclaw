@@ -83,7 +83,7 @@ This script drives the interactive setup flow via a pseudo-tty, verifies config/
 
 ## QR import smoke (Docker)
 
-Ensures `qrcode-terminal` loads under Node 22+ in Docker:
+Ensures `qrcode-terminal` loads under the supported Docker Node runtimes (Node 24 default, Node 22 compatible):
 
 ```bash
 pnpm test:docker:qr

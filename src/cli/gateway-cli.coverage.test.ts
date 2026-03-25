@@ -147,6 +147,7 @@ describe("gateway-cli coverage", () => {
         displayName: "Studio",
         domain: "remoteclaw.internal.",
         host: "studio.remoteclaw.internal",
+        port: 18789,
         lanHost: "studio.local",
         tailnetDns: "studio.tailnet.ts.net",
         gatewayPort: 18789,

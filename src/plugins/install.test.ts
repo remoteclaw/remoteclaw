@@ -86,20 +86,23 @@ async function packToArchive({
   pkgDir,
   outDir,
   outName,
+  flatRoot,
 }: {
   pkgDir: string;
   outDir: string;
   outName: string;
+  flatRoot?: boolean;
 }) {
   const dest = path.join(outDir, outName);
   fs.rmSync(dest, { force: true });
+  const entries = flatRoot ? fs.readdirSync(pkgDir) : [path.basename(pkgDir)];
   await tar.c(
     {
       gzip: true,
       file: dest,
-      cwd: path.dirname(pkgDir),
+      cwd: flatRoot ? pkgDir : path.dirname(pkgDir),
     },
-    [path.basename(pkgDir)],
+    entries,
   );
   return dest;
 }
@@ -243,12 +246,14 @@ async function installArchivePackageAndReturnResult(params: {
   packageJson: Record<string, unknown>;
   outName: string;
   withDistIndex?: boolean;
+  flatRoot?: boolean;
 }) {
   const stateDir = makeTempDir();
   const archivePath = await ensureDynamicArchiveTemplate({
     outName: params.outName,
     packageJson: params.packageJson,
     withDistIndex: params.withDistIndex === true,
+    flatRoot: params.flatRoot === true,
   });
 
   const extensionsDir = path.join(stateDir, "extensions");
@@ -262,10 +267,12 @@ async function installArchivePackageAndReturnResult(params: {
 function buildDynamicArchiveTemplateKey(params: {
   packageJson: Record<string, unknown>;
   withDistIndex: boolean;
+  flatRoot: boolean;
 }): string {
   return JSON.stringify({
     packageJson: params.packageJson,
     withDistIndex: params.withDistIndex,
+    flatRoot: params.flatRoot,
   });
 }
 
@@ -273,17 +280,19 @@ async function ensureDynamicArchiveTemplate(params: {
   packageJson: Record<string, unknown>;
   outName: string;
   withDistIndex: boolean;
+  flatRoot?: boolean;
 }): Promise<string> {
   const templateKey = buildDynamicArchiveTemplateKey({
     packageJson: params.packageJson,
     withDistIndex: params.withDistIndex,
+    flatRoot: params.flatRoot === true,
   });
   const cachedPath = dynamicArchiveTemplatePathCache.get(templateKey);
   if (cachedPath) {
     return cachedPath;
   }
   const templateDir = makeTempDir();
-  const pkgDir = path.join(templateDir, "package");
+  const pkgDir = params.flatRoot ? templateDir : path.join(templateDir, "package");
   fs.mkdirSync(pkgDir, { recursive: true });
   if (params.withDistIndex) {
     fs.mkdirSync(path.join(pkgDir, "dist"), { recursive: true });
@@ -294,6 +303,7 @@ async function ensureDynamicArchiveTemplate(params: {
     pkgDir,
     outDir: ensureSuiteFixtureRoot(),
     outName: params.outName,
+    flatRoot: params.flatRoot,
   });
   dynamicArchiveTemplatePathCache.set(templateKey, archivePath);
   return archivePath;
@@ -372,6 +382,7 @@ beforeAll(async () => {
       packageJson: preset.packageJson,
       outName: preset.outName,
       withDistIndex: preset.withDistIndex,
+      flatRoot: false,
     });
   }
 });

@@ -44,6 +44,13 @@ type PackageManifest = {
   version?: string;
   dependencies?: Record<string, string>;
 } & Partial<Record<typeof MANIFEST_KEY, ManifestMeta>>;
+const PLUGIN_ARCHIVE_ROOT_MARKERS = [
+  "package.json",
+  "remoteclaw.plugin.json",
+  ".codex-plugin/plugin.json",
+  ".claude-plugin/plugin.json",
+  ".cursor-plugin/plugin.json",
+];
 
 export const PLUGIN_INSTALL_ERROR_CODE = {
   INVALID_NPM_SPEC: "invalid_npm_spec",
@@ -367,6 +374,7 @@ export async function installPluginFromArchive(
     tempDirPrefix: "remoteclaw-plugin-",
     timeoutMs,
     logger,
+    rootMarkers: PLUGIN_ARCHIVE_ROOT_MARKERS,
     onExtracted: async (packageDir) =>
       await installPluginFromPackageDir({
         packageDir,

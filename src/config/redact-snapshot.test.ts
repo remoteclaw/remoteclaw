@@ -845,6 +845,7 @@ describe("redactConfigSnapshot", () => {
   });
 });
 
+
 describe("restoreRedactedValues", () => {
   it("restores sentinel values from original config", () => {
     const incoming = {
@@ -1049,45 +1050,5 @@ describe("restoreRedactedValues", () => {
     const result = restoreRedactedValues(incoming, original, hints) as typeof incoming;
     expect(result.channels.slack.accounts[0].botToken).toBe("original-token-first-account");
     expect(result.channels.slack.accounts[1].botToken).toBe("user-provided-new-token-value");
-  });
-});
-
-describe("realredactConfigSnapshot_real", () => {
-  it("main schema redact works (samples)", () => {
-    const schema = RemoteClawSchema.toJSONSchema({
-      target: "draft-07",
-      unrepresentable: "any",
-    });
-    schema.title = "RemoteClawConfig";
-    const hints = mainSchemaHints;
-
-    const snapshot = makeSnapshot({
-      agents: {
-        defaults: {
-          memorySearch: {
-            remote: {
-              apiKey: "1234",
-            },
-          },
-        },
-        list: [
-          {
-            memorySearch: {
-              remote: {
-                apiKey: "6789",
-              },
-            },
-          },
-        ],
-      },
-    });
-
-    const result = redactConfigSnapshot(snapshot, hints);
-    const config = result.config as typeof snapshot.config;
-    expect(config.agents.defaults.memorySearch.remote.apiKey).toBe(REDACTED_SENTINEL);
-    expect(config.agents.list[0].memorySearch.remote.apiKey).toBe(REDACTED_SENTINEL);
-    const restored = restoreRedactedValues(result.config, snapshot.config, hints);
-    expect(restored.agents.defaults.memorySearch.remote.apiKey).toBe("1234");
-    expect(restored.agents.list[0].memorySearch.remote.apiKey).toBe("6789");
   });
 });

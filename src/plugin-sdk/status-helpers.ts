@@ -31,15 +31,19 @@ export function createDefaultChannelRuntimeState<T extends Record<string, unknow
 }
 
 /** Normalize a channel-level status summary so missing lifecycle fields become explicit nulls. */
-export function buildBaseChannelStatusSummary(snapshot: {
-  configured?: boolean | null;
-  running?: boolean | null;
-  lastStartAt?: number | null;
-  lastStopAt?: number | null;
-  lastError?: string | null;
-}) {
+export function buildBaseChannelStatusSummary<TExtra extends Record<string, unknown>>(
+  snapshot: {
+    configured?: boolean | null;
+    running?: boolean | null;
+    lastStartAt?: number | null;
+    lastStopAt?: number | null;
+    lastError?: string | null;
+  },
+  extra?: TExtra,
+) {
   return {
     configured: snapshot.configured ?? false,
+    ...(extra ?? ({} as TExtra)),
     running: snapshot.running ?? false,
     lastStartAt: snapshot.lastStartAt ?? null,
     lastStopAt: snapshot.lastStopAt ?? null,

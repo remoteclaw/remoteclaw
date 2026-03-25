@@ -9,6 +9,7 @@ import {
   sendTypingZalouserMock,
 } from "./monitor.send-mocks.js";
 import { setZalouserRuntime } from "./runtime.js";
+import { createZalouserRuntimeEnv } from "./test-helpers.js";
 import type { ResolvedZalouserAccount, ZaloInboundMessage } from "./types.js";
 
 function createAccount(): ResolvedZalouserAccount {
@@ -39,15 +40,7 @@ function createConfig(): RemoteClawConfig {
   };
 }
 
-function createRuntimeEnv(): RuntimeEnv {
-  return {
-    log: vi.fn(),
-    error: vi.fn(),
-    exit: ((code: number): never => {
-      throw new Error(`exit ${code}`);
-    }) as RuntimeEnv["exit"],
-  };
-}
+const createRuntimeEnv = () => createZalouserRuntimeEnv();
 
 function installRuntime(params: {
   commandAuthorized?: boolean;
@@ -254,57 +247,152 @@ describe("zalouser monitor group mention gating", () => {
     sendSeenZalouserMock.mockClear();
   });
 
-  it("skips unmentioned group messages when requireMention=true", async () => {
+  async function processMessageWithDefaults(params: {
+    message: ZaloInboundMessage;
+    account?: ResolvedZalouserAccount;
+    historyState?: {
+      historyLimit: number;
+      groupHistories: Map<
+        string,
+        Array<{ sender: string; body: string; timestamp?: number; messageId?: string }>
+      >;
+    };
+  }) {
+    await __testing.processMessage({
+      message: params.message,
+      account: params.account ?? createAccount(),
+      config: createConfig(),
+      runtime: createZalouserRuntimeEnv(),
+      historyState: params.historyState,
+    });
+  }
+
+  async function expectSkippedGroupMessage(message?: Partial<ZaloInboundMessage>) {
     const { dispatchReplyWithBufferedBlockDispatcher } = installRuntime({
       commandAuthorized: false,
     });
-    await __testing.processMessage({
-      message: createGroupMessage(),
-      account: createAccount(),
-      config: createConfig(),
-      runtime: createRuntimeEnv(),
+    await processMessageWithDefaults({
+      message: createGroupMessage(message),
     });
-
     expect(dispatchReplyWithBufferedBlockDispatcher).not.toHaveBeenCalled();
     expect(sendTypingZalouserMock).not.toHaveBeenCalled();
-  });
+  }
 
-  it("fails closed when requireMention=true but mention detection is unavailable", async () => {
+  async function expectGroupCommandAuthorizers(params: {
+    accountConfig: ResolvedZalouserAccount["config"];
+    expectedAuthorizers: Array<{ configured: boolean; allowed: boolean }>;
+  }) {
+    const { dispatchReplyWithBufferedBlockDispatcher, resolveCommandAuthorizedFromAuthorizers } =
+      installGroupCommandAuthRuntime();
+    await processGroupControlCommand({
+      account: {
+        ...createAccount(),
+        config: params.accountConfig,
+      },
+    });
+    expect(dispatchReplyWithBufferedBlockDispatcher).toHaveBeenCalledTimes(1);
+    const authCall = resolveCommandAuthorizedFromAuthorizers.mock.calls[0]?.[0];
+    expect(authCall?.authorizers).toEqual(params.expectedAuthorizers);
+  }
+
+  async function processOpenDmMessage(params?: {
+    message?: Partial<ZaloInboundMessage>;
+    readSessionUpdatedAt?: (input?: {
+      storePath: string;
+      sessionKey: string;
+    }) => number | undefined;
+  }) {
+    const runtime = installRuntime({
+      commandAuthorized: false,
+    });
+    if (params?.readSessionUpdatedAt) {
+      runtime.readSessionUpdatedAt.mockImplementation(params.readSessionUpdatedAt);
+    }
+    const account = createAccount();
+    await processMessageWithDefaults({
+      message: createDmMessage(params?.message),
+      account: {
+        ...account,
+        config: {
+          ...account.config,
+          dmPolicy: "open",
+        },
+      },
+    });
+    return runtime;
+  }
+
+  async function expectDangerousNameMatching(params: {
+    dangerouslyAllowNameMatching?: boolean;
+    expectedDispatches: number;
+  }) {
     const { dispatchReplyWithBufferedBlockDispatcher } = installRuntime({
       commandAuthorized: false,
     });
-    await __testing.processMessage({
+    await processMessageWithDefaults({
       message: createGroupMessage({
-        canResolveExplicitMention: false,
-        hasAnyMention: false,
-        wasExplicitlyMentioned: false,
-      }),
-      account: createAccount(),
-      config: createConfig(),
-      runtime: createRuntimeEnv(),
-    });
-
-    expect(dispatchReplyWithBufferedBlockDispatcher).not.toHaveBeenCalled();
-    expect(sendTypingZalouserMock).not.toHaveBeenCalled();
-  });
-
-  it("dispatches explicitly-mentioned group messages and marks WasMentioned", async () => {
-    const { dispatchReplyWithBufferedBlockDispatcher } = installRuntime({
-      commandAuthorized: false,
-    });
-    await __testing.processMessage({
-      message: createGroupMessage({
+        threadId: "g-attacker-001",
+        groupName: "Trusted Team",
+        senderId: "666",
         hasAnyMention: true,
         wasExplicitlyMentioned: true,
         content: "ping @bot",
       }),
-      account: createAccount(),
-      config: createConfig(),
-      runtime: createRuntimeEnv(),
+      account: {
+        ...createAccount(),
+        config: {
+          ...createAccount().config,
+          ...(params.dangerouslyAllowNameMatching ? { dangerouslyAllowNameMatching: true } : {}),
+          groupPolicy: "allowlist",
+          groupAllowFrom: ["*"],
+          groups: {
+            "group:g-trusted-001": { allow: true },
+            "Trusted Team": { allow: true },
+          },
+        },
+      },
     });
+    expect(dispatchReplyWithBufferedBlockDispatcher).toHaveBeenCalledTimes(
+      params.expectedDispatches,
+    );
+    return dispatchReplyWithBufferedBlockDispatcher;
+  }
 
+  async function dispatchGroupMessage(params: {
+    commandAuthorized: boolean;
+    message: Partial<ZaloInboundMessage>;
+  }) {
+    const { dispatchReplyWithBufferedBlockDispatcher } = installRuntime({
+      commandAuthorized: params.commandAuthorized,
+    });
+    await processMessageWithDefaults({
+      message: createGroupMessage(params.message),
+    });
     expect(dispatchReplyWithBufferedBlockDispatcher).toHaveBeenCalledTimes(1);
-    const callArg = dispatchReplyWithBufferedBlockDispatcher.mock.calls[0]?.[0];
+    return dispatchReplyWithBufferedBlockDispatcher.mock.calls[0]?.[0];
+  }
+
+  it("skips unmentioned group messages when requireMention=true", async () => {
+    await expectSkippedGroupMessage();
+  });
+
+  it("fails closed when requireMention=true but mention detection is unavailable", async () => {
+    await expectSkippedGroupMessage({
+      canResolveExplicitMention: false,
+      hasAnyMention: false,
+      wasExplicitlyMentioned: false,
+    });
+  });
+
+  it("dispatches explicitly-mentioned group messages and marks WasMentioned", async () => {
+    const callArg = await dispatchGroupMessage({
+      commandAuthorized: false,
+      message: {
+        hasAnyMention: true,
+        wasExplicitlyMentioned: true,
+        content: "ping @bot",
+      },
+    });
     expect(callArg?.ctx?.WasMentioned).toBe(true);
     expect(callArg?.ctx?.To).toBe("zalouser:group:g-1");
     expect(callArg?.ctx?.OriginatingTo).toBe("zalouser:group:g-1");
@@ -315,22 +403,14 @@ describe("zalouser monitor group mention gating", () => {
   });
 
   it("allows authorized control commands to bypass mention gating", async () => {
-    const { dispatchReplyWithBufferedBlockDispatcher } = installRuntime({
+    const callArg = await dispatchGroupMessage({
       commandAuthorized: true,
-    });
-    await __testing.processMessage({
-      message: createGroupMessage({
+      message: {
         content: "/status",
         hasAnyMention: false,
         wasExplicitlyMentioned: false,
-      }),
-      account: createAccount(),
-      config: createConfig(),
-      runtime: createRuntimeEnv(),
+      },
     });
-
-    expect(dispatchReplyWithBufferedBlockDispatcher).toHaveBeenCalledTimes(1);
-    const callArg = dispatchReplyWithBufferedBlockDispatcher.mock.calls[0]?.[0];
     expect(callArg?.ctx?.WasMentioned).toBe(true);
   });
 
@@ -371,46 +451,30 @@ describe("zalouser monitor group mention gating", () => {
   });
 
   it("uses commandContent for mention-prefixed control commands", async () => {
-    const { dispatchReplyWithBufferedBlockDispatcher } = installRuntime({
+    const callArg = await dispatchGroupMessage({
       commandAuthorized: true,
-    });
-    await __testing.processMessage({
-      message: createGroupMessage({
+      message: {
         content: "@Bot /new",
         commandContent: "/new",
         hasAnyMention: true,
         wasExplicitlyMentioned: true,
-      }),
-      account: createAccount(),
-      config: createConfig(),
-      runtime: createRuntimeEnv(),
+      },
     });
-
-    expect(dispatchReplyWithBufferedBlockDispatcher).toHaveBeenCalledTimes(1);
-    const callArg = dispatchReplyWithBufferedBlockDispatcher.mock.calls[0]?.[0];
     expect(callArg?.ctx?.CommandBody).toBe("/new");
     expect(callArg?.ctx?.BodyForCommands).toBe("/new");
   });
 
   it("allows group control commands when only allowFrom is configured", async () => {
-    const { dispatchReplyWithBufferedBlockDispatcher, resolveCommandAuthorizedFromAuthorizers } =
-      installGroupCommandAuthRuntime();
-    await processGroupControlCommand({
-      account: {
-        ...createAccount(),
-        config: {
-          ...createAccount().config,
-          allowFrom: ["123"],
-        },
+    await expectGroupCommandAuthorizers({
+      accountConfig: {
+        ...createAccount().config,
+        allowFrom: ["123"],
       },
+      expectedAuthorizers: [
+        { configured: true, allowed: true },
+        { configured: true, allowed: true },
+      ],
     });
-
-    expect(dispatchReplyWithBufferedBlockDispatcher).toHaveBeenCalledTimes(1);
-    const authCall = resolveCommandAuthorizedFromAuthorizers.mock.calls[0]?.[0];
-    expect(authCall?.authorizers).toEqual([
-      { configured: true, allowed: true },
-      { configured: true, allowed: true },
-    ]);
   });
 
   it("blocks group messages when sender is not in groupAllowFrom/allowFrom", async () => {
@@ -439,45 +503,22 @@ describe("zalouser monitor group mention gating", () => {
   });
 
   it("allows group control commands when sender is in groupAllowFrom", async () => {
-    const { dispatchReplyWithBufferedBlockDispatcher, resolveCommandAuthorizedFromAuthorizers } =
-      installGroupCommandAuthRuntime();
-    await processGroupControlCommand({
-      account: {
-        ...createAccount(),
-        config: {
-          ...createAccount().config,
-          allowFrom: ["999"],
-          groupAllowFrom: ["123"],
-        },
+    await expectGroupCommandAuthorizers({
+      accountConfig: {
+        ...createAccount().config,
+        allowFrom: ["999"],
+        groupAllowFrom: ["123"],
       },
+      expectedAuthorizers: [
+        { configured: true, allowed: false },
+        { configured: true, allowed: true },
+      ],
     });
-
-    expect(dispatchReplyWithBufferedBlockDispatcher).toHaveBeenCalledTimes(1);
-    const authCall = resolveCommandAuthorizedFromAuthorizers.mock.calls[0]?.[0];
-    expect(authCall?.authorizers).toEqual([
-      { configured: true, allowed: false },
-      { configured: true, allowed: true },
-    ]);
   });
 
   it("routes DM messages with direct peer kind", async () => {
     const { dispatchReplyWithBufferedBlockDispatcher, resolveAgentRoute, buildAgentSessionKey } =
-      installRuntime({
-        commandAuthorized: false,
-      });
-    const account = createAccount();
-    await __testing.processMessage({
-      message: createDmMessage(),
-      account: {
-        ...account,
-        config: {
-          ...account.config,
-          dmPolicy: "open",
-        },
-      },
-      config: createConfig(),
-      runtime: createRuntimeEnv(),
-    });
+      await processOpenDmMessage();
 
     expect(resolveAgentRoute).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -495,24 +536,9 @@ describe("zalouser monitor group mention gating", () => {
   });
 
   it("reuses the legacy DM session key when only the old group-shaped session exists", async () => {
-    const { dispatchReplyWithBufferedBlockDispatcher, readSessionUpdatedAt } = installRuntime({
-      commandAuthorized: false,
-    });
-    readSessionUpdatedAt.mockImplementation((input?: { storePath: string; sessionKey: string }) =>
-      input?.sessionKey === "agent:main:zalouser:group:321" ? 123 : undefined,
-    );
-    const account = createAccount();
-    await __testing.processMessage({
-      message: createDmMessage(),
-      account: {
-        ...account,
-        config: {
-          ...account.config,
-          dmPolicy: "open",
-        },
-      },
-      config: createConfig(),
-      runtime: createRuntimeEnv(),
+    const { dispatchReplyWithBufferedBlockDispatcher } = await processOpenDmMessage({
+      readSessionUpdatedAt: (input?: { storePath: string; sessionKey: string }) =>
+        input?.sessionKey === "agent:main:zalouser:group:321" ? 123 : undefined,
     });
 
     const callArg = dispatchReplyWithBufferedBlockDispatcher.mock.calls[0]?.[0];

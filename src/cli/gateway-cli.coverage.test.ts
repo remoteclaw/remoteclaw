@@ -86,6 +86,10 @@ vi.mock("../config/config.js", async (importOriginal) => ({
   readBestEffortConfig: async () => ({}),
 }));
 
+vi.mock("./progress.js", () => ({
+  withProgress: async (_opts: unknown, fn: () => Promise<unknown>) => fn(),
+}));
+
 vi.mock("../infra/widearea-dns.js", () => ({
   resolveWideAreaDiscoveryDomain: () => null,
 }));

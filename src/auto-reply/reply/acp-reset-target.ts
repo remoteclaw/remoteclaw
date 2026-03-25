@@ -1,9 +1,9 @@
+import { resolveConfiguredAcpBindingRecord } from "../../acp/persistent-bindings.js";
 import {
   buildConfiguredAcpSessionKey,
   normalizeBindingConfig,
   type ConfiguredAcpBindingChannel,
 } from "../../acp/persistent-bindings.types.js";
-import { resolveConfiguredAcpBindingRecord } from "../../acp/persistent-bindings.js";
 import { listAcpBindings } from "../../config/bindings.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { getSessionBindingService } from "../../infra/outbound/session-binding-service.js";

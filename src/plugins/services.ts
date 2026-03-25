@@ -7,7 +7,6 @@ import type { RemoteClawPluginServiceContext, PluginLogger } from "./types.js";
 const log = createSubsystemLogger("plugins");
 const pluginCheckpointLogsEnabled = process.env.OPENCLAW_PLUGIN_CHECKPOINTS === "1";
 
-
 function createPluginLogger(): PluginLogger {
   return {
     info: (msg) => log.info(msg),

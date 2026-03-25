@@ -98,7 +98,6 @@ export async function channelsRemoveCommand(
     return;
   }
 
-
   const resolvedAccountId =
     normalizeAccountId(accountId) ?? resolveChannelDefaultAccountId({ plugin, cfg });
   const accountKey = resolvedAccountId || DEFAULT_ACCOUNT_ID;

@@ -59,23 +59,6 @@ function setMainSessionEntry(entry?: SessionStore[string]) {
   vi.mocked(loadSessionStore).mockReturnValue(store);
 }
 
-function setLastSessionEntry(params: {
-  sessionId: string;
-  lastChannel: string;
-  lastTo: string;
-  lastThreadId?: string;
-  lastAccountId?: string;
-}) {
-  setMainSessionEntry({
-    sessionId: params.sessionId,
-    updatedAt: 1000,
-    lastChannel: params.lastChannel,
-    lastTo: params.lastTo,
-    ...(params.lastThreadId ? { lastThreadId: params.lastThreadId } : {}),
-    ...(params.lastAccountId ? { lastAccountId: params.lastAccountId } : {}),
-  });
-}
-
 function setWhatsAppAllowFrom(allowFrom: string[]) {
   vi.mocked(resolveWhatsAppAccount).mockReturnValue({
     allowFrom,
@@ -98,17 +81,11 @@ async function resolveForAgent(params: {
   });
 }
 
-async function resolveLastTarget(cfg: OpenClawConfig) {
-  return resolveForAgent({
-    cfg,
-    target: { channel: "last", to: undefined },
-  });
-}
-
 describe("resolveDeliveryTarget", () => {
   it("reroutes implicit whatsapp delivery to authorized allowFrom recipient", async () => {
-    setLastSessionEntry({
+    setMainSessionEntry({
       sessionId: "sess-w1",
+      updatedAt: 1000,
       lastChannel: "whatsapp",
       lastTo: "+15550000099",
     });
@@ -116,15 +93,16 @@ describe("resolveDeliveryTarget", () => {
     setStoredWhatsAppAllowFrom(["+15550000001"]);
 
     const cfg = makeCfg({ bindings: [] });
-    const result = await resolveLastTarget(cfg);
+    const result = await resolveDeliveryTarget(cfg, AGENT_ID, { channel: "last", to: undefined });
 
     expect(result.channel).toBe("whatsapp");
     expect(result.to).toBe("+15550000001");
   });
 
   it("keeps explicit whatsapp target unchanged", async () => {
-    setLastSessionEntry({
+    setMainSessionEntry({
       sessionId: "sess-w2",
+      updatedAt: 1000,
       lastChannel: "whatsapp",
       lastTo: "+15550000099",
     });
@@ -213,8 +191,9 @@ describe("resolveDeliveryTarget", () => {
   });
 
   it("drops session threadId when destination does not match the previous recipient", async () => {
-    setLastSessionEntry({
+    setMainSessionEntry({
       sessionId: "sess-2",
+      updatedAt: 1000,
       lastChannel: "telegram",
       lastTo: "999999",
       lastThreadId: "thread-1",
@@ -225,8 +204,9 @@ describe("resolveDeliveryTarget", () => {
   });
 
   it("keeps session threadId when destination matches the previous recipient", async () => {
-    setLastSessionEntry({
+    setMainSessionEntry({
       sessionId: "sess-3",
+      updatedAt: 1000,
       lastChannel: "telegram",
       lastTo: "123456",
       lastThreadId: "thread-2",
@@ -239,7 +219,10 @@ describe("resolveDeliveryTarget", () => {
   it("uses single configured channel when neither explicit nor session channel exists", async () => {
     setMainSessionEntry(undefined);
 
-    const result = await resolveLastTarget(makeCfg({ bindings: [] }));
+    const result = await resolveForAgent({
+      cfg: makeCfg({ bindings: [] }),
+      target: { channel: "last", to: undefined },
+    });
     expect(result.channel).toBe("telegram");
     expect(result.ok).toBe(false);
     if (result.ok) {
@@ -256,7 +239,10 @@ describe("resolveDeliveryTarget", () => {
       new Error("Channel is required when multiple channels are configured: telegram, slack"),
     );
 
-    const result = await resolveLastTarget(makeCfg({ bindings: [] }));
+    const result = await resolveForAgent({
+      cfg: makeCfg({ bindings: [] }),
+      target: { channel: "last", to: undefined },
+    });
     expect(result.channel).toBeUndefined();
     expect(result.to).toBeUndefined();
     expect(result.ok).toBe(false);
@@ -293,13 +279,17 @@ describe("resolveDeliveryTarget", () => {
   });
 
   it("uses main session channel when channel=last and session route exists", async () => {
-    setLastSessionEntry({
+    setMainSessionEntry({
       sessionId: "sess-4",
+      updatedAt: 1000,
       lastChannel: "telegram",
       lastTo: "987654",
     });
 
-    const result = await resolveLastTarget(makeCfg({ bindings: [] }));
+    const result = await resolveForAgent({
+      cfg: makeCfg({ bindings: [] }),
+      target: { channel: "last", to: undefined },
+    });
 
     expect(result.channel).toBe("telegram");
     expect(result.to).toBe("987654");
@@ -307,8 +297,9 @@ describe("resolveDeliveryTarget", () => {
   });
 
   it("explicit delivery.accountId overrides session-derived accountId", async () => {
-    setLastSessionEntry({
+    setMainSessionEntry({
       sessionId: "sess-5",
+      updatedAt: 1000,
       lastChannel: "telegram",
       lastTo: "chat-999",
       lastAccountId: "default",

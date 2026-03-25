@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { GENERATED_BUNDLED_PLUGIN_METADATA } from "./bundled-plugin-metadata.generated.js";
-import type { PluginManifest, OpenClawPackageManifest } from "./manifest.js";
+import type { PluginManifest, RemoteClawPackageManifest } from "./manifest.js";
 
 type GeneratedBundledPluginPathPair = {
   source: string;
@@ -16,7 +16,7 @@ export type GeneratedBundledPluginMetadata = {
   packageName?: string;
   packageVersion?: string;
   packageDescription?: string;
-  packageManifest?: OpenClawPackageManifest;
+  packageManifest?: RemoteClawPackageManifest;
   manifest: PluginManifest;
 };
 

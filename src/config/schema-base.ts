@@ -2,7 +2,7 @@ import { VERSION } from "../version.js";
 import type { ConfigUiHints } from "./schema.hints.js";
 import { buildBaseHints, mapSensitivePaths } from "./schema.hints.js";
 import { applyDerivedTags } from "./schema.tags.js";
-import { OpenClawSchema } from "./zod-schema.js";
+import { RemoteClawSchema } from "./zod-schema.js";
 
 type ConfigSchema = Record<string, unknown>;
 
@@ -57,12 +57,12 @@ function stripChannelSchema(schema: ConfigSchema): ConfigSchema {
 export function computeBaseConfigSchemaResponse(params?: {
   generatedAt?: string;
 }): BaseConfigSchemaResponse {
-  const schema = OpenClawSchema.toJSONSchema({
+  const schema = RemoteClawSchema.toJSONSchema({
     target: "draft-07",
     unrepresentable: "any",
   });
-  schema.title = "OpenClawConfig";
-  const hints = applyDerivedTags(mapSensitivePaths(OpenClawSchema, "", buildBaseHints()));
+  schema.title = "RemoteClawConfig";
+  const hints = applyDerivedTags(mapSensitivePaths(RemoteClawSchema, "", buildBaseHints()));
   return {
     schema: stripChannelSchema(schema),
     uiHints: hints,

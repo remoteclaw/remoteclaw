@@ -481,7 +481,7 @@ describe("deliverOutboundPayloads", () => {
       .fn()
       .mockResolvedValueOnce({ messageId: "w1", toJid: "jid" })
       .mockResolvedValueOnce({ messageId: "w2", toJid: "jid" });
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: { whatsapp: { textChunkLimit: 2 } },
     };
     const results = await deliverOutboundPayloads({

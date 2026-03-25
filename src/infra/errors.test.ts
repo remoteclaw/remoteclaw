@@ -28,11 +28,14 @@ describe("error helpers", () => {
       cause?: unknown;
       errors?: unknown[];
     };
-    const root = { name: "root", cause: child, errors: [leaf, child] };
+    const root = { name: "root", cause: child, errors: [leaf, child] as unknown[] };
     child.cause = root;
 
     expect(
-      collectErrorGraphCandidates(root, (current) => [current.cause, ...(current.errors ?? [])]),
+      collectErrorGraphCandidates(root, (current) => [
+        current.cause,
+        ...((current.errors as unknown[]) ?? []),
+      ]),
     ).toEqual([root, child, leaf]);
     expect(collectErrorGraphCandidates(null)).toEqual([]);
   });

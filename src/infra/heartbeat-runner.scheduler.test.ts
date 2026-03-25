@@ -46,7 +46,7 @@ describe("startHeartbeatRunner", () => {
   }) {
     const runner = startHeartbeatRunner({
       cfg: params.cfg,
-      runOnce: params.runSpy,
+      runOnce: params.runSpy as Parameters<typeof startHeartbeatRunner>[0]["runOnce"],
     });
 
     requestHeartbeatNow(params.wake);

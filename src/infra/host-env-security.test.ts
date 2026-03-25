@@ -153,7 +153,7 @@ describe("sanitizeHostExecEnv", () => {
     });
 
     expect(env.PATH).toBe("/custom/bin");
-    expect(env.OPENCLAW_CLI).toBe(OPENCLAW_CLI_ENV_VALUE);
+    expect(env.REMOTECLAW_CLI).toBe(REMOTECLAW_CLI_ENV_VALUE);
   });
 
   it("drops non-string inherited values and non-portable inherited keys", () => {
@@ -168,7 +168,7 @@ describe("sanitizeHostExecEnv", () => {
     });
 
     expect(env).toEqual({
-      OPENCLAW_CLI: OPENCLAW_CLI_ENV_VALUE,
+      REMOTECLAW_CLI: REMOTECLAW_CLI_ENV_VALUE,
       PATH: "/usr/bin:/bin",
       GOOD: "1",
     });

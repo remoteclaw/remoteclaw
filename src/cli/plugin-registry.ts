@@ -57,7 +57,7 @@ export function ensurePluginRegistryLoaded(options?: { scope?: PluginRegistrySco
       ? {
           onlyPluginIds: resolveChannelPluginIds({
             config,
-            workspaceDir,
+            workspaceDir: workspaceDir ?? undefined,
             env: process.env,
           }),
         }

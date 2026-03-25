@@ -142,7 +142,7 @@ describe("promptRemoteGatewayConfig", () => {
       text,
     });
 
-    const next = await promptRemoteGatewayConfig({} as OpenClawConfig, prompter);
+    const next = await promptRemoteGatewayConfig({} as RemoteClawConfig, prompter);
 
     expect(next.gateway?.remote?.url).toBe("ws://127.0.0.1:18789");
     expect(select).not.toHaveBeenCalledWith(

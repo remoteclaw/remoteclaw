@@ -1579,7 +1579,7 @@ describe("security audit", () => {
 
   it("warns when Zalouser group routing contains mutable group entries", async () => {
     await withChannelSecurityStateDir(async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           zalouser: {
             enabled: true,
@@ -1610,7 +1610,7 @@ describe("security audit", () => {
 
   it("marks Zalouser mutable group routing as break-glass when dangerous matching is enabled", async () => {
     await withChannelSecurityStateDir(async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           zalouser: {
             enabled: true,

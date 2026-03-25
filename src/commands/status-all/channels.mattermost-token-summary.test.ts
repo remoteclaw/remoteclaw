@@ -75,7 +75,6 @@ function makeSlackPlugin(params?: { botToken?: string; appToken?: string }): Cha
   return makeSlackDirectPlugin({
     listAccountIds: () => ["primary"],
     defaultAccountId: () => "primary",
-    inspectAccount: () => createSlackTokenAccount(params),
     resolveAccount: () => createSlackTokenAccount(params),
     isConfigured: () => true,
     isEnabled: () => true,
@@ -86,7 +85,6 @@ function makeUnavailableSlackPlugin(): ChannelPlugin {
   return makeSlackDirectPlugin({
     listAccountIds: () => ["primary"],
     defaultAccountId: () => "primary",
-    inspectAccount: () => createUnavailableSlackTokenAccount(),
     resolveAccount: () => createUnavailableSlackTokenAccount(),
     isConfigured: () => true,
     isEnabled: () => true,
@@ -97,18 +95,6 @@ function makeSourceAwareUnavailablePlugin(): ChannelPlugin {
   return makeSlackDirectPlugin({
     listAccountIds: () => ["primary"],
     defaultAccountId: () => "primary",
-    inspectAccount: (cfg) =>
-      (cfg as { marker?: string }).marker === "source"
-        ? createUnavailableSlackTokenAccount()
-        : {
-            name: "Primary",
-            enabled: true,
-            configured: false,
-            botToken: "",
-            appToken: "",
-            botTokenSource: "none",
-            appTokenSource: "none",
-          },
     resolveAccount: () => ({
       name: "Primary",
       enabled: true,
@@ -128,22 +114,6 @@ function makeSourceUnavailableResolvedAvailablePlugin(): ChannelPlugin {
     config: {
       listAccountIds: () => ["primary"],
       defaultAccountId: () => "primary",
-      inspectAccount: (cfg) =>
-        (cfg as { marker?: string }).marker === "source"
-          ? {
-              name: "Primary",
-              enabled: true,
-              configured: true,
-              tokenSource: "config",
-              tokenStatus: "configured_unavailable",
-            }
-          : {
-              name: "Primary",
-              enabled: true,
-              configured: true,
-              tokenSource: "config",
-              tokenStatus: "available",
-            },
       resolveAccount: () => ({
         name: "Primary",
         enabled: true,
@@ -165,19 +135,6 @@ function makeHttpSlackUnavailablePlugin(): ChannelPlugin {
     config: {
       listAccountIds: () => ["primary"],
       defaultAccountId: () => "primary",
-      inspectAccount: () => ({
-        accountId: "primary",
-        name: "Primary",
-        enabled: true,
-        configured: true,
-        mode: "http",
-        botToken: "xoxb-http",
-        signingSecret: "",
-        botTokenSource: "config",
-        signingSecretSource: "config", // pragma: allowlist secret
-        botTokenStatus: "available",
-        signingSecretStatus: "configured_unavailable", // pragma: allowlist secret
-      }),
       resolveAccount: () => ({
         name: "Primary",
         enabled: true,
@@ -217,12 +174,11 @@ function makeTokenPlugin(): ChannelPlugin {
 
 async function buildTestTable(
   plugins: ChannelPlugin[],
-  params?: { cfg?: Record<string, unknown>; sourceConfig?: Record<string, unknown> },
+  params?: { cfg?: Record<string, unknown> },
 ) {
   vi.mocked(listChannelPlugins).mockReturnValue(plugins);
   return await buildChannelsTable((params?.cfg ?? { channels: {} }) as never, {
     showSecrets: false,
-    sourceConfig: params?.sourceConfig as never,
   });
 }
 
@@ -276,7 +232,6 @@ describe("buildChannelsTable - mattermost token summary", () => {
   it("preserves unavailable credential state from the source config snapshot", async () => {
     const table = await buildTestTable([makeSourceAwareUnavailablePlugin()], {
       cfg: { marker: "resolved", channels: {} },
-      sourceConfig: { marker: "source", channels: {} },
     });
 
     expectTableRow(table, {
@@ -296,7 +251,6 @@ describe("buildChannelsTable - mattermost token summary", () => {
   it("treats status-only available credentials as resolved", async () => {
     const table = await buildTestTable([makeSourceUnavailableResolvedAvailablePlugin()], {
       cfg: { marker: "resolved", channels: {} },
-      sourceConfig: { marker: "source", channels: {} },
     });
 
     expectTableRow(table, { id: "discord", state: "ok", detailEquals: "configured" });

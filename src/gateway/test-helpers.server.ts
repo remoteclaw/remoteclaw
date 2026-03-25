@@ -211,10 +211,6 @@ async function resetGatewayTestState(options: { uniqueConfigRoot: boolean }) {
   agentCommand.mockClear();
   sendWhatsAppMock.mockReset();
   sendWhatsAppMock.mockResolvedValue({ messageId: "msg-1", toJid: "jid-1" });
-  embeddedRunMock.activeIds.clear();
-  embeddedRunMock.abortCalls = [];
-  embeddedRunMock.waitCalls = [];
-  embeddedRunMock.waitResults.clear();
   drainSystemEvents(resolveMainSessionKeyFromConfig());
   resetAgentRunContextForTest();
   piSdkMock.enabled = false;

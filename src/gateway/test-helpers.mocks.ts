@@ -210,7 +210,7 @@ export const getReplyFromConfig: Mock<GetReplyFromConfigFn> = hoisted.getReplyFr
 export const mockGetReplyFromConfigOnce = (impl: GetReplyFromConfigFn) => {
   getReplyFromConfig.mockImplementationOnce(impl);
 };
-export const sendWhatsAppMock = hoisted.sendWhatsAppMock;
+export const sendWhatsAppMock: ReturnType<typeof vi.fn> = hoisted.sendWhatsAppMock;
 
 export const testState = {
   agentConfig: undefined as Record<string, unknown> | undefined,

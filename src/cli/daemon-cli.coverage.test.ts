@@ -48,7 +48,8 @@ vi.mock("../daemon/program-args.js", () => ({
   resolveGatewayProgramArguments: (opts: unknown) => resolveGatewayProgramArguments(opts),
 }));
 
-vi.mock("../daemon/service.js", () => ({
+vi.mock("../daemon/service.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../daemon/service.js")>()),
   resolveGatewayService: () => ({
     label: "LaunchAgent",
     loadedText: "loaded",

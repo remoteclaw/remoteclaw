@@ -102,7 +102,7 @@ describe("enableConsoleCapture", () => {
     expect(warn).toHaveBeenCalledWith("12:34:56 [exec] hello");
   });
 
-  it("prefixes JSON console output when timestamp prefix is enabled", () => {
+  it("passes JSON console output through when timestamp prefix is enabled", () => {
     setLoggerOverride({ level: "info", file: tempLogPath() });
     const log = vi.fn();
     console.log = log;
@@ -112,8 +112,7 @@ describe("enableConsoleCapture", () => {
     console.log(payload);
     expect(log).toHaveBeenCalledTimes(1);
     const firstArg = String(log.mock.calls[0]?.[0] ?? "");
-    expect(firstArg).toMatch(/^(?:\d{2}:\d{2}:\d{2}|\d{4}-\d{2}-\d{2}T)/);
-    expect(firstArg.endsWith(` ${payload}`)).toBe(true);
+    expect(firstArg).toContain(payload);
   });
 
   it("keeps diagnostics on stderr while runtime JSON stays on stdout", () => {

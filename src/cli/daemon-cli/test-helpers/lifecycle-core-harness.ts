@@ -5,10 +5,14 @@ export const runtimeLogs: string[] = [];
 export const defaultRuntime: {
   log: (message: string) => number;
   error: Mock;
+  writeStdout: (value: string) => number;
+  writeJson: (value: unknown, space?: number) => number;
   exit: (code: number) => never;
 } = {
   log: (message: string) => runtimeLogs.push(message),
   error: vi.fn(),
+  writeStdout: (value: string) => runtimeLogs.push(value),
+  writeJson: (value: unknown, space = 2) => runtimeLogs.push(JSON.stringify(value, null, space)),
   exit: (code: number) => {
     throw new Error(`__exit__:${code}`);
   },

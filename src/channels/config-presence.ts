@@ -75,6 +75,33 @@ function hasEnvConfiguredChannel(env: NodeJS.ProcessEnv): boolean {
   return hasWhatsAppAuthState(env);
 }
 
+export function listPotentialConfiguredChannelIds(
+  cfg: RemoteClawConfig,
+  env: NodeJS.ProcessEnv = process.env,
+): string[] {
+  const ids: string[] = [];
+  const channels = isRecord(cfg.channels) ? cfg.channels : null;
+  if (channels) {
+    for (const [key, value] of Object.entries(channels)) {
+      if (IGNORED_CHANNEL_CONFIG_KEYS.has(key)) {
+        continue;
+      }
+      if (recordHasKeys(value)) {
+        ids.push(key);
+      }
+    }
+  }
+  for (const prefix of CHANNEL_ENV_PREFIXES) {
+    for (const key of Object.keys(env)) {
+      if (key.startsWith(prefix)) {
+        ids.push(prefix.slice(0, -1).toLowerCase());
+        break;
+      }
+    }
+  }
+  return [...new Set(ids)];
+}
+
 export function hasPotentialConfiguredChannels(
   cfg: RemoteClawConfig,
   env: NodeJS.ProcessEnv = process.env,

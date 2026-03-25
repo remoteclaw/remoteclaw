@@ -4,10 +4,12 @@ import type { RemoteClawConfig } from "../config/config.js";
 import { buildGatewayConnectionDetails, callGateway } from "../gateway/call.js";
 import { normalizeControlUiBasePath } from "../gateway/control-ui-shared.js";
 import { probeGateway } from "../gateway/probe.js";
+import type { collectChannelStatusIssues } from "../infra/channels-status-issues.js";
 import { resolveOsSummary } from "../infra/os-summary.js";
 import { getTailnetHostname } from "../infra/tailscale.js";
 import { runExec } from "../process/exec.js";
 import type { RuntimeEnv } from "../runtime.js";
+import type { buildChannelsTable } from "./status-all/channels.js";
 import { getAgentLocalStatuses } from "./status.agent-local.js";
 import { pickGatewaySelfPresence, resolveGatewayProbeAuth } from "./status.gateway-probe.js";
 import { getStatusSummary } from "./status.summary.js";
@@ -144,7 +146,8 @@ async function scanStatusJsonFast(opts: {
     ? pickGatewaySelfPresence(gatewayProbe.presence)
     : null;
   const channelsStatus = await resolveChannelsStatus({ cfg, gatewayReachable, opts });
-  const channelIssues = channelsStatus ? collectChannelStatusIssues(channelsStatus) : [];
+  const { collectChannelStatusIssues: collectIssues } = await loadStatusScanRuntimeModule();
+  const channelIssues = channelsStatus ? collectIssues(channelsStatus) : [];
 
   return {
     cfg,

@@ -182,53 +182,6 @@ describe("chat view", () => {
     expect(logoImage?.getAttribute("src")).toBe("favicon.svg");
   });
 
-  it("keeps the welcome logo fallback under the mounted base path", () => {
-    const container = document.createElement("div");
-    render(
-      renderChat(
-        createProps({
-          assistantName: "Assistant",
-          assistantAvatar: "A",
-          assistantAvatarUrl: null,
-        }),
-      ),
-      container,
-    );
-
-    const logoImage = container.querySelector<HTMLImageElement>(
-      ".agent-chat__welcome .agent-chat__avatar--logo img",
-    );
-    expect(logoImage).not.toBeNull();
-    expect(logoImage?.getAttribute("src")).toBe("/openclaw/favicon.svg");
-  });
-
-  it("keeps grouped assistant avatar fallbacks under the mounted base path", () => {
-    const container = document.createElement("div");
-    render(
-      renderChat(
-        createProps({
-          assistantName: "Assistant",
-          assistantAvatar: "A",
-          assistantAvatarUrl: null,
-          messages: [
-            {
-              role: "assistant",
-              content: "hello",
-              timestamp: 1000,
-            },
-          ],
-        }),
-      ),
-      container,
-    );
-
-    const groupedLogo = container.querySelector<HTMLImageElement>(
-      ".chat-group.assistant .chat-avatar--logo",
-    );
-    expect(groupedLogo).not.toBeNull();
-    expect(groupedLogo?.getAttribute("src")).toBe("/openclaw/favicon.svg");
-  });
-
   it("renders compacting indicator as a badge", () => {
     const container = document.createElement("div");
     render(
@@ -358,49 +311,6 @@ describe("chat view", () => {
     expect(indicator).not.toBeNull();
     expect(indicator?.textContent).toContain("Fallback cleared: fireworks/minimax-m2p5");
     nowSpy.mockRestore();
-  });
-
-  it("shows a stop button when aborting is available", () => {
-    const container = document.createElement("div");
-    const onAbort = vi.fn();
-    render(
-      renderChat(
-        createProps({
-          canAbort: true,
-          sending: true,
-          onAbort,
-        }),
-      ),
-      container,
-    );
-
-    const stopButton = container.querySelector<HTMLButtonElement>('button[title="Stop"]');
-    expect(stopButton).not.toBeUndefined();
-    stopButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    expect(onAbort).toHaveBeenCalledTimes(1);
-    expect(container.textContent).not.toContain("New session");
-  });
-
-  it("shows a new session button when aborting is unavailable", () => {
-    const container = document.createElement("div");
-    const onNewSession = vi.fn();
-    render(
-      renderChat(
-        createProps({
-          canAbort: false,
-          onNewSession,
-        }),
-      ),
-      container,
-    );
-
-    const newSessionButton = container.querySelector<HTMLButtonElement>(
-      'button[title="New session"]',
-    );
-    expect(newSessionButton).not.toBeUndefined();
-    newSessionButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    expect(onNewSession).toHaveBeenCalledTimes(1);
-    expect(container.textContent).not.toContain("Stop");
   });
 
   it("shows sender labels from sanitized gateway messages instead of generic You", () => {

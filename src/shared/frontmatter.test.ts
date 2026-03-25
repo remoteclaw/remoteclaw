@@ -4,11 +4,11 @@ import {
   getFrontmatterString,
   normalizeStringList,
   parseFrontmatterBool,
-  parseOpenClawManifestInstallBase,
-  resolveOpenClawManifestBlock,
-  resolveOpenClawManifestInstall,
-  resolveOpenClawManifestOs,
-  resolveOpenClawManifestRequires,
+  parseRemoteClawManifestInstallBase,
+  resolveRemoteClawManifestBlock,
+  resolveRemoteClawManifestInstall,
+  resolveRemoteClawManifestOs,
+  resolveRemoteClawManifestRequires,
 } from "./frontmatter.js";
 
 describe("shared/frontmatter", () => {
@@ -29,9 +29,9 @@ describe("shared/frontmatter", () => {
     expect(parseFrontmatterBool(undefined, true)).toBe(true);
   });
 
-  test("resolveOpenClawManifestBlock reads current manifest keys and custom metadata fields", () => {
+  test("resolveRemoteClawManifestBlock reads current manifest keys and custom metadata fields", () => {
     expect(
-      resolveOpenClawManifestBlock({
+      resolveRemoteClawManifestBlock({
         frontmatter: {
           metadata: "{ openclaw: { foo: 1, bar: 'baz' } }",
         },
@@ -39,7 +39,7 @@ describe("shared/frontmatter", () => {
     ).toEqual({ foo: 1, bar: "baz" });
 
     expect(
-      resolveOpenClawManifestBlock({
+      resolveRemoteClawManifestBlock({
         frontmatter: {
           pluginMeta: "{ openclaw: { foo: 2 } }",
         },
@@ -48,19 +48,19 @@ describe("shared/frontmatter", () => {
     ).toEqual({ foo: 2 });
   });
 
-  test("resolveOpenClawManifestBlock returns undefined for invalid input", () => {
-    expect(resolveOpenClawManifestBlock({ frontmatter: {} })).toBeUndefined();
+  test("resolveRemoteClawManifestBlock returns undefined for invalid input", () => {
+    expect(resolveRemoteClawManifestBlock({ frontmatter: {} })).toBeUndefined();
     expect(
-      resolveOpenClawManifestBlock({ frontmatter: { metadata: "not-json5" } }),
+      resolveRemoteClawManifestBlock({ frontmatter: { metadata: "not-json5" } }),
     ).toBeUndefined();
     expect(
-      resolveOpenClawManifestBlock({ frontmatter: { metadata: "{ nope: { a: 1 } }" } }),
+      resolveRemoteClawManifestBlock({ frontmatter: { metadata: "{ nope: { a: 1 } }" } }),
     ).toBeUndefined();
   });
 
   it("normalizes manifest requirement and os lists", () => {
     expect(
-      resolveOpenClawManifestRequires({
+      resolveRemoteClawManifestRequires({
         requires: {
           bins: "bun, node",
           anyBins: [" ffmpeg ", ""],
@@ -74,15 +74,15 @@ describe("shared/frontmatter", () => {
       env: ["OPENCLAW_TOKEN", "OPENCLAW_URL"],
       config: [],
     });
-    expect(resolveOpenClawManifestRequires({})).toBeUndefined();
-    expect(resolveOpenClawManifestOs({ os: [" darwin ", "linux", ""] })).toEqual([
+    expect(resolveRemoteClawManifestRequires({})).toBeUndefined();
+    expect(resolveRemoteClawManifestOs({ os: [" darwin ", "linux", ""] })).toEqual([
       "darwin",
       "linux",
     ]);
   });
 
   it("parses and applies install common fields", () => {
-    const parsed = parseOpenClawManifestInstallBase(
+    const parsed = parseRemoteClawManifestInstallBase(
       {
         type: " Brew ",
         id: "brew.git",
@@ -104,9 +104,10 @@ describe("shared/frontmatter", () => {
       label: "Git",
       bins: ["git", "git"],
     });
-    expect(parseOpenClawManifestInstallBase({ kind: "bad" }, ["brew"])).toBeUndefined();
-    expect(applyOpenClawManifestInstallCommonFields({ extra: true }, parsed)).toEqual({
-      extra: true,
+    expect(parseRemoteClawManifestInstallBase({ kind: "bad" }, ["brew"])).toBeUndefined();
+    expect(
+      applyOpenClawManifestInstallCommonFields({ id: "old", label: "Old", bins: [] }, parsed!),
+    ).toEqual({
       id: "brew.git",
       label: "Git",
       bins: ["git", "git"],
@@ -115,11 +116,11 @@ describe("shared/frontmatter", () => {
 
   it("maps install entries through the parser and filters rejected specs", () => {
     expect(
-      resolveOpenClawManifestInstall(
+      resolveRemoteClawManifestInstall(
         {
           install: [{ id: "keep" }, { id: "drop" }, "bad"],
         },
-        (entry) => {
+        (entry: unknown) => {
           if (
             typeof entry === "object" &&
             entry !== null &&

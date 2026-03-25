@@ -109,7 +109,7 @@ describe("warning filter", () => {
       expect(seenWarnings.find((warning) => warning.code === "DEP0060")).toBeUndefined();
       expect(seenWarnings.find((warning) => warning.code === "DEP0040")).toBeUndefined();
 
-      emitWarning("Visible warning", { type: "Warning", code: "OPENCLAW_TEST_WARNING" });
+      emitWarning("Visible warning", { type: "Warning", code: "REMOTECLAW_TEST_WARNING" });
       await flushWarnings();
       expect(
         seenWarnings.find((warning) => warning.code === "REMOTECLAW_TEST_WARNING"),

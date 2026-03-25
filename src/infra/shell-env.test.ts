@@ -123,8 +123,10 @@ describe("shell env fallback", () => {
 
   it("uses the same truthy env parsing for deferred fallback", () => {
     expect(shouldDeferShellEnvFallback({} as NodeJS.ProcessEnv)).toBe(false);
-    expect(shouldDeferShellEnvFallback({ OPENCLAW_DEFER_SHELL_ENV_FALLBACK: "false" })).toBe(false);
-    expect(shouldDeferShellEnvFallback({ OPENCLAW_DEFER_SHELL_ENV_FALLBACK: "yes" })).toBe(true);
+    expect(shouldDeferShellEnvFallback({ REMOTECLAW_DEFER_SHELL_ENV_FALLBACK: "false" })).toBe(
+      false,
+    );
+    expect(shouldDeferShellEnvFallback({ REMOTECLAW_DEFER_SHELL_ENV_FALLBACK: "yes" })).toBe(true);
   });
 
   it("resolves timeout from env with default fallback", () => {

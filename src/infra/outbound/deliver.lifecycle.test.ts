@@ -273,8 +273,13 @@ describe("deliverOutboundPayloads lifecycle", () => {
     const sendWhatsApp = vi.fn().mockResolvedValue({ messageId: "w1", toJid: "jid" });
     hookMocks.runner.hasHooks.mockReturnValue(true);
 
+    const cfgWithAgent: RemoteClawConfig = {
+      ...whatsappChunkConfig,
+      agents: { list: [{ id: "agent-main", workspace: "/tmp/test-workspace" }] },
+    };
+
     await deliverOutboundPayloads({
-      cfg: whatsappChunkConfig,
+      cfg: cfgWithAgent,
       channel: "whatsapp",
       to: "+1555",
       payloads: [{ text: "hello" }],

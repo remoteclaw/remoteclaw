@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
-import { clearAllBootstrapSnapshots } from "../agents/bootstrap-cache.js";
+import { clearBootstrapSnapshot } from "../agents/bootstrap-cache.js";
 import { clearSessionStoreCacheForTest } from "../config/sessions/store.js";
 import { resetAgentRunContextForTest } from "../infra/agent-events.js";
 import { useFrozenTime, useRealTime } from "../test-utils/frozen-time.js";
@@ -40,7 +40,7 @@ export function setupCronIssueRegressionFixtures() {
     useRealTime();
     clearSessionStoreCacheForTest();
     resetAgentRunContextForTest();
-    clearAllBootstrapSnapshots();
+    clearBootstrapSnapshot("main");
     vi.restoreAllMocks();
     vi.resetModules();
   });

@@ -29,7 +29,7 @@ describe("resolveRuntimeEnv", () => {
       error: vi.fn(),
     };
 
-    const resolved = resolveRuntimeEnv({ logger });
+    const resolved = resolveRuntimeEnv({ logger }) as import("../runtime.js").OutputRuntimeEnv;
     resolved.log?.("hello %s", "world");
     resolved.error?.("bad %d", 7);
     resolved.writeStdout("plain");

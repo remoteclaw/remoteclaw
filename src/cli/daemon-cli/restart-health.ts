@@ -66,7 +66,6 @@ async function confirmGatewayReachable(port: number): Promise<boolean> {
     url: `ws://127.0.0.1:${port}`,
     auth: token || password ? { token, password } : undefined,
     timeoutMs: 3_000,
-    includeDetails: false,
   });
   return probe.ok || looksLikeAuthClose(probe.close?.code, probe.close?.reason);
 }

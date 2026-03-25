@@ -1,12 +1,12 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { vi } from "vitest";
+import { vi, type Mock } from "vitest";
 
 export const schtasksResponses: Array<{ code: number; stdout: string; stderr: string }> = [];
 export const schtasksCalls: string[][] = [];
-export const inspectPortUsage = vi.fn();
-export const killProcessTree = vi.fn();
+export const inspectPortUsage: Mock = vi.fn();
+export const killProcessTree: Mock = vi.fn();
 
 export async function withWindowsEnv(
   prefix: string,

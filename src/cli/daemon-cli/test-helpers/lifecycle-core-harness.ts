@@ -1,8 +1,12 @@
-import { vi } from "vitest";
+import { vi, type Mock } from "vitest";
 
 export const runtimeLogs: string[] = [];
 
-export const defaultRuntime = {
+export const defaultRuntime: {
+  log: (message: string) => number;
+  error: Mock;
+  exit: (code: number) => never;
+} = {
   log: (message: string) => runtimeLogs.push(message),
   error: vi.fn(),
   exit: (code: number) => {
@@ -10,7 +14,18 @@ export const defaultRuntime = {
   },
 };
 
-export const service = {
+export const service: {
+  label: string;
+  loadedText: string;
+  notLoadedText: string;
+  install: Mock;
+  uninstall: Mock;
+  stop: Mock;
+  isLoaded: Mock;
+  readCommand: Mock;
+  readRuntime: Mock;
+  restart: Mock;
+} = {
   label: "TestService",
   loadedText: "loaded",
   notLoadedText: "not loaded",

@@ -28,7 +28,7 @@ export {
   shouldResolveSessionIdInput,
   shouldVerifyRequesterSpawnedSessionVisibility,
 } from "./sessions-resolution.js";
-import { type OpenClawConfig, loadConfig } from "../../config/config.js";
+import { type RemoteClawConfig, loadConfig } from "../../config/config.js";
 import { extractTextFromChatContent } from "../../shared/chat-content.js";
 import { sanitizeUserFacingText } from "../agent-helpers.js";
 import {
@@ -77,7 +77,7 @@ function normalizeKey(value?: string) {
 export function resolveSessionToolContext(opts?: {
   agentSessionKey?: string;
   sandboxed?: boolean;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
 }) {
   const cfg = opts?.config ?? loadConfig();
   return {

@@ -258,7 +258,7 @@ function resolveSenderCandidates(params: {
 }
 
 function resolveFallbackAllowFrom(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   providerId?: ChannelId;
   accountId?: string | null;
 }): Array<string | number> {

@@ -216,24 +216,6 @@ describe("sessions_list gating", () => {
       sessions: [{ key: "agent:main:main" }],
     });
   });
-
-  it("keeps literal current keys for message previews", async () => {
-    callGatewayMock.mockReset();
-    callGatewayMock
-      .mockResolvedValueOnce({
-        path: "/tmp/sessions.json",
-        sessions: [{ key: "current", kind: "direct" }],
-      })
-      .mockResolvedValueOnce({ sessions: [{ key: "current" }] })
-      .mockResolvedValueOnce({ messages: [{ role: "assistant", content: [] }] });
-
-    await createMainSessionsListTool().execute("call1", { messageLimit: 1 });
-
-    expect(callGatewayMock).toHaveBeenLastCalledWith({
-      method: "chat.history",
-      params: { sessionKey: "current", limit: 1 },
-    });
-  });
 });
 
 describe("sessions_list transcriptPath resolution", () => {

@@ -108,7 +108,7 @@ describe("channel tools", () => {
 
     setActivePluginRegistry(createTestRegistry([{ pluginId: "telegram", source: "test", plugin }]));
 
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as RemoteClawConfig;
     expect(listChannelSupportedActions({ cfg, channel: "tg" })).toEqual(["react"]);
   });
 
@@ -140,7 +140,7 @@ describe("channel tools", () => {
 
     setActivePluginRegistry(createTestRegistry([{ pluginId: "telegram", source: "test", plugin }]));
 
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as RemoteClawConfig;
     expect(listChannelSupportedActions({ cfg, channel: "telegram" })).toEqual(["react"]);
     expect(listActions).not.toHaveBeenCalled();
   });

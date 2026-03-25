@@ -1,11 +1,6 @@
 // Narrow plugin-sdk surface for the bundled msteams plugin.
 // Keep this list additive and scoped to symbols used under extensions/msteams.
 
-import {
-  createOptionalChannelSetupAdapter,
-  createOptionalChannelSetupWizard,
-} from "./optional-channel-setup.js";
-
 export type { ChunkMode } from "../auto-reply/chunk.js";
 export type { HistoryEntry } from "../auto-reply/reply/history.js";
 export {
@@ -37,14 +32,19 @@ export {
 export { buildChannelConfigSchema } from "../channels/plugins/config-schema.js";
 export { resolveChannelMediaMaxBytes } from "../channels/plugins/media-limits.js";
 export { buildMediaPayload } from "../channels/plugins/media-payload.js";
+export type {
+  ChannelOnboardingAdapter,
+  ChannelOnboardingDmPolicy,
+} from "../channels/plugins/onboarding-types.js";
+export { promptChannelAccessConfig } from "../channels/plugins/onboarding/channel-access.js";
 export {
   addWildcardAllowFrom,
   mergeAllowFromEntries,
   setTopLevelChannelAllowFrom,
   setTopLevelChannelDmPolicyWithAllowFrom,
   setTopLevelChannelGroupPolicy,
-  splitSetupEntries,
-} from "../channels/plugins/setup-wizard-helpers.js";
+  splitOnboardingEntries,
+} from "../channels/plugins/onboarding/helpers.js";
 export { PAIRING_APPROVED_MESSAGE } from "../channels/plugins/pairing-message.js";
 export type {
   BaseProbeResult,
@@ -56,7 +56,7 @@ export type {
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 export { createTypingCallbacks } from "../channels/typing.js";
-export type { OpenClawConfig } from "../config/config.js";
+export type { RemoteClawConfig } from "../config/config.js";
 export { isDangerousNameMatchingEnabled } from "../config/dangerous-name-matching.js";
 export { resolveToolsBySender } from "../config/group-policy.js";
 export {
@@ -73,11 +73,7 @@ export type {
   MSTeamsReplyStyle,
   MSTeamsTeamConfig,
 } from "../config/types.js";
-export {
-  hasConfiguredSecretInput,
-  normalizeResolvedSecretInputString,
-  normalizeSecretInputString,
-} from "../config/types.secrets.js";
+export { normalizeSecretInputString } from "../config/types.secrets.js";
 export { MSTeamsConfigSchema } from "../config/zod-schema.providers-core.js";
 export { DEFAULT_WEBHOOK_MAX_BODY_BYTES } from "../infra/http-body.js";
 export { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
@@ -87,7 +83,7 @@ export { detectMime, extensionForMime, getFileExtension } from "../media/mime.js
 export { extractOriginalFilename } from "../media/store.js";
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 export type { PluginRuntime } from "../plugins/runtime/types.js";
-export type { OpenClawPluginApi } from "../plugins/types.js";
+export type { RemoteClawPluginApi } from "../plugins/types.js";
 export { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 export type { RuntimeEnv } from "../runtime.js";
 export {
@@ -101,7 +97,7 @@ export {
 } from "./group-access.js";
 export { formatDocsLink } from "../terminal/links.js";
 export { sleep } from "../utils.js";
-export { loadWebMedia } from "./web-media.js";
+export { loadWebMedia } from "../web/media.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
 export { keepHttpServerTaskAlive } from "./channel-lifecycle.js";
 export { withFileLock } from "./file-lock.js";
@@ -122,17 +118,3 @@ export {
   createDefaultChannelRuntimeState,
 } from "./status-helpers.js";
 export { normalizeStringEntries } from "../shared/string-normalization.js";
-
-export const msteamsSetupWizard = createOptionalChannelSetupWizard({
-  channel: "msteams",
-  label: "Microsoft Teams",
-  npmSpec: "@openclaw/msteams",
-  docsPath: "/channels/msteams",
-});
-
-export const msteamsSetupAdapter = createOptionalChannelSetupAdapter({
-  channel: "msteams",
-  label: "Microsoft Teams",
-  npmSpec: "@openclaw/msteams",
-  docsPath: "/channels/msteams",
-});

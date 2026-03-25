@@ -1,7 +1,7 @@
 import { hasAnyWhatsAppAuth } from "../../extensions/whatsapp/auth-presence.js";
 import { hasMeaningfulChannelConfig } from "../channels/config-presence.js";
 import { isRecord } from "../utils.js";
-import type { OpenClawConfig } from "./config.js";
+import type { RemoteClawConfig } from "./config.js";
 
 function hasNonEmptyString(value: unknown): boolean {
   return typeof value === "string" && value.trim().length > 0;
@@ -25,7 +25,7 @@ function accountsHaveKeys(value: unknown, keys: readonly string[]): boolean {
 }
 
 function resolveChannelConfig(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   channelId: string,
 ): Record<string, unknown> | null {
   const channels = cfg.channels as Record<string, unknown> | undefined;
@@ -100,7 +100,7 @@ function hasAnyNumberKeys(entry: Record<string, unknown>, keys: readonly string[
 }
 
 function isStructuredChannelConfigured(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   channelId: string,
   env: NodeJS.ProcessEnv,
   spec: StructuredChannelConfigSpec,
@@ -127,7 +127,7 @@ function isStructuredChannelConfigured(
   return hasMeaningfulChannelConfig(entry);
 }
 
-function isWhatsAppConfigured(cfg: OpenClawConfig): boolean {
+function isWhatsAppConfigured(cfg: RemoteClawConfig): boolean {
   if (hasAnyWhatsAppAuth(cfg)) {
     return true;
   }
@@ -138,13 +138,13 @@ function isWhatsAppConfigured(cfg: OpenClawConfig): boolean {
   return hasMeaningfulChannelConfig(entry);
 }
 
-function isGenericChannelConfigured(cfg: OpenClawConfig, channelId: string): boolean {
+function isGenericChannelConfigured(cfg: RemoteClawConfig, channelId: string): boolean {
   const entry = resolveChannelConfig(cfg, channelId);
   return hasMeaningfulChannelConfig(entry);
 }
 
 export function isChannelConfigured(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   channelId: string,
   env: NodeJS.ProcessEnv = process.env,
 ): boolean {

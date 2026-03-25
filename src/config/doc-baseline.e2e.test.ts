@@ -119,7 +119,7 @@ describe("config doc baseline", () => {
   });
 
   it("supports check mode for stale generated artifacts", async () => {
-    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-config-doc-baseline-"));
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-config-doc-baseline-"));
     tempRoots.push(tempRoot);
 
     const initial = await writeConfigDocBaselineStatefile({

@@ -179,6 +179,7 @@ describe("detectChangedScope", () => {
       runAndroid: true,
       runWindows: true,
       runSkillsPython: true,
+      runChangedSmoke: false,
     });
   });
 

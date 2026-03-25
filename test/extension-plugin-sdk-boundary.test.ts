@@ -38,14 +38,14 @@ describe("extension src outside plugin-sdk boundary inventory", () => {
 
     expect(inventory).toContainEqual(
       expect.objectContaining({
-        file: "extensions/brave/src/brave-web-search-provider.ts",
-        resolvedPath: "src/agents/tools/common.js",
+        file: "extensions/discord/src/monitor.tool-result.test-harness.ts",
+        resolvedPath: "src/test-utils/vitest-mock-fn.js",
       }),
     );
     expect(inventory).toContainEqual(
       expect.objectContaining({
-        file: "extensions/discord/src/runtime-api.ts",
-        resolvedPath: "src/config/types.secrets.js",
+        file: "extensions/googlechat/src/setup-core.ts",
+        resolvedPath: "src/channels/plugins/setup-helpers.js",
       }),
     );
   });

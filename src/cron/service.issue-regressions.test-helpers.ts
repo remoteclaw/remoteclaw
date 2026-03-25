@@ -42,7 +42,6 @@ export function setupCronIssueRegressionFixtures() {
     resetAgentRunContextForTest();
     clearBootstrapSnapshot("main");
     vi.restoreAllMocks();
-    vi.resetModules();
   });
 
   afterAll(async () => {

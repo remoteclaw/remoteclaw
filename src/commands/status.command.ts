@@ -469,27 +469,37 @@ export async function statusCommand(
         { key: "State", header: "State", minWidth: 8 },
         { key: "Detail", header: "Detail", flex: true, minWidth: 24 },
       ],
-      rows: channels.rows.map((row) => {
-        const issues = channelIssuesByChannel.get(row.id) ?? [];
-        const effectiveState = row.state === "off" ? "off" : issues.length > 0 ? "warn" : row.state;
-        const issueSuffix =
-          issues.length > 0
-            ? ` · ${warn(`gateway: ${shortenText(issues[0]?.message ?? "issue", 84)}`)}`
-            : "";
-        return {
-          Channel: row.label,
-          Enabled: row.enabled ? ok("ON") : muted("OFF"),
-          State:
-            effectiveState === "ok"
-              ? ok("OK")
-              : effectiveState === "warn"
-                ? warn("WARN")
-                : effectiveState === "off"
-                  ? muted("OFF")
-                  : theme.accentDim("SETUP"),
-          Detail: `${row.detail}${issueSuffix}`,
-        };
-      }),
+      rows: channels.rows.map(
+        (row: {
+          id: string;
+          Channel: string;
+          Enabled: string;
+          state: string;
+          detail?: string;
+          [key: string]: unknown;
+        }) => {
+          const issues = channelIssuesByChannel.get(row.id) ?? [];
+          const effectiveState =
+            row.state === "off" ? "off" : issues.length > 0 ? "warn" : row.state;
+          const issueSuffix =
+            issues.length > 0
+              ? ` · ${warn(`gateway: ${shortenText(issues[0]?.message ?? "issue", 84)}`)}`
+              : "";
+          return {
+            Channel: row.label,
+            Enabled: row.enabled ? ok("ON") : muted("OFF"),
+            State:
+              effectiveState === "ok"
+                ? ok("OK")
+                : effectiveState === "warn"
+                  ? warn("WARN")
+                  : effectiveState === "off"
+                    ? muted("OFF")
+                    : theme.accentDim("SETUP"),
+            Detail: `${row.detail}${issueSuffix}`,
+          };
+        },
+      ),
     }).trimEnd(),
   );
 

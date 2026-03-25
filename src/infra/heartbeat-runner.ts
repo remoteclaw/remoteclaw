@@ -122,7 +122,7 @@ function resolveHeartbeatConfig(
 
 function resolveHeartbeatAgents(cfg: RemoteClawConfig): HeartbeatAgent[] {
   const list = cfg.agents?.list ?? [];
-  if (hasExplicitHeartbeatAgents(cfg)) {
+  if (list.some((entry) => Boolean(entry?.heartbeat))) {
     return list
       .filter((entry) => entry?.heartbeat)
       .map((entry) => {

@@ -1,16 +1,19 @@
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import {
   approveDevicePairing,
   clearDevicePairing,
+  ensureDeviceToken,
   getPairedDevice,
+  type PairedDevice,
   removePairedDevice,
   requestDevicePairing,
   rotateDeviceToken,
   verifyDeviceToken,
 } from "./device-pairing.js";
+import { resolvePairingPaths } from "./pairing-files.js";
 
 async function setupPairedOperatorDevice(baseDir: string, scopes: string[]) {
   const request = await requestDevicePairing(

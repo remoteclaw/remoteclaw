@@ -146,7 +146,7 @@ describe("config io write", () => {
     "tightens world-writable state dir when writing the default config",
     async () => {
       await withSuiteHome(async (home) => {
-        const stateDir = path.join(home, ".openclaw");
+        const stateDir = path.join(home, ".remoteclaw");
         await fs.mkdir(stateDir, { recursive: true, mode: 0o777 });
         await fs.chmod(stateDir, 0o777);
 
@@ -548,10 +548,10 @@ describe("config io write", () => {
       });
       expect(lines.length).toBeGreaterThan(0);
       await expect(
-        fs.stat(path.join(home, ".openclaw", "logs", "config-audit.jsonl")),
+        fs.stat(path.join(home, ".remoteclaw", "logs", "config-audit.jsonl")),
       ).resolves.toBeDefined();
       await expect(
-        fs.stat(path.resolve("undefined", ".openclaw", "logs", "config-audit.jsonl")),
+        fs.stat(path.resolve("undefined", ".remoteclaw", "logs", "config-audit.jsonl")),
       ).rejects.toThrow();
     });
   });

@@ -5,16 +5,12 @@ import { refreshChatAvatar, type ChatHost } from "./app-chat.ts";
 
 function makeHost(overrides?: Partial<ChatHost>): ChatHost {
   return {
-    client: null,
-    chatMessages: [],
-    chatStream: null,
     connected: true,
     chatMessage: "",
     chatAttachments: [],
     chatQueue: [],
     chatRunId: null,
     chatSending: false,
-    lastError: null,
     sessionKey: "agent:main",
     basePath: "",
     hello: null,

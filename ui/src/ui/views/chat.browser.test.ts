@@ -7,7 +7,6 @@ function createProps(overrides: Partial<ChatProps> = {}): ChatProps {
   return {
     sessionKey: "main",
     onSessionKeyChange: () => undefined,
-    thinkingLevel: null,
     showThinking: false,
     loading: false,
     sending: false,
@@ -16,6 +15,7 @@ function createProps(overrides: Partial<ChatProps> = {}): ChatProps {
     fallbackStatus: null,
     messages: [],
     toolMessages: [],
+    thinkingStream: null,
     streamSegments: [],
     stream: null,
     streamStartedAt: null,
@@ -50,9 +50,6 @@ function createProps(overrides: Partial<ChatProps> = {}): ChatProps {
     onSend: () => undefined,
     onQueueRemove: () => undefined,
     onNewSession: () => undefined,
-    agentsList: null,
-    currentAgentId: "",
-    onAgentChange: () => undefined,
     ...overrides,
   };
 }

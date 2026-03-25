@@ -24,6 +24,7 @@ import { loadLogs } from "./controllers/logs.ts";
 import { loadNodes } from "./controllers/nodes.ts";
 import { loadPresence } from "./controllers/presence.ts";
 import { loadSessions } from "./controllers/sessions.ts";
+import { loadUsage } from "./controllers/usage.ts";
 import {
   inferBasePathFromPathname,
   normalizeBasePath,
@@ -201,7 +202,7 @@ export async function refreshActiveTab(host: SettingsHost) {
     await loadPresence(host as unknown as RemoteClawApp);
   }
   if (host.tab === "usage") {
-    await loadUsage(host as unknown as OpenClawApp);
+    await loadUsage(host as unknown as RemoteClawApp);
   }
   if (host.tab === "sessions") {
     await loadSessions(host as unknown as RemoteClawApp);

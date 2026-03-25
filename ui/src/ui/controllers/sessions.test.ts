@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { deleteSession, deleteSessionAndRefresh, type SessionsState } from "./sessions.ts";
+import { deleteSessionsAndRefresh, type SessionsState } from "./sessions.ts";
 
 type RequestFn = (method: string, params?: unknown) => Promise<unknown>;
 
@@ -36,9 +36,9 @@ describe("deleteSessionAndRefresh", () => {
     const state = createState(request);
     vi.spyOn(window, "confirm").mockReturnValue(true);
 
-    const deleted = await deleteSessionAndRefresh(state, "agent:main:test");
+    const deleted = await deleteSessionsAndRefresh(state, ["agent:main:test"]);
 
-    expect(deleted).toBe(true);
+    expect(deleted).toEqual(["agent:main:test"]);
     expect(request).toHaveBeenCalledTimes(2);
     expect(request).toHaveBeenNthCalledWith(1, "sessions.delete", {
       key: "agent:main:test",
@@ -57,9 +57,9 @@ describe("deleteSessionAndRefresh", () => {
     const state = createState(request, { sessionsError: "existing error" });
     vi.spyOn(window, "confirm").mockReturnValue(false);
 
-    const deleted = await deleteSessionAndRefresh(state, "agent:main:test");
+    const deleted = await deleteSessionsAndRefresh(state, ["agent:main:test"]);
 
-    expect(deleted).toBe(false);
+    expect(deleted).toEqual([]);
     expect(request).not.toHaveBeenCalled();
     expect(state.sessionsError).toBe("existing error");
     expect(state.sessionsLoading).toBe(false);
@@ -78,9 +78,9 @@ describe("deleteSessionAndRefresh", () => {
     const state = createState(request);
     vi.spyOn(window, "confirm").mockReturnValue(true);
 
-    const deleted = await deleteSessionAndRefresh(state, "agent:main:test");
+    const deleted = await deleteSessionsAndRefresh(state, ["agent:main:test"]);
 
-    expect(deleted).toBe(false);
+    expect(deleted).toEqual([]);
     expect(request).toHaveBeenCalledTimes(1);
     expect(request).toHaveBeenCalledWith("sessions.delete", {
       key: "agent:main:test",
@@ -89,16 +89,14 @@ describe("deleteSessionAndRefresh", () => {
     expect(state.sessionsError).toContain("delete boom");
     expect(state.sessionsLoading).toBe(false);
   });
-});
 
-describe("deleteSession", () => {
-  it("returns false when already loading", async () => {
+  it("returns empty array when already loading", async () => {
     const request = vi.fn(async () => undefined);
     const state = createState(request, { sessionsLoading: true });
 
-    const deleted = await deleteSession(state, "agent:main:test");
+    const deleted = await deleteSessionsAndRefresh(state, ["agent:main:test"]);
 
-    expect(deleted).toBe(false);
+    expect(deleted).toEqual([]);
     expect(request).not.toHaveBeenCalled();
   });
 });

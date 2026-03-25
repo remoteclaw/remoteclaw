@@ -94,7 +94,8 @@ vi.mock("../infra/widearea-dns.js", () => ({
   resolveWideAreaDiscoveryDomain: () => null,
 }));
 
-vi.mock("../infra/bonjour-discovery.js", () => ({
+vi.mock("../infra/bonjour-discovery.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../infra/bonjour-discovery.js")>()),
   discoverGatewayBeacons: (opts: unknown) => discoverGatewayBeacons(opts),
 }));
 

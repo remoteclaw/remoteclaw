@@ -75,7 +75,6 @@ describe("probeGateway", () => {
     const result = await probeGateway({
       url: "ws://127.0.0.1:18789",
       timeoutMs: 1_000,
-      includeDetails: false,
     });
 
     expect(result.ok).toBe(true);

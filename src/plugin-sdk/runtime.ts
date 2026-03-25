@@ -1,5 +1,5 @@
 import { format } from "node:util";
-import type { RuntimeEnv } from "../runtime.js";
+import type { OutputRuntimeEnv, RuntimeEnv } from "../runtime.js";
 
 type LoggerLike = {
   info: (message: string) => void;
@@ -9,13 +9,19 @@ type LoggerLike = {
 export function createLoggerBackedRuntime(params: {
   logger: LoggerLike;
   exitError?: (code: number) => Error;
-}): RuntimeEnv {
+}): OutputRuntimeEnv {
   return {
     log: (...args) => {
       params.logger.info(format(...args));
     },
     error: (...args) => {
       params.logger.error(format(...args));
+    },
+    writeStdout: (value: string) => {
+      params.logger.info(value);
+    },
+    writeJson: (value: unknown, space = 2) => {
+      params.logger.info(JSON.stringify(value, null, space));
     },
     exit: (code: number): never => {
       throw params.exitError?.(code) ?? new Error(`exit ${code}`);

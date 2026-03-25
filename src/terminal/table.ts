@@ -1,6 +1,10 @@
 import { displayString } from "../utils.js";
 import { visibleWidth } from "./ansi.js";
 
+export function getTerminalTableWidth(minWidth = 60, fallbackWidth = 120): number {
+  return Math.max(minWidth, process.stdout.columns ?? fallbackWidth);
+}
+
 type Align = "left" | "right" | "center";
 
 export type TableColumn = {

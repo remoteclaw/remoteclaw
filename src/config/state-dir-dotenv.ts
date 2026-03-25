@@ -8,7 +8,7 @@ import {
 } from "../infra/host-env-security.js";
 import { collectConfigServiceEnvVars } from "./config-env-vars.js";
 import { resolveStateDir } from "./paths.js";
-import type { OpenClawConfig } from "./types.js";
+import type { RemoteClawConfig } from "./types.remoteclaw.js";
 
 function isBlockedServiceEnvVar(key: string): boolean {
   return isDangerousHostEnvVarName(key) || isDangerousHostEnvOverrideVarName(key);
@@ -60,7 +60,7 @@ export function readStateDirDotEnvVars(
  */
 export function collectDurableServiceEnvVars(params: {
   env: Record<string, string | undefined>;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
 }): Record<string, string> {
   return {
     ...readStateDirDotEnvVars(params.env),

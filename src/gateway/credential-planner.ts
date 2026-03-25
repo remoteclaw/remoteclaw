@@ -1,5 +1,5 @@
-import type { OpenClawConfig } from "../config/config.js";
 import { containsEnvVarReference } from "../config/env-substitution.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { hasConfiguredSecretInput, resolveSecretInputRef } from "../config/types.secrets.js";
 
 export type GatewayCredentialInputPath =
@@ -41,7 +41,7 @@ export type GatewayCredentialPlan = {
   remotePasswordActive: boolean;
 };
 
-type GatewaySecretDefaults = NonNullable<OpenClawConfig["secrets"]>["defaults"];
+type GatewaySecretDefaults = NonNullable<RemoteClawConfig["secrets"]>["defaults"];
 
 function readGatewayEnv(
   env: NodeJS.ProcessEnv,
@@ -136,7 +136,7 @@ function resolveConfiguredGatewayCredentialInput(params: {
 }
 
 export function createGatewayCredentialPlan(params: {
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   env?: NodeJS.ProcessEnv;
   includeLegacyEnv?: boolean;
   defaults?: GatewaySecretDefaults;
@@ -187,7 +187,7 @@ export function createGatewayCredentialPlan(params: {
   const remoteUrlConfigured = Boolean(trimToUndefined(remote?.url));
   const tailscaleRemoteExposure =
     gateway?.tailscale?.mode === "serve" || gateway?.tailscale?.mode === "funnel";
-  const remoteEnabled = remote?.enabled !== false;
+  const remoteEnabled = true;
   const remoteConfiguredSurface = remoteMode || remoteUrlConfigured || tailscaleRemoteExposure;
   const remoteTokenFallbackActive = localTokenCanWin && !envToken && !localToken.configured;
   const remotePasswordFallbackActive = !envPassword && !localPassword.configured && passwordCanWin;

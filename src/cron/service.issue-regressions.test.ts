@@ -1,6 +1,8 @@
 import fs from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { HeartbeatRunResult } from "../infra/heartbeat-wake.js";
+import { clearCommandLane, setCommandLaneConcurrency } from "../process/command-queue.js";
+import { CommandLane } from "../process/lanes.js";
 import * as schedule from "./schedule.js";
 import {
   createAbortAwareIsolatedRunner,

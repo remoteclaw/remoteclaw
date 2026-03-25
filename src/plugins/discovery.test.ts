@@ -333,11 +333,11 @@ describe("discoverRemoteClawPlugins", () => {
 
       const result = await withEnvAsync(
         {
-          OPENCLAW_STATE_DIR: stateDir,
+          REMOTECLAW_STATE_DIR: stateDir,
           CLAWDBOT_STATE_DIR: undefined,
-          OPENCLAW_BUNDLED_PLUGINS_DIR: bundledDir,
+          REMOTECLAW_BUNDLED_PLUGINS_DIR: bundledDir,
         },
-        async () => discoverOpenClawPlugins({}),
+        async () => discoverRemoteClawPlugins({}),
       );
 
       expect(result.candidates.some((candidate) => candidate.idHint === "demo-pack")).toBe(true);

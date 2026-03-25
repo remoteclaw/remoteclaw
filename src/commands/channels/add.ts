@@ -30,17 +30,6 @@ export type ChannelsAddOptions = {
   dmAllowlist?: string;
 } & Omit<ChannelSetupInput, "groupChannels" | "dmAllowlist" | "initialSyncLimit">;
 
-function parseList(value: string | undefined): string[] | undefined {
-  if (!value?.trim()) {
-    return undefined;
-  }
-  const parsed = value
-    .split(/[\n,;]+/g)
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-  return parsed.length > 0 ? parsed : undefined;
-}
-
 function resolveCatalogChannelEntry(raw: string, cfg: RemoteClawConfig | null) {
   const trimmed = raw.trim().toLowerCase();
   if (!trimmed) {

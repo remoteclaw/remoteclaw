@@ -594,7 +594,7 @@ function buildLookupChildren(
       path: childPath,
       type: childSchema.type,
       required: isRequired,
-      hasChildren: schemaHasChildren(childSchema),
+      hasChildren: schemaHasChildren(childSchema as Parameters<typeof schemaHasChildren>[0]),
       hint: resolvedHint?.hint,
       hintPath: resolvedHint?.path,
     });

@@ -21,6 +21,7 @@ import {
   normalizeMessageChannel,
 } from "../../utils/message-channel.js";
 import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../whatsapp/normalize.js";
+import { resolveOutboundChannelPlugin } from "./channel-resolution.js";
 import { missingTargetError } from "./target-errors.js";
 
 export type OutboundChannel = DeliverableMessageChannel | "none";
@@ -182,7 +183,7 @@ export function resolveOutboundTarget(params: {
     };
   }
 
-  const plugin = getChannelPlugin(params.channel);
+  const plugin = resolveOutboundChannelPlugin({ channel: params.channel, cfg: params.cfg });
   if (!plugin) {
     return {
       ok: false,

@@ -5,8 +5,8 @@ import { withStateDirEnv } from "../test-helpers/state-dir-env.js";
 import { loadOrCreateDeviceIdentity } from "./device-identity.js";
 
 describe("device identity state dir defaults", () => {
-  it("writes the default identity file under REMOTECLAW_STATE_DIR", async () => {
-    await withStateDirEnv("remoteclaw-identity-state-", async ({ stateDir }) => {
+  it("writes the default identity file under OPENCLAW_STATE_DIR", async () => {
+    await withStateDirEnv("openclaw-identity-state-", async ({ stateDir }) => {
       const identity = loadOrCreateDeviceIdentity();
       const identityPath = path.join(stateDir, "identity", "device.json");
       const raw = JSON.parse(await fs.readFile(identityPath, "utf8")) as { deviceId?: string };
@@ -47,6 +47,27 @@ describe("device identity state dir defaults", () => {
 
       expect(repaired.deviceId).toBe(original.deviceId);
       expect(stored.deviceId).toBe(original.deviceId);
+    });
+  });
+
+  it("regenerates the identity when the stored file is invalid", async () => {
+    await withStateDirEnv("openclaw-identity-state-", async ({ stateDir }) => {
+      const identityPath = path.join(stateDir, "identity", "device.json");
+      await fs.mkdir(path.dirname(identityPath), { recursive: true });
+      await fs.writeFile(identityPath, '{"version":1,"deviceId":"broken"}\n', "utf8");
+
+      const regenerated = loadOrCreateDeviceIdentity();
+      const stored = JSON.parse(await fs.readFile(identityPath, "utf8")) as {
+        version?: number;
+        deviceId?: string;
+        publicKeyPem?: string;
+        privateKeyPem?: string;
+      };
+
+      expect(stored.version).toBe(1);
+      expect(stored.deviceId).toBe(regenerated.deviceId);
+      expect(stored.publicKeyPem).toBe(regenerated.publicKeyPem);
+      expect(stored.privateKeyPem).toBe(regenerated.privateKeyPem);
     });
   });
 });

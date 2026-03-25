@@ -4,7 +4,8 @@ const mocks = vi.hoisted(() => ({
   listChannelPlugins: vi.fn(),
 }));
 
-vi.mock("../../channels/plugins/index.js", () => ({
+vi.mock("../../channels/plugins/index.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../channels/plugins/index.js")>()),
   listChannelPlugins: mocks.listChannelPlugins,
 }));
 

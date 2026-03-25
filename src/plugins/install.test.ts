@@ -766,7 +766,7 @@ describe("installPluginFromNpmSpec", () => {
     });
 
     const result = await installPluginFromNpmSpec({
-      spec: "@openclaw/not-found",
+      spec: "@remoteclaw/not-found",
       logger: { info: () => {}, warn: () => {} },
     });
     expect(result.ok).toBe(false);
@@ -778,8 +778,8 @@ describe("installPluginFromNpmSpec", () => {
   it("rejects bare npm specs that resolve to prerelease versions", async () => {
     const run = vi.mocked(runCommandWithTimeout);
     mockNpmPackMetadataResult(run, {
-      id: "@openclaw/voice-call@0.0.2-beta.1",
-      name: "@openclaw/voice-call",
+      id: "@remoteclaw/voice-call@0.0.2-beta.1",
+      name: "@remoteclaw/voice-call",
       version: "0.0.2-beta.1",
       filename: "voice-call-0.0.2-beta.1.tgz",
       integrity: "sha512-beta",
@@ -787,13 +787,13 @@ describe("installPluginFromNpmSpec", () => {
     });
 
     const result = await installPluginFromNpmSpec({
-      spec: "@openclaw/voice-call",
+      spec: "@remoteclaw/voice-call",
       logger: { info: () => {}, warn: () => {} },
     });
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error).toContain("prerelease version 0.0.2-beta.1");
-      expect(result.error).toContain('"@openclaw/voice-call@beta"');
+      expect(result.error).toContain('"@remoteclaw/voice-call@beta"');
     }
   });
 
@@ -810,8 +810,8 @@ describe("installPluginFromNpmSpec", () => {
           code: 0,
           stdout: JSON.stringify([
             {
-              id: "@openclaw/voice-call@0.0.2-beta.1",
-              name: "@openclaw/voice-call",
+              id: "@remoteclaw/voice-call@0.0.2-beta.1",
+              name: "@remoteclaw/voice-call",
               version: "0.0.2-beta.1",
               filename: packedName,
               integrity: "sha512-beta",
@@ -832,7 +832,7 @@ describe("installPluginFromNpmSpec", () => {
       version: "0.0.1",
     });
     const result = await installPluginFromNpmSpec({
-      spec: "@openclaw/voice-call@beta",
+      spec: "@remoteclaw/voice-call@beta",
       extensionsDir,
       logger: { info: () => {}, warn: () => {} },
     });
@@ -841,10 +841,10 @@ describe("installPluginFromNpmSpec", () => {
       return;
     }
     expect(result.npmResolution?.version).toBe("0.0.2-beta.1");
-    expect(result.npmResolution?.resolvedSpec).toBe("@openclaw/voice-call@0.0.2-beta.1");
+    expect(result.npmResolution?.resolvedSpec).toBe("@remoteclaw/voice-call@0.0.2-beta.1");
     expectSingleNpmPackIgnoreScriptsCall({
       calls: run.mock.calls,
-      expectedSpec: "@openclaw/voice-call@beta",
+      expectedSpec: "@remoteclaw/voice-call@beta",
     });
     expect(packTmpDir).not.toBe("");
   });

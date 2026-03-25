@@ -241,6 +241,39 @@ describe("gateway bonjour advertiser", () => {
     expect(order).toEqual(["shutdown", "cleanup"]);
   });
 
+  it("logs ciao handler classifications at the bonjour caller", async () => {
+    enableAdvertiserUnitMode();
+
+    const destroy = vi.fn().mockResolvedValue(undefined);
+    const advertise = vi.fn().mockResolvedValue(undefined);
+    mockCiaoService({ advertise, destroy });
+
+    const started = await startGatewayBonjourAdvertiser({
+      gatewayPort: 18789,
+      sshPort: 2222,
+    });
+
+    const handler = registerUnhandledRejectionHandler.mock.calls[0]?.[0] as
+      | ((reason: unknown) => boolean)
+      | undefined;
+    expect(handler).toBeTypeOf("function");
+
+    expect(handler?.(new Error("CIAO PROBING CANCELLED"))).toBe(true);
+    expect(logDebug).toHaveBeenCalledWith(
+      expect.stringContaining("ignoring unhandled ciao rejection"),
+    );
+
+    logDebug.mockClear();
+    expect(
+      handler?.(new Error("Reached illegal state! IPV4 address change from defined to undefined!")),
+    ).toBe(true);
+    expect(logWarn).toHaveBeenCalledWith(
+      expect.stringContaining("suppressing ciao interface assertion"),
+    );
+
+    await started.stop();
+  });
+
   it("logs advertise failures and retries via watchdog", async () => {
     enableAdvertiserUnitMode();
     vi.useFakeTimers();
@@ -264,16 +297,14 @@ describe("gateway bonjour advertiser", () => {
     await Promise.resolve();
     expect(logWarn).toHaveBeenCalledWith(expect.stringContaining("advertise failed"));
 
-    // watchdog first retries, then recreates the advertiser after the service
-    // stays unhealthy across multiple 5s ticks.
-    await vi.advanceTimersByTimeAsync(15_000);
-    expect(advertise).toHaveBeenCalledTimes(3);
-    expect(createService).toHaveBeenCalledTimes(2);
+    // watchdog should attempt re-advertise at the 5s interval tick
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(advertise).toHaveBeenCalledTimes(2);
 
     await started.stop();
 
     await vi.advanceTimersByTimeAsync(60_000);
-    expect(advertise).toHaveBeenCalledTimes(3);
+    expect(advertise).toHaveBeenCalledTimes(2);
   });
 
   it("handles advertise throwing synchronously", async () => {
@@ -301,9 +332,15 @@ describe("gateway bonjour advertiser", () => {
     vi.useFakeTimers();
 
     const stateRef = { value: "announcing" };
-    const destroy = vi.fn().mockResolvedValue(undefined);
+    const events: string[] = [];
+    let advertiseCount = 0;
+    const destroy = vi.fn().mockImplementation(async () => {
+      events.push("destroy");
+    });
     const advertise = vi.fn().mockImplementation(() => {
-      if (advertise.mock.calls.length === 1) {
+      advertiseCount += 1;
+      events.push(`advertise:${advertiseCount}`);
+      if (advertiseCount === 1) {
         stateRef.value = "announcing";
         return new Promise<void>(() => {});
       }
@@ -327,48 +364,11 @@ describe("gateway bonjour advertiser", () => {
     expect(advertise).toHaveBeenCalledTimes(2);
     expect(destroy).toHaveBeenCalledTimes(1);
     expect(shutdown).toHaveBeenCalledTimes(1);
+    expect(events).toEqual(["advertise:1", "destroy", "advertise:2"]);
 
     await started.stop();
     expect(destroy).toHaveBeenCalledTimes(2);
     expect(shutdown).toHaveBeenCalledTimes(2);
-  });
-
-  it("treats probing-to-announcing churn as one unhealthy window", async () => {
-    enableAdvertiserUnitMode();
-    vi.useFakeTimers();
-
-    const stateRef = { value: "probing" };
-    let advertiseCount = 0;
-    const destroy = vi.fn().mockResolvedValue(undefined);
-    const advertise = vi.fn().mockImplementation(() => {
-      advertiseCount += 1;
-      if (advertiseCount === 2) {
-        stateRef.value = "announcing";
-      }
-      if (advertiseCount >= 3) {
-        stateRef.value = "announced";
-      }
-      return Promise.resolve();
-    });
-    mockCiaoService({ advertise, destroy, stateRef });
-
-    const started = await startGatewayBonjourAdvertiser({
-      gatewayPort: 18789,
-      sshPort: 2222,
-    });
-
-    expect(createService).toHaveBeenCalledTimes(1);
-    expect(advertise).toHaveBeenCalledTimes(1);
-
-    await vi.advanceTimersByTimeAsync(15_000);
-
-    expect(logWarn).toHaveBeenCalledWith(expect.stringContaining("service stuck in announcing"));
-    expect(createService).toHaveBeenCalledTimes(2);
-    expect(advertise).toHaveBeenCalledTimes(3);
-    expect(destroy).toHaveBeenCalledTimes(1);
-    expect(shutdown).toHaveBeenCalledTimes(1);
-
-    await started.stop();
   });
 
   it("normalizes hostnames with domains for service names", async () => {

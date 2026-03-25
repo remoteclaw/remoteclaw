@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { TEST_UNDICI_RUNTIME_DEPS_KEY } from "../infra/net/undici-runtime.js";
 import { resolveTelegramTransport } from "../telegram/fetch.js";
 import { fetchRemoteMedia } from "./fetch.js";
 
@@ -38,7 +39,19 @@ vi.mock("undici", () => ({
 describe("fetchRemoteMedia telegram network policy", () => {
   type LookupFn = NonNullable<Parameters<typeof fetchRemoteMedia>[0]["lookupFn"]>;
 
+  beforeEach(() => {
+    // Inject mock constructors into the CJS runtime-deps loader used by
+    // createPinnedDispatcher inside the SSRF fetch-guard so that dispatchers
+    // created during the guarded fetch also use the mocked undici classes.
+    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+      Agent: AgentCtor,
+      EnvHttpProxyAgent: EnvHttpProxyAgentCtor,
+      ProxyAgent: ProxyAgentCtor,
+    };
+  });
+
   afterEach(() => {
+    Reflect.deleteProperty(globalThis as object, TEST_UNDICI_RUNTIME_DEPS_KEY);
     undiciFetch.mockReset();
     AgentCtor.mockClear();
     EnvHttpProxyAgentCtor.mockClear();

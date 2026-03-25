@@ -15,7 +15,7 @@ function chmodSafeDir(dir: string) {
   fs.chmodSync(dir, 0o755);
 }
 
-function mkdirSafe(dir: string) {
+function _mkdirSafe(dir: string) {
   fs.mkdirSync(dir, { recursive: true });
   chmodSafeDir(dir);
 }

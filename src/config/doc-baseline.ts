@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { ChannelPlugin } from "../channels/plugins/index.js";
-import { resolveOpenClawPackageRootSync } from "../infra/openclaw-root.js";
+import { resolveRemoteClawPackageRootSync } from "../infra/remoteclaw-root.js";
 import { loadPluginManifestRegistry } from "../plugins/manifest-registry.js";
 import { FIELD_HELP } from "./schema.help.js";
 import { buildConfigSchema, type ConfigSchemaResponse } from "./schema.js";
@@ -65,7 +65,7 @@ const GENERATED_BY = "scripts/generate-config-doc-baseline.ts" as const;
 const DEFAULT_JSON_OUTPUT = "docs/.generated/config-baseline.json";
 const DEFAULT_STATEFILE_OUTPUT = "docs/.generated/config-baseline.jsonl";
 function resolveRepoRoot(): string {
-  const fromPackage = resolveOpenClawPackageRootSync({
+  const fromPackage = resolveRemoteClawPackageRootSync({
     cwd: path.dirname(fileURLToPath(import.meta.url)),
     moduleUrl: import.meta.url,
   });

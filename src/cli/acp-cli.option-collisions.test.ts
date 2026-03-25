@@ -77,7 +77,7 @@ describe("acp cli option collisions", () => {
 
   it("loads gateway token/password from files", async () => {
     await withTempSecretFiles(
-      "openclaw-acp-cli-",
+      "remoteclaw-acp-cli-",
       { token: "tok_file\n", [passwordKey()]: "pw_file\n" },
       async (files) => {
         // pragma: allowlist secret
@@ -117,7 +117,7 @@ describe("acp cli option collisions", () => {
       expected: /Use either --password or --password-file/,
     },
   ])("$name", async ({ files, args, expected }) => {
-    await withTempSecretFiles("openclaw-acp-cli-", files, async ({ tokenFile, passwordFile }) => {
+    await withTempSecretFiles("remoteclaw-acp-cli-", files, async ({ tokenFile, passwordFile }) => {
       await parseAcp(args(tokenFile ?? "", passwordFile ?? ""));
     });
 
@@ -136,7 +136,7 @@ describe("acp cli option collisions", () => {
   });
 
   it("trims token file path before reading", async () => {
-    await withTempSecretFiles("openclaw-acp-cli-", { token: "tok_file\n" }, async (files) => {
+    await withTempSecretFiles("remoteclaw-acp-cli-", { token: "tok_file\n" }, async (files) => {
       await parseAcp(["--token-file", `  ${files.tokenFile ?? ""}  `]);
     });
 

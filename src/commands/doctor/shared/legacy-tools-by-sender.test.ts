@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { RemoteClawConfig } from "../../../config/config.js";
 import {
   maybeRepairLegacyToolsBySenderKeys,
   scanLegacyToolsBySenderKeys,
@@ -21,7 +21,7 @@ describe("doctor legacy toolsBySender helpers", () => {
           },
         },
       },
-    } as OpenClawConfig);
+    } as RemoteClawConfig);
 
     expect(hits).toEqual([
       {
@@ -48,7 +48,7 @@ describe("doctor legacy toolsBySender helpers", () => {
           },
         },
       },
-    } as OpenClawConfig);
+    } as RemoteClawConfig);
 
     expect(result.changes).toEqual([
       expect.stringContaining("migrated 1 legacy key to typed id: entries"),

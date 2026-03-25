@@ -30,7 +30,7 @@ export async function requireValidConfigSnapshot(
           .slice(0, 3)
           .map((notice) => `- ${formatPluginCompatibilityNotice(notice)}`),
         ...(compatibility.length > 3 ? [`- ... +${compatibility.length - 3} more`] : []),
-        `Review: ${formatCliCommand("openclaw doctor")}`,
+        `Review: ${formatCliCommand("remoteclaw doctor")}`,
       ].join("\n"),
     );
   }

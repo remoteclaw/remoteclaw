@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { loadConfig, writeConfigFile } from "../config/config.js";
 import { installHooksFromNpmSpec, installHooksFromPath } from "../hooks/install.js";
 import { recordHookInstall } from "../hooks/installs.js";
@@ -38,14 +38,14 @@ import {
 } from "./plugins-command-helpers.js";
 
 async function installBundledPluginSource(params: {
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   rawSpec: string;
   bundledSource: BundledPluginSource;
   warning: string;
 }) {
   const existing = params.config.plugins?.load?.paths ?? [];
   const mergedPaths = Array.from(new Set([...existing, params.bundledSource.localPath]));
-  let next: OpenClawConfig = {
+  let next: RemoteClawConfig = {
     ...params.config,
     plugins: {
       ...params.config.plugins,
@@ -81,7 +81,7 @@ async function installBundledPluginSource(params: {
 }
 
 async function tryInstallHookPackFromLocalPath(params: {
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   resolvedPath: string;
   link?: boolean;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -104,7 +104,7 @@ async function tryInstallHookPackFromLocalPath(params: {
 
     const existing = params.config.hooks?.internal?.load?.extraDirs ?? [];
     const merged = Array.from(new Set([...existing, params.resolvedPath]));
-    let next: OpenClawConfig = {
+    let next: RemoteClawConfig = {
       ...params.config,
       hooks: {
         ...params.config.hooks,
@@ -158,7 +158,7 @@ async function tryInstallHookPackFromLocalPath(params: {
 }
 
 async function tryInstallHookPackFromNpmSpec(params: {
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   spec: string;
   pin?: boolean;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -281,7 +281,7 @@ export async function runPluginInstallCommand(params: {
         return defaultRuntime.exit(1);
       }
 
-      let next: OpenClawConfig = enablePluginInConfig(
+      let next: RemoteClawConfig = enablePluginInConfig(
         {
           ...cfg,
           plugins: {

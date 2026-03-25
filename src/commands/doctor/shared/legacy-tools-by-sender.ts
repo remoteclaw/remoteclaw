@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { RemoteClawConfig } from "../../../config/config.js";
 import { parseToolsBySenderTypedKey } from "../../../config/types.tools.js";
 import { formatConfigPath, resolveConfigPathTarget } from "../../doctor-config-analysis.js";
 import { asObjectRecord } from "./object.js";
@@ -52,14 +52,14 @@ function collectLegacyToolsBySenderKeyHits(
   }
 }
 
-export function scanLegacyToolsBySenderKeys(cfg: OpenClawConfig): LegacyToolsBySenderKeyHit[] {
+export function scanLegacyToolsBySenderKeys(cfg: RemoteClawConfig): LegacyToolsBySenderKeyHit[] {
   const hits: LegacyToolsBySenderKeyHit[] = [];
   collectLegacyToolsBySenderKeyHits(cfg, [], hits);
   return hits;
 }
 
-export function maybeRepairLegacyToolsBySenderKeys(cfg: OpenClawConfig): {
-  config: OpenClawConfig;
+export function maybeRepairLegacyToolsBySenderKeys(cfg: RemoteClawConfig): {
+  config: RemoteClawConfig;
   changes: string[];
 } {
   const next = structuredClone(cfg);

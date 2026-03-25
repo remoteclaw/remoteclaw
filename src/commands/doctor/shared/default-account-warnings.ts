@@ -1,6 +1,6 @@
 import { normalizeChatChannelId } from "../../../channels/registry.js";
 import { listRouteBindings } from "../../../config/bindings.js";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { RemoteClawConfig } from "../../../config/config.js";
 import {
   formatChannelAccountsDefaultPath,
   formatSetExplicitDefaultInstruction,
@@ -28,7 +28,7 @@ function normalizeBindingChannelKey(raw?: string | null): string {
 }
 
 function collectChannelsMissingDefaultAccount(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
 ): ChannelMissingDefaultAccountContext[] {
   const channels = asObjectRecord(cfg.channels);
   if (!channels) {
@@ -61,7 +61,7 @@ function collectChannelsMissingDefaultAccount(
   return contexts;
 }
 
-export function collectMissingDefaultAccountBindingWarnings(cfg: OpenClawConfig): string[] {
+export function collectMissingDefaultAccountBindingWarnings(cfg: RemoteClawConfig): string[] {
   const bindings = listRouteBindings(cfg);
   const warnings: string[] = [];
 
@@ -126,7 +126,7 @@ export function collectMissingDefaultAccountBindingWarnings(cfg: OpenClawConfig)
   return warnings;
 }
 
-export function collectMissingExplicitDefaultAccountWarnings(cfg: OpenClawConfig): string[] {
+export function collectMissingExplicitDefaultAccountWarnings(cfg: RemoteClawConfig): string[] {
   const warnings: string[] = [];
   for (const { channelKey, channel, normalizedAccountIds } of collectChannelsMissingDefaultAccount(
     cfg,

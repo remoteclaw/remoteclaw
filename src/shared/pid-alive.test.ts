@@ -2,6 +2,34 @@ import fsSync from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { getProcessStartTime, isPidAlive } from "./pid-alive.js";
 
+function mockProcReads(mapping: Record<string, string>): void {
+  const originalReadFileSync = fsSync.readFileSync;
+  vi.spyOn(fsSync, "readFileSync").mockImplementation((filePath, encoding) => {
+    if (typeof filePath === "string" && filePath in mapping) {
+      return mapping[filePath];
+    }
+    return originalReadFileSync(filePath as never, encoding as never) as never;
+  });
+}
+
+async function withLinuxProcessPlatform(fn: () => Promise<void>): Promise<void> {
+  const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(process, "platform");
+  if (!originalPlatformDescriptor) {
+    throw new Error("missing process.platform descriptor");
+  }
+  Object.defineProperty(process, "platform", {
+    ...originalPlatformDescriptor,
+    value: "linux",
+  });
+  try {
+    vi.resetModules();
+    await fn();
+  } finally {
+    Object.defineProperty(process, "platform", originalPlatformDescriptor);
+    vi.restoreAllMocks();
+  }
+}
+
 describe("isPidAlive", () => {
   it("returns true for the current running process", () => {
     expect(isPidAlive(process.pid)).toBe(true);

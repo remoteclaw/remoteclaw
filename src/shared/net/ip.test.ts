@@ -1,3 +1,4 @@
+import type * as ipaddr from "ipaddr.js";
 import { describe, expect, it } from "vitest";
 import { blockedIpv6MulticastLiterals } from "./ip-test-fixtures.js";
 import {
@@ -92,10 +93,12 @@ describe("shared ip helpers", () => {
       throw new Error("expected ipv4 fixtures");
     }
 
-    expect(isBlockedSpecialUseIpv4Address(loopback)).toBe(true);
-    expect(isBlockedSpecialUseIpv4Address(benchmark)).toBe(true);
-    expect(isBlockedSpecialUseIpv4Address(benchmark, { allowRfc2544BenchmarkRange: true })).toBe(
-      false,
-    );
+    expect(isBlockedSpecialUseIpv4Address(loopback as ipaddr.IPv4)).toBe(true);
+    expect(isBlockedSpecialUseIpv4Address(benchmark as ipaddr.IPv4)).toBe(true);
+    expect(
+      isBlockedSpecialUseIpv4Address(benchmark as ipaddr.IPv4, {
+        allowRfc2544BenchmarkRange: true,
+      }),
+    ).toBe(false);
   });
 });

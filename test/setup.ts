@@ -159,16 +159,13 @@ const createTestRegistry = (channels: TestChannelRegistration[] = []): PluginReg
   typedHooks: [],
   channels: channels as unknown as PluginRegistry["channels"],
   providers: [],
-  speechProviders: [],
-  mediaUnderstandingProviders: [],
-  imageGenerationProviders: [],
-  webSearchProviders: [],
+  sttProviders: [],
+  ttsProviders: [],
   gatewayHandlers: {},
   httpRoutes: [],
   cliRegistrars: [],
   services: [],
   commands: [],
-  conversationBindingResolvedHandlers: [],
   diagnostics: [],
 });
 

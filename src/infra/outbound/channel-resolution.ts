@@ -96,3 +96,4 @@ export function resolveOutboundChannelPlugin(params: {
   maybeBootstrapChannelPlugin({ channel: normalized, cfg: params.cfg });
   return resolve() ?? resolveDirectFromActiveRegistry(normalized);
 }
+// retrigger

@@ -102,10 +102,10 @@ function loadSessionStoreFixture(): Record<string, Record<string, unknown>> {
       }
       return target[key as keyof typeof target];
     },
-  }) as unknown as Record<string, SessionEntry>;
+  }) as unknown as Record<string, Record<string, unknown>>;
 }
 
-const callGatewaySpy = vi.fn(async (req: unknown) => {
+const callGatewaySpy = vi.fn(async (req: unknown): Promise<unknown> => {
   const typed = req as { method?: string; params?: { message?: string; sessionKey?: string } };
   if (typed.method === "agent") {
     return await agentSpy(typed);

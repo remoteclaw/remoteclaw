@@ -19,47 +19,23 @@ import type {
 } from "../src/channels/plugins/types.js";
 import type { RemoteClawConfig } from "../src/config/config.js";
 import type { OutboundSendDeps } from "../src/infra/outbound/deliver.js";
-import { installProcessWarningFilter } from "../src/infra/warning-filter.js";
-import type { PluginRegistry } from "../src/plugins/registry.js";
 import { withIsolatedTestHome } from "./test-env.js";
 
 // Set HOME/state isolation before importing any runtime RemoteClaw modules.
 const testEnv = withIsolatedTestHome();
 afterAll(() => testEnv.cleanup());
 
+const [
+  { installProcessWarningFilter },
+  { getActivePluginRegistry, setActivePluginRegistry },
+  { createTestRegistry },
+] = await Promise.all([
+  import("../src/infra/warning-filter.js"),
+  import("../src/plugins/runtime.js"),
+  import("../src/test-utils/channel-plugins.js"),
+]);
+
 installProcessWarningFilter();
-
-const REGISTRY_STATE = Symbol.for("openclaw.pluginRegistryState");
-
-type RegistryState = {
-  registry: PluginRegistry | null;
-  httpRouteRegistry: PluginRegistry | null;
-  httpRouteRegistryPinned: boolean;
-  key: string | null;
-  version: number;
-};
-
-type TestChannelRegistration = {
-  pluginId: string;
-  plugin: unknown;
-  source: string;
-};
-
-const globalRegistryState = (() => {
-  const globalState = globalThis as typeof globalThis & {
-    [REGISTRY_STATE]?: RegistryState;
-  };
-  if (!globalState[REGISTRY_STATE]) {
-    globalState[REGISTRY_STATE] = {
-      registry: null,
-      httpRouteRegistry: null,
-      httpRouteRegistryPinned: false,
-      key: null,
-      version: 0,
-    };
-  }
-  return globalState[REGISTRY_STATE];
-})();
 
 const pickSendFn = (id: ChannelId, deps?: OutboundSendDeps) => {
   switch (id) {
@@ -152,23 +128,6 @@ const createStubPlugin = (params: {
   outbound: createStubOutbound(params.id, params.deliveryMode),
 });
 
-const createTestRegistry = (channels: TestChannelRegistration[] = []): PluginRegistry => ({
-  plugins: [],
-  tools: [],
-  hooks: [],
-  typedHooks: [],
-  channels: channels as unknown as PluginRegistry["channels"],
-  providers: [],
-  sttProviders: [],
-  ttsProviders: [],
-  gatewayHandlers: {},
-  httpRoutes: [],
-  cliRegistrars: [],
-  services: [],
-  commands: [],
-  diagnostics: [],
-});
-
 const createDefaultRegistry = () =>
   createTestRegistry([
     {
@@ -216,55 +175,17 @@ const createDefaultRegistry = () =>
     },
   ]);
 
-let materializedDefaultPluginRegistry: PluginRegistry | null = null;
-
-function getDefaultPluginRegistry(): PluginRegistry {
-  materializedDefaultPluginRegistry ??= createDefaultRegistry();
-  return materializedDefaultPluginRegistry;
-}
-
-// Most unit suites never touch the plugin registry. Keep the default test registry
-// behind a lazy proxy so those files avoid allocating channel fixtures up front.
-const DEFAULT_PLUGIN_REGISTRY = new Proxy({} as PluginRegistry, {
-  defineProperty(_target, property, attributes) {
-    return Reflect.defineProperty(getDefaultPluginRegistry() as object, property, attributes);
-  },
-  deleteProperty(_target, property) {
-    return Reflect.deleteProperty(getDefaultPluginRegistry() as object, property);
-  },
-  get(_target, property, receiver) {
-    return Reflect.get(getDefaultPluginRegistry() as object, property, receiver);
-  },
-  getOwnPropertyDescriptor(_target, property) {
-    return Reflect.getOwnPropertyDescriptor(getDefaultPluginRegistry() as object, property);
-  },
-  has(_target, property) {
-    return Reflect.has(getDefaultPluginRegistry() as object, property);
-  },
-  ownKeys() {
-    return Reflect.ownKeys(getDefaultPluginRegistry() as object);
-  },
-  set(_target, property, value, receiver) {
-    return Reflect.set(getDefaultPluginRegistry() as object, property, value, receiver);
-  },
-});
-
-function installDefaultPluginRegistry(): void {
-  globalRegistryState.registry = DEFAULT_PLUGIN_REGISTRY;
-  if (!globalRegistryState.httpRouteRegistryPinned) {
-    globalRegistryState.httpRouteRegistry = DEFAULT_PLUGIN_REGISTRY;
-  }
-}
+// Creating a fresh registry before every test is measurable overhead.
+// The registry is immutable by default; tests that override it are restored in afterEach.
+const DEFAULT_PLUGIN_REGISTRY = createDefaultRegistry();
 
 beforeAll(() => {
-  installDefaultPluginRegistry();
+  setActivePluginRegistry(DEFAULT_PLUGIN_REGISTRY);
 });
 
 afterEach(() => {
-  if (globalRegistryState.registry !== DEFAULT_PLUGIN_REGISTRY) {
-    installDefaultPluginRegistry();
-    globalRegistryState.key = null;
-    globalRegistryState.version += 1;
+  if (getActivePluginRegistry() !== DEFAULT_PLUGIN_REGISTRY) {
+    setActivePluginRegistry(DEFAULT_PLUGIN_REGISTRY);
   }
   // Guard against leaked fake timers across test files/workers.
   if (vi.isFakeTimers()) {

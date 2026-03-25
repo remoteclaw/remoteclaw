@@ -33,7 +33,7 @@ describe("shared/frontmatter", () => {
     expect(
       resolveRemoteClawManifestBlock({
         frontmatter: {
-          metadata: "{ openclaw: { foo: 1, bar: 'baz' } }",
+          metadata: "{ remoteclaw: { foo: 1, bar: 'baz' } }",
         },
       }),
     ).toEqual({ foo: 1, bar: "baz" });
@@ -41,7 +41,7 @@ describe("shared/frontmatter", () => {
     expect(
       resolveRemoteClawManifestBlock({
         frontmatter: {
-          pluginMeta: "{ openclaw: { foo: 2 } }",
+          pluginMeta: "{ remoteclaw: { foo: 2 } }",
         },
         key: "pluginMeta",
       }),

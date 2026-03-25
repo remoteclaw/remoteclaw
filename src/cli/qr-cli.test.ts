@@ -169,15 +169,17 @@ describe("registerQrCli", () => {
 
     await runQr(["--json", "--remote"]);
 
-    const payload = JSON.parse(String(runtime.log.mock.calls.at(-1)?.[0] ?? "{}")) as {
-      setupCode?: string;
-      gatewayUrl?: string;
-      auth?: string;
-      urlSource?: string;
-    };
-    expect(payload.gatewayUrl).toBe("wss://remote.example.com:444");
-    expect(payload.auth).toBe("token");
-    expect(payload.urlSource).toBe("gateway.remote.url");
+    const jsonCall = runtime.writeJson.mock.calls.at(-1)?.[0] as
+      | {
+          setupCode?: string;
+          gatewayUrl?: string;
+          auth?: string;
+          urlSource?: string;
+        }
+      | undefined;
+    expect(jsonCall?.gatewayUrl).toBe("wss://remote.example.com:444");
+    expect(jsonCall?.auth).toBe("token");
+    expect(jsonCall?.urlSource).toBe("gateway.remote.url");
     expect(runCommandWithTimeout).not.toHaveBeenCalled();
   });
 

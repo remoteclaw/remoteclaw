@@ -20,7 +20,6 @@ function createProps(overrides: Partial<ChatProps> = {}): ChatProps {
     sessionKey: "main",
     onSessionKeyChange: () => undefined,
     showThinking: false,
-    showToolCalls: true,
     loading: false,
     sending: false,
     canAbort: false,
@@ -49,9 +48,6 @@ function createProps(overrides: Partial<ChatProps> = {}): ChatProps {
     onSend: () => undefined,
     onQueueRemove: () => undefined,
     onNewSession: () => undefined,
-    agentsList: null,
-    currentAgentId: "",
-    onAgentChange: () => undefined,
     ...overrides,
   };
 }
@@ -66,7 +62,7 @@ describe("chat view", () => {
             ts: 0,
             path: "",
             count: 1,
-            defaults: { modelProvider: "openai", model: "gpt-5", contextTokens: 200_000 },
+            defaults: { model: "gpt-5", contextTokens: 200_000 },
             sessions: [
               {
                 key: "main",
@@ -96,7 +92,7 @@ describe("chat view", () => {
             ts: 0,
             path: "",
             count: 1,
-            defaults: { modelProvider: "openai", model: "gpt-5", contextTokens: 200_000 },
+            defaults: { model: "gpt-5", contextTokens: 200_000 },
             sessions: [
               {
                 key: "main",
@@ -127,7 +123,7 @@ describe("chat view", () => {
             ts: 0,
             path: "",
             count: 1,
-            defaults: { modelProvider: "openai", model: "gpt-5", contextTokens: 200_000 },
+            defaults: { model: "gpt-5", contextTokens: 200_000 },
             sessions: [
               {
                 key: "main",
@@ -194,7 +190,6 @@ describe("chat view", () => {
           assistantName: "Assistant",
           assistantAvatar: "A",
           assistantAvatarUrl: null,
-          basePath: "/openclaw/",
         }),
       ),
       container,
@@ -215,7 +210,6 @@ describe("chat view", () => {
           assistantName: "Assistant",
           assistantAvatar: "A",
           assistantAvatarUrl: null,
-          basePath: "/openclaw/",
           messages: [
             {
               role: "assistant",

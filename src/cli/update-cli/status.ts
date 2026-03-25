@@ -42,22 +42,16 @@ export async function updateStatusCommand(opts: UpdateStatusOptions): Promise<vo
   const updateLine = formatUpdateOneLiner(update).replace(/^Update:\s*/i, "");
 
   if (opts.json) {
-    defaultRuntime.log(
-      JSON.stringify(
-        {
-          update,
-          channel: {
-            value: channelInfo.channel,
-            source: channelInfo.source,
-            label: channelLabel,
-            config: configChannel,
-          },
-          availability: updateAvailability,
-        },
-        null,
-        2,
-      ),
-    );
+    defaultRuntime.writeJson({
+      update,
+      channel: {
+        value: channelInfo.channel,
+        source: channelInfo.source,
+        label: channelLabel,
+        config: configChannel,
+      },
+      availability: updateAvailability,
+    });
     return;
   }
 

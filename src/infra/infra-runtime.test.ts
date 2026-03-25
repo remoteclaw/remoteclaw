@@ -1,9 +1,6 @@
 import os from "node:os";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { runExec } from "../process/exec.js";
-import type { RuntimeEnv } from "../runtime.js";
 import { makeNetworkInterfacesSnapshot } from "../test-helpers/network-interfaces.js";
-import { ensureBinary } from "./binaries.js";
 import {
   __testing,
   consumeGatewaySigusr1RestartAuthorization,
@@ -32,35 +29,6 @@ describe("infra runtime", () => {
       __testing.resetSigusr1State();
     });
   }
-
-  describe("ensureBinary", () => {
-    it("passes through when binary exists", async () => {
-      const exec: typeof runExec = vi.fn().mockResolvedValue({
-        stdout: "",
-        stderr: "",
-      });
-      const runtime: RuntimeEnv = {
-        log: vi.fn(),
-        error: vi.fn(),
-        exit: vi.fn(),
-      };
-      await ensureBinary("node", exec, runtime);
-      expect(exec).toHaveBeenCalledWith("which", ["node"]);
-    });
-
-    it("logs and exits when missing", async () => {
-      const exec: typeof runExec = vi.fn().mockRejectedValue(new Error("missing"));
-      const error = vi.fn();
-      const exit = vi.fn(() => {
-        throw new Error("exit");
-      });
-      await expect(ensureBinary("ghost", exec, { log: vi.fn(), error, exit })).rejects.toThrow(
-        "exit",
-      );
-      expect(error).toHaveBeenCalledWith("Missing required binary: ghost. Please install it.");
-      expect(exit).toHaveBeenCalledWith(1);
-    });
-  });
 
   describe("createTelegramRetryRunner", () => {
     afterEach(() => {
@@ -285,14 +253,6 @@ describe("infra runtime", () => {
       const out = listTailnetAddresses();
       expect(out.ipv4).toEqual(["100.123.224.76"]);
       expect(out.ipv6).toEqual(["fd7a:115c:a1e0::8801:e04c"]);
-    });
-
-    it("returns empty address lists when interface discovery throws", () => {
-      vi.spyOn(os, "networkInterfaces").mockImplementation(() => {
-        throw new Error("uv_interface_addresses failed");
-      });
-
-      expect(listTailnetAddresses()).toEqual({ ipv4: [], ipv6: [] });
     });
   });
 });

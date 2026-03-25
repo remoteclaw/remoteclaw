@@ -28,6 +28,7 @@ import {
 import { pickPrimaryTailnetIPv4 } from "../../infra/tailnet.js";
 import { loadGatewayTlsRuntime } from "../../infra/tls/gateway.js";
 import { probeGatewayStatus } from "./probe.js";
+import { inspectGatewayRestart } from "./restart-health.js";
 import { normalizeListenerAddress, parsePortFromArgs, pickProbeHostForBind } from "./shared.js";
 import type { GatewayRpcOpts } from "./types.js";
 
@@ -72,6 +73,37 @@ type ResolvedGatewayStatus = {
   probeUrlOverride: string | null;
 };
 
+function summarizeDisplayNetworkError(error: unknown): string {
+  if (error instanceof Error) {
+    const message = error.message.trim();
+    if (message) {
+      return message;
+    }
+  }
+  return "network interface discovery failed";
+}
+
+function fallbackBindHostForStatus(bindMode: GatewayBindMode, customBindHost?: string): string {
+  if (bindMode === "lan") {
+    return "0.0.0.0";
+  }
+  if (bindMode === "custom") {
+    return customBindHost?.trim() || "0.0.0.0";
+  }
+  return "127.0.0.1";
+}
+
+function appendProbeNote(
+  existing: string | undefined,
+  extra: string | undefined,
+): string | undefined {
+  const values = [existing, extra].filter((value): value is string => Boolean(value?.trim()));
+  if (values.length === 0) {
+    return undefined;
+  }
+  return [...new Set(values)].join(" ");
+}
+
 export type DaemonStatus = {
   service: {
     label: string;
@@ -110,6 +142,10 @@ export type DaemonStatus = {
     ok: boolean;
     error?: string;
     url?: string;
+  };
+  health?: {
+    healthy: boolean;
+    staleGatewayPids: number[];
   };
   extraServices: Array<{ label: string; detail: string; scope: string }>;
 };
@@ -190,18 +226,34 @@ async function resolveGatewayStatusSummary(params: {
     : "env/config";
   const bindMode: GatewayBindMode = params.daemonCfg.gateway?.bind ?? "loopback";
   const customBindHost = params.daemonCfg.gateway?.customBindHost;
-  const bindHost = await resolveGatewayBindHost(bindMode, customBindHost);
-  const tailnetIPv4 = pickPrimaryTailnetIPv4();
+  let bindHost: string;
+  let networkWarning: string | undefined;
+  try {
+    bindHost = await resolveGatewayBindHost(bindMode, customBindHost);
+  } catch (error) {
+    bindHost = fallbackBindHostForStatus(bindMode, customBindHost);
+    networkWarning = `Status is using fallback network details because interface discovery failed: ${summarizeDisplayNetworkError(error)}.`;
+  }
+  let tailnetIPv4: string | undefined;
+  try {
+    tailnetIPv4 = pickPrimaryTailnetIPv4();
+  } catch (error) {
+    networkWarning = appendProbeNote(
+      networkWarning,
+      `Status could not inspect tailnet addresses: ${summarizeDisplayNetworkError(error)}.`,
+    );
+  }
   const probeHost = pickProbeHostForBind(bindMode, tailnetIPv4, customBindHost);
   const probeUrlOverride = trimToUndefined(params.rpcUrlOverride) ?? null;
   const scheme = params.daemonCfg.gateway?.tls?.enabled === true ? "wss" : "ws";
   const probeUrl = probeUrlOverride ?? `${scheme}://${probeHost}:${daemonPort}`;
-  const probeNote =
+  let probeNote =
     !probeUrlOverride && bindMode === "lan"
       ? `bind=lan listens on 0.0.0.0 (all interfaces); probing via ${probeHost}.`
       : !probeUrlOverride && bindMode === "loopback"
         ? "Loopback-only gateway; only local clients can connect."
         : undefined;
+  probeNote = appendProbeNote(probeNote, networkWarning);
 
   return {
     gateway: {
@@ -323,6 +375,14 @@ export async function gatherDaemonStatus(
         configPath: daemonConfigSummary.path,
       })
     : undefined;
+  const health =
+    opts.probe && loaded
+      ? await inspectGatewayRestart({
+          service,
+          port: daemonPort,
+          env: serviceEnv,
+        }).catch(() => undefined)
+      : undefined;
 
   let lastError: string | undefined;
   if (loaded && runtime?.status === "running" && portStatus && portStatus.status !== "busy") {
@@ -349,6 +409,14 @@ export async function gatherDaemonStatus(
     ...(portCliStatus ? { portCli: portCliStatus } : {}),
     lastError,
     ...(rpc ? { rpc: { ...rpc, url: gateway.probeUrl } } : {}),
+    ...(health
+      ? {
+          health: {
+            healthy: health.healthy,
+            staleGatewayPids: health.staleGatewayPids,
+          },
+        }
+      : {}),
     extraServices,
   };
 }

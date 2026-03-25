@@ -83,6 +83,13 @@ export type ReplyPayload = {
   /** Marks this payload as a reasoning/thinking block. Channels that do not
    *  have a dedicated reasoning lane (e.g. WhatsApp, web) should suppress it. */
   isReasoning?: boolean;
+  /** Shared interactive payload (buttons, actions). */
+  interactive?: {
+    blocks: Array<{
+      type: string;
+      buttons?: Array<{ label: string; value: string; style?: string }>;
+    }>;
+  };
   /** Channel-specific payload data (per-channel envelope). */
   channelData?: Record<string, unknown>;
   /** Heartbeat report from the heartbeat_report MCP tool (set by agent runner on heartbeat runs). */

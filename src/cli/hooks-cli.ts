@@ -22,7 +22,7 @@ import { resolveArchiveKind } from "../infra/archive.js";
 import { buildPluginStatusReport } from "../plugins/status.js";
 import { defaultRuntime } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
-import { renderTable } from "../terminal/table.js";
+import { getTerminalTableWidth, renderTable } from "../terminal/table.js";
 import { theme } from "../terminal/theme.js";
 import { resolveUserPath, shortenHomePath } from "../utils.js";
 import { formatCliCommand } from "./command-format.js";
@@ -164,6 +164,14 @@ function exitHooksCliWithError(err: unknown): never {
   process.exit(1);
 }
 
+function writeHooksOutput(value: string, json: boolean | undefined): void {
+  if (json) {
+    defaultRuntime.writeStdout(value);
+    return;
+  }
+  defaultRuntime.log(value);
+}
+
 async function runHooksCliAction(action: () => Promise<void> | void): Promise<void> {
   try {
     await action();
@@ -275,7 +283,7 @@ export function formatHooksList(report: HookStatusReport, opts: HooksListOptions
   }
 
   const eligible = hooks.filter((h) => h.eligible);
-  const tableWidth = Math.max(60, (process.stdout.columns ?? 120) - 1);
+  const tableWidth = getTerminalTableWidth();
   const rows = hooks.map((hook) => {
     const missing = formatHookMissingSummary(hook);
     return {
@@ -526,7 +534,7 @@ export function registerHooksCli(program: Command): void {
       runHooksCliAction(async () => {
         const config = loadConfig();
         const report = buildHooksReport(config);
-        defaultRuntime.log(formatHooksList(report, opts));
+        writeHooksOutput(formatHooksList(report, opts), opts.json);
       }),
     );
 
@@ -538,7 +546,7 @@ export function registerHooksCli(program: Command): void {
       runHooksCliAction(async () => {
         const config = loadConfig();
         const report = buildHooksReport(config);
-        defaultRuntime.log(formatHookInfo(report, name, opts));
+        writeHooksOutput(formatHookInfo(report, name, opts), opts.json);
       }),
     );
 
@@ -550,7 +558,7 @@ export function registerHooksCli(program: Command): void {
       runHooksCliAction(async () => {
         const config = loadConfig();
         const report = buildHooksReport(config);
-        defaultRuntime.log(formatHooksCheck(report, opts));
+        writeHooksOutput(formatHooksCheck(report, opts), opts.json);
       }),
     );
 

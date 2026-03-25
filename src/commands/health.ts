@@ -13,10 +13,10 @@ import { formatErrorMessage } from "../infra/errors.js";
 import {
   type HeartbeatSummary,
   resolveHeartbeatSummaryForAgent,
-} from "../infra/heartbeat-runner.js";
+} from "../infra/heartbeat-summary.js";
 import { buildChannelAccountBindings, resolvePreferredAccountId } from "../routing/bindings.js";
 import { normalizeAgentId } from "../routing/session-key.js";
-import type { RuntimeEnv } from "../runtime.js";
+import { type RuntimeEnv, writeRuntimeJson } from "../runtime.js";
 import { styleHealthChannelLine } from "../terminal/health-style.js";
 import { isRich } from "../terminal/theme.js";
 
@@ -546,7 +546,7 @@ export async function healthCommand(
   const fatal = false;
 
   if (opts.json) {
-    runtime.log(JSON.stringify(summary, null, 2));
+    writeRuntimeJson(runtime, summary);
   } else {
     const debugEnabled = isTruthyEnvValue(process.env.REMOTECLAW_DEBUG_HEALTH);
     const rich = isRich();

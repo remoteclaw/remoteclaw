@@ -21,6 +21,28 @@ export type ZaloSendResult = {
   error?: string;
 };
 
+function toZaloSendResult(response: {
+  ok?: boolean;
+  result?: { message_id?: string };
+}): ZaloSendResult {
+  if (response.ok && response.result) {
+    return { ok: true, messageId: response.result.message_id };
+  }
+  return { ok: false, error: "Failed to send message" };
+}
+
+async function runZaloSend(
+  failureMessage: string,
+  send: () => Promise<{ ok?: boolean; result?: { message_id?: string } }>,
+): Promise<ZaloSendResult> {
+  try {
+    const result = toZaloSendResult(await send());
+    return result.ok ? result : { ok: false, error: failureMessage };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 function resolveSendContext(options: ZaloSendOptions): {
   token: string;
   fetcher?: ZaloFetch;
@@ -88,24 +110,16 @@ export async function sendMessageZalo(
     });
   }
 
-  try {
-    const response = await sendMessage(
+  return await runZaloSend("Failed to send message", () =>
+    sendMessage(
       context.token,
       {
         chat_id: context.chatId,
         text: text.slice(0, 2000),
       },
       context.fetcher,
-    );
-
-    if (response.ok && response.result) {
-      return { ok: true, messageId: response.result.message_id };
-    }
-
-    return { ok: false, error: "Failed to send message" };
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
-  }
+    ),
+  );
 }
 
 export async function sendPhotoZalo(
@@ -123,8 +137,8 @@ export async function sendPhotoZalo(
     return { ok: false, error: "No photo URL provided" };
   }
 
-  try {
-    const response = await sendPhoto(
+  return await runZaloSend("Failed to send photo", () =>
+    sendPhoto(
       context.token,
       {
         chat_id: context.chatId,
@@ -132,14 +146,6 @@ export async function sendPhotoZalo(
         caption: options.caption?.slice(0, 2000),
       },
       context.fetcher,
-    );
-
-    if (response.ok && response.result) {
-      return { ok: true, messageId: response.result.message_id };
-    }
-
-    return { ok: false, error: "Failed to send photo" };
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
-  }
+    ),
+  );
 }

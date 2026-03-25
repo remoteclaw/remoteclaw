@@ -303,15 +303,15 @@ async function handleImageMessage(
   statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void,
   fetcher?: ZaloFetch,
 ): Promise<void> {
-  const { photo, caption } = message;
+  const { photo_url, caption } = message;
 
   let mediaPath: string | undefined;
   let mediaType: string | undefined;
 
-  if (photo) {
+  if (photo_url) {
     try {
       const maxBytes = mediaMaxMb * 1024 * 1024;
-      const fetched = await core.channel.media.fetchRemoteMedia({ url: photo, maxBytes });
+      const fetched = await core.channel.media.fetchRemoteMedia({ url: photo_url, maxBytes });
       const saved = await core.channel.media.saveMediaBuffer(
         fetched.buffer,
         fetched.contentType,

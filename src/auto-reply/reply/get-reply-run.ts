@@ -11,6 +11,7 @@ import { clearCommandLane, getQueueSize } from "../../process/command-queue.js";
 import { normalizeMainKey } from "../../routing/session-key.js";
 import { isReasoningTagProvider } from "../../utils/provider-utils.js";
 import { hasControlCommand } from "../command-detection.js";
+import { resolveEnvelopeFormatOptions } from "../envelope.js";
 import { buildInboundMediaNote } from "../media-note.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
 import type { VerboseLevel } from "../thinking.js";
@@ -254,6 +255,7 @@ export async function runPreparedReply(
     isNewSession &&
     ((baseBodyTrimmedRaw.length === 0 && rawBodyTrimmed.length > 0) || isBareNewOrReset);
   const baseBodyFinal = isBareSessionReset ? buildBareSessionResetPrompt(cfg) : baseBody;
+  const envelopeOptions = resolveEnvelopeFormatOptions(cfg);
   const inboundUserContext = buildInboundUserContextPrefix(
     isNewSession
       ? {
@@ -263,6 +265,7 @@ export async function runPreparedReply(
             : {}),
         }
       : { ...sessionCtx, ThreadStarterBody: undefined },
+    envelopeOptions,
   );
   const baseBodyForPrompt = isBareSessionReset
     ? baseBodyFinal

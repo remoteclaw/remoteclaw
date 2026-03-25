@@ -13,9 +13,16 @@ import {
   stripArchivePath,
   validateArchiveEntryPath,
 } from "./archive-path.js";
+import {
+  createArchiveSymlinkTraversalError,
+  mergeExtractedTreeIntoDestination,
+  prepareArchiveDestinationDir,
+  prepareArchiveOutputPath,
+  withStagedArchiveDestination,
+} from "./archive-staging.js";
 import { sameFileIdentity } from "./file-identity.js";
 import { openFileWithinRoot, openWritableFileWithinRoot, SafeOpenError } from "./fs-safe.js";
-import { isNotFoundPathError, isPathInside } from "./path-guards.js";
+import { isNotFoundPathError } from "./path-guards.js";
 
 export type ArchiveKind = "tar" | "zip";
 
@@ -37,20 +44,13 @@ export type ArchiveExtractLimits = {
   maxEntryBytes?: number;
 };
 
-export type ArchiveSecurityErrorCode =
-  | "destination-not-directory"
-  | "destination-symlink"
-  | "destination-symlink-traversal";
-
-export class ArchiveSecurityError extends Error {
-  code: ArchiveSecurityErrorCode;
-
-  constructor(code: ArchiveSecurityErrorCode, message: string, options?: ErrorOptions) {
-    super(message, options);
-    this.code = code;
-    this.name = "ArchiveSecurityError";
-  }
-}
+export { ArchiveSecurityError, type ArchiveSecurityErrorCode } from "./archive-staging.js";
+export {
+  mergeExtractedTreeIntoDestination,
+  prepareArchiveDestinationDir,
+  prepareArchiveOutputPath,
+  withStagedArchiveDestination,
+} from "./archive-staging.js";
 
 /** @internal */
 export const DEFAULT_MAX_ARCHIVE_BYTES_ZIP = 256 * 1024 * 1024;
@@ -66,7 +66,6 @@ const ERROR_ARCHIVE_ENTRY_COUNT_EXCEEDS_LIMIT = "archive entry count exceeds lim
 const ERROR_ARCHIVE_ENTRY_EXTRACTED_SIZE_EXCEEDS_LIMIT =
   "archive entry extracted size exceeds limit";
 const ERROR_ARCHIVE_EXTRACTED_SIZE_EXCEEDS_LIMIT = "archive extracted size exceeds limit";
-const ERROR_ARCHIVE_ENTRY_TRAVERSES_SYMLINK = "archive entry traverses symlink in destination";
 const SUPPORTS_NOFOLLOW = process.platform !== "win32" && "O_NOFOLLOW" in fsConstants;
 const OPEN_WRITE_CREATE_FLAGS =
   fsConstants.O_WRONLY |
@@ -217,68 +216,8 @@ function createExtractBudgetTransform(params: {
   });
 }
 
-function symlinkTraversalError(originalPath: string): ArchiveSecurityError {
-  return new ArchiveSecurityError(
-    "destination-symlink-traversal",
-    `${ERROR_ARCHIVE_ENTRY_TRAVERSES_SYMLINK}: ${originalPath}`,
-  );
-}
-
-async function assertDestinationDirReady(destDir: string): Promise<string> {
-  const stat = await fs.lstat(destDir);
-  if (stat.isSymbolicLink()) {
-    throw new ArchiveSecurityError("destination-symlink", "archive destination is a symlink");
-  }
-  if (!stat.isDirectory()) {
-    throw new ArchiveSecurityError(
-      "destination-not-directory",
-      "archive destination is not a directory",
-    );
-  }
-  return await fs.realpath(destDir);
-}
-
-async function assertNoSymlinkTraversal(params: {
-  rootDir: string;
-  relPath: string;
-  originalPath: string;
-}): Promise<void> {
-  const parts = params.relPath.split("/").filter(Boolean);
-  let current = path.resolve(params.rootDir);
-  for (const part of parts) {
-    current = path.join(current, part);
-    let stat: Awaited<ReturnType<typeof fs.lstat>>;
-    try {
-      stat = await fs.lstat(current);
-    } catch (err) {
-      if (isNotFoundPathError(err)) {
-        continue;
-      }
-      throw err;
-    }
-    if (stat.isSymbolicLink()) {
-      throw symlinkTraversalError(params.originalPath);
-    }
-  }
-}
-
-async function assertResolvedInsideDestination(params: {
-  destinationRealDir: string;
-  targetPath: string;
-  originalPath: string;
-}): Promise<void> {
-  let resolved: string;
-  try {
-    resolved = await fs.realpath(params.targetPath);
-  } catch (err) {
-    if (isNotFoundPathError(err)) {
-      return;
-    }
-    throw err;
-  }
-  if (!isPathInside(params.destinationRealDir, resolved)) {
-    throw symlinkTraversalError(params.originalPath);
-  }
+function symlinkTraversalError(originalPath: string) {
+  return createArchiveSymlinkTraversalError(originalPath);
 }
 
 type OpenZipOutputFileResult = {
@@ -395,39 +334,6 @@ function resolveZipOutputPath(params: {
   };
 }
 
-async function prepareZipOutputPath(params: {
-  destinationDir: string;
-  destinationRealDir: string;
-  relPath: string;
-  outPath: string;
-  originalPath: string;
-  isDirectory: boolean;
-}): Promise<void> {
-  await assertNoSymlinkTraversal({
-    rootDir: params.destinationDir,
-    relPath: params.relPath,
-    originalPath: params.originalPath,
-  });
-
-  if (params.isDirectory) {
-    await fs.mkdir(params.outPath, { recursive: true });
-    await assertResolvedInsideDestination({
-      destinationRealDir: params.destinationRealDir,
-      targetPath: params.outPath,
-      originalPath: params.originalPath,
-    });
-    return;
-  }
-
-  const parentDir = path.dirname(params.outPath);
-  await fs.mkdir(parentDir, { recursive: true });
-  await assertResolvedInsideDestination({
-    destinationRealDir: params.destinationRealDir,
-    targetPath: parentDir,
-    originalPath: params.originalPath,
-  });
-}
-
 async function writeZipFileEntry(params: {
   entry: ZipEntry;
   relPath: string;
@@ -511,7 +417,7 @@ async function extractZip(params: {
   limits?: ArchiveExtractLimits;
 }): Promise<void> {
   const limits = resolveExtractLimits(params.limits);
-  const destinationRealDir = await assertDestinationDirReady(params.destDir);
+  const destinationRealDir = await prepareArchiveDestinationDir(params.destDir);
   const stat = await fs.stat(params.archivePath);
   if (stat.size > limits.maxArchiveBytes) {
     throw new Error(ERROR_ARCHIVE_SIZE_EXCEEDS_LIMIT);
@@ -536,7 +442,7 @@ async function extractZip(params: {
       continue;
     }
 
-    await prepareZipOutputPath({
+    await prepareArchiveOutputPath({
       destinationDir: params.destDir,
       destinationRealDir,
       relPath: output.relPath,

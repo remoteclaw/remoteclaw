@@ -12,8 +12,9 @@ import { createTestRegistry } from "../test-utils/channel-plugins.js";
 import { runHeartbeatOnce } from "./heartbeat-runner.js";
 import { seedSessionStore, withTempHeartbeatSandbox } from "./heartbeat-runner.test-utils.js";
 
-// Avoid pulling optional runtime deps during isolated runs.
-vi.mock("jiti", () => ({ createJiti: () => () => ({}) }));
+vi.mock("./outbound/deliver.js", () => ({
+  deliverOutboundPayloads: vi.fn().mockResolvedValue(undefined),
+}));
 
 type SeedSessionInput = {
   lastChannel: string;

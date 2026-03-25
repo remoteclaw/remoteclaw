@@ -173,7 +173,7 @@ describe("gateway server agent", () => {
     setRegistry(emptyRegistry);
   });
 
-  test("agent errors when deliver=true and last-channel plugin is unavailable", async () => {
+  test("agent reuses the last plugin delivery route when channel=last", async () => {
     const registry = createRegistry([
       {
         pluginId: "msteams",
@@ -194,10 +194,13 @@ describe("gateway server agent", () => {
       deliver: true,
       idempotencyKey: "idem-agent-last-msteams",
     });
-    expect(res.ok).toBe(false);
-    expect(res.error?.code).toBe("INVALID_REQUEST");
-    expect(res.error?.message).toContain("Channel is required");
-    expect(vi.mocked(agentCommand)).not.toHaveBeenCalled();
+    expect(res.ok).toBe(true);
+    expectAgentRoutingCall({
+      channel: "msteams",
+      deliver: true,
+      to: "conversation:teams-123",
+      fromEnd: 1,
+    });
   });
 
   test("agent accepts built-in channel alias (imsg)", async () => {
@@ -317,7 +320,7 @@ describe("gateway server agent", () => {
     await vi.waitFor(() => expect(calls.length).toBeGreaterThan(callsBefore));
     const call = (calls.at(-1)?.[0] ?? {}) as Record<string, unknown>;
     expect(call.message).toBeTypeOf("string");
-    expect(call.message).toContain("Execute your Session Startup sequence now");
+    expect(call.message).toContain("Run your Session Startup sequence");
     expect(call.message).toContain("Current time:");
     expect(typeof call.sessionId).toBe("string");
     expect(call.sessionId).not.toBe("sess-main-before-reset");

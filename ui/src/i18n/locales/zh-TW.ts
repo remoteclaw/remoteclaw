@@ -5,6 +5,7 @@ export const zh_TW: TranslationMap = {
     version: "版本",
     health: "健康狀況",
     ok: "正常",
+    online: "在線",
     offline: "離線",
     connect: "連接",
     refresh: "刷新",

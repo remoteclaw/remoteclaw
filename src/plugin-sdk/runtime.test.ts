@@ -29,11 +29,15 @@ describe("resolveRuntimeEnv", () => {
       error: vi.fn(),
     };
 
-    const resolved = resolveRuntimeEnv({ logger });
+    const resolved = resolveRuntimeEnv({ logger }) as import("../runtime.js").OutputRuntimeEnv;
     resolved.log?.("hello %s", "world");
     resolved.error?.("bad %d", 7);
+    resolved.writeStdout("plain");
+    resolved.writeJson({ ok: true });
 
     expect(logger.info).toHaveBeenCalledWith("hello world");
     expect(logger.error).toHaveBeenCalledWith("bad 7");
+    expect(logger.info).toHaveBeenCalledWith("plain");
+    expect(logger.info).toHaveBeenCalledWith('{\n  "ok": true\n}');
   });
 });

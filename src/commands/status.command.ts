@@ -8,7 +8,7 @@ import type { HeartbeatEventPayload } from "../infra/heartbeat-events.js";
 import { normalizeUpdateChannel, resolveUpdateChannelDisplay } from "../infra/update-channels.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { runSecurityAudit } from "../security/audit.js";
-import { renderTable } from "../terminal/table.js";
+import { getTerminalTableWidth, renderTable } from "../terminal/table.js";
 import { theme } from "../terminal/theme.js";
 import { formatHealthChannelLines, type HealthSummary } from "./health.js";
 import { resolveControlUiLinks } from "./onboard-helpers.js";
@@ -219,7 +219,7 @@ export async function statusCommand(
     runtime.log("");
   }
 
-  const tableWidth = Math.max(60, (process.stdout.columns ?? 120) - 1);
+  const tableWidth = getTerminalTableWidth();
 
   const dashboard = (() => {
     const controlUiEnabled = cfg.gateway?.controlUi?.enabled ?? true;

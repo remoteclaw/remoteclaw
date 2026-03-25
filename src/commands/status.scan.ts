@@ -4,12 +4,12 @@ import type { RemoteClawConfig } from "../config/config.js";
 import { buildGatewayConnectionDetails, callGateway } from "../gateway/call.js";
 import { normalizeControlUiBasePath } from "../gateway/control-ui-shared.js";
 import { probeGateway } from "../gateway/probe.js";
-import { collectChannelStatusIssues } from "../infra/channels-status-issues.js";
+import type { collectChannelStatusIssues } from "../infra/channels-status-issues.js";
 import { resolveOsSummary } from "../infra/os-summary.js";
 import { getTailnetHostname } from "../infra/tailscale.js";
 import { runExec } from "../process/exec.js";
 import type { RuntimeEnv } from "../runtime.js";
-import { buildChannelsTable } from "./status-all/channels.js";
+import type { buildChannelsTable } from "./status-all/channels.js";
 import { getAgentLocalStatuses } from "./status.agent-local.js";
 import { pickGatewaySelfPresence, resolveGatewayProbeAuth } from "./status.gateway-probe.js";
 import { getStatusSummary } from "./status.summary.js";
@@ -23,6 +23,13 @@ type GatewayProbeSnapshot = {
   gatewayMode: "local" | "remote";
   gatewayProbe: Awaited<ReturnType<typeof probeGateway>> | null;
 };
+
+let statusScanRuntimeModulePromise: Promise<typeof import("./status.scan.runtime.js")> | undefined;
+
+function loadStatusScanRuntimeModule() {
+  statusScanRuntimeModulePromise ??= import("./status.scan.runtime.js");
+  return statusScanRuntimeModulePromise;
+}
 
 function deferResult<T>(promise: Promise<T>): Promise<DeferredResult<T>> {
   return promise.then(
@@ -54,6 +61,7 @@ async function resolveGatewayProbeSnapshot(params: {
         url: gatewayConnection.url,
         auth: resolveGatewayProbeAuth(params.cfg),
         timeoutMs: Math.min(params.opts.all ? 5000 : 2500, params.opts.timeoutMs ?? 10_000),
+        detailLevel: "presence",
       }).catch(() => null);
   return { gatewayConnection, remoteUrlMissing, gatewayMode, gatewayProbe };
 }
@@ -139,7 +147,8 @@ async function scanStatusJsonFast(opts: {
     ? pickGatewaySelfPresence(gatewayProbe.presence)
     : null;
   const channelsStatus = await resolveChannelsStatus({ cfg, gatewayReachable, opts });
-  const channelIssues = channelsStatus ? collectChannelStatusIssues(channelsStatus) : [];
+  const { collectChannelStatusIssues: collectIssues } = await loadStatusScanRuntimeModule();
+  const channelIssues = channelsStatus ? collectIssues(channelsStatus) : [];
 
   return {
     cfg,
@@ -228,6 +237,8 @@ export async function scanStatus(
 
       progress.setLabel("Querying channel status…");
       const channelsStatus = await resolveChannelsStatus({ cfg, gatewayReachable, opts });
+      const { collectChannelStatusIssues, buildChannelsTable } =
+        await loadStatusScanRuntimeModule();
       const channelIssues = channelsStatus ? collectChannelStatusIssues(channelsStatus) : [];
       progress.tick();
 

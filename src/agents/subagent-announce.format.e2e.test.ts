@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
+import type { SessionEntry } from "../config/sessions.js";
 import {
   __testing as sessionBindingServiceTesting,
   registerSessionBindingAdapter,
@@ -108,30 +109,31 @@ function loadSessionStoreFixture(): Record<string, Record<string, unknown>> {
   }) as unknown as Record<string, SessionEntry>;
 }
 
-vi.mock("../gateway/call.js", () => ({
-  callGateway: vi.fn(async (req: unknown) => {
-    const typed = req as { method?: string; params?: { message?: string; sessionKey?: string } };
-    if (typed.method === "agent") {
-      return await agentSpy(typed);
-    }
-    if (typed.method === "send") {
-      return await sendSpy(typed);
-    }
-    if (typed.method === "agent.wait") {
-      return { status: "error", startedAt: 10, endedAt: 20, error: "boom" };
-    }
-    if (typed.method === "chat.history") {
-      return await chatHistoryMock(typed.params?.sessionKey);
-    }
-    if (typed.method === "sessions.patch") {
-      return {};
-    }
-    if (typed.method === "sessions.delete") {
-      sessionsDeleteSpy(typed);
-      return {};
-    }
+const callGatewaySpy = vi.fn(async (req: unknown) => {
+  const typed = req as { method?: string; params?: { message?: string; sessionKey?: string } };
+  if (typed.method === "agent") {
+    return await agentSpy(typed);
+  }
+  if (typed.method === "send") {
+    return await sendSpy(typed);
+  }
+  if (typed.method === "agent.wait") {
+    return { status: "error", startedAt: 10, endedAt: 20, error: "boom" };
+  }
+  if (typed.method === "chat.history") {
+    return await chatHistoryMock(typed.params?.sessionKey);
+  }
+  if (typed.method === "sessions.patch") {
     return {};
-  }),
+  }
+  if (typed.method === "sessions.delete") {
+    sessionsDeleteSpy(typed);
+    return {};
+  }
+  return {};
+});
+vi.mock("../gateway/call.js", () => ({
+  callGateway: callGatewaySpy,
 }));
 
 vi.mock("./tools/agent-step.js", () => ({

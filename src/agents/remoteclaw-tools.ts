@@ -110,18 +110,15 @@ export function createRemoteClawTools(
     createSessionsListTool({
       agentSessionKey: options?.agentSessionKey,
       sandboxed: options?.sandboxed,
-      config: options?.config,
     }),
     createSessionsHistoryTool({
       agentSessionKey: options?.agentSessionKey,
       sandboxed: options?.sandboxed,
-      config: options?.config,
     }),
     createSessionsSendTool({
       agentSessionKey: options?.agentSessionKey,
       agentChannel: options?.agentChannel,
       sandboxed: options?.sandboxed,
-      config: options?.config,
     }),
     createSessionsSpawnTool({
       agentSessionKey: options?.agentSessionKey,
@@ -142,7 +139,6 @@ export function createRemoteClawTools(
     createSessionStatusTool({
       agentSessionKey: options?.agentSessionKey,
       config: options?.config,
-      sandboxed: options?.sandboxed,
     }),
   ];
 

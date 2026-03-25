@@ -19,6 +19,7 @@ import {
 import {
   buildAgentMainSessionKey,
   DEFAULT_AGENT_ID,
+  parseAgentSessionKey,
   resolveAgentIdFromSessionKey,
 } from "../../routing/session-key.js";
 // Model override infrastructure gutted in RemoteClaw — inline override logic.
@@ -186,9 +187,8 @@ export function createSessionStatusTool(opts?: {
         throw new Error("sessionKey required");
       }
 
-      const requesterAgentId = resolveAgentIdFromSessionKey(
-        opts?.agentSessionKey ?? requestedKeyRaw,
-      );
+      const effectiveRequesterKey = opts?.agentSessionKey ?? requestedKeyRaw;
+      const requesterAgentId = resolveAgentIdFromSessionKey(effectiveRequesterKey);
       const ensureAgentAccess = (targetAgentId: string) => {
         if (targetAgentId === requesterAgentId) {
           return;

@@ -76,6 +76,24 @@ vi.mock("../infra/provider-usage.js", () => ({
   formatUsageSummaryLine: () => null,
 }));
 
+const callGatewayMock = vi.fn(async () => ({}));
+vi.mock("../gateway/call.js", () => ({
+  callGateway: (...args: unknown[]) => callGatewayMock(...args),
+}));
+
+const loadCombinedSessionStoreForGatewayMock = vi.fn(() => ({
+  storePath: "(multiple)",
+  store: {},
+}));
+vi.mock("../gateway/session-utils.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../gateway/session-utils.js")>();
+  return {
+    ...actual,
+    loadCombinedSessionStoreForGateway: (...args: unknown[]) =>
+      loadCombinedSessionStoreForGatewayMock(...args),
+  };
+});
+
 import "./test-helpers/fast-core-tools.js";
 import { createRemoteClawTools } from "./remoteclaw-tools.js";
 

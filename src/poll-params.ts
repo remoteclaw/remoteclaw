@@ -4,6 +4,7 @@ export type PollCreationParamKind = "string" | "stringArray" | "number" | "boole
 
 export type PollCreationParamDef = {
   kind: PollCreationParamKind;
+  telegramOnly?: boolean;
 };
 
 const SHARED_POLL_CREATION_PARAM_DEFS = {
@@ -14,9 +15,9 @@ const SHARED_POLL_CREATION_PARAM_DEFS = {
 } satisfies Record<string, PollCreationParamDef>;
 
 const TELEGRAM_POLL_CREATION_PARAM_DEFS = {
-  pollDurationSeconds: { kind: "number" },
-  pollAnonymous: { kind: "boolean" },
-  pollPublic: { kind: "boolean" },
+  pollDurationSeconds: { kind: "number", telegramOnly: true },
+  pollAnonymous: { kind: "boolean", telegramOnly: true },
+  pollPublic: { kind: "boolean", telegramOnly: true },
 } satisfies Record<string, PollCreationParamDef>;
 
 export const POLL_CREATION_PARAM_DEFS: Record<string, PollCreationParamDef> = {

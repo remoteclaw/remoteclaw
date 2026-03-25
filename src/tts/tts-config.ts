@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { TtsAutoMode, TtsMode } from "../config/types.tts.js";
 
 const TTS_AUTO_MODES = new Set<TtsAutoMode>(["off", "always", "inbound", "tagged"]);
@@ -14,6 +14,6 @@ export function normalizeTtsAutoMode(value: unknown): TtsAutoMode | undefined {
   return undefined;
 }
 
-export function resolveConfiguredTtsMode(cfg: OpenClawConfig): TtsMode {
+export function resolveConfiguredTtsMode(cfg: RemoteClawConfig): TtsMode {
   return cfg.messages?.tts?.mode ?? "final";
 }

@@ -1847,7 +1847,7 @@ describe("initSessionState internal channel routing preservation", () => {
     });
     const cfg = {
       session: { store: storePath, dmScope: "per-channel-peer" },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {

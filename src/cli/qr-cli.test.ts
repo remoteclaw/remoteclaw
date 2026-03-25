@@ -5,6 +5,8 @@ import { encodePairingSetupCode } from "../pairing/setup-code.js";
 const runtime = {
   log: vi.fn(),
   error: vi.fn(),
+  writeStdout: vi.fn(),
+  writeJson: vi.fn(),
   exit: vi.fn(() => {
     throw new Error("exit");
   }),

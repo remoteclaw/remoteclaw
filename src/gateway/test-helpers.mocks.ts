@@ -144,7 +144,6 @@ const createStubPluginRegistry = (): PluginRegistry => ({
       plugin: createStubChannelPlugin({ id: "bluebubbles", label: "BlueBubbles" }),
     },
   ],
-  channelSetups: [],
   providers: [],
   sttProviders: [],
   ttsProviders: [],

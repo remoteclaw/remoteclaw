@@ -22,7 +22,7 @@ function createGatewayAudit({
   expectedGatewayToken?: string;
   path?: string;
   serviceToken?: string;
-  environmentValueSources?: Record<string, string>;
+  environmentValueSources?: Record<string, "file" | "inline">;
 } = {}) {
   return auditGatewayServiceConfig({
     env: { HOME: "/tmp" },
@@ -32,7 +32,7 @@ function createGatewayAudit({
       programArguments: ["/usr/bin/node", "gateway"],
       environment: {
         PATH: path,
-        ...(serviceToken ? { OPENCLAW_GATEWAY_TOKEN: serviceToken } : {}),
+        ...(serviceToken ? { REMOTECLAW_GATEWAY_TOKEN: serviceToken } : {}),
       },
       ...(environmentValueSources ? { environmentValueSources } : {}),
     },

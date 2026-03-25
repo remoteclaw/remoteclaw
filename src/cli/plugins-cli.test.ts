@@ -1,10 +1,10 @@
 import { Command } from "commander";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { createCliRuntimeCapture } from "./test-runtime-capture.js";
 
-const loadConfig = vi.fn<() => OpenClawConfig>(() => ({}) as OpenClawConfig);
-const writeConfigFile = vi.fn<(config: OpenClawConfig) => Promise<void>>(async () => undefined);
+const loadConfig = vi.fn<() => RemoteClawConfig>(() => ({}) as RemoteClawConfig);
+const writeConfigFile = vi.fn<(config: RemoteClawConfig) => Promise<void>>(async () => undefined);
 const resolveStateDir = vi.fn(() => "/tmp/openclaw-state");
 const installPluginFromMarketplace = vi.fn();
 const listMarketplacePlugins = vi.fn();
@@ -32,7 +32,7 @@ vi.mock("../config/config.js", async (importOriginal) => {
   return {
     ...actual,
     loadConfig: () => loadConfig(),
-    writeConfigFile: (config: OpenClawConfig) => writeConfigFile(config),
+    writeConfigFile: (config: RemoteClawConfig) => writeConfigFile(config),
   };
 });
 
@@ -127,7 +127,7 @@ describe("plugins cli", () => {
     installPluginFromNpmSpec.mockReset();
     installPluginFromPath.mockReset();
 
-    loadConfig.mockReturnValue({} as OpenClawConfig);
+    loadConfig.mockReturnValue({} as RemoteClawConfig);
     writeConfigFile.mockResolvedValue(undefined);
     resolveStateDir.mockReturnValue("/tmp/openclaw-state");
     resolveMarketplaceInstallShortcut.mockResolvedValue(null);
@@ -135,19 +135,19 @@ describe("plugins cli", () => {
       ok: false,
       error: "marketplace install failed",
     });
-    enablePluginInConfig.mockImplementation((cfg: OpenClawConfig) => ({ config: cfg }));
-    recordPluginInstall.mockImplementation((cfg: OpenClawConfig) => cfg);
+    enablePluginInConfig.mockImplementation((cfg: RemoteClawConfig) => ({ config: cfg }));
+    recordPluginInstall.mockImplementation((cfg: RemoteClawConfig) => cfg);
     buildPluginStatusReport.mockReturnValue({
       plugins: [],
       diagnostics: [],
     });
-    applyExclusiveSlotSelection.mockImplementation(({ config }: { config: OpenClawConfig }) => ({
+    applyExclusiveSlotSelection.mockImplementation(({ config }: { config: RemoteClawConfig }) => ({
       config,
       warnings: [],
     }));
     uninstallPlugin.mockResolvedValue({
       ok: true,
-      config: {} as OpenClawConfig,
+      config: {} as RemoteClawConfig,
       warnings: [],
       actions: {
         entry: false,
@@ -161,7 +161,7 @@ describe("plugins cli", () => {
     updateNpmInstalledPlugins.mockResolvedValue({
       outcomes: [],
       changed: false,
-      config: {} as OpenClawConfig,
+      config: {} as RemoteClawConfig,
     });
     promptYesNo.mockResolvedValue(true);
     installPluginFromPath.mockResolvedValue({ ok: false, error: "path install disabled in test" });
@@ -199,7 +199,7 @@ describe("plugins cli", () => {
       plugins: {
         entries: {},
       },
-    } as OpenClawConfig;
+    } as unknown as RemoteClawConfig;
     const enabledCfg = {
       plugins: {
         entries: {
@@ -208,7 +208,7 @@ describe("plugins cli", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as unknown as RemoteClawConfig;
     const installedCfg = {
       ...enabledCfg,
       plugins: {
@@ -220,7 +220,7 @@ describe("plugins cli", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as unknown as RemoteClawConfig;
 
     loadConfig.mockReturnValue(cfg);
     installPluginFromMarketplace.mockResolvedValue({
@@ -267,7 +267,7 @@ describe("plugins cli", () => {
           },
         },
       },
-    } as OpenClawConfig);
+    } as RemoteClawConfig);
     buildPluginStatusReport.mockReturnValue({
       plugins: [{ id: "alpha", name: "alpha" }],
       diagnostics: [],
@@ -294,13 +294,13 @@ describe("plugins cli", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as unknown as RemoteClawConfig;
     const nextConfig = {
       plugins: {
         entries: {},
         installs: {},
       },
-    } as OpenClawConfig;
+    } as unknown as RemoteClawConfig;
 
     loadConfig.mockReturnValue(baseConfig);
     buildPluginStatusReport.mockReturnValue({
@@ -339,7 +339,7 @@ describe("plugins cli", () => {
         entries: {},
         installs: {},
       },
-    } as OpenClawConfig);
+    } as RemoteClawConfig);
     buildPluginStatusReport.mockReturnValue({
       plugins: [{ id: "alpha", name: "alpha" }],
       diagnostics: [],
@@ -358,7 +358,7 @@ describe("plugins cli", () => {
       plugins: {
         installs: {},
       },
-    } as OpenClawConfig);
+    } as RemoteClawConfig);
 
     await expect(runCommand(["plugins", "update"])).rejects.toThrow("__exit__:1");
 
@@ -371,7 +371,7 @@ describe("plugins cli", () => {
       plugins: {
         installs: {},
       },
-    } as OpenClawConfig);
+    } as RemoteClawConfig);
 
     await runCommand(["plugins", "update", "--all"]);
 
@@ -389,7 +389,7 @@ describe("plugins cli", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as unknown as RemoteClawConfig;
     const nextConfig = {
       plugins: {
         installs: {
@@ -399,7 +399,7 @@ describe("plugins cli", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as unknown as RemoteClawConfig;
     loadConfig.mockReturnValue(cfg);
     updateNpmInstalledPlugins.mockResolvedValue({
       outcomes: [{ status: "ok", message: "Updated alpha -> 1.1.0" }],

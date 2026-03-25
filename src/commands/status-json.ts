@@ -25,7 +25,6 @@ export async function statusJsonCommand(
   const scan = await scanStatus({ json: true, timeoutMs: opts.timeoutMs, all: opts.all }, runtime);
   const securityAudit = await runSecurityAudit({
     config: scan.cfg,
-    sourceConfig: scan.sourceConfig,
     deep: false,
     includeFilesystem: true,
     includeChannelSecurity: true,
@@ -60,9 +59,6 @@ export async function statusJsonCommand(
   ]);
   const channelInfo = resolveUpdateChannelDisplay({
     configChannel: normalizeUpdateChannel(scan.cfg.update?.channel),
-    installKind: scan.update.installKind,
-    gitTag: scan.update.git?.tag ?? null,
-    gitBranch: scan.update.git?.branch ?? null,
   });
 
   runtime.log(
@@ -73,8 +69,6 @@ export async function statusJsonCommand(
         update: scan.update,
         updateChannel: channelInfo.channel,
         updateChannelSource: channelInfo.source,
-        memory: scan.memory,
-        memoryPlugin: scan.memoryPlugin,
         gateway: {
           mode: scan.gatewayMode,
           url: scan.gatewayConnection.url,
@@ -84,13 +78,11 @@ export async function statusJsonCommand(
           connectLatencyMs: scan.gatewayProbe?.connectLatencyMs ?? null,
           self: scan.gatewaySelf,
           error: scan.gatewayProbe?.error ?? null,
-          authWarning: scan.gatewayProbeAuthWarning ?? null,
         },
         gatewayService: daemon,
         nodeService: nodeDaemon,
         agents: scan.agentStatus,
         securityAudit,
-        secretDiagnostics: scan.secretDiagnostics,
         ...(health || usage || lastHeartbeat ? { health, usage, lastHeartbeat } : {}),
       },
       null,

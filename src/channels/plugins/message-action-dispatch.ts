@@ -1,4 +1,4 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
+import type { AgentToolResult } from "../../agents/agent-types.js";
 import { getChannelPlugin } from "./index.js";
 import type { ChannelMessageActionContext } from "./types.js";
 

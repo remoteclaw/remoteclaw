@@ -3,10 +3,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { withEnvAsync } from "../test-utils/env.js";
 import { clearPluginDiscoveryCache, discoverRemoteClawPlugins } from "./discovery.js";
-import {
-  cleanupTrackedTempDirs,
-  makeTrackedTempDir,
-} from "./test-helpers/fs-fixtures.js";
+import { cleanupTrackedTempDirs, makeTrackedTempDir } from "./test-helpers/fs-fixtures.js";
 
 const tempDirs: string[] = [];
 

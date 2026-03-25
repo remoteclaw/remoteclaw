@@ -61,7 +61,7 @@ async function withOutsideHardlinkAlias(params: {
   aliasPath: string;
   run: (outsideFile: string) => Promise<void>;
 }): Promise<void> {
-  const outside = await tempDirs.make("openclaw-fs-safe-outside-");
+  const outside = await tempDirs.make("remoteclaw-fs-safe-outside-");
   const outsideFile = path.join(outside, "outside.txt");
   await fs.writeFile(outsideFile, "outside");
   try {
@@ -86,9 +86,9 @@ async function setupSymlinkWriteRaceFixture(options?: { seedInsideTarget?: boole
   slot: string;
   outsideTarget: string;
 }> {
-  const root = await tempDirs.make("openclaw-fs-safe-root-");
+  const root = await tempDirs.make("remoteclaw-fs-safe-root-");
   const inside = path.join(root, "inside");
-  const outside = await tempDirs.make("openclaw-fs-safe-outside-");
+  const outside = await tempDirs.make("remoteclaw-fs-safe-outside-");
   await fs.mkdir(inside, { recursive: true });
   if (options?.seedInsideTarget) {
     await fs.writeFile(path.join(inside, "target.txt"), "inside");
@@ -177,6 +177,32 @@ describe("fs-safe", () => {
     expect((err as SafeOpenError).message).not.toMatch(/EISDIR/i);
   });
 
+  it("reads files within root through all read helpers", async () => {
+    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
+
+    await fs.writeFile(path.join(root, "inside.txt"), "inside");
+    const byRelativePath = await readFileWithinRoot({
+      rootDir: root,
+      relativePath: "inside.txt",
+    });
+    expect(byRelativePath.buffer.toString("utf8")).toBe("inside");
+    expect(byRelativePath.realPath).toContain("inside.txt");
+    expect(byRelativePath.stat.size).toBe(6);
+
+    const absolutePath = path.join(root, "absolute.txt");
+    await fs.writeFile(absolutePath, "absolute");
+    const byAbsolutePath = await readPathWithinRoot({
+      rootDir: root,
+      filePath: absolutePath,
+    });
+    expect(byAbsolutePath.buffer.toString("utf8")).toBe("absolute");
+
+    const scopedPath = path.join(root, "scoped.txt");
+    await fs.writeFile(scopedPath, "scoped");
+    const readScoped = createRootScopedReadFile({ rootDir: root });
+    await expect(readScoped(scopedPath)).resolves.toEqual(Buffer.from("scoped"));
+  });
+
   it.runIf(process.platform !== "win32")("blocks symlink escapes under root", async () => {
     const root = await tempDirs.make("remoteclaw-fs-safe-root-");
     const outside = await tempDirs.make("remoteclaw-fs-safe-outside-");
@@ -220,7 +246,7 @@ describe("fs-safe", () => {
   });
 
   it("appends to a file within root safely", async () => {
-    const root = await tempDirs.make("openclaw-fs-safe-root-");
+    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
     const targetPath = path.join(root, "nested", "out.txt");
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
     await fs.writeFile(targetPath, "seed");
@@ -238,7 +264,7 @@ describe("fs-safe", () => {
   // Pinned write helper (Python subprocess) now handles atomic rename internally —
   // JS-level fs.rename mocking cannot intercept the subprocess rename path.
   it.skip("does not truncate existing target when atomic rename fails", async () => {
-    const root = await tempDirs.make("openclaw-fs-safe-root-");
+    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
     const targetPath = path.join(root, "nested", "out.txt");
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
     await fs.writeFile(targetPath, "existing-content");
@@ -262,7 +288,7 @@ describe("fs-safe", () => {
   // Pinned write helper (Python subprocess) now handles atomic rename internally —
   // JS-level fs.rename mocking cannot intercept the subprocess rename path.
   it.skip("rejects when a hardlink appears after atomic write rename", async () => {
-    const root = await tempDirs.make("openclaw-fs-safe-root-");
+    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
     const targetPath = path.join(root, "nested", "out.txt");
     const aliasPath = path.join(root, "nested", "alias.txt");
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
@@ -293,8 +319,8 @@ describe("fs-safe", () => {
   // Pinned write helper (Python subprocess) now handles atomic rename internally —
   // JS-level fs.rename mocking cannot intercept the subprocess rename path.
   it.skip("does not truncate existing target when atomic copy rename fails", async () => {
-    const root = await tempDirs.make("openclaw-fs-safe-root-");
-    const sourceDir = await tempDirs.make("openclaw-fs-safe-source-");
+    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
+    const sourceDir = await tempDirs.make("remoteclaw-fs-safe-source-");
     const sourcePath = path.join(sourceDir, "in.txt");
     const targetPath = path.join(root, "nested", "copied.txt");
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
@@ -320,8 +346,8 @@ describe("fs-safe", () => {
   // Pinned write helper (Python subprocess) now handles atomic rename internally —
   // JS-level fs.rename mocking cannot intercept the subprocess rename path.
   it.skip("rejects when a hardlink appears after atomic copy rename", async () => {
-    const root = await tempDirs.make("openclaw-fs-safe-root-");
-    const sourceDir = await tempDirs.make("openclaw-fs-safe-source-");
+    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
+    const sourceDir = await tempDirs.make("remoteclaw-fs-safe-source-");
     const sourcePath = path.join(sourceDir, "copy-source.txt");
     const targetPath = path.join(root, "nested", "copied.txt");
     const aliasPath = path.join(root, "nested", "alias.txt");
@@ -431,7 +457,7 @@ describe("fs-safe", () => {
   });
 
   it.runIf(process.platform !== "win32")("rejects appending through hardlink aliases", async () => {
-    const root = await tempDirs.make("openclaw-fs-safe-root-");
+    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
     const hardlinkPath = path.join(root, "alias.txt");
     await withOutsideHardlinkAlias({
       aliasPath: hardlinkPath,

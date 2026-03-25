@@ -48,10 +48,9 @@ import {
 } from "./delivery-dispatch.js";
 import { resolveDeliveryTarget } from "./delivery-target.js";
 import {
-  pickLastDeliverablePayload,
-  pickLastNonEmptyTextFromPayloads,
-  pickSummaryFromOutput,
-  pickSummaryFromPayloads,
+  isHeartbeatOnlyResponse,
+  resolveCronPayloadOutcome,
+  resolveHeartbeatAckMaxChars,
 } from "./helpers.js";
 import { resolveCronAgentSessionKey } from "./session-key.js";
 import { resolveCronSession } from "./session.js";
@@ -515,13 +514,16 @@ export async function runCronIsolatedAgentTurn(params: {
     // (e.g. "on it") and no descendants are active, run one focused follow-up
     // turn so the cron run returns an actual completion.
     if (!isAborted()) {
-      const interimPayloads = runResult.payloads ?? [];
-      const interimDeliveryPayload = pickLastDeliverablePayload(interimPayloads);
-      const interimPayloadHasStructuredContent =
-        Boolean(interimDeliveryPayload?.mediaUrl) ||
-        (interimDeliveryPayload?.mediaUrls?.length ?? 0) > 0 ||
-        Object.keys(interimDeliveryPayload?.channelData ?? {}).length > 0;
-      const interimText = pickLastNonEmptyTextFromPayloads(interimPayloads)?.trim() ?? "";
+      const interimRunResult = runResult;
+      const interimPayloads = interimRunResult.payloads ?? [];
+      const {
+        deliveryPayloadHasStructuredContent: interimPayloadHasStructuredContent,
+        outputText: interimOutputText,
+      } = resolveCronPayloadOutcome({
+        payloads: interimPayloads,
+        runLevelError: interimRunResult.meta?.error,
+      });
+      const interimText = interimOutputText?.trim() ?? "";
       const hasDescendantsSinceRunStart = listDescendantRunsForRequester(agentSessionKey).some(
         (entry) => {
           const descendantStartedAt =
@@ -635,42 +637,19 @@ export async function runCronIsolatedAgentTurn(params: {
   if (isAborted()) {
     return withRunSession({ status: "error", error: abortReason(), ...telemetry });
   }
-  const firstText = payloads[0]?.text ?? "";
-  let summary = pickSummaryFromPayloads(payloads) ?? pickSummaryFromOutput(firstText);
-  let outputText = pickLastNonEmptyTextFromPayloads(payloads);
-  let synthesizedText = outputText?.trim() || summary?.trim() || undefined;
-  const deliveryPayload = pickLastDeliverablePayload(payloads);
-  let deliveryPayloads =
-    deliveryPayload !== undefined
-      ? [deliveryPayload]
-      : synthesizedText
-        ? [{ text: synthesizedText }]
-        : [];
-  const deliveryPayloadHasStructuredContent =
-    Boolean(deliveryPayload?.mediaUrl) ||
-    (deliveryPayload?.mediaUrls?.length ?? 0) > 0 ||
-    Object.keys(deliveryPayload?.channelData ?? {}).length > 0;
+  let {
+    summary,
+    outputText,
+    synthesizedText,
+    deliveryPayloads,
+    deliveryPayloadHasStructuredContent,
+    hasFatalErrorPayload,
+    embeddedRunError,
+  } = resolveCronPayloadOutcome({
+    payloads,
+    runLevelError: finalRunResult.meta?.error,
+  });
   const deliveryBestEffort = resolveCronDeliveryBestEffort(params.job);
-  const hasErrorPayload = payloads.some((payload) => payload?.isError === true);
-  const runLevelError = runResult.error;
-  const lastErrorPayloadIndex = payloads.findLastIndex((payload) => payload?.isError === true);
-  const hasSuccessfulPayloadAfterLastError =
-    !runLevelError &&
-    lastErrorPayloadIndex >= 0 &&
-    payloads
-      .slice(lastErrorPayloadIndex + 1)
-      .some((payload) => payload?.isError !== true && Boolean(payload?.text?.trim()));
-  // Tool wrappers can emit transient/false-positive error payloads before a valid final
-  // assistant payload.  Only treat payload errors as recoverable when (a) the run itself
-  // did not report a model/context-level error and (b) a non-error payload follows.
-  const hasFatalErrorPayload = hasErrorPayload && !hasSuccessfulPayloadAfterLastError;
-  const lastErrorPayloadText = [...payloads]
-    .toReversed()
-    .find((payload) => payload?.isError === true && Boolean(payload?.text?.trim()))
-    ?.text?.trim();
-  const embeddedRunError = hasFatalErrorPayload
-    ? (lastErrorPayloadText ?? "cron isolated run returned an error payload")
-    : undefined;
   const resolveRunOutcome = (params?: { delivered?: boolean; deliveryAttempted?: boolean }) =>
     withRunSession({
       status: hasFatalErrorPayload ? "error" : "ok",

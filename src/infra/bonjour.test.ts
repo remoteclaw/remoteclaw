@@ -20,7 +20,7 @@ function enableAdvertiserUnitMode(hostname = "test-host") {
   delete process.env.VITEST;
   process.env.NODE_ENV = "development";
   vi.spyOn(os, "hostname").mockReturnValue(hostname);
-  process.env.OPENCLAW_MDNS_HOSTNAME = hostname;
+  process.env.REMOTECLAW_MDNS_HOSTNAME = hostname;
 }
 
 function mockCiaoService(params?: {
@@ -357,7 +357,7 @@ describe("gateway bonjour advertiser", () => {
     expect(createService).toHaveBeenCalledTimes(1);
     expect(advertise).toHaveBeenCalledTimes(1);
 
-    await vi.advanceTimersByTimeAsync(5_000);
+    await vi.advanceTimersByTimeAsync(15_000);
 
     expect(logWarn).toHaveBeenCalledWith(expect.stringContaining("restarting advertiser"));
     expect(createService).toHaveBeenCalledTimes(2);

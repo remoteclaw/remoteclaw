@@ -8,6 +8,7 @@ import { createPluginRuntime } from "../../plugins/runtime/index.js";
 import { createTestRegistry } from "../../test-utils/channel-plugins.js";
 
 export const slackConfig = {
+  agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
   channels: {
     slack: {
       botToken: "xoxb-test",
@@ -17,6 +18,7 @@ export const slackConfig = {
 } as RemoteClawConfig;
 
 export const telegramConfig = {
+  agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
   channels: {
     telegram: {
       botToken: "telegram-test",

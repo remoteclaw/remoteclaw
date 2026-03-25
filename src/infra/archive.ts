@@ -548,6 +548,7 @@ export async function extractArchive(params: {
   const label = kind === "zip" ? "extract zip" : "extract tar";
   if (kind === "tar") {
     const limits = resolveExtractLimits(params.limits);
+    const destinationRealDir = await prepareArchiveDestinationDir(params.destDir);
     const stat = await fs.stat(params.archivePath);
     if (stat.size > limits.maxArchiveBytes) {
       throw new Error(ERROR_ARCHIVE_SIZE_EXCEEDS_LIMIT);
@@ -558,29 +559,39 @@ export async function extractArchive(params: {
       stripComponents: params.stripComponents,
       limits,
     });
-    await withTimeout(
-      tar.x({
-        file: params.archivePath,
-        cwd: params.destDir,
-        strip: Math.max(0, Math.floor(params.stripComponents ?? 0)),
-        gzip: params.tarGzip,
-        preservePaths: false,
-        strict: true,
-        onReadEntry(entry) {
-          try {
-            checkTarEntrySafety(readTarEntryInfo(entry));
-          } catch (err) {
-            const error = err instanceof Error ? err : new Error(String(err));
-            // Node's EventEmitter calls listeners with `this` bound to the
-            // emitter (tar.Unpack), which exposes Parser.abort().
-            const emitter = this as unknown as { abort?: (error: Error) => void };
-            emitter.abort?.(error);
-          }
-        },
-      }),
-      params.timeoutMs,
-      label,
-    );
+    await withStagedArchiveDestination({
+      destinationRealDir,
+      run: async (stagingDir) => {
+        await withTimeout(
+          tar.x({
+            file: params.archivePath,
+            cwd: stagingDir,
+            strip: Math.max(0, Math.floor(params.stripComponents ?? 0)),
+            gzip: params.tarGzip,
+            preservePaths: false,
+            strict: true,
+            onReadEntry(entry) {
+              try {
+                checkTarEntrySafety(readTarEntryInfo(entry));
+              } catch (err) {
+                const error = err instanceof Error ? err : new Error(String(err));
+                // Node's EventEmitter calls listeners with `this` bound to the
+                // emitter (tar.Unpack), which exposes Parser.abort().
+                const emitter = this as unknown as { abort?: (error: Error) => void };
+                emitter.abort?.(error);
+              }
+            },
+          }),
+          params.timeoutMs,
+          label,
+        );
+        await mergeExtractedTreeIntoDestination({
+          sourceDir: stagingDir,
+          destinationDir: params.destDir,
+          destinationRealDir,
+        });
+      },
+    });
     return;
   }
 

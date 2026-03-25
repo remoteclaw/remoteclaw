@@ -124,7 +124,6 @@ export function resolveCronPayloadOutcome(params: {
   const deliveryPayloadHasStructuredContent =
     deliveryPayload?.mediaUrl !== undefined ||
     (deliveryPayload?.mediaUrls?.length ?? 0) > 0 ||
-    (deliveryPayload?.interactive?.blocks?.length ?? 0) > 0 ||
     Object.keys(deliveryPayload?.channelData ?? {}).length > 0;
   const hasErrorPayload = params.payloads.some((payload) => payload?.isError === true);
   const lastErrorPayloadIndex = params.payloads.findLastIndex(

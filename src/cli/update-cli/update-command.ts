@@ -61,10 +61,10 @@ import { suppressDeprecations } from "./suppress-deprecations.js";
 const CLI_NAME = resolveCliName();
 const SERVICE_REFRESH_TIMEOUT_MS = 60_000;
 const SERVICE_REFRESH_PATH_ENV_KEYS = [
-  "OPENCLAW_HOME",
-  "OPENCLAW_STATE_DIR",
+  "REMOTECLAW_HOME",
+  "REMOTECLAW_STATE_DIR",
   "CLAWDBOT_STATE_DIR",
-  "OPENCLAW_CONFIG_PATH",
+  "REMOTECLAW_CONFIG_PATH",
   "CLAWDBOT_CONFIG_PATH",
 ] as const;
 

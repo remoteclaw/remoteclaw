@@ -64,14 +64,14 @@ describe("shared/frontmatter", () => {
         requires: {
           bins: "bun, node",
           anyBins: [" ffmpeg ", ""],
-          env: ["OPENCLAW_TOKEN", " OPENCLAW_URL "],
+          env: ["REMOTECLAW_TOKEN", " REMOTECLAW_URL "],
           config: null,
         },
       }),
     ).toEqual({
       bins: ["bun", "node"],
       anyBins: ["ffmpeg"],
-      env: ["OPENCLAW_TOKEN", "OPENCLAW_URL"],
+      env: ["REMOTECLAW_TOKEN", "REMOTECLAW_URL"],
       config: [],
     });
     expect(resolveRemoteClawManifestRequires({})).toBeUndefined();
@@ -105,7 +105,9 @@ describe("shared/frontmatter", () => {
       bins: ["git", "git"],
     });
     expect(parseRemoteClawManifestInstallBase({ kind: "bad" }, ["brew"])).toBeUndefined();
-    expect(applyOpenClawManifestInstallCommonFields({ extra: true }, parsed!)).toEqual({
+    expect(
+      applyOpenClawManifestInstallCommonFields({ extra: true } as Record<string, unknown>, parsed!),
+    ).toEqual({
       extra: true,
       id: "brew.git",
       label: "Git",

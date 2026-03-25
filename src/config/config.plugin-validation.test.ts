@@ -39,6 +39,8 @@ describe("config plugin validation", () => {
   let bluebubblesPluginDir = "";
   let voiceCallSchemaPluginDir = "";
   const envSnapshot = {
+    HOME: process.env.HOME,
+    REMOTECLAW_HOME: process.env.REMOTECLAW_HOME,
     REMOTECLAW_STATE_DIR: process.env.REMOTECLAW_STATE_DIR,
     REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS: process.env.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS,
   };
@@ -90,6 +92,8 @@ describe("config plugin validation", () => {
       id: "voice-call-schema-fixture",
       schema: voiceCallManifest.configSchema,
     });
+    process.env.HOME = suiteHome;
+    delete process.env.REMOTECLAW_HOME;
     process.env.REMOTECLAW_STATE_DIR = path.join(suiteHome, ".remoteclaw");
     process.env.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS = "10000";
     clearPluginManifestRegistryCache();
@@ -105,6 +109,16 @@ describe("config plugin validation", () => {
 
   afterAll(async () => {
     clearPluginManifestRegistryCache();
+    if (envSnapshot.HOME === undefined) {
+      delete process.env.HOME;
+    } else {
+      process.env.HOME = envSnapshot.HOME;
+    }
+    if (envSnapshot.REMOTECLAW_HOME === undefined) {
+      delete process.env.REMOTECLAW_HOME;
+    } else {
+      process.env.REMOTECLAW_HOME = envSnapshot.REMOTECLAW_HOME;
+    }
     if (envSnapshot.REMOTECLAW_STATE_DIR === undefined) {
       delete process.env.REMOTECLAW_STATE_DIR;
     } else {

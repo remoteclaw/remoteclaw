@@ -71,7 +71,7 @@ describe("resolveOutboundSessionRoute", () => {
         target: "123456789:topic:99",
         expected: {
           sessionKey: "agent:main:telegram:direct:123456789",
-          from: "telegram:123456789:topic:99",
+          from: "telegram:123456789",
           to: "telegram:123456789",
           threadId: 99,
           chatType: "direct",
@@ -95,7 +95,7 @@ describe("resolveOutboundSessionRoute", () => {
         threadId: "12345:99",
         expected: {
           sessionKey: "agent:main:telegram:direct:12345",
-          from: "telegram:12345:topic:99",
+          from: "telegram:12345",
           to: "telegram:12345",
           threadId: 99,
           chatType: "direct",
@@ -239,10 +239,10 @@ describe("resolveOutboundSessionRoute", () => {
     });
 
     expect(route).toMatchObject({
-      sessionKey: `agent:main:mattermost:direct:${userId}`,
-      from: `mattermost:${userId}`,
-      to: `user:${userId}`,
-      chatType: "direct",
+      sessionKey: `agent:main:mattermost:channel:${userId}`,
+      from: `mattermost:channel:${userId}`,
+      to: `channel:${userId}`,
+      chatType: "channel",
     });
   });
 

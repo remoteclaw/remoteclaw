@@ -1,11 +1,24 @@
 import fs from "node:fs";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { withEnvAsync } from "../test-utils/env.js";
 import { clearPluginDiscoveryCache, discoverRemoteClawPlugins } from "./discovery.js";
 import { cleanupTrackedTempDirs, makeTrackedTempDir } from "./test-helpers/fs-fixtures.js";
 
 const tempDirs: string[] = [];
+const previousUmask = process.umask(0o022);
+
+function chmodSafeDir(dir: string) {
+  if (process.platform === "win32") {
+    return;
+  }
+  fs.chmodSync(dir, 0o755);
+}
+
+function mkdirSafe(dir: string) {
+  fs.mkdirSync(dir, { recursive: true });
+  chmodSafeDir(dir);
+}
 
 function makeTempDir() {
   return makeTrackedTempDir("remoteclaw-plugins", tempDirs);
@@ -58,17 +71,21 @@ afterEach(() => {
   cleanupTrackedTempDirs(tempDirs);
 });
 
+afterAll(() => {
+  process.umask(previousUmask);
+});
+
 describe("discoverRemoteClawPlugins", () => {
   it("discovers global and workspace extensions", async () => {
     const stateDir = makeTempDir();
     const workspaceDir = path.join(stateDir, "workspace");
 
     const globalExt = path.join(stateDir, "extensions");
-    fs.mkdirSync(globalExt, { recursive: true });
+    mkdirSafe(globalExt);
     fs.writeFileSync(path.join(globalExt, "alpha.ts"), "export default function () {}", "utf-8");
 
     const workspaceExt = path.join(workspaceDir, ".remoteclaw", "extensions");
-    fs.mkdirSync(workspaceExt, { recursive: true });
+    mkdirSafe(workspaceExt);
     fs.writeFileSync(path.join(workspaceExt, "beta.ts"), "export default function () {}", "utf-8");
 
     const { candidates } = await withStateDir(stateDir, async () => {
@@ -83,22 +100,22 @@ describe("discoverRemoteClawPlugins", () => {
   it("ignores backup and disabled plugin directories in scanned roots", async () => {
     const stateDir = makeTempDir();
     const globalExt = path.join(stateDir, "extensions");
-    fs.mkdirSync(globalExt, { recursive: true });
+    mkdirSafe(globalExt);
 
     const backupDir = path.join(globalExt, "feishu.backup-20260222");
-    fs.mkdirSync(backupDir, { recursive: true });
+    mkdirSafe(backupDir);
     fs.writeFileSync(path.join(backupDir, "index.ts"), "export default function () {}", "utf-8");
 
     const disabledDir = path.join(globalExt, "telegram.disabled.20260222");
-    fs.mkdirSync(disabledDir, { recursive: true });
+    mkdirSafe(disabledDir);
     fs.writeFileSync(path.join(disabledDir, "index.ts"), "export default function () {}", "utf-8");
 
     const bakDir = path.join(globalExt, "discord.bak");
-    fs.mkdirSync(bakDir, { recursive: true });
+    mkdirSafe(bakDir);
     fs.writeFileSync(path.join(bakDir, "index.ts"), "export default function () {}", "utf-8");
 
     const liveDir = path.join(globalExt, "live");
-    fs.mkdirSync(liveDir, { recursive: true });
+    mkdirSafe(liveDir);
     fs.writeFileSync(path.join(liveDir, "index.ts"), "export default function () {}", "utf-8");
 
     const { candidates } = await withStateDir(stateDir, async () => {
@@ -169,7 +186,7 @@ describe("discoverRemoteClawPlugins", () => {
   it("treats configured directory paths as plugin packages", async () => {
     const stateDir = makeTempDir();
     const packDir = path.join(stateDir, "packs", "demo-plugin-dir");
-    fs.mkdirSync(packDir, { recursive: true });
+    mkdirSafe(packDir);
 
     writePluginPackageManifest({
       packageDir: packDir,
@@ -189,7 +206,7 @@ describe("discoverRemoteClawPlugins", () => {
     const stateDir = makeTempDir();
     const globalExt = path.join(stateDir, "extensions", "escape-pack");
     const outside = path.join(stateDir, "outside.js");
-    fs.mkdirSync(globalExt, { recursive: true });
+    mkdirSafe(globalExt);
 
     writePluginPackageManifest({
       packageDir: globalExt,
@@ -209,8 +226,8 @@ describe("discoverRemoteClawPlugins", () => {
     const globalExt = path.join(stateDir, "extensions", "pack");
     const outsideDir = path.join(stateDir, "outside");
     const linkedDir = path.join(globalExt, "linked");
-    fs.mkdirSync(globalExt, { recursive: true });
-    fs.mkdirSync(outsideDir, { recursive: true });
+    mkdirSafe(globalExt);
+    mkdirSafe(outsideDir);
     fs.writeFileSync(path.join(outsideDir, "escape.ts"), "export default {}", "utf-8");
     try {
       fs.symlinkSync(outsideDir, linkedDir, process.platform === "win32" ? "junction" : "dir");
@@ -239,8 +256,8 @@ describe("discoverRemoteClawPlugins", () => {
     const outsideDir = path.join(stateDir, "outside");
     const outsideFile = path.join(outsideDir, "escape.ts");
     const linkedFile = path.join(globalExt, "escape.ts");
-    fs.mkdirSync(globalExt, { recursive: true });
-    fs.mkdirSync(outsideDir, { recursive: true });
+    mkdirSafe(globalExt);
+    mkdirSafe(outsideDir);
     fs.writeFileSync(outsideFile, "export default {}", "utf-8");
     try {
       fs.linkSync(outsideFile, linkedFile);
@@ -274,8 +291,8 @@ describe("discoverRemoteClawPlugins", () => {
     const outsideDir = path.join(stateDir, "outside");
     const outsideManifest = path.join(outsideDir, "package.json");
     const linkedManifest = path.join(globalExt, "package.json");
-    fs.mkdirSync(globalExt, { recursive: true });
-    fs.mkdirSync(outsideDir, { recursive: true });
+    mkdirSafe(globalExt);
+    mkdirSafe(outsideDir);
     fs.writeFileSync(path.join(globalExt, "entry.ts"), "export default {}", "utf-8");
     fs.writeFileSync(
       outsideManifest,
@@ -304,7 +321,7 @@ describe("discoverRemoteClawPlugins", () => {
   it.runIf(process.platform !== "win32")("blocks world-writable plugin paths", async () => {
     const stateDir = makeTempDir();
     const globalExt = path.join(stateDir, "extensions");
-    fs.mkdirSync(globalExt, { recursive: true });
+    mkdirSafe(globalExt);
     const pluginPath = path.join(globalExt, "world-open.ts");
     fs.writeFileSync(pluginPath, "export default function () {}", "utf-8");
     fs.chmodSync(pluginPath, 0o777);
@@ -325,7 +342,7 @@ describe("discoverRemoteClawPlugins", () => {
       const stateDir = makeTempDir();
       const bundledDir = path.join(stateDir, "bundled");
       const packDir = path.join(bundledDir, "demo-pack");
-      fs.mkdirSync(packDir, { recursive: true });
+      mkdirSafe(packDir);
       fs.writeFileSync(path.join(packDir, "index.ts"), "export default function () {}", "utf-8");
       fs.chmodSync(packDir, 0o777);
 
@@ -353,7 +370,7 @@ describe("discoverRemoteClawPlugins", () => {
     async () => {
       const stateDir = makeTempDir();
       const globalExt = path.join(stateDir, "extensions");
-      fs.mkdirSync(globalExt, { recursive: true });
+      mkdirSafe(globalExt);
       fs.writeFileSync(
         path.join(globalExt, "owner-mismatch.ts"),
         "export default function () {}",
@@ -375,7 +392,7 @@ describe("discoverRemoteClawPlugins", () => {
   it("reuses discovery results from cache until cleared", async () => {
     const stateDir = makeTempDir();
     const globalExt = path.join(stateDir, "extensions");
-    fs.mkdirSync(globalExt, { recursive: true });
+    mkdirSafe(globalExt);
     const pluginPath = path.join(globalExt, "cached.ts");
     fs.writeFileSync(pluginPath, "export default function () {}", "utf-8");
 

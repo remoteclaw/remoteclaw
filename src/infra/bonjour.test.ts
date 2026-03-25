@@ -297,8 +297,8 @@ describe("gateway bonjour advertiser", () => {
     await Promise.resolve();
     expect(logWarn).toHaveBeenCalledWith(expect.stringContaining("advertise failed"));
 
-    // watchdog should attempt re-advertise at the 60s interval tick
-    await vi.advanceTimersByTimeAsync(15_000);
+    // watchdog should attempt re-advertise at the 5s interval tick
+    await vi.advanceTimersByTimeAsync(5_000);
     expect(advertise).toHaveBeenCalledTimes(2);
 
     await started.stop();

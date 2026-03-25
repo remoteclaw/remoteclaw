@@ -4,11 +4,11 @@ const createChannelPairingChallengeIssuerMock = vi.hoisted(() => vi.fn());
 const upsertChannelPairingRequestMock = vi.hoisted(() => vi.fn(async () => undefined));
 const withTelegramApiErrorLoggingMock = vi.hoisted(() => vi.fn(async ({ fn }) => await fn()));
 
-vi.mock("openclaw/plugin-sdk/channel-pairing", () => ({
+vi.mock("../plugin-sdk/channel-pairing.js", () => ({
   createChannelPairingChallengeIssuer: createChannelPairingChallengeIssuerMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/conversation-runtime", () => ({
+vi.mock("../pairing/pairing-store.js", () => ({
   upsertChannelPairingRequest: upsertChannelPairingRequestMock,
 }));
 

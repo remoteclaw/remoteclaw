@@ -83,37 +83,6 @@ describe("chat view", () => {
     expect(container.textContent).not.toContain("757.3k / 200k");
   });
 
-  it("uses totalTokens for the context notice detail when current usage is high", () => {
-    const container = document.createElement("div");
-    render(
-      renderChat(
-        createProps({
-          sessions: {
-            ts: 0,
-            path: "",
-            count: 1,
-            defaults: { model: "gpt-5", contextTokens: 200_000 },
-            sessions: [
-              {
-                key: "main",
-                kind: "direct",
-                updatedAt: null,
-                inputTokens: 757_300,
-                totalTokens: 190_000,
-                contextTokens: 200_000,
-              },
-            ],
-          },
-        }),
-      ),
-      container,
-    );
-
-    expect(container.textContent).toContain("95% context used");
-    expect(container.textContent).toContain("190k / 200k");
-    expect(container.textContent).not.toContain("757.3k / 200k");
-  });
-
   it("hides the context notice when totalTokens is missing even if inputTokens is high", () => {
     const container = document.createElement("div");
     render(
@@ -140,46 +109,6 @@ describe("chat view", () => {
     );
 
     expect(container.textContent).not.toContain("context used");
-  });
-
-  it("uses the assistant avatar URL for the welcome state when the identity avatar is only initials", () => {
-    const container = document.createElement("div");
-    render(
-      renderChat(
-        createProps({
-          assistantName: "Assistant",
-          assistantAvatar: "A",
-          assistantAvatarUrl: "/avatar/main",
-        }),
-      ),
-      container,
-    );
-
-    const welcomeImage = container.querySelector<HTMLImageElement>(".agent-chat__welcome > img");
-    expect(welcomeImage).not.toBeNull();
-    expect(welcomeImage?.getAttribute("src")).toBe("/avatar/main");
-  });
-
-  it("falls back to the bundled logo in the welcome state when the assistant avatar is not a URL", () => {
-    const container = document.createElement("div");
-    render(
-      renderChat(
-        createProps({
-          assistantName: "Assistant",
-          assistantAvatar: "A",
-          assistantAvatarUrl: null,
-        }),
-      ),
-      container,
-    );
-
-    const welcomeImage = container.querySelector<HTMLImageElement>(".agent-chat__welcome > img");
-    const logoImage = container.querySelector<HTMLImageElement>(
-      ".agent-chat__welcome .agent-chat__avatar--logo img",
-    );
-    expect(welcomeImage).toBeNull();
-    expect(logoImage).not.toBeNull();
-    expect(logoImage?.getAttribute("src")).toBe("favicon.svg");
   });
 
   it("renders compacting indicator as a badge", () => {

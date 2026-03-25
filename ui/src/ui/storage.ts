@@ -115,7 +115,12 @@ export function loadSettings(): UiSettings {
   };
 
   try {
-    const raw = localStorage.getItem(KEY);
+    // First check for legacy key (no scope), then check for scoped key
+    const scopedKey = settingsKeyForGateway(defaults.gatewayUrl);
+    const raw =
+      storage?.getItem(scopedKey) ??
+      storage?.getItem(SETTINGS_KEY_PREFIX + "default") ??
+      storage?.getItem("openclaw.control.settings.v1");
     if (!raw) {
       return defaults;
     }
@@ -179,6 +184,37 @@ export function saveSettings(next: UiSettings) {
 
 function persistSettings(next: UiSettings) {
   persistSessionToken(next.gatewayUrl, next.token);
+  const storage = getSafeLocalStorage();
+  const scope = normalizeGatewayTokenScope(next.gatewayUrl);
+  const scopedKey = settingsKeyForGateway(next.gatewayUrl);
+  let existingSessionsByGateway: Record<string, ScopedSessionSelection> = {};
+  try {
+    // Try to migrate from legacy key or other scopes
+    const raw =
+      storage?.getItem(scopedKey) ??
+      storage?.getItem(SETTINGS_KEY_PREFIX + "default") ??
+      storage?.getItem("openclaw.control.settings.v1");
+    if (raw) {
+      const parsed = JSON.parse(raw) as PersistedUiSettings;
+      if (parsed.sessionsByGateway && typeof parsed.sessionsByGateway === "object") {
+        existingSessionsByGateway = parsed.sessionsByGateway;
+      }
+    }
+  } catch {
+    // best-effort
+  }
+  const sessionsByGateway = Object.fromEntries(
+    [
+      ...Object.entries(existingSessionsByGateway).filter(([key]) => key !== scope),
+      [
+        scope,
+        {
+          sessionKey: next.sessionKey,
+          lastActiveSessionKey: next.lastActiveSessionKey,
+        },
+      ],
+    ].slice(-MAX_SCOPED_SESSION_ENTRIES),
+  );
   const persisted: PersistedUiSettings = {
     gatewayUrl: next.gatewayUrl,
     sessionKey: next.sessionKey,

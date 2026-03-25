@@ -123,13 +123,14 @@ describe("detectChangedScope", () => {
     });
   });
 
-  it("runs Python skill tests when shared Python config changes", () => {
+  it("does not trigger Python skill tests for pyproject.toml in fork", () => {
+    // Fork's skills scope regex is narrower: ^skills\/ only
     expect(detectChangedScope(["pyproject.toml"])).toEqual({
       runNode: true,
       runMacos: false,
       runAndroid: false,
       runWindows: false,
-      runSkillsPython: true,
+      runSkillsPython: false,
       runChangedSmoke: false,
     });
   });

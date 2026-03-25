@@ -463,7 +463,9 @@ describe("delivery-queue", () => {
       const remaining = await loadPendingDeliveries(tmpDir);
       expect(remaining).toHaveLength(3);
 
-      expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("deferred to next restart"));
+      expect(log.warn).toHaveBeenCalledWith(
+        expect.stringContaining("Recovery time budget exceeded"),
+      );
     });
 
     it("defers entries until backoff becomes eligible", async () => {

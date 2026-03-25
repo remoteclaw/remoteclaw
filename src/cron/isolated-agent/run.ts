@@ -287,6 +287,13 @@ export async function runCronIsolatedAgentTurn(params: {
     ...params.cfg,
     agents: Object.assign({}, params.cfg.agents, { defaults: agentCfg }),
   };
+  let catalog: Awaited<ReturnType<typeof loadModelCatalog>> | undefined;
+  const loadCatalog = async () => {
+    if (!catalog) {
+      catalog = await loadModelCatalog({ config: cfgWithAgentDefaults });
+    }
+    return catalog;
+  };
 
   const baseSessionKey = (params.sessionKey?.trim() || `cron:${params.job.id}`).trim();
   const agentSessionKey = resolveCronAgentSessionKey({ sessionKey: baseSessionKey, agentId });

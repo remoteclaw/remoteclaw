@@ -81,11 +81,9 @@ vi.mock("../daemon/program-args.js", () => ({
   }),
 }));
 
-vi.mock("../config/config.js", () => ({
+vi.mock("../config/config.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../config/config.js")>()),
   readBestEffortConfig: async () => ({}),
-  readConfigFileSnapshot: async () => ({ exists: false, valid: false, config: {}, issues: [] }),
-  resolveGatewayPort: () => 18789,
-  loadConfig: () => ({}),
 }));
 
 vi.mock("../infra/widearea-dns.js", () => ({

@@ -2,7 +2,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { CURRENT_SESSION_VERSION } from "../../config/sessions/constants.js";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
-import { resolveThinkingDefault } from "../../agents/model-selection.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { dispatchInboundMessage } from "../../auto-reply/dispatch.js";
 import { createReplyDispatcher } from "../../auto-reply/reply/reply-dispatcher.js";
@@ -955,24 +954,11 @@ export const chatHandlers: GatewayRequestHandlers = {
         `chat.history omitted oversized payloads placeholders=${placeholderCount} total=${chatHistoryPlaceholderEmitCount}`,
       );
     }
-    let thinkingLevel = entry?.thinkingLevel;
-    if (!thinkingLevel) {
-      const sessionAgentId = resolveSessionAgentId({ sessionKey, config: cfg });
-      const { provider, model } = resolveSessionModelRef(cfg, entry, sessionAgentId);
-      const catalog = await context.loadGatewayModelCatalog();
-      thinkingLevel = resolveThinkingDefault({
-        cfg,
-        provider,
-        model,
-        catalog,
-      });
-    }
     const verboseLevel = entry?.verboseLevel ?? cfg.agents?.defaults?.verboseDefault;
     respond(true, {
       sessionKey,
       sessionId,
       messages: bounded.messages,
-      thinkingLevel,
       verboseLevel,
     });
   },

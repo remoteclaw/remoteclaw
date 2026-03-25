@@ -15,6 +15,12 @@ const createDefaultDepsMock = vi.fn(() => ({ deps: true }));
 const runtime = {
   log: vi.fn(),
   error: vi.fn(),
+  writeStdout: vi.fn((value: string) => {
+    runtime.log(value.endsWith("\n") ? value.slice(0, -1) : value);
+  }),
+  writeJson: vi.fn((value: unknown, space = 2) => {
+    runtime.log(JSON.stringify(value, null, space));
+  }),
   exit: vi.fn(),
 };
 
@@ -174,7 +180,7 @@ describe("registerAgentCommands", () => {
       "--agent",
       "ops",
       "--bind",
-      "matrix-js:ops",
+      "matrix:ops",
       "--bind",
       "telegram",
       "--json",
@@ -182,7 +188,7 @@ describe("registerAgentCommands", () => {
     expect(agentsBindCommandMock).toHaveBeenCalledWith(
       {
         agent: "ops",
-        bind: ["matrix-js:ops", "telegram"],
+        bind: ["matrix:ops", "telegram"],
         json: true,
       },
       runtime,

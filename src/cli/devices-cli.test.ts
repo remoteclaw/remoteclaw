@@ -14,6 +14,12 @@ const withProgress = vi.fn(async (_opts: unknown, fn: () => Promise<unknown>) =>
 const runtime = {
   log: vi.fn(),
   error: vi.fn(),
+  writeStdout: vi.fn((value: string) => {
+    runtime.log(value.endsWith("\n") ? value.slice(0, -1) : value);
+  }),
+  writeJson: vi.fn((value: unknown, space = 2) => {
+    runtime.log(JSON.stringify(value, null, space > 0 ? space : undefined));
+  }),
   exit: vi.fn(),
 };
 
@@ -32,7 +38,8 @@ vi.mock("../infra/device-pairing.js", () => ({
   summarizeDeviceTokens,
 }));
 
-vi.mock("../runtime.js", () => ({
+vi.mock("../runtime.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../runtime.js")>()),
   defaultRuntime: runtime,
 }));
 

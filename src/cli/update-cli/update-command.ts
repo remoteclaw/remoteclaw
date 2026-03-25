@@ -60,6 +60,13 @@ import { suppressDeprecations } from "./suppress-deprecations.js";
 
 const CLI_NAME = resolveCliName();
 const SERVICE_REFRESH_TIMEOUT_MS = 60_000;
+const SERVICE_REFRESH_PATH_ENV_KEYS = [
+  "OPENCLAW_HOME",
+  "OPENCLAW_STATE_DIR",
+  "CLAWDBOT_STATE_DIR",
+  "OPENCLAW_CONFIG_PATH",
+  "CLAWDBOT_CONFIG_PATH",
+] as const;
 
 const UPDATE_QUIPS = [
   "Fresh code, same crab. Miss me?",
@@ -107,6 +114,25 @@ function formatCommandFailure(stdout: string, stderr: string): string {
   return detail.split("\n").slice(-3).join("\n");
 }
 
+function resolveServiceRefreshEnv(
+  env: NodeJS.ProcessEnv,
+  invocationCwd: string = process.cwd(),
+): NodeJS.ProcessEnv {
+  const resolvedEnv: NodeJS.ProcessEnv = { ...env };
+  for (const key of SERVICE_REFRESH_PATH_ENV_KEYS) {
+    const rawValue = resolvedEnv[key]?.trim();
+    if (!rawValue) {
+      continue;
+    }
+    if (rawValue.startsWith("~") || path.isAbsolute(rawValue) || path.win32.isAbsolute(rawValue)) {
+      resolvedEnv[key] = rawValue;
+      continue;
+    }
+    resolvedEnv[key] = path.resolve(invocationCwd, rawValue);
+  }
+  return resolvedEnv;
+}
+
 type UpdateDryRunPreview = {
   dryRun: true;
   root: string;
@@ -125,7 +151,7 @@ type UpdateDryRunPreview = {
 
 function printDryRunPreview(preview: UpdateDryRunPreview, jsonMode: boolean): void {
   if (jsonMode) {
-    defaultRuntime.log(JSON.stringify(preview, null, 2));
+    defaultRuntime.writeJson(preview);
     return;
   }
 
@@ -175,6 +201,8 @@ async function refreshGatewayServiceEnv(params: {
       continue;
     }
     const res = await runCommandWithTimeout([resolveNodeRunner(), candidate, ...args], {
+      cwd: params.result.root,
+      env: resolveServiceRefreshEnv(process.env),
       timeoutMs: SERVICE_REFRESH_TIMEOUT_MS,
     });
     if (res.code === 0) {
@@ -260,7 +288,6 @@ async function runPackageInstallUpdate(params: {
   const packageName =
     (pkgRoot ? await readPackageName(pkgRoot) : await readPackageName(params.root)) ??
     DEFAULT_PACKAGE_NAME;
-
   const beforeVersion = pkgRoot ? await readPackageVersion(pkgRoot) : null;
   if (pkgRoot) {
     await cleanupGlobalRenameDirs({

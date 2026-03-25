@@ -35,6 +35,7 @@ import {
   isMSTeamsMutableAllowEntry,
   isMattermostMutableAllowEntry,
   isSlackMutableAllowEntry,
+  isZalouserMutableGroupEntry,
 } from "../security/mutable-allowlist-detectors.js";
 import { listTelegramAccountIds, resolveTelegramAccount } from "../telegram/accounts.js";
 import { note } from "../terminal/note.js";
@@ -999,6 +1000,27 @@ function scanMutableAllowlistEntries(cfg: RemoteClawConfig): MutableAllowlistHit
     }
   }
 
+  for (const scope of collectProviderDangerousNameMatchingScopes(cfg, "zalouser")) {
+    if (scope.dangerousNameMatchingEnabled) {
+      continue;
+    }
+    const groups = asObjectRecord(scope.account.groups);
+    if (!groups) {
+      continue;
+    }
+    for (const entry of Object.keys(groups)) {
+      if (!isZalouserMutableGroupEntry(entry)) {
+        continue;
+      }
+      hits.push({
+        channel: "zalouser",
+        path: `${scope.prefix}.groups`,
+        entry,
+        dangerousFlagPath: scope.dangerousFlagPath,
+      });
+    }
+  }
+
   return hits;
 }
 
@@ -1327,6 +1349,16 @@ function detectEmptyAllowlistPolicy(cfg: RemoteClawConfig): string[] {
     );
   };
 
+  const hasConfiguredGroups = (
+    account: Record<string, unknown>,
+    parent?: Record<string, unknown>,
+  ): boolean => {
+    const groups =
+      (account.groups as Record<string, unknown> | undefined) ??
+      (parent?.groups as Record<string, unknown> | undefined);
+    return Boolean(groups) && Object.keys(groups ?? {}).length > 0;
+  };
+
   const checkAccount = (
     account: Record<string, unknown>,
     prefix: string,
@@ -1369,6 +1401,11 @@ function detectEmptyAllowlistPolicy(cfg: RemoteClawConfig): string[] {
       undefined;
 
     if (groupPolicy === "allowlist" && usesSenderBasedGroupAllowlist(channelName)) {
+      if (channelName === "telegram" && !hasConfiguredGroups(account, parent)) {
+        // Fresh Telegram installs default to fail-closed group access until the
+        // operator explicitly configures allowed groups or sender filters.
+        return;
+      }
       const rawGroupAllowFrom =
         (account.groupAllowFrom as Array<string | number> | undefined) ??
         (parent?.groupAllowFrom as Array<string | number> | undefined);

@@ -1,7 +1,9 @@
 import type { Command } from "commander";
 import { setVerbose } from "../../globals.js";
 import { isTruthyEnvValue } from "../../infra/env.js";
+import { routeLogsToStderr } from "../../logging/console.js";
 import type { LogLevel } from "../../logging/levels.js";
+import { loggingState } from "../../logging/state.js";
 import { defaultRuntime } from "../../runtime.js";
 import {
   getCommandPathWithRootOptions,
@@ -66,6 +68,10 @@ function loadPluginRegistryModule() {
   return pluginRegistryModulePromise;
 }
 
+function resolvePluginRegistryScope(commandPath: string[]): "channels" | "all" {
+  return commandPath[0] === "status" || commandPath[0] === "health" ? "channels" : "all";
+}
+
 function getRootCommand(command: Command): Command {
   let current = command;
   while (current.parent) {
@@ -105,6 +111,9 @@ export function registerPreActionHooks(program: Command, programVersion: string)
       return;
     }
     const commandPath = getCommandPathWithRootOptions(argv, 2);
+    if (isJsonOutputMode(commandPath, argv)) {
+      routeLogsToStderr();
+    }
     const hideBanner =
       isTruthyEnvValue(process.env.REMOTECLAW_HIDE_BANNER) ||
       commandPath[0] === "update" ||
@@ -132,10 +141,20 @@ export function registerPreActionHooks(program: Command, programVersion: string)
       commandPath,
       ...(suppressDoctorStdout ? { suppressDoctorStdout: true } : {}),
     });
-    // Load plugins for commands that need channel access
+    // Load plugins for commands that need channel access.
+    // When --json output is active, temporarily route logs to stderr so plugin
+    // registration messages don't corrupt the JSON payload on stdout.
     if (PLUGIN_REQUIRED_COMMANDS.has(commandPath[0])) {
       const { ensurePluginRegistryLoaded } = await loadPluginRegistryModule();
-      ensurePluginRegistryLoaded();
+      const prev = loggingState.forceConsoleToStderr;
+      if (suppressDoctorStdout) {
+        loggingState.forceConsoleToStderr = true;
+      }
+      try {
+        ensurePluginRegistryLoaded({ scope: resolvePluginRegistryScope(commandPath) });
+      } finally {
+        loggingState.forceConsoleToStderr = prev;
+      }
     }
   });
 }

@@ -30,6 +30,7 @@ import {
   agentCommand,
   cronIsolatedRun,
   piSdkMock,
+  sendWhatsAppMock,
   sessionStoreSaveDelayMs,
   setTestConfigRoot,
   testIsNixMode,
@@ -150,15 +151,35 @@ async function resetGatewayTestState(options: { uniqueConfigRoot: boolean }) {
     throw new Error("resetGatewayTestState called before temp home was initialized");
   }
   applyGatewaySkipEnv();
+  const stateDir = process.env.REMOTECLAW_STATE_DIR;
+  if (stateDir) {
+    await fs.rm(stateDir, {
+      recursive: true,
+      force: true,
+      maxRetries: 20,
+      retryDelay: 25,
+    });
+    await fs.mkdir(stateDir, { recursive: true });
+  }
   if (options.uniqueConfigRoot) {
     const suiteRoot = path.join(tempHome, ".remoteclaw-test-suite");
     await fs.mkdir(suiteRoot, { recursive: true });
     tempConfigRoot = path.join(suiteRoot, `case-${suiteConfigRootSeq++}`);
-    await fs.rm(tempConfigRoot, { recursive: true, force: true });
+    await fs.rm(tempConfigRoot, {
+      recursive: true,
+      force: true,
+      maxRetries: 20,
+      retryDelay: 25,
+    });
     await fs.mkdir(tempConfigRoot, { recursive: true });
   } else {
     tempConfigRoot = path.join(tempHome, ".remoteclaw-test");
-    await fs.rm(tempConfigRoot, { recursive: true, force: true });
+    await fs.rm(tempConfigRoot, {
+      recursive: true,
+      force: true,
+      maxRetries: 20,
+      retryDelay: 25,
+    });
     await fs.mkdir(tempConfigRoot, { recursive: true });
   }
   setTestConfigRoot(tempConfigRoot);
@@ -188,6 +209,8 @@ async function resetGatewayTestState(options: { uniqueConfigRoot: boolean }) {
   testIsNixMode.value = false;
   cronIsolatedRun.mockClear();
   agentCommand.mockClear();
+  sendWhatsAppMock.mockReset();
+  sendWhatsAppMock.mockResolvedValue({ messageId: "msg-1", toJid: "jid-1" });
   drainSystemEvents(resolveMainSessionKeyFromConfig());
   resetAgentRunContextForTest();
   piSdkMock.enabled = false;

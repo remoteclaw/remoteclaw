@@ -9,7 +9,7 @@ import {
 } from "../infra/device-pairing.js";
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import { defaultRuntime } from "../runtime.js";
-import { renderTable } from "../terminal/table.js";
+import { getTerminalTableWidth, renderTable } from "../terminal/table.js";
 import { theme } from "../terminal/theme.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import { withProgress } from "./progress.js";
@@ -220,11 +220,11 @@ export function registerDevicesCli(program: Command) {
       .action(async (opts: DevicesRpcOpts) => {
         const list = await listPairingWithFallback(opts);
         if (opts.json) {
-          defaultRuntime.log(JSON.stringify(list, null, 2));
+          defaultRuntime.writeJson(list);
           return;
         }
         if (list.pending?.length) {
-          const tableWidth = Math.max(60, (process.stdout.columns ?? 120) - 1);
+          const tableWidth = getTerminalTableWidth();
           defaultRuntime.log(
             `${theme.heading("Pending")} ${theme.muted(`(${list.pending.length})`)}`,
           );
@@ -251,7 +251,7 @@ export function registerDevicesCli(program: Command) {
           );
         }
         if (list.paired?.length) {
-          const tableWidth = Math.max(60, (process.stdout.columns ?? 120) - 1);
+          const tableWidth = getTerminalTableWidth();
           defaultRuntime.log(
             `${theme.heading("Paired")} ${theme.muted(`(${list.paired.length})`)}`,
           );
@@ -295,7 +295,7 @@ export function registerDevicesCli(program: Command) {
         }
         const result = await callGatewayCli("device.pair.remove", opts, { deviceId: trimmed });
         if (opts.json) {
-          defaultRuntime.log(JSON.stringify(result, null, 2));
+          defaultRuntime.writeJson(result);
           return;
         }
         defaultRuntime.log(`${theme.warn("Removed")} ${theme.command(trimmed)}`);
@@ -338,16 +338,10 @@ export function registerDevicesCli(program: Command) {
           }
         }
         if (opts.json) {
-          defaultRuntime.log(
-            JSON.stringify(
-              {
-                removedDevices: removedDeviceIds,
-                rejectedPending: rejectedRequestIds,
-              },
-              null,
-              2,
-            ),
-          );
+          defaultRuntime.writeJson({
+            removedDevices: removedDeviceIds,
+            rejectedPending: rejectedRequestIds,
+          });
           return;
         }
         defaultRuntime.log(
@@ -385,7 +379,7 @@ export function registerDevicesCli(program: Command) {
           return;
         }
         if (opts.json) {
-          defaultRuntime.log(JSON.stringify(result, null, 2));
+          defaultRuntime.writeJson(result);
           return;
         }
         const deviceId = (result as { device?: { deviceId?: string } })?.device?.deviceId;
@@ -403,7 +397,7 @@ export function registerDevicesCli(program: Command) {
       .action(async (requestId: string, opts: DevicesRpcOpts) => {
         const result = await callGatewayCli("device.pair.reject", opts, { requestId });
         if (opts.json) {
-          defaultRuntime.log(JSON.stringify(result, null, 2));
+          defaultRuntime.writeJson(result);
           return;
         }
         const deviceId = (result as { deviceId?: string })?.deviceId;
@@ -428,7 +422,7 @@ export function registerDevicesCli(program: Command) {
           role: required.role,
           scopes: Array.isArray(opts.scope) ? opts.scope : undefined,
         });
-        defaultRuntime.log(JSON.stringify(result, null, 2));
+        defaultRuntime.writeJson(result);
       }),
   );
 
@@ -447,7 +441,7 @@ export function registerDevicesCli(program: Command) {
           deviceId: required.deviceId,
           role: required.role,
         });
-        defaultRuntime.log(JSON.stringify(result, null, 2));
+        defaultRuntime.writeJson(result);
       }),
   );
 }

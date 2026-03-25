@@ -13,9 +13,10 @@ import {
   resolveSessionModelRef,
 } from "../gateway/session-utils.js";
 import { buildChannelSummary } from "../infra/channel-summary.js";
-import { resolveHeartbeatSummaryForAgent } from "../infra/heartbeat-runner.js";
+import { resolveHeartbeatSummaryForAgent } from "../infra/heartbeat-summary.js";
 import { peekSystemEvents } from "../infra/system-events.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
+import { resolveRuntimeServiceVersion } from "../version.js";
 import { resolveLinkChannelContext } from "./status.link-channel.js";
 import type { HeartbeatStatus, SessionStatus, StatusSummary } from "./status.types.js";
 
@@ -168,6 +169,7 @@ export async function getStatusSummary(
   const totalSessions = allSessions.length;
 
   const summary: StatusSummary = {
+    runtimeVersion: resolveRuntimeServiceVersion(process.env),
     linkChannel: linkContext
       ? {
           id: linkContext.plugin.id,

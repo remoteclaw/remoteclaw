@@ -1,16 +1,31 @@
+import { listPotentialConfiguredChannelIds } from "../channels/config-presence.js";
 import type { RemoteClawConfig } from "../config/config.js";
+import { loadPluginManifestRegistry } from "./manifest-registry.js";
 
-/**
- * Resolve channel plugin IDs that should defer their full load until after
- * the gateway starts listening.
- *
- * Fork stub — upstream uses manifest-registry analysis; this returns an empty
- * list since the fork has not adopted setup-runtime channel plugins.
- */
-export function resolveConfiguredDeferredChannelPluginIds(_params: {
+export function resolveChannelPluginIds(params: {
   config: RemoteClawConfig;
-  workspaceDir: string;
+  workspaceDir?: string;
   env: NodeJS.ProcessEnv;
 }): string[] {
-  return [];
+  return loadPluginManifestRegistry({
+    config: params.config,
+    workspaceDir: params.workspaceDir,
+    env: params.env,
+  })
+    .plugins.filter((plugin) => plugin.channels.length > 0)
+    .map((plugin) => plugin.id);
+}
+
+export function resolveConfiguredChannelPluginIds(params: {
+  config: RemoteClawConfig;
+  workspaceDir?: string;
+  env: NodeJS.ProcessEnv;
+}): string[] {
+  const configuredChannelIds = new Set(
+    listPotentialConfiguredChannelIds(params.config, params.env).map((id) => id.trim()),
+  );
+  if (configuredChannelIds.size === 0) {
+    return [];
+  }
+  return resolveChannelPluginIds(params).filter((pluginId) => configuredChannelIds.has(pluginId));
 }

@@ -23,6 +23,7 @@ import type {
   GatewayServiceEnvArgs,
   GatewayServiceInstallArgs,
   GatewayServiceManageArgs,
+  GatewayServiceRestartResult,
 } from "./service-types.js";
 
 const LAUNCH_AGENT_DIR_MODE = 0o755;
@@ -471,7 +472,7 @@ export async function installLaunchAgent({
 export async function restartLaunchAgent({
   stdout,
   env,
-}: GatewayServiceControlArgs): Promise<void> {
+}: GatewayServiceControlArgs): Promise<GatewayServiceRestartResult> {
   const serviceEnv = env ?? (process.env as GatewayServiceEnv);
   const domain = resolveGuiDomain();
   const label = resolveLaunchAgentLabel({ env: serviceEnv });
@@ -522,4 +523,5 @@ export async function restartLaunchAgent({
       throw err;
     }
   }
+  return { outcome: "completed" };
 }

@@ -10,6 +10,7 @@ import { resolveNativeCommandsEnabled } from "../../config/commands.js";
 import { danger, logVerbose } from "../../globals.js";
 import { chunkItems } from "../../utils/chunk-items.js";
 import type { ResolvedSlackAccount } from "../accounts.js";
+import { truncateSlackText } from "../truncate.js";
 import { resolveSlackAllowListMatch, resolveSlackUserAllowed } from "./allow-list.js";
 import { resolveSlackEffectiveAllowFrom } from "./auth.js";
 import { resolveSlackChannelConfig, type SlackChannelConfigResolved } from "./channel-config.js";
@@ -52,17 +53,6 @@ function loadSlashDispatchRuntime() {
 
 type EncodedMenuChoice = SlackExternalArgMenuChoice;
 const slackExternalArgMenuStore = createSlackExternalArgMenuStore();
-
-function truncatePlainText(value: string, max: number): string {
-  const trimmed = value.trim();
-  if (trimmed.length <= max) {
-    return trimmed;
-  }
-  if (max <= 1) {
-    return trimmed.slice(0, max);
-  }
-  return `${trimmed.slice(0, max - 1)}…`;
-}
 
 function buildSlackArgMenuConfirm(params: { command: string; arg: string }) {
   const command = escapeSlackMrkdwn(params.command);
@@ -246,12 +236,12 @@ function buildSlackCommandArgMenuBlocks(params: {
               ],
             }),
           );
-  const headerText = truncatePlainText(
+  const headerText = truncateSlackText(
     `/${params.command}: choose ${params.arg}`,
     SLACK_HEADER_TEXT_MAX,
   );
-  const sectionText = truncatePlainText(params.title, 3000);
-  const contextText = truncatePlainText(
+  const sectionText = truncateSlackText(params.title, 3000);
+  const contextText = truncateSlackText(
     `Select one option to continue /${params.command} (${params.arg})`,
     3000,
   );

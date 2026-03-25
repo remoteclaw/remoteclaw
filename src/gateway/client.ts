@@ -86,7 +86,7 @@ export type GatewayClientOptions = {
   commands?: string[];
   permissions?: Record<string, boolean>;
   pathEnv?: string;
-  deviceIdentity?: DeviceIdentity;
+  deviceIdentity?: DeviceIdentity | null;
   minProtocol?: number;
   maxProtocol?: number;
   tlsFingerprint?: string;
@@ -132,7 +132,10 @@ export class GatewayClient {
   constructor(opts: GatewayClientOptions) {
     this.opts = {
       ...opts,
-      deviceIdentity: opts.deviceIdentity ?? loadOrCreateDeviceIdentity(),
+      deviceIdentity:
+        opts.deviceIdentity === null
+          ? undefined
+          : (opts.deviceIdentity ?? loadOrCreateDeviceIdentity()),
     };
     this.requestTimeoutMs =
       typeof opts.requestTimeoutMs === "number" && Number.isFinite(opts.requestTimeoutMs)
@@ -516,6 +519,7 @@ export class GatewayClient {
     try {
       const parsed = JSON.parse(raw);
       if (validateEventFrame(parsed)) {
+        this.lastTick = Date.now();
         const evt = parsed;
         if (evt.event === "connect.challenge") {
           const payload = evt.payload as { nonce?: unknown } | undefined;
@@ -543,6 +547,7 @@ export class GatewayClient {
         return;
       }
       if (validateResponseFrame(parsed)) {
+        this.lastTick = Date.now();
         const pending = this.pending.get(parsed.id);
         if (!pending) {
           return;

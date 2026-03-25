@@ -51,7 +51,8 @@ vi.mock("../globals.js", () => ({
   setVerbose: (enabled: boolean) => setVerbose(enabled),
 }));
 
-vi.mock("../runtime.js", () => ({
+vi.mock("../runtime.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../runtime.js")>()),
   defaultRuntime,
 }));
 
@@ -80,7 +81,21 @@ vi.mock("../daemon/program-args.js", () => ({
   }),
 }));
 
-vi.mock("../infra/bonjour-discovery.js", () => ({
+vi.mock("../config/config.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../config/config.js")>()),
+  readBestEffortConfig: async () => ({}),
+}));
+
+vi.mock("./progress.js", () => ({
+  withProgress: async (_opts: unknown, fn: () => Promise<unknown>) => fn(),
+}));
+
+vi.mock("../infra/widearea-dns.js", () => ({
+  resolveWideAreaDiscoveryDomain: () => null,
+}));
+
+vi.mock("../infra/bonjour-discovery.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../infra/bonjour-discovery.js")>()),
   discoverGatewayBeacons: (opts: unknown) => discoverGatewayBeacons(opts),
 }));
 
@@ -146,6 +161,7 @@ describe("gateway-cli coverage", () => {
         displayName: "Studio",
         domain: "remoteclaw.internal.",
         host: "studio.remoteclaw.internal",
+        port: 18789,
         lanHost: "studio.local",
         tailnetDns: "studio.tailnet.ts.net",
         gatewayPort: 18789,

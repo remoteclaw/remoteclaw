@@ -22,6 +22,12 @@ const formatPortDiagnostics = vi.fn();
 const pathExists = vi.fn();
 const syncPluginsForUpdateChannel = vi.fn();
 const updateNpmInstalledPlugins = vi.fn();
+const runtimeLog = vi.fn();
+const runtimeError = vi.fn();
+const runtimeExit = vi.fn();
+const runtimeWriteJson = vi.fn((value: unknown, space = 2) =>
+  runtimeLog(JSON.stringify(value, null, space > 0 ? space : undefined)),
+);
 
 vi.mock("@clack/prompts", () => ({
   confirm,
@@ -123,9 +129,13 @@ vi.mock("./daemon-cli.js", () => ({
 // Mock the runtime
 vi.mock("../runtime.js", () => ({
   defaultRuntime: {
-    log: vi.fn(),
-    error: vi.fn(),
-    exit: vi.fn(),
+    log: runtimeLog,
+    error: runtimeError,
+    writeStdout: vi.fn((value: string) =>
+      runtimeLog(value.endsWith("\n") ? value.slice(0, -1) : value),
+    ),
+    writeJson: runtimeWriteJson,
+    exit: runtimeExit,
   },
 }));
 
@@ -316,20 +326,48 @@ describe("update-cli", () => {
     setStdoutTty(false);
   });
 
-  it("updateCommand --dry-run previews without mutating", async () => {
-    vi.mocked(defaultRuntime.log).mockClear();
-    serviceLoaded.mockResolvedValue(true);
+  it("updateCommand dry-run previews without mutating and bypasses downgrade confirmation", async () => {
+    const cases = [
+      {
+        name: "preview mode",
+        run: async () => {
+          vi.mocked(defaultRuntime.log).mockClear();
+          serviceLoaded.mockResolvedValue(true);
+          await updateCommand({ dryRun: true, channel: "beta" });
+        },
+        assert: () => {
+          expect(writeConfigFile).not.toHaveBeenCalled();
+          expect(runCommandWithTimeout).not.toHaveBeenCalled();
+          expect(runDaemonInstall).not.toHaveBeenCalled();
+          expect(runRestartScript).not.toHaveBeenCalled();
+          expect(runDaemonRestart).not.toHaveBeenCalled();
 
-    await updateCommand({ dryRun: true, channel: "beta" });
+          const logs = vi.mocked(defaultRuntime.log).mock.calls.map((call) => String(call[0]));
+          expect(logs.join("\n")).toContain("Update dry-run");
+          expect(logs.join("\n")).toContain("No changes were applied.");
+        },
+      },
+      {
+        name: "downgrade bypass",
+        run: async () => {
+          await setupNonInteractiveDowngrade();
+          vi.mocked(defaultRuntime.exit).mockClear();
+          await updateCommand({ dryRun: true });
+        },
+        assert: () => {
+          expect(vi.mocked(defaultRuntime.exit).mock.calls.some((call) => call[0] === 1)).toBe(
+            false,
+          );
+          expect(runCommandWithTimeout).not.toHaveBeenCalled();
+        },
+      },
+    ] as const;
 
-    expect(writeConfigFile).not.toHaveBeenCalled();
-    expect(runDaemonInstall).not.toHaveBeenCalled();
-    expect(runRestartScript).not.toHaveBeenCalled();
-    expect(runDaemonRestart).not.toHaveBeenCalled();
-
-    const logs = vi.mocked(defaultRuntime.log).mock.calls.map((call) => String(call[0]));
-    expect(logs.join("\n")).toContain("Update dry-run");
-    expect(logs.join("\n")).toContain("No changes were applied.");
+    for (const testCase of cases) {
+      vi.clearAllMocks();
+      await testCase.run();
+      testCase.assert();
+    }
   });
 
   it("updateStatusCommand prints table output", async () => {
@@ -456,7 +494,7 @@ describe("update-cli", () => {
 
     expect(runCommandWithTimeout).toHaveBeenCalledWith(
       [expect.stringMatching(/node/), entryPath, "gateway", "install", "--force"],
-      expect.objectContaining({ timeoutMs: 60_000 }),
+      expect.objectContaining({ cwd: root, timeoutMs: 60_000 }),
     );
     expect(runDaemonInstall).not.toHaveBeenCalled();
     expect(runRestartScript).toHaveBeenCalled();
@@ -579,16 +617,6 @@ describe("update-cli", () => {
     );
     // When shouldRunUpdate is true, the command proceeds past downgrade check
     expect(vi.mocked(runCommandWithTimeout).mock.calls.length > 0).toBe(shouldRunUpdate);
-  });
-
-  it("dry-run bypasses downgrade confirmation checks in non-interactive mode", async () => {
-    await setupNonInteractiveDowngrade();
-    vi.mocked(defaultRuntime.exit).mockClear();
-
-    await updateCommand({ dryRun: true });
-
-    expect(vi.mocked(defaultRuntime.exit).mock.calls.some((call) => call[0] === 1)).toBe(false);
-    expect(runCommandWithTimeout).not.toHaveBeenCalled();
   });
 
   it("updateWizardCommand requires a TTY", async () => {

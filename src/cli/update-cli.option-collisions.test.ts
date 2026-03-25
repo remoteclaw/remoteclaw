@@ -9,6 +9,12 @@ const updateWizardCommand = vi.fn(async (_opts: unknown) => {});
 const defaultRuntime = {
   log: vi.fn(),
   error: vi.fn(),
+  writeStdout: vi.fn((value: string) => {
+    defaultRuntime.log(value.endsWith("\n") ? value.slice(0, -1) : value);
+  }),
+  writeJson: vi.fn((value: unknown, space = 2) => {
+    defaultRuntime.log(JSON.stringify(value, null, space));
+  }),
   exit: vi.fn(),
 };
 
@@ -41,33 +47,41 @@ describe("update cli option collisions", () => {
     updateWizardCommand.mockClear();
     defaultRuntime.log.mockClear();
     defaultRuntime.error.mockClear();
+    defaultRuntime.writeStdout.mockClear();
+    defaultRuntime.writeJson.mockClear();
     defaultRuntime.exit.mockClear();
   });
 
-  it("forwards parent-captured --json/--timeout to `update status`", async () => {
-    await runRegisteredCli({
-      register: registerUpdateCli as (program: Command) => void,
+  it.each([
+    {
+      name: "forwards parent-captured --json/--timeout to `update status`",
       argv: ["update", "status", "--json", "--timeout", "9"],
-    });
-
-    expect(updateStatusCommand).toHaveBeenCalledWith(
-      expect.objectContaining({
-        json: true,
-        timeout: "9",
-      }),
-    );
-  });
-
-  it("forwards parent-captured --timeout to `update wizard`", async () => {
+      assert: () => {
+        expect(updateStatusCommand).toHaveBeenCalledWith(
+          expect.objectContaining({
+            json: true,
+            timeout: "9",
+          }),
+        );
+      },
+    },
+    {
+      name: "forwards parent-captured --timeout to `update wizard`",
+      argv: ["update", "wizard", "--timeout", "13"],
+      assert: () => {
+        expect(updateWizardCommand).toHaveBeenCalledWith(
+          expect.objectContaining({
+            timeout: "13",
+          }),
+        );
+      },
+    },
+  ])("$name", async ({ argv, assert }) => {
     await runRegisteredCli({
       register: registerUpdateCli as (program: Command) => void,
-      argv: ["update", "wizard", "--timeout", "13"],
+      argv,
     });
 
-    expect(updateWizardCommand).toHaveBeenCalledWith(
-      expect.objectContaining({
-        timeout: "13",
-      }),
-    );
+    assert();
   });
 });

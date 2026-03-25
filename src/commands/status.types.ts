@@ -31,6 +31,7 @@ export type HeartbeatStatus = {
 };
 
 export type StatusSummary = {
+  runtimeVersion?: string | null;
   linkChannel?: {
     id: ChannelId;
     label: string;

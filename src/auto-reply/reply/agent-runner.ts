@@ -38,13 +38,14 @@ import {
   appendUnscheduledReminderNote,
   hasUnbackedReminderCommitment,
 } from "./agent-runner-reminder-guard.js";
-import { appendUsageLine, formatResponseUsageLine } from "./agent-runner-utils.js";
+import { appendUsageLine, formatResponseUsageLine } from "./agent-runner-usage-line.js";
 import { createAudioAsVoiceBuffer, createBlockReplyPipeline } from "./block-reply-pipeline.js";
 import { resolveBlockStreamingCoalescing } from "./block-streaming.js";
 import { createFollowupRunner } from "./followup-runner.js";
 import { resolveOriginMessageProvider, resolveOriginMessageTo } from "./origin-routing.js";
 import { resolveActiveRunQueueAction } from "./queue-policy.js";
-import { enqueueFollowupRun, type FollowupRun, type QueueSettings } from "./queue.js";
+import { enqueueFollowupRun } from "./queue/enqueue.js";
+import type { FollowupRun, QueueSettings } from "./queue/types.js";
 import { createReplyMediaPathNormalizer } from "./reply-media-paths.js";
 import { createReplyToModeFilterForChannel, resolveReplyToMode } from "./reply-threading.js";
 import { persistRunSessionUsage } from "./session-run-accounting.js";
@@ -272,6 +273,10 @@ export async function runReplyAgent(params: {
       updatedAt: Date.now(),
       systemSent: false,
       abortedLastRun: false,
+      modelProvider: undefined,
+      model: undefined,
+      contextTokens: undefined,
+      systemPromptReport: undefined,
       fallbackNoticeSelectedModel: undefined,
       fallbackNoticeActiveModel: undefined,
       fallbackNoticeReason: undefined,

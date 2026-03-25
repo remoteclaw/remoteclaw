@@ -12,6 +12,8 @@ const runtimeLogs: string[] = [];
 const defaultRuntime = {
   log: (message: string) => runtimeLogs.push(message),
   error: vi.fn(),
+  writeStdout: (value: string) => runtimeLogs.push(value),
+  writeJson: (value: unknown, space = 2) => runtimeLogs.push(JSON.stringify(value, null, space)),
   exit: (code: number) => {
     throw new Error(`__exit__:${code}`);
   },
@@ -40,11 +42,27 @@ vi.mock("../../runtime.js", () => ({
 }));
 
 let runServiceRestart: typeof import("./lifecycle-core.js").runServiceRestart;
+let runServiceStart: typeof import("./lifecycle-core.js").runServiceStart;
 let runServiceStop: typeof import("./lifecycle-core.js").runServiceStop;
+
+function readJsonLog<T extends object>() {
+  const jsonLine = runtimeLogs.find((line) => line.trim().startsWith("{"));
+  return JSON.parse(jsonLine ?? "{}") as T;
+}
+
+function createServiceRunArgs(checkTokenDrift?: boolean) {
+  return {
+    serviceNoun: "Gateway",
+    service,
+    renderStartHints: () => [],
+    opts: { json: true as const },
+    ...(checkTokenDrift ? { checkTokenDrift } : {}),
+  };
+}
 
 describe("runServiceRestart token drift", () => {
   beforeAll(async () => {
-    ({ runServiceRestart, runServiceStop } = await import("./lifecycle-core.js"));
+    ({ runServiceRestart, runServiceStart, runServiceStop } = await import("./lifecycle-core.js"));
   });
 
   beforeEach(() => {
@@ -64,7 +82,7 @@ describe("runServiceRestart token drift", () => {
     service.readCommand.mockResolvedValue({
       environment: { REMOTECLAW_GATEWAY_TOKEN: "service-token" },
     });
-    service.restart.mockResolvedValue(undefined);
+    service.restart.mockResolvedValue({ outcome: "completed" });
     vi.unstubAllEnvs();
     vi.stubEnv("REMOTECLAW_GATEWAY_TOKEN", "");
     vi.stubEnv("CLAWDBOT_GATEWAY_TOKEN", "");
@@ -73,17 +91,10 @@ describe("runServiceRestart token drift", () => {
   });
 
   it("emits drift warning when enabled", async () => {
-    await runServiceRestart({
-      serviceNoun: "Gateway",
-      service,
-      renderStartHints: () => [],
-      opts: { json: true },
-      checkTokenDrift: true,
-    });
+    await runServiceRestart(createServiceRunArgs(true));
 
     expect(loadConfig).toHaveBeenCalledTimes(1);
-    const jsonLine = runtimeLogs.find((line) => line.trim().startsWith("{"));
-    const payload = JSON.parse(jsonLine ?? "{}") as { warnings?: string[] };
+    const payload = readJsonLog<{ warnings?: string[] }>();
     expect(payload.warnings).toEqual(
       expect.arrayContaining([expect.stringContaining("gateway install --force")]),
     );
@@ -102,16 +113,9 @@ describe("runServiceRestart token drift", () => {
     });
     vi.stubEnv("REMOTECLAW_GATEWAY_TOKEN", "env-token");
 
-    await runServiceRestart({
-      serviceNoun: "Gateway",
-      service,
-      renderStartHints: () => [],
-      opts: { json: true },
-      checkTokenDrift: true,
-    });
+    await runServiceRestart(createServiceRunArgs(true));
 
-    const jsonLine = runtimeLogs.find((line) => line.trim().startsWith("{"));
-    const payload = JSON.parse(jsonLine ?? "{}") as { warnings?: string[] };
+    const payload = readJsonLog<{ warnings?: string[] }>();
     expect(payload.warnings).toEqual(
       expect.arrayContaining([expect.stringContaining("gateway install --force")]),
     );
@@ -127,8 +131,7 @@ describe("runServiceRestart token drift", () => {
 
     expect(loadConfig).not.toHaveBeenCalled();
     expect(service.readCommand).not.toHaveBeenCalled();
-    const jsonLine = runtimeLogs.find((line) => line.trim().startsWith("{"));
-    const payload = JSON.parse(jsonLine ?? "{}") as { warnings?: string[] };
+    const payload = readJsonLog<{ warnings?: string[] }>();
     expect(payload.warnings).toBeUndefined();
   });
 
@@ -145,8 +148,7 @@ describe("runServiceRestart token drift", () => {
       }),
     });
 
-    const jsonLine = runtimeLogs.find((line) => line.trim().startsWith("{"));
-    const payload = JSON.parse(jsonLine ?? "{}") as { result?: string; message?: string };
+    const payload = readJsonLog<{ result?: string; message?: string }>();
     expect(payload.result).toBe("stopped");
     expect(payload.message).toContain("unmanaged process");
     expect(service.stop).not.toHaveBeenCalled();
@@ -171,9 +173,43 @@ describe("runServiceRestart token drift", () => {
     expect(postRestartCheck).toHaveBeenCalledTimes(1);
     expect(service.restart).not.toHaveBeenCalled();
     expect(service.readCommand).not.toHaveBeenCalled();
-    const jsonLine = runtimeLogs.find((line) => line.trim().startsWith("{"));
-    const payload = JSON.parse(jsonLine ?? "{}") as { result?: string; message?: string };
+    const payload = readJsonLog<{ result?: string; message?: string }>();
     expect(payload.result).toBe("restarted");
     expect(payload.message).toContain("unmanaged process");
+  });
+
+  it("skips restart health checks when restart is only scheduled", async () => {
+    const postRestartCheck = vi.fn(async () => {});
+    service.restart.mockResolvedValue({ outcome: "scheduled" });
+
+    const result = await runServiceRestart({
+      serviceNoun: "Gateway",
+      service,
+      renderStartHints: () => [],
+      opts: { json: true },
+      postRestartCheck,
+    });
+
+    expect(result).toBe(true);
+    expect(postRestartCheck).not.toHaveBeenCalled();
+    const payload = readJsonLog<{ result?: string; message?: string }>();
+    expect(payload.result).toBe("scheduled");
+    expect(payload.message).toBe("restart scheduled, gateway will restart momentarily");
+  });
+
+  it("emits scheduled when service start routes through a scheduled restart", async () => {
+    service.restart.mockResolvedValue({ outcome: "scheduled" });
+
+    await runServiceStart({
+      serviceNoun: "Gateway",
+      service,
+      renderStartHints: () => [],
+      opts: { json: true },
+    });
+
+    expect(service.isLoaded).toHaveBeenCalledTimes(1);
+    const payload = readJsonLog<{ result?: string; message?: string }>();
+    expect(payload.result).toBe("scheduled");
+    expect(payload.message).toBe("restart scheduled, gateway will restart momentarily");
   });
 });

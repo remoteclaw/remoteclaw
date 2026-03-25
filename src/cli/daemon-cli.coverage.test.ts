@@ -10,7 +10,7 @@ const resolveGatewayProgramArguments = vi.fn(async (_opts?: unknown) => ({
 const serviceInstall = vi.fn().mockResolvedValue(undefined);
 const serviceUninstall = vi.fn().mockResolvedValue(undefined);
 const serviceStop = vi.fn().mockResolvedValue(undefined);
-const serviceRestart = vi.fn().mockResolvedValue(undefined);
+const serviceRestart = vi.fn().mockResolvedValue({ outcome: "completed" });
 const serviceIsLoaded = vi.fn().mockResolvedValue(false);
 const serviceReadCommand = vi.fn().mockResolvedValue(null);
 const serviceReadRuntime = vi.fn().mockResolvedValue({ status: "running" });
@@ -48,7 +48,8 @@ vi.mock("../daemon/program-args.js", () => ({
   resolveGatewayProgramArguments: (opts: unknown) => resolveGatewayProgramArguments(opts),
 }));
 
-vi.mock("../daemon/service.js", () => ({
+vi.mock("../daemon/service.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../daemon/service.js")>()),
   resolveGatewayService: () => ({
     label: "LaunchAgent",
     loadedText: "loaded",
@@ -77,7 +78,8 @@ vi.mock("../infra/ports.js", () => ({
   formatPortDiagnostics: () => ["Port 18789 is already in use."],
 }));
 
-vi.mock("../runtime.js", () => ({
+vi.mock("../runtime.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../runtime.js")>()),
   defaultRuntime,
 }));
 

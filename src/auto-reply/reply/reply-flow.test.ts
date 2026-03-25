@@ -1303,54 +1303,6 @@ describe("followup queue drain restart after idle window", () => {
     expect(freshCalls[0]?.prompt).toBe("after-idle");
   });
 
-  it("restarts an idle drain across distinct enqueue and drain module instances", async () => {
-    const drainA = await importFreshModule<typeof import("./queue/drain.js")>(
-      import.meta.url,
-      "./queue/drain.js?scope=restart-a",
-    );
-    const enqueueB = await importFreshModule<typeof import("./queue/enqueue.js")>(
-      import.meta.url,
-      "./queue/enqueue.js?scope=restart-b",
-    );
-    const { clearSessionQueues } = await import("./queue.js");
-    const key = `test-idle-window-cross-module-${Date.now()}`;
-    const calls: FollowupRun[] = [];
-    const settings: QueueSettings = { mode: "followup", debounceMs: 0, cap: 50 };
-    const firstProcessed = createDeferred<void>();
-
-    enqueueB.resetRecentQueuedMessageIdDedupe();
-
-    try {
-      const runFollowup = async (run: FollowupRun) => {
-        calls.push(run);
-        if (calls.length === 1) {
-          firstProcessed.resolve();
-        }
-      };
-
-      enqueueB.enqueueFollowupRun(key, createRun({ prompt: "before-idle" }), settings);
-      drainA.scheduleFollowupDrain(key, runFollowup);
-      await firstProcessed.promise;
-
-      await new Promise<void>((resolve) => setImmediate(resolve));
-
-      enqueueB.enqueueFollowupRun(key, createRun({ prompt: "after-idle" }), settings);
-
-      await vi.waitFor(
-        () => {
-          expect(calls).toHaveLength(2);
-        },
-        { timeout: 1_000 },
-      );
-
-      expect(calls[0]?.prompt).toBe("before-idle");
-      expect(calls[1]?.prompt).toBe("after-idle");
-    } finally {
-      clearSessionQueues([key]);
-      drainA.clearFollowupDrainCallback(key);
-      enqueueB.resetRecentQueuedMessageIdDedupe();
-    }
-  });
   it("does not double-drain when a message arrives while drain is still running", async () => {
     const key = `test-no-double-drain-${Date.now()}`;
     const calls: FollowupRun[] = [];

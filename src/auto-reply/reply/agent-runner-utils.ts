@@ -7,11 +7,6 @@ import { isReasoningTagProvider } from "../../utils/provider-utils.js";
 import { estimateUsageCost, formatTokenCount, formatUsd } from "../../utils/usage-format.js";
 import type { TemplateContext } from "../templating.js";
 import type { ReplyPayload } from "../types.js";
-import {
-  resolveProviderScopedAuthProfile,
-  resolveRunAuthProfile,
-} from "./agent-runner-auth-profile.js";
-export { resolveProviderScopedAuthProfile, resolveRunAuthProfile };
 import { resolveOriginMessageProvider, resolveOriginMessageTo } from "./origin-routing.js";
 import type { FollowupRun } from "./queue.js";
 

@@ -39,8 +39,8 @@ describe("program routes", () => {
     const route = expectRoute(["health"]);
     expect(typeof route?.loadPlugins).toBe("function");
     const shouldLoad = route?.loadPlugins as (argv: string[]) => boolean;
-    expect(shouldLoad(["node", "openclaw", "health"])).toBe(true);
-    expect(shouldLoad(["node", "openclaw", "health", "--json"])).toBe(false);
+    expect(shouldLoad(["node", "remoteclaw", "health"])).toBe(true);
+    expect(shouldLoad(["node", "remoteclaw", "health", "--json"])).toBe(false);
   });
 
   it("matches gateway status route without plugin preload", () => {
@@ -49,23 +49,29 @@ describe("program routes", () => {
   });
 
   it("returns false for gateway status route when option values are missing", async () => {
-    await expectRunFalse(["gateway", "status"], ["node", "openclaw", "gateway", "status", "--url"]);
     await expectRunFalse(
       ["gateway", "status"],
-      ["node", "openclaw", "gateway", "status", "--token"],
+      ["node", "remoteclaw", "gateway", "status", "--url"],
     );
     await expectRunFalse(
       ["gateway", "status"],
-      ["node", "openclaw", "gateway", "status", "--password"],
+      ["node", "remoteclaw", "gateway", "status", "--token"],
     );
     await expectRunFalse(
       ["gateway", "status"],
-      ["node", "openclaw", "gateway", "status", "--timeout"],
+      ["node", "remoteclaw", "gateway", "status", "--password"],
     );
-    await expectRunFalse(["gateway", "status"], ["node", "openclaw", "gateway", "status", "--ssh"]);
     await expectRunFalse(
       ["gateway", "status"],
-      ["node", "openclaw", "gateway", "status", "--ssh-identity"],
+      ["node", "remoteclaw", "gateway", "status", "--timeout"],
+    );
+    await expectRunFalse(
+      ["gateway", "status"],
+      ["node", "remoteclaw", "gateway", "status", "--ssh"],
+    );
+    await expectRunFalse(
+      ["gateway", "status"],
+      ["node", "remoteclaw", "gateway", "status", "--ssh-identity"],
     );
   });
 
@@ -74,7 +80,7 @@ describe("program routes", () => {
     await expect(
       route?.run([
         "node",
-        "openclaw",
+        "remoteclaw",
         "--profile",
         "work",
         "gateway",

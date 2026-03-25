@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { loadConfig, writeConfigFile } from "../config/config.js";
 import type { HookInstallRecord } from "../config/types.hooks.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
@@ -25,7 +25,7 @@ type HookPackUpdateOutcome = {
 };
 
 type HookPackUpdateSummary = {
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   changed: boolean;
   outcomes: HookPackUpdateOutcome[];
 };
@@ -106,7 +106,7 @@ function resolveHookPackUpdateSelection(params: {
 }
 
 async function updateTrackedHookPacks(params: {
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   hookIds?: string[];
   dryRun?: boolean;
   specOverrides?: Record<string, string>;

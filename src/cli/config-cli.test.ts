@@ -211,7 +211,7 @@ describe("config cli", () => {
     });
 
     it("drops gateway.auth.password when switching mode to token", async () => {
-      const resolved: OpenClawConfig = {
+      const resolved: RemoteClawConfig = {
         gateway: {
           auth: {
             mode: "password",
@@ -240,7 +240,7 @@ describe("config cli", () => {
     });
 
     it("drops gateway.auth.token when switching mode to password", async () => {
-      const resolved: OpenClawConfig = {
+      const resolved: RemoteClawConfig = {
         gateway: {
           auth: {
             mode: "token",
@@ -267,7 +267,7 @@ describe("config cli", () => {
     });
 
     it("applies mode-based credential cleanup using the final batch result", async () => {
-      const resolved: OpenClawConfig = {
+      const resolved: RemoteClawConfig = {
         gateway: {
           auth: {
             mode: "password",

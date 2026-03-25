@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { RemoteClawConfig } from "../../../config/config.js";
 import { sanitizeForLog } from "../../../terminal/ansi.js";
 import {
   collectDiscordNumericIdWarnings,
@@ -26,7 +26,7 @@ import {
 } from "./open-policy-allowfrom.js";
 
 export function collectDoctorPreviewWarnings(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   doctorFixCommand: string;
 }): string[] {
   const warnings: string[] = [];

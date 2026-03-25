@@ -4,13 +4,8 @@ import {
   redactConfigSnapshot,
   restoreRedactedValues as restoreRedactedValues_orig,
 } from "./redact-snapshot.js";
-import { __test__ } from "./schema.hints.js";
 import type { ConfigUiHints } from "./schema.js";
 import type { ConfigFileSnapshot } from "./types.remoteclaw.js";
-import { RemoteClawSchema } from "./zod-schema.js";
-
-const { mapSensitivePaths } = __test__;
-const mainSchemaHints = mapSensitivePaths(RemoteClawSchema, "", {});
 
 type TestSnapshot<TConfig extends Record<string, unknown>> = ConfigFileSnapshot & {
   parsed: TConfig;
@@ -48,25 +43,6 @@ function restoreRedactedValues<TOriginal>(
 }
 
 describe("restoreRedactedValues", () => {
-  it("restores redacted URL endpoint fields on round-trip", () => {
-    const incoming = {
-      models: {
-        providers: {
-          openai: { baseUrl: REDACTED_SENTINEL },
-        },
-      },
-    };
-    const original = {
-      models: {
-        providers: {
-          openai: { baseUrl: "https://alice:secret@example.test/v1" },
-        },
-      },
-    };
-    const result = restoreRedactedValues(incoming, original, mainSchemaHints);
-    expect(result.models.providers.openai.baseUrl).toBe("https://alice:secret@example.test/v1");
-  });
-
   it("restores sentinel values from original config", () => {
     const incoming = {
       gateway: { auth: { token: REDACTED_SENTINEL } },

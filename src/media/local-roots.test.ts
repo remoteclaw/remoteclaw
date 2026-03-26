@@ -21,10 +21,13 @@ describe("local media roots", () => {
   });
 
   it("adds the active agent workspace without re-opening broad agent state roots", () => {
-    const stateDir = path.join("/tmp", "openclaw-agent-media-roots-state");
+    const stateDir = path.join("/tmp", "remoteclaw-agent-media-roots-state");
     vi.stubEnv("REMOTECLAW_STATE_DIR", stateDir);
 
-    const roots = getAgentScopedMediaLocalRoots({}, "ops");
+    const roots = getAgentScopedMediaLocalRoots(
+      { agents: { list: [{ id: "ops", workspace: "/tmp/test-workspace" }] } },
+      "ops",
+    );
 
     expect(roots).toContain(path.join(stateDir, "workspace-ops"));
     expect(roots).toContain(path.join(stateDir, "sandboxes"));

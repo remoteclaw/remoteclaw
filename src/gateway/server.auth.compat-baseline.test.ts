@@ -169,11 +169,13 @@ describe("gateway auth compatibility baseline", () => {
       });
       await approveDevicePairing(pending.request.requestId);
 
-      const rotated = await rotateDeviceToken({
+      const rotateResult = await rotateDeviceToken({
         deviceId: identity.deviceId,
         role: "operator",
         scopes: ["operator.admin"],
       });
+      expect(rotateResult.ok).toBe(true);
+      const rotated = rotateResult.ok ? rotateResult.entry : undefined;
       expect(rotated?.token).toBeTruthy();
 
       const ws = await openWs(port);

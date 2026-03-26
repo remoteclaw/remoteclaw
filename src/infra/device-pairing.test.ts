@@ -293,12 +293,14 @@ describe("device pairing tokens", () => {
     const baseDir = await mkdtemp(join(tmpdir(), "remoteclaw-device-pairing-"));
     await setupPairedOperatorDevice(baseDir, ["operator.admin"]);
 
-    const rotated = await rotateDeviceToken({
+    const rotateResult = await rotateDeviceToken({
       deviceId: "device-1",
       role: "operator",
       scopes: ["operator.talk.secrets"],
       baseDir,
     });
+    expect(rotateResult.ok).toBe(true);
+    const rotated = rotateResult.ok ? rotateResult.entry : undefined;
     expect(rotated?.scopes).toEqual(["operator.talk.secrets"]);
 
     await expect(

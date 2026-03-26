@@ -124,6 +124,7 @@ export function resolveAccount(cfg: any, accountId?: string | null): ResolvedSyn
     nasHost: accountOverride.nasHost ?? channelCfg.nasHost ?? envNasHost,
     webhookPath: accountOverride.webhookPath ?? channelCfg.webhookPath ?? "/webhook/synology",
     webhookPathSource,
+    hasExplicitWebhookPath: webhookPathSource === "explicit",
     dangerouslyAllowNameMatching: resolveDangerousNameMatchingEnabled({
       providerConfig: channelCfg,
       accountConfig: id === "default" ? undefined : (accountOverride ?? undefined),

@@ -1,7 +1,5 @@
-import type { TopLevelComponents } from "@buape/carbon";
 import type { TSchema } from "@sinclair/typebox";
 import type { MsgContext } from "../../auto-reply/templating.js";
-import type { ReplyPayload } from "../../auto-reply/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { PollInput } from "../../polls.js";
 import type { AgentTool, AgentToolResult } from "../../types/agent-types.js";
@@ -9,7 +7,6 @@ import type { GatewayClientMode, GatewayClientName } from "../../utils/message-c
 import type { ChatType } from "../chat-type.js";
 import type { ChatChannelId } from "../registry.js";
 import type { ChannelMessageActionName as ChannelMessageActionNameFromList } from "./message-action-names.js";
-import type { ChannelMessageCapability } from "./message-capabilities.js";
 
 export type ChannelId = ChatChannelId | (string & {});
 
@@ -24,7 +21,6 @@ export type ChannelAgentToolFactory = (params: { cfg?: RemoteClawConfig }) => Ch
 export type ChannelSetupInput = {
   name?: string;
   token?: string;
-  privateKey?: string;
   tokenFile?: string;
   botToken?: string;
   appToken?: string;
@@ -43,6 +39,7 @@ export type ChannelSetupInput = {
   audience?: string;
   useEnv?: boolean;
   homeserver?: string;
+  allowPrivateNetwork?: boolean;
   userId?: string;
   accessToken?: string;
   password?: string;
@@ -50,7 +47,6 @@ export type ChannelSetupInput = {
   initialSyncLimit?: number;
   ship?: string;
   url?: string;
-  relayUrls?: string;
   code?: string;
   groupChannels?: string[];
   dmAllowlist?: string[];
@@ -122,6 +118,7 @@ export type ChannelAccountSnapshot = {
   lastMessageAt?: number | null;
   lastEventAt?: number | null;
   lastError?: string | null;
+  healthState?: string;
   lastStartAt?: number | null;
   lastStopAt?: number | null;
   lastInboundAt?: number | null;
@@ -185,6 +182,7 @@ export type ChannelGroupContext = {
 
 export type ChannelCapabilities = {
   chatTypes: Array<ChatType | "thread">;
+  voiceOnly?: boolean;
   polls?: boolean;
   reactions?: boolean;
   edit?: boolean;
@@ -214,11 +212,6 @@ export type ChannelSecurityContext<ResolvedAccount = unknown> = {
 };
 
 export type ChannelMentionAdapter = {
-  stripRegexes?: (params: {
-    ctx: MsgContext;
-    cfg: RemoteClawConfig | undefined;
-    agentId?: string;
-  }) => RegExp[];
   stripPatterns?: (params: {
     ctx: MsgContext;
     cfg: RemoteClawConfig | undefined;
@@ -237,38 +230,6 @@ export type ChannelStreamingAdapter = {
     minChars: number;
     idleMs: number;
   };
-};
-
-export type ChannelCrossContextComponentsFactory = (params: {
-  originLabel: string;
-  message: string;
-  cfg: RemoteClawConfig;
-  accountId?: string | null;
-}) => TopLevelComponents[];
-
-export type ChannelReplyTransport = {
-  replyToId?: string | null;
-  threadId?: string | number | null;
-};
-
-export type ChannelFocusedBindingContext = {
-  conversationId: string;
-  parentConversationId?: string;
-  placement: "current" | "child";
-  labelNoun: string;
-};
-
-export type ChannelOutboundSessionRoute = {
-  sessionKey: string;
-  baseSessionKey: string;
-  peer: {
-    kind: ChatType;
-    id: string;
-  };
-  chatType: "direct" | "group" | "channel";
-  from: string;
-  to: string;
-  threadId?: string | number;
 };
 
 export type ChannelThreadingAdapter = {
@@ -294,24 +255,6 @@ export type ChannelThreadingAdapter = {
     context: ChannelThreadingContext;
     hasRepliedRef?: { value: boolean };
   }) => ChannelThreadingToolContext | undefined;
-  resolveAutoThreadId?: (params: {
-    cfg: RemoteClawConfig;
-    accountId?: string | null;
-    to: string;
-    toolContext?: ChannelThreadingToolContext;
-    replyToId?: string | null;
-  }) => string | undefined;
-  resolveReplyTransport?: (params: {
-    cfg: RemoteClawConfig;
-    accountId?: string | null;
-    threadId?: string | number | null;
-    replyToId?: string | null;
-  }) => ChannelReplyTransport | null;
-  resolveFocusedBinding?: (params: {
-    cfg: RemoteClawConfig;
-    accountId?: string | null;
-    context: ChannelThreadingContext;
-  }) => ChannelFocusedBindingContext | null;
 };
 
 export type ChannelThreadingContext = {
@@ -345,47 +288,20 @@ export type ChannelThreadingToolContext = {
 
 export type ChannelMessagingAdapter = {
   normalizeTarget?: (raw: string) => string | undefined;
-  buildCrossContextComponents?: ChannelCrossContextComponentsFactory;
-  enableInteractiveReplies?: (params: {
-    cfg: RemoteClawConfig;
-    accountId?: string | null;
-  }) => boolean;
-  hasStructuredReplyPayload?: (params: { payload: ReplyPayload }) => boolean;
+  resolveSessionTarget?: (params: {
+    kind: "group" | "channel";
+    id: string;
+    threadId?: string | null;
+  }) => string | undefined;
   targetResolver?: {
     looksLikeId?: (raw: string, normalized?: string) => boolean;
     hint?: string;
-    resolveTarget?: (params: {
-      cfg: RemoteClawConfig;
-      accountId?: string | null;
-      input: string;
-      normalized: string;
-      preferredKind?: ChannelDirectoryEntryKind | "channel";
-    }) => Promise<{
-      to: string;
-      kind: ChannelDirectoryEntryKind | "channel";
-      display?: string;
-      source?: "normalized" | "directory";
-    } | null>;
   };
   formatTargetDisplay?: (params: {
     target: string;
     display?: string;
     kind?: ChannelDirectoryEntryKind;
   }) => string;
-  resolveOutboundSessionRoute?: (params: {
-    cfg: RemoteClawConfig;
-    agentId: string;
-    accountId?: string | null;
-    target: string;
-    resolvedTarget?: {
-      to: string;
-      kind: ChannelDirectoryEntryKind | "channel";
-      display?: string;
-      source: "normalized" | "directory";
-    };
-    replyToId?: string | null;
-    threadId?: string | number | null;
-  }) => ChannelOutboundSessionRoute | Promise<ChannelOutboundSessionRoute | null> | null;
 };
 
 export type ChannelAgentPromptAdapter = {
@@ -444,12 +360,10 @@ export type ChannelMessageActionAdapter = {
    * create polls should include `"poll"` here when enabled.
    */
   listActions?: (params: { cfg: RemoteClawConfig }) => ChannelMessageActionName[];
+  getCapabilities?: (params: { cfg: RemoteClawConfig }) => string[];
   supportsAction?: (params: { action: ChannelMessageActionName }) => boolean;
-  getCapabilities?: (params: { cfg: RemoteClawConfig }) => readonly ChannelMessageCapability[];
-  requiresTrustedRequesterSender?: (params: {
-    action: ChannelMessageActionName;
-    toolContext?: ChannelThreadingToolContext;
-  }) => boolean;
+  supportsButtons?: (params: { cfg: RemoteClawConfig }) => boolean;
+  supportsCards?: (params: { cfg: RemoteClawConfig }) => boolean;
   extractToolSend?: (params: { args: Record<string, unknown> }) => ChannelToolSend | null;
   handleAction?: (ctx: ChannelMessageActionContext) => Promise<AgentToolResult>;
 };

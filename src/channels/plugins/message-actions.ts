@@ -1,19 +1,19 @@
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { AgentToolResult } from "../../types/agent-types.js";
 import { getChannelPlugin, listChannelPlugins } from "./index.js";
-import type { ChannelMessageCapability } from "./message-capabilities.js";
 import type { ChannelMessageActionContext, ChannelMessageActionName } from "./types.js";
+
+const trustedRequesterRequiredByChannel: Readonly<
+  Partial<Record<string, ReadonlySet<ChannelMessageActionName>>>
+> = {
+  discord: new Set<ChannelMessageActionName>(["timeout", "kick", "ban"]),
+};
 
 type ChannelActions = NonNullable<NonNullable<ReturnType<typeof getChannelPlugin>>["actions"]>;
 
 function requiresTrustedRequesterSender(ctx: ChannelMessageActionContext): boolean {
-  const plugin = getChannelPlugin(ctx.channel);
-  return Boolean(
-    plugin?.actions?.requiresTrustedRequesterSender?.({
-      action: ctx.action,
-      toolContext: ctx.toolContext,
-    }),
-  );
+  const actions = trustedRequesterRequiredByChannel[ctx.channel];
+  return Boolean(actions?.has(ctx.action) && ctx.toolContext);
 }
 
 export function listChannelMessageActions(cfg: RemoteClawConfig): ChannelMessageActionName[] {
@@ -30,52 +30,58 @@ export function listChannelMessageActions(cfg: RemoteClawConfig): ChannelMessage
   return Array.from(actions);
 }
 
-function listCapabilities(
-  actions: ChannelActions,
-  cfg: RemoteClawConfig,
-): readonly ChannelMessageCapability[] {
-  return actions.getCapabilities?.({ cfg }) ?? [];
+export function supportsChannelMessageButtons(cfg: RemoteClawConfig): boolean {
+  return supportsMessageFeature(cfg, (actions) => actions?.supportsButtons?.({ cfg }) === true);
 }
 
-export function listChannelMessageCapabilities(cfg: RemoteClawConfig): ChannelMessageCapability[] {
-  const capabilities = new Set<ChannelMessageCapability>();
-  for (const plugin of listChannelPlugins()) {
-    if (!plugin.actions) {
-      continue;
-    }
-    for (const capability of listCapabilities(plugin.actions, cfg)) {
-      capabilities.add(capability);
-    }
-  }
-  return Array.from(capabilities);
-}
-
-export function listChannelMessageCapabilitiesForChannel(params: {
+export function supportsChannelMessageButtonsForChannel(params: {
   cfg: RemoteClawConfig;
   channel?: string;
-}): ChannelMessageCapability[] {
-  if (!params.channel) {
-    return [];
-  }
-  const plugin = getChannelPlugin(params.channel as Parameters<typeof getChannelPlugin>[0]);
-  return plugin?.actions ? Array.from(listCapabilities(plugin.actions, params.cfg)) : [];
+}): boolean {
+  return supportsMessageFeatureForChannel(
+    params,
+    (actions) => actions.supportsButtons?.(params) === true,
+  );
 }
 
-export function channelSupportsMessageCapability(
+export function supportsChannelMessageCards(cfg: RemoteClawConfig): boolean {
+  return supportsMessageFeature(cfg, (actions) => actions?.supportsCards?.({ cfg }) === true);
+}
+
+export function supportsChannelMessageCardsForChannel(params: {
+  cfg: RemoteClawConfig;
+  channel?: string;
+}): boolean {
+  return supportsMessageFeatureForChannel(
+    params,
+    (actions) => actions.supportsCards?.(params) === true,
+  );
+}
+
+function supportsMessageFeature(
   cfg: RemoteClawConfig,
-  capability: ChannelMessageCapability,
+  check: (actions: ChannelActions) => boolean,
 ): boolean {
-  return listChannelMessageCapabilities(cfg).includes(capability);
+  for (const plugin of listChannelPlugins()) {
+    if (plugin.actions && check(plugin.actions)) {
+      return true;
+    }
+  }
+  return false;
 }
 
-export function channelSupportsMessageCapabilityForChannel(
+function supportsMessageFeatureForChannel(
   params: {
     cfg: RemoteClawConfig;
     channel?: string;
   },
-  capability: ChannelMessageCapability,
+  check: (actions: ChannelActions) => boolean,
 ): boolean {
-  return listChannelMessageCapabilitiesForChannel(params).includes(capability);
+  if (!params.channel) {
+    return false;
+  }
+  const plugin = getChannelPlugin(params.channel as Parameters<typeof getChannelPlugin>[0]);
+  return plugin?.actions ? check(plugin.actions) : false;
 }
 
 export async function dispatchChannelMessageAction(

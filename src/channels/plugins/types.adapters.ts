@@ -1,7 +1,6 @@
 import type { ReplyPayload } from "../../auto-reply/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { GroupToolPolicyConfig } from "../../config/types.tools.js";
-import type { ExecApprovalRequest, ExecApprovalResolved } from "../../infra/exec-approvals.js";
 import type { OutboundDeliveryResult, OutboundSendDeps } from "../../infra/outbound/deliver.js";
 import type { OutboundIdentity } from "../../infra/outbound/identity.js";
 import type { PluginRuntime } from "../../plugins/runtime/types.js";
@@ -21,35 +20,6 @@ import type {
   ChannelSetupInput,
   ChannelStatusIssue,
 } from "./types.core.js";
-
-export type ChannelExecApprovalInitiatingSurfaceState =
-  | { kind: "enabled" }
-  | { kind: "disabled" }
-  | { kind: "unsupported" };
-
-export type ChannelExecApprovalForwardTarget = {
-  channel: string;
-  to: string;
-  accountId?: string | null;
-  threadId?: string | number | null;
-  source?: "session" | "target";
-};
-
-export type ChannelCapabilitiesDisplayTone = "default" | "muted" | "success" | "warn" | "error";
-
-export type ChannelCapabilitiesDisplayLine = {
-  text: string;
-  tone?: ChannelCapabilitiesDisplayTone;
-};
-
-export type ChannelCapabilitiesDiagnostics = {
-  lines?: ChannelCapabilitiesDisplayLine[];
-  details?: Record<string, unknown>;
-};
-
-type BivariantCallback<T extends (...args: never[]) => unknown> = {
-  bivarianceHack: T;
-}["bivarianceHack"];
 
 export type ChannelSetupAdapter = {
   resolveAccountId?: (params: {
@@ -82,7 +52,6 @@ export type ChannelSetupAdapter = {
 export type ChannelConfigAdapter<ResolvedAccount> = {
   listAccountIds: (cfg: RemoteClawConfig) => string[];
   resolveAccount: (cfg: RemoteClawConfig, accountId?: string | null) => ResolvedAccount;
-  inspectAccount?: (cfg: RemoteClawConfig, accountId?: string | null) => unknown;
   defaultAccountId?: (cfg: RemoteClawConfig) => string;
   setAccountEnabled?: (params: {
     cfg: RemoteClawConfig;
@@ -121,10 +90,9 @@ export type ChannelOutboundContext = {
   to: string;
   text: string;
   mediaUrl?: string;
+  audioAsVoice?: boolean;
   mediaLocalRoots?: readonly string[];
   gifPlayback?: boolean;
-  /** Send image as document to avoid Telegram compression. */
-  forceDocument?: boolean;
   replyToId?: string | null;
   threadId?: string | number | null;
   accountId?: string | null;
@@ -169,25 +137,12 @@ export type ChannelStatusAdapter<ResolvedAccount, Probe = unknown, Audit = unkno
     timeoutMs: number;
     cfg: RemoteClawConfig;
   }) => Promise<Probe>;
-  formatCapabilitiesProbe?: BivariantCallback<
-    (params: { probe: Probe }) => ChannelCapabilitiesDisplayLine[]
-  >;
   auditAccount?: (params: {
     account: ResolvedAccount;
     timeoutMs: number;
     cfg: RemoteClawConfig;
     probe?: Probe;
   }) => Promise<Audit>;
-  buildCapabilitiesDiagnostics?: BivariantCallback<
-    (params: {
-      account: ResolvedAccount;
-      timeoutMs: number;
-      cfg: RemoteClawConfig;
-      probe?: Probe;
-      audit?: Audit;
-      target?: string;
-    }) => Promise<ChannelCapabilitiesDiagnostics | undefined>
-  >;
   buildAccountSnapshot?: (params: {
     account: ResolvedAccount;
     cfg: RemoteClawConfig;
@@ -411,63 +366,9 @@ export type ChannelResolverAdapter = {
   }) => Promise<ChannelResolveResult[]>;
 };
 
-export type ChannelElevatedAdapter = {
-  allowFromFallback?: (params: {
-    cfg: RemoteClawConfig;
-    accountId?: string | null;
-  }) => Array<string | number> | undefined;
-};
-
 export type ChannelCommandAdapter = {
   enforceOwnerForCommands?: boolean;
   skipWhenConfigEmpty?: boolean;
-};
-
-export type ChannelLifecycleAdapter = {
-  onAccountConfigChanged?: (params: {
-    prevCfg: RemoteClawConfig;
-    nextCfg: RemoteClawConfig;
-    accountId: string;
-    runtime: RuntimeEnv;
-  }) => Promise<void> | void;
-  onAccountRemoved?: (params: {
-    prevCfg: RemoteClawConfig;
-    accountId: string;
-    runtime: RuntimeEnv;
-  }) => Promise<void> | void;
-};
-
-export type ChannelExecApprovalAdapter = {
-  getInitiatingSurfaceState?: (params: {
-    cfg: RemoteClawConfig;
-    accountId?: string | null;
-  }) => ChannelExecApprovalInitiatingSurfaceState;
-  hasConfiguredDmRoute?: (params: { cfg: RemoteClawConfig }) => boolean;
-  shouldSuppressForwardingFallback?: (params: {
-    cfg: RemoteClawConfig;
-    target: ChannelExecApprovalForwardTarget;
-    request: ExecApprovalRequest;
-  }) => boolean;
-  buildPendingPayload?: (params: {
-    cfg: RemoteClawConfig;
-    request: ExecApprovalRequest;
-    target: ChannelExecApprovalForwardTarget;
-    nowMs: number;
-  }) => ReplyPayload | null;
-  buildResolvedPayload?: (params: {
-    cfg: RemoteClawConfig;
-    resolved: ExecApprovalResolved;
-    target: ChannelExecApprovalForwardTarget;
-  }) => ReplyPayload | null;
-  beforeDeliverPending?: (params: {
-    cfg: RemoteClawConfig;
-    target: ChannelExecApprovalForwardTarget;
-    payload: ReplyPayload;
-  }) => Promise<void> | void;
-};
-
-export type ChannelAllowlistAdapter = {
-  supportsScope?: (params: { scope: "dm" | "group" | "all" }) => boolean;
 };
 
 export type ChannelSecurityAdapter<ResolvedAccount = unknown> = {

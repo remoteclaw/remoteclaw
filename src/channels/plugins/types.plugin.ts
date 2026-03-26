@@ -1,11 +1,10 @@
-import type { ChannelSetupWizard } from "./setup-wizard.js";
+import type { ChannelOnboardingAdapter } from "./onboarding-types.js";
 import type {
   ChannelAuthAdapter,
   ChannelCommandAdapter,
   ChannelConfigAdapter,
   ChannelDirectoryAdapter,
   ChannelResolverAdapter,
-  ChannelElevatedAdapter,
   ChannelGatewayAdapter,
   ChannelGroupAdapter,
   ChannelHeartbeatAdapter,
@@ -56,7 +55,8 @@ export type ChannelPlugin<ResolvedAccount = any, Probe = unknown, Audit = unknow
     };
   };
   reload?: { configPrefixes: string[]; noopPrefixes?: string[] };
-  setupWizard?: ChannelSetupWizard;
+  // CLI onboarding wizard hooks for this channel.
+  onboarding?: ChannelOnboardingAdapter;
   config: ChannelConfigAdapter<ResolvedAccount>;
   configSchema?: ChannelConfigSchema;
   setup?: ChannelSetupAdapter;
@@ -69,7 +69,6 @@ export type ChannelPlugin<ResolvedAccount = any, Probe = unknown, Audit = unknow
   gatewayMethods?: string[];
   gateway?: ChannelGatewayAdapter<ResolvedAccount>;
   auth?: ChannelAuthAdapter;
-  elevated?: ChannelElevatedAdapter;
   commands?: ChannelCommandAdapter;
   streaming?: ChannelStreamingAdapter;
   threading?: ChannelThreadingAdapter;

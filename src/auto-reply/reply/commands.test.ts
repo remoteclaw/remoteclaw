@@ -2,7 +2,6 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { abortEmbeddedPiRun, compactEmbeddedPiSession } from "../../agents/pi-embedded.js";
 import {
   addSubagentRunForTests,
   listSubagentRunsForRequester,
@@ -15,8 +14,6 @@ import { clearPluginCommands, registerPluginCommand } from "../../plugins/comman
 import { typedCases } from "../../test-utils/typed-cases.js";
 import { INTERNAL_MESSAGE_CHANNEL } from "../../utils/message-channel.js";
 import type { MsgContext } from "../templating.js";
-import { resetBashChatCommandForTests } from "./bash-command.js";
-import { handleCompactCommand } from "./commands-compact.js";
 import { buildCommandsPaginationKeyboard } from "./commands-info.js";
 import { extractMessageText } from "./commands-subagents.js";
 import { buildCommandTestParams } from "./commands.test-harness.js";
@@ -75,29 +72,8 @@ vi.mock("../../agents/model-catalog.js", () => ({
   ]),
 }));
 
-vi.mock("../../agents/pi-embedded.js", () => {
-  const resolveEmbeddedSessionLane = (key: string) => {
-    const cleaned = key.trim() || "main";
-    return cleaned.startsWith("session:") ? cleaned : `session:${cleaned}`;
-  };
-  return {
-    abortEmbeddedPiRun: vi.fn(),
-    compactEmbeddedPiSession: vi.fn(),
-    isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
-    isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
-    queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-    resolveEmbeddedSessionLane,
-    runEmbeddedPiAgent: vi.fn(),
-    waitForEmbeddedPiRunEnd: vi.fn().mockResolvedValue(undefined),
-  };
-});
-
 vi.mock("../../infra/system-events.js", () => ({
   enqueueSystemEvent: vi.fn(),
-}));
-
-vi.mock("./session-updates.js", () => ({
-  incrementCompactionCount: vi.fn(),
 }));
 
 const callGatewayMock = vi.fn();
@@ -105,22 +81,29 @@ vi.mock("../../gateway/call.js", () => ({
   callGateway: (opts: unknown) => callGatewayMock(opts),
 }));
 
+type ResetAcpSessionInPlaceResult = { ok: true } | { ok: false; skipped?: boolean; error?: string };
+
+const resetAcpSessionInPlaceMock = vi.hoisted(() =>
+  vi.fn(
+    async (_params: unknown): Promise<ResetAcpSessionInPlaceResult> => ({
+      ok: false,
+      skipped: true,
+    }),
+  ),
+);
+vi.mock("../../acp/persistent-bindings.js", async () => {
+  const actual = await vi.importActual<typeof import("../../acp/persistent-bindings.js")>(
+    "../../acp/persistent-bindings.js",
+  );
+  return {
+    ...actual,
+    resetAcpSessionInPlace: (params: unknown) => resetAcpSessionInPlaceMock(params),
+  };
+});
+
+import { buildConfiguredAcpSessionKey } from "../../acp/persistent-bindings.js";
 import type { HandleCommandsParams } from "./commands-types.js";
 import { buildCommandContext, handleCommands } from "./commands.js";
-
-// Avoid expensive workspace scans during /context tests.
-vi.mock("./commands-context-report.js", () => ({
-  buildContextReply: async (params: { command: { commandBodyNormalized: string } }) => {
-    const normalized = params.command.commandBodyNormalized;
-    if (normalized === "/context list") {
-      return { text: "Injected workspace files:\n- AGENTS.md" };
-    }
-    if (normalized === "/context detail") {
-      return { text: "Context breakdown (detailed)\nTop tools (schema size):" };
-    }
-    return { text: "/context\n- /context list\nInline shortcut" };
-  },
-}));
 
 let testWorkspaceDir = os.tmpdir();
 
@@ -141,8 +124,13 @@ function buildParams(
   return buildCommandTestParams(commandBody, cfg, ctxOverrides, { workspaceDir: testWorkspaceDir });
 }
 
+beforeEach(() => {
+  resetAcpSessionInPlaceMock.mockReset();
+  resetAcpSessionInPlaceMock.mockResolvedValue({ ok: false, skipped: true } as const);
+});
+
 describe("handleCommands gating", () => {
-  it("blocks gated commands when disabled or not elevated-allowlisted", async () => {
+  it("blocks gated commands when disabled or not allowlisted", async () => {
     const cases = typedCases<{
       name: string;
       commandBody: string;
@@ -150,33 +138,6 @@ describe("handleCommands gating", () => {
       applyParams?: (params: ReturnType<typeof buildParams>) => void;
       expectedText: string;
     }>([
-      {
-        name: "disabled bash command",
-        commandBody: "/bash echo hi",
-        makeCfg: () =>
-          ({
-            commands: { bash: false, text: true },
-            whatsapp: { allowFrom: ["*"] },
-          }) as RemoteClawConfig,
-        expectedText: "bash is disabled",
-      },
-      {
-        name: "missing elevated allowlist",
-        commandBody: "/bash echo hi",
-        makeCfg: () =>
-          ({
-            commands: { bash: true, text: true },
-            whatsapp: { allowFrom: ["*"] },
-          }) as RemoteClawConfig,
-        applyParams: (params: ReturnType<typeof buildParams>) => {
-          params.elevated = {
-            enabled: true,
-            allowed: false,
-            failures: [{ gate: "allowFrom", key: "tools.elevated.allowFrom.whatsapp" }],
-          };
-        },
-        expectedText: "elevated is not available",
-      },
       {
         name: "disabled config command",
         commandBody: "/config show",
@@ -196,22 +157,6 @@ describe("handleCommands gating", () => {
             channels: { whatsapp: { allowFrom: ["*"] } },
           }) as RemoteClawConfig,
         expectedText: "/debug is disabled",
-      },
-      {
-        name: "inherited bash flag does not enable command",
-        commandBody: "/bash echo hi",
-        makeCfg: () => {
-          const inheritedCommands = Object.create({
-            bash: true,
-            config: true,
-            debug: true,
-          }) as Record<string, unknown>;
-          return {
-            commands: inheritedCommands as never,
-            channels: { whatsapp: { allowFrom: ["*"] } },
-          } as RemoteClawConfig;
-        },
-        expectedText: "bash is disabled",
       },
       {
         name: "inherited config flag does not enable command",
@@ -248,344 +193,12 @@ describe("handleCommands gating", () => {
     ]);
 
     for (const testCase of cases) {
-      resetBashChatCommandForTests();
       const params = buildParams(testCase.commandBody, testCase.makeCfg());
       testCase.applyParams?.(params);
       const result = await handleCommands(params);
       expect(result.shouldContinue, testCase.name).toBe(false);
       expect(result.reply?.text, testCase.name).toContain(testCase.expectedText);
     }
-  });
-});
-
-describe("/approve command", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("rejects invalid usage", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-    } as RemoteClawConfig;
-    const params = buildParams("/approve", cfg);
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Usage: /approve");
-  });
-
-  it("submits approval", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-    } as RemoteClawConfig;
-    const params = buildParams("/approve abc allow-once", cfg, { SenderId: "123" });
-
-    callGatewayMock.mockResolvedValue({ ok: true });
-
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Exec approval allow-once submitted");
-    expect(callGatewayMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        method: "exec.approval.resolve",
-        params: { id: "abc", decision: "allow-once" },
-      }),
-    );
-  });
-
-  it("accepts Telegram command mentions for /approve", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: {
-        telegram: {
-          allowFrom: ["*"],
-          execApprovals: { enabled: true, approvers: ["123"], target: "dm" },
-        },
-      },
-    } as RemoteClawConfig;
-    const params = buildParams("/approve@bot abc12345 allow-once", cfg, {
-      BotUsername: "bot",
-      Provider: "telegram",
-      Surface: "telegram",
-      SenderId: "123",
-    });
-
-    callGatewayMock.mockResolvedValue({ ok: true });
-
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Exec approval allow-once submitted");
-    expect(callGatewayMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        method: "exec.approval.resolve",
-        params: { id: "abc12345", decision: "allow-once" },
-      }),
-    );
-  });
-
-  it("rejects Telegram /approve mentions targeting a different bot", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: {
-        telegram: {
-          allowFrom: ["*"],
-          execApprovals: { enabled: true, approvers: ["123"], target: "dm" },
-        },
-      },
-    } as RemoteClawConfig;
-    const params = buildParams("/approve@otherbot abc12345 allow-once", cfg, {
-      BotUsername: "bot",
-      Provider: "telegram",
-      Surface: "telegram",
-      SenderId: "123",
-    });
-
-    const result = await handleCommands(params);
-
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("targets a different Telegram bot");
-    expect(callGatewayMock).not.toHaveBeenCalled();
-  });
-
-  it("surfaces unknown or expired approval id errors", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: {
-        telegram: {
-          allowFrom: ["*"],
-          execApprovals: { enabled: true, approvers: ["123"], target: "dm" },
-        },
-      },
-    } as RemoteClawConfig;
-    const params = buildParams("/approve abc12345 allow-once", cfg, {
-      Provider: "telegram",
-      Surface: "telegram",
-      SenderId: "123",
-    });
-
-    callGatewayMock.mockRejectedValue(new Error("unknown or expired approval id"));
-
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("unknown or expired approval id");
-  });
-
-  it("rejects Telegram /approve when telegram exec approvals are disabled", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { telegram: { allowFrom: ["*"] } },
-    } as RemoteClawConfig;
-    const params = buildParams("/approve abc12345 allow-once", cfg, {
-      Provider: "telegram",
-      Surface: "telegram",
-      SenderId: "123",
-    });
-
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Telegram exec approvals are not enabled");
-    expect(callGatewayMock).not.toHaveBeenCalled();
-  });
-
-  it("rejects Telegram /approve from non-approvers", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: {
-        telegram: {
-          allowFrom: ["*"],
-          execApprovals: { enabled: true, approvers: ["999"], target: "dm" },
-        },
-      },
-    } as RemoteClawConfig;
-    const params = buildParams("/approve abc12345 allow-once", cfg, {
-      Provider: "telegram",
-      Surface: "telegram",
-      SenderId: "123",
-    });
-
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("not authorized to approve");
-    expect(callGatewayMock).not.toHaveBeenCalled();
-  });
-
-  it("rejects gateway clients without approvals scope", async () => {
-    const cfg = {
-      commands: { text: true },
-    } as RemoteClawConfig;
-    const params = buildParams("/approve abc allow-once", cfg, {
-      Provider: "webchat",
-      Surface: "webchat",
-      GatewayClientScopes: ["operator.write"],
-    });
-
-    callGatewayMock.mockResolvedValue({ ok: true });
-
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("requires operator.approvals");
-    expect(callGatewayMock).not.toHaveBeenCalled();
-  });
-
-  it("allows gateway clients with approvals or admin scopes", async () => {
-    const cfg = {
-      commands: { text: true },
-    } as RemoteClawConfig;
-    const scopeCases = [["operator.approvals"], ["operator.admin"]];
-    for (const scopes of scopeCases) {
-      callGatewayMock.mockResolvedValue({ ok: true });
-      const params = buildParams("/approve abc allow-once", cfg, {
-        Provider: "webchat",
-        Surface: "webchat",
-        GatewayClientScopes: scopes,
-      });
-
-      const result = await handleCommands(params);
-      expect(result.shouldContinue).toBe(false);
-      expect(result.reply?.text).toContain("Exec approval allow-once submitted");
-      expect(callGatewayMock).toHaveBeenLastCalledWith(
-        expect.objectContaining({
-          method: "exec.approval.resolve",
-          params: { id: "abc", decision: "allow-once" },
-        }),
-      );
-    }
-  });
-});
-
-describe("/compact command", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("returns null when command is not /compact", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-    } as RemoteClawConfig;
-    const params = buildParams("/status", cfg);
-
-    const result = await handleCompactCommand(
-      {
-        ...params,
-      },
-      true,
-    );
-
-    expect(result).toBeNull();
-    expect(vi.mocked(compactEmbeddedPiSession)).not.toHaveBeenCalled();
-  });
-
-  it("rejects unauthorized /compact commands", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-    } as RemoteClawConfig;
-    const params = buildParams("/compact", cfg);
-
-    const result = await handleCompactCommand(
-      {
-        ...params,
-        command: {
-          ...params.command,
-          isAuthorizedSender: false,
-          senderId: "unauthorized",
-        },
-      },
-      true,
-    );
-
-    expect(result).toEqual({ shouldContinue: false });
-    expect(vi.mocked(compactEmbeddedPiSession)).not.toHaveBeenCalled();
-  });
-
-  it("routes manual compaction with explicit trigger and context metadata", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-      session: { store: "/tmp/remoteclaw-session-store.json" },
-    } as RemoteClawConfig;
-    const params = buildParams("/compact: focus on decisions", cfg, {
-      From: "+15550001",
-      To: "+15550002",
-    });
-    const agentDir = "/tmp/remoteclaw-agent-compact";
-    vi.mocked(compactEmbeddedPiSession).mockResolvedValueOnce({
-      ok: true,
-      compacted: false,
-    });
-
-    const result = await handleCompactCommand(
-      {
-        ...params,
-        agentDir,
-        sessionEntry: {
-          sessionId: "session-1",
-          updatedAt: Date.now(),
-          groupId: "group-1",
-          groupChannel: "#general",
-          space: "workspace-1",
-          spawnedBy: "agent:main:parent",
-          totalTokens: 12345,
-        },
-      },
-      true,
-    );
-
-    expect(result?.shouldContinue).toBe(false);
-    expect(vi.mocked(compactEmbeddedPiSession)).toHaveBeenCalledOnce();
-    expect(vi.mocked(compactEmbeddedPiSession)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sessionId: "session-1",
-        sessionKey: "agent:main:main",
-        trigger: "manual",
-        customInstructions: "focus on decisions",
-        messageChannel: "whatsapp",
-        groupId: "group-1",
-        groupChannel: "#general",
-        groupSpace: "workspace-1",
-        spawnedBy: "agent:main:parent",
-        agentDir,
-      }),
-    );
-  });
-});
-
-describe("abort trigger command", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("rejects unauthorized natural-language abort triggers", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-    } as RemoteClawConfig;
-    const params = buildParams("stop", cfg);
-    const sessionEntry: SessionEntry = {
-      sessionId: "session-1",
-      updatedAt: Date.now(),
-      abortedLastRun: false,
-    };
-    const sessionStore: Record<string, SessionEntry> = {
-      [params.sessionKey]: sessionEntry,
-    };
-
-    const result = await handleCommands({
-      ...params,
-      sessionEntry,
-      sessionStore,
-      command: {
-        ...params.command,
-        isAuthorizedSender: false,
-        senderId: "unauthorized",
-      },
-    });
-
-    expect(result).toEqual({ shouldContinue: false });
-    expect(sessionStore[params.sessionKey]?.abortedLastRun).toBe(false);
-    expect(vi.mocked(abortEmbeddedPiRun)).not.toHaveBeenCalled();
   });
 });
 
@@ -732,6 +345,48 @@ describe("handleCommands /config configWrites gating", () => {
     expect(writeConfigFileMock.mock.calls.length).toBe(previousWriteCount);
   });
 
+  it("returns an explicit unauthorized reply for native privileged commands", async () => {
+    const configParams = buildParams(
+      "/config show",
+      {
+        commands: { config: true, text: true },
+        channels: { discord: { dm: { enabled: true, policy: "open" } } },
+      } as RemoteClawConfig,
+      {
+        Provider: "discord",
+        Surface: "discord",
+        CommandSource: "native",
+      },
+    );
+    configParams.command.senderIsOwner = false;
+
+    const configResult = await handleCommands(configParams);
+    expect(configResult).toEqual({
+      shouldContinue: false,
+      reply: { text: "You are not authorized to use this command." },
+    });
+
+    const pluginParams = buildParams(
+      "/plugins list",
+      {
+        commands: { plugins: true, text: true },
+        channels: { discord: { dm: { enabled: true, policy: "open" } } },
+      } as RemoteClawConfig,
+      {
+        Provider: "discord",
+        Surface: "discord",
+        CommandSource: "native",
+      },
+    );
+    pluginParams.command.senderIsOwner = false;
+
+    const pluginResult = await handleCommands(pluginParams);
+    expect(pluginResult).toEqual({
+      shouldContinue: false,
+      reply: { text: "You are not authorized to use this command." },
+    });
+  });
+
   it("blocks /config set from gateway clients without operator.admin", async () => {
     const cfg = {
       commands: { config: true, text: true },
@@ -834,22 +489,6 @@ describe("handleCommands /config configWrites gating", () => {
   });
 });
 
-describe("handleCommands bash alias", () => {
-  it("routes !poll and !stop through the /bash handler", async () => {
-    const cfg = {
-      commands: { bash: true, text: true },
-      whatsapp: { allowFrom: ["*"] },
-    } as RemoteClawConfig;
-    for (const aliasCommand of ["!poll", "!stop"]) {
-      resetBashChatCommandForTests();
-      const params = buildParams(aliasCommand, cfg);
-      const result = await handleCommands(params);
-      expect(result.shouldContinue).toBe(false);
-      expect(result.reply?.text).toContain("No active bash job");
-    }
-  });
-});
-
 function buildPolicyParams(
   commandBody: string,
   cfg: RemoteClawConfig,
@@ -878,13 +517,10 @@ function buildPolicyParams(
     cfg,
     command,
     directives: parseInlineDirectives(commandBody),
-    elevated: { enabled: true, allowed: true, failures: [] },
     sessionKey: "agent:main:main",
     workspaceDir: "/tmp",
     defaultGroupActivation: () => "mention",
     resolvedVerboseLevel: "off",
-    resolvedReasoningLevel: "off",
-    resolveDefaultThinkingLevel: async () => undefined,
     provider: "telegram",
     model: "test-model",
     contextTokens: 0,
@@ -1118,150 +754,6 @@ describe("handleCommands /allowlist", () => {
   });
 });
 
-describe("/models command", () => {
-  const cfg = {
-    commands: { text: true },
-    agents: { defaults: { model: { primary: "anthropic/claude-opus-4-5" } } },
-  } as unknown as RemoteClawConfig;
-
-  it.each(["discord", "whatsapp"])("lists providers on %s (text)", async (surface) => {
-    const params = buildPolicyParams("/models", cfg, { Provider: surface, Surface: surface });
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Providers:");
-    expect(result.reply?.text).toContain("anthropic");
-    expect(result.reply?.text).toContain("Use: /models <provider>");
-  });
-
-  it("rejects unauthorized /models commands", async () => {
-    const params = buildPolicyParams("/models", cfg, { Provider: "discord", Surface: "discord" });
-    const result = await handleCommands({
-      ...params,
-      command: {
-        ...params.command,
-        isAuthorizedSender: false,
-        senderId: "unauthorized",
-      },
-    });
-    expect(result).toEqual({ shouldContinue: false });
-  });
-
-  it("lists providers on telegram (buttons)", async () => {
-    const params = buildPolicyParams("/models", cfg, { Provider: "telegram", Surface: "telegram" });
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toBe("Select a provider:");
-    const buttons = (result.reply?.channelData as { telegram?: { buttons?: unknown[][] } })
-      ?.telegram?.buttons;
-    expect(buttons).toBeDefined();
-    expect(buttons?.length).toBeGreaterThan(0);
-  });
-
-  it("handles provider model pagination, all mode, and unknown providers", async () => {
-    const cases = [
-      {
-        name: "lists provider models with pagination hints",
-        command: "/models anthropic",
-        includes: [
-          "Models (anthropic",
-          "page 1/",
-          "anthropic/claude-opus-4-5",
-          "Switch: /model <provider/model>",
-          "All: /models anthropic all",
-        ],
-        excludes: [],
-      },
-      {
-        name: "ignores page argument when all flag is present",
-        command: "/models anthropic 3 all",
-        includes: ["Models (anthropic", "page 1/1", "anthropic/claude-opus-4-5"],
-        excludes: ["Page out of range"],
-      },
-      {
-        name: "errors on out-of-range pages",
-        command: "/models anthropic 4",
-        includes: ["Page out of range", "valid: 1-"],
-        excludes: [],
-      },
-      {
-        name: "handles unknown providers",
-        command: "/models not-a-provider",
-        includes: ["Unknown provider", "Available providers"],
-        excludes: [],
-      },
-    ] as const;
-
-    for (const testCase of cases) {
-      // Use discord surface for deterministic text-based output assertions.
-      const result = await handleCommands(
-        buildPolicyParams(testCase.command, cfg, {
-          Provider: "discord",
-          Surface: "discord",
-        }),
-      );
-      expect(result.shouldContinue, testCase.name).toBe(false);
-      for (const expected of testCase.includes) {
-        expect(result.reply?.text, `${testCase.name}: ${expected}`).toContain(expected);
-      }
-      for (const blocked of testCase.excludes ?? []) {
-        expect(result.reply?.text, `${testCase.name}: !${blocked}`).not.toContain(blocked);
-      }
-    }
-  });
-
-  it("lists configured models outside the curated catalog", async () => {
-    const customCfg = {
-      commands: { text: true },
-      agents: {
-        defaults: {
-          model: {
-            primary: "localai/ultra-chat",
-            fallbacks: ["anthropic/claude-opus-4-5"],
-          },
-          imageModel: "visionpro/studio-v1",
-        },
-      },
-    } as unknown as RemoteClawConfig;
-
-    // Use discord surface for text-based output tests
-    const providerList = await handleCommands(
-      buildPolicyParams("/models", customCfg, { Surface: "discord" }),
-    );
-    expect(providerList.reply?.text).toContain("localai");
-    expect(providerList.reply?.text).toContain("visionpro");
-
-    const result = await handleCommands(
-      buildPolicyParams("/models localai", customCfg, { Surface: "discord" }),
-    );
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Models (localai");
-    expect(result.reply?.text).toContain("localai/ultra-chat");
-    expect(result.reply?.text).not.toContain("Unknown provider");
-  });
-
-  it("threads the routed agent through /models replies", async () => {
-    const scopedCfg = {
-      commands: { text: true },
-      agents: {
-        defaults: { model: { primary: "anthropic/claude-opus-4-5" } },
-        list: [{ id: "support", model: "localai/ultra-chat" }],
-      },
-    } as unknown as RemoteClawConfig;
-    const params = buildPolicyParams("/models", scopedCfg, {
-      Provider: "discord",
-      Surface: "discord",
-    });
-
-    const result = await handleCommands({
-      ...params,
-      agentId: "support",
-      sessionKey: "agent:support:main",
-    });
-
-    expect(result.reply?.text).toContain("localai");
-  });
-});
-
 describe("handleCommands plugin commands", () => {
   it("dispatches registered plugin commands", async () => {
     clearPluginCommands();
@@ -1352,6 +844,226 @@ describe("handleCommands hooks", () => {
       }),
     );
     spy.mockRestore();
+  });
+});
+
+describe("handleCommands ACP-bound /new and /reset", () => {
+  const discordChannelId = "1478836151241412759";
+  const buildDiscordBoundConfig = (): RemoteClawConfig =>
+    ({
+      commands: { text: true },
+      bindings: [
+        {
+          type: "acp",
+          agentId: "codex",
+          match: {
+            channel: "discord",
+            accountId: "default",
+            peer: {
+              kind: "channel",
+              id: discordChannelId,
+            },
+          },
+          acp: {
+            mode: "persistent",
+          },
+        },
+      ],
+      channels: {
+        discord: {
+          allowFrom: ["*"],
+          guilds: { "1459246755253325866": { channels: { [discordChannelId]: {} } } },
+        },
+      },
+    }) as RemoteClawConfig;
+
+  const buildDiscordBoundParams = (body: string) => {
+    const params = buildParams(body, buildDiscordBoundConfig(), {
+      Provider: "discord",
+      Surface: "discord",
+      OriginatingChannel: "discord",
+      AccountId: "default",
+      SenderId: "12345",
+      From: "discord:12345",
+      To: discordChannelId,
+      OriginatingTo: discordChannelId,
+      SessionKey: "agent:main:acp:binding:discord:default:feedface",
+    });
+    params.sessionKey = "agent:main:acp:binding:discord:default:feedface";
+    return params;
+  };
+
+  it("handles /new as ACP in-place reset for bound conversations", async () => {
+    resetAcpSessionInPlaceMock.mockResolvedValue({ ok: true } as const);
+    const result = await handleCommands(buildDiscordBoundParams("/new"));
+
+    expect(result.shouldContinue).toBe(false);
+    expect(result.reply?.text).toContain("ACP session reset in place");
+    expect(resetAcpSessionInPlaceMock).toHaveBeenCalledTimes(1);
+    expect(resetAcpSessionInPlaceMock.mock.calls[0]?.[0]).toMatchObject({
+      reason: "new",
+    });
+  });
+
+  it("continues with trailing prompt text after successful ACP-bound /new", async () => {
+    resetAcpSessionInPlaceMock.mockResolvedValue({ ok: true } as const);
+    const params = buildDiscordBoundParams("/new continue with deployment");
+    const result = await handleCommands(params);
+
+    expect(result.shouldContinue).toBe(false);
+    expect(result.reply).toBeUndefined();
+    const mutableCtx = params.ctx as Record<string, unknown>;
+    expect(mutableCtx.BodyStripped).toBe("continue with deployment");
+    expect(mutableCtx.CommandBody).toBe("continue with deployment");
+    expect(mutableCtx.AcpDispatchTailAfterReset).toBe(true);
+    expect(resetAcpSessionInPlaceMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("handles /reset failures without falling back to normal session reset flow", async () => {
+    resetAcpSessionInPlaceMock.mockResolvedValue({ ok: false, error: "backend unavailable" });
+    const result = await handleCommands(buildDiscordBoundParams("/reset"));
+
+    expect(result.shouldContinue).toBe(false);
+    expect(result.reply?.text).toContain("ACP session reset failed");
+    expect(resetAcpSessionInPlaceMock).toHaveBeenCalledTimes(1);
+    expect(resetAcpSessionInPlaceMock.mock.calls[0]?.[0]).toMatchObject({
+      reason: "reset",
+    });
+  });
+
+  it("does not emit reset hooks when ACP reset fails", async () => {
+    resetAcpSessionInPlaceMock.mockResolvedValue({ ok: false, error: "backend unavailable" });
+    const spy = vi.spyOn(internalHooks, "triggerInternalHook").mockResolvedValue();
+
+    const result = await handleCommands(buildDiscordBoundParams("/reset"));
+
+    expect(result.shouldContinue).toBe(false);
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  it("keeps existing /new behavior for non-ACP sessions", async () => {
+    const cfg = {
+      commands: { text: true },
+      channels: { whatsapp: { allowFrom: ["*"] } },
+    } as RemoteClawConfig;
+    const result = await handleCommands(buildParams("/new", cfg));
+
+    expect(result.shouldContinue).toBe(true);
+    expect(resetAcpSessionInPlaceMock).not.toHaveBeenCalled();
+  });
+
+  it("still targets configured ACP binding when runtime routing falls back to a non-ACP session", async () => {
+    const fallbackSessionKey = `agent:main:discord:channel:${discordChannelId}`;
+    const configuredAcpSessionKey = buildConfiguredAcpSessionKey({
+      channel: "discord",
+      accountId: "default",
+      conversationId: discordChannelId,
+      agentId: "codex",
+      mode: "persistent",
+    });
+    const params = buildDiscordBoundParams("/new");
+    params.sessionKey = fallbackSessionKey;
+    params.ctx.SessionKey = fallbackSessionKey;
+    params.ctx.CommandTargetSessionKey = fallbackSessionKey;
+
+    const result = await handleCommands(params);
+
+    expect(result.shouldContinue).toBe(false);
+    expect(result.reply?.text).toContain("ACP session reset unavailable");
+    expect(resetAcpSessionInPlaceMock).toHaveBeenCalledTimes(1);
+    expect(resetAcpSessionInPlaceMock.mock.calls[0]?.[0]).toMatchObject({
+      sessionKey: configuredAcpSessionKey,
+      reason: "new",
+    });
+  });
+
+  it("emits reset hooks for the ACP session key when routing falls back to non-ACP session", async () => {
+    resetAcpSessionInPlaceMock.mockResolvedValue({ ok: true } as const);
+    const hookSpy = vi.spyOn(internalHooks, "triggerInternalHook").mockResolvedValue();
+    const fallbackSessionKey = `agent:main:discord:channel:${discordChannelId}`;
+    const configuredAcpSessionKey = buildConfiguredAcpSessionKey({
+      channel: "discord",
+      accountId: "default",
+      conversationId: discordChannelId,
+      agentId: "codex",
+      mode: "persistent",
+    });
+    const fallbackEntry = {
+      sessionId: "fallback-session-id",
+      sessionFile: "/tmp/fallback-session.jsonl",
+    } as SessionEntry;
+    const configuredEntry = {
+      sessionId: "configured-acp-session-id",
+      sessionFile: "/tmp/configured-acp-session.jsonl",
+    } as SessionEntry;
+    const params = buildDiscordBoundParams("/new");
+    params.sessionKey = fallbackSessionKey;
+    params.ctx.SessionKey = fallbackSessionKey;
+    params.ctx.CommandTargetSessionKey = fallbackSessionKey;
+    params.sessionEntry = fallbackEntry;
+    params.previousSessionEntry = fallbackEntry;
+    params.sessionStore = {
+      [fallbackSessionKey]: fallbackEntry,
+      [configuredAcpSessionKey]: configuredEntry,
+    };
+
+    const result = await handleCommands(params);
+
+    expect(result.shouldContinue).toBe(false);
+    expect(result.reply?.text).toContain("ACP session reset in place");
+    expect(hookSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "command",
+        action: "new",
+        sessionKey: configuredAcpSessionKey,
+        context: expect.objectContaining({
+          sessionEntry: configuredEntry,
+          previousSessionEntry: configuredEntry,
+        }),
+      }),
+    );
+    hookSpy.mockRestore();
+  });
+
+  it("uses active ACP command target when conversation binding context is missing", async () => {
+    resetAcpSessionInPlaceMock.mockResolvedValue({ ok: true } as const);
+    const activeAcpTarget = "agent:codex:acp:binding:discord:default:feedface";
+    const params = buildParams(
+      "/new",
+      {
+        commands: { text: true },
+        channels: {
+          discord: {
+            allowFrom: ["*"],
+          },
+        },
+      } as RemoteClawConfig,
+      {
+        Provider: "discord",
+        Surface: "discord",
+        OriginatingChannel: "discord",
+        AccountId: "default",
+        SenderId: "12345",
+        From: "discord:12345",
+      },
+    );
+    params.sessionKey = "discord:slash:12345";
+    params.ctx.SessionKey = "discord:slash:12345";
+    params.ctx.CommandSource = "native";
+    params.ctx.CommandTargetSessionKey = activeAcpTarget;
+    params.ctx.To = "user:12345";
+    params.ctx.OriginatingTo = "user:12345";
+
+    const result = await handleCommands(params);
+
+    expect(result.shouldContinue).toBe(false);
+    expect(result.reply?.text).toContain("ACP session reset in place");
+    expect(resetAcpSessionInPlaceMock).toHaveBeenCalledTimes(1);
+    expect(resetAcpSessionInPlaceMock.mock.calls[0]?.[0]).toMatchObject({
+      sessionKey: activeAcpTarget,
+      reason: "new",
+    });
   });
 });
 
@@ -1888,5 +1600,41 @@ describe("handleCommands /tts", () => {
     const result = await handleCommands(params);
     expect(result.shouldContinue).toBe(false);
     expect(result.reply?.text).toContain("TTS status");
+  });
+});
+
+describe("abort trigger command", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("rejects unauthorized natural-language abort triggers", async () => {
+    const cfg = {
+      commands: { text: true },
+      channels: { whatsapp: { allowFrom: ["*"] } },
+    } as RemoteClawConfig;
+    const params = buildParams("stop", cfg);
+    const sessionEntry: SessionEntry = {
+      sessionId: "session-1",
+      updatedAt: Date.now(),
+      abortedLastRun: false,
+    };
+    const sessionStore: Record<string, SessionEntry> = {
+      [params.sessionKey]: sessionEntry,
+    };
+
+    const result = await handleCommands({
+      ...params,
+      sessionEntry,
+      sessionStore,
+      command: {
+        ...params.command,
+        isAuthorizedSender: false,
+        senderId: "unauthorized",
+      },
+    });
+
+    expect(result).toEqual({ shouldContinue: false });
+    expect(sessionStore[params.sessionKey]?.abortedLastRun).toBe(false);
   });
 });

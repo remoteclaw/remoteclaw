@@ -171,6 +171,7 @@ export type TtsDirectiveOverrides = {
   elevenlabs?: {
     voiceId?: string;
     modelId?: string;
+    outputFormat?: string;
     seed?: number;
     applyTextNormalization?: "auto" | "on" | "off";
     languageCode?: string;
@@ -178,6 +179,7 @@ export type TtsDirectiveOverrides = {
   };
   microsoft?: {
     voice?: string;
+    outputFormat?: string;
   };
 };
 

@@ -9,9 +9,9 @@ describe("resolveVitestIsolation", () => {
   });
 
   it("restores isolate mode when explicitly requested", () => {
-    expect(resolveVitestIsolation({ OPENCLAW_TEST_ISOLATE: "1" })).toBe(true);
-    expect(resolveVitestIsolation({ OPENCLAW_TEST_NO_ISOLATE: "0" })).toBe(true);
-    expect(resolveVitestIsolation({ OPENCLAW_TEST_NO_ISOLATE: "false" })).toBe(true);
+    expect(resolveVitestIsolation({ REMOTECLAW_TEST_ISOLATE: "1" })).toBe(true);
+    expect(resolveVitestIsolation({ REMOTECLAW_TEST_NO_ISOLATE: "0" })).toBe(true);
+    expect(resolveVitestIsolation({ REMOTECLAW_TEST_NO_ISOLATE: "false" })).toBe(true);
   });
 });
 

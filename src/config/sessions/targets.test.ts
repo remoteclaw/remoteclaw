@@ -17,7 +17,7 @@ describe("resolveSessionStoreTargets", () => {
   it("resolves all configured agent stores", () => {
     const cfg: RemoteClawConfig = {
       session: {
-        store: "~/.openclaw/agents/{agentId}/sessions/sessions.json",
+        store: "~/.remoteclaw/agents/{agentId}/sessions/sessions.json",
       },
       agents: {
         list: [{ id: "main", default: true }, { id: "work" }],
@@ -30,13 +30,13 @@ describe("resolveSessionStoreTargets", () => {
       {
         agentId: "main",
         storePath: path.resolve(
-          path.join(process.env.HOME ?? "", ".openclaw/agents/main/sessions/sessions.json"),
+          path.join(process.env.HOME ?? "", ".remoteclaw/agents/main/sessions/sessions.json"),
         ),
       },
       {
         agentId: "work",
         storePath: path.resolve(
-          path.join(process.env.HOME ?? "", ".openclaw/agents/work/sessions/sessions.json"),
+          path.join(process.env.HOME ?? "", ".remoteclaw/agents/work/sessions/sessions.json"),
         ),
       },
     ]);
@@ -80,7 +80,7 @@ describe("resolveSessionStoreTargets", () => {
 describe("resolveAllAgentSessionStoreTargets", () => {
   it("includes discovered on-disk agent stores alongside configured targets", async () => {
     await withTempHome(async (home) => {
-      const stateDir = path.join(home, ".openclaw");
+      const stateDir = path.join(home, ".remoteclaw");
       const opsSessionsDir = path.join(stateDir, "agents", "ops", "sessions");
       const retiredSessionsDir = path.join(stateDir, "agents", "retired", "sessions");
       await fs.mkdir(opsSessionsDir, { recursive: true });
@@ -198,7 +198,7 @@ describe("resolveAllAgentSessionStoreTargets", () => {
 
       const env = {
         ...process.env,
-        OPENCLAW_STATE_DIR: envStateDir,
+        REMOTECLAW_STATE_DIR: envStateDir,
       };
       const cfg: RemoteClawConfig = {};
       const mainStorePath = await resolveRealStorePath(mainSessionsDir);
@@ -245,7 +245,7 @@ describe("resolveAllAgentSessionStoreTargets", () => {
       };
       const env = {
         ...process.env,
-        OPENCLAW_STATE_DIR: envStateDir,
+        REMOTECLAW_STATE_DIR: envStateDir,
       };
       const retiredStorePath = await resolveRealStorePath(retiredSessionsDir);
 
@@ -291,7 +291,7 @@ describe("resolveAllAgentSessionStoreTargets", () => {
 
   it("skips discovered directories that only normalize into the default main agent", async () => {
     await withTempHome(async (home) => {
-      const stateDir = path.join(home, ".openclaw");
+      const stateDir = path.join(home, ".remoteclaw");
       const mainSessionsDir = path.join(stateDir, "agents", "main", "sessions");
       const junkSessionsDir = path.join(stateDir, "agents", "###", "sessions");
       await fs.mkdir(mainSessionsDir, { recursive: true });
@@ -339,7 +339,7 @@ describe("resolveAllAgentSessionStoreTargetsSync", () => {
       };
       const env = {
         ...process.env,
-        OPENCLAW_STATE_DIR: envStateDir,
+        REMOTECLAW_STATE_DIR: envStateDir,
       };
       const retiredStorePath = await resolveRealStorePath(retiredSessionsDir);
 

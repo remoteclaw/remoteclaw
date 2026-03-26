@@ -5,7 +5,7 @@ read_when:
 title: "WhatsApp"
 ---
 
-import { Card, CardGrid, Steps } from "@astrojs/starlight/components";
+import { Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 # WhatsApp (Web channel)
 
@@ -136,7 +136,7 @@ There is no separate Twilio WhatsApp messaging channel in the built-in chat-chan
 ## Access control and activation
 
 <Tabs>
-  <Tab title="DM policy">
+  <TabItem label="DM policy">
     `channels.whatsapp.dmPolicy` controls direct chat access:
 
     - `pairing` (default)
@@ -154,9 +154,9 @@ There is no separate Twilio WhatsApp messaging channel in the built-in chat-chan
     - if no allowlist is configured, the linked self number is allowed by default
     - outbound `fromMe` DMs are never auto-paired
 
-  </Tab>
+  </TabItem>
 
-  <Tab title="Group policy + allowlists">
+  <TabItem label="Group policy + allowlists">
     Group access has two layers:
 
     1. **Group membership allowlist** (`channels.whatsapp.groups`)
@@ -175,9 +175,9 @@ There is no separate Twilio WhatsApp messaging channel in the built-in chat-chan
 
     Note: if no `channels.whatsapp` block exists at all, runtime group-policy fallback is `allowlist` (with a warning log), even if `channels.defaults.groupPolicy` is set.
 
-  </Tab>
+  </TabItem>
 
-  <Tab title="Mentions + /activation">
+  <TabItem label="Mentions + /activation">
     Group replies require mention by default.
 
     Mention detection includes:
@@ -198,7 +198,7 @@ There is no separate Twilio WhatsApp messaging channel in the built-in chat-chan
 
     `activation` updates session state (not global config). It is owner-gated.
 
-  </Tab>
+  </TabItem>
 </Tabs>
 
 ## Personal-number and self-chat behavior

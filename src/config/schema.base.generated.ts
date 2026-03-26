@@ -97,11 +97,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
               type: "string",
             },
           },
-          stuckSessionWarnMs: {
-            type: "integer",
-            exclusiveMinimum: 0,
-            maximum: 9007199254740991,
-          },
           otel: {
             type: "object",
             properties: {
@@ -336,7 +331,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
               },
               {
                 type: "string",
-                const: "dev",
+                const: "next",
               },
             ],
           },
@@ -466,14 +461,11 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 cdpUrl: {
                   type: "string",
                 },
-                userDataDir: {
-                  type: "string",
-                },
                 driver: {
                   anyOf: [
                     {
                       type: "string",
-                      const: "openclaw",
+                      const: "remoteclaw",
                     },
                     {
                       type: "string",
@@ -481,7 +473,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     },
                     {
                       type: "string",
-                      const: "existing-session",
+                      const: "extension",
                     },
                   ],
                 },
@@ -496,6 +488,22 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
               required: ["color"],
               additionalProperties: false,
             },
+          },
+          relayBindHost: {
+            anyOf: [
+              {
+                type: "string",
+                format: "ipv4",
+                pattern:
+                  "^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$",
+              },
+              {
+                type: "string",
+                format: "ipv6",
+                pattern:
+                  "^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:))$",
+              },
+            ],
           },
           extraArgs: {
             type: "array",
@@ -792,540 +800,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
         },
         additionalProperties: false,
       },
-      acp: {
-        type: "object",
-        properties: {
-          enabled: {
-            type: "boolean",
-          },
-          dispatch: {
-            type: "object",
-            properties: {
-              enabled: {
-                type: "boolean",
-              },
-            },
-            additionalProperties: false,
-          },
-          backend: {
-            type: "string",
-          },
-          defaultAgent: {
-            type: "string",
-          },
-          allowedAgents: {
-            type: "array",
-            items: {
-              type: "string",
-            },
-          },
-          maxConcurrentSessions: {
-            type: "integer",
-            exclusiveMinimum: 0,
-            maximum: 9007199254740991,
-          },
-          stream: {
-            type: "object",
-            properties: {
-              coalesceIdleMs: {
-                type: "integer",
-                minimum: 0,
-                maximum: 9007199254740991,
-              },
-              maxChunkChars: {
-                type: "integer",
-                exclusiveMinimum: 0,
-                maximum: 9007199254740991,
-              },
-              repeatSuppression: {
-                type: "boolean",
-              },
-              deliveryMode: {
-                anyOf: [
-                  {
-                    type: "string",
-                    const: "live",
-                  },
-                  {
-                    type: "string",
-                    const: "final_only",
-                  },
-                ],
-              },
-              hiddenBoundarySeparator: {
-                anyOf: [
-                  {
-                    type: "string",
-                    const: "none",
-                  },
-                  {
-                    type: "string",
-                    const: "space",
-                  },
-                  {
-                    type: "string",
-                    const: "newline",
-                  },
-                  {
-                    type: "string",
-                    const: "paragraph",
-                  },
-                ],
-              },
-              maxOutputChars: {
-                type: "integer",
-                exclusiveMinimum: 0,
-                maximum: 9007199254740991,
-              },
-              maxSessionUpdateChars: {
-                type: "integer",
-                exclusiveMinimum: 0,
-                maximum: 9007199254740991,
-              },
-              tagVisibility: {
-                type: "object",
-                propertyNames: {
-                  type: "string",
-                },
-                additionalProperties: {
-                  type: "boolean",
-                },
-              },
-            },
-            additionalProperties: false,
-          },
-          runtime: {
-            type: "object",
-            properties: {
-              ttlMinutes: {
-                type: "integer",
-                exclusiveMinimum: 0,
-                maximum: 9007199254740991,
-              },
-              installCommand: {
-                type: "string",
-              },
-            },
-            additionalProperties: false,
-          },
-        },
-        additionalProperties: false,
-      },
-      models: {
-        type: "object",
-        properties: {
-          mode: {
-            anyOf: [
-              {
-                type: "string",
-                const: "merge",
-              },
-              {
-                type: "string",
-                const: "replace",
-              },
-            ],
-          },
-          providers: {
-            type: "object",
-            propertyNames: {
-              type: "string",
-            },
-            additionalProperties: {
-              type: "object",
-              properties: {
-                baseUrl: {
-                  type: "string",
-                  minLength: 1,
-                },
-                apiKey: {
-                  anyOf: [
-                    {
-                      type: "string",
-                    },
-                    {
-                      oneOf: [
-                        {
-                          type: "object",
-                          properties: {
-                            source: {
-                              type: "string",
-                              const: "env",
-                            },
-                            provider: {
-                              type: "string",
-                              pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                            },
-                            id: {
-                              type: "string",
-                              pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                            },
-                          },
-                          required: ["source", "provider", "id"],
-                          additionalProperties: false,
-                        },
-                        {
-                          type: "object",
-                          properties: {
-                            source: {
-                              type: "string",
-                              const: "file",
-                            },
-                            provider: {
-                              type: "string",
-                              pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                            },
-                            id: {
-                              type: "string",
-                            },
-                          },
-                          required: ["source", "provider", "id"],
-                          additionalProperties: false,
-                        },
-                        {
-                          type: "object",
-                          properties: {
-                            source: {
-                              type: "string",
-                              const: "exec",
-                            },
-                            provider: {
-                              type: "string",
-                              pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                            },
-                            id: {
-                              type: "string",
-                            },
-                          },
-                          required: ["source", "provider", "id"],
-                          additionalProperties: false,
-                        },
-                      ],
-                    },
-                  ],
-                },
-                auth: {
-                  anyOf: [
-                    {
-                      type: "string",
-                      const: "api-key",
-                    },
-                    {
-                      type: "string",
-                      const: "aws-sdk",
-                    },
-                    {
-                      type: "string",
-                      const: "oauth",
-                    },
-                    {
-                      type: "string",
-                      const: "token",
-                    },
-                  ],
-                },
-                api: {
-                  type: "string",
-                  enum: [
-                    "openai-completions",
-                    "openai-responses",
-                    "openai-codex-responses",
-                    "anthropic-messages",
-                    "google-generative-ai",
-                    "github-copilot",
-                    "bedrock-converse-stream",
-                    "ollama",
-                  ],
-                },
-                injectNumCtxForOpenAICompat: {
-                  type: "boolean",
-                },
-                headers: {
-                  type: "object",
-                  propertyNames: {
-                    type: "string",
-                  },
-                  additionalProperties: {
-                    anyOf: [
-                      {
-                        type: "string",
-                      },
-                      {
-                        oneOf: [
-                          {
-                            type: "object",
-                            properties: {
-                              source: {
-                                type: "string",
-                                const: "env",
-                              },
-                              provider: {
-                                type: "string",
-                                pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                              },
-                              id: {
-                                type: "string",
-                                pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                              },
-                            },
-                            required: ["source", "provider", "id"],
-                            additionalProperties: false,
-                          },
-                          {
-                            type: "object",
-                            properties: {
-                              source: {
-                                type: "string",
-                                const: "file",
-                              },
-                              provider: {
-                                type: "string",
-                                pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                              },
-                              id: {
-                                type: "string",
-                              },
-                            },
-                            required: ["source", "provider", "id"],
-                            additionalProperties: false,
-                          },
-                          {
-                            type: "object",
-                            properties: {
-                              source: {
-                                type: "string",
-                                const: "exec",
-                              },
-                              provider: {
-                                type: "string",
-                                pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                              },
-                              id: {
-                                type: "string",
-                              },
-                            },
-                            required: ["source", "provider", "id"],
-                            additionalProperties: false,
-                          },
-                        ],
-                      },
-                    ],
-                  },
-                },
-                authHeader: {
-                  type: "boolean",
-                },
-                models: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      id: {
-                        type: "string",
-                        minLength: 1,
-                      },
-                      name: {
-                        type: "string",
-                        minLength: 1,
-                      },
-                      api: {
-                        type: "string",
-                        enum: [
-                          "openai-completions",
-                          "openai-responses",
-                          "openai-codex-responses",
-                          "anthropic-messages",
-                          "google-generative-ai",
-                          "github-copilot",
-                          "bedrock-converse-stream",
-                          "ollama",
-                        ],
-                      },
-                      reasoning: {
-                        type: "boolean",
-                      },
-                      input: {
-                        type: "array",
-                        items: {
-                          anyOf: [
-                            {
-                              type: "string",
-                              const: "text",
-                            },
-                            {
-                              type: "string",
-                              const: "image",
-                            },
-                          ],
-                        },
-                      },
-                      cost: {
-                        type: "object",
-                        properties: {
-                          input: {
-                            type: "number",
-                          },
-                          output: {
-                            type: "number",
-                          },
-                          cacheRead: {
-                            type: "number",
-                          },
-                          cacheWrite: {
-                            type: "number",
-                          },
-                        },
-                        additionalProperties: false,
-                      },
-                      contextWindow: {
-                        type: "number",
-                        exclusiveMinimum: 0,
-                      },
-                      maxTokens: {
-                        type: "number",
-                        exclusiveMinimum: 0,
-                      },
-                      headers: {
-                        type: "object",
-                        propertyNames: {
-                          type: "string",
-                        },
-                        additionalProperties: {
-                          type: "string",
-                        },
-                      },
-                      compat: {
-                        type: "object",
-                        properties: {
-                          supportsStore: {
-                            type: "boolean",
-                          },
-                          supportsDeveloperRole: {
-                            type: "boolean",
-                          },
-                          supportsReasoningEffort: {
-                            type: "boolean",
-                          },
-                          supportsUsageInStreaming: {
-                            type: "boolean",
-                          },
-                          supportsTools: {
-                            type: "boolean",
-                          },
-                          supportsStrictMode: {
-                            type: "boolean",
-                          },
-                          maxTokensField: {
-                            anyOf: [
-                              {
-                                type: "string",
-                                const: "max_completion_tokens",
-                              },
-                              {
-                                type: "string",
-                                const: "max_tokens",
-                              },
-                            ],
-                          },
-                          thinkingFormat: {
-                            anyOf: [
-                              {
-                                type: "string",
-                                const: "openai",
-                              },
-                              {
-                                type: "string",
-                                const: "openrouter",
-                              },
-                              {
-                                type: "string",
-                                const: "zai",
-                              },
-                              {
-                                type: "string",
-                                const: "qwen",
-                              },
-                              {
-                                type: "string",
-                                const: "qwen-chat-template",
-                              },
-                            ],
-                          },
-                          requiresToolResultName: {
-                            type: "boolean",
-                          },
-                          requiresAssistantAfterToolResult: {
-                            type: "boolean",
-                          },
-                          requiresThinkingAsText: {
-                            type: "boolean",
-                          },
-                          toolSchemaProfile: {
-                            type: "string",
-                            const: "xai",
-                          },
-                          nativeWebSearchTool: {
-                            type: "boolean",
-                          },
-                          toolCallArgumentsEncoding: {
-                            type: "string",
-                            const: "html-entities",
-                          },
-                          requiresMistralToolIds: {
-                            type: "boolean",
-                          },
-                          requiresOpenAiAnthropicToolPayload: {
-                            type: "boolean",
-                          },
-                        },
-                        additionalProperties: false,
-                      },
-                    },
-                    required: ["id", "name"],
-                    additionalProperties: false,
-                  },
-                },
-              },
-              required: ["baseUrl", "models"],
-              additionalProperties: false,
-            },
-          },
-          bedrockDiscovery: {
-            type: "object",
-            properties: {
-              enabled: {
-                type: "boolean",
-              },
-              region: {
-                type: "string",
-              },
-              providerFilter: {
-                type: "array",
-                items: {
-                  type: "string",
-                },
-              },
-              refreshInterval: {
-                type: "integer",
-                minimum: 0,
-                maximum: 9007199254740991,
-              },
-              defaultContextWindow: {
-                type: "integer",
-                exclusiveMinimum: 0,
-                maximum: 9007199254740991,
-              },
-              defaultMaxTokens: {
-                type: "integer",
-                exclusiveMinimum: 0,
-                maximum: 9007199254740991,
-              },
-            },
-            additionalProperties: false,
-          },
-        },
-        additionalProperties: false,
-      },
       nodeHost: {
         type: "object",
         properties: {
@@ -1353,162 +827,13 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
           defaults: {
             type: "object",
             properties: {
-              model: {
-                anyOf: [
-                  {
-                    type: "string",
-                  },
-                  {
-                    type: "object",
-                    properties: {
-                      primary: {
-                        type: "string",
-                      },
-                      fallbacks: {
-                        type: "array",
-                        items: {
-                          type: "string",
-                        },
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                ],
-              },
-              imageModel: {
-                anyOf: [
-                  {
-                    type: "string",
-                  },
-                  {
-                    type: "object",
-                    properties: {
-                      primary: {
-                        type: "string",
-                      },
-                      fallbacks: {
-                        type: "array",
-                        items: {
-                          type: "string",
-                        },
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                ],
-              },
-              imageGenerationModel: {
-                anyOf: [
-                  {
-                    type: "string",
-                  },
-                  {
-                    type: "object",
-                    properties: {
-                      primary: {
-                        type: "string",
-                      },
-                      fallbacks: {
-                        type: "array",
-                        items: {
-                          type: "string",
-                        },
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                ],
-              },
-              pdfModel: {
-                anyOf: [
-                  {
-                    type: "string",
-                  },
-                  {
-                    type: "object",
-                    properties: {
-                      primary: {
-                        type: "string",
-                      },
-                      fallbacks: {
-                        type: "array",
-                        items: {
-                          type: "string",
-                        },
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                ],
-              },
-              pdfMaxBytesMb: {
-                type: "number",
-                exclusiveMinimum: 0,
-              },
-              pdfMaxPages: {
-                type: "integer",
-                exclusiveMinimum: 0,
-                maximum: 9007199254740991,
-              },
-              models: {
-                type: "object",
-                propertyNames: {
-                  type: "string",
-                },
-                additionalProperties: {
-                  type: "object",
-                  properties: {
-                    alias: {
-                      type: "string",
-                    },
-                    params: {
-                      type: "object",
-                      propertyNames: {
-                        type: "string",
-                      },
-                      additionalProperties: {},
-                    },
-                    streaming: {
-                      type: "boolean",
-                    },
-                  },
-                  additionalProperties: false,
-                },
-              },
+              imageModel: {},
+              models: {},
               workspace: {
                 type: "string",
               },
               repoRoot: {
                 type: "string",
-              },
-              skipBootstrap: {
-                type: "boolean",
-              },
-              bootstrapMaxChars: {
-                type: "integer",
-                exclusiveMinimum: 0,
-                maximum: 9007199254740991,
-              },
-              bootstrapTotalMaxChars: {
-                type: "integer",
-                exclusiveMinimum: 0,
-                maximum: 9007199254740991,
-              },
-              bootstrapPromptTruncationWarning: {
-                anyOf: [
-                  {
-                    type: "string",
-                    const: "off",
-                  },
-                  {
-                    type: "string",
-                    const: "once",
-                  },
-                  {
-                    type: "string",
-                    const: "always",
-                  },
-                ],
               },
               userTimezone: {
                 type: "string",
@@ -1561,684 +886,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 exclusiveMinimum: 0,
                 maximum: 9007199254740991,
               },
-              cliBackends: {
-                type: "object",
-                propertyNames: {
-                  type: "string",
-                },
-                additionalProperties: {
-                  type: "object",
-                  properties: {
-                    command: {
-                      type: "string",
-                    },
-                    args: {
-                      type: "array",
-                      items: {
-                        type: "string",
-                      },
-                    },
-                    output: {
-                      anyOf: [
-                        {
-                          type: "string",
-                          const: "json",
-                        },
-                        {
-                          type: "string",
-                          const: "text",
-                        },
-                        {
-                          type: "string",
-                          const: "jsonl",
-                        },
-                      ],
-                    },
-                    resumeOutput: {
-                      anyOf: [
-                        {
-                          type: "string",
-                          const: "json",
-                        },
-                        {
-                          type: "string",
-                          const: "text",
-                        },
-                        {
-                          type: "string",
-                          const: "jsonl",
-                        },
-                      ],
-                    },
-                    input: {
-                      anyOf: [
-                        {
-                          type: "string",
-                          const: "arg",
-                        },
-                        {
-                          type: "string",
-                          const: "stdin",
-                        },
-                      ],
-                    },
-                    maxPromptArgChars: {
-                      type: "integer",
-                      exclusiveMinimum: 0,
-                      maximum: 9007199254740991,
-                    },
-                    env: {
-                      type: "object",
-                      propertyNames: {
-                        type: "string",
-                      },
-                      additionalProperties: {
-                        type: "string",
-                      },
-                    },
-                    clearEnv: {
-                      type: "array",
-                      items: {
-                        type: "string",
-                      },
-                    },
-                    modelArg: {
-                      type: "string",
-                    },
-                    modelAliases: {
-                      type: "object",
-                      propertyNames: {
-                        type: "string",
-                      },
-                      additionalProperties: {
-                        type: "string",
-                      },
-                    },
-                    sessionArg: {
-                      type: "string",
-                    },
-                    sessionArgs: {
-                      type: "array",
-                      items: {
-                        type: "string",
-                      },
-                    },
-                    resumeArgs: {
-                      type: "array",
-                      items: {
-                        type: "string",
-                      },
-                    },
-                    sessionMode: {
-                      anyOf: [
-                        {
-                          type: "string",
-                          const: "always",
-                        },
-                        {
-                          type: "string",
-                          const: "existing",
-                        },
-                        {
-                          type: "string",
-                          const: "none",
-                        },
-                      ],
-                    },
-                    sessionIdFields: {
-                      type: "array",
-                      items: {
-                        type: "string",
-                      },
-                    },
-                    systemPromptArg: {
-                      type: "string",
-                    },
-                    systemPromptMode: {
-                      anyOf: [
-                        {
-                          type: "string",
-                          const: "append",
-                        },
-                        {
-                          type: "string",
-                          const: "replace",
-                        },
-                      ],
-                    },
-                    systemPromptWhen: {
-                      anyOf: [
-                        {
-                          type: "string",
-                          const: "first",
-                        },
-                        {
-                          type: "string",
-                          const: "always",
-                        },
-                        {
-                          type: "string",
-                          const: "never",
-                        },
-                      ],
-                    },
-                    imageArg: {
-                      type: "string",
-                    },
-                    imageMode: {
-                      anyOf: [
-                        {
-                          type: "string",
-                          const: "repeat",
-                        },
-                        {
-                          type: "string",
-                          const: "list",
-                        },
-                      ],
-                    },
-                    serialize: {
-                      type: "boolean",
-                    },
-                    reliability: {
-                      type: "object",
-                      properties: {
-                        watchdog: {
-                          type: "object",
-                          properties: {
-                            fresh: {
-                              type: "object",
-                              properties: {
-                                noOutputTimeoutMs: {
-                                  type: "integer",
-                                  minimum: 1000,
-                                  maximum: 9007199254740991,
-                                },
-                                noOutputTimeoutRatio: {
-                                  type: "number",
-                                  minimum: 0.05,
-                                  maximum: 0.95,
-                                },
-                                minMs: {
-                                  type: "integer",
-                                  minimum: 1000,
-                                  maximum: 9007199254740991,
-                                },
-                                maxMs: {
-                                  type: "integer",
-                                  minimum: 1000,
-                                  maximum: 9007199254740991,
-                                },
-                              },
-                              additionalProperties: false,
-                            },
-                            resume: {
-                              type: "object",
-                              properties: {
-                                noOutputTimeoutMs: {
-                                  type: "integer",
-                                  minimum: 1000,
-                                  maximum: 9007199254740991,
-                                },
-                                noOutputTimeoutRatio: {
-                                  type: "number",
-                                  minimum: 0.05,
-                                  maximum: 0.95,
-                                },
-                                minMs: {
-                                  type: "integer",
-                                  minimum: 1000,
-                                  maximum: 9007199254740991,
-                                },
-                                maxMs: {
-                                  type: "integer",
-                                  minimum: 1000,
-                                  maximum: 9007199254740991,
-                                },
-                              },
-                              additionalProperties: false,
-                            },
-                          },
-                          additionalProperties: false,
-                        },
-                      },
-                      additionalProperties: false,
-                    },
-                  },
-                  required: ["command"],
-                  additionalProperties: false,
-                },
-              },
-              memorySearch: {
-                type: "object",
-                properties: {
-                  enabled: {
-                    type: "boolean",
-                  },
-                  sources: {
-                    type: "array",
-                    items: {
-                      anyOf: [
-                        {
-                          type: "string",
-                          const: "memory",
-                        },
-                        {
-                          type: "string",
-                          const: "sessions",
-                        },
-                      ],
-                    },
-                  },
-                  extraPaths: {
-                    type: "array",
-                    items: {
-                      type: "string",
-                    },
-                  },
-                  multimodal: {
-                    type: "object",
-                    properties: {
-                      enabled: {
-                        type: "boolean",
-                      },
-                      modalities: {
-                        type: "array",
-                        items: {
-                          anyOf: [
-                            {
-                              type: "string",
-                              const: "image",
-                            },
-                            {
-                              type: "string",
-                              const: "audio",
-                            },
-                            {
-                              type: "string",
-                              const: "all",
-                            },
-                          ],
-                        },
-                      },
-                      maxFileBytes: {
-                        type: "integer",
-                        exclusiveMinimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                  experimental: {
-                    type: "object",
-                    properties: {
-                      sessionMemory: {
-                        type: "boolean",
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                  provider: {
-                    anyOf: [
-                      {
-                        type: "string",
-                        const: "openai",
-                      },
-                      {
-                        type: "string",
-                        const: "local",
-                      },
-                      {
-                        type: "string",
-                        const: "gemini",
-                      },
-                      {
-                        type: "string",
-                        const: "voyage",
-                      },
-                      {
-                        type: "string",
-                        const: "mistral",
-                      },
-                      {
-                        type: "string",
-                        const: "ollama",
-                      },
-                    ],
-                  },
-                  remote: {
-                    type: "object",
-                    properties: {
-                      baseUrl: {
-                        type: "string",
-                      },
-                      apiKey: {
-                        anyOf: [
-                          {
-                            type: "string",
-                          },
-                          {
-                            oneOf: [
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "env",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "file",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "exec",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                            ],
-                          },
-                        ],
-                      },
-                      headers: {
-                        type: "object",
-                        propertyNames: {
-                          type: "string",
-                        },
-                        additionalProperties: {
-                          type: "string",
-                        },
-                      },
-                      batch: {
-                        type: "object",
-                        properties: {
-                          enabled: {
-                            type: "boolean",
-                          },
-                          wait: {
-                            type: "boolean",
-                          },
-                          concurrency: {
-                            type: "integer",
-                            exclusiveMinimum: 0,
-                            maximum: 9007199254740991,
-                          },
-                          pollIntervalMs: {
-                            type: "integer",
-                            minimum: 0,
-                            maximum: 9007199254740991,
-                          },
-                          timeoutMinutes: {
-                            type: "integer",
-                            exclusiveMinimum: 0,
-                            maximum: 9007199254740991,
-                          },
-                        },
-                        additionalProperties: false,
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                  fallback: {
-                    anyOf: [
-                      {
-                        type: "string",
-                        const: "openai",
-                      },
-                      {
-                        type: "string",
-                        const: "gemini",
-                      },
-                      {
-                        type: "string",
-                        const: "local",
-                      },
-                      {
-                        type: "string",
-                        const: "voyage",
-                      },
-                      {
-                        type: "string",
-                        const: "mistral",
-                      },
-                      {
-                        type: "string",
-                        const: "ollama",
-                      },
-                      {
-                        type: "string",
-                        const: "none",
-                      },
-                    ],
-                  },
-                  model: {
-                    type: "string",
-                  },
-                  outputDimensionality: {
-                    type: "integer",
-                    exclusiveMinimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  local: {
-                    type: "object",
-                    properties: {
-                      modelPath: {
-                        type: "string",
-                      },
-                      modelCacheDir: {
-                        type: "string",
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                  store: {
-                    type: "object",
-                    properties: {
-                      driver: {
-                        type: "string",
-                        const: "sqlite",
-                      },
-                      path: {
-                        type: "string",
-                      },
-                      vector: {
-                        type: "object",
-                        properties: {
-                          enabled: {
-                            type: "boolean",
-                          },
-                          extensionPath: {
-                            type: "string",
-                          },
-                        },
-                        additionalProperties: false,
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                  chunking: {
-                    type: "object",
-                    properties: {
-                      tokens: {
-                        type: "integer",
-                        exclusiveMinimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                      overlap: {
-                        type: "integer",
-                        minimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                  sync: {
-                    type: "object",
-                    properties: {
-                      onSessionStart: {
-                        type: "boolean",
-                      },
-                      onSearch: {
-                        type: "boolean",
-                      },
-                      watch: {
-                        type: "boolean",
-                      },
-                      watchDebounceMs: {
-                        type: "integer",
-                        minimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                      intervalMinutes: {
-                        type: "integer",
-                        minimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                      sessions: {
-                        type: "object",
-                        properties: {
-                          deltaBytes: {
-                            type: "integer",
-                            minimum: 0,
-                            maximum: 9007199254740991,
-                          },
-                          deltaMessages: {
-                            type: "integer",
-                            minimum: 0,
-                            maximum: 9007199254740991,
-                          },
-                          postCompactionForce: {
-                            type: "boolean",
-                          },
-                        },
-                        additionalProperties: false,
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                  query: {
-                    type: "object",
-                    properties: {
-                      maxResults: {
-                        type: "integer",
-                        exclusiveMinimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                      minScore: {
-                        type: "number",
-                        minimum: 0,
-                        maximum: 1,
-                      },
-                      hybrid: {
-                        type: "object",
-                        properties: {
-                          enabled: {
-                            type: "boolean",
-                          },
-                          vectorWeight: {
-                            type: "number",
-                            minimum: 0,
-                            maximum: 1,
-                          },
-                          textWeight: {
-                            type: "number",
-                            minimum: 0,
-                            maximum: 1,
-                          },
-                          candidateMultiplier: {
-                            type: "integer",
-                            exclusiveMinimum: 0,
-                            maximum: 9007199254740991,
-                          },
-                          mmr: {
-                            type: "object",
-                            properties: {
-                              enabled: {
-                                type: "boolean",
-                              },
-                              lambda: {
-                                type: "number",
-                                minimum: 0,
-                                maximum: 1,
-                              },
-                            },
-                            additionalProperties: false,
-                          },
-                          temporalDecay: {
-                            type: "object",
-                            properties: {
-                              enabled: {
-                                type: "boolean",
-                              },
-                              halfLifeDays: {
-                                type: "integer",
-                                exclusiveMinimum: 0,
-                                maximum: 9007199254740991,
-                              },
-                            },
-                            additionalProperties: false,
-                          },
-                        },
-                        additionalProperties: false,
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                  cache: {
-                    type: "object",
-                    properties: {
-                      enabled: {
-                        type: "boolean",
-                      },
-                      maxEntries: {
-                        type: "integer",
-                        exclusiveMinimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                },
-                additionalProperties: false,
-              },
+              cliBackends: {},
               contextPruning: {
                 type: "object",
                 properties: {
@@ -2331,189 +979,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 },
                 additionalProperties: false,
               },
-              compaction: {
-                type: "object",
-                properties: {
-                  mode: {
-                    anyOf: [
-                      {
-                        type: "string",
-                        const: "default",
-                      },
-                      {
-                        type: "string",
-                        const: "safeguard",
-                      },
-                    ],
-                  },
-                  reserveTokens: {
-                    type: "integer",
-                    minimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  keepRecentTokens: {
-                    type: "integer",
-                    exclusiveMinimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  reserveTokensFloor: {
-                    type: "integer",
-                    minimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  maxHistoryShare: {
-                    type: "number",
-                    minimum: 0.1,
-                    maximum: 0.9,
-                  },
-                  customInstructions: {
-                    type: "string",
-                  },
-                  identifierPolicy: {
-                    anyOf: [
-                      {
-                        type: "string",
-                        const: "strict",
-                      },
-                      {
-                        type: "string",
-                        const: "off",
-                      },
-                      {
-                        type: "string",
-                        const: "custom",
-                      },
-                    ],
-                  },
-                  identifierInstructions: {
-                    type: "string",
-                  },
-                  recentTurnsPreserve: {
-                    type: "integer",
-                    minimum: 0,
-                    maximum: 12,
-                  },
-                  qualityGuard: {
-                    type: "object",
-                    properties: {
-                      enabled: {
-                        type: "boolean",
-                      },
-                      maxRetries: {
-                        type: "integer",
-                        minimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                  postIndexSync: {
-                    type: "string",
-                    enum: ["off", "async", "await"],
-                  },
-                  postCompactionSections: {
-                    type: "array",
-                    items: {
-                      type: "string",
-                    },
-                  },
-                  model: {
-                    type: "string",
-                  },
-                  timeoutSeconds: {
-                    type: "integer",
-                    exclusiveMinimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  memoryFlush: {
-                    type: "object",
-                    properties: {
-                      enabled: {
-                        type: "boolean",
-                      },
-                      softThresholdTokens: {
-                        type: "integer",
-                        minimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                      forceFlushTranscriptBytes: {
-                        anyOf: [
-                          {
-                            type: "integer",
-                            minimum: 0,
-                            maximum: 9007199254740991,
-                          },
-                          {
-                            type: "string",
-                          },
-                        ],
-                      },
-                      prompt: {
-                        type: "string",
-                      },
-                      systemPrompt: {
-                        type: "string",
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                },
-                additionalProperties: false,
-              },
-              embeddedPi: {
-                type: "object",
-                properties: {
-                  projectSettingsPolicy: {
-                    anyOf: [
-                      {
-                        type: "string",
-                        const: "trusted",
-                      },
-                      {
-                        type: "string",
-                        const: "sanitize",
-                      },
-                      {
-                        type: "string",
-                        const: "ignore",
-                      },
-                    ],
-                  },
-                },
-                additionalProperties: false,
-              },
-              thinkingDefault: {
-                anyOf: [
-                  {
-                    type: "string",
-                    const: "off",
-                  },
-                  {
-                    type: "string",
-                    const: "minimal",
-                  },
-                  {
-                    type: "string",
-                    const: "low",
-                  },
-                  {
-                    type: "string",
-                    const: "medium",
-                  },
-                  {
-                    type: "string",
-                    const: "high",
-                  },
-                  {
-                    type: "string",
-                    const: "xhigh",
-                  },
-                  {
-                    type: "string",
-                    const: "adaptive",
-                  },
-                ],
-              },
               verboseDefault: {
                 anyOf: [
                   {
@@ -2523,26 +988,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   {
                     type: "string",
                     const: "on",
-                  },
-                  {
-                    type: "string",
-                    const: "full",
-                  },
-                ],
-              },
-              elevatedDefault: {
-                anyOf: [
-                  {
-                    type: "string",
-                    const: "off",
-                  },
-                  {
-                    type: "string",
-                    const: "on",
-                  },
-                  {
-                    type: "string",
-                    const: "ask",
                   },
                   {
                     type: "string",
@@ -2725,9 +1170,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   session: {
                     type: "string",
                   },
-                  includeReasoning: {
-                    type: "boolean",
-                  },
                   target: {
                     type: "string",
                   },
@@ -2752,19 +1194,23 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   prompt: {
                     type: "string",
                   },
-                  ackMaxChars: {
-                    type: "integer",
-                    minimum: 0,
-                    maximum: 9007199254740991,
+                  file: {
+                    type: "string",
                   },
                   suppressToolErrorWarnings: {
                     type: "boolean",
                   },
-                  lightContext: {
-                    type: "boolean",
+                },
+                additionalProperties: false,
+              },
+              boot: {
+                type: "object",
+                properties: {
+                  prompt: {
+                    type: "string",
                   },
-                  isolatedSession: {
-                    type: "boolean",
+                  file: {
+                    type: "string",
                   },
                 },
                 additionalProperties: false,
@@ -2798,33 +1244,8 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   },
                   archiveAfterMinutes: {
                     type: "integer",
-                    minimum: 0,
+                    exclusiveMinimum: 0,
                     maximum: 9007199254740991,
-                  },
-                  model: {
-                    anyOf: [
-                      {
-                        type: "string",
-                      },
-                      {
-                        type: "object",
-                        properties: {
-                          primary: {
-                            type: "string",
-                          },
-                          fallbacks: {
-                            type: "array",
-                            items: {
-                              type: "string",
-                            },
-                          },
-                        },
-                        additionalProperties: false,
-                      },
-                    ],
-                  },
-                  thinking: {
-                    type: "string",
                   },
                   runTimeoutSeconds: {
                     type: "integer",
@@ -2839,530 +1260,64 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 },
                 additionalProperties: false,
               },
-              sandbox: {
-                type: "object",
-                properties: {
-                  mode: {
-                    anyOf: [
-                      {
-                        type: "string",
-                        const: "off",
-                      },
-                      {
-                        type: "string",
-                        const: "non-main",
-                      },
-                      {
-                        type: "string",
-                        const: "all",
-                      },
-                    ],
-                  },
-                  backend: {
-                    type: "string",
-                    minLength: 1,
-                  },
-                  workspaceAccess: {
-                    anyOf: [
-                      {
-                        type: "string",
-                        const: "none",
-                      },
-                      {
-                        type: "string",
-                        const: "ro",
-                      },
-                      {
-                        type: "string",
-                        const: "rw",
-                      },
-                    ],
-                  },
-                  sessionToolsVisibility: {
-                    anyOf: [
-                      {
-                        type: "string",
-                        const: "spawned",
-                      },
-                      {
-                        type: "string",
-                        const: "all",
-                      },
-                    ],
-                  },
-                  scope: {
-                    anyOf: [
-                      {
-                        type: "string",
-                        const: "session",
-                      },
-                      {
-                        type: "string",
-                        const: "agent",
-                      },
-                      {
-                        type: "string",
-                        const: "shared",
-                      },
-                    ],
-                  },
-                  perSession: {
-                    type: "boolean",
-                  },
-                  workspaceRoot: {
-                    type: "string",
-                  },
-                  docker: {
-                    type: "object",
-                    properties: {
-                      image: {
-                        type: "string",
-                      },
-                      containerPrefix: {
-                        type: "string",
-                      },
-                      workdir: {
-                        type: "string",
-                      },
-                      readOnlyRoot: {
-                        type: "boolean",
-                      },
-                      tmpfs: {
-                        type: "array",
-                        items: {
-                          type: "string",
-                        },
-                      },
-                      network: {
-                        type: "string",
-                      },
-                      user: {
-                        type: "string",
-                      },
-                      capDrop: {
-                        type: "array",
-                        items: {
-                          type: "string",
-                        },
-                      },
-                      env: {
-                        type: "object",
-                        propertyNames: {
-                          type: "string",
-                        },
-                        additionalProperties: {
-                          type: "string",
-                        },
-                      },
-                      setupCommand: {},
-                      pidsLimit: {
-                        type: "integer",
-                        exclusiveMinimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                      memory: {
-                        anyOf: [
-                          {
-                            type: "string",
-                          },
-                          {
-                            type: "number",
-                          },
-                        ],
-                      },
-                      memorySwap: {
-                        anyOf: [
-                          {
-                            type: "string",
-                          },
-                          {
-                            type: "number",
-                          },
-                        ],
-                      },
-                      cpus: {
-                        type: "number",
-                        exclusiveMinimum: 0,
-                      },
-                      ulimits: {
-                        type: "object",
-                        propertyNames: {
-                          type: "string",
-                        },
-                        additionalProperties: {
-                          anyOf: [
-                            {
-                              type: "string",
-                            },
-                            {
-                              type: "number",
-                            },
-                            {
-                              type: "object",
-                              properties: {
-                                soft: {
-                                  type: "integer",
-                                  minimum: 0,
-                                  maximum: 9007199254740991,
-                                },
-                                hard: {
-                                  type: "integer",
-                                  minimum: 0,
-                                  maximum: 9007199254740991,
-                                },
-                              },
-                              additionalProperties: false,
-                            },
-                          ],
-                        },
-                      },
-                      seccompProfile: {
-                        type: "string",
-                      },
-                      apparmorProfile: {
-                        type: "string",
-                      },
-                      dns: {
-                        type: "array",
-                        items: {
-                          type: "string",
-                        },
-                      },
-                      extraHosts: {
-                        type: "array",
-                        items: {
-                          type: "string",
-                        },
-                      },
-                      binds: {
-                        type: "array",
-                        items: {
-                          type: "string",
-                        },
-                      },
-                      dangerouslyAllowReservedContainerTargets: {
-                        type: "boolean",
-                      },
-                      dangerouslyAllowExternalBindSources: {
-                        type: "boolean",
-                      },
-                      dangerouslyAllowContainerNamespaceJoin: {
-                        type: "boolean",
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                  ssh: {
-                    type: "object",
-                    properties: {
-                      target: {
-                        type: "string",
-                        minLength: 1,
-                      },
-                      command: {
-                        type: "string",
-                        minLength: 1,
-                      },
-                      workspaceRoot: {
-                        type: "string",
-                        minLength: 1,
-                      },
-                      strictHostKeyChecking: {
-                        type: "boolean",
-                      },
-                      updateHostKeys: {
-                        type: "boolean",
-                      },
-                      identityFile: {
-                        type: "string",
-                        minLength: 1,
-                      },
-                      certificateFile: {
-                        type: "string",
-                        minLength: 1,
-                      },
-                      knownHostsFile: {
-                        type: "string",
-                        minLength: 1,
-                      },
-                      identityData: {
-                        anyOf: [
-                          {
-                            type: "string",
-                          },
-                          {
-                            oneOf: [
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "env",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "file",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "exec",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                            ],
-                          },
-                        ],
-                      },
-                      certificateData: {
-                        anyOf: [
-                          {
-                            type: "string",
-                          },
-                          {
-                            oneOf: [
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "env",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "file",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "exec",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                            ],
-                          },
-                        ],
-                      },
-                      knownHostsData: {
-                        anyOf: [
-                          {
-                            type: "string",
-                          },
-                          {
-                            oneOf: [
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "env",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "file",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "exec",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                            ],
-                          },
-                        ],
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                  browser: {
-                    type: "object",
-                    properties: {
-                      enabled: {
-                        type: "boolean",
-                      },
-                      image: {
-                        type: "string",
-                      },
-                      containerPrefix: {
-                        type: "string",
-                      },
-                      network: {
-                        type: "string",
-                      },
-                      cdpPort: {
-                        type: "integer",
-                        exclusiveMinimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                      cdpSourceRange: {
-                        type: "string",
-                      },
-                      vncPort: {
-                        type: "integer",
-                        exclusiveMinimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                      noVncPort: {
-                        type: "integer",
-                        exclusiveMinimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                      headless: {
-                        type: "boolean",
-                      },
-                      enableNoVnc: {
-                        type: "boolean",
-                      },
-                      allowHostControl: {
-                        type: "boolean",
-                      },
-                      autoStart: {
-                        type: "boolean",
-                      },
-                      autoStartTimeoutMs: {
-                        type: "integer",
-                        exclusiveMinimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                      binds: {
-                        type: "array",
-                        items: {
-                          type: "string",
-                        },
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                  prune: {
-                    type: "object",
-                    properties: {
-                      idleHours: {
-                        type: "integer",
-                        minimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                      maxAgeDays: {
-                        type: "integer",
-                        minimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                    },
-                    additionalProperties: false,
-                  },
+              editableFiles: {
+                type: "array",
+                items: {
+                  type: "string",
                 },
-                additionalProperties: false,
+              },
+              sandbox: {},
+              runtime: {
+                anyOf: [
+                  {
+                    type: "string",
+                    const: "claude",
+                  },
+                  {
+                    type: "string",
+                    const: "gemini",
+                  },
+                  {
+                    type: "string",
+                    const: "codex",
+                  },
+                  {
+                    type: "string",
+                    const: "opencode",
+                  },
+                ],
+              },
+              runtimeArgs: {
+                type: "array",
+                items: {
+                  type: "string",
+                },
+              },
+              runtimeEnv: {
+                type: "object",
+                propertyNames: {
+                  type: "string",
+                },
+                additionalProperties: {
+                  type: "string",
+                },
+              },
+              auth: {
+                anyOf: [
+                  {
+                    type: "boolean",
+                    const: false,
+                  },
+                  {
+                    type: "string",
+                  },
+                  {
+                    type: "array",
+                    items: {
+                      type: "string",
+                    },
+                  },
+                ],
               },
             },
             additionalProperties: false,
@@ -3386,475 +1341,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 },
                 agentDir: {
                   type: "string",
-                },
-                model: {
-                  anyOf: [
-                    {
-                      type: "string",
-                    },
-                    {
-                      type: "object",
-                      properties: {
-                        primary: {
-                          type: "string",
-                        },
-                        fallbacks: {
-                          type: "array",
-                          items: {
-                            type: "string",
-                          },
-                        },
-                      },
-                      additionalProperties: false,
-                    },
-                  ],
-                },
-                thinkingDefault: {
-                  type: "string",
-                  enum: ["off", "minimal", "low", "medium", "high", "xhigh", "adaptive"],
-                },
-                reasoningDefault: {
-                  type: "string",
-                  enum: ["on", "off", "stream"],
-                },
-                fastModeDefault: {
-                  type: "boolean",
-                },
-                skills: {
-                  type: "array",
-                  items: {
-                    type: "string",
-                  },
-                },
-                memorySearch: {
-                  type: "object",
-                  properties: {
-                    enabled: {
-                      type: "boolean",
-                    },
-                    sources: {
-                      type: "array",
-                      items: {
-                        anyOf: [
-                          {
-                            type: "string",
-                            const: "memory",
-                          },
-                          {
-                            type: "string",
-                            const: "sessions",
-                          },
-                        ],
-                      },
-                    },
-                    extraPaths: {
-                      type: "array",
-                      items: {
-                        type: "string",
-                      },
-                    },
-                    multimodal: {
-                      type: "object",
-                      properties: {
-                        enabled: {
-                          type: "boolean",
-                        },
-                        modalities: {
-                          type: "array",
-                          items: {
-                            anyOf: [
-                              {
-                                type: "string",
-                                const: "image",
-                              },
-                              {
-                                type: "string",
-                                const: "audio",
-                              },
-                              {
-                                type: "string",
-                                const: "all",
-                              },
-                            ],
-                          },
-                        },
-                        maxFileBytes: {
-                          type: "integer",
-                          exclusiveMinimum: 0,
-                          maximum: 9007199254740991,
-                        },
-                      },
-                      additionalProperties: false,
-                    },
-                    experimental: {
-                      type: "object",
-                      properties: {
-                        sessionMemory: {
-                          type: "boolean",
-                        },
-                      },
-                      additionalProperties: false,
-                    },
-                    provider: {
-                      anyOf: [
-                        {
-                          type: "string",
-                          const: "openai",
-                        },
-                        {
-                          type: "string",
-                          const: "local",
-                        },
-                        {
-                          type: "string",
-                          const: "gemini",
-                        },
-                        {
-                          type: "string",
-                          const: "voyage",
-                        },
-                        {
-                          type: "string",
-                          const: "mistral",
-                        },
-                        {
-                          type: "string",
-                          const: "ollama",
-                        },
-                      ],
-                    },
-                    remote: {
-                      type: "object",
-                      properties: {
-                        baseUrl: {
-                          type: "string",
-                        },
-                        apiKey: {
-                          anyOf: [
-                            {
-                              type: "string",
-                            },
-                            {
-                              oneOf: [
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "env",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                      pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "file",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "exec",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                              ],
-                            },
-                          ],
-                        },
-                        headers: {
-                          type: "object",
-                          propertyNames: {
-                            type: "string",
-                          },
-                          additionalProperties: {
-                            type: "string",
-                          },
-                        },
-                        batch: {
-                          type: "object",
-                          properties: {
-                            enabled: {
-                              type: "boolean",
-                            },
-                            wait: {
-                              type: "boolean",
-                            },
-                            concurrency: {
-                              type: "integer",
-                              exclusiveMinimum: 0,
-                              maximum: 9007199254740991,
-                            },
-                            pollIntervalMs: {
-                              type: "integer",
-                              minimum: 0,
-                              maximum: 9007199254740991,
-                            },
-                            timeoutMinutes: {
-                              type: "integer",
-                              exclusiveMinimum: 0,
-                              maximum: 9007199254740991,
-                            },
-                          },
-                          additionalProperties: false,
-                        },
-                      },
-                      additionalProperties: false,
-                    },
-                    fallback: {
-                      anyOf: [
-                        {
-                          type: "string",
-                          const: "openai",
-                        },
-                        {
-                          type: "string",
-                          const: "gemini",
-                        },
-                        {
-                          type: "string",
-                          const: "local",
-                        },
-                        {
-                          type: "string",
-                          const: "voyage",
-                        },
-                        {
-                          type: "string",
-                          const: "mistral",
-                        },
-                        {
-                          type: "string",
-                          const: "ollama",
-                        },
-                        {
-                          type: "string",
-                          const: "none",
-                        },
-                      ],
-                    },
-                    model: {
-                      type: "string",
-                    },
-                    outputDimensionality: {
-                      type: "integer",
-                      exclusiveMinimum: 0,
-                      maximum: 9007199254740991,
-                    },
-                    local: {
-                      type: "object",
-                      properties: {
-                        modelPath: {
-                          type: "string",
-                        },
-                        modelCacheDir: {
-                          type: "string",
-                        },
-                      },
-                      additionalProperties: false,
-                    },
-                    store: {
-                      type: "object",
-                      properties: {
-                        driver: {
-                          type: "string",
-                          const: "sqlite",
-                        },
-                        path: {
-                          type: "string",
-                        },
-                        vector: {
-                          type: "object",
-                          properties: {
-                            enabled: {
-                              type: "boolean",
-                            },
-                            extensionPath: {
-                              type: "string",
-                            },
-                          },
-                          additionalProperties: false,
-                        },
-                      },
-                      additionalProperties: false,
-                    },
-                    chunking: {
-                      type: "object",
-                      properties: {
-                        tokens: {
-                          type: "integer",
-                          exclusiveMinimum: 0,
-                          maximum: 9007199254740991,
-                        },
-                        overlap: {
-                          type: "integer",
-                          minimum: 0,
-                          maximum: 9007199254740991,
-                        },
-                      },
-                      additionalProperties: false,
-                    },
-                    sync: {
-                      type: "object",
-                      properties: {
-                        onSessionStart: {
-                          type: "boolean",
-                        },
-                        onSearch: {
-                          type: "boolean",
-                        },
-                        watch: {
-                          type: "boolean",
-                        },
-                        watchDebounceMs: {
-                          type: "integer",
-                          minimum: 0,
-                          maximum: 9007199254740991,
-                        },
-                        intervalMinutes: {
-                          type: "integer",
-                          minimum: 0,
-                          maximum: 9007199254740991,
-                        },
-                        sessions: {
-                          type: "object",
-                          properties: {
-                            deltaBytes: {
-                              type: "integer",
-                              minimum: 0,
-                              maximum: 9007199254740991,
-                            },
-                            deltaMessages: {
-                              type: "integer",
-                              minimum: 0,
-                              maximum: 9007199254740991,
-                            },
-                            postCompactionForce: {
-                              type: "boolean",
-                            },
-                          },
-                          additionalProperties: false,
-                        },
-                      },
-                      additionalProperties: false,
-                    },
-                    query: {
-                      type: "object",
-                      properties: {
-                        maxResults: {
-                          type: "integer",
-                          exclusiveMinimum: 0,
-                          maximum: 9007199254740991,
-                        },
-                        minScore: {
-                          type: "number",
-                          minimum: 0,
-                          maximum: 1,
-                        },
-                        hybrid: {
-                          type: "object",
-                          properties: {
-                            enabled: {
-                              type: "boolean",
-                            },
-                            vectorWeight: {
-                              type: "number",
-                              minimum: 0,
-                              maximum: 1,
-                            },
-                            textWeight: {
-                              type: "number",
-                              minimum: 0,
-                              maximum: 1,
-                            },
-                            candidateMultiplier: {
-                              type: "integer",
-                              exclusiveMinimum: 0,
-                              maximum: 9007199254740991,
-                            },
-                            mmr: {
-                              type: "object",
-                              properties: {
-                                enabled: {
-                                  type: "boolean",
-                                },
-                                lambda: {
-                                  type: "number",
-                                  minimum: 0,
-                                  maximum: 1,
-                                },
-                              },
-                              additionalProperties: false,
-                            },
-                            temporalDecay: {
-                              type: "object",
-                              properties: {
-                                enabled: {
-                                  type: "boolean",
-                                },
-                                halfLifeDays: {
-                                  type: "integer",
-                                  exclusiveMinimum: 0,
-                                  maximum: 9007199254740991,
-                                },
-                              },
-                              additionalProperties: false,
-                            },
-                          },
-                          additionalProperties: false,
-                        },
-                      },
-                      additionalProperties: false,
-                    },
-                    cache: {
-                      type: "object",
-                      properties: {
-                        enabled: {
-                          type: "boolean",
-                        },
-                        maxEntries: {
-                          type: "integer",
-                          exclusiveMinimum: 0,
-                          maximum: 9007199254740991,
-                        },
-                      },
-                      additionalProperties: false,
-                    },
-                  },
-                  additionalProperties: false,
                 },
                 humanDelay: {
                   type: "object",
@@ -3915,9 +1401,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     session: {
                       type: "string",
                     },
-                    includeReasoning: {
-                      type: "boolean",
-                    },
                     target: {
                       type: "string",
                     },
@@ -3942,19 +1425,23 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     prompt: {
                       type: "string",
                     },
-                    ackMaxChars: {
-                      type: "integer",
-                      minimum: 0,
-                      maximum: 9007199254740991,
+                    file: {
+                      type: "string",
                     },
                     suppressToolErrorWarnings: {
                       type: "boolean",
                     },
-                    lightContext: {
-                      type: "boolean",
+                  },
+                  additionalProperties: false,
+                },
+                boot: {
+                  type: "object",
+                  properties: {
+                    prompt: {
+                      type: "string",
                     },
-                    isolatedSession: {
-                      type: "boolean",
+                    file: {
+                      type: "string",
                     },
                   },
                   additionalProperties: false,
@@ -4003,565 +1490,14 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                         type: "string",
                       },
                     },
-                    model: {
-                      anyOf: [
-                        {
-                          type: "string",
-                        },
-                        {
-                          type: "object",
-                          properties: {
-                            primary: {
-                              type: "string",
-                            },
-                            fallbacks: {
-                              type: "array",
-                              items: {
-                                type: "string",
-                              },
-                            },
-                          },
-                          additionalProperties: false,
-                        },
-                      ],
-                    },
-                    thinking: {
-                      type: "string",
-                    },
                   },
                   additionalProperties: false,
                 },
-                sandbox: {
-                  type: "object",
-                  properties: {
-                    mode: {
-                      anyOf: [
-                        {
-                          type: "string",
-                          const: "off",
-                        },
-                        {
-                          type: "string",
-                          const: "non-main",
-                        },
-                        {
-                          type: "string",
-                          const: "all",
-                        },
-                      ],
-                    },
-                    backend: {
-                      type: "string",
-                      minLength: 1,
-                    },
-                    workspaceAccess: {
-                      anyOf: [
-                        {
-                          type: "string",
-                          const: "none",
-                        },
-                        {
-                          type: "string",
-                          const: "ro",
-                        },
-                        {
-                          type: "string",
-                          const: "rw",
-                        },
-                      ],
-                    },
-                    sessionToolsVisibility: {
-                      anyOf: [
-                        {
-                          type: "string",
-                          const: "spawned",
-                        },
-                        {
-                          type: "string",
-                          const: "all",
-                        },
-                      ],
-                    },
-                    scope: {
-                      anyOf: [
-                        {
-                          type: "string",
-                          const: "session",
-                        },
-                        {
-                          type: "string",
-                          const: "agent",
-                        },
-                        {
-                          type: "string",
-                          const: "shared",
-                        },
-                      ],
-                    },
-                    perSession: {
-                      type: "boolean",
-                    },
-                    workspaceRoot: {
-                      type: "string",
-                    },
-                    docker: {
-                      type: "object",
-                      properties: {
-                        image: {
-                          type: "string",
-                        },
-                        containerPrefix: {
-                          type: "string",
-                        },
-                        workdir: {
-                          type: "string",
-                        },
-                        readOnlyRoot: {
-                          type: "boolean",
-                        },
-                        tmpfs: {
-                          type: "array",
-                          items: {
-                            type: "string",
-                          },
-                        },
-                        network: {
-                          type: "string",
-                        },
-                        user: {
-                          type: "string",
-                        },
-                        capDrop: {
-                          type: "array",
-                          items: {
-                            type: "string",
-                          },
-                        },
-                        env: {
-                          type: "object",
-                          propertyNames: {
-                            type: "string",
-                          },
-                          additionalProperties: {
-                            type: "string",
-                          },
-                        },
-                        setupCommand: {},
-                        pidsLimit: {
-                          type: "integer",
-                          exclusiveMinimum: 0,
-                          maximum: 9007199254740991,
-                        },
-                        memory: {
-                          anyOf: [
-                            {
-                              type: "string",
-                            },
-                            {
-                              type: "number",
-                            },
-                          ],
-                        },
-                        memorySwap: {
-                          anyOf: [
-                            {
-                              type: "string",
-                            },
-                            {
-                              type: "number",
-                            },
-                          ],
-                        },
-                        cpus: {
-                          type: "number",
-                          exclusiveMinimum: 0,
-                        },
-                        ulimits: {
-                          type: "object",
-                          propertyNames: {
-                            type: "string",
-                          },
-                          additionalProperties: {
-                            anyOf: [
-                              {
-                                type: "string",
-                              },
-                              {
-                                type: "number",
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  soft: {
-                                    type: "integer",
-                                    minimum: 0,
-                                    maximum: 9007199254740991,
-                                  },
-                                  hard: {
-                                    type: "integer",
-                                    minimum: 0,
-                                    maximum: 9007199254740991,
-                                  },
-                                },
-                                additionalProperties: false,
-                              },
-                            ],
-                          },
-                        },
-                        seccompProfile: {
-                          type: "string",
-                        },
-                        apparmorProfile: {
-                          type: "string",
-                        },
-                        dns: {
-                          type: "array",
-                          items: {
-                            type: "string",
-                          },
-                        },
-                        extraHosts: {
-                          type: "array",
-                          items: {
-                            type: "string",
-                          },
-                        },
-                        binds: {
-                          type: "array",
-                          items: {
-                            type: "string",
-                          },
-                        },
-                        dangerouslyAllowReservedContainerTargets: {
-                          type: "boolean",
-                        },
-                        dangerouslyAllowExternalBindSources: {
-                          type: "boolean",
-                        },
-                        dangerouslyAllowContainerNamespaceJoin: {
-                          type: "boolean",
-                        },
-                      },
-                      additionalProperties: false,
-                    },
-                    ssh: {
-                      type: "object",
-                      properties: {
-                        target: {
-                          type: "string",
-                          minLength: 1,
-                        },
-                        command: {
-                          type: "string",
-                          minLength: 1,
-                        },
-                        workspaceRoot: {
-                          type: "string",
-                          minLength: 1,
-                        },
-                        strictHostKeyChecking: {
-                          type: "boolean",
-                        },
-                        updateHostKeys: {
-                          type: "boolean",
-                        },
-                        identityFile: {
-                          type: "string",
-                          minLength: 1,
-                        },
-                        certificateFile: {
-                          type: "string",
-                          minLength: 1,
-                        },
-                        knownHostsFile: {
-                          type: "string",
-                          minLength: 1,
-                        },
-                        identityData: {
-                          anyOf: [
-                            {
-                              type: "string",
-                            },
-                            {
-                              oneOf: [
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "env",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                      pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "file",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "exec",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                              ],
-                            },
-                          ],
-                        },
-                        certificateData: {
-                          anyOf: [
-                            {
-                              type: "string",
-                            },
-                            {
-                              oneOf: [
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "env",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                      pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "file",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "exec",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                              ],
-                            },
-                          ],
-                        },
-                        knownHostsData: {
-                          anyOf: [
-                            {
-                              type: "string",
-                            },
-                            {
-                              oneOf: [
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "env",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                      pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "file",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "exec",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                              ],
-                            },
-                          ],
-                        },
-                      },
-                      additionalProperties: false,
-                    },
-                    browser: {
-                      type: "object",
-                      properties: {
-                        enabled: {
-                          type: "boolean",
-                        },
-                        image: {
-                          type: "string",
-                        },
-                        containerPrefix: {
-                          type: "string",
-                        },
-                        network: {
-                          type: "string",
-                        },
-                        cdpPort: {
-                          type: "integer",
-                          exclusiveMinimum: 0,
-                          maximum: 9007199254740991,
-                        },
-                        cdpSourceRange: {
-                          type: "string",
-                        },
-                        vncPort: {
-                          type: "integer",
-                          exclusiveMinimum: 0,
-                          maximum: 9007199254740991,
-                        },
-                        noVncPort: {
-                          type: "integer",
-                          exclusiveMinimum: 0,
-                          maximum: 9007199254740991,
-                        },
-                        headless: {
-                          type: "boolean",
-                        },
-                        enableNoVnc: {
-                          type: "boolean",
-                        },
-                        allowHostControl: {
-                          type: "boolean",
-                        },
-                        autoStart: {
-                          type: "boolean",
-                        },
-                        autoStartTimeoutMs: {
-                          type: "integer",
-                          exclusiveMinimum: 0,
-                          maximum: 9007199254740991,
-                        },
-                        binds: {
-                          type: "array",
-                          items: {
-                            type: "string",
-                          },
-                        },
-                      },
-                      additionalProperties: false,
-                    },
-                    prune: {
-                      type: "object",
-                      properties: {
-                        idleHours: {
-                          type: "integer",
-                          minimum: 0,
-                          maximum: 9007199254740991,
-                        },
-                        maxAgeDays: {
-                          type: "integer",
-                          minimum: 0,
-                          maximum: 9007199254740991,
-                        },
-                      },
-                      additionalProperties: false,
-                    },
-                  },
-                  additionalProperties: false,
-                },
-                params: {
-                  type: "object",
-                  propertyNames: {
+                editableFiles: {
+                  type: "array",
+                  items: {
                     type: "string",
                   },
-                  additionalProperties: {},
                 },
                 tools: {
                   type: "object",
@@ -4653,34 +1589,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                         },
                         additionalProperties: false,
                       },
-                    },
-                    elevated: {
-                      type: "object",
-                      properties: {
-                        enabled: {
-                          type: "boolean",
-                        },
-                        allowFrom: {
-                          type: "object",
-                          propertyNames: {
-                            type: "string",
-                          },
-                          additionalProperties: {
-                            type: "array",
-                            items: {
-                              anyOf: [
-                                {
-                                  type: "string",
-                                },
-                                {
-                                  type: "number",
-                                },
-                              ],
-                            },
-                          },
-                        },
-                      },
-                      additionalProperties: false,
                     },
                     exec: {
                       type: "object",
@@ -4776,24 +1684,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                         notifyOnExitEmptySuccess: {
                           type: "boolean",
                         },
-                        applyPatch: {
-                          type: "object",
-                          properties: {
-                            enabled: {
-                              type: "boolean",
-                            },
-                            workspaceOnly: {
-                              type: "boolean",
-                            },
-                            allowModels: {
-                              type: "array",
-                              items: {
-                                type: "string",
-                              },
-                            },
-                          },
-                          additionalProperties: false,
-                        },
                         approvalRunningNoticeMs: {
                           type: "integer",
                           minimum: 0,
@@ -4811,127 +1701,60 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                       },
                       additionalProperties: false,
                     },
-                    loopDetection: {
-                      type: "object",
-                      properties: {
-                        enabled: {
-                          type: "boolean",
-                        },
-                        historySize: {
-                          type: "integer",
-                          exclusiveMinimum: 0,
-                          maximum: 9007199254740991,
-                        },
-                        warningThreshold: {
-                          type: "integer",
-                          exclusiveMinimum: 0,
-                          maximum: 9007199254740991,
-                        },
-                        criticalThreshold: {
-                          type: "integer",
-                          exclusiveMinimum: 0,
-                          maximum: 9007199254740991,
-                        },
-                        globalCircuitBreakerThreshold: {
-                          type: "integer",
-                          exclusiveMinimum: 0,
-                          maximum: 9007199254740991,
-                        },
-                        detectors: {
-                          type: "object",
-                          properties: {
-                            genericRepeat: {
-                              type: "boolean",
-                            },
-                            knownPollNoProgress: {
-                              type: "boolean",
-                            },
-                            pingPong: {
-                              type: "boolean",
-                            },
-                          },
-                          additionalProperties: false,
-                        },
-                      },
-                      additionalProperties: false,
-                    },
-                    sandbox: {
-                      type: "object",
-                      properties: {
-                        tools: {
-                          type: "object",
-                          properties: {
-                            allow: {
-                              type: "array",
-                              items: {
-                                type: "string",
-                              },
-                            },
-                            alsoAllow: {
-                              type: "array",
-                              items: {
-                                type: "string",
-                              },
-                            },
-                            deny: {
-                              type: "array",
-                              items: {
-                                type: "string",
-                              },
-                            },
-                          },
-                          additionalProperties: false,
-                        },
-                      },
-                      additionalProperties: false,
-                    },
                   },
                   additionalProperties: false,
+                },
+                auth: {
+                  anyOf: [
+                    {
+                      type: "boolean",
+                      const: false,
+                    },
+                    {
+                      type: "string",
+                    },
+                    {
+                      type: "array",
+                      items: {
+                        type: "string",
+                      },
+                    },
+                  ],
                 },
                 runtime: {
                   anyOf: [
                     {
-                      type: "object",
-                      properties: {
-                        type: {
-                          type: "string",
-                          const: "embedded",
-                        },
-                      },
-                      required: ["type"],
-                      additionalProperties: false,
+                      type: "string",
+                      const: "claude",
                     },
                     {
-                      type: "object",
-                      properties: {
-                        type: {
-                          type: "string",
-                          const: "acp",
-                        },
-                        acp: {
-                          type: "object",
-                          properties: {
-                            agent: {
-                              type: "string",
-                            },
-                            backend: {
-                              type: "string",
-                            },
-                            mode: {
-                              type: "string",
-                              enum: ["persistent", "oneshot"],
-                            },
-                            cwd: {
-                              type: "string",
-                            },
-                          },
-                          additionalProperties: false,
-                        },
-                      },
-                      required: ["type"],
-                      additionalProperties: false,
+                      type: "string",
+                      const: "gemini",
+                    },
+                    {
+                      type: "string",
+                      const: "codex",
+                    },
+                    {
+                      type: "string",
+                      const: "opencode",
                     },
                   ],
+                },
+                runtimeArgs: {
+                  type: "array",
+                  items: {
+                    type: "string",
+                  },
+                },
+                runtimeEnv: {
+                  type: "object",
+                  propertyNames: {
+                    type: "string",
+                  },
+                  additionalProperties: {
+                    type: "string",
+                  },
                 },
               },
               required: ["id"],
@@ -5031,708 +1854,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
               },
               additionalProperties: false,
             },
-          },
-          web: {
-            type: "object",
-            properties: {
-              search: {
-                type: "object",
-                properties: {
-                  enabled: {
-                    type: "boolean",
-                  },
-                  provider: {
-                    type: "string",
-                  },
-                  maxResults: {
-                    type: "integer",
-                    exclusiveMinimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  timeoutSeconds: {
-                    type: "integer",
-                    exclusiveMinimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  cacheTtlMinutes: {
-                    type: "number",
-                    minimum: 0,
-                  },
-                  apiKey: {
-                    anyOf: [
-                      {
-                        type: "string",
-                      },
-                      {
-                        oneOf: [
-                          {
-                            type: "object",
-                            properties: {
-                              source: {
-                                type: "string",
-                                const: "env",
-                              },
-                              provider: {
-                                type: "string",
-                                pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                              },
-                              id: {
-                                type: "string",
-                                pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                              },
-                            },
-                            required: ["source", "provider", "id"],
-                            additionalProperties: false,
-                          },
-                          {
-                            type: "object",
-                            properties: {
-                              source: {
-                                type: "string",
-                                const: "file",
-                              },
-                              provider: {
-                                type: "string",
-                                pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                              },
-                              id: {
-                                type: "string",
-                              },
-                            },
-                            required: ["source", "provider", "id"],
-                            additionalProperties: false,
-                          },
-                          {
-                            type: "object",
-                            properties: {
-                              source: {
-                                type: "string",
-                                const: "exec",
-                              },
-                              provider: {
-                                type: "string",
-                                pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                              },
-                              id: {
-                                type: "string",
-                              },
-                            },
-                            required: ["source", "provider", "id"],
-                            additionalProperties: false,
-                          },
-                        ],
-                      },
-                    ],
-                  },
-                  brave: {
-                    type: "object",
-                    properties: {
-                      apiKey: {
-                        anyOf: [
-                          {
-                            type: "string",
-                          },
-                          {
-                            oneOf: [
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "env",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "file",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "exec",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                            ],
-                          },
-                        ],
-                      },
-                      baseUrl: {
-                        type: "string",
-                      },
-                      model: {
-                        type: "string",
-                      },
-                      mode: {
-                        type: "string",
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                  firecrawl: {
-                    type: "object",
-                    properties: {
-                      apiKey: {
-                        anyOf: [
-                          {
-                            type: "string",
-                          },
-                          {
-                            oneOf: [
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "env",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "file",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "exec",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                            ],
-                          },
-                        ],
-                      },
-                      baseUrl: {
-                        type: "string",
-                      },
-                      model: {
-                        type: "string",
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                  gemini: {
-                    type: "object",
-                    properties: {
-                      apiKey: {
-                        anyOf: [
-                          {
-                            type: "string",
-                          },
-                          {
-                            oneOf: [
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "env",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "file",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "exec",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                            ],
-                          },
-                        ],
-                      },
-                      baseUrl: {
-                        type: "string",
-                      },
-                      model: {
-                        type: "string",
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                  grok: {
-                    type: "object",
-                    properties: {
-                      apiKey: {
-                        anyOf: [
-                          {
-                            type: "string",
-                          },
-                          {
-                            oneOf: [
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "env",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "file",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "exec",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                            ],
-                          },
-                        ],
-                      },
-                      baseUrl: {
-                        type: "string",
-                      },
-                      model: {
-                        type: "string",
-                      },
-                      inlineCitations: {
-                        type: "boolean",
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                  kimi: {
-                    type: "object",
-                    properties: {
-                      apiKey: {
-                        anyOf: [
-                          {
-                            type: "string",
-                          },
-                          {
-                            oneOf: [
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "env",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "file",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "exec",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                            ],
-                          },
-                        ],
-                      },
-                      baseUrl: {
-                        type: "string",
-                      },
-                      model: {
-                        type: "string",
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                  perplexity: {
-                    type: "object",
-                    properties: {
-                      apiKey: {
-                        anyOf: [
-                          {
-                            type: "string",
-                          },
-                          {
-                            oneOf: [
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "env",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "file",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "exec",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                            ],
-                          },
-                        ],
-                      },
-                      baseUrl: {
-                        type: "string",
-                      },
-                      model: {
-                        type: "string",
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                },
-                additionalProperties: false,
-              },
-              fetch: {
-                type: "object",
-                properties: {
-                  enabled: {
-                    type: "boolean",
-                  },
-                  maxChars: {
-                    type: "integer",
-                    exclusiveMinimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  maxCharsCap: {
-                    type: "integer",
-                    exclusiveMinimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  timeoutSeconds: {
-                    type: "integer",
-                    exclusiveMinimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  cacheTtlMinutes: {
-                    type: "number",
-                    minimum: 0,
-                  },
-                  maxRedirects: {
-                    type: "integer",
-                    minimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  userAgent: {
-                    type: "string",
-                  },
-                  readability: {
-                    type: "boolean",
-                  },
-                  firecrawl: {
-                    type: "object",
-                    properties: {
-                      enabled: {
-                        type: "boolean",
-                      },
-                      apiKey: {
-                        anyOf: [
-                          {
-                            type: "string",
-                          },
-                          {
-                            oneOf: [
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "env",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "file",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "exec",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                            ],
-                          },
-                        ],
-                      },
-                      baseUrl: {
-                        type: "string",
-                      },
-                      onlyMainContent: {
-                        type: "boolean",
-                      },
-                      maxAgeMs: {
-                        type: "integer",
-                        minimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                      timeoutSeconds: {
-                        type: "integer",
-                        exclusiveMinimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                },
-                additionalProperties: false,
-              },
-            },
-            additionalProperties: false,
           },
           media: {
             type: "object",
@@ -6899,179 +3020,12 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
             },
             additionalProperties: false,
           },
-          links: {
-            type: "object",
-            properties: {
-              enabled: {
-                type: "boolean",
-              },
-              scope: {
-                type: "object",
-                properties: {
-                  default: {
-                    anyOf: [
-                      {
-                        type: "string",
-                        const: "allow",
-                      },
-                      {
-                        type: "string",
-                        const: "deny",
-                      },
-                    ],
-                  },
-                  rules: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        action: {
-                          anyOf: [
-                            {
-                              type: "string",
-                              const: "allow",
-                            },
-                            {
-                              type: "string",
-                              const: "deny",
-                            },
-                          ],
-                        },
-                        match: {
-                          type: "object",
-                          properties: {
-                            channel: {
-                              type: "string",
-                            },
-                            chatType: {
-                              anyOf: [
-                                {
-                                  type: "string",
-                                  const: "direct",
-                                },
-                                {
-                                  type: "string",
-                                  const: "group",
-                                },
-                                {
-                                  type: "string",
-                                  const: "channel",
-                                },
-                                {
-                                  type: "string",
-                                  const: "dm",
-                                },
-                              ],
-                            },
-                            keyPrefix: {
-                              type: "string",
-                            },
-                            rawKeyPrefix: {
-                              type: "string",
-                            },
-                          },
-                          additionalProperties: false,
-                        },
-                      },
-                      required: ["action"],
-                      additionalProperties: false,
-                    },
-                  },
-                },
-                additionalProperties: false,
-              },
-              maxLinks: {
-                type: "integer",
-                exclusiveMinimum: 0,
-                maximum: 9007199254740991,
-              },
-              timeoutSeconds: {
-                type: "integer",
-                exclusiveMinimum: 0,
-                maximum: 9007199254740991,
-              },
-              models: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    type: {
-                      type: "string",
-                      const: "cli",
-                    },
-                    command: {
-                      type: "string",
-                      minLength: 1,
-                    },
-                    args: {
-                      type: "array",
-                      items: {
-                        type: "string",
-                      },
-                    },
-                    timeoutSeconds: {
-                      type: "integer",
-                      exclusiveMinimum: 0,
-                      maximum: 9007199254740991,
-                    },
-                  },
-                  required: ["command"],
-                  additionalProperties: false,
-                },
-              },
-            },
-            additionalProperties: false,
-          },
           sessions: {
             type: "object",
             properties: {
               visibility: {
                 type: "string",
                 enum: ["self", "tree", "agent", "all"],
-              },
-            },
-            additionalProperties: false,
-          },
-          loopDetection: {
-            type: "object",
-            properties: {
-              enabled: {
-                type: "boolean",
-              },
-              historySize: {
-                type: "integer",
-                exclusiveMinimum: 0,
-                maximum: 9007199254740991,
-              },
-              warningThreshold: {
-                type: "integer",
-                exclusiveMinimum: 0,
-                maximum: 9007199254740991,
-              },
-              criticalThreshold: {
-                type: "integer",
-                exclusiveMinimum: 0,
-                maximum: 9007199254740991,
-              },
-              globalCircuitBreakerThreshold: {
-                type: "integer",
-                exclusiveMinimum: 0,
-                maximum: 9007199254740991,
-              },
-              detectors: {
-                type: "object",
-                properties: {
-                  genericRepeat: {
-                    type: "boolean",
-                  },
-                  knownPollNoProgress: {
-                    type: "boolean",
-                  },
-                  pingPong: {
-                    type: "boolean",
-                  },
-                },
-                additionalProperties: false,
               },
             },
             additionalProperties: false,
@@ -7131,34 +3085,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 type: "array",
                 items: {
                   type: "string",
-                },
-              },
-            },
-            additionalProperties: false,
-          },
-          elevated: {
-            type: "object",
-            properties: {
-              enabled: {
-                type: "boolean",
-              },
-              allowFrom: {
-                type: "object",
-                propertyNames: {
-                  type: "string",
-                },
-                additionalProperties: {
-                  type: "array",
-                  items: {
-                    anyOf: [
-                      {
-                        type: "string",
-                      },
-                      {
-                        type: "number",
-                      },
-                    ],
-                  },
                 },
               },
             },
@@ -7258,24 +3184,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
               notifyOnExitEmptySuccess: {
                 type: "boolean",
               },
-              applyPatch: {
-                type: "object",
-                properties: {
-                  enabled: {
-                    type: "boolean",
-                  },
-                  workspaceOnly: {
-                    type: "boolean",
-                  },
-                  allowModels: {
-                    type: "array",
-                    items: {
-                      type: "string",
-                    },
-                  },
-                },
-                additionalProperties: false,
-              },
             },
             additionalProperties: false,
           },
@@ -7289,36 +3197,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
             additionalProperties: false,
           },
           subagents: {
-            type: "object",
-            properties: {
-              tools: {
-                type: "object",
-                properties: {
-                  allow: {
-                    type: "array",
-                    items: {
-                      type: "string",
-                    },
-                  },
-                  alsoAllow: {
-                    type: "array",
-                    items: {
-                      type: "string",
-                    },
-                  },
-                  deny: {
-                    type: "array",
-                    items: {
-                      type: "string",
-                    },
-                  },
-                },
-                additionalProperties: false,
-              },
-            },
-            additionalProperties: false,
-          },
-          sandbox: {
             type: "object",
             properties: {
               tools: {
@@ -8093,9 +3971,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   stallHard: {
                     type: "string",
                   },
-                  compacting: {
-                    type: "string",
-                  },
                 },
                 additionalProperties: false,
               },
@@ -8152,7 +4027,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
               },
               provider: {
                 type: "string",
-                minLength: 1,
+                enum: ["elevenlabs", "openai", "edge"],
               },
               summaryModel: {
                 type: "string",
@@ -8387,56 +4262,10 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   voice: {
                     type: "string",
                   },
-                  speed: {
-                    type: "number",
-                    minimum: 0.25,
-                    maximum: 4,
-                  },
-                  instructions: {
-                    type: "string",
-                  },
                 },
                 additionalProperties: false,
               },
               edge: {
-                type: "object",
-                properties: {
-                  enabled: {
-                    type: "boolean",
-                  },
-                  voice: {
-                    type: "string",
-                  },
-                  lang: {
-                    type: "string",
-                  },
-                  outputFormat: {
-                    type: "string",
-                  },
-                  pitch: {
-                    type: "string",
-                  },
-                  rate: {
-                    type: "string",
-                  },
-                  volume: {
-                    type: "string",
-                  },
-                  saveSubtitles: {
-                    type: "boolean",
-                  },
-                  proxy: {
-                    type: "string",
-                  },
-                  timeoutMs: {
-                    type: "integer",
-                    minimum: 1000,
-                    maximum: 120000,
-                  },
-                },
-                additionalProperties: false,
-              },
-              microsoft: {
                 type: "object",
                 properties: {
                   enabled: {
@@ -8496,7 +4325,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       commands: {
         default: {
           native: "auto",
-          nativeSkills: "auto",
           restart: true,
           ownerDisplay: "raw",
         },
@@ -8514,36 +4342,10 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
               },
             ],
           },
-          nativeSkills: {
-            default: "auto",
-            anyOf: [
-              {
-                type: "boolean",
-              },
-              {
-                type: "string",
-                const: "auto",
-              },
-            ],
-          },
           text: {
             type: "boolean",
           },
-          bash: {
-            type: "boolean",
-          },
-          bashForegroundMs: {
-            type: "integer",
-            minimum: 0,
-            maximum: 30000,
-          },
           config: {
-            type: "boolean",
-          },
-          mcp: {
-            type: "boolean",
-          },
-          plugins: {
             type: "boolean",
           },
           debug: {
@@ -8597,7 +4399,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
             },
           },
         },
-        required: ["native", "nativeSkills", "restart", "ownerDisplay"],
+        required: ["native", "restart", "ownerDisplay"],
         additionalProperties: false,
       },
       approvals: {
@@ -9176,70 +4978,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
             format: "uri",
           },
           webhookToken: {
-            anyOf: [
-              {
-                type: "string",
-              },
-              {
-                oneOf: [
-                  {
-                    type: "object",
-                    properties: {
-                      source: {
-                        type: "string",
-                        const: "env",
-                      },
-                      provider: {
-                        type: "string",
-                        pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                      },
-                      id: {
-                        type: "string",
-                        pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                      },
-                    },
-                    required: ["source", "provider", "id"],
-                    additionalProperties: false,
-                  },
-                  {
-                    type: "object",
-                    properties: {
-                      source: {
-                        type: "string",
-                        const: "file",
-                      },
-                      provider: {
-                        type: "string",
-                        pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                      },
-                      id: {
-                        type: "string",
-                      },
-                    },
-                    required: ["source", "provider", "id"],
-                    additionalProperties: false,
-                  },
-                  {
-                    type: "object",
-                    properties: {
-                      source: {
-                        type: "string",
-                        const: "exec",
-                      },
-                      provider: {
-                        type: "string",
-                        pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                      },
-                      id: {
-                        type: "string",
-                      },
-                    },
-                    required: ["source", "provider", "id"],
-                    additionalProperties: false,
-                  },
-                ],
-              },
-            ],
+            type: "string",
           },
           sessionRetention: {
             anyOf: [
@@ -9696,10 +5435,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                           type: "string",
                           const: "path",
                         },
-                        {
-                          type: "string",
-                          const: "clawhub",
-                        },
                       ],
                     },
                     spec: {
@@ -9734,40 +5469,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     },
                     installedAt: {
                       type: "string",
-                    },
-                    clawhubUrl: {
-                      type: "string",
-                    },
-                    clawhubPackage: {
-                      type: "string",
-                    },
-                    clawhubFamily: {
-                      anyOf: [
-                        {
-                          type: "string",
-                          const: "code-plugin",
-                        },
-                        {
-                          type: "string",
-                          const: "bundle-plugin",
-                        },
-                      ],
-                    },
-                    clawhubChannel: {
-                      anyOf: [
-                        {
-                          type: "string",
-                          const: "official",
-                        },
-                        {
-                          type: "string",
-                          const: "community",
-                        },
-                        {
-                          type: "string",
-                          const: "private",
-                        },
-                      ],
                     },
                     hooks: {
                       type: "array",
@@ -9843,9 +5544,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
               enabled: {
                 type: "boolean",
               },
-              domain: {
-                type: "string",
-              },
             },
             additionalProperties: false,
           },
@@ -9915,70 +5613,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   type: "string",
                 },
                 apiKey: {
-                  anyOf: [
-                    {
-                      type: "string",
-                    },
-                    {
-                      oneOf: [
-                        {
-                          type: "object",
-                          properties: {
-                            source: {
-                              type: "string",
-                              const: "env",
-                            },
-                            provider: {
-                              type: "string",
-                              pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                            },
-                            id: {
-                              type: "string",
-                              pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                            },
-                          },
-                          required: ["source", "provider", "id"],
-                          additionalProperties: false,
-                        },
-                        {
-                          type: "object",
-                          properties: {
-                            source: {
-                              type: "string",
-                              const: "file",
-                            },
-                            provider: {
-                              type: "string",
-                              pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                            },
-                            id: {
-                              type: "string",
-                            },
-                          },
-                          required: ["source", "provider", "id"],
-                          additionalProperties: false,
-                        },
-                        {
-                          type: "object",
-                          properties: {
-                            source: {
-                              type: "string",
-                              const: "exec",
-                            },
-                            provider: {
-                              type: "string",
-                              pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                            },
-                            id: {
-                              type: "string",
-                            },
-                          },
-                          required: ["source", "provider", "id"],
-                          additionalProperties: false,
-                        },
-                      ],
-                    },
-                  ],
+                  type: "string",
                 },
               },
               additionalProperties: {},
@@ -10003,70 +5638,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
             type: "string",
           },
           apiKey: {
-            anyOf: [
-              {
-                type: "string",
-              },
-              {
-                oneOf: [
-                  {
-                    type: "object",
-                    properties: {
-                      source: {
-                        type: "string",
-                        const: "env",
-                      },
-                      provider: {
-                        type: "string",
-                        pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                      },
-                      id: {
-                        type: "string",
-                        pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                      },
-                    },
-                    required: ["source", "provider", "id"],
-                    additionalProperties: false,
-                  },
-                  {
-                    type: "object",
-                    properties: {
-                      source: {
-                        type: "string",
-                        const: "file",
-                      },
-                      provider: {
-                        type: "string",
-                        pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                      },
-                      id: {
-                        type: "string",
-                      },
-                    },
-                    required: ["source", "provider", "id"],
-                    additionalProperties: false,
-                  },
-                  {
-                    type: "object",
-                    properties: {
-                      source: {
-                        type: "string",
-                        const: "exec",
-                      },
-                      provider: {
-                        type: "string",
-                        pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                      },
-                      id: {
-                        type: "string",
-                      },
-                    },
-                    required: ["source", "provider", "id"],
-                    additionalProperties: false,
-                  },
-                ],
-              },
-            ],
+            type: "string",
           },
           interruptOnSpeech: {
             type: "boolean",
@@ -10180,136 +5752,10 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 ],
               },
               token: {
-                anyOf: [
-                  {
-                    type: "string",
-                  },
-                  {
-                    oneOf: [
-                      {
-                        type: "object",
-                        properties: {
-                          source: {
-                            type: "string",
-                            const: "env",
-                          },
-                          provider: {
-                            type: "string",
-                            pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                          },
-                          id: {
-                            type: "string",
-                            pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                          },
-                        },
-                        required: ["source", "provider", "id"],
-                        additionalProperties: false,
-                      },
-                      {
-                        type: "object",
-                        properties: {
-                          source: {
-                            type: "string",
-                            const: "file",
-                          },
-                          provider: {
-                            type: "string",
-                            pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                          },
-                          id: {
-                            type: "string",
-                          },
-                        },
-                        required: ["source", "provider", "id"],
-                        additionalProperties: false,
-                      },
-                      {
-                        type: "object",
-                        properties: {
-                          source: {
-                            type: "string",
-                            const: "exec",
-                          },
-                          provider: {
-                            type: "string",
-                            pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                          },
-                          id: {
-                            type: "string",
-                          },
-                        },
-                        required: ["source", "provider", "id"],
-                        additionalProperties: false,
-                      },
-                    ],
-                  },
-                ],
+                type: "string",
               },
               password: {
-                anyOf: [
-                  {
-                    type: "string",
-                  },
-                  {
-                    oneOf: [
-                      {
-                        type: "object",
-                        properties: {
-                          source: {
-                            type: "string",
-                            const: "env",
-                          },
-                          provider: {
-                            type: "string",
-                            pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                          },
-                          id: {
-                            type: "string",
-                            pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                          },
-                        },
-                        required: ["source", "provider", "id"],
-                        additionalProperties: false,
-                      },
-                      {
-                        type: "object",
-                        properties: {
-                          source: {
-                            type: "string",
-                            const: "file",
-                          },
-                          provider: {
-                            type: "string",
-                            pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                          },
-                          id: {
-                            type: "string",
-                          },
-                        },
-                        required: ["source", "provider", "id"],
-                        additionalProperties: false,
-                      },
-                      {
-                        type: "object",
-                        properties: {
-                          source: {
-                            type: "string",
-                            const: "exec",
-                          },
-                          provider: {
-                            type: "string",
-                            pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                          },
-                          id: {
-                            type: "string",
-                          },
-                        },
-                        required: ["source", "provider", "id"],
-                        additionalProperties: false,
-                      },
-                    ],
-                  },
-                ],
+                type: "string",
               },
               allowTailscale: {
                 type: "boolean",
@@ -10390,16 +5836,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
             minimum: 0,
             maximum: 9007199254740991,
           },
-          channelStaleEventThresholdMinutes: {
-            type: "integer",
-            minimum: 1,
-            maximum: 9007199254740991,
-          },
-          channelMaxRestartsPerHour: {
-            type: "integer",
-            minimum: 1,
-            maximum: 9007199254740991,
-          },
           tailscale: {
             type: "object",
             properties: {
@@ -10444,136 +5880,10 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 ],
               },
               token: {
-                anyOf: [
-                  {
-                    type: "string",
-                  },
-                  {
-                    oneOf: [
-                      {
-                        type: "object",
-                        properties: {
-                          source: {
-                            type: "string",
-                            const: "env",
-                          },
-                          provider: {
-                            type: "string",
-                            pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                          },
-                          id: {
-                            type: "string",
-                            pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                          },
-                        },
-                        required: ["source", "provider", "id"],
-                        additionalProperties: false,
-                      },
-                      {
-                        type: "object",
-                        properties: {
-                          source: {
-                            type: "string",
-                            const: "file",
-                          },
-                          provider: {
-                            type: "string",
-                            pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                          },
-                          id: {
-                            type: "string",
-                          },
-                        },
-                        required: ["source", "provider", "id"],
-                        additionalProperties: false,
-                      },
-                      {
-                        type: "object",
-                        properties: {
-                          source: {
-                            type: "string",
-                            const: "exec",
-                          },
-                          provider: {
-                            type: "string",
-                            pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                          },
-                          id: {
-                            type: "string",
-                          },
-                        },
-                        required: ["source", "provider", "id"],
-                        additionalProperties: false,
-                      },
-                    ],
-                  },
-                ],
+                type: "string",
               },
               password: {
-                anyOf: [
-                  {
-                    type: "string",
-                  },
-                  {
-                    oneOf: [
-                      {
-                        type: "object",
-                        properties: {
-                          source: {
-                            type: "string",
-                            const: "env",
-                          },
-                          provider: {
-                            type: "string",
-                            pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                          },
-                          id: {
-                            type: "string",
-                            pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                          },
-                        },
-                        required: ["source", "provider", "id"],
-                        additionalProperties: false,
-                      },
-                      {
-                        type: "object",
-                        properties: {
-                          source: {
-                            type: "string",
-                            const: "file",
-                          },
-                          provider: {
-                            type: "string",
-                            pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                          },
-                          id: {
-                            type: "string",
-                          },
-                        },
-                        required: ["source", "provider", "id"],
-                        additionalProperties: false,
-                      },
-                      {
-                        type: "object",
-                        properties: {
-                          source: {
-                            type: "string",
-                            const: "exec",
-                          },
-                          provider: {
-                            type: "string",
-                            pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                          },
-                          id: {
-                            type: "string",
-                          },
-                        },
-                        required: ["source", "provider", "id"],
-                        additionalProperties: false,
-                      },
-                    ],
-                  },
-                ],
+                type: "string",
               },
               tlsFingerprint: {
                 type: "string",
@@ -10850,32 +6160,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
             },
             additionalProperties: false,
           },
-          push: {
-            type: "object",
-            properties: {
-              apns: {
-                type: "object",
-                properties: {
-                  relay: {
-                    type: "object",
-                    properties: {
-                      baseUrl: {
-                        type: "string",
-                      },
-                      timeoutMs: {
-                        type: "integer",
-                        exclusiveMinimum: 0,
-                        maximum: 9007199254740991,
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                },
-                additionalProperties: false,
-              },
-            },
-            additionalProperties: false,
-          },
           nodes: {
             type: "object",
             properties: {
@@ -10922,503 +6206,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
         },
         additionalProperties: false,
       },
-      memory: {
-        type: "object",
-        properties: {
-          backend: {
-            anyOf: [
-              {
-                type: "string",
-                const: "builtin",
-              },
-              {
-                type: "string",
-                const: "qmd",
-              },
-            ],
-          },
-          citations: {
-            anyOf: [
-              {
-                type: "string",
-                const: "auto",
-              },
-              {
-                type: "string",
-                const: "on",
-              },
-              {
-                type: "string",
-                const: "off",
-              },
-            ],
-          },
-          qmd: {
-            type: "object",
-            properties: {
-              command: {
-                type: "string",
-              },
-              mcporter: {
-                type: "object",
-                properties: {
-                  enabled: {
-                    type: "boolean",
-                  },
-                  serverName: {
-                    type: "string",
-                  },
-                  startDaemon: {
-                    type: "boolean",
-                  },
-                },
-                additionalProperties: false,
-              },
-              searchMode: {
-                anyOf: [
-                  {
-                    type: "string",
-                    const: "query",
-                  },
-                  {
-                    type: "string",
-                    const: "search",
-                  },
-                  {
-                    type: "string",
-                    const: "vsearch",
-                  },
-                ],
-              },
-              includeDefaultMemory: {
-                type: "boolean",
-              },
-              paths: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    path: {
-                      type: "string",
-                    },
-                    name: {
-                      type: "string",
-                    },
-                    pattern: {
-                      type: "string",
-                    },
-                  },
-                  required: ["path"],
-                  additionalProperties: false,
-                },
-              },
-              sessions: {
-                type: "object",
-                properties: {
-                  enabled: {
-                    type: "boolean",
-                  },
-                  exportDir: {
-                    type: "string",
-                  },
-                  retentionDays: {
-                    type: "integer",
-                    minimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                },
-                additionalProperties: false,
-              },
-              update: {
-                type: "object",
-                properties: {
-                  interval: {
-                    type: "string",
-                  },
-                  debounceMs: {
-                    type: "integer",
-                    minimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  onBoot: {
-                    type: "boolean",
-                  },
-                  waitForBootSync: {
-                    type: "boolean",
-                  },
-                  embedInterval: {
-                    type: "string",
-                  },
-                  commandTimeoutMs: {
-                    type: "integer",
-                    minimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  updateTimeoutMs: {
-                    type: "integer",
-                    minimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  embedTimeoutMs: {
-                    type: "integer",
-                    minimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                },
-                additionalProperties: false,
-              },
-              limits: {
-                type: "object",
-                properties: {
-                  maxResults: {
-                    type: "integer",
-                    exclusiveMinimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  maxSnippetChars: {
-                    type: "integer",
-                    exclusiveMinimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  maxInjectedChars: {
-                    type: "integer",
-                    exclusiveMinimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  timeoutMs: {
-                    type: "integer",
-                    minimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                },
-                additionalProperties: false,
-              },
-              scope: {
-                type: "object",
-                properties: {
-                  default: {
-                    anyOf: [
-                      {
-                        type: "string",
-                        const: "allow",
-                      },
-                      {
-                        type: "string",
-                        const: "deny",
-                      },
-                    ],
-                  },
-                  rules: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        action: {
-                          anyOf: [
-                            {
-                              type: "string",
-                              const: "allow",
-                            },
-                            {
-                              type: "string",
-                              const: "deny",
-                            },
-                          ],
-                        },
-                        match: {
-                          type: "object",
-                          properties: {
-                            channel: {
-                              type: "string",
-                            },
-                            chatType: {
-                              anyOf: [
-                                {
-                                  type: "string",
-                                  const: "direct",
-                                },
-                                {
-                                  type: "string",
-                                  const: "group",
-                                },
-                                {
-                                  type: "string",
-                                  const: "channel",
-                                },
-                                {
-                                  type: "string",
-                                  const: "dm",
-                                },
-                              ],
-                            },
-                            keyPrefix: {
-                              type: "string",
-                            },
-                            rawKeyPrefix: {
-                              type: "string",
-                            },
-                          },
-                          additionalProperties: false,
-                        },
-                      },
-                      required: ["action"],
-                      additionalProperties: false,
-                    },
-                  },
-                },
-                additionalProperties: false,
-              },
-            },
-            additionalProperties: false,
-          },
-        },
-        additionalProperties: false,
-      },
-      mcp: {
-        type: "object",
-        properties: {
-          servers: {
-            type: "object",
-            propertyNames: {
-              type: "string",
-            },
-            additionalProperties: {
-              type: "object",
-              properties: {
-                command: {
-                  type: "string",
-                },
-                args: {
-                  type: "array",
-                  items: {
-                    type: "string",
-                  },
-                },
-                env: {
-                  type: "object",
-                  propertyNames: {
-                    type: "string",
-                  },
-                  additionalProperties: {
-                    anyOf: [
-                      {
-                        type: "string",
-                      },
-                      {
-                        type: "number",
-                      },
-                      {
-                        type: "boolean",
-                      },
-                    ],
-                  },
-                },
-                cwd: {
-                  type: "string",
-                },
-                workingDirectory: {
-                  type: "string",
-                },
-                url: {
-                  type: "string",
-                  format: "uri",
-                },
-              },
-              additionalProperties: {},
-            },
-          },
-        },
-        additionalProperties: false,
-      },
-      skills: {
-        type: "object",
-        properties: {
-          allowBundled: {
-            type: "array",
-            items: {
-              type: "string",
-            },
-          },
-          load: {
-            type: "object",
-            properties: {
-              extraDirs: {
-                type: "array",
-                items: {
-                  type: "string",
-                },
-              },
-              watch: {
-                type: "boolean",
-              },
-              watchDebounceMs: {
-                type: "integer",
-                minimum: 0,
-                maximum: 9007199254740991,
-              },
-            },
-            additionalProperties: false,
-          },
-          install: {
-            type: "object",
-            properties: {
-              preferBrew: {
-                type: "boolean",
-              },
-              nodeManager: {
-                anyOf: [
-                  {
-                    type: "string",
-                    const: "npm",
-                  },
-                  {
-                    type: "string",
-                    const: "pnpm",
-                  },
-                  {
-                    type: "string",
-                    const: "yarn",
-                  },
-                  {
-                    type: "string",
-                    const: "bun",
-                  },
-                ],
-              },
-            },
-            additionalProperties: false,
-          },
-          limits: {
-            type: "object",
-            properties: {
-              maxCandidatesPerRoot: {
-                type: "integer",
-                minimum: 1,
-                maximum: 9007199254740991,
-              },
-              maxSkillsLoadedPerSource: {
-                type: "integer",
-                minimum: 1,
-                maximum: 9007199254740991,
-              },
-              maxSkillsInPrompt: {
-                type: "integer",
-                minimum: 0,
-                maximum: 9007199254740991,
-              },
-              maxSkillsPromptChars: {
-                type: "integer",
-                minimum: 0,
-                maximum: 9007199254740991,
-              },
-              maxSkillFileBytes: {
-                type: "integer",
-                minimum: 0,
-                maximum: 9007199254740991,
-              },
-            },
-            additionalProperties: false,
-          },
-          entries: {
-            type: "object",
-            propertyNames: {
-              type: "string",
-            },
-            additionalProperties: {
-              type: "object",
-              properties: {
-                enabled: {
-                  type: "boolean",
-                },
-                apiKey: {
-                  anyOf: [
-                    {
-                      type: "string",
-                    },
-                    {
-                      oneOf: [
-                        {
-                          type: "object",
-                          properties: {
-                            source: {
-                              type: "string",
-                              const: "env",
-                            },
-                            provider: {
-                              type: "string",
-                              pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                            },
-                            id: {
-                              type: "string",
-                              pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                            },
-                          },
-                          required: ["source", "provider", "id"],
-                          additionalProperties: false,
-                        },
-                        {
-                          type: "object",
-                          properties: {
-                            source: {
-                              type: "string",
-                              const: "file",
-                            },
-                            provider: {
-                              type: "string",
-                              pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                            },
-                            id: {
-                              type: "string",
-                            },
-                          },
-                          required: ["source", "provider", "id"],
-                          additionalProperties: false,
-                        },
-                        {
-                          type: "object",
-                          properties: {
-                            source: {
-                              type: "string",
-                              const: "exec",
-                            },
-                            provider: {
-                              type: "string",
-                              pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                            },
-                            id: {
-                              type: "string",
-                            },
-                          },
-                          required: ["source", "provider", "id"],
-                          additionalProperties: false,
-                        },
-                      ],
-                    },
-                  ],
-                },
-                env: {
-                  type: "object",
-                  propertyNames: {
-                    type: "string",
-                  },
-                  additionalProperties: {
-                    type: "string",
-                  },
-                },
-                config: {
-                  type: "object",
-                  propertyNames: {
-                    type: "string",
-                  },
-                  additionalProperties: {},
-                },
-              },
-              additionalProperties: false,
-            },
-          },
-        },
-        additionalProperties: false,
-      },
+      memory: {},
       plugins: {
         type: "object",
         properties: {
@@ -11472,30 +6260,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 enabled: {
                   type: "boolean",
                 },
-                hooks: {
-                  type: "object",
-                  properties: {
-                    allowPromptInjection: {
-                      type: "boolean",
-                    },
-                  },
-                  additionalProperties: false,
-                },
-                subagent: {
-                  type: "object",
-                  properties: {
-                    allowModelOverride: {
-                      type: "boolean",
-                    },
-                    allowedModels: {
-                      type: "array",
-                      items: {
-                        type: "string",
-                      },
-                    },
-                  },
-                  additionalProperties: false,
-                },
                 config: {
                   type: "object",
                   propertyNames: {
@@ -11518,28 +6282,16 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 source: {
                   anyOf: [
                     {
-                      anyOf: [
-                        {
-                          type: "string",
-                          const: "npm",
-                        },
-                        {
-                          type: "string",
-                          const: "archive",
-                        },
-                        {
-                          type: "string",
-                          const: "path",
-                        },
-                        {
-                          type: "string",
-                          const: "clawhub",
-                        },
-                      ],
+                      type: "string",
+                      const: "npm",
                     },
                     {
                       type: "string",
-                      const: "marketplace",
+                      const: "archive",
+                    },
+                    {
+                      type: "string",
+                      const: "path",
                     },
                   ],
                 },
@@ -11576,49 +6328,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 installedAt: {
                   type: "string",
                 },
-                clawhubUrl: {
-                  type: "string",
-                },
-                clawhubPackage: {
-                  type: "string",
-                },
-                clawhubFamily: {
-                  anyOf: [
-                    {
-                      type: "string",
-                      const: "code-plugin",
-                    },
-                    {
-                      type: "string",
-                      const: "bundle-plugin",
-                    },
-                  ],
-                },
-                clawhubChannel: {
-                  anyOf: [
-                    {
-                      type: "string",
-                      const: "official",
-                    },
-                    {
-                      type: "string",
-                      const: "community",
-                    },
-                    {
-                      type: "string",
-                      const: "private",
-                    },
-                  ],
-                },
-                marketplaceName: {
-                  type: "string",
-                },
-                marketplaceSource: {
-                  type: "string",
-                },
-                marketplacePlugin: {
-                  type: "string",
-                },
               },
               required: ["source"],
               additionalProperties: false,
@@ -11630,21 +6339,21 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     required: ["commands"],
     additionalProperties: false,
-    title: "OpenClawConfig",
+    title: "RemoteClawConfig",
   },
   uiHints: {
     wizard: {
       label: "Setup Wizard State",
       group: "Wizard",
       order: 20,
-      help: "Setup wizard state tracking fields that record the most recent guided setup run details. Keep these fields for observability and troubleshooting of setup flows across upgrades.",
+      help: "Setup wizard state tracking fields that record the most recent guided onboarding run details. Keep these fields for observability and troubleshooting of setup flows across upgrades.",
       tags: ["advanced"],
     },
     update: {
       label: "Updates",
       group: "Update",
       order: 25,
-      help: "Update-channel and startup-check behavior for keeping OpenClaw runtime versions current. Use conservative channels in production and more experimental channels only in controlled environments.",
+      help: "Update-channel and startup-check behavior for keeping RemoteClaw runtime versions current. Use conservative channels in production and more experimental channels only in controlled environments.",
       tags: ["advanced"],
     },
     cli: {
@@ -11693,7 +6402,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Tools",
       group: "Tools",
       order: 50,
-      help: "Global tool access policy and capability configuration across web, exec, media, messaging, and elevated surfaces. Use this section to constrain risky capabilities before broad rollout.",
+      help: "Global tool access policy and capability configuration across web, exec, media, and messaging surfaces. Use this section to constrain risky capabilities before broad rollout.",
       tags: ["advanced"],
     },
     bindings: {
@@ -11728,7 +6437,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Commands",
       group: "Commands",
       order: 85,
-      help: "Controls chat command surfaces, owner gating, and elevated command access behavior across providers. Keep defaults unless you need stricter operator controls or broader command availability.",
+      help: "Controls chat command surfaces and owner gating behavior across providers. Keep defaults unless you need stricter operator controls or broader command availability.",
       tags: ["advanced"],
     },
     session: {
@@ -11749,7 +6458,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Hooks",
       group: "Hooks",
       order: 110,
-      help: "Inbound webhook automation surface for mapping external events into wake or agent actions in OpenClaw. Keep this locked down with explicit token/session/agent controls before exposing it beyond trusted networks.",
+      help: "Inbound webhook automation surface for mapping external events into wake or agent actions in RemoteClaw. Keep this locked down with explicit token/session/agent controls before exposing it beyond trusted networks.",
       tags: ["advanced"],
     },
     ui: {
@@ -11780,12 +6489,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Channel provider configurations plus shared defaults that control access policies, heartbeat visibility, and per-surface behavior. Keep defaults centralized and override per provider only where required.",
       tags: ["advanced"],
     },
-    skills: {
-      label: "Skills",
-      group: "Skills",
-      order: 200,
-      tags: ["advanced"],
-    },
     plugins: {
       label: "Plugins",
       group: "Plugins",
@@ -11814,12 +6517,12 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     meta: {
       label: "Metadata",
-      help: "Metadata fields automatically maintained by OpenClaw to record write/version history for this config file. Keep these values system-managed and avoid manual edits unless debugging migration history.",
+      help: "Metadata fields automatically maintained by RemoteClaw to record write/version history for this config file. Keep these values system-managed and avoid manual edits unless debugging migration history.",
       tags: ["advanced"],
     },
     "meta.lastTouchedVersion": {
       label: "Config Last Touched Version",
-      help: "Auto-set when OpenClaw writes the config.",
+      help: "Auto-set when RemoteClaw writes the config.",
       tags: ["media"],
     },
     "meta.lastTouchedAt": {
@@ -11849,32 +6552,32 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "env.vars": {
       label: "Environment Variable Overrides",
-      help: "Explicit key/value environment variable overrides merged into runtime process environment for OpenClaw. Use this for deterministic env configuration instead of relying only on shell profile side effects.",
+      help: "Explicit key/value environment variable overrides merged into runtime process environment for RemoteClaw. Use this for deterministic env configuration instead of relying only on shell profile side effects.",
       tags: ["advanced"],
     },
     "wizard.lastRunAt": {
       label: "Wizard Last Run Timestamp",
-      help: "ISO timestamp for when the setup wizard most recently completed on this host. Use this to confirm setup recency during support and operational audits.",
+      help: "ISO timestamp for when the setup wizard most recently completed on this host. Use this to confirm onboarding recency during support and operational audits.",
       tags: ["advanced"],
     },
     "wizard.lastRunVersion": {
       label: "Wizard Last Run Version",
-      help: "OpenClaw version recorded at the time of the most recent wizard run on this config. Use this when diagnosing behavior differences across version-to-version setup changes.",
+      help: "RemoteClaw version recorded at the time of the most recent wizard run on this config. Use this when diagnosing behavior differences across version-to-version onboarding changes.",
       tags: ["advanced"],
     },
     "wizard.lastRunCommit": {
       label: "Wizard Last Run Commit",
-      help: "Source commit identifier recorded for the last wizard execution in development builds. Use this to correlate setup behavior with exact source state during debugging.",
+      help: "Source commit identifier recorded for the last wizard execution in development builds. Use this to correlate onboarding behavior with exact source state during debugging.",
       tags: ["advanced"],
     },
     "wizard.lastRunCommand": {
       label: "Wizard Last Run Command",
-      help: "Command invocation recorded for the latest wizard run to preserve execution context. Use this to reproduce setup steps when verifying setup regressions.",
+      help: "Command invocation recorded for the latest wizard run to preserve execution context. Use this to reproduce onboarding steps when verifying setup regressions.",
       tags: ["advanced"],
     },
     "wizard.lastRunMode": {
       label: "Wizard Last Run Mode",
-      help: 'Wizard execution mode recorded as "local" or "remote" for the most recent setup flow. Use this to understand whether setup targeted direct local runtime or remote gateway topology.',
+      help: 'Wizard execution mode recorded as "local" or "remote" for the most recent onboarding flow. Use this to understand whether setup targeted direct local runtime or remote gateway topology.',
       tags: ["advanced"],
     },
     "diagnostics.otel": {
@@ -11929,7 +6632,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "update.channel": {
       label: "Update Channel",
-      help: 'Update channel for git + npm installs ("stable", "beta", or "dev").',
+      help: 'Update channel ("stable", "beta", or "next").',
       tags: ["advanced"],
     },
     "update.checkOnStart": {
@@ -11966,11 +6669,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Diagnostics Flags",
       help: 'Enable targeted diagnostics logs by flag (e.g. ["telegram.http"]). Supports wildcards like "telegram.*" or "*".',
       tags: ["observability"],
-    },
-    "diagnostics.stuckSessionWarnMs": {
-      label: "Stuck Session Warning Threshold (ms)",
-      help: "Age threshold in milliseconds for emitting stuck-session warnings while a session remains in processing state. Increase for long multi-tool turns to reduce false positives; decrease for faster hang detection.",
-      tags: ["observability", "storage"],
     },
     "diagnostics.otel.enabled": {
       label: "OpenTelemetry Enabled",
@@ -12029,7 +6727,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "diagnostics.cacheTrace.filePath": {
       label: "Cache Trace File Path",
-      help: "JSONL output path for cache trace logs (default: $OPENCLAW_STATE_DIR/logs/cache-trace.jsonl).",
+      help: "JSONL output path for cache trace logs (default: $REMOTECLAW_STATE_DIR/logs/cache-trace.jsonl).",
       tags: ["observability", "storage"],
     },
     "diagnostics.cacheTrace.includeMessages": {
@@ -12050,11 +6748,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     "agents.list.*.identity.avatar": {
       label: "Identity Avatar",
       help: "Agent avatar (workspace-relative path, http(s) URL, or data URI).",
-      tags: ["advanced"],
-    },
-    "agents.list.*.skills": {
-      label: "Agent Skill Filter",
-      help: "Optional allowlist of skills for this agent (omit = all skills; empty = no skills).",
       tags: ["advanced"],
     },
     "agents.list[].runtime": {
@@ -12090,21 +6783,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     "agents.list[].runtime.acp.cwd": {
       label: "Agent ACP Working Directory",
       help: "Optional default working directory for this agent's ACP sessions.",
-      tags: ["advanced"],
-    },
-    "agents.list[].thinkingDefault": {
-      label: "Agent Thinking Default",
-      help: "Optional per-agent default thinking level. Overrides agents.defaults.thinkingDefault for this agent when no per-message or session override is set.",
-      tags: ["advanced"],
-    },
-    "agents.list[].reasoningDefault": {
-      label: "Agent Reasoning Default",
-      help: "Optional per-agent default reasoning visibility (on|off|stream). Applies when no per-message or session reasoning override is set.",
-      tags: ["advanced"],
-    },
-    "agents.list[].fastModeDefault": {
-      label: "Agent Fast Mode Default",
-      help: "Optional per-agent default for fast mode. Applies when no per-message or session fast-mode override is set.",
       tags: ["advanced"],
     },
     "agents.defaults": {
@@ -12201,16 +6879,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Gateway Channel Health Check Interval (min)",
       help: "Interval in minutes for automatic channel health probing and status updates. Use lower intervals for faster detection, or higher intervals to reduce periodic probe noise.",
       tags: ["network", "reliability"],
-    },
-    "gateway.channelStaleEventThresholdMinutes": {
-      label: "Gateway Channel Stale Event Threshold (min)",
-      help: "How many minutes a connected channel can go without receiving any event before the health monitor treats it as a stale socket and triggers a restart. Default: 30.",
-      tags: ["network"],
-    },
-    "gateway.channelMaxRestartsPerHour": {
-      label: "Gateway Channel Max Restarts Per Hour",
-      help: "Maximum number of health-monitor-initiated channel restarts allowed within a rolling one-hour window. Once hit, further restarts are skipped until the window expires. Default: 10.",
-      tags: ["network", "performance"],
     },
     "gateway.tailscale": {
       label: "Gateway Tailscale",
@@ -12384,6 +7052,11 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Default browser profile name selected when callers do not explicitly choose a profile. Use a stable low-privilege profile as the default to reduce accidental cross-context state use.",
       tags: ["storage"],
     },
+    "browser.relayBindHost": {
+      label: "Browser Relay Bind Address",
+      help: "Bind IP address for the Chrome extension relay listener. Leave unset for loopback-only access, or set an explicit non-loopback IP such as 0.0.0.0 only when the relay must be reachable across network namespaces (for example WSL2) and the surrounding network is already trusted.",
+      tags: ["advanced"],
+    },
     "browser.profiles": {
       label: "Browser Profiles",
       help: "Named browser profile connection map used for explicit routing to CDP ports or URLs with optional metadata. Keep profile names consistent and avoid overlapping endpoint definitions.",
@@ -12399,14 +7072,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Per-profile CDP websocket URL used for explicit remote browser routing by profile name. Use this when profile connections terminate on remote hosts or tunnels.",
       tags: ["storage"],
     },
-    "browser.profiles.*.userDataDir": {
-      label: "Browser Profile User Data Dir",
-      help: "Per-profile Chromium user data directory for existing-session attachment through Chrome DevTools MCP. Use this for host-local Brave, Edge, Chromium, or non-default Chrome profiles when the built-in auto-connect path would pick the wrong browser data directory.",
-      tags: ["storage"],
-    },
     "browser.profiles.*.driver": {
       label: "Browser Profile Driver",
-      help: 'Per-profile browser driver mode. Use "openclaw" (or legacy "clawd") for CDP-based profiles, or use "existing-session" for host-local Chrome DevTools MCP attachment.',
+      help: 'Per-profile browser driver mode: "remoteclaw" (or legacy "clawd") or "extension" depending on connection/runtime strategy. Use the driver that matches your browser control stack to avoid protocol mismatches.',
       tags: ["storage"],
     },
     "browser.profiles.*.attachOnly": {
@@ -12429,110 +7097,45 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Global tool denylist that blocks listed tools even when profile or provider rules would allow them. Use deny rules for emergency lockouts and long-term defense-in-depth.",
       tags: ["access", "tools"],
     },
-    "tools.web": {
-      label: "Web Tools",
-      help: "Web-tool policy grouping for search/fetch providers, limits, and fallback behavior tuning. Keep enabled settings aligned with API key availability and outbound networking policy.",
-      tags: ["tools"],
-    },
     "tools.exec": {
       label: "Exec Tool",
-      help: "Exec-tool policy grouping for shell execution host, security mode, approval behavior, and runtime bindings. Keep conservative defaults in production and tighten elevated execution paths.",
+      help: "Exec-tool policy grouping for shell execution host, security mode, approval behavior, and runtime bindings. Keep conservative defaults in production.",
       tags: ["tools"],
     },
-    "tools.media.image.enabled": {
-      label: "Enable Image Understanding",
-      help: "Enable image understanding so attached or referenced images can be interpreted into textual context. Disable if you need text-only operation or want to avoid image-processing cost.",
-      tags: ["media", "tools"],
-    },
-    "tools.media.image.maxBytes": {
-      label: "Image Understanding Max Bytes",
-      help: "Maximum accepted image payload size in bytes before the item is skipped or truncated by policy. Keep limits realistic for your provider caps and infrastructure bandwidth.",
-      tags: ["performance", "media", "tools"],
-    },
-    "tools.media.image.maxChars": {
-      label: "Image Understanding Max Chars",
-      help: "Maximum characters returned from image understanding output after model response normalization. Use tighter limits to reduce prompt bloat and larger limits for detail-heavy OCR tasks.",
-      tags: ["performance", "media", "tools"],
-    },
-    "tools.media.image.prompt": {
-      label: "Image Understanding Prompt",
-      help: "Instruction template used for image understanding requests to shape extraction style and detail level. Keep prompts deterministic so outputs stay consistent across turns and channels.",
-      tags: ["media", "tools"],
-    },
-    "tools.media.image.timeoutSeconds": {
-      label: "Image Understanding Timeout (sec)",
-      help: "Timeout in seconds for each image understanding request before it is aborted. Increase for high-resolution analysis and lower it for latency-sensitive operator workflows.",
-      tags: ["performance", "media", "tools"],
-    },
-    "tools.media.image.attachments": {
-      label: "Image Understanding Attachment Policy",
-      help: "Attachment handling policy for image inputs, including which message attachments qualify for image analysis. Use restrictive settings in untrusted channels to reduce unexpected processing.",
-      tags: ["media", "tools"],
-    },
-    "tools.media.image.models": {
-      label: "Image Understanding Models",
-      help: "Ordered model preferences specifically for image understanding when you want to override shared media models. Put the most reliable multimodal model first to reduce fallback attempts.",
-      tags: ["models", "media", "tools"],
-    },
-    "tools.media.image.scope": {
-      label: "Image Understanding Scope",
-      help: "Scope selector for when image understanding is attempted (for example only explicit requests versus broader auto-detection). Keep narrow scope in busy channels to control token and API spend.",
-      tags: ["media", "tools"],
-    },
-    "tools.media.models": {
-      label: "Media Understanding Shared Models",
-      help: "Shared fallback model list used by media understanding tools when modality-specific model lists are not set. Keep this aligned with available multimodal providers to avoid runtime fallback churn.",
-      tags: ["models", "media", "tools"],
-    },
-    "tools.media.concurrency": {
-      label: "Media Understanding Concurrency",
-      help: "Maximum number of concurrent media understanding operations per turn across image, audio, and video tasks. Lower this in resource-constrained deployments to prevent CPU/network saturation.",
-      tags: ["performance", "media", "tools"],
-    },
     "tools.media.audio.enabled": {
-      label: "Enable Audio Understanding",
+      label: "Enable Audio Transcription",
       help: "Enable audio understanding so voice notes or audio clips can be transcribed/summarized for agent context. Disable when audio ingestion is outside policy or unnecessary for your workflows.",
       tags: ["media", "tools"],
     },
     "tools.media.audio.maxBytes": {
-      label: "Audio Understanding Max Bytes",
+      label: "Audio Max Bytes",
       help: "Maximum accepted audio payload size in bytes before processing is rejected or clipped by policy. Set this based on expected recording length and upstream provider limits.",
       tags: ["performance", "media", "tools"],
     },
     "tools.media.audio.maxChars": {
-      label: "Audio Understanding Max Chars",
+      label: "Audio Max Chars",
       help: "Maximum characters retained from audio understanding output to prevent oversized transcript injection. Increase for long-form dictation, or lower to keep conversational turns compact.",
       tags: ["performance", "media", "tools"],
     },
     "tools.media.audio.prompt": {
-      label: "Audio Understanding Prompt",
+      label: "Audio Transcription Prompt",
       help: "Instruction template guiding audio understanding output style, such as concise summary versus near-verbatim transcript. Keep wording consistent so downstream automations can rely on output format.",
       tags: ["media", "tools"],
     },
     "tools.media.audio.timeoutSeconds": {
-      label: "Audio Understanding Timeout (sec)",
+      label: "Audio Transcription Timeout (sec)",
       help: "Timeout in seconds for audio understanding execution before the operation is cancelled. Use longer timeouts for long recordings and tighter ones for interactive chat responsiveness.",
       tags: ["performance", "media", "tools"],
     },
     "tools.media.audio.language": {
-      label: "Audio Understanding Language",
+      label: "Audio Transcription Language",
       help: "Preferred language hint for audio understanding/transcription when provider support is available. Set this to improve recognition accuracy for known primary languages.",
       tags: ["media", "tools"],
     },
-    "tools.media.audio.attachments": {
-      label: "Audio Understanding Attachment Policy",
-      help: "Attachment policy for audio inputs indicating which uploaded files are eligible for audio processing. Keep restrictive defaults in mixed-content channels to avoid unintended audio workloads.",
-      tags: ["media", "tools"],
-    },
     "tools.media.audio.models": {
-      label: "Audio Understanding Models",
-      help: "Ordered model preferences specifically for audio understanding, used before shared media model fallback. Choose models optimized for transcription quality in your primary language/domain.",
+      label: "Audio Transcription Models",
+      help: "Ordered model preferences specifically for audio understanding. Choose models optimized for transcription quality in your primary language/domain.",
       tags: ["models", "media", "tools"],
-    },
-    "tools.media.audio.scope": {
-      label: "Audio Understanding Scope",
-      help: "Scope selector for when audio understanding runs across inbound messages and attachments. Keep focused scopes in high-volume channels to reduce cost and avoid accidental transcription.",
-      tags: ["media", "tools"],
     },
     "tools.media.audio.echoTranscript": {
       label: "Echo Transcript to Chat",
@@ -12584,30 +7187,15 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Scope selector controlling when video understanding is attempted across incoming events. Narrow scope in noisy channels, and broaden only where video interpretation is core to workflow.",
       tags: ["media", "tools"],
     },
-    "tools.links.enabled": {
-      label: "Enable Link Understanding",
-      help: "Enable automatic link understanding pre-processing so URLs can be summarized before agent reasoning. Keep enabled for richer context, and disable when strict minimal processing is required.",
-      tags: ["tools"],
+    "skills.load.watch": {
+      label: "Watch Skill Files",
+      help: "Enable filesystem watching for skill-definition changes so updates can be applied without full process restart. Keep enabled in development workflows and disable in immutable production images.",
+      tags: ["advanced"],
     },
-    "tools.links.maxLinks": {
-      label: "Link Understanding Max Links",
-      help: "Maximum number of links expanded per turn during link understanding. Use lower values to control latency/cost in chatty threads and higher values when multi-link context is critical.",
-      tags: ["performance", "tools"],
-    },
-    "tools.links.timeoutSeconds": {
-      label: "Link Understanding Timeout (sec)",
-      help: "Per-link understanding timeout budget in seconds before unresolved links are skipped. Keep this bounded to avoid long stalls when external sites are slow or unreachable.",
-      tags: ["performance", "tools"],
-    },
-    "tools.links.models": {
-      label: "Link Understanding Models",
-      help: "Preferred model list for link understanding tasks, evaluated in order as fallbacks when supported. Use lightweight models first for routine summarization and heavier models only when needed.",
-      tags: ["models", "tools"],
-    },
-    "tools.links.scope": {
-      label: "Link Understanding Scope",
-      help: "Controls when link understanding runs relative to conversation context and message type. Keep scope conservative to avoid unnecessary fetches on messages where links are not actionable.",
-      tags: ["tools"],
+    "skills.load.watchDebounceMs": {
+      label: "Skill Watch Debounce (ms)",
+      help: "Debounce window in milliseconds for coalescing rapid skill file changes before reload logic runs. Increase to reduce reload churn on frequent writes, or lower for faster edit feedback.",
+      tags: ["performance", "automation"],
     },
     "tools.profile": {
       label: "Tool Profile",
@@ -12639,64 +7227,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Per-agent provider-specific tool policy overrides for channel-scoped capability control. Use this when a single agent needs tighter restrictions on one provider than others.",
       tags: ["advanced"],
     },
-    "tools.exec.applyPatch.enabled": {
-      label: "Enable apply_patch",
-      help: "Experimental. Enables apply_patch for OpenAI models when allowed by tool policy.",
-      tags: ["tools"],
-    },
-    "tools.exec.applyPatch.workspaceOnly": {
-      label: "apply_patch Workspace-Only",
-      help: "Restrict apply_patch paths to the workspace directory (default: true). Set false to allow writing outside the workspace (dangerous).",
-      tags: ["security", "access", "tools", "advanced"],
-    },
-    "tools.exec.applyPatch.allowModels": {
-      label: "apply_patch Model Allowlist",
-      help: 'Optional allowlist of model ids (e.g. "gpt-5.2" or "openai/gpt-5.2").',
-      tags: ["access", "tools"],
-    },
-    "tools.loopDetection.enabled": {
-      label: "Tool-loop Detection",
-      help: "Enable repetitive tool-call loop detection and backoff safety checks (default: false).",
-      tags: ["tools"],
-    },
-    "tools.loopDetection.historySize": {
-      label: "Tool-loop History Size",
-      help: "Tool history window size for loop detection (default: 30).",
-      tags: ["tools"],
-    },
-    "tools.loopDetection.warningThreshold": {
-      label: "Tool-loop Warning Threshold",
-      help: "Warning threshold for repetitive patterns when detector is enabled (default: 10).",
-      tags: ["tools"],
-    },
-    "tools.loopDetection.criticalThreshold": {
-      label: "Tool-loop Critical Threshold",
-      help: "Critical threshold for repetitive patterns when detector is enabled (default: 20).",
-      tags: ["tools"],
-    },
-    "tools.loopDetection.globalCircuitBreakerThreshold": {
-      label: "Tool-loop Global Circuit Breaker Threshold",
-      help: "Global no-progress breaker threshold (default: 30).",
-      tags: ["reliability", "tools"],
-    },
-    "tools.loopDetection.detectors.genericRepeat": {
-      label: "Tool-loop Generic Repeat Detection",
-      help: "Enable generic repeated same-tool/same-params loop detection (default: true).",
-      tags: ["tools"],
-    },
-    "tools.loopDetection.detectors.knownPollNoProgress": {
-      label: "Tool-loop Poll No-Progress Detection",
-      help: "Enable known poll tool no-progress loop detection (default: true).",
-      tags: ["tools"],
-    },
-    "tools.loopDetection.detectors.pingPong": {
-      label: "Tool-loop Ping-Pong Detection",
-      help: "Enable ping-pong loop detection (default: true).",
-      tags: ["tools"],
-    },
     "tools.fs.workspaceOnly": {
       label: "Workspace-only FS tools",
-      help: "Restrict filesystem tools (read/write/edit/apply_patch) to the workspace directory (default: false).",
+      help: "Restrict filesystem tools to the workspace directory (default: false).",
       tags: ["tools"],
     },
     "tools.sessions.visibility": {
@@ -12752,21 +7285,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     "tools.agentToAgent.allow": {
       label: "Agent-to-Agent Target Allowlist",
       help: "Allowlist of target agent IDs permitted for agent_to_agent calls when orchestration is enabled. Use explicit allowlists to avoid uncontrolled cross-agent call graphs.",
-      tags: ["access", "tools"],
-    },
-    "tools.elevated": {
-      label: "Elevated Tool Access",
-      help: "Elevated tool access controls for privileged command surfaces that should only be reachable from trusted senders. Keep disabled unless operator workflows explicitly require elevated actions.",
-      tags: ["tools"],
-    },
-    "tools.elevated.enabled": {
-      label: "Enable Elevated Tool Access",
-      help: "Enables elevated tool execution path when sender and policy checks pass. Keep disabled in public/shared channels and enable only for trusted owner-operated contexts.",
-      tags: ["tools"],
-    },
-    "tools.elevated.allowFrom": {
-      label: "Elevated Tool Allow Rules",
-      help: "Sender allow rules for elevated tools, usually keyed by channel/provider identity formats. Use narrow, explicit identities so elevated commands cannot be triggered by unintended users.",
       tags: ["access", "tools"],
     },
     "tools.subagents": {
@@ -12904,106 +7422,10 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Enable broadcast action (default: true).",
       tags: ["tools"],
     },
-    "tools.web.search.enabled": {
-      label: "Enable Web Search Tool",
-      help: "Enable the web_search tool (requires a provider API key).",
-      tags: ["tools"],
-    },
-    "tools.web.search.provider": {
-      label: "Web Search Provider",
-      help: "Search provider id. Auto-detected from available API keys if omitted.",
-      tags: ["tools"],
-    },
-    "tools.web.search.maxResults": {
-      label: "Web Search Max Results",
-      help: "Number of results to return (1-10).",
-      tags: ["performance", "tools"],
-    },
-    "tools.web.search.timeoutSeconds": {
-      label: "Web Search Timeout (sec)",
-      help: "Timeout in seconds for web_search requests.",
-      tags: ["performance", "tools"],
-    },
-    "tools.web.search.cacheTtlMinutes": {
-      label: "Web Search Cache TTL (min)",
-      help: "Cache TTL in minutes for web_search results.",
-      tags: ["performance", "storage", "tools"],
-    },
-    "tools.web.fetch.enabled": {
-      label: "Enable Web Fetch Tool",
-      help: "Enable the web_fetch tool (lightweight HTTP fetch).",
-      tags: ["tools"],
-    },
-    "tools.web.fetch.maxChars": {
-      label: "Web Fetch Max Chars",
-      help: "Max characters returned by web_fetch (truncated).",
-      tags: ["performance", "tools"],
-    },
-    "tools.web.fetch.maxCharsCap": {
-      label: "Web Fetch Hard Max Chars",
-      help: "Hard cap for web_fetch maxChars (applies to config and tool calls).",
-      tags: ["performance", "tools"],
-    },
-    "tools.web.fetch.timeoutSeconds": {
-      label: "Web Fetch Timeout (sec)",
-      help: "Timeout in seconds for web_fetch requests.",
-      tags: ["performance", "tools"],
-    },
-    "tools.web.fetch.cacheTtlMinutes": {
-      label: "Web Fetch Cache TTL (min)",
-      help: "Cache TTL in minutes for web_fetch results.",
-      tags: ["performance", "storage", "tools"],
-    },
-    "tools.web.fetch.maxRedirects": {
-      label: "Web Fetch Max Redirects",
-      help: "Maximum redirects allowed for web_fetch (default: 3).",
-      tags: ["performance", "storage", "tools"],
-    },
-    "tools.web.fetch.userAgent": {
-      label: "Web Fetch User-Agent",
-      help: "Override User-Agent header for web_fetch requests.",
-      tags: ["tools"],
-    },
-    "tools.web.fetch.readability": {
-      label: "Web Fetch Readability Extraction",
-      help: "Use Readability to extract main content from HTML (fallbacks to basic HTML cleanup).",
-      tags: ["tools"],
-    },
-    "tools.web.fetch.firecrawl.enabled": {
-      label: "Enable Firecrawl Fallback",
-      help: "Enable Firecrawl fallback for web_fetch (if configured).",
-      tags: ["tools"],
-    },
-    "tools.web.fetch.firecrawl.apiKey": {
-      label: "Firecrawl API Key",
-      help: "Firecrawl API key (fallback: FIRECRAWL_API_KEY env var).",
-      tags: ["security", "auth", "tools"],
-      sensitive: true,
-    },
-    "tools.web.fetch.firecrawl.baseUrl": {
-      label: "Firecrawl Base URL",
-      help: "Firecrawl base URL (e.g. https://api.firecrawl.dev or custom endpoint).",
-      tags: ["tools"],
-    },
-    "tools.web.fetch.firecrawl.onlyMainContent": {
-      label: "Firecrawl Main Content Only",
-      help: "When true, Firecrawl returns only the main content (default: true).",
-      tags: ["tools"],
-    },
-    "tools.web.fetch.firecrawl.maxAgeMs": {
-      label: "Firecrawl Cache Max Age (ms)",
-      help: "Firecrawl maxAge (ms) for cached results when supported by the API.",
-      tags: ["performance", "tools"],
-    },
-    "tools.web.fetch.firecrawl.timeoutSeconds": {
-      label: "Firecrawl Timeout (sec)",
-      help: "Timeout in seconds for Firecrawl requests.",
-      tags: ["performance", "tools"],
-    },
     "gateway.controlUi.basePath": {
       label: "Control UI Base Path",
-      help: "Optional URL prefix where the Control UI is served (e.g. /openclaw).",
-      placeholder: "/openclaw",
+      help: "Optional URL prefix where the Control UI is served (e.g. /remoteclaw).",
+      placeholder: "/remoteclaw",
       tags: ["network", "storage"],
     },
     "gateway.controlUi.root": {
@@ -13014,7 +7436,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "gateway.controlUi.allowedOrigins": {
       label: "Control UI Allowed Origins",
-      help: 'Allowed browser origins for Control UI/WebChat websocket connections (full origins only, e.g. https://control.example.com). Required for non-loopback Control UI deployments unless dangerous Host-header fallback is explicitly enabled. Setting ["*"] means allow any browser origin and should be avoided outside tightly controlled local testing.',
+      help: "Allowed browser origins for Control UI/WebChat websocket connections (full origins only, e.g. https://control.example.com). Required for non-loopback Control UI deployments unless dangerous Host-header fallback is explicitly enabled.",
       placeholder: "https://control.example.com",
       tags: ["access", "network"],
     },
@@ -13035,28 +7457,22 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "gateway.push": {
       label: "Gateway Push Delivery",
-      help: "Push-delivery settings used by the gateway when it needs to wake or notify paired devices. Configure relay-backed APNs here for official iOS builds; direct APNs auth remains env-based for local/manual builds.",
       tags: ["network"],
     },
     "gateway.push.apns": {
       label: "Gateway APNs Delivery",
-      help: "APNs delivery settings for iOS devices paired to this gateway. Use relay settings for official/TestFlight builds that register through the external push relay.",
       tags: ["network"],
     },
     "gateway.push.apns.relay": {
       label: "Gateway APNs Relay",
-      help: "External relay settings for relay-backed APNs sends. The gateway uses this relay for push.test, wake nudges, and reconnect wakes after a paired official iOS build publishes a relay-backed registration.",
       tags: ["network"],
     },
     "gateway.push.apns.relay.baseUrl": {
       label: "Gateway APNs Relay Base URL",
-      help: "Base HTTPS URL for the external APNs relay service used by official/TestFlight iOS builds. Keep this aligned with the relay URL baked into the iOS build so registration and send traffic hit the same deployment.",
-      placeholder: "https://relay.example.com",
-      tags: ["network", "advanced"],
+      tags: ["network"],
     },
     "gateway.push.apns.relay.timeoutMs": {
       label: "Gateway APNs Relay Timeout (ms)",
-      help: "Timeout in milliseconds for relay send requests from the gateway to the APNs relay (default: 10000). Increase for slower relays or networks, or lower to fail wake attempts faster.",
       tags: ["network", "performance"],
     },
     "gateway.http.endpoints.chatCompletions.enabled": {
@@ -13086,12 +7502,12 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "gateway.http.endpoints.chatCompletions.images.allowUrl": {
       label: "OpenAI Chat Completions Allow Image URLs",
-      help: "Allow server-side URL fetches for `image_url` parts (default: false; data URIs remain supported). Set this to `false` to disable URL fetching entirely.",
+      help: "Allow server-side URL fetches for `image_url` parts (default: false; data URIs remain supported).",
       tags: ["access", "network", "media"],
     },
     "gateway.http.endpoints.chatCompletions.images.urlAllowlist": {
       label: "OpenAI Chat Completions Image URL Allowlist",
-      help: "Optional hostname allowlist for `image_url` URL fetches; supports exact hosts and `*.example.com` wildcards. Empty or omitted lists mean no hostname allowlist restriction.",
+      help: "Optional hostname allowlist for `image_url` URL fetches; supports exact hosts and `*.example.com` wildcards.",
       tags: ["access", "network", "media"],
     },
     "gateway.http.endpoints.chatCompletions.images.allowedMimes": {
@@ -13125,7 +7541,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       tags: ["network", "reliability", "performance"],
     },
     "gateway.reload.deferralTimeoutMs": {
-      label: "Restart Deferral Timeout (ms)",
+      label: "Config Reload Deferral Timeout (ms)",
       help: "Maximum time (ms) to wait for in-flight operations to complete before forcing a SIGUSR1 restart. Default: 300000 (5 minutes). Lower values risk aborting active subagent LLM calls.",
       tags: ["network", "reliability", "performance"],
     },
@@ -13141,12 +7557,12 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "gateway.nodes.allowCommands": {
       label: "Gateway Node Allowlist (Extra Commands)",
-      help: "Extra node.invoke commands to allow beyond the gateway defaults (array of command strings). Enabling dangerous commands here is a security-sensitive override and is flagged by `openclaw security audit`.",
+      help: "Extra node.invoke commands to allow beyond the gateway defaults (array of command strings). Enabling dangerous commands here is a security-sensitive override and is flagged by `remoteclaw security audit`.",
       tags: ["access", "network"],
     },
     "gateway.nodes.denyCommands": {
       label: "Gateway Node Denylist",
-      help: "Node command names to block even if present in node claims or default allowlist (exact command-name matching only, e.g. `system.run`; does not inspect shell text inside that command).",
+      help: "Commands to block even if present in node claims or default allowlist.",
       tags: ["access", "network"],
     },
     "nodeHost.browserProxy": {
@@ -13289,40 +7705,40 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Per-source broadcast destination list where each key is a source peer ID and the value is an array of destination peer IDs. Keep lists intentional to avoid accidental message amplification.",
       tags: ["advanced"],
     },
-    "skills.load.watch": {
-      label: "Watch Skills",
-      help: "Enable filesystem watching for skill-definition changes so updates can be applied without full process restart. Keep enabled in development workflows and disable in immutable production images.",
-      tags: ["advanced"],
-    },
-    "skills.load.watchDebounceMs": {
-      label: "Skills Watch Debounce (ms)",
-      help: "Debounce window in milliseconds for coalescing rapid skill file changes before reload logic runs. Increase to reduce reload churn on frequent writes, or lower for faster edit feedback.",
-      tags: ["performance", "automation"],
-    },
-    "agents.defaults.workspace": {
-      label: "Workspace",
-      help: "Default workspace path exposed to agent runtime tools for filesystem context and repo-aware behavior. Set this explicitly when running from wrappers so path resolution stays deterministic.",
-      tags: ["advanced"],
-    },
     "agents.defaults.repoRoot": {
       label: "Repo Root",
       help: "Optional repository root shown in the system prompt runtime line (overrides auto-detect).",
       tags: ["advanced"],
     },
-    "agents.defaults.bootstrapMaxChars": {
-      label: "Bootstrap Max Chars",
-      help: "Max characters of each workspace bootstrap file injected into the system prompt before truncation (default: 20000).",
-      tags: ["performance"],
-    },
-    "agents.defaults.bootstrapTotalMaxChars": {
-      label: "Bootstrap Total Max Chars",
-      help: "Max total characters across all injected workspace bootstrap files (default: 150000).",
-      tags: ["performance"],
-    },
-    "agents.defaults.bootstrapPromptTruncationWarning": {
-      label: "Bootstrap Prompt Truncation Warning",
-      help: 'Inject agent-visible warning text when bootstrap files are truncated: "off", "once" (default), or "always".',
+    "agents.defaults.boot": {
+      label: "Boot Prompt",
+      help: "Boot prompt configuration for gateway startup runs. Set `prompt` for an inline prompt or `file` for a path relative to the workspace directory. If neither is set, boot is skipped.",
       tags: ["advanced"],
+    },
+    "agents.defaults.boot.prompt": {
+      label: "Boot Prompt Text",
+      help: "Inline boot prompt text. Takes precedence over `file` if both are set.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.boot.file": {
+      label: "Boot Prompt File",
+      help: "Path to a boot prompt file (relative to workspace directory). Read at runtime on each gateway startup.",
+      tags: ["storage"],
+    },
+    "agents.list[].boot": {
+      label: "Agent Boot Prompt",
+      help: "Per-agent boot prompt override. Same shape as `agents.defaults.boot`.",
+      tags: ["advanced"],
+    },
+    "agents.list[].boot.prompt": {
+      label: "Agent Boot Prompt Text",
+      help: "Per-agent inline boot prompt text.",
+      tags: ["advanced"],
+    },
+    "agents.list[].boot.file": {
+      label: "Agent Boot Prompt File",
+      help: "Per-agent boot prompt file path (relative to agent workspace directory).",
+      tags: ["storage"],
     },
     "agents.defaults.envelopeTimezone": {
       label: "Envelope Timezone",
@@ -13338,387 +7754,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Envelope Elapsed",
       help: 'Include elapsed time in message envelopes ("on" or "off").',
       tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch": {
-      label: "Memory Search",
-      help: "Vector search over MEMORY.md and memory/*.md (per-agent overrides supported).",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.enabled": {
-      label: "Enable Memory Search",
-      help: "Master toggle for memory search indexing and retrieval behavior on this agent profile. Keep enabled for semantic recall, and disable when you want fully stateless responses.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.sources": {
-      label: "Memory Search Sources",
-      help: 'Chooses which sources are indexed: "memory" reads MEMORY.md + memory files, and "sessions" includes transcript history. Keep ["memory"] unless you need recall from prior chat transcripts.',
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.extraPaths": {
-      label: "Extra Memory Paths",
-      help: "Adds extra directories or .md files to the memory index beyond default memory files. Use this when key reference docs live elsewhere in your repo; when multimodal memory is enabled, matching image/audio files under these paths are also eligible for indexing.",
-      tags: ["storage"],
-    },
-    "agents.defaults.memorySearch.multimodal": {
-      label: "Memory Search Multimodal",
-      help: 'Optional multimodal memory settings for indexing image and audio files from configured extra paths. Keep this off unless your embedding model explicitly supports cross-modal embeddings, and set `memorySearch.fallback` to "none" while it is enabled. Matching files are uploaded to the configured remote embedding provider during indexing.',
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.multimodal.enabled": {
-      label: "Enable Memory Search Multimodal",
-      help: "Enables image/audio memory indexing from extraPaths. This currently requires Gemini embedding-2, keeps the default memory roots Markdown-only, disables memory-search fallback providers, and uploads matching binary content to the configured remote embedding provider.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.multimodal.modalities": {
-      label: "Memory Search Multimodal Modalities",
-      help: 'Selects which multimodal file types are indexed from extraPaths: "image", "audio", or "all". Keep this narrow to avoid indexing large binary corpora unintentionally.',
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.multimodal.maxFileBytes": {
-      label: "Memory Search Multimodal Max File Bytes",
-      help: "Sets the maximum bytes allowed per multimodal file before it is skipped during memory indexing. Use this to cap upload cost and indexing latency, or raise it for short high-quality audio clips.",
-      tags: ["performance", "storage"],
-    },
-    "agents.defaults.memorySearch.experimental.sessionMemory": {
-      label: "Memory Search Session Index (Experimental)",
-      help: "Indexes session transcripts into memory search so responses can reference prior chat turns. Keep this off unless transcript recall is needed, because indexing cost and storage usage both increase.",
-      tags: ["security", "storage", "advanced"],
-    },
-    "agents.defaults.memorySearch.provider": {
-      label: "Memory Search Provider",
-      help: 'Selects the embedding backend used to build/query memory vectors: "openai", "gemini", "voyage", "mistral", "ollama", or "local". Keep your most reliable provider here and configure fallback for resilience.',
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.remote.baseUrl": {
-      label: "Remote Embedding Base URL",
-      help: "Overrides the embedding API endpoint, such as an OpenAI-compatible proxy or custom Gemini base URL. Use this only when routing through your own gateway or vendor endpoint; keep provider defaults otherwise.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.remote.apiKey": {
-      label: "Remote Embedding API Key",
-      help: "Supplies a dedicated API key for remote embedding calls used by memory indexing and query-time embeddings. Use this when memory embeddings should use different credentials than global defaults or environment variables.",
-      tags: ["security", "auth"],
-      sensitive: true,
-    },
-    "agents.defaults.memorySearch.remote.headers": {
-      label: "Remote Embedding Headers",
-      help: "Adds custom HTTP headers to remote embedding requests, merged with provider defaults. Use this for proxy auth and tenant routing headers, and keep values minimal to avoid leaking sensitive metadata.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.remote.batch.enabled": {
-      label: "Remote Batch Embedding Enabled",
-      help: "Enables provider batch APIs for embedding jobs when supported (OpenAI/Gemini), improving throughput on larger index runs. Keep this enabled unless debugging provider batch failures or running very small workloads.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.remote.batch.wait": {
-      label: "Remote Batch Wait for Completion",
-      help: "Waits for batch embedding jobs to fully finish before the indexing operation completes. Keep this enabled for deterministic indexing state; disable only if you accept delayed consistency.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.remote.batch.concurrency": {
-      label: "Remote Batch Concurrency",
-      help: "Limits how many embedding batch jobs run at the same time during indexing (default: 2). Increase carefully for faster bulk indexing, but watch provider rate limits and queue errors.",
-      tags: ["performance"],
-    },
-    "agents.defaults.memorySearch.remote.batch.pollIntervalMs": {
-      label: "Remote Batch Poll Interval (ms)",
-      help: "Controls how often the system polls provider APIs for batch job status in milliseconds (default: 2000). Use longer intervals to reduce API chatter, or shorter intervals for faster completion detection.",
-      tags: ["performance"],
-    },
-    "agents.defaults.memorySearch.remote.batch.timeoutMinutes": {
-      label: "Remote Batch Timeout (min)",
-      help: "Sets the maximum wait time for a full embedding batch operation in minutes (default: 60). Increase for very large corpora or slower providers, and lower it to fail fast in automation-heavy flows.",
-      tags: ["performance"],
-    },
-    "agents.defaults.memorySearch.model": {
-      label: "Memory Search Model",
-      help: "Embedding model override used by the selected memory provider when a non-default model is required. Set this only when you need explicit recall quality/cost tuning beyond provider defaults.",
-      tags: ["models"],
-    },
-    "agents.defaults.memorySearch.outputDimensionality": {
-      label: "Memory Search Output Dimensionality",
-      help: "Gemini embedding-2 only: chooses the output vector size for memory embeddings. Use 768, 1536, or 3072 (default), and expect a full reindex when you change it because stored vector dimensions must stay consistent.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.fallback": {
-      label: "Memory Search Fallback",
-      help: 'Backup provider used when primary embeddings fail: "openai", "gemini", "voyage", "mistral", "ollama", "local", or "none". Set a real fallback for production reliability; use "none" only if you prefer explicit failures.',
-      tags: ["reliability"],
-    },
-    "agents.defaults.memorySearch.local.modelPath": {
-      label: "Local Embedding Model Path",
-      help: "Specifies the local embedding model source for local memory search, such as a GGUF file path or `hf:` URI. Use this only when provider is `local`, and verify model compatibility before large index rebuilds.",
-      tags: ["storage"],
-    },
-    "agents.defaults.memorySearch.store.path": {
-      label: "Memory Search Index Path",
-      help: "Sets where the SQLite memory index is stored on disk for each agent. Keep the default `~/.openclaw/memory/{agentId}.sqlite` unless you need custom storage placement or backup policy alignment.",
-      tags: ["storage"],
-    },
-    "agents.defaults.memorySearch.store.vector.enabled": {
-      label: "Memory Search Vector Index",
-      help: "Enables the sqlite-vec extension used for vector similarity queries in memory search (default: true). Keep this enabled for normal semantic recall; disable only for debugging or fallback-only operation.",
-      tags: ["storage"],
-    },
-    "agents.defaults.memorySearch.store.vector.extensionPath": {
-      label: "Memory Search Vector Extension Path",
-      help: "Overrides the auto-discovered sqlite-vec extension library path (`.dylib`, `.so`, or `.dll`). Use this when your runtime cannot find sqlite-vec automatically or you pin a known-good build.",
-      tags: ["storage"],
-    },
-    "agents.defaults.memorySearch.chunking.tokens": {
-      label: "Memory Chunk Tokens",
-      help: "Chunk size in tokens used when splitting memory sources before embedding/indexing. Increase for broader context per chunk, or lower to improve precision on pinpoint lookups.",
-      tags: ["security", "auth"],
-    },
-    "agents.defaults.memorySearch.chunking.overlap": {
-      label: "Memory Chunk Overlap Tokens",
-      help: "Token overlap between adjacent memory chunks to preserve context continuity near split boundaries. Use modest overlap to reduce boundary misses without inflating index size too aggressively.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.sync.onSessionStart": {
-      label: "Index on Session Start",
-      help: "Triggers a memory index sync when a session starts so early turns see fresh memory content. Keep enabled when startup freshness matters more than initial turn latency.",
-      tags: ["storage", "automation"],
-    },
-    "agents.defaults.memorySearch.sync.onSearch": {
-      label: "Index on Search (Lazy)",
-      help: "Uses lazy sync by scheduling reindex on search after content changes are detected. Keep enabled for lower idle overhead, or disable if you require pre-synced indexes before any query.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.sync.watch": {
-      label: "Watch Memory Files",
-      help: "Watches memory files and schedules index updates from file-change events (chokidar). Enable for near-real-time freshness; disable on very large workspaces if watch churn is too noisy.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.sync.watchDebounceMs": {
-      label: "Memory Watch Debounce (ms)",
-      help: "Debounce window in milliseconds for coalescing rapid file-watch events before reindex runs. Increase to reduce churn on frequently-written files, or lower for faster freshness.",
-      tags: ["performance", "automation"],
-    },
-    "agents.defaults.memorySearch.sync.sessions.deltaBytes": {
-      label: "Session Delta Bytes",
-      help: "Requires at least this many newly appended bytes before session transcript changes trigger reindex (default: 100000). Increase to reduce frequent small reindexes, or lower for faster transcript freshness.",
-      tags: ["storage"],
-    },
-    "agents.defaults.memorySearch.sync.sessions.deltaMessages": {
-      label: "Session Delta Messages",
-      help: "Requires at least this many appended transcript messages before reindex is triggered (default: 50). Lower this for near-real-time transcript recall, or raise it to reduce indexing churn.",
-      tags: ["storage"],
-    },
-    "agents.defaults.memorySearch.sync.sessions.postCompactionForce": {
-      label: "Force Reindex After Compaction",
-      help: "Forces a session memory-search reindex after compaction-triggered transcript updates (default: true). Keep enabled when compacted summaries must be immediately searchable, or disable to reduce write-time indexing pressure.",
-      tags: ["storage"],
-    },
-    "agents.defaults.memorySearch.query.maxResults": {
-      label: "Memory Search Max Results",
-      help: "Maximum number of memory hits returned from search before downstream reranking and prompt injection. Raise for broader recall, or lower for tighter prompts and faster responses.",
-      tags: ["performance"],
-    },
-    "agents.defaults.memorySearch.query.minScore": {
-      label: "Memory Search Min Score",
-      help: "Minimum relevance score threshold for including memory results in final recall output. Increase to reduce weak/noisy matches, or lower when you need more permissive retrieval.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.query.hybrid.enabled": {
-      label: "Memory Search Hybrid",
-      help: "Combines BM25 keyword matching with vector similarity for better recall on mixed exact + semantic queries. Keep enabled unless you are isolating ranking behavior for troubleshooting.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.query.hybrid.vectorWeight": {
-      label: "Memory Search Vector Weight",
-      help: "Controls how strongly semantic similarity influences hybrid ranking (0-1). Increase when paraphrase matching matters more than exact terms; decrease for stricter keyword emphasis.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.query.hybrid.textWeight": {
-      label: "Memory Search Text Weight",
-      help: "Controls how strongly BM25 keyword relevance influences hybrid ranking (0-1). Increase for exact-term matching; decrease when semantic matches should rank higher.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.query.hybrid.candidateMultiplier": {
-      label: "Memory Search Hybrid Candidate Multiplier",
-      help: "Expands the candidate pool before reranking (default: 4). Raise this for better recall on noisy corpora, but expect more compute and slightly slower searches.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.query.hybrid.mmr.enabled": {
-      label: "Memory Search MMR Re-ranking",
-      help: "Adds MMR reranking to diversify results and reduce near-duplicate snippets in a single answer window. Enable when recall looks repetitive; keep off for strict score ordering.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.query.hybrid.mmr.lambda": {
-      label: "Memory Search MMR Lambda",
-      help: "Sets MMR relevance-vs-diversity balance (0 = most diverse, 1 = most relevant, default: 0.7). Lower values reduce repetition; higher values keep tightly relevant but may duplicate.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.query.hybrid.temporalDecay.enabled": {
-      label: "Memory Search Temporal Decay",
-      help: "Applies recency decay so newer memory can outrank older memory when scores are close. Enable when timeliness matters; keep off for timeless reference knowledge.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.query.hybrid.temporalDecay.halfLifeDays": {
-      label: "Memory Search Temporal Decay Half-life (Days)",
-      help: "Controls how fast older memory loses rank when temporal decay is enabled (half-life in days, default: 30). Lower values prioritize recent context more aggressively.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.memorySearch.cache.enabled": {
-      label: "Memory Search Embedding Cache",
-      help: "Caches computed chunk embeddings in SQLite so reindexing and incremental updates run faster (default: true). Keep this enabled unless investigating cache correctness or minimizing disk usage.",
-      tags: ["storage"],
-    },
-    "agents.defaults.memorySearch.cache.maxEntries": {
-      label: "Memory Search Embedding Cache Max Entries",
-      help: "Sets a best-effort upper bound on cached embeddings kept in SQLite for memory search. Use this when controlling disk growth matters more than peak reindex speed.",
-      tags: ["performance", "storage"],
-    },
-    memory: {
-      label: "Memory",
-      help: "Memory backend configuration (global).",
-      tags: ["advanced"],
-    },
-    "memory.backend": {
-      label: "Memory Backend",
-      help: 'Selects the global memory engine: "builtin" uses OpenClaw memory internals, while "qmd" uses the QMD sidecar pipeline. Keep "builtin" unless you intentionally operate QMD.',
-      tags: ["storage"],
-    },
-    "memory.citations": {
-      label: "Memory Citations Mode",
-      help: 'Controls citation visibility in replies: "auto" shows citations when useful, "on" always shows them, and "off" hides them. Keep "auto" for a balanced signal-to-noise default.',
-      tags: ["storage"],
-    },
-    "memory.qmd.command": {
-      label: "QMD Binary",
-      help: "Sets the executable path for the `qmd` binary used by the QMD backend (default: resolved from PATH). Use an explicit absolute path when multiple qmd installs exist or PATH differs across environments.",
-      tags: ["storage"],
-    },
-    "memory.qmd.mcporter": {
-      label: "QMD MCPorter",
-      help: "Routes QMD work through mcporter (MCP runtime) instead of spawning `qmd` for each call. Use this when cold starts are expensive on large models; keep direct process mode for simpler local setups.",
-      tags: ["storage"],
-    },
-    "memory.qmd.mcporter.enabled": {
-      label: "QMD MCPorter Enabled",
-      help: "Routes QMD through an mcporter daemon instead of spawning qmd per request, reducing cold-start overhead for larger models. Keep disabled unless mcporter is installed and configured.",
-      tags: ["storage"],
-    },
-    "memory.qmd.mcporter.serverName": {
-      label: "QMD MCPorter Server Name",
-      help: "Names the mcporter server target used for QMD calls (default: qmd). Change only when your mcporter setup uses a custom server name for qmd mcp keep-alive.",
-      tags: ["storage"],
-    },
-    "memory.qmd.mcporter.startDaemon": {
-      label: "QMD MCPorter Start Daemon",
-      help: "Automatically starts the mcporter daemon when mcporter-backed QMD mode is enabled (default: true). Keep enabled unless process lifecycle is managed externally by your service supervisor.",
-      tags: ["storage"],
-    },
-    "memory.qmd.searchMode": {
-      label: "QMD Search Mode",
-      help: 'Selects the QMD retrieval path: "query" uses standard query flow, "search" uses search-oriented retrieval, and "vsearch" emphasizes vector retrieval. Keep default unless tuning relevance quality.',
-      tags: ["storage"],
-    },
-    "memory.qmd.includeDefaultMemory": {
-      label: "QMD Include Default Memory",
-      help: "Automatically indexes default memory files (MEMORY.md and memory/**/*.md) into QMD collections. Keep enabled unless you want indexing controlled only through explicit custom paths.",
-      tags: ["storage"],
-    },
-    "memory.qmd.paths": {
-      label: "QMD Extra Paths",
-      help: "Adds custom directories or files to include in QMD indexing, each with an optional name and glob pattern. Use this for project-specific knowledge locations that are outside default memory paths.",
-      tags: ["storage"],
-    },
-    "memory.qmd.paths.path": {
-      label: "QMD Path",
-      help: "Defines the root location QMD should scan, using an absolute path or `~`-relative path. Use stable directories so collection identity does not drift across environments.",
-      tags: ["storage"],
-    },
-    "memory.qmd.paths.pattern": {
-      label: "QMD Path Pattern",
-      help: "Filters files under each indexed root using a glob pattern, with default `**/*.md`. Use narrower patterns to reduce noise and indexing cost when directories contain mixed file types.",
-      tags: ["storage"],
-    },
-    "memory.qmd.paths.name": {
-      label: "QMD Path Name",
-      help: "Sets a stable collection name for an indexed path instead of deriving it from filesystem location. Use this when paths vary across machines but you want consistent collection identity.",
-      tags: ["storage"],
-    },
-    "memory.qmd.sessions.enabled": {
-      label: "QMD Session Indexing",
-      help: "Indexes session transcripts into QMD so recall can include prior conversation content (experimental, default: false). Enable only when transcript memory is required and you accept larger index churn.",
-      tags: ["storage"],
-    },
-    "memory.qmd.sessions.exportDir": {
-      label: "QMD Session Export Directory",
-      help: "Overrides where sanitized session exports are written before QMD indexing. Use this when default state storage is constrained or when exports must land on a managed volume.",
-      tags: ["storage"],
-    },
-    "memory.qmd.sessions.retentionDays": {
-      label: "QMD Session Retention (days)",
-      help: "Defines how long exported session files are kept before automatic pruning, in days (default: unlimited). Set a finite value for storage hygiene or compliance retention policies.",
-      tags: ["storage"],
-    },
-    "memory.qmd.update.interval": {
-      label: "QMD Update Interval",
-      help: "Sets how often QMD refreshes indexes from source content (duration string, default: 5m). Shorter intervals improve freshness but increase background CPU and I/O.",
-      tags: ["performance", "storage"],
-    },
-    "memory.qmd.update.debounceMs": {
-      label: "QMD Update Debounce (ms)",
-      help: "Sets the minimum delay between consecutive QMD refresh attempts in milliseconds (default: 15000). Increase this if frequent file changes cause update thrash or unnecessary background load.",
-      tags: ["performance", "storage"],
-    },
-    "memory.qmd.update.onBoot": {
-      label: "QMD Update on Startup",
-      help: "Runs an initial QMD update once during gateway startup (default: true). Keep enabled so recall starts from a fresh baseline; disable only when startup speed is more important than immediate freshness.",
-      tags: ["storage"],
-    },
-    "memory.qmd.update.waitForBootSync": {
-      label: "QMD Wait for Boot Sync",
-      help: "Blocks startup completion until the initial boot-time QMD sync finishes (default: false). Enable when you need fully up-to-date recall before serving traffic, and keep off for faster boot.",
-      tags: ["storage"],
-    },
-    "memory.qmd.update.embedInterval": {
-      label: "QMD Embed Interval",
-      help: "Sets how often QMD recomputes embeddings (duration string, default: 60m; set 0 to disable periodic embeds). Lower intervals improve freshness but increase embedding workload and cost.",
-      tags: ["performance", "storage"],
-    },
-    "memory.qmd.update.commandTimeoutMs": {
-      label: "QMD Command Timeout (ms)",
-      help: "Sets timeout for QMD maintenance commands such as collection list/add in milliseconds (default: 30000). Increase when running on slower disks or remote filesystems that delay command completion.",
-      tags: ["performance", "storage"],
-    },
-    "memory.qmd.update.updateTimeoutMs": {
-      label: "QMD Update Timeout (ms)",
-      help: "Sets maximum runtime for each `qmd update` cycle in milliseconds (default: 120000). Raise this for larger collections; lower it when you want quicker failure detection in automation.",
-      tags: ["performance", "storage"],
-    },
-    "memory.qmd.update.embedTimeoutMs": {
-      label: "QMD Embed Timeout (ms)",
-      help: "Sets maximum runtime for each `qmd embed` cycle in milliseconds (default: 120000). Increase for heavier embedding workloads or slower hardware, and lower to fail fast under tight SLAs.",
-      tags: ["performance", "storage"],
-    },
-    "memory.qmd.limits.maxResults": {
-      label: "QMD Max Results",
-      help: "Limits how many QMD hits are returned into the agent loop for each recall request (default: 6). Increase for broader recall context, or lower to keep prompts tighter and faster.",
-      tags: ["performance", "storage"],
-    },
-    "memory.qmd.limits.maxSnippetChars": {
-      label: "QMD Max Snippet Chars",
-      help: "Caps per-result snippet length extracted from QMD hits in characters (default: 700). Lower this when prompts bloat quickly, and raise only if answers consistently miss key details.",
-      tags: ["performance", "storage"],
-    },
-    "memory.qmd.limits.maxInjectedChars": {
-      label: "QMD Max Injected Chars",
-      help: "Caps how much QMD text can be injected into one turn across all hits. Use lower values to control prompt bloat and latency; raise only when context is consistently truncated.",
-      tags: ["performance", "storage"],
-    },
-    "memory.qmd.limits.timeoutMs": {
-      label: "QMD Search Timeout (ms)",
-      help: "Sets per-query QMD search timeout in milliseconds (default: 4000). Increase for larger indexes or slower environments, and lower to keep request latency bounded.",
-      tags: ["performance", "storage"],
-    },
-    "memory.qmd.scope": {
-      label: "QMD Surface Scope",
-      help: "Defines which sessions/channels are eligible for QMD recall using session.sendPolicy-style rules. Keep default direct-only scope unless you intentionally want cross-chat memory sharing.",
-      tags: ["storage"],
     },
     auth: {
       label: "Auth",
@@ -13740,99 +7775,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Cooldown/backoff controls for temporary profile suppression after billing-related failures and retry windows. Use these to prevent rapid re-selection of profiles that are still blocked.",
       tags: ["auth", "access"],
     },
-    acp: {
-      label: "ACP",
-      help: "ACP runtime controls for enabling dispatch, selecting backends, constraining allowed agent targets, and tuning streamed turn projection behavior.",
-      tags: ["advanced"],
-    },
-    "acp.enabled": {
-      label: "ACP Enabled",
-      help: "Global ACP feature gate. Keep disabled unless ACP runtime + policy are configured.",
-      tags: ["advanced"],
-    },
-    "acp.dispatch.enabled": {
-      label: "ACP Dispatch Enabled",
-      help: "Independent dispatch gate for ACP session turns (default: true). Set false to keep ACP commands available while blocking ACP turn execution.",
-      tags: ["advanced"],
-    },
-    "acp.backend": {
-      label: "ACP Backend",
-      help: "Default ACP runtime backend id (for example: acpx). Must match a registered ACP runtime plugin backend.",
-      tags: ["advanced"],
-    },
-    "acp.defaultAgent": {
-      label: "ACP Default Agent",
-      help: "Fallback ACP target agent id used when ACP spawns do not specify an explicit target.",
-      tags: ["advanced"],
-    },
-    "acp.allowedAgents": {
-      label: "ACP Allowed Agents",
-      help: "Allowlist of ACP target agent ids permitted for ACP runtime sessions. Empty means no additional allowlist restriction.",
-      tags: ["access"],
-    },
-    "acp.maxConcurrentSessions": {
-      label: "ACP Max Concurrent Sessions",
-      help: "Maximum concurrently active ACP sessions across this gateway process.",
-      tags: ["performance", "storage"],
-    },
-    "acp.stream": {
-      label: "ACP Stream",
-      help: "ACP streaming projection controls for chunk sizing, metadata visibility, and deduped delivery behavior.",
-      tags: ["advanced"],
-    },
-    "acp.stream.coalesceIdleMs": {
-      label: "ACP Stream Coalesce Idle (ms)",
-      help: "Coalescer idle flush window in milliseconds for ACP streamed text before block replies are emitted.",
-      tags: ["advanced"],
-    },
-    "acp.stream.maxChunkChars": {
-      label: "ACP Stream Max Chunk Chars",
-      help: "Maximum chunk size for ACP streamed block projection before splitting into multiple block replies.",
-      tags: ["performance"],
-    },
-    "acp.stream.repeatSuppression": {
-      label: "ACP Stream Repeat Suppression",
-      help: "When true (default), suppress repeated ACP status/tool projection lines in a turn while keeping raw ACP events unchanged.",
-      tags: ["advanced"],
-    },
-    "acp.stream.deliveryMode": {
-      label: "ACP Stream Delivery Mode",
-      help: "ACP delivery style: live streams projected output incrementally, final_only buffers all projected ACP output until terminal turn events.",
-      tags: ["advanced"],
-    },
-    "acp.stream.hiddenBoundarySeparator": {
-      label: "ACP Stream Hidden Boundary Separator",
-      help: "Separator inserted before next visible assistant text when hidden ACP tool lifecycle events occurred (none|space|newline|paragraph). Default: paragraph.",
-      tags: ["advanced"],
-    },
-    "acp.stream.maxOutputChars": {
-      label: "ACP Stream Max Output Chars",
-      help: "Maximum assistant output characters projected per ACP turn before truncation notice is emitted.",
-      tags: ["performance"],
-    },
-    "acp.stream.maxSessionUpdateChars": {
-      label: "ACP Stream Max Session Update Chars",
-      help: "Maximum characters for projected ACP session/update lines (tool/status updates).",
-      tags: ["performance", "storage"],
-    },
-    "acp.stream.tagVisibility": {
-      label: "ACP Stream Tag Visibility",
-      help: "Per-sessionUpdate visibility overrides for ACP projection (for example usage_update, available_commands_update).",
-      tags: ["advanced"],
-    },
-    "acp.runtime.ttlMinutes": {
-      label: "ACP Runtime TTL (minutes)",
-      help: "Idle runtime TTL in minutes for ACP session workers before eligible cleanup.",
-      tags: ["advanced"],
-    },
-    "acp.runtime.installCommand": {
-      label: "ACP Runtime Install Command",
-      help: "Optional operator install/setup command shown by `/acp install` and `/acp doctor` when ACP backend wiring is missing.",
-      tags: ["advanced"],
-    },
     "models.mode": {
       label: "Model Catalog Mode",
-      help: 'Controls provider catalog behavior: "merge" keeps built-ins and overlays your custom providers, while "replace" uses only your configured providers. In "merge", matching provider IDs preserve non-empty agent models.json baseUrl values, while apiKey values are preserved only when the provider is not SecretRef-managed in current config/auth-profile context; SecretRef-managed providers refresh apiKey from current source markers, and matching model contextWindow/maxTokens use the higher value between explicit and implicit entries.',
+      help: 'Controls provider catalog behavior: "merge" keeps built-ins and overlays your custom providers, while "replace" uses only your configured providers. Keep "merge" unless you intentionally want a strict custom list.',
       tags: ["models"],
     },
     "models.providers": {
@@ -13849,7 +7794,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Model Provider API Key",
       help: "Provider credential used for API-key based authentication when the provider requires direct key auth. Use secret/env substitution and avoid storing real keys in committed config files.",
       tags: ["security", "auth", "models"],
-      sensitive: true,
     },
     "models.providers.*.auth": {
       label: "Model Provider Auth Mode",
@@ -13859,11 +7803,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     "models.providers.*.api": {
       label: "Model Provider API Adapter",
       help: "Provider API adapter selection controlling request/response compatibility handling for model calls. Use the adapter that matches your upstream provider protocol to avoid feature mismatch.",
-      tags: ["models"],
-    },
-    "models.providers.*.injectNumCtxForOpenAICompat": {
-      label: "Model Provider Inject num_ctx (OpenAI Compat)",
-      help: "Controls whether OpenClaw injects `options.num_ctx` for Ollama providers configured with the OpenAI-compatible adapter (`openai-completions`). Default is true. Set false only if your proxy/upstream rejects unknown `options` payload fields.",
       tags: ["models"],
     },
     "models.providers.*.headers": {
@@ -13941,56 +7880,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Configured model catalog (keys are full provider/model IDs).",
       tags: ["models"],
     },
-    "agents.defaults.model.primary": {
-      label: "Primary Model",
-      help: "Primary model (provider/model).",
-      tags: ["models"],
-    },
-    "agents.defaults.model.fallbacks": {
-      label: "Model Fallbacks",
-      help: "Ordered fallback models (provider/model). Used when the primary model fails.",
-      tags: ["reliability", "models"],
-    },
-    "agents.defaults.imageModel.primary": {
-      label: "Image Model",
-      help: "Optional image model (provider/model) used when the primary model lacks image input.",
-      tags: ["models", "media"],
-    },
-    "agents.defaults.imageModel.fallbacks": {
-      label: "Image Model Fallbacks",
-      help: "Ordered fallback image models (provider/model).",
-      tags: ["reliability", "models", "media"],
-    },
-    "agents.defaults.imageGenerationModel.primary": {
-      label: "Image Generation Model",
-      help: "Optional image-generation model (provider/model) used by the shared image generation capability.",
-      tags: ["media"],
-    },
-    "agents.defaults.imageGenerationModel.fallbacks": {
-      label: "Image Generation Model Fallbacks",
-      help: "Ordered fallback image-generation models (provider/model).",
-      tags: ["reliability", "media"],
-    },
-    "agents.defaults.pdfModel.primary": {
-      label: "PDF Model",
-      help: "Optional PDF model (provider/model) for the PDF analysis tool. Defaults to imageModel, then session model.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.pdfModel.fallbacks": {
-      label: "PDF Model Fallbacks",
-      help: "Ordered fallback PDF models (provider/model).",
-      tags: ["reliability"],
-    },
-    "agents.defaults.pdfMaxBytesMb": {
-      label: "PDF Max Size (MB)",
-      help: "Maximum PDF file size in megabytes for the PDF tool (default: 10).",
-      tags: ["performance"],
-    },
-    "agents.defaults.pdfMaxPages": {
-      label: "PDF Max Pages",
-      help: "Maximum number of PDF pages to process for the PDF tool (default: 20).",
-      tags: ["performance"],
-    },
     "agents.defaults.imageMaxDimensionPx": {
       label: "Image Max Dimension (px)",
       help: "Max image side length in pixels when sanitizing transcript/tool-result image payloads (default: 1200).",
@@ -14016,131 +7905,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Optional CLI backends for text-only fallback (claude-cli, etc.).",
       tags: ["advanced"],
     },
-    "agents.defaults.compaction": {
-      label: "Compaction",
-      help: "Compaction tuning for when context nears token limits, including history share, reserve headroom, and pre-compaction memory flush behavior. Use this when long-running sessions need stable continuity under tight context windows.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.compaction.mode": {
-      label: "Compaction Mode",
-      help: 'Compaction strategy mode: "default" uses baseline behavior, while "safeguard" applies stricter guardrails to preserve recent context. Keep "default" unless you observe aggressive history loss near limit boundaries.',
-      tags: ["advanced"],
-    },
-    "agents.defaults.compaction.reserveTokens": {
-      label: "Compaction Reserve Tokens",
-      help: "Token headroom reserved for reply generation and tool output after compaction runs. Use higher reserves for verbose/tool-heavy sessions, and lower reserves when maximizing retained history matters more.",
-      tags: ["security", "auth"],
-    },
-    "agents.defaults.compaction.keepRecentTokens": {
-      label: "Compaction Keep Recent Tokens",
-      help: "Minimum token budget preserved from the most recent conversation window during compaction. Use higher values to protect immediate context continuity and lower values to keep more long-tail history.",
-      tags: ["security", "auth"],
-    },
-    "agents.defaults.compaction.reserveTokensFloor": {
-      label: "Compaction Reserve Token Floor",
-      help: "Minimum floor enforced for reserveTokens in Pi compaction paths (0 disables the floor guard). Use a non-zero floor to avoid over-aggressive compression under fluctuating token estimates.",
-      tags: ["security", "auth"],
-    },
-    "agents.defaults.compaction.maxHistoryShare": {
-      label: "Compaction Max History Share",
-      help: "Maximum fraction of total context budget allowed for retained history after compaction (range 0.1-0.9). Use lower shares for more generation headroom or higher shares for deeper historical continuity.",
-      tags: ["performance"],
-    },
-    "agents.defaults.compaction.identifierPolicy": {
-      label: "Compaction Identifier Policy",
-      help: 'Identifier-preservation policy for compaction summaries: "strict" prepends built-in opaque-identifier retention guidance (default), "off" disables this prefix, and "custom" uses identifierInstructions. Keep "strict" unless you have a specific compatibility need.',
-      tags: ["access"],
-    },
-    "agents.defaults.compaction.identifierInstructions": {
-      label: "Compaction Identifier Instructions",
-      help: 'Custom identifier-preservation instruction text used when identifierPolicy="custom". Keep this explicit and safety-focused so compaction summaries do not rewrite opaque IDs, URLs, hosts, or ports.',
-      tags: ["advanced"],
-    },
-    "agents.defaults.compaction.recentTurnsPreserve": {
-      label: "Compaction Preserve Recent Turns",
-      help: "Number of most recent user/assistant turns kept verbatim outside safeguard summarization (default: 3). Raise this to preserve exact recent dialogue context, or lower it to maximize compaction savings.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.compaction.qualityGuard": {
-      label: "Compaction Quality Guard",
-      help: "Optional quality-audit retry settings for safeguard compaction summaries. Leave this disabled unless you explicitly want summary audits and one-shot regeneration on failed checks.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.compaction.qualityGuard.enabled": {
-      label: "Compaction Quality Guard Enabled",
-      help: "Enables summary quality audits and regeneration retries for safeguard compaction. Default: false, so safeguard mode alone does not turn on retry behavior.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.compaction.qualityGuard.maxRetries": {
-      label: "Compaction Quality Guard Max Retries",
-      help: "Maximum number of regeneration retries after a failed safeguard summary quality audit. Use small values to bound extra latency and token cost.",
-      tags: ["performance"],
-    },
-    "agents.defaults.compaction.postIndexSync": {
-      label: "Compaction Post-Index Sync",
-      help: 'Controls post-compaction session memory reindex mode: "off", "async", or "await" (default: "async"). Use "await" for strongest freshness, "async" for lower compaction latency, and "off" only when session-memory sync is handled elsewhere.',
-      tags: ["advanced"],
-    },
-    "agents.defaults.compaction.postCompactionSections": {
-      label: "Post-Compaction Context Sections",
-      help: 'AGENTS.md H2/H3 section names re-injected after compaction so the agent reruns critical startup guidance. Leave unset to use "Session Startup"/"Red Lines" with legacy fallback to "Every Session"/"Safety"; set to [] to disable reinjection entirely.',
-      tags: ["advanced"],
-    },
-    "agents.defaults.compaction.timeoutSeconds": {
-      label: "Compaction Timeout (Seconds)",
-      help: "Maximum time in seconds allowed for a single compaction operation before it is aborted (default: 900). Increase this for very large sessions that need more time to summarize, or decrease it to fail faster on unresponsive models.",
-      tags: ["performance"],
-    },
-    "agents.defaults.compaction.model": {
-      label: "Compaction Model Override",
-      help: "Optional provider/model override used only for compaction summarization. Set this when you want compaction to run on a different model than the session default, and leave it unset to keep using the primary agent model.",
-      tags: ["models"],
-    },
-    "agents.defaults.compaction.truncateAfterCompaction": {
-      label: "Truncate After Compaction",
-      help: "When enabled, rewrites the session JSONL file after compaction to remove entries that were summarized. Prevents unbounded file growth in long-running sessions with many compaction cycles. Default: false.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.compaction.memoryFlush": {
-      label: "Compaction Memory Flush",
-      help: "Pre-compaction memory flush settings that run an agentic memory write before heavy compaction. Keep enabled for long sessions so salient context is persisted before aggressive trimming.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.compaction.memoryFlush.enabled": {
-      label: "Compaction Memory Flush Enabled",
-      help: "Enables pre-compaction memory flush before the runtime performs stronger history reduction near token limits. Keep enabled unless you intentionally disable memory side effects in constrained environments.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.compaction.memoryFlush.softThresholdTokens": {
-      label: "Compaction Memory Flush Soft Threshold",
-      help: "Threshold distance to compaction (in tokens) that triggers pre-compaction memory flush execution. Use earlier thresholds for safer persistence, or tighter thresholds for lower flush frequency.",
-      tags: ["security", "auth"],
-    },
-    "agents.defaults.compaction.memoryFlush.forceFlushTranscriptBytes": {
-      label: "Compaction Memory Flush Transcript Size Threshold",
-      help: 'Forces pre-compaction memory flush when transcript file size reaches this threshold (bytes or strings like "2mb"). Use this to prevent long-session hangs even when token counters are stale; set to 0 to disable.',
-      tags: ["advanced"],
-    },
-    "agents.defaults.compaction.memoryFlush.prompt": {
-      label: "Compaction Memory Flush Prompt",
-      help: "User-prompt template used for the pre-compaction memory flush turn when generating memory candidates. Use this only when you need custom extraction instructions beyond the default memory flush behavior.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.compaction.memoryFlush.systemPrompt": {
-      label: "Compaction Memory Flush System Prompt",
-      help: "System-prompt override for the pre-compaction memory flush turn to control extraction style and safety constraints. Use carefully so custom instructions do not reduce memory quality or leak sensitive context.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.embeddedPi": {
-      label: "Embedded Pi",
-      help: "Embedded Pi runner hardening controls for how workspace-local Pi settings are trusted and applied in OpenClaw sessions.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.embeddedPi.projectSettingsPolicy": {
-      label: "Embedded Pi Project Settings Policy",
-      help: 'How embedded Pi handles workspace-local `.pi/config/settings.json`: "sanitize" (default) strips shellPath/shellCommandPrefix, "ignore" disables project settings entirely, and "trusted" applies project settings as-is.',
-      tags: ["access"],
-    },
     "agents.defaults.heartbeat.directPolicy": {
       label: "Heartbeat Direct Policy",
       help: 'Controls whether heartbeat delivery may target direct/DM chats: "allow" (default) permits DM delivery and "block" suppresses direct-target sends.',
@@ -14158,7 +7922,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "agents.defaults.sandbox.browser.network": {
       label: "Sandbox Browser Network",
-      help: "Docker network for sandbox browser containers (default: openclaw-sandbox-browser). Avoid bridge if you need stricter isolation.",
+      help: "Docker network for sandbox browser containers (default: remoteclaw-sandbox-browser). Avoid bridge if you need stricter isolation.",
       tags: ["storage"],
     },
     "agents.defaults.sandbox.browser.cdpSourceRange": {
@@ -14176,39 +7940,14 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Registers native slash/menu commands with channels that support command registration (Discord, Slack, Telegram). Keep enabled for discoverability unless you intentionally run text-only command workflows.",
       tags: ["advanced"],
     },
-    "commands.nativeSkills": {
-      label: "Native Skill Commands",
-      help: "Registers native skill commands so users can invoke skills directly from provider command menus where supported. Keep aligned with your skill policy so exposed commands match what operators expect.",
-      tags: ["advanced"],
-    },
     "commands.text": {
       label: "Text Commands",
       help: "Enables text-command parsing in chat input in addition to native command surfaces where available. Keep this enabled for compatibility across channels that do not support native command registration.",
       tags: ["advanced"],
     },
-    "commands.bash": {
-      label: "Allow Bash Chat Command",
-      help: "Allow bash chat command (`!`; `/bash` alias) to run host shell commands (default: false; requires tools.elevated).",
-      tags: ["advanced"],
-    },
-    "commands.bashForegroundMs": {
-      label: "Bash Foreground Window (ms)",
-      help: "How long bash waits before backgrounding (default: 2000; 0 backgrounds immediately).",
-      tags: ["advanced"],
-    },
     "commands.config": {
       label: "Allow /config",
       help: "Allow /config chat command to read/write config on disk (default: false).",
-      tags: ["advanced"],
-    },
-    "commands.mcp": {
-      label: "Allow /mcp",
-      help: "Allow /mcp chat command to manage OpenClaw MCP server config under mcp.servers (default: false).",
-      tags: ["advanced"],
-    },
-    "commands.plugins": {
-      label: "Allow /plugins",
-      help: "Allow /plugins chat command to list discovered plugins and toggle plugin enablement in config (default: false).",
       tags: ["advanced"],
     },
     "commands.debug": {
@@ -14243,23 +7982,13 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       sensitive: true,
     },
     "commands.allowFrom": {
-      label: "Command Elevated Access Rules",
-      help: "Defines elevated command allow rules by channel and sender for owner-level command surfaces. Use narrow provider-specific identities so privileged commands are not exposed to broad chat audiences.",
+      label: "Command Access Rules",
+      help: "Defines command allow rules by channel and sender for owner-level command surfaces. Use narrow provider-specific identities so privileged commands are not exposed to broad chat audiences.",
       tags: ["access"],
-    },
-    mcp: {
-      label: "MCP",
-      help: "Global MCP server definitions managed by OpenClaw. Embedded Pi and other runtime adapters can consume these servers without storing them inside Pi-owned project settings.",
-      tags: ["advanced"],
-    },
-    "mcp.servers": {
-      label: "MCP Servers",
-      help: "Named MCP server definitions. OpenClaw stores them in its own config and runtime adapters decide which transports are supported at execution time.",
-      tags: ["advanced"],
     },
     "ui.seamColor": {
       label: "Accent Color",
-      help: "Primary accent color used by UI surfaces for emphasis, badges, and visual identity cues. Use high-contrast values that remain readable across light/dark themes.",
+      help: "Primary accent/seam color used by UI surfaces for emphasis, badges, and visual identity cues. Use high-contrast values that remain readable across light/dark themes.",
       tags: ["advanced"],
     },
     "ui.assistant": {
@@ -14419,7 +8148,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "session.parentForkMaxTokens": {
       label: "Session Parent Fork Max Tokens",
-      help: "Maximum parent-session token count allowed for thread/session inheritance forking. If the parent exceeds this, OpenClaw starts a fresh thread session instead of forking; set 0 to disable this protection.",
+      help: "Maximum parent-session token count allowed for thread/session inheritance forking. If the parent exceeds this, RemoteClaw starts a fresh thread session instead of forking; set 0 to disable this protection.",
       tags: ["security", "auth", "performance", "storage"],
     },
     "session.mainKey": {
@@ -14625,7 +8354,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "hooks.token": {
       label: "Hooks Auth Token",
-      help: "Shared bearer token checked by hooks ingress for request authentication before mappings run. Treat holders as full-trust callers for the hook ingress surface, not as a separate non-owner role. Use environment substitution and rotate regularly when webhook endpoints are internet-accessible.",
+      help: "Shared bearer token checked by hooks ingress for request authentication before mappings run. Use environment substitution and rotate regularly when webhook endpoints are internet-accessible.",
       tags: ["security", "auth"],
       sensitive: true,
     },
@@ -14646,7 +8375,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "hooks.allowedAgentIds": {
       label: "Hooks Allowed Agent IDs",
-      help: "Allowlist of agent IDs that hook mappings are allowed to target when selecting execution agents. Use this to constrain automation events to dedicated service agents and reduce blast radius if a hook token is exposed.",
+      help: "Allowlist of agent IDs that hook mappings are allowed to target when selecting execution agents. Use this to constrain automation events to dedicated service agents.",
       tags: ["access"],
     },
     "hooks.maxBodyBytes": {
@@ -14986,11 +8715,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Enables wide-area discovery signaling when your environment needs non-local gateway discovery. Keep disabled unless cross-network discovery is operationally required.",
       tags: ["network"],
     },
-    "discovery.wideArea.domain": {
-      label: "Wide-area Discovery Domain",
-      help: "Optional unicast DNS-SD domain for wide-area discovery, such as openclaw.internal. Use this when you intentionally publish gateway discovery beyond local mDNS scopes.",
-      tags: ["network"],
-    },
     "discovery.mdns": {
       label: "mDNS Discovery",
       help: "mDNS discovery configuration group for local network advertisement and discovery behavior tuning. Keep minimal mode for routine LAN discovery unless extra metadata is required.",
@@ -15068,7 +8792,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "messages.groupChat.mentionPatterns": {
       label: "Group Mention Patterns",
-      help: "Safe case-insensitive regex patterns used to detect explicit mentions/trigger phrases in group chats. Use precise patterns to reduce false positives in high-volume channels; invalid or unsafe nested-repetition patterns are ignored.",
+      help: "Regex-like patterns used to detect explicit mentions/trigger phrases in group chats. Use precise patterns to reduce false positives in high-volume channels.",
       tags: ["advanced"],
     },
     "messages.groupChat.historyLimit": {
@@ -15148,7 +8872,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "messages.statusReactions.emojis": {
       label: "Status Reaction Emojis",
-      help: "Override default status reaction emojis. Keys: thinking, compacting, tool, coding, web, done, error, stallSoft, stallHard. Must be valid Telegram reaction emojis.",
+      help: "Override default status reaction emojis. Keys: thinking, tool, coding, web, done, error, stallSoft, stallHard. Must be valid Telegram reaction emojis.",
       tags: ["advanced"],
     },
     "messages.statusReactions.timing": {
@@ -15300,7 +9024,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "channels.irc": {
       label: "IRC",
-      help: "IRC channel provider configuration and compatibility settings for classic IRC transport workflows. Use this section when bridging legacy chat infrastructure into OpenClaw.",
+      help: "IRC channel provider configuration and compatibility settings for classic IRC transport workflows. Use this section when bridging legacy chat infrastructure into RemoteClaw.",
       tags: ["network", "channels"],
     },
     "channels.irc.dmPolicy": {
@@ -15358,11 +9082,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     "channels.telegram.commands.native": {
       label: "Telegram Native Commands",
       help: 'Override native commands for Telegram (bool or "auto").',
-      tags: ["network", "channels"],
-    },
-    "channels.telegram.commands.nativeSkills": {
-      label: "Telegram Native Skill Commands",
-      help: 'Override native skill commands for Telegram (bool or "auto").',
       tags: ["network", "channels"],
     },
     "channels.telegram.streaming": {
@@ -15428,36 +9147,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     "channels.telegram.capabilities.inlineButtons": {
       label: "Telegram Inline Buttons",
       help: "Enable Telegram inline button components for supported command and interaction surfaces. Disable if your deployment needs plain-text-only compatibility behavior.",
-      tags: ["network", "channels"],
-    },
-    "channels.telegram.execApprovals": {
-      label: "Telegram Exec Approvals",
-      help: "Telegram-native exec approval routing and approver authorization. Enable this only when Telegram should act as an explicit exec-approval client for the selected bot account.",
-      tags: ["network", "channels"],
-    },
-    "channels.telegram.execApprovals.enabled": {
-      label: "Telegram Exec Approvals Enabled",
-      help: "Enable Telegram exec approvals for this account. When false or unset, Telegram messages/buttons cannot approve exec requests.",
-      tags: ["network", "channels"],
-    },
-    "channels.telegram.execApprovals.approvers": {
-      label: "Telegram Exec Approval Approvers",
-      help: "Telegram user IDs allowed to approve exec requests for this bot account. Use numeric Telegram user IDs; prompts are only delivered to these approvers when target includes dm.",
-      tags: ["network", "channels"],
-    },
-    "channels.telegram.execApprovals.agentFilter": {
-      label: "Telegram Exec Approval Agent Filter",
-      help: 'Optional allowlist of agent IDs eligible for Telegram exec approvals, for example `["main", "ops-agent"]`. Use this to keep approval prompts scoped to the agents you actually operate from Telegram.',
-      tags: ["network", "channels"],
-    },
-    "channels.telegram.execApprovals.sessionFilter": {
-      label: "Telegram Exec Approval Session Filter",
-      help: "Optional session-key filters matched as substring or regex-style patterns before Telegram approval routing is used. Use narrow patterns so Telegram approvals only appear for intended sessions.",
-      tags: ["network", "storage", "channels"],
-    },
-    "channels.telegram.execApprovals.target": {
-      label: "Telegram Exec Approval Target",
-      help: 'Controls where Telegram approval prompts are sent: "dm" sends to approver DMs (default), "channel" sends to the originating Telegram chat/topic, and "both" sends to both. Channel delivery exposes the command text to the chat, so only use it in trusted groups/topics.',
       tags: ["network", "channels"],
     },
     "channels.telegram.threadBindings.enabled": {
@@ -15565,11 +9254,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: 'Override native commands for Discord (bool or "auto").',
       tags: ["network", "channels"],
     },
-    "channels.discord.commands.nativeSkills": {
-      label: "Discord Native Skill Commands",
-      help: 'Override native skill commands for Discord (bool or "auto").',
-      tags: ["network", "channels"],
-    },
     "channels.discord.streaming": {
       label: "Discord Streaming Mode",
       help: 'Unified Discord stream preview mode: "off" | "partial" | "block" | "progress". "progress" maps to "partial" on Discord. Legacy boolean/streamMode keys are auto-mapped.',
@@ -15627,7 +9311,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "channels.discord.eventQueue.listenerTimeout": {
       label: "Discord EventQueue Listener Timeout (ms)",
-      help: "Canonical Discord listener timeout control in ms for gateway normalization/enqueue handlers. Default is 120000 in OpenClaw; set per account via channels.discord.accounts.<id>.eventQueue.listenerTimeout.",
+      help: "Canonical Discord listener timeout control in ms for gateway normalization/enqueue handlers. Default is 120000 in RemoteClaw; set per account via channels.discord.accounts.<id>.eventQueue.listenerTimeout.",
       tags: ["network", "performance", "channels"],
     },
     "channels.discord.eventQueue.maxQueueSize": {
@@ -15658,11 +9342,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     "channels.discord.threadBindings.spawnSubagentSessions": {
       label: "Discord Thread-Bound Subagent Spawn",
       help: "Allow subagent spawns with thread=true to auto-create and bind Discord threads (default: false; opt-in). Set true to enable thread-bound subagent spawns for this account/channel.",
-      tags: ["network", "storage", "channels"],
-    },
-    "channels.discord.threadBindings.spawnAcpSessions": {
-      label: "Discord Thread-Bound ACP Spawn",
-      help: "Allow /acp spawn to auto-create and bind Discord threads for ACP sessions (default: false; opt-in). Set true to enable thread-bound ACP spawns for this account/channel.",
       tags: ["network", "storage", "channels"],
     },
     "channels.discord.ui.components.accentColor": {
@@ -15786,11 +9465,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: 'Override native commands for Slack (bool or "auto").',
       tags: ["network", "channels"],
     },
-    "channels.slack.commands.nativeSkills": {
-      label: "Slack Native Skill Commands",
-      help: 'Override native skill commands for Slack (bool or "auto").',
-      tags: ["network", "channels"],
-    },
     "channels.slack.allowBots": {
       label: "Slack Allow Bot Messages",
       help: "Allow bot-authored messages to trigger Slack replies (default: false).",
@@ -15799,11 +9473,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     "channels.discord.allowBots": {
       label: "Discord Allow Bot Messages",
       help: 'Allow bot-authored messages to trigger Discord replies (default: false). Set "mentions" to only accept bot messages that mention the bot.',
-      tags: ["access", "network", "channels"],
-    },
-    "channels.matrix.allowBots": {
-      label: "Matrix Allow Bot Messages",
-      help: 'Allow messages from other configured Matrix bot accounts to trigger replies (default: false). Set "mentions" to only accept bot messages that visibly mention this bot.',
       tags: ["access", "network", "channels"],
     },
     "channels.discord.token": {
@@ -15834,11 +9503,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Slack User Token Read Only",
       help: "When true, treat configured Slack user token usage as read-only helper behavior where possible. Keep enabled if you only need supplemental reads without user-context writes.",
       tags: ["security", "auth", "network", "channels"],
-    },
-    "channels.slack.capabilities.interactiveReplies": {
-      label: "Slack Interactive Replies",
-      help: "Enable agent-authored Slack interactive reply directives (`[[slack_buttons: ...]]`, `[[slack_select: ...]]`). Default: false.",
-      tags: ["network", "channels"],
     },
     "channels.slack.streaming": {
       label: "Slack Streaming Mode",
@@ -15911,15 +9575,10 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Filesystem path to the iMessage bridge CLI binary used for send/receive operations. Set explicitly when the binary is not on PATH in service runtime environments.",
       tags: ["network", "storage", "channels"],
     },
-    "agents.list[].skills": {
-      label: "Agent Skill Filter",
-      help: "Optional allowlist of skills for this agent (omit = all skills; empty = no skills).",
-      tags: ["advanced"],
-    },
     "agents.list[].identity.avatar": {
       label: "Agent Avatar",
       help: "Avatar image path (relative to the agent workspace only) or a remote URL/data URL.",
-      placeholder: "avatars/openclaw.png",
+      placeholder: "avatars/remoteclaw.png",
       tags: ["advanced"],
     },
     "agents.list[].heartbeat.suppressToolErrorWarnings": {
@@ -15974,12 +9633,11 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "plugins.slots": {
       label: "Plugin Slots",
-      help: "Selects which plugins own exclusive runtime slots such as memory so only one plugin provides that capability. Use explicit slot ownership to avoid overlapping providers with conflicting behavior.",
+      help: "Selects which plugins own exclusive runtime slots so only one plugin provides a given capability. Use explicit slot ownership to avoid overlapping providers with conflicting behavior.",
       tags: ["advanced"],
     },
     "plugins.slots.memory": {
       label: "Memory Plugin",
-      help: 'Select the active memory plugin by id, or "none" to disable memory plugins.',
       tags: ["advanced"],
     },
     "plugins.slots.contextEngine": {
@@ -15996,31 +9654,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Plugin Enabled",
       help: "Per-plugin enablement override for a specific entry, applied on top of global plugin policy (restart required). Use this to stage plugin rollout gradually across environments.",
       tags: ["advanced"],
-    },
-    "plugins.entries.*.hooks": {
-      label: "Plugin Hook Policy",
-      help: "Per-plugin typed hook policy controls for core-enforced safety gates. Use this to constrain high-impact hook categories without disabling the entire plugin.",
-      tags: ["advanced"],
-    },
-    "plugins.entries.*.hooks.allowPromptInjection": {
-      label: "Allow Prompt Injection Hooks",
-      help: "Controls whether this plugin may mutate prompts through typed hooks. Set false to block `before_prompt_build` and ignore prompt-mutating fields from legacy `before_agent_start`, while preserving legacy `modelOverride` and `providerOverride` behavior.",
-      tags: ["access"],
-    },
-    "plugins.entries.*.subagent": {
-      label: "Plugin Subagent Policy",
-      help: "Per-plugin subagent runtime controls for model override trust and allowlists. Keep this unset unless a plugin must explicitly steer subagent model selection.",
-      tags: ["advanced"],
-    },
-    "plugins.entries.*.subagent.allowModelOverride": {
-      label: "Allow Plugin Subagent Model Override",
-      help: "Explicitly allows this plugin to request provider/model overrides in background subagent runs. Keep false unless the plugin is trusted to steer model selection.",
-      tags: ["access"],
-    },
-    "plugins.entries.*.subagent.allowedModels": {
-      label: "Plugin Subagent Allowed Models",
-      help: 'Allowed override targets for trusted plugin subagent runs as canonical "provider/model" refs. Use "*" only when you intentionally allow any model.',
-      tags: ["access"],
     },
     "plugins.entries.*.apiKey": {
       label: "Plugin API Key",
@@ -16039,7 +9672,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "plugins.installs": {
       label: "Plugin Install Records",
-      help: "CLI-managed install metadata (used by `openclaw plugins update` to locate install sources).",
+      help: "CLI-managed install metadata (used by `remoteclaw plugins update` to locate install sources).",
       tags: ["advanced"],
     },
     "plugins.installs.*.source": {
@@ -16059,7 +9692,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "plugins.installs.*.installPath": {
       label: "Plugin Install Path",
-      help: "Resolved install directory (usually ~/.openclaw/extensions/<id>).",
+      help: "Resolved install directory (usually ~/.remoteclaw/extensions/<id>).",
       tags: ["storage"],
     },
     "plugins.installs.*.version": {
@@ -16101,81 +9734,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Plugin Install Time",
       help: "ISO timestamp of last install/update.",
       tags: ["advanced"],
-    },
-    "plugins.installs.*.marketplaceName": {
-      label: "Plugin Marketplace Name",
-      help: "Marketplace display name recorded for marketplace-backed plugin installs (if available).",
-      tags: ["advanced"],
-    },
-    "plugins.installs.*.marketplaceSource": {
-      label: "Plugin Marketplace Source",
-      help: "Original marketplace source used to resolve the install (for example a repo path or Git URL).",
-      tags: ["advanced"],
-    },
-    "plugins.installs.*.marketplacePlugin": {
-      label: "Plugin Marketplace Plugin",
-      help: "Plugin entry name inside the source marketplace, used for later updates.",
-      tags: ["advanced"],
-    },
-    "models.providers.*.headers.*": {
-      sensitive: true,
-      tags: ["security", "models"],
-    },
-    "agents.defaults.sandbox.ssh.identityData": {
-      sensitive: true,
-      tags: ["security", "storage"],
-    },
-    "agents.defaults.sandbox.ssh.certificateData": {
-      sensitive: true,
-      tags: ["security", "storage"],
-    },
-    "agents.defaults.sandbox.ssh.knownHostsData": {
-      sensitive: true,
-      tags: ["security", "storage"],
-    },
-    "agents.list[].memorySearch.remote.apiKey": {
-      sensitive: true,
-      tags: ["security", "auth"],
-    },
-    "agents.list[].sandbox.ssh.identityData": {
-      sensitive: true,
-      tags: ["security", "storage"],
-    },
-    "agents.list[].sandbox.ssh.certificateData": {
-      sensitive: true,
-      tags: ["security", "storage"],
-    },
-    "agents.list[].sandbox.ssh.knownHostsData": {
-      sensitive: true,
-      tags: ["security", "storage"],
-    },
-    "tools.web.search.apiKey": {
-      sensitive: true,
-      tags: ["security", "auth", "tools"],
-    },
-    "tools.web.search.brave.apiKey": {
-      sensitive: true,
-      tags: ["security", "auth", "tools"],
-    },
-    "tools.web.search.firecrawl.apiKey": {
-      sensitive: true,
-      tags: ["security", "auth", "tools"],
-    },
-    "tools.web.search.gemini.apiKey": {
-      sensitive: true,
-      tags: ["security", "auth", "tools"],
-    },
-    "tools.web.search.grok.apiKey": {
-      sensitive: true,
-      tags: ["security", "auth", "tools"],
-    },
-    "tools.web.search.kimi.apiKey": {
-      sensitive: true,
-      tags: ["security", "auth", "tools"],
-    },
-    "tools.web.search.perplexity.apiKey": {
-      sensitive: true,
-      tags: ["security", "auth", "tools"],
     },
     "messages.tts.elevenlabs.apiKey": {
       sensitive: true,
@@ -16281,11 +9839,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       sensitive: true,
       tags: ["security", "auth", "network", "channels"],
     },
-    "skills.entries.*.apiKey": {
-      sensitive: true,
-      tags: ["security", "auth"],
-    },
   },
-  version: "2026.3.22",
+  version: "0.1.0",
   generatedAt: "2026-03-22T21:17:33.302Z",
 } as const satisfies BaseConfigSchemaResponse;

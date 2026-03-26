@@ -1,5 +1,5 @@
 ---
-summary: "Run OpenClaw Gateway 24/7 on a cheap Hetzner VPS (Docker) with durable state and baked-in binaries"
+description: "Run OpenClaw Gateway 24/7 on a cheap Hetzner VPS (Docker) with durable state and baked-in binaries"
 read_when:
   - You want OpenClaw running 24/7 on a cloud VPS (not your laptop)
   - You want a production-grade, always-on Gateway on your own VPS
@@ -73,154 +73,147 @@ For the generic Docker flow, see [Docker](/install/docker).
 ---
 
 <Steps>
-  <Step title="Provision the VPS">
-    Create an Ubuntu or Debian VPS in Hetzner.
 
-    Connect as root:
+1. **Provision the VPS**
 
-    ```bash
-    ssh root@YOUR_VPS_IP
-    ```
+   Create an Ubuntu or Debian VPS in Hetzner.
 
-    This guide assumes the VPS is stateful.
-    Do not treat it as disposable infrastructure.
+   Connect as root:
 
-  </Step>
+   ```bash
+   ssh root@YOUR_VPS_IP
+   ```
 
-  <Step title="Install Docker (on the VPS)">
-    ```bash
-    apt-get update
-    apt-get install -y git curl ca-certificates
-    curl -fsSL https://get.docker.com | sh
-    ```
+   This guide assumes the VPS is stateful.
+   Do not treat it as disposable infrastructure.
 
-    Verify:
+2. **Install Docker (on the VPS)**
 
-    ```bash
-    docker --version
-    docker compose version
-    ```
+   ```bash
+   apt-get update
+   apt-get install -y git curl ca-certificates
+   curl -fsSL https://get.docker.com | sh
+   ```
 
-  </Step>
+   Verify:
 
-  <Step title="Clone the OpenClaw repository">
-    ```bash
-    git clone https://github.com/openclaw/openclaw.git
-    cd openclaw
-    ```
+   ```bash
+   docker --version
+   docker compose version
+   ```
 
-    This guide assumes you will build a custom image to guarantee binary persistence.
+3. **Clone the OpenClaw repository**
 
-  </Step>
+   ```bash
+   git clone https://github.com/openclaw/openclaw.git
+   cd openclaw
+   ```
 
-  <Step title="Create persistent host directories">
-    Docker containers are ephemeral.
-    All long-lived state must live on the host.
+   This guide assumes you will build a custom image to guarantee binary persistence.
 
-    ```bash
-    mkdir -p /root/.openclaw/workspace
+4. **Create persistent host directories**
 
-    # Set ownership to the container user (uid 1000):
-    chown -R 1000:1000 /root/.openclaw
-    ```
+   Docker containers are ephemeral.
+   All long-lived state must live on the host.
 
-  </Step>
+   ```bash
+   mkdir -p /root/.openclaw/workspace
 
-  <Step title="Configure environment variables">
-    Create `.env` in the repository root.
+   # Set ownership to the container user (uid 1000):
+   chown -R 1000:1000 /root/.openclaw
+   ```
 
-    ```bash
-    OPENCLAW_IMAGE=openclaw:latest
-    OPENCLAW_GATEWAY_TOKEN=change-me-now
-    OPENCLAW_GATEWAY_BIND=lan
-    OPENCLAW_GATEWAY_PORT=18789
+5. **Configure environment variables**
 
-    OPENCLAW_CONFIG_DIR=/root/.openclaw
-    OPENCLAW_WORKSPACE_DIR=/root/.openclaw/workspace
+   Create `.env` in the repository root.
 
-    GOG_KEYRING_PASSWORD=change-me-now
-    XDG_CONFIG_HOME=/home/node/.openclaw
-    ```
+   ```bash
+   OPENCLAW_IMAGE=openclaw:latest
+   OPENCLAW_GATEWAY_TOKEN=change-me-now
+   OPENCLAW_GATEWAY_BIND=lan
+   OPENCLAW_GATEWAY_PORT=18789
 
-    Generate strong secrets:
+   OPENCLAW_CONFIG_DIR=/root/.openclaw
+   OPENCLAW_WORKSPACE_DIR=/root/.openclaw/workspace
 
-    ```bash
-    openssl rand -hex 32
-    ```
+   GOG_KEYRING_PASSWORD=change-me-now
+   XDG_CONFIG_HOME=/home/node/.openclaw
+   ```
 
-    **Do not commit this file.**
+   Generate strong secrets:
 
-  </Step>
+   ```bash
+   openssl rand -hex 32
+   ```
 
-  <Step title="Docker Compose configuration">
-    Create or update `docker-compose.yml`.
+   **Do not commit this file.**
 
-    ```yaml
-    services:
-      openclaw-gateway:
-        image: ${OPENCLAW_IMAGE}
-        build: .
-        restart: unless-stopped
-        env_file:
-          - .env
-        environment:
-          - HOME=/home/node
-          - NODE_ENV=production
-          - TERM=xterm-256color
-          - OPENCLAW_GATEWAY_BIND=${OPENCLAW_GATEWAY_BIND}
-          - OPENCLAW_GATEWAY_PORT=${OPENCLAW_GATEWAY_PORT}
-          - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
-          - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
-          - XDG_CONFIG_HOME=${XDG_CONFIG_HOME}
-          - PATH=/home/linuxbrew/.linuxbrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-        volumes:
-          - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
-          - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
-        ports:
-          # Recommended: keep the Gateway loopback-only on the VPS; access via SSH tunnel.
-          # To expose it publicly, remove the `127.0.0.1:` prefix and firewall accordingly.
-          - "127.0.0.1:${OPENCLAW_GATEWAY_PORT}:18789"
-        command:
-          [
-            "node",
-            "dist/index.js",
-            "gateway",
-            "--bind",
-            "${OPENCLAW_GATEWAY_BIND}",
-            "--port",
-            "${OPENCLAW_GATEWAY_PORT}",
-            "--allow-unconfigured",
-          ]
-    ```
+6. **Docker Compose configuration**
 
-    `--allow-unconfigured` is only for bootstrap convenience, it is not a replacement for a proper gateway configuration. Still set auth (`gateway.auth.token` or password) and use safe bind settings for your deployment.
+   Create or update `docker-compose.yml`.
 
-  </Step>
+   ```yaml
+   services:
+     openclaw-gateway:
+       image: ${OPENCLAW_IMAGE}
+       build: .
+       restart: unless-stopped
+       env_file:
+         - .env
+       environment:
+         - HOME=/home/node
+         - NODE_ENV=production
+         - TERM=xterm-256color
+         - OPENCLAW_GATEWAY_BIND=${OPENCLAW_GATEWAY_BIND}
+         - OPENCLAW_GATEWAY_PORT=${OPENCLAW_GATEWAY_PORT}
+         - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+         - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
+         - XDG_CONFIG_HOME=${XDG_CONFIG_HOME}
+         - PATH=/home/linuxbrew/.linuxbrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+       volumes:
+         - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
+         - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+       ports:
+         # Recommended: keep the Gateway loopback-only on the VPS; access via SSH tunnel.
+         # To expose it publicly, remove the `127.0.0.1:` prefix and firewall accordingly.
+         - "127.0.0.1:${OPENCLAW_GATEWAY_PORT}:18789"
+       command:
+         [
+           "node",
+           "dist/index.js",
+           "gateway",
+           "--bind",
+           "${OPENCLAW_GATEWAY_BIND}",
+           "--port",
+           "${OPENCLAW_GATEWAY_PORT}",
+           "--allow-unconfigured",
+         ]
+   ```
 
-  <Step title="Shared Docker VM runtime steps">
-    Use the shared runtime guide for the common Docker host flow:
+   `--allow-unconfigured` is only for bootstrap convenience, it is not a replacement for a proper gateway configuration. Still set auth (`gateway.auth.token` or password) and use safe bind settings for your deployment.
 
-    - [Bake required binaries into the image](/install/docker-vm-runtime#bake-required-binaries-into-the-image)
-    - [Build and launch](/install/docker-vm-runtime#build-and-launch)
-    - [What persists where](/install/docker-vm-runtime#what-persists-where)
-    - [Updates](/install/docker-vm-runtime#updates)
+7. **Shared Docker VM runtime steps**
 
-  </Step>
+   Use the shared runtime guide for the common Docker host flow:
+   - [Bake required binaries into the image](/install/docker-vm-runtime#bake-required-binaries-into-the-image)
+   - [Build and launch](/install/docker-vm-runtime#build-and-launch)
+   - [What persists where](/install/docker-vm-runtime#what-persists-where)
+   - [Updates](/install/docker-vm-runtime#updates)
 
-  <Step title="Hetzner-specific access">
-    After the shared build and launch steps, tunnel from your laptop:
+8. **Hetzner-specific access**
 
-    ```bash
-    ssh -N -L 18789:127.0.0.1:18789 root@YOUR_VPS_IP
-    ```
+   After the shared build and launch steps, tunnel from your laptop:
 
-    Open:
+   ```bash
+   ssh -N -L 18789:127.0.0.1:18789 root@YOUR_VPS_IP
+   ```
 
-    `http://127.0.0.1:18789/`
+   Open:
 
-    Paste your gateway token.
+   `http://127.0.0.1:18789/`
 
-  </Step>
+   Paste your gateway token.
+
 </Steps>
 
 The shared persistence map lives in [Docker VM Runtime](/install/docker-vm-runtime#what-persists-where).

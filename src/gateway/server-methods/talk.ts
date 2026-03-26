@@ -189,8 +189,6 @@ function buildTalkTtsConfig(
         ? {}
         : { timeoutMs: finiteNumber(providerConfig.timeoutMs) }),
     };
-  } else {
-    return { error: `talk.speak unavailable: unsupported talk provider '${resolved.provider}'` };
   }
 
   return {

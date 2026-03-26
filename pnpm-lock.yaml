@@ -275,8 +275,6 @@ importers:
 
   extensions/discord: {}
 
-  extensions/elevenlabs: {}
-
   extensions/feishu:
     dependencies:
       '@larksuiteoapi/node-sdk':

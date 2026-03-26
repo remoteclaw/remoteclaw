@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { autoPrepareLegacyMatrixCrypto } from "../infra/matrix-legacy-crypto.js";
 import { autoMigrateLegacyMatrixState } from "../infra/matrix-legacy-state.js";
 import {
@@ -27,7 +27,7 @@ async function runBestEffortMatrixMigrationStep(params: {
 }
 
 export async function runStartupMatrixMigration(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   env?: NodeJS.ProcessEnv;
   log: MatrixMigrationLogger;
   deps?: {

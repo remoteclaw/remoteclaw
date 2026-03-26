@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import {
   patchChannelOnboardingAdapter,
@@ -51,20 +51,20 @@ describe("setupChannels post-write hooks", () => {
   it("collects onboarding post-write hooks and runs them against the final config", async () => {
     const select = createQuickstartTelegramSelect();
     const afterConfigWritten = vi.fn(async () => {});
-    const configureInteractive = vi.fn(async ({ cfg }: { cfg: OpenClawConfig }) => ({
+    const configureInteractive = vi.fn(async ({ cfg }: { cfg: RemoteClawConfig }) => ({
       cfg: {
         ...cfg,
         channels: {
           ...cfg.channels,
           telegram: { ...cfg.channels?.telegram, botToken: "new-token" },
         },
-      } as OpenClawConfig,
+      } as RemoteClawConfig,
       accountId: "acct-1",
     }));
     const restore = patchChannelOnboardingAdapter("telegram", {
       configureInteractive,
       afterConfigWritten,
-      getStatus: vi.fn(async ({ cfg }: { cfg: OpenClawConfig }) => ({
+      getStatus: vi.fn(async ({ cfg }: { cfg: RemoteClawConfig }) => ({
         channel: "telegram",
         configured: Boolean(cfg.channels?.telegram?.botToken),
         statusLines: [],
@@ -77,7 +77,7 @@ describe("setupChannels post-write hooks", () => {
     const runtime = createExitThrowingRuntime();
 
     try {
-      const cfg = await setupChannels({} as OpenClawConfig, runtime, prompter, {
+      const cfg = await setupChannels({} as RemoteClawConfig, runtime, prompter, {
         quickstartDefaults: true,
         skipConfirm: true,
         onPostWriteHook: (hook) => {
@@ -94,7 +94,7 @@ describe("setupChannels post-write hooks", () => {
       });
 
       expect(afterConfigWritten).toHaveBeenCalledWith({
-        previousCfg: {} as OpenClawConfig,
+        previousCfg: {} as RemoteClawConfig,
         cfg,
         accountId: "acct-1",
         runtime,
@@ -117,7 +117,7 @@ describe("setupChannels post-write hooks", () => {
           },
         },
       ],
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       runtime,
     });
 

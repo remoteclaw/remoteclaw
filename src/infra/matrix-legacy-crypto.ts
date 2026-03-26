@@ -5,7 +5,7 @@ import {
   resolveConfiguredMatrixAccountIds,
   resolveMatrixLegacyFlatStoragePaths,
 } from "../../extensions/matrix/runtime-api.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import { writeJsonFileAtomically as writeJsonFileAtomicallyImpl } from "../plugin-sdk/json-store.js";
 import {
@@ -137,12 +137,12 @@ function detectLegacyBotSdkCryptoStore(cryptoRootDir: string): {
   }
 }
 
-function resolveMatrixAccountIds(cfg: OpenClawConfig): string[] {
+function resolveMatrixAccountIds(cfg: RemoteClawConfig): string[] {
   return resolveConfiguredMatrixAccountIds(cfg);
 }
 
 function resolveLegacyMatrixFlatStorePlan(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   env: NodeJS.ProcessEnv;
 }): MatrixLegacyCryptoPlan | { warning: string } | null {
   const legacy = resolveMatrixLegacyFlatStoragePaths(resolveStateDir(params.env, os.homedir));
@@ -201,7 +201,7 @@ function loadLegacyBotSdkMetadata(cryptoRootDir: string): MatrixLegacyBotSdkMeta
 }
 
 function resolveMatrixLegacyCryptoPlans(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   env: NodeJS.ProcessEnv;
 }): MatrixLegacyCryptoDetection {
   const warnings: string[] = [];
@@ -294,7 +294,7 @@ async function persistLegacyMigrationState(params: {
 }
 
 export function detectLegacyMatrixCrypto(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   env?: NodeJS.ProcessEnv;
 }): MatrixLegacyCryptoDetection {
   const detection = resolveMatrixLegacyCryptoPlans({
@@ -317,7 +317,7 @@ export function detectLegacyMatrixCrypto(params: {
 }
 
 export async function autoPrepareLegacyMatrixCrypto(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   env?: NodeJS.ProcessEnv;
   log?: { info?: (message: string) => void; warn?: (message: string) => void };
   deps?: Partial<MatrixLegacyCryptoPrepareDeps>;

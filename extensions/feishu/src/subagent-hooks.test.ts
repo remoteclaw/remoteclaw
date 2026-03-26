@@ -1,4 +1,4 @@
-import type { OpenClawPluginApi } from "remoteclaw/plugin-sdk/feishu";
+import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/feishu";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { registerFeishuSubagentHooks } from "./subagent-hooks.js";
 import {
@@ -18,7 +18,7 @@ function registerHandlersForTest(config: Record<string, unknown> = baseConfig) {
     on: (hookName: string, handler: (event: unknown, ctx: unknown) => unknown) => {
       handlers.set(hookName, handler);
     },
-  } as unknown as OpenClawPluginApi;
+  } as unknown as RemoteClawPluginApi;
   registerFeishuSubagentHooks(api);
   return handlers;
 }

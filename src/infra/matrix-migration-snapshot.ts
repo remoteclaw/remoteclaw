@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import { writeJsonFileAtomically } from "../plugin-sdk/json-store.js";
 import { createBackupArchive } from "./backup-create.js";
@@ -69,7 +69,7 @@ export function resolveMatrixMigrationSnapshotOutputDir(
 }
 
 export function hasPendingMatrixMigration(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   env?: NodeJS.ProcessEnv;
 }): boolean {
   const env = params.env ?? process.env;
@@ -82,7 +82,7 @@ export function hasPendingMatrixMigration(params: {
 }
 
 export function hasActionableMatrixMigration(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   env?: NodeJS.ProcessEnv;
 }): boolean {
   const env = params.env ?? process.env;

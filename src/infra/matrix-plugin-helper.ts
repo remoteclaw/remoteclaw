@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createJiti } from "jiti";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import {
   loadPluginManifestRegistry,
   type PluginManifestRecord,
@@ -40,7 +40,7 @@ export type MatrixLegacyCryptoInspector = (
 ) => Promise<MatrixLegacyCryptoInspectorResult>;
 
 function resolveMatrixPluginRecord(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   env?: NodeJS.ProcessEnv;
   workspaceDir?: string;
 }): PluginManifestRecord | null {
@@ -58,7 +58,7 @@ type MatrixLegacyCryptoInspectorPathResolution =
   | { status: "unsafe"; candidatePath: string };
 
 function resolveMatrixLegacyCryptoInspectorPath(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   env?: NodeJS.ProcessEnv;
   workspaceDir?: string;
 }): MatrixLegacyCryptoInspectorPathResolution {
@@ -87,7 +87,7 @@ function resolveMatrixLegacyCryptoInspectorPath(params: {
 }
 
 export function isMatrixLegacyCryptoInspectorAvailable(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   env?: NodeJS.ProcessEnv;
   workspaceDir?: string;
 }): boolean {
@@ -133,7 +133,7 @@ function resolveInspectorExport(loaded: unknown): MatrixLegacyCryptoInspector | 
 }
 
 export async function loadMatrixLegacyCryptoInspector(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   env?: NodeJS.ProcessEnv;
   workspaceDir?: string;
 }): Promise<MatrixLegacyCryptoInspector> {

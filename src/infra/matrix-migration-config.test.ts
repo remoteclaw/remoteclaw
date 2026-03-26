@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { withTempHome } from "../../test/helpers/temp-home.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolveMatrixMigrationAccountTarget } from "./matrix-migration-config.js";
 
 function writeFile(filePath: string, value: string) {
@@ -28,7 +28,7 @@ describe("resolveMatrixMigrationAccountTarget", () => {
         ),
       );
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           matrix: {
             accounts: {
@@ -70,7 +70,7 @@ describe("resolveMatrixMigrationAccountTarget", () => {
         ),
       );
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           matrix: {
             accounts: {
@@ -114,7 +114,7 @@ describe("resolveMatrixMigrationAccountTarget", () => {
         ),
       );
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           matrix: {
             accounts: {
@@ -154,7 +154,7 @@ describe("resolveMatrixMigrationAccountTarget", () => {
         ),
       );
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           matrix: {
             homeserver: "https://matrix.example.org",
@@ -183,7 +183,7 @@ describe("resolveMatrixMigrationAccountTarget", () => {
 
   it("does not inherit the base access token for non-default accounts", async () => {
     await withTempHome(async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           matrix: {
             homeserver: "https://matrix.example.org",
@@ -212,7 +212,7 @@ describe("resolveMatrixMigrationAccountTarget", () => {
   it("does not inherit the global Matrix access token for non-default accounts", async () => {
     await withTempHome(
       async () => {
-        const cfg: OpenClawConfig = {
+        const cfg: RemoteClawConfig = {
           channels: {
             matrix: {
               accounts: {
@@ -243,7 +243,7 @@ describe("resolveMatrixMigrationAccountTarget", () => {
 
   it("uses the same scoped env token encoding as runtime account auth", async () => {
     await withTempHome(async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           matrix: {
             accounts: {

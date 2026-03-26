@@ -35,7 +35,11 @@ const normalizeManifestEntries = (entries) =>
 export function loadTestRunnerBehavior() {
   const raw = readJson(behaviorManifestPath, {});
   const unit = raw.unit ?? {};
+  const base = raw.base ?? {};
   return {
+    base: {
+      threadSingleton: normalizeManifestEntries(base.threadSingleton ?? []),
+    },
     unit: {
       isolated: normalizeManifestEntries(unit.isolated ?? []),
       singletonIsolated: normalizeManifestEntries(unit.singletonIsolated ?? []),

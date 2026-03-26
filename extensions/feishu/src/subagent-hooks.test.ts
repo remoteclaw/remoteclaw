@@ -1,4 +1,4 @@
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/feishu";
+import type { OpenClawPluginApi } from "remoteclaw/plugin-sdk/feishu";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { registerFeishuSubagentHooks } from "./subagent-hooks.js";
 import {

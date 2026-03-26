@@ -231,7 +231,6 @@ export function createPluginRuntimeMock(overrides: DeepPartial<PluginRuntime> = 
       line: {} as PluginRuntime["channel"]["line"],
       slack: {} as PluginRuntime["channel"]["slack"],
       telegram: {} as PluginRuntime["channel"]["telegram"],
-      matrix: {} as PluginRuntime["channel"]["matrix"],
       signal: {} as PluginRuntime["channel"]["signal"],
       imessage: {} as PluginRuntime["channel"]["imessage"],
       whatsapp: {} as PluginRuntime["channel"]["whatsapp"],

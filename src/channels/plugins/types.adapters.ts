@@ -1,7 +1,6 @@
 import type { ReplyPayload } from "../../auto-reply/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { GroupToolPolicyConfig } from "../../config/types.tools.js";
-import type { ExecApprovalRequest, ExecApprovalResolved } from "../../infra/exec-approvals.js";
 import type { OutboundDeliveryResult, OutboundSendDeps } from "../../infra/outbound/deliver.js";
 import type { OutboundIdentity } from "../../infra/outbound/identity.js";
 import type { PluginRuntime } from "../../plugins/runtime/types.js";
@@ -21,19 +20,6 @@ import type {
   ChannelSetupInput,
   ChannelStatusIssue,
 } from "./types.core.js";
-
-export type ChannelExecApprovalInitiatingSurfaceState =
-  | { kind: "enabled" }
-  | { kind: "disabled" }
-  | { kind: "unsupported" };
-
-export type ChannelExecApprovalForwardTarget = {
-  channel: string;
-  to: string;
-  accountId?: string | null;
-  threadId?: string | number | null;
-  source?: "session" | "target";
-};
 
 export type ChannelSetupAdapter = {
   resolveAccountId?: (params: {
@@ -135,10 +121,6 @@ export type ChannelOutboundAdapter = {
   sendPayload?: (ctx: ChannelOutboundPayloadContext) => Promise<OutboundDeliveryResult>;
   sendText?: (ctx: ChannelOutboundContext) => Promise<OutboundDeliveryResult>;
   sendMedia?: (ctx: ChannelOutboundContext) => Promise<OutboundDeliveryResult>;
-  /**
-   * Shared outbound poll adapter for channels that fit the common poll model.
-   * Channels with extra poll semantics should prefer `actions.handleAction("poll")`.
-   */
   sendPoll?: (ctx: ChannelPollContext) => Promise<ChannelPollResult>;
 };
 
@@ -387,53 +369,6 @@ export type ChannelResolverAdapter = {
 export type ChannelCommandAdapter = {
   enforceOwnerForCommands?: boolean;
   skipWhenConfigEmpty?: boolean;
-};
-
-export type ChannelLifecycleAdapter = {
-  onAccountConfigChanged?: (params: {
-    prevCfg: OpenClawConfig;
-    nextCfg: OpenClawConfig;
-    accountId: string;
-    runtime: RuntimeEnv;
-  }) => Promise<void> | void;
-  onAccountRemoved?: (params: {
-    prevCfg: OpenClawConfig;
-    accountId: string;
-    runtime: RuntimeEnv;
-  }) => Promise<void> | void;
-};
-
-export type ChannelExecApprovalAdapter = {
-  getInitiatingSurfaceState?: (params: {
-    cfg: OpenClawConfig;
-    accountId?: string | null;
-  }) => ChannelExecApprovalInitiatingSurfaceState;
-  hasConfiguredDmRoute?: (params: { cfg: OpenClawConfig }) => boolean;
-  shouldSuppressForwardingFallback?: (params: {
-    cfg: OpenClawConfig;
-    target: ChannelExecApprovalForwardTarget;
-    request: ExecApprovalRequest;
-  }) => boolean;
-  buildPendingPayload?: (params: {
-    cfg: OpenClawConfig;
-    request: ExecApprovalRequest;
-    target: ChannelExecApprovalForwardTarget;
-    nowMs: number;
-  }) => ReplyPayload | null;
-  buildResolvedPayload?: (params: {
-    cfg: OpenClawConfig;
-    resolved: ExecApprovalResolved;
-    target: ChannelExecApprovalForwardTarget;
-  }) => ReplyPayload | null;
-  beforeDeliverPending?: (params: {
-    cfg: OpenClawConfig;
-    target: ChannelExecApprovalForwardTarget;
-    payload: ReplyPayload;
-  }) => Promise<void> | void;
-};
-
-export type ChannelAllowlistAdapter = {
-  supportsScope?: (params: { scope: "dm" | "group" | "all" }) => boolean;
 };
 
 export type ChannelSecurityAdapter<ResolvedAccount = unknown> = {

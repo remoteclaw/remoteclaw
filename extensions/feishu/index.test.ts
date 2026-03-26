@@ -1,4 +1,4 @@
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/feishu";
+import type { OpenClawPluginApi } from "remoteclaw/plugin-sdk/feishu";
 import { describe, expect, it, vi } from "vitest";
 
 const registerFeishuDocToolsMock = vi.hoisted(() => vi.fn());

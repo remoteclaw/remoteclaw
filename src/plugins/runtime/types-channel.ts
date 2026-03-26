@@ -125,12 +125,6 @@ export type PluginRuntimeChannel = {
     monitorTelegramProvider: typeof import("../../telegram/monitor.js").monitorTelegramProvider;
     messageActions: typeof import("../../channels/plugins/actions/telegram.js").telegramMessageActions;
   };
-  matrix: {
-    threadBindings: {
-      setIdleTimeoutBySessionKey: typeof import("../../../extensions/matrix/runtime-api.js").setMatrixThreadBindingIdleTimeoutBySessionKey;
-      setMaxAgeBySessionKey: typeof import("../../../extensions/matrix/runtime-api.js").setMatrixThreadBindingMaxAgeBySessionKey;
-    };
-  };
   signal: {
     probeSignal: typeof import("../../signal/probe.js").probeSignal;
     sendMessageSignal: typeof import("../../signal/send.js").sendMessageSignal;

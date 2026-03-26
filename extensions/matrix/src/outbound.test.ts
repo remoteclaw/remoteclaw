@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/matrix";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -75,7 +75,6 @@ describe("matrixOutbound cfg threading", () => {
       to: "room:!room:example",
       text: "caption",
       mediaUrl: "file:///tmp/cat.png",
-      mediaLocalRoots: ["/tmp/openclaw"],
       accountId: "default",
     });
 
@@ -85,12 +84,11 @@ describe("matrixOutbound cfg threading", () => {
       expect.objectContaining({
         cfg,
         mediaUrl: "file:///tmp/cat.png",
-        mediaLocalRoots: ["/tmp/openclaw"],
       }),
     );
   });
 
-  it("passes resolved cfg through injected deps.matrix", async () => {
+  it("passes resolved cfg through injected deps.sendMatrix", async () => {
     const cfg = {
       channels: {
         matrix: {
@@ -98,7 +96,7 @@ describe("matrixOutbound cfg threading", () => {
         },
       },
     } as RemoteClawConfig;
-    const matrix = vi.fn(async () => ({
+    const sendMatrix = vi.fn(async () => ({
       messageId: "evt-injected",
       roomId: "!room:example",
     }));
@@ -107,13 +105,13 @@ describe("matrixOutbound cfg threading", () => {
       cfg,
       to: "room:!room:example",
       text: "hello via deps",
-      deps: { matrix },
+      deps: { sendMatrix },
       accountId: "default",
       threadId: "$thread",
       replyToId: "$reply",
     });
 
-    expect(matrix).toHaveBeenCalledWith(
+    expect(sendMatrix).toHaveBeenCalledWith(
       "room:!room:example",
       "hello via deps",
       expect.objectContaining({

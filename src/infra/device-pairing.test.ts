@@ -7,7 +7,6 @@ import {
   clearDevicePairing,
   ensureDeviceToken,
   getPairedDevice,
-  listDevicePairing,
   type PairedDevice,
   removePairedDevice,
   requestDevicePairing,
@@ -115,7 +114,7 @@ describe("device pairing tokens", () => {
     expect(second.request.requestId).toBe(first.request.requestId);
   });
 
-  test("supersedes pending requests when requested roles/scopes change", async () => {
+  test("merges pending roles/scopes for the same device before approval", async () => {
     const baseDir = await mkdtemp(join(tmpdir(), "remoteclaw-device-pairing-"));
     const first = await requestDevicePairing(
       {
@@ -136,19 +135,14 @@ describe("device pairing tokens", () => {
       baseDir,
     );
 
-    expect(second.created).toBe(true);
-    expect(second.request.requestId).not.toBe(first.request.requestId);
-    expect(second.request.role).toBe("operator");
-    expect(second.request.roles).toEqual(["operator"]);
+    expect(second.created).toBe(false);
+    expect(second.request.requestId).toBe(first.request.requestId);
+    expect(second.request.roles).toEqual(["node", "operator"]);
     expect(second.request.scopes).toEqual(["operator.read", "operator.write"]);
 
-    const list = await listDevicePairing(baseDir);
-    expect(list.pending).toHaveLength(1);
-    expect(list.pending[0]?.requestId).toBe(second.request.requestId);
-
-    await approveDevicePairing(second.request.requestId, baseDir);
+    await approveDevicePairing(first.request.requestId, baseDir);
     const paired = await getPairedDevice("device-1", baseDir);
-    expect(paired?.roles).toEqual(["operator"]);
+    expect(paired?.roles).toEqual(["node", "operator"]);
     expect(paired?.scopes).toEqual(["operator.read", "operator.write"]);
   });
 

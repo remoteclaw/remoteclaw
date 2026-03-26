@@ -3,26 +3,17 @@ import type { AgentToolResult } from "../../types/agent-types.js";
 import { getChannelPlugin, listChannelPlugins } from "./index.js";
 import type { ChannelMessageActionContext, ChannelMessageActionName } from "./types.js";
 
-type ChannelActions = NonNullable<NonNullable<ReturnType<typeof getChannelPlugin>>["actions"]>;
-
 const trustedRequesterRequiredByChannel: Readonly<
   Partial<Record<string, ReadonlySet<ChannelMessageActionName>>>
 > = {
   discord: new Set<ChannelMessageActionName>(["timeout", "kick", "ban"]),
 };
 
+type ChannelActions = NonNullable<NonNullable<ReturnType<typeof getChannelPlugin>>["actions"]>;
+
 function requiresTrustedRequesterSender(ctx: ChannelMessageActionContext): boolean {
-  const plugin = getChannelPlugin(ctx.channel);
-  const fromPlugin = plugin?.actions?.requiresTrustedRequesterSender?.({
-    action: ctx.action,
-    toolContext: ctx.toolContext,
-  });
-  if (fromPlugin != null) {
-    return fromPlugin;
-  }
-  return Boolean(
-    trustedRequesterRequiredByChannel[ctx.channel]?.has(ctx.action) && ctx.toolContext,
-  );
+  const actions = trustedRequesterRequiredByChannel[ctx.channel];
+  return Boolean(actions?.has(ctx.action) && ctx.toolContext);
 }
 
 export function listChannelMessageActions(cfg: RemoteClawConfig): ChannelMessageActionName[] {

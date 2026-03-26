@@ -948,20 +948,6 @@ export async function resolveOutboundSessionRoute(
     return null;
   }
   const nextParams = { ...params, target };
-  const pluginRoute = await getChannelPlugin(
-    params.channel,
-  )?.messaging?.resolveOutboundSessionRoute?.({
-    cfg: nextParams.cfg,
-    agentId: nextParams.agentId,
-    accountId: nextParams.accountId,
-    target,
-    resolvedTarget: nextParams.resolvedTarget,
-    replyToId: nextParams.replyToId,
-    threadId: nextParams.threadId,
-  });
-  if (pluginRoute) {
-    return pluginRoute;
-  }
   const resolver = OUTBOUND_SESSION_RESOLVERS[params.channel];
   if (!resolver) {
     return resolveFallbackSession(nextParams);

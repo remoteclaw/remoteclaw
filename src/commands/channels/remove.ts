@@ -7,6 +7,7 @@ import {
 import { type RemoteClawConfig, writeConfigFile } from "../../config/config.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../../runtime.js";
+import { deleteTelegramUpdateOffset } from "../../telegram/update-offset-store.js";
 import { createClackPrompter } from "../../wizard/clack-prompter.js";
 import { type ChatChannel, channelLabel, requireValidConfig, shouldUseWizard } from "./shared.js";
 
@@ -102,7 +103,6 @@ export async function channelsRemoveCommand(
   const accountKey = resolvedAccountId || DEFAULT_ACCOUNT_ID;
 
   let next = { ...cfg };
-  const prevCfg = cfg;
   if (deleteConfig) {
     if (!plugin.config.deleteAccount) {
       runtime.error(`Channel ${channel} does not support delete.`);
@@ -113,14 +113,9 @@ export async function channelsRemoveCommand(
       cfg: next,
       accountId: resolvedAccountId,
     });
-    await plugin.lifecycle?.onAccountRemoved?.({
-      prevCfg,
-      accountId: resolvedAccountId,
-      runtime,
-    });
+
+    // Clean up Telegram polling offset to prevent stale offset on bot token change (#18233)
     if (channel === "telegram") {
-      const { deleteTelegramUpdateOffset } =
-        await import("../../../extensions/telegram/src/update-offset-store.js");
       await deleteTelegramUpdateOffset({ accountId: resolvedAccountId });
     }
   } else {
@@ -133,12 +128,6 @@ export async function channelsRemoveCommand(
       cfg: next,
       accountId: resolvedAccountId,
       enabled: false,
-    });
-    await plugin.lifecycle?.onAccountConfigChanged?.({
-      prevCfg,
-      nextCfg: next,
-      accountId: resolvedAccountId,
-      runtime,
     });
   }
 

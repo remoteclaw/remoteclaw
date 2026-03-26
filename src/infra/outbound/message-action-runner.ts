@@ -5,7 +5,6 @@ import {
   readStringParam,
 } from "../../agents/tools/common.js";
 import { parseReplyDirectives } from "../../auto-reply/reply/reply-directives.js";
-import { getChannelPlugin } from "../../channels/plugins/index.js";
 import { dispatchChannelMessageAction } from "../../channels/plugins/message-actions.js";
 import type {
   ChannelId,
@@ -40,6 +39,8 @@ import {
   parseComponentsParam,
   readBooleanParam,
   resolveAttachmentMediaPolicy,
+  resolveSlackAutoThreadId,
+  resolveTelegramAutoThreadId,
 } from "./message-action-params.js";
 import type { MessagePollResult, MessageSendResult } from "./message.js";
 import {
@@ -66,23 +67,22 @@ export type MessageActionRunnerGateway = {
 function resolveAndApplyOutboundThreadId(
   params: Record<string, unknown>,
   ctx: {
-    cfg: OpenClawConfig;
     channel: ChannelId;
     to: string;
-    accountId?: string | null;
     toolContext?: ChannelThreadingToolContext;
+    allowSlackAutoThread: boolean;
   },
 ): string | undefined {
   const threadId = readStringParam(params, "threadId");
-  const resolved =
-    threadId ??
-    getChannelPlugin(ctx.channel)?.threading?.resolveAutoThreadId?.({
-      cfg: ctx.cfg,
-      accountId: ctx.accountId,
-      to: ctx.to,
-      toolContext: ctx.toolContext,
-      replyToId: readStringParam(params, "replyTo"),
-    });
+  const slackAutoThreadId =
+    ctx.allowSlackAutoThread && ctx.channel === "slack" && !threadId
+      ? resolveSlackAutoThreadId({ to: ctx.to, toolContext: ctx.toolContext })
+      : undefined;
+  const telegramAutoThreadId =
+    ctx.channel === "telegram" && !threadId
+      ? resolveTelegramAutoThreadId({ to: ctx.to, toolContext: ctx.toolContext })
+      : undefined;
+  const resolved = threadId ?? slackAutoThreadId ?? telegramAutoThreadId;
   // Write auto-resolved threadId back into params so downstream dispatch
   // (plugin `readStringParam(params, "threadId")`) picks it up.
   if (resolved && !params.threadId) {
@@ -501,11 +501,10 @@ async function handleSendAction(ctx: ResolvedActionContext): Promise<MessageActi
 
   const replyToId = readStringParam(params, "replyTo");
   const resolvedThreadId = resolveAndApplyOutboundThreadId(params, {
-    cfg,
     channel,
     to,
-    accountId,
     toolContext: input.toolContext,
+    allowSlackAutoThread: channel === "slack" && !replyToId,
   });
   const outboundRoute =
     agentId && !dryRun
@@ -589,14 +588,40 @@ async function handlePollAction(ctx: ResolvedActionContext): Promise<MessageActi
   throwIfAborted(abortSignal);
   const action: ChannelMessageActionName = "poll";
   const to = readStringParam(params, "to", { required: true });
+  const question = readStringParam(params, "pollQuestion", {
+    required: true,
+  });
+  const options = readStringArrayParam(params, "pollOption", { required: true });
+  if (options.length < 2) {
+    throw new Error("pollOption requires at least two values");
+  }
   const silent = readBooleanParam(params, "silent");
+  const allowMultiselect = readBooleanParam(params, "pollMulti") ?? false;
+  const pollAnonymous = readBooleanParam(params, "pollAnonymous");
+  const pollPublic = readBooleanParam(params, "pollPublic");
+  const isAnonymous = resolveTelegramPollVisibility({ pollAnonymous, pollPublic });
+  const durationHours = readNumberParam(params, "pollDurationHours", {
+    integer: true,
+    strict: true,
+  });
+  const durationSeconds = readNumberParam(params, "pollDurationSeconds", {
+    integer: true,
+    strict: true,
+  });
+  const maxSelections = resolvePollMaxSelections(options.length, allowMultiselect);
+
+  if (durationSeconds !== undefined && channel !== "telegram") {
+    throw new Error("pollDurationSeconds is only supported for Telegram polls");
+  }
+  if (isAnonymous !== undefined && channel !== "telegram") {
+    throw new Error("pollAnonymous/pollPublic are only supported for Telegram polls");
+  }
 
   const resolvedThreadId = resolveAndApplyOutboundThreadId(params, {
-    cfg,
     channel,
     to,
-    accountId,
     toolContext: input.toolContext,
+    allowSlackAutoThread: channel === "slack",
   });
 
   const base = typeof params.message === "string" ? params.message : "";
@@ -623,45 +648,14 @@ async function handlePollAction(ctx: ResolvedActionContext): Promise<MessageActi
       dryRun,
       silent: silent ?? undefined,
     },
-    resolveCorePoll: () => {
-      const question = readStringParam(params, "pollQuestion", {
-        required: true,
-      });
-      const options = readStringArrayParam(params, "pollOption", { required: true });
-      if (options.length < 2) {
-        throw new Error("pollOption requires at least two values");
-      }
-      const allowMultiselect = readBooleanParam(params, "pollMulti") ?? false;
-      const pollAnonymous = readBooleanParam(params, "pollAnonymous");
-      const pollPublic = readBooleanParam(params, "pollPublic");
-      const isAnonymous = resolveTelegramPollVisibility({ pollAnonymous, pollPublic });
-      const durationHours = readNumberParam(params, "pollDurationHours", {
-        integer: true,
-        strict: true,
-      });
-      const durationSeconds = readNumberParam(params, "pollDurationSeconds", {
-        integer: true,
-        strict: true,
-      });
-
-      if (durationSeconds !== undefined && channel !== "telegram") {
-        throw new Error("pollDurationSeconds is only supported for Telegram polls");
-      }
-      if (isAnonymous !== undefined && channel !== "telegram") {
-        throw new Error("pollAnonymous/pollPublic are only supported for Telegram polls");
-      }
-
-      return {
-        to,
-        question,
-        options,
-        maxSelections: resolvePollMaxSelections(options.length, allowMultiselect),
-        durationSeconds: durationSeconds ?? undefined,
-        durationHours: durationHours ?? undefined,
-        threadId: resolvedThreadId ?? undefined,
-        isAnonymous,
-      };
-    },
+    to,
+    question,
+    options,
+    maxSelections,
+    durationSeconds: durationSeconds ?? undefined,
+    durationHours: durationHours ?? undefined,
+    threadId: resolvedThreadId ?? undefined,
+    isAnonymous,
   });
 
   return {

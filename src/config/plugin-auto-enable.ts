@@ -1,5 +1,4 @@
-import { hasAnyWhatsAppAuth } from "../../extensions/whatsapp/src/accounts.js";
-import { normalizeProviderId } from "../agents/model-selection.js";
+import { normalizeProviderId } from "../agents/provider-utils.js";
 import {
   getChannelPluginCatalogEntry,
   listChannelPluginCatalogEntries,
@@ -14,6 +13,7 @@ import {
   type PluginManifestRegistry,
 } from "../plugins/manifest-registry.js";
 import { isRecord } from "../utils.js";
+import { hasAnyWhatsAppAuth } from "../web/accounts.js";
 import type { RemoteClawConfig } from "./config.js";
 import { ensurePluginAllowlisted } from "./plugins-allowlist.js";
 
@@ -27,12 +27,14 @@ export type PluginAutoEnableResult = {
   changes: string[];
 };
 
-const PROVIDER_PLUGIN_IDS: Array<{ pluginId: string; providerId: string }> = [
-  { pluginId: "google", providerId: "google-gemini-cli" },
-  { pluginId: "qwen-portal-auth", providerId: "qwen-portal" },
-  { pluginId: "copilot-proxy", providerId: "copilot-proxy" },
-  { pluginId: "minimax-portal-auth", providerId: "minimax-portal" },
-];
+const CHANNEL_PLUGIN_IDS = Array.from(
+  new Set([
+    ...listChatChannels().map((meta) => meta.id),
+    ...listChannelPluginCatalogEntries().map((entry) => entry.id),
+  ]),
+);
+
+const PROVIDER_PLUGIN_IDS: Array<{ pluginId: string; providerId: string }> = [];
 
 function hasNonEmptyString(value: unknown): boolean {
   return typeof value === "string" && value.trim().length > 0;
@@ -200,38 +202,14 @@ function collectModelRefs(cfg: RemoteClawConfig): string[] {
       refs.push(value.trim());
     }
   };
-  const collectFromAgent = (agent: Record<string, unknown> | null | undefined) => {
-    if (!agent) {
-      return;
-    }
-    const model = agent.model;
-    if (typeof model === "string") {
-      pushModelRef(model);
-    } else if (isRecord(model)) {
-      pushModelRef(model.primary);
-      const fallbacks = model.fallbacks;
-      if (Array.isArray(fallbacks)) {
-        for (const entry of fallbacks) {
-          pushModelRef(entry);
-        }
-      }
-    }
-    const models = agent.models;
+  // Model config gutted from per-agent and defaults — only legacy `models` map
+  // (per-model settings like cache retention) still contributes refs.
+  const defaults = cfg.agents?.defaults as Record<string, unknown> | undefined;
+  if (defaults) {
+    const models = defaults.models;
     if (isRecord(models)) {
       for (const key of Object.keys(models)) {
         pushModelRef(key);
-      }
-    }
-  };
-
-  const defaults = cfg.agents?.defaults as Record<string, unknown> | undefined;
-  collectFromAgent(defaults);
-
-  const list = cfg.agents?.list;
-  if (Array.isArray(list)) {
-    for (const entry of list) {
-      if (isRecord(entry)) {
-        collectFromAgent(entry);
       }
     }
   }
@@ -258,15 +236,6 @@ function isProviderConfigured(cfg: RemoteClawConfig, providerId: string): boolea
       }
       const provider = normalizeProviderId(String(profile.provider ?? ""));
       if (provider === normalized) {
-        return true;
-      }
-    }
-  }
-
-  const providerConfig = cfg.models?.providers;
-  if (providerConfig && typeof providerConfig === "object") {
-    for (const key of Object.keys(providerConfig)) {
-      if (normalizeProviderId(key) === normalized) {
         return true;
       }
     }
@@ -308,17 +277,8 @@ function resolvePluginIdForChannel(
   return channelToPluginId.get(channelId) ?? channelId;
 }
 
-function listKnownChannelPluginIds(env: NodeJS.ProcessEnv): string[] {
-  return Array.from(
-    new Set([
-      ...listChatChannels().map((meta) => meta.id),
-      ...listChannelPluginCatalogEntries({ env }).map((entry) => entry.id),
-    ]),
-  );
-}
-
-function collectCandidateChannelIds(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): string[] {
-  const channelIds = new Set<string>(listKnownChannelPluginIds(env));
+function collectCandidateChannelIds(cfg: RemoteClawConfig): string[] {
+  const channelIds = new Set<string>(CHANNEL_PLUGIN_IDS);
   const configuredChannels = cfg.channels as Record<string, unknown> | undefined;
   if (!configuredChannels || typeof configuredChannels !== "object") {
     return Array.from(channelIds);
@@ -341,7 +301,7 @@ function resolveConfiguredPlugins(
   const changes: PluginEnableChange[] = [];
   // Build reverse map: channel ID → plugin ID from installed plugin manifests.
   const channelToPluginId = buildChannelToPluginIdMap(registry);
-  for (const channelId of collectCandidateChannelIds(cfg, env)) {
+  for (const channelId of collectCandidateChannelIds(cfg)) {
     const pluginId = resolvePluginIdForChannel(channelId, channelToPluginId);
     if (isChannelConfigured(cfg, channelId, env)) {
       changes.push({ pluginId, reason: `${channelId} configured` });
@@ -355,16 +315,6 @@ function resolveConfiguredPlugins(
         reason: `${mapping.providerId} auth configured`,
       });
     }
-  }
-  const backendRaw =
-    typeof cfg.acp?.backend === "string" ? cfg.acp.backend.trim().toLowerCase() : "";
-  const acpConfigured =
-    cfg.acp?.enabled === true || cfg.acp?.dispatch?.enabled === true || backendRaw === "acpx";
-  if (acpConfigured && (!backendRaw || backendRaw === "acpx")) {
-    changes.push({
-      pluginId: "acpx",
-      reason: "ACP runtime configured",
-    });
   }
   return changes;
 }
@@ -392,12 +342,12 @@ function isPluginDenied(cfg: RemoteClawConfig, pluginId: string): boolean {
   return Array.isArray(deny) && deny.includes(pluginId);
 }
 
-function resolvePreferredOverIds(pluginId: string, env: NodeJS.ProcessEnv): string[] {
+function resolvePreferredOverIds(pluginId: string): string[] {
   const normalized = normalizeChatChannelId(pluginId);
   if (normalized) {
     return getChatChannelMeta(normalized).preferOver ?? [];
   }
-  const catalogEntry = getChannelPluginCatalogEntry(pluginId, { env });
+  const catalogEntry = getChannelPluginCatalogEntry(pluginId);
   return catalogEntry?.meta.preferOver ?? [];
 }
 
@@ -405,7 +355,6 @@ function shouldSkipPreferredPluginAutoEnable(
   cfg: RemoteClawConfig,
   entry: PluginEnableChange,
   configured: PluginEnableChange[],
-  env: NodeJS.ProcessEnv,
 ): boolean {
   for (const other of configured) {
     if (other.pluginId === entry.pluginId) {
@@ -417,7 +366,7 @@ function shouldSkipPreferredPluginAutoEnable(
     if (isPluginExplicitlyDisabled(cfg, other.pluginId)) {
       continue;
     }
-    const preferOver = resolvePreferredOverIds(other.pluginId, env);
+    const preferOver = resolvePreferredOverIds(other.pluginId);
     if (preferOver.includes(entry.pluginId)) {
       return true;
     }
@@ -480,8 +429,7 @@ export function applyPluginAutoEnable(params: {
   manifestRegistry?: PluginManifestRegistry;
 }): PluginAutoEnableResult {
   const env = params.env ?? process.env;
-  const registry =
-    params.manifestRegistry ?? loadPluginManifestRegistry({ config: params.config, env });
+  const registry = params.manifestRegistry ?? loadPluginManifestRegistry({ config: params.config });
   const configured = resolveConfiguredPlugins(params.config, env, registry);
   if (configured.length === 0) {
     return { config: params.config, changes: [] };
@@ -502,11 +450,12 @@ export function applyPluginAutoEnable(params: {
     if (isPluginExplicitlyDisabled(next, entry.pluginId)) {
       continue;
     }
-    if (shouldSkipPreferredPluginAutoEnable(next, entry, configured, env)) {
+    if (shouldSkipPreferredPluginAutoEnable(next, entry, configured)) {
       continue;
     }
     const allow = next.plugins?.allow;
-    const allowMissing = Array.isArray(allow) && !allow.includes(entry.pluginId);
+    const allowMissing =
+      builtInChannelId == null && Array.isArray(allow) && !allow.includes(entry.pluginId);
     const alreadyEnabled =
       builtInChannelId != null
         ? (() => {
@@ -526,7 +475,7 @@ export function applyPluginAutoEnable(params: {
       continue;
     }
     next = registerPluginEntry(next, entry.pluginId);
-    if (allowMissing || !builtInChannelId) {
+    if (!builtInChannelId) {
       next = ensurePluginAllowlisted(next, entry.pluginId);
     }
     changes.push(formatAutoEnableChange(entry));

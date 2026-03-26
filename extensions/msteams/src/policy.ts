@@ -7,7 +7,7 @@ import type {
   MSTeamsConfig,
   MSTeamsReplyStyle,
   MSTeamsTeamConfig,
-} from "openclaw/plugin-sdk/msteams";
+} from "remoteclaw/plugin-sdk";
 import {
   buildChannelKeyCandidates,
   evaluateSenderGroupAccessForPolicy,
@@ -17,7 +17,7 @@ import {
   resolveChannelEntryMatchWithFallback,
   resolveNestedAllowlistDecision,
   isDangerousNameMatchingEnabled,
-} from "openclaw/plugin-sdk/msteams";
+} from "remoteclaw/plugin-sdk";
 
 export type MSTeamsResolvedRouteConfig = {
   teamConfig?: MSTeamsTeamConfig;

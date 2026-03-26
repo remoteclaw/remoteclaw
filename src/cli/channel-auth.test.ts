@@ -161,7 +161,7 @@ describe("channel-auth", () => {
     mocks.getChannelPlugin.mockReturnValueOnce(undefined);
     mocks.getChannelPluginCatalogEntry.mockReturnValueOnce({
       id: "whatsapp",
-      pluginId: "@openclaw/whatsapp",
+      pluginId: "@remoteclaw/whatsapp",
       meta: {
         id: "whatsapp",
         label: "WhatsApp",
@@ -170,7 +170,7 @@ describe("channel-auth", () => {
         blurb: "wa",
       },
       install: {
-        npmSpec: "@openclaw/whatsapp",
+        npmSpec: "@remoteclaw/whatsapp",
       },
     });
     mocks.loadChannelSetupPluginRegistrySnapshotForChannel

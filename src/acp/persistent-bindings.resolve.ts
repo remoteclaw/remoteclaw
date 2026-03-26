@@ -1,4 +1,3 @@
-import { parseFeishuConversationId } from "../../extensions/feishu/src/conversation-id.js";
 import { listAcpBindings } from "../config/bindings.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { AgentAcpBinding } from "../config/types.js";
@@ -22,21 +21,10 @@ import {
 
 function normalizeBindingChannel(value: string | undefined): ConfiguredAcpBindingChannel | null {
   const normalized = (value ?? "").trim().toLowerCase();
-  if (normalized === "discord" || normalized === "telegram" || normalized === "feishu") {
+  if (normalized === "discord" || normalized === "telegram") {
     return normalized;
   }
   return null;
-}
-
-function isSupportedFeishuDirectConversationId(conversationId: string): boolean {
-  const trimmed = conversationId.trim();
-  if (!trimmed || trimmed.includes(":")) {
-    return false;
-  }
-  if (trimmed.startsWith("oc_") || trimmed.startsWith("on_")) {
-    return false;
-  }
-  return true;
 }
 
 function resolveAccountMatchPriority(match: string | undefined, actual: string): 0 | 1 | 2 {
@@ -132,23 +120,14 @@ function resolveConfiguredBindingRecord(params: {
   bindings: AgentAcpBinding[];
   channel: ConfiguredAcpBindingChannel;
   accountId: string;
-  selectConversation: (binding: AgentAcpBinding) => {
-    conversationId: string;
-    parentConversationId?: string;
-    matchPriority?: number;
-  } | null;
+  selectConversation: (
+    binding: AgentAcpBinding,
+  ) => { conversationId: string; parentConversationId?: string } | null;
 }): ResolvedConfiguredAcpBinding | null {
   let wildcardMatch: {
     binding: AgentAcpBinding;
     conversationId: string;
     parentConversationId?: string;
-    matchPriority: number;
-  } | null = null;
-  let exactMatch: {
-    binding: AgentAcpBinding;
-    conversationId: string;
-    parentConversationId?: string;
-    matchPriority: number;
   } | null = null;
   for (const binding of params.bindings) {
     if (normalizeBindingChannel(binding.match.channel) !== params.channel) {
@@ -165,40 +144,23 @@ function resolveConfiguredBindingRecord(params: {
     if (!conversation) {
       continue;
     }
-    const matchPriority = conversation.matchPriority ?? 0;
-    if (accountMatchPriority === 2) {
-      if (!exactMatch || matchPriority > exactMatch.matchPriority) {
-        exactMatch = {
-          binding,
-          conversationId: conversation.conversationId,
-          parentConversationId: conversation.parentConversationId,
-          matchPriority,
-        };
-      }
-      continue;
-    }
-    if (!wildcardMatch || matchPriority > wildcardMatch.matchPriority) {
-      wildcardMatch = {
-        binding,
-        conversationId: conversation.conversationId,
-        parentConversationId: conversation.parentConversationId,
-        matchPriority,
-      };
-    }
-  }
-  if (exactMatch) {
     const spec = toConfiguredBindingSpec({
       cfg: params.cfg,
       channel: params.channel,
       accountId: params.accountId,
-      conversationId: exactMatch.conversationId,
-      parentConversationId: exactMatch.parentConversationId,
-      binding: exactMatch.binding,
+      conversationId: conversation.conversationId,
+      parentConversationId: conversation.parentConversationId,
+      binding,
     });
-    return {
-      spec,
-      record: toConfiguredAcpBindingRecord(spec),
-    };
+    if (accountMatchPriority === 2) {
+      return {
+        spec,
+        record: toConfiguredAcpBindingRecord(spec),
+      };
+    }
+    if (!wildcardMatch) {
+      wildcardMatch = { binding, ...conversation };
+    }
   }
   if (!wildcardMatch) {
     return null;
@@ -252,42 +214,6 @@ export function resolveConfiguredAcpBindingSpecBySessionKey(params: {
         channel: "discord",
         accountId: parsedSessionKey.accountId,
         conversationId: targetConversationId,
-        binding,
-      });
-      if (buildConfiguredAcpSessionKey(spec) === sessionKey) {
-        if (accountMatchPriority === 2) {
-          return spec;
-        }
-        if (!wildcardMatch) {
-          wildcardMatch = spec;
-        }
-      }
-      continue;
-    }
-    if (channel === "feishu") {
-      const targetParsed = parseFeishuConversationId({
-        conversationId: targetConversationId,
-      });
-      if (
-        !targetParsed ||
-        (targetParsed.scope !== "group_topic" &&
-          targetParsed.scope !== "group_topic_sender" &&
-          !isSupportedFeishuDirectConversationId(targetParsed.canonicalConversationId))
-      ) {
-        continue;
-      }
-      const spec = toConfiguredBindingSpec({
-        cfg: params.cfg,
-        channel: "feishu",
-        accountId: parsedSessionKey.accountId,
-        conversationId: targetParsed.canonicalConversationId,
-        // Session-key recovery deliberately collapses sender-scoped topic bindings onto the
-        // canonical topic conversation id so `group_topic` and `group_topic_sender` reuse
-        // the same configured ACP session identity.
-        parentConversationId:
-          targetParsed.scope === "group_topic" || targetParsed.scope === "group_topic_sender"
-            ? targetParsed.chatId
-            : undefined,
         binding,
       });
       if (buildConfiguredAcpSessionKey(spec) === sessionKey) {
@@ -401,64 +327,6 @@ export function resolveConfiguredAcpBindingRecord(params: {
         return {
           conversationId: parsed.canonicalConversationId,
           parentConversationId: parsed.chatId,
-        };
-      },
-    });
-  }
-
-  if (channel === "feishu") {
-    const parsed = parseFeishuConversationId({
-      conversationId,
-      parentConversationId,
-    });
-    if (
-      !parsed ||
-      (parsed.scope !== "group_topic" &&
-        parsed.scope !== "group_topic_sender" &&
-        !isSupportedFeishuDirectConversationId(parsed.canonicalConversationId))
-    ) {
-      return null;
-    }
-    return resolveConfiguredBindingRecord({
-      cfg: params.cfg,
-      bindings: listAcpBindings(params.cfg),
-      channel: "feishu",
-      accountId,
-      selectConversation: (binding) => {
-        const targetConversationId = resolveBindingConversationId(binding);
-        if (!targetConversationId) {
-          return null;
-        }
-        const targetParsed = parseFeishuConversationId({
-          conversationId: targetConversationId,
-        });
-        if (
-          !targetParsed ||
-          (targetParsed.scope !== "group_topic" &&
-            targetParsed.scope !== "group_topic_sender" &&
-            !isSupportedFeishuDirectConversationId(targetParsed.canonicalConversationId))
-        ) {
-          return null;
-        }
-        const matchesCanonicalConversation =
-          targetParsed.canonicalConversationId === parsed.canonicalConversationId;
-        const matchesParentTopicForSenderScopedConversation =
-          parsed.scope === "group_topic_sender" &&
-          targetParsed.scope === "group_topic" &&
-          parsed.chatId === targetParsed.chatId &&
-          parsed.topicId === targetParsed.topicId;
-        if (!matchesCanonicalConversation && !matchesParentTopicForSenderScopedConversation) {
-          return null;
-        }
-        return {
-          conversationId: matchesParentTopicForSenderScopedConversation
-            ? targetParsed.canonicalConversationId
-            : parsed.canonicalConversationId,
-          parentConversationId:
-            parsed.scope === "group_topic" || parsed.scope === "group_topic_sender"
-              ? parsed.chatId
-              : undefined,
-          matchPriority: matchesCanonicalConversation ? 2 : 1,
         };
       },
     });

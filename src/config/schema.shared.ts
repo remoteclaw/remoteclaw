@@ -1,5 +1,5 @@
 type JsonSchemaObject = {
-  type?: string;
+  type?: string | string[];
   properties?: Record<string, JsonSchemaObject>;
   additionalProperties?: JsonSchemaObject | boolean;
   items?: JsonSchemaObject | JsonSchemaObject[];

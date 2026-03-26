@@ -264,6 +264,10 @@ const countExplicitEntryFilters = (entryArgs) => {
   const { fileFilters } = parsePassthroughArgs(entryArgs.slice(2));
   return fileFilters.length > 0 ? fileFilters.length : null;
 };
+const parseEnvNumber = (name, fallback) => {
+  const parsed = Number.parseInt(process.env[name] ?? "", 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+};
 const topLevelParallelEnabled = testProfile !== "low" && testProfile !== "serial";
 const defaultTopLevelParallelLimit =
   testProfile === "serial"

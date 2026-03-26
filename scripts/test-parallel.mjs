@@ -235,6 +235,34 @@ const silentArgs =
 const rawPassthroughArgs = process.argv.slice(2);
 const passthroughArgs =
   rawPassthroughArgs[0] === "--" ? rawPassthroughArgs.slice(1) : rawPassthroughArgs;
+const OPTION_TAKES_VALUE = new Set([
+  "-t",
+  "-c",
+  "-r",
+  "--testNamePattern",
+  "--config",
+  "--root",
+  "--dir",
+  "--reporter",
+  "--outputFile",
+  "--pool",
+  "--execArgv",
+  "--vmMemoryLimit",
+  "--maxWorkers",
+  "--environment",
+  "--shard",
+  "--changed",
+  "--sequence",
+  "--inspect",
+  "--inspectBrk",
+  "--testTimeout",
+  "--hookTimeout",
+  "--teardownTimeout",
+  "--bail",
+  "--retry",
+  "--diff",
+  "--experimental",
+]);
 const parsePassthroughArgs = (args) => {
   const fileFilters = [];
   const optionArgs = [];

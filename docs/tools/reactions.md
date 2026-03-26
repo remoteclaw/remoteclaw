@@ -1,5 +1,5 @@
 ---
-summary: "Reaction tool semantics across all supported channels"
+description: "Reaction tool semantics across all supported channels"
 read_when:
   - Working on reactions in any channel
   - Understanding how emoji reactions differ across platforms
@@ -27,36 +27,52 @@ tool with the `react` action. Reaction behavior varies by channel.
 
 ## Channel behavior
 
-<AccordionGroup>
-  <Accordion title="Discord and Slack">
-    - Empty `emoji` removes all of the bot's reactions on the message.
-    - `remove: true` removes just the specified emoji.
-  </Accordion>
+<details>
+<summary>Discord and Slack</summary>
 
-  <Accordion title="Google Chat">
-    - Empty `emoji` removes the app's reactions on the message.
-    - `remove: true` removes just the specified emoji.
-  </Accordion>
+- Empty `emoji` removes all of the bot's reactions on the message.
+- `remove: true` removes just the specified emoji.
 
-  <Accordion title="Telegram">
-    - Empty `emoji` removes the bot's reactions.
-    - `remove: true` also removes reactions but still requires a non-empty `emoji` for tool validation.
-  </Accordion>
+</details>
 
-  <Accordion title="WhatsApp">
-    - Empty `emoji` removes the bot reaction.
-    - `remove: true` maps to empty emoji internally (still requires `emoji` in the tool call).
-  </Accordion>
+<details>
+<summary>Google Chat</summary>
 
-  <Accordion title="Zalo Personal (zalouser)">
-    - Requires non-empty `emoji`.
-    - `remove: true` removes that specific emoji reaction.
-  </Accordion>
+- Empty `emoji` removes the app's reactions on the message.
+- `remove: true` removes just the specified emoji.
 
-  <Accordion title="Signal">
-    - Inbound reaction notifications are controlled by `channels.signal.reactionNotifications`: `"off"` disables them, `"own"` (default) emits events when users react to bot messages, and `"all"` emits events for all reactions.
-  </Accordion>
-</AccordionGroup>
+</details>
+
+<details>
+<summary>Telegram</summary>
+
+- Empty `emoji` removes the bot's reactions.
+- `remove: true` also removes reactions but still requires a non-empty `emoji` for tool validation.
+
+</details>
+
+<details>
+<summary>WhatsApp</summary>
+
+- Empty `emoji` removes the bot reaction.
+- `remove: true` maps to empty emoji internally (still requires `emoji` in the tool call).
+
+</details>
+
+<details>
+<summary>Zalo Personal (zalouser)</summary>
+
+- Requires non-empty `emoji`.
+- `remove: true` removes that specific emoji reaction.
+
+</details>
+
+<details>
+<summary>Signal</summary>
+
+- Inbound reaction notifications are controlled by `channels.signal.reactionNotifications`: `"off"` disables them, `"own"` (default) emits events when users react to bot messages, and `"all"` emits events for all reactions.
+
+</details>
 
 ## Related
 

@@ -1,5 +1,5 @@
 ---
-summary: "Run OpenClaw Gateway 24/7 on an Azure Linux VM with durable state"
+description: "Run OpenClaw Gateway 24/7 on an Azure Linux VM with durable state"
 read_when:
   - You want OpenClaw running 24/7 on Azure with Network Security Group hardening
   - You want a production-grade, always-on OpenClaw Gateway on your own Azure Linux VM
@@ -28,135 +28,130 @@ You’ll need:
 - Azure CLI installed (see [Azure CLI install steps](https://learn.microsoft.com/cli/azure/install-azure-cli) if needed)
 
 <Steps>
-  <Step title="Sign in to Azure CLI">
-    ```bash
-    az login # Sign in and select your Azure subscription
-    az extension add -n ssh # Extension required for Azure Bastion SSH management
-    ```
-  </Step>
 
-  <Step title="Register required resource providers (one-time)">
-    ```bash
-    az provider register --namespace Microsoft.Compute
-    az provider register --namespace Microsoft.Network
-    ```
+1. **Sign in to Azure CLI**
 
-    Verify Azure resource provider registration. Wait until both show `Registered`.
+   ```bash
+   az login # Sign in and select your Azure subscription
+   az extension add -n ssh # Extension required for Azure Bastion SSH management
+   ```
 
-    ```bash
-    az provider show --namespace Microsoft.Compute --query registrationState -o tsv
-    az provider show --namespace Microsoft.Network --query registrationState -o tsv
-    ```
+2. **Register required resource providers (one-time)**
 
-  </Step>
+   ```bash
+   az provider register --namespace Microsoft.Compute
+   az provider register --namespace Microsoft.Network
+   ```
 
-  <Step title="Set deployment variables">
-    ```bash
-    RG="rg-openclaw"
-    LOCATION="westus2"
-    TEMPLATE_URI="https://raw.githubusercontent.com/openclaw/openclaw/main/infra/azure/templates/azuredeploy.json"
-    PARAMS_URI="https://raw.githubusercontent.com/openclaw/openclaw/main/infra/azure/templates/azuredeploy.parameters.json"
-    ```
-  </Step>
+   Verify Azure resource provider registration. Wait until both show `Registered`.
 
-  <Step title="Select SSH key">
-    Use your existing public key if you have one:
+   ```bash
+   az provider show --namespace Microsoft.Compute --query registrationState -o tsv
+   az provider show --namespace Microsoft.Network --query registrationState -o tsv
+   ```
 
-    ```bash
-    SSH_PUB_KEY="$(cat ~/.ssh/id_ed25519.pub)"
-    ```
+3. **Set deployment variables**
 
-    If you don’t have an SSH key yet, run the following:
+   ```bash
+   RG="rg-openclaw"
+   LOCATION="westus2"
+   TEMPLATE_URI="https://raw.githubusercontent.com/openclaw/openclaw/main/infra/azure/templates/azuredeploy.json"
+   PARAMS_URI="https://raw.githubusercontent.com/openclaw/openclaw/main/infra/azure/templates/azuredeploy.parameters.json"
+   ```
 
-    ```bash
-    ssh-keygen -t ed25519 -a 100 -f ~/.ssh/id_ed25519 -C "you@example.com"
-    SSH_PUB_KEY="$(cat ~/.ssh/id_ed25519.pub)"
-    ```
+4. **Select SSH key**
 
-  </Step>
+   Use your existing public key if you have one:
 
-  <Step title="Select VM size and OS disk size">
-    Set VM and disk sizing variables:
+   ```bash
+   SSH_PUB_KEY="$(cat ~/.ssh/id_ed25519.pub)"
+   ```
 
-    ```bash
-    VM_SIZE="Standard_B2as_v2"
-    OS_DISK_SIZE_GB=64
-    ```
+   If you don’t have an SSH key yet, run the following:
 
-    Choose a VM size and OS disk size that are available in your Azure subscription/region and matches your workload:
+   ```bash
+   ssh-keygen -t ed25519 -a 100 -f ~/.ssh/id_ed25519 -C "you@example.com"
+   SSH_PUB_KEY="$(cat ~/.ssh/id_ed25519.pub)"
+   ```
 
-    - Start smaller for light usage and scale up later
-    - Use more vCPU/RAM/OS disk size for heavier automation, more channels, or larger model/tool workloads
-    - If a VM size is unavailable in your region or subscription quota, pick the closest available SKU
+5. **Select VM size and OS disk size**
 
-    List VM sizes available in your target region:
+   Set VM and disk sizing variables:
 
-    ```bash
-    az vm list-skus --location "${LOCATION}" --resource-type virtualMachines -o table
-    ```
+   ```bash
+   VM_SIZE="Standard_B2as_v2"
+   OS_DISK_SIZE_GB=64
+   ```
 
-    Check your current VM vCPU and OS disk size usage/quota:
+   Choose a VM size and OS disk size that are available in your Azure subscription/region and matches your workload:
+   - Start smaller for light usage and scale up later
+   - Use more vCPU/RAM/OS disk size for heavier automation, more channels, or larger model/tool workloads
+   - If a VM size is unavailable in your region or subscription quota, pick the closest available SKU
 
-    ```bash
-    az vm list-usage --location "${LOCATION}" -o table
-    ```
+   List VM sizes available in your target region:
 
-  </Step>
+   ```bash
+   az vm list-skus --location "${LOCATION}" --resource-type virtualMachines -o table
+   ```
 
-  <Step title="Create the resource group">
-    ```bash
-    az group create -n "${RG}" -l "${LOCATION}"
-    ```
-  </Step>
+   Check your current VM vCPU and OS disk size usage/quota:
 
-  <Step title="Deploy resources">
-    This command applies your selected SSH key, VM size, and OS disk size.
+   ```bash
+   az vm list-usage --location "${LOCATION}" -o table
+   ```
 
-    ```bash
-    az deployment group create \
-      -g "${RG}" \
-      --template-uri "${TEMPLATE_URI}" \
-      --parameters "${PARAMS_URI}" \
-      --parameters location="${LOCATION}" \
-      --parameters vmSize="${VM_SIZE}" \
-      --parameters osDiskSizeGb="${OS_DISK_SIZE_GB}" \
-      --parameters sshPublicKey="${SSH_PUB_KEY}"
-    ```
+6. **Create the resource group**
 
-  </Step>
+   ```bash
+   az group create -n "${RG}" -l "${LOCATION}"
+   ```
 
-  <Step title="SSH into the VM through Azure Bastion">
-    ```bash
-    RG="rg-openclaw"
-    VM_NAME="vm-openclaw"
-    BASTION_NAME="bas-openclaw"
-    ADMIN_USERNAME="openclaw"
-    VM_ID="$(az vm show -g "${RG}" -n "${VM_NAME}" --query id -o tsv)"
+7. **Deploy resources**
 
-    az network bastion ssh \
-      --name "${BASTION_NAME}" \
-      --resource-group "${RG}" \
-      --target-resource-id "${VM_ID}" \
-      --auth-type ssh-key \
-      --username "${ADMIN_USERNAME}" \
-      --ssh-key ~/.ssh/id_ed25519
-    ```
+   This command applies your selected SSH key, VM size, and OS disk size.
 
-  </Step>
+   ```bash
+   az deployment group create \
+     -g "${RG}" \
+     --template-uri "${TEMPLATE_URI}" \
+     --parameters "${PARAMS_URI}" \
+     --parameters location="${LOCATION}" \
+     --parameters vmSize="${VM_SIZE}" \
+     --parameters osDiskSizeGb="${OS_DISK_SIZE_GB}" \
+     --parameters sshPublicKey="${SSH_PUB_KEY}"
+   ```
 
-  <Step title="Install OpenClaw (in the VM shell)">
-    ```bash
-    curl -fsSL https://openclaw.ai/install.sh -o /tmp/openclaw-install.sh
-    bash /tmp/openclaw-install.sh
-    rm -f /tmp/openclaw-install.sh
-    openclaw --version
-    ```
+8. **SSH into the VM through Azure Bastion**
 
-    The installer script handles Node detection/installation and runs onboarding by default.
+   ```bash
+   RG="rg-openclaw"
+   VM_NAME="vm-openclaw"
+   BASTION_NAME="bas-openclaw"
+   ADMIN_USERNAME="openclaw"
+   VM_ID="$(az vm show -g "${RG}" -n "${VM_NAME}" --query id -o tsv)"
 
-  </Step>
+   az network bastion ssh \
+     --name "${BASTION_NAME}" \
+     --resource-group "${RG}" \
+     --target-resource-id "${VM_ID}" \
+     --auth-type ssh-key \
+     --username "${ADMIN_USERNAME}" \
+     --ssh-key ~/.ssh/id_ed25519
+   ```
 
-  <Step title="Verify the Gateway">
+9. **Install OpenClaw (in the VM shell)**
+
+   ```bash
+   curl -fsSL https://openclaw.ai/install.sh -o /tmp/openclaw-install.sh
+   bash /tmp/openclaw-install.sh
+   rm -f /tmp/openclaw-install.sh
+   openclaw --version
+   ```
+
+   The installer script handles Node detection/installation and runs onboarding by default.
+
+10. **Verify the Gateway**
+
     After onboarding completes:
 
     ```bash
@@ -167,7 +162,6 @@ You’ll need:
 
     The included ARM template uses Ubuntu image `version: "latest"` for convenience. If you need reproducible builds, pin a specific image version in `infra/azure/templates/azuredeploy.json` (you can list versions with `az vm image list --publisher Canonical --offer ubuntu-24_04-lts --sku server --all -o table`).
 
-  </Step>
 </Steps>
 
 ## Next steps

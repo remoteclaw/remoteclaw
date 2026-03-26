@@ -230,6 +230,8 @@ export interface WebhookHandlerDeps {
     commandAuthorized: boolean;
     /** Chat API user_id for sending replies (may differ from webhook user_id) */
     chatUserId?: string;
+    /** Session key for scoping DM sessions by account */
+    sessionKey?: string;
   }) => Promise<string | null>;
   log?: {
     info: (...args: unknown[]) => void;

@@ -209,11 +209,12 @@ export const deviceHandlers: GatewayRequestHandlers = {
       );
       return;
     }
-    const entry = await rotateDeviceToken({ deviceId, role, scopes });
-    if (!entry) {
+    const result = await rotateDeviceToken({ deviceId, role, scopes });
+    if (!result.ok) {
       respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "unknown deviceId/role"));
       return;
     }
+    const entry = result.entry;
     context.logGateway.info(
       `device token rotated device=${deviceId} role=${entry.role} scopes=${entry.scopes.join(",")}`,
     );

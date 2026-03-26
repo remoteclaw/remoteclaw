@@ -25,6 +25,9 @@ export interface SynologyChatChannelConfig extends SynologyChatConfigFields {
 /** Raw per-account config (overrides base config) */
 export interface SynologyChatAccountRaw extends SynologyChatConfigFields {}
 
+/** How the webhook path was determined for a resolved account. */
+export type SynologyWebhookPathSource = "default" | "explicit" | "inherited-base";
+
 /** Fully resolved account config with defaults applied */
 export interface ResolvedSynologyChatAccount {
   accountId: string;
@@ -33,6 +36,7 @@ export interface ResolvedSynologyChatAccount {
   incomingUrl: string;
   nasHost: string;
   webhookPath: string;
+  webhookPathSource: SynologyWebhookPathSource;
   dangerouslyAllowNameMatching: boolean;
   hasExplicitWebhookPath: boolean;
   dangerouslyAllowInheritedWebhookPath: boolean;

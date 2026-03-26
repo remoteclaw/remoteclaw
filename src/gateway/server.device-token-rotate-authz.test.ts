@@ -82,11 +82,13 @@ async function issuePairingScopedTokenForAdminApprovedDevice(name: string): Prom
     clientId: GATEWAY_CLIENT_NAMES.TEST,
     clientMode: GATEWAY_CLIENT_MODES.TEST,
   });
-  const rotated = await rotateDeviceToken({
+  const rotateResult = await rotateDeviceToken({
     deviceId: paired.identity.deviceId,
     role: "operator",
     scopes: ["operator.pairing"],
   });
+  expect(rotateResult.ok).toBe(true);
+  const rotated = rotateResult.ok ? rotateResult.entry : undefined;
   expect(rotated?.token).toBeTruthy();
   return {
     deviceId: paired.identity.deviceId,

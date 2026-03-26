@@ -30,10 +30,6 @@ export type PluginRuntimeCore = {
   tts: {
     textToSpeechTelephony: typeof import("../../tts/tts.js").textToSpeechTelephony;
   };
-  webSearch: {
-    listProviders: typeof import("../../web-search/runtime.js").listWebSearchProviders;
-    search: typeof import("../../web-search/runtime.js").runWebSearch;
-  };
   stt: {
     transcribeAudioFile: (params: {
       filePath: string;

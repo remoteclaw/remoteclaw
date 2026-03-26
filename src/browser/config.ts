@@ -46,7 +46,7 @@ export type ResolvedBrowserProfile = {
   cdpHost: string;
   cdpIsLoopback: boolean;
   color: string;
-  driver: "remoteclaw" | "extension";
+  driver: "remoteclaw" | "extension" | "existing-session";
   attachOnly: boolean;
 };
 

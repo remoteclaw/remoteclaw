@@ -1,4 +1,3 @@
-import { getChromeMcpPid } from "../chrome-mcp.js";
 import { resolveBrowserExecutableForPlatform } from "../chrome.executables.js";
 import { createBrowserProfilesService } from "../profiles-service.js";
 import type { BrowserRouteContext, ProfileContext } from "../server-context.js";
@@ -72,14 +71,10 @@ export function registerBrowserBasicRoutes(app: BrowserRouteRegistrar, ctx: Brow
     res.json({
       enabled: current.resolved.enabled,
       profile: profileCtx.profile.name,
-      driver: profileCtx.profile.driver,
       running: cdpReady,
       cdpReady,
       cdpHttp,
-      pid:
-        profileCtx.profile.driver === "existing-session"
-          ? getChromeMcpPid(profileCtx.profile.name)
-          : (profileState?.running?.pid ?? null),
+      pid: profileState?.running?.pid ?? null,
       cdpPort: profileCtx.profile.cdpPort,
       cdpUrl: profileCtx.profile.cdpUrl,
       chosenBrowser: profileState?.running?.exe.kind ?? null,
@@ -146,7 +141,6 @@ export function registerBrowserBasicRoutes(app: BrowserRouteRegistrar, ctx: Brow
     const driver = toStringOrEmpty((req.body as { driver?: unknown })?.driver) as
       | "remoteclaw"
       | "extension"
-      | "existing-session"
       | "";
 
     if (!name) {
@@ -159,12 +153,7 @@ export function registerBrowserBasicRoutes(app: BrowserRouteRegistrar, ctx: Brow
         name,
         color: color || undefined,
         cdpUrl: cdpUrl || undefined,
-        driver:
-          driver === "extension"
-            ? "extension"
-            : driver === "existing-session"
-              ? "existing-session"
-              : undefined,
+        driver: driver === "extension" ? "extension" : undefined,
       });
       res.json(result);
     } catch (err) {

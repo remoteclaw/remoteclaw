@@ -3,9 +3,6 @@ import type { BlockStreamingCoalesceConfig, DmPolicy, GroupPolicy } from "remote
 export type MattermostReplyToMode = "off" | "first" | "all";
 export type MattermostChatTypeKey = "direct" | "channel" | "group";
 
-export type MattermostReplyToMode = "off" | "first" | "all";
-export type MattermostChatTypeKey = "direct" | "channel" | "group";
-
 export type MattermostChatMode = "oncall" | "onmessage" | "onchar";
 
 export type MattermostAccountConfig = {

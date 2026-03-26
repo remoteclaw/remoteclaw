@@ -20,7 +20,7 @@ export type CreateProfileParams = {
   name: string;
   color?: string;
   cdpUrl?: string;
-  driver?: "remoteclaw" | "extension";
+  driver?: "remoteclaw" | "extension" | "existing-session";
 };
 
 export type CreateProfileResult = {

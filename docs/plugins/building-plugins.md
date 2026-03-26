@@ -113,7 +113,7 @@ my-plugin/
     **Channel plugin:**
 
     ```typescript
-    import { defineChannelPluginEntry } from "openclaw/plugin-sdk/core";
+    import { defineChannelPluginEntry } from "remoteclaw/plugin-sdk/core";
 
     export default defineChannelPluginEntry({
       id: "my-channel",
@@ -128,7 +128,7 @@ my-plugin/
     **Provider plugin:**
 
     ```typescript
-    import { definePluginEntry } from "openclaw/plugin-sdk/core";
+    import { definePluginEntry } from "remoteclaw/plugin-sdk/core";
 
     export default definePluginEntry({
       id: "my-provider",
@@ -144,7 +144,7 @@ my-plugin/
     **Multi-capability plugin** (provider + tool):
 
     ```typescript
-    import { definePluginEntry } from "openclaw/plugin-sdk/core";
+    import { definePluginEntry } from "remoteclaw/plugin-sdk/core";
 
     export default definePluginEntry({
       id: "my-plugin",
@@ -163,17 +163,17 @@ my-plugin/
   </Step>
 
   <Step title="Import from focused SDK subpaths">
-    Always import from specific `openclaw/plugin-sdk/\<subpath\>` paths. The old
+    Always import from specific `remoteclaw/plugin-sdk/\<subpath\>` paths. The old
     monolithic import is deprecated (see [SDK Migration](/plugins/sdk-migration)).
 
     ```typescript
     // Correct: focused subpaths
-    import { definePluginEntry } from "openclaw/plugin-sdk/core";
-    import { createPluginRuntimeStore } from "openclaw/plugin-sdk/runtime-store";
-    import { buildOauthProviderAuthResult } from "openclaw/plugin-sdk/provider-oauth";
+    import { definePluginEntry } from "remoteclaw/plugin-sdk/core";
+    import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/runtime-store";
+    import { buildOauthProviderAuthResult } from "remoteclaw/plugin-sdk/provider-oauth";
 
     // Wrong: monolithic root (lint will reject this)
-    import { ... } from "openclaw/plugin-sdk";
+    import { ... } from "remoteclaw/plugin-sdk";
     ```
 
     <Accordion title="Common subpaths reference">
@@ -251,7 +251,7 @@ my-plugin/
     For unit tests, import test helpers from the testing surface:
 
     ```typescript
-    import { createTestRuntime } from "openclaw/plugin-sdk/testing";
+    import { createTestRuntime } from "remoteclaw/plugin-sdk/testing";
     ```
 
   </Step>
@@ -281,7 +281,7 @@ my-plugin/
 
 Three scripts enforce SDK boundaries for plugins in the OpenClaw repository:
 
-1. **No monolithic root imports** — `openclaw/plugin-sdk` root is rejected
+1. **No monolithic root imports** — `remoteclaw/plugin-sdk` root is rejected
 2. **No direct src/ imports** — plugins cannot import `../../src/` directly
 3. **No self-imports** — plugins cannot import their own `plugin-sdk/\<name\>` subpath
 

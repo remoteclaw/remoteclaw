@@ -163,7 +163,7 @@ export async function browserCreateProfile(
     name: string;
     color?: string;
     cdpUrl?: string;
-    driver?: "remoteclaw" | "extension";
+    driver?: "remoteclaw" | "extension" | "existing-session";
   },
 ): Promise<BrowserCreateProfileResult> {
   return await fetchBrowserJson<BrowserCreateProfileResult>(

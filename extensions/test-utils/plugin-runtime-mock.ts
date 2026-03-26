@@ -59,10 +59,6 @@ export function createPluginRuntimeMock(overrides: DeepPartial<PluginRuntime> = 
     tts: {
       textToSpeechTelephony: vi.fn() as unknown as PluginRuntime["tts"]["textToSpeechTelephony"],
     },
-    webSearch: {
-      listProviders: vi.fn() as unknown as PluginRuntime["webSearch"]["listProviders"],
-      search: vi.fn() as unknown as PluginRuntime["webSearch"]["search"],
-    },
     stt: {
       transcribeAudioFile: vi.fn() as unknown as PluginRuntime["stt"]["transcribeAudioFile"],
     },

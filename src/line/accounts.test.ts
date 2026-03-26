@@ -112,7 +112,7 @@ describe("LINE accounts", () => {
       fs.symlinkSync(tokenFile, tokenLink);
       fs.symlinkSync(secretFile, secretLink);
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           line: {
             tokenFile: tokenLink,

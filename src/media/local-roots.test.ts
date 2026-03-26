@@ -29,7 +29,7 @@ describe("local media roots", () => {
       "ops",
     );
 
-    expect(roots).toContain(path.join(stateDir, "workspace-ops"));
+    expect(roots).toContain("/tmp/test-workspace");
     expect(roots).toContain(path.join(stateDir, "sandboxes"));
     expect(roots).not.toContain(path.join(stateDir, "agents"));
   });

@@ -69,7 +69,7 @@ function listBundledPluginBuildEntries(): Record<string, string> {
     }
 
     const pluginDir = path.join(extensionsRoot, dirent.name);
-    const manifestPath = path.join(pluginDir, "openclaw.plugin.json");
+    const manifestPath = path.join(pluginDir, "remoteclaw.plugin.json");
     if (!fs.existsSync(manifestPath)) {
       continue;
     }
@@ -79,17 +79,17 @@ function listBundledPluginBuildEntries(): Record<string, string> {
     if (fs.existsSync(packageJsonPath)) {
       try {
         const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8")) as {
-          openclaw?: { extensions?: unknown; setupEntry?: unknown };
+          remoteclaw?: { extensions?: unknown; setupEntry?: unknown };
         };
-        packageEntries = Array.isArray(packageJson.openclaw?.extensions)
-          ? packageJson.openclaw.extensions.filter(
+        packageEntries = Array.isArray(packageJson.remoteclaw?.extensions)
+          ? packageJson.remoteclaw.extensions.filter(
               (entry): entry is string => typeof entry === "string" && entry.trim().length > 0,
             )
           : [];
         const setupEntry =
-          typeof packageJson.openclaw?.setupEntry === "string" &&
-          packageJson.openclaw.setupEntry.trim().length > 0
-            ? packageJson.openclaw.setupEntry
+          typeof packageJson.remoteclaw?.setupEntry === "string" &&
+          packageJson.remoteclaw.setupEntry.trim().length > 0
+            ? packageJson.remoteclaw.setupEntry
             : undefined;
         if (setupEntry) {
           packageEntries = Array.from(new Set([...packageEntries, setupEntry]));

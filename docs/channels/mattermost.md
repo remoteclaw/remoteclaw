@@ -57,7 +57,7 @@ Minimal config:
 
 ## Native slash commands
 
-Native slash commands are opt-in. When enabled, OpenClaw registers `oc_*` slash commands via
+Native slash commands are opt-in. When enabled, RemoteClaw registers `oc_*` slash commands via
 the Mattermost API and receives callback POSTs on the gateway HTTP server.
 
 ```json5
@@ -79,14 +79,14 @@ the Mattermost API and receives callback POSTs on the gateway HTTP server.
 Notes:
 
 - `native: "auto"` defaults to disabled for Mattermost. Set `native: true` to enable.
-- If `callbackUrl` is omitted, OpenClaw derives one from gateway host/port + `callbackPath`.
+- If `callbackUrl` is omitted, RemoteClaw derives one from gateway host/port + `callbackPath`.
 - For multi-account setups, `commands` can be set at the top level or under
   `channels.mattermost.accounts.<id>.commands` (account values override top-level fields).
 - Command callbacks are validated with per-command tokens and fail closed when token checks fail.
 - Reachability requirement: the callback endpoint must be reachable from the Mattermost server.
-  - Do not set `callbackUrl` to `localhost` unless Mattermost runs on the same host/network namespace as OpenClaw.
-  - Do not set `callbackUrl` to your Mattermost base URL unless that URL reverse-proxies `/api/channels/mattermost/command` to OpenClaw.
-  - A quick check is `curl https://<gateway-host>/api/channels/mattermost/command`; a GET should return `405 Method Not Allowed` from OpenClaw, not `404`.
+  - Do not set `callbackUrl` to `localhost` unless Mattermost runs on the same host/network namespace as RemoteClaw.
+  - Do not set `callbackUrl` to your Mattermost base URL unless that URL reverse-proxies `/api/channels/mattermost/command` to RemoteClaw.
+  - A quick check is `curl https://<gateway-host>/api/channels/mattermost/command`; a GET should return `405 Method Not Allowed` from RemoteClaw, not `404`.
 - Mattermost egress allowlist requirement:
   - If your callback targets private/tailnet/internal addresses, set Mattermost
     `ServiceSettings.AllowedUntrustedInternalConnections` to include the callback host/domain.
@@ -186,7 +186,7 @@ Bare IDs are treated as channels.
 
 ## DM channel retry
 
-When OpenClaw sends to a Mattermost DM target and needs to resolve the direct channel first, it
+When RemoteClaw sends to a Mattermost DM target and needs to resolve the direct channel first, it
 retries transient direct-channel creation failures by default.
 
 Use `channels.mattermost.dmChannelRetry` to tune that behavior globally for the Mattermost plugin,
@@ -215,7 +215,7 @@ Notes:
 
 ## DM channel retry
 
-When OpenClaw sends to a Mattermost DM target and needs to resolve the direct channel first, it
+When RemoteClaw sends to a Mattermost DM target and needs to resolve the direct channel first, it
 retries transient direct-channel creation failures by default.
 
 Use `channels.mattermost.dmChannelRetry` to tune that behavior globally for the Mattermost plugin,
@@ -313,10 +313,10 @@ Config:
   reach the gateway at its bind host directly.
 - In multi-account setups, you can also set the same field under
   `channels.mattermost.accounts.<id>.interactions.callbackBaseUrl`.
-- If `interactions.callbackBaseUrl` is omitted, OpenClaw derives the callback URL from
+- If `interactions.callbackBaseUrl` is omitted, RemoteClaw derives the callback URL from
   `gateway.customBindHost` + `gateway.port`, then falls back to `http://localhost:<port>`.
 - Reachability rule: the button callback URL must be reachable from the Mattermost server.
-  `localhost` only works when Mattermost and OpenClaw run on the same host/network namespace.
+  `localhost` only works when Mattermost and RemoteClaw run on the same host/network namespace.
 - If your callback target is private/tailnet/internal, add its host/domain to Mattermost
   `ServiceSettings.AllowedUntrustedInternalConnections`.
 
@@ -375,7 +375,7 @@ The gateway verifies button clicks with HMAC-SHA256. External scripts must gener
 that match the gateway's verification logic:
 
 1. Derive the secret from the bot token:
-   `HMAC-SHA256(key="openclaw-mattermost-interactions", data=botToken)`
+   `HMAC-SHA256(key="remoteclaw-mattermost-interactions", data=botToken)`
 2. Build the context object with all fields **except** `_token`.
 3. Serialize with **sorted keys** and **no spaces** (the gateway uses `JSON.stringify`
    with sorted keys, which produces compact output).
@@ -388,7 +388,7 @@ Python example:
 import hmac, hashlib, json
 
 secret = hmac.new(
-    b"openclaw-mattermost-interactions",
+    b"remoteclaw-mattermost-interactions",
     bot_token.encode(), hashlib.sha256
 ).hexdigest()
 
@@ -414,7 +414,7 @@ Common HMAC pitfalls:
 
 The Mattermost plugin includes a directory adapter that resolves channel and user names
 via the Mattermost API. This enables `#channel-name` and `@username` targets in
-`openclaw message send` and cron/webhook deliveries.
+`remoteclaw message send` and cron/webhook deliveries.
 
 No configuration is needed — the adapter uses the bot token from the account config.
 

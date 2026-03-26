@@ -32,7 +32,7 @@ import {
   resolveDiscordGroupToolPolicy,
   type ChannelMessageActionAdapter,
   type ChannelPlugin,
-  type OpenClawConfig,
+  type RemoteClawConfig,
   type ResolvedDiscordAccount,
 } from "remoteclaw/plugin-sdk/discord";
 import { resolveOutboundSendDep } from "../../../src/infra/outbound/send-deps.js";
@@ -90,7 +90,7 @@ const discordMessageActions: ChannelMessageActionAdapter = {
 function buildDiscordCrossContextComponents(params: {
   originLabel: string;
   message: string;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId?: string | null;
 }) {
   const trimmed = params.message.trim();
@@ -103,7 +103,7 @@ function buildDiscordCrossContextComponents(params: {
   return [new DiscordUiContainer({ cfg: params.cfg, accountId: params.accountId, components })];
 }
 
-function hasDiscordExecApprovalDmRoute(cfg: OpenClawConfig): boolean {
+function hasDiscordExecApprovalDmRoute(cfg: RemoteClawConfig): boolean {
   return listDiscordAccountIds(cfg).some((accountId) => {
     const execApprovals = resolveDiscordAccount({ cfg, accountId }).config.execApprovals;
     if (!execApprovals?.enabled || (execApprovals.approvers?.length ?? 0) === 0) {

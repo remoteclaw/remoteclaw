@@ -11,21 +11,21 @@
     },
     "vmName": {
       "type": "string",
-      "defaultValue": "vm-openclaw",
+      "defaultValue": "vm-remoteclaw",
       "metadata": {
-        "description": "OpenClaw VM name."
+        "description": "RemoteClaw VM name."
       }
     },
     "vmSize": {
       "type": "string",
       "defaultValue": "Standard_B2as_v2",
       "metadata": {
-        "description": "Azure VM size for OpenClaw host."
+        "description": "Azure VM size for RemoteClaw host."
       }
     },
     "adminUsername": {
       "type": "string",
-      "defaultValue": "openclaw",
+      "defaultValue": "remoteclaw",
       "minLength": 1,
       "maxLength": 32,
       "metadata": {
@@ -40,7 +40,7 @@
     },
     "vnetName": {
       "type": "string",
-      "defaultValue": "vnet-openclaw",
+      "defaultValue": "vnet-remoteclaw",
       "metadata": {
         "description": "Virtual network name."
       }
@@ -54,9 +54,9 @@
     },
     "vmSubnetName": {
       "type": "string",
-      "defaultValue": "snet-openclaw-vm",
+      "defaultValue": "snet-remoteclaw-vm",
       "metadata": {
-        "description": "Subnet name for OpenClaw VM."
+        "description": "Subnet name for RemoteClaw VM."
       }
     },
     "vmSubnetPrefix": {
@@ -75,28 +75,28 @@
     },
     "nsgName": {
       "type": "string",
-      "defaultValue": "nsg-openclaw-vm",
+      "defaultValue": "nsg-remoteclaw-vm",
       "metadata": {
         "description": "Network security group for VM subnet."
       }
     },
     "nicName": {
       "type": "string",
-      "defaultValue": "nic-openclaw-vm",
+      "defaultValue": "nic-remoteclaw-vm",
       "metadata": {
-        "description": "NIC for OpenClaw VM."
+        "description": "NIC for RemoteClaw VM."
       }
     },
     "bastionName": {
       "type": "string",
-      "defaultValue": "bas-openclaw",
+      "defaultValue": "bas-remoteclaw",
       "metadata": {
         "description": "Azure Bastion host name."
       }
     },
     "bastionPublicIpName": {
       "type": "string",
-      "defaultValue": "pip-openclaw-bastion",
+      "defaultValue": "pip-remoteclaw-bastion",
       "metadata": {
         "description": "Public IP used by Bastion."
       }

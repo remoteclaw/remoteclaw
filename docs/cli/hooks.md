@@ -90,7 +90,7 @@ Details:
   Source: remoteclaw-bundled
   Path: /path/to/remoteclaw/hooks/bundled/session-memory/HOOK.md
   Handler: /path/to/remoteclaw/hooks/bundled/session-memory/handler.ts
-  Homepage: https://docs.remoteclaw.ai/automation/hooks#session-memory
+  Homepage: https://docs.remoteclaw.org/automation/hooks#session-memory
   Events: command:new, command:reset
 
 Requirements:

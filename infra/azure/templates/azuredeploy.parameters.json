@@ -6,22 +6,22 @@
       "value": "westus2"
     },
     "vmName": {
-      "value": "vm-openclaw"
+      "value": "vm-remoteclaw"
     },
     "vmSize": {
       "value": "Standard_B2as_v2"
     },
     "adminUsername": {
-      "value": "openclaw"
+      "value": "remoteclaw"
     },
     "vnetName": {
-      "value": "vnet-openclaw"
+      "value": "vnet-remoteclaw"
     },
     "vnetAddressPrefix": {
       "value": "10.40.0.0/16"
     },
     "vmSubnetName": {
-      "value": "snet-openclaw-vm"
+      "value": "snet-remoteclaw-vm"
     },
     "vmSubnetPrefix": {
       "value": "10.40.2.0/24"
@@ -30,16 +30,16 @@
       "value": "10.40.1.0/26"
     },
     "nsgName": {
-      "value": "nsg-openclaw-vm"
+      "value": "nsg-remoteclaw-vm"
     },
     "nicName": {
-      "value": "nic-openclaw-vm"
+      "value": "nic-remoteclaw-vm"
     },
     "bastionName": {
-      "value": "bas-openclaw"
+      "value": "bas-remoteclaw"
     },
     "bastionPublicIpName": {
-      "value": "pip-openclaw-bastion"
+      "value": "pip-remoteclaw-bastion"
     },
     "osDiskSizeGb": {
       "value": 64

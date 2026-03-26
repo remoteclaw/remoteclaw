@@ -1,15 +1,15 @@
 ---
-summary: "Host OpenClaw on Oracle Cloud's Always Free ARM tier"
+summary: "Host RemoteClaw on Oracle Cloud's Always Free ARM tier"
 read_when:
-  - Setting up OpenClaw on Oracle Cloud
-  - Looking for free VPS hosting for OpenClaw
-  - Want 24/7 OpenClaw on a small server
+  - Setting up RemoteClaw on Oracle Cloud
+  - Looking for free VPS hosting for RemoteClaw
+  - Want 24/7 RemoteClaw on a small server
 title: "Oracle Cloud"
 ---
 
 # Oracle Cloud
 
-Run a persistent OpenClaw Gateway on Oracle Cloud's **Always Free** ARM tier (up to 4 OCPU, 24 GB RAM, 200 GB storage) at no cost.
+Run a persistent RemoteClaw Gateway on Oracle Cloud's **Always Free** ARM tier (up to 4 OCPU, 24 GB RAM, 200 GB storage) at no cost.
 
 ## Prerequisites
 
@@ -25,7 +25,7 @@ Run a persistent OpenClaw Gateway on Oracle Cloud's **Always Free** ARM tier (up
     1. Log into [Oracle Cloud Console](https://cloud.oracle.com/).
     2. Navigate to **Compute > Instances > Create Instance**.
     3. Configure:
-       - **Name:** `openclaw`
+       - **Name:** `remoteclaw`
        - **Image:** Ubuntu 24.04 (aarch64)
        - **Shape:** `VM.Standard.A1.Flex` (Ampere ARM)
        - **OCPUs:** 2 (or up to 4)
@@ -54,7 +54,7 @@ Run a persistent OpenClaw Gateway on Oracle Cloud's **Always Free** ARM tier (up
 
   <Step title="Configure user and hostname">
     ```bash
-    sudo hostnamectl set-hostname openclaw
+    sudo hostnamectl set-hostname remoteclaw
     sudo passwd ubuntu
     sudo loginctl enable-linger ubuntu
     ```
@@ -66,16 +66,16 @@ Run a persistent OpenClaw Gateway on Oracle Cloud's **Always Free** ARM tier (up
   <Step title="Install Tailscale">
     ```bash
     curl -fsSL https://tailscale.com/install.sh | sh
-    sudo tailscale up --ssh --hostname=openclaw
+    sudo tailscale up --ssh --hostname=remoteclaw
     ```
 
-    From now on, connect via Tailscale: `ssh ubuntu@openclaw`.
+    From now on, connect via Tailscale: `ssh ubuntu@remoteclaw`.
 
   </Step>
 
-  <Step title="Install OpenClaw">
+  <Step title="Install RemoteClaw">
     ```bash
-    curl -fsSL https://openclaw.ai/install.sh | bash
+    curl -fsSL https://remoteclaw.org/install.sh | bash
     source ~/.bashrc
     ```
 
@@ -87,13 +87,13 @@ Run a persistent OpenClaw Gateway on Oracle Cloud's **Always Free** ARM tier (up
     Use token auth with Tailscale Serve for secure remote access.
 
     ```bash
-    openclaw config set gateway.bind loopback
-    openclaw config set gateway.auth.mode token
-    openclaw doctor --generate-gateway-token
-    openclaw config set gateway.tailscale.mode serve
-    openclaw config set gateway.trustedProxies '["127.0.0.1"]'
+    remoteclaw config set gateway.bind loopback
+    remoteclaw config set gateway.auth.mode token
+    remoteclaw doctor --generate-gateway-token
+    remoteclaw config set gateway.tailscale.mode serve
+    remoteclaw config set gateway.trustedProxies '["127.0.0.1"]'
 
-    systemctl --user restart openclaw-gateway
+    systemctl --user restart remoteclaw-gateway
     ```
 
   </Step>
@@ -112,8 +112,8 @@ Run a persistent OpenClaw Gateway on Oracle Cloud's **Always Free** ARM tier (up
 
   <Step title="Verify">
     ```bash
-    openclaw --version
-    systemctl --user status openclaw-gateway
+    remoteclaw --version
+    systemctl --user status remoteclaw-gateway
     tailscale serve status
     curl http://localhost:18789
     ```
@@ -121,7 +121,7 @@ Run a persistent OpenClaw Gateway on Oracle Cloud's **Always Free** ARM tier (up
     Access the Control UI from any device on your tailnet:
 
     ```
-    https://openclaw.<tailnet-name>.ts.net/
+    https://remoteclaw.<tailnet-name>.ts.net/
     ```
 
     Replace `<tailnet-name>` with your tailnet name (visible in `tailscale status`).
@@ -134,7 +134,7 @@ Run a persistent OpenClaw Gateway on Oracle Cloud's **Always Free** ARM tier (up
 If Tailscale Serve is not working, use an SSH tunnel from your local machine:
 
 ```bash
-ssh -L 18789:127.0.0.1:18789 ubuntu@openclaw
+ssh -L 18789:127.0.0.1:18789 ubuntu@remoteclaw
 ```
 
 Then open `http://localhost:18789`.
@@ -143,9 +143,9 @@ Then open `http://localhost:18789`.
 
 **Instance creation fails ("Out of capacity")** -- Free tier ARM instances are popular. Try a different availability domain or retry during off-peak hours.
 
-**Tailscale will not connect** -- Run `sudo tailscale up --ssh --hostname=openclaw --reset` to re-authenticate.
+**Tailscale will not connect** -- Run `sudo tailscale up --ssh --hostname=remoteclaw --reset` to re-authenticate.
 
-**Gateway will not start** -- Run `openclaw doctor --non-interactive` and check logs with `journalctl --user -u openclaw-gateway -n 50`.
+**Gateway will not start** -- Run `remoteclaw doctor --non-interactive` and check logs with `journalctl --user -u remoteclaw-gateway -n 50`.
 
 **ARM binary issues** -- Most npm packages work on ARM64. For native binaries, look for `linux-arm64` or `aarch64` releases. Verify architecture with `uname -m`.
 
@@ -153,4 +153,4 @@ Then open `http://localhost:18789`.
 
 - [Channels](/channels) -- connect Telegram, WhatsApp, Discord, and more
 - [Gateway configuration](/gateway/configuration) -- all config options
-- [Updating](/install/updating) -- keep OpenClaw up to date
+- [Updating](/install/updating) -- keep RemoteClaw up to date

@@ -1,16 +1,16 @@
 ---
 title: "Plugin SDK Migration"
-summary: "Migrate from openclaw/plugin-sdk/compat to focused subpath imports"
+summary: "Migrate from remoteclaw/plugin-sdk/compat to focused subpath imports"
 read_when:
   - You see the OPENCLAW_PLUGIN_SDK_COMPAT_DEPRECATED warning
   - You are updating a plugin from the monolithic plugin-sdk import to scoped subpaths
-  - You maintain an external OpenClaw plugin
+  - You maintain an external RemoteClaw plugin
 ---
 
 # Plugin SDK Migration
 
-OpenClaw is migrating from a single monolithic `openclaw/plugin-sdk/compat` barrel
-to **focused subpath imports** (`openclaw/plugin-sdk/<subpath>`). This page explains
+RemoteClaw is migrating from a single monolithic `remoteclaw/plugin-sdk/compat` barrel
+to **focused subpath imports** (`remoteclaw/plugin-sdk/<subpath>`). This page explains
 what changed, why, and how to migrate.
 
 ## Why this change
@@ -30,8 +30,8 @@ with a clear purpose.
 If your plugin imports from the compat barrel, you will see:
 
 ```
-[OPENCLAW_PLUGIN_SDK_COMPAT_DEPRECATED] Warning: openclaw/plugin-sdk/compat is
-deprecated for new plugins. Migrate to focused openclaw/plugin-sdk/<subpath> imports.
+[OPENCLAW_PLUGIN_SDK_COMPAT_DEPRECATED] Warning: remoteclaw/plugin-sdk/compat is
+deprecated for new plugins. Migrate to focused remoteclaw/plugin-sdk/<subpath> imports.
 ```
 
 The compat barrel still works at runtime. This is a deprecation warning, not an
@@ -58,12 +58,12 @@ import {
   createChannelReplyPipeline,
   createPluginRuntimeStore,
   resolveControlCommandGate,
-} from "openclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk/compat";
 
 // After (focused subpaths)
-import { createChannelReplyPipeline } from "openclaw/plugin-sdk/channel-reply-pipeline";
-import { createPluginRuntimeStore } from "openclaw/plugin-sdk/runtime-store";
-import { resolveControlCommandGate } from "openclaw/plugin-sdk/command-auth";
+import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
+import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/runtime-store";
+import { resolveControlCommandGate } from "remoteclaw/plugin-sdk/command-auth";
 ```
 
 ### Step 3: Verify
@@ -117,7 +117,7 @@ should migrate before the next major release.
 If you need to suppress the warning while migrating:
 
 ```bash
-OPENCLAW_SUPPRESS_PLUGIN_SDK_COMPAT_WARNING=1 openclaw gateway run
+OPENCLAW_SUPPRESS_PLUGIN_SDK_COMPAT_WARNING=1 remoteclaw gateway run
 ```
 
 This is a temporary escape hatch, not a permanent solution.
@@ -133,7 +133,7 @@ export { MyConfig } from "./src/config.js";
 export { MyRuntime } from "./src/runtime.js";
 ```
 
-Never import your own extension back through `openclaw/plugin-sdk/<your-extension>`
+Never import your own extension back through `remoteclaw/plugin-sdk/<your-extension>`
 from production files. That path is for external consumers only. See
 [Building Extensions](/plugins/building-extensions#step-4-use-local-barrels-for-internal-imports).
 

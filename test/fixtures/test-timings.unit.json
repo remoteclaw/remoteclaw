@@ -59,7 +59,7 @@
       "durationMs": 3400,
       "testCount": 95
     },
-    "src/agents/openclaw-tools.subagents.sessions-spawn.lifecycle.test.ts": {
+    "src/agents/remoteclaw-tools.subagents.sessions-spawn.lifecycle.test.ts": {
       "durationMs": 3300,
       "testCount": 85
     },

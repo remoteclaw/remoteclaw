@@ -1,5 +1,5 @@
 ---
-summary: "Feishu bot overview, features, and configuration"
+description: "Feishu bot overview, features, and configuration"
 read_when:
   - You want to connect a Feishu/Lark bot
   - You are configuring the Feishu channel
@@ -8,20 +8,20 @@ title: Feishu
 
 # Feishu bot
 
-Feishu (Lark) is a team chat platform used by companies for messaging and collaboration. This plugin connects OpenClaw to a Feishu/Lark bot using the platform’s WebSocket event subscription so messages can be received without exposing a public webhook URL.
+Feishu (Lark) is a team chat platform used by companies for messaging and collaboration. This plugin connects RemoteClaw to a Feishu/Lark bot using the platform’s WebSocket event subscription so messages can be received without exposing a public webhook URL.
 
 ---
 
 ## Bundled plugin
 
-Feishu ships bundled with current OpenClaw releases, so no separate plugin install
+Feishu ships bundled with current RemoteClaw releases, so no separate plugin install
 is required.
 
 If you are using an older build or a custom install that does not include bundled
 Feishu, install it manually:
 
 ```bash
-openclaw plugins install @openclaw/feishu
+remoteclaw plugins install @remoteclaw/feishu
 ```
 
 ---
@@ -30,40 +30,40 @@ openclaw plugins install @openclaw/feishu
 
 There are two ways to add the Feishu channel:
 
-### Method 1: setup wizard (recommended)
+### Method 1: onboarding wizard (recommended)
 
-If you just installed OpenClaw, run the setup wizard:
+If you just installed RemoteClaw, run the wizard:
 
 ```bash
-openclaw onboard
+remoteclaw onboard
 ```
 
 The wizard guides you through:
 
 1. Creating a Feishu app and collecting credentials
-2. Configuring app credentials in OpenClaw
+2. Configuring app credentials in RemoteClaw
 3. Starting the gateway
 
 ✅ **After configuration**, check gateway status:
 
-- `openclaw gateway status`
-- `openclaw logs --follow`
+- `remoteclaw gateway status`
+- `remoteclaw logs --follow`
 
 ### Method 2: CLI setup
 
 If you already completed initial install, add the channel via CLI:
 
 ```bash
-openclaw channels add
+remoteclaw channels add
 ```
 
 Choose **Feishu**, then enter the App ID and App Secret.
 
 ✅ **After configuration**, manage the gateway:
 
-- `openclaw gateway status`
-- `openclaw gateway restart`
-- `openclaw logs --follow`
+- `remoteclaw gateway status`
+- `remoteclaw gateway restart`
+- `remoteclaw logs --follow`
 
 ---
 
@@ -81,7 +81,7 @@ Lark (global) tenants should use [https://open.larksuite.com/app](https://open.l
 2. Fill in the app name + description
 3. Choose an app icon
 
-![Create enterprise app](../images/feishu-step2-create-app.png)
+![Create enterprise app](/images/feishu-step2-create-app.png)
 
 ### 3. Copy credentials
 
@@ -92,7 +92,7 @@ From **Credentials & Basic Info**, copy:
 
 ❗ **Important:** keep the App Secret private.
 
-![Get credentials](../images/feishu-step3-credentials.png)
+![Get credentials](/images/feishu-step3-credentials.png)
 
 ### 4. Configure permissions
 
@@ -126,7 +126,7 @@ On **Permissions**, click **Batch import** and paste:
 }
 ```
 
-![Configure permissions](../images/feishu-step4-permissions.png)
+![Configure permissions](/images/feishu-step4-permissions.png)
 
 ### 5. Enable bot capability
 
@@ -135,14 +135,14 @@ In **App Capability** > **Bot**:
 1. Enable bot capability
 2. Set the bot name
 
-![Enable bot capability](../images/feishu-step5-bot-capability.png)
+![Enable bot capability](/images/feishu-step5-bot-capability.png)
 
 ### 6. Configure event subscription
 
 ⚠️ **Important:** before setting event subscription, make sure:
 
-1. You already ran `openclaw channels add` for Feishu
-2. The gateway is running (`openclaw gateway status`)
+1. You already ran `remoteclaw channels add` for Feishu
+2. The gateway is running (`remoteclaw gateway status`)
 
 In **Event Subscription**:
 
@@ -151,7 +151,7 @@ In **Event Subscription**:
 
 ⚠️ If the gateway is not running, the long-connection setup may fail to save.
 
-![Configure event subscription](../images/feishu-step6-event-subscription.png)
+![Configure event subscription](/images/feishu-step6-event-subscription.png)
 
 ### 7. Publish the app
 
@@ -161,19 +161,19 @@ In **Event Subscription**:
 
 ---
 
-## Step 2: Configure OpenClaw
+## Step 2: Configure RemoteClaw
 
 ### Configure with the wizard (recommended)
 
 ```bash
-openclaw channels add
+remoteclaw channels add
 ```
 
 Choose **Feishu** and paste your App ID + App Secret.
 
 ### Configure via config file
 
-Edit `~/.openclaw/openclaw.json`:
+Edit `~/.remoteclaw/remoteclaw.json`:
 
 ```json5
 {
@@ -185,7 +185,7 @@ Edit `~/.openclaw/openclaw.json`:
         main: {
           appId: "cli_xxx",
           appSecret: "xxx",
-          botName: "My AI assistant",
+          name: "My AI assistant",
         },
       },
     },
@@ -206,7 +206,7 @@ When using webhook mode, set both `channels.feishu.verificationToken` and `chann
 
 The screenshot below shows where to find the **Verification Token**. The **Encrypt Key** is listed in the same **Encryption** section.
 
-![Verification Token location](../images/feishu-verification-token.png)
+![Verification Token location](../public/images/feishu-verification-token.png)
 
 ### Configure via environment variables
 
@@ -270,7 +270,7 @@ Set them at top level or per account:
 ### 1. Start the gateway
 
 ```bash
-openclaw gateway
+remoteclaw gateway
 ```
 
 ### 2. Send a test message
@@ -282,7 +282,7 @@ In Feishu, find your bot and send a message.
 By default, the bot replies with a pairing code. Approve it:
 
 ```bash
-openclaw pairing approve feishu <CODE>
+remoteclaw pairing approve feishu <CODE>
 ```
 
 After approval, you can chat normally.
@@ -306,8 +306,8 @@ After approval, you can chat normally.
 - **Approve pairing**:
 
   ```bash
-  openclaw pairing list feishu
-  openclaw pairing approve feishu <CODE>
+  remoteclaw pairing list feishu
+  remoteclaw pairing approve feishu <CODE>
   ```
 
 - **Allowlist mode**: set `channels.feishu.allowFrom` with allowed Open IDs
@@ -402,7 +402,7 @@ Group IDs look like `oc_xxx`.
 **Method 1 (recommended)**
 
 1. Start the gateway and @mention the bot in the group
-2. Run `openclaw logs --follow` and look for `chat_id`
+2. Run `remoteclaw logs --follow` and look for `chat_id`
 
 **Method 2**
 
@@ -415,14 +415,14 @@ User IDs look like `ou_xxx`.
 **Method 1 (recommended)**
 
 1. Start the gateway and DM the bot
-2. Run `openclaw logs --follow` and look for `open_id`
+2. Run `remoteclaw logs --follow` and look for `open_id`
 
 **Method 2**
 
 Check pairing requests for user Open IDs:
 
 ```bash
-openclaw pairing list feishu
+remoteclaw pairing list feishu
 ```
 
 ---
@@ -433,19 +433,18 @@ openclaw pairing list feishu
 | --------- | ----------------- |
 | `/status` | Show bot status   |
 | `/reset`  | Reset the session |
-| `/model`  | Show/switch model |
 
 > Note: Feishu does not support native command menus yet, so commands must be sent as text.
 
 ## Gateway management commands
 
-| Command                    | Description                   |
-| -------------------------- | ----------------------------- |
-| `openclaw gateway status`  | Show gateway status           |
-| `openclaw gateway install` | Install/start gateway service |
-| `openclaw gateway stop`    | Stop gateway service          |
-| `openclaw gateway restart` | Restart gateway service       |
-| `openclaw logs --follow`   | Tail gateway logs             |
+| Command                      | Description                   |
+| ---------------------------- | ----------------------------- |
+| `remoteclaw gateway status`  | Show gateway status           |
+| `remoteclaw gateway install` | Install/start gateway service |
+| `remoteclaw gateway stop`    | Stop gateway service          |
+| `remoteclaw gateway restart` | Restart gateway service       |
+| `remoteclaw logs --follow`   | Tail gateway logs             |
 
 ---
 
@@ -456,7 +455,7 @@ openclaw pairing list feishu
 1. Ensure the bot is added to the group
 2. Ensure you @mention the bot (default behavior)
 3. Check `groupPolicy` is not set to `"disabled"`
-4. Check logs: `openclaw logs --follow`
+4. Check logs: `remoteclaw logs --follow`
 
 ### Bot does not receive messages
 
@@ -464,8 +463,8 @@ openclaw pairing list feishu
 2. Ensure event subscription includes `im.message.receive_v1`
 3. Ensure **long connection** is enabled
 4. Ensure app permissions are complete
-5. Ensure the gateway is running: `openclaw gateway status`
-6. Check logs: `openclaw logs --follow`
+5. Ensure the gateway is running: `remoteclaw gateway status`
+6. Check logs: `remoteclaw logs --follow`
 
 ### App Secret leak
 
@@ -494,12 +493,12 @@ openclaw pairing list feishu
         main: {
           appId: "cli_xxx",
           appSecret: "xxx",
-          botName: "Primary bot",
+          name: "Primary bot",
         },
         backup: {
           appId: "cli_yyy",
           appSecret: "yyy",
-          botName: "Backup bot",
+          name: "Backup bot",
           enabled: false,
         },
       },
@@ -532,75 +531,6 @@ Feishu supports streaming replies via interactive cards. When enabled, the bot u
 
 Set `streaming: false` to wait for the full reply before sending.
 
-### ACP sessions
-
-Feishu supports ACP for:
-
-- DMs
-- group topic conversations
-
-Feishu ACP is text-command driven. There are no native slash-command menus, so use `/acp ...` messages directly in the conversation.
-
-#### Persistent ACP bindings
-
-Use top-level typed ACP bindings to pin a Feishu DM or topic conversation to a persistent ACP session.
-
-```json5
-{
-  agents: {
-    list: [
-      {
-        id: "codex",
-        runtime: {
-          type: "acp",
-          acp: {
-            agent: "codex",
-            backend: "acpx",
-            mode: "persistent",
-            cwd: "/workspace/openclaw",
-          },
-        },
-      },
-    ],
-  },
-  bindings: [
-    {
-      type: "acp",
-      agentId: "codex",
-      match: {
-        channel: "feishu",
-        accountId: "default",
-        peer: { kind: "direct", id: "ou_1234567890" },
-      },
-    },
-    {
-      type: "acp",
-      agentId: "codex",
-      match: {
-        channel: "feishu",
-        accountId: "default",
-        peer: { kind: "group", id: "oc_group_chat:topic:om_topic_root" },
-      },
-      acp: { label: "codex-feishu-topic" },
-    },
-  ],
-}
-```
-
-#### Thread-bound ACP spawn from chat
-
-In a Feishu DM or topic conversation, you can spawn and bind an ACP session in place:
-
-```text
-/acp spawn codex --thread here
-```
-
-Notes:
-
-- `--thread here` works for DMs and Feishu topics.
-- Follow-up messages in the bound DM/topic route directly to that ACP session.
-- v1 does not target generic non-topic group chats.
-
 ### Multi-agent routing
 
 Use `bindings` to route Feishu DMs or groups to different agents.
@@ -613,12 +543,12 @@ Use `bindings` to route Feishu DMs or groups to different agents.
       {
         id: "clawd-fan",
         workspace: "/home/user/clawd-fan",
-        agentDir: "/home/user/.openclaw/agents/clawd-fan/agent",
+        agentDir: "/home/user/.remoteclaw/agents/clawd-fan/agent",
       },
       {
         id: "clawd-xi",
         workspace: "/home/user/clawd-xi",
-        agentDir: "/home/user/.openclaw/agents/clawd-xi/agent",
+        agentDir: "/home/user/.remoteclaw/agents/clawd-xi/agent",
       },
     ],
   },

@@ -34,7 +34,7 @@ openclaw plugins list
 2. Install an official plugin (example: Voice Call):
 
 ```bash
-openclaw plugins install @openclaw/voice-call
+openclaw plugins install @remoteclaw/voice-call
 ```
 
 Npm specs are **registry-only** (package name + optional **exact version** or
@@ -479,15 +479,15 @@ Important trust note:
 
 ## Available plugins (official)
 
-- Microsoft Teams is plugin-only as of 2026.1.15; install `@openclaw/msteams` if you use Teams.
+- Microsoft Teams is plugin-only as of 2026.1.15; install `@remoteclaw/msteams` if you use Teams.
 - Memory (Core) — bundled memory search plugin (enabled by default via `plugins.slots.memory`)
 - Memory (LanceDB) — bundled long-term memory plugin (auto-recall/capture; set `plugins.slots.memory = "memory-lancedb"`)
-- [Voice Call](/plugins/voice-call) — `@openclaw/voice-call`
-- [Zalo Personal](/plugins/zalouser) — `@openclaw/zalouser`
-- [Matrix](/channels/matrix) — `@openclaw/matrix`
-- [Nostr](/channels/nostr) — `@openclaw/nostr`
-- [Zalo](/channels/zalo) — `@openclaw/zalo`
-- [Microsoft Teams](/channels/msteams) — `@openclaw/msteams`
+- [Voice Call](/plugins/voice-call) — `@remoteclaw/voice-call`
+- [Zalo Personal](/plugins/zalouser) — `@remoteclaw/zalouser`
+- [Matrix](/channels/matrix) — `@remoteclaw/matrix`
+- [Nostr](/channels/nostr) — `@remoteclaw/nostr`
+- [Zalo](/channels/zalo) — `@remoteclaw/zalo`
+- [Microsoft Teams](/channels/msteams) — `@remoteclaw/msteams`
 - Anthropic provider runtime — bundled as `anthropic` (enabled by default)
 - BytePlus provider catalog — bundled as `byteplus` (enabled by default)
 - Cloudflare AI Gateway provider catalog — bundled as `cloudflare-ai-gateway` (enabled by default)
@@ -1447,7 +1447,7 @@ Example:
 
 ```json
 {
-  "name": "@openclaw/nextcloud-talk",
+  "name": "@remoteclaw/nextcloud-talk",
   "openclaw": {
     "extensions": ["./index.ts"],
     "channel": {
@@ -1461,7 +1461,7 @@ Example:
       "aliases": ["nc-talk", "nc"]
     },
     "install": {
-      "npmSpec": "@openclaw/nextcloud-talk",
+      "npmSpec": "@remoteclaw/nextcloud-talk",
       "localPath": "extensions/nextcloud-talk",
       "defaultChoice": "npm"
     }
@@ -1643,8 +1643,8 @@ openclaw plugins install ./extensions/voice-call # relative path ok
 openclaw plugins install ./plugin.tgz           # install from a local tarball
 openclaw plugins install ./plugin.zip           # install from a local zip
 openclaw plugins install -l ./extensions/voice-call # link (no copy) for dev
-openclaw plugins install @openclaw/voice-call # install from npm
-openclaw plugins install @openclaw/voice-call --pin # store exact resolved name@version
+openclaw plugins install @remoteclaw/voice-call # install from npm
+openclaw plugins install @remoteclaw/voice-call --pin # store exact resolved name@version
 openclaw plugins update <id>
 openclaw plugins update --all
 openclaw plugins enable <id>
@@ -2439,7 +2439,7 @@ it’s present in your workspace/managed skills locations.
 Recommended packaging:
 
 - Main package: `openclaw` (this repo)
-- Plugins: separate npm packages under `@openclaw/*` (example: `@openclaw/voice-call`)
+- Plugins: separate npm packages under `@remoteclaw/*` (example: `@remoteclaw/voice-call`)
 
 Publishing contract:
 

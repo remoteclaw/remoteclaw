@@ -53,7 +53,7 @@ const normalizeRepoPath = (value) => value.split(path.sep).join("/");
 
 const opts = parseArgs(process.argv.slice(2));
 const reportPath =
-  opts.reportPath || path.join(os.tmpdir(), `openclaw-vitest-timings-${Date.now()}.json`);
+  opts.reportPath || path.join(os.tmpdir(), `remoteclaw-vitest-timings-${Date.now()}.json`);
 
 if (!(opts.reportPath && fs.existsSync(reportPath))) {
   const run = spawnSync(

@@ -8,11 +8,11 @@ const shouldWarnCompatImport =
 
 if (shouldWarnCompatImport) {
   process.emitWarning(
-    "remoteclaw/plugin-sdk/compat is deprecated for new plugins. Migrate to focused remoteclaw/plugin-sdk/<subpath> imports. See https://docs.openclaw.ai/plugins/sdk-migration",
+    "remoteclaw/plugin-sdk/compat is deprecated for new plugins. Migrate to focused remoteclaw/plugin-sdk/<subpath> imports. See https://docs.remoteclaw.org/plugins/sdk-migration",
     {
       code: "REMOTECLAW_PLUGIN_SDK_COMPAT_DEPRECATED",
       detail:
-        "Bundled plugins must use scoped plugin-sdk subpaths. External plugins may keep compat temporarily while migrating. Migration guide: https://docs.openclaw.ai/plugins/sdk-migration",
+        "Bundled plugins must use scoped plugin-sdk subpaths. External plugins may keep compat temporarily while migrating. Migration guide: https://docs.remoteclaw.org/plugins/sdk-migration",
     },
   );
 }

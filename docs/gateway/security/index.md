@@ -1208,6 +1208,6 @@ Commit the updated `.secrets.baseline` once it reflects the intended state.
 
 Found a vulnerability in RemoteClaw? Please report responsibly:
 
-1. Email: [security@remoteclaw.ai](mailto:security@remoteclaw.ai)
+1. Email: [security@remoteclaw.org](mailto:security@remoteclaw.org)
 2. Don't post publicly until fixed
 3. We'll credit you (unless you prefer anonymity)

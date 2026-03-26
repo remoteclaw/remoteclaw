@@ -72,7 +72,7 @@ workflow.
 - `maxTokens` (number, optional)
 - `timeoutMs` (number, optional)
 
-`thinking` accepts the standard OpenClaw reasoning presets, such as `low` or `medium`.
+`thinking` accepts the standard RemoteClaw reasoning presets, such as `low` or `medium`.
 
 ## Output
 

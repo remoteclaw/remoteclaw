@@ -1,4 +1,4 @@
-import * as extensionApi from "openclaw/extension-api";
+import * as extensionApi from "remoteclaw/extension-api";
 import * as compatSdk from "remoteclaw/plugin-sdk/compat";
 import * as discordSdk from "remoteclaw/plugin-sdk/discord";
 import * as imessageSdk from "remoteclaw/plugin-sdk/imessage";

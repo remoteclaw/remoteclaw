@@ -320,7 +320,7 @@ describe("setupChannels", () => {
     catalogMocks.listChannelPluginCatalogEntries.mockReturnValue([
       {
         id: "msteams",
-        pluginId: "@openclaw/msteams-plugin",
+        pluginId: "@remoteclaw/msteams-plugin",
         meta: {
           id: "msteams",
           label: "Microsoft Teams",
@@ -329,7 +329,7 @@ describe("setupChannels", () => {
           blurb: "teams channel",
         },
         install: {
-          npmSpec: "@openclaw/msteams",
+          npmSpec: "@remoteclaw/msteams",
         },
       } satisfies ChannelPluginCatalogEntry,
     ]);
@@ -338,7 +338,7 @@ describe("setupChannels", () => {
         const registry = createEmptyPluginRegistry();
         if (channel === "msteams") {
           registry.channels.push({
-            pluginId: "@openclaw/msteams-plugin",
+            pluginId: "@remoteclaw/msteams-plugin",
             source: "test",
             plugin: {
               id: "msteams",
@@ -388,7 +388,7 @@ describe("setupChannels", () => {
         },
         plugins: {
           entries: {
-            "@openclaw/msteams-plugin": { enabled: true },
+            "@remoteclaw/msteams-plugin": { enabled: true },
           },
         },
       } as RemoteClawConfig,
@@ -398,7 +398,7 @@ describe("setupChannels", () => {
     expect(loadOnboardingPluginRegistrySnapshotForChannel).toHaveBeenCalledWith(
       expect.objectContaining({
         channel: "msteams",
-        pluginId: "@openclaw/msteams-plugin",
+        pluginId: "@remoteclaw/msteams-plugin",
       }),
     );
     expect(multiselect).not.toHaveBeenCalled();

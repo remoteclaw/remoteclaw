@@ -1,7 +1,10 @@
 import os from "node:os";
 import path from "node:path";
+import { FLAG_TERMINATOR } from "../infra/cli-root-options.js";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { isValidProfileName } from "./profile-utils.js";
+import { forwardConsumedCliRootOption } from "./root-option-forward.js";
+import { takeCliRootOptionValue } from "./root-option-value.js";
 
 export type CliProfileParseResult =
   | { ok: true; profile: string | null; argv: string[] }
@@ -76,9 +79,9 @@ export function parseCliProfileArgs(argv: string[]): CliProfileParseResult {
       continue;
     }
 
-    if (!arg.startsWith("-")) {
-      sawCommand = true;
-      out.push(arg);
+    const consumedRootOption = forwardConsumedCliRootOption(args, i, out);
+    if (consumedRootOption > 0) {
+      i += consumedRootOption - 1;
       continue;
     }
 

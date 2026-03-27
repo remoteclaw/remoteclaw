@@ -249,10 +249,6 @@ function normalizeWidth(n: number | undefined): number | undefined {
   return Math.floor(n);
 }
 
-export function getTerminalTableWidth(minWidth = 60, fallbackWidth = 120): number {
-  return Math.max(minWidth, process.stdout.columns ?? fallbackWidth);
-}
-
 export function renderTable(opts: RenderTableOptions): string {
   const rows = opts.rows.map((row) => {
     const next: Record<string, string> = {};

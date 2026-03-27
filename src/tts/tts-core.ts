@@ -1,17 +1,5 @@
-import { rmSync, statSync } from "node:fs";
-import { completeSimple, type TextContent } from "@mariozechner/pi-ai";
+import { rmSync } from "node:fs";
 import { EdgeTTS } from "node-edge-tts";
-import { ensureCustomApiRegistered } from "../agents/custom-api-registry.js";
-import { getApiKeyForModel, requireApiKey } from "../agents/model-auth.js";
-import {
-  buildModelAliasIndex,
-  resolveDefaultModelForAgent,
-  resolveModelRefFromString,
-  type ModelRef,
-} from "../agents/model-selection.js";
-import { createConfiguredOllamaStreamFn } from "../agents/ollama-stream.js";
-import { resolveModel } from "../agents/pi-embedded-runner/model.js";
-import type { OpenClawConfig } from "../config/config.js";
 import type {
   ResolvedTtsConfig,
   ResolvedTtsModelOverrides,
@@ -41,11 +29,6 @@ function normalizeOpenAITtsBaseUrl(baseUrl?: string): string {
     return DEFAULT_OPENAI_BASE_URL;
   }
   return trimmed.replace(/\/+$/, "");
-}
-
-function trimToUndefined(value?: string): string | undefined {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
 }
 
 function requireInRange(value: number, min: number, max: number, label: string): void {
@@ -156,10 +139,10 @@ export function parseTtsDirectives(
             if (!policy.allowProvider) {
               break;
             }
-            if (rawValue === "openai" || rawValue === "elevenlabs" || rawValue === "edge") {
-              overrides.provider = rawValue;
+            if (rawValue.trim()) {
+              overrides.provider = rawValue.trim();
             } else {
-              warnings.push(`unsupported provider "${rawValue}"`);
+              warnings.push(`empty provider value`);
             }
             break;
           case "voice":
@@ -388,151 +371,12 @@ export function isValidOpenAIModel(model: string, baseUrl?: string): boolean {
   return OPENAI_TTS_MODELS.includes(model as (typeof OPENAI_TTS_MODELS)[number]);
 }
 
-export function resolveOpenAITtsInstructions(
-  model: string,
-  instructions?: string,
-): string | undefined {
-  const next = trimToUndefined(instructions);
-  return next && model.includes("gpt-4o-mini-tts") ? next : undefined;
-}
-
 export function isValidOpenAIVoice(voice: string, baseUrl?: string): voice is OpenAiTtsVoice {
   // Allow any voice when using custom endpoint (e.g., Kokoro Chinese voices)
   if (isCustomOpenAIEndpoint(baseUrl)) {
     return true;
   }
   return OPENAI_TTS_VOICES.includes(voice as OpenAiTtsVoice);
-}
-
-type SummarizeResult = {
-  summary: string;
-  latencyMs: number;
-  inputLength: number;
-  outputLength: number;
-};
-
-type SummaryModelSelection = {
-  ref: ModelRef;
-  source: "summaryModel" | "default";
-};
-
-function resolveSummaryModelRef(
-  cfg: OpenClawConfig,
-  config: ResolvedTtsConfig,
-): SummaryModelSelection {
-  const defaultRef = resolveDefaultModelForAgent({ cfg });
-  const override = config.summaryModel?.trim();
-  if (!override) {
-    return { ref: defaultRef, source: "default" };
-  }
-
-  const aliasIndex = buildModelAliasIndex({ cfg, defaultProvider: defaultRef.provider });
-  const resolved = resolveModelRefFromString({
-    raw: override,
-    defaultProvider: defaultRef.provider,
-    aliasIndex,
-  });
-  if (!resolved) {
-    return { ref: defaultRef, source: "default" };
-  }
-  return { ref: resolved.ref, source: "summaryModel" };
-}
-
-function isTextContentBlock(block: { type: string }): block is TextContent {
-  return block.type === "text";
-}
-
-export async function summarizeText(params: {
-  text: string;
-  targetLength: number;
-  cfg: OpenClawConfig;
-  config: ResolvedTtsConfig;
-  timeoutMs: number;
-}): Promise<SummarizeResult> {
-  const { text, targetLength, cfg, config, timeoutMs } = params;
-  if (targetLength < 100 || targetLength > 10_000) {
-    throw new Error(`Invalid targetLength: ${targetLength}`);
-  }
-
-  const startTime = Date.now();
-  const { ref } = resolveSummaryModelRef(cfg, config);
-  const resolved = resolveModel(ref.provider, ref.model, undefined, cfg);
-  if (!resolved.model) {
-    throw new Error(resolved.error ?? `Unknown summary model: ${ref.provider}/${ref.model}`);
-  }
-  const apiKey = requireApiKey(
-    await getApiKeyForModel({ model: resolved.model, cfg }),
-    ref.provider,
-  );
-
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-    try {
-      if (resolved.model.api === "ollama") {
-        const providerBaseUrl =
-          typeof cfg.models?.providers?.[resolved.model.provider]?.baseUrl === "string"
-            ? cfg.models.providers[resolved.model.provider]?.baseUrl
-            : undefined;
-        ensureCustomApiRegistered(
-          resolved.model.api,
-          createConfiguredOllamaStreamFn({
-            model: resolved.model,
-            providerBaseUrl,
-          }),
-        );
-      }
-      const res = await completeSimple(
-        resolved.model,
-        {
-          messages: [
-            {
-              role: "user",
-              content:
-                `You are an assistant that summarizes texts concisely while keeping the most important information. ` +
-                `Summarize the text to approximately ${targetLength} characters. Maintain the original tone and style. ` +
-                `Reply only with the summary, without additional explanations.\n\n` +
-                `<text_to_summarize>\n${text}\n</text_to_summarize>`,
-              timestamp: Date.now(),
-            },
-          ],
-        },
-        {
-          apiKey,
-          maxTokens: Math.ceil(targetLength / 2),
-          temperature: 0.3,
-          signal: controller.signal,
-        },
-      );
-
-      const summary = res.content
-        .filter(isTextContentBlock)
-        .map((block) => block.text.trim())
-        .filter(Boolean)
-        .join(" ")
-        .trim();
-
-      if (!summary) {
-        throw new Error("No summary returned");
-      }
-
-      return {
-        summary,
-        latencyMs: Date.now() - startTime,
-        inputLength: text.length,
-        outputLength: summary.length,
-      };
-    } finally {
-      clearTimeout(timeout);
-    }
-  } catch (err) {
-    const error = err as Error;
-    if (error.name === "AbortError") {
-      throw new Error("Summarization timed out", { cause: err });
-    }
-    throw err;
-  }
 }
 
 export function scheduleCleanup(
@@ -632,14 +476,10 @@ export async function openaiTTS(params: {
   baseUrl: string;
   model: string;
   voice: string;
-  speed?: number;
-  instructions?: string;
   responseFormat: "mp3" | "opus" | "pcm";
   timeoutMs: number;
 }): Promise<Buffer> {
-  const { text, apiKey, baseUrl, model, voice, speed, instructions, responseFormat, timeoutMs } =
-    params;
-  const effectiveInstructions = resolveOpenAITtsInstructions(model, instructions);
+  const { text, apiKey, baseUrl, model, voice, responseFormat, timeoutMs } = params;
 
   if (!isValidOpenAIModel(model, baseUrl)) {
     throw new Error(`Invalid model: ${model}`);
@@ -663,8 +503,6 @@ export async function openaiTTS(params: {
         input: text,
         voice,
         response_format: responseFormat,
-        ...(speed != null && { speed }),
-        ...(effectiveInstructions != null && { instructions: effectiveInstructions }),
       }),
       signal: controller.signal,
     });
@@ -715,10 +553,4 @@ export async function edgeTTS(params: {
     timeout: config.timeoutMs ?? timeoutMs,
   });
   await tts.ttsPromise(text, outputPath);
-
-  const { size } = statSync(outputPath);
-
-  if (size === 0) {
-    throw new Error("Edge TTS produced empty audio file");
-  }
 }

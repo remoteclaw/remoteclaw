@@ -1,6 +1,43 @@
 import type { Block, KnownBlock } from "@slack/web-api";
-import type { InteractiveReply } from "../../../src/interactive/payload.js";
-import { truncateSlackText } from "./truncate.js";
+import { truncateSlackText } from "../../../src/slack/truncate.js";
+
+type InteractiveButtonStyle = "primary" | "secondary" | "success" | "danger";
+
+type InteractiveReplyButton = {
+  label: string;
+  value: string;
+  style?: InteractiveButtonStyle;
+};
+
+type InteractiveReplyOption = {
+  label: string;
+  value: string;
+};
+
+type InteractiveReplyTextBlock = {
+  type: "text";
+  text: string;
+};
+
+type InteractiveReplyButtonsBlock = {
+  type: "buttons";
+  buttons: InteractiveReplyButton[];
+};
+
+type InteractiveReplySelectBlock = {
+  type: "select";
+  placeholder?: string;
+  options: InteractiveReplyOption[];
+};
+
+type InteractiveReplyBlock =
+  | InteractiveReplyTextBlock
+  | InteractiveReplyButtonsBlock
+  | InteractiveReplySelectBlock;
+
+type InteractiveReply = {
+  blocks: InteractiveReplyBlock[];
+};
 
 const SLACK_REPLY_BUTTON_ACTION_ID = "openclaw:reply_button";
 const SLACK_REPLY_SELECT_ACTION_ID = "openclaw:reply_select";

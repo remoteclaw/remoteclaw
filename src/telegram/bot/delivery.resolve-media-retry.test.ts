@@ -35,7 +35,6 @@ vi.mock("../sticker-cache.js", () => ({
 
 import { resolveMedia } from "./delivery.js";
 
-
 const MAX_MEDIA_BYTES = 10_000_000;
 const BOT_TOKEN = "tok123";
 

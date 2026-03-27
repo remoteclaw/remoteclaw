@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../../../src/config/config.js";
+import type { RemoteClawConfig } from "../../../../src/config/config.js";
 import { clearPluginCommands, registerPluginCommand } from "../../../../src/plugins/commands.js";
 import type { RuntimeEnv } from "../../../../src/runtime.js";
 
@@ -61,7 +61,7 @@ const {
   createNoopThreadBindingManagerMock: vi.fn(() => ({ stop: vi.fn() })),
   createThreadBindingManagerMock: vi.fn(() => ({ stop: vi.fn() })),
   getAcpSessionStatusMock: vi.fn(
-    async (_params: { cfg: OpenClawConfig; sessionKey: string; signal?: AbortSignal }) => ({
+    async (_params: { cfg: RemoteClawConfig; sessionKey: string; signal?: AbortSignal }) => ({
       state: "idle",
     }),
   ),
@@ -289,7 +289,7 @@ describe("monitorDiscordProvider real plugin registry", () => {
     exit: vi.fn(),
   });
 
-  const baseConfig = (): OpenClawConfig =>
+  const baseConfig = (): RemoteClawConfig =>
     ({
       channels: {
         discord: {
@@ -298,7 +298,7 @@ describe("monitorDiscordProvider real plugin registry", () => {
           },
         },
       },
-    }) as OpenClawConfig;
+    }) as RemoteClawConfig;
 
   beforeEach(() => {
     clearPluginCommands();
@@ -347,7 +347,7 @@ describe("monitorDiscordProvider real plugin registry", () => {
       }),
     ).toEqual({ ok: true });
 
-    const { monitorDiscordProvider } = await import("./provider.js");
+    const { monitorDiscordProvider } = await import("../../../../src/discord/monitor/provider.js");
 
     await monitorDiscordProvider({
       config: baseConfig(),

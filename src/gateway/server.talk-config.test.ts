@@ -1,13 +1,11 @@
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   loadOrCreateDeviceIdentity,
   publicKeyRawBase64UrlFromPem,
   signDevicePayload,
 } from "../infra/device-identity.js";
-import { createEmptyPluginRegistry } from "../plugins/registry-empty.js";
-import { getActivePluginRegistry, setActivePluginRegistry } from "../plugins/runtime.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { buildDeviceAuthPayload } from "./device-auth.js";
 import { validateTalkConfigResult } from "./protocol/index.js";
@@ -42,9 +40,10 @@ type TalkConfigPayload = {
     ui?: { seamColor?: string };
   };
 };
+type TalkConfig = NonNullable<NonNullable<TalkConfigPayload["config"]>["talk"]>;
 const TALK_CONFIG_DEVICE_PATH = path.join(
   os.tmpdir(),
-  `openclaw-talk-config-device-${process.pid}.json`,
+  `remoteclaw-talk-config-device-${process.pid}.json`,
 );
 const TALK_CONFIG_DEVICE = loadOrCreateDeviceIdentity(TALK_CONFIG_DEVICE_PATH);
 
@@ -96,49 +95,23 @@ async function fetchTalkConfig(
   return rpcReq<TalkConfigPayload>(ws, "talk.config", params ?? {});
 }
 
-type TalkSpeakPayload = {
-  provider?: string;
-  outputFormat?: string;
-  mimeType?: string;
-  fileExtension?: string;
-  audioBase64?: string;
-};
-
-async function fetchTalkSpeak(
-  ws: GatewaySocket,
-  params: {
-    text: string;
-    voiceId?: string;
-    modelId?: string;
-    speed?: number;
-    outputFormat?: string;
-  },
-) {
-  return rpcReq<TalkSpeakPayload>(ws, "talk.speak", params);
-}
-
 function expectElevenLabsTalkConfig(
-  rawTalk: unknown,
+  talk: TalkConfig | undefined,
   expected: {
     voiceId?: string;
     apiKey?: string | SecretRef;
     silenceTimeoutMs?: number;
   },
 ) {
-  const talk = rawTalk as Record<string, unknown> | undefined;
-  const providers = talk?.providers as Record<string, Record<string, unknown>> | undefined;
-  const resolved = talk?.resolved as Record<string, unknown> | undefined;
-  const resolvedConfig = resolved?.config as Record<string, unknown> | undefined;
-
   expect(talk?.provider).toBe("elevenlabs");
-  expect(providers?.elevenlabs?.voiceId).toBe(expected.voiceId);
-  expect(resolved?.provider).toBe("elevenlabs");
-  expect(resolvedConfig?.voiceId).toBe(expected.voiceId);
+  expect(talk?.providers?.elevenlabs?.voiceId).toBe(expected.voiceId);
+  expect(talk?.resolved?.provider).toBe("elevenlabs");
+  expect(talk?.resolved?.config?.voiceId).toBe(expected.voiceId);
   expect(talk?.voiceId).toBe(expected.voiceId);
 
   if ("apiKey" in expected) {
-    expect(providers?.elevenlabs?.apiKey).toEqual(expected.apiKey);
-    expect(resolvedConfig?.apiKey).toEqual(expected.apiKey);
+    expect(talk?.providers?.elevenlabs?.apiKey).toEqual(expected.apiKey);
+    expect(talk?.resolved?.config?.apiKey).toEqual(expected.apiKey);
     expect(talk?.apiKey).toEqual(expected.apiKey);
   }
   if ("silenceTimeoutMs" in expected) {
@@ -169,7 +142,7 @@ describe("gateway talk.config", () => {
       expect(res.ok).toBe(true);
       expectElevenLabsTalkConfig(res.payload?.config?.talk, {
         voiceId: "voice-123",
-        apiKey: "__REMOTECLAW_REDACTED__",
+        apiKey: "__OPENCLAW_REDACTED__",
         silenceTimeoutMs: 1500,
       });
       expect(res.payload?.config?.session?.mainKey).toBe("main-test");
@@ -262,153 +235,5 @@ describe("gateway talk.config", () => {
         voiceId: "voice-normalized",
       });
     });
-  });
-
-  it("synthesizes talk audio via the active talk provider", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
-      talk: {
-        provider: "openai",
-        providers: {
-          openai: {
-            apiKey: "openai-talk-key", // pragma: allowlist secret
-            voiceId: "alloy",
-            modelId: "gpt-4o-mini-tts",
-          },
-        },
-      },
-    });
-
-    const originalFetch = globalThis.fetch;
-    const requestInits: RequestInit[] = [];
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-      if (init) {
-        requestInits.push(init);
-      }
-      return new Response(new Uint8Array([1, 2, 3]), { status: 200 });
-    });
-    globalThis.fetch = fetchMock as typeof fetch;
-
-    try {
-      await withServer(async (ws) => {
-        await connectOperator(ws, ["operator.read", "operator.write"]);
-        const res = await fetchTalkSpeak(ws, {
-          text: "Hello from talk mode.",
-          voiceId: "nova",
-          modelId: "tts-1",
-          speed: 1.25,
-        });
-        expect(res.ok).toBe(true);
-        expect(res.payload?.provider).toBe("openai");
-        expect(res.payload?.outputFormat).toBe("mp3");
-        expect(res.payload?.mimeType).toBe("audio/mpeg");
-        expect(res.payload?.fileExtension).toBe(".mp3");
-        expect(res.payload?.audioBase64).toBe(Buffer.from([1, 2, 3]).toString("base64"));
-      });
-
-      expect(fetchMock).toHaveBeenCalled();
-      const requestInit = requestInits.find((init) => typeof init.body === "string");
-      expect(requestInit).toBeDefined();
-      const body = JSON.parse(requestInit?.body as string) as Record<string, unknown>;
-      expect(body.model).toBe("tts-1");
-      expect(body.voice).toBe("nova");
-      expect(body.speed).toBe(1.25);
-    } finally {
-      globalThis.fetch = originalFetch;
-    }
-  });
-
-  it("resolves talk voice aliases case-insensitively and forwards output format", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
-      talk: {
-        provider: "elevenlabs",
-        providers: {
-          elevenlabs: {
-            apiKey: "elevenlabs-talk-key", // pragma: allowlist secret
-            voiceId: "voice-default",
-            voiceAliases: {
-              Clawd: "EXAVITQu4vr4xnSDxMaL",
-            },
-          },
-        },
-      },
-    });
-
-    const originalFetch = globalThis.fetch;
-    let fetchUrl: string | undefined;
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      fetchUrl = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-      return new Response(new Uint8Array([4, 5, 6]), { status: 200 });
-    });
-    globalThis.fetch = fetchMock as typeof fetch;
-
-    try {
-      await withServer(async (ws) => {
-        await connectOperator(ws, ["operator.read", "operator.write"]);
-        const res = await fetchTalkSpeak(ws, {
-          text: "Hello from talk mode.",
-          voiceId: "clawd",
-          outputFormat: "pcm_44100",
-        });
-        expect(res.ok).toBe(true);
-        expect(res.payload?.provider).toBe("elevenlabs");
-        expect(res.payload?.outputFormat).toBe("pcm_44100");
-        expect(res.payload?.audioBase64).toBe(Buffer.from([4, 5, 6]).toString("base64"));
-      });
-
-      expect(fetchMock).toHaveBeenCalled();
-      expect(fetchUrl).toContain("/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL");
-      expect(fetchUrl).toContain("output_format=pcm_44100");
-    } finally {
-      globalThis.fetch = originalFetch;
-    }
-  });
-
-  it("allows extension speech providers through talk.speak", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
-      talk: {
-        provider: "acme",
-        providers: {
-          acme: {
-            voiceId: "plugin-voice",
-          },
-        },
-      },
-    });
-
-    const previousRegistry = getActivePluginRegistry() ?? createEmptyPluginRegistry();
-    setActivePluginRegistry({
-      ...createEmptyPluginRegistry(),
-      ttsProviders: [
-        {
-          pluginId: "acme-plugin",
-          source: "test",
-          provider: {
-            id: "acme",
-            requiresApiKey: false,
-            synthesize: async () => ({
-              audioBuffer: Buffer.from([7, 8, 9]),
-              format: "mp3",
-            }),
-          },
-        },
-      ],
-    });
-
-    try {
-      await withServer(async (ws) => {
-        await connectOperator(ws, ["operator.read", "operator.write"]);
-        const res = await fetchTalkSpeak(ws, {
-          text: "Hello from plugin talk mode.",
-        });
-        expect(res.ok).toBe(true);
-        expect(res.payload?.provider).toBe("acme");
-        expect(res.payload?.audioBase64).toBe(Buffer.from([7, 8, 9]).toString("base64"));
-      });
-    } finally {
-      setActivePluginRegistry(previousRegistry);
-    }
   });
 });

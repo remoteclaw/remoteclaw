@@ -178,11 +178,11 @@ function patchTopLevelChannelConfig(params: {
 }
 
 export function setTopLevelChannelAllowFrom(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   channel: string;
   allowFrom: string[];
   enabled?: boolean;
-}): OpenClawConfig {
+}): RemoteClawConfig {
   return patchTopLevelChannelConfig({
     cfg: params.cfg,
     channel: params.channel,

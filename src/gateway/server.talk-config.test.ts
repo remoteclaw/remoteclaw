@@ -1,6 +1,6 @@
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   loadOrCreateDeviceIdentity,
   publicKeyRawBase64UrlFromPem,
@@ -94,6 +94,27 @@ async function fetchTalkConfig(
   params?: { includeSecrets?: boolean } | Record<string, unknown>,
 ) {
   return rpcReq<TalkConfigPayload>(ws, "talk.config", params ?? {});
+}
+
+type TalkSpeakPayload = {
+  provider?: string;
+  outputFormat?: string;
+  mimeType?: string;
+  fileExtension?: string;
+  audioBase64?: string;
+};
+
+async function fetchTalkSpeak(
+  ws: GatewaySocket,
+  params: {
+    text: string;
+    voiceId?: string;
+    modelId?: string;
+    speed?: number;
+    outputFormat?: string;
+  },
+) {
+  return rpcReq<TalkSpeakPayload>(ws, "talk.speak", params);
 }
 
 function expectElevenLabsTalkConfig(
@@ -360,19 +381,16 @@ describe("gateway talk.config", () => {
     const previousRegistry = getActivePluginRegistry() ?? createEmptyPluginRegistry();
     setActivePluginRegistry({
       ...createEmptyPluginRegistry(),
-      speechProviders: [
+      ttsProviders: [
         {
           pluginId: "acme-plugin",
           source: "test",
           provider: {
             id: "acme",
-            label: "Acme Speech",
-            isConfigured: () => true,
+            requiresApiKey: false,
             synthesize: async () => ({
               audioBuffer: Buffer.from([7, 8, 9]),
-              outputFormat: "mp3",
-              fileExtension: ".mp3",
-              voiceCompatible: false,
+              format: "mp3",
             }),
           },
         },

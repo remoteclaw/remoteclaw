@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { RemoteClawConfig } from "../config/config.js";
 import { captureEnv } from "../test-utils/env.js";
 import {
   loadConfigMock as loadConfig,
@@ -732,7 +733,7 @@ describe("callGateway password resolution", () => {
           default: { source: "env" },
         },
       },
-    } as unknown as OpenClawConfig);
+    } as unknown as RemoteClawConfig);
 
     await callGateway({ method: "health" });
 
@@ -755,7 +756,7 @@ describe("callGateway password resolution", () => {
           default: { source: "env" },
         },
       },
-    } as unknown as OpenClawConfig);
+    } as unknown as RemoteClawConfig);
 
     await callGateway({ method: "health" });
 
@@ -778,7 +779,7 @@ describe("callGateway password resolution", () => {
           default: { source: "env" },
         },
       },
-    } as unknown as OpenClawConfig);
+    } as unknown as RemoteClawConfig);
 
     await callGateway({ method: "health" });
 
@@ -801,7 +802,7 @@ describe("callGateway password resolution", () => {
           default: { source: "env" },
         },
       },
-    } as unknown as OpenClawConfig);
+    } as unknown as RemoteClawConfig);
 
     await callGateway({ method: "health" });
 
@@ -828,7 +829,7 @@ describe("callGateway password resolution", () => {
           default: { source: "env" },
         },
       },
-    } as unknown as OpenClawConfig);
+    } as unknown as RemoteClawConfig);
 
     await expect(callGateway({ method: "health" })).rejects.toThrow("gateway.auth.token");
   });
@@ -850,7 +851,7 @@ describe("callGateway password resolution", () => {
             default: { source: "env" },
           },
         },
-      } as unknown as OpenClawConfig);
+      } as unknown as RemoteClawConfig);
 
       await callGateway({ method: "health" });
 
@@ -878,7 +879,7 @@ describe("callGateway password resolution", () => {
           default: { source: "env" },
         },
       },
-    } as unknown as OpenClawConfig);
+    } as unknown as RemoteClawConfig);
 
     await callGateway({ method: "health" });
 
@@ -902,7 +903,7 @@ describe("callGateway password resolution", () => {
           default: { source: "env" },
         },
       },
-    } as unknown as OpenClawConfig);
+    } as unknown as RemoteClawConfig);
 
     await callGateway({ method: "health" });
 
@@ -926,7 +927,7 @@ describe("callGateway password resolution", () => {
           default: { source: "env" },
         },
       },
-    } as unknown as OpenClawConfig);
+    } as unknown as RemoteClawConfig);
 
     await callGateway({ method: "health" });
 
@@ -950,7 +951,7 @@ describe("callGateway password resolution", () => {
           default: { source: "env" },
         },
       },
-    } as unknown as OpenClawConfig);
+    } as unknown as RemoteClawConfig);
 
     await callGateway({ method: "health" });
 
@@ -976,7 +977,7 @@ describe("callGateway password resolution", () => {
           default: { source: "env" },
         },
       },
-    } as unknown as OpenClawConfig);
+    } as unknown as RemoteClawConfig);
 
     await callGateway({ method: "health" });
 
@@ -1001,7 +1002,7 @@ describe("callGateway password resolution", () => {
           default: { source: "env" },
         },
       },
-    } as unknown as OpenClawConfig);
+    } as unknown as RemoteClawConfig);
 
     await callGateway({ method: "health" });
 
@@ -1026,7 +1027,7 @@ describe("callGateway password resolution", () => {
           default: { source: "env" },
         },
       },
-    } as unknown as OpenClawConfig);
+    } as unknown as RemoteClawConfig);
 
     await callGateway({ method: "health" });
 
@@ -1053,7 +1054,7 @@ describe("callGateway password resolution", () => {
             default: { source: "env" },
           },
         },
-      } as unknown as OpenClawConfig);
+      } as unknown as RemoteClawConfig);
 
       await callGateway({ method: "health" });
 

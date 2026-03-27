@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { captureEnv } from "../test-utils/env.js";
 import { isRecord } from "../utils.js";
 import { loadEnabledBundleMcpConfig } from "./bundle-mcp.js";
@@ -65,7 +65,7 @@ describe("loadEnabledBundleMcpConfig", () => {
         "utf-8",
       );
 
-      const config: OpenClawConfig = {
+      const config: RemoteClawConfig = {
         plugins: {
           entries: {
             "bundle-probe": { enabled: true },
@@ -144,7 +144,7 @@ describe("loadEnabledBundleMcpConfig", () => {
         "utf-8",
       );
 
-      const config: OpenClawConfig = {
+      const config: RemoteClawConfig = {
         plugins: {
           entries: {
             "inline-enabled": { enabled: true },

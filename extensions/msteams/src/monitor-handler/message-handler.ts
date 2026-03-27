@@ -9,7 +9,7 @@ import {
   evaluateSenderGroupAccessForPolicy,
   resolveSenderScopedGroupPolicy,
   recordPendingHistoryEntryIfEnabled,
-  resolveControlCommandGate,
+  resolveDualTextControlCommandGate,
   resolveDefaultGroupPolicy,
   isDangerousNameMatchingEnabled,
   readStoreAllowFromForDmPolicy,
@@ -19,7 +19,7 @@ import {
   resolveEffectiveAllowFromLists,
   resolveDmGroupAccessWithLists,
   type HistoryEntry,
-} from "remoteclaw/plugin-sdk";
+} from "../../runtime-api.js";
 import {
   buildMSTeamsAttachmentPlaceholder,
   buildMSTeamsMediaPayload,
@@ -153,18 +153,18 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
     const dmAllowFrom = msteamsCfg?.allowFrom ?? [];
     const configuredDmAllowFrom = dmAllowFrom.map((v) => String(v));
     const groupAllowFrom = msteamsCfg?.groupAllowFrom;
-
-    const defaultGroupPolicy = resolveDefaultGroupPolicy(cfg);
-    const groupPolicy =
-      !isDirectMessage && msteamsCfg
-        ? (msteamsCfg.groupPolicy ?? defaultGroupPolicy ?? "allowlist")
-        : "disabled";
     const resolvedAllowFromLists = resolveEffectiveAllowFromLists({
       allowFrom: configuredDmAllowFrom,
       groupAllowFrom,
       storeAllowFrom: storedAllowFrom,
       dmPolicy,
     });
+
+    const defaultGroupPolicy = resolveDefaultGroupPolicy(cfg);
+    const groupPolicy =
+      !isDirectMessage && msteamsCfg
+        ? (msteamsCfg.groupPolicy ?? defaultGroupPolicy ?? "allowlist")
+        : "disabled";
     const effectiveGroupAllowFrom = resolvedAllowFromLists.effectiveGroupAllowFrom;
     const teamId = activity.channelData?.team?.id;
     const teamName = activity.channelData?.team?.name;
@@ -177,17 +177,10 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
       channelName,
       allowNameMatching: isDangerousNameMatchingEnabled(msteamsCfg),
     });
-    // When a route-level (team/channel) allowlist is configured but the sender allowlist is
-    // empty, resolveSenderScopedGroupPolicy would otherwise downgrade the policy to "open",
-    // allowing any sender. To close this bypass (GHSA-g7cr-9h7q-4qxq), treat an empty sender
-    // allowlist as deny-all whenever the route allowlist is active.
-    const senderGroupPolicy =
-      channelGate.allowlistConfigured && effectiveGroupAllowFrom.length === 0
-        ? groupPolicy
-        : resolveSenderScopedGroupPolicy({
-            groupPolicy,
-            groupAllowFrom: effectiveGroupAllowFrom,
-          });
+    const senderGroupPolicy = resolveSenderScopedGroupPolicy({
+      groupPolicy,
+      groupAllowFrom: effectiveGroupAllowFrom,
+    });
     const access = resolveDmGroupAccessWithLists({
       isGroup: !isDirectMessage,
       dmPolicy,
@@ -304,18 +297,14 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
       senderName,
       allowNameMatching: isDangerousNameMatchingEnabled(msteamsCfg),
     });
-    const hasControlCommandInMessage = core.channel.text.hasControlCommand(text, cfg);
-    const commandGate = resolveControlCommandGate({
+    const { commandAuthorized, shouldBlock } = resolveDualTextControlCommandGate({
       useAccessGroups,
-      authorizers: [
-        { configured: commandDmAllowFrom.length > 0, allowed: ownerAllowedForCommands },
-        { configured: effectiveGroupAllowFrom.length > 0, allowed: groupAllowedForCommands },
-      ],
-      allowTextCommands: true,
-      hasControlCommand: hasControlCommandInMessage,
+      primaryConfigured: commandDmAllowFrom.length > 0,
+      primaryAllowed: ownerAllowedForCommands,
+      secondaryConfigured: effectiveGroupAllowFrom.length > 0,
+      secondaryAllowed: groupAllowedForCommands,
+      hasControlCommand: core.channel.text.hasControlCommand(text, cfg),
     });
-    const commandAuthorized = commandGate.commandAuthorized;
-    const shouldBlock = commandGate.shouldBlock;
     if (shouldBlock) {
       logInboundDrop({
         log: logVerboseMessage,
@@ -544,7 +533,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
       storePath,
       sessionKey: ctxPayload.SessionKey ?? route.sessionKey,
       ctx: ctxPayload,
-      onRecordError: (err: any) => {
+      onRecordError: (err) => {
         logVerboseMessage(`msteams: failed updating session meta: ${String(err)}`);
       },
     });
@@ -579,7 +568,9 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
         cfg,
         ctxPayload,
         dispatcher,
-        onSettled: () => markDispatchIdle(),
+        onSettled: () => {
+          markDispatchIdle();
+        },
         replyOptions,
       });
 
@@ -621,7 +612,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
 
   const inboundDebouncer = core.channel.debounce.createInboundDebouncer<MSTeamsDebounceEntry>({
     debounceMs: inboundDebounceMs,
-    buildKey: (entry: any) => {
+    buildKey: (entry) => {
       const conversationId = normalizeMSTeamsConversationId(
         entry.context.activity.conversation?.id ?? "",
       );
@@ -632,7 +623,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
       }
       return `msteams:${appId}:${conversationId}:${senderId}`;
     },
-    shouldDebounce: (entry: any) => {
+    shouldDebounce: (entry) => {
       if (!entry.text.trim()) {
         return false;
       }
@@ -641,7 +632,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
       }
       return !core.channel.text.hasControlCommand(entry.text, cfg);
     },
-    onFlush: async (entries: any[]) => {
+    onFlush: async (entries) => {
       const last = entries.at(-1);
       if (!last) {
         return;
@@ -651,18 +642,18 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
         return;
       }
       const combinedText = entries
-        .map((entry: any) => entry.text)
+        .map((entry) => entry.text)
         .filter(Boolean)
         .join("\n");
       if (!combinedText.trim()) {
         return;
       }
       const combinedRawText = entries
-        .map((entry: any) => entry.rawText)
+        .map((entry) => entry.rawText)
         .filter(Boolean)
         .join("\n");
-      const wasMentioned = entries.some((entry: any) => entry.wasMentioned);
-      const implicitMention = entries.some((entry: any) => entry.implicitMention);
+      const wasMentioned = entries.some((entry) => entry.wasMentioned);
+      const implicitMention = entries.some((entry) => entry.implicitMention);
       await handleTeamsMessageNow({
         context: last.context,
         rawText: combinedRawText,
@@ -672,7 +663,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
         implicitMention,
       });
     },
-    onError: (err: any) => {
+    onError: (err) => {
       runtime.error?.(`msteams debounce flush failed: ${String(err)}`);
     },
   });

@@ -3,10 +3,10 @@ import {
   createTypingCallbacks,
   logTypingFailure,
   resolveChannelMediaMaxBytes,
-  type RemoteClawConfig,
+  type OpenClawConfig,
   type MSTeamsReplyStyle,
   type RuntimeEnv,
-} from "remoteclaw/plugin-sdk";
+} from "../runtime-api.js";
 import type { MSTeamsAccessTokenProvider } from "./attachments/types.js";
 import type { StoredConversationReference } from "./conversation-store.js";
 import {
@@ -26,7 +26,7 @@ import { getMSTeamsRuntime } from "./runtime.js";
 import type { MSTeamsTurnContext } from "./sdk-types.js";
 
 export function createMSTeamsReplyDispatcher(params: {
-  cfg: RemoteClawConfig;
+  cfg: OpenClawConfig;
   agentId: string;
   accountId?: string;
   runtime: RuntimeEnv;
@@ -97,7 +97,7 @@ export function createMSTeamsReplyDispatcher(params: {
       ...prefixOptions,
       humanDelay: core.channel.reply.resolveHumanDelayConfig(params.cfg, params.agentId),
       typingCallbacks,
-      deliver: async (payload: any) => {
+      deliver: async (payload) => {
         const tableMode = core.channel.text.resolveMarkdownTableMode({
           cfg: params.cfg,
           channel: "msteams",
@@ -136,7 +136,7 @@ export function createMSTeamsReplyDispatcher(params: {
           params.onSentMessageIds?.(ids);
         }
       },
-      onError: (err: any, info: any) => {
+      onError: (err, info) => {
         const errMsg = formatUnknownError(err);
         const classification = classifyMSTeamsSendError(err);
         const hint = formatMSTeamsSendErrorHint(classification);

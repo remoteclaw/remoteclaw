@@ -3,6 +3,7 @@ node_modules
 .env
 docker-compose.extra.yml
 dist
+dist-runtime
 pnpm-lock.yaml
 bun.lock
 bun.lockb

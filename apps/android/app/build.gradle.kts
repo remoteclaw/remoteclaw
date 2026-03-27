@@ -63,11 +63,26 @@ android {
         applicationId = "org.remoteclaw.android"
         minSdk = 31
         targetSdk = 36
-        versionCode = 202603110
-        versionName = "2026.3.11"
+        versionCode = 2026032000
+        versionName = "2026.3.20"
         ndk {
             // Support all major ABIs — native libs are tiny (~47 KB per ABI)
             abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+        }
+    }
+
+    flavorDimensions += "store"
+
+    productFlavors {
+        create("play") {
+            dimension = "store"
+            buildConfigField("boolean", "OPENCLAW_ENABLE_SMS", "false")
+            buildConfigField("boolean", "OPENCLAW_ENABLE_CALL_LOG", "false")
+        }
+        create("thirdParty") {
+            dimension = "store"
+            buildConfigField("boolean", "OPENCLAW_ENABLE_SMS", "true")
+            buildConfigField("boolean", "OPENCLAW_ENABLE_CALL_LOG", "true")
         }
     }
 
@@ -131,8 +146,13 @@ androidComponents {
             .forEach { output ->
                 val versionName = output.versionName.orNull ?: "0"
                 val buildType = variant.buildType
-
-                val outputFileName = "remoteclaw-$versionName-$buildType.apk"
+                val flavorName = variant.flavorName?.takeIf { it.isNotBlank() }
+                val outputFileName =
+                    if (flavorName == null) {
+                        "remoteclaw-$versionName-$buildType.apk"
+                    } else {
+                        "remoteclaw-$versionName-$flavorName-$buildType.apk"
+                    }
                 output.outputFileName = outputFileName
             }
     }

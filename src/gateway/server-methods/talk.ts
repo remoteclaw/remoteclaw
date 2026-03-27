@@ -68,7 +68,13 @@ function resolveTalkVoiceId(
   if (!aliases) {
     return requested;
   }
-  return aliases[normalizeAliasKey(requested)] ?? requested;
+  const normalizedRequested = normalizeAliasKey(requested);
+  for (const [alias, voiceId] of Object.entries(aliases)) {
+    if (normalizeAliasKey(alias) === normalizedRequested) {
+      return voiceId;
+    }
+  }
+  return requested;
 }
 
 function readTalkVoiceSettings(
@@ -111,86 +117,59 @@ function buildTalkTtsConfig(
     auto: "always",
     provider,
   };
+  const baseUrl = trimString(providerConfig.baseUrl);
+  const voiceId = trimString(providerConfig.voiceId);
+  const modelId = trimString(providerConfig.modelId);
+  const languageCode = trimString(providerConfig.languageCode);
 
   if (provider === "elevenlabs") {
+    const seed = finiteNumber(providerConfig.seed);
+    const applyTextNormalization = normalizeTextNormalization(
+      providerConfig.applyTextNormalization,
+    );
+    const voiceSettings = readTalkVoiceSettings(providerConfig);
     talkTts.elevenlabs = {
       ...baseTts.elevenlabs,
       ...(typeof providerConfig.apiKey === "string" ? { apiKey: providerConfig.apiKey } : {}),
-      ...(trimString(providerConfig.baseUrl) == null
-        ? {}
-        : { baseUrl: trimString(providerConfig.baseUrl) }),
-      ...(trimString(providerConfig.voiceId) == null
-        ? {}
-        : { voiceId: trimString(providerConfig.voiceId) }),
-      ...(trimString(providerConfig.modelId) == null
-        ? {}
-        : { modelId: trimString(providerConfig.modelId) }),
-      ...(finiteNumber(providerConfig.seed) == null
-        ? {}
-        : { seed: finiteNumber(providerConfig.seed) }),
-      ...(normalizeTextNormalization(providerConfig.applyTextNormalization) == null
-        ? {}
-        : {
-            applyTextNormalization: normalizeTextNormalization(
-              providerConfig.applyTextNormalization,
-            ),
-          }),
-      ...(trimString(providerConfig.languageCode) == null
-        ? {}
-        : { languageCode: trimString(providerConfig.languageCode) }),
-      ...(readTalkVoiceSettings(providerConfig) == null
-        ? {}
-        : { voiceSettings: readTalkVoiceSettings(providerConfig) }),
+      ...(baseUrl == null ? {} : { baseUrl }),
+      ...(voiceId == null ? {} : { voiceId }),
+      ...(modelId == null ? {} : { modelId }),
+      ...(seed == null ? {} : { seed }),
+      ...(applyTextNormalization == null ? {} : { applyTextNormalization }),
+      ...(languageCode == null ? {} : { languageCode }),
+      ...(voiceSettings == null ? {} : { voiceSettings }),
     };
   } else if (provider === "openai") {
+    const speed = finiteNumber(providerConfig.speed);
+    const instructions = trimString(providerConfig.instructions);
     talkTts.openai = {
       ...baseTts.openai,
       ...(typeof providerConfig.apiKey === "string" ? { apiKey: providerConfig.apiKey } : {}),
-      ...(trimString(providerConfig.baseUrl) == null
-        ? {}
-        : { baseUrl: trimString(providerConfig.baseUrl) }),
-      ...(trimString(providerConfig.modelId) == null
-        ? {}
-        : { model: trimString(providerConfig.modelId) }),
-      ...(trimString(providerConfig.voiceId) == null
-        ? {}
-        : { voice: trimString(providerConfig.voiceId) }),
-      ...(finiteNumber(providerConfig.speed) == null
-        ? {}
-        : { speed: finiteNumber(providerConfig.speed) }),
-      ...(trimString(providerConfig.instructions) == null
-        ? {}
-        : { instructions: trimString(providerConfig.instructions) }),
+      ...(baseUrl == null ? {} : { baseUrl }),
+      ...(modelId == null ? {} : { model: modelId }),
+      ...(voiceId == null ? {} : { voice: voiceId }),
+      ...(speed == null ? {} : { speed }),
+      ...(instructions == null ? {} : { instructions }),
     };
   } else if (provider === "microsoft") {
+    const outputFormat = trimString(providerConfig.outputFormat);
+    const pitch = trimString(providerConfig.pitch);
+    const rate = trimString(providerConfig.rate);
+    const volume = trimString(providerConfig.volume);
+    const proxy = trimString(providerConfig.proxy);
+    const timeoutMs = finiteNumber(providerConfig.timeoutMs);
     talkTts.microsoft = {
       ...baseTts.microsoft,
       enabled: true,
-      ...(trimString(providerConfig.voiceId) == null
-        ? {}
-        : { voice: trimString(providerConfig.voiceId) }),
-      ...(trimString(providerConfig.languageCode) == null
-        ? {}
-        : { lang: trimString(providerConfig.languageCode) }),
-      ...(trimString(providerConfig.outputFormat) == null
-        ? {}
-        : { outputFormat: trimString(providerConfig.outputFormat) }),
-      ...(trimString(providerConfig.pitch) == null
-        ? {}
-        : { pitch: trimString(providerConfig.pitch) }),
-      ...(trimString(providerConfig.rate) == null ? {} : { rate: trimString(providerConfig.rate) }),
-      ...(trimString(providerConfig.volume) == null
-        ? {}
-        : { volume: trimString(providerConfig.volume) }),
-      ...(trimString(providerConfig.proxy) == null
-        ? {}
-        : { proxy: trimString(providerConfig.proxy) }),
-      ...(finiteNumber(providerConfig.timeoutMs) == null
-        ? {}
-        : { timeoutMs: finiteNumber(providerConfig.timeoutMs) }),
+      ...(voiceId == null ? {} : { voice: voiceId }),
+      ...(languageCode == null ? {} : { lang: languageCode }),
+      ...(outputFormat == null ? {} : { outputFormat }),
+      ...(pitch == null ? {} : { pitch }),
+      ...(rate == null ? {} : { rate }),
+      ...(volume == null ? {} : { volume }),
+      ...(proxy == null ? {} : { proxy }),
+      ...(timeoutMs == null ? {} : { timeoutMs }),
     };
-  } else {
-    return { error: `talk.speak unavailable: unsupported talk provider '${resolved.provider}'` };
   }
 
   return {
@@ -213,6 +192,7 @@ function buildTalkSpeakOverrides(
 ): TtsDirectiveOverrides {
   const voiceId = resolveTalkVoiceId(providerConfig, trimString(params.voiceId));
   const modelId = trimString(params.modelId);
+  const outputFormat = trimString(params.outputFormat);
   const speed = finiteNumber(params.speed);
   const seed = finiteNumber(params.seed);
   const normalize = normalizeTextNormalization(params.normalize);
@@ -236,6 +216,7 @@ function buildTalkSpeakOverrides(
     overrides.elevenlabs = {
       ...(voiceId == null ? {} : { voiceId }),
       ...(modelId == null ? {} : { modelId }),
+      ...(outputFormat == null ? {} : { outputFormat }),
       ...(seed == null ? {} : { seed }),
       ...(normalize == null ? {} : { applyTextNormalization: normalize }),
       ...(language == null ? {} : { languageCode: language }),
@@ -254,7 +235,10 @@ function buildTalkSpeakOverrides(
   }
 
   if (provider === "microsoft") {
-    overrides.microsoft = voiceId == null ? undefined : { voice: voiceId };
+    overrides.microsoft = {
+      ...(voiceId == null ? {} : { voice: voiceId }),
+      ...(outputFormat == null ? {} : { outputFormat }),
+    };
   }
 
   return overrides;

@@ -1,5 +1,7 @@
 import com.android.build.api.variant.impl.VariantOutputImpl
 
+val dnsjavaInetAddressResolverService = "META-INF/services/java.net.spi.InetAddressResolverProvider"
+
 val androidStoreFile = providers.gradleProperty("REMOTECLAW_ANDROID_STORE_FILE").orNull?.takeIf { it.isNotBlank() }
 val androidStorePassword = providers.gradleProperty("REMOTECLAW_ANDROID_STORE_PASSWORD").orNull?.takeIf { it.isNotBlank() }
 val androidKeyAlias = providers.gradleProperty("REMOTECLAW_ANDROID_KEY_ALIAS").orNull?.takeIf { it.isNotBlank() }
@@ -63,11 +65,26 @@ android {
         applicationId = "org.remoteclaw.android"
         minSdk = 31
         targetSdk = 36
-        versionCode = 202603090
-        versionName = "2026.3.9"
+        versionCode = 2026032000
+        versionName = "2026.3.20"
         ndk {
             // Support all major ABIs — native libs are tiny (~47 KB per ABI)
             abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+        }
+    }
+
+    flavorDimensions += "store"
+
+    productFlavors {
+        create("play") {
+            dimension = "store"
+            buildConfigField("boolean", "OPENCLAW_ENABLE_SMS", "false")
+            buildConfigField("boolean", "OPENCLAW_ENABLE_CALL_LOG", "false")
+        }
+        create("thirdParty") {
+            dimension = "store"
+            buildConfigField("boolean", "OPENCLAW_ENABLE_SMS", "true")
+            buildConfigField("boolean", "OPENCLAW_ENABLE_CALL_LOG", "true")
         }
     }
 
@@ -78,6 +95,9 @@ android {
             }
             isMinifyEnabled = true
             isShrinkResources = true
+            ndk {
+                debugSymbolLevel = "SYMBOL_TABLE"
+            }
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         debug {
@@ -104,6 +124,10 @@ android {
                     "/META-INF/LICENSE*.txt",
                     "DebugProbesKt.bin",
                     "kotlin-tooling-metadata.json",
+                    "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
+                    "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
+                    "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
+                    "org/bouncycastle/x509/CertPathReviewerMessages*.properties",
                 )
         }
     }
@@ -131,8 +155,13 @@ androidComponents {
             .forEach { output ->
                 val versionName = output.versionName.orNull ?: "0"
                 val buildType = variant.buildType
-
-                val outputFileName = "remoteclaw-$versionName-$buildType.apk"
+                val flavorName = variant.flavorName?.takeIf { it.isNotBlank() }
+                val outputFileName =
+                    if (flavorName == null) {
+                        "remoteclaw-$versionName-$buildType.apk"
+                    } else {
+                        "remoteclaw-$versionName-$flavorName-$buildType.apk"
+                    }
                 output.outputFileName = outputFileName
             }
     }
@@ -168,7 +197,6 @@ dependencies {
     // material-icons-extended pulled in full icon set (~20 MB DEX). Only ~18 icons used.
     // R8 will tree-shake unused icons when minify is enabled on release builds.
     implementation("androidx.compose.material:material-icons-extended")
-    implementation("androidx.navigation:navigation-compose:2.9.7")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 
@@ -210,4 +238,46 @@ dependencies {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+}
+
+val stripReleaseDnsjavaServiceDescriptor =
+    tasks.register("stripReleaseDnsjavaServiceDescriptor") {
+        val mergedJar =
+            layout.buildDirectory.file(
+                "intermediates/merged_java_res/release/mergeReleaseJavaResource/base.jar",
+            )
+
+        inputs.file(mergedJar)
+        outputs.file(mergedJar)
+
+        doLast {
+            val jarFile = mergedJar.get().asFile
+            if (!jarFile.exists()) {
+                return@doLast
+            }
+
+            val unpackDir = temporaryDir.resolve("merged-java-res")
+            delete(unpackDir)
+            copy {
+                from(zipTree(jarFile))
+                into(unpackDir)
+                exclude(dnsjavaInetAddressResolverService)
+            }
+            delete(jarFile)
+            ant.invokeMethod(
+                "zip",
+                mapOf(
+                    "destfile" to jarFile.absolutePath,
+                    "basedir" to unpackDir.absolutePath,
+                ),
+            )
+        }
+    }
+
+tasks.matching { it.name == "stripReleaseDnsjavaServiceDescriptor" }.configureEach {
+    dependsOn("mergeReleaseJavaResource")
+}
+
+tasks.matching { it.name == "minifyReleaseWithR8" }.configureEach {
+    dependsOn(stripReleaseDnsjavaServiceDescriptor)
 }

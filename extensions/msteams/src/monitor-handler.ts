@@ -1,4 +1,4 @@
-import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk";
+import type { OpenClawConfig, RuntimeEnv } from "../runtime-api.js";
 import type { MSTeamsConversationStore } from "./conversation-store.js";
 import { buildFileInfoCard, parseFileConsentInvoke, uploadToConsentUrl } from "./file-consent.js";
 import { normalizeMSTeamsConversationId } from "./inbound.js";
@@ -21,17 +21,11 @@ export type MSTeamsActivityHandler = {
   onMembersAdded: (
     handler: (context: unknown, next: () => Promise<void>) => Promise<void>,
   ) => MSTeamsActivityHandler;
-  onReactionsAdded: (
-    handler: (context: unknown, next: () => Promise<void>) => Promise<void>,
-  ) => MSTeamsActivityHandler;
-  onReactionsRemoved: (
-    handler: (context: unknown, next: () => Promise<void>) => Promise<void>,
-  ) => MSTeamsActivityHandler;
   run?: (context: unknown) => Promise<void>;
 };
 
 export type MSTeamsMessageHandlerDeps = {
-  cfg: RemoteClawConfig;
+  cfg: OpenClawConfig;
   runtime: RuntimeEnv;
   appId: string;
   adapter: MSTeamsAdapter;

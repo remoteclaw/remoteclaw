@@ -8,7 +8,7 @@ import {
   extensionForMime,
   extractOriginalFilename,
   getFileExtension,
-} from "remoteclaw/plugin-sdk";
+} from "../runtime-api.js";
 
 /**
  * Detect MIME type from URL extension or data URL.

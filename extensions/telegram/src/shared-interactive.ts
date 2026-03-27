@@ -1,5 +1,45 @@
-import type { InteractiveReply, InteractiveReplyButton } from "../../../src/interactive/payload.js";
-import type { TelegramInlineButton, TelegramInlineButtons } from "./button-types.js";
+import type {
+  TelegramInlineButton,
+  TelegramInlineButtons,
+} from "../../../src/telegram/button-types.js";
+
+type InteractiveButtonStyle = "primary" | "secondary" | "success" | "danger";
+
+type InteractiveReplyButton = {
+  label: string;
+  value: string;
+  style?: InteractiveButtonStyle;
+};
+
+type InteractiveReplyOption = {
+  label: string;
+  value: string;
+};
+
+type InteractiveReplyTextBlock = {
+  type: "text";
+  text: string;
+};
+
+type InteractiveReplyButtonsBlock = {
+  type: "buttons";
+  buttons: InteractiveReplyButton[];
+};
+
+type InteractiveReplySelectBlock = {
+  type: "select";
+  placeholder?: string;
+  options: InteractiveReplyOption[];
+};
+
+type InteractiveReplyBlock =
+  | InteractiveReplyTextBlock
+  | InteractiveReplyButtonsBlock
+  | InteractiveReplySelectBlock;
+
+type InteractiveReply = {
+  blocks: InteractiveReplyBlock[];
+};
 
 const TELEGRAM_INTERACTIVE_ROW_SIZE = 3;
 

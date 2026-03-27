@@ -478,9 +478,9 @@ describe("docker-setup.sh", () => {
 
   it("keeps docker-compose gateway token env defaults aligned across services", async () => {
     const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
-    expect(compose.match(/REMOTECLAW_GATEWAY_TOKEN: \$\{REMOTECLAW_GATEWAY_TOKEN:-\}/g)).toHaveLength(
-      2,
-    );
+    expect(
+      compose.match(/REMOTECLAW_GATEWAY_TOKEN: \$\{REMOTECLAW_GATEWAY_TOKEN:-\}/g),
+    ).toHaveLength(2);
   });
 
   it("keeps docker-compose timezone env defaults aligned across services", async () => {

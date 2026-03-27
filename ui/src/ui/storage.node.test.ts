@@ -324,6 +324,7 @@ describe("loadSettings default gateway URL derivation", () => {
       themeMode: "light",
       chatFocusMode: false,
       chatShowThinking: true,
+      chatShowToolCalls: true,
       splitRatio: 0.6,
       navCollapsed: false,
       navWidth: 320,

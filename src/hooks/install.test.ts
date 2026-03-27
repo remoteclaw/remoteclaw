@@ -276,12 +276,12 @@ describe("installHooksFromPath", () => {
       {
         hooks: ["../outside"],
         setupLink: false,
-        expected: "openclaw.hooks entry escapes package directory",
+        expected: "remoteclaw.hooks entry escapes package directory",
       },
       {
         hooks: ["./linked"],
         setupLink: true,
-        expected: "openclaw.hooks entry resolves outside package directory",
+        expected: "remoteclaw.hooks entry resolves outside package directory",
       },
     ] as const;
 

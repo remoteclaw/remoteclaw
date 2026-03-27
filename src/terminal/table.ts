@@ -1,5 +1,5 @@
 import { displayString } from "../utils.js";
-import { splitGraphemes, visibleWidth } from "./ansi.js";
+import { visibleWidth } from "./ansi.js";
 
 export function getTerminalTableWidth(minWidth = 60, fallbackWidth = 120): number {
   return Math.max(minWidth, process.stdout.columns ?? fallbackWidth);
@@ -98,15 +98,13 @@ function wrapLine(text: string, width: number): string[] {
       }
     }
 
-    let nextEsc = text.indexOf(ESC, i);
-    if (nextEsc < 0) {
-      nextEsc = text.length;
+    const cp = text.codePointAt(i);
+    if (!cp) {
+      break;
     }
-    const plainChunk = text.slice(i, nextEsc);
-    for (const grapheme of splitGraphemes(plainChunk)) {
-      tokens.push({ kind: "char", value: grapheme });
-    }
-    i = nextEsc;
+    const ch = String.fromCodePoint(cp);
+    tokens.push({ kind: "char", value: ch });
+    i += ch.length;
   }
 
   const firstCharIndex = tokens.findIndex((t) => t.kind === "char");
@@ -145,7 +143,7 @@ function wrapLine(text: string, width: number): string[] {
   const bufToString = (slice?: Token[]) => (slice ?? buf).map((t) => t.value).join("");
 
   const bufVisibleWidth = (slice: Token[]) =>
-    slice.reduce((acc, t) => acc + (t.kind === "char" ? visibleWidth(t.value) : 0), 0);
+    slice.reduce((acc, t) => acc + (t.kind === "char" ? 1 : 0), 0);
 
   const pushLine = (value: string) => {
     const cleaned = value.replace(/\s+$/, "");
@@ -201,13 +199,12 @@ function wrapLine(text: string, width: number): string[] {
       }
       continue;
     }
-    const charWidth = visibleWidth(ch);
-    if (bufVisible + charWidth > width && bufVisible > 0) {
+    if (bufVisible + 1 > width && bufVisible > 0) {
       flushAt(lastBreakIndex);
     }
 
     buf.push(token);
-    bufVisible += charWidth;
+    bufVisible += 1;
     if (isBreakChar(ch)) {
       lastBreakIndex = buf.length;
     }

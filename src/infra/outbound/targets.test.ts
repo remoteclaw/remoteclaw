@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { telegramOutbound } from "../../channels/plugins/outbound/telegram.js";
-import type { RemoteClawConfig } from "../../config/config.js";
+import type { OpenClawConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../../test-utils/channel-plugins.js";
 import {
@@ -18,7 +18,7 @@ runResolveOutboundTargetCoreTests();
 
 describe("resolveOutboundTarget defaultTo config fallback", () => {
   installResolveOutboundTargetPluginRegistryHooks();
-  const whatsappDefaultCfg: RemoteClawConfig = {
+  const whatsappDefaultCfg: OpenClawConfig = {
     channels: { whatsapp: { defaultTo: "+15551234567", allowFrom: ["*"] } },
   };
 
@@ -33,7 +33,7 @@ describe("resolveOutboundTarget defaultTo config fallback", () => {
   });
 
   it("uses telegram defaultTo when no explicit target is provided", () => {
-    const cfg: RemoteClawConfig = {
+    const cfg: OpenClawConfig = {
       channels: { telegram: { defaultTo: "123456789" } },
     };
     const res = resolveOutboundTarget({
@@ -56,7 +56,7 @@ describe("resolveOutboundTarget defaultTo config fallback", () => {
   });
 
   it("still errors when no defaultTo and no explicit target", () => {
-    const cfg: RemoteClawConfig = {
+    const cfg: OpenClawConfig = {
       channels: { whatsapp: { allowFrom: ["+1555"] } },
     };
     const res = resolveOutboundTarget({
@@ -339,39 +339,149 @@ describe("resolveSessionDeliveryTarget", () => {
       },
     });
 
-  it("allows heartbeat delivery to Slack DMs and avoids inherited threadId by default", () => {
-    const resolved = resolveHeartbeatTarget({
-      sessionId: "sess-heartbeat-outbound",
-      updatedAt: 1,
-      lastChannel: "slack",
-      lastTo: "user:U123",
-      lastThreadId: "1739142736.000100",
-    });
+  const expectHeartbeatTarget = (params: {
+    name: string;
+    entry: Parameters<typeof resolveHeartbeatDeliveryTarget>[0]["entry"];
+    directPolicy?: "allow" | "block";
+    expectedChannel: string;
+    expectedTo?: string;
+    expectedReason?: string;
+    expectedThreadId?: string | number;
+  }) => {
+    const resolved = resolveHeartbeatTarget(params.entry, params.directPolicy);
+    expect(resolved.channel, params.name).toBe(params.expectedChannel);
+    expect(resolved.to, params.name).toBe(params.expectedTo);
+    expect(resolved.reason, params.name).toBe(params.expectedReason);
+    expect(resolved.threadId, params.name).toBe(params.expectedThreadId);
+  };
 
-    expect(resolved.channel).toBe("slack");
-    expect(resolved.to).toBe("user:U123");
-    expect(resolved.threadId).toBeUndefined();
-  });
-
-  it("blocks heartbeat delivery to Slack DMs when directPolicy is block", () => {
-    const resolved = resolveHeartbeatTarget(
-      {
-        sessionId: "sess-heartbeat-outbound",
+  it.each([
+    {
+      name: "allows heartbeat delivery to Slack DMs by default and drops inherited thread ids",
+      entry: {
+        sessionId: "sess-heartbeat-slack-direct",
         updatedAt: 1,
         lastChannel: "slack",
         lastTo: "user:U123",
         lastThreadId: "1739142736.000100",
       },
-      "block",
-    );
-
-    expect(resolved.channel).toBe("none");
-    expect(resolved.reason).toBe("dm-blocked");
-    expect(resolved.threadId).toBeUndefined();
+      expectedChannel: "slack",
+      expectedTo: "user:U123",
+    },
+    {
+      name: "blocks heartbeat delivery to Slack DMs when directPolicy is block",
+      entry: {
+        sessionId: "sess-heartbeat-slack-direct-blocked",
+        updatedAt: 1,
+        lastChannel: "slack",
+        lastTo: "user:U123",
+        lastThreadId: "1739142736.000100",
+      },
+      directPolicy: "block" as const,
+      expectedChannel: "none",
+      expectedReason: "dm-blocked",
+    },
+    {
+      name: "allows heartbeat delivery to Telegram direct chats by default",
+      entry: {
+        sessionId: "sess-heartbeat-telegram-direct",
+        updatedAt: 1,
+        lastChannel: "telegram",
+        lastTo: "5232990709",
+      },
+      expectedChannel: "telegram",
+      expectedTo: "5232990709",
+    },
+    {
+      name: "blocks heartbeat delivery to Telegram direct chats when directPolicy is block",
+      entry: {
+        sessionId: "sess-heartbeat-telegram-direct-blocked",
+        updatedAt: 1,
+        lastChannel: "telegram",
+        lastTo: "5232990709",
+      },
+      directPolicy: "block" as const,
+      expectedChannel: "none",
+      expectedReason: "dm-blocked",
+    },
+    {
+      name: "keeps heartbeat delivery to Telegram groups",
+      entry: {
+        sessionId: "sess-heartbeat-telegram-group",
+        updatedAt: 1,
+        lastChannel: "telegram",
+        lastTo: "-1001234567890",
+      },
+      expectedChannel: "telegram",
+      expectedTo: "-1001234567890",
+    },
+    {
+      name: "allows heartbeat delivery to WhatsApp direct chats by default",
+      entry: {
+        sessionId: "sess-heartbeat-whatsapp-direct",
+        updatedAt: 1,
+        lastChannel: "whatsapp",
+        lastTo: "+15551234567",
+      },
+      expectedChannel: "whatsapp",
+      expectedTo: "+15551234567",
+    },
+    {
+      name: "keeps heartbeat delivery to WhatsApp groups",
+      entry: {
+        sessionId: "sess-heartbeat-whatsapp-group",
+        updatedAt: 1,
+        lastChannel: "whatsapp",
+        lastTo: "120363140186826074@g.us",
+      },
+      expectedChannel: "whatsapp",
+      expectedTo: "120363140186826074@g.us",
+    },
+    {
+      name: "uses session chatType hints when target parsing cannot classify a direct chat",
+      entry: {
+        sessionId: "sess-heartbeat-imessage-direct",
+        updatedAt: 1,
+        lastChannel: "imessage",
+        lastTo: "chat-guid-unknown-shape",
+        chatType: "direct",
+      },
+      expectedChannel: "imessage",
+      expectedTo: "chat-guid-unknown-shape",
+    },
+    {
+      name: "blocks session chatType direct hints when directPolicy is block",
+      entry: {
+        sessionId: "sess-heartbeat-imessage-direct-blocked",
+        updatedAt: 1,
+        lastChannel: "imessage",
+        lastTo: "chat-guid-unknown-shape",
+        chatType: "direct",
+      },
+      directPolicy: "block" as const,
+      expectedChannel: "none",
+      expectedReason: "dm-blocked",
+    },
+  ] satisfies Array<{
+    name: string;
+    entry: NonNullable<Parameters<typeof resolveHeartbeatDeliveryTarget>[0]["entry"]>;
+    directPolicy?: "allow" | "block";
+    expectedChannel: string;
+    expectedTo?: string;
+    expectedReason?: string;
+  }>)("$name", ({ name, entry, directPolicy, expectedChannel, expectedTo, expectedReason }) => {
+    expectHeartbeatTarget({
+      name,
+      entry,
+      directPolicy,
+      expectedChannel,
+      expectedTo,
+      expectedReason,
+    });
   });
 
   it("allows heartbeat delivery to Discord DMs by default", () => {
-    const cfg: RemoteClawConfig = {};
+    const cfg: OpenClawConfig = {};
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg,
       entry: {
@@ -389,121 +499,8 @@ describe("resolveSessionDeliveryTarget", () => {
     expect(resolved.to).toBe("user:12345");
   });
 
-  it("allows heartbeat delivery to Telegram direct chats by default", () => {
-    const resolved = resolveHeartbeatTarget({
-      sessionId: "sess-heartbeat-telegram-direct",
-      updatedAt: 1,
-      lastChannel: "telegram",
-      lastTo: "5232990709",
-    });
-
-    expect(resolved.channel).toBe("telegram");
-    expect(resolved.to).toBe("5232990709");
-  });
-
-  it("blocks heartbeat delivery to Telegram direct chats when directPolicy is block", () => {
-    const resolved = resolveHeartbeatTarget(
-      {
-        sessionId: "sess-heartbeat-telegram-direct",
-        updatedAt: 1,
-        lastChannel: "telegram",
-        lastTo: "5232990709",
-      },
-      "block",
-    );
-
-    expect(resolved.channel).toBe("none");
-    expect(resolved.reason).toBe("dm-blocked");
-  });
-
-  it("keeps heartbeat delivery to Telegram groups", () => {
-    const cfg: RemoteClawConfig = {};
-    const resolved = resolveHeartbeatDeliveryTarget({
-      cfg,
-      entry: {
-        sessionId: "sess-heartbeat-telegram-group",
-        updatedAt: 1,
-        lastChannel: "telegram",
-        lastTo: "-1001234567890",
-      },
-      heartbeat: {
-        target: "last",
-      },
-    });
-
-    expect(resolved.channel).toBe("telegram");
-    expect(resolved.to).toBe("-1001234567890");
-  });
-
-  it("allows heartbeat delivery to WhatsApp direct chats by default", () => {
-    const cfg: RemoteClawConfig = {};
-    const resolved = resolveHeartbeatDeliveryTarget({
-      cfg,
-      entry: {
-        sessionId: "sess-heartbeat-whatsapp-direct",
-        updatedAt: 1,
-        lastChannel: "whatsapp",
-        lastTo: "+15551234567",
-      },
-      heartbeat: {
-        target: "last",
-      },
-    });
-
-    expect(resolved.channel).toBe("whatsapp");
-    expect(resolved.to).toBe("+15551234567");
-  });
-
-  it("keeps heartbeat delivery to WhatsApp groups", () => {
-    const cfg: RemoteClawConfig = {};
-    const resolved = resolveHeartbeatDeliveryTarget({
-      cfg,
-      entry: {
-        sessionId: "sess-heartbeat-whatsapp-group",
-        updatedAt: 1,
-        lastChannel: "whatsapp",
-        lastTo: "120363140186826074@g.us",
-      },
-      heartbeat: {
-        target: "last",
-      },
-    });
-
-    expect(resolved.channel).toBe("whatsapp");
-    expect(resolved.to).toBe("120363140186826074@g.us");
-  });
-
-  it("uses session chatType hint when target parser cannot classify and allows direct by default", () => {
-    const resolved = resolveHeartbeatTarget({
-      sessionId: "sess-heartbeat-imessage-direct",
-      updatedAt: 1,
-      lastChannel: "imessage",
-      lastTo: "chat-guid-unknown-shape",
-      chatType: "direct",
-    });
-
-    expect(resolved.channel).toBe("imessage");
-    expect(resolved.to).toBe("chat-guid-unknown-shape");
-  });
-
-  it("blocks session chatType direct hints when directPolicy is block", () => {
-    const resolved = resolveHeartbeatTarget(
-      {
-        sessionId: "sess-heartbeat-imessage-direct",
-        updatedAt: 1,
-        lastChannel: "imessage",
-        lastTo: "chat-guid-unknown-shape",
-        chatType: "direct",
-      },
-      "block",
-    );
-
-    expect(resolved.channel).toBe("none");
-    expect(resolved.reason).toBe("dm-blocked");
-  });
-
   it("keeps heartbeat delivery to Discord channels", () => {
-    const cfg: RemoteClawConfig = {};
+    const cfg: OpenClawConfig = {};
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg,
       entry: {
@@ -542,7 +539,7 @@ describe("resolveSessionDeliveryTarget", () => {
   });
 
   it("parses explicit heartbeat topic targets into threadId", () => {
-    const cfg: RemoteClawConfig = {};
+    const cfg: OpenClawConfig = {};
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg,
       heartbeat: {

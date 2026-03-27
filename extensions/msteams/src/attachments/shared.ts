@@ -4,8 +4,8 @@ import {
   isHttpsUrlAllowedByHostnameSuffixAllowlist,
   isPrivateIpAddress,
   normalizeHostnameSuffixAllowlist,
-} from "../../runtime-api.js";
-import type { SsrFPolicy } from "../../runtime-api.js";
+} from "remoteclaw/plugin-sdk";
+import type { SsrFPolicy } from "remoteclaw/plugin-sdk";
 import type { MSTeamsAttachmentLike } from "./types.js";
 
 type InlineImageCandidate =

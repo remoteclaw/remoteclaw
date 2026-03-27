@@ -1,5 +1,5 @@
-import type { OpenClawConfig } from "../runtime-api.js";
-import { loadOutboundMediaFromUrl } from "../runtime-api.js";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
+import { loadOutboundMediaFromUrl } from "remoteclaw/plugin-sdk";
 import { createMSTeamsConversationStoreFs } from "./conversation-store-fs.js";
 import {
   classifyMSTeamsSendError,
@@ -21,7 +21,7 @@ import { resolveMSTeamsSendContext, type MSTeamsProactiveContext } from "./send-
 
 export type SendMSTeamsMessageParams = {
   /** Full config (for credentials) */
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   /** Conversation ID or user ID to send to */
   to: string;
   /** Message text */
@@ -49,7 +49,7 @@ const MSTEAMS_MAX_MEDIA_BYTES = 100 * 1024 * 1024;
 
 export type SendMSTeamsPollParams = {
   /** Full config (for credentials) */
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   /** Conversation ID or user ID to send to */
   to: string;
   /** Poll question */
@@ -68,7 +68,7 @@ export type SendMSTeamsPollResult = {
 
 export type SendMSTeamsCardParams = {
   /** Full config (for credentials) */
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   /** Conversation ID or user ID to send to */
   to: string;
   /** Adaptive Card JSON object */
@@ -206,7 +206,9 @@ export async function sendMessageMSTeams(
           contentType: media.contentType,
           tokenProvider,
           siteId: sharePointSiteId,
-          chatId: conversationId,
+          // Use the Graph-native chat ID (19:xxx format) — the Bot Framework conversationId
+          // for personal DMs uses a different format that Graph API rejects.
+          chatId: ctx.graphChatId ?? conversationId,
           usePerUserSharing: conversationType === "groupChat",
         });
 

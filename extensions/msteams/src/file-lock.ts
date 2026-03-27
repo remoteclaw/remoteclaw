@@ -1,1 +1,1 @@
-export { withFileLock } from "../runtime-api.js";
+export { withFileLock } from "remoteclaw/plugin-sdk";

@@ -1,4 +1,4 @@
-import { buildMediaPayload } from "../../runtime-api.js";
+import { buildMediaPayload } from "remoteclaw/plugin-sdk";
 
 export function buildMSTeamsMediaPayload(
   mediaList: Array<{ path: string; contentType?: string }>,

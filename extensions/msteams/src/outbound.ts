@@ -1,5 +1,4 @@
-import { resolveOutboundSendDep } from "openclaw/plugin-sdk/channel-runtime";
-import type { ChannelOutboundAdapter } from "../runtime-api.js";
+import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk";
 import { createMSTeamsPollStoreFs } from "./polls.js";
 import { getMSTeamsRuntime } from "./runtime.js";
 import { sendMessageMSTeams, sendPollMSTeams } from "./send.js";
@@ -11,24 +10,13 @@ export const msteamsOutbound: ChannelOutboundAdapter = {
   textChunkLimit: 4000,
   pollMaxOptions: 12,
   sendText: async ({ cfg, to, text, deps }) => {
-    type SendFn = (
-      to: string,
-      text: string,
-    ) => Promise<{ messageId: string; conversationId: string }>;
-    const send =
-      resolveOutboundSendDep<SendFn>(deps, "msteams") ??
-      ((to, text) => sendMessageMSTeams({ cfg, to, text }));
+    const send = deps?.sendMSTeams ?? ((to, text) => sendMessageMSTeams({ cfg, to, text }));
     const result = await send(to, text);
     return { channel: "msteams", ...result };
   },
   sendMedia: async ({ cfg, to, text, mediaUrl, mediaLocalRoots, deps }) => {
-    type SendFn = (
-      to: string,
-      text: string,
-      opts?: { mediaUrl?: string; mediaLocalRoots?: readonly string[] },
-    ) => Promise<{ messageId: string; conversationId: string }>;
     const send =
-      resolveOutboundSendDep<SendFn>(deps, "msteams") ??
+      deps?.sendMSTeams ??
       ((to, text, opts) =>
         sendMessageMSTeams({
           cfg,

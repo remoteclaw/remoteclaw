@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { readJsonFileWithFallback, writeJsonFileAtomically } from "../runtime-api.js";
+import { readJsonFileWithFallback, writeJsonFileAtomically } from "remoteclaw/plugin-sdk";
 import { withFileLock as withPathLock } from "./file-lock.js";
 
 const STORE_LOCK_OPTIONS = {

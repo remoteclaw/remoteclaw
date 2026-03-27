@@ -1,4 +1,4 @@
-import { fetchWithSsrFGuard, type SsrFPolicy } from "../../runtime-api.js";
+import { fetchWithSsrFGuard, type SsrFPolicy } from "remoteclaw/plugin-sdk";
 import { getMSTeamsRuntime } from "../runtime.js";
 import { downloadMSTeamsAttachments } from "./download.js";
 import { downloadAndStoreMSTeamsRemoteMedia } from "./remote-media.js";

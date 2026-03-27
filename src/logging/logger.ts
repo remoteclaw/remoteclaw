@@ -3,7 +3,10 @@ import path from "node:path";
 import { Logger as TsLogger } from "tslog";
 import { getCommandPathWithRootOptions } from "../cli/argv.js";
 import type { RemoteClawConfig } from "../config/types.js";
-import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
+import {
+  POSIX_REMOTECLAW_TMP_DIR,
+  resolvePreferredRemoteClawTmpDir,
+} from "../infra/tmp-remoteclaw-dir.js";
 import { readLoggingConfig } from "./config.js";
 import type { ConsoleStyle } from "./console.js";
 import { resolveEnvLogLevelOverride } from "./env-log-level.js";
@@ -12,7 +15,27 @@ import { resolveNodeRequireFromMeta } from "./node-require.js";
 import { loggingState } from "./state.js";
 import { formatLocalIsoWithOffset } from "./timestamps.js";
 
-export const DEFAULT_LOG_DIR = resolvePreferredRemoteClawTmpDir();
+type ProcessWithBuiltinModule = NodeJS.Process & {
+  getBuiltinModule?: (id: string) => unknown;
+};
+
+function canUseNodeFs(): boolean {
+  const getBuiltinModule = (process as ProcessWithBuiltinModule).getBuiltinModule;
+  if (typeof getBuiltinModule !== "function") {
+    return false;
+  }
+  try {
+    return getBuiltinModule("fs") !== undefined;
+  } catch {
+    return false;
+  }
+}
+
+function resolveDefaultLogDir(): string {
+  return canUseNodeFs() ? resolvePreferredRemoteClawTmpDir() : POSIX_REMOTECLAW_TMP_DIR;
+}
+
+export const DEFAULT_LOG_DIR = resolveDefaultLogDir();
 export const DEFAULT_LOG_FILE = path.join(DEFAULT_LOG_DIR, "remoteclaw.log"); // legacy single-file path
 
 const LOG_PREFIX = "remoteclaw";

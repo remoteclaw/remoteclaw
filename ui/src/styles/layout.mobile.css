@@ -58,6 +58,17 @@
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: space-between;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .topnav-shell__content {
+    display: none;
+    width: 100%;
+  }
+
+  .topbar-nav-toggle {
+    display: inline-flex;
     align-items: center;
   }
 

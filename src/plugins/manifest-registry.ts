@@ -182,6 +182,7 @@ export function loadPluginManifestRegistry(params: {
     : discoverRemoteClawPlugins({
         workspaceDir: params.workspaceDir,
         extraPaths: normalized.loadPaths,
+        cache: params.cache,
         env,
       });
   const diagnostics: PluginDiagnostic[] = [...discovery.diagnostics];

@@ -213,7 +213,7 @@ async function postWebhookPayloadWithChunkPlan(params: {
         },
       },
       (res) => {
-        collectResponseBody(res, settle.resolve);
+        collectResponseBody(res, (body) => settle.resolve(body));
       },
     );
 

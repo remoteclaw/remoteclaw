@@ -1,11 +1,11 @@
 import * as compatSdk from "remoteclaw/plugin-sdk/compat";
+import * as coreSdk from "remoteclaw/plugin-sdk/core";
 import * as discordSdk from "remoteclaw/plugin-sdk/discord";
 import * as imessageSdk from "remoteclaw/plugin-sdk/imessage";
 import * as lineSdk from "remoteclaw/plugin-sdk/line";
 import * as msteamsSdk from "remoteclaw/plugin-sdk/msteams";
 import * as signalSdk from "remoteclaw/plugin-sdk/signal";
 import * as slackSdk from "remoteclaw/plugin-sdk/slack";
-import * as telegramSdk from "remoteclaw/plugin-sdk/telegram";
 import * as whatsappSdk from "remoteclaw/plugin-sdk/whatsapp";
 import { describe, expect, it } from "vitest";
 
@@ -27,8 +27,6 @@ const bundledExtensionSubpathLoaders = [
   { id: "lobster", load: () => import("remoteclaw/plugin-sdk/lobster") },
   { id: "matrix", load: () => import("remoteclaw/plugin-sdk/matrix") },
   { id: "mattermost", load: () => import("remoteclaw/plugin-sdk/mattermost") },
-  { id: "memory-core", load: () => import("remoteclaw/plugin-sdk/memory-core") },
-  { id: "memory-lancedb", load: () => import("remoteclaw/plugin-sdk/memory-lancedb") },
   {
     id: "minimax-portal-auth",
     load: () => import("remoteclaw/plugin-sdk/minimax-portal-auth"),
@@ -55,22 +53,19 @@ describe("plugin-sdk subpath exports", () => {
     expect(typeof compatSdk.resolveControlCommandGate).toBe("function");
   });
 
+  it("exports core routing helpers", () => {
+    expect(typeof coreSdk.buildAgentSessionKey).toBe("function");
+    expect(typeof coreSdk.resolveThreadSessionKeys).toBe("function");
+  });
+
   it("exports Discord helpers", () => {
     expect(typeof discordSdk.resolveDiscordAccount).toBe("function");
-    expect(typeof discordSdk.inspectDiscordAccount).toBe("function");
     expect(typeof discordSdk.discordOnboardingAdapter).toBe("object");
   });
 
   it("exports Slack helpers", () => {
     expect(typeof slackSdk.resolveSlackAccount).toBe("function");
-    expect(typeof slackSdk.inspectSlackAccount).toBe("function");
     expect(typeof slackSdk.handleSlackMessageAction).toBe("function");
-  });
-
-  it("exports Telegram helpers", () => {
-    expect(typeof telegramSdk.resolveTelegramAccount).toBe("function");
-    expect(typeof telegramSdk.inspectTelegramAccount).toBe("function");
-    expect(typeof telegramSdk.telegramOnboardingAdapter).toBe("object");
   });
 
   it("exports Signal helpers", () => {
@@ -87,6 +82,8 @@ describe("plugin-sdk subpath exports", () => {
     // WhatsApp-specific functions (resolveWhatsAppAccount, whatsappOnboardingAdapter) moved to extensions/whatsapp/src/
     expect(typeof whatsappSdk.WhatsAppConfigSchema).toBe("object");
     expect(typeof whatsappSdk.resolveWhatsAppOutboundTarget).toBe("function");
+    expect(typeof whatsappSdk.resolveWhatsAppMentionStripPatterns).toBe("function");
+    expect("resolveWhatsAppMentionStripRegexes" in whatsappSdk).toBe(false);
   });
 
   it("exports LINE helpers", () => {
@@ -97,12 +94,6 @@ describe("plugin-sdk subpath exports", () => {
   it("exports Microsoft Teams helpers", () => {
     expect(typeof msteamsSdk.resolveControlCommandGate).toBe("function");
     expect(typeof msteamsSdk.loadOutboundMediaFromUrl).toBe("function");
-  });
-
-  it("exports acpx helpers", async () => {
-    const acpxSdk = await import("remoteclaw/plugin-sdk/acpx");
-    expect(typeof acpxSdk.listKnownProviderAuthEnvVarNames).toBe("function");
-    expect(typeof acpxSdk.omitEnvKeysCaseInsensitive).toBe("function");
   });
 
   it("resolves bundled extension subpaths", async () => {

@@ -165,13 +165,13 @@ export async function runWebHeartbeatOnce(opts: {
       return;
     }
 
+    const heartbeatPrompt = await resolveHeartbeatPrompt({
+      prompt: cfg.agents?.defaults?.heartbeat?.prompt,
+      file: cfg.agents?.defaults?.heartbeat?.file,
+    });
     const replyResult = await replyResolver(
       {
-        Body: appendCronStyleCurrentTimeLine(
-          resolveHeartbeatPrompt(cfg.agents?.defaults?.heartbeat?.prompt),
-          cfg,
-          Date.now(),
-        ),
+        Body: appendCronStyleCurrentTimeLine(heartbeatPrompt, cfg, Date.now()),
         From: to,
         To: to,
         MessageSid: sessionId ?? sessionSnapshot.entry?.sessionId,
@@ -205,10 +205,7 @@ export async function runWebHeartbeatOnce(opts: {
     }
 
     const hasMedia = Boolean(replyPayload.mediaUrl || (replyPayload.mediaUrls?.length ?? 0) > 0);
-    const ackMaxChars = Math.max(
-      0,
-      cfg.agents?.defaults?.heartbeat?.ackMaxChars ?? DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
-    );
+    const ackMaxChars = DEFAULT_HEARTBEAT_ACK_MAX_CHARS;
     const stripped = stripHeartbeatToken(replyPayload.text, {
       mode: "heartbeat",
       maxAckChars: ackMaxChars,

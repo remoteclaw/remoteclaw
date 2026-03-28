@@ -1,5 +1,3 @@
-import type { ModelDefinitionConfig } from "../config/types.js";
-import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
   KILOCODE_BASE_URL,
   KILOCODE_DEFAULT_CONTEXT_WINDOW,
@@ -7,6 +5,8 @@ import {
   KILOCODE_DEFAULT_MAX_TOKENS,
   KILOCODE_MODEL_CATALOG,
 } from "../../extensions/kilocode/shared.js";
+import type { ModelDefinitionConfig } from "../config/types.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
 
 const log = createSubsystemLogger("kilocode-models");
 

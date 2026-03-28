@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { messagingApi } from "@line/bot-sdk";
-import { buildRandomTempFilePath } from "remoteclaw/plugin-sdk/temp-path";
 import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
+import { buildRandomTempFilePath } from "remoteclaw/plugin-sdk/temp-path";
 
 interface DownloadResult {
   path: string;

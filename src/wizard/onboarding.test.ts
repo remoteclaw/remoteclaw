@@ -1,0 +1,640 @@
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { createWizardPrompter as buildWizardPrompter } from "../../test/helpers/wizard-prompter.js";
+import type { RuntimeEnv } from "../runtime.js";
+import { runOnboardingWizard } from "./onboarding.js";
+import type { WizardPrompter, WizardSelectParams } from "./prompts.js";
+
+const upsertAuthProfile = vi.hoisted(() => vi.fn());
+const configureGatewayForOnboarding = vi.hoisted(() =>
+  vi.fn(async (args) => ({
+    nextConfig: args.nextConfig,
+    settings: {
+      port: args.localPort ?? 18789,
+      bind: "loopback",
+      authMode: "token",
+      gatewayToken: "test-token",
+      tailscaleMode: "off",
+      tailscaleResetOnExit: false,
+    },
+  })),
+);
+const finalizeOnboardingWizard = vi.hoisted(() =>
+  vi.fn(async (options) => {
+    if (!options.nextConfig?.tools?.web?.search?.provider) {
+      await options.prompter.note("Web search was skipped.", "Web search");
+    }
+
+    if (options.opts.skipUi) {
+      return { launchedTui: false };
+    }
+
+    const hatch = await options.prompter.select({
+      message: "How do you want to hatch your bot?",
+      options: [],
+    });
+    if (hatch !== "tui") {
+      return { launchedTui: false };
+    }
+
+    await runTui({ deliver: false, message: undefined });
+    return { launchedTui: true };
+  }),
+);
+const listChannelPlugins = vi.hoisted(() => vi.fn(() => []));
+const logConfigUpdated = vi.hoisted(() => vi.fn(() => {}));
+const setupChannels = vi.hoisted(() => vi.fn(async (cfg) => cfg));
+const healthCommand = vi.hoisted(() => vi.fn(async () => {}));
+const ensureWorkspaceAndSessions = vi.hoisted(() => vi.fn(async () => {}));
+const writeConfigFile = vi.hoisted(() => vi.fn(async () => {}));
+const readConfigFileSnapshot = vi.hoisted(() =>
+  vi.fn(async () => ({
+    path: "/tmp/.remoteclaw/remoteclaw.json",
+    exists: false,
+    raw: null as string | null,
+    parsed: {},
+    resolved: {},
+    valid: true,
+    config: {},
+    issues: [] as Array<{ path: string; message: string }>,
+    warnings: [] as Array<{ path: string; message: string }>,
+    legacyIssues: [] as Array<{ path: string; message: string }>,
+  })),
+);
+const ensureSystemdUserLingerInteractive = vi.hoisted(() => vi.fn(async () => {}));
+const isSystemdUserServiceAvailable = vi.hoisted(() => vi.fn(async () => true));
+const ensureControlUiAssetsBuilt = vi.hoisted(() => vi.fn(async () => ({ ok: true })));
+const probeGatewayReachable = vi.hoisted(() => vi.fn(async () => ({ ok: true })));
+const runTui = vi.hoisted(() => vi.fn(async (_options: unknown) => {}));
+const setupOnboardingShellCompletion = vi.hoisted(() => vi.fn(async () => {}));
+
+vi.mock("../commands/onboard-channels.js", () => ({
+  setupChannels,
+}));
+
+vi.mock("../auth/index.js", () => ({
+  upsertAuthProfile,
+}));
+
+vi.mock("../commands/health.js", () => ({
+  healthCommand,
+}));
+
+vi.mock("../config/config.js", () => ({
+  DEFAULT_GATEWAY_PORT: 18789,
+  resolveGatewayPort: () => 18789,
+  readConfigFileSnapshot,
+  writeConfigFile,
+}));
+
+vi.mock("../commands/onboard-helpers.js", () => ({
+  applyWizardMetadata: (cfg: unknown) => cfg,
+  summarizeExistingConfig: () => "summary",
+  handleReset: async () => {},
+  randomToken: () => "test-token",
+  normalizeGatewayTokenInput: (value: unknown) => ({
+    ok: true,
+    token: typeof value === "string" ? value.trim() : "",
+    error: null,
+  }),
+  validateGatewayPasswordInput: () => ({ ok: true, error: null }),
+  ensureWorkspaceAndSessions,
+  detectBrowserOpenSupport: vi.fn(async () => ({ ok: false })),
+  openUrl: vi.fn(async () => true),
+  printWizardHeader: vi.fn(),
+  probeGatewayReachable,
+  waitForGatewayReachable: vi.fn(async () => {}),
+  formatControlUiSshHint: vi.fn(() => "ssh hint"),
+  resolveControlUiLinks: vi.fn(() => ({
+    httpUrl: "http://127.0.0.1:18789",
+    wsUrl: "ws://127.0.0.1:18789",
+  })),
+}));
+
+vi.mock("../commands/systemd-linger.js", () => ({
+  ensureSystemdUserLingerInteractive,
+}));
+
+vi.mock("../daemon/systemd.js", () => ({
+  isSystemdUserServiceAvailable,
+}));
+
+vi.mock("../infra/control-ui-assets.js", () => ({
+  ensureControlUiAssetsBuilt,
+}));
+
+vi.mock("../channels/plugins/index.js", () => ({
+  listChannelPlugins,
+}));
+
+vi.mock("../config/logging.js", () => ({
+  logConfigUpdated,
+}));
+
+vi.mock("../tui/tui.js", () => ({
+  runTui,
+}));
+
+vi.mock("./onboarding.gateway-config.js", () => ({
+  configureGatewayForOnboarding,
+}));
+
+vi.mock("./onboarding.finalize.js", () => ({
+  finalizeOnboardingWizard,
+}));
+
+vi.mock("./onboarding.completion.js", () => ({
+  setupOnboardingShellCompletion,
+}));
+
+function createRuntime(opts?: { throwsOnExit?: boolean }): RuntimeEnv {
+  if (opts?.throwsOnExit) {
+    return {
+      log: vi.fn(),
+      error: vi.fn(),
+      exit: vi.fn((code: number) => {
+        throw new Error(`exit:${code}`);
+      }),
+    };
+  }
+
+  return {
+    log: vi.fn(),
+    error: vi.fn(),
+    exit: vi.fn(),
+  };
+}
+
+describe("runOnboardingWizard", () => {
+  let suiteRoot = "";
+  let suiteCase = 0;
+
+  beforeAll(async () => {
+    suiteRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-onboard-suite-"));
+  });
+
+  afterAll(async () => {
+    await fs.rm(suiteRoot, { recursive: true, force: true });
+    suiteRoot = "";
+    suiteCase = 0;
+  });
+
+  async function makeCaseDir(prefix: string): Promise<string> {
+    const dir = path.join(suiteRoot, `${prefix}${++suiteCase}`);
+    await fs.mkdir(dir, { recursive: true });
+    return dir;
+  }
+
+  it("exits when config is invalid", async () => {
+    readConfigFileSnapshot.mockResolvedValueOnce({
+      path: "/tmp/.remoteclaw/remoteclaw.json",
+      exists: true,
+      raw: "{}",
+      parsed: {},
+      resolved: {},
+      valid: false,
+      config: {},
+      issues: [{ path: "routing.allowFrom", message: "Legacy key" }],
+      warnings: [],
+      legacyIssues: [{ path: "routing.allowFrom", message: "Legacy key" }],
+    });
+
+    const select = vi.fn(
+      async (_params: WizardSelectParams<unknown>) => "quickstart",
+    ) as unknown as WizardPrompter["select"];
+    const prompter = buildWizardPrompter({ select });
+    const runtime = createRuntime({ throwsOnExit: true });
+
+    await expect(
+      runOnboardingWizard(
+        {
+          acceptRisk: true,
+          flow: "quickstart",
+          runtime: "claude",
+          installDaemon: false,
+          skipChannels: true,
+          skipSearch: true,
+          skipHealth: true,
+          skipUi: true,
+        },
+        runtime,
+        prompter,
+      ),
+    ).rejects.toThrow("exit:1");
+
+    expect(select).not.toHaveBeenCalled();
+    expect(prompter.outro).toHaveBeenCalled();
+  });
+
+  it("skips prompts and setup steps when flags are set", async () => {
+    const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
+      // Runtime credential prompt: choose skip
+      if (
+        params.message === "Authentication for Claude Code" ||
+        params.message === "Authentication for Gemini CLI" ||
+        params.message === "Authentication for Codex CLI" ||
+        params.message === "Authentication for OpenCode"
+      ) {
+        return "skip";
+      }
+      return "quickstart";
+    }) as unknown as WizardPrompter["select"];
+    const multiselect: WizardPrompter["multiselect"] = vi.fn(async () => []);
+    const prompter = buildWizardPrompter({ select, multiselect });
+    const runtime = createRuntime({ throwsOnExit: true });
+
+    const workspaceDir = await makeCaseDir("workspace-");
+    await runOnboardingWizard(
+      {
+        acceptRisk: true,
+        flow: "quickstart",
+        runtime: "claude",
+        workspace: workspaceDir,
+        installDaemon: false,
+        skipChannels: true,
+        skipSearch: true,
+        skipHealth: true,
+        skipUi: true,
+      },
+      runtime,
+      prompter,
+    );
+
+    expect(setupChannels).not.toHaveBeenCalled();
+    expect(healthCommand).not.toHaveBeenCalled();
+    expect(runTui).not.toHaveBeenCalled();
+  });
+
+  it("writes workspace to agents.list in config", async () => {
+    writeConfigFile.mockClear();
+
+    const workspaceDir = await makeCaseDir("workspace-");
+
+    const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
+      if (
+        params.message === "Authentication for Claude Code" ||
+        params.message === "Authentication for Gemini CLI" ||
+        params.message === "Authentication for Codex CLI" ||
+        params.message === "Authentication for OpenCode"
+      ) {
+        return "skip";
+      }
+      return "quickstart";
+    }) as unknown as WizardPrompter["select"];
+    const prompter = buildWizardPrompter({ select });
+    const runtime = createRuntime({ throwsOnExit: true });
+
+    await runOnboardingWizard(
+      {
+        acceptRisk: true,
+        flow: "quickstart",
+        runtime: "claude",
+        workspace: workspaceDir,
+        installDaemon: false,
+        skipChannels: true,
+        skipSearch: true,
+        skipHealth: true,
+        skipUi: true,
+      },
+      runtime,
+      prompter,
+    );
+
+    type WrittenConfig = { agents?: { list?: Array<{ id?: string; workspace?: string }> } };
+    const writtenConfigs = writeConfigFile.mock.calls.map(
+      (call) => (call as unknown[])[0] as WrittenConfig,
+    );
+    const hasWorkspaceInList = writtenConfigs.some((cfg) =>
+      cfg.agents?.list?.some((entry) => entry.workspace === workspaceDir),
+    );
+    expect(hasWorkspaceInList).toBe(true);
+  });
+
+  it("sets agents.defaults.auth to false when user skips credential", async () => {
+    writeConfigFile.mockClear();
+
+    const workspaceDir = await makeCaseDir("workspace-");
+
+    const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
+      if (params.message === "Authentication for Claude Code") {
+        return "skip";
+      }
+      return "quickstart";
+    }) as unknown as WizardPrompter["select"];
+    const prompter = buildWizardPrompter({ select });
+    const runtime = createRuntime({ throwsOnExit: true });
+
+    await runOnboardingWizard(
+      {
+        acceptRisk: true,
+        flow: "quickstart",
+        runtime: "claude",
+        workspace: workspaceDir,
+        installDaemon: false,
+        skipChannels: true,
+        skipSearch: true,
+        skipHealth: true,
+        skipUi: true,
+      },
+      runtime,
+      prompter,
+    );
+
+    type WrittenConfig = {
+      agents?: { defaults?: { auth?: false | string | string[] } };
+    };
+    const writtenConfigs = writeConfigFile.mock.calls.map(
+      (call) => (call as unknown[])[0] as WrittenConfig,
+    );
+    const hasAuthFalse = writtenConfigs.some((cfg) => cfg.agents?.defaults?.auth === false);
+    expect(hasAuthFalse).toBe(true);
+  });
+
+  it("sets agents.defaults.auth to profile id when user provides API key", async () => {
+    writeConfigFile.mockClear();
+    upsertAuthProfile.mockClear();
+
+    const workspaceDir = await makeCaseDir("workspace-");
+
+    const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
+      if (params.message === "Authentication for Claude Code") {
+        return "api-key";
+      }
+      return "quickstart";
+    }) as unknown as WizardPrompter["select"];
+    const text: WizardPrompter["text"] = vi.fn(async () => "sk-ant-test-key");
+    const prompter = buildWizardPrompter({ select, text });
+    const runtime = createRuntime({ throwsOnExit: true });
+
+    await runOnboardingWizard(
+      {
+        acceptRisk: true,
+        flow: "quickstart",
+        runtime: "claude",
+        workspace: workspaceDir,
+        installDaemon: false,
+        skipChannels: true,
+        skipSearch: true,
+        skipHealth: true,
+        skipUi: true,
+      },
+      runtime,
+      prompter,
+    );
+
+    type WrittenConfig = {
+      agents?: { defaults?: { auth?: false | string | string[] } };
+    };
+    const writtenConfigs = writeConfigFile.mock.calls.map(
+      (call) => (call as unknown[])[0] as WrittenConfig,
+    );
+    const hasAuthProfile = writtenConfigs.some(
+      (cfg) => cfg.agents?.defaults?.auth === "anthropic:default",
+    );
+    expect(hasAuthProfile).toBe(true);
+    expect(upsertAuthProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ profileId: "anthropic:default" }),
+    );
+  });
+
+  it("sets agents.defaults.auth to claude:oauth-token when user provides auth token", async () => {
+    writeConfigFile.mockClear();
+    upsertAuthProfile.mockClear();
+
+    const workspaceDir = await makeCaseDir("workspace-");
+
+    const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
+      if (params.message === "Authentication for Claude Code") {
+        return "auth-token";
+      }
+      return "quickstart";
+    }) as unknown as WizardPrompter["select"];
+    const text: WizardPrompter["text"] = vi.fn(async () => "my-oauth-token");
+    const prompter = buildWizardPrompter({ select, text });
+    const runtime = createRuntime({ throwsOnExit: true });
+
+    await runOnboardingWizard(
+      {
+        acceptRisk: true,
+        flow: "quickstart",
+        runtime: "claude",
+        workspace: workspaceDir,
+        installDaemon: false,
+        skipChannels: true,
+        skipSearch: true,
+        skipHealth: true,
+        skipUi: true,
+      },
+      runtime,
+      prompter,
+    );
+
+    type WrittenConfig = {
+      agents?: { defaults?: { auth?: false | string | string[] } };
+    };
+    const writtenConfigs = writeConfigFile.mock.calls.map(
+      (call) => (call as unknown[])[0] as WrittenConfig,
+    );
+    const hasAuthProfile = writtenConfigs.some(
+      (cfg) => cfg.agents?.defaults?.auth === "claude:oauth-token",
+    );
+    expect(hasAuthProfile).toBe(true);
+  });
+
+  it("launches TUI without auto-delivery when hatching", async () => {
+    runTui.mockClear();
+
+    const workspaceDir = await makeCaseDir("workspace-");
+
+    const select = vi.fn(async (opts: WizardSelectParams<unknown>) => {
+      if (opts.message === "How do you want to hatch your bot?") {
+        return "tui";
+      }
+      if (
+        opts.message === "Authentication for Claude Code" ||
+        opts.message === "Authentication for Gemini CLI" ||
+        opts.message === "Authentication for Codex CLI" ||
+        opts.message === "Authentication for OpenCode"
+      ) {
+        return "skip";
+      }
+      return "quickstart";
+    }) as unknown as WizardPrompter["select"];
+
+    const prompter = buildWizardPrompter({ select });
+    const runtime = createRuntime({ throwsOnExit: true });
+
+    await runOnboardingWizard(
+      {
+        acceptRisk: true,
+        flow: "quickstart",
+        mode: "local",
+        workspace: workspaceDir,
+        runtime: "claude",
+        skipChannels: true,
+        skipSearch: true,
+        skipHealth: true,
+        installDaemon: false,
+      },
+      runtime,
+      prompter,
+    );
+
+    expect(runTui).toHaveBeenCalledWith(
+      expect.objectContaining({
+        deliver: false,
+        message: undefined,
+      }),
+    );
+  });
+
+  it("shows the web search hint at the end of onboarding", async () => {
+    const prevBraveKey = process.env.BRAVE_API_KEY;
+    delete process.env.BRAVE_API_KEY;
+
+    try {
+      const workspaceDir = await makeCaseDir("workspace-");
+      const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
+        if (
+          params.message === "Authentication for Claude Code" ||
+          params.message === "Authentication for Gemini CLI" ||
+          params.message === "Authentication for Codex CLI" ||
+          params.message === "Authentication for OpenCode"
+        ) {
+          return "skip";
+        }
+        return "quickstart";
+      }) as unknown as WizardPrompter["select"];
+      const note: WizardPrompter["note"] = vi.fn(async () => {});
+      const prompter = buildWizardPrompter({ note, select });
+      const runtime = createRuntime();
+
+      await runOnboardingWizard(
+        {
+          acceptRisk: true,
+          flow: "quickstart",
+          runtime: "claude",
+          workspace: workspaceDir,
+          installDaemon: false,
+          skipChannels: true,
+          skipSearch: true,
+          skipHealth: true,
+          skipUi: true,
+        },
+        runtime,
+        prompter,
+      );
+
+      const calls = (note as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      expect(calls.some((call) => call?.[1] === "Web search")).toBe(true);
+    } finally {
+      if (prevBraveKey === undefined) {
+        delete process.env.BRAVE_API_KEY;
+      } else {
+        process.env.BRAVE_API_KEY = prevBraveKey;
+      }
+    }
+  });
+
+  it("resolves gateway.auth.password SecretRef for local onboarding probe", async () => {
+    const previous = process.env.REMOTECLAW_GATEWAY_PASSWORD;
+    process.env.REMOTECLAW_GATEWAY_PASSWORD = "gateway-ref-password"; // pragma: allowlist secret
+    probeGatewayReachable.mockClear();
+    readConfigFileSnapshot.mockResolvedValueOnce({
+      path: "/tmp/.remoteclaw/remoteclaw.json",
+      exists: true,
+      raw: "{}",
+      parsed: {},
+      resolved: {},
+      valid: true,
+      config: {
+        gateway: {
+          auth: {
+            mode: "password",
+            password: {
+              source: "env",
+              provider: "default",
+              id: "REMOTECLAW_GATEWAY_PASSWORD",
+            },
+          },
+        },
+      },
+      issues: [],
+      warnings: [],
+      legacyIssues: [],
+    });
+    const select = vi.fn(async (opts: WizardSelectParams<unknown>) => {
+      if (opts.message === "Config handling") {
+        return "keep";
+      }
+      return "quickstart";
+    }) as unknown as WizardPrompter["select"];
+    const prompter = buildWizardPrompter({ select });
+    const runtime = createRuntime();
+
+    try {
+      await runOnboardingWizard(
+        {
+          acceptRisk: true,
+          flow: "quickstart",
+          mode: "local",
+          runtime: "claude",
+          installDaemon: false,
+          skipChannels: true,
+          skipSearch: true,
+          skipHealth: true,
+          skipUi: true,
+        },
+        runtime,
+        prompter,
+      );
+    } finally {
+      if (previous === undefined) {
+        delete process.env.REMOTECLAW_GATEWAY_PASSWORD;
+      } else {
+        process.env.REMOTECLAW_GATEWAY_PASSWORD = previous;
+      }
+    }
+
+    expect(probeGatewayReachable).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: "ws://127.0.0.1:18789",
+        password: "gateway-ref-password", // pragma: allowlist secret
+      }),
+    );
+  });
+
+  it("passes secretInputMode through to local gateway config step", async () => {
+    configureGatewayForOnboarding.mockClear();
+    const workspaceDir = await makeCaseDir("workspace-");
+    const prompter = buildWizardPrompter({});
+    const runtime = createRuntime();
+
+    await runOnboardingWizard(
+      {
+        acceptRisk: true,
+        flow: "quickstart",
+        mode: "local",
+        runtime: "claude",
+        workspace: workspaceDir,
+        installDaemon: false,
+        skipChannels: true,
+        skipSearch: true,
+        skipHealth: true,
+        skipUi: true,
+        secretInputMode: "ref", // pragma: allowlist secret
+      },
+      runtime,
+      prompter,
+    );
+
+    expect(configureGatewayForOnboarding).toHaveBeenCalledWith(
+      expect.objectContaining({
+        secretInputMode: "ref", // pragma: allowlist secret
+      }),
+    );
+  });
+});

@@ -1,13 +1,12 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
 import type {
   ChannelAccountSnapshot,
   ChannelGatewayContext,
-} from "../../../src/channels/plugins/types.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import type { PluginRuntime } from "../../../src/plugins/runtime/types.js";
-import { createRuntimeEnv } from "../../../test/helpers/extensions/runtime-env.js";
-import type { ResolvedTelegramAccount } from "./accounts.js";
-import * as auditModule from "./audit.js";
+  RemoteClawConfig,
+  PluginRuntime,
+  ResolvedTelegramAccount,
+} from "remoteclaw/plugin-sdk";
+import { describe, expect, it, vi } from "vitest";
+import { createRuntimeEnv } from "../../test-utils/runtime-env.js";
 import { telegramPlugin } from "./channel.js";
 import { setTelegramRuntime } from "./runtime.js";
 

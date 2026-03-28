@@ -1,4 +1,3 @@
-import { inspectSlackAccount } from "../../../extensions/slack/src/account-inspect.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
   resolveChannelGroupRequireMention,
@@ -12,6 +11,7 @@ import type {
 } from "../../config/types.tools.js";
 import { resolveExactLineGroupConfigKey } from "../../line/group-keys.js";
 import { normalizeAtHashSlug, normalizeHyphenSlug } from "../../shared/string-normalization.js";
+import { resolveSlackAccount } from "../../slack/accounts.js";
 import type { ChannelGroupContext } from "./types.js";
 
 type GroupMentionParams = ChannelGroupContext;
@@ -279,10 +279,79 @@ export function resolveSlackGroupRequireMention(params: GroupMentionParams): boo
 }
 
 export function resolveBlueBubblesGroupRequireMention(params: GroupMentionParams): boolean {
-  return resolveChannelGroupRequireMention({
+  return resolveChannelRequireMention(params, "bluebubbles");
+}
+
+export function resolveTelegramGroupToolPolicy(
+  params: GroupMentionParams,
+): GroupToolPolicyConfig | undefined {
+  const { chatId } = parseTelegramGroupId(params.groupId);
+  return resolveChannelToolPolicyForSender(params, "telegram", chatId ?? params.groupId);
+}
+
+export function resolveWhatsAppGroupToolPolicy(
+  params: GroupMentionParams,
+): GroupToolPolicyConfig | undefined {
+  return resolveChannelToolPolicyForSender(params, "whatsapp");
+}
+
+export function resolveIMessageGroupToolPolicy(
+  params: GroupMentionParams,
+): GroupToolPolicyConfig | undefined {
+  return resolveChannelToolPolicyForSender(params, "imessage");
+}
+
+export function resolveDiscordGroupToolPolicy(
+  params: GroupMentionParams,
+): GroupToolPolicyConfig | undefined {
+  const context = resolveDiscordPolicyContext(params);
+  const channelPolicy = resolveSenderToolsEntry(context.channelEntry, params);
+  if (channelPolicy) {
+    return channelPolicy;
+  }
+  return resolveSenderToolsEntry(context.guildEntry, params);
+}
+
+export function resolveSlackGroupToolPolicy(
+  params: GroupMentionParams,
+): GroupToolPolicyConfig | undefined {
+  const resolved = resolveSlackChannelPolicyEntry(params);
+  return resolveSenderToolsEntry(resolved, params);
+}
+
+export function resolveBlueBubblesGroupToolPolicy(
+  params: GroupMentionParams,
+): GroupToolPolicyConfig | undefined {
+  return resolveChannelToolPolicyForSender(params, "bluebubbles");
+}
+
+export function resolveLineGroupRequireMention(params: GroupMentionParams): boolean {
+  const exactGroupId = resolveExactLineGroupConfigKey({
     cfg: params.cfg,
-    channel: "bluebubbles",
-    groupId: params.groupId,
     accountId: params.accountId,
+    groupId: params.groupId,
   });
+  if (exactGroupId) {
+    return resolveChannelGroupRequireMention({
+      cfg: params.cfg,
+      channel: "line",
+      groupId: exactGroupId,
+      accountId: params.accountId,
+    });
+  }
+  return resolveChannelRequireMention(params, "line");
+}
+
+export function resolveLineGroupToolPolicy(
+  params: GroupMentionParams,
+): GroupToolPolicyConfig | undefined {
+  const exactGroupId = resolveExactLineGroupConfigKey({
+    cfg: params.cfg,
+    accountId: params.accountId,
+    groupId: params.groupId,
+  });
+  if (exactGroupId) {
+    return resolveChannelToolPolicyForSender(params, "line", exactGroupId);
+  }
+  return resolveChannelToolPolicyForSender(params, "line");
 }

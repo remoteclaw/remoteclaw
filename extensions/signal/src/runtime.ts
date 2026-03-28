@@ -1,7 +1,4 @@
-import {
-  createPluginRuntimeStore,
-  type PluginRuntime,
-} from "../../../src/plugin-sdk-internal/core.js";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk/signal";
 
 let runtime: PluginRuntime | null = null;
 

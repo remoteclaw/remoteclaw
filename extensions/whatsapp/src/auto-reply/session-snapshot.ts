@@ -1,4 +1,4 @@
-import type { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type { loadConfig } from "../../../../src/config/config.js";
 import {
   evaluateSessionFreshness,
   loadSessionStore,
@@ -8,8 +8,8 @@ import {
   resolveSessionResetType,
   resolveSessionKey,
   resolveStorePath,
-} from "remoteclaw/plugin-sdk/config-runtime";
-import { normalizeMainKey } from "remoteclaw/plugin-sdk/routing";
+} from "../../../../src/config/sessions.js";
+import { normalizeMainKey } from "../../../../src/routing/session-key.js";
 
 export function getSessionSnapshot(
   cfg: ReturnType<typeof loadConfig>,

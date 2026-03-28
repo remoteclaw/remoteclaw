@@ -29,19 +29,19 @@ const mocks = vi.hoisted(() => ({
   deliverOutboundPayloads: vi.fn(),
 }));
 
-vi.mock("../../../extensions/discord/src/send.js", () => ({
+vi.mock("../../discord/send.js", () => ({
   sendMessageDiscord: mocks.sendMessageDiscord,
 }));
-vi.mock("../../../extensions/imessage/src/send.js", () => ({
+vi.mock("../../imessage/send.js", () => ({
   sendMessageIMessage: mocks.sendMessageIMessage,
 }));
-vi.mock("../../../extensions/signal/src/send.js", () => ({
+vi.mock("../../signal/send.js", () => ({
   sendMessageSignal: mocks.sendMessageSignal,
 }));
-vi.mock("../../../extensions/slack/src/send.js", () => ({
+vi.mock("../../slack/send.js", () => ({
   sendMessageSlack: mocks.sendMessageSlack,
 }));
-vi.mock("../../../extensions/telegram/src/send.js", () => ({
+vi.mock("../../telegram/send.js", () => ({
   sendMessageTelegram: mocks.sendMessageTelegram,
 }));
 vi.mock("../../../extensions/whatsapp/src/send.js", () => ({

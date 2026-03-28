@@ -1,8 +1,6 @@
 // Narrow plugin-sdk surface for the bundled msteams plugin.
 // Keep this list additive and scoped to symbols used under extensions/msteams.
 
-import { createOptionalChannelSetupSurface } from "./channel-setup.js";
-
 export type { ChunkMode } from "../auto-reply/chunk.js";
 export type { HistoryEntry } from "../auto-reply/reply/history.js";
 export {
@@ -45,8 +43,8 @@ export {
   setTopLevelChannelAllowFrom,
   setTopLevelChannelDmPolicyWithAllowFrom,
   setTopLevelChannelGroupPolicy,
-  splitSetupEntries,
-} from "../channels/plugins/setup-flow-helpers.js";
+  splitOnboardingEntries,
+} from "../channels/plugins/onboarding/helpers.js";
 export { PAIRING_APPROVED_MESSAGE } from "../channels/plugins/pairing-message.js";
 export type {
   BaseProbeResult,
@@ -56,8 +54,8 @@ export type {
   ChannelOutboundAdapter,
 } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
-export { createChannelReplyPipeline, createReplyPrefixOptions } from "./channel-reply-pipeline.js";
-export { createTypingCallbacks } from "./channel-reply-pipeline.js";
+export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
+export { createTypingCallbacks } from "../channels/typing.js";
 export type { RemoteClawConfig } from "../config/config.js";
 export { isDangerousNameMatchingEnabled } from "../config/dangerous-name-matching.js";
 export { resolveToolsBySender } from "../config/group-policy.js";
@@ -99,14 +97,14 @@ export {
 } from "./group-access.js";
 export { formatDocsLink } from "../terminal/links.js";
 export { sleep } from "../utils.js";
-export { loadWebMedia } from "../../extensions/whatsapp/src/media.js";
+export { loadWebMedia } from "../web/media.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
 export { keepHttpServerTaskAlive } from "./channel-lifecycle.js";
 export { withFileLock } from "./file-lock.js";
 export { dispatchReplyFromConfigWithSettledDispatcher } from "./inbound-reply-dispatch.js";
 export { readJsonFileWithFallback, writeJsonFileAtomically } from "./json-store.js";
 export { loadOutboundMediaFromUrl } from "./outbound-media.js";
-export { createChannelPairingController, createScopedPairingAccess } from "./channel-pairing.js";
+export { createScopedPairingAccess } from "./pairing-access.js";
 export { resolveInboundSessionEnvelopeContext } from "../channels/session-envelope.js";
 export {
   buildHostnameAllowlistPolicyFromSuffixAllowlist,
@@ -120,13 +118,3 @@ export {
   createDefaultChannelRuntimeState,
 } from "./status-helpers.js";
 export { normalizeStringEntries } from "../shared/string-normalization.js";
-
-const msteamsSetup = createOptionalChannelSetupSurface({
-  channel: "msteams",
-  label: "Microsoft Teams",
-  npmSpec: "@openclaw/msteams",
-  docsPath: "/channels/msteams",
-});
-
-export const msteamsSetupWizard = msteamsSetup.setupWizard;
-export const msteamsSetupAdapter = msteamsSetup.setupAdapter;

@@ -17,31 +17,16 @@ import {
   applySyntheticConfig,
   applyXaiConfig,
   applyXaiProviderConfig,
-  XAI_DEFAULT_MODEL_REF,
-} from "../../extensions/xai/onboard.js";
-import { applyXiaomiConfig, applyXiaomiProviderConfig } from "../../extensions/xiaomi/onboard.js";
-import { applyZaiConfig, applyZaiProviderConfig } from "../../extensions/zai/onboard.js";
-import { SYNTHETIC_DEFAULT_MODEL_ID } from "../agents/synthetic-models.js";
-import {
-  resolveAgentModelFallbackValues,
-  resolveAgentModelPrimaryValue,
-} from "../config/model-input.js";
-import type { ModelApi } from "../config/types.models.js";
-import {
-  MISTRAL_DEFAULT_MODEL_REF,
-  ZAI_CODING_CN_BASE_URL,
-  ZAI_GLOBAL_BASE_URL,
-} from "../plugin-sdk/provider-models.js";
-import {
+  applyXiaomiConfig,
+  applyZaiConfig,
+  applyZaiProviderConfig,
   OPENROUTER_DEFAULT_MODEL_REF,
+  MISTRAL_DEFAULT_MODEL_REF,
+  XAI_DEFAULT_MODEL_REF,
   setMinimaxApiKey,
   writeOAuthCredentials,
-} from "../plugins/provider-auth-storage.js";
-import {
-  createAuthTestLifecycle,
-  readAuthProfilesForAgent,
-  setupAuthTestEnv,
-} from "./test-wizard-helpers.js";
+} from "./onboard-auth.js";
+import { createAuthTestLifecycle, setupAuthTestEnv } from "./test-wizard-helpers.js";
 
 function createLegacyProviderConfig(_params: {
   providerId: string;
@@ -269,17 +254,7 @@ describe("provider config helpers", () => {
 describe("applyZaiConfig", () => {
   it("sets agent default models for zai", () => {
     const cfg = applyZaiConfig({});
-    expect(cfg.models?.providers?.zai).toMatchObject({
-      // Default: general (non-coding) endpoint. Coding Plan endpoint is detected during setup.
-      baseUrl: ZAI_GLOBAL_BASE_URL,
-      api: "openai-completions",
-    });
-    const ids = cfg.models?.providers?.zai?.models?.map((m) => m.id);
-    expect(ids).toContain("glm-5");
-    expect(ids).toContain("glm-5-turbo");
-    expect(ids).toContain("glm-4.7");
-    expect(ids).toContain("glm-4.7-flash");
-    expect(ids).toContain("glm-4.7-flashx");
+    expect(cfg.agents?.defaults?.models).toBeDefined();
   });
 
   it("does not set default primary model for CN endpoint", () => {

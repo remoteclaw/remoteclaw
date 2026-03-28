@@ -1,9 +1,9 @@
-import { issuePairingChallenge } from "remoteclaw/plugin-sdk/conversation-runtime";
-import { upsertChannelPairingRequest } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { issuePairingChallenge } from "../../../../src/pairing/pairing-challenge.js";
+import { upsertChannelPairingRequest } from "../../../../src/pairing/pairing-store.js";
 import {
   readStoreAllowFromForDmPolicy,
   resolveDmGroupAccessWithLists,
-} from "remoteclaw/plugin-sdk/security-runtime";
+} from "../../../../src/security/dm-policy-shared.js";
 import { isSignalSenderAllowed, type SignalSender } from "../identity.js";
 
 type SignalDmPolicy = "open" | "pairing" | "allowlist" | "disabled";

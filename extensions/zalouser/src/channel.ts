@@ -1,25 +1,8 @@
-import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
 import {
-  createPairingPrefixStripper,
-  createTextPairingAdapter,
-} from "remoteclaw/plugin-sdk/channel-pairing";
-import {
-  createEmptyChannelResult,
-  createRawChannelSendResultAdapter,
-} from "remoteclaw/plugin-sdk/channel-send-result";
-import { createStaticReplyToModeResolver } from "remoteclaw/plugin-sdk/conversation-runtime";
-import { buildPassiveProbedChannelStatusSummary } from "remoteclaw/plugin-sdk/extension-shared";
-import type {
-  ChannelAccountSnapshot,
-  ChannelDirectoryEntry,
-  ChannelGroupContext,
-  ChannelMessageActionAdapter,
-  ChannelPlugin,
-  RemoteClawConfig,
-  GroupToolPolicyConfig,
-} from "remoteclaw/plugin-sdk/zalouser";
-import {
+  buildAccountScopedDmSecurityPolicy,
+  mapAllowFromEntries,
+  applyAccountNameToChannelSection,
+  applySetupAccountConfigPatch,
   buildChannelSendResult,
   buildBaseAccountStatusSnapshot,
   buildChannelConfigSchema,
@@ -27,12 +10,18 @@ import {
   chunkTextForOutbound,
   deleteAccountFromConfigSection,
   formatAllowFromLowercase,
-  formatPairingApproveHint,
-  migrateBaseNameToDefaultAccount,
+  isNumericTargetId,
   normalizeAccountId,
-  resolveChannelAccountConfigBasePath,
+  sendPayloadWithChunkedTextAndMedia,
   setAccountEnabledInConfigSection,
+  type ChannelAccountSnapshot,
+  type ChannelDirectoryEntry,
   type ChannelDock,
+  type ChannelGroupContext,
+  type ChannelMessageActionAdapter,
+  type ChannelPlugin,
+  type RemoteClawConfig,
+  type GroupToolPolicyConfig,
 } from "remoteclaw/plugin-sdk";
 import {
   listZalouserAccountIds,
@@ -379,18 +368,16 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {
-      const resolvedAccountId = accountId ?? account.accountId ?? DEFAULT_ACCOUNT_ID;
-      const basePath = resolveChannelAccountConfigBasePath({
+      return buildAccountScopedDmSecurityPolicy({
         cfg,
         channelKey: "zalouser",
-        accountId: resolvedAccountId,
-      });
-      return {
-        policy: account.config.dmPolicy ?? "pairing",
+        accountId,
+        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
+        policy: account.config.dmPolicy,
         allowFrom: account.config.allowFrom ?? [],
         policyPathSuffix: "dmPolicy",
         normalizeEntry: (raw) => raw.replace(/^(zalouser|zlu):/i, ""),
-      };
+      });
     },
   },
   groups: {

@@ -1,17 +1,17 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type {
-  ChannelDirectoryEntryKind,
-  ChannelMessagingAdapter,
-  ChannelOutboundAdapter,
-  ChannelPlugin,
-} from "../../channels/plugins/types.js";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { slackPlugin } from "../../../extensions/slack/src/channel.js";
+import { telegramPlugin } from "../../../extensions/telegram/src/channel.js";
+import { whatsappPlugin } from "../../../extensions/whatsapp/src/channel.js";
+import { jsonResult } from "../../agents/tools/common.js";
+import type { ChannelPlugin } from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
-import {
-  createChannelTestPluginBase,
-  createTestRegistry,
-} from "../../test-utils/channel-plugins.js";
+import { createOutboundTestPlugin, createTestRegistry } from "../../test-utils/channel-plugins.js";
 import { createIMessageTestPlugin } from "../../test-utils/imessage-test-plugin.js";
+import { loadWebMedia } from "../../web/media.js";
 import { runMessageAction } from "./message-action-runner.js";
 
 vi.mock("../../web/media.js", async () => {
@@ -69,112 +69,29 @@ const runDrySend = (params: {
     action: "send",
   });
 
-type ResolvedTestTarget = { to: string; kind: ChannelDirectoryEntryKind };
-
-const directOutbound: ChannelOutboundAdapter = { deliveryMode: "direct" };
-
-function normalizeSlackTarget(raw: string): string {
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    return trimmed;
-  }
-  if (trimmed.startsWith("#")) {
-    return trimmed.slice(1).trim();
-  }
-  if (/^channel:/i.test(trimmed)) {
-    return trimmed.replace(/^channel:/i, "").trim();
-  }
-  if (/^user:/i.test(trimmed)) {
-    return trimmed.replace(/^user:/i, "").trim();
-  }
-  const mention = trimmed.match(/^<@([A-Z0-9]+)>$/i);
-  if (mention?.[1]) {
-    return mention[1];
-  }
-  return trimmed;
-}
-
-function createConfiguredTestPlugin(params: {
-  id: "slack" | "telegram" | "whatsapp";
-  isConfigured: (cfg: RemoteClawConfig) => boolean;
-  normalizeTarget: (raw: string) => string | undefined;
-  resolveTarget: (input: string) => ResolvedTestTarget | null;
-}): ChannelPlugin {
-  const messaging: ChannelMessagingAdapter = {
-    normalizeTarget: params.normalizeTarget,
-    targetResolver: {
-      looksLikeId: (raw) => Boolean(params.resolveTarget(raw.trim())),
-      hint: "<id>",
-      resolveTarget: async (resolverParams) => {
-        const resolved = params.resolveTarget(resolverParams.input);
-        return resolved ? { ...resolved, source: "normalized" } : null;
-      },
-    },
-    inferTargetChatType: (inferParams) =>
-      params.resolveTarget(inferParams.to)?.kind === "user" ? "direct" : "group",
-  };
+function createAlwaysConfiguredPluginConfig(account: Record<string, unknown> = { enabled: true }) {
   return {
-    ...createChannelTestPluginBase({
-      id: params.id,
-      config: {
-        listAccountIds: () => ["default"],
-        resolveAccount: () => ({ enabled: true }),
-        isConfigured: (_account, cfg) => params.isConfigured(cfg),
-      },
-    }),
-    outbound: directOutbound,
-    messaging,
+    listAccountIds: () => ["default"],
+    resolveAccount: () => account,
+    isConfigured: () => true,
   };
 }
 
-const slackTestPlugin = createConfiguredTestPlugin({
-  id: "slack",
-  isConfigured: (cfg) => Boolean(cfg.channels?.slack?.botToken?.trim()),
-  normalizeTarget: (raw) => normalizeSlackTarget(raw) || undefined,
-  resolveTarget: (input) => {
-    const normalized = normalizeSlackTarget(input);
-    if (!normalized) {
-      return null;
-    }
-    if (/^[A-Z0-9]+$/i.test(normalized)) {
-      const kind = /^U/i.test(normalized) ? "user" : "group";
-      return { to: normalized, kind };
-    }
-    return null;
-  },
-});
+let createPluginRuntime: typeof import("../../plugins/runtime/index.js").createPluginRuntime;
+let setSlackRuntime: typeof import("../../../extensions/slack/src/runtime.js").setSlackRuntime;
+let setTelegramRuntime: typeof import("../../../extensions/telegram/src/runtime.js").setTelegramRuntime;
+let setWhatsAppRuntime: typeof import("../../../extensions/whatsapp/src/runtime.js").setWhatsAppRuntime;
 
-const telegramTestPlugin = createConfiguredTestPlugin({
-  id: "telegram",
-  isConfigured: (cfg) => Boolean(cfg.channels?.telegram?.botToken?.trim()),
-  normalizeTarget: (raw) => raw.trim() || undefined,
-  resolveTarget: (input) => {
-    const normalized = input.trim();
-    if (!normalized) {
-      return null;
-    }
-    return {
-      to: normalized.replace(/^telegram:/i, ""),
-      kind: normalized.startsWith("@") ? "user" : "group",
-    };
-  },
-});
-
-const whatsappTestPlugin = createConfiguredTestPlugin({
-  id: "whatsapp",
-  isConfigured: (cfg) => Boolean(cfg.channels?.whatsapp),
-  normalizeTarget: (raw) => raw.trim() || undefined,
-  resolveTarget: (input) => {
-    const normalized = input.trim();
-    if (!normalized) {
-      return null;
-    }
-    return {
-      to: normalized,
-      kind: normalized.endsWith("@g.us") ? "group" : "user",
-    };
-  },
-});
+function installChannelRuntimes(params?: { includeTelegram?: boolean; includeWhatsApp?: boolean }) {
+  const runtime = createPluginRuntime();
+  setSlackRuntime(runtime);
+  if (params?.includeTelegram !== false) {
+    setTelegramRuntime(runtime);
+  }
+  if (params?.includeWhatsApp !== false) {
+    setWhatsAppRuntime(runtime);
+  }
+}
 
 describe("runMessageAction context isolation", () => {
   beforeAll(async () => {
@@ -191,17 +108,17 @@ describe("runMessageAction context isolation", () => {
         {
           pluginId: "slack",
           source: "test",
-          plugin: slackTestPlugin,
+          plugin: slackPlugin,
         },
         {
           pluginId: "whatsapp",
           source: "test",
-          plugin: whatsappTestPlugin,
+          plugin: whatsappPlugin,
         },
         {
           pluginId: "telegram",
           source: "test",
-          plugin: telegramTestPlugin,
+          plugin: telegramPlugin,
         },
         {
           pluginId: "imessage",

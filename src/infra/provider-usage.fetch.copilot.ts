@@ -1,11 +1,6 @@
-import {
-  buildUsageHttpErrorSnapshot,
-  fetchJson,
-  clampPercent,
-  PROVIDER_LABELS,
-  type ProviderUsageSnapshot,
-  type UsageWindow,
-} from "remoteclaw/plugin-sdk/provider-usage";
+import { buildUsageHttpErrorSnapshot, fetchJson } from "./provider-usage.fetch.shared.js";
+import { clampPercent, PROVIDER_LABELS } from "./provider-usage.shared.js";
+import type { ProviderUsageSnapshot, UsageWindow } from "./provider-usage.types.js";
 
 type CopilotUsageResponse = {
   quota_snapshots?: {

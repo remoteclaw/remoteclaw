@@ -1,16 +1,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { inspectTelegramAccount } from "../../extensions/telegram/src/account-inspect.js";
-import {
-  listTelegramAccountIds,
-  resolveTelegramAccount,
-} from "../../extensions/telegram/src/accounts.js";
+import type { ZodIssue } from "zod";
+import { normalizeChatChannelId } from "../channels/registry.js";
 import {
   isNumericTelegramUserId,
   normalizeTelegramAllowFromEntry,
-} from "../../extensions/telegram/src/allow-from.js";
-import { fetchTelegramChatId } from "../../extensions/telegram/src/api-fetch.js";
-import { normalizeChatChannelId } from "../channels/registry.js";
+} from "../channels/telegram/allow-from.js";
+import { lookupTelegramChatId } from "../channels/telegram/api.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { listRouteBindings } from "../config/bindings.js";
 import type { RemoteClawConfig } from "../config/config.js";
@@ -22,38 +18,6 @@ import type { TelegramNetworkConfig } from "../config/types.telegram.js";
 import { parseToolsBySenderTypedKey } from "../config/types.tools.js";
 import { RemoteClawSchema } from "../config/zod-schema.js";
 import { readChannelAllowFromStore } from "../pairing/pairing-store.js";
-import {
-  lookupTelegramChatId,
-} from "../../extensions/telegram/api.js";
-import { resolveCommandSecretRefsViaGateway } from "../cli/command-secret-gateway.js";
-import { getChannelsCommandSecretTargetIds } from "../cli/command-secret-targets.js";
-import { resolveCommandResolutionFromArgv } from "../infra/exec-command-resolution.js";
-import {
-  listInterpreterLikeSafeBins,
-  resolveMergedSafeBinProfileFixtures,
-} from "../infra/exec-safe-bin-runtime-policy.js";
-import {
-  getTrustedSafeBinDirs,
-  isTrustedSafeBinPath,
-  normalizeTrustedSafeBinDirs,
-} from "../infra/exec-safe-bin-trust.js";
-import {
-  autoPrepareLegacyMatrixCrypto,
-  detectLegacyMatrixCrypto,
-} from "../infra/matrix-legacy-crypto.js";
-import {
-  autoMigrateLegacyMatrixState,
-  detectLegacyMatrixState,
-} from "../infra/matrix-legacy-state.js";
-import {
-  hasActionableMatrixMigration,
-  hasPendingMatrixMigration,
-  maybeCreateMatrixMigrationSnapshot,
-} from "../infra/matrix-migration-snapshot.js";
-import {
-  detectPluginInstallPathIssue,
-  formatPluginInstallPathIssue,
-} from "../infra/plugin-install-path-warnings.js";
 import {
   formatChannelAccountsDefaultPath,
   formatSetExplicitDefaultInstruction,
@@ -73,6 +37,7 @@ import {
   isSlackMutableAllowEntry,
   isZalouserMutableGroupEntry,
 } from "../security/mutable-allowlist-detectors.js";
+import { listTelegramAccountIds, resolveTelegramAccount } from "../telegram/accounts.js";
 import { note } from "../terminal/note.js";
 import { resolveHomeDir } from "../utils.js";
 import { normalizeCompatibilityConfigValues } from "./doctor-legacy-config.js";
@@ -467,27 +432,13 @@ async function maybeRepairTelegramAllowFromUsernames(cfg: RemoteClawConfig): Pro
     return { config: cfg, changes: [] };
   }
 
-  const { resolvedConfig } = await resolveCommandSecretRefsViaGateway({
-    config: cfg,
-    commandName: "doctor --fix",
-    targetIds: getChannelsCommandSecretTargetIds(),
-    mode: "read_only_status",
-  });
-  const hasConfiguredUnavailableToken = listTelegramAccountIds(cfg).some((accountId) => {
-    const inspected = inspectTelegramAccount({ cfg, accountId });
-    return inspected.enabled && inspected.tokenStatus === "configured_unavailable";
-  });
-  const tokenResolutionWarnings: string[] = [];
   const lookupAccounts: ResolvedTelegramLookupAccount[] = [];
   const seenLookupAccounts = new Set<string>();
-  for (const accountId of listTelegramAccountIds(resolvedConfig)) {
+  for (const accountId of listTelegramAccountIds(cfg)) {
     let account: NonNullable<ReturnType<typeof resolveTelegramAccount>>;
     try {
-      account = resolveTelegramAccount({ cfg: resolvedConfig, accountId });
-    } catch (error) {
-      tokenResolutionWarnings.push(
-        `- Telegram account ${accountId}: failed to inspect bot token (${describeUnknownError(error)}).`,
-      );
+      account = resolveTelegramAccount({ cfg, accountId });
+    } catch {
       continue;
     }
     const token = account.tokenSource === "none" ? "" : account.token.trim();

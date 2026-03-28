@@ -1,6 +1,5 @@
-import { createAccountListHelpers, mergeAccountConfig } from "remoteclaw/plugin-sdk/account-helpers";
+import { createAccountListHelpers } from "remoteclaw/plugin-sdk";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
-import { resolveAccountEntry } from "remoteclaw/plugin-sdk/routing";
 import type { RemoteClawConfig } from "./runtime-api.js";
 import { resolveZaloToken } from "./token.js";
 import type { ResolvedZaloAccount, ZaloAccountConfig, ZaloConfig } from "./types.js";
@@ -15,20 +14,18 @@ function resolveAccountConfig(
   cfg: RemoteClawConfig,
   accountId: string,
 ): ZaloAccountConfig | undefined {
-  return resolveAccountEntry(
-    (cfg.channels?.zalo as ZaloConfig | undefined)?.accounts as
-      | Record<string, ZaloAccountConfig>
-      | undefined,
-    accountId,
-  );
+  const accounts = (cfg.channels?.zalo as ZaloConfig | undefined)?.accounts;
+  if (!accounts || typeof accounts !== "object") {
+    return undefined;
+  }
+  return accounts[accountId] as ZaloAccountConfig | undefined;
 }
 
 function mergeZaloAccountConfig(cfg: RemoteClawConfig, accountId: string): ZaloAccountConfig {
-  return mergeAccountConfig<ZaloAccountConfig>({
-    channelConfig: cfg.channels?.zalo as ZaloAccountConfig | undefined,
-    accountConfig: resolveAccountConfig(cfg, accountId),
-    omitKeys: ["defaultAccount"],
-  });
+  const raw = (cfg.channels?.zalo ?? {}) as ZaloConfig;
+  const { accounts: _ignored, defaultAccount: _ignored2, ...base } = raw;
+  const account = resolveAccountConfig(cfg, accountId) ?? {};
+  return { ...base, ...account };
 }
 
 export function resolveZaloAccount(params: {

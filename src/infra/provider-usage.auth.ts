@@ -5,12 +5,7 @@ import {
   ensureAuthProfileStore,
   listProfilesForProvider,
   resolveApiKeyForProfile,
-  resolveAuthProfileOrder,
-} from "../agents/auth-profiles.js";
-import { isNonSecretApiKeyMarker } from "../agents/model-auth-markers.js";
-import { resolveUsableCustomProviderApiKey } from "../agents/model-auth.js";
-import { normalizeProviderId } from "../agents/model-selection.js";
-import { loadConfig } from "../config/config.js";
+} from "../auth/index.js";
 import { normalizeSecretInput } from "../utils/normalize-secret-input.js";
 import { resolveRequiredHomeDir } from "./home-dir.js";
 import type { UsageProviderId } from "./provider-usage.types.js";
@@ -26,14 +21,6 @@ function resolveZaiApiKey(): string | undefined {
     normalizeSecretInput(process.env.ZAI_API_KEY) || normalizeSecretInput(process.env.Z_AI_API_KEY);
   if (envDirect) {
     return envDirect;
-  }
-
-  const cfg = loadConfig();
-  const key =
-    resolveUsableCustomProviderApiKey({ cfg, provider: "zai" })?.apiKey ??
-    resolveUsableCustomProviderApiKey({ cfg, provider: "z-ai" })?.apiKey;
-  if (key) {
-    return key;
   }
 
   const store = ensureAuthProfileStore();
@@ -93,15 +80,6 @@ function resolveProviderApiKeyFromConfigAndStore(params: {
   const envDirect = params.envDirect.map(normalizeSecretInput).find(Boolean);
   if (envDirect) {
     return envDirect;
-  }
-
-  const cfg = loadConfig();
-  const key = resolveUsableCustomProviderApiKey({
-    cfg,
-    provider: params.providerId,
-  })?.apiKey;
-  if (key) {
-    return key;
   }
 
   const store = ensureAuthProfileStore();

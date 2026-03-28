@@ -1,18 +1,8 @@
-export type { RemoteClawConfig } from "../config/config.js";
-
-export { createAccountActionGate } from "../channels/plugins/account-action-gate.js";
 export {
   createAccountListHelpers,
-  mergeAccountConfig,
+  listCombinedAccountIds,
+  resolveListedDefaultAccountId,
 } from "../channels/plugins/account-helpers.js";
-export { normalizeChatType } from "../channels/chat-type.js";
-export { resolveAccountEntry } from "../routing/account-lookup.js";
-export {
-  DEFAULT_ACCOUNT_ID,
-  normalizeAccountId,
-  normalizeOptionalAccountId,
-} from "../routing/session-key.js";
-export { normalizeE164, pathExists, resolveUserPath } from "../utils.js";
 
 /** Resolve an account by id, then fall back to the default account when the primary lacks credentials. */
 export function resolveAccountWithDefaultFallback<TAccount>(params: {

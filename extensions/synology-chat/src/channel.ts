@@ -5,19 +5,11 @@
  */
 
 import {
-  createHybridChannelConfigAdapter,
-  createScopedDmSecurityResolver,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { buildChannelConfigSchema } from "remoteclaw/plugin-sdk/channel-config-schema";
-import { createTextPairingAdapter } from "remoteclaw/plugin-sdk/channel-pairing";
-import {
-  createConditionalWarningCollector,
-  projectWarningCollector,
-} from "remoteclaw/plugin-sdk/channel-policy";
-import { attachChannelToResult } from "remoteclaw/plugin-sdk/channel-send-result";
-import { createEmptyChannelDirectoryAdapter } from "remoteclaw/plugin-sdk/directory-runtime";
-import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/setup";
-import { registerPluginHttpRoute } from "remoteclaw/plugin-sdk/webhook-ingress";
+  DEFAULT_ACCOUNT_ID,
+  setAccountEnabledInConfigSection,
+  registerPluginHttpRoute,
+  buildChannelConfigSchema,
+} from "remoteclaw/plugin-sdk";
 import { z } from "zod";
 import { listAccountIds, resolveAccount } from "./accounts.js";
 import { sendMessage, sendFileUrl } from "./client.js";

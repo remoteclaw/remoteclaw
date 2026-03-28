@@ -1,11 +1,10 @@
 import {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,
-  DEFAULT_ACCOUNT_ID,
   migrateBaseNameToDefaultAccount,
-  normalizeAccountId,
-  type ChannelSetupAdapter,
-} from "remoteclaw/plugin-sdk/setup";
+} from "../../../src/channels/plugins/setup-helpers.js";
+import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
 
 const channel = "zalo" as const;
 

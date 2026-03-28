@@ -4,18 +4,7 @@
   "private": true,
   "description": "RemoteClaw LINE channel plugin",
   "type": "module",
-  "devDependencies": {
-    "openclaw": "workspace:*"
-  },
-  "peerDependencies": {
-    "openclaw": ">=2026.3.14"
-  },
-  "peerDependenciesMeta": {
-    "openclaw": {
-      "optional": true
-    }
-  },
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ],

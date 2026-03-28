@@ -1,7 +1,5 @@
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
-import { tryReadSecretFileSync } from "remoteclaw/plugin-sdk/infra-runtime";
-import type { BaseTokenResolution } from "remoteclaw/plugin-sdk/zalo";
-import { normalizeResolvedSecretInputString, normalizeSecretInputString } from "./secret-input.js";
+import { readFileSync } from "node:fs";
+import { type BaseTokenResolution, DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk";
 import type { ZaloConfig } from "./types.js";
 
 export type ZaloTokenResolution = BaseTokenResolution & {

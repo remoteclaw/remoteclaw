@@ -1,10 +1,9 @@
 // Narrow plugin-sdk surface for the bundled tlon plugin.
 // Keep this list additive and scoped to symbols used under extensions/tlon.
 
-import { createOptionalChannelSetupSurface } from "./channel-setup.js";
-
 export type { ReplyPayload } from "../auto-reply/types.js";
 export { buildChannelConfigSchema } from "../channels/plugins/config-schema.js";
+export type { ChannelOnboardingAdapter } from "../channels/plugins/onboarding-types.js";
 export {
   promptAccountId,
   resolveAccountIdForConfigure,
@@ -16,8 +15,9 @@ export type {
   ChannelSetupInput,
 } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
-export { createChannelReplyPipeline, createReplyPrefixOptions } from "./channel-reply-pipeline.js";
+export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 export type { RemoteClawConfig } from "../config/config.js";
+
 export { createDedupeCache } from "../infra/dedupe.js";
 export { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
 export type { LookupFn, SsrFPolicy } from "../infra/net/ssrf.js";
@@ -31,4 +31,3 @@ export { buildComputedAccountStatusSnapshot } from "./status-helpers.js";
 export { formatDocsLink } from "../terminal/links.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
 export { createLoggerBackedRuntime } from "./runtime.js";
-export { tlonSetupAdapter, tlonSetupWizard } from "../../extensions/tlon/setup-api.js";

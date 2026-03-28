@@ -1,15 +1,15 @@
-import { resolveTelegramAccount } from "../../../extensions/telegram/src/accounts.js";
-import { deleteTelegramUpdateOffset } from "../../../extensions/telegram/src/update-offset-store.js";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import { listChannelPluginCatalogEntries } from "../../channels/plugins/catalog.js";
 import { parseOptionalDelimitedEntries } from "../../channels/plugins/helpers.js";
 import { getChannelPlugin, normalizeChannelId } from "../../channels/plugins/index.js";
 import { moveSingleAccountChannelSectionToDefaultAccount } from "../../channels/plugins/setup-helpers.js";
-import type { ChannelSetupPlugin } from "../../channels/plugins/setup-wizard-types.js";
-import type { ChannelId, ChannelPlugin, ChannelSetupInput } from "../../channels/plugins/types.js";
+import type { ChannelId, ChannelSetupInput } from "../../channels/plugins/types.js";
+import { validateVoiceCredentials } from "../../channels/voice-credentials.js";
 import { writeConfigFile, type RemoteClawConfig } from "../../config/config.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../../runtime.js";
+import { resolveTelegramAccount } from "../../telegram/accounts.js";
+import { deleteTelegramUpdateOffset } from "../../telegram/update-offset-store.js";
 import { createClackPrompter } from "../../wizard/clack-prompter.js";
 import { applyAgentBindings, describeBinding } from "../agents.bindings.js";
 import { buildAgentSummaries } from "../agents.config.js";
@@ -175,59 +175,20 @@ export async function channelsAddCommand(
   const rawChannel = String(opts.channel ?? "");
   let channel = normalizeChannelId(rawChannel);
   let catalogEntry = channel ? undefined : resolveCatalogChannelEntry(rawChannel, nextConfig);
-  const resolveWorkspaceDir = () =>
-    resolveAgentWorkspaceDir(nextConfig, resolveDefaultAgentId(nextConfig));
-  // May trigger loadOpenClawPlugins on cache miss (disk scan + jiti import)
-  const loadScopedPlugin = async (
-    channelId: ChannelId,
-    pluginId?: string,
-  ): Promise<ChannelPlugin | undefined> => {
-    const existing = getChannelPlugin(channelId);
-    if (existing) {
-      return existing;
-    }
-    const { loadChannelSetupPluginRegistrySnapshotForChannel } =
-      await import("../channel-setup/plugin-install.js");
-    const snapshot = loadChannelSetupPluginRegistrySnapshotForChannel({
-      cfg: nextConfig,
-      runtime,
-      channel: channelId,
-      ...(pluginId ? { pluginId } : {}),
-      workspaceDir: resolveWorkspaceDir(),
-    });
-    return (
-      snapshot.channels.find((entry) => entry.plugin.id === channelId)?.plugin ??
-      snapshot.channelSetups.find((entry) => entry.plugin.id === channelId)?.plugin
-    );
-  };
 
   if (!channel && catalogEntry) {
-    const workspaceDir = resolveWorkspaceDir();
-    if (
-      !isCatalogChannelInstalled({
-        cfg: nextConfig,
-        entry: catalogEntry,
-        workspaceDir,
-      })
-    ) {
-      const { ensureChannelSetupPluginInstalled } =
-        await import("../channel-setup/plugin-install.js");
-      const prompter = createClackPrompter();
-      const result = await ensureChannelSetupPluginInstalled({
-        cfg: nextConfig,
-        entry: catalogEntry,
-        prompter,
-        runtime,
-        workspaceDir,
-      });
-      nextConfig = result.cfg;
-      if (!result.installed) {
-        return;
-      }
-      catalogEntry = {
-        ...catalogEntry,
-        ...(result.pluginId ? { pluginId: result.pluginId } : {}),
-      };
+    const prompter = createClackPrompter();
+    const workspaceDir = resolveAgentWorkspaceDir(nextConfig, resolveDefaultAgentId(nextConfig));
+    const result = await ensureOnboardingPluginInstalled({
+      cfg: nextConfig,
+      entry: catalogEntry,
+      prompter,
+      runtime,
+      workspaceDir,
+    });
+    nextConfig = result.cfg;
+    if (!result.installed) {
+      return;
     }
     reloadOnboardingPluginRegistry({ cfg: nextConfig, runtime, workspaceDir });
     channel = normalizeChannelId(catalogEntry.id) ?? (catalogEntry.id as ChannelId);

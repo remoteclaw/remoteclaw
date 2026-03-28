@@ -134,7 +134,7 @@ export const twitchPlugin: ChannelPlugin<TwitchAccountConfig> = {
       accountId?: string | null;
       inputs: string[];
       kind: ChannelResolveKind;
-      runtime: import("remoteclaw/plugin-sdk/runtime-env").RuntimeEnv;
+      runtime: import("../../../src/runtime.js").RuntimeEnv;
     }): Promise<ChannelResolveResult[]> => {
       const account = getAccountConfig(cfg, accountId ?? DEFAULT_ACCOUNT_ID);
 

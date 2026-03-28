@@ -1,8 +1,10 @@
 import {
   GROUP_POLICY_BLOCKED_LABEL,
-  createChannelPairingController,
-  deliverFormattedTextWithAttachments,
-  dispatchInboundReplyWithBase,
+  createScopedPairingAccess,
+  createNormalizedOutboundDeliverer,
+  createReplyPrefixOptions,
+  formatTextWithAttachmentLinks,
+  issuePairingChallenge,
   logInboundDrop,
   readStoreAllowFromForDmPolicy,
   resolveDmGroupAccessWithCommandGate,
@@ -58,7 +60,7 @@ export async function handleNextcloudTalkInbound(params: {
 }): Promise<void> {
   const { message, account, config, runtime, statusSink } = params;
   const core = getNextcloudTalkRuntime();
-  const pairing = createChannelPairingController({
+  const pairing = createScopedPairingAccess({
     core,
     channel: CHANNEL_ID,
     accountId: account.accountId,
@@ -175,10 +177,12 @@ export async function handleNextcloudTalkInbound(params: {
   } else {
     if (access.decision !== "allow") {
       if (access.decision === "pairing") {
-        await pairing.issueChallenge({
+        await issuePairingChallenge({
+          channel: CHANNEL_ID,
           senderId,
           senderIdLine: `Your Nextcloud user id: ${senderId}`,
           meta: { name: senderName || undefined },
+          upsertPairingRequest: pairing.upsertPairingRequest,
           sendPairingReply: async (text) => {
             await sendMessageNextcloudTalk(roomToken, text, { accountId: account.accountId });
             statusSink?.({ lastOutboundAt: Date.now() });

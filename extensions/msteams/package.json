@@ -8,18 +8,7 @@
     "express": "^5.2.1",
     "uuid": "^13.0.0"
   },
-  "devDependencies": {
-    "openclaw": "workspace:*"
-  },
-  "peerDependencies": {
-    "openclaw": ">=2026.3.14"
-  },
-  "peerDependenciesMeta": {
-    "openclaw": {
-      "optional": true
-    }
-  },
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ],

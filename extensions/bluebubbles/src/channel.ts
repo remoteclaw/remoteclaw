@@ -1,5 +1,8 @@
-import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
-import type { ChannelAccountSnapshot, ChannelPlugin } from "remoteclaw/plugin-sdk/bluebubbles";
+import type {
+  ChannelAccountSnapshot,
+  ChannelPlugin,
+  RemoteClawConfig,
+} from "remoteclaw/plugin-sdk";
 import {
   applyAccountNameToChannelSection,
   buildAccountScopedDmSecurityPolicy,
@@ -9,6 +12,7 @@ import {
   collectOpenGroupPolicyRestrictSendersWarnings,
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
+  formatNormalizedAllowFromEntries,
   mapAllowFromEntries,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
@@ -16,18 +20,7 @@ import {
   resolveBlueBubblesGroupRequireMention,
   resolveBlueBubblesGroupToolPolicy,
   setAccountEnabledInConfigSection,
-} from "remoteclaw/plugin-sdk/bluebubbles";
-import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
-import {
-  createPairingPrefixStripper,
-  createTextPairingAdapter,
-} from "remoteclaw/plugin-sdk/channel-pairing";
-import {
-  createOpenGroupPolicyRestrictSendersWarningCollector,
-  projectWarningCollector,
-} from "remoteclaw/plugin-sdk/channel-policy";
-import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
-import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
+} from "remoteclaw/plugin-sdk";
 import {
   listBlueBubblesAccountIds,
   type ResolvedBlueBubblesAccount,

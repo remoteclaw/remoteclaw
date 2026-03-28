@@ -3,18 +3,18 @@ import type { RemoteClawConfig } from "../config/config.js";
 import { readConfigFileSnapshot } from "../config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
-import { runNonInteractiveLocalSetup } from "./onboard-non-interactive/local.js";
-import { runNonInteractiveRemoteSetup } from "./onboard-non-interactive/remote.js";
+import { runNonInteractiveOnboardingLocal } from "./onboard-non-interactive/local.js";
+import { runNonInteractiveOnboardingRemote } from "./onboard-non-interactive/remote.js";
 import type { OnboardOptions } from "./onboard-types.js";
 
-export async function runNonInteractiveSetup(
+export async function runNonInteractiveOnboarding(
   opts: OnboardOptions,
   runtime: RuntimeEnv = defaultRuntime,
 ) {
   const snapshot = await readConfigFileSnapshot();
   if (snapshot.exists && !snapshot.valid) {
     runtime.error(
-      `Config invalid. Run \`${formatCliCommand("openclaw doctor")}\` to repair it, then re-run setup.`,
+      `Config invalid. Run \`${formatCliCommand("remoteclaw doctor")}\` to repair it, then re-run onboarding.`,
     );
     runtime.exit(1);
     return;
@@ -33,9 +33,9 @@ export async function runNonInteractiveSetup(
   }
 
   if (mode === "remote") {
-    await runNonInteractiveRemoteSetup({ opts, runtime, baseConfig });
+    await runNonInteractiveOnboardingRemote({ opts, runtime, baseConfig });
     return;
   }
 
-  await runNonInteractiveLocalSetup({ opts, runtime, baseConfig });
+  await runNonInteractiveOnboardingLocal({ opts, runtime, baseConfig });
 }

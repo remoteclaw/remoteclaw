@@ -1,10 +1,9 @@
-import { mapAllowFromEntries } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
   buildAccountScopedDmSecurityPolicy,
   collectOpenProviderGroupPolicyWarnings,
   buildOpenGroupPolicyRestrictSendersWarning,
   buildOpenGroupPolicyWarning,
-} from "remoteclaw/plugin-sdk/channel-policy";
+} from "remoteclaw/plugin-sdk";
 import type {
   ChannelAccountSnapshot,
   ChannelDock,
@@ -12,13 +11,22 @@ import type {
   RemoteClawConfig,
 } from "remoteclaw/plugin-sdk";
 import {
-  createEmptyChannelResult,
-  createRawChannelSendResultAdapter,
-} from "remoteclaw/plugin-sdk/channel-send-result";
-import { createStaticReplyToModeResolver } from "remoteclaw/plugin-sdk/conversation-runtime";
-import { createChannelDirectoryAdapter } from "remoteclaw/plugin-sdk/directory-runtime";
-import { listResolvedDirectoryUserEntriesFromAllowFrom } from "remoteclaw/plugin-sdk/directory-runtime";
-import { createLazyRuntimeModule } from "remoteclaw/plugin-sdk/lazy-runtime";
+  buildBaseAccountStatusSnapshot,
+  buildChannelConfigSchema,
+  buildTokenChannelStatusSummary,
+  buildChannelSendResult,
+  DEFAULT_ACCOUNT_ID,
+  deleteAccountFromConfigSection,
+  chunkTextForOutbound,
+  formatAllowFromLowercase,
+  mapAllowFromEntries,
+  listDirectoryUserEntriesFromAllowFrom,
+  isNumericTargetId,
+  PAIRING_APPROVED_MESSAGE,
+  resolveOutboundMediaUrls,
+  sendPayloadWithChunkedTextAndMedia,
+  setAccountEnabledInConfigSection,
+} from "remoteclaw/plugin-sdk";
 import {
   listZaloAccountIds,
   resolveDefaultZaloAccountId,
@@ -124,18 +132,16 @@ export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {
-      const resolvedAccountId = accountId ?? account.accountId ?? DEFAULT_ACCOUNT_ID;
-      const basePath = resolveChannelAccountConfigBasePath({
+      return buildAccountScopedDmSecurityPolicy({
         cfg,
         channelKey: "zalo",
-        accountId: resolvedAccountId,
-      });
-      return {
-        policy: account.config.dmPolicy ?? "pairing",
+        accountId,
+        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
+        policy: account.config.dmPolicy,
         allowFrom: account.config.allowFrom ?? [],
         policyPathSuffix: "dmPolicy",
         normalizeEntry: (raw) => raw.replace(/^(zalo|zl):/i, ""),
-      };
+      });
     },
     collectWarnings: ({ account, cfg }) => {
       return collectOpenProviderGroupPolicyWarnings({

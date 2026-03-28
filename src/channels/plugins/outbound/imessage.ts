@@ -1,9 +1,9 @@
-import { resolveOutboundSendDep, type OutboundSendDeps } from "remoteclaw/plugin-sdk/infra-runtime";
+import { sendMessageIMessage } from "../../../imessage/send.js";
+import type { OutboundSendDeps } from "../../../infra/outbound/deliver.js";
 import {
-  createDirectTextMediaOutbound,
   createScopedChannelMediaMaxBytesResolver,
-} from "remoteclaw/plugin-sdk/media-runtime";
-import { sendMessageIMessage } from "./send.js";
+  createDirectTextMediaOutbound,
+} from "./direct-text-media.js";
 
 function resolveIMessageSender(deps: OutboundSendDeps | undefined) {
   return deps?.sendIMessage ?? sendMessageIMessage;

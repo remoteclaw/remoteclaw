@@ -29,7 +29,7 @@ vi.mock("../config/sessions.js", () => ({
   updateLastRoute: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../../extensions/whatsapp/src/auth-store.js", () => ({
+vi.mock("../web/auth-store.js", () => ({
   webAuthExists: vi.fn(async () => true),
   getWebAuthAgeMs: vi.fn(() => 1234),
   readWebSelfId: vi.fn(() => ({ e164: null, jid: null })),

@@ -4,9 +4,9 @@ import {
   getContentType,
   normalizeMessageContent,
 } from "@whiskeysockets/baileys";
-import { formatLocationText, type NormalizedLocation } from "remoteclaw/plugin-sdk/channel-inbound";
-import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
-import { jidToE164 } from "remoteclaw/plugin-sdk/text-runtime";
+import { formatLocationText, type NormalizedLocation } from "../../../../src/channels/location.js";
+import { logVerbose } from "../../../../src/globals.js";
+import { jidToE164 } from "../../../../src/utils.js";
 import { parseVcard } from "../vcard.js";
 
 function unwrapMessage(message: proto.IMessage | undefined): proto.IMessage | undefined {

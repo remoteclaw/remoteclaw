@@ -316,7 +316,6 @@ export async function cleanupBrowserControlServerTestContext(): Promise<void> {
 
 export function installBrowserControlServerHooks() {
   beforeEach(async () => {
-    vi.useRealTimers();
     cdpMocks.createTargetViaCdp.mockImplementation(async () => {
       if (state.createTargetId) {
         return { targetId: state.createTargetId };

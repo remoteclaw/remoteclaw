@@ -2,7 +2,6 @@ import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/zalo";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEmptyPluginRegistry } from "../../../src/plugins/registry.js";
 import { setActivePluginRegistry } from "../../../src/plugins/runtime.js";
-import { createRuntimeEnv } from "../../../test/helpers/extensions/runtime-env.js";
 import type { ResolvedZaloAccount } from "./accounts.js";
 
 const getWebhookInfoMock = vi.fn(async () => ({ ok: true, result: { url: "" } }));
@@ -40,6 +39,13 @@ const TEST_ACCOUNT = {
 
 const TEST_CONFIG = {} as RemoteClawConfig;
 
+function createLifecycleRuntime() {
+  return {
+    log: vi.fn<(message: string) => void>(),
+    error: vi.fn<(message: string) => void>(),
+  };
+}
+
 async function startLifecycleMonitor(
   options: {
     useWebhook?: boolean;
@@ -49,7 +55,7 @@ async function startLifecycleMonitor(
 ) {
   const { monitorZaloProvider } = await import("./monitor.js");
   const abort = new AbortController();
-  const runtime = createRuntimeEnv();
+  const runtime = createLifecycleRuntime();
   const run = monitorZaloProvider({
     token: "test-token",
     account: TEST_ACCOUNT,

@@ -2,8 +2,8 @@
  * Signal reactions via signal-cli JSON-RPC API
  */
 
-import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { loadConfig } from "../../../src/config/config.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { resolveSignalAccount } from "./accounts.js";
 import { signalRpcRequest } from "./client.js";
 import { resolveSignalRpcContext } from "./rpc-context.js";

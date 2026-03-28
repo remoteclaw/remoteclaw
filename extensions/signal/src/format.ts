@@ -1,10 +1,10 @@
-import type { MarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import type { MarkdownTableMode } from "../../../src/config/types.base.js";
 import {
   chunkMarkdownIR,
   markdownToIR,
   type MarkdownIR,
   type MarkdownStyle,
-} from "remoteclaw/plugin-sdk/text-runtime";
+} from "../../../src/markdown/ir.js";
 
 type SignalTextStyle = "BOLD" | "ITALIC" | "STRIKETHROUGH" | "MONOSPACE" | "SPOILER";
 

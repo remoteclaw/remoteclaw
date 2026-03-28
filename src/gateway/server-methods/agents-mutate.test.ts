@@ -168,37 +168,6 @@ function makeSymlinkStat(params?: { dev?: number; ino?: number }): import("node:
   } as unknown as import("node:fs").Stats;
 }
 
-function mockWorkspaceStateRead(params: {
-  setupCompletedAt?: string;
-  errorCode?: string;
-  rawContent?: string;
-}) {
-  mocks.fsReadFile.mockImplementation(async (...args: unknown[]) => {
-    const filePath = args[0];
-    if (String(filePath).endsWith("workspace-state.json")) {
-      if (params.errorCode) {
-        throw createErrnoError(params.errorCode);
-      }
-      if (typeof params.rawContent === "string") {
-        return params.rawContent;
-      }
-      return JSON.stringify({
-        setupCompletedAt: params.setupCompletedAt ?? "2026-02-15T14:00:00.000Z",
-      });
-    }
-    throw createEnoentError();
-  });
-}
-
-async function listAgentFileNames(agentId = "main") {
-  const { respond, promise } = makeCall("agents.files.list", { agentId });
-  await promise;
-
-  const [, result] = respond.mock.calls[0] ?? [];
-  const files = (result as { files: Array<{ name: string }> }).files;
-  return files.map((file) => file.name);
-}
-
 function expectNotFoundResponseAndNoWrite(respond: ReturnType<typeof vi.fn>) {
   expect(respond).toHaveBeenCalledWith(
     false,
@@ -518,8 +487,17 @@ describe("agents.files.list", () => {
     expect((result as { hint: string }).hint).toMatch(/editableFiles/);
   });
 
-  it("hides BOOTSTRAP.md when workspace onboarding is complete", async () => {
-    mockWorkspaceStateRead({ setupCompletedAt: "2026-02-15T14:00:00.000Z" });
+  it("lists only files matching configured globs", async () => {
+    mocks.loadConfigReturn = {
+      agents: { defaults: { editableFiles: ["*.md"] } },
+    };
+    mocks.fsReaddir.mockImplementation(async () => [
+      { name: "CLAUDE.md", isFile: () => true, isDirectory: () => false },
+      { name: "secret.key", isFile: () => true, isDirectory: () => false },
+    ]);
+    const fileStat = makeFileStat({ size: 42, mtimeMs: 1000 });
+    mocks.fsLstat.mockResolvedValue(fileStat);
+    mocks.fsStat.mockResolvedValue(fileStat);
 
     const { respond, promise } = makeCall("agents.files.list", { agentId: "main" });
     await promise;

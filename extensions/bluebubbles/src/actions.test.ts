@@ -1,9 +1,7 @@
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { bluebubblesMessageActions } from "./actions.js";
 import { getCachedBlueBubblesPrivateApiStatus } from "./probe.js";
-import { sendBlueBubblesReaction } from "./reactions.js";
-import type { RemoteClawConfig } from "./runtime-api.js";
-import { resolveChatGuidForTarget, sendMessageBlueBubbles } from "./send.js";
 
 vi.mock("./accounts.js", async () => {
   const { createBlueBubblesAccountsMockModule } = await import("./test-harness.js");

@@ -70,9 +70,6 @@ let stopBrowserControlServer: typeof import("./server.js").stopBrowserControlSer
 
 describe("browser control evaluate gating", () => {
   beforeEach(async () => {
-    vi.resetModules();
-    ({ startBrowserControlServerFromConfig, stopBrowserControlServer } =
-      await import("./server.js"));
     testPort = await getFreePort();
     prevGatewayPort = process.env.REMOTECLAW_GATEWAY_PORT;
     process.env.REMOTECLAW_GATEWAY_PORT = String(testPort - 2);
@@ -86,6 +83,9 @@ describe("browser control evaluate gating", () => {
     pwMocks.evaluateViaPlaywright.mockClear();
     routeCtxMocks.profileCtx.ensureTabAvailable.mockClear();
     routeCtxMocks.profileCtx.stopRunningBrowser.mockClear();
+    vi.resetModules();
+    ({ startBrowserControlServerFromConfig, stopBrowserControlServer } =
+      await import("./server.js"));
   });
 
   afterEach(async () => {

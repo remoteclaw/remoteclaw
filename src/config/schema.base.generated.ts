@@ -11630,7 +11630,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     required: ["commands"],
     additionalProperties: false,
-    title: "RemoteClawConfig",
+    title: "OpenClawConfig",
   },
   uiHints: {
     wizard: {

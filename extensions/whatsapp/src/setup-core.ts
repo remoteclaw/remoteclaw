@@ -1,9 +1,9 @@
 import {
   applyAccountNameToChannelSection,
-  type ChannelSetupAdapter,
   migrateBaseNameToDefaultAccount,
-  normalizeAccountId,
-} from "../../../src/plugin-sdk-internal/setup.js";
+} from "../../../src/channels/plugins/setup-helpers.js";
+import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
+import { normalizeAccountId } from "../../../src/routing/session-key.js";
 
 const channel = "whatsapp" as const;
 

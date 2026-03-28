@@ -1,7 +1,6 @@
 import type { ClawdbotConfig, PluginRuntime, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createPluginRuntimeMock } from "../../../test/helpers/extensions/plugin-runtime-mock.js";
-import { createRuntimeEnv } from "../../../test/helpers/extensions/runtime-env.js";
+import { createPluginRuntimeMock } from "../../test-utils/plugin-runtime-mock.js";
 import type { FeishuMessageEvent } from "./bot.js";
 import {
   buildBroadcastSessionKey,
@@ -67,26 +66,15 @@ vi.mock("./client.js", () => ({
   createFeishuClient: mockCreateFeishuClient,
 }));
 
-vi.mock("remoteclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/conversation-runtime")>();
+function createRuntimeEnv(): RuntimeEnv {
   return {
-    ...actual,
-    resolveConfiguredBindingRoute: (params: unknown) => mockResolveConfiguredBindingRoute(params),
-    ensureConfiguredBindingRouteReady: (params: unknown) =>
-      mockEnsureConfiguredBindingRouteReady(params),
-    getSessionBindingService: () => ({
-      resolveByConversation: mockResolveBoundConversation,
-      touch: mockTouchBinding,
+    log: vi.fn(),
+    error: vi.fn(),
+    exit: vi.fn((code: number): never => {
+      throw new Error(`exit ${code}`);
     }),
-  };
-});
-
-vi.mock("../../../src/infra/outbound/session-binding-service.js", () => ({
-  getSessionBindingService: () => ({
-    resolveByConversation: mockResolveBoundConversation,
-    touch: mockTouchBinding,
-  }),
-}));
+  } as RuntimeEnv;
+}
 
 async function dispatchMessage(params: { cfg: ClawdbotConfig; event: FeishuMessageEvent }) {
   const runtime = createRuntimeEnv();

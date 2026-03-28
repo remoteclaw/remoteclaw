@@ -1,8 +1,6 @@
 // Narrow plugin-sdk surface for the bundled zalouser plugin.
 // Keep this list additive and scoped to symbols used under extensions/zalouser.
 
-import { createOptionalChannelSetupSurface } from "./channel-setup.js";
-
 export type { ReplyPayload } from "../auto-reply/types.js";
 export { mergeAllowlist, summarizeMapping } from "../channels/allowlists/resolve-utils.js";
 export { resolveMentionGatingWithBypass } from "../channels/mention-gating.js";
@@ -15,8 +13,9 @@ export { formatPairingApproveHint } from "../channels/plugins/helpers.js";
 export {
   addWildcardAllowFrom,
   mergeAllowFromEntries,
+  promptAccountId,
   setTopLevelChannelDmPolicyWithAllowFrom,
-} from "../channels/plugins/setup-flow-helpers.js";
+} from "../channels/plugins/onboarding/helpers.js";
 export {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,
@@ -32,10 +31,10 @@ export type {
   ChannelStatusIssue,
 } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
-export { createChannelReplyPipeline, createReplyPrefixOptions } from "./channel-reply-pipeline.js";
-export { createTypingCallbacks } from "./channel-reply-pipeline.js";
+export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
+export { createTypingCallbacks } from "../channels/typing.js";
 export type { RemoteClawConfig } from "../config/config.js";
-export { isDangerousNameMatchingEnabled } from "../config/dangerous-name-matching.js";
+
 export {
   resolveDefaultGroupPolicy,
   resolveOpenProviderRuntimeGroupPolicy,
@@ -56,7 +55,9 @@ export { resolveSenderCommandAuthorization } from "./command-auth.js";
 export { resolveChannelAccountConfigBasePath } from "./config-paths.js";
 export { evaluateGroupRouteAccessForPolicy } from "./group-access.js";
 export { loadOutboundMediaFromUrl } from "./outbound-media.js";
-export { createChannelPairingController, createScopedPairingAccess } from "./channel-pairing.js";
+export { createScopedPairingAccess } from "./pairing-access.js";
+export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
+
 export { buildChannelSendResult } from "./channel-send-result.js";
 export type { OutboundReplyPayload } from "./reply-payload.js";
 export {
@@ -68,13 +69,3 @@ export {
 export { formatResolvedUnresolvedNote } from "./resolution-notes.js";
 export { buildBaseAccountStatusSnapshot } from "./status-helpers.js";
 export { chunkTextForOutbound } from "./text-chunking.js";
-
-const zalouserSetup = createOptionalChannelSetupSurface({
-  channel: "zalouser",
-  label: "Zalo Personal",
-  npmSpec: "@openclaw/zalouser",
-  docsPath: "/channels/zalouser",
-});
-
-export const zalouserSetupAdapter = zalouserSetup.setupAdapter;
-export const zalouserSetupWizard = zalouserSetup.setupWizard;

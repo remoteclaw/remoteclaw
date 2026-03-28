@@ -1,12 +1,12 @@
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type { HistoryEntry } from "../../../../src/auto-reply/reply/history.js";
+import type { ReplyPayload } from "../../../../src/auto-reply/types.js";
+import type { RemoteClawConfig } from "../../../../src/config/config.js";
 import type {
   DmPolicy,
   GroupPolicy,
   SignalReactionNotificationMode,
-} from "remoteclaw/plugin-sdk/config-runtime";
-import type { HistoryEntry } from "remoteclaw/plugin-sdk/reply-history";
-import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
-import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
+} from "../../../../src/config/types.js";
+import type { RuntimeEnv } from "../../../../src/runtime.js";
 import type { SignalSender } from "../identity.js";
 
 export type SignalEnvelope = {

@@ -26,12 +26,6 @@ import {
   resolveIrcGroupSenderAllowed,
   resolveIrcRequireMention,
 } from "./policy.js";
-import {
-  createChannelPairingController,
-  deliverFormattedTextWithAttachments,
-  dispatchInboundReplyWithBase,
-  resolveEffectiveAllowFromLists,
-} from "./runtime-api.js";
 import { getIrcRuntime } from "./runtime.js";
 import { sendMessageIrc } from "./send.js";
 import type { CoreConfig, IrcInboundMessage } from "./types.js";
@@ -91,7 +85,7 @@ export async function handleIrcInbound(params: {
 }): Promise<void> {
   const { message, account, config, runtime, connectedNick, statusSink } = params;
   const core = getIrcRuntime();
-  const pairing = createChannelPairingController({
+  const pairing = createScopedPairingAccess({
     core,
     channel: CHANNEL_ID,
     accountId: account.accountId,
@@ -211,10 +205,12 @@ export async function handleIrcInbound(params: {
       }).allowed;
       if (!dmAllowed) {
         if (dmPolicy === "pairing") {
-          await pairing.issueChallenge({
+          await issuePairingChallenge({
+            channel: CHANNEL_ID,
             senderId: senderDisplay.toLowerCase(),
             senderIdLine: `Your IRC id: ${senderDisplay}`,
             meta: { name: message.senderNick || undefined },
+            upsertPairingRequest: pairing.upsertPairingRequest,
             sendPairingReply: async (text) => {
               await deliverIrcReply({
                 payload: { text },

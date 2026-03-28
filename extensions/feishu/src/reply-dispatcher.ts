@@ -1,11 +1,6 @@
 import {
-  resolveSendableOutboundReplyParts,
-  resolveTextChunksWithFallback,
-  sendMediaWithLeadingCaption,
-} from "remoteclaw/plugin-sdk/reply-payload";
-import {
-  createChannelReplyPipeline,
   createReplyPrefixContext,
+  createTypingCallbacks,
   logTypingFailure,
   type ClawdbotConfig,
   type OutboundIdentity,
@@ -119,69 +114,58 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
   const prefixContext = createReplyPrefixContext({ cfg, agentId });
 
   let typingState: TypingIndicatorState | null = null;
-  const { typingCallbacks } = createChannelReplyPipeline({
-    cfg,
-    agentId,
-    channel: "feishu",
-    accountId,
-    typing: {
-      start: async () => {
-        // Check if typing indicator is enabled (default: true)
-        if (!(account.config.typingIndicator ?? true)) {
-          return;
-        }
-        if (!replyToMessageId) {
-          return;
-        }
-        // Skip typing indicator for old messages — likely replays after context
-        // compaction that would flood users with stale notifications (#30418).
-        const messageCreateTimeMs = normalizeEpochMs(params.messageCreateTimeMs);
-        if (
-          messageCreateTimeMs !== undefined &&
-          Date.now() - messageCreateTimeMs > TYPING_INDICATOR_MAX_AGE_MS
-        ) {
-          return;
-        }
-        // Feishu reactions persist until explicitly removed, so skip keepalive
-        // re-adds when a reaction already exists. Re-adding the same emoji
-        // triggers a new push notification for every call (#28660).
-        if (typingState?.reactionId) {
-          return;
-        }
-        typingState = await addTypingIndicator({
-          cfg,
-          messageId: replyToMessageId,
-          accountId,
-          runtime: params.runtime,
-        });
-      },
-      stop: async () => {
-        if (!typingState) {
-          return;
-        }
-        await removeTypingIndicator({
-          cfg,
-          state: typingState,
-          accountId,
-          runtime: params.runtime,
-        });
-        typingState = null;
-      },
-      onStartError: (err) =>
-        logTypingFailure({
-          log: (message) => params.runtime.log?.(message),
-          channel: "feishu",
-          action: "start",
-          error: err,
-        }),
-      onStopError: (err) =>
-        logTypingFailure({
-          log: (message) => params.runtime.log?.(message),
-          channel: "feishu",
-          action: "stop",
-          error: err,
-        }),
+  const typingCallbacks = createTypingCallbacks({
+    start: async () => {
+      // Check if typing indicator is enabled (default: true)
+      if (!(account.config.typingIndicator ?? true)) {
+        return;
+      }
+      if (!replyToMessageId) {
+        return;
+      }
+      // Skip typing indicator for old messages — likely replays after context
+      // compaction that would flood users with stale notifications (#30418).
+      const messageCreateTimeMs = normalizeEpochMs(params.messageCreateTimeMs);
+      if (
+        messageCreateTimeMs !== undefined &&
+        Date.now() - messageCreateTimeMs > TYPING_INDICATOR_MAX_AGE_MS
+      ) {
+        return;
+      }
+      // Feishu reactions persist until explicitly removed, so skip keepalive
+      // re-adds when a reaction already exists. Re-adding the same emoji
+      // triggers a new push notification for every call (#28660).
+      if (typingState?.reactionId) {
+        return;
+      }
+      typingState = await addTypingIndicator({
+        cfg,
+        messageId: replyToMessageId,
+        accountId,
+        runtime: params.runtime,
+      });
     },
+    stop: async () => {
+      if (!typingState) {
+        return;
+      }
+      await removeTypingIndicator({ cfg, state: typingState, accountId, runtime: params.runtime });
+      typingState = null;
+    },
+    onStartError: (err) =>
+      logTypingFailure({
+        log: (message) => params.runtime.log?.(message),
+        channel: "feishu",
+        action: "start",
+        error: err,
+      }),
+    onStopError: (err) =>
+      logTypingFailure({
+        log: (message) => params.runtime.log?.(message),
+        channel: "feishu",
+        action: "stop",
+        error: err,
+      }),
   });
 
   const textChunkLimit = core.channel.text.resolveTextChunkLimit(cfg, "feishu", accountId, {
@@ -317,12 +301,12 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
       responsePrefix: prefixContext.responsePrefix,
       responsePrefixContextProvider: prefixContext.responsePrefixContextProvider,
       humanDelay: core.channel.reply.resolveHumanDelayConfig(cfg, agentId),
-      onReplyStart: async () => {
+      onReplyStart: () => {
         deliveredFinalTexts.clear();
         if (streamingEnabled && renderMode === "card") {
           startStreaming();
         }
-        await typingCallbacks?.onReplyStart?.();
+        void typingCallbacks.onReplyStart?.();
       },
       deliver: async (payload: ReplyPayload, info: any) => {
         const text = payload.text ?? "";
@@ -458,14 +442,14 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
           `feishu[${account.accountId}] ${info.kind} reply failed: ${String(error)}`,
         );
         await closeStreaming();
-        typingCallbacks?.onIdle?.();
+        typingCallbacks.onIdle?.();
       },
       onIdle: async () => {
         await closeStreaming();
-        typingCallbacks?.onIdle?.();
+        typingCallbacks.onIdle?.();
       },
       onCleanup: () => {
-        typingCallbacks?.onCleanup?.();
+        typingCallbacks.onCleanup?.();
       },
     });
 

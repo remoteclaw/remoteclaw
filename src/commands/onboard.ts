@@ -3,10 +3,9 @@ import { assertSupportedRuntime } from "../infra/runtime-guard.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { resolveUserPath } from "../utils.js";
-import { isDeprecatedAuthChoice, normalizeLegacyOnboardAuthChoice } from "./auth-choice-legacy.js";
-import { DEFAULT_WORKSPACE, handleReset } from "./onboard-helpers.js";
-import { runInteractiveSetup } from "./onboard-interactive.js";
-import { runNonInteractiveSetup } from "./onboard-non-interactive.js";
+import { handleReset } from "./onboard-helpers.js";
+import { runInteractiveOnboarding } from "./onboard-interactive.js";
+import { runNonInteractiveOnboarding } from "./onboard-non-interactive.js";
 import type { OnboardOptions, ResetScope } from "./onboard-types.js";
 
 const VALID_RESET_SCOPES = new Set<ResetScope>(["config", "config+creds+sessions", "full"]);
@@ -25,9 +24,9 @@ export async function onboardCommand(opts: OnboardOptions, runtime: RuntimeEnv =
   if (normalizedOpts.nonInteractive && normalizedOpts.acceptRisk !== true) {
     runtime.error(
       [
-        "Non-interactive setup requires explicit risk acknowledgement.",
-        "Read: https://docs.openclaw.ai/security",
-        `Re-run with: ${formatCliCommand("openclaw onboard --non-interactive --accept-risk ...")}`,
+        "Non-interactive onboarding requires explicit risk acknowledgement.",
+        "Read: https://docs.remoteclaw.org/security",
+        `Re-run with: ${formatCliCommand("remoteclaw onboard --non-interactive --accept-risk ...")}`,
       ].join("\n"),
     );
     runtime.exit(1);
@@ -59,11 +58,11 @@ export async function onboardCommand(opts: OnboardOptions, runtime: RuntimeEnv =
   }
 
   if (normalizedOpts.nonInteractive) {
-    await runNonInteractiveSetup(normalizedOpts, runtime);
+    await runNonInteractiveOnboarding(normalizedOpts, runtime);
     return;
   }
 
-  await runInteractiveSetup(normalizedOpts, runtime);
+  await runInteractiveOnboarding(normalizedOpts, runtime);
 }
 
 export type { OnboardOptions } from "./onboard-types.js";

@@ -1,6 +1,6 @@
-import { formatCliCommand } from "remoteclaw/plugin-sdk/cli-runtime";
-import type { PollInput } from "remoteclaw/plugin-sdk/media-runtime";
-import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/routing";
+import { formatCliCommand } from "../../../src/cli/command-format.js";
+import type { PollInput } from "../../../src/polls.js";
+import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
 
 export type ActiveWebSendOptions = {
   gifPlayback?: boolean;

@@ -4,7 +4,7 @@ import { resolveGatewayPort, writeConfigFile } from "../../config/config.js";
 import { logConfigUpdated } from "../../config/logging.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { DEFAULT_GATEWAY_DAEMON_RUNTIME } from "../daemon-runtime.js";
-import { applyLocalSetupWorkspaceConfig } from "../onboard-config.js";
+import { applyOnboardingLocalWorkspaceConfig } from "../onboard-config.js";
 import {
   applyWizardMetadata,
   ensureWorkspaceAndSessions,
@@ -187,7 +187,7 @@ async function applyNonInteractiveAuxiliaryAuth(opts: OnboardOptions): Promise<v
   }
 }
 
-export async function runNonInteractiveLocalSetup(params: {
+export async function runNonInteractiveOnboardingLocal(params: {
   opts: OnboardOptions;
   runtime: RuntimeEnv;
   baseConfig: RemoteClawConfig;
@@ -195,22 +195,10 @@ export async function runNonInteractiveLocalSetup(params: {
   const { opts, runtime, baseConfig } = params;
   const mode = "local" as const;
 
-  const workspaceDir = resolveNonInteractiveWorkspaceDir({
-    opts,
-    baseConfig,
-    defaultWorkspaceDir: DEFAULT_WORKSPACE,
-  });
-
-  let nextConfig: RemoteClawConfig = applyLocalSetupWorkspaceConfig(baseConfig, workspaceDir);
-
-  const inferredAuthChoice = inferAuthChoiceFromFlags(opts);
-  if (!opts.authChoice && inferredAuthChoice.matches.length > 1) {
+  const workspaceRaw = opts.workspace;
+  if (!workspaceRaw?.trim()) {
     runtime.error(
-      [
-        "Multiple API key flags were provided for non-interactive setup.",
-        "Use a single provider flag or pass --auth-choice explicitly.",
-        `Flags: ${inferredAuthChoice.matches.map((match) => match.label).join(", ")}`,
-      ].join("\n"),
+      "No workspace path provided. Pass --workspace to set per-agent workspace in agents.list[].workspace.",
     );
     runtime.exit(1);
     return;

@@ -5,15 +5,8 @@
  * These commands are processed before built-in commands and before agent invocation.
  */
 
-import { parseDiscordTarget } from "../../extensions/discord/src/targets.js";
-import { parseTelegramTarget } from "../../extensions/telegram/src/targets.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { logVerbose } from "../globals.js";
-import {
-  detachPluginConversationBinding,
-  getCurrentPluginConversationBinding,
-  requestPluginConversationBinding,
-} from "./conversation-binding.js";
 import type {
   RemoteClawPluginCommandDefinition,
   PluginCommandContext,
@@ -22,8 +15,6 @@ import type {
 
 type RegisteredPluginCommand = RemoteClawPluginCommandDefinition & {
   pluginId: string;
-  pluginName?: string;
-  pluginRoot?: string;
 };
 
 // Registry of plugin commands
@@ -138,10 +129,9 @@ export function validatePluginCommandDefinition(
 export function registerPluginCommand(
   pluginId: string,
   command: RemoteClawPluginCommandDefinition,
-  opts?: { pluginName?: string; pluginRoot?: string },
 ): CommandRegistrationResult {
   // Prevent registration while commands are being processed
-  if (isPluginCommandRegistryLocked()) {
+  if (registryLocked) {
     return { ok: false, error: "Cannot register commands while processing is in progress" };
   }
 
@@ -164,19 +154,29 @@ export function registerPluginCommand(
     };
   }
 
-  pluginCommands.set(key, {
-    ...command,
-    name,
-    description,
-    pluginId,
-    pluginName: opts?.pluginName,
-    pluginRoot: opts?.pluginRoot,
-  });
+  pluginCommands.set(key, { ...command, name, description, pluginId });
   logVerbose(`Registered plugin command: ${key} (plugin: ${pluginId})`);
   return { ok: true };
 }
 
-export { clearPluginCommands, clearPluginCommandsForPlugin, getPluginCommandSpecs };
+/**
+ * Clear all registered plugin commands.
+ * Called during plugin reload.
+ */
+export function clearPluginCommands(): void {
+  pluginCommands.clear();
+}
+
+/**
+ * Clear plugin commands for a specific plugin.
+ */
+export function clearPluginCommandsForPlugin(pluginId: string): void {
+  for (const [key, cmd] of pluginCommands.entries()) {
+    if (cmd.pluginId === pluginId) {
+      pluginCommands.delete(key);
+    }
+  }
+}
 
 /**
  * Check if a command body matches a registered plugin command.
@@ -240,63 +240,6 @@ function sanitizeArgs(args: string | undefined): string | undefined {
   return sanitized;
 }
 
-function stripPrefix(raw: string | undefined, prefix: string): string | undefined {
-  if (!raw) {
-    return undefined;
-  }
-  return raw.startsWith(prefix) ? raw.slice(prefix.length) : raw;
-}
-
-function resolveBindingConversationFromCommand(params: {
-  channel: string;
-  from?: string;
-  to?: string;
-  accountId?: string;
-  messageThreadId?: number;
-}): {
-  channel: string;
-  accountId: string;
-  conversationId: string;
-  parentConversationId?: string;
-  threadId?: string | number;
-} | null {
-  const accountId = params.accountId?.trim() || "default";
-  if (params.channel === "telegram") {
-    const rawTarget = params.to ?? params.from;
-    if (!rawTarget) {
-      return null;
-    }
-    const target = parseTelegramTarget(rawTarget);
-    return {
-      channel: "telegram",
-      accountId,
-      conversationId: target.chatId,
-      threadId: params.messageThreadId ?? target.messageThreadId,
-    };
-  }
-  if (params.channel === "discord") {
-    const source = params.from ?? params.to;
-    const rawTarget = source?.startsWith("discord:channel:")
-      ? stripPrefix(source, "discord:")
-      : source?.startsWith("discord:user:")
-        ? stripPrefix(source, "discord:")
-        : source;
-    if (!rawTarget || rawTarget.startsWith("slash:")) {
-      return null;
-    }
-    const target = parseDiscordTarget(rawTarget, { defaultKind: "channel" });
-    if (!target) {
-      return null;
-    }
-    return {
-      channel: "discord",
-      accountId,
-      conversationId: `${target.kind}:${target.id}`,
-    };
-  }
-  return null;
-}
-
 /**
  * Execute a plugin command handler.
  *
@@ -331,13 +274,6 @@ export async function executePluginCommand(params: {
 
   // Sanitize args before passing to handler
   const sanitizedArgs = sanitizeArgs(args);
-  const bindingConversation = resolveBindingConversationFromCommand({
-    channel,
-    from: params.from,
-    to: params.to,
-    accountId: params.accountId,
-    messageThreadId: params.messageThreadId,
-  });
 
   const ctx: PluginCommandContext = {
     senderId,
@@ -352,44 +288,10 @@ export async function executePluginCommand(params: {
     to: params.to,
     accountId: params.accountId,
     messageThreadId: params.messageThreadId,
-    requestConversationBinding: async (bindingParams) => {
-      if (!command.pluginRoot || !bindingConversation) {
-        return {
-          status: "error",
-          message: "This command cannot bind the current conversation.",
-        };
-      }
-      return requestPluginConversationBinding({
-        pluginId: command.pluginId,
-        pluginName: command.pluginName,
-        pluginRoot: command.pluginRoot,
-        requestedBySenderId: senderId,
-        conversation: bindingConversation,
-        binding: bindingParams,
-      });
-    },
-    detachConversationBinding: async () => {
-      if (!command.pluginRoot || !bindingConversation) {
-        return { removed: false };
-      }
-      return detachPluginConversationBinding({
-        pluginRoot: command.pluginRoot,
-        conversation: bindingConversation,
-      });
-    },
-    getCurrentConversationBinding: async () => {
-      if (!command.pluginRoot || !bindingConversation) {
-        return null;
-      }
-      return getCurrentPluginConversationBinding({
-        pluginRoot: command.pluginRoot,
-        conversation: bindingConversation,
-      });
-    },
   };
 
   // Lock registry during execution to prevent concurrent modifications
-  setPluginCommandRegistryLocked(true);
+  registryLocked = true;
   try {
     const result = await command.handler(ctx);
     logVerbose(
@@ -402,7 +304,7 @@ export async function executePluginCommand(params: {
     // Don't leak internal error details - return a safe generic message
     return { text: "⚠️ Command failed. Please try again later." };
   } finally {
-    setPluginCommandRegistryLocked(false);
+    registryLocked = false;
   }
 }
 
@@ -422,8 +324,20 @@ export function listPluginCommands(): Array<{
   }));
 }
 
-function listPluginInvocationNames(command: RemoteClawPluginCommandDefinition): string[] {
-  return listPluginInvocationKeys(command);
+function resolvePluginNativeName(
+  command: RemoteClawPluginCommandDefinition,
+  provider?: string,
+): string {
+  const providerName = provider?.trim().toLowerCase();
+  const providerOverride = providerName ? command.nativeNames?.[providerName] : undefined;
+  if (typeof providerOverride === "string" && providerOverride.trim()) {
+    return providerOverride.trim();
+  }
+  const defaultOverride = command.nativeNames?.default;
+  if (typeof defaultOverride === "string" && defaultOverride.trim()) {
+    return defaultOverride.trim();
+  }
+  return command.name;
 }
 
 /**
@@ -434,17 +348,9 @@ export function getPluginCommandSpecs(provider?: string): Array<{
   description: string;
   acceptsArgs: boolean;
 }> {
-  const providerName = provider?.trim().toLowerCase();
-  if (providerName && providerName !== "telegram" && providerName !== "discord") {
-    return [];
-  }
   return Array.from(pluginCommands.values()).map((cmd) => ({
     name: resolvePluginNativeName(cmd, provider),
     description: cmd.description,
     acceptsArgs: cmd.acceptsArgs ?? false,
   }));
 }
-
-export const __testing = {
-  resolveBindingConversationFromCommand,
-};

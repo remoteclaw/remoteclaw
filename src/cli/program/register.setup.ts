@@ -20,7 +20,7 @@ export function registerSetupCommand(program: Command) {
       "--workspace <dir>",
       "Agent workspace directory (required; stored per-agent in agents.list[].workspace)",
     )
-    .option("--wizard", "Run the interactive setup wizard", false)
+    .option("--wizard", "Run the interactive onboarding wizard", false)
     .option("--non-interactive", "Run the wizard without prompts", false)
     .option("--mode <mode>", "Wizard mode: local|remote")
     .option("--remote-url <url>", "Remote Gateway WebSocket URL")

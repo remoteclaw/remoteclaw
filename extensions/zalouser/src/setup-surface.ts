@@ -1,15 +1,18 @@
+import type {
+  ChannelOnboardingAdapter,
+  ChannelOnboardingDmPolicy,
+  RemoteClawConfig,
+  WizardPrompter,
+} from "remoteclaw/plugin-sdk";
 import {
   DEFAULT_ACCOUNT_ID,
   formatResolvedUnresolvedNote,
   mergeAllowFromEntries,
   normalizeAccountId,
-  patchScopedAccountConfig,
+  promptChannelAccessConfig,
+  resolveAccountIdForConfigure,
   setTopLevelChannelDmPolicyWithAllowFrom,
-} from "../../../src/channels/plugins/setup-wizard-helpers.js";
-import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
-import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
+} from "remoteclaw/plugin-sdk";
 import {
   listZalouserAccountIds,
   resolveDefaultZalouserAccountId,
@@ -92,7 +95,7 @@ async function noteZalouserHelp(prompter: WizardPrompter): Promise<void> {
 
 async function promptZalouserAllowFrom(params: {
   cfg: RemoteClawConfig;
-  prompter: Parameters<NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]>>[0]["prompter"];
+  prompter: WizardPrompter;
   accountId: string;
 }): Promise<RemoteClawConfig> {
   const { cfg, prompter, accountId } = params;
@@ -145,7 +148,28 @@ async function promptZalouserAllowFrom(params: {
   }
 }
 
-const zalouserDmPolicy: ChannelSetupDmPolicy = {
+function setZalouserGroupPolicy(
+  cfg: RemoteClawConfig,
+  accountId: string,
+  groupPolicy: "open" | "allowlist" | "disabled",
+): RemoteClawConfig {
+  return setZalouserAccountScopedConfig(cfg, accountId, {
+    groupPolicy,
+  });
+}
+
+function setZalouserGroupAllowlist(
+  cfg: RemoteClawConfig,
+  accountId: string,
+  groupKeys: string[],
+): RemoteClawConfig {
+  const groups = Object.fromEntries(groupKeys.map((key) => [key, { allow: true }]));
+  return setZalouserAccountScopedConfig(cfg, accountId, {
+    groups,
+  });
+}
+
+const dmPolicy: ChannelOnboardingDmPolicy = {
   label: "Zalo Personal",
   channel,
   policyKey: "channels.zalouser.dmPolicy",

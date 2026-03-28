@@ -142,17 +142,7 @@ describe("Mattermost model picker", () => {
           ],
         },
       };
-      const providerData = {
-        byProvider: new Map<string, Set<string>>([
-          ["anthropic", new Set(["claude-opus-4-5"])],
-          ["openai", new Set(["gpt-5"])],
-        ]),
-        providers: ["anthropic", "openai"],
-        resolvedDefault: {
-          provider: "openai",
-          model: "gpt-5",
-        },
-      };
+      const providerData = await buildModelsProviderData(cfg, "support");
 
       expect(
         resolveMattermostModelPickerCurrentModel({

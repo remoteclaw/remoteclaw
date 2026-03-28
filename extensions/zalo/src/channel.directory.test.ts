@@ -1,9 +1,5 @@
 import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { describe, expect, it } from "vitest";
-import {
-  createDirectoryTestRuntime,
-  expectDirectorySurface,
-} from "../../../test/helpers/extensions/directory.js";
 import { zaloPlugin } from "./channel.js";
 
 describe("zalo directory", () => {

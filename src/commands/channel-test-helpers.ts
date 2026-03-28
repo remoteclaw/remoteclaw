@@ -6,24 +6,22 @@ import { telegramPlugin } from "../../extensions/telegram/src/channel.js";
 import { whatsappPlugin } from "../../extensions/whatsapp/src/channel.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createTestRegistry } from "../test-utils/channel-plugins.js";
-import { getChannelSetupWizardAdapter } from "./channel-setup/registry.js";
-import type { ChannelSetupWizardAdapter } from "./channel-setup/types.js";
 import type { ChannelChoice } from "./onboard-types.js";
 import { getChannelOnboardingAdapter } from "./onboarding/registry.js";
 import type { ChannelOnboardingAdapter } from "./onboarding/types.js";
 
-type ChannelSetupWizardAdapterPatch = Partial<
+type ChannelOnboardingAdapterPatch = Partial<
   Pick<
-    ChannelSetupWizardAdapter,
+    ChannelOnboardingAdapter,
     "configure" | "configureInteractive" | "configureWhenConfigured" | "getStatus"
   >
 >;
 
-type PatchedSetupAdapterFields = {
-  configure?: ChannelSetupWizardAdapter["configure"];
-  configureInteractive?: ChannelSetupWizardAdapter["configureInteractive"];
-  configureWhenConfigured?: ChannelSetupWizardAdapter["configureWhenConfigured"];
-  getStatus?: ChannelSetupWizardAdapter["getStatus"];
+type PatchedOnboardingAdapterFields = {
+  configure?: ChannelOnboardingAdapter["configure"];
+  configureInteractive?: ChannelOnboardingAdapter["configureInteractive"];
+  configureWhenConfigured?: ChannelOnboardingAdapter["configureWhenConfigured"];
+  getStatus?: ChannelOnboardingAdapter["getStatus"];
 };
 
 export function setDefaultChannelPluginRegistryForTests(): void {
@@ -38,11 +36,11 @@ export function setDefaultChannelPluginRegistryForTests(): void {
   setActivePluginRegistry(createTestRegistry(channels));
 }
 
-export function patchChannelSetupWizardAdapter(
+export function patchChannelOnboardingAdapter(
   channel: ChannelChoice,
-  patch: ChannelSetupWizardAdapterPatch,
+  patch: ChannelOnboardingAdapterPatch,
 ): () => void {
-  const adapter = getChannelSetupWizardAdapter(channel);
+  const adapter = getChannelOnboardingAdapter(channel);
   if (!adapter) {
     throw new Error(`missing onboarding adapter for ${channel}`);
   }

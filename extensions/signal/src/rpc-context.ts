@@ -1,4 +1,4 @@
-import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { loadConfig } from "../../../src/config/config.js";
 import { resolveSignalAccount } from "./accounts.js";
 
 export function resolveSignalRpcContext(

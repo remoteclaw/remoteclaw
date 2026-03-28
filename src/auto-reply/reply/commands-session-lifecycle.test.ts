@@ -19,11 +19,8 @@ const hoisted = vi.hoisted(() => {
   };
 });
 
-vi.mock("../../../extensions/discord/src/monitor/thread-bindings.js", async (importOriginal) => {
-  const actual =
-    await importOriginal<
-      typeof import("../../../extensions/discord/src/monitor/thread-bindings.js")
-    >();
+vi.mock("../../discord/monitor/thread-bindings.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../discord/monitor/thread-bindings.js")>();
   return {
     ...actual,
     getThreadBindingManager: hoisted.getThreadBindingManagerMock,
@@ -32,9 +29,8 @@ vi.mock("../../../extensions/discord/src/monitor/thread-bindings.js", async (imp
   };
 });
 
-vi.mock("../../../extensions/telegram/src/thread-bindings.js", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("../../../extensions/telegram/src/thread-bindings.js")>();
+vi.mock("../../telegram/thread-bindings.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../telegram/thread-bindings.js")>();
   return {
     ...actual,
     setTelegramThreadBindingIdleTimeoutBySessionKey:

@@ -1,10 +1,8 @@
+import type { PluginRuntime, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createRuntimeEnv } from "../../../test/helpers/extensions/runtime-env.js";
-import type { RuntimeEnv } from "../runtime-api.js";
+import { createRuntimeEnv } from "../../test-utils/runtime-env.js";
 import { matrixPlugin } from "./channel.js";
-import { resolveMatrixAccount } from "./matrix/accounts.js";
-import { resolveMatrixConfigForAccount } from "./matrix/client/config.js";
-import { installMatrixTestRuntime } from "./test-runtime.js";
+import { setMatrixRuntime } from "./runtime.js";
 import type { CoreConfig } from "./types.js";
 
 vi.mock("@vector-im/matrix-bot-sdk", () => ({
@@ -30,7 +28,11 @@ describe("matrix directory", () => {
   const runtimeEnv: RuntimeEnv = createRuntimeEnv();
 
   beforeEach(() => {
-    installMatrixTestRuntime();
+    setMatrixRuntime({
+      state: {
+        resolveStateDir: (_env, homeDir) => (homeDir ?? (() => "/tmp"))(),
+      },
+    } as PluginRuntime);
   });
 
   it("lists peers and groups from config", async () => {

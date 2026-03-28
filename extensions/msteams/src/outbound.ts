@@ -1,6 +1,4 @@
-import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
-import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/infra-runtime";
-import type { ChannelOutboundAdapter } from "../runtime-api.js";
+import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk";
 import { createMSTeamsPollStoreFs } from "./polls.js";
 import { getMSTeamsRuntime } from "./runtime.js";
 import { sendMessageMSTeams, sendPollMSTeams } from "./send.js";

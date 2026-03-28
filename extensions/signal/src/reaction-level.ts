@@ -1,9 +1,9 @@
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
 import {
   resolveReactionLevel,
   type ReactionLevel,
   type ResolvedReactionLevel,
-} from "remoteclaw/plugin-sdk/text-runtime";
+} from "../../../src/utils/reaction-level.js";
 import { resolveSignalAccount } from "./accounts.js";
 
 export type SignalReactionLevel = ReactionLevel;

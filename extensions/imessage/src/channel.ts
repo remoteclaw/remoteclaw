@@ -1,47 +1,57 @@
-import { buildAccountScopedAllowlistConfigEditor } from "remoteclaw/plugin-sdk/allowlist-config-edit";
-import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
-import { buildOutboundBaseSessionKey } from "remoteclaw/plugin-sdk/core";
 import {
+  buildAccountScopedDmSecurityPolicy,
+  collectAllowlistProviderRestrictSendersWarnings,
+} from "remoteclaw/plugin-sdk";
+import {
+  applyAccountNameToChannelSection,
   buildChannelConfigSchema,
   collectStatusIssuesFromLastError,
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
   formatTrimmedAllowFromEntries,
   getChatChannelMeta,
+  imessageOnboardingAdapter,
   IMessageConfigSchema,
+  listIMessageAccountIds,
   looksLikeIMessageTargetId,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
   normalizeIMessageMessagingTarget,
   PAIRING_APPROVED_MESSAGE,
   resolveChannelMediaMaxBytes,
+  resolveDefaultIMessageAccountId,
+  resolveIMessageAccount,
   resolveIMessageConfigAllowFrom,
   resolveIMessageConfigDefaultTo,
   resolveIMessageGroupRequireMention,
   resolveIMessageGroupToolPolicy,
   setAccountEnabledInConfigSection,
   type ChannelPlugin,
-} from "../../../src/plugin-sdk-internal/imessage.js";
-import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
-import {
-  listIMessageAccountIds,
-  resolveDefaultIMessageAccountId,
-  resolveIMessageAccount,
   type ResolvedIMessageAccount,
-} from "./accounts.js";
-import { imessageSetupWizard } from "./plugin-shared.js";
+} from "remoteclaw/plugin-sdk/imessage";
 import { getIMessageRuntime } from "./runtime.js";
-import { imessageSetupAdapter } from "./setup-core.js";
-import {
-  collectIMessageSecurityWarnings,
-  createIMessagePluginBase,
-  imessageResolveDmPolicy,
-} from "./shared.js";
-import { normalizeIMessageHandle, parseIMessageTarget } from "./targets.js";
 
 const meta = getChatChannelMeta("imessage");
 
-function buildIMessageBaseSessionKey(params: {
+function buildIMessageSetupPatch(input: {
+  cliPath?: string;
+  dbPath?: string;
+  service?: string;
+  region?: string;
+}) {
+  return {
+    ...(input.cliPath ? { cliPath: input.cliPath } : {}),
+    ...(input.dbPath ? { dbPath: input.dbPath } : {}),
+    ...(input.service ? { service: input.service } : {}),
+    ...(input.region ? { region: input.region } : {}),
+  };
+}
+
+type IMessageSendFn = ReturnType<
+  typeof getIMessageRuntime
+>["channel"]["imessage"]["sendMessageIMessage"];
+
+async function sendIMessageOutbound(params: {
   cfg: Parameters<typeof resolveIMessageAccount>[0]["cfg"];
   to: string;
   text: string;
@@ -77,7 +87,7 @@ export const imessagePlugin: ChannelPlugin<ResolvedIMessageAccount> = {
     aliases: ["imsg"],
     showConfigured: false,
   },
-  setupWizard: imessageSetupWizard,
+  onboarding: imessageOnboardingAdapter,
   pairing: {
     idLabel: "imessageSenderId",
     notifyApproval: async ({ id }) => {
@@ -120,46 +130,30 @@ export const imessagePlugin: ChannelPlugin<ResolvedIMessageAccount> = {
     formatAllowFrom: ({ allowFrom }) => formatTrimmedAllowFromEntries(allowFrom),
     resolveDefaultTo: ({ cfg, accountId }) => resolveIMessageConfigDefaultTo({ cfg, accountId }),
   },
-  allowlist: {
-    supportsScope: ({ scope }) => scope === "dm" || scope === "group" || scope === "all",
-    readConfig: ({ cfg, accountId }) => {
-      const account = resolveIMessageAccount({ cfg, accountId });
-      return {
-        dmAllowFrom: (account.config.allowFrom ?? []).map(String),
-        groupAllowFrom: (account.config.groupAllowFrom ?? []).map(String),
-        dmPolicy: account.config.dmPolicy,
-        groupPolicy: account.config.groupPolicy,
-      };
-    },
-    applyConfigEdit: buildAccountScopedAllowlistConfigEditor({
-      channelId: "imessage",
-      normalize: ({ values }) => formatTrimmedAllowFromEntries(values),
-      resolvePaths: (scope) => ({
-        readPaths: [[scope === "dm" ? "allowFrom" : "groupAllowFrom"]],
-        writePath: [scope === "dm" ? "allowFrom" : "groupAllowFrom"],
-      }),
-    }),
-    deleteAccount: ({ cfg, accountId }) =>
-      deleteAccountFromConfigSection({
-        cfg,
-        sectionKey: "imessage",
-        accountId,
-        clearBaseFields: ["cliPath", "dbPath", "service", "region", "name"],
-      }),
-    isConfigured: (account) => account.configured,
-    describeAccount: (account) => ({
-      accountId: account.accountId,
-      name: account.name,
-      enabled: account.enabled,
-      configured: account.configured,
-    }),
-    resolveAllowFrom: ({ cfg, accountId }) => resolveIMessageConfigAllowFrom({ cfg, accountId }),
-    formatAllowFrom: ({ allowFrom }) => formatTrimmedAllowFromEntries(allowFrom),
-    resolveDefaultTo: ({ cfg, accountId }) => resolveIMessageConfigDefaultTo({ cfg, accountId }),
-  },
   security: {
-    resolveDmPolicy: imessageResolveDmPolicy,
-    collectWarnings: collectIMessageSecurityWarnings,
+    resolveDmPolicy: ({ cfg, accountId, account }) => {
+      return buildAccountScopedDmSecurityPolicy({
+        cfg,
+        channelKey: "imessage",
+        accountId,
+        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
+        policy: account.config.dmPolicy,
+        allowFrom: account.config.allowFrom ?? [],
+        policyPathSuffix: "dmPolicy",
+      });
+    },
+    collectWarnings: ({ account, cfg }) => {
+      return collectAllowlistProviderRestrictSendersWarnings({
+        cfg,
+        providerConfigPresent: cfg.channels?.imessage !== undefined,
+        configuredGroupPolicy: account.config.groupPolicy,
+        surface: "iMessage groups",
+        openScope: "any member",
+        groupPolicyPath: "channels.imessage.groupPolicy",
+        groupAllowFromPath: "channels.imessage.groupAllowFrom",
+        mentionGated: false,
+      });
+    },
   },
   groups: {
     resolveRequireMention: resolveIMessageGroupRequireMention,
@@ -172,16 +166,70 @@ export const imessagePlugin: ChannelPlugin<ResolvedIMessageAccount> = {
       hint: "<handle|chat_id:ID>",
     },
   },
-  setup: imessageSetupAdapter,
+  setup: {
+    resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
+    applyAccountName: ({ cfg, accountId, name }) =>
+      applyAccountNameToChannelSection({
+        cfg,
+        channelKey: "imessage",
+        accountId,
+        name,
+      }),
+    applyAccountConfig: ({ cfg, accountId, input }) => {
+      const namedConfig = applyAccountNameToChannelSection({
+        cfg,
+        channelKey: "imessage",
+        accountId,
+        name: input.name,
+      });
+      const next = (
+        accountId !== DEFAULT_ACCOUNT_ID
+          ? migrateBaseNameToDefaultAccount({
+              cfg: namedConfig,
+              channelKey: "imessage",
+            })
+          : namedConfig
+      ) as typeof cfg;
+      if (accountId === DEFAULT_ACCOUNT_ID) {
+        return {
+          ...next,
+          channels: {
+            ...next.channels,
+            imessage: {
+              ...next.channels?.imessage,
+              enabled: true,
+              ...buildIMessageSetupPatch(input),
+            },
+          },
+        } as typeof cfg;
+      }
+      return {
+        ...next,
+        channels: {
+          ...next.channels,
+          imessage: {
+            ...next.channels?.imessage,
+            enabled: true,
+            accounts: {
+              ...next.channels?.imessage?.accounts,
+              [accountId]: {
+                ...next.channels?.imessage?.accounts?.[accountId],
+                enabled: true,
+                ...buildIMessageSetupPatch(input),
+              },
+            },
+          },
+        },
+      } as typeof cfg;
+    },
+  },
   outbound: {
     deliveryMode: "direct",
     chunker: (text, limit) => getIMessageRuntime().channel.text.chunkText(text, limit),
     chunkerMode: "text",
     textChunkLimit: 4000,
     sendText: async ({ cfg, to, text, accountId, deps, replyToId }) => {
-      const result = await (
-        await loadIMessageChannelRuntime()
-      ).sendIMessageOutbound({
+      const result = await sendIMessageOutbound({
         cfg,
         to,
         text,
@@ -192,9 +240,7 @@ export const imessagePlugin: ChannelPlugin<ResolvedIMessageAccount> = {
       return { channel: "imessage", ...result };
     },
     sendMedia: async ({ cfg, to, text, mediaUrl, mediaLocalRoots, accountId, deps, replyToId }) => {
-      const result = await (
-        await loadIMessageChannelRuntime()
-      ).sendIMessageOutbound({
+      const result = await sendIMessageOutbound({
         cfg,
         to,
         text,

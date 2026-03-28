@@ -97,21 +97,11 @@ export type OnboardOptions = {
   flow?: "quickstart" | "advanced" | "manual";
   workspace?: string;
   nonInteractive?: boolean;
-  /** Required for non-interactive setup; skips the interactive risk prompt when true. */
+  /** Required for non-interactive onboarding; skips the interactive risk prompt when true. */
   acceptRisk?: boolean;
   reset?: boolean;
   resetScope?: ResetScope;
-  authChoice?: AuthChoice;
-  /** Used when `authChoice=token` in non-interactive mode. */
-  tokenProvider?: string;
-  /** Used when `authChoice=token` in non-interactive mode. */
-  token?: string;
-  /** Used when `authChoice=token` in non-interactive mode. */
-  tokenProfileId?: string;
-  /** Used when `authChoice=token` in non-interactive mode. */
-  tokenExpiresIn?: string;
-  /** API key persistence mode for setup flows (default: plaintext). */
-  secretInputMode?: SecretInputMode;
+  runtime?: AgentRuntime;
   anthropicApiKey?: string;
   openaiApiKey?: string;
   geminiApiKey?: string;
@@ -153,6 +143,7 @@ export type OnboardOptions = {
   skipSearch?: boolean;
   skipHealth?: boolean;
   skipUi?: boolean;
+  secretInputMode?: SecretInputMode;
   remoteUrl?: string;
   remoteToken?: string;
   json?: boolean;

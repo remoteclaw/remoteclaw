@@ -1,9 +1,5 @@
+import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/discord";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { RemoteClawPluginApi } from "../../../src/plugins/types.js";
-import {
-  getRequiredHookHandler,
-  registerHookHandlersForTest,
-} from "../../../test/helpers/extensions/subagent-hooks.js";
 import { registerDiscordSubagentHooks } from "./subagent-hooks.js";
 
 type ThreadBindingRecord = {

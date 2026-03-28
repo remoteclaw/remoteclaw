@@ -14,8 +14,6 @@ import { resolveUserPath } from "../utils.js";
 import { registerPluginCommand } from "./commands.js";
 import { normalizePluginHttpPath } from "./http-path.js";
 import { findOverlappingPluginHttpRoute } from "./http-route-overlap.js";
-import { registerPluginInteractiveHandler } from "./interactive.js";
-import { normalizeRegisteredProvider } from "./provider-validation.js";
 import type { PluginRuntime } from "./runtime/types.js";
 import type {
   RemoteClawPluginApi,
@@ -50,21 +48,17 @@ function describeHttpRouteOwner(route: { pluginId?: string; source?: string }): 
 
 export type PluginToolRegistration = {
   pluginId: string;
-  pluginName?: string;
   factory: RemoteClawPluginToolFactory;
   names: string[];
   optional: boolean;
   source: string;
-  rootDir?: string;
 };
 
 export type PluginCliRegistration = {
   pluginId: string;
-  pluginName?: string;
-  register: OpenClawPluginCliRegistrar;
+  register: RemoteClawPluginCliRegistrar;
   commands: string[];
   source: string;
-  rootDir?: string;
 };
 
 export type PluginHttpRouteRegistration = {
@@ -78,58 +72,46 @@ export type PluginHttpRouteRegistration = {
 
 export type PluginChannelRegistration = {
   pluginId: string;
-  pluginName?: string;
   plugin: ChannelPlugin;
   dock?: ChannelDock;
   source: string;
-  rootDir?: string;
 };
 
 export type PluginProviderRegistration = {
   pluginId: string;
-  pluginName?: string;
   provider: ProviderPlugin;
   source: string;
-  rootDir?: string;
 };
-
-type PluginOwnedProviderRegistration<T extends { id: string }> = {
-  pluginId: string;
-  pluginName?: string;
-  provider: T;
-  source: string;
-  rootDir?: string;
-};
-
-export type PluginSpeechProviderRegistration =
-  PluginOwnedProviderRegistration<SpeechProviderPlugin>;
-export type PluginMediaUnderstandingProviderRegistration =
-  PluginOwnedProviderRegistration<MediaUnderstandingProviderPlugin>;
-export type PluginWebSearchProviderRegistration =
-  PluginOwnedProviderRegistration<WebSearchProviderPlugin>;
 
 export type PluginHookRegistration = {
   pluginId: string;
   entry: HookEntry;
   events: string[];
   source: string;
-  rootDir?: string;
 };
 
 export type PluginServiceRegistration = {
   pluginId: string;
-  pluginName?: string;
   service: RemoteClawPluginService;
   source: string;
-  rootDir?: string;
 };
 
 export type PluginCommandRegistration = {
   pluginId: string;
-  pluginName?: string;
   command: RemoteClawPluginCommandDefinition;
   source: string;
-  rootDir?: string;
+};
+
+export type PluginSttProviderRegistration = {
+  pluginId: string;
+  provider: SttProvider;
+  source: string;
+};
+
+export type PluginTtsProviderRegistration = {
+  pluginId: string;
+  provider: TtsProviderImpl;
+  source: string;
 };
 
 export type PluginRecord = {
@@ -139,7 +121,6 @@ export type PluginRecord = {
   description?: string;
   kind?: PluginKind;
   source: string;
-  rootDir?: string;
   origin: PluginOrigin;
   workspaceDir?: string;
   enabled: boolean;
@@ -246,12 +227,10 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     }
     registry.tools.push({
       pluginId: record.id,
-      pluginName: record.name,
       factory,
       names: normalized,
       optional,
       source: record.source,
-      rootDir: record.rootDir,
     });
   };
 
@@ -461,118 +440,9 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     record.channelIds.push(id);
     registry.channels.push({
       pluginId: record.id,
-      pluginName: record.name,
       plugin,
       dock: normalized.dock,
       source: record.source,
-      rootDir: record.rootDir,
-    });
-  };
-
-  const registerProvider = (record: PluginRecord, provider: ProviderPlugin) => {
-    const normalizedProvider = normalizeRegisteredProvider({
-      pluginId: record.id,
-      source: record.source,
-      provider,
-      pushDiagnostic,
-    });
-    if (!normalizedProvider) {
-      return;
-    }
-    const id = normalizedProvider.id;
-    const existing = registry.providers.find((entry) => entry.provider.id === id);
-    if (existing) {
-      pushDiagnostic({
-        level: "error",
-        pluginId: record.id,
-        source: record.source,
-        message: `provider already registered: ${id} (${existing.pluginId})`,
-      });
-      return;
-    }
-    record.providerIds.push(id);
-    registry.providers.push({
-      pluginId: record.id,
-      pluginName: record.name,
-      provider: normalizedProvider,
-      source: record.source,
-      rootDir: record.rootDir,
-    });
-  };
-
-  const registerUniqueProviderLike = <
-    T extends { id: string },
-    R extends PluginOwnedProviderRegistration<T>,
-  >(params: {
-    record: PluginRecord;
-    provider: T;
-    kindLabel: string;
-    registrations: R[];
-    ownedIds: string[];
-  }) => {
-    const id = params.provider.id.trim();
-    const { record, kindLabel } = params;
-    const missingLabel = `${kindLabel} registration missing id`;
-    const duplicateLabel = `${kindLabel} already registered: ${id}`;
-    if (!id) {
-      pushDiagnostic({
-        level: "error",
-        pluginId: record.id,
-        source: record.source,
-        message: missingLabel,
-      });
-      return;
-    }
-    const existing = params.registrations.find((entry) => entry.provider.id === id);
-    if (existing) {
-      pushDiagnostic({
-        level: "error",
-        pluginId: record.id,
-        source: record.source,
-        message: `${duplicateLabel} (${existing.pluginId})`,
-      });
-      return;
-    }
-    params.ownedIds.push(id);
-    params.registrations.push({
-      pluginId: record.id,
-      pluginName: record.name,
-      provider: params.provider,
-      source: record.source,
-      rootDir: record.rootDir,
-    } as R);
-  };
-
-  const registerSpeechProvider = (record: PluginRecord, provider: SpeechProviderPlugin) => {
-    registerUniqueProviderLike({
-      record,
-      provider,
-      kindLabel: "speech provider",
-      registrations: registry.speechProviders,
-      ownedIds: record.speechProviderIds,
-    });
-  };
-
-  const registerMediaUnderstandingProvider = (
-    record: PluginRecord,
-    provider: MediaUnderstandingProviderPlugin,
-  ) => {
-    registerUniqueProviderLike({
-      record,
-      provider,
-      kindLabel: "media provider",
-      registrations: registry.mediaUnderstandingProviders,
-      ownedIds: record.mediaUnderstandingProviderIds,
-    });
-  };
-
-  const registerWebSearchProvider = (record: PluginRecord, provider: WebSearchProviderPlugin) => {
-    registerUniqueProviderLike({
-      record,
-      provider,
-      kindLabel: "web search provider",
-      registrations: registry.webSearchProviders,
-      ownedIds: record.webSearchProviderIds,
     });
   };
 
@@ -585,11 +455,9 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     record.cliCommands.push(...commands);
     registry.cliRegistrars.push({
       pluginId: record.id,
-      pluginName: record.name,
       register: registrar,
       commands,
       source: record.source,
-      rootDir: record.rootDir,
     });
   };
 
@@ -601,10 +469,8 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     record.services.push(id);
     registry.services.push({
       pluginId: record.id,
-      pluginName: record.name,
       service,
       source: record.source,
-      rootDir: record.rootDir,
     });
   };
 
@@ -621,10 +487,7 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     }
 
     // Register with the plugin command system (validates name and checks for duplicates)
-    const result = registerPluginCommand(record.id, command, {
-      pluginName: record.name,
-      pluginRoot: record.rootDir,
-    });
+    const result = registerPluginCommand(record.id, command);
     if (!result.ok) {
       pushDiagnostic({
         level: "error",
@@ -638,10 +501,8 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     record.commands.push(name);
     registry.commands.push({
       pluginId: record.id,
-      pluginName: record.name,
       command,
       source: record.source,
-      rootDir: record.rootDir,
     });
   };
 
@@ -737,7 +598,6 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
       version: record.version,
       description: record.description,
       source: record.source,
-      rootDir: record.rootDir,
       config: params.config,
       pluginConfig: params.pluginConfig,
       runtime: registryParams.runtime,
@@ -750,20 +610,6 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
       registerGatewayMethod: (method, handler) => registerGatewayMethod(record, method, handler),
       registerCli: (registrar, opts) => registerCli(record, registrar, opts),
       registerService: (service) => registerService(record, service),
-      registerInteractiveHandler: (registration) => {
-        const result = registerPluginInteractiveHandler(record.id, registration, {
-          pluginName: record.name,
-          pluginRoot: record.rootDir,
-        });
-        if (!result.ok) {
-          pushDiagnostic({
-            level: "warn",
-            pluginId: record.id,
-            source: record.source,
-            message: result.error ?? "interactive handler registration failed",
-          });
-        }
-      },
       registerCommand: (command) => registerCommand(record, command),
       registerSttProvider: (provider) => registerSttProvider(record, provider),
       registerTtsProvider: (provider) => registerTtsProvider(record, provider),

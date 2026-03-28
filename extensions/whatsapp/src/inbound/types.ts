@@ -1,5 +1,5 @@
 import type { AnyMessageContent } from "@whiskeysockets/baileys";
-import type { NormalizedLocation } from "remoteclaw/plugin-sdk/channel-inbound";
+import type { NormalizedLocation } from "../../../../src/channels/location.js";
 
 export type WebListenerCloseReason = {
   status?: number;
@@ -30,6 +30,7 @@ export type WebInboundMessage = {
   groupParticipants?: string[];
   mentionedJids?: string[];
   selfJid?: string | null;
+  selfLid?: string | null;
   selfE164?: string | null;
   fromMe?: boolean;
   location?: NormalizedLocation;

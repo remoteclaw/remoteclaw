@@ -1,11 +1,8 @@
-import type { SignalAccountConfig } from "remoteclaw/plugin-sdk/signal";
-import {
-  type RemoteClawConfig,
-  createAccountListHelpers,
-  mergeAccountConfig,
-  normalizeAccountId,
-  resolveAccountEntry,
-} from "../../../src/plugin-sdk-internal/accounts.js";
+import { createAccountListHelpers } from "../../../src/channels/plugins/account-helpers.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
+import type { SignalAccountConfig } from "../../../src/config/types.js";
+import { resolveAccountEntry } from "../../../src/routing/account-lookup.js";
+import { normalizeAccountId } from "../../../src/routing/session-key.js";
 
 export type ResolvedSignalAccount = {
   accountId: string;
@@ -28,10 +25,11 @@ function resolveAccountConfig(
 }
 
 function mergeSignalAccountConfig(cfg: RemoteClawConfig, accountId: string): SignalAccountConfig {
-  return mergeAccountConfig<SignalAccountConfig>({
-    channelConfig: cfg.channels?.signal as SignalAccountConfig | undefined,
-    accountConfig: resolveAccountConfig(cfg, accountId),
-  });
+  const { accounts: _ignored, ...base } = (cfg.channels?.signal ?? {}) as SignalAccountConfig & {
+    accounts?: unknown;
+  };
+  const account = resolveAccountConfig(cfg, accountId) ?? {};
+  return { ...base, ...account };
 }
 
 export function resolveSignalAccount(params: {

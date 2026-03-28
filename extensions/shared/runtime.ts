@@ -1,4 +1,4 @@
-import { createLoggerBackedRuntime } from "remoteclaw/plugin-sdk/runtime";
+import { createLoggerBackedRuntime } from "remoteclaw/plugin-sdk";
 
 export function resolveLoggerBackedRuntime<TRuntime>(
   runtime: TRuntime | undefined,

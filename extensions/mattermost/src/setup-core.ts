@@ -1,15 +1,15 @@
-import type { ChannelSetupAdapter } from "remoteclaw/plugin-sdk/channel-setup";
-import { resolveMattermostAccount, type ResolvedMattermostAccount } from "./mattermost/accounts.js";
-import { normalizeMattermostBaseUrl } from "./mattermost/client.js";
 import {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,
   DEFAULT_ACCOUNT_ID,
-  hasConfiguredSecretInput,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
   type RemoteClawConfig,
 } from "remoteclaw/plugin-sdk/mattermost";
+import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
+import { hasConfiguredSecretInput } from "../../../src/config/types.secrets.js";
+import { resolveMattermostAccount, type ResolvedMattermostAccount } from "./mattermost/accounts.js";
+import { normalizeMattermostBaseUrl } from "./mattermost/client.js";
 
 const channel = "mattermost" as const;
 

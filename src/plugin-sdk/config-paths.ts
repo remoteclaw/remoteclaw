@@ -1,5 +1,6 @@
 import type { RemoteClawConfig } from "../config/config.js";
 
+/** Resolve the config path prefix for a channel account, falling back to the root channel section. */
 export function resolveChannelAccountConfigBasePath(params: {
   cfg: RemoteClawConfig;
   channelKey: string;

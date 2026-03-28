@@ -1,9 +1,11 @@
-import { resolveAgentRoute } from "remoteclaw/plugin-sdk/routing";
-import { normalizeE164 } from "remoteclaw/plugin-sdk/text-runtime";
 import { describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
+import { peekSystemEvents } from "../../../src/infra/system-events.js";
+import { resolveAgentRoute } from "../../../src/routing/resolve-route.js";
+import { normalizeE164 } from "../../../src/utils.js";
 import type { SignalDaemonExitEvent } from "./daemon.js";
 import {
+  createMockSignalDaemonHandle,
   config,
   flush,
   getSignalToolResultTestMocks,
@@ -14,7 +16,6 @@ import {
 installSignalToolResultTestHooks();
 
 // Import after the harness registers `vi.mock(...)` for Signal internals.
-vi.resetModules();
 const { monitorSignalProvider } = await import("./monitor.js");
 
 const {
@@ -22,13 +23,27 @@ const {
   sendMock,
   streamMock,
   updateLastRouteMock,
-  enqueueSystemEventMock,
   upsertPairingRequestMock,
   waitForTransportReadyMock,
+  spawnSignalDaemonMock,
 } = getSignalToolResultTestMocks();
 
 const SIGNAL_BASE_URL = "http://127.0.0.1:8080";
 type MonitorSignalProviderOptions = Parameters<typeof monitorSignalProvider>[0];
+
+function createMonitorRuntime() {
+  return {
+    log: vi.fn(),
+    error: vi.fn(),
+    exit: ((code: number): never => {
+      throw new Error(`exit ${code}`);
+    }) as (code: number) => never,
+  };
+}
+
+function setSignalAutoStartConfig(overrides: Record<string, unknown> = {}) {
+  setSignalToolResultTestConfig(createSignalConfig(overrides));
+}
 
 function createSignalConfig(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   const base = config as RemoteClawConfig;
@@ -49,11 +64,17 @@ function createSignalConfig(overrides: Record<string, unknown> = {}): Record<str
   };
 }
 
-async function runMonitorWithMocks(opts: MonitorSignalProviderOptions) {
-  return monitorSignalProvider({
-    config: config as RemoteClawConfig,
-    ...opts,
+function createAutoAbortController() {
+  const abortController = new AbortController();
+  streamMock.mockImplementation(async () => {
+    abortController.abort();
+    return;
   });
+  return abortController;
+}
+
+async function runMonitorWithMocks(opts: MonitorSignalProviderOptions) {
+  return monitorSignalProvider(opts);
 }
 
 async function receiveSignalPayloads(params: {
@@ -81,23 +102,14 @@ async function receiveSignalPayloads(params: {
   await flush();
 }
 
-function hasQueuedReactionEventFor(sender: string) {
+function getDirectSignalEventsFor(sender: string) {
   const route = resolveAgentRoute({
     cfg: config as RemoteClawConfig,
     channel: "signal",
     accountId: "default",
     peer: { kind: "direct", id: normalizeE164(sender) },
   });
-  return enqueueSystemEventMock.mock.calls.some(([text, options]) => {
-    return (
-      typeof text === "string" &&
-      text.includes("Signal reaction added") &&
-      typeof options === "object" &&
-      options !== null &&
-      "sessionKey" in options &&
-      (options as { sessionKey?: string }).sessionKey === route.sessionKey
-    );
-  });
+  return peekSystemEvents(route.sessionKey);
 }
 
 function makeBaseEnvelope(overrides: Record<string, unknown> = {}) {
@@ -137,7 +149,143 @@ function setReactionNotificationConfig(mode: "all" | "own", extra: Record<string
   );
 }
 
+function expectWaitForTransportReadyTimeout(timeoutMs: number) {
+  expect(waitForTransportReadyMock).toHaveBeenCalledTimes(1);
+  expect(waitForTransportReadyMock).toHaveBeenCalledWith(
+    expect.objectContaining({
+      timeoutMs,
+    }),
+  );
+}
+
 describe("monitorSignalProvider tool results", () => {
+  it("uses bounded readiness checks when auto-starting the daemon", async () => {
+    const runtime = createMonitorRuntime();
+    setSignalAutoStartConfig();
+    const abortController = createAutoAbortController();
+    await runMonitorWithMocks({
+      autoStart: true,
+      baseUrl: SIGNAL_BASE_URL,
+      abortSignal: abortController.signal,
+      runtime,
+    });
+
+    expect(waitForTransportReadyMock).toHaveBeenCalledTimes(1);
+    expect(waitForTransportReadyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        label: "signal daemon",
+        timeoutMs: 30_000,
+        logAfterMs: 10_000,
+        logIntervalMs: 10_000,
+        pollIntervalMs: 150,
+        runtime,
+        abortSignal: expect.any(AbortSignal),
+      }),
+    );
+  });
+
+  it("uses startupTimeoutMs override when provided", async () => {
+    const runtime = createMonitorRuntime();
+    setSignalAutoStartConfig({ startupTimeoutMs: 60_000 });
+    const abortController = createAutoAbortController();
+
+    await runMonitorWithMocks({
+      autoStart: true,
+      baseUrl: SIGNAL_BASE_URL,
+      abortSignal: abortController.signal,
+      runtime,
+      startupTimeoutMs: 90_000,
+    });
+
+    expectWaitForTransportReadyTimeout(90_000);
+  });
+
+  it("caps startupTimeoutMs at 2 minutes", async () => {
+    const runtime = createMonitorRuntime();
+    setSignalAutoStartConfig({ startupTimeoutMs: 180_000 });
+    const abortController = createAutoAbortController();
+
+    await runMonitorWithMocks({
+      autoStart: true,
+      baseUrl: SIGNAL_BASE_URL,
+      abortSignal: abortController.signal,
+      runtime,
+    });
+
+    expectWaitForTransportReadyTimeout(120_000);
+  });
+
+  it("fails fast when auto-started signal daemon exits during startup", async () => {
+    const runtime = createMonitorRuntime();
+    setSignalAutoStartConfig();
+    spawnSignalDaemonMock.mockReturnValueOnce(
+      createMockSignalDaemonHandle({
+        exited: Promise.resolve({ source: "process", code: 1, signal: null }),
+        isExited: () => true,
+      }),
+    );
+    waitForTransportReadyMock.mockImplementationOnce(
+      async (params: { abortSignal?: AbortSignal | null }) => {
+        await new Promise<void>((_resolve, reject) => {
+          if (params.abortSignal?.aborted) {
+            reject(params.abortSignal.reason);
+            return;
+          }
+          params.abortSignal?.addEventListener(
+            "abort",
+            () => reject(params.abortSignal?.reason ?? new Error("aborted")),
+            { once: true },
+          );
+        });
+      },
+    );
+
+    await expect(
+      runMonitorWithMocks({
+        autoStart: true,
+        baseUrl: SIGNAL_BASE_URL,
+        runtime,
+      }),
+    ).rejects.toThrow(/signal daemon exited/i);
+  });
+
+  it("treats daemon exit after user abort as clean shutdown", async () => {
+    const runtime = createMonitorRuntime();
+    setSignalAutoStartConfig();
+    const abortController = new AbortController();
+    let exited = false;
+    let resolveExit!: (value: SignalDaemonExitEvent) => void;
+    const exitedPromise = new Promise<SignalDaemonExitEvent>((resolve) => {
+      resolveExit = resolve;
+    });
+    const stop = vi.fn(() => {
+      if (exited) {
+        return;
+      }
+      exited = true;
+      resolveExit({ source: "process", code: null, signal: "SIGTERM" });
+    });
+    spawnSignalDaemonMock.mockReturnValueOnce(
+      createMockSignalDaemonHandle({
+        stop,
+        exited: exitedPromise,
+        isExited: () => exited,
+      }),
+    );
+    streamMock.mockImplementationOnce(async () => {
+      abortController.abort(new Error("stop"));
+    });
+
+    await expect(
+      runMonitorWithMocks({
+        autoStart: true,
+        baseUrl: SIGNAL_BASE_URL,
+        runtime,
+        abortSignal: abortController.signal,
+      }),
+    ).resolves.toBeUndefined();
+  });
+
   it("skips tool summaries with responsePrefix", async () => {
     replyMock.mockResolvedValue({ text: "final reply" });
 
@@ -156,9 +304,7 @@ describe("monitorSignalProvider tool results", () => {
       ],
     });
 
-    await vi.waitFor(() => {
-      expect(sendMock).toHaveBeenCalledTimes(1);
-    });
+    expect(sendMock).toHaveBeenCalledTimes(1);
     expect(sendMock.mock.calls[0][1]).toBe("PFX final reply");
   });
 
@@ -228,7 +374,8 @@ describe("monitorSignalProvider tool results", () => {
       },
     });
 
-    expect(hasQueuedReactionEventFor("+15550001111")).toBe(true);
+    const events = getDirectSignalEventsFor("+15550001111");
+    expect(events.some((text) => text.includes("Signal reaction added"))).toBe(true);
   });
 
   it.each([
@@ -268,7 +415,8 @@ describe("monitorSignalProvider tool results", () => {
       },
     });
 
-    expect(hasQueuedReactionEventFor("+15550001111")).toBe(shouldEnqueue);
+    const events = getDirectSignalEventsFor("+15550001111");
+    expect(events.some((text) => text.includes("Signal reaction added"))).toBe(shouldEnqueue);
     expect(sendMock).not.toHaveBeenCalled();
     expect(upsertPairingRequestMock).not.toHaveBeenCalled();
   });
@@ -285,7 +433,8 @@ describe("monitorSignalProvider tool results", () => {
       },
     });
 
-    expect(hasQueuedReactionEventFor("+15550001111")).toBe(true);
+    const events = getDirectSignalEventsFor("+15550001111");
+    expect(events.some((text) => text.includes("Signal reaction added"))).toBe(true);
   });
 
   it("processes messages when reaction metadata is present", async () => {
@@ -311,9 +460,8 @@ describe("monitorSignalProvider tool results", () => {
       ],
     });
 
-    await vi.waitFor(() => {
-      expect(sendMock).toHaveBeenCalledTimes(1);
-    });
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    expect(updateLastRouteMock).toHaveBeenCalled();
   });
 
   it("does not resend pairing code when a request is already pending", async () => {

@@ -14,10 +14,10 @@ export {
   buildSingleChannelSecretPromptState,
   addWildcardAllowFrom,
   mergeAllowFromEntries,
-  promptSingleChannelSecretInput,
-  runSingleChannelSecretStep,
+  promptAccountId,
+  promptSingleChannelToken,
   setTopLevelChannelDmPolicyWithAllowFrom,
-} from "../channels/plugins/setup-flow-helpers.js";
+} from "../channels/plugins/onboarding/helpers.js";
 export { PAIRING_APPROVED_MESSAGE } from "../channels/plugins/pairing-message.js";
 export {
   applyAccountNameToChannelSection,
@@ -34,23 +34,20 @@ export type {
   ChannelStatusIssue,
 } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
+export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 export { logTypingFailure } from "../channels/logging.js";
-export { createChannelReplyPipeline, createReplyPrefixOptions } from "./channel-reply-pipeline.js";
-export { createTypingCallbacks } from "./channel-reply-pipeline.js";
+export { createTypingCallbacks } from "../channels/typing.js";
 export type { RemoteClawConfig } from "../config/config.js";
+
 export {
   resolveDefaultGroupPolicy,
   resolveOpenProviderRuntimeGroupPolicy,
   warnMissingProviderGroupPolicyFallbackOnce,
 } from "../config/runtime-group-policy.js";
 export type { GroupPolicy, MarkdownTableMode } from "../config/types.js";
-export type { SecretInput } from "./secret-input.js";
-export {
-  buildSecretInputSchema,
-  hasConfiguredSecretInput,
-  normalizeResolvedSecretInputString,
-  normalizeSecretInputString,
-} from "./secret-input.js";
+export type { SecretInput } from "../config/types.secrets.js";
+export { normalizeSecretInputString } from "../config/types.secrets.js";
+export { buildSecretInputSchema } from "./secret-input-schema.js";
 export { MarkdownConfigSchema } from "../config/zod-schema.core.js";
 export { waitForAbortSignal } from "../infra/abort-signal.js";
 export { createDedupeCache } from "../infra/dedupe.js";
@@ -69,7 +66,9 @@ export { resolveChannelAccountConfigBasePath } from "./config-paths.js";
 export { evaluateSenderGroupAccess } from "./group-access.js";
 export type { SenderGroupAccessDecision } from "./group-access.js";
 export { resolveInboundRouteEnvelopeBuilderWithRuntime } from "./inbound-envelope.js";
-export { createChannelPairingController, createScopedPairingAccess } from "./channel-pairing.js";
+export { createScopedPairingAccess } from "./pairing-access.js";
+export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
+
 export { buildChannelSendResult } from "./channel-send-result.js";
 export type { OutboundReplyPayload } from "./reply-payload.js";
 export {
@@ -85,21 +84,21 @@ export {
 export { chunkTextForOutbound } from "./text-chunking.js";
 export { extractToolSend } from "./tool-send.js";
 export {
-  applyBasicWebhookRequestGuards,
   createFixedWindowRateLimiter,
   createWebhookAnomalyTracker,
-  readJsonWebhookBodyOrReject,
-  registerWebhookTarget,
-  registerWebhookTargetWithPluginRoute,
-  resolveSingleWebhookTarget,
-  resolveWebhookPath,
-  resolveWebhookTargetWithAuthOrRejectSync,
-  resolveWebhookTargets,
   WEBHOOK_ANOMALY_COUNTER_DEFAULTS,
   WEBHOOK_RATE_LIMIT_DEFAULTS,
+} from "./webhook-memory-guards.js";
+export { resolveWebhookPath } from "./webhook-path.js";
+export {
+  applyBasicWebhookRequestGuards,
+  readJsonWebhookBodyOrReject,
+} from "./webhook-request-guards.js";
+export type { RegisterWebhookTargetOptions } from "./webhook-targets.js";
+export {
+  registerWebhookTarget,
+  resolveSingleWebhookTarget,
+  resolveWebhookTargetWithAuthOrRejectSync,
+  resolveWebhookTargets,
   withResolvedWebhookRequestPipeline,
-} from "./webhook-ingress.js";
-export type {
-  RegisterWebhookPluginRouteOptions,
-  RegisterWebhookTargetOptions,
-} from "./webhook-ingress.js";
+} from "./webhook-targets.js";

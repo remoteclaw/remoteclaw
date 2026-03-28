@@ -1,4 +1,4 @@
-import { tryReadSecretFileSync } from "remoteclaw/plugin-sdk/infra-runtime";
+import { tryReadSecretFileSync } from "remoteclaw/plugin-sdk/core";
 import {
   createAccountListHelpers,
   DEFAULT_ACCOUNT_ID,

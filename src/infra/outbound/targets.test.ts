@@ -1,10 +1,6 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { parseTelegramTarget } from "../../../extensions/telegram/src/targets.js";
-import { telegramOutbound, whatsappOutbound } from "../../../test/channel-outbounds.js";
-import type { ChannelOutboundAdapter } from "../../channels/plugins/types.js";
+import { describe, expect, it } from "vitest";
+import { telegramOutbound } from "../../channels/plugins/outbound/telegram.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../plugin-sdk/whatsapp-shared.js";
-import type { SessionEntry } from "../../config/sessions/types.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../../test-utils/channel-plugins.js";
 import {
@@ -19,76 +15,6 @@ import {
 } from "./targets.shared-test.js";
 
 runResolveOutboundTargetCoreTests();
-
-const telegramMessaging = {
-  parseExplicitTarget: ({ raw }: { raw: string }) => {
-    const target = parseTelegramTarget(raw);
-    return {
-      to: target.chatId,
-      threadId: target.messageThreadId,
-      chatType: target.chatType === "unknown" ? undefined : target.chatType,
-    };
-  },
-  inferTargetChatType: ({ to }: { to: string }) => {
-    const target = parseTelegramTarget(to);
-    return target.chatType === "unknown" ? undefined : target.chatType;
-  },
-};
-
-const whatsappMessaging = {
-  inferTargetChatType: ({ to }: { to: string }) => {
-    const normalized = normalizeWhatsAppTarget(to);
-    if (!normalized) {
-      return undefined;
-    }
-    return isWhatsAppGroupJid(normalized) ? ("group" as const) : ("direct" as const);
-  },
-};
-
-const noopOutbound = (channel: "discord" | "imessage" | "slack"): ChannelOutboundAdapter => ({
-  deliveryMode: "direct",
-  sendText: async () => ({ channel, messageId: `${channel}-msg` }),
-});
-
-beforeEach(() => {
-  setActivePluginRegistry(
-    createTestRegistry([
-      {
-        pluginId: "discord",
-        plugin: createOutboundTestPlugin({ id: "discord", outbound: noopOutbound("discord") }),
-        source: "test",
-      },
-      {
-        pluginId: "imessage",
-        plugin: createOutboundTestPlugin({ id: "imessage", outbound: noopOutbound("imessage") }),
-        source: "test",
-      },
-      {
-        pluginId: "slack",
-        plugin: createOutboundTestPlugin({ id: "slack", outbound: noopOutbound("slack") }),
-        source: "test",
-      },
-      {
-        pluginId: "telegram",
-        plugin: createOutboundTestPlugin({
-          id: "telegram",
-          outbound: telegramOutbound,
-          messaging: telegramMessaging,
-        }),
-        source: "test",
-      },
-      {
-        pluginId: "whatsapp",
-        plugin: createOutboundTestPlugin({
-          id: "whatsapp",
-          outbound: whatsappOutbound,
-          messaging: whatsappMessaging,
-        }),
-        source: "test",
-      },
-    ]),
-  );
-});
 
 describe("resolveOutboundTarget defaultTo config fallback", () => {
   installResolveOutboundTargetPluginRegistryHooks();
@@ -153,11 +79,7 @@ describe("resolveOutboundTarget defaultTo config fallback", () => {
 
     registry.channels.push({
       pluginId: "telegram",
-      plugin: createOutboundTestPlugin({
-        id: "telegram",
-        outbound: telegramOutbound,
-        messaging: telegramMessaging,
-      }),
+      plugin: createOutboundTestPlugin({ id: "telegram", outbound: telegramOutbound }),
       source: "test",
     });
 
@@ -384,24 +306,6 @@ describe("resolveSessionDeliveryTarget", () => {
     });
 
     expect(resolved.to).toBe("C12345:topic:999");
-    expect(resolved.threadId).toBeUndefined();
-  });
-
-  it("keeps raw :topic: targets when the telegram plugin registry is unavailable", () => {
-    setActivePluginRegistry(createTestRegistry([]));
-
-    const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-no-registry",
-        updatedAt: 1,
-        lastChannel: "telegram",
-        lastTo: "63448508",
-      },
-      requestedChannel: "last",
-      explicitTo: "63448508:topic:1008013",
-    });
-
-    expect(resolved.to).toBe("63448508:topic:1008013");
     expect(resolved.threadId).toBeUndefined();
   });
 

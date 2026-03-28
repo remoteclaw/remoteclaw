@@ -7,8 +7,7 @@ import type { ChannelPlugin } from "../channels/plugins/index.js";
 import { resolveRemoteClawPackageRootSync } from "../infra/remoteclaw-root.js";
 import { loadPluginManifestRegistry } from "../plugins/manifest-registry.js";
 import { FIELD_HELP } from "./schema.help.js";
-import type { ConfigSchemaResponse } from "./schema.js";
-import { schemaHasChildren } from "./schema.shared.js";
+import { buildConfigSchema, type ConfigSchemaResponse } from "./schema.js";
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 
@@ -80,7 +79,6 @@ export type ConfigDocBaselineStatefileWriteResult = {
 const GENERATED_BY = "scripts/generate-config-doc-baseline.ts" as const;
 const DEFAULT_JSON_OUTPUT = "docs/.generated/config-baseline.json";
 const DEFAULT_STATEFILE_OUTPUT = "docs/.generated/config-baseline.jsonl";
-let cachedConfigDocBaselinePromise: Promise<ConfigDocBaseline> | null = null;
 
 function logConfigDocBaselineDebug(message: string): void {
   if (process.env.OPENCLAW_CONFIG_DOC_BASELINE_DEBUG === "1") {
@@ -184,31 +182,6 @@ function resolveUiHintMatch(
   path: string,
 ): ConfigSchemaResponse["uiHints"][string] | undefined {
   const targetParts = splitHintLookupPath(path);
-  if (targetParts.length === 0) {
-    return undefined;
-  }
-
-  let index = uiHintIndexCache.get(uiHints);
-  if (!index) {
-    index = new Map();
-    for (const [hintPath, hint] of Object.entries(uiHints)) {
-      const parts = splitHintLookupPath(hintPath);
-      const bucket = index.get(parts.length);
-      const entry = { path: hintPath, parts, hint };
-      if (bucket) {
-        bucket.push(entry);
-      } else {
-        index.set(parts.length, [entry]);
-      }
-    }
-    uiHintIndexCache.set(uiHints, index);
-  }
-
-  const candidates = index.get(targetParts.length);
-  if (!candidates) {
-    return undefined;
-  }
-
   let bestMatch:
     | {
         hint: ConfigSchemaResponse["uiHints"][string];
@@ -216,11 +189,16 @@ function resolveUiHintMatch(
       }
     | undefined;
 
-  for (const candidate of candidates) {
+  for (const [hintPath, hint] of Object.entries(uiHints)) {
+    const hintParts = splitHintLookupPath(hintPath);
+    if (hintParts.length !== targetParts.length) {
+      continue;
+    }
+
     let wildcardCount = 0;
     let matches = true;
-    for (let index = 0; index < candidate.parts.length; index += 1) {
-      const hintPart = candidate.parts[index];
+    for (let index = 0; index < hintParts.length; index += 1) {
+      const hintPart = hintParts[index];
       const targetPart = targetParts[index];
       if (hintPart === targetPart) {
         continue;
@@ -232,28 +210,16 @@ function resolveUiHintMatch(
       matches = false;
       break;
     }
+
     if (!matches) {
       continue;
     }
     if (!bestMatch || wildcardCount < bestMatch.wildcardCount) {
-      bestMatch = { hint: candidate.hint, wildcardCount };
-      if (wildcardCount === 0) {
-        break;
-      }
+      bestMatch = { hint, wildcardCount };
     }
   }
 
   return bestMatch?.hint;
-}
-
-function resolveSchemaHasChildren(schema: JsonSchemaObject): boolean {
-  const cached = schemaHasChildrenCache.get(schema);
-  if (cached !== undefined) {
-    return cached;
-  }
-  const next = schemaHasChildren(schema);
-  schemaHasChildrenCache.set(schema, next);
-  return next;
 }
 
 function normalizeTypeValue(value: string | string[] | undefined): string | string[] | undefined {
@@ -631,7 +597,7 @@ export function collectConfigDocBaselineEntries(
       tags: [...(hint?.tags ?? [])].toSorted((left, right) => left.localeCompare(right)),
       label: hint?.label,
       help: hint?.help,
-      hasChildren: resolveSchemaHasChildren(schema),
+      hasChildren: schemaHasChildren(schema),
     });
   }
 
@@ -704,37 +670,26 @@ export function dedupeConfigDocBaselineEntries(
 }
 
 export async function buildConfigDocBaseline(): Promise<ConfigDocBaseline> {
-  if (cachedConfigDocBaselinePromise) {
-    return await cachedConfigDocBaselinePromise;
+  const start = Date.now();
+  logConfigDocBaselineDebug("build baseline start");
+  const response = await loadBundledConfigSchemaResponse();
+  const schemaRoot = asSchemaObject(response.schema);
+  if (!schemaRoot) {
+    throw new Error("config schema root is not an object");
   }
-  cachedConfigDocBaselinePromise = (async () => {
-    const start = Date.now();
-    logConfigDocBaselineDebug("build baseline start");
-    const response = await loadBundledConfigSchemaResponse();
-    const schemaRoot = asSchemaObject(response.schema);
-    if (!schemaRoot) {
-      throw new Error("config schema root is not an object");
-    }
-    const collectStart = Date.now();
-    logConfigDocBaselineDebug("collect baseline entries start");
-    const entries = dedupeConfigDocBaselineEntries(
-      collectConfigDocBaselineEntries(schemaRoot, response.uiHints),
-    );
-    logConfigDocBaselineDebug(
-      `collect baseline entries done count=${entries.length} elapsedMs=${Date.now() - collectStart}`,
-    );
-    logConfigDocBaselineDebug(`build baseline done elapsedMs=${Date.now() - start}`);
-    return {
-      generatedBy: GENERATED_BY,
-      entries,
-    };
-  })();
-  try {
-    return await cachedConfigDocBaselinePromise;
-  } catch (error) {
-    cachedConfigDocBaselinePromise = null;
-    throw error;
-  }
+  const collectStart = Date.now();
+  logConfigDocBaselineDebug("collect baseline entries start");
+  const entries = dedupeConfigDocBaselineEntries(
+    collectConfigDocBaselineEntries(schemaRoot, response.uiHints),
+  );
+  logConfigDocBaselineDebug(
+    `collect baseline entries done count=${entries.length} elapsedMs=${Date.now() - collectStart}`,
+  );
+  logConfigDocBaselineDebug(`build baseline done elapsedMs=${Date.now() - start}`);
+  return {
+    generatedBy: GENERATED_BY,
+    entries,
+  };
 }
 
 export async function renderConfigDocBaselineStatefile(

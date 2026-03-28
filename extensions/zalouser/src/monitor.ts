@@ -1,27 +1,18 @@
 import {
   DM_GROUP_ACCESS_REASON,
-  resolveDmGroupAccessWithLists,
-} from "remoteclaw/plugin-sdk/channel-policy";
-import { KeyedAsyncQueue } from "remoteclaw/plugin-sdk/keyed-async-queue";
-import {
   DEFAULT_GROUP_HISTORY_LIMIT,
   type HistoryEntry,
+  KeyedAsyncQueue,
   buildPendingHistoryContextFromMap,
   clearHistoryEntriesIfEnabled,
   recordPendingHistoryEntryIfEnabled,
-} from "remoteclaw/plugin-sdk/reply-history";
-import type {
-  MarkdownTableMode,
-  RemoteClawConfig,
-  OutboundReplyPayload,
-  RuntimeEnv,
-} from "remoteclaw/plugin-sdk/zalouser";
-import {
-  createChannelPairingController,
-  createChannelReplyPipeline,
-  deliverTextOrMediaReply,
+  resolveDmGroupAccessWithLists,
+  createTypingCallbacks,
+  createScopedPairingAccess,
+  createReplyPrefixOptions,
   evaluateGroupRouteAccessForPolicy,
-  isDangerousNameMatchingEnabled,
+  issuePairingChallenge,
+  resolveOutboundMediaUrls,
   mergeAllowlist,
   resolveMentionGatingWithBypass,
   resolveOpenProviderRuntimeGroupPolicy,
@@ -30,6 +21,10 @@ import {
   sendMediaWithLeadingCaption,
   summarizeMapping,
   warnMissingProviderGroupPolicyFallbackOnce,
+  type MarkdownTableMode,
+  type RemoteClawConfig,
+  type OutboundReplyPayload,
+  type RuntimeEnv,
 } from "remoteclaw/plugin-sdk";
 import {
   buildZalouserGroupCandidates,
@@ -256,7 +251,7 @@ async function processMessage(
   historyState: ZalouserGroupHistoryState,
   statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void,
 ): Promise<void> {
-  const pairing = createChannelPairingController({
+  const pairing = createScopedPairingAccess({
     core,
     channel: "zalouser",
     accountId: account.accountId,
@@ -386,10 +381,12 @@ async function processMessage(
 
   if (!isGroup && accessDecision.decision !== "allow") {
     if (accessDecision.decision === "pairing") {
-      await pairing.issueChallenge({
+      await issuePairingChallenge({
+        channel: "zalouser",
         senderId,
         senderIdLine: `Your Zalo user id: ${senderId}`,
         meta: { name: senderName || undefined },
+        upsertPairingRequest: pairing.upsertPairingRequest,
         onCreated: () => {
           logVerbose(core, runtime, `zalouser pairing request sender=${senderId}`);
         },
@@ -624,24 +621,24 @@ async function processMessage(
     },
   });
 
-  const { onModelSelected, ...replyPipeline } = createChannelReplyPipeline({
+  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
     cfg: config,
     agentId: route.agentId,
     channel: "zalouser",
     accountId: account.accountId,
-    typing: {
-      start: async () => {
-        await sendTypingZalouser(chatId, {
-          profile: account.profile,
-          isGroup,
-        });
-      },
-      onStartError: (err) => {
-        runtime.error?.(
-          `[${account.accountId}] zalouser typing start failed for ${chatId}: ${String(err)}`,
-        );
-        logVerbose(core, runtime, `zalouser typing failed for ${chatId}: ${String(err)}`);
-      },
+  });
+  const typingCallbacks = createTypingCallbacks({
+    start: async () => {
+      await sendTypingZalouser(chatId, {
+        profile: account.profile,
+        isGroup,
+      });
+    },
+    onStartError: (err) => {
+      runtime.error?.(
+        `[${account.accountId}] zalouser typing start failed for ${chatId}: ${String(err)}`,
+      );
+      logVerbose(core, runtime, `zalouser typing failed for ${chatId}: ${String(err)}`);
     },
   });
 
@@ -649,7 +646,8 @@ async function processMessage(
     ctx: ctxPayload,
     cfg: config,
     dispatcherOptions: {
-      ...replyPipeline,
+      ...prefixOptions,
+      typingCallbacks,
       deliver: async (payload) => {
         await deliverZalouserReply({
           payload: payload as { text?: string; mediaUrls?: string[]; mediaUrl?: string },

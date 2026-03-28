@@ -11,7 +11,7 @@ import { note } from "../terminal/note.js";
 import { resolveUserPath } from "../utils.js";
 import { createClackPrompter } from "../wizard/clack-prompter.js";
 import { WizardCancelledError } from "../wizard/prompts.js";
-import { resolveSetupSecretInputString } from "../wizard/setup.secret-input.js";
+import { collectWorkspaceDirs } from "./cleanup-utils.js";
 import { removeChannelConfigWizard } from "./configure.channels.js";
 import { maybeInstallDaemon } from "./configure.daemon.js";
 import { promptAuthConfig } from "./configure.gateway-auth.js";
@@ -45,23 +45,6 @@ import {
 import { promptRemoteGatewayConfig } from "./onboard-remote.js";
 
 type ConfigureSectionChoice = WizardSection | "__continue";
-
-async function resolveGatewaySecretInputForWizard(params: {
-  cfg: RemoteClawConfig;
-  value: unknown;
-  path: string;
-}): Promise<string | undefined> {
-  try {
-    return await resolveSetupSecretInputString({
-      config: params.cfg,
-      value: params.value,
-      path: params.path,
-      env: process.env,
-    });
-  } catch {
-    return undefined;
-  }
-}
 
 async function runGatewayHealthCheck(params: {
   cfg: RemoteClawConfig;

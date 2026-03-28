@@ -1,14 +1,14 @@
-import type { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { normalizeGroupActivation } from "../../../../../src/auto-reply/group-activation.js";
+import type { loadConfig } from "../../../../../src/config/config.js";
 import {
   resolveChannelGroupPolicy,
   resolveChannelGroupRequireMention,
-} from "remoteclaw/plugin-sdk/config-runtime";
+} from "../../../../../src/config/group-policy.js";
 import {
   loadSessionStore,
   resolveGroupSessionKey,
   resolveStorePath,
-} from "remoteclaw/plugin-sdk/config-runtime";
-import { normalizeGroupActivation } from "remoteclaw/plugin-sdk/reply-runtime";
+} from "../../../../../src/config/sessions.js";
 
 export function resolveGroupPolicyFor(cfg: ReturnType<typeof loadConfig>, conversationId: string) {
   const groupId = resolveGroupSessionKey({

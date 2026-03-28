@@ -33,17 +33,7 @@ vi.mock("./server-context.js", () => ({
   listKnownProfileNames: listKnownProfileNamesMock,
 }));
 
-let ensureExtensionRelayForProfiles: typeof import("./server-lifecycle.js").ensureExtensionRelayForProfiles;
-let stopKnownBrowserProfiles: typeof import("./server-lifecycle.js").stopKnownBrowserProfiles;
-
-beforeEach(async () => {
-  vi.resetModules();
-  ({ ensureExtensionRelayForProfiles, stopKnownBrowserProfiles } =
-    await import("./server-lifecycle.js"));
-  createBrowserRouteContextMock.mockClear();
-  listKnownProfileNamesMock.mockClear();
-  stopRemoteClawChromeMock.mockClear();
-});
+import { ensureExtensionRelayForProfiles, stopKnownBrowserProfiles } from "./server-lifecycle.js";
 
 describe("ensureExtensionRelayForProfiles", () => {
   beforeEach(() => {
@@ -93,6 +83,13 @@ describe("ensureExtensionRelayForProfiles", () => {
 });
 
 describe("stopKnownBrowserProfiles", () => {
+  beforeEach(() => {
+    createBrowserRouteContextMock.mockClear();
+    listKnownProfileNamesMock.mockClear();
+    stopRemoteClawChromeMock.mockClear();
+    stopChromeExtensionRelayServerMock.mockClear();
+  });
+
   it("stops all known profiles and ignores per-profile failures", async () => {
     listKnownProfileNamesMock.mockReturnValue(["remoteclaw", "chrome"]);
     const stopMap: Record<string, ReturnType<typeof vi.fn>> = {

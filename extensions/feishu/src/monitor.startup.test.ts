@@ -1,6 +1,5 @@
 import type { ClawdbotConfig } from "remoteclaw/plugin-sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createNonExitingRuntimeEnv } from "../../../test/helpers/extensions/runtime-env.js";
 import { monitorFeishuProvider, stopFeishuMonitor } from "./monitor.js";
 
 const probeFeishuMock = vi.hoisted(() => vi.fn());
@@ -168,7 +167,7 @@ describe("Feishu monitor startup preflight", () => {
     });
 
     const abortController = new AbortController();
-    const runtime = createNonExitingRuntimeEnv();
+    const runtime = { log: vi.fn(), error: vi.fn(), exit: vi.fn() };
     const monitorPromise = monitorFeishuProvider({
       config: buildMultiAccountWebsocketConfig(["alpha", "beta"]),
       runtime,

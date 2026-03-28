@@ -1,10 +1,9 @@
-import type { RequestListener } from "node:http";
+import { createServer, type RequestListener } from "node:http";
+import type { AddressInfo } from "node:net";
+import type { RemoteClawConfig, PluginRuntime } from "remoteclaw/plugin-sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEmptyPluginRegistry } from "../../../src/plugins/registry.js";
 import { setActivePluginRegistry } from "../../../src/plugins/runtime.js";
-import { createPluginRuntimeMock } from "../../../test/helpers/extensions/plugin-runtime-mock.js";
-import { withServer } from "../../../test/helpers/http-test-server.js";
-import type { RemoteClawConfig, PluginRuntime } from "../runtime-api.js";
 import {
   clearZaloWebhookSecurityStateForTest,
   getZaloWebhookRateLimitStateSizeForTest,
@@ -13,6 +12,22 @@ import {
   registerZaloWebhookTarget,
 } from "./monitor.js";
 import type { ResolvedZaloAccount } from "./types.js";
+
+async function withServer(handler: RequestListener, fn: (baseUrl: string) => Promise<void>) {
+  const server = createServer(handler);
+  await new Promise<void>((resolve) => {
+    server.listen(0, "127.0.0.1", () => resolve());
+  });
+  const address = server.address() as AddressInfo | null;
+  if (!address) {
+    throw new Error("missing server address");
+  }
+  try {
+    await fn(`http://127.0.0.1:${address.port}`);
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+}
 
 const DEFAULT_ACCOUNT: ResolvedZaloAccount = {
   accountId: "default",

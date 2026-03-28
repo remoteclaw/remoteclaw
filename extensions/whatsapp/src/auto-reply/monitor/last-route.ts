@@ -1,6 +1,6 @@
-import type { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { resolveStorePath, updateLastRoute } from "remoteclaw/plugin-sdk/config-runtime";
-import type { MsgContext } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { MsgContext } from "../../../../../src/auto-reply/templating.js";
+import type { loadConfig } from "../../../../../src/config/config.js";
+import { resolveStorePath, updateLastRoute } from "../../../../../src/config/sessions.js";
 import { formatError } from "../../session.js";
 
 export function trackBackgroundTask(

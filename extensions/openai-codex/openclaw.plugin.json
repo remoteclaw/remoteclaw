@@ -1,3 +1,9 @@
 {
-  "id": "deepgram"
+  "id": "openai-codex",
+  "providers": ["openai-codex"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
 }

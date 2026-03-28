@@ -1,25 +1,22 @@
 import {
+  buildAccountScopedDmSecurityPolicy,
+  buildOpenGroupPolicyWarning,
+  collectAllowlistProviderGroupPolicyWarnings,
   createScopedAccountConfigAccessors,
-  createScopedChannelConfigBase,
-  createScopedDmSecurityResolver,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
+} from "remoteclaw/plugin-sdk";
 import {
-  createPairingPrefixStripper,
-  createTextPairingAdapter,
-} from "remoteclaw/plugin-sdk/channel-pairing";
-import {
-  createAllowlistProviderOpenWarningCollector,
-  projectWarningCollector,
-} from "remoteclaw/plugin-sdk/channel-policy";
-import { createScopedAccountReplyToModeResolver } from "remoteclaw/plugin-sdk/conversation-runtime";
-import {
-  createChannelDirectoryAdapter,
-  createRuntimeDirectoryLiveAdapter,
-  listResolvedDirectoryEntriesFromSources,
-} from "remoteclaw/plugin-sdk/directory-runtime";
-import { buildTrafficStatusSummary } from "remoteclaw/plugin-sdk/extension-shared";
-import { createRuntimeOutboundDelegates } from "remoteclaw/plugin-sdk/infra-runtime";
-import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
+  applyAccountNameToChannelSection,
+  buildChannelConfigSchema,
+  buildProbeChannelStatusSummary,
+  collectStatusIssuesFromLastError,
+  DEFAULT_ACCOUNT_ID,
+  deleteAccountFromConfigSection,
+  mapAllowFromEntries,
+  normalizeAccountId,
+  PAIRING_APPROVED_MESSAGE,
+  setAccountEnabledInConfigSection,
+  type ChannelPlugin,
+} from "remoteclaw/plugin-sdk";
 import { matrixMessageActions } from "./actions.js";
 import { MatrixConfigSchema } from "./config-schema.js";
 import { listMatrixDirectoryGroupsLive, listMatrixDirectoryPeersLive } from "./directory-live.js";

@@ -20,15 +20,18 @@ export type {
 export { promptChannelAccessConfig } from "../channels/plugins/onboarding/channel-access.js";
 export {
   addWildcardAllowFrom,
+  promptAccountId,
+  resolveAccountIdForConfigure,
   setTopLevelChannelAllowFrom,
   setTopLevelChannelDmPolicyWithAllowFrom,
-} from "../channels/plugins/setup-flow-helpers.js";
+} from "../channels/plugins/onboarding/helpers.js";
 export { PAIRING_APPROVED_MESSAGE } from "../channels/plugins/pairing-message.js";
 export type { BaseProbeResult } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export { getChatChannelMeta } from "../channels/registry.js";
-export { createChannelReplyPipeline, createReplyPrefixOptions } from "./channel-reply-pipeline.js";
+export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 export type { RemoteClawConfig } from "../config/config.js";
+
 export { isDangerousNameMatchingEnabled } from "../config/dangerous-name-matching.js";
 export {
   GROUP_POLICY_BLOCKED_LABEL,
@@ -67,7 +70,9 @@ export {
 } from "../security/dm-policy-shared.js";
 export { formatDocsLink } from "../terminal/links.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
-export { createChannelPairingController, createScopedPairingAccess } from "./channel-pairing.js";
+export { createScopedPairingAccess } from "./pairing-access.js";
+export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
+
 export { dispatchInboundReplyWithBase } from "./inbound-reply-dispatch.js";
 export type { OutboundReplyPayload } from "./reply-payload.js";
 export {

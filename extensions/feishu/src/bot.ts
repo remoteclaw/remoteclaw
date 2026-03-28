@@ -1,25 +1,19 @@
-import {
-  ensureConfiguredAcpRouteReady,
-  resolveConfiguredAcpRoute,
-} from "remoteclaw/plugin-sdk/conversation-runtime";
-import { getSessionBindingService } from "remoteclaw/plugin-sdk/conversation-runtime";
-import type { ClawdbotConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/feishu";
+import type { ClawdbotConfig, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import {
   buildAgentMediaPayload,
   buildPendingHistoryContextFromMap,
   clearHistoryEntriesIfEnabled,
-  createChannelPairingController,
+  createScopedPairingAccess,
   DEFAULT_GROUP_HISTORY_LIMIT,
   type HistoryEntry,
+  issuePairingChallenge,
   normalizeAgentId,
   recordPendingHistoryEntryIfEnabled,
   resolveAgentOutboundIdentity,
   resolveOpenProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
   warnMissingProviderGroupPolicyFallbackOnce,
-} from "remoteclaw/plugin-sdk/feishu";
-import { deriveLastRoutePolicy } from "remoteclaw/plugin-sdk/routing";
-import { resolveAgentIdFromSessionKey } from "remoteclaw/plugin-sdk/routing";
+} from "remoteclaw/plugin-sdk";
 import { resolveFeishuAccount } from "./accounts.js";
 import { type FeishuPermissionError, resolveFeishuSenderName } from "./bot-sender-name.js";
 import { createFeishuClient } from "./client.js";
@@ -955,7 +949,7 @@ export async function handleFeishuMessage(params: {
 
   try {
     const core = getFeishuRuntime();
-    const pairing = createChannelPairingController({
+    const pairing = createScopedPairingAccess({
       core,
       channel: "feishu",
       accountId: account.accountId,
@@ -981,10 +975,12 @@ export async function handleFeishuMessage(params: {
 
     if (isDirect && dmPolicy !== "open" && !dmAllowed) {
       if (dmPolicy === "pairing") {
-        await pairing.issueChallenge({
+        await issuePairingChallenge({
+          channel: "feishu",
           senderId: ctx.senderOpenId,
           senderIdLine: `Your Feishu user id: ${ctx.senderOpenId}`,
           meta: { name: ctx.senderName },
+          upsertPairingRequest: pairing.upsertPairingRequest,
           onCreated: () => {
             log(`feishu[${account.accountId}]: pairing request sender=${ctx.senderOpenId}`);
           },

@@ -1,14 +1,14 @@
 import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { formatCliCommand } from "remoteclaw/plugin-sdk/cli-runtime";
-import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/routing";
-import { info, success } from "remoteclaw/plugin-sdk/runtime-env";
-import { getChildLogger } from "remoteclaw/plugin-sdk/runtime-env";
-import { defaultRuntime, type RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
-import { resolveOAuthDir } from "remoteclaw/plugin-sdk/state-paths";
-import type { WebChannel } from "remoteclaw/plugin-sdk/text-runtime";
-import { jidToE164, resolveUserPath } from "remoteclaw/plugin-sdk/text-runtime";
+import { formatCliCommand } from "../../../src/cli/command-format.js";
+import { resolveOAuthDir } from "../../../src/config/paths.js";
+import { info, success } from "../../../src/globals.js";
+import { getChildLogger } from "../../../src/logging.js";
+import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
+import { defaultRuntime, type RuntimeEnv } from "../../../src/runtime.js";
+import type { WebChannel } from "../../../src/utils.js";
+import { jidToE164, resolveUserPath } from "../../../src/utils.js";
 
 export function resolveDefaultWebAuthDir(): string {
   return path.join(resolveOAuthDir(), "whatsapp", DEFAULT_ACCOUNT_ID);

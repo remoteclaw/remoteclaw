@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { resolveBrowserConfig } from "./config.js";
+import { createBrowserProfilesService } from "./profiles-service.js";
 import type { BrowserRouteContext, BrowserServerState } from "./server-context.js";
 
 vi.mock("../config/config.js", async (importOriginal) => {
@@ -24,9 +26,6 @@ import { loadConfig, writeConfigFile } from "../config/config.js";
 import { resolveRemoteClawUserDataDir } from "./chrome.js";
 import { movePathToTrash } from "./trash.js";
 
-let resolveBrowserConfig: typeof import("./config.js").resolveBrowserConfig;
-let createBrowserProfilesService: typeof import("./profiles-service.js").createBrowserProfilesService;
-
 function createCtx(resolved: BrowserServerState["resolved"]) {
   const state: BrowserServerState = {
     server: null as unknown as BrowserServerState["server"],
@@ -47,13 +46,6 @@ function createCtx(resolved: BrowserServerState["resolved"]) {
 }
 
 describe("BrowserProfilesService", () => {
-  beforeEach(async () => {
-    vi.resetModules();
-    ({ resolveBrowserConfig } = await import("./config.js"));
-    ({ createBrowserProfilesService } = await import("./profiles-service.js"));
-    vi.clearAllMocks();
-  });
-
   it("allocates next local port for new profiles", async () => {
     const resolved = resolveBrowserConfig({});
     const { ctx, state } = createCtx(resolved);

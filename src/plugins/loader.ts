@@ -1,13 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { createJiti } from "jiti";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { GatewayRequestHandler } from "../gateway/server-methods/types.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { isPathInsideWithRealpath } from "../security/scan-paths.js";
 import { resolveUserPath } from "../utils.js";
-import { inspectBundleMcpRuntimeSupport } from "./bundle-mcp.js";
-import { clearPluginCommands } from "./command-registry-state.js";
+import { clearPluginCommands } from "./commands.js";
 import {
   applyTestPluginDefaults,
   normalizePluginsConfig,
@@ -16,7 +16,6 @@ import {
 } from "./config-state.js";
 import { discoverRemoteClawPlugins } from "./discovery.js";
 import { initializeGlobalHookRunner } from "./hook-runner-global.js";
-import { clearPluginInteractiveHandlers } from "./interactive.js";
 import { loadPluginManifestRegistry } from "./manifest-registry.js";
 import { isPathInside, safeStatSync } from "./path-safety.js";
 import { createPluginRegistry, type PluginRecord, type PluginRegistry } from "./registry.js";
@@ -24,18 +23,6 @@ import { setActivePluginRegistry } from "./runtime.js";
 import { createPluginRuntime } from "./runtime/index.js";
 import type { PluginRuntime } from "./runtime/types.js";
 import { validateJsonSchemaValue } from "./schema-validator.js";
-import {
-  buildPluginLoaderAliasMap,
-  buildPluginLoaderJitiOptions,
-  listPluginSdkAliasCandidates,
-  listPluginSdkExportedSubpaths,
-  resolveExtensionApiAlias,
-  resolvePluginSdkAliasCandidateOrder,
-  resolvePluginSdkAliasFile,
-  resolvePluginRuntimeModulePath,
-  resolvePluginSdkScopedAliasMap,
-  shouldPreferNativeJiti,
-} from "./sdk-alias.js";
 import type {
   RemoteClawPluginDefinition,
   RemoteClawPluginModule,
@@ -75,38 +62,40 @@ const registryCache = new Map<string, PluginRegistry>();
 
 const defaultLogger = () => createSubsystemLogger("plugins");
 
-export const __testing = {
-  buildPluginLoaderJitiOptions,
-  buildPluginLoaderAliasMap,
-  listPluginSdkAliasCandidates,
-  listPluginSdkExportedSubpaths,
-  resolvePluginSdkScopedAliasMap,
-  resolvePluginSdkAliasCandidateOrder,
-  resolvePluginSdkAliasFile,
-  resolvePluginRuntimeModulePath,
-  shouldPreferNativeJiti,
-  maxPluginRegistryCacheEntries: MAX_PLUGIN_REGISTRY_CACHE_ENTRIES,
-};
+type PluginSdkAliasCandidateKind = "dist" | "src";
 
-function getCachedPluginRegistry(cacheKey: string): CachedPluginState | undefined {
-  const cached = registryCache.get(cacheKey);
-  if (!cached) {
-    return undefined;
-  }
-  // Refresh insertion order so frequently reused registries survive eviction.
-  registryCache.delete(cacheKey);
-  registryCache.set(cacheKey, cached);
-  return cached;
+function resolvePluginSdkAliasCandidateOrder(params: {
+  modulePath: string;
+  isProduction: boolean;
+}): PluginSdkAliasCandidateKind[] {
+  const normalizedModulePath = params.modulePath.replace(/\\/g, "/");
+  const isDistRuntime = normalizedModulePath.includes("/dist/");
+  return isDistRuntime || params.isProduction
+    ? (["dist", "src"] as const)
+    : (["src", "dist"] as const);
 }
 
-function setCachedPluginRegistry(cacheKey: string, state: CachedPluginState): void {
-  if (registryCache.has(cacheKey)) {
-    registryCache.delete(cacheKey);
-  }
-  registryCache.set(cacheKey, state);
-  while (registryCache.size > MAX_PLUGIN_REGISTRY_CACHE_ENTRIES) {
-    const oldestKey = registryCache.keys().next().value;
-    if (!oldestKey) {
+function listPluginSdkAliasCandidates(params: {
+  srcFile: string;
+  distFile: string;
+  modulePath: string;
+}) {
+  const orderedKinds = resolvePluginSdkAliasCandidateOrder({
+    modulePath: params.modulePath,
+    isProduction: process.env.NODE_ENV === "production",
+  });
+  let cursor = path.dirname(params.modulePath);
+  const candidates: string[] = [];
+  for (let i = 0; i < 6; i += 1) {
+    const candidateMap = {
+      src: path.join(cursor, "src", "plugin-sdk", params.srcFile),
+      dist: path.join(cursor, "dist", "plugin-sdk", params.distFile),
+    } as const;
+    for (const kind of orderedKinds) {
+      candidates.push(candidateMap[kind]);
+    }
+    const parent = path.dirname(cursor);
+    if (parent === cursor) {
       break;
     }
     cursor = parent;
@@ -309,7 +298,6 @@ function createPluginRecord(params: {
   description?: string;
   version?: string;
   source: string;
-  rootDir?: string;
   origin: PluginRecord["origin"];
   workspaceDir?: string;
   enabled: boolean;
@@ -321,7 +309,6 @@ function createPluginRecord(params: {
     description: params.description,
     version: params.version,
     source: params.source,
-    rootDir: params.rootDir,
     origin: params.origin,
     workspaceDir: params.workspaceDir,
     enabled: params.enabled,
@@ -572,7 +559,6 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
 
   // Clear previously registered plugin commands before reloading
   clearPluginCommands();
-  clearPluginInteractiveHandlers();
 
   // Lazily initialize the runtime so startup paths that discover/skip plugins do
   // not eagerly load every channel runtime dependency.
@@ -684,7 +670,6 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
         description: manifestRecord.description,
         version: manifestRecord.version,
         source: candidate.source,
-        rootDir: candidate.rootDir,
         origin: candidate.origin,
         workspaceDir: candidate.workspaceDir,
         enabled: false,
@@ -709,7 +694,6 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
       description: manifestRecord.description,
       version: manifestRecord.version,
       source: candidate.source,
-      rootDir: candidate.rootDir,
       origin: candidate.origin,
       workspaceDir: candidate.workspaceDir,
       enabled: enableState.enabled,

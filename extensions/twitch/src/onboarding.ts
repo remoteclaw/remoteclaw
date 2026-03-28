@@ -2,12 +2,14 @@
  * Twitch onboarding adapter for CLI setup wizard.
  */
 
-import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
-import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
-import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
-import type { WizardPrompter } from "../../../src/wizard/prompts.js";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
+import {
+  formatDocsLink,
+  promptChannelAccessConfig,
+  type ChannelOnboardingAdapter,
+  type ChannelOnboardingDmPolicy,
+  type WizardPrompter,
+} from "remoteclaw/plugin-sdk";
 import { DEFAULT_ACCOUNT_ID, getAccountConfig } from "./config.js";
 import type { TwitchAccountConfig, TwitchRole } from "./types.js";
 import { isAccountConfigured } from "./utils/twitch.js";
@@ -210,7 +212,7 @@ async function configureWithEnvToken(
   account: TwitchAccountConfig | null,
   envToken: string,
   forceAllowFrom: boolean,
-  dmPolicy: ChannelSetupDmPolicy,
+  dmPolicy: ChannelOnboardingDmPolicy,
 ): Promise<{ cfg: RemoteClawConfig } | null> {
   const useEnv = await prompter.confirm({
     message: "Twitch env var REMOTECLAW_TWITCH_ACCESS_TOKEN detected. Use env token?",
@@ -257,27 +259,7 @@ function setTwitchAccessControl(
   });
 }
 
-function resolveTwitchGroupPolicy(cfg: RemoteClawConfig): "open" | "allowlist" | "disabled" {
-  const account = getAccountConfig(cfg, DEFAULT_ACCOUNT_ID);
-  if (account?.allowedRoles?.includes("all")) {
-    return "open";
-  }
-  if (account?.allowedRoles?.includes("moderator")) {
-    return "allowlist";
-  }
-  return "disabled";
-}
-
-function setTwitchGroupPolicy(
-  cfg: RemoteClawConfig,
-  policy: "open" | "allowlist" | "disabled",
-): RemoteClawConfig {
-  const allowedRoles: TwitchRole[] =
-    policy === "open" ? ["all"] : policy === "allowlist" ? ["moderator", "vip"] : [];
-  return setTwitchAccessControl(cfg, allowedRoles, true);
-}
-
-const twitchDmPolicy: ChannelSetupDmPolicy = {
+const dmPolicy: ChannelOnboardingDmPolicy = {
   label: "Twitch",
   channel,
   policyKey: "channels.twitch.allowedRoles", // Twitch uses roles instead of DM policy
@@ -320,33 +302,7 @@ const twitchDmPolicy: ChannelSetupDmPolicy = {
   },
 };
 
-const twitchGroupAccess: NonNullable<ChannelSetupWizard["groupAccess"]> = {
-  label: "Twitch chat",
-  placeholder: "",
-  skipAllowlistEntries: true,
-  currentPolicy: ({ cfg }) => resolveTwitchGroupPolicy(cfg as RemoteClawConfig),
-  currentEntries: ({ cfg }) => {
-    const account = getAccountConfig(cfg as RemoteClawConfig, DEFAULT_ACCOUNT_ID);
-    return account?.allowFrom ?? [];
-  },
-  updatePrompt: ({ cfg }) => {
-    const account = getAccountConfig(cfg as RemoteClawConfig, DEFAULT_ACCOUNT_ID);
-    return Boolean(account?.allowedRoles?.length || account?.allowFrom?.length);
-  },
-  setPolicy: ({ cfg, policy }) => setTwitchGroupPolicy(cfg as RemoteClawConfig, policy),
-  resolveAllowlist: async () => [],
-  applyAllowlist: ({ cfg }) => cfg as RemoteClawConfig,
-};
-
-export const twitchSetupAdapter: ChannelSetupAdapter = {
-  resolveAccountId: () => DEFAULT_ACCOUNT_ID,
-  applyAccountConfig: ({ cfg }) =>
-    setTwitchAccount(cfg, {
-      enabled: true,
-    }),
-};
-
-export const twitchSetupWizard: ChannelSetupWizard = {
+export const twitchOnboardingAdapter: ChannelOnboardingAdapter = {
   channel,
   getStatus: async ({ cfg }) => {
     const account = getAccountConfig(cfg, DEFAULT_ACCOUNT_ID);
@@ -405,10 +361,37 @@ export const twitchSetupWizard: ChannelSetupWizard = {
         ? await dmPolicy.promptAllowFrom({ cfg: cfgWithAccount, prompter })
         : cfgWithAccount;
 
+    // Prompt for access control if allowFrom not set
+    if (!account?.allowFrom || account.allowFrom.length === 0) {
+      const accessConfig = await promptChannelAccessConfig({
+        prompter,
+        label: "Twitch chat",
+        currentPolicy: account?.allowedRoles?.includes("all")
+          ? "open"
+          : account?.allowedRoles?.includes("moderator")
+            ? "allowlist"
+            : "disabled",
+        currentEntries: [],
+        placeholder: "",
+        updatePrompt: false,
+      });
+
+      if (accessConfig) {
+        const allowedRoles: TwitchRole[] =
+          accessConfig.policy === "open"
+            ? ["all"]
+            : accessConfig.policy === "allowlist"
+              ? ["moderator", "vip"]
+              : [];
+
+        const cfgWithAccessControl = setTwitchAccessControl(cfgWithAllowFrom, allowedRoles, true);
+        return { cfg: cfgWithAccessControl };
+      }
+    }
+
     return { cfg: cfgWithAllowFrom };
   },
-  dmPolicy: twitchDmPolicy,
-  groupAccess: twitchGroupAccess,
+  dmPolicy,
   disable: (cfg) => {
     const twitch = (cfg.channels as Record<string, unknown>)?.twitch as
       | Record<string, unknown>

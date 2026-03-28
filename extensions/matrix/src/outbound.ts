@@ -1,5 +1,4 @@
-import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
-import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk/matrix";
+import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk";
 import { sendMessageMatrix, sendPollMatrix } from "./matrix/send.js";
 import { getMatrixRuntime } from "./runtime.js";
 

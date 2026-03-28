@@ -6,7 +6,7 @@ import { type RuntimeEnv, writeRuntimeJson } from "../../runtime.js";
 import { applyWizardMetadata } from "../onboard-helpers.js";
 import type { OnboardOptions } from "../onboard-types.js";
 
-export async function runNonInteractiveRemoteSetup(params: {
+export async function runNonInteractiveOnboardingRemote(params: {
   opts: OnboardOptions;
   runtime: RuntimeEnv;
   baseConfig: RemoteClawConfig;

@@ -1,14 +1,17 @@
-import { inspectSlackAccount } from "../../../../extensions/slack/src/account-inspect.js";
+import type { RemoteClawConfig } from "../../../config/config.js";
+import { DEFAULT_ACCOUNT_ID } from "../../../routing/session-key.js";
 import {
   listSlackAccountIds,
   resolveDefaultSlackAccountId,
   resolveSlackAccount,
-} from "../../../../extensions/slack/src/accounts.js";
-import { resolveSlackChannelAllowlist } from "../../../../extensions/slack/src/resolve-channels.js";
-import { resolveSlackUserAllowlist } from "../../../../extensions/slack/src/resolve-users.js";
-import type { RemoteClawConfig } from "../../../config/config.js";
-import { hasConfiguredSecretInput } from "../../../config/types.secrets.js";
-import { DEFAULT_ACCOUNT_ID } from "../../../routing/session-key.js";
+} from "../../../slack/accounts.js";
+import {
+  type SlackManifestConfig,
+  buildSlackManifest,
+  defaultManifestConfig,
+} from "../../../slack/manifest.js";
+import { resolveSlackChannelAllowlist } from "../../../slack/resolve-channels.js";
+import { resolveSlackUserAllowlist } from "../../../slack/resolve-users.js";
 import { formatDocsLink } from "../../../terminal/links.js";
 import type { WizardPrompter } from "../../../wizard/prompts.js";
 import type { ChannelOnboardingAdapter, ChannelOnboardingDmPolicy } from "../onboarding-types.js";

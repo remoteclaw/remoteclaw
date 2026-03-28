@@ -1,20 +1,16 @@
+import type { DmPolicy } from "remoteclaw/plugin-sdk";
 import {
   addWildcardAllowFrom,
   buildSingleChannelSecretPromptState,
-  DEFAULT_ACCOUNT_ID,
-  formatDocsLink,
   formatResolvedUnresolvedNote,
-  hasConfiguredSecretInput,
+  formatDocsLink,
   mergeAllowFromEntries,
   promptChannelAccessConfig,
   setTopLevelChannelGroupPolicy,
-} from "../../../src/channels/plugins/setup-flow-helpers.js";
-import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
-import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import type { DmPolicy } from "../../../src/config/types.js";
-import type { SecretInput } from "../../../src/config/types.secrets.js";
-import type { WizardPrompter } from "../../../src/wizard/prompts.js";
+  type ChannelOnboardingAdapter,
+  type ChannelOnboardingDmPolicy,
+  type WizardPrompter,
+} from "remoteclaw/plugin-sdk";
 import { listMatrixDirectoryGroupsLive } from "./directory-live.js";
 import { resolveMatrixAccount } from "./matrix/accounts.js";
 import { ensureMatrixSdkInstalled, isMatrixSdkAvailable } from "./matrix/deps.js";
@@ -169,79 +165,7 @@ function setMatrixGroupRooms(cfg: CoreConfig, roomKeys: string[]) {
   };
 }
 
-async function resolveMatrixGroupRooms(params: {
-  cfg: CoreConfig;
-  entries: string[];
-  prompter: Pick<WizardPrompter, "note">;
-}): Promise<string[]> {
-  if (params.entries.length === 0) {
-    return [];
-  }
-  try {
-    const resolvedIds: string[] = [];
-    const unresolved: string[] = [];
-    for (const entry of params.entries) {
-      const trimmed = entry.trim();
-      if (!trimmed) {
-        continue;
-      }
-      const cleaned = trimmed.replace(/^(room|channel):/i, "").trim();
-      if (cleaned.startsWith("!") && cleaned.includes(":")) {
-        resolvedIds.push(cleaned);
-        continue;
-      }
-      const matches = await listMatrixDirectoryGroupsLive({
-        cfg: params.cfg,
-        query: trimmed,
-        limit: 10,
-      });
-      const exact = matches.find(
-        (match) => (match.name ?? "").toLowerCase() === trimmed.toLowerCase(),
-      );
-      const best = exact ?? matches[0];
-      if (best?.id) {
-        resolvedIds.push(best.id);
-      } else {
-        unresolved.push(entry);
-      }
-    }
-    const roomKeys = [...resolvedIds, ...unresolved.map((entry) => entry.trim()).filter(Boolean)];
-    const resolution = formatResolvedUnresolvedNote({
-      resolved: resolvedIds,
-      unresolved,
-    });
-    if (resolution) {
-      await params.prompter.note(resolution, "Matrix rooms");
-    }
-    return roomKeys;
-  } catch (err) {
-    await params.prompter.note(
-      `Room lookup failed; keeping entries as typed. ${String(err)}`,
-      "Matrix rooms",
-    );
-    return params.entries.map((entry) => entry.trim()).filter(Boolean);
-  }
-}
-
-const matrixGroupAccess: NonNullable<ChannelSetupWizard["groupAccess"]> = {
-  label: "Matrix rooms",
-  placeholder: "!roomId:server, #alias:server, Project Room",
-  currentPolicy: ({ cfg }) => cfg.channels?.matrix?.groupPolicy ?? "allowlist",
-  currentEntries: ({ cfg }) =>
-    Object.keys(cfg.channels?.matrix?.groups ?? cfg.channels?.matrix?.rooms ?? {}),
-  updatePrompt: ({ cfg }) => Boolean(cfg.channels?.matrix?.groups ?? cfg.channels?.matrix?.rooms),
-  setPolicy: ({ cfg, policy }) => setMatrixGroupPolicy(cfg as CoreConfig, policy),
-  resolveAllowlist: async ({ cfg, entries, prompter }) =>
-    await resolveMatrixGroupRooms({
-      cfg: cfg as CoreConfig,
-      entries,
-      prompter,
-    }),
-  applyAllowlist: ({ cfg, resolved }) =>
-    setMatrixGroupRooms(cfg as CoreConfig, resolved as string[]),
-};
-
-const matrixDmPolicy: ChannelSetupDmPolicy = {
+const dmPolicy: ChannelOnboardingDmPolicy = {
   label: "Matrix",
   channel,
   policyKey: "channels.matrix.dm.policy",
@@ -438,10 +362,72 @@ export const matrixOnboardingAdapter: ChannelOnboardingAdapter = {
       next = await promptMatrixAllowFrom({ cfg: next, prompter });
     }
 
+    const existingGroups = next.channels?.matrix?.groups ?? next.channels?.matrix?.rooms;
+    const accessConfig = await promptChannelAccessConfig({
+      prompter,
+      label: "Matrix rooms",
+      currentPolicy: next.channels?.matrix?.groupPolicy ?? "allowlist",
+      currentEntries: Object.keys(existingGroups ?? {}),
+      placeholder: "!roomId:server, #alias:server, Project Room",
+      updatePrompt: Boolean(existingGroups),
+    });
+    if (accessConfig) {
+      if (accessConfig.policy !== "allowlist") {
+        next = setMatrixGroupPolicy(next, accessConfig.policy);
+      } else {
+        let roomKeys = accessConfig.entries;
+        if (accessConfig.entries.length > 0) {
+          try {
+            const resolvedIds: string[] = [];
+            const unresolved: string[] = [];
+            for (const entry of accessConfig.entries) {
+              const trimmed = entry.trim();
+              if (!trimmed) {
+                continue;
+              }
+              const cleaned = trimmed.replace(/^(room|channel):/i, "").trim();
+              if (cleaned.startsWith("!") && cleaned.includes(":")) {
+                resolvedIds.push(cleaned);
+                continue;
+              }
+              const matches = await listMatrixDirectoryGroupsLive({
+                cfg: next,
+                query: trimmed,
+                limit: 10,
+              });
+              const exact = matches.find(
+                (match) => (match.name ?? "").toLowerCase() === trimmed.toLowerCase(),
+              );
+              const best = exact ?? matches[0];
+              if (best?.id) {
+                resolvedIds.push(best.id);
+              } else {
+                unresolved.push(entry);
+              }
+            }
+            roomKeys = [...resolvedIds, ...unresolved.map((entry) => entry.trim()).filter(Boolean)];
+            const resolution = formatResolvedUnresolvedNote({
+              resolved: resolvedIds,
+              unresolved,
+            });
+            if (resolution) {
+              await prompter.note(resolution, "Matrix rooms");
+            }
+          } catch (err) {
+            await prompter.note(
+              `Room lookup failed; keeping entries as typed. ${String(err)}`,
+              "Matrix rooms",
+            );
+          }
+        }
+        next = setMatrixGroupPolicy(next, "allowlist");
+        next = setMatrixGroupRooms(next, roomKeys);
+      }
+    }
+
     return { cfg: next };
   },
-  dmPolicy: matrixDmPolicy,
-  groupAccess: matrixGroupAccess,
+  dmPolicy,
   disable: (cfg) => ({
     ...(cfg as CoreConfig),
     channels: {

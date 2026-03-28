@@ -1,3 +1,9 @@
 {
-  "id": "groq"
+  "id": "feishu",
+  "channels": ["feishu"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
 }

@@ -1,5 +1,3 @@
-import { z } from "zod";
-import { requireChannelOpenAllowFrom } from "../../shared/config-schema-helpers.js";
 import {
   BlockStreamingCoalesceSchema,
   DmConfigSchema,
@@ -9,7 +7,8 @@ import {
   ReplyRuntimeConfigSchemaShape,
   ToolPolicySchema,
   requireOpenAllowFrom,
-} from "./runtime-api.js";
+} from "remoteclaw/plugin-sdk";
+import { z } from "zod";
 
 const IrcGroupSchema = z
   .object({

@@ -5,9 +5,13 @@ import {
   redactConfigSnapshot,
   restoreRedactedValues as restoreRedactedValues_orig,
 } from "./redact-snapshot.js";
-import { redactSnapshotTestHints as mainSchemaHints } from "./redact-snapshot.test-hints.js";
+import { __test__ } from "./schema.hints.js";
 import type { ConfigUiHints } from "./schema.js";
 import type { ConfigFileSnapshot } from "./types.remoteclaw.js";
+import { RemoteClawSchema } from "./zod-schema.js";
+
+const { mapSensitivePaths } = __test__;
+const mainSchemaHints = mapSensitivePaths(RemoteClawSchema, "", {});
 
 type TestSnapshot<TConfig extends Record<string, unknown>> = ConfigFileSnapshot & {
   parsed: TConfig;

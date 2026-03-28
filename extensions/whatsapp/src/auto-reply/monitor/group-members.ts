@@ -1,4 +1,4 @@
-import { normalizeE164 } from "remoteclaw/plugin-sdk/text-runtime";
+import { normalizeE164 } from "../../../../../src/utils.js";
 
 function appendNormalizedUnique(entries: Iterable<string>, seen: Set<string>, ordered: string[]) {
   for (const entry of entries) {

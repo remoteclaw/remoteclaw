@@ -265,6 +265,7 @@ export const TelegramAccountSchemaBase = z
     responsePrefix: z.string().optional(),
     ackReaction: z.string().optional(),
     apiRoot: z.string().url().optional(),
+    autoTopicLabel: AutoTopicLabelSchema,
   })
   .strict();
 

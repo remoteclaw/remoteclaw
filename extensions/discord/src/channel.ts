@@ -1,78 +1,45 @@
-import { Separator, TextDisplay } from "@buape/carbon";
-import { resolveOutboundSendDep } from "../../../src/infra/outbound/send-deps.js";
 import {
-  buildAccountScopedAllowlistConfigEditor,
   buildAccountScopedDmSecurityPolicy,
-  collectOpenGroupPolicyConfiguredRouteWarnings,
   collectOpenProviderGroupPolicyWarnings,
-} from "../../../src/plugin-sdk-internal/channel-config.js";
+  collectOpenGroupPolicyConfiguredRouteWarnings,
+  createScopedAccountConfigAccessors,
+} from "remoteclaw/plugin-sdk";
 import {
-  buildAgentSessionKey,
-  resolveThreadSessionKeys,
-  type RoutePeer,
-} from "../../../src/plugin-sdk-internal/core.js";
-import {
+  applyAccountNameToChannelSection,
   buildComputedAccountStatusSnapshot,
+  buildChannelConfigSchema,
   buildTokenChannelStatusSummary,
-  type ChannelMessageActionAdapter,
-  type ChannelPlugin,
+  collectDiscordAuditChannelIds,
+  collectDiscordStatusIssues,
   DEFAULT_ACCOUNT_ID,
+  deleteAccountFromConfigSection,
+  discordOnboardingAdapter,
+  DiscordConfigSchema,
+  formatAllowFromLowercase,
   getChatChannelMeta,
+  mapAllowFromEntries,
+  listDiscordAccountIds,
   listDiscordDirectoryGroupsFromConfig,
   listDiscordDirectoryPeersFromConfig,
-  PAIRING_APPROVED_MESSAGE,
-  projectCredentialSnapshotFields,
-  resolveConfiguredFromCredentialStatuses,
-  type RemoteClawConfig,
-} from "./runtime-api.js";
-import {
-  listDiscordAccountIds,
-  resolveDiscordAccount,
-  type ResolvedDiscordAccount,
-} from "./accounts.js";
-import { collectDiscordAuditChannelIds } from "./audit.js";
-import {
-  isDiscordExecApprovalClientEnabled,
-  shouldSuppressLocalDiscordExecApprovalPrompt,
-} from "./exec-approvals.js";
-import {
   looksLikeDiscordTargetId,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
   normalizeDiscordMessagingTarget,
   normalizeDiscordOutboundTarget,
-} from "./normalize.js";
-import { discordConfigAccessors, discordConfigBase, discordSetupWizard } from "./plugin-shared.js";
-import type { DiscordProbe } from "./probe.js";
-import { resolveDiscordUserAllowlist } from "./resolve-users.js";
+  PAIRING_APPROVED_MESSAGE,
+  resolveDiscordAccount,
+  resolveDefaultDiscordAccountId,
+  resolveDiscordGroupRequireMention,
+  resolveDiscordGroupToolPolicy,
+  resolveOptionalConfigString,
+  setAccountEnabledInConfigSection,
+  type ChannelMessageActionAdapter,
+  type ChannelPlugin,
+  type ResolvedDiscordAccount,
+} from "remoteclaw/plugin-sdk/discord";
 import { getDiscordRuntime } from "./runtime.js";
-import { fetchChannelPermissionsDiscord } from "./send.js";
-import { discordSetupAdapter } from "./setup-core.js";
-import { collectDiscordStatusIssues } from "./status-issues.js";
-import { parseDiscordTarget } from "./targets.js";
-import { DiscordUiContainer } from "./ui.js";
-
-type DiscordSendFn = ReturnType<
-  typeof getDiscordRuntime
->["channel"]["discord"]["sendMessageDiscord"];
 
 const meta = getChatChannelMeta("discord");
-const REQUIRED_DISCORD_PERMISSIONS = ["ViewChannel", "SendMessages"] as const;
-
-function formatDiscordIntents(intents?: {
-  messageContent?: string;
-  guildMembers?: string;
-  presence?: string;
-}) {
-  if (!intents) {
-    return "unknown";
-  }
-  return [
-    `messageContent=${intents.messageContent ?? "unknown"}`,
-    `guildMembers=${intents.guildMembers ?? "unknown"}`,
-    `presence=${intents.presence ?? "unknown"}`,
-  ].join(" ");
-}
 
 const discordMessageActions: ChannelMessageActionAdapter = {
   listActions: (ctx) =>
@@ -90,211 +57,19 @@ const discordMessageActions: ChannelMessageActionAdapter = {
   },
 };
 
-function buildDiscordCrossContextComponents(params: {
-  originLabel: string;
-  message: string;
-  cfg: RemoteClawConfig;
-  accountId?: string | null;
-}) {
-  const trimmed = params.message.trim();
-  const components: Array<TextDisplay | Separator> = [];
-  if (trimmed) {
-    components.push(new TextDisplay(params.message));
-    components.push(new Separator({ divider: true, spacing: "small" }));
-  }
-  components.push(new TextDisplay(`*From ${params.originLabel}*`));
-  return [new DiscordUiContainer({ cfg: params.cfg, accountId: params.accountId, components })];
-}
-
-function hasDiscordExecApprovalDmRoute(cfg: RemoteClawConfig): boolean {
-  return listDiscordAccountIds(cfg).some((accountId) => {
-    const execApprovals = resolveDiscordAccount({ cfg, accountId }).config.execApprovals;
-    if (!execApprovals?.enabled || (execApprovals.approvers?.length ?? 0) === 0) {
-      return false;
-    }
-    const target = execApprovals.target ?? "dm";
-    return target === "dm" || target === "both";
-  });
-}
-
-function readDiscordAllowlistConfig(account: ResolvedDiscordAccount) {
-  const groupOverrides: Array<{ label: string; entries: string[] }> = [];
-  for (const [guildKey, guildCfg] of Object.entries(account.config.guilds ?? {})) {
-    const entries = (guildCfg?.users ?? []).map(String).filter(Boolean);
-    if (entries.length > 0) {
-      groupOverrides.push({ label: `guild ${guildKey}`, entries });
-    }
-    for (const [channelKey, channelCfg] of Object.entries(guildCfg?.channels ?? {})) {
-      const channelEntries = (channelCfg?.users ?? []).map(String).filter(Boolean);
-      if (channelEntries.length > 0) {
-        groupOverrides.push({
-          label: `guild ${guildKey} / channel ${channelKey}`,
-          entries: channelEntries,
-        });
-      }
-    }
-  }
-  return {
-    dmAllowFrom: (account.config.allowFrom ?? account.config.dm?.allowFrom ?? []).map(String),
-    groupPolicy: account.config.groupPolicy,
-    groupOverrides,
-  };
-}
-
-async function resolveDiscordAllowlistNames(params: {
-  cfg: Parameters<typeof resolveDiscordAccount>[0]["cfg"];
-  accountId?: string | null;
-  entries: string[];
-}) {
-  const account = resolveDiscordAccount({ cfg: params.cfg, accountId: params.accountId });
-  const token = account.token?.trim();
-  if (!token) {
-    return [];
-  }
-  return await resolveDiscordUserAllowlist({ token, entries: params.entries });
-}
-
-function normalizeDiscordAcpConversationId(conversationId: string) {
-  const normalized = conversationId.trim();
-  return normalized ? { conversationId: normalized } : null;
-}
-
-function matchDiscordAcpConversation(params: {
-  bindingConversationId: string;
-  conversationId: string;
-  parentConversationId?: string;
-}) {
-  if (params.bindingConversationId === params.conversationId) {
-    return { conversationId: params.conversationId, matchPriority: 2 };
-  }
-  if (
-    params.parentConversationId &&
-    params.parentConversationId !== params.conversationId &&
-    params.bindingConversationId === params.parentConversationId
-  ) {
-    return {
-      conversationId: params.parentConversationId,
-      matchPriority: 1,
-    };
-  }
-  return null;
-}
-
-function parseDiscordExplicitTarget(raw: string) {
-  try {
-    const target = parseDiscordTarget(raw, { defaultKind: "channel" });
-    if (!target) {
-      return null;
-    }
-    return {
-      to: target.id,
-      chatType: target.kind === "user" ? ("direct" as const) : ("channel" as const),
-    };
-  } catch {
-    return null;
-  }
-}
-
-function normalizeOutboundThreadId(value?: string | number | null): string | undefined {
-  if (value == null) {
-    return undefined;
-  }
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) {
-      return undefined;
-    }
-    return String(Math.trunc(value));
-  }
-  const trimmed = value.trim();
-  return trimmed ? trimmed : undefined;
-}
-
-function buildDiscordBaseSessionKey(params: {
-  cfg: RemoteClawConfig;
-  agentId: string;
-  accountId?: string | null;
-  peer: RoutePeer;
-}) {
-  return buildAgentSessionKey({
-    agentId: params.agentId,
-    channel: "discord",
-    accountId: params.accountId,
-    peer: params.peer,
-    dmScope: params.cfg.session?.dmScope ?? "main",
-    identityLinks: params.cfg.session?.identityLinks,
-  });
-}
-
-function resolveDiscordOutboundTargetKindHint(params: {
-  target: string;
-  resolvedTarget?: { kind: string };
-}): "user" | "channel" | undefined {
-  const resolvedKind = params.resolvedTarget?.kind;
-  if (resolvedKind === "user") {
-    return "user";
-  }
-  if (resolvedKind === "group" || resolvedKind === "channel") {
-    return "channel";
-  }
-
-  const target = params.target.trim();
-  if (/^channel:/i.test(target)) {
-    return "channel";
-  }
-  if (/^(user:|discord:|@|<@!?)/i.test(target)) {
-    return "user";
-  }
-  return undefined;
-}
-
-function resolveDiscordOutboundSessionRoute(params: {
-  cfg: RemoteClawConfig;
-  agentId: string;
-  accountId?: string | null;
-  target: string;
-  resolvedTarget?: { kind: string };
-  replyToId?: string | null;
-  threadId?: string | number | null;
-}) {
-  const parsed = parseDiscordTarget(params.target, {
-    defaultKind: resolveDiscordOutboundTargetKindHint(params),
-  });
-  if (!parsed) {
-    return null;
-  }
-  const isDm = parsed.kind === "user";
-  const peer: RoutePeer = {
-    kind: isDm ? "direct" : "channel",
-    id: parsed.id,
-  };
-  const baseSessionKey = buildDiscordBaseSessionKey({
-    cfg: params.cfg,
-    agentId: params.agentId,
-    accountId: params.accountId,
-    peer,
-  });
-  const explicitThreadId = normalizeOutboundThreadId(params.threadId);
-  const threadCandidate = explicitThreadId ?? normalizeOutboundThreadId(params.replyToId);
-  const threadKeys = resolveThreadSessionKeys({
-    baseSessionKey,
-    threadId: threadCandidate,
-    useSuffix: false,
-  });
-  return {
-    sessionKey: threadKeys.sessionKey,
-    baseSessionKey,
-    peer,
-    chatType: isDm ? ("direct" as const) : ("channel" as const),
-    from: isDm ? `discord:${parsed.id}` : `discord:channel:${parsed.id}`,
-    to: isDm ? `user:${parsed.id}` : `channel:${parsed.id}`,
-    threadId: explicitThreadId ?? undefined,
-  };
-}
+const discordConfigAccessors = createScopedAccountConfigAccessors({
+  resolveAccount: resolveDiscordAccount,
+  resolveAllowFrom: (account: ResolvedDiscordAccount) => account.config.dm?.allowFrom,
+  formatAllowFrom: (allowFrom) => formatAllowFromLowercase({ allowFrom }),
+  resolveDefaultTo: (account: ResolvedDiscordAccount) => account.config.defaultTo,
+});
 
 export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
-  ...createDiscordPluginBase({
-    setup: discordSetupAdapter,
-  }),
+  id: "discord",
+  meta: {
+    ...meta,
+  },
+  onboarding: discordOnboardingAdapter,
   pairing: {
     idLabel: "discordUserId",
     normalizeAllowEntry: (entry) => entry.replace(/^(discord|user):/i, ""),
@@ -305,24 +80,45 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
       );
     },
   },
-  allowlist: {
-    supportsScope: ({ scope }) => scope === "dm",
-    readConfig: ({ cfg, accountId }) =>
-      readDiscordAllowlistConfig(resolveDiscordAccount({ cfg, accountId })),
-    resolveNames: async ({ cfg, accountId, entries }) =>
-      await resolveDiscordAllowlistNames({ cfg, accountId, entries }),
-    applyConfigEdit: buildAccountScopedAllowlistConfigEditor({
-      channelId: "discord",
-      normalize: ({ cfg, accountId, values }) =>
-        discordConfigAccessors.formatAllowFrom!({ cfg, accountId, allowFrom: values }),
-      resolvePaths: (scope) =>
-        scope === "dm"
-          ? {
-              readPaths: [["allowFrom"], ["dm", "allowFrom"]],
-              writePath: ["allowFrom"],
-              cleanupPaths: [["dm", "allowFrom"]],
-            }
-          : null,
+  capabilities: {
+    chatTypes: ["direct", "channel", "thread"],
+    polls: true,
+    reactions: true,
+    threads: true,
+    media: true,
+    nativeCommands: true,
+  },
+  streaming: {
+    blockStreamingCoalesceDefaults: { minChars: 1500, idleMs: 1000 },
+  },
+  reload: { configPrefixes: ["channels.discord"] },
+  configSchema: buildChannelConfigSchema(DiscordConfigSchema),
+  config: {
+    listAccountIds: (cfg) => listDiscordAccountIds(cfg),
+    resolveAccount: (cfg, accountId) => resolveDiscordAccount({ cfg, accountId }),
+    defaultAccountId: (cfg) => resolveDefaultDiscordAccountId(cfg),
+    setAccountEnabled: ({ cfg, accountId, enabled }) =>
+      setAccountEnabledInConfigSection({
+        cfg,
+        sectionKey: "discord",
+        accountId,
+        enabled,
+        allowTopLevel: true,
+      }),
+    deleteAccount: ({ cfg, accountId }) =>
+      deleteAccountFromConfigSection({
+        cfg,
+        sectionKey: "discord",
+        accountId,
+        clearBaseFields: ["token", "name"],
+      }),
+    isConfigured: (account) => Boolean(account.token?.trim()),
+    describeAccount: (account) => ({
+      accountId: account.accountId,
+      name: account.name,
+      enabled: account.enabled,
+      configured: Boolean(account.token?.trim()),
+      tokenSource: account.tokenSource,
     }),
     ...discordConfigAccessors,
   },

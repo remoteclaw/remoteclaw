@@ -19,12 +19,7 @@ import { startPluginServices } from "./services.js";
 function createRegistry(services: RemoteClawPluginService[]) {
   const registry = createEmptyPluginRegistry();
   for (const service of services) {
-    registry.services.push({
-      pluginId: "plugin:test",
-      service,
-      source: "test",
-      rootDir: "/plugins/test-plugin",
-    });
+    registry.services.push({ pluginId: "plugin:test", service, source: "test" });
   }
   return registry;
 }
@@ -121,9 +116,7 @@ describe("startPluginServices", () => {
     await handle.stop();
 
     expect(mockedLogger.error).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "plugin service failed (service-start-fail, plugin=plugin:test, root=/plugins/test-plugin):",
-      ),
+      expect.stringContaining("plugin service failed (service-start-fail):"),
     );
     expect(mockedLogger.warn).toHaveBeenCalledWith(
       expect.stringContaining("plugin service stop failed (service-stop-fail):"),

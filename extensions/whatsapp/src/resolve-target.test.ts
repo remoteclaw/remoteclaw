@@ -1,8 +1,10 @@
-import { installCommonResolveTargetErrorCases } from "remoteclaw/plugin-sdk/testing";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { installCommonResolveTargetErrorCases } from "../../shared/resolve-target-test-helpers.js";
 
-vi.mock("./runtime-api.js", async () => {
-  const actual = await vi.importActual<typeof import("./runtime-api.js")>("./runtime-api.js");
+vi.mock("remoteclaw/plugin-sdk/whatsapp", async () => {
+  const actual = await vi.importActual<typeof import("remoteclaw/plugin-sdk/whatsapp")>(
+    "remoteclaw/plugin-sdk/whatsapp",
+  );
   const normalizeWhatsAppTarget = (value: string) => {
     if (value === "invalid-target") return null;
     // Simulate E.164 normalization: strip leading + and whatsapp: prefix.
@@ -66,20 +68,11 @@ vi.mock("./runtime.js", () => ({
   })),
 }));
 
-let resolveTarget: NonNullable<
-  NonNullable<NonNullable<typeof import("./channel.js").whatsappPlugin.outbound>["resolveTarget"]>
->;
+import { whatsappPlugin } from "./channel.js";
+
+const resolveTarget = whatsappPlugin.outbound!.resolveTarget!;
 
 describe("whatsapp resolveTarget", () => {
-  beforeEach(async () => {
-    vi.resetModules();
-    const outbound = (await import("./channel.js")).whatsappPlugin.outbound;
-    if (!outbound?.resolveTarget) {
-      throw new Error("expected whatsapp outbound resolveTarget");
-    }
-    resolveTarget = outbound.resolveTarget;
-  });
-
   it("should resolve valid target in explicit mode", () => {
     const result = resolveTarget({
       to: "5511999999999",
@@ -91,7 +84,7 @@ describe("whatsapp resolveTarget", () => {
     if (!result.ok) {
       throw result.error;
     }
-    expect(result.to).toBe("5511999999999@s.whatsapp.net");
+    expect(result.to).toBe("+5511999999999");
   });
 
   it("should resolve target in implicit mode with wildcard", () => {
@@ -105,7 +98,7 @@ describe("whatsapp resolveTarget", () => {
     if (!result.ok) {
       throw result.error;
     }
-    expect(result.to).toBe("5511999999999@s.whatsapp.net");
+    expect(result.to).toBe("+5511999999999");
   });
 
   it("should resolve target in implicit mode when in allowlist", () => {
@@ -119,7 +112,7 @@ describe("whatsapp resolveTarget", () => {
     if (!result.ok) {
       throw result.error;
     }
-    expect(result.to).toBe("5511999999999@s.whatsapp.net");
+    expect(result.to).toBe("+5511999999999");
   });
 
   it("should allow group JID regardless of allowlist", () => {
@@ -150,10 +143,8 @@ describe("whatsapp resolveTarget", () => {
     expect(result.error).toBeDefined();
   });
 
-  describe("common error cases", () => {
-    installCommonResolveTargetErrorCases({
-      resolveTarget: (...args) => resolveTarget(...args),
-      implicitAllowFrom: ["5511999999999"],
-    });
+  installCommonResolveTargetErrorCases({
+    resolveTarget,
+    implicitAllowFrom: ["5511999999999"],
   });
 });

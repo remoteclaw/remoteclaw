@@ -1,9 +1,9 @@
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import { afterEach, describe, expect, it } from "vitest";
 import { createEmptyPluginRegistry } from "../../../src/plugins/registry.js";
 import { setActivePluginRegistry } from "../../../src/plugins/runtime.js";
 import type { WebhookTarget } from "./monitor-shared.js";
 import { registerBlueBubblesWebhookTarget } from "./monitor.js";
-import type { RemoteClawConfig } from "./runtime-api.js";
 
 function createTarget(): WebhookTarget {
   return {

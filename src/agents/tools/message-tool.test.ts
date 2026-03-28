@@ -1,38 +1,9 @@
-import { Type } from "@sinclair/typebox";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ChannelMessageCapability } from "../../channels/plugins/message-capabilities.js";
-import { createMessageToolButtonsSchema } from "../../channels/plugins/message-tool-schema.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ChannelMessageActionName, ChannelPlugin } from "../../channels/plugins/types.js";
 import type { MessageActionRunResult } from "../../infra/outbound/message-action-runner.js";
-type CreateMessageTool = typeof import("./message-tool.js").createMessageTool;
-type SetActivePluginRegistry = typeof import("../../plugins/runtime.js").setActivePluginRegistry;
-type CreateTestRegistry = typeof import("../../test-utils/channel-plugins.js").createTestRegistry;
-
-let createMessageTool: CreateMessageTool;
-let setActivePluginRegistry: SetActivePluginRegistry;
-let createTestRegistry: CreateTestRegistry;
-
-type DescribeMessageTool = NonNullable<
-  NonNullable<ChannelPlugin["actions"]>["describeMessageTool"]
->;
-type MessageToolDiscoveryContext = Parameters<DescribeMessageTool>[0];
-type MessageToolSchema = NonNullable<ReturnType<DescribeMessageTool>>["schema"];
-
-function createDiscordMessageToolComponentsSchema() {
-  return Type.Object({ type: Type.Literal("discord-components") });
-}
-
-function createSlackMessageToolBlocksSchema() {
-  return Type.Array(Type.Object({}, { additionalProperties: true }));
-}
-
-function createTelegramPollExtraToolSchemas() {
-  return {
-    pollDurationSeconds: Type.Optional(Type.Number()),
-    pollAnonymous: Type.Optional(Type.Boolean()),
-    pollPublic: Type.Optional(Type.Boolean()),
-  };
-}
+import { setActivePluginRegistry } from "../../plugins/runtime.js";
+import { createTestRegistry } from "../../test-utils/channel-plugins.js";
+import { createMessageTool } from "./message-tool.js";
 
 const mocks = vi.hoisted(() => ({
   runMessageAction: vi.fn(),

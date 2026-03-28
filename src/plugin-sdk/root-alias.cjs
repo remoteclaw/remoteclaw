@@ -32,104 +32,6 @@ function emptyPluginConfigSchema() {
   };
 }
 
-function resolveCommandAuthorizedFromAuthorizers(params) {
-  const { useAccessGroups, authorizers } = params;
-  const mode = params.modeWhenAccessGroupsOff ?? "allow";
-  if (!useAccessGroups) {
-    if (mode === "allow") {
-      return true;
-    }
-    if (mode === "deny") {
-      return false;
-    }
-    const anyConfigured = authorizers.some((entry) => entry.configured);
-    if (!anyConfigured) {
-      return true;
-    }
-    return authorizers.some((entry) => entry.configured && entry.allowed);
-  }
-  return authorizers.some((entry) => entry.configured && entry.allowed);
-}
-
-function resolveControlCommandGate(params) {
-  const commandAuthorized = resolveCommandAuthorizedFromAuthorizers({
-    useAccessGroups: params.useAccessGroups,
-    authorizers: params.authorizers,
-    modeWhenAccessGroupsOff: params.modeWhenAccessGroupsOff,
-  });
-  const shouldBlock = params.allowTextCommands && params.hasControlCommand && !commandAuthorized;
-  return { commandAuthorized, shouldBlock };
-}
-
-function onDiagnosticEvent(listener) {
-  const monolithic = loadMonolithicSdk();
-  if (!monolithic || typeof monolithic.onDiagnosticEvent !== "function") {
-    throw new Error("remoteclaw/plugin-sdk root alias could not resolve onDiagnosticEvent");
-  }
-  return monolithic.onDiagnosticEvent(listener);
-}
-
-function getPackageRoot() {
-  return path.resolve(__dirname, "..", "..");
-}
-
-function listPluginSdkExportedSubpaths() {
-  const packageRoot = getPackageRoot();
-  if (pluginSdkSubpathsCache.has(packageRoot)) {
-    return pluginSdkSubpathsCache.get(packageRoot);
-  }
-
-  let subpaths = [];
-  try {
-    const packageJsonPath = path.join(packageRoot, "package.json");
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-    subpaths = Object.keys(packageJson.exports ?? {})
-      .filter((key) => key.startsWith("./plugin-sdk/"))
-      .map((key) => key.slice("./plugin-sdk/".length));
-  } catch {
-    subpaths = [];
-  }
-
-  pluginSdkSubpathsCache.set(packageRoot, subpaths);
-  return subpaths;
-}
-
-function buildPluginSdkAliasMap(useDist) {
-  const packageRoot = getPackageRoot();
-  const pluginSdkDir = path.join(packageRoot, useDist ? "dist" : "src", "plugin-sdk");
-  const ext = useDist ? ".js" : ".ts";
-  const aliasMap = {
-    "remoteclaw/plugin-sdk": __filename,
-  };
-
-  for (const subpath of listPluginSdkExportedSubpaths()) {
-    const candidate = path.join(pluginSdkDir, `${subpath}${ext}`);
-    if (fs.existsSync(candidate)) {
-      aliasMap[`remoteclaw/plugin-sdk/${subpath}`] = candidate;
-    }
-  }
-
-  return aliasMap;
-}
-
-function getJiti(tryNative) {
-  if (jitiLoaders.has(tryNative)) {
-    return jitiLoaders.get(tryNative);
-  }
-
-  const { createJiti } = require("jiti");
-  const jitiLoader = createJiti(__filename, {
-    alias: buildPluginSdkAliasMap(tryNative),
-    interopDefault: true,
-    // Prefer Node's native sync ESM loader for built dist/plugin-sdk/*.js files
-    // so local plugins do not create a second transpiled OpenClaw core graph.
-    tryNative,
-    extensions: [".ts", ".tsx", ".mts", ".cts", ".mtsx", ".ctsx", ".js", ".mjs", ".cjs", ".json"],
-  });
-  jitiLoaders.set(tryNative, jitiLoader);
-  return jitiLoader;
-}
-
 function loadMonolithicSdk() {
   if (monolithicSdk) {
     return monolithicSdk;
@@ -141,8 +43,8 @@ function loadMonolithicSdk() {
     extensions: [".ts", ".tsx", ".mts", ".cts", ".mtsx", ".ctsx", ".js", ".mjs", ".cjs", ".json"],
   });
 
-  const distCandidate = path.resolve(__dirname, "..", "..", "dist", "plugin-sdk", "compat.js");
-  if (fs.existsSync(distCandidate)) {
+  const distCandidate = path.resolve(__dirname, "..", "..", "dist", "plugin-sdk", "index.js");
+  if (!shouldPreferSourceInTests && fs.existsSync(distCandidate)) {
     try {
       monolithicSdk = jiti(distCandidate);
       return monolithicSdk;
@@ -151,14 +53,12 @@ function loadMonolithicSdk() {
     }
   }
 
-  monolithicSdk = jiti(path.join(__dirname, "compat.ts"));
+  monolithicSdk = jiti(path.join(__dirname, "index.ts"));
   return monolithicSdk;
 }
 
 const fastExports = {
   emptyPluginConfigSchema,
-  onDiagnosticEvent,
-  resolveControlCommandGate,
 };
 
 function shouldResolveMonolithic(prop) {

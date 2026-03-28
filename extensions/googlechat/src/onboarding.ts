@@ -1,7 +1,5 @@
 import type { RemoteClawConfig, DmPolicy } from "remoteclaw/plugin-sdk";
 import {
-  DEFAULT_ACCOUNT_ID,
-  applySetupAccountConfigPatch,
   addWildcardAllowFrom,
   formatDocsLink,
   mergeAllowFromEntries,
@@ -10,6 +8,7 @@ import {
   type ChannelOnboardingAdapter,
   type ChannelOnboardingDmPolicy,
   type WizardPrompter,
+  DEFAULT_ACCOUNT_ID,
   migrateBaseNameToDefaultAccount,
 } from "remoteclaw/plugin-sdk";
 import {

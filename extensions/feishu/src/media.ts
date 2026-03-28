@@ -1,8 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { Readable } from "stream";
-import { withTempDownloadPath, type ClawdbotConfig } from "remoteclaw/plugin-sdk/feishu";
-import { mediaKindFromMime } from "remoteclaw/plugin-sdk/media-runtime";
+import { withTempDownloadPath, type ClawdbotConfig } from "remoteclaw/plugin-sdk";
 import { resolveFeishuAccount } from "./accounts.js";
 import { createFeishuClient } from "./client.js";
 import { normalizeFeishuExternalKey } from "./external-keys.js";

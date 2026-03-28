@@ -1,6 +1,5 @@
-import { AllowFromListSchema, DmPolicySchema } from "remoteclaw/plugin-sdk/channel-config-schema";
+import { MarkdownConfigSchema, buildChannelConfigSchema } from "remoteclaw/plugin-sdk";
 import { z } from "zod";
-import { MarkdownConfigSchema, buildChannelConfigSchema } from "../runtime-api.js";
 
 const allowFromEntry = z.union([z.string(), z.number()]);
 

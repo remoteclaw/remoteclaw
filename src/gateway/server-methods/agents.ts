@@ -6,19 +6,7 @@ import {
   resolveAgentDir,
   resolveAgentWorkspaceDir,
 } from "../../agents/agent-scope.js";
-import {
-  DEFAULT_AGENTS_FILENAME,
-  DEFAULT_BOOTSTRAP_FILENAME,
-  DEFAULT_HEARTBEAT_FILENAME,
-  DEFAULT_IDENTITY_FILENAME,
-  DEFAULT_MEMORY_ALT_FILENAME,
-  DEFAULT_MEMORY_FILENAME,
-  DEFAULT_SOUL_FILENAME,
-  DEFAULT_TOOLS_FILENAME,
-  DEFAULT_USER_FILENAME,
-  ensureAgentWorkspace,
-  isWorkspaceSetupCompleted,
-} from "../../agents/workspace.js";
+import { ensureAgentWorkspace } from "../../agents/workspace.js";
 import { movePathToTrash } from "../../browser/trash.js";
 import {
   applyAgentConfig,
@@ -626,11 +614,18 @@ export const agentsHandlers: GatewayRequestHandlers = {
       return;
     }
     const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
-    let hideBootstrap = false;
-    try {
-      hideBootstrap = await isWorkspaceSetupCompleted(workspaceDir);
-    } catch {
-      // Fall back to showing BOOTSTRAP if workspace state cannot be read.
+    const globs = resolveEditableFiles(cfg, agentId);
+    const unsafeGlob = globs.find(isUnsafePattern);
+    if (unsafeGlob) {
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          `editableFiles pattern "${unsafeGlob}" is unsafe (no ".." or absolute paths)`,
+        ),
+      );
+      return;
     }
     const files = await listAgentFiles(workspaceDir, globs);
     respond(

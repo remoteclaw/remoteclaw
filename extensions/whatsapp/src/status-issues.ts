@@ -1,13 +1,13 @@
-import type {
-  ChannelAccountSnapshot,
-  ChannelStatusIssue,
-} from "remoteclaw/plugin-sdk/channel-contract";
-import { formatCliCommand } from "remoteclaw/plugin-sdk/cli-runtime";
 import {
   asString,
   collectIssuesForEnabledAccounts,
   isRecord,
-} from "remoteclaw/plugin-sdk/status-helpers";
+} from "../../../src/channels/plugins/status-issues/shared.js";
+import type {
+  ChannelAccountSnapshot,
+  ChannelStatusIssue,
+} from "../../../src/channels/plugins/types.js";
+import { formatCliCommand } from "../../../src/cli/command-format.js";
 
 type WhatsAppAccountStatus = {
   accountId?: unknown;

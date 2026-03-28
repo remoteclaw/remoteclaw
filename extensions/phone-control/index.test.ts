@@ -2,7 +2,11 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { createTestPluginApi } from "../../test/helpers/extensions/plugin-api.js";
+import type {
+  RemoteClawPluginApi,
+  RemoteClawPluginCommandDefinition,
+  PluginCommandContext,
+} from "../../src/plugins/types.js";
 import registerPhoneControl from "./index.js";
 
 function createApi(params: {
@@ -51,12 +55,6 @@ function createCommandContext(args: string): PluginCommandContext {
     commandBody: `/phone ${args}`,
     args,
     config: {},
-    requestConversationBinding: async () => ({
-      status: "error",
-      message: "unsupported",
-    }),
-    detachConversationBinding: async () => ({ removed: false }),
-    getCurrentConversationBinding: async () => null,
   };
 }
 

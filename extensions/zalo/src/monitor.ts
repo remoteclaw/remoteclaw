@@ -49,11 +49,6 @@ import {
   type ZaloWebhookTarget,
 } from "./monitor.webhook.js";
 import { resolveZaloProxyFetch } from "./proxy.js";
-import {
-  createChannelPairingController,
-  createChannelReplyPipeline,
-  deliverTextOrMediaReply,
-} from "./runtime-api.js";
 import { getZaloRuntime } from "./runtime.js";
 
 export type ZaloRuntimeEnv = {
@@ -371,7 +366,7 @@ async function processMessageWithPipeline(params: {
     statusSink,
     fetcher,
   } = params;
-  const pairing = createChannelPairingController({
+  const pairing = createScopedPairingAccess({
     core,
     channel: "zalo",
     accountId: account.accountId,
@@ -447,10 +442,12 @@ async function processMessageWithPipeline(params: {
   }
   if (directDmOutcome === "unauthorized") {
     if (dmPolicy === "pairing") {
-      await pairing.issueChallenge({
+      await issuePairingChallenge({
+        channel: "zalo",
         senderId,
         senderIdLine: `Your Zalo user id: ${senderId}`,
         meta: { name: senderName ?? undefined },
+        upsertPairingRequest: pairing.upsertPairingRequest,
         onCreated: () => {
           logVerbose(core, runtime, `zalo pairing request sender=${senderId}`);
         },
@@ -546,32 +543,32 @@ async function processMessageWithPipeline(params: {
     channel: "zalo",
     accountId: account.accountId,
   });
-  const { onModelSelected, ...replyPipeline } = createChannelReplyPipeline({
+  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
     cfg: config,
     agentId: route.agentId,
     channel: "zalo",
     accountId: account.accountId,
-    typing: {
-      start: async () => {
-        await sendChatAction(
-          token,
-          {
-            chat_id: chatId,
-            action: "typing",
-          },
-          fetcher,
-          ZALO_TYPING_TIMEOUT_MS,
-        );
-      },
-      onStartError: (err) => {
-        logTypingFailure({
-          log: (message) => logVerbose(core, runtime, message),
-          channel: "zalo",
-          action: "start",
-          target: chatId,
-          error: err,
-        });
-      },
+  });
+  const typingCallbacks = createTypingCallbacks({
+    start: async () => {
+      await sendChatAction(
+        token,
+        {
+          chat_id: chatId,
+          action: "typing",
+        },
+        fetcher,
+        ZALO_TYPING_TIMEOUT_MS,
+      );
+    },
+    onStartError: (err) => {
+      logTypingFailure({
+        log: (message) => logVerbose(core, runtime, message),
+        channel: "zalo",
+        action: "start",
+        target: chatId,
+        error: err,
+      });
     },
   });
 
@@ -579,8 +576,9 @@ async function processMessageWithPipeline(params: {
     ctx: ctxPayload,
     cfg: config,
     dispatcherOptions: {
-      ...replyPipeline,
-      deliver: async (payload) => {
+      ...prefixOptions,
+      typingCallbacks,
+      deliver: async (payload: any) => {
         await deliverZaloReply({
           payload,
           token,

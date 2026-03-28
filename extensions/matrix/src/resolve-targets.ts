@@ -1,4 +1,4 @@
-import { mapAllowlistResolutionInputs } from "remoteclaw/plugin-sdk/allowlist-resolution";
+import { mapAllowlistResolutionInputs } from "remoteclaw/plugin-sdk";
 import type {
   ChannelDirectoryEntry,
   ChannelResolveKind,

@@ -7,8 +7,6 @@
  * across multiple providers.
  */
 
-import { parseSlackBlocksInput } from "../../../extensions/slack/src/blocks-input.js";
-import { isSlackInteractiveRepliesEnabled } from "../../../extensions/slack/src/interactive-replies.js";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import { resolveEffectiveMessagesConfig } from "../../agents/identity.js";
 import { normalizeChannelId } from "../../channels/plugins/index.js";

@@ -1,12 +1,11 @@
-import { resetSystemEventsForTest } from "remoteclaw/plugin-sdk/infra-runtime";
-import { resetInboundDedupe } from "remoteclaw/plugin-sdk/reply-runtime";
-import type { MockFn } from "remoteclaw/plugin-sdk/testing";
 import { beforeEach, vi } from "vitest";
+import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
+import { resetSystemEventsForTest } from "../../../src/infra/system-events.js";
+import type { MockFn } from "../../../src/test-utils/vitest-mock-fn.js";
 import type { SignalDaemonExitEvent, SignalDaemonHandle } from "./daemon.js";
 
 type SignalToolResultTestMocks = {
   waitForTransportReadyMock: MockFn;
-  enqueueSystemEventMock: MockFn;
   sendMock: MockFn;
   replyMock: MockFn;
   updateLastRouteMock: MockFn;
@@ -19,7 +18,6 @@ type SignalToolResultTestMocks = {
 };
 
 const waitForTransportReadyMock = vi.hoisted(() => vi.fn()) as unknown as MockFn;
-const enqueueSystemEventMock = vi.hoisted(() => vi.fn()) as unknown as MockFn;
 const sendMock = vi.hoisted(() => vi.fn()) as unknown as MockFn;
 const replyMock = vi.hoisted(() => vi.fn()) as unknown as MockFn;
 const updateLastRouteMock = vi.hoisted(() => vi.fn()) as unknown as MockFn;
@@ -33,7 +31,6 @@ const spawnSignalDaemonMock = vi.hoisted(() => vi.fn()) as unknown as MockFn;
 export function getSignalToolResultTestMocks(): SignalToolResultTestMocks {
   return {
     waitForTransportReadyMock,
-    enqueueSystemEventMock,
     sendMock,
     replyMock,
     updateLastRouteMock,
@@ -71,21 +68,17 @@ export function createMockSignalDaemonHandle(
   };
 }
 
-vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
+vi.mock("../../../src/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../src/config/config.js")>();
   return {
     ...actual,
     loadConfig: () => config,
   };
 });
 
-vi.mock("remoteclaw/plugin-sdk/reply-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/reply-runtime")>();
-  return {
-    ...actual,
-    getReplyFromConfig: (...args: unknown[]) => replyMock(...args),
-  };
-});
+vi.mock("../../../src/auto-reply/reply.js", () => ({
+  getReplyFromConfig: (...args: unknown[]) => replyMock(...args),
+}));
 
 vi.mock("./send.js", () => ({
   sendMessageSignal: (...args: unknown[]) => sendMock(...args),
@@ -93,13 +86,13 @@ vi.mock("./send.js", () => ({
   sendReadReceiptSignal: vi.fn().mockResolvedValue(true),
 }));
 
-vi.mock("remoteclaw/plugin-sdk/conversation-runtime", () => ({
+vi.mock("../../../src/pairing/pairing-store.js", () => ({
   readChannelAllowFromStore: (...args: unknown[]) => readAllowFromStoreMock(...args),
   upsertChannelPairingRequest: (...args: unknown[]) => upsertPairingRequestMock(...args),
 }));
 
-vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
+vi.mock("../../../src/config/sessions.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../src/config/sessions.js")>();
   return {
     ...actual,
     resolveStorePath: vi.fn(() => "/tmp/openclaw-sessions.json"),
@@ -123,17 +116,9 @@ vi.mock("./daemon.js", async (importOriginal) => {
   };
 });
 
-vi.mock("remoteclaw/plugin-sdk/infra-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/infra-runtime")>();
-  return {
-    ...actual,
-    waitForTransportReady: (...args: unknown[]) => waitForTransportReadyMock(...args),
-    enqueueSystemEvent: (...args: Parameters<typeof actual.enqueueSystemEvent>) => {
-      enqueueSystemEventMock(...args);
-      return actual.enqueueSystemEvent(...args);
-    },
-  };
-});
+vi.mock("../../../src/infra/transport-ready.js", () => ({
+  waitForTransportReady: (...args: unknown[]) => waitForTransportReadyMock(...args),
+}));
 
 export function installSignalToolResultTestHooks() {
   beforeEach(() => {
@@ -155,7 +140,6 @@ export function installSignalToolResultTestHooks() {
     readAllowFromStoreMock.mockReset().mockResolvedValue([]);
     upsertPairingRequestMock.mockReset().mockResolvedValue({ code: "PAIRCODE", created: true });
     waitForTransportReadyMock.mockReset().mockResolvedValue(undefined);
-    enqueueSystemEventMock.mockReset();
 
     resetSystemEventsForTest();
   });

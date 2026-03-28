@@ -1,8 +1,3 @@
-import type { ChannelOutboundAdapter, ChannelPollResult } from "../channels/plugins/types.js";
-import type { OutboundDeliveryResult } from "../infra/outbound/deliver.js";
-
-export type { ChannelOutboundAdapter } from "../channels/plugins/types.js";
-
 export type ChannelSendRawResult = {
   ok: boolean;
   messageId?: string | null;

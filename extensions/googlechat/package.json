@@ -7,11 +7,8 @@
   "dependencies": {
     "google-auth-library": "^10.6.1"
   },
-  "devDependencies": {
-    "openclaw": "workspace:*"
-  },
   "peerDependencies": {
-    "openclaw": ">=2026.3.14"
+    "remoteclaw": "workspace:*"
   },
   "peerDependenciesMeta": {
     "remoteclaw": {

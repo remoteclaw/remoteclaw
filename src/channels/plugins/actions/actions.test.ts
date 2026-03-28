@@ -15,7 +15,7 @@ vi.mock("../../../agents/tools/telegram-actions.js", () => ({
   handleTelegramAction,
 }));
 
-vi.mock("../../../../extensions/signal/src/send-reactions.js", () => ({
+vi.mock("../../../signal/send-reactions.js", () => ({
   sendReactionSignal,
   removeReactionSignal,
 }));
@@ -24,11 +24,11 @@ vi.mock("../../../agents/tools/slack-actions.js", () => ({
   handleSlackAction,
 }));
 
-let discordMessageActions: typeof import("../../../../extensions/discord/src/channel-actions.js").discordMessageActions;
-let handleDiscordMessageAction: typeof import("../../../../extensions/discord/src/actions/handle-action.js").handleDiscordMessageAction;
-let telegramMessageActions: typeof import("../../../../extensions/telegram/src/channel-actions.js").telegramMessageActions;
-let signalMessageActions: typeof import("../../../../extensions/signal/src/message-actions.js").signalMessageActions;
-let createSlackActions: typeof import("../../../../extensions/slack/src/channel-actions.js").createSlackActions;
+const { discordMessageActions } = await import("./discord.js");
+const { handleDiscordMessageAction } = await import("./discord/handle-action.js");
+const { telegramMessageActions } = await import("./telegram.js");
+const { signalMessageActions } = await import("./signal.js");
+const { createSlackActions } = await import("../slack.actions.js");
 
 function telegramCfg(): RemoteClawConfig {
   return { channels: { telegram: { botToken: "tok" } } } as RemoteClawConfig;
@@ -191,16 +191,7 @@ async function expectSlackSendRejected(params: Record<string, unknown>, error: R
   expect(handleSlackAction).not.toHaveBeenCalled();
 }
 
-beforeEach(async () => {
-  vi.resetModules();
-  ({ discordMessageActions } =
-    await import("../../../../extensions/discord/src/channel-actions.js"));
-  ({ handleDiscordMessageAction } =
-    await import("../../../../extensions/discord/src/actions/handle-action.js"));
-  ({ telegramMessageActions } =
-    await import("../../../../extensions/telegram/src/channel-actions.js"));
-  ({ signalMessageActions } = await import("../../../../extensions/signal/src/message-actions.js"));
-  ({ createSlackActions } = await import("../../../../extensions/slack/src/channel-actions.js"));
+beforeEach(() => {
   vi.clearAllMocks();
 });
 
@@ -671,7 +662,7 @@ describe("telegramMessageActions", () => {
     }
   });
 
-  it("forwards telegram action aliases into the runtime seam", async () => {
+  it("maps action params into telegram actions", async () => {
     const cases = [
       {
         name: "media-only send preserves asVoice",
@@ -684,7 +675,8 @@ describe("telegramMessageActions", () => {
         expectedPayload: expect.objectContaining({
           action: "sendMessage",
           to: "123",
-          media: "https://example.com/voice.ogg",
+          content: "",
+          mediaUrl: "https://example.com/voice.ogg",
           asVoice: true,
         }),
       },
@@ -699,7 +691,7 @@ describe("telegramMessageActions", () => {
         expectedPayload: expect.objectContaining({
           action: "sendMessage",
           to: "456",
-          message: "Silent notification test",
+          content: "Silent notification test",
           silent: true,
         }),
       },
@@ -716,7 +708,7 @@ describe("telegramMessageActions", () => {
           action: "editMessage",
           chatId: "123",
           messageId: 42,
-          message: "Updated",
+          content: "Updated",
           buttons: [],
           accountId: undefined,
         },
@@ -738,19 +730,20 @@ describe("telegramMessageActions", () => {
         expectedPayload: {
           action: "poll",
           to: "123",
-          pollQuestion: "Ready?",
-          pollOption: ["Yes", "No"],
-          pollMulti: true,
-          pollDurationSeconds: 60,
-          pollPublic: true,
-          replyTo: 55,
-          threadId: 77,
+          question: "Ready?",
+          answers: ["Yes", "No"],
+          allowMultiselect: true,
+          durationHours: undefined,
+          durationSeconds: 60,
+          replyToMessageId: 55,
+          messageThreadId: 77,
+          isAnonymous: false,
           silent: true,
           accountId: undefined,
         },
       },
       {
-        name: "poll forwards raw alias flags to telegram runtime",
+        name: "poll parses string booleans before telegram action handoff",
         action: "poll" as const,
         params: {
           to: "123",
@@ -763,16 +756,20 @@ describe("telegramMessageActions", () => {
         expectedPayload: {
           action: "poll",
           to: "123",
-          pollQuestion: "Ready?",
-          pollOption: ["Yes", "No"],
-          pollMulti: "true",
-          pollPublic: "true",
-          silent: "true",
+          question: "Ready?",
+          answers: ["Yes", "No"],
+          allowMultiselect: true,
+          durationHours: undefined,
+          durationSeconds: undefined,
+          replyToMessageId: undefined,
+          messageThreadId: undefined,
+          isAnonymous: false,
+          silent: true,
           accountId: undefined,
         },
       },
       {
-        name: "poll forwards duration strings for runtime validation",
+        name: "poll rejects partially numeric duration strings before telegram action handoff",
         action: "poll" as const,
         params: {
           to: "123",
@@ -783,9 +780,15 @@ describe("telegramMessageActions", () => {
         expectedPayload: {
           action: "poll",
           to: "123",
-          pollQuestion: "Ready?",
-          pollOption: ["Yes", "No"],
-          pollDurationSeconds: "60s",
+          question: "Ready?",
+          answers: ["Yes", "No"],
+          allowMultiselect: undefined,
+          durationHours: undefined,
+          durationSeconds: undefined,
+          replyToMessageId: undefined,
+          messageThreadId: undefined,
+          isAnonymous: undefined,
+          silent: undefined,
           accountId: undefined,
         },
       },
@@ -798,8 +801,10 @@ describe("telegramMessageActions", () => {
         },
         expectedPayload: {
           action: "createForumTopic",
-          to: "telegram:group:-1001234567890:topic:271",
+          chatId: "telegram:group:-1001234567890:topic:271",
           name: "Build Updates",
+          iconColor: undefined,
+          iconCustomEmojiId: undefined,
           accountId: undefined,
         },
       },
@@ -814,8 +819,8 @@ describe("telegramMessageActions", () => {
         },
         expectedPayload: {
           action: "editForumTopic",
-          to: "telegram:group:-1001234567890:topic:271",
-          threadId: 271,
+          chatId: "telegram:group:-1001234567890:topic:271",
+          messageThreadId: 271,
           name: "Build Updates",
           iconCustomEmojiId: "emoji-123",
           accountId: undefined,
@@ -832,6 +837,53 @@ describe("telegramMessageActions", () => {
         expect.objectContaining({ mediaLocalRoots: undefined }),
       );
     }
+  });
+
+  it("forwards trusted mediaLocalRoots for send", async () => {
+    const cfg = telegramCfg();
+    await telegramMessageActions.handleAction?.({
+      channel: "telegram",
+      action: "send",
+      params: {
+        to: "123",
+        media: "/tmp/voice.ogg",
+      },
+      cfg,
+      mediaLocalRoots: ["/tmp/agent-root"],
+    });
+
+    expect(handleTelegramAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "sendMessage",
+        mediaUrl: "/tmp/voice.ogg",
+      }),
+      cfg,
+      expect.objectContaining({ mediaLocalRoots: ["/tmp/agent-root"] }),
+    );
+  });
+
+  it("rejects non-integer messageId for edit before reaching telegram-actions", async () => {
+    const cfg = telegramCfg();
+    const handleAction = telegramMessageActions.handleAction;
+    if (!handleAction) {
+      throw new Error("telegram handleAction unavailable");
+    }
+
+    await expect(
+      handleAction({
+        channel: "telegram",
+        action: "edit",
+        params: {
+          chatId: "123",
+          messageId: "nope",
+          message: "Updated",
+        },
+        cfg,
+        accountId: undefined,
+      }),
+    ).rejects.toThrow();
+
+    expect(handleTelegramAction).not.toHaveBeenCalled();
   });
 
   it("inherits top-level reaction gate when account overrides sticker only", () => {
@@ -854,81 +906,23 @@ describe("telegramMessageActions", () => {
 
   it("accepts numeric messageId and channelId for reactions", async () => {
     const cfg = telegramCfg();
-    for (const testCase of [
-      {
-        name: "numeric channelId/messageId",
-        params: {
-          channelId: 123,
-          messageId: 456,
-          emoji: "ok",
-        },
-        toolContext: undefined,
-        expectedChannelField: "channelId",
-        expectedChannelValue: "123",
-        expectedMessageId: "456",
-      },
-      {
-        name: "snake_case message_id",
-        params: {
-          channelId: 123,
-          message_id: "456",
-          emoji: "ok",
-        },
-        toolContext: undefined,
-        expectedChannelField: "channelId",
-        expectedChannelValue: "123",
-        expectedMessageId: "456",
-      },
-      {
-        name: "toolContext fallback",
-        params: {
-          chatId: "123",
-          emoji: "ok",
-        },
-        toolContext: { currentMessageId: "9001" },
-        expectedChannelField: "chatId",
-        expectedChannelValue: "123",
-        expectedMessageId: "9001",
-      },
-      {
-        name: "missing messageId soft-falls through to telegram-actions",
-        params: {
-          chatId: "123",
-          emoji: "ok",
-        },
-        toolContext: undefined,
-        expectedChannelField: "chatId",
-        expectedChannelValue: "123",
-        expectedMessageId: undefined,
-      },
-    ] as const) {
-      handleTelegramAction.mockClear();
-      await expect(
-        telegramMessageActions.handleAction?.({
-          channel: "telegram",
-          action: "react",
-          params: testCase.params,
-          cfg,
-          accountId: undefined,
-          toolContext: testCase.toolContext,
-        }),
-      ).resolves.toBeDefined();
 
-      expect(handleTelegramAction, testCase.name).toHaveBeenCalledTimes(1);
-      const call = handleTelegramAction.mock.calls[0]?.[0];
-      if (!call) {
-        throw new Error("missing telegram action call");
-      }
-      const callPayload = call as Record<string, unknown>;
-      expect(callPayload.action, testCase.name).toBe("react");
-      expect(String(callPayload[testCase.expectedChannelField]), testCase.name).toBe(
-        testCase.expectedChannelValue,
-      );
-      if (testCase.expectedMessageId === undefined) {
-        expect(callPayload.messageId, testCase.name).toBeUndefined();
-      } else {
-        expect(String(callPayload.messageId), testCase.name).toBe(testCase.expectedMessageId);
-      }
+    await telegramMessageActions.handleAction?.({
+      channel: "telegram",
+      action: "react",
+      params: {
+        channelId: 123,
+        messageId: 456,
+        emoji: "ok",
+      },
+      cfg,
+      accountId: undefined,
+    });
+
+    expect(handleTelegramAction).toHaveBeenCalledTimes(1);
+    const call = handleTelegramAction.mock.calls[0]?.[0];
+    if (!call) {
+      throw new Error("missing telegram action call");
     }
     const callPayload = call as Record<string, unknown>;
     expect(callPayload.action).toBe("react");
@@ -937,58 +931,8 @@ describe("telegramMessageActions", () => {
     expect(callPayload.emoji).toBe("ok");
   });
 
-it("forwards trusted mediaLocalRoots for send actions", async () => {
-  const cases = [
-    {
-      name: "discord",
-      run: async () => {
-        await handleDiscordMessageAction({
-          action: "send",
-          params: { to: "channel:123", message: "hi", media: "/tmp/file.png" },
-          cfg: {} as RemoteClawConfig,
-          mediaLocalRoots: ["/tmp/agent-root"],
-        });
-      },
-      assert: () => {
-        expect(handleDiscordAction).toHaveBeenCalledWith(
-          expect.objectContaining({
-            action: "sendMessage",
-            mediaUrl: "/tmp/file.png",
-          }),
-          expect.any(Object),
-          expect.objectContaining({ mediaLocalRoots: ["/tmp/agent-root"] }),
-        );
-      },
-      clear: () => handleDiscordAction.mockClear(),
-    },
-    {
-      name: "telegram",
-      run: async () => {
-        const cfg = telegramCfg();
-        await telegramMessageActions.handleAction?.({
-          channel: "telegram",
-          action: "send",
-          params: {
-            to: "123",
-            media: "/tmp/voice.ogg",
-          },
-          cfg,
-          mediaLocalRoots: ["/tmp/agent-root"],
-        });
-      },
-      assert: () => {
-        expect(handleTelegramAction).toHaveBeenCalledWith(
-          expect.objectContaining({
-            action: "sendMessage",
-            media: "/tmp/voice.ogg",
-          }),
-          expect.any(Object),
-          expect.objectContaining({ mediaLocalRoots: ["/tmp/agent-root"] }),
-        );
-      },
-      clear: () => handleTelegramAction.mockClear(),
-    },
-  ] as const;
+  it("accepts snake_case message_id for reactions", async () => {
+    const cfg = telegramCfg();
 
     await telegramMessageActions.handleAction?.({
       channel: "telegram",

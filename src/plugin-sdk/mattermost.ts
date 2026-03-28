@@ -24,9 +24,10 @@ export { resolveChannelMediaMaxBytes } from "../channels/plugins/media-limits.js
 export type { ChannelOnboardingAdapter } from "../channels/plugins/onboarding-types.js";
 export {
   buildSingleChannelSecretPromptState,
-  promptSingleChannelSecretInput,
-  runSingleChannelSecretStep,
-} from "../channels/plugins/setup-flow-helpers.js";
+  promptAccountId,
+  promptSingleChannelToken,
+  resolveAccountIdForConfigure,
+} from "../channels/plugins/onboarding/helpers.js";
 export {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,

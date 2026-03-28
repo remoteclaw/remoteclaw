@@ -1,5 +1,5 @@
-import type { ChannelOnboardingAdapter, ClawdbotConfig, WizardPrompter } from "clawdbot/plugin-sdk";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "clawdbot/plugin-sdk";
+import type { ChannelOnboardingAdapter, ClawdbotConfig, WizardPrompter } from "remoteclaw/plugin-sdk";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk";
 
 import {
   listMattermostAccountIds,

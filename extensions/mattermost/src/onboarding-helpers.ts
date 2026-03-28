@@ -1,5 +1,5 @@
-import type { ClawdbotConfig, WizardPrompter } from "clawdbot/plugin-sdk";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "clawdbot/plugin-sdk";
+import type { ClawdbotConfig, WizardPrompter } from "remoteclaw/plugin-sdk";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk";
 
 type PromptAccountIdParams = {
   cfg: ClawdbotConfig;

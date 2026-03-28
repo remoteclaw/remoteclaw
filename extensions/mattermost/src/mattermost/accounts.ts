@@ -1,5 +1,5 @@
-import type { ClawdbotConfig } from "clawdbot/plugin-sdk";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "clawdbot/plugin-sdk";
+import type { ClawdbotConfig } from "remoteclaw/plugin-sdk";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk";
 
 import type { MattermostAccountConfig, MattermostChatMode } from "../types.js";
 import { normalizeMattermostBaseUrl } from "./client.js";

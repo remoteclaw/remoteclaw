@@ -5,7 +5,7 @@ import type {
   ClawdbotConfig,
   ReplyPayload,
   RuntimeEnv,
-} from "clawdbot/plugin-sdk";
+} from "remoteclaw/plugin-sdk";
 import {
   buildPendingHistoryContextFromMap,
   clearHistoryEntries,
@@ -13,7 +13,7 @@ import {
   recordPendingHistoryEntry,
   resolveChannelMediaMaxBytes,
   type HistoryEntry,
-} from "clawdbot/plugin-sdk";
+} from "remoteclaw/plugin-sdk";
 
 import { getMattermostRuntime } from "../runtime.js";
 import { resolveMattermostAccount } from "./accounts.js";

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { BlockStreamingCoalesceSchema } from "clawdbot/plugin-sdk";
+import { BlockStreamingCoalesceSchema } from "remoteclaw/plugin-sdk";
 
 const MattermostAccountSchema = z
   .object({

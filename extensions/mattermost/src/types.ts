@@ -1,4 +1,4 @@
-import type { BlockStreamingCoalesceConfig } from "clawdbot/plugin-sdk";
+import type { BlockStreamingCoalesceConfig } from "remoteclaw/plugin-sdk";
 
 export type MattermostChatMode = "oncall" | "onmessage" | "onchar";
 

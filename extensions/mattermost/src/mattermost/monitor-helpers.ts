@@ -2,7 +2,7 @@ import { Buffer } from "node:buffer";
 
 import type WebSocket from "ws";
 
-import type { ClawdbotConfig } from "clawdbot/plugin-sdk";
+import type { ClawdbotConfig } from "remoteclaw/plugin-sdk";
 
 export type ResponsePrefixContext = {
   model?: string;

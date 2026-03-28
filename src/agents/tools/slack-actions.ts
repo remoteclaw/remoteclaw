@@ -1,15 +1,5 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import {
-  createActionGate,
-  imageResultFromFile,
-  jsonResult,
-  readNumberParam,
-  readReactionParams,
-  readStringParam,
-  type RemoteClawConfig,
-  withNormalizedTimestamp,
-} from "remoteclaw/plugin-sdk/slack-core";
-import { resolveSlackAccount } from "./accounts.js";
+import type { RemoteClawConfig } from "../../config/config.js";
+import { resolveSlackAccount } from "../../slack/accounts.js";
 import {
   deleteSlackMessage,
   downloadSlackFile,
@@ -25,14 +15,19 @@ import {
   removeSlackReaction,
   sendSlackMessage,
   unpinSlackMessage,
-} from "../../plugin-sdk/slack.js";
+} from "../../slack/actions.js";
+import { parseSlackBlocksInput } from "../../slack/blocks-input.js";
+import { recordSlackThreadParticipation } from "../../slack/sent-thread-cache.js";
+import { parseSlackTarget, resolveSlackChannelId } from "../../slack/targets.js";
+import type { AgentToolResult } from "../agent-types.js";
+import { withNormalizedTimestamp } from "../date-time.js";
 import {
-  parseSlackBlocksInput,
-  parseSlackTarget,
-  recordSlackThreadParticipation,
-  resolveSlackChannelId,
-} from "../../plugin-sdk/slack.js";
-import {
+  createActionGate,
+  imageResultFromFile,
+  jsonResult,
+  readNumberParam,
+  readReactionParams,
+  readStringParam,
 } from "./common.js";
 
 const messagingActions = new Set([

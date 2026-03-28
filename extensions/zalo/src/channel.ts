@@ -136,7 +136,7 @@ export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
         allowFrom: account.config.allowFrom ?? [],
         policyPathSuffix: "dmPolicy",
         normalizeEntry: (raw) => raw.replace(/^(zalo|zl):/i, ""),
-      });
+      };
     },
     collectWarnings: ({ account, cfg }) => {
       return collectOpenProviderGroupPolicyWarnings({

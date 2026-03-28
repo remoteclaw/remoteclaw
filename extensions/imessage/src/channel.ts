@@ -139,6 +139,7 @@ export const imessagePlugin: ChannelPlugin<ResolvedIMessageAccount> = {
         readPaths: [[scope === "dm" ? "allowFrom" : "groupAllowFrom"]],
         writePath: [scope === "dm" ? "allowFrom" : "groupAllowFrom"],
       }),
+    }),
     deleteAccount: ({ cfg, accountId }) =>
       deleteAccountFromConfigSection({
         cfg,

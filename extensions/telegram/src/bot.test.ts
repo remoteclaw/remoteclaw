@@ -5,7 +5,7 @@ import {
 } from "../../../src/plugins/interactive.js";
 import type { PluginInteractiveTelegramHandlerContext } from "../../../src/plugins/types.js";
 import { escapeRegExp, formatEnvelopeTimestamp } from "../../../test/helpers/envelope-timestamp.js";
-import {
+const {
   answerCallbackQuerySpy,
   commandSpy,
   editMessageTextSpy,

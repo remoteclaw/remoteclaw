@@ -289,16 +289,9 @@ function hasTelegramExecApprovalDmRoute(cfg: RemoteClawConfig): boolean {
     if (!isTelegramExecApprovalClientEnabled({ cfg, accountId })) {
       return false;
     }
-    const ownerAccountId = tokenOwners.get(token);
-    if (!ownerAccountId) {
-      tokenOwners.set(token, account.accountId);
-      continue;
-    }
-    if (account.accountId === normalizedAccountId) {
-      return ownerAccountId;
-    }
-  }
-  return null;
+    const target = resolveTelegramExecApprovalTarget({ cfg, accountId });
+    return target === "dm" || target === "both";
+  });
 }
 
 function formatDuplicateTelegramTokenReason(params: {

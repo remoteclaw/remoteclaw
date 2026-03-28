@@ -397,7 +397,7 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
         allowFrom: account.config.allowFrom ?? [],
         policyPathSuffix: "dmPolicy",
         normalizeEntry: (raw) => raw.replace(/^(zalouser|zlu):/i, ""),
-      });
+      };
     },
   },
   groups: {

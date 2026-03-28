@@ -162,6 +162,7 @@ export const signalPlugin: ChannelPlugin<ResolvedSignalAccount> = {
         readPaths: [[scope === "dm" ? "allowFrom" : "groupAllowFrom"]],
         writePath: [scope === "dm" ? "allowFrom" : "groupAllowFrom"],
       }),
+    }),
     deleteAccount: ({ cfg, accountId }) =>
       deleteAccountFromConfigSection({
         cfg,

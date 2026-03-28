@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const loadWebMediaMock = vi.hoisted(() => vi.fn());
 
-vi.mock("../web/media.js", () => ({
+vi.mock("../../extensions/whatsapp/src/media.js", () => ({
   loadWebMedia: loadWebMediaMock,
 }));
 

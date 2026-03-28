@@ -165,16 +165,13 @@ export async function runWebHeartbeatOnce(opts: {
       return;
     }
 
+    const heartbeatPrompt = await resolveHeartbeatPrompt({
+      prompt: cfg.agents?.defaults?.heartbeat?.prompt,
+      file: cfg.agents?.defaults?.heartbeat?.file,
+    });
     const replyResult = await replyResolver(
       {
-        Body: appendCronStyleCurrentTimeLine(
-          await resolveHeartbeatPrompt({
-            prompt: cfg.agents?.defaults?.heartbeat?.prompt,
-            file: cfg.agents?.defaults?.heartbeat?.file,
-          }),
-          cfg,
-          Date.now(),
-        ),
+        Body: appendCronStyleCurrentTimeLine(heartbeatPrompt, cfg, Date.now()),
         From: to,
         To: to,
         MessageSid: sessionId ?? sessionSnapshot.entry?.sessionId,

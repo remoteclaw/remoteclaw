@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
 import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
+import { createPinnedLookup } from "../../../src/infra/net/ssrf.js";
 import * as ssrf from "../../../src/infra/net/ssrf.js";
 import { resetLogger, setLoggerOverride } from "../../../src/logging.js";
 import type { WebInboundMessage, WebListenerCloseReason } from "./inbound.js";
@@ -125,14 +126,14 @@ export function installWebAutoReplyUnitTestHooks(opts?: { pinDns?: boolean }) {
     if (opts?.pinDns) {
       resolvePinnedHostnameSpy = vi
         .spyOn(ssrf, "resolvePinnedHostname")
-        .mockImplementation(async (hostname) => {
+        .mockImplementation(async (hostname: string) => {
           // SSRF guard pins DNS; stub resolution to avoid live lookups in unit tests.
           const normalized = hostname.trim().toLowerCase().replace(/\.$/, "");
           const addresses = [TEST_NET_IP];
           return {
             hostname: normalized,
             addresses,
-            lookup: ssrf.createPinnedLookup({ hostname: normalized, addresses }),
+            lookup: createPinnedLookup({ hostname: normalized, addresses }),
           };
         });
     }
@@ -174,12 +175,83 @@ export function createMockWebListener(): MockWebListener {
   };
 }
 
+export function createScriptedWebListenerFactory(): AnyExport {
+  const onMessages: Array<(msg: WebInboundMessage) => Promise<void>> = [];
+  const closeResolvers: Array<(reason: unknown) => void> = [];
+  const listeners: MockWebListener[] = [];
+
+  const listenerFactory = vi.fn(
+    async (opts: { onMessage: (msg: WebInboundMessage) => Promise<void> }) => {
+      onMessages.push(opts.onMessage);
+      let resolveClose: (reason: unknown) => void = () => {};
+      const onClose = new Promise<WebListenerCloseReason>((res) => {
+        resolveClose = res as (reason: unknown) => void;
+        closeResolvers.push(resolveClose);
+      });
+      const listener: MockWebListener = {
+        ...createMockWebListener(),
+        onClose,
+        signalClose: vi.fn((reason?: unknown) => resolveClose(reason)),
+      };
+      listeners.push(listener);
+      return listener;
+    },
+  );
+
+  return {
+    listenerFactory,
+    listeners,
+    getOnMessage: (index = onMessages.length - 1) => onMessages[index],
+    resolveClose: (index: number, reason?: unknown) => closeResolvers[index]?.(reason),
+    getListenerCount: () => listenerFactory.mock.calls.length,
+  };
+}
+
 export function createWebInboundDeliverySpies(): AnyExport {
   return {
     sendMedia: vi.fn(),
     reply: vi.fn().mockResolvedValue(undefined),
     sendComposing: vi.fn(),
   };
+}
+
+export function createWebAutoReplyRuntime(): AnyExport {
+  return {
+    log: vi.fn(),
+    error: vi.fn(),
+    exit: vi.fn(),
+  };
+}
+
+export function startWebAutoReplyMonitor(params: {
+  monitorWebChannelFn: (...args: unknown[]) => Promise<unknown>;
+  listenerFactory: unknown;
+  sleep: ReturnType<typeof vi.fn>;
+  signal?: AbortSignal;
+  heartbeatSeconds?: number;
+  messageTimeoutMs?: number;
+  watchdogCheckMs?: number;
+  reconnect?: { initialMs: number; maxMs: number; maxAttempts: number; factor: number };
+}): AnyExport {
+  const runtime = createWebAutoReplyRuntime();
+  const controller = new AbortController();
+  const run = params.monitorWebChannelFn(
+    false,
+    params.listenerFactory as never,
+    true,
+    async () => ({ text: "ok" }),
+    runtime as never,
+    params.signal ?? controller.signal,
+    {
+      heartbeatSeconds: params.heartbeatSeconds ?? 1,
+      messageTimeoutMs: params.messageTimeoutMs,
+      watchdogCheckMs: params.watchdogCheckMs,
+      reconnect: params.reconnect ?? { initialMs: 10, maxMs: 10, maxAttempts: 3, factor: 1.1 },
+      sleep: params.sleep,
+    },
+  );
+
+  return { runtime, controller, run };
 }
 
 export async function sendWebGroupInboundMessage(params: {
@@ -225,6 +297,7 @@ export async function sendWebDirectInboundMessage(params: {
   to: string;
   spies: ReturnType<typeof createWebInboundDeliverySpies>;
   accountId?: string;
+  timestamp?: number;
 }) {
   const accountId = params.accountId ?? "default";
   await params.onMessage({
@@ -234,7 +307,7 @@ export async function sendWebDirectInboundMessage(params: {
     conversationId: params.from,
     to: params.to,
     body: params.body,
-    timestamp: Date.now(),
+    timestamp: params.timestamp ?? Date.now(),
     chatType: "direct",
     chatId: `direct:${params.from}`,
     sendComposing: params.spies.sendComposing,

@@ -51,7 +51,7 @@ function describeHttpRouteOwner(route: { pluginId?: string; source?: string }): 
 export type PluginToolRegistration = {
   pluginId: string;
   pluginName?: string;
-  factory: OpenClawPluginToolFactory;
+  factory: RemoteClawPluginToolFactory;
   names: string[];
   optional: boolean;
   source: string;
@@ -127,7 +127,7 @@ export type PluginServiceRegistration = {
 export type PluginCommandRegistration = {
   pluginId: string;
   pluginName?: string;
-  command: OpenClawPluginCommandDefinition;
+  command: RemoteClawPluginCommandDefinition;
   source: string;
   rootDir?: string;
 };

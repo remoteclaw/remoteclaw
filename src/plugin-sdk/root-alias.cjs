@@ -105,7 +105,7 @@ function buildPluginSdkAliasMap(useDist) {
   for (const subpath of listPluginSdkExportedSubpaths()) {
     const candidate = path.join(pluginSdkDir, `${subpath}${ext}`);
     if (fs.existsSync(candidate)) {
-      aliasMap[`openclaw/plugin-sdk/${subpath}`] = candidate;
+      aliasMap[`remoteclaw/plugin-sdk/${subpath}`] = candidate;
     }
   }
 

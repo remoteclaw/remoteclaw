@@ -232,7 +232,7 @@ export function resolvePluginSdkScopedAliasMap(
       modulePath: params.modulePath,
     });
     if (resolved) {
-      aliasMap[`openclaw/plugin-sdk/${subpath}`] = resolved;
+      aliasMap[`remoteclaw/plugin-sdk/${subpath}`] = resolved;
     }
   }
   return aliasMap;

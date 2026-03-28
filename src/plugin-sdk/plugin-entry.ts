@@ -1,7 +1,7 @@
 import { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 import type {
   RemoteClawPluginApi,
-  OpenClawPluginCommandDefinition,
+  RemoteClawPluginCommandDefinition,
   RemoteClawPluginConfigSchema,
   OpenClawPluginDefinition,
   PluginInteractiveTelegramHandlerContext,
@@ -42,7 +42,7 @@ export type {
   ProviderAuthMethodNonInteractiveContext,
   ProviderAuthMethod,
   ProviderAuthResult,
-  OpenClawPluginCommandDefinition,
+  RemoteClawPluginCommandDefinition,
   OpenClawPluginDefinition,
   PluginLogger,
   PluginInteractiveTelegramHandlerContext,

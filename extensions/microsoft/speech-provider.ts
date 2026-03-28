@@ -6,7 +6,7 @@ import {
   generateSecMsGecToken,
 } from "node-edge-tts/dist/drm.js";
 import type { SpeechProviderPlugin } from "remoteclaw/plugin-sdk/core";
-import { resolvePreferredOpenClawTmpDir } from "remoteclaw/plugin-sdk/llm-task";
+import { resolvePreferredRemoteClawTmpDir } from "remoteclaw/plugin-sdk/llm-task";
 import { isVoiceCompatibleAudio } from "remoteclaw/plugin-sdk/media-runtime";
 import { edgeTTS, inferEdgeExtension, type SpeechVoiceOption } from "remoteclaw/plugin-sdk/speech";
 
@@ -79,7 +79,7 @@ export function buildMicrosoftSpeechProvider(): SpeechProviderPlugin {
     listVoices: async () => await listMicrosoftVoices(),
     isConfigured: ({ config }) => config.edge.enabled,
     synthesize: async (req) => {
-      const tempRoot = resolvePreferredOpenClawTmpDir();
+      const tempRoot = resolvePreferredRemoteClawTmpDir();
       mkdirSync(tempRoot, { recursive: true, mode: 0o700 });
       const tempDir = mkdtempSync(path.join(tempRoot, "tts-microsoft-"));
       let outputFormat = req.overrides?.microsoft?.outputFormat ?? req.config.edge.outputFormat;

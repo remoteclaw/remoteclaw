@@ -42,7 +42,7 @@ beforeEach(async () => {
     await import("./server-lifecycle.js"));
   createBrowserRouteContextMock.mockClear();
   listKnownProfileNamesMock.mockClear();
-  stopOpenClawChromeMock.mockClear();
+  stopRemoteClawChromeMock.mockClear();
 });
 
 describe("ensureExtensionRelayForProfiles", () => {

@@ -2,8 +2,8 @@ export { definePluginEntry } from "remoteclaw/plugin-sdk/core";
 export type {
   AnyAgentTool,
   RemoteClawPluginApi,
-  OpenClawPluginToolContext,
-  OpenClawPluginToolFactory,
+  RemoteClawPluginToolContext,
+  RemoteClawPluginToolFactory,
 } from "remoteclaw/plugin-sdk/core";
 export {
   applyWindowsSpawnProgramPolicy,

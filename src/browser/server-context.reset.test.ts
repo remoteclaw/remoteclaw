@@ -32,13 +32,13 @@ beforeEach(async () => {
 
 function localOpenClawProfile(): Parameters<typeof createProfileResetOps>[0]["profile"] {
   return {
-    name: "openclaw",
+    name: "remoteclaw",
     cdpUrl: "http://127.0.0.1:18800",
     cdpHost: "127.0.0.1",
     cdpIsLoopback: true,
     cdpPort: 18800,
     color: "#f60",
-    driver: "openclaw",
+    driver: "remoteclaw",
     attachOnly: false,
   };
 }
@@ -55,7 +55,7 @@ function createStatelessResetOps(profile: Parameters<typeof createProfileResetOp
     getProfileState: () => ({ profile: {} as never, running: null }),
     stopRunningBrowser: vi.fn(async () => ({ stopped: false })),
     isHttpReachable: vi.fn(async () => false),
-    resolveOpenClawUserDataDir: (name: string) => `/tmp/${name}`,
+    resolveRemoteClawUserDataDir: (name: string) => `/tmp/${name}`,
   });
 }
 

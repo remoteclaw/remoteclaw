@@ -7,7 +7,7 @@ vi.mock("remoteclaw/plugin-sdk/infra-runtime", async (importOriginal) => {
   const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/infra-runtime")>();
   return {
     ...actual,
-    resolvePreferredOpenClawTmpDir: () => "/tmp",
+    resolvePreferredRemoteClawTmpDir: () => "/tmp",
   };
 });
 

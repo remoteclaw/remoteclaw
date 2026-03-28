@@ -206,10 +206,10 @@ describe("channel import guardrails", () => {
   it("keeps bundled extension source files off root and compat plugin-sdk imports", () => {
     for (const file of collectExtensionSourceFiles()) {
       const text = readFileSync(file, "utf8");
-      expect(text, `${file} should not import openclaw/plugin-sdk root`).not.toMatch(
+      expect(text, `${file} should not import remoteclaw/plugin-sdk root`).not.toMatch(
         /["']openclaw\/plugin-sdk["']/,
       );
-      expect(text, `${file} should not import openclaw/plugin-sdk/compat`).not.toMatch(
+      expect(text, `${file} should not import remoteclaw/plugin-sdk/compat`).not.toMatch(
         /["']openclaw\/plugin-sdk\/compat["']/,
       );
     }

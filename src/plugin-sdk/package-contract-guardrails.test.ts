@@ -95,7 +95,7 @@ describe("plugin-sdk package contract guardrails", () => {
     expect(collectPluginSdkPackageExports()).toEqual([...pluginSdkEntrypoints].sort());
   });
 
-  it("keeps repo openclaw/plugin-sdk/<name> references on exported built subpaths", () => {
+  it("keeps repo remoteclaw/plugin-sdk/<name> references on exported built subpaths", () => {
     const entrypoints = new Set(pluginSdkEntrypoints);
     const exports = new Set(collectPluginSdkPackageExports());
     const failures: string[] = [];
@@ -112,7 +112,7 @@ describe("plugin-sdk package contract guardrails", () => {
         continue;
       }
       failures.push(
-        `${reference.file} references openclaw/plugin-sdk/${reference.subpath}, but ${reference.subpath} is missing from ${missingFrom.join(" and ")}`,
+        `${reference.file} references remoteclaw/plugin-sdk/${reference.subpath}, but ${reference.subpath} is missing from ${missingFrom.join(" and ")}`,
       );
     }
 
@@ -133,7 +133,7 @@ describe("plugin-sdk package contract guardrails", () => {
         continue;
       }
       failures.push(
-        `src/plugin-sdk/${sourceName}.ts is referenced as openclaw/plugin-sdk/${sourceName} in ${matchingRefs
+        `src/plugin-sdk/${sourceName}.ts is referenced as remoteclaw/plugin-sdk/${sourceName} in ${matchingRefs
           .map((reference) => reference.file)
           .sort()
           .join(", ")}, but ${sourceName} is not exported as a public plugin-sdk subpath`,

@@ -9,11 +9,11 @@ import {
   normalizeSpeechProviderId,
 } from "./provider-registry.js";
 
-const loadOpenClawPluginsMock = vi.fn();
+const loadRemoteClawPluginsMock = vi.fn();
 
 vi.mock("../plugins/loader.js", () => ({
-  loadOpenClawPlugins: (...args: Parameters<typeof loadOpenClawPluginsMock>) =>
-    loadOpenClawPluginsMock(...args),
+  loadRemoteClawPlugins: (...args: Parameters<typeof loadRemoteClawPluginsMock>) =>
+    loadRemoteClawPluginsMock(...args),
 }));
 
 function createSpeechProvider(id: string, aliases?: string[]): SpeechProviderPlugin {
@@ -33,8 +33,8 @@ function createSpeechProvider(id: string, aliases?: string[]): SpeechProviderPlu
 describe("speech provider registry", () => {
   beforeEach(() => {
     resetPluginRuntimeStateForTest();
-    loadOpenClawPluginsMock.mockReset();
-    loadOpenClawPluginsMock.mockReturnValue(createEmptyPluginRegistry());
+    loadRemoteClawPluginsMock.mockReset();
+    loadRemoteClawPluginsMock.mockReturnValue(createEmptyPluginRegistry());
   });
 
   afterEach(() => {
@@ -55,11 +55,11 @@ describe("speech provider registry", () => {
     const providers = listSpeechProviders();
 
     expect(providers.map((provider) => provider.id)).toEqual(["openai"]);
-    expect(loadOpenClawPluginsMock).not.toHaveBeenCalled();
+    expect(loadRemoteClawPluginsMock).not.toHaveBeenCalled();
   });
 
   it("loads speech providers from plugins when config is provided", () => {
-    loadOpenClawPluginsMock.mockReturnValue({
+    loadRemoteClawPluginsMock.mockReturnValue({
       ...createEmptyPluginRegistry(),
       speechProviders: [
         {
@@ -73,7 +73,7 @@ describe("speech provider registry", () => {
 
     expect(listSpeechProviders(cfg).map((provider) => provider.id)).toEqual(["microsoft"]);
     expect(getSpeechProvider("edge", cfg)?.id).toBe("microsoft");
-    expect(loadOpenClawPluginsMock).toHaveBeenCalledWith({ config: cfg });
+    expect(loadRemoteClawPluginsMock).toHaveBeenCalledWith({ config: cfg });
   });
 
   it("returns no providers when neither plugins nor active registry provide speech support", () => {

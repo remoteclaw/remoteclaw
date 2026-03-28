@@ -75,7 +75,7 @@ const importPluginSdkSubpath = (specifier: string) => import(/* @vite-ignore */ 
 
 const bundledExtensionSubpathLoaders = pluginSdkSubpaths.map((id: string) => ({
   id,
-  load: () => importPluginSdkSubpath(`openclaw/plugin-sdk/${id}`),
+  load: () => importPluginSdkSubpath(`remoteclaw/plugin-sdk/${id}`),
 }));
 
 const asExports = (mod: object) => mod as Record<string, unknown>;

@@ -36,7 +36,7 @@ export * from "../infra/secret-file.js";
 export * from "../infra/secure-random.js";
 export * from "../infra/system-events.js";
 export * from "../infra/system-message.ts";
-export * from "../infra/tmp-openclaw-dir.js";
+export * from "../infra/tmp-remoteclaw-dir.js";
 export * from "../infra/transport-ready.js";
 export * from "../infra/wsl.ts";
 export { createRuntimeOutboundDelegates } from "../channels/plugins/runtime-forwarders.js";

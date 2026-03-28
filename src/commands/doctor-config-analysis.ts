@@ -2,7 +2,7 @@ import path from "node:path";
 import type { ZodIssue } from "zod";
 import type { RemoteClawConfig } from "../config/config.js";
 import { CONFIG_PATH } from "../config/config.js";
-import { OpenClawSchema } from "../config/zod-schema.js";
+import { RemoteClawSchema } from "../config/zod-schema.js";
 import { note } from "../terminal/note.js";
 import { isRecord } from "../utils.js";
 
@@ -63,7 +63,7 @@ export function stripUnknownConfigKeys(config: RemoteClawConfig): {
   config: RemoteClawConfig;
   removed: string[];
 } {
-  const parsed = OpenClawSchema.safeParse(config);
+  const parsed = RemoteClawSchema.safeParse(config);
   if (parsed.success) {
     return { config, removed: [] };
   }

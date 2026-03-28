@@ -14,7 +14,7 @@ const sessionMocks = getPwToolsCoreSessionMocks();
 const tmpDirMocks = vi.hoisted(() => ({
   resolvePreferredRemoteClawTmpDir: vi.fn(() => "/tmp/remoteclaw"),
 }));
-vi.mock("../infra/tmp-openclaw-dir.js", () => tmpDirMocks);
+vi.mock("../infra/tmp-remoteclaw-dir.js", () => tmpDirMocks);
 let mod: typeof import("./pw-tools-core.js");
 
 describe("pw-tools-core", () => {
@@ -23,7 +23,7 @@ describe("pw-tools-core", () => {
     for (const fn of Object.values(tmpDirMocks)) {
       fn.mockClear();
     }
-    tmpDirMocks.resolvePreferredOpenClawTmpDir.mockReturnValue("/tmp/openclaw");
+    tmpDirMocks.resolvePreferredRemoteClawTmpDir.mockReturnValue("/tmp/openclaw");
     mod = await import("./pw-tools-core.js");
   });
 

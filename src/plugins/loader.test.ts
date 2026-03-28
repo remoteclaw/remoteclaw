@@ -38,13 +38,13 @@ const {
   getActivePluginRegistry,
   getActivePluginRegistryKey,
   getGlobalHookRunner,
-  loadOpenClawPlugins,
+  loadRemoteClawPlugins,
   resetGlobalHookRunner,
   setActivePluginRegistry,
 } = await importFreshPluginTestModules();
 
 type TempPlugin = { dir: string; file: string; id: string };
-type PluginLoadConfig = NonNullable<Parameters<typeof loadOpenClawPlugins>[0]>["config"];
+type PluginLoadConfig = NonNullable<Parameters<typeof loadRemoteClawPlugins>[0]>["config"];
 
 function chmodSafeDir(dir: string) {
   if (process.platform === "win32") {
@@ -133,7 +133,7 @@ function loadBundledMemoryPluginRegistry(options?: {
 }) {
   if (!options && cachedBundledMemoryDir) {
     process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = cachedBundledMemoryDir;
-    return loadOpenClawPlugins({
+    return loadRemoteClawPlugins({
       cache: false,
       workspaceDir: cachedBundledMemoryDir,
       config: {
@@ -183,7 +183,7 @@ function loadBundledMemoryPluginRegistry(options?: {
   }
   process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
 
-  return loadOpenClawPlugins({
+  return loadRemoteClawPlugins({
     cache: false,
     workspaceDir: bundledDir,
     config: {
@@ -209,7 +209,7 @@ function setupBundledTelegramPlugin() {
   process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = cachedBundledTelegramDir;
 }
 
-function expectTelegramLoaded(registry: ReturnType<typeof loadOpenClawPlugins>) {
+function expectTelegramLoaded(registry: ReturnType<typeof loadRemoteClawPlugins>) {
   const telegram = registry.plugins.find((entry) => entry.id === "telegram");
   expect(telegram?.status).toBe("loaded");
   expect(registry.channels.some((entry) => entry.plugin.id === "telegram")).toBe(true);
@@ -223,10 +223,10 @@ function loadRegistryFromSinglePlugin(params: {
   plugin: TempPlugin;
   pluginConfig?: Record<string, unknown>;
   includeWorkspaceDir?: boolean;
-  options?: Omit<Parameters<typeof loadOpenClawPlugins>[0], "cache" | "workspaceDir" | "config">;
+  options?: Omit<Parameters<typeof loadRemoteClawPlugins>[0], "cache" | "workspaceDir" | "config">;
 }) {
   const pluginConfig = params.pluginConfig ?? {};
-  return loadOpenClawPlugins({
+  return loadRemoteClawPlugins({
     cache: false,
     ...(params.includeWorkspaceDir === false ? {} : { workspaceDir: params.plugin.dir }),
     ...params.options,
@@ -241,9 +241,9 @@ function loadRegistryFromSinglePlugin(params: {
 
 function loadRegistryFromAllowedPlugins(
   plugins: TempPlugin[],
-  options?: Omit<Parameters<typeof loadOpenClawPlugins>[0], "cache" | "config">,
+  options?: Omit<Parameters<typeof loadRemoteClawPlugins>[0], "cache" | "config">,
 ) {
-  return loadOpenClawPlugins({
+  return loadRemoteClawPlugins({
     cache: false,
     ...options,
     config: {
@@ -305,7 +305,7 @@ function loadBundleFixture(params: {
   const bundleRoot = path.join(workspaceDir, ".openclaw", "extensions", params.pluginId);
   params.build(bundleRoot);
   return withEnv({ OPENCLAW_STATE_DIR: stateDir, ...params.env }, () =>
-    loadOpenClawPlugins({
+    loadRemoteClawPlugins({
       workspaceDir,
       onlyPluginIds: params.onlyPluginIds ?? [params.pluginId],
       config: {
@@ -323,7 +323,7 @@ function loadBundleFixture(params: {
 }
 
 function expectNoUnwiredBundleDiagnostic(
-  registry: ReturnType<typeof loadOpenClawPlugins>,
+  registry: ReturnType<typeof loadRemoteClawPlugins>,
   pluginId: string,
 ) {
   expect(
@@ -336,7 +336,7 @@ function expectNoUnwiredBundleDiagnostic(
 }
 
 function resolveLoadedPluginSource(
-  registry: ReturnType<typeof loadOpenClawPlugins>,
+  registry: ReturnType<typeof loadRemoteClawPlugins>,
   pluginId: string,
 ) {
   return fs.realpathSync(registry.plugins.find((entry) => entry.id === pluginId)?.source ?? "");
@@ -344,8 +344,8 @@ function resolveLoadedPluginSource(
 
 function expectCachePartitionByPluginSource(params: {
   pluginId: string;
-  loadFirst: () => ReturnType<typeof loadOpenClawPlugins>;
-  loadSecond: () => ReturnType<typeof loadOpenClawPlugins>;
+  loadFirst: () => ReturnType<typeof loadRemoteClawPlugins>;
+  loadSecond: () => ReturnType<typeof loadRemoteClawPlugins>;
   expectedFirstSource: string;
   expectedSecondSource: string;
 }) {
@@ -362,8 +362,8 @@ function expectCachePartitionByPluginSource(params: {
 }
 
 function expectCacheMissThenHit(params: {
-  loadFirst: () => ReturnType<typeof loadOpenClawPlugins>;
-  loadVariant: () => ReturnType<typeof loadOpenClawPlugins>;
+  loadFirst: () => ReturnType<typeof loadRemoteClawPlugins>;
+  loadVariant: () => ReturnType<typeof loadRemoteClawPlugins>;
 }) {
   const first = params.loadFirst();
   const second = params.loadVariant();
@@ -531,7 +531,7 @@ function expectEscapingEntryRejected(params: {
     throw err;
   }
 
-  const registry = loadOpenClawPlugins({
+  const registry = loadRemoteClawPlugins({
     cache: false,
     config: {
       plugins: {
@@ -580,7 +580,7 @@ describe("bundle plugins", () => {
     );
 
     const registry = withEnv({ OPENCLAW_STATE_DIR: stateDir }, () =>
-      loadOpenClawPlugins({
+      loadRemoteClawPlugins({
         workspaceDir,
         onlyPluginIds: ["sample-bundle"],
         config: {
@@ -736,7 +736,7 @@ afterAll(() => {
   }
 });
 
-describe("loadOpenClawPlugins", () => {
+describe("loadRemoteClawPlugins", () => {
   it("disables bundled plugins by default", () => {
     const bundledDir = makeTempDir();
     writePlugin({
@@ -747,7 +747,7 @@ describe("loadOpenClawPlugins", () => {
     });
     process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {
@@ -773,7 +773,7 @@ describe("loadOpenClawPlugins", () => {
             },
           },
         } satisfies PluginLoadConfig,
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           expectTelegramLoaded(registry);
         },
       },
@@ -789,7 +789,7 @@ describe("loadOpenClawPlugins", () => {
             enabled: true,
           },
         } satisfies PluginLoadConfig,
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           expectTelegramLoaded(registry);
         },
       },
@@ -807,7 +807,7 @@ describe("loadOpenClawPlugins", () => {
             },
           },
         } satisfies PluginLoadConfig,
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           const telegram = registry.plugins.find((entry) => entry.id === "telegram");
           expect(telegram?.status).toBe("disabled");
           expect(telegram?.error).toBe("disabled in config");
@@ -816,7 +816,7 @@ describe("loadOpenClawPlugins", () => {
     ] as const;
 
     for (const testCase of cases) {
-      const registry = loadOpenClawPlugins({
+      const registry = loadRemoteClawPlugins({
         cache: false,
         workspaceDir: cachedBundledTelegramDir,
         config: testCase.config,
@@ -859,7 +859,7 @@ describe("loadOpenClawPlugins", () => {
 };`,
           });
 
-          const registry = loadOpenClawPlugins({
+          const registry = loadRemoteClawPlugins({
             cache: false,
             workspaceDir: plugin.dir,
             config: {
@@ -892,7 +892,7 @@ describe("loadOpenClawPlugins", () => {
 module.exports = { id: "skipped-scoped-only", register() { throw new Error("skipped plugin should not load"); } };`,
           });
 
-          const registry = loadOpenClawPlugins({
+          const registry = loadRemoteClawPlugins({
             cache: false,
             config: {
               plugins: {
@@ -930,12 +930,12 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
             },
           };
 
-          const full = loadOpenClawPlugins(options);
-          const scoped = loadOpenClawPlugins({
+          const full = loadRemoteClawPlugins(options);
+          const scoped = loadRemoteClawPlugins({
             ...options,
             onlyPluginIds: ["allowed-cache-scope"],
           });
-          const scopedAgain = loadOpenClawPlugins({
+          const scopedAgain = loadRemoteClawPlugins({
             ...options,
             onlyPluginIds: ["allowed-cache-scope"],
           });
@@ -962,7 +962,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
           setActivePluginRegistry(previousRegistry, "existing-registry");
           resetGlobalHookRunner();
 
-          const scoped = loadOpenClawPlugins({
+          const scoped = loadRemoteClawPlugins({
             cache: false,
             activate: false,
             workspaceDir: plugin.dir,
@@ -1009,7 +1009,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
 
     clearPluginCommands();
 
-    const scoped = loadOpenClawPlugins({
+    const scoped = loadRemoteClawPlugins({
       cache: false,
       activate: false,
       workspaceDir: plugin.dir,
@@ -1026,7 +1026,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
     expect(scoped.commands.map((entry) => entry.command.name)).toEqual(["pair"]);
     expect(getPluginCommandSpecs("telegram")).toEqual([]);
 
-    const active = loadOpenClawPlugins({
+    const active = loadRemoteClawPlugins({
       cache: false,
       workspaceDir: plugin.dir,
       config: {
@@ -1051,10 +1051,10 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
   });
 
   it("throws when activate:false is used without cache:false", () => {
-    expect(() => loadOpenClawPlugins({ activate: false })).toThrow(
+    expect(() => loadRemoteClawPlugins({ activate: false })).toThrow(
       "activate:false requires cache:false",
     );
-    expect(() => loadOpenClawPlugins({ activate: false, cache: true })).toThrow(
+    expect(() => loadRemoteClawPlugins({ activate: false, cache: true })).toThrow(
       "activate:false requires cache:false",
     );
   });
@@ -1077,13 +1077,13 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
       },
     };
 
-    const first = loadOpenClawPlugins(options);
+    const first = loadRemoteClawPlugins(options);
     expect(getGlobalHookRunner()).not.toBeNull();
 
     resetGlobalHookRunner();
     expect(getGlobalHookRunner()).toBeNull();
 
-    const second = loadOpenClawPlugins(options);
+    const second = loadRemoteClawPlugins(options);
     expect(second).toBe(first);
     expect(getGlobalHookRunner()).not.toBeNull();
 
@@ -1125,7 +1125,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
           expectedFirstSource: pluginA.file,
           expectedSecondSource: pluginB.file,
           loadFirst: () =>
-            loadOpenClawPlugins({
+            loadRemoteClawPlugins({
               ...options,
               env: {
                 ...process.env,
@@ -1133,7 +1133,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
               },
             }),
           loadSecond: () =>
-            loadOpenClawPlugins({
+            loadRemoteClawPlugins({
               ...options,
               env: {
                 ...process.env,
@@ -1182,7 +1182,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
           expectedFirstSource: pluginA.file,
           expectedSecondSource: pluginB.file,
           loadFirst: () =>
-            loadOpenClawPlugins({
+            loadRemoteClawPlugins({
               ...options,
               env: {
                 ...process.env,
@@ -1193,7 +1193,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
               },
             }),
           loadSecond: () =>
-            loadOpenClawPlugins({
+            loadRemoteClawPlugins({
               ...options,
               env: {
                 ...process.env,
@@ -1253,7 +1253,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
         const secondHome = makeTempDir();
         return {
           loadFirst: () =>
-            loadOpenClawPlugins({
+            loadRemoteClawPlugins({
               ...options,
               env: {
                 ...process.env,
@@ -1265,7 +1265,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
               },
             }),
           loadVariant: () =>
-            loadOpenClawPlugins({
+            loadRemoteClawPlugins({
               ...options,
               env: {
                 ...process.env,
@@ -1302,9 +1302,9 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
         };
 
         return {
-          loadFirst: () => loadOpenClawPlugins(options),
+          loadFirst: () => loadRemoteClawPlugins(options),
           loadVariant: () =>
-            loadOpenClawPlugins({
+            loadRemoteClawPlugins({
               ...options,
               runtimeOptions: {
                 allowGatewaySubagentBinding: true,
@@ -1329,7 +1329,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
     );
 
     const loadWithStateDir = (stateDir: string) =>
-      loadOpenClawPlugins({
+      loadRemoteClawPlugins({
         env: {
           ...process.env,
           OPENCLAW_STATE_DIR: stateDir,
@@ -1369,7 +1369,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
       body: `module.exports = { id: "tilde-bundled", register() {} };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       env: {
         ...process.env,
         HOME: homeDir,
@@ -1403,7 +1403,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
       body: `module.exports = { id: "openclaw-home-demo", register() {} };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       env: {
         ...process.env,
         HOME: ignoredHome,
@@ -1506,7 +1506,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
     });
 
     expect(() =>
-      loadOpenClawPlugins({
+      loadRemoteClawPlugins({
         cache: false,
         throwOnLoadError: true,
         config: {
@@ -1583,7 +1583,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
     }
   });
 } };`,
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           const channel = registry.channels.find((entry) => entry.plugin.id === "demo");
           expect(channel).toBeDefined();
         },
@@ -1629,7 +1629,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
     }
   });
 } };`,
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           expect(registry.channels.filter((entry) => entry.plugin.id === "demo")).toHaveLength(1);
           expect(
             registry.diagnostics.some(
@@ -1647,7 +1647,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
         body: `module.exports = { id: "context-engine-core-collision", register(api) {
   api.registerContextEngine("legacy", () => ({}));
 } };`,
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           expect(
             registry.diagnostics.some(
               (diag) =>
@@ -1664,7 +1664,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
         body: `module.exports = { id: "cli-missing-metadata", register(api) {
   api.registerCli(() => {});
 } };`,
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           expect(registry.cliRegistrars).toHaveLength(0);
           expect(
             registry.diagnostics.some(
@@ -1755,7 +1755,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
         buildBody: (ownerId: string) => `module.exports = { id: "${ownerId}", register(api) {
   api.registerHook("gateway:startup", () => {}, { name: "shared-hook" });
 } };`,
-        selectCount: (registry: ReturnType<typeof loadOpenClawPlugins>) =>
+        selectCount: (registry: ReturnType<typeof loadRemoteClawPlugins>) =>
           registry.hooks.filter((entry) => entry.entry.hook.name === "shared-hook").length,
         duplicateMessage: "hook already registered: shared-hook (hook-owner-a)",
       },
@@ -1766,7 +1766,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
         buildBody: (ownerId: string) => `module.exports = { id: "${ownerId}", register(api) {
   api.registerService({ id: "shared-service", start() {} });
 } };`,
-        selectCount: (registry: ReturnType<typeof loadOpenClawPlugins>) =>
+        selectCount: (registry: ReturnType<typeof loadRemoteClawPlugins>) =>
           registry.services.filter((entry) => entry.service.id === "shared-service").length,
         duplicateMessage: "service already registered: shared-service (service-owner-a)",
       },
@@ -1788,10 +1788,10 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
         buildBody: (ownerId: string) => `module.exports = { id: "${ownerId}", register(api) {
   api.registerCli(() => {}, { commands: ["shared-cli"] });
 } };`,
-        selectCount: (registry: ReturnType<typeof loadOpenClawPlugins>) =>
+        selectCount: (registry: ReturnType<typeof loadRemoteClawPlugins>) =>
           registry.cliRegistrars.length,
         duplicateMessage: "cli command already registered: shared-cli (cli-owner-a)",
-        assertPrimaryOwner: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assertPrimaryOwner: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           expect(registry.cliRegistrars[0]?.pluginId).toBe("cli-owner-a");
         },
       },
@@ -1900,7 +1900,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
 } };`,
           }),
         ],
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           expect(
             registry.httpRoutes.find((entry) => entry.pluginId === "http-route-missing-auth"),
           ).toBeUndefined();
@@ -1923,7 +1923,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
 } };`,
           }),
         ],
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           const routes = registry.httpRoutes.filter(
             (entry) => entry.pluginId === "http-route-replace-self",
           );
@@ -1950,7 +1950,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
 } };`,
           }),
         ],
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           const route = registry.httpRoutes.find((entry) => entry.path === "/demo");
           expect(route?.pluginId).toBe("http-route-owner-a");
           expect(
@@ -1972,7 +1972,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
 } };`,
           }),
         ],
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           const routes = registry.httpRoutes.filter(
             (entry) => entry.pluginId === "http-route-overlap",
           );
@@ -1997,7 +1997,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
 } };`,
           }),
         ],
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           const routes = registry.httpRoutes.filter(
             (entry) => entry.pluginId === "http-route-overlap-same-auth",
           );
@@ -2029,7 +2029,7 @@ module.exports = { id: "skipped-scoped-only", register() { throw new Error("skip
       body: `module.exports = { id: "config-disable", register() {} };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {
@@ -2099,7 +2099,7 @@ module.exports = {
       },
     };
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config,
     });
@@ -2108,7 +2108,7 @@ module.exports = {
     expect(registry.channelSetups).toHaveLength(0);
     expect(registry.plugins.find((entry) => entry.id === "lazy-channel")?.status).toBe("disabled");
 
-    const setupRegistry = loadOpenClawPlugins({
+    const setupRegistry = loadRemoteClawPlugins({
       cache: false,
       config,
       includeSetupOnlyChannelPlugins: true,
@@ -2134,7 +2134,7 @@ module.exports = {
         configured: false,
       },
       load: ({ pluginDir }: { pluginDir: string }) =>
-        loadOpenClawPlugins({
+        loadRemoteClawPlugins({
           cache: false,
           config: {
             plugins: {
@@ -2162,7 +2162,7 @@ module.exports = {
         configured: false,
       },
       load: ({ pluginDir }: { pluginDir: string }) =>
-        loadOpenClawPlugins({
+        loadRemoteClawPlugins({
           cache: false,
           config: {
             plugins: {
@@ -2187,7 +2187,7 @@ module.exports = {
         startupDeferConfiguredChannelFullLoadUntilAfterListen: true,
       },
       load: ({ pluginDir }: { pluginDir: string }) =>
-        loadOpenClawPlugins({
+        loadRemoteClawPlugins({
           cache: false,
           preferSetupRuntimeForChannelPlugins: true,
           config: {
@@ -2218,7 +2218,7 @@ module.exports = {
         configured: true,
       },
       load: ({ pluginDir }: { pluginDir: string }) =>
-        loadOpenClawPlugins({
+        loadRemoteClawPlugins({
           cache: false,
           preferSetupRuntimeForChannelPlugins: true,
           config: {
@@ -2379,7 +2379,7 @@ module.exports = {
             body: `module.exports = { id: "memory-b", kind: "memory", register() {} };`,
           });
 
-          return loadOpenClawPlugins({
+          return loadRemoteClawPlugins({
             cache: false,
             config: {
               plugins: {
@@ -2389,7 +2389,7 @@ module.exports = {
             },
           });
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           const a = registry.plugins.find((entry) => entry.id === "memory-a");
           const b = registry.plugins.find((entry) => entry.id === "memory-b");
           expect(b?.status).toBe("loaded");
@@ -2444,7 +2444,7 @@ module.exports = {
           );
           process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
 
-          return loadOpenClawPlugins({
+          return loadRemoteClawPlugins({
             cache: false,
             config: {
               plugins: {
@@ -2458,7 +2458,7 @@ module.exports = {
             },
           });
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           const a = registry.plugins.find((entry) => entry.id === "memory-a");
           const b = registry.plugins.find((entry) => entry.id === "memory-b");
           expect(a?.status).toBe("disabled");
@@ -2475,7 +2475,7 @@ module.exports = {
             body: `module.exports = { id: "memory-off", kind: "memory", register() {} };`,
           });
 
-          return loadOpenClawPlugins({
+          return loadRemoteClawPlugins({
             cache: false,
             config: {
               plugins: {
@@ -2485,7 +2485,7 @@ module.exports = {
             },
           });
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           const entry = registry.plugins.find((item) => item.id === "memory-off");
           expect(entry?.status).toBe("disabled");
         },
@@ -2519,7 +2519,7 @@ module.exports = {
             body: `module.exports = { id: "shadow", register() {} };`,
           });
 
-          return loadOpenClawPlugins({
+          return loadRemoteClawPlugins({
             cache: false,
             config: {
               plugins: {
@@ -2559,7 +2559,7 @@ module.exports = {
               filename: "index.cjs",
             });
 
-            return loadOpenClawPlugins({
+            return loadRemoteClawPlugins({
               cache: false,
               config: {
                 plugins: {
@@ -2601,7 +2601,7 @@ module.exports = {
               filename: "index.cjs",
             });
 
-            return loadOpenClawPlugins({
+            return loadRemoteClawPlugins({
               cache: false,
               config: {
                 plugins: {
@@ -2674,7 +2674,7 @@ module.exports = {
       };
 
       for (let index = 0; index < scenario.loads; index += 1) {
-        loadOpenClawPlugins(options);
+        loadRemoteClawPlugins(options);
       }
 
       const openAllowWarnings = warnings.filter((msg) => msg.includes("plugins.allow is empty"));
@@ -2708,7 +2708,7 @@ module.exports = {
             filename: "index.cjs",
           });
 
-          return loadOpenClawPlugins({
+          return loadRemoteClawPlugins({
             cache: false,
             workspaceDir,
             config: {
@@ -2718,7 +2718,7 @@ module.exports = {
             },
           });
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           const workspacePlugin = registry.plugins.find((entry) => entry.id === "workspace-helper");
           expect(workspacePlugin?.origin).toBe("workspace");
           expect(workspacePlugin?.status).toBe("disabled");
@@ -2744,7 +2744,7 @@ module.exports = {
             filename: "index.cjs",
           });
 
-          return loadOpenClawPlugins({
+          return loadRemoteClawPlugins({
             cache: false,
             workspaceDir,
             config: {
@@ -2755,7 +2755,7 @@ module.exports = {
             },
           });
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           const workspacePlugin = registry.plugins.find((entry) => entry.id === "workspace-helper");
           expect(workspacePlugin?.origin).toBe("workspace");
           expect(workspacePlugin?.status).toBe("loaded");
@@ -2784,7 +2784,7 @@ module.exports = {
             filename: "index.cjs",
           });
 
-          return loadOpenClawPlugins({
+          return loadRemoteClawPlugins({
             cache: false,
             workspaceDir,
             config: {
@@ -2798,7 +2798,7 @@ module.exports = {
             },
           });
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadRemoteClawPlugins>) => {
           const entries = registry.plugins.filter((entry) => entry.id === "shadowed");
           const loaded = entries.find((entry) => entry.status === "loaded");
           const overridden = entries.find((entry) => entry.status === "disabled");
@@ -2838,7 +2838,7 @@ module.exports = {
     );
     process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir: bundledDir,
       config: {
@@ -2866,7 +2866,7 @@ module.exports = {
       filename: "unscoped.cjs",
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {
@@ -2901,7 +2901,7 @@ module.exports = {
             });
 
             const warnings: string[] = [];
-            const registry = loadOpenClawPlugins({
+            const registry = loadRemoteClawPlugins({
               cache: false,
               logger: createWarningLogger(warnings),
               config: {
@@ -2920,7 +2920,7 @@ module.exports = {
         loadRegistry: () => {
           const { plugin, env } = createEnvResolvedPluginFixture("tracked-load-path");
           const warnings: string[] = [];
-          const registry = loadOpenClawPlugins({
+          const registry = loadRemoteClawPlugins({
             cache: false,
             logger: createWarningLogger(warnings),
             env,
@@ -2946,7 +2946,7 @@ module.exports = {
         loadRegistry: () => {
           const { plugin, env } = createEnvResolvedPluginFixture("tracked-install-path");
           const warnings: string[] = [];
-          const registry = loadOpenClawPlugins({
+          const registry = loadRemoteClawPlugins({
             cache: false,
             logger: createWarningLogger(warnings),
             env,
@@ -3051,7 +3051,7 @@ module.exports = {
     }
 
     process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir: bundledDir,
       config: {
@@ -3121,7 +3121,7 @@ module.exports = {
     });
 
     const registry = withEnv({ OPENCLAW_BUNDLED_PLUGINS_DIR: "/nonexistent/bundled/plugins" }, () =>
-      loadOpenClawPlugins({
+      loadRemoteClawPlugins({
         cache: false,
         workspaceDir: plugin.dir,
         config: {
@@ -3167,7 +3167,7 @@ module.exports = {
       const registry = withEnv(
         { OPENCLAW_BUNDLED_PLUGINS_DIR: "/nonexistent/bundled/plugins" },
         () =>
-          loadOpenClawPlugins({
+          loadRemoteClawPlugins({
             cache: false,
             workspaceDir: plugin.dir,
             config: {
@@ -3263,7 +3263,7 @@ export const runtimeValue = helperValue;`,
       "utf-8",
     );
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir: plugin.dir,
       config: {

@@ -11,7 +11,7 @@ const readConfigFileSnapshotForWrite = vi.fn().mockResolvedValue({
 });
 const setRuntimeConfigSnapshot = vi.fn();
 const ensureOpenClawModelsJson = vi.fn().mockResolvedValue(undefined);
-const resolveOpenClawAgentDir = vi.fn().mockReturnValue("/tmp/openclaw-agent");
+const resolveRemoteClawAgentDir = vi.fn().mockReturnValue("/tmp/openclaw-agent");
 const ensureAuthProfileStore = vi.fn().mockReturnValue({ version: 1, profiles: {} });
 const listProfilesForProvider = vi.fn().mockReturnValue([]);
 const resolveAuthProfileDisplayLabel = vi.fn(({ profileId }: { profileId: string }) => profileId);
@@ -45,7 +45,7 @@ vi.mock("../agents/models-config.js", () => ({
 }));
 
 vi.mock("../agents/agent-paths.js", () => ({
-  resolveOpenClawAgentDir,
+  resolveRemoteClawAgentDir,
 }));
 
 vi.mock("../agents/auth-profiles.js", () => ({

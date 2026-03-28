@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
-import type { RemoteClawPluginApi, OpenClawPluginToolContext } from "remoteclaw/plugin-sdk/lobster";
+import type { RemoteClawPluginApi, RemoteClawPluginToolContext } from "remoteclaw/plugin-sdk/lobster";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createWindowsCmdShimFixture,
@@ -54,7 +54,7 @@ function fakeApi(overrides: Partial<RemoteClawPluginApi> = {}): RemoteClawPlugin
   };
 }
 
-function fakeCtx(overrides: Partial<OpenClawPluginToolContext> = {}): OpenClawPluginToolContext {
+function fakeCtx(overrides: Partial<RemoteClawPluginToolContext> = {}): RemoteClawPluginToolContext {
   return {
     config: {},
     workspaceDir: "/tmp",
@@ -299,7 +299,7 @@ describe("lobster plugin tool", () => {
 
   it("can be gated off in sandboxed contexts", async () => {
     const api = fakeApi();
-    const factoryTool = (ctx: OpenClawPluginToolContext) => {
+    const factoryTool = (ctx: RemoteClawPluginToolContext) => {
       if (ctx.sandboxed) {
         return null;
       }

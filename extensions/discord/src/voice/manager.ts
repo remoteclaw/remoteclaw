@@ -23,7 +23,7 @@ import { isDangerousNameMatchingEnabled } from "../../../../src/config/dangerous
 import type { DiscordAccountConfig, TtsConfig } from "../../../../src/config/types.js";
 import { logVerbose, shouldLogVerbose } from "../../../../src/globals.js";
 import { formatErrorMessage } from "../../../../src/infra/errors.js";
-import { resolvePreferredOpenClawTmpDir } from "../../../../src/infra/tmp-openclaw-dir.js";
+import { resolvePreferredRemoteClawTmpDir } from "../../../../src/infra/tmp-remoteclaw-dir.js";
 import { createSubsystemLogger } from "../../../../src/logging/subsystem.js";
 import { transcribeAudioFile } from "../../../../src/media-understanding/runtime.js";
 import { resolveAgentRoute } from "../../../../src/routing/resolve-route.js";
@@ -206,7 +206,7 @@ function estimateDurationSeconds(pcm: Buffer): number {
 }
 
 async function writeWavFile(pcm: Buffer): Promise<{ path: string; durationSeconds: number }> {
-  const tempDir = await fs.mkdtemp(path.join(resolvePreferredOpenClawTmpDir(), "discord-voice-"));
+  const tempDir = await fs.mkdtemp(path.join(resolvePreferredRemoteClawTmpDir(), "discord-voice-"));
   const filePath = path.join(tempDir, `segment-${randomUUID()}.wav`);
   const wav = buildWavBuffer(pcm);
   await fs.writeFile(filePath, wav);

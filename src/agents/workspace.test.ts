@@ -72,7 +72,8 @@ function expectSubagentAllowedBootstrapNames(files: WorkspaceBootstrapFile[]) {
 }
 
 describe("ensureAgentWorkspace", () => {
-  let tmpDir: string;
+  it("creates BOOTSTRAP.md and records a seeded marker for brand new workspaces", async () => {
+    const tempDir = await makeTempWorkspace("openclaw-workspace-");
 
     await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
 
@@ -242,12 +243,37 @@ describe("loadWorkspaceBootstrapFiles", () => {
       await fs.rm(rootDir, { recursive: true, force: true });
     }
   });
+});
 
-  it("creates workspace directory when given a valid dir", async () => {
-    tmpDir = path.join(os.tmpdir(), `workspace-test-${Date.now()}`);
-    const result = await ensureAgentWorkspace(tmpDir);
-    expect(result).toBe(tmpDir);
-    const stat = await fs.stat(tmpDir);
-    expect(stat.isDirectory()).toBe(true);
+describe("filterBootstrapFilesForSession", () => {
+  const mockFiles: WorkspaceBootstrapFile[] = [
+    { name: "AGENTS.md", path: "/w/AGENTS.md", content: "", missing: false },
+    { name: "SOUL.md", path: "/w/SOUL.md", content: "", missing: false },
+    { name: "TOOLS.md", path: "/w/TOOLS.md", content: "", missing: false },
+    { name: "IDENTITY.md", path: "/w/IDENTITY.md", content: "", missing: false },
+    { name: "USER.md", path: "/w/USER.md", content: "", missing: false },
+    { name: "HEARTBEAT.md", path: "/w/HEARTBEAT.md", content: "", missing: false },
+    { name: "BOOTSTRAP.md", path: "/w/BOOTSTRAP.md", content: "", missing: false },
+    { name: "MEMORY.md", path: "/w/MEMORY.md", content: "", missing: false },
+  ];
+
+  it("returns all files for main session (no sessionKey)", () => {
+    const result = filterBootstrapFilesForSession(mockFiles);
+    expect(result).toHaveLength(mockFiles.length);
+  });
+
+  it("returns all files for normal (non-subagent, non-cron) session key", () => {
+    const result = filterBootstrapFilesForSession(mockFiles, "agent:default:chat:main");
+    expect(result).toHaveLength(mockFiles.length);
+  });
+
+  it("filters to allowlist for subagent sessions", () => {
+    const result = filterBootstrapFilesForSession(mockFiles, "agent:default:subagent:task-1");
+    expectSubagentAllowedBootstrapNames(result);
+  });
+
+  it("filters to allowlist for cron sessions", () => {
+    const result = filterBootstrapFilesForSession(mockFiles, "agent:default:cron:daily-check");
+    expectSubagentAllowedBootstrapNames(result);
   });
 });

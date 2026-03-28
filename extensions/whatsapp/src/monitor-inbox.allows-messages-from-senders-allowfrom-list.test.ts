@@ -66,7 +66,7 @@ async function expectOutboundDmSkipsPairing(params: {
         },
       ],
     });
-    await new Promise((resolve) => setImmediate(resolve));
+    await settleInboundWork();
 
     expect(onMessage).not.toHaveBeenCalled();
     expect(upsertPairingRequestMock).not.toHaveBeenCalled();
@@ -96,7 +96,7 @@ describe("web monitor inbox", () => {
     });
 
     sock.ev.emit("messages.upsert", upsert);
-    await new Promise((resolve) => setImmediate(resolve));
+    await waitForMessageCalls(onMessage, 1);
 
     // Should call onMessage for authorized senders
     expect(onMessage).toHaveBeenCalledWith(
@@ -126,7 +126,7 @@ describe("web monitor inbox", () => {
     });
 
     sock.ev.emit("messages.upsert", upsert);
-    await new Promise((resolve) => setImmediate(resolve));
+    await waitForMessageCalls(onMessage, 1);
 
     // Should allow self-messages even if not in allowFrom
     expect(onMessage).toHaveBeenCalledWith(
@@ -171,7 +171,7 @@ describe("web monitor inbox", () => {
     });
 
     sock.ev.emit("messages.upsert", upsertBlockedAgain);
-    await new Promise((resolve) => setImmediate(resolve));
+    await settleInboundWork();
     expect(onMessage).not.toHaveBeenCalled();
     expect(sock.sendMessage).toHaveBeenCalledTimes(1);
 
@@ -184,7 +184,7 @@ describe("web monitor inbox", () => {
     });
 
     sock.ev.emit("messages.upsert", upsertSelf);
-    await new Promise((resolve) => setImmediate(resolve));
+    await waitForMessageCalls(onMessage, 1);
 
     expect(onMessage).toHaveBeenCalledTimes(1);
     expect(onMessage).toHaveBeenCalledWith(
@@ -214,8 +214,132 @@ describe("web monitor inbox", () => {
     });
   });
 
+  it("allows owner fromMe group commands when they were not sent by the gateway", async () => {
+    mockLoadConfig.mockReturnValue({
+      channels: {
+        whatsapp: {
+          groupPolicy: "open",
+          allowFrom: ["+123"],
+        },
+      },
+      messages: DEFAULT_MESSAGES_CFG,
+    });
+
+    const { onMessage, listener, sock } = await openInboxMonitor();
+
+    sock.ev.emit("messages.upsert", {
+      type: "notify",
+      messages: [
+        {
+          key: {
+            id: "owner-group-1",
+            fromMe: true,
+            remoteJid: "120363@g.us",
+            participant: "123@s.whatsapp.net",
+          },
+          message: { conversation: "/status" },
+          messageTimestamp: nowSeconds(),
+          pushName: "Owner",
+        },
+      ],
+    });
+    await waitForMessageCalls(onMessage, 1);
+
+    expect(onMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: "/status",
+        chatType: "group",
+        from: "120363@g.us",
+        fromMe: true,
+        senderE164: "+123",
+      }),
+    );
+
+    await listener.close();
+  });
+
+  it("filters group fromMe echoes only when the gateway sent the matching message id", async () => {
+    mockLoadConfig.mockReturnValue({
+      channels: {
+        whatsapp: {
+          groupPolicy: "open",
+          allowFrom: ["+123"],
+        },
+      },
+      messages: DEFAULT_MESSAGES_CFG,
+    });
+
+    const onMessage = vi.fn();
+    const { listener, sock } = await startInboxMonitor(onMessage);
+
+    sock.sendMessage.mockResolvedValueOnce({ key: { id: "bot-group-echo-1" } });
+    await listener.sendMessage("120363@g.us", "gateway echo candidate");
+
+    sock.ev.emit("messages.upsert", {
+      type: "notify",
+      messages: [
+        {
+          key: {
+            id: "bot-group-echo-1",
+            fromMe: true,
+            remoteJid: "120363@g.us",
+            participant: "123@s.whatsapp.net",
+          },
+          message: { conversation: "gateway echo candidate" },
+          messageTimestamp: nowSeconds(),
+          pushName: "Owner",
+        },
+      ],
+    });
+    await settleInboundWork();
+
+    expect(onMessage).not.toHaveBeenCalled();
+
+    await listener.close();
+  });
+
+  it("filters self-chat DM fromMe echoes when the gateway sent the matching message id", async () => {
+    mockLoadConfig.mockReturnValue({
+      channels: {
+        whatsapp: {
+          selfChatMode: true,
+          allowFrom: ["+123"],
+        },
+      },
+      messages: DEFAULT_MESSAGES_CFG,
+    });
+
+    const onMessage = vi.fn();
+    const { listener, sock } = await startInboxMonitor(onMessage);
+
+    sock.sendMessage.mockResolvedValueOnce({ key: { id: "bot-dm-echo-1" } });
+    await listener.sendMessage("123@s.whatsapp.net", "self-chat reply");
+
+    sock.ev.emit("messages.upsert", {
+      type: "notify",
+      messages: [
+        {
+          key: {
+            id: "bot-dm-echo-1",
+            fromMe: true,
+            remoteJid: "123@s.whatsapp.net",
+          },
+          message: { conversation: "self-chat reply" },
+          messageTimestamp: nowSeconds(),
+          pushName: "Owner",
+        },
+      ],
+    });
+    await settleInboundWork();
+
+    expect(onMessage).not.toHaveBeenCalled();
+
+    await listener.close();
+  });
+
   it("handles append messages by marking them read but skipping auto-reply", async () => {
     const { onMessage, listener, sock } = await openInboxMonitor();
+    const staleTs = Math.floor(Date.now() / 1000) - 300;
 
     const upsert = {
       type: "append",
@@ -227,22 +351,23 @@ describe("web monitor inbox", () => {
             remoteJid: "999@s.whatsapp.net",
           },
           message: { conversation: "old message" },
-          messageTimestamp: nowSeconds(),
+          messageTimestamp: staleTs,
           pushName: "History Sender",
         },
       ],
     };
 
     sock.ev.emit("messages.upsert", upsert);
-    await new Promise((resolve) => setImmediate(resolve));
-
-    // Verify it WAS marked as read
-    expect(sock.readMessages).toHaveBeenCalledWith([
-      {
-        remoteJid: "999@s.whatsapp.net",
-        id: "history1",
-        participant: undefined,
-        fromMe: false,
+    await vi.waitFor(
+      () => {
+        expect(sock.readMessages).toHaveBeenCalledWith([
+          {
+            remoteJid: "999@s.whatsapp.net",
+            id: "history1",
+            participant: undefined,
+            fromMe: false,
+          },
+        ]);
       },
       { timeout: 5_000, interval: 5 },
     );

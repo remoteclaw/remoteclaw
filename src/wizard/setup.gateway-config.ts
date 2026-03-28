@@ -9,6 +9,7 @@ import {
 } from "../commands/onboard-helpers.js";
 import type { GatewayAuthChoice } from "../commands/onboard-types.js";
 import type { GatewayBindMode, GatewayTailscaleMode, RemoteClawConfig } from "../config/config.js";
+import { buildDefaultControlUiAllowedOrigins } from "../config/gateway-control-ui-origins.js";
 import {
   TAILSCALE_DOCS_LINES,
   TAILSCALE_EXPOSURE_OPTIONS,
@@ -16,8 +17,6 @@ import {
 } from "../gateway/gateway-config-prompts.shared.js";
 import { DEFAULT_DANGEROUS_NODE_COMMANDS } from "../gateway/node-command-policy.js";
 import { findTailscaleBinary } from "../infra/tailscale.js";
-import { resolveSecretInputModeForEnvSelection } from "../plugins/provider-auth-mode.js";
-import { promptSecretRefForSetup } from "../plugins/provider-auth-ref.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { validateIPv4AddressInput } from "../shared/net/ipv4.js";
 import type { WizardPrompter } from "./prompts.js";
@@ -151,11 +150,8 @@ export async function configureGatewayForSetup(
 
   let gatewayToken: string | undefined;
   if (authMode === "token") {
-    const quickstartTokenString = normalizeSecretInputString(quickstartGateway.token);
-    const quickstartTokenRef = resolveSecretInputRef({
-      value: quickstartGateway.token,
-      defaults: nextConfig.secrets?.defaults,
-    }).ref;
+    const quickstartTokenString = quickstartGateway.token ? String(quickstartGateway.token) : undefined;
+    const quickstartTokenRef: string | undefined = undefined;
     const tokenMode =
       flow === "quickstart" && opts.secretInputMode !== "ref" // pragma: allowlist secret
         ? quickstartTokenRef
@@ -174,7 +170,7 @@ export async function configureGatewayForSetup(
           });
     if (tokenMode === "ref") {
       if (flow === "quickstart" && quickstartTokenRef) {
-        gatewayTokenInput = quickstartTokenRef;
+        gatewayToken = quickstartTokenRef;
         gatewayToken = await resolveSetupSecretInputString({
           config: nextConfig,
           value: quickstartTokenRef,
@@ -192,7 +188,6 @@ export async function configureGatewayForSetup(
             envVarPlaceholder: "OPENCLAW_GATEWAY_TOKEN",
           },
         });
-        gatewayTokenInput = resolved.ref;
         gatewayToken = resolved.resolvedValue;
       }
     } else if (flow === "quickstart") {
@@ -214,7 +209,7 @@ export async function configureGatewayForSetup(
   }
 
   if (authMode === "password") {
-    let password: SecretInput | undefined =
+    let password: string | undefined =
       flow === "quickstart" && quickstartGateway.password ? quickstartGateway.password : undefined;
     if (!password) {
       const selectedMode = await resolveSecretInputModeForEnvSelection({
@@ -237,13 +232,16 @@ export async function configureGatewayForSetup(
             envVarPlaceholder: "OPENCLAW_GATEWAY_PASSWORD",
           },
         });
-        password = resolved.ref;
+        password = resolved.resolvedValue;
       } else {
         password = String(
           (await prompter.text({
             message: "Gateway password",
             validate: validateGatewayPasswordInput,
-          });
+          })) ?? "",
+        );
+      }
+    }
     nextConfig = {
       ...nextConfig,
       gateway: {

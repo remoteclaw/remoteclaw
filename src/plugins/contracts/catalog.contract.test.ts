@@ -1,13 +1,18 @@
-import { beforeEach, describe, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, it, vi } from "vitest";
+import {
+  registerProviderPlugin,
+  requireRegisteredProvider,
+} from "../../../test/helpers/extensions/provider-registration.js";
 import {
   expectAugmentedCodexCatalog,
   expectCodexBuiltInSuppression,
   expectCodexMissingAuthHint,
 } from "../provider-runtime.test-support.js";
+import type { ProviderPlugin } from "../types.js";
 
-const CONTRACT_SETUP_TIMEOUT_MS = 300_000;
+const PROVIDER_CATALOG_CONTRACT_TIMEOUT_MS = 300_000;
 
-type ResolvePluginProviders = typeof import("../providers.js").resolvePluginProviders;
+type ResolvePluginProviders = typeof import("../providers.runtime.js").resolvePluginProviders;
 type ResolveOwningPluginIdsForProvider =
   typeof import("../providers.js").resolveOwningPluginIdsForProvider;
 type ResolveNonBundledProviderPluginIds =
@@ -15,72 +20,77 @@ type ResolveNonBundledProviderPluginIds =
 
 const resolvePluginProvidersMock = vi.hoisted(() => vi.fn<ResolvePluginProviders>(() => []));
 const resolveOwningPluginIdsForProviderMock = vi.hoisted(() =>
-  vi.fn<ResolveOwningPluginIdsForProvider>((params) =>
-    resolveProviderContractPluginIdsForProvider(params.provider),
-  ),
+  vi.fn<ResolveOwningPluginIdsForProvider>(() => undefined),
 );
 const resolveNonBundledProviderPluginIdsMock = vi.hoisted(() =>
   vi.fn<ResolveNonBundledProviderPluginIds>((_) => [] as string[]),
 );
 
 vi.mock("../providers.js", () => ({
-  resolvePluginProviders: (params: unknown) => resolvePluginProvidersMock(params as never),
   resolveOwningPluginIdsForProvider: (params: unknown) =>
     resolveOwningPluginIdsForProviderMock(params as never),
   resolveNonBundledProviderPluginIds: (params: unknown) =>
     resolveNonBundledProviderPluginIdsMock(params as never),
 }));
 
+vi.mock("../providers.runtime.js", () => ({
+  resolvePluginProviders: (params: unknown) => resolvePluginProvidersMock(params as never),
+}));
+
 let augmentModelCatalogWithProviderPlugins: typeof import("../provider-runtime.js").augmentModelCatalogWithProviderPlugins;
-let buildProviderMissingAuthMessageWithPlugin: typeof import("../provider-runtime.js").buildProviderMissingAuthMessageWithPlugin;
 let resetProviderRuntimeHookCacheForTest: typeof import("../provider-runtime.js").resetProviderRuntimeHookCacheForTest;
 let resolveProviderBuiltInModelSuppression: typeof import("../provider-runtime.js").resolveProviderBuiltInModelSuppression;
-let resolveProviderContractPluginIdsForProvider: typeof import("./registry.js").resolveProviderContractPluginIdsForProvider;
-let resolveProviderContractProvidersForPluginIds: typeof import("./registry.js").resolveProviderContractProvidersForPluginIds;
-let uniqueProviderContractProviders: typeof import("./registry.js").uniqueProviderContractProviders;
+let openaiProviders: ProviderPlugin[];
+let openaiProvider: ProviderPlugin;
 
-describe("provider catalog contract", () => {
-  beforeEach(async () => {
-    vi.resetModules();
-    const actualProviders =
-      await vi.importActual<typeof import("../providers.js")>("../providers.js");
-    resolvePluginProvidersMock.mockReset();
-    resolvePluginProvidersMock.mockImplementation((params) =>
-      actualProviders.resolvePluginProviders(params as never),
-    );
+describe("provider catalog contract", { timeout: PROVIDER_CATALOG_CONTRACT_TIMEOUT_MS }, () => {
+  beforeAll(async () => {
+    const openaiPlugin = await import("../../../extensions/openai/index.ts");
+    openaiProviders = registerProviderPlugin({
+      plugin: openaiPlugin.default,
+      id: "openai",
+      name: "OpenAI",
+    }).providers;
+    openaiProvider = requireRegisteredProvider(openaiProviders, "openai", "provider");
     ({
-      resolveProviderContractPluginIdsForProvider,
-      resolveProviderContractProvidersForPluginIds,
-      uniqueProviderContractProviders,
-    } = await import("./registry.js"));
+      augmentModelCatalogWithProviderPlugins,
+      resetProviderRuntimeHookCacheForTest,
+      resolveProviderBuiltInModelSuppression,
+    } = await import("../provider-runtime.js"));
+  });
+
+  beforeEach(() => {
+    resetProviderRuntimeHookCacheForTest();
+
     resolvePluginProvidersMock.mockReset();
     resolvePluginProvidersMock.mockImplementation((params?: { onlyPluginIds?: string[] }) => {
       const onlyPluginIds = params?.onlyPluginIds;
       if (!onlyPluginIds || onlyPluginIds.length === 0) {
-        return uniqueProviderContractProviders;
+        return openaiProviders;
       }
-      return resolveProviderContractProvidersForPluginIds(onlyPluginIds);
+      return onlyPluginIds.includes("openai") ? openaiProviders : [];
     });
-    ({
-      augmentModelCatalogWithProviderPlugins,
-      buildProviderMissingAuthMessageWithPlugin,
-      resetProviderRuntimeHookCacheForTest,
-      resolveProviderBuiltInModelSuppression,
-    } = await import("../provider-runtime.js"));
-    resetProviderRuntimeHookCacheForTest();
-  }, CONTRACT_SETUP_TIMEOUT_MS);
 
     resolveOwningPluginIdsForProviderMock.mockReset();
-    resolveOwningPluginIdsForProviderMock.mockImplementation((params) =>
-      resolveProviderContractPluginIdsForProvider(params.provider),
-    );
+    resolveOwningPluginIdsForProviderMock.mockImplementation((params) => {
+      switch (params.provider) {
+        case "azure-openai-responses":
+        case "openai":
+        case "openai-codex":
+          return ["openai"];
+        default:
+          return undefined;
+      }
+    });
 
     resolveNonBundledProviderPluginIdsMock.mockReset();
     resolveNonBundledProviderPluginIdsMock.mockReturnValue([]);
-  }, CONTRACT_SETUP_TIMEOUT_MS);
+  });
 
   it("keeps codex-only missing-auth hints wired through the provider runtime", () => {
-    expectCodexMissingAuthHint(buildProviderMissingAuthMessageWithPlugin);
+    expectCodexMissingAuthHint(
+      (params) => openaiProvider.buildMissingAuthMessage?.(params.context) ?? undefined,
+    );
   });
 
   it("keeps built-in model suppression wired through the provider runtime", () => {

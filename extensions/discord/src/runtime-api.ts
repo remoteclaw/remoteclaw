@@ -44,9 +44,6 @@ export type {
   ChannelMessageActionAdapter,
   ChannelMessageActionName,
 } from "remoteclaw/plugin-sdk/channel-runtime";
-export { withNormalizedTimestamp } from "../../../src/agents/date-time.js";
-export { assertMediaNotDataUrl } from "../../../src/agents/sandbox-paths.js";
-export { parseAvailableTags, readReactionParams } from "remoteclaw/plugin-sdk/discord-core";
 export { resolvePollMaxSelections } from "../../../src/polls.js";
 export type { DiscordAccountConfig, DiscordActionConfig } from "../config/types.js";
 export {

@@ -15,7 +15,6 @@ import {
   resolveAgentIdFromSessionKey,
   sanitizeAgentId,
 } from "remoteclaw/plugin-sdk/routing";
-import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import {
   buildTelegramGroupPeerId,
   buildTelegramParentPeer,

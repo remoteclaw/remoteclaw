@@ -4,7 +4,6 @@ import {
   collectOpenProviderGroupPolicyWarnings,
   buildOpenGroupPolicyRestrictSendersWarning,
   buildOpenGroupPolicyWarning,
-  collectOpenProviderGroupPolicyWarnings,
 } from "remoteclaw/plugin-sdk/channel-policy";
 import type {
   ChannelAccountSnapshot,

@@ -40,8 +40,6 @@ import {
   listSlackDirectoryPeersFromConfig,
   listTelegramDirectoryGroupsFromConfig,
   listTelegramDirectoryPeersFromConfig,
-  listWhatsAppDirectoryGroupsFromConfig,
-  listWhatsAppDirectoryPeersFromConfig,
 } from "./directory-config.js";
 import { listChannelPlugins } from "./index.js";
 import { loadChannelPlugin } from "./load.js";

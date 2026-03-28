@@ -3,7 +3,6 @@ import {
   patchScopedAccountConfig,
   prepareScopedSetupConfig,
 } from "../../../src/channels/plugins/setup-helpers.js";
-import { setTopLevelChannelDmPolicyWithAllowFrom } from "../../../src/channels/plugins/setup-wizard-helpers.js";
 import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { DmPolicy } from "../../../src/config/types.js";

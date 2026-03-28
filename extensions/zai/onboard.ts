@@ -10,7 +10,6 @@ import {
 import {
   applyAgentDefaultModelPrimary,
   applyProviderConfigWithModelCatalog,
-  type RemoteClawConfig,
 } from "remoteclaw/plugin-sdk/provider-onboard";
 
 export const ZAI_DEFAULT_MODEL_REF = `zai/${ZAI_DEFAULT_MODEL_ID}`;

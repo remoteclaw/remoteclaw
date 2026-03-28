@@ -10,7 +10,6 @@ import {
 import {
   applyAgentDefaultModelPrimary,
   applyProviderConfigWithDefaultModel,
-  type RemoteClawConfig,
 } from "remoteclaw/plugin-sdk/provider-onboard";
 
 export const MISTRAL_DEFAULT_MODEL_REF = `mistral/${MISTRAL_DEFAULT_MODEL_ID}`;

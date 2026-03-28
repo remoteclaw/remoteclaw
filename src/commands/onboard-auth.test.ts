@@ -22,7 +22,6 @@ import {
 import { applyXiaomiConfig, applyXiaomiProviderConfig } from "../../extensions/xiaomi/onboard.js";
 import { applyZaiConfig, applyZaiProviderConfig } from "../../extensions/zai/onboard.js";
 import { SYNTHETIC_DEFAULT_MODEL_ID } from "../agents/synthetic-models.js";
-import type { RemoteClawConfig } from "../config/config.js";
 import {
   resolveAgentModelFallbackValues,
   resolveAgentModelPrimaryValue,
@@ -33,15 +32,11 @@ import {
   ZAI_CODING_CN_BASE_URL,
   ZAI_GLOBAL_BASE_URL,
 } from "../plugin-sdk/provider-models.js";
-import { applyAuthProfileConfig } from "../plugins/provider-auth-helpers.js";
 import {
   OPENROUTER_DEFAULT_MODEL_REF,
-  MISTRAL_DEFAULT_MODEL_REF,
-  XAI_DEFAULT_MODEL_REF,
   setMinimaxApiKey,
   writeOAuthCredentials,
 } from "../plugins/provider-auth-storage.js";
-import { applyLitellmProviderConfig } from "./onboard-auth.config-litellm.js";
 import {
   createAuthTestLifecycle,
   readAuthProfilesForAgent,

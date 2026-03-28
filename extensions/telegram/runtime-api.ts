@@ -53,8 +53,4 @@ export { telegramMessageActions } from "./src/channel-actions.js";
 export { monitorTelegramProvider } from "./src/monitor.js";
 export { probeTelegram } from "./src/probe.js";
 export {
-  projectCredentialSnapshotFields,
-  resolveConfiguredFromCredentialStatuses,
 } from "../../src/channels/account-snapshot-fields.js";
-export { resolveTelegramPollVisibility } from "../../src/poll-params.js";
-export { PAIRING_APPROVED_MESSAGE } from "../../src/channels/plugins/pairing-message.js";

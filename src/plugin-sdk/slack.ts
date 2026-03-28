@@ -45,23 +45,13 @@ export {
   resolveSlackGroupToolPolicy,
 } from "../../extensions/slack/api.js";
 export { SlackConfigSchema } from "../config/zod-schema.providers-core.js";
-export { buildComputedAccountStatusSnapshot } from "./status-helpers.js";
 
 export {
   listEnabledSlackAccounts,
-  listSlackAccountIds,
-  resolveDefaultSlackAccountId,
-  resolveSlackAccount,
-  resolveSlackReplyToMode,
 } from "../../extensions/slack/src/accounts.js";
-export { isSlackInteractiveRepliesEnabled } from "../../extensions/slack/src/interactive-replies.js";
-export { inspectSlackAccount } from "../../extensions/slack/src/account-inspect.js";
 export { parseSlackTarget, resolveSlackChannelId } from "./slack-targets.js";
 export {
-  extractSlackToolSend,
-  listSlackMessageActions,
 } from "../../extensions/slack/src/message-actions.js";
-export { buildSlackThreadingToolContext } from "../../extensions/slack/src/threading-tool-context.js";
 export { parseSlackBlocksInput } from "../../extensions/slack/src/blocks-input.js";
 export { handleSlackHttpRequest } from "../../extensions/slack/src/http/index.js";
 export { sendMessageSlack } from "../../extensions/slack/src/send.js";

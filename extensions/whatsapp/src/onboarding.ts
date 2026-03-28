@@ -9,7 +9,6 @@ import { setSetupChannelEnabled } from "../../../src/channels/plugins/setup-flow
 import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import { formatCliCommand } from "../../../src/cli/command-format.js";
 import { formatDocsLink } from "../../../src/terminal/links.js";
-import type { ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
 import { listWhatsAppAccountIds, resolveWhatsAppAuthDir } from "./accounts.js";
 import { loginWeb } from "./login.js";
 import { whatsappSetupAdapter } from "./setup-core.js";

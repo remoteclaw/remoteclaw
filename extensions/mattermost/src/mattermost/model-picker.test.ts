@@ -4,7 +4,6 @@ import path from "node:path";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/mattermost";
 import { buildModelsProviderData } from "remoteclaw/plugin-sdk/mattermost";
 import { describe, expect, it } from "vitest";
-import type { RemoteClawConfig } from "../../runtime-api.js";
 import {
   buildMattermostAllowedModelRefs,
   parseMattermostModelPickerContext,

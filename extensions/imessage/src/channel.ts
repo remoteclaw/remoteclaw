@@ -36,7 +36,6 @@ import {
   collectIMessageSecurityWarnings,
   createIMessagePluginBase,
   imessageResolveDmPolicy,
-  imessageSetupWizard,
 } from "./shared.js";
 import { normalizeIMessageHandle, parseIMessageTarget } from "./targets.js";
 

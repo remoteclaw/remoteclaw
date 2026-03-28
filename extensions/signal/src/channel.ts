@@ -43,9 +43,7 @@ import { signalSetupAdapter } from "./setup-core.js";
 import {
   collectSignalSecurityWarnings,
   createSignalPluginBase,
-  signalConfigAccessors,
   signalResolveDmPolicy,
-  signalSetupWizard,
 } from "./shared.js";
 type SignalSendFn = ReturnType<typeof getSignalRuntime>["channel"]["signal"]["sendMessageSignal"];
 
@@ -63,7 +61,6 @@ function resolveSignalSendContext(params: {
   };
 }
 
-type SignalSendFn = ReturnType<typeof getSignalRuntime>["channel"]["signal"]["sendMessageSignal"];
 
 async function sendSignalOutbound(params: {
   cfg: Parameters<typeof resolveSignalAccount>[0]["cfg"];

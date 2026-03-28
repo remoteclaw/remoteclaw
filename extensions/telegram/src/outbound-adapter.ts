@@ -9,9 +9,6 @@ import {
   resolvePayloadMediaUrls,
   sendPayloadMediaSequence,
 } from "remoteclaw/plugin-sdk/channel-runtime";
-import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveOutboundSendDep, type OutboundSendDeps } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveInteractiveTextFallback } from "remoteclaw/plugin-sdk/interactive-runtime";
 import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
 import type { TelegramInlineButtons } from "./button-types.js";
 import { buildTelegramInteractiveButtons } from "./button-types.js";

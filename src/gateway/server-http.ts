@@ -8,7 +8,6 @@ import { createServer as createHttpsServer } from "node:https";
 import type { TlsOptions } from "node:tls";
 import { handleSlackHttpRequest } from "remoteclaw/plugin-sdk/slack";
 import type { WebSocketServer } from "ws";
-import { handleSlackHttpRequest } from "../../extensions/slack/api.js";
 import { resolveAgentAvatar } from "../agents/identity-avatar.js";
 import {
   A2UI_PATH,

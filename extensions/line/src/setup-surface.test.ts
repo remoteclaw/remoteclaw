@@ -12,7 +12,6 @@ import {
   runSetupWizardConfigure,
   type WizardPrompter,
 } from "../../../test/helpers/extensions/setup-wizard.js";
-import type { RemoteClawConfig } from "../api.js";
 import { linePlugin } from "./channel.js";
 
 function createPrompter(overrides: Partial<WizardPrompter> = {}): WizardPrompter {

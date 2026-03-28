@@ -15,7 +15,6 @@ import {
   pickGatewaySelfPresence,
   resolveGatewayProbeAuthResolution,
 } from "./status.gateway-probe.js";
-import type { buildChannelsTable, collectChannelStatusIssues } from "./status.scan.runtime.js";
 import { getStatusSummary } from "./status.summary.js";
 import { getUpdateCheckResult } from "./status.update.js";
 

@@ -69,7 +69,6 @@ export type {
   MediaUnderstandingProviderPlugin,
   RemoteClawPluginApi,
   RemoteClawPluginConfigSchema,
-  RemoteClawPluginApi,
   RemoteClawPluginService,
   RemoteClawPluginServiceContext,
   PluginHookInboundClaimContext,
@@ -651,4 +650,3 @@ export { extractOriginalFilename } from "../media/store.js";
 export { listSkillCommandsForAgents } from "../auto-reply/skill-commands.js";
 export type { SkillCommandSpec } from "../agents/skills.js";
 
-export { emptyPluginConfigSchema } from "../plugins/config-schema.js";

@@ -15,7 +15,6 @@ import {
   KILOCODE_DEFAULT_MAX_TOKENS,
   KILOCODE_DEFAULT_COST,
 } from "../plugin-sdk/provider-models.js";
-import { captureEnv } from "../test-utils/env.js";
 
 const emptyCfg: RemoteClawConfig = {};
 

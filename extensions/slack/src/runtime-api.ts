@@ -11,7 +11,6 @@ export {
   looksLikeSlackTargetId,
   normalizeSlackMessagingTarget,
 } from "remoteclaw/plugin-sdk/slack-targets";
-export type { ChannelPlugin, RemoteClawConfig, SlackAccountConfig } from "remoteclaw/plugin-sdk/slack";
 export {
   buildChannelConfigSchema,
   getChatChannelMeta,

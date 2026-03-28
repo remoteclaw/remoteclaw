@@ -16,7 +16,7 @@ import type {
   ChannelMessageActionName,
 } from "../../../src/channels/plugins/types.js";
 import type { TelegramActionConfig } from "../../../src/config/types.telegram.js";
-import { extractToolSend, readBooleanParam } from "../../../src/plugin-sdk-internal/telegram.js";
+import { extractToolSend } from "../../../src/plugin-sdk-internal/telegram.js";
 import { resolveTelegramPollVisibility } from "../../../src/poll-params.js";
 import {
   createTelegramActionGate,

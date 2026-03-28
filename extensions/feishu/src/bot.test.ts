@@ -2,7 +2,6 @@ import type { ClawdbotConfig, PluginRuntime, RuntimeEnv } from "remoteclaw/plugi
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPluginRuntimeMock } from "../../../test/helpers/extensions/plugin-runtime-mock.js";
 import { createRuntimeEnv } from "../../../test/helpers/extensions/runtime-env.js";
-import type { ClawdbotConfig, PluginRuntime, RuntimeEnv } from "../runtime-api.js";
 import type { FeishuMessageEvent } from "./bot.js";
 import {
   buildBroadcastSessionKey,

@@ -8,8 +8,6 @@ import type { ChannelGroupPolicy } from "remoteclaw/plugin-sdk/config-runtime";
 import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   resolveCommandAuthorization,
-  resolveCommandAuthorizedFromAuthorizers,
-  resolveNativeCommandSessionTargets,
 } from "remoteclaw/plugin-sdk/command-auth";
 import {
   buildCommandTextFromArgs,

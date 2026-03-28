@@ -14,10 +14,6 @@ import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wiz
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { DmPolicy } from "../../../src/config/types.js";
 import type { SecretInput } from "../../../src/config/types.secrets.js";
-import { hasConfiguredSecretInput } from "../../../src/config/types.secrets.js";
-import { formatResolvedUnresolvedNote } from "../../../src/plugin-sdk/resolution-notes.js";
-import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
 import type { WizardPrompter } from "../../../src/wizard/prompts.js";
 import { listMatrixDirectoryGroupsLive } from "./directory-live.js";
 import { resolveMatrixAccount } from "./matrix/accounts.js";

@@ -22,11 +22,6 @@ export type {
   UsageProviderId,
   UsageWindow,
 } from "../infra/provider-usage.types.js";
-export type { ChannelMessageActionContext } from "../channels/plugins/types.js";
-export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
-export type { RemoteClawPluginApi } from "../plugins/types.js";
-export type { PluginRuntime } from "../plugins/runtime/types.js";
-
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 export { delegateCompactionToRuntime } from "../context-engine/delegate.js";
 export { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";

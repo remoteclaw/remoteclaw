@@ -11,7 +11,6 @@ import {
   getScopedCredentialValue,
   setScopedCredentialValue,
 } from "remoteclaw/plugin-sdk/provider-web-search";
-import { applyXaiConfig, XAI_DEFAULT_MODEL_REF } from "./onboard.js";
 
 const PROVIDER_ID = "xai";
 const XAI_MODERN_MODEL_PREFIXES = ["grok-4"] as const;

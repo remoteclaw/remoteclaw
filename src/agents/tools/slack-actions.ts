@@ -30,17 +30,9 @@ import {
   parseSlackBlocksInput,
   parseSlackTarget,
   recordSlackThreadParticipation,
-  resolveSlackAccount,
   resolveSlackChannelId,
 } from "../../plugin-sdk/slack.js";
-import { withNormalizedTimestamp } from "../date-time.js";
 import {
-  createActionGate,
-  imageResultFromFile,
-  jsonResult,
-  readNumberParam,
-  readReactionParams,
-  readStringParam,
 } from "./common.js";
 
 const messagingActions = new Set([

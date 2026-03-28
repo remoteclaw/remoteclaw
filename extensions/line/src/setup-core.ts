@@ -3,7 +3,6 @@ import {
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
   resolveLineAccount,
-  type ChannelSetupAdapter,
   type LineConfig,
 } from "../runtime-api.js";
 

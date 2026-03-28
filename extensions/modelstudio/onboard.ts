@@ -10,7 +10,6 @@ import {
 import {
   applyAgentDefaultModelPrimary,
   applyProviderConfigWithModelCatalog,
-  type RemoteClawConfig,
 } from "remoteclaw/plugin-sdk/provider-onboard";
 import { buildModelStudioProvider } from "./provider-catalog.js";
 

@@ -12,8 +12,6 @@ import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-f
 import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { DmPolicy, MSTeamsTeamConfig } from "../../../src/config/types.js";
-import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
 import type { WizardPrompter } from "../../../src/wizard/prompts.js";
 import {
   parseMSTeamsTeamEntry,

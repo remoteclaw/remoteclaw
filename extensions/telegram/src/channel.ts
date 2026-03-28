@@ -21,9 +21,6 @@ import {
 } from "remoteclaw/plugin-sdk/channel-send-result";
 import { createTopLevelChannelReplyToModeResolver } from "remoteclaw/plugin-sdk/conversation-runtime";
 import { createChannelDirectoryAdapter } from "remoteclaw/plugin-sdk/directory-runtime";
-import { resolveExecApprovalCommandDisplay } from "remoteclaw/plugin-sdk/infra-runtime";
-import { buildExecApprovalPendingReplyPayload } from "remoteclaw/plugin-sdk/infra-runtime";
-import { resolveOutboundSendDep, type OutboundSendDeps } from "remoteclaw/plugin-sdk/infra-runtime";
 import {
   buildOutboundBaseSessionKey,
   normalizeMessageChannel,
@@ -53,10 +50,8 @@ import {
   type ChannelMessageActionAdapter,
   type RemoteClawConfig,
 } from "../../../src/plugin-sdk-internal/telegram.js";
-import { normalizeMessageChannel } from "../../../src/utils/message-channel.js";
 import {
   listTelegramAccountIds,
-  resolveTelegramAccount,
   type ResolvedTelegramAccount,
 } from "./accounts.js";
 import { buildTelegramExecApprovalButtons } from "./approval-buttons.js";
@@ -69,7 +64,6 @@ import {
 import { monitorTelegramProvider } from "./monitor.js";
 import { looksLikeTelegramTargetId, normalizeTelegramMessagingTarget } from "./normalize.js";
 import { sendTelegramPayloadMessages } from "./outbound-adapter.js";
-import { parseTelegramReplyToMessageId, parseTelegramThreadId } from "./outbound-params.js";
 import {
   findTelegramTokenOwnerAccountId,
   formatDuplicateTelegramTokenReason,
@@ -81,7 +75,6 @@ import { getTelegramRuntime } from "./runtime.js";
 import { sendTypingTelegram } from "./send.js";
 import { telegramSetupAdapter } from "./setup-core.js";
 import { telegramSetupWizard } from "./setup-surface.js";
-import { collectTelegramStatusIssues } from "./status-issues.js";
 import { parseTelegramTarget } from "./targets.js";
 
 const meta = getChatChannelMeta("telegram");

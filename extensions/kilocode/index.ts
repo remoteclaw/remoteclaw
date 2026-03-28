@@ -6,7 +6,6 @@ import {
   isProxyReasoningUnsupported,
 } from "remoteclaw/plugin-sdk/provider-stream";
 import { applyKilocodeConfig, KILOCODE_DEFAULT_MODEL_REF } from "./onboard.js";
-import { buildSingleProviderApiKeyCatalog } from "../../src/plugins/provider-catalog.js";
 import { buildKilocodeProviderWithDiscovery } from "./provider-catalog.js";
 
 const PROVIDER_ID = "kilocode";

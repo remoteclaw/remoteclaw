@@ -13,8 +13,6 @@ import { normalizeInteractiveReply } from "../../../../src/interactive/payload.j
 import { buildDiscordInteractiveComponents } from "../shared-interactive.js";
 import { resolveDiscordChannelId } from "../targets.js";
 import { tryHandleDiscordMessageActionGuildAdmin } from "./handle-action.guild-admin.js";
-import { handleDiscordAction } from "./runtime.js";
-import { readDiscordParentIdParam } from "./runtime.shared.js";
 
 const providerId = "discord";
 

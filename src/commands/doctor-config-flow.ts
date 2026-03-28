@@ -23,24 +23,10 @@ import { parseToolsBySenderTypedKey } from "../config/types.tools.js";
 import { RemoteClawSchema } from "../config/zod-schema.js";
 import { readChannelAllowFromStore } from "../pairing/pairing-store.js";
 import {
-  inspectTelegramAccount,
-  isNumericTelegramUserId,
-  listTelegramAccountIds,
   lookupTelegramChatId,
-  normalizeTelegramAllowFromEntry,
 } from "../../extensions/telegram/api.js";
-import { normalizeChatChannelId } from "../channels/registry.js";
-import { formatCliCommand } from "../cli/command-format.js";
 import { resolveCommandSecretRefsViaGateway } from "../cli/command-secret-gateway.js";
 import { getChannelsCommandSecretTargetIds } from "../cli/command-secret-targets.js";
-import { listRouteBindings } from "../config/bindings.js";
-import type { RemoteClawConfig } from "../config/config.js";
-import { CONFIG_PATH, migrateLegacyConfig } from "../config/config.js";
-import { collectProviderDangerousNameMatchingScopes } from "../config/dangerous-name-matching.js";
-import { formatConfigIssueLines } from "../config/issue-format.js";
-import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
-import type { TelegramNetworkConfig } from "../config/types.telegram.js";
-import { parseToolsBySenderTypedKey } from "../config/types.tools.js";
 import { resolveCommandResolutionFromArgv } from "../infra/exec-command-resolution.js";
 import {
   listInterpreterLikeSafeBins,
@@ -68,8 +54,6 @@ import {
   detectPluginInstallPathIssue,
   formatPluginInstallPathIssue,
 } from "../infra/plugin-install-path-warnings.js";
-import { readChannelAllowFromStore } from "../pairing/pairing-store.js";
-import { resolveTelegramAccount } from "../plugin-sdk/account-resolution.js";
 import {
   formatChannelAccountsDefaultPath,
   formatSetExplicitDefaultInstruction,

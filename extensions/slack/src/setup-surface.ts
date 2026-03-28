@@ -15,7 +15,6 @@ import {
 } from "../../../src/channels/plugins/setup-flow-helpers.js";
 import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
 import type {
-  ChannelSetupDmPolicy,
   ChannelSetupWizard,
   ChannelSetupWizardAllowFromEntry,
 } from "remoteclaw/plugin-sdk/setup";

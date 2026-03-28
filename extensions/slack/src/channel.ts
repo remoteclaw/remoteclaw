@@ -22,8 +22,6 @@ import {
   type RemoteClawConfig,
   type SlackActionContext,
 } from "remoteclaw/plugin-sdk/slack";
-import type { SlackActionContext } from "../../../src/agents/tools/slack-actions.js";
-import { createSlackActions } from "../../../src/channels/plugins/slack.actions.js";
 import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import {
   listEnabledSlackAccounts,
@@ -31,49 +29,23 @@ import {
   resolveSlackReplyToMode,
   type ResolvedSlackAccount,
 } from "./accounts.js";
-import type { SlackActionContext } from "./action-runtime.js";
 import { parseSlackBlocksInput } from "./blocks-input.js";
-import { createSlackActions } from "./channel-actions.js";
 import { createSlackWebClient } from "./client.js";
 import {
   applyAccountNameToChannelSection,
-  buildComputedAccountStatusSnapshot,
   buildChannelConfigSchema,
-  DEFAULT_ACCOUNT_ID,
   getChatChannelMeta,
-  listSlackDirectoryGroupsFromConfig,
-  listSlackDirectoryPeersFromConfig,
-  looksLikeSlackTargetId,
   mapAllowFromEntries,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
-  normalizeSlackMessagingTarget,
-  PAIRING_APPROVED_MESSAGE,
-  projectCredentialSnapshotFields,
-  resolveConfiguredFromRequiredCredentialStatuses,
-  resolveSlackGroupRequireMention,
-  resolveSlackGroupToolPolicy,
   SlackConfigSchema,
-  type ChannelPlugin,
-  type RemoteClawConfig,
 } from "../../../src/plugin-sdk-internal/slack.js";
-import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import {
-  listEnabledSlackAccounts,
-  resolveSlackAccount,
-  resolveSlackReplyToMode,
   resolveOptionalConfigString,
-  resolveSlackGroupRequireMention,
-  resolveSlackGroupToolPolicy,
   buildSlackThreadingToolContext,
   setAccountEnabledInConfigSection,
   slackOnboardingAdapter,
-  SlackConfigSchema,
-  type ChannelPlugin,
-  type ResolvedSlackAccount,
 } from "./accounts.js";
-import { parseSlackBlocksInput } from "./blocks-input.js";
-import { createSlackWebClient } from "./client.js";
 import { isSlackInteractiveRepliesEnabled } from "./interactive-replies.js";
 import { handleSlackMessageAction } from "./message-action-dispatch.js";
 import { extractSlackToolSend, listSlackMessageActions } from "./message-actions.js";
@@ -90,7 +62,6 @@ import { getSlackRuntime } from "./runtime.js";
 import { fetchSlackScopes } from "./scopes.js";
 import { slackSetupAdapter } from "./setup-core.js";
 import { parseSlackTarget } from "./targets.js";
-import { buildSlackThreadingToolContext } from "./threading-tool-context.js";
 
 const meta = getChatChannelMeta("slack");
 const SLACK_CHANNEL_TYPE_CACHE = new Map<string, "channel" | "group" | "dm" | "unknown">();

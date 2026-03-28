@@ -27,7 +27,6 @@ import {
   buildChannelConfigSchema,
   createDefaultChannelRuntimeState,
   DEFAULT_ACCOUNT_ID,
-  formatAllowFromLowercase,
   MSTeamsConfigSchema,
   PAIRING_APPROVED_MESSAGE,
 } from "remoteclaw/plugin-sdk";

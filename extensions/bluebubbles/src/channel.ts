@@ -9,7 +9,6 @@ import {
   collectOpenGroupPolicyRestrictSendersWarnings,
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
-  formatNormalizedAllowFromEntries,
   mapAllowFromEntries,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
@@ -18,7 +17,6 @@ import {
   resolveBlueBubblesGroupToolPolicy,
   setAccountEnabledInConfigSection,
 } from "remoteclaw/plugin-sdk/bluebubbles";
-import { mapAllowFromEntries } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
 import {
   createPairingPrefixStripper,

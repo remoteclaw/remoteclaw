@@ -1,7 +1,6 @@
 import type { ClawdbotConfig } from "remoteclaw/plugin-sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createNonExitingRuntimeEnv } from "../../../test/helpers/extensions/runtime-env.js";
-import type { ClawdbotConfig } from "../runtime-api.js";
 import { monitorFeishuProvider, stopFeishuMonitor } from "./monitor.js";
 
 const probeFeishuMock = vi.hoisted(() => vi.fn());

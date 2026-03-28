@@ -5,7 +5,6 @@ import {
   createScopedChannelConfigAdapter,
   createScopedDmSecurityResolver,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
 import {
   createLoggedPairingApprovalNotifier,
   createPairingPrefixStripper,
@@ -21,8 +20,6 @@ import {
   clearAccountEntryFields,
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
-  formatAllowFromLowercase,
-  mapAllowFromEntries,
   normalizeAccountId,
   setAccountEnabledInConfigSection,
   waitForAbortSignal,

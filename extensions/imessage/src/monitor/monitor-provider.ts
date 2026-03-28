@@ -19,7 +19,6 @@ import {
   readChannelAllowFromStore,
   upsertChannelPairingRequest,
 } from "remoteclaw/plugin-sdk/conversation-runtime";
-import { recordInboundSession } from "remoteclaw/plugin-sdk/conversation-runtime";
 import { normalizeScpRemoteHost } from "remoteclaw/plugin-sdk/infra-runtime";
 import { waitForTransportReady } from "remoteclaw/plugin-sdk/infra-runtime";
 import {

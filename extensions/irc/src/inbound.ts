@@ -27,21 +27,10 @@ import {
   resolveIrcRequireMention,
 } from "./policy.js";
 import {
-  GROUP_POLICY_BLOCKED_LABEL,
   createChannelPairingController,
   deliverFormattedTextWithAttachments,
   dispatchInboundReplyWithBase,
-  logInboundDrop,
-  isDangerousNameMatchingEnabled,
-  readStoreAllowFromForDmPolicy,
-  resolveControlCommandGate,
-  resolveAllowlistProviderRuntimeGroupPolicy,
-  resolveDefaultGroupPolicy,
   resolveEffectiveAllowFromLists,
-  warnMissingProviderGroupPolicyFallbackOnce,
-  type OutboundReplyPayload,
-  type RemoteClawConfig,
-  type RuntimeEnv,
 } from "./runtime-api.js";
 import { getIrcRuntime } from "./runtime.js";
 import { sendMessageIrc } from "./send.js";

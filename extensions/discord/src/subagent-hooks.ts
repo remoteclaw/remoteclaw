@@ -3,7 +3,6 @@ import { resolveDiscordAccount } from "./accounts.js";
 import {
   autoBindSpawnedDiscordSubagent,
   listThreadBindingsBySessionKey,
-  resolveDiscordAccount,
   unbindThreadBindingsBySessionKey,
 } from "remoteclaw/plugin-sdk/discord";
 

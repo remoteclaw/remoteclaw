@@ -10,7 +10,6 @@ import {
   createNonExitingTypedRuntimeEnv,
   createRuntimeEnv,
 } from "../../../test/helpers/extensions/runtime-env.js";
-import type { ClawdbotConfig, RuntimeEnv } from "../runtime-api.js";
 import { parseFeishuMessageEvent, type FeishuMessageEvent } from "./bot.js";
 import * as dedup from "./dedup.js";
 import { monitorSingleAccount } from "./monitor.account.js";

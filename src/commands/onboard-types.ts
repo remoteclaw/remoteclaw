@@ -153,7 +153,6 @@ export type OnboardOptions = {
   skipSearch?: boolean;
   skipHealth?: boolean;
   skipUi?: boolean;
-  secretInputMode?: SecretInputMode;
   remoteUrl?: string;
   remoteToken?: string;
   json?: boolean;

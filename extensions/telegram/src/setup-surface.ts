@@ -10,9 +10,6 @@ import {
 } from "../../../src/channels/plugins/setup-flow-helpers.js";
 import { type ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
 import { type ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import { hasConfiguredSecretInput } from "../../../src/config/types.secrets.js";
-import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
 import { inspectTelegramAccount } from "./account-inspect.js";
 import { listTelegramAccountIds, resolveTelegramAccount } from "./accounts.js";
 import {

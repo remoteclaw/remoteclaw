@@ -4,7 +4,6 @@ import {
   deliverTextOrMediaReply,
   resolveSendableOutboundReplyParts,
 } from "remoteclaw/plugin-sdk/reply-payload";
-import type { RemoteClawConfig } from "../runtime-api.js";
 import {
   createChannelReplyPipeline,
   createWebhookInFlightLimiter,

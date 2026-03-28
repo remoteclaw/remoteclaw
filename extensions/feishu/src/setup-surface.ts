@@ -17,9 +17,6 @@ import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wiz
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { DmPolicy } from "../../../src/config/types.js";
 import type { SecretInput } from "../../../src/config/types.secrets.js";
-import { hasConfiguredSecretInput } from "../../../src/config/types.secrets.js";
-import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
 import { listFeishuAccountIds, resolveFeishuCredentials } from "./accounts.js";
 import { probeFeishu } from "./probe.js";
 import type { FeishuConfig } from "./types.js";

@@ -25,7 +25,6 @@ import {
   resolveConfiguredFromCredentialStatuses,
   type RemoteClawConfig,
 } from "./runtime-api.js";
-import { resolveThreadSessionKeys, type RoutePeer } from "remoteclaw/plugin-sdk/routing";
 import {
   listDiscordAccountIds,
   resolveDiscordAccount,

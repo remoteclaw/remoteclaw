@@ -75,27 +75,15 @@ export {
 
 export {
   createDiscordActionGate,
-  listDiscordAccountIds,
-  resolveDefaultDiscordAccountId,
-  resolveDiscordAccount,
 } from "../../extensions/discord/src/accounts.js";
-export { inspectDiscordAccount } from "../../extensions/discord/src/account-inspect.js";
 export {
-  looksLikeDiscordTargetId,
-  normalizeDiscordMessagingTarget,
-  normalizeDiscordOutboundTarget,
 } from "../../extensions/discord/src/normalize.js";
-export { collectDiscordAuditChannelIds } from "../../extensions/discord/src/audit.js";
-export { collectDiscordStatusIssues } from "../../extensions/discord/src/status-issues.js";
 export {
   DISCORD_DEFAULT_INBOUND_WORKER_TIMEOUT_MS,
   DISCORD_DEFAULT_LISTENER_TIMEOUT_MS,
 } from "../../extensions/discord/runtime-api.js";
 export { normalizeExplicitDiscordSessionKey } from "../../extensions/discord/session-key-api.js";
 export {
-  autoBindSpawnedDiscordSubagent,
-  listThreadBindingsBySessionKey,
-  unbindThreadBindingsBySessionKey,
 } from "../../extensions/discord/src/monitor/thread-bindings.js";
 export { getGateway } from "../../extensions/discord/src/monitor/gateway-registry.js";
 export { getPresence } from "../../extensions/discord/src/monitor/presence-cache.js";

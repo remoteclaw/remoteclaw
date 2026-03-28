@@ -10,7 +10,6 @@ import {
   type ChannelOnboardingAdapter,
   type ChannelOnboardingDmPolicy,
   type WizardPrompter,
-  DEFAULT_ACCOUNT_ID,
   migrateBaseNameToDefaultAccount,
 } from "remoteclaw/plugin-sdk";
 import {

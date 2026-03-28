@@ -10,8 +10,6 @@ import {
   normalizeAccountId,
   type RemoteClawConfig,
 } from "remoteclaw/plugin-sdk/mattermost";
-import { resolveMattermostAccount, type ResolvedMattermostAccount } from "./mattermost/accounts.js";
-import { normalizeMattermostBaseUrl } from "./mattermost/client.js";
 
 const channel = "mattermost" as const;
 

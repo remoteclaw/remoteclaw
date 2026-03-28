@@ -19,7 +19,6 @@ import type { HookEntry } from "../hooks/types.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { SttProvider } from "../stt/types.js";
 import type { TtsProviderImpl } from "../tts/types.js";
-import type { AgentMessage } from "../types/agent-types.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import type { PluginRuntime } from "./runtime/types.js";
 

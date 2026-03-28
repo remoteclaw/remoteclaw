@@ -8,13 +8,11 @@ import {
   migrateBaseNameToDefaultAccount,
 } from "../../../src/channels/plugins/setup-helpers.js";
 import {
-  patchChannelConfigForAccount,
-  splitSetupEntries,
 } from "../../../src/channels/plugins/setup-wizard-helpers.js";
 import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
 import { formatCliCommand } from "../../../src/cli/command-format.js";
 import { formatDocsLink } from "../../../src/terminal/links.js";
-import type { ChannelSetupAdapter, ChannelSetupDmPolicy } from "remoteclaw/plugin-sdk/setup";
+import type { ChannelSetupDmPolicy } from "remoteclaw/plugin-sdk/setup";
 import { resolveDefaultTelegramAccountId, resolveTelegramAccount } from "./accounts.js";
 import { fetchTelegramChatId } from "./api-fetch.js";
 

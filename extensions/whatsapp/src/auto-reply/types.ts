@@ -7,15 +7,6 @@ export type WebInboundMsg = Parameters<typeof monitorWebInbox>[0]["onMessage"] e
   ? M
   : never;
 
-export type WebChannelHealthState =
-  | "starting"
-  | "healthy"
-  | "stale"
-  | "reconnecting"
-  | "conflict"
-  | "logged-out"
-  | "stopped";
-
 export type WebChannelStatus = {
   running: boolean;
   connected: boolean;
@@ -27,11 +18,9 @@ export type WebChannelStatus = {
     error?: string;
     loggedOut?: boolean;
   } | null;
-  lastInboundAt?: number | null;
   lastMessageAt?: number | null;
   lastEventAt?: number | null;
   lastError?: string | null;
-  healthState?: WebChannelHealthState;
 };
 
 export type WebMonitorTuning = {

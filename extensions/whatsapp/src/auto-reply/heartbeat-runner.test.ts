@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { getReplyFromConfig } from "../../../../src/auto-reply/reply.js";
+import { HEARTBEAT_TOKEN } from "../../../../src/auto-reply/tokens.js";
 import { redactIdentifier } from "../../../../src/logging/redact-identifier.js";
 import type { sendMessageWhatsApp } from "../send.js";
 
@@ -37,20 +38,11 @@ vi.mock("../../../../src/channels/plugins/whatsapp-heartbeat.js", () => ({
 }));
 
 vi.mock("../../../../src/config/config.js", () => ({
-  loadConfig: () => ({
-    agents: { defaults: { heartbeat: { prompt: "default heartbeat prompt" } } },
-    session: {},
-  }),
+  loadConfig: () => ({ agents: { defaults: {} }, session: {} }),
 }));
 
 vi.mock("../../../../src/routing/session-key.js", () => ({
   normalizeMainKey: () => null,
-  DEFAULT_AGENT_ID: "default",
-}));
-
-vi.mock("../../agents/agent-scope.js", () => ({
-  resolveAgentWorkspaceDir: () => "/tmp/workspace",
-  resolveDefaultAgentId: () => "default",
 }));
 
 vi.mock("../../../../src/infra/heartbeat-visibility.js", () => ({
@@ -109,10 +101,7 @@ describe("runWebHeartbeatOnce", () => {
 
   const getModules = async () => await import("./heartbeat-runner.js");
   const buildRunArgs = (overrides: Record<string, unknown> = {}) => ({
-    cfg: {
-      agents: { defaults: { heartbeat: { prompt: "default heartbeat prompt" } } },
-      session: {},
-    } as never,
+    cfg: { agents: { defaults: {} }, session: {} } as never,
     to: "+123",
     sender,
     replyResolver,
@@ -149,13 +138,12 @@ describe("runWebHeartbeatOnce", () => {
     expect(state.events).toHaveLength(0);
   });
 
-  it("emits ok-empty when reply is empty", async () => {
+  it("sends HEARTBEAT_OK when reply is empty and showOk is enabled", async () => {
     const { runWebHeartbeatOnce } = await getModules();
     await runWebHeartbeatOnce(buildRunArgs());
-    // No summary text to send, so sender should not be called
-    expect(senderMock).not.toHaveBeenCalled();
+    expect(senderMock).toHaveBeenCalledWith("+123", HEARTBEAT_TOKEN, { verbose: false });
     expect(state.events).toEqual(
-      expect.arrayContaining([expect.objectContaining({ status: "ok-empty" })]),
+      expect.arrayContaining([expect.objectContaining({ status: "ok-empty", silent: false })]),
     );
   });
 
@@ -173,16 +161,12 @@ describe("runWebHeartbeatOnce", () => {
     expect(ctx?.Body).toContain("Current time: 2026-02-15T00:00:00Z (mock)");
   });
 
-  it("treats heartbeat report with anythingDone=false as ok-token and preserves session updatedAt", async () => {
-    replyResolverMock.mockResolvedValue({
-      text: "All clear",
-      heartbeatReport: { anythingDone: false, summary: "All clear" },
-    });
+  it("treats heartbeat token-only replies as ok-token and preserves session updatedAt", async () => {
+    replyResolverMock.mockResolvedValue({ text: HEARTBEAT_TOKEN });
     const { runWebHeartbeatOnce } = await getModules();
     await runWebHeartbeatOnce(buildRunArgs());
     expect(state.store.k?.updatedAt).toBe(123);
-    // showOk is true, so summary should be sent
-    expect(senderMock).toHaveBeenCalledWith("+123", "All clear", { verbose: false });
+    expect(senderMock).toHaveBeenCalledWith("+123", HEARTBEAT_TOKEN, { verbose: false });
     expect(state.events).toEqual(
       expect.arrayContaining([expect.objectContaining({ status: "ok-token", silent: false })]),
     );

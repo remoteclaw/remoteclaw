@@ -1,7 +1,7 @@
 import type { WebhookRequestBody } from "@line/bot-sdk";
 import { chunkMarkdownText } from "../auto-reply/chunk.js";
 import { dispatchReplyWithBufferedBlockDispatcher } from "../auto-reply/reply/provider-dispatcher.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { danger, logVerbose } from "../globals.js";
 import { waitForAbortSignal } from "../infra/abort-signal.js";
 import { createChannelReplyPipeline } from "../plugin-sdk/channel-reply-pipeline.js";

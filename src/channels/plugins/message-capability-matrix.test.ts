@@ -161,7 +161,7 @@ describe("channel action capability matrix", () => {
     expect(telegramGetCapabilitiesMock).toHaveBeenCalledWith({ cfg: {} });
     discordGetCapabilitiesMock.mockReturnValue(["interactive", "components"]);
 
-    const discordResult = discordPlugin.actions?.getCapabilities?.({ cfg: {} as OpenClawConfig });
+    const discordResult = discordPlugin.actions?.getCapabilities?.({ cfg: {} as RemoteClawConfig });
 
     expect(discordResult).toEqual(["interactive", "components"]);
     expect(discordGetCapabilitiesMock).toHaveBeenCalledWith({ cfg: {} });
@@ -183,7 +183,7 @@ describe("channel action capability matrix", () => {
           enabled: true,
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const configuredFeishuCfg = {
       channels: {
         feishu: {
@@ -192,7 +192,7 @@ describe("channel action capability matrix", () => {
           appSecret: "secret",
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const disabledFeishuCfg = {
       channels: {
         feishu: {
@@ -201,7 +201,7 @@ describe("channel action capability matrix", () => {
           appSecret: "secret",
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const configuredMsteamsCfg = {
       channels: {
         msteams: {
@@ -211,7 +211,7 @@ describe("channel action capability matrix", () => {
           appPassword: "secret",
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const disabledMsteamsCfg = {
       channels: {
         msteams: {
@@ -221,7 +221,7 @@ describe("channel action capability matrix", () => {
           appPassword: "secret",
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     expect(mattermostPlugin.actions?.getCapabilities?.({ cfg: configuredCfg })).toEqual([
       "buttons",

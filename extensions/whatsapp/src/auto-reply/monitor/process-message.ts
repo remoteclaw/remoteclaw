@@ -1,16 +1,16 @@
-import { resolveIdentityNamePrefix } from "openclaw/plugin-sdk/agent-runtime";
-import { createChannelReplyPipeline } from "openclaw/plugin-sdk/channel-reply-pipeline";
-import { toLocationContext } from "openclaw/plugin-sdk/channel-runtime";
-import { resolveInboundSessionEnvelopeContext } from "openclaw/plugin-sdk/channel-runtime";
-import type { loadConfig } from "openclaw/plugin-sdk/config-runtime";
-import { resolveMarkdownTableMode } from "openclaw/plugin-sdk/config-runtime";
-import { recordSessionMetaFromInbound } from "openclaw/plugin-sdk/config-runtime";
-import { getAgentScopedMediaLocalRoots } from "openclaw/plugin-sdk/media-runtime";
-import { resolveSendableOutboundReplyParts } from "openclaw/plugin-sdk/reply-payload";
-import { resolveChunkMode, resolveTextChunkLimit } from "openclaw/plugin-sdk/reply-runtime";
-import { shouldComputeCommandAuthorized } from "openclaw/plugin-sdk/reply-runtime";
-import { formatInboundEnvelope } from "openclaw/plugin-sdk/reply-runtime";
-import type { getReplyFromConfig } from "openclaw/plugin-sdk/reply-runtime";
+import { resolveIdentityNamePrefix } from "remoteclaw/plugin-sdk/agent-runtime";
+import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
+import { toLocationContext } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveInboundSessionEnvelopeContext } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import { recordSessionMetaFromInbound } from "remoteclaw/plugin-sdk/config-runtime";
+import { getAgentScopedMediaLocalRoots } from "remoteclaw/plugin-sdk/media-runtime";
+import { resolveSendableOutboundReplyParts } from "remoteclaw/plugin-sdk/reply-payload";
+import { resolveChunkMode, resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
+import { shouldComputeCommandAuthorized } from "remoteclaw/plugin-sdk/reply-runtime";
+import { formatInboundEnvelope } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { getReplyFromConfig } from "remoteclaw/plugin-sdk/reply-runtime";
 import {
   buildHistoryContextFromEntries,
   type HistoryEntry,

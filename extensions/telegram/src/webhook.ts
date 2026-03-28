@@ -1,12 +1,12 @@
 import { timingSafeEqual } from "node:crypto";
 import { createServer } from "node:http";
 import * as grammy from "grammy";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-runtime";
-import { isDiagnosticsEnabled } from "openclaw/plugin-sdk/infra-runtime";
-import { formatErrorMessage } from "openclaw/plugin-sdk/infra-runtime";
-import { readJsonBodyWithLimit } from "openclaw/plugin-sdk/infra-runtime";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import { defaultRuntime } from "openclaw/plugin-sdk/runtime-env";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { isDiagnosticsEnabled } from "remoteclaw/plugin-sdk/infra-runtime";
+import { formatErrorMessage } from "remoteclaw/plugin-sdk/infra-runtime";
+import { readJsonBodyWithLimit } from "remoteclaw/plugin-sdk/infra-runtime";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
+import { defaultRuntime } from "remoteclaw/plugin-sdk/runtime-env";
 import {
   logWebhookError,
   logWebhookProcessed,

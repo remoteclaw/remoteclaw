@@ -68,7 +68,7 @@ export type {
   AnyAgentTool,
   MediaUnderstandingProviderPlugin,
   RemoteClawPluginApi,
-  OpenClawPluginConfigSchema,
+  RemoteClawPluginConfigSchema,
   RemoteClawPluginApi,
   RemoteClawPluginService,
   RemoteClawPluginServiceContext,

@@ -1,4 +1,4 @@
-import { createScopedExpiringIdCache, resolveGlobalMap } from "openclaw/plugin-sdk/text-runtime";
+import { createScopedExpiringIdCache, resolveGlobalMap } from "remoteclaw/plugin-sdk/text-runtime";
 
 /**
  * In-memory cache of sent message IDs per chat.

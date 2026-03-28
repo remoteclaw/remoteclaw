@@ -25,10 +25,10 @@ type DeliverWithParams = Omit<
   Partial<Pick<DeliverRepliesParams, "replyToMode" | "textLimit" | "mediaLoader">>;
 type RuntimeStub = Pick<RuntimeEnv, "error" | "log" | "exit">;
 
-vi.mock("openclaw/plugin-sdk/web-media", () => ({
+vi.mock("remoteclaw/plugin-sdk/web-media", () => ({
   loadWebMedia: (...args: unknown[]) => loadWebMedia(...args),
 }));
-vi.mock("openclaw/plugin-sdk/web-media.js", () => ({
+vi.mock("remoteclaw/plugin-sdk/web-media.js", () => ({
   loadWebMedia: (...args: unknown[]) => loadWebMedia(...args),
 }));
 

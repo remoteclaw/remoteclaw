@@ -64,7 +64,7 @@ function resolveControlCommandGate(params) {
 function onDiagnosticEvent(listener) {
   const monolithic = loadMonolithicSdk();
   if (!monolithic || typeof monolithic.onDiagnosticEvent !== "function") {
-    throw new Error("openclaw/plugin-sdk root alias could not resolve onDiagnosticEvent");
+    throw new Error("remoteclaw/plugin-sdk root alias could not resolve onDiagnosticEvent");
   }
   return monolithic.onDiagnosticEvent(listener);
 }
@@ -99,7 +99,7 @@ function buildPluginSdkAliasMap(useDist) {
   const pluginSdkDir = path.join(packageRoot, useDist ? "dist" : "src", "plugin-sdk");
   const ext = useDist ? ".js" : ".ts";
   const aliasMap = {
-    "openclaw/plugin-sdk": __filename,
+    "remoteclaw/plugin-sdk": __filename,
   };
 
   for (const subpath of listPluginSdkExportedSubpaths()) {

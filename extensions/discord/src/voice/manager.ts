@@ -18,7 +18,7 @@ import {
 } from "@discordjs/voice";
 import { resolveAgentDir } from "../../../../src/agents/agent-scope.js";
 import { agentCommandFromIngress } from "../../../../src/commands/agent.js";
-import type { OpenClawConfig } from "../../../../src/config/config.js";
+import type { RemoteClawConfig } from "../../../../src/config/config.js";
 import { isDangerousNameMatchingEnabled } from "../../../../src/config/dangerous-name-matching.js";
 import type { DiscordAccountConfig, TtsConfig } from "../../../../src/config/types.js";
 import { logVerbose, shouldLogVerbose } from "../../../../src/globals.js";

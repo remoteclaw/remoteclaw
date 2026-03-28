@@ -121,13 +121,13 @@ export function migrateBaseNameToDefaultAccount(params: {
 }
 
 export function prepareScopedSetupConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   channelKey: string;
   accountId: string;
   name?: string;
   alwaysUseAccounts?: boolean;
   migrateBaseName?: boolean;
-}): OpenClawConfig {
+}): RemoteClawConfig {
   const namedConfig = applyAccountNameToChannelSection({
     cfg: params.cfg,
     channelKey: params.channelKey,
@@ -150,7 +150,7 @@ export function applySetupAccountConfigPatch(params: {
   channelKey: string;
   accountId: string;
   patch: Record<string, unknown>;
-}): OpenClawConfig {
+}): RemoteClawConfig {
   return patchScopedAccountConfig({
     cfg: params.cfg,
     channelKey: params.channelKey,
@@ -232,7 +232,7 @@ export function createEnvPatchedAccountSetupAdapter(params: {
 }
 
 export function patchScopedAccountConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   channelKey: string;
   accountId: string;
   patch: Record<string, unknown>;
@@ -240,7 +240,7 @@ export function patchScopedAccountConfig(params: {
   ensureChannelEnabled?: boolean;
   ensureAccountEnabled?: boolean;
   scopeDefaultToAccounts?: boolean;
-}): OpenClawConfig {
+}): RemoteClawConfig {
   const accountId = normalizeAccountId(params.accountId);
   const channels = params.cfg.channels as Record<string, unknown> | undefined;
   const channelConfig = channels?.[params.channelKey];

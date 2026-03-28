@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("openclaw/plugin-sdk/agent-runtime", () => ({
+vi.mock("remoteclaw/plugin-sdk/agent-runtime", () => ({
   resolveApiKeyForProvider: vi.fn(),
   findModelInCatalog: vi.fn(),
   loadModelCatalog: vi.fn(async () => []),
@@ -10,13 +10,13 @@ vi.mock("openclaw/plugin-sdk/agent-runtime", () => ({
   resolveDefaultModelForAgent: vi.fn(() => ({ provider: "openai", model: "gpt-5.2" })),
 }));
 
-vi.mock("openclaw/plugin-sdk/media-runtime", () => ({
+vi.mock("remoteclaw/plugin-sdk/media-runtime", () => ({
   AUTO_IMAGE_KEY_PROVIDERS: ["openai"],
   DEFAULT_IMAGE_MODELS: { openai: "gpt-4.1-mini" },
   resolveAutoImageModel: vi.fn(async () => null),
 }));
 
-vi.mock("openclaw/plugin-sdk/media-understanding-runtime", () => ({
+vi.mock("remoteclaw/plugin-sdk/media-understanding-runtime", () => ({
   describeImageFileWithModel: vi.fn(),
 }));
 

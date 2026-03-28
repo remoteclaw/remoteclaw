@@ -3,7 +3,7 @@ import type { ResolvedSlackAccount } from "../../../../extensions/slack/src/acco
 import { prepareSlackMessage } from "../../../../extensions/slack/src/monitor/message-handler/prepare.js";
 import { createInboundSlackTestContext } from "../../../../extensions/slack/src/monitor/message-handler/prepare.test-helpers.js";
 import type { SlackMessageEvent } from "../../../../extensions/slack/src/types.js";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { RemoteClawConfig } from "../../../config/config.js";
 import { expectChannelInboundContextContract } from "./suites.js";
 
 function createSlackAccount(config: ResolvedSlackAccount["config"] = {}): ResolvedSlackAccount {
@@ -36,7 +36,7 @@ describe("slack inbound contract", () => {
     const ctx = createInboundSlackTestContext({
       cfg: {
         channels: { slack: { enabled: true } },
-      } as OpenClawConfig,
+      } as RemoteClawConfig,
     });
     // oxlint-disable-next-line typescript/no-explicit-any
     ctx.resolveUserName = async () => ({ name: "Alice" }) as any;

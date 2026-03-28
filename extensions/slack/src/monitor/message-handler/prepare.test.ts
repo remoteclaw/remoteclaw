@@ -4,7 +4,7 @@ import path from "node:path";
 import type { App } from "@slack/bolt";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { expectChannelInboundContextContract as expectInboundContextContract } from "../../../../../src/channels/plugins/contracts/suites.js";
-import type { OpenClawConfig } from "../../../../../src/config/config.js";
+import type { RemoteClawConfig } from "../../../../../src/config/config.js";
 import { resolveAgentRoute } from "../../../../../src/routing/resolve-route.js";
 import { resolveThreadSessionKeys } from "../../../../../src/routing/session-key.js";
 import type { ResolvedSlackAccount } from "../../accounts.js";

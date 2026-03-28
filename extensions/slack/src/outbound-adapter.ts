@@ -2,15 +2,15 @@ import {
   resolvePayloadMediaUrls,
   sendPayloadMediaSequence,
   sendTextMediaPayload,
-} from "openclaw/plugin-sdk/channel-runtime";
-import type { ChannelOutboundAdapter } from "openclaw/plugin-sdk/channel-runtime";
-import { resolveOutboundSendDep } from "openclaw/plugin-sdk/channel-runtime";
-import type { OutboundIdentity } from "openclaw/plugin-sdk/infra-runtime";
+} from "remoteclaw/plugin-sdk/channel-runtime";
+import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { OutboundIdentity } from "remoteclaw/plugin-sdk/infra-runtime";
 import {
   resolveInteractiveTextFallback,
   type InteractiveReply,
-} from "openclaw/plugin-sdk/interactive-runtime";
-import { getGlobalHookRunner } from "openclaw/plugin-sdk/plugin-runtime";
+} from "remoteclaw/plugin-sdk/interactive-runtime";
+import { getGlobalHookRunner } from "remoteclaw/plugin-sdk/plugin-runtime";
 import { parseSlackBlocksInput } from "./blocks-input.js";
 import { buildSlackInteractiveBlocks, type SlackBlock } from "./blocks-render.js";
 import { sendMessageSlack, type SlackSendIdentity } from "./send.js";

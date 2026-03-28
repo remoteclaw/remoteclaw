@@ -35,9 +35,9 @@ vi.mock("remoteclaw/plugin-sdk/conversation-runtime", async (importOriginal) => 
   };
 });
 
-vi.mock("openclaw/plugin-sdk/channel-reply-pipeline", async (importOriginal) => {
+vi.mock("remoteclaw/plugin-sdk/channel-reply-pipeline", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("openclaw/plugin-sdk/channel-reply-pipeline")>();
+    await importOriginal<typeof import("remoteclaw/plugin-sdk/channel-reply-pipeline")>();
   return {
     ...actual,
     createChannelReplyPipeline: (...args: unknown[]) =>
@@ -45,8 +45,8 @@ vi.mock("openclaw/plugin-sdk/channel-reply-pipeline", async (importOriginal) => 
   };
 });
 
-vi.mock("openclaw/plugin-sdk/config-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/config-runtime")>();
+vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
   return {
     ...actual,
     recordSessionMetaFromInbound: (...args: unknown[]) =>

@@ -20,7 +20,7 @@ import {
   resolveDiscordAutoThreadReplyPlan,
   resolveDiscordReplyDeliveryPlan,
 } from "./threading.js";
-import { buildAgentSessionKey } from "openclaw/plugin-sdk/routing";
+import { buildAgentSessionKey } from "remoteclaw/plugin-sdk/routing";
 import { beforeEach, describe, expect, it } from "vitest";
 
 describe("resolveDiscordOwnerAllowFrom", () => {

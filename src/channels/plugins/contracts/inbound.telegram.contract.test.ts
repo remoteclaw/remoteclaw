@@ -6,7 +6,7 @@ import {
   replySpy,
 } from "../../../../extensions/telegram/src/bot.create-telegram-bot.test-harness.js";
 import type { MsgContext } from "../../../auto-reply/templating.js";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { RemoteClawConfig } from "../../../config/config.js";
 import { expectChannelInboundContextContract } from "./suites.js";
 
 const { createTelegramBot } = await import("../../../../extensions/telegram/src/bot.js");
@@ -29,7 +29,7 @@ describe("telegram inbound contract", () => {
           groups: { "*": { requireMention: false } },
         },
       },
-    } satisfies OpenClawConfig);
+    } satisfies RemoteClawConfig);
   });
 
   it("keeps inbound context finalized", async () => {

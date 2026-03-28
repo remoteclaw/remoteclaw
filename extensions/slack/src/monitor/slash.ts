@@ -1,7 +1,7 @@
 import type { SlackActionMiddlewareArgs, SlackCommandMiddlewareArgs } from "@slack/bolt";
-import { createChannelReplyPipeline } from "openclaw/plugin-sdk/channel-reply-pipeline";
-import { resolveCommandAuthorizedFromAuthorizers } from "openclaw/plugin-sdk/channel-runtime";
-import { resolveNativeCommandSessionTargets } from "openclaw/plugin-sdk/channel-runtime";
+import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
+import { resolveCommandAuthorizedFromAuthorizers } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveNativeCommandSessionTargets } from "remoteclaw/plugin-sdk/channel-runtime";
 import {
   resolveNativeCommandsEnabled,
   resolveNativeSkillsEnabled,

@@ -5,15 +5,15 @@ import {
   findModelInCatalog,
   loadModelCatalog,
   modelSupportsVision,
-} from "openclaw/plugin-sdk/agent-runtime";
-import { resolveDefaultModelForAgent } from "openclaw/plugin-sdk/agent-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-runtime";
-import { loadJsonFile, saveJsonFile } from "openclaw/plugin-sdk/json-store";
-import { AUTO_IMAGE_KEY_PROVIDERS, DEFAULT_IMAGE_MODELS } from "openclaw/plugin-sdk/media-runtime";
-import { resolveAutoImageModel } from "openclaw/plugin-sdk/media-runtime";
-import { describeImageFileWithModel } from "openclaw/plugin-sdk/media-understanding-runtime";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { STATE_DIR } from "openclaw/plugin-sdk/state-paths";
+} from "remoteclaw/plugin-sdk/agent-runtime";
+import { resolveDefaultModelForAgent } from "remoteclaw/plugin-sdk/agent-runtime";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { loadJsonFile, saveJsonFile } from "remoteclaw/plugin-sdk/json-store";
+import { AUTO_IMAGE_KEY_PROVIDERS, DEFAULT_IMAGE_MODELS } from "remoteclaw/plugin-sdk/media-runtime";
+import { resolveAutoImageModel } from "remoteclaw/plugin-sdk/media-runtime";
+import { describeImageFileWithModel } from "remoteclaw/plugin-sdk/media-understanding-runtime";
+import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
+import { STATE_DIR } from "remoteclaw/plugin-sdk/state-paths";
 
 const CACHE_FILE = path.join(STATE_DIR, "telegram", "sticker-cache.json");
 const CACHE_VERSION = 1;

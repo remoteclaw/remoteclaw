@@ -17,7 +17,7 @@ export type {
 } from "remoteclaw/plugin-sdk/acp-runtime";
 export type {
   RemoteClawPluginApi,
-  OpenClawPluginConfigSchema,
+  RemoteClawPluginConfigSchema,
   RemoteClawPluginService,
   RemoteClawPluginServiceContext,
   PluginLogger,

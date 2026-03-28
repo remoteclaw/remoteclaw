@@ -85,12 +85,12 @@ vi.mock("@discordjs/voice", () => ({
   joinVoiceChannel: joinVoiceChannelMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/routing", () => ({
+vi.mock("remoteclaw/plugin-sdk/routing", () => ({
   resolveAgentRoute: resolveAgentRouteMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/agent-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/agent-runtime")>();
+vi.mock("remoteclaw/plugin-sdk/agent-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/agent-runtime")>();
   return {
     ...actual,
     agentCommandFromIngress: agentCommandMock,

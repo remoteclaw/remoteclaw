@@ -8,7 +8,7 @@ import {
   normalizeAccountId,
   hasConfiguredSecretInput,
   normalizeSecretInputString,
-  type OpenClawConfig,
+  type RemoteClawConfig,
   type DiscordAccountConfig,
 } from "./runtime-api.js";
 

@@ -37,9 +37,9 @@ const {
   voiceRuntimeModuleLoadedMock,
 } = getProviderMonitorTestMocks();
 
-vi.mock("openclaw/plugin-sdk/plugin-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/plugin-runtime")>(
-    "openclaw/plugin-sdk/plugin-runtime",
+vi.mock("remoteclaw/plugin-sdk/plugin-runtime", async () => {
+  const actual = await vi.importActual<typeof import("remoteclaw/plugin-sdk/plugin-runtime")>(
+    "remoteclaw/plugin-sdk/plugin-runtime",
   );
   return {
     ...actual,

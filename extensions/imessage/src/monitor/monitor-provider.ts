@@ -1,13 +1,13 @@
 import fs from "node:fs/promises";
-import { resolveHumanDelayConfig } from "openclaw/plugin-sdk/agent-runtime";
-import { createChannelPairingChallengeIssuer } from "openclaw/plugin-sdk/channel-pairing";
-import { createChannelReplyPipeline } from "openclaw/plugin-sdk/channel-reply-pipeline";
+import { resolveHumanDelayConfig } from "remoteclaw/plugin-sdk/agent-runtime";
+import { createChannelPairingChallengeIssuer } from "remoteclaw/plugin-sdk/channel-pairing";
+import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
 import {
   createChannelInboundDebouncer,
   shouldDebounceTextInbound,
-} from "openclaw/plugin-sdk/channel-runtime";
-import { recordInboundSession } from "openclaw/plugin-sdk/channel-runtime";
-import { loadConfig } from "openclaw/plugin-sdk/config-runtime";
+} from "remoteclaw/plugin-sdk/channel-runtime";
+import { recordInboundSession } from "remoteclaw/plugin-sdk/channel-runtime";
+import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   resolveOpenProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,

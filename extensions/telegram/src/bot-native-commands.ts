@@ -1,11 +1,11 @@
 import type { Bot, Context } from "grammy";
-import { createChannelReplyPipeline } from "openclaw/plugin-sdk/channel-reply-pipeline";
-import { resolveCommandAuthorizedFromAuthorizers } from "openclaw/plugin-sdk/channel-runtime";
-import { resolveNativeCommandSessionTargets } from "openclaw/plugin-sdk/channel-runtime";
-import { recordInboundSessionMetaSafe } from "openclaw/plugin-sdk/channel-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-runtime";
-import type { ChannelGroupPolicy } from "openclaw/plugin-sdk/config-runtime";
-import { resolveMarkdownTableMode } from "openclaw/plugin-sdk/config-runtime";
+import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
+import { resolveCommandAuthorizedFromAuthorizers } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveNativeCommandSessionTargets } from "remoteclaw/plugin-sdk/channel-runtime";
+import { recordInboundSessionMetaSafe } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type { ChannelGroupPolicy } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   resolveCommandAuthorization,
   resolveCommandAuthorizedFromAuthorizers,
@@ -18,13 +18,13 @@ import {
   listNativeCommandSpecsForConfig,
   parseCommandArgs,
   resolveCommandArgMenu,
-} from "openclaw/plugin-sdk/reply-runtime";
-import { finalizeInboundContext } from "openclaw/plugin-sdk/reply-runtime";
-import { resolveAgentRoute } from "openclaw/plugin-sdk/routing";
-import { resolveThreadSessionKeys } from "openclaw/plugin-sdk/routing";
-import { danger, logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { getChildLogger } from "openclaw/plugin-sdk/runtime-env";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+} from "remoteclaw/plugin-sdk/reply-runtime";
+import { finalizeInboundContext } from "remoteclaw/plugin-sdk/reply-runtime";
+import { resolveAgentRoute } from "remoteclaw/plugin-sdk/routing";
+import { resolveThreadSessionKeys } from "remoteclaw/plugin-sdk/routing";
+import { danger, logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
+import { getChildLogger } from "remoteclaw/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import { resolveTelegramAccount } from "./accounts.js";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import { isSenderAllowed, normalizeDmAllowFromWithStore } from "./bot-access.js";
@@ -423,8 +423,8 @@ export const registerTelegramNativeCommands = ({
   for (const issue of pluginCatalog.issues) {
     runtime.error?.(danger(issue));
   }
-  const loadFreshRuntimeConfig = (): OpenClawConfig => telegramDeps.loadConfig();
-  const resolveFreshTelegramConfig = (runtimeCfg: OpenClawConfig): TelegramAccountConfig => {
+  const loadFreshRuntimeConfig = (): RemoteClawConfig => telegramDeps.loadConfig();
+  const resolveFreshTelegramConfig = (runtimeCfg: RemoteClawConfig): TelegramAccountConfig => {
     try {
       return resolveTelegramAccount({
         cfg: runtimeCfg,
@@ -481,7 +481,7 @@ export const registerTelegramNativeCommands = ({
 
   const resolveCommandRuntimeContext = async (params: {
     msg: NonNullable<TelegramNativeCommandContext["message"]>;
-    runtimeCfg: OpenClawConfig;
+    runtimeCfg: RemoteClawConfig;
     isGroup: boolean;
     isForum: boolean;
     resolvedThreadId?: number;

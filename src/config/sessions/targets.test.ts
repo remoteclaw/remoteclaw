@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { withTempHome } from "../../../test/helpers/temp-home.js";
-import type { OpenClawConfig } from "../config.js";
+import type { RemoteClawConfig } from "../config.js";
 import { resolveStorePath } from "./paths.js";
 import {
   resolveAllAgentSessionStoreTargets,
@@ -17,7 +17,7 @@ async function resolveRealStorePath(sessionsDir: string): Promise<string> {
 describe("resolveSessionStoreTargets", () => {
   it("resolves all configured agent stores", async () => {
     await withTempHome(async (home) => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         session: {
           store: "~/.openclaw/agents/{agentId}/sessions/sessions.json",
         },

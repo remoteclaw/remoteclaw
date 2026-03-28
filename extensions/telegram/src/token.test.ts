@@ -199,7 +199,7 @@ describe("resolveTelegramToken", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const res = resolveTelegramToken(cfg, { accountId: "unknownBot" });
     expect(res.token).toBe("");

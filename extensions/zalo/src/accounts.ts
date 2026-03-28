@@ -1,7 +1,7 @@
-import { createAccountListHelpers, mergeAccountConfig } from "openclaw/plugin-sdk/account-helpers";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
-import { resolveAccountEntry } from "openclaw/plugin-sdk/routing";
-import type { OpenClawConfig } from "./runtime-api.js";
+import { createAccountListHelpers, mergeAccountConfig } from "remoteclaw/plugin-sdk/account-helpers";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
+import { resolveAccountEntry } from "remoteclaw/plugin-sdk/routing";
+import type { RemoteClawConfig } from "./runtime-api.js";
 import { resolveZaloToken } from "./token.js";
 import type { ResolvedZaloAccount, ZaloAccountConfig, ZaloConfig } from "./types.js";
 
@@ -23,7 +23,7 @@ function resolveAccountConfig(
   );
 }
 
-function mergeZaloAccountConfig(cfg: OpenClawConfig, accountId: string): ZaloAccountConfig {
+function mergeZaloAccountConfig(cfg: RemoteClawConfig, accountId: string): ZaloAccountConfig {
   return mergeAccountConfig<ZaloAccountConfig>({
     channelConfig: cfg.channels?.zalo as ZaloAccountConfig | undefined,
     accountConfig: resolveAccountConfig(cfg, accountId),

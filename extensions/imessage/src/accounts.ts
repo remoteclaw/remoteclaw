@@ -1,6 +1,6 @@
-import type { IMessageAccountConfig } from "openclaw/plugin-sdk/imessage";
+import type { IMessageAccountConfig } from "remoteclaw/plugin-sdk/imessage";
 import {
-  type OpenClawConfig,
+  type RemoteClawConfig,
   createAccountListHelpers,
   mergeAccountConfig,
   normalizeAccountId,
@@ -26,7 +26,7 @@ function resolveAccountConfig(
   return resolveAccountEntry(cfg.channels?.imessage?.accounts, accountId);
 }
 
-function mergeIMessageAccountConfig(cfg: OpenClawConfig, accountId: string): IMessageAccountConfig {
+function mergeIMessageAccountConfig(cfg: RemoteClawConfig, accountId: string): IMessageAccountConfig {
   return mergeAccountConfig<IMessageAccountConfig>({
     channelConfig: cfg.channels?.imessage as IMessageAccountConfig | undefined,
     accountConfig: resolveAccountConfig(cfg, accountId),

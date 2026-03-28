@@ -1,6 +1,6 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import type { ChannelMessageActionContext } from "openclaw/plugin-sdk/channel-runtime";
-import { normalizeInteractiveReply } from "openclaw/plugin-sdk/interactive-runtime";
+import type { ChannelMessageActionContext } from "remoteclaw/plugin-sdk/channel-runtime";
+import { normalizeInteractiveReply } from "remoteclaw/plugin-sdk/interactive-runtime";
 import { readNumberParam, readStringParam } from "../../../src/agents/tools/common.js";
 import { parseSlackBlocksInput } from "./blocks-input.js";
 import { buildSlackInteractiveBlocks } from "./blocks-render.js";

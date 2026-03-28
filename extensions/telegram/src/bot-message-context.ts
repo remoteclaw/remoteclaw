@@ -3,14 +3,14 @@ import {
   createStatusReactionController,
   shouldAckReaction as shouldAckReactionGate,
   type StatusReactionController,
-} from "openclaw/plugin-sdk/channel-runtime";
-import { loadConfig } from "openclaw/plugin-sdk/config-runtime";
-import type { TelegramDirectConfig, TelegramGroupConfig } from "openclaw/plugin-sdk/config-runtime";
-import { ensureConfiguredAcpRouteReady } from "openclaw/plugin-sdk/conversation-runtime";
-import { recordChannelActivity } from "openclaw/plugin-sdk/infra-runtime";
-import { deriveLastRoutePolicy } from "openclaw/plugin-sdk/routing";
-import { DEFAULT_ACCOUNT_ID, resolveThreadSessionKeys } from "openclaw/plugin-sdk/routing";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
+} from "remoteclaw/plugin-sdk/channel-runtime";
+import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type { TelegramDirectConfig, TelegramGroupConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { ensureConfiguredAcpRouteReady } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { recordChannelActivity } from "remoteclaw/plugin-sdk/infra-runtime";
+import { deriveLastRoutePolicy } from "remoteclaw/plugin-sdk/routing";
+import { DEFAULT_ACCOUNT_ID, resolveThreadSessionKeys } from "remoteclaw/plugin-sdk/routing";
+import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import { firstDefined, normalizeAllowFrom, normalizeDmAllowFromWithStore } from "./bot-access.js";
 import { resolveTelegramInboundBody } from "./bot-message-context.body.js";

@@ -1,7 +1,7 @@
-import type { ReplyToMode } from "openclaw/plugin-sdk/config-runtime";
-import type { TelegramAccountConfig } from "openclaw/plugin-sdk/config-runtime";
-import { danger } from "openclaw/plugin-sdk/runtime-env";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+import type { ReplyToMode } from "remoteclaw/plugin-sdk/config-runtime";
+import type { TelegramAccountConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { danger } from "remoteclaw/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import type { TelegramBotDeps } from "./bot-deps.js";
 import {
   buildTelegramMessageContext,

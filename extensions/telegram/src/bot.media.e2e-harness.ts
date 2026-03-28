@@ -1,7 +1,7 @@
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-runtime";
-import { resetInboundDedupe } from "openclaw/plugin-sdk/reply-runtime";
-import type { GetReplyOptions, MsgContext } from "openclaw/plugin-sdk/reply-runtime";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { resetInboundDedupe } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { GetReplyOptions, MsgContext } from "remoteclaw/plugin-sdk/reply-runtime";
 import { beforeEach, vi, type Mock } from "vitest";
 import type { TelegramBotDeps } from "./bot-deps.js";
 
@@ -21,7 +21,7 @@ export function resetUndiciFetchMock() {
   undiciFetchSpy.mockImplementation(defaultUndiciFetch);
 }
 
-type FetchRemoteMediaFn = typeof import("openclaw/plugin-sdk/media-runtime").fetchRemoteMedia;
+type FetchRemoteMediaFn = typeof import("remoteclaw/plugin-sdk/media-runtime").fetchRemoteMedia;
 
 async function defaultFetchRemoteMedia(
   params: Parameters<FetchRemoteMediaFn>[0],
@@ -161,7 +161,7 @@ vi.mock("undici", async (importOriginal) => {
 });
 
 export async function mockMediaRuntimeModuleForTest(
-  importOriginal: () => Promise<typeof import("openclaw/plugin-sdk/media-runtime")>,
+  importOriginal: () => Promise<typeof import("remoteclaw/plugin-sdk/media-runtime")>,
 ) {
   const actual = await importOriginal();
   const mockModule = Object.create(null) as Record<string, unknown>;
@@ -181,10 +181,10 @@ export async function mockMediaRuntimeModuleForTest(
   return mockModule;
 }
 
-vi.mock("openclaw/plugin-sdk/media-runtime", mockMediaRuntimeModuleForTest);
+vi.mock("remoteclaw/plugin-sdk/media-runtime", mockMediaRuntimeModuleForTest);
 
-vi.doMock("openclaw/plugin-sdk/config-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/config-runtime")>();
+vi.doMock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
   return {
     ...actual,
     loadConfig: () => ({
@@ -194,15 +194,15 @@ vi.doMock("openclaw/plugin-sdk/config-runtime", async (importOriginal) => {
   };
 });
 
-vi.doMock("openclaw/plugin-sdk/config-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/config-runtime")>();
+vi.doMock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
   return {
     ...actual,
     updateLastRoute: vi.fn(async () => undefined),
   };
 });
 
-vi.doMock("openclaw/plugin-sdk/conversation-runtime", () => ({
+vi.doMock("remoteclaw/plugin-sdk/conversation-runtime", () => ({
   readChannelAllowFromStore: vi.fn(async () => [] as string[]),
   upsertChannelPairingRequest: vi.fn(async () => ({
     code: "PAIRCODE",
@@ -210,8 +210,8 @@ vi.doMock("openclaw/plugin-sdk/conversation-runtime", () => ({
   })),
 }));
 
-vi.doMock("openclaw/plugin-sdk/reply-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/reply-runtime")>();
+vi.doMock("remoteclaw/plugin-sdk/reply-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/reply-runtime")>();
   return {
     ...actual,
     getReplyFromConfig: mediaHarnessReplySpy,

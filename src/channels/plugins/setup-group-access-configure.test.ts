@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { configureChannelAccessWithAllowlist } from "./setup-group-access-configure.js";
 import type { ChannelAccessPolicy } from "./setup-group-access.js";
 
@@ -90,19 +90,19 @@ describe("configureChannelAccessWithAllowlist", () => {
   });
 
   it("supports allowlist policies without prompting for entries", async () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: RemoteClawConfig = {};
     const prompter = createPrompter({
       confirm: true,
       policy: "allowlist",
     });
     const setPolicy = vi.fn(
-      (next: OpenClawConfig, policy: ChannelAccessPolicy): OpenClawConfig => ({
+      (next: RemoteClawConfig, policy: ChannelAccessPolicy): RemoteClawConfig => ({
         ...next,
         channels: { twitch: { groupPolicy: policy } },
       }),
     );
     const resolveAllowlist = vi.fn(async () => ["ignored"]);
-    const applyAllowlist = vi.fn((params: { cfg: OpenClawConfig }) => params.cfg);
+    const applyAllowlist = vi.fn((params: { cfg: RemoteClawConfig }) => params.cfg);
 
     const next = await configureChannelAccessWithAllowlist({
       cfg,

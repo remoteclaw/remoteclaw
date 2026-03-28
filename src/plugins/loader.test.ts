@@ -3182,6 +3182,8 @@ module.exports = {
         (entry) => entry.id === "legacy-root-diagnostic-listener",
       );
       expect(record?.status).toBe("loaded");
+    } finally { /* cherry-pick merge truncated */ }
+  });
 
   it("derives plugin-sdk subpaths from package exports", () => {
     const subpaths = __testing.listPluginSdkExportedSubpaths();

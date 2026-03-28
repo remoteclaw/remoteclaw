@@ -109,7 +109,7 @@ describe("native command auth in groups", () => {
             telegram: ["12345"],
           },
         },
-      } as OpenClawConfig,
+      } as RemoteClawConfig,
       useAccessGroups: true,
       resolveGroupPolicy: () =>
         ({

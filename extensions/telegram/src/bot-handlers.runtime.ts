@@ -1,9 +1,9 @@
 import type { Message, ReactionTypeEmoji } from "@grammyjs/types";
-import { resolveAgentDir, resolveDefaultAgentId } from "openclaw/plugin-sdk/agent-runtime";
-import { resolveDefaultModelForAgent } from "openclaw/plugin-sdk/agent-runtime";
-import { shouldDebounceTextInbound } from "openclaw/plugin-sdk/channel-runtime";
-import { resolveChannelConfigWrites } from "openclaw/plugin-sdk/channel-runtime";
-import { writeConfigFile } from "openclaw/plugin-sdk/config-runtime";
+import { resolveAgentDir, resolveDefaultAgentId } from "remoteclaw/plugin-sdk/agent-runtime";
+import { resolveDefaultModelForAgent } from "remoteclaw/plugin-sdk/agent-runtime";
+import { shouldDebounceTextInbound } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveChannelConfigWrites } from "remoteclaw/plugin-sdk/channel-runtime";
+import { writeConfigFile } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   loadSessionStore,
   resolveSessionStoreEntry,
@@ -14,30 +14,30 @@ import type {
   TelegramDirectConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
-} from "openclaw/plugin-sdk/config-runtime";
-import { applyModelOverrideToSessionEntry } from "openclaw/plugin-sdk/config-runtime";
+} from "remoteclaw/plugin-sdk/config-runtime";
+import { applyModelOverrideToSessionEntry } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   buildPluginBindingResolvedText,
   parsePluginBindingApprovalCustomId,
   resolvePluginConversationBindingApproval,
-} from "openclaw/plugin-sdk/conversation-runtime";
-import { dispatchPluginInteractiveHandler } from "openclaw/plugin-sdk/plugin-runtime";
+} from "remoteclaw/plugin-sdk/conversation-runtime";
+import { dispatchPluginInteractiveHandler } from "remoteclaw/plugin-sdk/plugin-runtime";
 import {
   createInboundDebouncer,
   resolveInboundDebounceMs,
-} from "openclaw/plugin-sdk/reply-runtime";
-import { buildCommandsPaginationKeyboard } from "openclaw/plugin-sdk/reply-runtime";
+} from "remoteclaw/plugin-sdk/reply-runtime";
+import { buildCommandsPaginationKeyboard } from "remoteclaw/plugin-sdk/reply-runtime";
 import {
   createInboundDebouncer,
   resolveInboundDebounceMs,
-} from "openclaw/plugin-sdk/reply-runtime";
-import { buildCommandsPaginationKeyboard } from "openclaw/plugin-sdk/reply-runtime";
-import { formatModelsAvailableHeader } from "openclaw/plugin-sdk/reply-runtime";
-import { resolveStoredModelOverride } from "openclaw/plugin-sdk/reply-runtime";
-import { buildCommandsMessagePaginated } from "openclaw/plugin-sdk/reply-runtime";
-import { resolveAgentRoute } from "openclaw/plugin-sdk/routing";
-import { resolveThreadSessionKeys } from "openclaw/plugin-sdk/routing";
-import { danger, logVerbose, warn } from "openclaw/plugin-sdk/runtime-env";
+} from "remoteclaw/plugin-sdk/reply-runtime";
+import { buildCommandsPaginationKeyboard } from "remoteclaw/plugin-sdk/reply-runtime";
+import { formatModelsAvailableHeader } from "remoteclaw/plugin-sdk/reply-runtime";
+import { resolveStoredModelOverride } from "remoteclaw/plugin-sdk/reply-runtime";
+import { buildCommandsMessagePaginated } from "remoteclaw/plugin-sdk/reply-runtime";
+import { resolveAgentRoute } from "remoteclaw/plugin-sdk/routing";
+import { resolveThreadSessionKeys } from "remoteclaw/plugin-sdk/routing";
+import { danger, logVerbose, warn } from "remoteclaw/plugin-sdk/runtime-env";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import {
   isSenderAllowed,

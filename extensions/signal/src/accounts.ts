@@ -1,6 +1,6 @@
-import type { SignalAccountConfig } from "openclaw/plugin-sdk/signal";
+import type { SignalAccountConfig } from "remoteclaw/plugin-sdk/signal";
 import {
-  type OpenClawConfig,
+  type RemoteClawConfig,
   createAccountListHelpers,
   mergeAccountConfig,
   normalizeAccountId,
@@ -27,7 +27,7 @@ function resolveAccountConfig(
   return resolveAccountEntry(cfg.channels?.signal?.accounts, accountId);
 }
 
-function mergeSignalAccountConfig(cfg: OpenClawConfig, accountId: string): SignalAccountConfig {
+function mergeSignalAccountConfig(cfg: RemoteClawConfig, accountId: string): SignalAccountConfig {
   return mergeAccountConfig<SignalAccountConfig>({
     channelConfig: cfg.channels?.signal as SignalAccountConfig | undefined,
     accountConfig: resolveAccountConfig(cfg, accountId),

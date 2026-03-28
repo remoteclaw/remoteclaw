@@ -2,10 +2,10 @@ import {
   createAccountActionGate,
   createAccountListHelpers,
   mergeAccountConfig,
-} from "openclaw/plugin-sdk/account-helpers";
-import { normalizeAccountId } from "openclaw/plugin-sdk/account-id";
-import { resolveAccountEntry } from "openclaw/plugin-sdk/routing";
-import type { DiscordAccountConfig, DiscordActionConfig, OpenClawConfig } from "./runtime-api.js";
+} from "remoteclaw/plugin-sdk/account-helpers";
+import { normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
+import { resolveAccountEntry } from "remoteclaw/plugin-sdk/routing";
+import type { DiscordAccountConfig, DiscordActionConfig, RemoteClawConfig } from "./runtime-api.js";
 import { resolveDiscordToken } from "./token.js";
 
 export type ResolvedDiscordAccount = {

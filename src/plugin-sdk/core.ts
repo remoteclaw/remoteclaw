@@ -138,7 +138,7 @@ type DefinePluginEntryOptions = {
   name: string;
   description: string;
   kind?: OpenClawPluginDefinition["kind"];
-  configSchema?: OpenClawPluginConfigSchema | (() => OpenClawPluginConfigSchema);
+  configSchema?: RemoteClawPluginConfigSchema | (() => RemoteClawPluginConfigSchema);
   register: (api: RemoteClawPluginApi) => void;
 };
 
@@ -146,7 +146,7 @@ type DefinedPluginEntry = {
   id: string;
   name: string;
   description: string;
-  configSchema: OpenClawPluginConfigSchema;
+  configSchema: RemoteClawPluginConfigSchema;
   register: NonNullable<OpenClawPluginDefinition["register"]>;
 } & Pick<OpenClawPluginDefinition, "kind">;
 
@@ -188,7 +188,7 @@ type CreatedChannelPluginBase<TResolvedAccount> = Pick<
 
 function resolvePluginConfigSchema(
   configSchema: DefinePluginEntryOptions["configSchema"] = emptyPluginConfigSchema,
-): OpenClawPluginConfigSchema {
+): RemoteClawPluginConfigSchema {
   return typeof configSchema === "function" ? configSchema() : configSchema;
 }
 

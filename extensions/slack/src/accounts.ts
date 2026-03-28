@@ -1,6 +1,6 @@
-import type { SlackAccountConfig } from "openclaw/plugin-sdk/slack";
+import type { SlackAccountConfig } from "remoteclaw/plugin-sdk/slack";
 import {
-  type OpenClawConfig,
+  type RemoteClawConfig,
   createAccountListHelpers,
   DEFAULT_ACCOUNT_ID,
   mergeAccountConfig,

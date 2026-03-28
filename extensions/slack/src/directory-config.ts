@@ -5,7 +5,7 @@ import {
   listDirectoryGroupEntriesFromMapKeys,
   toDirectoryEntries,
   type DirectoryConfigParams,
-} from "openclaw/plugin-sdk/directory-runtime";
+} from "remoteclaw/plugin-sdk/directory-runtime";
 import type { InspectedSlackAccount } from "../api.js";
 import { parseSlackTarget } from "./targets.js";
 

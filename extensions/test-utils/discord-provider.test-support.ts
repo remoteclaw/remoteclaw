@@ -1,5 +1,5 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/discord";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/discord";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import type { Mock } from "vitest";
 import { expect, vi } from "vitest";
 
@@ -29,7 +29,7 @@ type ProviderMonitorTestMocks = {
   createdBindingManagers: Array<{ stop: ReturnType<typeof vi.fn> }>;
   getAcpSessionStatusMock: Mock<
     (params: {
-      cfg: OpenClawConfig;
+      cfg: RemoteClawConfig;
       sessionKey: string;
       signal?: AbortSignal;
     }) => Promise<{ state: string }>
@@ -101,7 +101,7 @@ const providerMonitorTestMocks: ProviderMonitorTestMocks = vi.hoisted(() => {
     })),
     createdBindingManagers,
     getAcpSessionStatusMock: vi.fn(
-      async (_params: { cfg: OpenClawConfig; sessionKey: string; signal?: AbortSignal }) => ({
+      async (_params: { cfg: RemoteClawConfig; sessionKey: string; signal?: AbortSignal }) => ({
         state: "idle",
       }),
     ),
@@ -243,7 +243,7 @@ export const baseRuntime = (): RuntimeEnv => ({
   exit: vi.fn(),
 });
 
-export const baseConfig = (): OpenClawConfig =>
+export const baseConfig = (): RemoteClawConfig =>
   ({
     channels: {
       discord: {
@@ -252,7 +252,7 @@ export const baseConfig = (): OpenClawConfig =>
         },
       },
     },
-  }) as OpenClawConfig;
+  }) as RemoteClawConfig;
 
 vi.mock("@buape/carbon", () => {
   class ReadyListener {}
@@ -303,9 +303,9 @@ vi.mock("@buape/carbon/voice", () => ({
   VoicePlugin: class VoicePlugin {},
 }));
 
-vi.mock("openclaw/plugin-sdk/acp-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/acp-runtime")>(
-    "openclaw/plugin-sdk/acp-runtime",
+vi.mock("remoteclaw/plugin-sdk/acp-runtime", async () => {
+  const actual = await vi.importActual<typeof import("remoteclaw/plugin-sdk/acp-runtime")>(
+    "remoteclaw/plugin-sdk/acp-runtime",
   );
   return {
     ...actual,
@@ -317,9 +317,9 @@ vi.mock("openclaw/plugin-sdk/acp-runtime", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/reply-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/reply-runtime")>(
-    "openclaw/plugin-sdk/reply-runtime",
+vi.mock("remoteclaw/plugin-sdk/reply-runtime", async () => {
+  const actual = await vi.importActual<typeof import("remoteclaw/plugin-sdk/reply-runtime")>(
+    "remoteclaw/plugin-sdk/reply-runtime",
   );
   return {
     ...actual,
@@ -329,9 +329,9 @@ vi.mock("openclaw/plugin-sdk/reply-runtime", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/config-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/config-runtime")>(
-    "openclaw/plugin-sdk/config-runtime",
+vi.mock("remoteclaw/plugin-sdk/config-runtime", async () => {
+  const actual = await vi.importActual<typeof import("remoteclaw/plugin-sdk/config-runtime")>(
+    "remoteclaw/plugin-sdk/config-runtime",
   );
   return {
     ...actual,
@@ -342,9 +342,9 @@ vi.mock("openclaw/plugin-sdk/config-runtime", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/runtime-env", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/runtime-env")>(
-    "openclaw/plugin-sdk/runtime-env",
+vi.mock("remoteclaw/plugin-sdk/runtime-env", async () => {
+  const actual = await vi.importActual<typeof import("remoteclaw/plugin-sdk/runtime-env")>(
+    "remoteclaw/plugin-sdk/runtime-env",
   );
   return {
     ...actual,
@@ -367,9 +367,9 @@ vi.mock("openclaw/plugin-sdk/runtime-env", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/infra-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/infra-runtime")>(
-    "openclaw/plugin-sdk/infra-runtime",
+vi.mock("remoteclaw/plugin-sdk/infra-runtime", async () => {
+  const actual = await vi.importActual<typeof import("remoteclaw/plugin-sdk/infra-runtime")>(
+    "remoteclaw/plugin-sdk/infra-runtime",
   );
   return {
     ...actual,

@@ -5,7 +5,7 @@ import {
   inspectReadOnlyChannelAccount,
   toDirectoryEntries,
   type DirectoryConfigParams,
-} from "openclaw/plugin-sdk/directory-runtime";
+} from "remoteclaw/plugin-sdk/directory-runtime";
 import type { InspectedDiscordAccount } from "../api.js";
 
 export async function listDiscordDirectoryPeersFromConfig(params: DirectoryConfigParams) {

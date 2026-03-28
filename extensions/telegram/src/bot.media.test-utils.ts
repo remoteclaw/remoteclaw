@@ -144,7 +144,7 @@ beforeAll(async () => {
       ...opts,
       telegramDeps: harness.telegramBotDepsForTest,
     });
-  const replyModule = await import("openclaw/plugin-sdk/reply-runtime");
+  const replyModule = await import("remoteclaw/plugin-sdk/reply-runtime");
   replySpyRef = (replyModule as unknown as { __replySpy: ReturnType<typeof vi.fn> }).__replySpy;
 }, TELEGRAM_BOT_IMPORT_TIMEOUT_MS);
 

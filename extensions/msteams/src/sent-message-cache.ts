@@ -1,4 +1,4 @@
-import { createScopedExpiringIdCache } from "openclaw/plugin-sdk/text-runtime";
+import { createScopedExpiringIdCache } from "remoteclaw/plugin-sdk/text-runtime";
 
 const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const sentMessageCache = createScopedExpiringIdCache<string, string>({

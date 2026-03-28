@@ -1,10 +1,10 @@
-import { loadConfig, resolveStorePath } from "openclaw/plugin-sdk/config-runtime";
-import { readChannelAllowFromStore } from "openclaw/plugin-sdk/conversation-runtime";
-import { enqueueSystemEvent } from "openclaw/plugin-sdk/infra-runtime";
+import { loadConfig, resolveStorePath } from "remoteclaw/plugin-sdk/config-runtime";
+import { readChannelAllowFromStore } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { enqueueSystemEvent } from "remoteclaw/plugin-sdk/infra-runtime";
 import {
   dispatchReplyWithBufferedBlockDispatcher,
   listSkillCommandsForAgents,
-} from "openclaw/plugin-sdk/reply-runtime";
+} from "remoteclaw/plugin-sdk/reply-runtime";
 import { wasSentByBot } from "./sent-message-cache.js";
 
 export type TelegramBotDeps = {

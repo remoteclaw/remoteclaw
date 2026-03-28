@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../../src/config/config.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
 import * as subsystemModule from "../../../src/logging/subsystem.js";
 import { withEnv } from "../../../src/test-utils/env.js";
 import {

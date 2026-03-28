@@ -9,7 +9,7 @@ import {
   readStringParam,
   resolvePollMaxSelections,
   type DiscordActionConfig,
-  type OpenClawConfig,
+  type RemoteClawConfig,
   withNormalizedTimestamp,
   readBooleanParam,
 } from "../runtime-api.js";

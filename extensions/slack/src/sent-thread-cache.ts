@@ -1,4 +1,4 @@
-import { resolveGlobalDedupeCache } from "openclaw/plugin-sdk/infra-runtime";
+import { resolveGlobalDedupeCache } from "remoteclaw/plugin-sdk/infra-runtime";
 
 /**
  * In-memory cache of Slack threads the bot has participated in.

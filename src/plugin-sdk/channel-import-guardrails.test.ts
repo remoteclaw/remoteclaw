@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const ALLOWED_EXTENSION_PUBLIC_SEAMS = new Set([
+const _ALLOWED_EXTENSION_PUBLIC_SEAMS = new Set([
   "action-runtime.runtime.js",
   "api.js",
   "auth-presence.js",
@@ -14,7 +14,7 @@ const ALLOWED_EXTENSION_PUBLIC_SEAMS = new Set([
   "setup-api.js",
   "setup-entry.js",
 ]);
-const GUARDED_CHANNEL_EXTENSIONS = new Set([
+const _GUARDED_CHANNEL_EXTENSIONS = new Set([
   "bluebubbles",
   "discord",
   "feishu",

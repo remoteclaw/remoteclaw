@@ -240,20 +240,9 @@ export async function main(argv = process.argv.slice(2)) {
     return;
   }
 
-  writeLine(streams.stdout, formatInventoryHuman(mode, actual));
-  if (mode === "relative-outside-package") {
-    if (actual.length === 0) {
-      return 0;
-    }
-    writeLine(
-      streams.stderr,
-      `Relative outside-package violations found (${actual.length}); this mode no longer uses a baseline.`,
-    );
-    return 1;
-  }
-
   const expected = await readExpectedInventory(mode);
   const diff = diffInventory(expected, actual);
+  console.log(formatInventoryHuman(mode, actual));
   if (diff.missing.length === 0 && diff.unexpected.length === 0) {
     console.log(`Baseline matches (${actual.length} entries).`);
     return;

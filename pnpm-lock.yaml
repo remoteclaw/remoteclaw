@@ -7,7 +7,7 @@ settings:
 overrides:
   hono: 4.12.5
   '@hono/node-server': 1.19.10
-  fast-xml-parser: 5.5.7
+  fast-xml-parser: 5.3.8
   request: npm:@cypress/request@3.0.10
   request-promise: npm:@cypress/request-promise@5.0.0
   form-data: 2.5.4
@@ -237,10 +237,6 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-    devDependencies:
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/diagnostics-otel:
     dependencies:
@@ -278,43 +274,7 @@ importers:
         specifier: ^1.40.0
         version: 1.40.0
 
-  extensions/diffs:
-    dependencies:
-      '@pierre/diffs':
-        specifier: 1.1.1
-        version: 1.1.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@sinclair/typebox':
-        specifier: 0.34.48
-        version: 0.34.48
-      playwright-core:
-        specifier: 1.58.2
-        version: 1.58.2
-
-  extensions/discord:
-    dependencies:
-      '@buape/carbon':
-        specifier: 0.0.0-beta-20260317045421
-        version: 0.0.0-beta-20260317045421(@discordjs/opus@0.10.0)(hono@4.12.8)(opusscript@0.1.1)
-      '@discordjs/voice':
-        specifier: ^0.19.2
-        version: 0.19.2(@discordjs/opus@0.10.0)(opusscript@0.1.1)
-      discord-api-types:
-        specifier: ^0.38.42
-        version: 0.38.42
-      https-proxy-agent:
-        specifier: ^8.0.0
-        version: 8.0.0
-      opusscript:
-        specifier: ^0.1.1
-        version: 0.1.1
-    devDependencies:
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
-
-  extensions/elevenlabs: {}
-
-  extensions/fal: {}
+  extensions/discord: {}
 
   extensions/feishu:
     dependencies:
@@ -330,24 +290,17 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-    devDependencies:
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/github-copilot: {}
 
   extensions/googlechat:
     dependencies:
       google-auth-library:
-        specifier: ^10.6.2
-        version: 10.6.2
-    devDependencies:
-      openclaw:
+        specifier: ^10.6.1
+        version: 10.6.1
+      remoteclaw:
         specifier: workspace:*
         version: link:../..
-
-  extensions/huggingface: {}
 
   extensions/imessage: {}
 
@@ -357,15 +310,7 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
 
-  extensions/kilocode: {}
-
-  extensions/kimi-coding: {}
-
-  extensions/line:
-    devDependencies:
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
+  extensions/line: {}
 
   extensions/matrix:
     dependencies:
@@ -396,55 +341,6 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-    devDependencies:
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
-
-  extensions/mattermost:
-    dependencies:
-      ws:
-        specifier: ^8.19.0
-        version: 8.19.0
-      zod:
-        specifier: ^4.3.6
-        version: 4.3.6
-    devDependencies:
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
-
-  extensions/memory-core:
-    devDependencies:
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
-
-  extensions/memory-lancedb:
-    dependencies:
-      '@lancedb/lancedb':
-        specifier: ^0.27.1
-        version: 0.27.1(apache-arrow@18.1.0)
-      '@sinclair/typebox':
-        specifier: 0.34.48
-        version: 0.34.48
-      openai:
-        specifier: ^6.32.0
-        version: 6.32.0(ws@8.20.0)(zod@4.3.6)
-
-  extensions/microsoft:
-    dependencies:
-      node-edge-tts:
-        specifier: ^1.2.10
-        version: 1.2.10
-
-  extensions/minimax: {}
-
-  extensions/mistral: {}
-
-  extensions/modelstudio: {}
-
-  extensions/moonshot: {}
 
   extensions/msteams:
     dependencies:
@@ -455,22 +351,14 @@ importers:
         specifier: ^5.2.1
         version: 5.2.1
       uuid:
-        specifier: ^11.1.0
-        version: 11.1.0
-    devDependencies:
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
+        specifier: ^13.0.0
+        version: 13.0.0
 
   extensions/nextcloud-talk:
     dependencies:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-    devDependencies:
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/nostr:
     dependencies:
@@ -480,10 +368,6 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-    devDependencies:
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/openai-codex: {}
 
@@ -518,10 +402,6 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-    devDependencies:
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/twitch:
     dependencies:
@@ -552,26 +432,12 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-    devDependencies:
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/whatsapp:
     dependencies:
       '@whiskeysockets/baileys':
         specifier: 7.0.0-rc.9
-        version: 7.0.0-rc.9(audio-decode@2.2.3)(jimp@1.6.0)(sharp@0.34.5)
-    devDependencies:
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
-
-  extensions/xai: {}
-
-  extensions/xiaomi: {}
-
-  extensions/zai: {}
+        version: 7.0.0-rc.9(audio-decode@2.2.3)(sharp@0.34.5)
 
   extensions/zalo:
     dependencies:
@@ -581,10 +447,6 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-    devDependencies:
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/zalouser:
     dependencies:
@@ -597,10 +459,6 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-    devDependencies:
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
 
   ui:
     dependencies:
@@ -3811,11 +3669,8 @@ packages:
   fast-uri@3.1.0:
     resolution: {integrity: sha512-iPeeDKJSWf4IEOasVVrknXpaBV0IApz/gp7S2bb7Z4Lljbl2MGJRqInZiUrQwV16cpzw/D3S5j5Julj/gT52AA==}
 
-  fast-xml-builder@1.1.4:
-    resolution: {integrity: sha512-f2jhpN4Eccy0/Uz9csxh3Nu6q4ErKxf0XIsasomfOihuSUa3/xw6w8dnOtCDgEItQFJG8KyXPzQXzcODDrrbOg==}
-
-  fast-xml-parser@5.5.7:
-    resolution: {integrity: sha512-LteOsISQ2GEiDHZch6L9hB0+MLoYVLToR7xotrzU0opCICBkxOPgHAy1HxAvtxfJNXDJpgAsQN30mkrfpO2Prg==}
+  fast-xml-parser@5.3.8:
+    resolution: {integrity: sha512-53jIF4N6u/pxvaL1eb/hEZts/cFLWZ92eCfLrNyCI0k38lettCG/Bs40W9pPwoPXyHQlKu2OUbQtiEIZK/J6Vw==}
     hasBin: true
 
   fdir@6.5.0:
@@ -6513,7 +6368,7 @@ snapshots:
   '@aws-sdk/xml-builder@3.972.15':
     dependencies:
       '@smithy/types': 4.13.1
-      fast-xml-parser: 5.5.7
+      fast-xml-parser: 5.3.8
       tslib: 2.8.1
 
   '@aws/lambda-invoke-store@0.2.4': {}
@@ -9677,17 +9532,7 @@ snapshots:
 
   fast-xml-parser@5.3.8:
     dependencies:
-      path-expression-matcher: 1.2.0
-
-  fast-xml-parser@5.5.7:
-    dependencies:
-      fast-xml-builder: 1.1.4
-      path-expression-matcher: 1.2.0
-      strnum: 2.2.1
-
-  fastq@1.20.1:
-    dependencies:
-      reusify: 1.1.0
+      strnum: 2.2.0
 
   fdir@6.5.0(picomatch@4.0.3):
     optionalDependencies:

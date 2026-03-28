@@ -1,15 +1,10 @@
-import {
-  isNumericTelegramUserId,
-  normalizeTelegramAllowFromEntry,
-} from "../../extensions/telegram/src/allow-from.js";
-import {
-  hasConfiguredUnavailableCredentialStatus,
-  hasResolvedCredentialValue,
-} from "../channels/account-snapshot-fields.js";
 import { resolveChannelDefaultAccountId } from "../channels/plugins/helpers.js";
 import type { listChannelPlugins } from "../channels/plugins/index.js";
 import type { ChannelId } from "../channels/plugins/types.js";
-import { inspectReadOnlyChannelAccount } from "../channels/read-only-account-inspect.js";
+import {
+  isNumericTelegramUserId,
+  normalizeTelegramAllowFromEntry,
+} from "../channels/telegram/allow-from.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { resolveNativeCommandsEnabled } from "../config/commands.js";
 import type { RemoteClawConfig } from "../config/config.js";
@@ -18,26 +13,10 @@ import { readChannelAllowFromStore } from "../pairing/pairing-store.js";
 import { normalizeStringEntries } from "../shared/string-normalization.js";
 import type { SecurityAuditFinding, SecurityAuditSeverity } from "./audit.js";
 import { resolveDmAllowState } from "./dm-policy-shared.js";
-
-const loadAuditChannelDiscordRuntimeModule = createLazyRuntimeSurface(
-  () => import("./audit-channel.discord.runtime.js"),
-  ({ auditChannelDiscordRuntime }) => auditChannelDiscordRuntime,
-);
-
-const loadAuditChannelAllowFromRuntimeModule = createLazyRuntimeSurface(
-  () => import("./audit-channel.allow-from.runtime.js"),
-  ({ auditChannelAllowFromRuntime }) => auditChannelAllowFromRuntime,
-);
-
-const loadAuditChannelTelegramRuntimeModule = createLazyRuntimeSurface(
-  () => import("./audit-channel.telegram.runtime.js"),
-  ({ auditChannelTelegramRuntime }) => auditChannelTelegramRuntime,
-);
-
-const loadAuditChannelZalouserRuntimeModule = createLazyRuntimeSurface(
-  () => import("./audit-channel.zalouser.runtime.js"),
-  ({ auditChannelZalouserRuntime }) => auditChannelZalouserRuntime,
-);
+import {
+  isDiscordMutableAllowEntry,
+  isZalouserMutableGroupEntry,
+} from "./mutable-allowlist-detectors.js";
 
 function normalizeAllowFromList(list: Array<string | number> | undefined | null): string[] {
   return normalizeStringEntries(Array.isArray(list) ? list : undefined);
@@ -86,8 +65,6 @@ function collectInvalidTelegramAllowFromEntries(params: {
   if (!Array.isArray(params.entries)) {
     return;
   }
-  const { isNumericTelegramUserId, normalizeTelegramAllowFromEntry } =
-    await loadAuditChannelTelegramRuntimeModule();
   for (const entry of params.entries) {
     const normalized = normalizeTelegramAllowFromEntry(entry);
     if (!normalized || normalized === "*") {
@@ -316,8 +293,6 @@ export async function collectChannelSecurityFindings(params: {
       }
 
       if (plugin.id === "discord") {
-        const { isDiscordMutableAllowEntry } = await loadAuditChannelDiscordRuntimeModule();
-        const { readChannelAllowFromStore } = await loadAuditChannelAllowFromRuntimeModule();
         const discordCfg =
           (account as { config?: Record<string, unknown> } | null)?.config ??
           ({} as Record<string, unknown>);
@@ -475,7 +450,6 @@ export async function collectChannelSecurityFindings(params: {
       }
 
       if (plugin.id === "zalouser") {
-        const { isZalouserMutableGroupEntry } = await loadAuditChannelZalouserRuntimeModule();
         const zalouserCfg =
           (account as { config?: Record<string, unknown> } | null)?.config ??
           ({} as Record<string, unknown>);
@@ -515,7 +489,6 @@ export async function collectChannelSecurityFindings(params: {
       }
 
       if (plugin.id === "slack") {
-        const { readChannelAllowFromStore } = await loadAuditChannelAllowFromRuntimeModule();
         const slackCfg =
           (account as { config?: Record<string, unknown>; dm?: Record<string, unknown> } | null)
             ?.config ?? ({} as Record<string, unknown>);
@@ -646,13 +619,12 @@ export async function collectChannelSecurityFindings(params: {
         continue;
       }
 
-      const { readChannelAllowFromStore } = await loadAuditChannelAllowFromRuntimeModule();
       const storeAllowFrom = await readChannelAllowFromStore(
         "telegram",
         process.env,
         accountId,
       ).catch(() => []);
-      const storeHasWildcard = storeAllowFrom.some((value) => String(value).trim() === "*");
+      const storeHasWildcard = storeAllowFrom.some((v) => String(v).trim() === "*");
       const invalidTelegramAllowFromEntries = new Set<string>();
       collectInvalidTelegramAllowFromEntries({
         entries: storeAllowFrom,

@@ -1,4 +1,5 @@
-import { normalizeTrackedRepoPath, tryReadJsonFile } from "./test-report-utils.mjs";
+import fs from "node:fs";
+import path from "node:path";
 
 export const behaviorManifestPath = "test/fixtures/test-parallel.behavior.json";
 export const unitTimingManifestPath = "test/fixtures/test-timings.unit.json";
@@ -8,6 +9,16 @@ const defaultTimingManifest = {
   defaultDurationMs: 250,
   files: {},
 };
+
+const readJson = (filePath, fallback) => {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch {
+    return fallback;
+  }
+};
+
+const normalizeRepoPath = (value) => value.split(path.sep).join("/");
 
 const normalizeManifestEntries = (entries) =>
   entries
@@ -22,7 +33,7 @@ const normalizeManifestEntries = (entries) =>
     .filter((entry) => entry.file.length > 0);
 
 export function loadTestRunnerBehavior() {
-  const raw = tryReadJsonFile(behaviorManifestPath, {});
+  const raw = readJson(behaviorManifestPath, {});
   const unit = raw.unit ?? {};
   const base = raw.base ?? {};
   const extensions = raw.extensions ?? {};
@@ -43,7 +54,7 @@ export function loadTestRunnerBehavior() {
 }
 
 export function loadUnitTimingManifest() {
-  const raw = tryReadJsonFile(unitTimingManifestPath, defaultTimingManifest);
+  const raw = readJson(unitTimingManifestPath, defaultTimingManifest);
   const defaultDurationMs =
     Number.isFinite(raw.defaultDurationMs) && raw.defaultDurationMs > 0
       ? raw.defaultDurationMs
@@ -75,46 +86,6 @@ export function loadUnitTimingManifest() {
       typeof raw.config === "string" && raw.config ? raw.config : defaultTimingManifest.config,
     generatedAt: typeof raw.generatedAt === "string" ? raw.generatedAt : "",
     defaultDurationMs,
-    files,
-  };
-}
-
-export function loadUnitMemoryHotspotManifest() {
-  const raw = tryReadJsonFile(unitMemoryHotspotManifestPath, defaultMemoryHotspotManifest);
-  const defaultMinDeltaKb =
-    Number.isFinite(raw.defaultMinDeltaKb) && raw.defaultMinDeltaKb > 0
-      ? raw.defaultMinDeltaKb
-      : defaultMemoryHotspotManifest.defaultMinDeltaKb;
-  const files = Object.fromEntries(
-    Object.entries(raw.files ?? {})
-      .map(([file, value]) => {
-        const normalizedFile = normalizeTrackedRepoPath(file);
-        const deltaKb =
-          Number.isFinite(value?.deltaKb) && value.deltaKb > 0 ? Math.round(value.deltaKb) : null;
-        const sources = Array.isArray(value?.sources)
-          ? value.sources.filter((source) => typeof source === "string" && source.length > 0)
-          : [];
-        if (deltaKb === null) {
-          return [normalizedFile, null];
-        }
-        return [
-          normalizedFile,
-          {
-            deltaKb,
-            ...(sources.length > 0 ? { sources } : {}),
-          },
-        ];
-      })
-      .filter(([, value]) => value !== null),
-  );
-
-  return {
-    config:
-      typeof raw.config === "string" && raw.config
-        ? raw.config
-        : defaultMemoryHotspotManifest.config,
-    generatedAt: typeof raw.generatedAt === "string" ? raw.generatedAt : "",
-    defaultMinDeltaKb,
     files,
   };
 }

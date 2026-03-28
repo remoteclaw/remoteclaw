@@ -7,16 +7,16 @@ const originalGetBuiltinModule = (
 ).getBuiltinModule;
 
 async function importBrowserSafeLogger(params?: {
-  resolvePreferredRemoteClawTmpDir?: ReturnType<typeof vi.fn>;
+  resolvePreferredOpenClawTmpDir?: ReturnType<typeof vi.fn>;
 }): Promise<{
   module: LoggerModule;
-  resolvePreferredRemoteClawTmpDir: ReturnType<typeof vi.fn>;
+  resolvePreferredOpenClawTmpDir: ReturnType<typeof vi.fn>;
 }> {
   vi.resetModules();
-  const resolvePreferredRemoteClawTmpDir =
-    params?.resolvePreferredRemoteClawTmpDir ??
+  const resolvePreferredOpenClawTmpDir =
+    params?.resolvePreferredOpenClawTmpDir ??
     vi.fn(() => {
-      throw new Error("resolvePreferredRemoteClawTmpDir should not run during browser-safe import");
+      throw new Error("resolvePreferredOpenClawTmpDir should not run during browser-safe import");
     });
 
   vi.doMock("../infra/tmp-remoteclaw-dir.js", async () => {
@@ -25,7 +25,7 @@ async function importBrowserSafeLogger(params?: {
     );
     return {
       ...actual,
-      resolvePreferredRemoteClawTmpDir,
+      resolvePreferredOpenClawTmpDir,
     };
   });
 
@@ -35,7 +35,7 @@ async function importBrowserSafeLogger(params?: {
   });
 
   const module = await import("./logger.js");
-  return { module, resolvePreferredRemoteClawTmpDir };
+  return { module, resolvePreferredOpenClawTmpDir };
 }
 
 describe("logging/logger browser-safe import", () => {
@@ -49,15 +49,15 @@ describe("logging/logger browser-safe import", () => {
   });
 
   it("does not resolve the preferred temp dir at import time when node fs is unavailable", async () => {
-    const { module, resolvePreferredRemoteClawTmpDir } = await importBrowserSafeLogger();
+    const { module, resolvePreferredOpenClawTmpDir } = await importBrowserSafeLogger();
 
-    expect(resolvePreferredRemoteClawTmpDir).not.toHaveBeenCalled();
+    expect(resolvePreferredOpenClawTmpDir).not.toHaveBeenCalled();
     expect(module.DEFAULT_LOG_DIR).toBe("/tmp/remoteclaw");
     expect(module.DEFAULT_LOG_FILE).toBe("/tmp/remoteclaw/remoteclaw.log");
   });
 
   it("disables file logging when imported in a browser-like environment", async () => {
-    const { module, resolvePreferredRemoteClawTmpDir } = await importBrowserSafeLogger();
+    const { module, resolvePreferredOpenClawTmpDir } = await importBrowserSafeLogger();
 
     expect(module.getResolvedLoggerSettings()).toMatchObject({
       level: "silent",
@@ -65,6 +65,6 @@ describe("logging/logger browser-safe import", () => {
     });
     expect(module.isFileLogLevelEnabled("info")).toBe(false);
     expect(() => module.getLogger().info("browser-safe")).not.toThrow();
-    expect(resolvePreferredRemoteClawTmpDir).not.toHaveBeenCalled();
+    expect(resolvePreferredOpenClawTmpDir).not.toHaveBeenCalled();
   });
 });

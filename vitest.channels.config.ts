@@ -1,6 +1,9 @@
-import { channelTestInclude } from "./vitest.channel-paths.mjs";
 import { createScopedVitestConfig } from "./vitest.scoped-config.ts";
 
-export default createScopedVitestConfig(channelTestInclude, {
-  exclude: ["src/gateway/**"],
-});
+export default createScopedVitestConfig([
+  "src/telegram/**/*.test.ts",
+  "src/discord/**/*.test.ts",
+  "src/web/**/*.test.ts",
+  "src/browser/**/*.test.ts",
+  "src/line/**/*.test.ts",
+]);

@@ -122,32 +122,9 @@ const coreDistEntries = buildCoreDistEntries();
 
 export default defineConfig([
   nodeBuildConfig({
-    entry: "src/index.ts",
-  }),
-  nodeBuildConfig({
-    entry: "src/entry.ts",
-  }),
-  nodeBuildConfig({
-    // Ensure this module is bundled as an entry so legacy CLI shims can resolve its exports.
-    entry: "src/cli/daemon-cli.ts",
-  }),
-  nodeBuildConfig({
-    entry: "src/infra/warning-filter.ts",
-  }),
-  nodeBuildConfig({
-    // Keep sync lazy-runtime channel modules as concrete dist files.
-    entry: {
-      "channels/plugins/agent-tools/whatsapp-login":
-        "src/channels/plugins/agent-tools/whatsapp-login.ts",
-      "channels/plugins/actions/discord": "src/channels/plugins/actions/discord.ts",
-      "channels/plugins/actions/signal": "src/channels/plugins/actions/signal.ts",
-      "channels/plugins/actions/telegram": "src/channels/plugins/actions/telegram.ts",
-      "telegram/audit": "extensions/telegram/src/audit.ts",
-      "telegram/token": "extensions/telegram/src/token.ts",
-      "line/accounts": "src/line/accounts.ts",
-      "line/send": "src/line/send.ts",
-      "line/template-messages": "src/line/template-messages.ts",
-    },
+    // Build the root dist entrypoints together so they can share hashed chunks
+    // instead of emitting near-identical copies across separate builds.
+    entry: coreDistEntries,
   }),
   nodeBuildConfig({
     // Bundle all plugin-sdk entries in a single build so the bundler can share

@@ -1,0 +1,235 @@
+import type {
+  ChannelOnboardingAdapter,
+  ChannelOnboardingDmPolicy,
+} from "../../../src/channels/plugins/onboarding-types.js";
+import {
+  applySingleTokenPromptResult,
+  buildSingleChannelSecretPromptState,
+  patchChannelConfigForAccount,
+  promptSingleChannelToken,
+  promptResolvedAllowFrom,
+  resolveAccountIdForConfigure,
+  resolveOnboardingAccountId,
+  setChannelDmPolicyWithAllowFrom,
+  setOnboardingChannelEnabled,
+  splitOnboardingEntries,
+} from "../../../src/channels/plugins/onboarding/helpers.js";
+import { fetchTelegramChatId } from "../../../src/channels/telegram/api.js";
+import { formatCliCommand } from "../../../src/cli/command-format.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
+import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
+import type { WizardPrompter } from "../../../src/wizard/prompts.js";
+import {
+  listTelegramAccountIds,
+  resolveDefaultTelegramAccountId,
+  resolveTelegramAccount,
+} from "./accounts.js";
+
+const channel = "telegram" as const;
+
+async function noteTelegramTokenHelp(prompter: WizardPrompter): Promise<void> {
+  await prompter.note(
+    [
+      "1) Open Telegram and chat with @BotFather",
+      "2) Run /newbot (or /mybots)",
+      "3) Copy the token (looks like 123456:ABC...)",
+      "Tip: you can also set TELEGRAM_BOT_TOKEN in your env.",
+      `Docs: ${formatDocsLink("/telegram")}`,
+      "Website: https://remoteclaw.org",
+    ].join("\n"),
+    "Telegram bot token",
+  );
+}
+
+async function noteTelegramUserIdHelp(prompter: WizardPrompter): Promise<void> {
+  await prompter.note(
+    [
+      `1) DM your bot, then read from.id in \`${formatCliCommand("remoteclaw logs --follow")}\` (safest)`,
+      "2) Or call https://api.telegram.org/bot<bot_token>/getUpdates and read message.from.id",
+      "3) Third-party: DM @userinfobot or @getidsbot",
+      `Docs: ${formatDocsLink("/telegram")}`,
+      "Website: https://remoteclaw.org",
+    ].join("\n"),
+    "Telegram user id",
+  );
+}
+
+export function normalizeTelegramAllowFromInput(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^(telegram|tg):/i, "")
+    .trim();
+}
+
+export function parseTelegramAllowFromId(raw: string): string | null {
+  const stripped = normalizeTelegramAllowFromInput(raw);
+  return /^\d+$/.test(stripped) ? stripped : null;
+}
+
+async function promptTelegramAllowFrom(params: {
+  cfg: RemoteClawConfig;
+  prompter: WizardPrompter;
+  accountId: string;
+}): Promise<RemoteClawConfig> {
+  const { cfg, prompter, accountId } = params;
+  const resolved = resolveTelegramAccount({ cfg, accountId });
+  const existingAllowFrom = resolved.config.allowFrom ?? [];
+  await noteTelegramUserIdHelp(prompter);
+
+  const token = resolved.token;
+  if (!token) {
+    await prompter.note("Telegram token missing; username lookup is unavailable.", "Telegram");
+  }
+  const unique = await promptResolvedAllowFrom({
+    prompter,
+    existing: existingAllowFrom,
+    token,
+    message: "Telegram allowFrom (numeric sender id; @username resolves to id)",
+    placeholder: "@username",
+    label: "Telegram allowlist",
+    parseInputs: splitOnboardingEntries,
+    parseId: parseTelegramAllowFromId,
+    invalidWithoutTokenNote:
+      "Telegram token missing; use numeric sender ids (usernames require a bot token).",
+    resolveEntries: async ({ token: tokenValue, entries }) => {
+      const results = await Promise.all(
+        entries.map(async (entry) => {
+          const numericId = parseTelegramAllowFromId(entry);
+          if (numericId) {
+            return { input: entry, resolved: true, id: numericId };
+          }
+          const stripped = normalizeTelegramAllowFromInput(entry);
+          if (!stripped) {
+            return { input: entry, resolved: false, id: null };
+          }
+          const username = stripped.startsWith("@") ? stripped : `@${stripped}`;
+          const id = await fetchTelegramChatId({ token: tokenValue, chatId: username });
+          return { input: entry, resolved: Boolean(id), id };
+        }),
+      );
+      return results;
+    },
+  });
+
+  return patchChannelConfigForAccount({
+    cfg,
+    channel: "telegram",
+    accountId,
+    patch: { dmPolicy: "allowlist", allowFrom: unique },
+  });
+}
+
+async function promptTelegramAllowFromForAccount(params: {
+  cfg: RemoteClawConfig;
+  prompter: WizardPrompter;
+  accountId?: string;
+}): Promise<RemoteClawConfig> {
+  const accountId = resolveOnboardingAccountId({
+    accountId: params.accountId,
+    defaultAccountId: resolveDefaultTelegramAccountId(params.cfg),
+  });
+  return promptTelegramAllowFrom({
+    cfg: params.cfg,
+    prompter: params.prompter,
+    accountId,
+  });
+}
+
+const dmPolicy: ChannelOnboardingDmPolicy = {
+  label: "Telegram",
+  channel,
+  policyKey: "channels.telegram.dmPolicy",
+  allowFromKey: "channels.telegram.allowFrom",
+  getCurrent: (cfg) => cfg.channels?.telegram?.dmPolicy ?? "pairing",
+  setPolicy: (cfg, policy) =>
+    setChannelDmPolicyWithAllowFrom({
+      cfg,
+      channel: "telegram",
+      dmPolicy: policy,
+    }),
+  promptAllowFrom: promptTelegramAllowFromForAccount,
+};
+
+export const telegramOnboardingAdapter: ChannelOnboardingAdapter = {
+  channel,
+  getStatus: async ({ cfg }) => {
+    const configured = listTelegramAccountIds(cfg).some((accountId) =>
+      Boolean(resolveTelegramAccount({ cfg, accountId }).token),
+    );
+    return {
+      channel,
+      configured,
+      statusLines: [`Telegram: ${configured ? "configured" : "needs token"}`],
+      selectionHint: configured ? "recommended · configured" : "recommended · newcomer-friendly",
+      quickstartScore: configured ? 1 : 10,
+    };
+  },
+  configure: async ({
+    cfg,
+    prompter,
+    accountOverrides,
+    shouldPromptAccountIds,
+    forceAllowFrom,
+  }) => {
+    const defaultTelegramAccountId = resolveDefaultTelegramAccountId(cfg);
+    const telegramAccountId = await resolveAccountIdForConfigure({
+      cfg,
+      prompter,
+      label: "Telegram",
+      accountOverride: accountOverrides.telegram,
+      shouldPromptAccountIds,
+      listAccountIds: listTelegramAccountIds,
+      defaultAccountId: defaultTelegramAccountId,
+    });
+
+    let next = cfg;
+    const resolvedAccount = resolveTelegramAccount({
+      cfg: next,
+      accountId: telegramAccountId,
+    });
+    const hasConfigToken =
+      Boolean(resolvedAccount.config.botToken) || Boolean(resolvedAccount.config.tokenFile?.trim());
+    const allowEnv = telegramAccountId === DEFAULT_ACCOUNT_ID;
+    const tokenPromptState = buildSingleChannelSecretPromptState({
+      accountConfigured: Boolean(resolvedAccount.token) || hasConfigToken,
+      hasConfigToken,
+      allowEnv,
+      envValue: process.env.TELEGRAM_BOT_TOKEN,
+    });
+
+    if (!tokenPromptState.accountConfigured) {
+      await noteTelegramTokenHelp(prompter);
+    }
+
+    const tokenResult = await promptSingleChannelToken({
+      prompter,
+      accountConfigured: tokenPromptState.accountConfigured,
+      canUseEnv: tokenPromptState.canUseEnv,
+      hasConfigToken: tokenPromptState.hasConfigToken,
+      envPrompt: "TELEGRAM_BOT_TOKEN detected. Use env var?",
+      keepPrompt: "Telegram token already configured. Keep it?",
+      inputPrompt: "Enter Telegram bot token",
+    });
+
+    next = applySingleTokenPromptResult({
+      cfg: next,
+      channel: "telegram",
+      accountId: telegramAccountId,
+      tokenPatchKey: "botToken",
+      tokenResult,
+    });
+
+    if (forceAllowFrom) {
+      next = await promptTelegramAllowFrom({
+        cfg: next,
+        prompter,
+        accountId: telegramAccountId,
+      });
+    }
+
+    return { cfg: next, accountId: telegramAccountId };
+  },
+  dmPolicy,
+  disable: (cfg) => setOnboardingChannelEnabled(cfg, channel, false),
+};

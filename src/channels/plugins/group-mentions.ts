@@ -1,3 +1,4 @@
+import { resolveSlackAccount } from "../../../extensions/slack/src/accounts.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
   resolveChannelGroupRequireMention,
@@ -11,7 +12,6 @@ import type {
 } from "../../config/types.tools.js";
 import { resolveExactLineGroupConfigKey } from "../../line/group-keys.js";
 import { normalizeAtHashSlug, normalizeHyphenSlug } from "../../shared/string-normalization.js";
-import { resolveSlackAccount } from "../../slack/accounts.js";
 import type { ChannelGroupContext } from "./types.js";
 
 type GroupMentionParams = ChannelGroupContext;

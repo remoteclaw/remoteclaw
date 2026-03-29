@@ -1,6 +1,9 @@
+import {
+  resolveTelegramApiBase,
+  resolveTelegramFetch,
+} from "../../../extensions/telegram/src/fetch.js";
+import { makeProxyFetch } from "../../../extensions/telegram/src/proxy.js";
 import type { TelegramNetworkConfig } from "../../config/types.telegram.js";
-import { resolveTelegramApiBase, resolveTelegramFetch } from "../../telegram/fetch.js";
-import { makeProxyFetch } from "../../telegram/proxy.js";
 
 export function resolveTelegramChatLookupFetch(params?: {
   proxyUrl?: string;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isAllowedBlueBubblesSender } from "../../extensions/bluebubbles/src/targets.js";
-import { isSignalSenderAllowed, type SignalSender } from "../signal/identity.js";
+import { isSignalSenderAllowed, type SignalSender } from "../../extensions/signal/src/identity.js";
 import { DM_GROUP_ACCESS_REASON, resolveDmGroupAccessWithLists } from "./dm-policy-shared.js";
 
 /** Inline mattermost sender check — fork equivalent of upstream monitor-auth.ts */

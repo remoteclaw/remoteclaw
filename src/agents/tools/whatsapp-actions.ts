@@ -1,5 +1,5 @@
+import { sendReactionWhatsApp } from "../../../extensions/whatsapp/src/send.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { sendReactionWhatsApp } from "../../web/outbound.js";
 import type { AgentToolResult } from "../agent-types.js";
 import { createActionGate, jsonResult, readReactionParams, readStringParam } from "./common.js";
 import { resolveAuthorizedWhatsAppOutboundTarget } from "./whatsapp-target-auth.js";

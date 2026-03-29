@@ -1,10 +1,10 @@
+import type { sendMessageDiscord } from "../../extensions/discord/src/send.js";
+import type { sendMessageIMessage } from "../../extensions/imessage/src/send.js";
+import type { sendMessageSignal } from "../../extensions/signal/src/send.js";
+import type { sendMessageSlack } from "../../extensions/slack/src/send.js";
+import type { sendMessageTelegram } from "../../extensions/telegram/src/send.js";
 import type { sendMessageWhatsApp } from "../channels/web/index.js";
-import type { sendMessageDiscord } from "../discord/send.js";
-import type { sendMessageIMessage } from "../imessage/send.js";
 import type { OutboundSendDeps } from "../infra/outbound/deliver.js";
-import type { sendMessageSignal } from "../signal/send.js";
-import type { sendMessageSlack } from "../slack/send.js";
-import type { sendMessageTelegram } from "../telegram/send.js";
 import { createOutboundSendDepsFromCliSource } from "./outbound-send-mapping.js";
 
 export type CliDeps = {
@@ -91,4 +91,4 @@ export function createOutboundSendDeps(deps: CliDeps): OutboundSendDeps {
   return createOutboundSendDepsFromCliSource(deps);
 }
 
-export { logWebSelfId } from "../web/auth-store.js";
+export { logWebSelfId } from "../../extensions/whatsapp/src/auth-store.js";

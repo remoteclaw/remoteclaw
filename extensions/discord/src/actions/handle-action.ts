@@ -1,3 +1,4 @@
+import { resolveDiscordChannelId } from "../../../../extensions/discord/src/targets.js";
 import {
   readNumberParam,
   readStringArrayParam,
@@ -7,7 +8,6 @@ import { readDiscordParentIdParam } from "../../../../src/agents/tools/discord-a
 import { handleDiscordAction } from "../../../../src/agents/tools/discord-actions.js";
 import { resolveReactionMessageId } from "../../../../src/channels/plugins/actions/reaction-message-id.js";
 import type { ChannelMessageActionContext } from "../../../../src/channels/plugins/types.js";
-import { resolveDiscordChannelId } from "../../../../src/discord/targets.js";
 import { readBooleanParam } from "../../../../src/plugin-sdk/boolean-param.js";
 import type { AgentToolResult } from "../../../../src/types/agent-types.js";
 import { tryHandleDiscordMessageActionGuildAdmin } from "./handle-action.guild-admin.js";

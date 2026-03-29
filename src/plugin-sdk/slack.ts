@@ -1,12 +1,12 @@
 export type { RemoteClawConfig } from "../config/config.js";
-export type { ResolvedSlackAccount } from "../slack/accounts.js";
+export type { ResolvedSlackAccount } from "../../extensions/slack/src/accounts.js";
 export * from "./channel-plugin-common.js";
 export {
   listSlackAccountIds,
   resolveDefaultSlackAccountId,
   resolveSlackAccount,
   resolveSlackReplyToMode,
-} from "../slack/accounts.js";
+} from "../../extensions/slack/src/accounts.js";
 export {
   listSlackDirectoryGroupsFromConfig,
   listSlackDirectoryPeersFromConfig,
@@ -15,8 +15,11 @@ export {
   looksLikeSlackTargetId,
   normalizeSlackMessagingTarget,
 } from "../channels/plugins/normalize/slack.js";
-export { extractSlackToolSend, listSlackMessageActions } from "../slack/message-actions.js";
-export { buildSlackThreadingToolContext } from "../slack/threading-tool-context.js";
+export {
+  extractSlackToolSend,
+  listSlackMessageActions,
+} from "../../extensions/slack/src/message-actions.js";
+export { buildSlackThreadingToolContext } from "../../extensions/slack/src/threading-tool-context.js";
 export { buildComputedAccountStatusSnapshot } from "./status-helpers.js";
 
 export {

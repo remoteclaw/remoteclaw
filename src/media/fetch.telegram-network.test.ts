@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { resolveTelegramTransport } from "../../extensions/telegram/src/fetch.js";
 import { TEST_UNDICI_RUNTIME_DEPS_KEY } from "../infra/net/undici-runtime.js";
-import { resolveTelegramTransport } from "../telegram/fetch.js";
 import { fetchRemoteMedia } from "./fetch.js";
 
 const undiciFetch = vi.hoisted(() => vi.fn());
@@ -109,7 +109,7 @@ describe("fetchRemoteMedia telegram network policy", () => {
   });
 
   it("keeps explicit proxy routing for file downloads", async () => {
-    const { makeProxyFetch } = await import("../telegram/proxy.js");
+    const { makeProxyFetch } = await import("../../extensions/telegram/src/proxy.js");
     const lookupFn = vi.fn(async () => [
       { address: "149.154.167.220", family: 4 },
     ]) as unknown as LookupFn;

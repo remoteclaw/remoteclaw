@@ -1,10 +1,10 @@
-import type { DiscordActionConfig } from "../../config/config.js";
 import {
   banMemberDiscord,
   hasAnyGuildPermissionDiscord,
   kickMemberDiscord,
   timeoutMemberDiscord,
-} from "../../discord/send.js";
+} from "../../../extensions/discord/src/send.js";
+import type { DiscordActionConfig } from "../../config/config.js";
 import type { AgentToolResult } from "../agent-types.js";
 import { type ActionGate, jsonResult, readStringParam } from "./common.js";
 import {

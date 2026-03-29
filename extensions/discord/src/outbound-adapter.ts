@@ -1,16 +1,16 @@
-import { normalizeDiscordOutboundTarget } from "../../../src/channels/plugins/normalize/discord.js";
-import { sendTextMediaPayload } from "../../../src/channels/plugins/outbound/direct-text-media.js";
-import type { ChannelOutboundAdapter } from "../../../src/channels/plugins/types.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
 import {
   getThreadBindingManager,
   type ThreadBindingRecord,
-} from "../../../src/discord/monitor/thread-bindings.js";
+} from "../../../extensions/discord/src/monitor/thread-bindings.js";
 import {
   sendMessageDiscord,
   sendPollDiscord,
   sendWebhookMessageDiscord,
-} from "../../../src/discord/send.js";
+} from "../../../extensions/discord/src/send.js";
+import { normalizeDiscordOutboundTarget } from "../../../src/channels/plugins/normalize/discord.js";
+import { sendTextMediaPayload } from "../../../src/channels/plugins/outbound/direct-text-media.js";
+import type { ChannelOutboundAdapter } from "../../../src/channels/plugins/types.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { OutboundIdentity } from "../../../src/infra/outbound/identity.js";
 
 function resolveDiscordOutboundTarget(params: {

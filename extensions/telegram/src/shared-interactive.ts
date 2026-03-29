@@ -1,7 +1,7 @@
 import type {
   TelegramInlineButton,
   TelegramInlineButtons,
-} from "../../../src/telegram/button-types.js";
+} from "../../../extensions/telegram/src/button-types.js";
 
 type InteractiveButtonStyle = "primary" | "secondary" | "success" | "danger";
 

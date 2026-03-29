@@ -1,5 +1,5 @@
 import type { Block, KnownBlock } from "@slack/web-api";
-import { truncateSlackText } from "../../../src/slack/truncate.js";
+import { truncateSlackText } from "../../../extensions/slack/src/truncate.js";
 
 type InteractiveButtonStyle = "primary" | "secondary" | "success" | "danger";
 

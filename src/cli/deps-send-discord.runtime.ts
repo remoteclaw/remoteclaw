@@ -1,1 +1,1 @@
-export { sendMessageDiscord } from "../discord/send.js";
+export { sendMessageDiscord } from "../../extensions/discord/src/send.js";

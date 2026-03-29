@@ -1,4 +1,8 @@
 import {
+  createDiscordActionGate,
+  listEnabledDiscordAccounts,
+} from "../../../extensions/discord/src/accounts.js";
+import {
   createUnionActionGate,
   listTokenSourcedAccounts,
 } from "../../../src/channels/plugins/actions/shared.js";
@@ -7,10 +11,6 @@ import type {
   ChannelMessageActionName,
 } from "../../../src/channels/plugins/types.js";
 import type { DiscordActionConfig } from "../../../src/config/types.discord.js";
-import {
-  createDiscordActionGate,
-  listEnabledDiscordAccounts,
-} from "../../../src/discord/accounts.js";
 import { handleDiscordMessageAction } from "./actions/handle-action.js";
 
 export const discordMessageActions: ChannelMessageActionAdapter = {

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+import { parseTelegramTarget } from "../../extensions/telegram/src/targets.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import { parseTelegramTarget } from "../telegram/targets.js";
 
 // Mock session store so we can control what entries exist.
 const mockStore: Record<string, Record<string, unknown>> = {};

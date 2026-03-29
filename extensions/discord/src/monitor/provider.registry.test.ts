@@ -347,7 +347,7 @@ describe("monitorDiscordProvider real plugin registry", () => {
       }),
     ).toEqual({ ok: true });
 
-    const { monitorDiscordProvider } = await import("../../../../src/discord/monitor/provider.js");
+    const { monitorDiscordProvider } = await import("./provider.js");
 
     await monitorDiscordProvider({
       config: baseConfig(),

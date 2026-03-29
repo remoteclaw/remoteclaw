@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { formatThreadBindingDurationLabel } from "../../../extensions/discord/src/monitor/thread-bindings.messages.js";
 import { resolveThreadBindingConversationIdFromBindingId } from "../../../src/channels/thread-binding-id.js";
 import { resolveStateDir } from "../../../src/config/paths.js";
-import { formatThreadBindingDurationLabel } from "../../../src/discord/monitor/thread-bindings.messages.js";
 import { logVerbose } from "../../../src/globals.js";
 import { writeJsonAtomic } from "../../../src/infra/json-files.js";
 import {

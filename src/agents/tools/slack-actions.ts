@@ -1,5 +1,4 @@
-import type { RemoteClawConfig } from "../../config/config.js";
-import { resolveSlackAccount } from "../../slack/accounts.js";
+import { resolveSlackAccount } from "../../../extensions/slack/src/accounts.js";
 import {
   deleteSlackMessage,
   downloadSlackFile,
@@ -15,10 +14,11 @@ import {
   removeSlackReaction,
   sendSlackMessage,
   unpinSlackMessage,
-} from "../../slack/actions.js";
-import { parseSlackBlocksInput } from "../../slack/blocks-input.js";
-import { recordSlackThreadParticipation } from "../../slack/sent-thread-cache.js";
-import { parseSlackTarget, resolveSlackChannelId } from "../../slack/targets.js";
+} from "../../../extensions/slack/src/actions.js";
+import { parseSlackBlocksInput } from "../../../extensions/slack/src/blocks-input.js";
+import { recordSlackThreadParticipation } from "../../../extensions/slack/src/sent-thread-cache.js";
+import { parseSlackTarget, resolveSlackChannelId } from "../../../extensions/slack/src/targets.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import type { AgentToolResult } from "../agent-types.js";
 import { withNormalizedTimestamp } from "../date-time.js";
 import {

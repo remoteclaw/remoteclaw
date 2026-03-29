@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import * as normalize from "./normalize.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as normalize from "./normalize-target.js";
 
-vi.mock("./normalize.js");
-vi.mock("../infra/outbound/target-errors.js", () => ({
+vi.mock("./normalize-target.js");
+vi.mock("../../../src/infra/outbound/target-errors.js", () => ({
   missingTargetError: (platform: string, format: string) => new Error(`${platform}: ${format}`),
 }));
 
@@ -144,9 +144,9 @@ describe("resolveWhatsAppOutboundTarget", () => {
 
     it("handles mixed numeric and string allowList entries", () => {
       vi.mocked(normalize.normalizeWhatsAppTarget)
-        .mockReturnValueOnce("+11234567890") // for 'to' param
-        .mockReturnValueOnce("+11234567890") // for allowFrom[0]
-        .mockReturnValueOnce("+11234567890"); // for allowFrom[1]
+        .mockReturnValueOnce("+11234567890")
+        .mockReturnValueOnce("+11234567890")
+        .mockReturnValueOnce("+11234567890");
       vi.mocked(normalize.isWhatsAppGroupJid).mockReturnValueOnce(false);
 
       expectAllowedForTarget({
@@ -157,9 +157,9 @@ describe("resolveWhatsAppOutboundTarget", () => {
 
     it("filters out invalid normalized entries from allowList", () => {
       vi.mocked(normalize.normalizeWhatsAppTarget)
-        .mockReturnValueOnce(null) // for allowFrom[0] "invalid" (processed first)
-        .mockReturnValueOnce("+11234567890") // for allowFrom[1] "+11234567890"
-        .mockReturnValueOnce("+11234567890"); // for 'to' param (processed last)
+        .mockReturnValueOnce(null)
+        .mockReturnValueOnce("+11234567890")
+        .mockReturnValueOnce("+11234567890");
       vi.mocked(normalize.isWhatsAppGroupJid).mockReturnValueOnce(false);
 
       expectAllowedForTarget({

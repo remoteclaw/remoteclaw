@@ -1,3 +1,7 @@
+import {
+  isWhatsAppGroupJid,
+  normalizeWhatsAppTarget,
+} from "../../../extensions/whatsapp/src/normalize-target.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import type { ChatType } from "../../channels/chat-type.js";
 import { getChannelPlugin } from "../../channels/plugins/index.js";
@@ -22,7 +26,6 @@ import { buildTelegramGroupPeerId } from "../../telegram/bot/helpers.js";
 import { resolveTelegramTargetChatType } from "../../telegram/inline-buttons.js";
 import { parseTelegramThreadId } from "../../telegram/outbound-params.js";
 import { parseTelegramTarget } from "../../telegram/targets.js";
-import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../whatsapp/normalize.js";
 import type { ResolvedMessagingTarget } from "./target-resolver.js";
 
 export type OutboundSessionRoute = {

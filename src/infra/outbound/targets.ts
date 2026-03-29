@@ -1,3 +1,7 @@
+import {
+  isWhatsAppGroupJid,
+  normalizeWhatsAppTarget,
+} from "../../../extensions/whatsapp/src/normalize-target.js";
 import { normalizeChatType, type ChatType } from "../../channels/chat-type.js";
 import { getChannelPlugin, normalizeChannelId } from "../../channels/plugins/index.js";
 import type { ChannelOutboundTargetMode } from "../../channels/plugins/types.js";
@@ -20,7 +24,6 @@ import {
   isDeliverableMessageChannel,
   normalizeMessageChannel,
 } from "../../utils/message-channel.js";
-import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../whatsapp/normalize.js";
 import { resolveOutboundChannelPlugin } from "./channel-resolution.js";
 import { missingTargetError } from "./target-errors.js";
 

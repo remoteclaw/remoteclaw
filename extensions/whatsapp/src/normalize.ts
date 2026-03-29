@@ -2,7 +2,7 @@ import {
   looksLikeHandleOrPhoneTarget,
   trimMessagingTarget,
 } from "../../../src/channels/plugins/normalize/shared.js";
-import { normalizeWhatsAppTarget } from "../../../src/whatsapp/normalize.js";
+import { normalizeWhatsAppTarget } from "./normalize-target.js";
 
 export function normalizeWhatsAppMessagingTarget(raw: string): string | undefined {
   const trimmed = trimMessagingTarget(raw);

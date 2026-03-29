@@ -25,14 +25,8 @@ jobs:
         with:
           install-bun: "false"
 
-      - name: Format check
-        run: pnpm format:check
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Lint no-random-messaging
-        run: pnpm lint:tmp:no-random-messaging
+      - name: Check
+        run: pnpm check
 
   build:
     runs-on: ubuntu-latest
@@ -46,9 +40,6 @@ jobs:
         uses: ./.github/actions/setup-node-env
         with:
           install-bun: "false"
-
-      - name: Type-check
-        run: pnpm tsgo
 
       - name: Build
         run: pnpm build

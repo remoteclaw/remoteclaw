@@ -1,6 +1,6 @@
+import { sendMessageSlack, type SlackSendIdentity } from "../../../../extensions/slack/src/send.js";
 import type { OutboundIdentity } from "../../../infra/outbound/identity.js";
 import { getGlobalHookRunner } from "../../../plugins/hook-runner-global.js";
-import { sendMessageSlack, type SlackSendIdentity } from "../../../slack/send.js";
 import type { ChannelOutboundAdapter } from "../types.js";
 import { sendTextMediaPayload } from "./direct-text-media.js";
 

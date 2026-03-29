@@ -1,10 +1,10 @@
+import { parseTelegramTarget } from "../../../extensions/telegram/src/targets.js";
 import { isMessagingToolDuplicate } from "../../agents/agent-helpers.js";
 import type { MessagingToolSend } from "../../agents/agent-messaging.js";
 import { normalizeChannelId } from "../../channels/plugins/index.js";
 import type { ReplyToMode } from "../../config/types.js";
 import { normalizeTargetForProvider } from "../../infra/outbound/target-normalization.js";
 import { normalizeOptionalAccountId } from "../../routing/account-id.js";
-import { parseTelegramTarget } from "../../telegram/targets.js";
 import type { OriginatingChannelType } from "../templating.js";
 import type { ReplyPayload } from "../types.js";
 import { extractReplyToTag } from "./reply-tags.js";

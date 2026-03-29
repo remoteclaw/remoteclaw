@@ -7,8 +7,8 @@ export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export type { RemoteClawConfig } from "../config/config.js";
 export type { PluginRuntime } from "../plugins/runtime/types.js";
 export type { RemoteClawPluginApi } from "../plugins/types.js";
-export type { ResolvedTelegramAccount } from "../telegram/accounts.js";
-export type { TelegramProbe } from "../telegram/probe.js";
+export type { ResolvedTelegramAccount } from "../../extensions/telegram/src/accounts.js";
+export type { TelegramProbe } from "../../extensions/telegram/src/probe.js";
 
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 
@@ -33,7 +33,7 @@ export {
   listTelegramAccountIds,
   resolveDefaultTelegramAccountId,
   resolveTelegramAccount,
-} from "../telegram/accounts.js";
+} from "../../extensions/telegram/src/accounts.js";
 export {
   listTelegramDirectoryGroupsFromConfig,
   listTelegramDirectoryPeersFromConfig,
@@ -45,7 +45,7 @@ export {
 export {
   parseTelegramReplyToMessageId,
   parseTelegramThreadId,
-} from "../telegram/outbound-params.js";
+} from "../../extensions/telegram/src/outbound-params.js";
 export { collectTelegramStatusIssues } from "../channels/plugins/status-issues/telegram.js";
 
 export {

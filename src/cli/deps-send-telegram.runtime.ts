@@ -1,1 +1,1 @@
-export { sendMessageTelegram } from "../telegram/send.js";
+export { sendMessageTelegram } from "../../extensions/telegram/src/send.js";

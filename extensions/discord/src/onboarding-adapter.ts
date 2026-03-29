@@ -1,3 +1,14 @@
+import {
+  listDiscordAccountIds,
+  resolveDefaultDiscordAccountId,
+  resolveDiscordAccount,
+} from "../../../extensions/discord/src/accounts.js";
+import { normalizeDiscordSlug } from "../../../extensions/discord/src/monitor/allow-list.js";
+import {
+  resolveDiscordChannelAllowlist,
+  type DiscordChannelResolution,
+} from "../../../extensions/discord/src/resolve-channels.js";
+import { resolveDiscordUserAllowlist } from "../../../extensions/discord/src/resolve-users.js";
 import type {
   ChannelOnboardingAdapter,
   ChannelOnboardingDmPolicy,
@@ -20,17 +31,6 @@ import {
 } from "../../../src/channels/plugins/onboarding/helpers.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { DiscordGuildEntry } from "../../../src/config/types.discord.js";
-import {
-  listDiscordAccountIds,
-  resolveDefaultDiscordAccountId,
-  resolveDiscordAccount,
-} from "../../../src/discord/accounts.js";
-import { normalizeDiscordSlug } from "../../../src/discord/monitor/allow-list.js";
-import {
-  resolveDiscordChannelAllowlist,
-  type DiscordChannelResolution,
-} from "../../../src/discord/resolve-channels.js";
-import { resolveDiscordUserAllowlist } from "../../../src/discord/resolve-users.js";
 import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
 import { formatDocsLink } from "../../../src/terminal/links.js";
 import type { WizardPrompter } from "../../../src/wizard/prompts.js";

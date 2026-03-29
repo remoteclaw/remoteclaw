@@ -64,12 +64,12 @@ export type {
   ThreadBindingManager,
   ThreadBindingRecord,
   ThreadBindingTargetKind,
-} from "../discord/monitor/thread-bindings.js";
+} from "../../extensions/discord/src/monitor/thread-bindings.js";
 export {
   autoBindSpawnedDiscordSubagent,
   listThreadBindingsBySessionKey,
   unbindThreadBindingsBySessionKey,
-} from "../discord/monitor/thread-bindings.js";
+} from "../../extensions/discord/src/monitor/thread-bindings.js";
 export { createPluginRuntimeStore } from "./runtime-store.js";
 export {
   AllowFromEntrySchema,
@@ -591,8 +591,8 @@ export {
   resolveDefaultDiscordAccountId,
   resolveDiscordAccount,
   type ResolvedDiscordAccount,
-} from "../discord/accounts.js";
-export { collectDiscordAuditChannelIds } from "../discord/audit.js";
+} from "../../extensions/discord/src/accounts.js";
+export { collectDiscordAuditChannelIds } from "../../extensions/discord/src/audit.js";
 export { discordOnboardingAdapter } from "../channels/plugins/onboarding/discord.js";
 export {
   looksLikeDiscordTargetId,
@@ -607,7 +607,7 @@ export {
   resolveDefaultIMessageAccountId,
   resolveIMessageAccount,
   type ResolvedIMessageAccount,
-} from "../imessage/accounts.js";
+} from "../../extensions/imessage/src/accounts.js";
 export { imessageOnboardingAdapter } from "../channels/plugins/onboarding/imessage.js";
 export {
   looksLikeIMessageTargetId,
@@ -621,11 +621,11 @@ export {
   resolveServicePrefixedAllowTarget,
   resolveServicePrefixedOrChatAllowTarget,
   resolveServicePrefixedTarget,
-} from "../imessage/target-parsing-helpers.js";
+} from "../../extensions/imessage/src/target-parsing-helpers.js";
 export type {
   ChatSenderAllowParams,
   ParsedChatTarget,
-} from "../imessage/target-parsing-helpers.js";
+} from "../../extensions/imessage/src/target-parsing-helpers.js";
 
 // Channel: Slack
 export {
@@ -635,14 +635,17 @@ export {
   resolveSlackAccount,
   resolveSlackReplyToMode,
   type ResolvedSlackAccount,
-} from "../slack/accounts.js";
-export { extractSlackToolSend, listSlackMessageActions } from "../slack/message-actions.js";
+} from "../../extensions/slack/src/accounts.js";
+export {
+  extractSlackToolSend,
+  listSlackMessageActions,
+} from "../../extensions/slack/src/message-actions.js";
 export { slackOnboardingAdapter } from "../channels/plugins/onboarding/slack.js";
 export {
   looksLikeSlackTargetId,
   normalizeSlackMessagingTarget,
 } from "../channels/plugins/normalize/slack.js";
-export { buildSlackThreadingToolContext } from "../slack/threading-tool-context.js";
+export { buildSlackThreadingToolContext } from "../../extensions/slack/src/threading-tool-context.js";
 
 // Channel: Telegram
 export {
@@ -650,7 +653,7 @@ export {
   resolveDefaultTelegramAccountId,
   resolveTelegramAccount,
   type ResolvedTelegramAccount,
-} from "../telegram/accounts.js";
+} from "../../extensions/telegram/src/accounts.js";
 export { telegramOnboardingAdapter } from "../channels/plugins/onboarding/telegram.js";
 export {
   looksLikeTelegramTargetId,
@@ -660,8 +663,8 @@ export { collectTelegramStatusIssues } from "../channels/plugins/status-issues/t
 export {
   parseTelegramReplyToMessageId,
   parseTelegramThreadId,
-} from "../telegram/outbound-params.js";
-export { type TelegramProbe } from "../telegram/probe.js";
+} from "../../extensions/telegram/src/outbound-params.js";
+export { type TelegramProbe } from "../../extensions/telegram/src/probe.js";
 
 // Channel: Signal
 export {
@@ -669,7 +672,7 @@ export {
   resolveDefaultSignalAccountId,
   resolveSignalAccount,
   type ResolvedSignalAccount,
-} from "../signal/accounts.js";
+} from "../../extensions/signal/src/accounts.js";
 export { signalOnboardingAdapter } from "../channels/plugins/onboarding/signal.js";
 export {
   looksLikeSignalTargetId,
@@ -718,7 +721,7 @@ export {
 export type { ProcessedLineMessage } from "../line/markdown-to-line.js";
 
 // Media utilities
-export { loadWebMedia, type WebMediaResult } from "../web/media.js";
+export { loadWebMedia, type WebMediaResult } from "../../extensions/whatsapp/src/media.js";
 
 // Model authentication types for plugins.
 // Plugins should use runtime.modelAuth (which strips unsafe overrides like

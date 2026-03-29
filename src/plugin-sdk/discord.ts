@@ -1,13 +1,13 @@
 export type { ChannelMessageActionAdapter } from "../channels/plugins/types.js";
 export type { RemoteClawConfig } from "../config/config.js";
-export type { ResolvedDiscordAccount } from "../discord/accounts.js";
+export type { ResolvedDiscordAccount } from "../../extensions/discord/src/accounts.js";
 export * from "./channel-plugin-common.js";
 
 export {
   listDiscordAccountIds,
   resolveDefaultDiscordAccountId,
   resolveDiscordAccount,
-} from "../discord/accounts.js";
+} from "../../extensions/discord/src/accounts.js";
 export {
   listDiscordDirectoryGroupsFromConfig,
   listDiscordDirectoryPeersFromConfig,
@@ -17,7 +17,7 @@ export {
   normalizeDiscordMessagingTarget,
   normalizeDiscordOutboundTarget,
 } from "../channels/plugins/normalize/discord.js";
-export { collectDiscordAuditChannelIds } from "../discord/audit.js";
+export { collectDiscordAuditChannelIds } from "../../extensions/discord/src/audit.js";
 export { collectDiscordStatusIssues } from "../channels/plugins/status-issues/discord.js";
 
 export {
@@ -35,7 +35,7 @@ export {
   autoBindSpawnedDiscordSubagent,
   listThreadBindingsBySessionKey,
   unbindThreadBindingsBySessionKey,
-} from "../discord/monitor/thread-bindings.js";
+} from "../../extensions/discord/src/monitor/thread-bindings.js";
 
 export {
   buildComputedAccountStatusSnapshot,

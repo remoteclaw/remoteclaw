@@ -1,10 +1,10 @@
+import { resolveIMessageAccount } from "../../extensions/imessage/src/accounts.js";
+import { resolveWhatsAppAccount } from "../../extensions/whatsapp/src/accounts.js";
 import { normalizeWhatsAppAllowFromEntries } from "../channels/plugins/normalize/whatsapp.js";
 import type { ChannelConfigAdapter } from "../channels/plugins/types.adapters.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import { resolveIMessageAccount } from "../imessage/accounts.js";
 import { normalizeAccountId } from "../routing/session-key.js";
 import { normalizeStringEntries } from "../shared/string-normalization.js";
-import { resolveWhatsAppAccount } from "../web/accounts.js";
 
 export function mapAllowFromEntries(
   allowFrom: Array<string | number> | null | undefined,

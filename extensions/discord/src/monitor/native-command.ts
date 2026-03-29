@@ -48,7 +48,7 @@ import { getAgentScopedMediaLocalRoots } from "../../../../src/media/local-roots
 import { buildPairingReply } from "../../../../src/pairing/pairing-messages.js";
 import { executePluginCommand, matchPluginCommand } from "../../../../src/plugins/commands.js";
 import { chunkItems } from "../../../../src/utils/chunk-items.js";
-import { loadWebMedia } from "../../../../src/web/media.js";
+import { loadWebMedia } from "../../../whatsapp/src/media.js";
 import { resolveDiscordMaxLinesPerMessage } from "../accounts.js";
 import { chunkDiscordTextWithMode } from "../chunk.js";
 import {

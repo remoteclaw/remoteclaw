@@ -1,8 +1,15 @@
+import { resolveDiscordAccount } from "../../extensions/discord/src/accounts.js";
+import { resolveSignalAccount } from "../../extensions/signal/src/accounts.js";
+import {
+  resolveSlackAccount,
+  resolveSlackReplyToMode,
+} from "../../extensions/slack/src/accounts.js";
+import { buildSlackThreadingToolContext } from "../../extensions/slack/src/threading-tool-context.js";
+import { resolveTelegramAccount } from "../../extensions/telegram/src/accounts.js";
 import {
   resolveChannelGroupRequireMention,
   resolveChannelGroupToolsPolicy,
 } from "../config/group-policy.js";
-import { resolveDiscordAccount } from "../discord/accounts.js";
 import {
   formatAllowFromLowercase,
   formatNormalizedAllowFromEntries,
@@ -19,10 +26,6 @@ import {
 } from "../plugin-sdk/channel-config-helpers.js";
 import { requireActivePluginRegistry } from "../plugins/runtime.js";
 import { normalizeAccountId } from "../routing/session-key.js";
-import { resolveSignalAccount } from "../signal/accounts.js";
-import { resolveSlackAccount, resolveSlackReplyToMode } from "../slack/accounts.js";
-import { buildSlackThreadingToolContext } from "../slack/threading-tool-context.js";
-import { resolveTelegramAccount } from "../telegram/accounts.js";
 import { normalizeE164 } from "../utils.js";
 import {
   resolveDiscordGroupRequireMention,

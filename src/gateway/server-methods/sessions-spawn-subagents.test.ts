@@ -33,7 +33,7 @@ vi.mock("../../config/sessions.js", () => ({
   updateSessionStore: vi.fn(),
 }));
 
-vi.mock("../../discord/monitor/thread-bindings.js", () => ({
+vi.mock("../../../extensions/discord/src/monitor/thread-bindings.js", () => ({
   unbindThreadBindingsBySessionKey: vi.fn(),
 }));
 

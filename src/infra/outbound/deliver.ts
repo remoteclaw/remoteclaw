@@ -1,3 +1,13 @@
+import type { sendMessageDiscord } from "../../../extensions/discord/src/send.js";
+import type { sendMessageIMessage } from "../../../extensions/imessage/src/send.js";
+import {
+  markdownToSignalTextChunks,
+  type SignalTextStyleRange,
+} from "../../../extensions/signal/src/format.js";
+import { sendMessageSignal } from "../../../extensions/signal/src/send.js";
+import type { sendMessageSlack } from "../../../extensions/slack/src/send.js";
+import type { sendMessageTelegram } from "../../../extensions/telegram/src/send.js";
+import type { sendMessageWhatsApp } from "../../../extensions/whatsapp/src/send.js";
 import {
   chunkByParagraph,
   chunkMarkdownTextWithMode,
@@ -17,7 +27,6 @@ import {
   appendAssistantMessageToSessionTranscript,
   resolveMirroredTranscriptText,
 } from "../../config/sessions.js";
-import type { sendMessageDiscord } from "../../discord/send.js";
 import { fireAndForgetHook } from "../../hooks/fire-and-forget.js";
 import { createInternalHookEvent, triggerInternalHook } from "../../hooks/internal-hooks.js";
 import {
@@ -26,15 +35,9 @@ import {
   toPluginMessageContext,
   toPluginMessageSentEvent,
 } from "../../hooks/message-hook-mappers.js";
-import type { sendMessageIMessage } from "../../imessage/send.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
-import { markdownToSignalTextChunks, type SignalTextStyleRange } from "../../signal/format.js";
-import { sendMessageSignal } from "../../signal/send.js";
-import type { sendMessageSlack } from "../../slack/send.js";
-import type { sendMessageTelegram } from "../../telegram/send.js";
-import type { sendMessageWhatsApp } from "../../web/outbound.js";
 import { throwIfAborted } from "./abort.js";
 import { ackDelivery, enqueueDelivery, failDelivery } from "./delivery-queue.js";
 import type { OutboundIdentity } from "./identity.js";

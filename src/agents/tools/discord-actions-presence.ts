@@ -1,6 +1,6 @@
 import type { Activity, UpdatePresenceData } from "@buape/carbon/gateway";
+import { getGateway } from "../../../extensions/discord/src/monitor/gateway-registry.js";
 import type { DiscordActionConfig } from "../../config/config.js";
-import { getGateway } from "../../discord/monitor/gateway-registry.js";
 import type { AgentToolResult } from "../agent-types.js";
 import { type ActionGate, jsonResult, readStringParam } from "./common.js";
 

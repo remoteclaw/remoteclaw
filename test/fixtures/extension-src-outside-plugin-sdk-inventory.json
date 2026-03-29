@@ -688,6 +688,2438 @@
     "reason": "imports core src path outside plugin-sdk from an extension"
   },
   {
+    "file": "extensions/slack/src/shared-interactive.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/slack/truncate.js",
+    "resolvedPath": "src/slack/truncate.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/account-inspect.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/account-inspect.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/config/types.secrets.js",
+    "resolvedPath": "src/config/types.secrets.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/account-inspect.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/config/types.telegram.js",
+    "resolvedPath": "src/config/types.telegram.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/account-inspect.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/accounts.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/account-action-gate.js",
+    "resolvedPath": "src/channels/plugins/account-action-gate.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/accounts.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/accounts.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/config/types.js",
+    "resolvedPath": "src/config/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/accounts.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/infra/env.js",
+    "resolvedPath": "src/infra/env.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/accounts.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/logging/subsystem.js",
+    "resolvedPath": "src/logging/subsystem.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/accounts.ts",
+    "line": 12,
+    "kind": "import",
+    "specifier": "../../../src/routing/account-lookup.js",
+    "resolvedPath": "src/routing/account-lookup.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/accounts.ts",
+    "line": 16,
+    "kind": "import",
+    "specifier": "../../../src/routing/bindings.js",
+    "resolvedPath": "src/routing/bindings.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/accounts.ts",
+    "line": 17,
+    "kind": "import",
+    "specifier": "../../../src/routing/default-account-warnings.js",
+    "resolvedPath": "src/routing/default-account-warnings.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/accounts.ts",
+    "line": 22,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/api-logging.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/api-logging.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/infra/errors.js",
+    "resolvedPath": "src/infra/errors.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/api-logging.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/logging/subsystem.js",
+    "resolvedPath": "src/logging/subsystem.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/api-logging.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/audit-membership-runtime.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/audit-membership-runtime.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/utils/fetch-timeout.js",
+    "resolvedPath": "src/utils/fetch-timeout.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/audit.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/config/types.js",
+    "resolvedPath": "src/config/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/audit.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/config/types.telegram.js",
+    "resolvedPath": "src/config/types.telegram.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-access.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/channels/allow-from.js",
+    "resolvedPath": "src/channels/allow-from.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-access.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/channels/allowlist-match.js",
+    "resolvedPath": "src/channels/allowlist-match.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-access.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/logging/subsystem.js",
+    "resolvedPath": "src/logging/subsystem.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-handlers.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/agents/agent-scope.js",
+    "resolvedPath": "src/agents/agent-scope.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-handlers.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/inbound-debounce.js",
+    "resolvedPath": "src/auto-reply/inbound-debounce.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-handlers.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/reply/commands-info.js",
+    "resolvedPath": "src/auto-reply/reply/commands-info.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-handlers.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/status.js",
+    "resolvedPath": "src/auto-reply/status.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-handlers.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../src/channels/inbound-debounce-policy.js",
+    "resolvedPath": "src/channels/inbound-debounce-policy.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-handlers.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/config-writes.js",
+    "resolvedPath": "src/channels/plugins/config-writes.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-handlers.ts",
+    "line": 11,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-handlers.ts",
+    "line": 12,
+    "kind": "import",
+    "specifier": "../../../src/config/io.js",
+    "resolvedPath": "src/config/io.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-handlers.ts",
+    "line": 13,
+    "kind": "import",
+    "specifier": "../../../src/config/types.base.js",
+    "resolvedPath": "src/config/types.base.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-handlers.ts",
+    "line": 14,
+    "kind": "import",
+    "specifier": "../../../src/config/types.js",
+    "resolvedPath": "src/config/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-handlers.ts",
+    "line": 15,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-handlers.ts",
+    "line": 16,
+    "kind": "import",
+    "specifier": "../../../src/infra/system-events.js",
+    "resolvedPath": "src/infra/system-events.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-handlers.ts",
+    "line": 17,
+    "kind": "import",
+    "specifier": "../../../src/media/fetch.js",
+    "resolvedPath": "src/media/fetch.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-handlers.ts",
+    "line": 18,
+    "kind": "import",
+    "specifier": "../../../src/pairing/pairing-store.js",
+    "resolvedPath": "src/pairing/pairing-store.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-handlers.ts",
+    "line": 19,
+    "kind": "import",
+    "specifier": "../../../src/routing/resolve-route.js",
+    "resolvedPath": "src/routing/resolve-route.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.body.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/command-detection.js",
+    "resolvedPath": "src/auto-reply/command-detection.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.body.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/reply/history.js",
+    "resolvedPath": "src/auto-reply/reply/history.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.body.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/reply/mentions.js",
+    "resolvedPath": "src/auto-reply/reply/mentions.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.body.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../src/channels/command-gating.js",
+    "resolvedPath": "src/channels/command-gating.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.body.ts",
+    "line": 11,
+    "kind": "import",
+    "specifier": "../../../src/channels/location.js",
+    "resolvedPath": "src/channels/location.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.body.ts",
+    "line": 12,
+    "kind": "import",
+    "specifier": "../../../src/channels/logging.js",
+    "resolvedPath": "src/channels/logging.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.body.ts",
+    "line": 13,
+    "kind": "import",
+    "specifier": "../../../src/channels/mention-gating.js",
+    "resolvedPath": "src/channels/mention-gating.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.body.ts",
+    "line": 14,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.body.ts",
+    "line": 15,
+    "kind": "import",
+    "specifier": "../../../src/config/types.js",
+    "resolvedPath": "src/config/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.body.ts",
+    "line": 16,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.session.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/commands-registry.js",
+    "resolvedPath": "src/auto-reply/commands-registry.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.session.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/envelope.js",
+    "resolvedPath": "src/auto-reply/envelope.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.session.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/reply/history.js",
+    "resolvedPath": "src/auto-reply/reply/history.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.session.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/reply/inbound-context.js",
+    "resolvedPath": "src/auto-reply/reply/inbound-context.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.session.ts",
+    "line": 11,
+    "kind": "import",
+    "specifier": "../../../src/channels/location.js",
+    "resolvedPath": "src/channels/location.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.session.ts",
+    "line": 12,
+    "kind": "import",
+    "specifier": "../../../src/channels/session.js",
+    "resolvedPath": "src/channels/session.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.session.ts",
+    "line": 13,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.session.ts",
+    "line": 14,
+    "kind": "import",
+    "specifier": "../../../src/config/sessions.js",
+    "resolvedPath": "src/config/sessions.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.session.ts",
+    "line": 15,
+    "kind": "import",
+    "specifier": "../../../src/config/types.js",
+    "resolvedPath": "src/config/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.session.ts",
+    "line": 16,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.session.ts",
+    "line": 17,
+    "kind": "import",
+    "specifier": "../../../src/routing/resolve-route.js",
+    "resolvedPath": "src/routing/resolve-route.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.session.ts",
+    "line": 18,
+    "kind": "import",
+    "specifier": "../../../src/routing/resolve-route.js",
+    "resolvedPath": "src/routing/resolve-route.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.session.ts",
+    "line": 19,
+    "kind": "import",
+    "specifier": "../../../src/security/dm-policy-shared.js",
+    "resolvedPath": "src/security/dm-policy-shared.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/acp/persistent-bindings.route.js",
+    "resolvedPath": "src/acp/persistent-bindings.route.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/agents/identity.js",
+    "resolvedPath": "src/agents/identity.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/channels/ack-reactions.js",
+    "resolvedPath": "src/channels/ack-reactions.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/channels/logging.js",
+    "resolvedPath": "src/channels/logging.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../src/channels/status-reactions.js",
+    "resolvedPath": "src/channels/status-reactions.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.ts",
+    "line": 11,
+    "kind": "import",
+    "specifier": "../../../src/infra/channel-activity.js",
+    "resolvedPath": "src/infra/channel-activity.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.ts",
+    "line": 12,
+    "kind": "import",
+    "specifier": "../../../src/routing/resolve-route.js",
+    "resolvedPath": "src/routing/resolve-route.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.ts",
+    "line": 13,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.types.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/reply/history.js",
+    "resolvedPath": "src/auto-reply/reply/history.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.types.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-context.types.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../src/config/types.js",
+    "resolvedPath": "src/config/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-dispatch.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/agents/agent-scope.js",
+    "resolvedPath": "src/agents/agent-scope.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-dispatch.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/chunk.js",
+    "resolvedPath": "src/auto-reply/chunk.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-dispatch.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/reply/auto-topic-label.js",
+    "resolvedPath": "src/auto-reply/reply/auto-topic-label.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-dispatch.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/reply/history.js",
+    "resolvedPath": "src/auto-reply/reply/history.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-dispatch.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/reply/provider-dispatcher.js",
+    "resolvedPath": "src/auto-reply/reply/provider-dispatcher.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-dispatch.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/types.js",
+    "resolvedPath": "src/auto-reply/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-dispatch.ts",
+    "line": 11,
+    "kind": "import",
+    "specifier": "../../../src/channels/ack-reactions.js",
+    "resolvedPath": "src/channels/ack-reactions.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-dispatch.ts",
+    "line": 12,
+    "kind": "import",
+    "specifier": "../../../src/channels/logging.js",
+    "resolvedPath": "src/channels/logging.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-dispatch.ts",
+    "line": 13,
+    "kind": "import",
+    "specifier": "../../../src/channels/reply-prefix.js",
+    "resolvedPath": "src/channels/reply-prefix.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-dispatch.ts",
+    "line": 14,
+    "kind": "import",
+    "specifier": "../../../src/channels/typing.js",
+    "resolvedPath": "src/channels/typing.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-dispatch.ts",
+    "line": 15,
+    "kind": "import",
+    "specifier": "../../../src/config/markdown-tables.js",
+    "resolvedPath": "src/config/markdown-tables.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-dispatch.ts",
+    "line": 16,
+    "kind": "import",
+    "specifier": "../../../src/config/sessions/paths.js",
+    "resolvedPath": "src/config/sessions/paths.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-dispatch.ts",
+    "line": 17,
+    "kind": "import",
+    "specifier": "../../../src/config/sessions/store.js",
+    "resolvedPath": "src/config/sessions/store.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-dispatch.ts",
+    "line": 23,
+    "kind": "import",
+    "specifier": "../../../src/config/types.js",
+    "resolvedPath": "src/config/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-dispatch.ts",
+    "line": 24,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-dispatch.ts",
+    "line": 25,
+    "kind": "import",
+    "specifier": "../../../src/media/local-roots.js",
+    "resolvedPath": "src/media/local-roots.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message-dispatch.ts",
+    "line": 26,
+    "kind": "import",
+    "specifier": "../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/config/types.telegram.js",
+    "resolvedPath": "src/config/types.telegram.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-message.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-command-menu.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/config/paths.js",
+    "resolvedPath": "src/config/paths.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-command-menu.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../src/config/telegram-custom-commands.js",
+    "resolvedPath": "src/config/telegram-custom-commands.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-command-menu.ts",
+    "line": 11,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-command-menu.ts",
+    "line": 12,
+    "kind": "import",
+    "specifier": "../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.test-helpers.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.test-helpers.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/config/types.js",
+    "resolvedPath": "src/config/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.test-helpers.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/acp/persistent-bindings.route.js",
+    "resolvedPath": "src/acp/persistent-bindings.route.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/chunk.js",
+    "resolvedPath": "src/auto-reply/chunk.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/command-auth.js",
+    "resolvedPath": "src/auto-reply/command-auth.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/commands-registry.js",
+    "resolvedPath": "src/auto-reply/commands-registry.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 13,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/commands-registry.js",
+    "resolvedPath": "src/auto-reply/commands-registry.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 14,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/reply/inbound-context.js",
+    "resolvedPath": "src/auto-reply/reply/inbound-context.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 15,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/reply/provider-dispatcher.js",
+    "resolvedPath": "src/auto-reply/reply/provider-dispatcher.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 17,
+    "kind": "import",
+    "specifier": "../../../src/channels/command-gating.js",
+    "resolvedPath": "src/channels/command-gating.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 18,
+    "kind": "import",
+    "specifier": "../../../src/channels/native-command-session-targets.js",
+    "resolvedPath": "src/channels/native-command-session-targets.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 19,
+    "kind": "import",
+    "specifier": "../../../src/channels/reply-prefix.js",
+    "resolvedPath": "src/channels/reply-prefix.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 20,
+    "kind": "import",
+    "specifier": "../../../src/channels/session-meta.js",
+    "resolvedPath": "src/channels/session-meta.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 21,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 22,
+    "kind": "import",
+    "specifier": "../../../src/config/group-policy.js",
+    "resolvedPath": "src/config/group-policy.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 23,
+    "kind": "import",
+    "specifier": "../../../src/config/markdown-tables.js",
+    "resolvedPath": "src/config/markdown-tables.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 28,
+    "kind": "import",
+    "specifier": "../../../src/config/telegram-custom-commands.js",
+    "resolvedPath": "src/config/telegram-custom-commands.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 35,
+    "kind": "import",
+    "specifier": "../../../src/config/types.js",
+    "resolvedPath": "src/config/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 36,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 37,
+    "kind": "import",
+    "specifier": "../../../src/logging.js",
+    "resolvedPath": "src/logging.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 38,
+    "kind": "import",
+    "specifier": "../../../src/media/local-roots.js",
+    "resolvedPath": "src/media/local-roots.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 43,
+    "kind": "import",
+    "specifier": "../../../src/plugins/commands.js",
+    "resolvedPath": "src/plugins/commands.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 44,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-native-commands.ts",
+    "line": 45,
+    "kind": "import",
+    "specifier": "../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot-updates.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/infra/dedupe.js",
+    "resolvedPath": "src/infra/dedupe.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.create-telegram-bot.test-harness.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/reply/inbound-dedupe.js",
+    "resolvedPath": "src/auto-reply/reply/inbound-dedupe.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.create-telegram-bot.test-harness.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/templating.js",
+    "resolvedPath": "src/auto-reply/templating.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.create-telegram-bot.test-harness.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/types.js",
+    "resolvedPath": "src/auto-reply/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.create-telegram-bot.test-harness.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.create-telegram-bot.test-harness.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/test-utils/vitest-mock-fn.js",
+    "resolvedPath": "src/test-utils/vitest-mock-fn.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.media.e2e-harness.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/reply/inbound-dedupe.js",
+    "resolvedPath": "src/auto-reply/reply/inbound-dedupe.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.media.test-utils.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/infra/net/ssrf.js",
+    "resolvedPath": "src/infra/net/ssrf.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.media.test-utils.ts",
+    "line": 106,
+    "kind": "dynamic-import",
+    "specifier": "../../../src/auto-reply/reply.js",
+    "resolvedPath": "src/auto-reply/reply.js",
+    "reason": "dynamically imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/agents/agent-scope.js",
+    "resolvedPath": "src/agents/agent-scope.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/chunk.js",
+    "resolvedPath": "src/auto-reply/chunk.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/reply/history.js",
+    "resolvedPath": "src/auto-reply/reply/history.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.ts",
+    "line": 15,
+    "kind": "import",
+    "specifier": "../../../src/channels/thread-bindings-policy.js",
+    "resolvedPath": "src/channels/thread-bindings-policy.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.ts",
+    "line": 19,
+    "kind": "import",
+    "specifier": "../../../src/config/commands.js",
+    "resolvedPath": "src/config/commands.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.ts",
+    "line": 24,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.ts",
+    "line": 25,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.ts",
+    "line": 29,
+    "kind": "import",
+    "specifier": "../../../src/config/group-policy.js",
+    "resolvedPath": "src/config/group-policy.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.ts",
+    "line": 30,
+    "kind": "import",
+    "specifier": "../../../src/config/sessions.js",
+    "resolvedPath": "src/config/sessions.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.ts",
+    "line": 31,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.ts",
+    "line": 32,
+    "kind": "import",
+    "specifier": "../../../src/infra/errors.js",
+    "resolvedPath": "src/infra/errors.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.ts",
+    "line": 33,
+    "kind": "import",
+    "specifier": "../../../src/logging.js",
+    "resolvedPath": "src/logging.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.ts",
+    "line": 34,
+    "kind": "import",
+    "specifier": "../../../src/logging/subsystem.js",
+    "resolvedPath": "src/logging/subsystem.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot.ts",
+    "line": 35,
+    "kind": "import",
+    "specifier": "../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/delivery.replies.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/chunk.js",
+    "resolvedPath": "src/auto-reply/chunk.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/delivery.replies.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/types.js",
+    "resolvedPath": "src/auto-reply/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/delivery.replies.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/delivery.replies.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../../src/config/types.base.js",
+    "resolvedPath": "src/config/types.base.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/delivery.replies.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/delivery.replies.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../../src/infra/errors.js",
+    "resolvedPath": "src/infra/errors.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/delivery.replies.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../../src/media/load-options.js",
+    "resolvedPath": "src/media/load-options.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/delivery.replies.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../../src/media/mime.js",
+    "resolvedPath": "src/media/mime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/delivery.replies.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../../src/plugins/hook-runner-global.js",
+    "resolvedPath": "src/plugins/hook-runner-global.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/delivery.replies.ts",
+    "line": 11,
+    "kind": "import",
+    "specifier": "../../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/delivery.replies.ts",
+    "line": 12,
+    "kind": "import",
+    "specifier": "../../../../src/web/media.js",
+    "resolvedPath": "src/web/media.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/delivery.resolve-media.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/delivery.resolve-media.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../../src/infra/errors.js",
+    "resolvedPath": "src/infra/errors.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/delivery.resolve-media.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../../src/infra/retry.js",
+    "resolvedPath": "src/infra/retry.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/delivery.resolve-media.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../../src/media/fetch.js",
+    "resolvedPath": "src/media/fetch.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/delivery.resolve-media.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../../src/media/store.js",
+    "resolvedPath": "src/media/store.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/delivery.send.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../../src/infra/errors.js",
+    "resolvedPath": "src/infra/errors.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/delivery.send.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/helpers.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../../src/channels/location.js",
+    "resolvedPath": "src/channels/location.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/helpers.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../../src/config/discord-preview-streaming.js",
+    "resolvedPath": "src/config/discord-preview-streaming.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/helpers.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../../src/config/types.js",
+    "resolvedPath": "src/config/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/helpers.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../../src/pairing/pairing-store.js",
+    "resolvedPath": "src/pairing/pairing-store.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/helpers.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/bot/reply-threading.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/channel-actions.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/agents/tools/common.js",
+    "resolvedPath": "src/agents/tools/common.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/channel-actions.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/agents/tools/telegram-actions.js",
+    "resolvedPath": "src/agents/tools/telegram-actions.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/channel-actions.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/actions/reaction-message-id.js",
+    "resolvedPath": "src/channels/plugins/actions/reaction-message-id.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/channel-actions.ts",
+    "line": 12,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/actions/shared.js",
+    "resolvedPath": "src/channels/plugins/actions/shared.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/channel-actions.ts",
+    "line": 16,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/types.js",
+    "resolvedPath": "src/channels/plugins/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/channel-actions.ts",
+    "line": 17,
+    "kind": "import",
+    "specifier": "../../../src/config/types.telegram.js",
+    "resolvedPath": "src/config/types.telegram.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/channel-actions.ts",
+    "line": 20,
+    "kind": "import",
+    "specifier": "../../../src/poll-params.js",
+    "resolvedPath": "src/poll-params.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/conversation-route.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/acp/persistent-bindings.route.js",
+    "resolvedPath": "src/acp/persistent-bindings.route.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/conversation-route.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/conversation-route.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/conversation-route.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/infra/outbound/session-binding-service.js",
+    "resolvedPath": "src/infra/outbound/session-binding-service.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/conversation-route.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../src/routing/resolve-route.js",
+    "resolvedPath": "src/routing/resolve-route.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/conversation-route.ts",
+    "line": 14,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/dm-access.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/config/types.js",
+    "resolvedPath": "src/config/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/dm-access.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/dm-access.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/pairing/pairing-store.js",
+    "resolvedPath": "src/pairing/pairing-store.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/draft-chunking.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/chunk.js",
+    "resolvedPath": "src/auto-reply/chunk.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/draft-chunking.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/channels/dock.js",
+    "resolvedPath": "src/channels/dock.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/draft-chunking.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/draft-chunking.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/routing/account-lookup.js",
+    "resolvedPath": "src/routing/account-lookup.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/draft-chunking.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/draft-stream.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/channels/draft-stream-controls.js",
+    "resolvedPath": "src/channels/draft-stream-controls.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/fetch.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/config/types.telegram.js",
+    "resolvedPath": "src/config/types.telegram.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/fetch.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/infra/fetch.js",
+    "resolvedPath": "src/infra/fetch.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/fetch.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/infra/net/proxy-env.js",
+    "resolvedPath": "src/infra/net/proxy-env.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/fetch.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/infra/net/ssrf.js",
+    "resolvedPath": "src/infra/net/ssrf.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/fetch.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/logging/subsystem.js",
+    "resolvedPath": "src/logging/subsystem.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/format.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/config/types.base.js",
+    "resolvedPath": "src/config/types.base.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/format.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/markdown/ir.js",
+    "resolvedPath": "src/markdown/ir.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/format.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../src/markdown/render.js",
+    "resolvedPath": "src/markdown/render.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/group-access.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/group-access.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/config/group-policy.js",
+    "resolvedPath": "src/config/group-policy.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/group-access.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/config/runtime-group-policy.js",
+    "resolvedPath": "src/config/runtime-group-policy.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/group-access.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../src/config/types.js",
+    "resolvedPath": "src/config/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/group-config-helpers.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/config/types.js",
+    "resolvedPath": "src/config/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/group-migration.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/group-migration.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/config/types.telegram.js",
+    "resolvedPath": "src/config/types.telegram.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/group-migration.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/inline-buttons.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/inline-buttons.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/config/types.telegram.js",
+    "resolvedPath": "src/config/types.telegram.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/lane-delivery-text-deliverer.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/types.js",
+    "resolvedPath": "src/auto-reply/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/monitor.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/config/agent-limits.js",
+    "resolvedPath": "src/config/agent-limits.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/monitor.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/monitor.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/monitor.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/infra/abort-signal.js",
+    "resolvedPath": "src/infra/abort-signal.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/monitor.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/infra/errors.js",
+    "resolvedPath": "src/infra/errors.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/monitor.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/infra/unhandled-rejections.js",
+    "resolvedPath": "src/infra/unhandled-rejections.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/monitor.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/network-config.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/config/types.telegram.js",
+    "resolvedPath": "src/config/types.telegram.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/network-config.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/infra/env.js",
+    "resolvedPath": "src/infra/env.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/network-config.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/infra/wsl.js",
+    "resolvedPath": "src/infra/wsl.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/network-errors.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/infra/errors.js",
+    "resolvedPath": "src/infra/errors.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/onboarding.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/onboarding-types.js",
+    "resolvedPath": "src/channels/plugins/onboarding-types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/onboarding.ts",
+    "line": 16,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/onboarding/helpers.js",
+    "resolvedPath": "src/channels/plugins/onboarding/helpers.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/onboarding.ts",
+    "line": 17,
+    "kind": "import",
+    "specifier": "../../../src/channels/telegram/api.js",
+    "resolvedPath": "src/channels/telegram/api.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/onboarding.ts",
+    "line": 18,
+    "kind": "import",
+    "specifier": "../../../src/cli/command-format.js",
+    "resolvedPath": "src/cli/command-format.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/onboarding.ts",
+    "line": 19,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/onboarding.ts",
+    "line": 20,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/onboarding.ts",
+    "line": 21,
+    "kind": "import",
+    "specifier": "../../../src/terminal/links.js",
+    "resolvedPath": "src/terminal/links.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/onboarding.ts",
+    "line": 22,
+    "kind": "import",
+    "specifier": "../../../src/wizard/prompts.js",
+    "resolvedPath": "src/wizard/prompts.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/outbound-adapter.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/types.js",
+    "resolvedPath": "src/auto-reply/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/outbound-adapter.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/outbound/direct-text-media.js",
+    "resolvedPath": "src/channels/plugins/outbound/direct-text-media.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/outbound-adapter.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/types.js",
+    "resolvedPath": "src/channels/plugins/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/outbound-adapter.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/infra/outbound/deliver.js",
+    "resolvedPath": "src/infra/outbound/deliver.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/polling-session.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/infra/backoff.js",
+    "resolvedPath": "src/infra/backoff.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/polling-session.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/infra/errors.js",
+    "resolvedPath": "src/infra/errors.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/polling-session.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/infra/format-time/format-duration.ts",
+    "resolvedPath": "src/infra/format-time/format-duration.ts",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/probe.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/types.js",
+    "resolvedPath": "src/channels/plugins/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/probe.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/config/types.telegram.js",
+    "resolvedPath": "src/config/types.telegram.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/probe.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/utils/fetch-timeout.js",
+    "resolvedPath": "src/utils/fetch-timeout.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/proxy.ts",
+    "line": 1,
+    "kind": "export",
+    "specifier": "../../../src/infra/net/proxy-fetch.js",
+    "resolvedPath": "src/infra/net/proxy-fetch.js",
+    "reason": "re-exports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/reaction-level.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/reaction-level.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/utils/reaction-level.js",
+    "resolvedPath": "src/utils/reaction-level.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/send.test-harness.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/test-utils/vitest-mock-fn.js",
+    "resolvedPath": "src/test-utils/vitest-mock-fn.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/send.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/send.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../src/config/markdown-tables.js",
+    "resolvedPath": "src/config/markdown-tables.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/send.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/send.ts",
+    "line": 11,
+    "kind": "import",
+    "specifier": "../../../src/infra/channel-activity.js",
+    "resolvedPath": "src/infra/channel-activity.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/send.ts",
+    "line": 12,
+    "kind": "import",
+    "specifier": "../../../src/infra/diagnostic-flags.js",
+    "resolvedPath": "src/infra/diagnostic-flags.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/send.ts",
+    "line": 13,
+    "kind": "import",
+    "specifier": "../../../src/infra/errors.js",
+    "resolvedPath": "src/infra/errors.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/send.ts",
+    "line": 14,
+    "kind": "import",
+    "specifier": "../../../src/infra/retry-policy.js",
+    "resolvedPath": "src/infra/retry-policy.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/send.ts",
+    "line": 15,
+    "kind": "import",
+    "specifier": "../../../src/infra/retry.js",
+    "resolvedPath": "src/infra/retry.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/send.ts",
+    "line": 16,
+    "kind": "import",
+    "specifier": "../../../src/logging/redact.js",
+    "resolvedPath": "src/logging/redact.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/send.ts",
+    "line": 17,
+    "kind": "import",
+    "specifier": "../../../src/logging/subsystem.js",
+    "resolvedPath": "src/logging/subsystem.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/send.ts",
+    "line": 18,
+    "kind": "import",
+    "specifier": "../../../src/media/constants.js",
+    "resolvedPath": "src/media/constants.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/send.ts",
+    "line": 19,
+    "kind": "import",
+    "specifier": "../../../src/media/load-options.js",
+    "resolvedPath": "src/media/load-options.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/send.ts",
+    "line": 20,
+    "kind": "import",
+    "specifier": "../../../src/media/mime.js",
+    "resolvedPath": "src/media/mime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/send.ts",
+    "line": 21,
+    "kind": "import",
+    "specifier": "../../../src/polls.js",
+    "resolvedPath": "src/polls.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/send.ts",
+    "line": 22,
+    "kind": "import",
+    "specifier": "../../../src/web/media.js",
+    "resolvedPath": "src/web/media.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/sendchataction-401-backoff.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/infra/backoff.js",
+    "resolvedPath": "src/infra/backoff.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/sequential-key.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/reply/abort.js",
+    "resolvedPath": "src/auto-reply/reply/abort.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/shared-interactive.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/telegram/button-types.js",
+    "resolvedPath": "src/telegram/button-types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/status-issues.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/status-issues/shared.js",
+    "resolvedPath": "src/channels/plugins/status-issues/shared.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/status-issues.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/types.js",
+    "resolvedPath": "src/channels/plugins/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/status-reaction-variants.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/channels/status-reactions.js",
+    "resolvedPath": "src/channels/status-reactions.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/sticker-cache.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/sticker-cache.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/config/paths.js",
+    "resolvedPath": "src/config/paths.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/sticker-cache.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/sticker-cache.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/infra/json-file.js",
+    "resolvedPath": "src/infra/json-file.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/target-writeback.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/target-writeback.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/target-writeback.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/cron/store.js",
+    "resolvedPath": "src/cron/store.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/target-writeback.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/logging/subsystem.js",
+    "resolvedPath": "src/logging/subsystem.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/thread-bindings.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/channels/thread-binding-id.js",
+    "resolvedPath": "src/channels/thread-binding-id.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/thread-bindings.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/config/paths.js",
+    "resolvedPath": "src/config/paths.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/thread-bindings.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/discord/monitor/thread-bindings.messages.js",
+    "resolvedPath": "src/discord/monitor/thread-bindings.messages.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/thread-bindings.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/thread-bindings.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../src/infra/json-files.js",
+    "resolvedPath": "src/infra/json-files.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/thread-bindings.ts",
+    "line": 14,
+    "kind": "import",
+    "specifier": "../../../src/infra/outbound/session-binding-service.js",
+    "resolvedPath": "src/infra/outbound/session-binding-service.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/thread-bindings.ts",
+    "line": 15,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/token.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/types.js",
+    "resolvedPath": "src/channels/plugins/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/token.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/token.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/config/types.telegram.js",
+    "resolvedPath": "src/config/types.telegram.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/token.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/update-offset-store.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/config/paths.js",
+    "resolvedPath": "src/config/paths.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/update-offset-store.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/infra/json-files.js",
+    "resolvedPath": "src/infra/json-files.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/voice.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/media/audio.js",
+    "resolvedPath": "src/media/audio.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/webhook.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/webhook.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/infra/diagnostic-events.js",
+    "resolvedPath": "src/infra/diagnostic-events.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/webhook.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/infra/errors.js",
+    "resolvedPath": "src/infra/errors.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/webhook.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/infra/http-body.js",
+    "resolvedPath": "src/infra/http-body.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/webhook.ts",
+    "line": 14,
+    "kind": "import",
+    "specifier": "../../../src/logging/diagnostic.js",
+    "resolvedPath": "src/logging/diagnostic.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/webhook.ts",
+    "line": 15,
+    "kind": "import",
+    "specifier": "../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/telegram/src/webhook.ts",
+    "line": 16,
+    "kind": "import",
+    "specifier": "../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/accounts.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/account-helpers.js",
+    "resolvedPath": "src/channels/plugins/account-helpers.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/accounts.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/accounts.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/config/paths.js",
+    "resolvedPath": "src/config/paths.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/accounts.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/config/types.js",
+    "resolvedPath": "src/config/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/accounts.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/routing/account-lookup.js",
+    "resolvedPath": "src/routing/account-lookup.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/accounts.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/accounts.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
     "file": "extensions/whatsapp/src/active-listener.ts",
     "line": 1,
     "kind": "import",
@@ -709,6 +3141,14 @@
     "kind": "import",
     "specifier": "../../../src/routing/session-key.js",
     "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/agent-tools-login.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/types.js",
+    "resolvedPath": "src/channels/plugins/types.js",
     "reason": "imports core src path outside plugin-sdk from an extension"
   },
   {
@@ -776,11 +3216,419 @@
     "reason": "imports core src path outside plugin-sdk from an extension"
   },
   {
+    "file": "extensions/whatsapp/src/auto-reply.impl.ts",
+    "line": 1,
+    "kind": "export",
+    "specifier": "../../../src/auto-reply/heartbeat.js",
+    "resolvedPath": "src/auto-reply/heartbeat.js",
+    "reason": "re-exports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply.impl.ts",
+    "line": 2,
+    "kind": "export",
+    "specifier": "../../../src/auto-reply/tokens.js",
+    "resolvedPath": "src/auto-reply/tokens.js",
+    "reason": "re-exports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply.test-harness.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/reply/inbound-dedupe.js",
+    "resolvedPath": "src/auto-reply/reply/inbound-dedupe.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply.test-harness.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/infra/net/ssrf.js",
+    "resolvedPath": "src/infra/net/ssrf.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply.test-harness.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../src/infra/net/ssrf.js",
+    "resolvedPath": "src/infra/net/ssrf.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply.test-harness.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../src/logging.js",
+    "resolvedPath": "src/logging.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/deliver-reply.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/chunk.js",
+    "resolvedPath": "src/auto-reply/chunk.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/deliver-reply.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/types.js",
+    "resolvedPath": "src/auto-reply/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/deliver-reply.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../../src/config/types.base.js",
+    "resolvedPath": "src/config/types.base.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/deliver-reply.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/deliver-reply.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../../src/markdown/tables.js",
+    "resolvedPath": "src/markdown/tables.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/deliver-reply.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../../src/markdown/whatsapp.js",
+    "resolvedPath": "src/markdown/whatsapp.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/deliver-reply.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/heartbeat-runner.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../src/agents/current-time.js",
+    "resolvedPath": "src/agents/current-time.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/heartbeat-runner.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/heartbeat-reply-payload.js",
+    "resolvedPath": "src/auto-reply/heartbeat-reply-payload.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/heartbeat-runner.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/heartbeat.js",
+    "resolvedPath": "src/auto-reply/heartbeat.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/heartbeat-runner.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/reply.js",
+    "resolvedPath": "src/auto-reply/reply.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/heartbeat-runner.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/tokens.js",
+    "resolvedPath": "src/auto-reply/tokens.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/heartbeat-runner.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../../src/channels/plugins/whatsapp-heartbeat.js",
+    "resolvedPath": "src/channels/plugins/whatsapp-heartbeat.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/heartbeat-runner.ts",
+    "line": 11,
+    "kind": "import",
+    "specifier": "../../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/heartbeat-runner.ts",
+    "line": 17,
+    "kind": "import",
+    "specifier": "../../../../src/config/sessions.js",
+    "resolvedPath": "src/config/sessions.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/heartbeat-runner.ts",
+    "line": 21,
+    "kind": "import",
+    "specifier": "../../../../src/infra/heartbeat-events.js",
+    "resolvedPath": "src/infra/heartbeat-events.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/heartbeat-runner.ts",
+    "line": 22,
+    "kind": "import",
+    "specifier": "../../../../src/infra/heartbeat-visibility.js",
+    "resolvedPath": "src/infra/heartbeat-visibility.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/heartbeat-runner.ts",
+    "line": 23,
+    "kind": "import",
+    "specifier": "../../../../src/logging.js",
+    "resolvedPath": "src/logging.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/heartbeat-runner.ts",
+    "line": 24,
+    "kind": "import",
+    "specifier": "../../../../src/logging/redact-identifier.js",
+    "resolvedPath": "src/logging/redact-identifier.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/heartbeat-runner.ts",
+    "line": 25,
+    "kind": "import",
+    "specifier": "../../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
     "file": "extensions/whatsapp/src/auto-reply/loggers.ts",
     "line": 1,
     "kind": "import",
     "specifier": "../../../../src/logging/subsystem.js",
     "resolvedPath": "src/logging/subsystem.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/mentions.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/reply/mentions.js",
+    "resolvedPath": "src/auto-reply/reply/mentions.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/mentions.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/mentions.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/command-detection.js",
+    "resolvedPath": "src/auto-reply/command-detection.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/inbound-debounce.js",
+    "resolvedPath": "src/auto-reply/inbound-debounce.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/reply.js",
+    "resolvedPath": "src/auto-reply/reply.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/reply/history.js",
+    "resolvedPath": "src/auto-reply/reply/history.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../../src/cli/command-format.js",
+    "resolvedPath": "src/cli/command-format.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../../src/cli/wait.js",
+    "resolvedPath": "src/cli/wait.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../../src/gateway/channel-status-patches.js",
+    "resolvedPath": "src/gateway/channel-status-patches.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../../src/infra/format-time/format-duration.ts",
+    "resolvedPath": "src/infra/format-time/format-duration.ts",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor.ts",
+    "line": 11,
+    "kind": "import",
+    "specifier": "../../../../src/infra/system-events.js",
+    "resolvedPath": "src/infra/system-events.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor.ts",
+    "line": 12,
+    "kind": "import",
+    "specifier": "../../../../src/infra/unhandled-rejections.js",
+    "resolvedPath": "src/infra/unhandled-rejections.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor.ts",
+    "line": 13,
+    "kind": "import",
+    "specifier": "../../../../src/logging.js",
+    "resolvedPath": "src/logging.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor.ts",
+    "line": 14,
+    "kind": "import",
+    "specifier": "../../../../src/routing/resolve-route.js",
+    "resolvedPath": "src/routing/resolve-route.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor.ts",
+    "line": 15,
+    "kind": "import",
+    "specifier": "../../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/ack-reaction.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../../src/channels/ack-reactions.js",
+    "resolvedPath": "src/channels/ack-reactions.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/ack-reaction.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/ack-reaction.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/broadcast.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/broadcast.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../../../src/routing/resolve-route.js",
+    "resolvedPath": "src/routing/resolve-route.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/broadcast.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../../../src/routing/resolve-route.js",
+    "resolvedPath": "src/routing/resolve-route.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/broadcast.ts",
+    "line": 11,
+    "kind": "import",
+    "specifier": "../../../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
     "reason": "imports core src path outside plugin-sdk from an extension"
   },
   {
@@ -816,6 +3664,54 @@
     "reason": "imports core src path outside plugin-sdk from an extension"
   },
   {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/group-gating.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../../src/auto-reply/command-detection.js",
+    "resolvedPath": "src/auto-reply/command-detection.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/group-gating.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../../../src/auto-reply/group-activation.js",
+    "resolvedPath": "src/auto-reply/group-activation.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/group-gating.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../../../src/auto-reply/reply/history.js",
+    "resolvedPath": "src/auto-reply/reply/history.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/group-gating.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../../../src/channels/mention-gating.js",
+    "resolvedPath": "src/channels/mention-gating.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/group-gating.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/group-gating.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
     "file": "extensions/whatsapp/src/auto-reply/monitor/group-members.ts",
     "line": 1,
     "kind": "import",
@@ -848,6 +3744,262 @@
     "reason": "imports core src path outside plugin-sdk from an extension"
   },
   {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/message-line.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../../src/agents/identity.js",
+    "resolvedPath": "src/agents/identity.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/message-line.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../../../src/auto-reply/envelope.js",
+    "resolvedPath": "src/auto-reply/envelope.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/message-line.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/on-message.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../../src/auto-reply/reply.js",
+    "resolvedPath": "src/auto-reply/reply.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/on-message.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../../../src/auto-reply/templating.js",
+    "resolvedPath": "src/auto-reply/templating.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/on-message.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/on-message.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/on-message.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../../../src/routing/resolve-route.js",
+    "resolvedPath": "src/routing/resolve-route.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/on-message.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/on-message.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/peer.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../../src/agents/identity.js",
+    "resolvedPath": "src/agents/identity.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../../../src/auto-reply/chunk.js",
+    "resolvedPath": "src/auto-reply/chunk.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../../../src/auto-reply/command-detection.js",
+    "resolvedPath": "src/auto-reply/command-detection.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../../../src/auto-reply/envelope.js",
+    "resolvedPath": "src/auto-reply/envelope.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../../../src/auto-reply/reply.js",
+    "resolvedPath": "src/auto-reply/reply.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../../../src/auto-reply/reply/history.js",
+    "resolvedPath": "src/auto-reply/reply/history.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../../../src/auto-reply/reply/inbound-context.js",
+    "resolvedPath": "src/auto-reply/reply/inbound-context.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 11,
+    "kind": "import",
+    "specifier": "../../../../../src/auto-reply/reply/provider-dispatcher.js",
+    "resolvedPath": "src/auto-reply/reply/provider-dispatcher.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 12,
+    "kind": "import",
+    "specifier": "../../../../../src/auto-reply/types.js",
+    "resolvedPath": "src/auto-reply/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 13,
+    "kind": "import",
+    "specifier": "../../../../../src/channels/location.js",
+    "resolvedPath": "src/channels/location.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 14,
+    "kind": "import",
+    "specifier": "../../../../../src/channels/reply-prefix.js",
+    "resolvedPath": "src/channels/reply-prefix.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 15,
+    "kind": "import",
+    "specifier": "../../../../../src/channels/session-envelope.js",
+    "resolvedPath": "src/channels/session-envelope.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 16,
+    "kind": "import",
+    "specifier": "../../../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 17,
+    "kind": "import",
+    "specifier": "../../../../../src/config/markdown-tables.js",
+    "resolvedPath": "src/config/markdown-tables.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 18,
+    "kind": "import",
+    "specifier": "../../../../../src/config/sessions.js",
+    "resolvedPath": "src/config/sessions.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 19,
+    "kind": "import",
+    "specifier": "../../../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 20,
+    "kind": "import",
+    "specifier": "../../../../../src/logging.js",
+    "resolvedPath": "src/logging.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 21,
+    "kind": "import",
+    "specifier": "../../../../../src/media/local-roots.js",
+    "resolvedPath": "src/media/local-roots.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 25,
+    "kind": "import",
+    "specifier": "../../../../../src/routing/resolve-route.js",
+    "resolvedPath": "src/routing/resolve-route.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 30,
+    "kind": "import",
+    "specifier": "../../../../../src/security/dm-policy-shared.js",
+    "resolvedPath": "src/security/dm-policy-shared.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/auto-reply/monitor/process-message.ts",
+    "line": 31,
+    "kind": "import",
+    "specifier": "../../../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
     "file": "extensions/whatsapp/src/auto-reply/session-snapshot.ts",
     "line": 1,
     "kind": "import",
@@ -869,6 +4021,62 @@
     "kind": "import",
     "specifier": "../../../../src/routing/session-key.js",
     "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/access-control.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/access-control.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../../src/config/runtime-group-policy.js",
+    "resolvedPath": "src/config/runtime-group-policy.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/access-control.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/access-control.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../../src/pairing/pairing-challenge.js",
+    "resolvedPath": "src/pairing/pairing-challenge.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/access-control.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../../src/pairing/pairing-store.js",
+    "resolvedPath": "src/pairing/pairing-store.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/access-control.ts",
+    "line": 13,
+    "kind": "import",
+    "specifier": "../../../../src/security/dm-policy-shared.js",
+    "resolvedPath": "src/security/dm-policy-shared.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/access-control.ts",
+    "line": 14,
+    "kind": "import",
+    "specifier": "../../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
     "reason": "imports core src path outside plugin-sdk from an extension"
   },
   {
@@ -912,6 +4120,70 @@
     "reason": "imports core src path outside plugin-sdk from an extension"
   },
   {
+    "file": "extensions/whatsapp/src/inbound/monitor.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../../src/auto-reply/inbound-debounce.js",
+    "resolvedPath": "src/auto-reply/inbound-debounce.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/monitor.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../../src/channels/location.js",
+    "resolvedPath": "src/channels/location.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/monitor.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/monitor.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../../src/infra/channel-activity.js",
+    "resolvedPath": "src/infra/channel-activity.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/monitor.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../../src/logging/logger.js",
+    "resolvedPath": "src/logging/logger.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/monitor.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../../src/logging/subsystem.js",
+    "resolvedPath": "src/logging/subsystem.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/monitor.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../../src/media/store.js",
+    "resolvedPath": "src/media/store.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/inbound/monitor.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
     "file": "extensions/whatsapp/src/inbound/send-api.ts",
     "line": 2,
     "kind": "import",
@@ -933,6 +4205,78 @@
     "kind": "import",
     "specifier": "../../../../src/channels/location.js",
     "resolvedPath": "src/channels/location.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/login-qr.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/login-qr.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/login-qr.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/logger.js",
+    "resolvedPath": "src/logger.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/login-qr.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/login.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/cli/command-format.js",
+    "resolvedPath": "src/cli/command-format.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/login.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/login.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/login.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/logger.js",
+    "resolvedPath": "src/logger.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/login.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
     "reason": "imports core src path outside plugin-sdk from an extension"
   },
   {
@@ -1008,6 +4352,14 @@
     "reason": "imports core src path outside plugin-sdk from an extension"
   },
   {
+    "file": "extensions/whatsapp/src/monitor-inbox.test-harness.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/logging.js",
+    "resolvedPath": "src/logging.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
     "file": "extensions/whatsapp/src/normalize.ts",
     "line": 4,
     "kind": "import",
@@ -1024,11 +4376,259 @@
     "reason": "imports core src path outside plugin-sdk from an extension"
   },
   {
+    "file": "extensions/whatsapp/src/onboarding.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/channel-web.js",
+    "resolvedPath": "src/channel-web.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/onboarding.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/onboarding-types.js",
+    "resolvedPath": "src/channels/plugins/onboarding-types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/onboarding.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/onboarding/helpers.js",
+    "resolvedPath": "src/channels/plugins/onboarding/helpers.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/onboarding.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../src/cli/command-format.js",
+    "resolvedPath": "src/cli/command-format.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/onboarding.ts",
+    "line": 11,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/onboarding.ts",
+    "line": 12,
+    "kind": "import",
+    "specifier": "../../../src/config/merge-config.js",
+    "resolvedPath": "src/config/merge-config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/onboarding.ts",
+    "line": 13,
+    "kind": "import",
+    "specifier": "../../../src/config/types.js",
+    "resolvedPath": "src/config/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/onboarding.ts",
+    "line": 14,
+    "kind": "import",
+    "specifier": "../../../src/routing/session-key.js",
+    "resolvedPath": "src/routing/session-key.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/onboarding.ts",
+    "line": 15,
+    "kind": "import",
+    "specifier": "../../../src/runtime.js",
+    "resolvedPath": "src/runtime.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/onboarding.ts",
+    "line": 16,
+    "kind": "import",
+    "specifier": "../../../src/terminal/links.js",
+    "resolvedPath": "src/terminal/links.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/onboarding.ts",
+    "line": 17,
+    "kind": "import",
+    "specifier": "../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/onboarding.ts",
+    "line": 18,
+    "kind": "import",
+    "specifier": "../../../src/wizard/prompts.js",
+    "resolvedPath": "src/wizard/prompts.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/outbound-adapter.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/auto-reply/chunk.js",
+    "resolvedPath": "src/auto-reply/chunk.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/outbound-adapter.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/outbound/direct-text-media.js",
+    "resolvedPath": "src/channels/plugins/outbound/direct-text-media.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/outbound-adapter.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/channels/plugins/types.js",
+    "resolvedPath": "src/channels/plugins/types.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/outbound-adapter.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/globals.js",
+    "resolvedPath": "src/globals.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/outbound-adapter.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/whatsapp/resolve-outbound-target.js",
+    "resolvedPath": "src/whatsapp/resolve-outbound-target.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
     "file": "extensions/whatsapp/src/qr-image.ts",
     "line": 3,
     "kind": "import",
     "specifier": "../../../src/media/png-encode.js",
     "resolvedPath": "src/media/png-encode.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/reconnect.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/reconnect.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/infra/backoff.js",
+    "resolvedPath": "src/infra/backoff.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/reconnect.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/infra/backoff.js",
+    "resolvedPath": "src/infra/backoff.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/reconnect.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/send.ts",
+    "line": 1,
+    "kind": "import",
+    "specifier": "../../../src/config/config.js",
+    "resolvedPath": "src/config/config.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/send.ts",
+    "line": 2,
+    "kind": "import",
+    "specifier": "../../../src/config/markdown-tables.js",
+    "resolvedPath": "src/config/markdown-tables.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/send.ts",
+    "line": 3,
+    "kind": "import",
+    "specifier": "../../../src/infra/secure-random.js",
+    "resolvedPath": "src/infra/secure-random.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/send.ts",
+    "line": 4,
+    "kind": "import",
+    "specifier": "../../../src/logging/logger.js",
+    "resolvedPath": "src/logging/logger.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/send.ts",
+    "line": 5,
+    "kind": "import",
+    "specifier": "../../../src/logging/redact-identifier.js",
+    "resolvedPath": "src/logging/redact-identifier.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/send.ts",
+    "line": 6,
+    "kind": "import",
+    "specifier": "../../../src/logging/subsystem.js",
+    "resolvedPath": "src/logging/subsystem.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/send.ts",
+    "line": 7,
+    "kind": "import",
+    "specifier": "../../../src/markdown/tables.js",
+    "resolvedPath": "src/markdown/tables.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/send.ts",
+    "line": 8,
+    "kind": "import",
+    "specifier": "../../../src/markdown/whatsapp.js",
+    "resolvedPath": "src/markdown/whatsapp.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/send.ts",
+    "line": 9,
+    "kind": "import",
+    "specifier": "../../../src/polls.js",
+    "resolvedPath": "src/polls.js",
+    "reason": "imports core src path outside plugin-sdk from an extension"
+  },
+  {
+    "file": "extensions/whatsapp/src/send.ts",
+    "line": 10,
+    "kind": "import",
+    "specifier": "../../../src/utils.js",
+    "resolvedPath": "src/utils.js",
     "reason": "imports core src path outside plugin-sdk from an extension"
   },
   {

@@ -1,14 +1,14 @@
 import { GatewayIntents, GatewayPlugin } from "@buape/carbon/gateway";
 import type { APIGatewayBotInfo } from "discord-api-types/v10";
 import { HttpsProxyAgent } from "https-proxy-agent";
+import type { DiscordAccountConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { danger } from "remoteclaw/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import { ProxyAgent, fetch as undiciFetch } from "undici";
 import WebSocket from "ws";
-import type { DiscordAccountConfig } from "../../../../src/config/types.js";
-import { danger } from "../../../../src/globals.js";
-import type { RuntimeEnv } from "../../../../src/runtime.js";
 
 export function resolveDiscordGatewayIntents(
-  intentsConfig?: import("../../../../src/config/types.discord.js").DiscordIntentsConfig,
+  intentsConfig?: import("remoteclaw/plugin-sdk/config-runtime").DiscordIntentsConfig,
 ): number {
   let intents =
     GatewayIntents.Guilds |

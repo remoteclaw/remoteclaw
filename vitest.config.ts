@@ -1,3 +1,4 @@
+import { readdirSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,49 +9,10 @@ const isCI = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
 const isWindows = process.platform === "win32";
 const localWorkers = Math.max(4, Math.min(16, os.cpus().length));
 const ciWorkers = isWindows ? 2 : 3;
-const pluginSdkSubpaths = [
-  "account-id",
-  "core",
-  "compat",
-  "telegram",
-  "discord",
-  "slack",
-  "signal",
-  "imessage",
-  "whatsapp",
-  "line",
-  "msteams",
-  "acpx",
-  "bluebubbles",
-  "copilot-proxy",
-  "device-pair",
-  "diagnostics-otel",
-  "diffs",
-  "feishu",
-  "google-gemini-cli-auth",
-  "googlechat",
-  "irc",
-  "llm-task",
-  "lobster",
-  "matrix",
-  "mattermost",
-  "minimax-portal-auth",
-  "nextcloud-talk",
-  "nostr",
-  "open-prose",
-  "phone-control",
-  "qwen-portal-auth",
-  "synology-chat",
-  "talk-voice",
-  "test-utils",
-  "thread-ownership",
-  "tlon",
-  "twitch",
-  "voice-call",
-  "zalo",
-  "zalouser",
-  "keyed-async-queue",
-] as const;
+
+const pluginSdkSubpaths = readdirSync(path.join(repoRoot, "src", "plugin-sdk"))
+  .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts") && !f.endsWith(".d.ts") && f !== "index.ts")
+  .map((f) => f.replace(/\.ts$/, ""));
 
 export default defineConfig({
   resolve: {

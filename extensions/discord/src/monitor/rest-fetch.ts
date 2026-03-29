@@ -1,7 +1,7 @@
+import { wrapFetchWithAbortSignal } from "remoteclaw/plugin-sdk/infra-runtime";
+import { danger } from "remoteclaw/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import { ProxyAgent, fetch as undiciFetch } from "undici";
-import { danger } from "../../../../src/globals.js";
-import { wrapFetchWithAbortSignal } from "../../../../src/infra/fetch.js";
-import type { RuntimeEnv } from "../../../../src/runtime.js";
 
 export function resolveDiscordRestFetch(
   proxyUrl: string | undefined,

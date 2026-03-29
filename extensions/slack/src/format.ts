@@ -1,6 +1,10 @@
-import type { MarkdownTableMode } from "../../../src/config/types.base.js";
-import { chunkMarkdownIR, markdownToIR, type MarkdownLinkSpan } from "../../../src/markdown/ir.js";
-import { renderMarkdownWithMarkers } from "../../../src/markdown/render.js";
+import type { MarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import {
+  chunkMarkdownIR,
+  markdownToIR,
+  type MarkdownLinkSpan,
+} from "remoteclaw/plugin-sdk/text-runtime";
+import { renderMarkdownWithMarkers } from "remoteclaw/plugin-sdk/text-runtime";
 
 // Escape special characters for Slack mrkdwn format.
 // Preserve Slack's angle-bracket tokens so mentions and links stay intact.

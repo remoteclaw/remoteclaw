@@ -1,0 +1,16 @@
+export type {
+  BaseProbeResult,
+  BaseTokenResolution,
+  ChannelAgentTool,
+  ChannelAccountSnapshot,
+  ChannelGroupContext,
+  ChannelMessageActionAdapter,
+  ChannelMessageActionContext,
+// STRIPPED (not in fork):   ChannelMessageActionDiscoveryContext,
+  ChannelMessageActionName,
+// STRIPPED (not in fork):   ChannelMessageToolDiscovery,
+// STRIPPED (not in fork):   ChannelMessageToolSchemaContribution,
+  ChannelStatusIssue,
+  ChannelThreadingContext,
+  ChannelThreadingToolContext,
+} from "../channels/plugins/types.js";

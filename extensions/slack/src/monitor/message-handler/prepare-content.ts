@@ -1,4 +1,4 @@
-import { logVerbose } from "../../../../../src/globals.js";
+import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import type { SlackFile, SlackMessageEvent } from "../../types.js";
 import {
   MAX_SLACK_MEDIA_FILES,

@@ -33,15 +33,15 @@ export function setupAccessControlTestHarness(): void {
   });
 }
 
-vi.mock("../../../../src/config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../../../src/config/config.js")>();
+vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
   return {
     ...actual,
     loadConfig: () => config,
   };
 });
 
-vi.mock("../../../../src/pairing/pairing-store.js", () => ({
+vi.mock("remoteclaw/plugin-sdk/conversation-runtime", () => ({
   readChannelAllowFromStore: (...args: unknown[]) => readAllowFromStoreMock(...args),
   upsertChannelPairingRequest: (...args: unknown[]) => upsertPairingRequestMock(...args),
 }));

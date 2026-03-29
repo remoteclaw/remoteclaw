@@ -66,6 +66,18 @@ jobs:
           REMOTECLAW_TEST_WORKERS: 1
           REMOTECLAW_TEST_MAX_OLD_SPACE_SIZE_MB: 1536
 
+  CI:
+    if: always()
+    needs: [lint, build, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          if [[ "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.test.result }}" != "success" ]]; then
+            echo "::error::One or more required jobs failed"
+            exit 1
+          fi
+
   publish-next:
     if: github.event_name == 'push'
     needs: [lint, build, test]

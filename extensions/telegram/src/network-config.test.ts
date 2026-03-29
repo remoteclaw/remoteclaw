@@ -23,38 +23,38 @@ describe("resolveTelegramAutoSelectFamilyDecision", () => {
     {
       name: "prefers env enable over env disable",
       env: {
-        OPENCLAW_TELEGRAM_ENABLE_AUTO_SELECT_FAMILY: "1",
-        OPENCLAW_TELEGRAM_DISABLE_AUTO_SELECT_FAMILY: "1",
+        REMOTECLAW_TELEGRAM_ENABLE_AUTO_SELECT_FAMILY: "1",
+        REMOTECLAW_TELEGRAM_DISABLE_AUTO_SELECT_FAMILY: "1",
       },
       expected: {
         value: true,
-        source: "env:OPENCLAW_TELEGRAM_ENABLE_AUTO_SELECT_FAMILY",
+        source: "env:REMOTECLAW_TELEGRAM_ENABLE_AUTO_SELECT_FAMILY",
       },
     },
     {
       name: "uses env disable when set",
-      env: { OPENCLAW_TELEGRAM_DISABLE_AUTO_SELECT_FAMILY: "1" },
+      env: { REMOTECLAW_TELEGRAM_DISABLE_AUTO_SELECT_FAMILY: "1" },
       expected: {
         value: false,
-        source: "env:OPENCLAW_TELEGRAM_DISABLE_AUTO_SELECT_FAMILY",
+        source: "env:REMOTECLAW_TELEGRAM_DISABLE_AUTO_SELECT_FAMILY",
       },
     },
     {
       name: "prefers env enable over config",
-      env: { OPENCLAW_TELEGRAM_ENABLE_AUTO_SELECT_FAMILY: "1" },
+      env: { REMOTECLAW_TELEGRAM_ENABLE_AUTO_SELECT_FAMILY: "1" },
       network: { autoSelectFamily: false },
       expected: {
         value: true,
-        source: "env:OPENCLAW_TELEGRAM_ENABLE_AUTO_SELECT_FAMILY",
+        source: "env:REMOTECLAW_TELEGRAM_ENABLE_AUTO_SELECT_FAMILY",
       },
     },
     {
       name: "prefers env disable over config",
-      env: { OPENCLAW_TELEGRAM_DISABLE_AUTO_SELECT_FAMILY: "1" },
+      env: { REMOTECLAW_TELEGRAM_DISABLE_AUTO_SELECT_FAMILY: "1" },
       network: { autoSelectFamily: true },
       expected: {
         value: false,
-        source: "env:OPENCLAW_TELEGRAM_DISABLE_AUTO_SELECT_FAMILY",
+        source: "env:REMOTECLAW_TELEGRAM_DISABLE_AUTO_SELECT_FAMILY",
       },
     },
     {
@@ -97,10 +97,10 @@ describe("resolveTelegramAutoSelectFamilyDecision", () => {
       },
       {
         name: "respects env override on WSL2",
-        env: { OPENCLAW_TELEGRAM_ENABLE_AUTO_SELECT_FAMILY: "1" },
+        env: { REMOTECLAW_TELEGRAM_ENABLE_AUTO_SELECT_FAMILY: "1" },
         expected: {
           value: true,
-          source: "env:OPENCLAW_TELEGRAM_ENABLE_AUTO_SELECT_FAMILY",
+          source: "env:REMOTECLAW_TELEGRAM_ENABLE_AUTO_SELECT_FAMILY",
         },
       },
       {
@@ -134,20 +134,20 @@ describe("resolveTelegramDnsResultOrderDecision", () => {
   it.each([
     {
       name: "uses env override when provided",
-      env: { OPENCLAW_TELEGRAM_DNS_RESULT_ORDER: "verbatim" },
+      env: { REMOTECLAW_TELEGRAM_DNS_RESULT_ORDER: "verbatim" },
       nodeMajor: 22,
       expected: {
         value: "verbatim",
-        source: "env:OPENCLAW_TELEGRAM_DNS_RESULT_ORDER",
+        source: "env:REMOTECLAW_TELEGRAM_DNS_RESULT_ORDER",
       },
     },
     {
       name: "normalizes trimmed env values",
-      env: { OPENCLAW_TELEGRAM_DNS_RESULT_ORDER: "  IPV4FIRST  " },
+      env: { REMOTECLAW_TELEGRAM_DNS_RESULT_ORDER: "  IPV4FIRST  " },
       nodeMajor: 20,
       expected: {
         value: "ipv4first",
-        source: "env:OPENCLAW_TELEGRAM_DNS_RESULT_ORDER",
+        source: "env:REMOTECLAW_TELEGRAM_DNS_RESULT_ORDER",
       },
     },
     {
@@ -166,14 +166,14 @@ describe("resolveTelegramDnsResultOrderDecision", () => {
     },
     {
       name: "ignores invalid env values and falls back to config",
-      env: { OPENCLAW_TELEGRAM_DNS_RESULT_ORDER: "bogus" },
+      env: { REMOTECLAW_TELEGRAM_DNS_RESULT_ORDER: "bogus" },
       network: { dnsResultOrder: "ipv4first" },
       nodeMajor: 20,
       expected: { value: "ipv4first", source: "config" },
     },
     {
       name: "ignores invalid env and config values before applying Node 22 default",
-      env: { OPENCLAW_TELEGRAM_DNS_RESULT_ORDER: "bogus" },
+      env: { REMOTECLAW_TELEGRAM_DNS_RESULT_ORDER: "bogus" },
       network: { dnsResultOrder: "invalid" } as TelegramNetworkConfig & { dnsResultOrder: string },
       nodeMajor: 22,
       expected: { value: "ipv4first", source: "default-node22" },

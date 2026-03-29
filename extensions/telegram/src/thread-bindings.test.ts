@@ -21,7 +21,7 @@ describe("telegram thread bindings", () => {
   afterEach(() => {
     vi.useRealTimers();
     if (stateDirOverride) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.REMOTECLAW_STATE_DIR;
       fs.rmSync(stateDirOverride, { recursive: true, force: true });
       stateDirOverride = undefined;
     }
@@ -100,8 +100,8 @@ describe("telegram thread bindings", () => {
   });
 
   it("does not persist lifecycle updates when manager persistence is disabled", async () => {
-    stateDirOverride = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-telegram-bindings-"));
-    process.env.OPENCLAW_STATE_DIR = stateDirOverride;
+    stateDirOverride = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-telegram-bindings-"));
+    process.env.REMOTECLAW_STATE_DIR = stateDirOverride;
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-03-06T10:00:00.000Z"));
 

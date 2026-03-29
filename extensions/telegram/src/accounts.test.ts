@@ -103,7 +103,7 @@ describe("resolveTelegramAccount", () => {
   });
 
   it("formats debug logs with inspect-style output when debug env is enabled", () => {
-    withEnv({ TELEGRAM_BOT_TOKEN: "", OPENCLAW_DEBUG_TELEGRAM_ACCOUNTS: "1" }, () => {
+    withEnv({ TELEGRAM_BOT_TOKEN: "", REMOTECLAW_DEBUG_TELEGRAM_ACCOUNTS: "1" }, () => {
       const cfg: RemoteClawConfig = {
         channels: {
           telegram: { accounts: { work: { botToken: "tok-work" } } },

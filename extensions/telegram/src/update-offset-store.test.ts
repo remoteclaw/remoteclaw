@@ -80,7 +80,7 @@ describe("deleteTelegramUpdateOffset", () => {
   });
 
   it("ignores invalid persisted update IDs from disk", async () => {
-    await withStateDirEnv("openclaw-tg-offset-", async ({ stateDir }) => {
+    await withStateDirEnv("remoteclaw-tg-offset-", async ({ stateDir }) => {
       const offsetPath = path.join(stateDir, "telegram", "update-offset-default.json");
       await fs.mkdir(path.dirname(offsetPath), { recursive: true });
       await fs.writeFile(
@@ -100,7 +100,7 @@ describe("deleteTelegramUpdateOffset", () => {
   });
 
   it("rejects writing invalid update IDs", async () => {
-    await withStateDirEnv("openclaw-tg-offset-", async () => {
+    await withStateDirEnv("remoteclaw-tg-offset-", async () => {
       await expect(
         writeTelegramUpdateOffset({ accountId: "default", updateId: -1 as number }),
       ).rejects.toThrow(/non-negative safe integer/i);

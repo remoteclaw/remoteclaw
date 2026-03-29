@@ -89,7 +89,7 @@ function buildStatusTopicCommandContext() {
       chat: {
         id: -1001234567890,
         type: "supergroup" as const,
-        title: "OpenClaw",
+        title: "RemoteClaw",
         is_forum: true,
       },
       message_thread_id: 42,

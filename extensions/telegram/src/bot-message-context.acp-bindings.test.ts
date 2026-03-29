@@ -58,7 +58,7 @@ describe("buildTelegramMessageContext ACP configured bindings", () => {
     const ctx = await buildTelegramMessageContextForTest({
       accountId: "work",
       message: {
-        chat: { id: -1001234567890, type: "supergroup", title: "OpenClaw", is_forum: true },
+        chat: { id: -1001234567890, type: "supergroup", title: "RemoteClaw", is_forum: true },
         message_thread_id: 42,
         text: "hello",
       },
@@ -75,7 +75,7 @@ describe("buildTelegramMessageContext ACP configured bindings", () => {
     const ctx = await buildTelegramMessageContextForTest({
       accountId: "work",
       message: {
-        chat: { id: -1001234567890, type: "supergroup", title: "OpenClaw", is_forum: true },
+        chat: { id: -1001234567890, type: "supergroup", title: "RemoteClaw", is_forum: true },
         message_thread_id: 42,
         text: "hello",
       },
@@ -94,7 +94,7 @@ describe("buildTelegramMessageContext ACP configured bindings", () => {
     const ctx = await buildTelegramMessageContextForTest({
       accountId: "work",
       message: {
-        chat: { id: -1001234567890, type: "supergroup", title: "OpenClaw", is_forum: true },
+        chat: { id: -1001234567890, type: "supergroup", title: "RemoteClaw", is_forum: true },
         message_thread_id: 42,
         text: "/new",
       },
@@ -123,7 +123,7 @@ describe("buildTelegramMessageContext ACP configured bindings", () => {
     const ctx = await buildTelegramMessageContextForTest({
       accountId: "work",
       message: {
-        chat: { id: -1001234567890, type: "supergroup", title: "OpenClaw", is_forum: true },
+        chat: { id: -1001234567890, type: "supergroup", title: "RemoteClaw", is_forum: true },
         message_thread_id: 42,
         text: "hello",
       },

@@ -1,10 +1,10 @@
 import { describe, vi } from "vitest";
-import type { ReplyPayload } from "../../../auto-reply/types.js";
+import type { ReplyPayload } from "../../../src/auto-reply/types.js";
 import {
   installSendPayloadContractSuite,
   primeSendMock,
-} from "../../../test-utils/send-payload-contract.js";
-import { discordOutbound } from "./discord.js";
+} from "../../../src/test-utils/send-payload-contract.js";
+import { discordOutbound } from "./outbound-adapter.js";
 
 function createHarness(params: {
   payload: ReplyPayload;

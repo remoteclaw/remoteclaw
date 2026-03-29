@@ -1,19 +1,2 @@
-export function normalizeSlackToken(raw?: string): string | undefined {
-  if (typeof raw !== "string") {
-    return undefined;
-  }
-  const trimmed = raw.trim();
-  return trimmed ? trimmed : undefined;
-}
-
-export function resolveSlackBotToken(raw?: string): string | undefined {
-  return normalizeSlackToken(raw);
-}
-
-export function resolveSlackAppToken(raw?: string): string | undefined {
-  return normalizeSlackToken(raw);
-}
-
-export function resolveSlackUserToken(raw?: string): string | undefined {
-  return normalizeSlackToken(raw);
-}
+// Shim: re-exports from extensions/slack/src/token
+export * from "../../extensions/slack/src/token.js";

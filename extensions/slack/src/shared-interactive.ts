@@ -39,8 +39,8 @@ type InteractiveReply = {
   blocks: InteractiveReplyBlock[];
 };
 
-const SLACK_REPLY_BUTTON_ACTION_ID = "openclaw:reply_button";
-const SLACK_REPLY_SELECT_ACTION_ID = "openclaw:reply_select";
+const SLACK_REPLY_BUTTON_ACTION_ID = "remoteclaw:reply_button";
+const SLACK_REPLY_SELECT_ACTION_ID = "remoteclaw:reply_select";
 const SLACK_SECTION_TEXT_MAX = 3000;
 const SLACK_PLAIN_TEXT_MAX = 75;
 const SLACK_OPTION_VALUE_MAX = 75;
@@ -81,7 +81,7 @@ export function buildSlackInteractiveBlocks(interactive?: InteractiveReply): Sla
       }
       blocks.push({
         type: "actions",
-        block_id: `openclaw_reply_buttons_${++buttonIndex}`,
+        block_id: `remoteclaw_reply_buttons_${++buttonIndex}`,
         elements: block.buttons.map((button, choiceIndex) => ({
           type: "button",
           action_id: SLACK_REPLY_BUTTON_ACTION_ID,
@@ -100,7 +100,7 @@ export function buildSlackInteractiveBlocks(interactive?: InteractiveReply): Sla
     }
     blocks.push({
       type: "actions",
-      block_id: `openclaw_reply_select_${++selectIndex}`,
+      block_id: `remoteclaw_reply_select_${++selectIndex}`,
       elements: [
         {
           type: "static_select",

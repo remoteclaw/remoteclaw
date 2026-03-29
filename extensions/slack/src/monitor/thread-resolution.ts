@@ -1,6 +1,6 @@
 import type { WebClient as SlackWebClient } from "@slack/web-api";
-import { logVerbose, shouldLogVerbose } from "../../../../src/globals.js";
-import { pruneMapToMaxSize } from "../../../../src/infra/map-size.js";
+import { pruneMapToMaxSize } from "remoteclaw/plugin-sdk/infra-runtime";
+import { logVerbose, shouldLogVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import type { SlackMessageEvent } from "../types.js";
 
 type ThreadTsCacheEntry = {

@@ -3,7 +3,7 @@ import {
   extractErrorCode,
   formatErrorMessage,
   readErrorName,
-} from "../../../src/infra/errors.js";
+} from "remoteclaw/plugin-sdk/infra-runtime";
 
 const RECOVERABLE_ERROR_CODES = new Set([
   "ECONNRESET",

@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { ChannelAgentTool } from "../../../src/channels/plugins/types.js";
+import type { ChannelAgentTool } from "remoteclaw/plugin-sdk/channel-runtime";
 
 export function createWhatsAppLoginTool(): ChannelAgentTool {
   return {

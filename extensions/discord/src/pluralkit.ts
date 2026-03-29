@@ -1,4 +1,4 @@
-import { resolveFetch } from "../../../src/infra/fetch.js";
+import { resolveFetch } from "remoteclaw/plugin-sdk/infra-runtime";
 
 const PLURALKIT_API_BASE = "https://api.pluralkit.me/v2";
 

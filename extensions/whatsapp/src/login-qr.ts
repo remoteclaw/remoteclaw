@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { DisconnectReason } from "@whiskeysockets/baileys";
-import { loadConfig } from "../../../src/config/config.js";
-import { danger, info, success } from "../../../src/globals.js";
-import { logInfo } from "../../../src/logger.js";
-import { defaultRuntime, type RuntimeEnv } from "../../../src/runtime.js";
+import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { danger, info, success } from "remoteclaw/plugin-sdk/runtime-env";
+import { defaultRuntime, type RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
+import { logInfo } from "remoteclaw/plugin-sdk/text-runtime";
 import { resolveWhatsAppAccount } from "./accounts.js";
 import { renderQrPngBase64 } from "./qr-image.js";
 import {

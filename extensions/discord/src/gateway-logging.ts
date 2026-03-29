@@ -1,6 +1,6 @@
 import type { EventEmitter } from "node:events";
-import { logVerbose } from "../../../src/globals.js";
-import type { RuntimeEnv } from "../../../src/runtime.js";
+import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 
 type GatewayEmitter = Pick<EventEmitter, "on" | "removeListener">;
 

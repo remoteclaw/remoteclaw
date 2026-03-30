@@ -509,6 +509,86 @@ export async function promptSingleChannelToken(params: {
   return { useEnv: false, token: await promptToken() };
 }
 
+/**
+ * Unified secret step that builds prompt state, shows optional help,
+ * prompts for a credential (plaintext-only), and applies the result.
+ *
+ * Adapted from upstream's runSingleChannelSecretStep — the "ref" (external
+ * secret provider) code path is omitted because the fork does not have the
+ * secret-provider infrastructure. The secretInputMode parameter is accepted
+ * for signature compatibility but ignored.
+ */
+export async function runSingleChannelSecretStep(params: {
+  cfg: RemoteClawConfig;
+  prompter: Pick<WizardPrompter, "confirm" | "text" | "select" | "note">;
+  providerHint: string;
+  credentialLabel: string;
+  secretInputMode?: "plaintext" | "ref";
+  accountConfigured: boolean;
+  hasConfigToken: boolean;
+  allowEnv: boolean;
+  envValue?: string;
+  envPrompt: string;
+  keepPrompt: string;
+  inputPrompt: string;
+  preferredEnvVar?: string;
+  onMissingConfigured?: () => Promise<void>;
+  applyUseEnv?: (cfg: RemoteClawConfig) => RemoteClawConfig | Promise<RemoteClawConfig>;
+  applySet?: (
+    cfg: RemoteClawConfig,
+    value: string,
+    resolvedValue: string,
+  ) => RemoteClawConfig | Promise<RemoteClawConfig>;
+}): Promise<{
+  cfg: RemoteClawConfig;
+  action: "use-env" | "set" | "keep";
+  resolvedValue?: string;
+}> {
+  const promptState = buildSingleChannelSecretPromptState({
+    accountConfigured: params.accountConfigured,
+    hasConfigToken: params.hasConfigToken,
+    allowEnv: params.allowEnv,
+    envValue: params.envValue,
+  });
+
+  if (!promptState.accountConfigured && params.onMissingConfigured) {
+    await params.onMissingConfigured();
+  }
+
+  const result = await promptSingleChannelToken({
+    prompter: params.prompter,
+    accountConfigured: promptState.accountConfigured,
+    canUseEnv: promptState.canUseEnv,
+    hasConfigToken: promptState.hasConfigToken,
+    envPrompt: params.envPrompt,
+    keepPrompt: params.keepPrompt,
+    inputPrompt: params.inputPrompt,
+  });
+
+  if (result.useEnv) {
+    return {
+      cfg: params.applyUseEnv ? await params.applyUseEnv(params.cfg) : params.cfg,
+      action: "use-env",
+      resolvedValue: params.envValue?.trim() || undefined,
+    };
+  }
+
+  if (result.token) {
+    return {
+      cfg: params.applySet
+        ? await params.applySet(params.cfg, result.token, result.token)
+        : params.cfg,
+      action: "set",
+      resolvedValue: result.token,
+    };
+  }
+
+  return {
+    cfg: params.cfg,
+    action: "keep",
+  };
+}
+
 type ParsedAllowFromResult = { entries: string[]; error?: string };
 
 export async function promptParsedAllowFromForScopedChannel(params: {

@@ -302,6 +302,11 @@ export type ChannelMessagingAdapter = {
     display?: string;
     kind?: ChannelDirectoryEntryKind;
   }) => string;
+  parseExplicitTarget?: (params: { raw: string }) => {
+    to: string;
+    threadId?: string | number;
+    chatType?: ChatType;
+  } | null;
 };
 
 export type ChannelAgentPromptAdapter = {

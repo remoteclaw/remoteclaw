@@ -1,4 +1,4 @@
-import { normalizeE164 } from "../../../src/utils.js";
+import { normalizeE164 } from "remoteclaw/plugin-sdk/text-runtime";
 import {
   createAllowedChatSenderMatcher,
   type ChatSenderAllowParams,

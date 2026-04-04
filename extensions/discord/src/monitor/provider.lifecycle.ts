@@ -1,9 +1,9 @@
 import type { Client } from "@buape/carbon";
 import type { GatewayPlugin } from "@buape/carbon/gateway";
-import { createArmableStallWatchdog } from "../../../../src/channels/transport/stall-watchdog.js";
-import { createConnectedChannelStatusPatch } from "../../../../src/gateway/channel-status-patches.js";
-import { danger } from "../../../../src/globals.js";
-import type { RuntimeEnv } from "../../../../src/runtime.js";
+import { createArmableStallWatchdog } from "remoteclaw/plugin-sdk/channel-lifecycle";
+import { createConnectedChannelStatusPatch } from "remoteclaw/plugin-sdk/gateway-runtime";
+import { danger } from "remoteclaw/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import { attachDiscordGatewayLogging } from "../gateway-logging.js";
 import { getDiscordGatewayEmitter, waitForDiscordGatewayStop } from "../monitor.gateway.js";
 import type { DiscordVoiceManager } from "../voice/manager.js";

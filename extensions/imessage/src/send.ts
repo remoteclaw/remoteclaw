@@ -1,8 +1,8 @@
-import { loadConfig } from "../../../src/config/config.js";
-import { resolveMarkdownTableMode } from "../../../src/config/markdown-tables.js";
-import { convertMarkdownTables } from "../../../src/markdown/tables.js";
-import { kindFromMime } from "../../../src/media/mime.js";
-import { resolveOutboundAttachmentFromUrl } from "../../../src/media/outbound-attachment.js";
+import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import { kindFromMime } from "remoteclaw/plugin-sdk/media-runtime";
+import { resolveOutboundAttachmentFromUrl } from "remoteclaw/plugin-sdk/media-runtime";
+import { convertMarkdownTables } from "remoteclaw/plugin-sdk/text-runtime";
 import { resolveIMessageAccount, type ResolvedIMessageAccount } from "./accounts.js";
 import { createIMessageRpcClient, type IMessageRpcClient } from "./client.js";
 import { formatIMessageChatTarget, type IMessageService, parseIMessageTarget } from "./targets.js";

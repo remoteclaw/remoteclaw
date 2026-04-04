@@ -1,10 +1,10 @@
-import { chunkMarkdownTextWithMode, type ChunkMode } from "../../../../src/auto-reply/chunk.js";
-import type { ReplyPayload } from "../../../../src/auto-reply/types.js";
-import type { MarkdownTableMode } from "../../../../src/config/types.base.js";
-import { logVerbose, shouldLogVerbose } from "../../../../src/globals.js";
-import { convertMarkdownTables } from "../../../../src/markdown/tables.js";
-import { markdownToWhatsApp } from "../../../../src/markdown/whatsapp.js";
-import { sleep } from "../../../../src/utils.js";
+import type { MarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import { chunkMarkdownTextWithMode, type ChunkMode } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
+import { logVerbose, shouldLogVerbose } from "remoteclaw/plugin-sdk/runtime-env";
+import { convertMarkdownTables } from "remoteclaw/plugin-sdk/text-runtime";
+import { markdownToWhatsApp } from "remoteclaw/plugin-sdk/text-runtime";
+import { sleep } from "remoteclaw/plugin-sdk/text-runtime";
 import { loadWebMedia } from "../media.js";
 import { newConnectionId } from "../reconnect.js";
 import { formatError } from "../session.js";

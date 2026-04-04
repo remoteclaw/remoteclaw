@@ -1,5 +1,5 @@
-import type { FinalizedMsgContext } from "../../../../../src/auto-reply/templating.js";
-import type { ResolvedAgentRoute } from "../../../../../src/routing/resolve-route.js";
+import type { FinalizedMsgContext } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { ResolvedAgentRoute } from "remoteclaw/plugin-sdk/routing";
 import type { ResolvedSlackAccount } from "../../accounts.js";
 import type { SlackMessageEvent } from "../../types.js";
 import type { SlackChannelConfigResolved } from "../channel-config.js";

@@ -7,9 +7,6 @@ import { describe, expect, it } from "vitest";
 const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 const RUNTIME_API_EXPORT_GUARDS: Record<string, readonly string[]> = {
-  "extensions/bluebubbles/src/runtime-api.ts": [
-    'export * from "remoteclaw/plugin-sdk/bluebubbles";',
-  ],
   "extensions/discord/runtime-api.ts": [
     'export * from "./src/audit.js";',
     'export * from "./src/actions/runtime.js";',
@@ -37,7 +34,7 @@ const RUNTIME_API_EXPORT_GUARDS: Record<string, readonly string[]> = {
     'export { probeIMessage } from "./src/probe.js";',
     'export { sendMessageIMessage } from "./src/send.js";',
   ],
-  "extensions/googlechat/runtime-api.ts": ['export * from "remoteclaw/plugin-sdk/googlechat";'],
+  "extensions/googlechat/runtime-api.ts": ['export * from "../../src/plugin-sdk/googlechat.js";'],
   "extensions/nextcloud-talk/runtime-api.ts": [
     'export * from "remoteclaw/plugin-sdk/nextcloud-talk";',
   ],

@@ -1,13 +1,13 @@
+import type {
+  ChannelAccountSnapshot,
+  ChannelStatusIssue,
+} from "remoteclaw/plugin-sdk/channel-contract";
 import {
   appendMatchMetadata,
   asString,
   isRecord,
   resolveEnabledConfiguredAccountId,
-} from "../../../src/channels/plugins/status-issues/shared.js";
-import type {
-  ChannelAccountSnapshot,
-  ChannelStatusIssue,
-} from "../../../src/channels/plugins/types.js";
+} from "remoteclaw/plugin-sdk/status-helpers";
 
 type TelegramAccountStatus = {
   accountId?: unknown;

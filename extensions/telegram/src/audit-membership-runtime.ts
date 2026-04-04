@@ -1,5 +1,5 @@
-import { isRecord } from "../../../src/utils.js";
-import { fetchWithTimeout } from "../../../src/utils/fetch-timeout.js";
+import { isRecord } from "remoteclaw/plugin-sdk/text-runtime";
+import { fetchWithTimeout } from "remoteclaw/plugin-sdk/text-runtime";
 import type {
   AuditTelegramGroupMembershipParams,
   TelegramGroupMembershipAudit,

@@ -1,6 +1,6 @@
-import { resolveFetch } from "../../../src/infra/fetch.js";
-import { generateSecureUuid } from "../../../src/infra/secure-random.js";
-import { fetchWithTimeout } from "../../../src/utils/fetch-timeout.js";
+import { resolveFetch } from "remoteclaw/plugin-sdk/infra-runtime";
+import { generateSecureUuid } from "remoteclaw/plugin-sdk/infra-runtime";
+import { fetchWithTimeout } from "remoteclaw/plugin-sdk/text-runtime";
 
 export type SignalRpcOptions = {
   baseUrl: string;

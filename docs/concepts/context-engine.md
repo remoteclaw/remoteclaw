@@ -1,7 +1,7 @@
 ---
 summary: "Context engine: pluggable context assembly, compaction, and subagent lifecycle"
 read_when:
-  - You want to understand how OpenClaw assembles model context
+  - You want to understand how RemoteClaw assembles model context
   - You are switching between the legacy engine and a plugin engine
   - You are building a context engine plugin
 title: "Context Engine"
@@ -9,11 +9,11 @@ title: "Context Engine"
 
 # Context Engine
 
-A **context engine** controls how OpenClaw builds model context for each run.
+A **context engine** controls how RemoteClaw builds model context for each run.
 It decides which messages to include, how to summarize older history, and how
 to manage context across subagent boundaries.
 
-OpenClaw ships with a built-in `legacy` engine. Plugins can register
+RemoteClaw ships with a built-in `legacy` engine. Plugins can register
 alternative engines that replace the entire context pipeline.
 
 ## Quick start
@@ -21,15 +21,15 @@ alternative engines that replace the entire context pipeline.
 Check which engine is active:
 
 ```bash
-openclaw doctor
+remoteclaw doctor
 # or inspect config directly:
-cat ~/.openclaw/openclaw.json | jq '.plugins.slots.contextEngine'
+cat ~/.remoteclaw/remoteclaw.json | jq '.plugins.slots.contextEngine'
 ```
 
 Switch engines:
 
 ```json5
-// openclaw.json
+// remoteclaw.json
 {
   plugins: {
     slots: {
@@ -43,7 +43,7 @@ Restart the gateway after changing the slot.
 
 ## How it works
 
-Every time OpenClaw runs a model prompt, the context engine participates at
+Every time RemoteClaw runs a model prompt, the context engine participates at
 four lifecycle points:
 
 1. **Ingest** — called when a new message is added to the session. The engine
@@ -66,14 +66,14 @@ Engines can also manage context across subagent boundaries:
 
 ### System prompt addition
 
-The `assemble` method can return a `systemPromptAddition` string. OpenClaw
+The `assemble` method can return a `systemPromptAddition` string. RemoteClaw
 prepends this to the system prompt for the run. This lets engines inject
 dynamic recall guidance, retrieval instructions, or context-aware hints
 without requiring static workspace files.
 
 ## The legacy engine
 
-The built-in `legacy` engine preserves OpenClaw's original behavior:
+The built-in `legacy` engine preserves RemoteClaw's original behavior:
 
 - **Ingest**: no-op (the session manager handles message persistence directly).
 - **Assemble**: pass-through (the existing sanitize → validate → limit pipeline
@@ -164,11 +164,11 @@ Optional methods:
 ### ownsCompaction
 
 When `info.ownsCompaction` is `true`, the engine manages its own compaction
-lifecycle. OpenClaw will not trigger the built-in auto-compaction; instead it
+lifecycle. RemoteClaw will not trigger the built-in auto-compaction; instead it
 delegates entirely to the engine's `compact()` method. The engine may also
 run compaction proactively in `afterTurn()`.
 
-When `false` or unset, OpenClaw's built-in auto-compaction logic runs
+When `false` or unset, RemoteClaw's built-in auto-compaction logic runs
 alongside the engine.
 
 ## Configuration reference
@@ -192,7 +192,7 @@ multiple plugins declare `kind: "context-engine"`, only the one selected in
 ## Relationship to compaction and memory
 
 - **Compaction** is one responsibility of the context engine. The legacy engine
-  delegates to OpenClaw's built-in summarization. Plugin engines can implement
+  delegates to RemoteClaw's built-in summarization. Plugin engines can implement
   any compaction strategy (DAG summaries, vector retrieval, etc.).
 - **Memory plugins** (`plugins.slots.memory`) are separate from context engines.
   Memory plugins provide search/retrieval; context engines control what the
@@ -203,12 +203,12 @@ multiple plugins declare `kind: "context-engine"`, only the one selected in
 
 ## Tips
 
-- Use `openclaw doctor` to verify your engine is loading correctly.
+- Use `remoteclaw doctor` to verify your engine is loading correctly.
 - If switching engines, existing sessions continue with their current history.
   The new engine takes over for future runs.
 - Engine errors are logged and surfaced in diagnostics. If a plugin engine
-  fails to load, OpenClaw falls back to the legacy engine with a warning.
-- For development, use `openclaw plugins install -l ./my-engine` to link a
+  fails to load, RemoteClaw falls back to the legacy engine with a warning.
+- For development, use `remoteclaw plugins install -l ./my-engine` to link a
   local plugin directory without copying.
 
 See also: [Compaction](/concepts/compaction), [Context](/concepts/context),

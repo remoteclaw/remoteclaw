@@ -1,12 +1,12 @@
 ---
-summary: "Deploy OpenClaw on Render with Infrastructure-as-Code"
+summary: "Deploy RemoteClaw on Render with Infrastructure-as-Code"
 read_when:
-  - Deploying OpenClaw to Render
+  - Deploying RemoteClaw to Render
   - You want a declarative cloud deploy with Render Blueprints
 title: Deploy on Render
 ---
 
-Deploy OpenClaw on Render using Infrastructure as Code. The included `render.yaml` Blueprint defines your entire stack declaratively, service, disk, environment variables, so you can deploy with a single click and version your infrastructure alongside your code.
+Deploy RemoteClaw on Render using Infrastructure as Code. The included `render.yaml` Blueprint defines your entire stack declaratively, service, disk, environment variables, so you can deploy with a single click and version your infrastructure alongside your code.
 
 ## Prerequisites
 
@@ -28,12 +28,12 @@ Once deployed, your service URL follows the pattern `https://<service-name>.onre
 ## Understanding the Blueprint
 
 Render Blueprints are YAML files that define your infrastructure. The `render.yaml` in this
-repository configures everything needed to run OpenClaw:
+repository configures everything needed to run RemoteClaw:
 
 ```yaml
 services:
   - type: web
-    name: openclaw
+    name: remoteclaw
     runtime: docker
     plan: starter
     healthCheckPath: /health
@@ -42,14 +42,14 @@ services:
         value: "8080"
       - key: SETUP_PASSWORD
         sync: false # prompts during deploy
-      - key: OPENCLAW_STATE_DIR
-        value: /data/.openclaw
-      - key: OPENCLAW_WORKSPACE_DIR
+      - key: REMOTECLAW_STATE_DIR
+        value: /data/.remoteclaw
+      - key: REMOTECLAW_WORKSPACE_DIR
         value: /data/workspace
-      - key: OPENCLAW_GATEWAY_TOKEN
+      - key: REMOTECLAW_GATEWAY_TOKEN
         generateValue: true # auto-generates a secure token
     disk:
-      name: openclaw-data
+      name: remoteclaw-data
       mountPath: /data
       sizeGB: 1
 ```
@@ -87,7 +87,7 @@ The Blueprint defaults to `starter`. To use free tier, change `plan: free` in yo
 
 ### Access the Control UI
 
-The web dashboard is available at `https://<your-service>.onrender.com/openclaw`.
+The web dashboard is available at `https://<your-service>.onrender.com/remoteclaw`.
 
 ## Render Dashboard features
 
@@ -109,7 +109,7 @@ Modify variables in **Dashboard → your service → Environment**. Changes trig
 
 ### Auto-deploy
 
-If you use the original OpenClaw repository, Render will not auto-deploy your OpenClaw. To update it, run a manual Blueprint sync from the dashboard.
+If you use the original RemoteClaw repository, Render will not auto-deploy your RemoteClaw. To update it, run a manual Blueprint sync from the dashboard.
 
 ## Custom domain
 
@@ -125,7 +125,7 @@ Render supports horizontal and vertical scaling:
 - **Vertical**: Change the plan to get more CPU/RAM
 - **Horizontal**: Increase instance count (Standard plan and above)
 
-For OpenClaw, vertical scaling is usually sufficient. Horizontal scaling requires sticky sessions or external state management.
+For RemoteClaw, vertical scaling is usually sufficient. Horizontal scaling requires sticky sessions or external state management.
 
 ## Backups and migration
 
@@ -135,7 +135,7 @@ Export your configuration and workspace at any time:
 https://<your-service>.onrender.com/setup/export
 ```
 
-This downloads a portable backup you can restore on any OpenClaw host.
+This downloads a portable backup you can restore on any RemoteClaw host.
 
 ## Troubleshooting
 
@@ -166,4 +166,4 @@ Render expects a 200 response from `/health` within 30 seconds. If builds succee
 
 - Set up messaging channels: [Channels](/channels)
 - Configure the Gateway: [Gateway configuration](/gateway/configuration)
-- Keep OpenClaw up to date: [Updating](/install/updating)
+- Keep RemoteClaw up to date: [Updating](/install/updating)

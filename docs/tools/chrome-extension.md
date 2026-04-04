@@ -13,7 +13,7 @@ The RemoteClaw Chrome extension lets the agent control your **existing Chrome ta
 
 Attach/detach happens via a **single Chrome toolbar button**.
 
-If you want Chrome’s official DevTools MCP attach flow instead of the OpenClaw
+If you want Chrome’s official DevTools MCP attach flow instead of the RemoteClaw
 extension relay, use an `existing-session` browser profile instead. See
 [Browser](/tools/browser#chrome-existing-session-via-mcp). For Chrome’s own
 setup docs, see [Chrome for Developers: Use Chrome DevTools MCP with your

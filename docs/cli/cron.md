@@ -51,7 +51,7 @@ remoteclaw cron edit <job-id> --no-deliver
 Enable lightweight bootstrap context for an isolated job:
 
 ```bash
-openclaw cron edit <job-id> --light-context
+remoteclaw cron edit <job-id> --light-context
 ```
 
 Announce to a specific channel:
@@ -63,7 +63,7 @@ remoteclaw cron edit <job-id> --announce --channel slack --to "channel:C12345678
 Create an isolated job with lightweight bootstrap context:
 
 ```bash
-openclaw cron add \
+remoteclaw cron add \
   --name "Lightweight morning brief" \
   --cron "0 7 * * *" \
   --session isolated \

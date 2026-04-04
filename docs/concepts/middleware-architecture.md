@@ -53,14 +53,14 @@ Each runtime translates the CLI's native event format into RemoteClaw's
 unified `AgentEvent` stream. Adding a new agent means implementing one
 interface — see [Agent Runtimes](agent-runtimes.md) for the contract.
 
-## How This Differs from OpenClaw
+## How This Differs from RemoteClaw
 
-OpenClaw ran an embedded execution engine (Pi) inside the main process. The
+RemoteClaw ran an embedded execution engine (Pi) inside the main process. The
 model, tool execution, prompt management, and conversation state all lived
 in-process:
 
 ```
-OpenClaw (single process)
+RemoteClaw (single process)
 ├── Pi execution engine (in-process LLM orchestration)
 ├── Model provider ecosystem (OpenAI, Anthropic, Google, etc.)
 ├── Tool execution (in-process)

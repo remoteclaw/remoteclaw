@@ -185,7 +185,7 @@ export default defineConfig({
               label: "Guides",
               items: [
                 { slug: "start/remoteclaw" },
-                { slug: "start/openclaw-or-remoteclaw", label: "Coming from OpenClaw" },
+                { slug: "start/remoteclaw-or-remoteclaw", label: "Coming from RemoteClaw" },
                 { slug: "start/nanoclaw-or-remoteclaw", label: "Coming from NanoClaw" },
                 { slug: "landscape", label: "Agent Middleware Landscape" },
               ],
@@ -214,8 +214,8 @@ export default defineConfig({
               items: [
                 { slug: "install/updating" },
                 { slug: "install/migrating" },
-                { slug: "install/from-openclaw" },
-                { slug: "install/breaking-changes-from-openclaw" },
+                { slug: "install/from-remoteclaw" },
+                { slug: "install/breaking-changes-from-remoteclaw" },
                 { slug: "install/uninstall" },
               ],
             },

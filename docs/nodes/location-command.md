@@ -82,7 +82,7 @@ Errors (stable codes):
 ## Background behavior
 
 - Android app denies `location.get` while backgrounded.
-- Keep OpenClaw open when requesting location on Android.
+- Keep RemoteClaw open when requesting location on Android.
 - Other node platforms may differ.
 
 ## Model/tooling integration

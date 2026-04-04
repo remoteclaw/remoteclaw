@@ -244,7 +244,7 @@ Isolated jobs (`agentTurn`) can set `lightContext: true` to run with lightweight
 
 - Use this for scheduled chores that do not need workspace bootstrap file injection.
 - In practice, the embedded runtime runs with `bootstrapContextMode: "lightweight"`, which keeps cron bootstrap context empty on purpose.
-- CLI equivalents: `openclaw cron add --light-context ...` and `openclaw cron edit --light-context`.
+- CLI equivalents: `remoteclaw cron add --light-context ...` and `remoteclaw cron edit --light-context`.
 
 ### Delivery (channel + target)
 

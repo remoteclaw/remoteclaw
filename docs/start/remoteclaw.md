@@ -183,7 +183,7 @@ MEDIA:https://example.com/screenshot.png
 
 RemoteClaw extracts these and sends them as media alongside the text.
 
-For local paths, the default allowlist is intentionally narrow: the OpenClaw temp
+For local paths, the default allowlist is intentionally narrow: the RemoteClaw temp
 root, the media cache, agent workspace paths, and sandbox-generated files. If you
 need broader local-file attachment roots, configure an explicit channel/plugin
 allowlist instead of relying on arbitrary host paths.

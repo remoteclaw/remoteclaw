@@ -117,9 +117,9 @@ What persists across messages depends on the mechanism:
 
 Docs: [Session](/concepts/session), [Session pruning](/concepts/session-pruning).
 
-By default, OpenClaw uses the built-in `legacy` context engine for assembly and
+By default, RemoteClaw uses the built-in `legacy` context engine for assembly and
 compaction. If you install a plugin that provides `kind: "context-engine"` and
-select it with `plugins.slots.contextEngine`, OpenClaw delegates context
+select it with `plugins.slots.contextEngine`, RemoteClaw delegates context
 assembly, `/compact`, and related subagent context lifecycle hooks to that
 engine instead. See [Context Engine](/concepts/context-engine) for the full
 pluggable interface, lifecycle hooks, and configuration.

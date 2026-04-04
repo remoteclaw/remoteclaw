@@ -1,5 +1,5 @@
 ---
-summary: "OpenClaw plugins/extensions: discovery, config, and safety"
+summary: "RemoteClaw plugins/extensions: discovery, config, and safety"
 read_when:
   - Adding or modifying plugins/extensions
   - Documenting plugin install or load rules
@@ -13,14 +13,14 @@ title: "Plugins"
 
 A plugin is either:
 
-- a native **OpenClaw plugin** (`openclaw.plugin.json` + runtime module), or
+- a native **RemoteClaw plugin** (`remoteclaw.plugin.json` + runtime module), or
 - a compatible **bundle** (`.codex-plugin/plugin.json` or `.claude-plugin/plugin.json`)
 
-Both show up under `openclaw plugins`, but only native OpenClaw plugins execute
+Both show up under `remoteclaw plugins`, but only native RemoteClaw plugins execute
 runtime code in-process.
 
 Most of the time, you’ll use plugins when you want a feature that’s not built
-into core OpenClaw yet (or you want to keep optional features out of your main
+into core RemoteClaw yet (or you want to keep optional features out of your main
 install).
 
 Fast path:
@@ -28,20 +28,20 @@ Fast path:
 1. See what’s already loaded:
 
 ```bash
-openclaw plugins list
+remoteclaw plugins list
 ```
 
 2. Install an official plugin (example: Voice Call):
 
 ```bash
-openclaw plugins install @remoteclaw/voice-call
+remoteclaw plugins install @remoteclaw/voice-call
 ```
 
 Npm specs are **registry-only** (package name + optional **exact version** or
 **dist-tag**). Git/URL/file specs and semver ranges are rejected.
 
 Bare specs and `@latest` stay on the stable track. If npm resolves either of
-those to a prerelease, OpenClaw stops and asks you to opt in explicitly with a
+those to a prerelease, RemoteClaw stops and asks you to opt in explicitly with a
 prerelease tag such as `@beta`/`@rc` or an exact prerelease version.
 
 3. Restart the Gateway, then configure under `plugins.entries.<id>.config`.
@@ -53,19 +53,19 @@ Need the bundle compatibility details? See [Plugin bundles](/plugins/bundles).
 For compatible bundles, install from a local directory or archive:
 
 ```bash
-openclaw plugins install ./my-bundle
-openclaw plugins install ./my-bundle.tgz
+remoteclaw plugins install ./my-bundle
+remoteclaw plugins install ./my-bundle.tgz
 ```
 
 For Claude marketplace installs, list the marketplace first, then install by
 marketplace entry name:
 
 ```bash
-openclaw plugins marketplace list <marketplace-name>
-openclaw plugins install <plugin-name>@<marketplace-name>
+remoteclaw plugins marketplace list <marketplace-name>
+remoteclaw plugins install <plugin-name>@<marketplace-name>
 ```
 
-OpenClaw resolves known Claude marketplace names from
+RemoteClaw resolves known Claude marketplace names from
 `~/.claude/plugins/known_marketplaces.json`. You can also pass an explicit
 marketplace source with `--marketplace`.
 
@@ -107,7 +107,7 @@ conversation, and it runs after core approval handling finishes.
 
 ## Public capability model
 
-Capabilities are the public plugin model. Every native OpenClaw plugin
+Capabilities are the public plugin model. Every native RemoteClaw plugin
 registers against one or more capability types:
 
 | Capability          | Registration method                           | Example plugins           |
@@ -124,7 +124,7 @@ services is a **legacy hook-only** plugin. That shape is still fully supported.
 
 ### Plugin shapes
 
-OpenClaw classifies every loaded plugin into a shape based on its actual
+RemoteClaw classifies every loaded plugin into a shape based on its actual
 registration behavior (not just static metadata):
 
 - **plain-capability** — registers exactly one capability type (for example a
@@ -137,7 +137,7 @@ registration behavior (not just static metadata):
 - **non-capability** — registers tools, commands, services, or routes but no
   capabilities
 
-Use `openclaw plugins inspect <id>` to see a plugin's shape and capability
+Use `remoteclaw plugins inspect <id>` to see a plugin's shape and capability
 breakdown. See [CLI reference](/cli/plugins#inspect) for details.
 
 ### Capability labels
@@ -162,21 +162,21 @@ Direction:
 
 ## Architecture
 
-OpenClaw's plugin system has four layers:
+RemoteClaw's plugin system has four layers:
 
 1. **Manifest + discovery**
-   OpenClaw finds candidate plugins from configured paths, workspace roots,
+   RemoteClaw finds candidate plugins from configured paths, workspace roots,
    global extension roots, and bundled extensions. Discovery reads native
-   `openclaw.plugin.json` manifests plus supported bundle manifests first.
+   `remoteclaw.plugin.json` manifests plus supported bundle manifests first.
 2. **Enablement + validation**
    Core decides whether a discovered plugin is enabled, disabled, blocked, or
    selected for an exclusive slot such as memory.
 3. **Runtime loading**
-   Native OpenClaw plugins are loaded in-process via jiti and register
+   Native RemoteClaw plugins are loaded in-process via jiti and register
    capabilities into a central registry. Compatible bundles are normalized into
    registry records without importing runtime code.
 4. **Surface consumption**
-   The rest of OpenClaw reads the registry to expose tools, channels, provider
+   The rest of RemoteClaw reads the registry to expose tools, channels, provider
    setup, hooks, HTTP routes, CLI commands, and services.
 
 The important design boundary:
@@ -185,13 +185,13 @@ The important design boundary:
   without executing plugin code
 - native runtime behavior comes from the plugin module's `register(api)` path
 
-That split lets OpenClaw validate config, explain missing/disabled plugins, and
+That split lets RemoteClaw validate config, explain missing/disabled plugins, and
 build UI/schema hints before the full runtime is active.
 
 ### Channel plugins and the shared message tool
 
 Channel plugins do not need to register a separate send/edit/react tool for
-normal chat actions. OpenClaw keeps one shared `message` tool in core, and
+normal chat actions. RemoteClaw keeps one shared `message` tool in core, and
 channel plugins own the channel-specific discovery and execution behind it.
 
 The current boundary is:
@@ -237,12 +237,12 @@ extension-owned modules.
 
 ## Capability ownership model
 
-OpenClaw treats a native plugin as the ownership boundary for a **company** or a
+RemoteClaw treats a native plugin as the ownership boundary for a **company** or a
 **feature**, not as a grab bag of unrelated integrations.
 
 That means:
 
-- a company plugin should usually own all of that company's OpenClaw-facing
+- a company plugin should usually own all of that company's RemoteClaw-facing
   surfaces
 - a feature plugin should usually own the full feature surface it introduces
 - channels should consume shared core capabilities instead of re-implementing
@@ -275,7 +275,7 @@ This is the key distinction:
 - **plugin** = ownership boundary
 - **capability** = core contract that multiple plugins can implement or consume
 
-So if OpenClaw adds a new domain such as video, the first question is not
+So if RemoteClaw adds a new domain such as video, the first question is not
 "which provider should hardcode video handling?" The first question is "what is
 the core video capability contract?" Once that contract exists, vendor plugins
 can register against it and channel/feature plugins can consume it.
@@ -311,20 +311,20 @@ That same pattern should be preferred for future capabilities.
 
 ### Multi-capability company plugin example
 
-A company plugin should feel cohesive from the outside. If OpenClaw has shared
+A company plugin should feel cohesive from the outside. If RemoteClaw has shared
 contracts for models, speech, media understanding, and web search, a vendor can
 own all of its surfaces in one place:
 
 ```ts
-import type { OpenClawPluginDefinition } from "openclaw/plugin-sdk";
+import type { RemoteClawPluginDefinition } from "remoteclaw/plugin-sdk";
 import {
   buildOpenAISpeechProvider,
   createPluginBackedWebSearchProvider,
   describeImageWithModel,
   transcribeOpenAiCompatibleAudio,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk";
 
-const plugin: OpenClawPluginDefinition = {
+const plugin: RemoteClawPluginDefinition = {
   id: "exampleai",
   name: "ExampleAI",
   register(api) {
@@ -381,7 +381,7 @@ What matters is not the exact helper names. The shape matters:
 
 ### Capability example: video understanding
 
-OpenClaw already treats image/audio/video understanding as one shared
+RemoteClaw already treats image/audio/video understanding as one shared
 capability. The same ownership model applies there:
 
 1. core defines the media-understanding contract
@@ -393,7 +393,7 @@ capability. The same ownership model applies there:
 That avoids baking one provider's video assumptions into core. The plugin owns
 the vendor surface; core owns the capability contract and fallback behavior.
 
-If OpenClaw adds a new domain later, such as video generation, use the same
+If RemoteClaw adds a new domain later, such as video generation, use the same
 sequence again: define the core capability first, then let vendor plugins
 register implementations against it.
 
@@ -402,7 +402,7 @@ Need a concrete rollout checklist? See
 
 ## Compatible bundles
 
-OpenClaw also recognizes two compatible external bundle layouts:
+RemoteClaw also recognizes two compatible external bundle layouts:
 
 - Codex-style bundles: `.codex-plugin/plugin.json`
 - Claude-style bundles: `.claude-plugin/plugin.json` or the default Claude
@@ -410,7 +410,7 @@ OpenClaw also recognizes two compatible external bundle layouts:
 - Cursor-style bundles: `.cursor-plugin/plugin.json`
 
 Claude marketplace entries can point at any of these compatible bundles, or at
-native OpenClaw plugin sources. OpenClaw resolves the marketplace entry first,
+native RemoteClaw plugin sources. RemoteClaw resolves the marketplace entry first,
 then runs the normal install path for the resolved source.
 
 They are shown in the plugin list as `format=bundle`, with a subtype of
@@ -419,20 +419,20 @@ They are shown in the plugin list as `format=bundle`, with a subtype of
 See [Plugin bundles](/plugins/bundles) for the exact detection rules, mapping
 behavior, and current support matrix.
 
-Today, OpenClaw treats these as **capability packs**, not native runtime
+Today, RemoteClaw treats these as **capability packs**, not native runtime
 plugins:
 
 - supported now: bundled `skills`
 - supported now: Claude `commands/` markdown roots, mapped into the normal
-  OpenClaw skill loader
+  RemoteClaw skill loader
 - supported now: Claude bundle `settings.json` defaults for embedded Pi agent
   settings (with shell override keys sanitized)
 - supported now: bundle MCP config, merged into embedded Pi agent settings as
   `mcpServers`, with supported stdio bundle MCP tools exposed during embedded
   Pi agent turns
 - supported now: Cursor `.cursor/commands/*.md` roots, mapped into the normal
-  OpenClaw skill loader
-- supported now: Codex bundle hook directories that use the OpenClaw hook-pack
+  RemoteClaw skill loader
+- supported now: Codex bundle hook directories that use the RemoteClaw hook-pack
   layout (`HOOK.md` + `handler.ts`/`handler.js`)
 - detected but not wired yet: other declared bundle capabilities such as
   agents, Claude hook automation, Cursor rules/hooks metadata, app/LSP
@@ -445,14 +445,14 @@ servers may also run as subprocesses for embedded Pi tool calls when they use
 supported stdio transport, but bundle runtime modules are not loaded
 in-process.
 
-Bundle hook support is limited to the normal OpenClaw hook directory format
+Bundle hook support is limited to the normal RemoteClaw hook directory format
 (`HOOK.md` plus `handler.ts`/`handler.js` under the declared hook roots).
 Vendor-specific shell/JSON hook runtimes, including Claude `hooks.json`, are
 only detected today and are not executed directly.
 
 ## Execution model
 
-Native OpenClaw plugins run **in-process** with the Gateway. They are not
+Native RemoteClaw plugins run **in-process** with the Gateway. They are not
 sandboxed. A loaded native plugin has the same process-level trust boundary as
 core code.
 
@@ -461,9 +461,9 @@ Implications:
 - a native plugin can register tools, network handlers, hooks, and services
 - a native plugin bug can crash or destabilize the gateway
 - a malicious native plugin is equivalent to arbitrary code execution inside
-  the OpenClaw process
+  the RemoteClaw process
 
-Compatible bundles are safer by default because OpenClaw currently treats them
+Compatible bundles are safer by default because RemoteClaw currently treats them
 as metadata/content packs. In current releases, that mostly means bundled
 skills.
 
@@ -518,11 +518,11 @@ Important trust note:
 - Z.AI provider runtime — bundled as `zai` (enabled by default)
 - Copilot Proxy (provider auth) — local VS Code Copilot Proxy bridge; distinct from built-in `github-copilot` device login (bundled, disabled by default)
 
-Native OpenClaw plugins are **TypeScript modules** loaded at runtime via jiti.
+Native RemoteClaw plugins are **TypeScript modules** loaded at runtime via jiti.
 **Config validation does not execute plugin code**; it uses the plugin manifest
 and JSON Schema instead. See [Plugin manifest](/plugins/manifest).
 
-Native OpenClaw plugins can register capabilities and surfaces:
+Native RemoteClaw plugins can register capabilities and surfaces:
 
 **Capabilities** (public plugin model):
 
@@ -544,18 +544,18 @@ Native OpenClaw plugins can register capabilities and surfaces:
 - **Skills** (by listing `skills` directories in the plugin manifest)
 - **Auto-reply commands** (execute without invoking the AI agent)
 
-Native OpenClaw plugins run **in‑process** with the Gateway, so treat them as trusted code.
+Native RemoteClaw plugins run **in‑process** with the Gateway, so treat them as trusted code.
 Tool authoring guide: [Plugin agent tools](/plugins/agent-tools).
 
 Think of these registrations as **capability claims**. A plugin is not supposed
 to reach into random internals and "just make it work." It should register
-against explicit surfaces that OpenClaw understands, validates, and can expose
+against explicit surfaces that RemoteClaw understands, validates, and can expose
 consistently across config, onboarding, status, docs, and runtime behavior.
 
 ## Contracts and enforcement
 
 The plugin API surface is intentionally typed and centralized in
-`OpenClawPluginApi`. That contract defines the supported registration points and
+`RemoteClawPluginApi`. That contract defines the supported registration points and
 the runtime helpers a plugin may rely on.
 
 Why this matters:
@@ -574,11 +574,11 @@ There are two layers of enforcement:
    registrations produce plugin diagnostics instead of undefined behavior.
 2. **contract tests**
    Bundled plugins are captured in contract registries during test runs so
-   OpenClaw can assert ownership explicitly. Today this is used for model
+   RemoteClaw can assert ownership explicitly. Today this is used for model
    providers, speech providers, web search providers, and bundled registration
    ownership.
 
-The practical effect is that OpenClaw knows, up front, which plugin owns which
+The practical effect is that RemoteClaw knows, up front, which plugin owns which
 surface. That lets core and channels compose seamlessly because ownership is
 declared, typed, and testable rather than implicit.
 
@@ -598,7 +598,7 @@ Bad plugin contracts are:
 - vendor-specific policy hidden in core
 - one-off plugin escape hatches that bypass the registry
 - channel code reaching straight into a vendor implementation
-- ad hoc runtime objects that are not part of `OpenClawPluginApi` or
+- ad hoc runtime objects that are not part of `RemoteClawPluginApi` or
   `api.runtime`
 
 When in doubt, raise the abstraction level: define the capability first, then
@@ -606,7 +606,7 @@ let plugins plug into it.
 
 ## Export boundary
 
-OpenClaw exports capabilities, not implementation convenience.
+RemoteClaw exports capabilities, not implementation convenience.
 
 Keep capability registration public. Trim non-contract helper exports:
 
@@ -617,12 +617,12 @@ Keep capability registration public. Trim non-contract helper exports:
 
 ## Plugin inspection
 
-Use `openclaw plugins inspect <id>` for deep plugin introspection. This is the
+Use `remoteclaw plugins inspect <id>` for deep plugin introspection. This is the
 canonical command for understanding a plugin's shape and registration behavior.
 
 ```bash
-openclaw plugins inspect openai
-openclaw plugins inspect openai --json
+remoteclaw plugins inspect openai
+remoteclaw plugins inspect openai --json
 ```
 
 The inspect report shows:
@@ -657,7 +657,7 @@ Provider plugins now have two layers:
 - config-time hooks: `catalog` / legacy `discovery`
 - runtime hooks: `resolveDynamicModel`, `prepareDynamicModel`, `normalizeResolvedModel`, `capabilities`, `prepareExtraParams`, `wrapStreamFn`, `formatApiKey`, `refreshOAuth`, `buildAuthDoctorHint`, `isCacheTtlEligible`, `buildMissingAuthMessage`, `suppressBuiltInModel`, `augmentModelCatalog`, `isBinaryThinking`, `supportsXHighThinking`, `resolveDefaultThinkingLevel`, `isModernModelRef`, `prepareRuntimeAuth`, `resolveUsageAuth`, `fetchUsageSnapshot`
 
-OpenClaw still owns the generic agent loop, failover, transcript handling, and
+RemoteClaw still owns the generic agent loop, failover, transcript handling, and
 tool policy. These hooks are the extension surface for provider-specific behavior without
 needing a whole custom inference transport.
 
@@ -671,13 +671,13 @@ client-id/client-secret setup vars.
 
 ### Hook order
 
-For model/provider plugins, OpenClaw uses hooks in this rough order:
+For model/provider plugins, RemoteClaw uses hooks in this rough order:
 
 1. `catalog`
    Publish provider config into `models.providers` during `models.json`
    generation.
 2. built-in/discovered model lookup
-   OpenClaw tries the normal registry/catalog path first.
+   RemoteClaw tries the normal registry/catalog path first.
 3. `resolveDynamicModel`
    Sync fallback for provider-owned model ids that are not in the local
    registry yet.
@@ -778,7 +778,7 @@ Rule of thumb:
 
 If the provider needs a fully custom wire protocol or custom request executor,
 that is a different class of extension. These hooks are for provider behavior
-that still runs on OpenClaw's normal inference loop.
+that still runs on RemoteClaw's normal inference loop.
 
 ### Provider Example
 
@@ -851,7 +851,7 @@ api.registerProvider({
   live-model policy.
 - OpenRouter uses `catalog` plus `resolveDynamicModel` and
   `prepareDynamicModel` because the provider is pass-through and may expose new
-  model ids before OpenClaw's static catalog updates.
+  model ids before RemoteClaw's static catalog updates.
 - GitHub Copilot uses `catalog`, `auth`, `resolveDynamicModel`, and
   `capabilities` plus `prepareRuntimeAuth` and `fetchUsageSnapshot` because it
   needs provider-owned device login, model fallback behavior, Claude transcript
@@ -895,7 +895,7 @@ api.registerProvider({
 
 ## Load pipeline
 
-At startup, OpenClaw does roughly this:
+At startup, RemoteClaw does roughly this:
 
 1. discover candidate plugin roots
 2. read native or compatible bundle manifests and package metadata
@@ -913,7 +913,7 @@ ownership looks suspicious for non-bundled plugins.
 
 ### Manifest-first behavior
 
-The manifest is the control-plane source of truth. OpenClaw uses it to:
+The manifest is the control-plane source of truth. RemoteClaw uses it to:
 
 - identify the plugin
 - discover declared channels/skills/config schema or bundle capabilities
@@ -926,7 +926,7 @@ actual behavior such as hooks, tools, commands, or provider flows.
 
 ### What the loader caches
 
-OpenClaw keeps short in-process caches for:
+RemoteClaw keeps short in-process caches for:
 
 - discovery results
 - manifest registry data
@@ -941,12 +941,12 @@ Plugins can access selected core helpers via `api.runtime`. For TTS:
 
 ```ts
 const clip = await api.runtime.tts.textToSpeech({
-  text: "Hello from OpenClaw",
+  text: "Hello from RemoteClaw",
   cfg: api.config,
 });
 
 const result = await api.runtime.tts.textToSpeechTelephony({
-  text: "Hello from OpenClaw",
+  text: "Hello from RemoteClaw",
   cfg: api.config,
 });
 
@@ -989,7 +989,7 @@ Notes:
 - Use speech providers for vendor-owned synthesis behavior.
 - Legacy Microsoft `edge` input is normalized to the `microsoft` provider id.
 - The preferred ownership model is company-oriented: one vendor plugin can own
-  text, speech, image, and future media providers as OpenClaw adds those
+  text, speech, image, and future media providers as RemoteClaw adds those
   capability contracts.
 
 For image/audio/video understanding, plugins register one typed
@@ -1011,7 +1011,7 @@ Notes:
 - Keep vendor behavior in the provider plugin.
 - Additive expansion should stay typed: new optional methods, new optional
   result fields, new optional capabilities.
-- If OpenClaw adds a new capability such as video generation later, define the
+- If RemoteClaw adds a new capability such as video generation later, define the
   core capability contract first, then let vendor plugins register against it.
 
 For media-understanding runtime helpers, plugins can call:
@@ -1064,7 +1064,7 @@ const result = await api.runtime.subagent.run({
 Notes:
 
 - `provider` and `model` are optional per-run overrides, not persistent session changes.
-- OpenClaw only honors those override fields for trusted callers.
+- RemoteClaw only honors those override fields for trusted callers.
 - For plugin-owned fallback runs, operators must opt in with `plugins.entries.<id>.subagent.allowModelOverride: true`.
 - Use `plugins.entries.<id>.subagent.allowedModels` to restrict trusted plugins to specific canonical `provider/model` targets, or `"*"` to allow any target explicitly.
 - Untrusted plugin subagent runs still work, but override requests are rejected instead of silently falling back.
@@ -1080,7 +1080,7 @@ const providers = api.runtime.webSearch.listProviders({
 const result = await api.runtime.webSearch.search({
   config: api.config,
   args: {
-    query: "OpenClaw plugin runtime helpers",
+    query: "RemoteClaw plugin runtime helpers",
     count: 5,
   },
 });
@@ -1129,23 +1129,23 @@ Notes:
 
 ## Plugin SDK import paths
 
-Use SDK subpaths instead of the monolithic `openclaw/plugin-sdk` import when
+Use SDK subpaths instead of the monolithic `remoteclaw/plugin-sdk` import when
 authoring plugins:
 
-- `openclaw/plugin-sdk/core` for the smallest generic plugin-facing contract.
-- Domain subpaths such as `openclaw/plugin-sdk/channel-config-helpers`,
-  `openclaw/plugin-sdk/channel-config-schema`,
-  `openclaw/plugin-sdk/channel-policy`,
-  `openclaw/plugin-sdk/lazy-runtime`,
-  `openclaw/plugin-sdk/reply-history`,
-  `openclaw/plugin-sdk/routing`,
-  `openclaw/plugin-sdk/runtime-store`, and
-  `openclaw/plugin-sdk/directory-runtime` for shared runtime/config helpers.
+- `remoteclaw/plugin-sdk/core` for the smallest generic plugin-facing contract.
+- Domain subpaths such as `remoteclaw/plugin-sdk/channel-config-helpers`,
+  `remoteclaw/plugin-sdk/channel-config-schema`,
+  `remoteclaw/plugin-sdk/channel-policy`,
+  `remoteclaw/plugin-sdk/lazy-runtime`,
+  `remoteclaw/plugin-sdk/reply-history`,
+  `remoteclaw/plugin-sdk/routing`,
+  `remoteclaw/plugin-sdk/runtime-store`, and
+  `remoteclaw/plugin-sdk/directory-runtime` for shared runtime/config helpers.
 - `openclaw/plugin-sdk/compat` remains as a legacy migration surface for older
   external plugins. Bundled plugins should not use it, and non-test imports emit
   a one-time deprecation warning outside test environments.
 - Bundled extension internals remain private. External plugins should use only
-  `openclaw/plugin-sdk/*` subpaths. OpenClaw core/test code may use the repo
+  `remoteclaw/plugin-sdk/*` subpaths. RemoteClaw core/test code may use the repo
   public entry points under `extensions/<id>/index.js`, `api.js`, `runtime-api.js`,
   `setup-entry.js`, and narrowly scoped files such as `login-qr-api.js`. Never
   import `extensions/<id>/src/*` from core or from another extension.
@@ -1154,38 +1154,38 @@ authoring plugins:
   `extensions/<id>/runtime-api.js` is the runtime-only barrel,
   `extensions/<id>/index.js` is the bundled plugin entry,
   and `extensions/<id>/setup-entry.js` is the setup plugin entry.
-- `openclaw/plugin-sdk/telegram` for Telegram channel plugin types and shared channel-facing helpers. Built-in Telegram implementation internals stay private to the bundled extension.
-- `openclaw/plugin-sdk/discord` for Discord channel plugin types and shared channel-facing helpers. Built-in Discord implementation internals stay private to the bundled extension.
-- `openclaw/plugin-sdk/slack` for Slack channel plugin types and shared channel-facing helpers. Built-in Slack implementation internals stay private to the bundled extension.
-- `openclaw/plugin-sdk/signal` for Signal channel plugin types and shared channel-facing helpers. Built-in Signal implementation internals stay private to the bundled extension.
-- `openclaw/plugin-sdk/imessage` for iMessage channel plugin types and shared channel-facing helpers. Built-in iMessage implementation internals stay private to the bundled extension.
-- `openclaw/plugin-sdk/whatsapp` for WhatsApp channel plugin types and shared channel-facing helpers. Built-in WhatsApp implementation internals stay private to the bundled extension.
-- `openclaw/plugin-sdk/line` for LINE channel plugins.
-- `openclaw/plugin-sdk/msteams` for the bundled Microsoft Teams plugin surface.
+- `remoteclaw/plugin-sdk/telegram` for Telegram channel plugin types and shared channel-facing helpers. Built-in Telegram implementation internals stay private to the bundled extension.
+- `remoteclaw/plugin-sdk/discord` for Discord channel plugin types and shared channel-facing helpers. Built-in Discord implementation internals stay private to the bundled extension.
+- `remoteclaw/plugin-sdk/slack` for Slack channel plugin types and shared channel-facing helpers. Built-in Slack implementation internals stay private to the bundled extension.
+- `remoteclaw/plugin-sdk/signal` for Signal channel plugin types and shared channel-facing helpers. Built-in Signal implementation internals stay private to the bundled extension.
+- `remoteclaw/plugin-sdk/imessage` for iMessage channel plugin types and shared channel-facing helpers. Built-in iMessage implementation internals stay private to the bundled extension.
+- `remoteclaw/plugin-sdk/whatsapp` for WhatsApp channel plugin types and shared channel-facing helpers. Built-in WhatsApp implementation internals stay private to the bundled extension.
+- `remoteclaw/plugin-sdk/line` for LINE channel plugins.
+- `remoteclaw/plugin-sdk/msteams` for the bundled Microsoft Teams plugin surface.
 - Bundled extension-specific subpaths are also available:
-  `openclaw/plugin-sdk/acpx`, `openclaw/plugin-sdk/bluebubbles`,
-  `openclaw/plugin-sdk/copilot-proxy`, `openclaw/plugin-sdk/device-pair`,
-  `openclaw/plugin-sdk/diagnostics-otel`, `openclaw/plugin-sdk/diffs`,
-  `openclaw/plugin-sdk/feishu`, `openclaw/plugin-sdk/googlechat`,
-  `openclaw/plugin-sdk/irc`, `openclaw/plugin-sdk/llm-task`,
-  `openclaw/plugin-sdk/lobster`, `openclaw/plugin-sdk/matrix`,
-  `openclaw/plugin-sdk/mattermost`, `openclaw/plugin-sdk/memory-core`,
-  `openclaw/plugin-sdk/memory-lancedb`,
-  `openclaw/plugin-sdk/minimax-portal-auth`,
-  `openclaw/plugin-sdk/nextcloud-talk`, `openclaw/plugin-sdk/nostr`,
-  `openclaw/plugin-sdk/open-prose`, `openclaw/plugin-sdk/phone-control`,
-  `openclaw/plugin-sdk/qwen-portal-auth`, `openclaw/plugin-sdk/synology-chat`,
-  `openclaw/plugin-sdk/talk-voice`, `openclaw/plugin-sdk/test-utils`,
-  `openclaw/plugin-sdk/thread-ownership`, `openclaw/plugin-sdk/tlon`,
-  `openclaw/plugin-sdk/twitch`, `openclaw/plugin-sdk/voice-call`,
-  `openclaw/plugin-sdk/zalo`, and `openclaw/plugin-sdk/zalouser`.
+  `remoteclaw/plugin-sdk/acpx`, `remoteclaw/plugin-sdk/bluebubbles`,
+  `remoteclaw/plugin-sdk/copilot-proxy`, `remoteclaw/plugin-sdk/device-pair`,
+  `remoteclaw/plugin-sdk/diagnostics-otel`, `remoteclaw/plugin-sdk/diffs`,
+  `remoteclaw/plugin-sdk/feishu`, `remoteclaw/plugin-sdk/googlechat`,
+  `remoteclaw/plugin-sdk/irc`, `remoteclaw/plugin-sdk/llm-task`,
+  `remoteclaw/plugin-sdk/lobster`, `remoteclaw/plugin-sdk/matrix`,
+  `remoteclaw/plugin-sdk/mattermost`, `remoteclaw/plugin-sdk/memory-core`,
+  `remoteclaw/plugin-sdk/memory-lancedb`,
+  `remoteclaw/plugin-sdk/minimax-portal-auth`,
+  `remoteclaw/plugin-sdk/nextcloud-talk`, `remoteclaw/plugin-sdk/nostr`,
+  `remoteclaw/plugin-sdk/open-prose`, `remoteclaw/plugin-sdk/phone-control`,
+  `remoteclaw/plugin-sdk/qwen-portal-auth`, `remoteclaw/plugin-sdk/synology-chat`,
+  `remoteclaw/plugin-sdk/talk-voice`, `remoteclaw/plugin-sdk/test-utils`,
+  `remoteclaw/plugin-sdk/thread-ownership`, `remoteclaw/plugin-sdk/tlon`,
+  `remoteclaw/plugin-sdk/twitch`, `remoteclaw/plugin-sdk/voice-call`,
+  `remoteclaw/plugin-sdk/zalo`, and `remoteclaw/plugin-sdk/zalouser`.
 
 ## Provider catalogs
 
 Provider plugins can define model catalogs for inference with
 `registerProvider({ catalog: { run(...) { ... } } })`.
 
-`catalog.run(...)` returns the same shape OpenClaw writes into
+`catalog.run(...)` returns the same shape RemoteClaw writes into
 `models.providers`:
 
 - `{ provider }` for one provider entry
@@ -1194,7 +1194,7 @@ Provider plugins can define model catalogs for inference with
 Use `catalog` when the plugin owns provider-specific model ids, base URL
 defaults, or auth-gated model metadata.
 
-`catalog.order` controls when a plugin's catalog merges relative to OpenClaw's
+`catalog.order` controls when a plugin's catalog merges relative to RemoteClaw's
 built-in implicit providers:
 
 - `simple`: plain API-key or env-driven providers
@@ -1208,11 +1208,11 @@ built-in provider entry with the same provider id.
 Compatibility:
 
 - `discovery` still works as a legacy alias
-- if both `catalog` and `discovery` are registered, OpenClaw uses `catalog`
+- if both `catalog` and `discovery` are registered, RemoteClaw uses `catalog`
 
 Compatibility note:
 
-- `openclaw/plugin-sdk` remains supported for existing external plugins.
+- `remoteclaw/plugin-sdk` remains supported for existing external plugins.
 - New and migrated bundled plugins should use channel or extension-specific
   subpaths; use `core` plus explicit domain subpaths for generic surfaces, and
   treat `compat` as migration-only.
@@ -1226,8 +1226,8 @@ Why:
 
 - `resolveAccount(...)` is the runtime path. It is allowed to assume credentials
   are fully materialized and can fail fast when required secrets are missing.
-- Read-only command paths such as `openclaw status`, `openclaw status --all`,
-  `openclaw channels status`, `openclaw channels resolve`, and doctor/config
+- Read-only command paths such as `remoteclaw status`, `remoteclaw status --all`,
+  `remoteclaw channels status`, `remoteclaw channels resolve`, and doctor/config
   repair flows should not need to materialize runtime credentials just to
   describe configuration.
 
@@ -1253,14 +1253,14 @@ Performance note:
 
 - Plugin discovery and manifest metadata use short in-process caches to reduce
   bursty startup/reload work.
-- Set `OPENCLAW_DISABLE_PLUGIN_DISCOVERY_CACHE=1` or
-  `OPENCLAW_DISABLE_PLUGIN_MANIFEST_CACHE=1` to disable these caches.
-- Tune cache windows with `OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS` and
-  `OPENCLAW_PLUGIN_MANIFEST_CACHE_MS`.
+- Set `REMOTECLAW_DISABLE_PLUGIN_DISCOVERY_CACHE=1` or
+  `REMOTECLAW_DISABLE_PLUGIN_MANIFEST_CACHE=1` to disable these caches.
+- Tune cache windows with `REMOTECLAW_PLUGIN_DISCOVERY_CACHE_MS` and
+  `REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS`.
 
 ## Discovery & precedence
 
-OpenClaw scans, in order:
+RemoteClaw scans, in order:
 
 1. Config paths
 
@@ -1268,22 +1268,22 @@ OpenClaw scans, in order:
 
 2. Workspace extensions
 
-- `<workspace>/.openclaw/extensions/*.ts`
-- `<workspace>/.openclaw/extensions/*/index.ts`
+- `<workspace>/.remoteclaw/extensions/*.ts`
+- `<workspace>/.remoteclaw/extensions/*/index.ts`
 
 3. Global extensions
 
-- `~/.openclaw/extensions/*.ts`
-- `~/.openclaw/extensions/*/index.ts`
+- `~/.remoteclaw/extensions/*.ts`
+- `~/.remoteclaw/extensions/*/index.ts`
 
-4. Bundled extensions (shipped with OpenClaw; mixed default-on/default-off)
+4. Bundled extensions (shipped with RemoteClaw; mixed default-on/default-off)
 
-- `<openclaw>/extensions/*`
+- `<remoteclaw>/extensions/*`
 
 Many bundled provider plugins are enabled by default so model catalogs/runtime
 hooks stay available without extra setup. Others still require explicit
 enablement via `plugins.entries.<id>.enabled` or
-`openclaw plugins enable <id>`.
+`remoteclaw plugins enable <id>`.
 
 Default-on bundled plugin examples:
 
@@ -1324,14 +1324,14 @@ become production gateway code.
 
 Hardening notes:
 
-- If `plugins.allow` is empty and non-bundled plugins are discoverable, OpenClaw logs a startup warning with plugin ids and sources.
-- Candidate paths are safety-checked before discovery admission. OpenClaw blocks candidates when:
+- If `plugins.allow` is empty and non-bundled plugins are discoverable, RemoteClaw logs a startup warning with plugin ids and sources.
+- Candidate paths are safety-checked before discovery admission. RemoteClaw blocks candidates when:
   - extension entry resolves outside plugin root (including symlink/path traversal escapes),
   - plugin root/source path is world-writable,
   - path ownership is suspicious for non-bundled plugins (POSIX owner is neither current uid nor root).
 - Loaded non-bundled plugins without install/load-path provenance emit a warning so you can pin trust (`plugins.allow`) or install tracking (`plugins.installs`).
 
-Each native OpenClaw plugin must include a `openclaw.plugin.json` file in its
+Each native RemoteClaw plugin must include a `remoteclaw.plugin.json` file in its
 root. If a path points at a file, the plugin root is the file's directory and
 must contain the manifest.
 
@@ -1374,12 +1374,12 @@ above plus the active memory slot plugin.
 
 ### Package packs
 
-A plugin directory may include a `package.json` with `openclaw.extensions`:
+A plugin directory may include a `package.json` with `remoteclaw.extensions`:
 
 ```json
 {
   "name": "my-pack",
-  "openclaw": {
+  "remoteclaw": {
     "extensions": ["./src/safety.ts", "./src/tools.ts"],
     "setupEntry": "./src/setup-entry.ts"
   }
@@ -1392,22 +1392,22 @@ becomes `name/<fileBase>`.
 If your plugin imports npm deps, install them in that directory so
 `node_modules` is available (`npm install` / `pnpm install`).
 
-Security guardrail: every `openclaw.extensions` entry must stay inside the plugin
+Security guardrail: every `remoteclaw.extensions` entry must stay inside the plugin
 directory after symlink resolution. Entries that escape the package directory are
 rejected.
 
-Security note: `openclaw plugins install` installs plugin dependencies with
+Security note: `remoteclaw plugins install` installs plugin dependencies with
 `npm install --ignore-scripts` (no lifecycle scripts). Keep plugin dependency
 trees "pure JS/TS" and avoid packages that require `postinstall` builds.
 
-Optional: `openclaw.setupEntry` can point at a lightweight setup-only module.
-When OpenClaw needs setup surfaces for a disabled channel plugin, or
+Optional: `remoteclaw.setupEntry` can point at a lightweight setup-only module.
+When RemoteClaw needs setup surfaces for a disabled channel plugin, or
 when a channel plugin is enabled but still unconfigured, it loads `setupEntry`
 instead of the full plugin entry. This keeps startup and setup lighter
 when your main plugin entry also wires tools, hooks, or other runtime-only
 code.
 
-Optional: `openclaw.startup.deferConfiguredChannelFullLoadUntilAfterListen`
+Optional: `remoteclaw.startup.deferConfiguredChannelFullLoadUntilAfterListen`
 can opt a channel plugin into the same `setupEntry` path during the gateway's
 pre-listen startup phase, even when the channel is already configured.
 
@@ -1420,7 +1420,7 @@ must register every channel-owned capability that startup depends on, such as:
 - any gateway methods, tools, or services that must exist during that same window
 
 If your full entry still owns any required startup capability, do not enable
-this flag. Keep the plugin on the default behavior and let OpenClaw load the
+this flag. Keep the plugin on the default behavior and let RemoteClaw load the
 full entry during startup.
 
 Example:
@@ -1428,7 +1428,7 @@ Example:
 ```json
 {
   "name": "@scope/my-channel",
-  "openclaw": {
+  "remoteclaw": {
     "extensions": ["./index.ts"],
     "setupEntry": "./setup-entry.ts",
     "startup": {
@@ -1440,15 +1440,15 @@ Example:
 
 ### Channel catalog metadata
 
-Channel plugins can advertise setup/discovery metadata via `openclaw.channel` and
-install hints via `openclaw.install`. This keeps the core catalog data-free.
+Channel plugins can advertise setup/discovery metadata via `remoteclaw.channel` and
+install hints via `remoteclaw.install`. This keeps the core catalog data-free.
 
 Example:
 
 ```json
 {
   "name": "@remoteclaw/nextcloud-talk",
-  "openclaw": {
+  "remoteclaw": {
     "extensions": ["./index.ts"],
     "channel": {
       "id": "nextcloud-talk",
@@ -1469,16 +1469,16 @@ Example:
 }
 ```
 
-OpenClaw can also merge **external channel catalogs** (for example, an MPM
+RemoteClaw can also merge **external channel catalogs** (for example, an MPM
 registry export). Drop a JSON file at one of:
 
-- `~/.openclaw/mpm/plugins.json`
-- `~/.openclaw/mpm/catalog.json`
-- `~/.openclaw/plugins/catalog.json`
+- `~/.remoteclaw/mpm/plugins.json`
+- `~/.remoteclaw/mpm/catalog.json`
+- `~/.remoteclaw/plugins/catalog.json`
 
-Or point `OPENCLAW_PLUGIN_CATALOG_PATHS` (or `OPENCLAW_MPM_CATALOG_PATHS`) at
+Or point `REMOTECLAW_PLUGIN_CATALOG_PATHS` (or `REMOTECLAW_MPM_CATALOG_PATHS`) at
 one or more JSON files (comma/semicolon/`PATH`-delimited). Each file should
-contain `{ "entries": [ { "name": "@scope/pkg", "openclaw": { "channel": {...}, "install": {...} } } ] }`.
+contain `{ "entries": [ { "name": "@scope/pkg", "remoteclaw": { "channel": {...}, "install": {...} } } ] }`.
 
 ## Plugin IDs
 
@@ -1487,7 +1487,7 @@ Default plugin ids:
 - Package packs: `package.json` `name`
 - Standalone file: file base name (`~/.../voice-call.ts` → `voice-call`)
 
-If a plugin exports `id`, OpenClaw uses it but warns when it doesn’t match the
+If a plugin exports `id`, RemoteClaw uses it but warns when it doesn’t match the
 configured id.
 
 ## Registry model
@@ -1551,8 +1551,8 @@ Validation rules (strict):
 - Unknown `channels.<id>` keys are **errors** unless a plugin manifest declares
   the channel id.
 - Native plugin config is validated using the JSON Schema embedded in
-  `openclaw.plugin.json` (`configSchema`).
-- Compatible bundles currently do not expose native OpenClaw config schemas.
+  `remoteclaw.plugin.json` (`configSchema`).
+- Compatible bundles currently do not expose native RemoteClaw config schemas.
 - If a plugin is disabled, its config is preserved and a **warning** is emitted.
 
 ### Disabled vs missing vs invalid
@@ -1563,7 +1563,7 @@ These states are intentionally different:
 - **missing**: config references a plugin id that discovery did not find
 - **invalid**: plugin exists, but its config does not match the declared schema
 
-OpenClaw preserves config for disabled plugins so toggling them back on is not
+RemoteClaw preserves config for disabled plugins so toggling them back on is not
 destructive.
 
 ## Plugin slots (exclusive categories)
@@ -1604,7 +1604,7 @@ pipeline rather than just add memory search or hooks.
 
 The Control UI uses `config.schema` (JSON Schema + `uiHints`) to render better forms.
 
-OpenClaw augments `uiHints` at runtime based on discovered plugins:
+RemoteClaw augments `uiHints` at runtime based on discovered plugins:
 
 - Adds per-plugin labels for `plugins.entries.<id>` / `.enabled` / `.config`
 - Merges optional plugin-provided config field hints under:
@@ -1636,30 +1636,30 @@ Example:
 ## CLI
 
 ```bash
-openclaw plugins list
-openclaw plugins inspect <id>
-openclaw plugins install <path>                 # copy a local file/dir into ~/.openclaw/extensions/<id>
-openclaw plugins install ./extensions/voice-call # relative path ok
-openclaw plugins install ./plugin.tgz           # install from a local tarball
-openclaw plugins install ./plugin.zip           # install from a local zip
-openclaw plugins install -l ./extensions/voice-call # link (no copy) for dev
-openclaw plugins install @remoteclaw/voice-call # install from npm
-openclaw plugins install @remoteclaw/voice-call --pin # store exact resolved name@version
-openclaw plugins update <id>
-openclaw plugins update --all
-openclaw plugins enable <id>
-openclaw plugins disable <id>
-openclaw plugins doctor
+remoteclaw plugins list
+remoteclaw plugins inspect <id>
+remoteclaw plugins install <path>                 # copy a local file/dir into ~/.remoteclaw/extensions/<id>
+remoteclaw plugins install ./extensions/voice-call # relative path ok
+remoteclaw plugins install ./plugin.tgz           # install from a local tarball
+remoteclaw plugins install ./plugin.zip           # install from a local zip
+remoteclaw plugins install -l ./extensions/voice-call # link (no copy) for dev
+remoteclaw plugins install @remoteclaw/voice-call # install from npm
+remoteclaw plugins install @remoteclaw/voice-call --pin # store exact resolved name@version
+remoteclaw plugins update <id>
+remoteclaw plugins update --all
+remoteclaw plugins enable <id>
+remoteclaw plugins disable <id>
+remoteclaw plugins doctor
 ```
 
-`openclaw plugins list` shows the top-level format as `openclaw` or `bundle`.
+`remoteclaw plugins list` shows the top-level format as `remoteclaw` or `bundle`.
 Verbose list/info output also shows bundle subtype (`codex` or `claude`) plus
 detected bundle capabilities.
 
 `plugins update` only works for npm installs tracked under `plugins.installs`.
-If stored integrity metadata changes between updates, OpenClaw warns and asks for confirmation (use global `--yes` to bypass prompts).
+If stored integrity metadata changes between updates, RemoteClaw warns and asks for confirmation (use global `--yes` to bypass prompts).
 
-Plugins may also register their own top‑level commands (example: `openclaw voicecall`).
+Plugins may also register their own top‑level commands (example: `remoteclaw voicecall`).
 
 ## Plugin API (overview)
 
@@ -1706,7 +1706,7 @@ Recommended sequence:
    Decide what shared behavior core should own: policy, fallback, config merge,
    lifecycle, channel-facing semantics, and runtime helper shape.
 2. add typed plugin registration/runtime surfaces
-   Extend `OpenClawPluginApi` and/or `api.runtime` with the smallest useful
+   Extend `RemoteClawPluginApi` and/or `api.runtime` with the smallest useful
    typed capability surface.
 3. wire core + channel/feature consumers
    Channels and feature plugins should consume the new capability through core,
@@ -1716,7 +1716,7 @@ Recommended sequence:
 5. add contract coverage
    Add tests so ownership and registration shape stay explicit over time.
 
-This is how OpenClaw stays opinionated without becoming hardcoded to one
+This is how RemoteClaw stays opinionated without becoming hardcoded to one
 provider's worldview.
 
 ### Capability checklist
@@ -1835,8 +1835,8 @@ Notes:
 
 - Register hooks explicitly via `api.registerHook(...)`.
 - Hook eligibility rules still apply (OS/bins/env/config requirements).
-- Plugin-managed hooks show up in `openclaw hooks list` with `plugin:<id>`.
-- You cannot enable/disable plugin-managed hooks via `openclaw hooks`; enable/disable the plugin instead.
+- Plugin-managed hooks show up in `remoteclaw hooks list` with `plugin:<id>`.
+- You cannot enable/disable plugin-managed hooks via `remoteclaw hooks`; enable/disable the plugin instead.
 
 ### Agent lifecycle hooks (`api.on`)
 
@@ -1865,7 +1865,7 @@ Important hooks for prompt construction:
 Core-enforced hook policy:
 
 - Operators can disable prompt mutation hooks per plugin via `plugins.entries.<id>.hooks.allowPromptInjection: false`.
-- When disabled, OpenClaw blocks `before_prompt_build` and ignores prompt-mutating fields returned from legacy `before_agent_start` while preserving legacy `modelOverride` and `providerOverride`.
+- When disabled, RemoteClaw blocks `before_prompt_build` and ignores prompt-mutating fields returned from legacy `before_agent_start` while preserving legacy `modelOverride` and `providerOverride`.
 
 `before_prompt_build` result fields:
 
@@ -1894,7 +1894,7 @@ Migration guidance:
 ## Provider plugins (model auth)
 
 Plugins can register **model providers** so users can run OAuth or API-key
-setup inside OpenClaw, surface provider setup in onboarding/model-pickers, and
+setup inside RemoteClaw, surface provider setup in onboarding/model-pickers, and
 contribute implicit provider discovery.
 
 Provider plugins are the modular extension surface for model-provider setup.
@@ -1908,11 +1908,11 @@ A provider plugin can participate in five distinct phases:
    `auth[].run(ctx)` performs OAuth, API-key capture, device code, or custom
    setup and returns auth profiles plus optional config patches.
 2. **Non-interactive setup**
-   `auth[].runNonInteractive(ctx)` handles `openclaw onboard --non-interactive`
+   `auth[].runNonInteractive(ctx)` handles `remoteclaw onboard --non-interactive`
    without prompts. Use this when the provider needs custom headless setup
    beyond the built-in simple API-key paths.
 3. **Wizard integration**
-   `wizard.setup` adds an entry to `openclaw onboard`.
+   `wizard.setup` adds an entry to `remoteclaw onboard`.
    `wizard.modelPicker` adds a setup entry to the model picker.
 4. **Implicit discovery**
    `discovery.run(ctx)` can contribute provider config automatically during
@@ -1935,7 +1935,7 @@ requirements:
 `auth[].run(ctx)` returns:
 
 - `profiles`: auth profiles to write
-- `configPatch`: optional `openclaw.json` changes
+- `configPatch`: optional `remoteclaw.json` changes
 - `defaultModel`: optional `provider/model` ref
 - `notes`: optional user-facing notes
 
@@ -2008,9 +2008,9 @@ entry in model selection:
 - `methodId`
 
 When a provider has multiple auth methods, the wizard can either point at one
-explicit method or let OpenClaw synthesize per-method choices.
+explicit method or let RemoteClaw synthesize per-method choices.
 
-OpenClaw validates provider wizard metadata when the plugin registers:
+RemoteClaw validates provider wizard metadata when the plugin registers:
 
 - duplicate or blank auth-method ids are rejected
 - wizard metadata is ignored when the provider has no auth methods
@@ -2083,8 +2083,8 @@ Register a provider via `api.registerProvider(...)`. Each provider exposes one
 or more auth methods (OAuth, API key, device code, etc.). Those methods can
 power:
 
-- `openclaw models auth login --provider <id> [--method <id>]`
-- `openclaw onboard`
+- `remoteclaw models auth login --provider <id> [--method <id>]`
+- `remoteclaw onboard`
 - model-picker “custom provider” setup entries
 - implicit provider discovery during model resolution/listing
 
@@ -2153,18 +2153,18 @@ Notes:
   `openUrl`, `oauth.createVpsAwareHandlers`, `secretInputMode`, and
   `allowSecretRefPrompt` helpers/state. Onboarding/configure flows can use
   these to honor `--secret-input-mode` or offer env/file/exec secret-ref
-  capture, while `openclaw models auth` keeps a tighter prompt surface.
+  capture, while `remoteclaw models auth` keeps a tighter prompt surface.
 - `runNonInteractive` receives a `ProviderAuthMethodNonInteractiveContext`
   with `opts`, `agentDir`, `resolveApiKey`, and `toApiKeyCredential` helpers
   for headless onboarding.
 - Return `configPatch` when you need to add default models or provider config.
 - Return `defaultModel` so `--set-default` can update agent defaults.
 - `wizard.setup` adds a provider choice to onboarding surfaces such as
-  `openclaw onboard` / `openclaw setup --wizard`.
+  `remoteclaw onboard` / `remoteclaw setup --wizard`.
 - `wizard.setup.modelAllowlist` lets the provider narrow the follow-up model
   allowlist prompt during onboarding/configure.
 - `wizard.modelPicker` adds a “setup this provider” entry to the model picker.
-- `deprecatedProfileIds` lets the provider own `openclaw doctor` cleanup for
+- `deprecatedProfileIds` lets the provider own `remoteclaw doctor` cleanup for
   retired auth-profile ids.
 - `discovery.run` returns either `{ provider }` for the plugin’s own provider id
   or `{ providers }` for multi-provider discovery.
@@ -2374,7 +2374,7 @@ Command handler context:
 - `isAuthorizedSender`: Whether the sender is an authorized user
 - `args`: Arguments passed after the command (if `acceptsArgs: true`)
 - `commandBody`: The full command text
-- `config`: The current OpenClaw config
+- `config`: The current RemoteClaw config
 
 Command options:
 
@@ -2438,16 +2438,16 @@ it’s present in your workspace/managed skills locations.
 
 Recommended packaging:
 
-- Main package: `openclaw` (this repo)
+- Main package: `remoteclaw` (this repo)
 - Plugins: separate npm packages under `@remoteclaw/*` (example: `@remoteclaw/voice-call`)
 
 Publishing contract:
 
-- Plugin `package.json` must include `openclaw.extensions` with one or more entry files.
-- Optional: `openclaw.setupEntry` may point at a lightweight setup-only entry for disabled or still-unconfigured channel setup.
-- Optional: `openclaw.startup.deferConfiguredChannelFullLoadUntilAfterListen` may opt a channel plugin into using `setupEntry` during pre-listen gateway startup, but only when that setup entry completely covers the plugin's startup-critical surface.
+- Plugin `package.json` must include `remoteclaw.extensions` with one or more entry files.
+- Optional: `remoteclaw.setupEntry` may point at a lightweight setup-only entry for disabled or still-unconfigured channel setup.
+- Optional: `remoteclaw.startup.deferConfiguredChannelFullLoadUntilAfterListen` may opt a channel plugin into using `setupEntry` during pre-listen gateway startup, but only when that setup entry completely covers the plugin's startup-critical surface.
 - Entry files can be `.js` or `.ts` (jiti loads TS at runtime).
-- `openclaw plugins install <npm-spec>` uses `npm pack`, extracts into `~/.openclaw/extensions/<id>/`, and enables it in config.
+- `remoteclaw plugins install <npm-spec>` uses `npm pack`, extracts into `~/.remoteclaw/extensions/<id>/`, and enables it in config.
 - Config key stability: scoped packages are normalized to the **unscoped** id for `plugins.entries.*`.
 
 ## Example plugin: Voice Call
@@ -2456,7 +2456,7 @@ This repo includes a voice‑call plugin (Twilio or log fallback):
 
 - Source: `extensions/voice-call`
 - Skill: `skills/voice-call`
-- CLI: `openclaw voicecall start|status`
+- CLI: `remoteclaw voicecall start|status`
 - Tool: `voice_call`
 - RPC: `voicecall.start`, `voicecall.status`
 - Config (twilio): `provider: "twilio"` + `twilio.accountSid/authToken/from` (optional `statusCallbackUrl`, `twimlUrl`)
@@ -2479,4 +2479,4 @@ Plugins run in-process with the Gateway. Treat them as trusted code:
 Plugins can (and should) ship tests:
 
 - In-repo plugins can keep Vitest tests under `src/**` (example: `src/plugins/voice-call.plugin.test.ts`).
-- Separately published plugins should run their own CI (lint/build/test) and validate `openclaw.extensions` points at the built entrypoint (`dist/index.js`).
+- Separately published plugins should run their own CI (lint/build/test) and validate `remoteclaw.extensions` points at the built entrypoint (`dist/index.js`).

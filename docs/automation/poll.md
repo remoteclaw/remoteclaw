@@ -19,9 +19,9 @@ title: "Polls"
 
 ```bash
 # Telegram
-openclaw message poll --channel telegram --target 123456789 \
+remoteclaw message poll --channel telegram --target 123456789 \
   --poll-question "Ship it?" --poll-option "Yes" --poll-option "No"
-openclaw message poll --channel telegram --target -1001234567890:topic:42 \
+remoteclaw message poll --channel telegram --target -1001234567890:topic:42 \
   --poll-question "Pick a time" --poll-option "10am" --poll-option "2pm" \
   --poll-duration-seconds 300
 

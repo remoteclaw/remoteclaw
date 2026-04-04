@@ -52,12 +52,12 @@ See the [nix-remoteclaw README](https://github.com/remoteclaw/nix-remoteclaw) fo
 
 ## Nix Mode Runtime Behavior
 
-When `OPENCLAW_NIX_MODE=1` is set (automatic with nix-remoteclaw), RemoteClaw enters a deterministic mode that disables auto-install flows.
+When `REMOTECLAW_NIX_MODE=1` is set (automatic with nix-remoteclaw), RemoteClaw enters a deterministic mode that disables auto-install flows.
 
 You can also set it manually:
 
 ```bash
-export OPENCLAW_NIX_MODE=1
+export REMOTECLAW_NIX_MODE=1
 ```
 
 On macOS, the GUI app does not automatically inherit shell environment variables. Enable Nix mode via defaults instead:
@@ -74,13 +74,13 @@ defaults write ai.remoteclaw.mac remoteclaw.nixMode -bool true
 
 ### Config and state paths
 
-RemoteClaw reads JSON5 config from `OPENCLAW_CONFIG_PATH` and stores mutable data in `OPENCLAW_STATE_DIR`. When running under Nix, set these explicitly to Nix-managed locations so runtime state and config stay out of the immutable store.
+RemoteClaw reads JSON5 config from `REMOTECLAW_CONFIG_PATH` and stores mutable data in `REMOTECLAW_STATE_DIR`. When running under Nix, set these explicitly to Nix-managed locations so runtime state and config stay out of the immutable store.
 
-| Variable               | Default                                 |
-| ---------------------- | --------------------------------------- |
-| `OPENCLAW_HOME`        | `HOME` / `USERPROFILE` / `os.homedir()` |
-| `OPENCLAW_STATE_DIR`   | `~/.remoteclaw`                         |
-| `OPENCLAW_CONFIG_PATH` | `$OPENCLAW_STATE_DIR/remoteclaw.json`   |
+| Variable                 | Default                                 |
+| ------------------------ | --------------------------------------- |
+| `REMOTECLAW_HOME`        | `HOME` / `USERPROFILE` / `os.homedir()` |
+| `REMOTECLAW_STATE_DIR`   | `~/.remoteclaw`                         |
+| `REMOTECLAW_CONFIG_PATH` | `$REMOTECLAW_STATE_DIR/remoteclaw.json` |
 
 ## Related
 

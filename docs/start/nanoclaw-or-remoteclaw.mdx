@@ -19,7 +19,7 @@ NanoClaw builds a new agent using the Anthropic Agent SDK and runs it in contain
 ## What you gain
 
 - **Multi-runtime support.** NanoClaw is Claude-only via the Anthropic Agent SDK. RemoteClaw supports 4 CLI runtimes: Claude Code, Gemini CLI, Codex CLI, and OpenCode. Switch runtimes via config, no rebuild needed.
-- **20+ messaging channels.** NanoClaw supports WhatsApp, Telegram, Slack, Discord, and Gmail. RemoteClaw inherits OpenClaw's full adapter library.
+- **20+ messaging channels.** NanoClaw supports WhatsApp, Telegram, Slack, Discord, and Gmail. RemoteClaw inherits RemoteClaw's full adapter library.
 - **Your existing config.** RemoteClaw uses your `~/.<agent>` directly. No need to reconfigure your agent inside a new framework.
 - **Subscription compatibility.** RemoteClaw spawns the CLI binary, so your existing Claude subscription or API keys work as-is.
 - **50+ MCP tools.** Infrastructure-bound tools for sessions, messaging, cron, gateway, and more.
@@ -69,7 +69,7 @@ NanoClaw builds a new agent using the Anthropic Agent SDK and runs it in contain
 | **Config**          | Uses your `~/.<agent>` directly              | Agent configured within NanoClaw          |
 | **Authentication**  | Your existing CLI subscription or API keys   | API keys (Anthropic policy for Agent SDK) |
 | **Isolation**       | Process isolation (subprocess boundary)      | Container isolation (container boundary)  |
-| **Channels**        | 20+ (inherited from OpenClaw)                | WhatsApp, Telegram, Slack, Discord, Gmail |
+| **Channels**        | 20+ (inherited from RemoteClaw)              | WhatsApp, Telegram, Slack, Discord, Gmail |
 | **MCP tools**       | 50+ infrastructure-bound tools               | Agent SDK built-in tools                  |
 
 :::note

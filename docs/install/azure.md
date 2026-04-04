@@ -1,23 +1,23 @@
 ---
-description: "Run OpenClaw Gateway 24/7 on an Azure Linux VM with durable state"
+description: "Run RemoteClaw Gateway 24/7 on an Azure Linux VM with durable state"
 read_when:
-  - You want OpenClaw running 24/7 on Azure with Network Security Group hardening
-  - You want a production-grade, always-on OpenClaw Gateway on your own Azure Linux VM
+  - You want RemoteClaw running 24/7 on Azure with Network Security Group hardening
+  - You want a production-grade, always-on RemoteClaw Gateway on your own Azure Linux VM
   - You want secure administration with Azure Bastion SSH
   - You want repeatable deployments with Azure Resource Manager templates
 title: "Azure"
 ---
 
-# OpenClaw on Azure Linux VM
+# RemoteClaw on Azure Linux VM
 
-This guide sets up an Azure Linux VM, applies Network Security Group (NSG) hardening, configures Azure Bastion (managed Azure SSH entry point), and installs OpenClaw.
+This guide sets up an Azure Linux VM, applies Network Security Group (NSG) hardening, configures Azure Bastion (managed Azure SSH entry point), and installs RemoteClaw.
 
 ## What you’ll do
 
 - Deploy Azure compute and network resources with Azure Resource Manager (ARM) templates
 - Apply Azure Network Security Group (NSG) rules so VM SSH is allowed only from Azure Bastion
 - Use Azure Bastion for SSH access
-- Install OpenClaw with the installer script
+- Install RemoteClaw with the installer script
 - Verify the Gateway
 
 ## Before you start
@@ -53,10 +53,10 @@ You’ll need:
 3. **Set deployment variables**
 
    ```bash
-   RG="rg-openclaw"
+   RG="rg-remoteclaw"
    LOCATION="westus2"
-   TEMPLATE_URI="https://raw.githubusercontent.com/openclaw/openclaw/main/infra/azure/templates/azuredeploy.json"
-   PARAMS_URI="https://raw.githubusercontent.com/openclaw/openclaw/main/infra/azure/templates/azuredeploy.parameters.json"
+   TEMPLATE_URI="https://raw.githubusercontent.com/remoteclaw/remoteclaw/main/infra/azure/templates/azuredeploy.json"
+   PARAMS_URI="https://raw.githubusercontent.com/remoteclaw/remoteclaw/main/infra/azure/templates/azuredeploy.parameters.json"
    ```
 
 4. **Select SSH key**
@@ -124,10 +124,10 @@ You’ll need:
 8. **SSH into the VM through Azure Bastion**
 
    ```bash
-   RG="rg-openclaw"
-   VM_NAME="vm-openclaw"
-   BASTION_NAME="bas-openclaw"
-   ADMIN_USERNAME="openclaw"
+   RG="rg-remoteclaw"
+   VM_NAME="vm-remoteclaw"
+   BASTION_NAME="bas-remoteclaw"
+   ADMIN_USERNAME="remoteclaw"
    VM_ID="$(az vm show -g "${RG}" -n "${VM_NAME}" --query id -o tsv)"
 
    az network bastion ssh \
@@ -139,13 +139,13 @@ You’ll need:
      --ssh-key ~/.ssh/id_ed25519
    ```
 
-9. **Install OpenClaw (in the VM shell)**
+9. **Install RemoteClaw (in the VM shell)**
 
    ```bash
-   curl -fsSL https://openclaw.ai/install.sh -o /tmp/openclaw-install.sh
-   bash /tmp/openclaw-install.sh
-   rm -f /tmp/openclaw-install.sh
-   openclaw --version
+   curl -fsSL https://remoteclaw.ai/install.sh -o /tmp/remoteclaw-install.sh
+   bash /tmp/remoteclaw-install.sh
+   rm -f /tmp/remoteclaw-install.sh
+   remoteclaw --version
    ```
 
    The installer script handles Node detection/installation and runs onboarding by default.
@@ -155,10 +155,10 @@ You’ll need:
     After onboarding completes:
 
     ```bash
-    openclaw gateway status
+    remoteclaw gateway status
     ```
 
-    Most enterprise Azure teams already have GitHub Copilot licenses. If that is your case, we recommend choosing the GitHub Copilot provider in the OpenClaw onboarding wizard. See [GitHub Copilot provider](/providers/github-copilot).
+    Most enterprise Azure teams already have GitHub Copilot licenses. If that is your case, we recommend choosing the GitHub Copilot provider in the RemoteClaw onboarding wizard. See [GitHub Copilot provider](/providers/github-copilot).
 
     The included ARM template uses Ubuntu image `version: "latest"` for convenience. If you need reproducible builds, pin a specific image version in `infra/azure/templates/azuredeploy.json` (you can list versions with `az vm image list --publisher Canonical --offer ubuntu-24_04-lts --sku server --all -o table`).
 
@@ -169,4 +169,4 @@ You’ll need:
 - Set up messaging channels: [Channels](/channels)
 - Pair local devices as nodes: [Nodes](/nodes)
 - Configure the Gateway: [Gateway configuration](/gateway/configuration)
-- For more details on OpenClaw Azure deployment with the GitHub Copilot model provider: [OpenClaw on Azure with GitHub Copilot](https://github.com/johnsonshi/openclaw-azure-github-copilot)
+- For more details on RemoteClaw Azure deployment with the GitHub Copilot model provider: [RemoteClaw on Azure with GitHub Copilot](https://github.com/johnsonshi/remoteclaw-azure-github-copilot)

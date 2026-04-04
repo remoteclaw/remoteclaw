@@ -7,7 +7,7 @@ title: "Model Config Exploration"
 
 # Model Config (Exploration)
 
-This document captures **ideas** from the OpenClaw era for model configuration.
+This document captures **ideas** from the RemoteClaw era for model configuration.
 These features were removed in RemoteClaw's middleware rewrite — model selection
 is now the CLI agent's responsibility, not RemoteClaw's.
 
@@ -15,7 +15,7 @@ This file is kept for historical reference only.
 
 ## Motivation
 
-> **Note:** These requirements described OpenClaw's in-process model management, which was removed.
+> **Note:** These requirements described RemoteClaw's in-process model management, which was removed.
 
 Operators want:
 

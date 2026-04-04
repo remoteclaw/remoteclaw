@@ -353,7 +353,7 @@ async function reannounceAttachedTabs() {
       setBadge(tabId, 'connecting')
       void chrome.action.setTitle({
         tabId,
-        title: 'OpenClaw Browser Relay: relay reconnecting…',
+        title: 'RemoteClaw Browser Relay: relay reconnecting…',
       })
     }
   }

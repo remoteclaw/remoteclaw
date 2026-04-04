@@ -43,7 +43,7 @@ import Testing
 
     @Test func trimsAfterTriggerHandlesWidthInsensitiveForms() {
         let triggers = ["remoteclaw"]
-        let text = "ＯｐｅｎＣｌａｗ 请帮我"
+        let text = "ＲｅｍｏｔｅＣｌａｗ 请帮我"
         #expect(VoiceWakeRuntime._testTrimmedAfterTrigger(text, triggers: triggers) == "请帮我")
     }
 
@@ -76,12 +76,12 @@ import Testing
     }
 
     @Test func `gate command text handles foreign string ranges`() {
-        let transcript = "hey openclaw do thing"
+        let transcript = "hey remoteclaw do thing"
         let other = "do thing"
         let foreignRange = other.range(of: "do")
         let segments = [
             WakeWordSegment(text: "hey", start: 0.0, duration: 0.1, range: transcript.range(of: "hey")),
-            WakeWordSegment(text: "openclaw", start: 0.2, duration: 0.1, range: transcript.range(of: "openclaw")),
+            WakeWordSegment(text: "remoteclaw", start: 0.2, duration: 0.1, range: transcript.range(of: "remoteclaw")),
             WakeWordSegment(text: "do", start: 0.9, duration: 0.1, range: foreignRange),
             WakeWordSegment(text: "thing", start: 1.1, duration: 0.1, range: nil),
         ]

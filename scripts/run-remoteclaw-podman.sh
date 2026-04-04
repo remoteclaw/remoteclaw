@@ -190,7 +190,7 @@ ENV_FILE_ARGS=()
 # On Linux with SELinux enforcing/permissive, add ,Z so Podman relabels the
 # bind-mounted directories and the container can access them.
 SELINUX_MOUNT_OPTS=""
-if [[ -z "${OPENCLAW_BIND_MOUNT_OPTIONS:-}" ]]; then
+if [[ -z "${REMOTECLAW_BIND_MOUNT_OPTIONS:-}" ]]; then
   if [[ "$(uname -s 2>/dev/null)" == "Linux" ]] && command -v getenforce >/dev/null 2>&1; then
     _selinux_mode="$(getenforce 2>/dev/null || true)"
     if [[ "$_selinux_mode" == "Enforcing" || "$_selinux_mode" == "Permissive" ]]; then
@@ -198,8 +198,8 @@ if [[ -z "${OPENCLAW_BIND_MOUNT_OPTIONS:-}" ]]; then
     fi
   fi
 else
-  # Honour explicit override (e.g. OPENCLAW_BIND_MOUNT_OPTIONS=":Z" → strip leading colon for inline use).
-  SELINUX_MOUNT_OPTS="${OPENCLAW_BIND_MOUNT_OPTIONS#:}"
+  # Honour explicit override (e.g. REMOTECLAW_BIND_MOUNT_OPTIONS=":Z" → strip leading colon for inline use).
+  SELINUX_MOUNT_OPTS="${REMOTECLAW_BIND_MOUNT_OPTIONS#:}"
   [[ -n "$SELINUX_MOUNT_OPTS" ]] && SELINUX_MOUNT_OPTS=",$SELINUX_MOUNT_OPTS"
 fi
 

@@ -78,13 +78,13 @@ android {
     productFlavors {
         create("play") {
             dimension = "store"
-            buildConfigField("boolean", "OPENCLAW_ENABLE_SMS", "false")
-            buildConfigField("boolean", "OPENCLAW_ENABLE_CALL_LOG", "false")
+            buildConfigField("boolean", "REMOTECLAW_ENABLE_SMS", "false")
+            buildConfigField("boolean", "REMOTECLAW_ENABLE_CALL_LOG", "false")
         }
         create("thirdParty") {
             dimension = "store"
-            buildConfigField("boolean", "OPENCLAW_ENABLE_SMS", "true")
-            buildConfigField("boolean", "OPENCLAW_ENABLE_CALL_LOG", "true")
+            buildConfigField("boolean", "REMOTECLAW_ENABLE_SMS", "true")
+            buildConfigField("boolean", "REMOTECLAW_ENABLE_CALL_LOG", "true")
         }
     }
 

@@ -1,5 +1,5 @@
 import AVFoundation
-import OpenClawKit
+import RemoteClawKit
 import ReplayKit
 
 final class ScreenRecordService: @unchecked Sendable {

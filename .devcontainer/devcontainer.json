@@ -1,5 +1,5 @@
 {
-  "name": "OpenClaw Dev",
+  "name": "RemoteClaw Dev",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
   "features": {
     "ghcr.io/devcontainers/features/sshd:1": {

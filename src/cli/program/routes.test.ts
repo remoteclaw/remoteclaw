@@ -122,9 +122,9 @@ describe("program routes", () => {
 
   it("passes --no-probe through to daemon status", async () => {
     const route = expectRoute(["gateway", "status"]);
-    await expect(route?.run(["node", "openclaw", "gateway", "status", "--no-probe"])).resolves.toBe(
-      true,
-    );
+    await expect(
+      route?.run(["node", "remoteclaw", "gateway", "status", "--no-probe"]),
+    ).resolves.toBe(true);
 
     expect(runDaemonStatusMock).toHaveBeenCalledWith({
       rpc: {
@@ -149,7 +149,7 @@ describe("program routes", () => {
     await expect(
       route?.run([
         "node",
-        "openclaw",
+        "remoteclaw",
         "status",
         "--json",
         "--deep",

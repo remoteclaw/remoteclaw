@@ -4,7 +4,7 @@ import {
   collectReleaseTagErrors,
   parseReleaseVersion,
   utcCalendarDayDistance,
-} from "../scripts/openclaw-npm-release-check.ts";
+} from "../scripts/remoteclaw-npm-release-check.ts";
 
 describe("parseReleaseVersion", () => {
   it("parses stable CalVer releases", () => {
@@ -81,11 +81,11 @@ describe("collectReleasePackageMetadataErrors", () => {
   it("validates the expected npm package metadata", () => {
     expect(
       collectReleasePackageMetadataErrors({
-        name: "openclaw",
+        name: "remoteclaw",
         description: "Multi-channel AI gateway with extensible messaging integrations",
         license: "MIT",
         repository: { url: "git+https://github.com/openclaw/openclaw.git" },
-        bin: { openclaw: "openclaw.mjs" },
+        bin: { remoteclaw: "remoteclaw.mjs" },
       }),
     ).toEqual([]);
   });

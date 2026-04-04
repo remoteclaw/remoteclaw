@@ -39,7 +39,7 @@ describe("createMatrixRoomMessageHandler BodyForAgent sender label", () => {
           }),
         },
         session: {
-          resolveStorePath: vi.fn().mockReturnValue("/tmp/openclaw-test-session.json"),
+          resolveStorePath: vi.fn().mockReturnValue("/tmp/remoteclaw-test-session.json"),
           readSessionUpdatedAt: vi.fn().mockReturnValue(123),
           recordInboundSession,
         },

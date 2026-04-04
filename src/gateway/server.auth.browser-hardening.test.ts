@@ -254,7 +254,7 @@ describe("gateway auth browser hardening", () => {
           scopes: ["operator.admin"],
           clientId: TEST_OPERATOR_CLIENT.id,
           clientMode: TEST_OPERATOR_CLIENT.mode,
-          identityPath: path.join(os.tmpdir(), `openclaw-browser-device-${randomUUID()}.json`),
+          identityPath: path.join(os.tmpdir(), `remoteclaw-browser-device-${randomUUID()}.json`),
           nonce: String(nonce ?? ""),
         });
         const res = await connectReq(browserWs, {

@@ -146,13 +146,13 @@ describe("chrome extension relay server", () => {
 
   beforeEach(() => {
     envSnapshot = captureEnv([
-      "OPENCLAW_GATEWAY_TOKEN",
-      "OPENCLAW_EXTENSION_RELAY_RECONNECT_GRACE_MS",
-      "OPENCLAW_EXTENSION_RELAY_COMMAND_RECONNECT_WAIT_MS",
+      "REMOTECLAW_GATEWAY_TOKEN",
+      "REMOTECLAW_EXTENSION_RELAY_RECONNECT_GRACE_MS",
+      "REMOTECLAW_EXTENSION_RELAY_COMMAND_RECONNECT_WAIT_MS",
     ]);
-    process.env.OPENCLAW_GATEWAY_TOKEN = TEST_GATEWAY_TOKEN;
-    delete process.env.OPENCLAW_EXTENSION_RELAY_RECONNECT_GRACE_MS;
-    delete process.env.OPENCLAW_EXTENSION_RELAY_COMMAND_RECONNECT_WAIT_MS;
+    process.env.REMOTECLAW_GATEWAY_TOKEN = TEST_GATEWAY_TOKEN;
+    delete process.env.REMOTECLAW_EXTENSION_RELAY_RECONNECT_GRACE_MS;
+    delete process.env.REMOTECLAW_EXTENSION_RELAY_COMMAND_RECONNECT_WAIT_MS;
   });
 
   afterEach(async () => {
@@ -516,7 +516,7 @@ describe("chrome extension relay server", () => {
   });
 
   it("closes CDP clients after reconnect grace when extension stays disconnected", async () => {
-    process.env.OPENCLAW_EXTENSION_RELAY_RECONNECT_GRACE_MS = "150";
+    process.env.REMOTECLAW_EXTENSION_RELAY_RECONNECT_GRACE_MS = "150";
 
     const { port, ext } = await startRelayWithExtension();
     const cdp = new WebSocket(`ws://127.0.0.1:${port}/cdp`, {
@@ -529,7 +529,7 @@ describe("chrome extension relay server", () => {
   });
 
   it("stops advertising websocket endpoint after reconnect grace expires", async () => {
-    process.env.OPENCLAW_EXTENSION_RELAY_RECONNECT_GRACE_MS = "120";
+    process.env.REMOTECLAW_EXTENSION_RELAY_RECONNECT_GRACE_MS = "120";
 
     const { ext } = await startRelayWithExtension();
     ext.send(
@@ -986,7 +986,7 @@ describe("chrome extension relay server", () => {
   it(
     "restores tabs after extension reconnects and re-announces",
     async () => {
-      process.env.OPENCLAW_EXTENSION_RELAY_RECONNECT_GRACE_MS = "200";
+      process.env.REMOTECLAW_EXTENSION_RELAY_RECONNECT_GRACE_MS = "200";
 
       const { port, ext: ext1 } = await startRelayWithExtension();
 
@@ -1071,7 +1071,7 @@ describe("chrome extension relay server", () => {
   it(
     "preserves tab across a fast extension reconnect within grace period",
     async () => {
-      process.env.OPENCLAW_EXTENSION_RELAY_RECONNECT_GRACE_MS = "2000";
+      process.env.REMOTECLAW_EXTENSION_RELAY_RECONNECT_GRACE_MS = "2000";
 
       const { port, ext: ext1 } = await startRelayWithExtension();
 

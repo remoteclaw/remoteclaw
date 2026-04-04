@@ -258,7 +258,7 @@ describe("gateway plugin HTTP auth boundary", () => {
 
     await withTempConfig({
       cfg: createMattermostCallbackConfig("/api/channels/mattermost/command"),
-      prefix: "openclaw-plugin-http-auth-mm-callback-",
+      prefix: "remoteclaw-plugin-http-auth-mm-callback-",
       run: async () => {
         const server = createTestGatewayServer({
           resolvedAuth: AUTH_TOKEN,
@@ -294,7 +294,7 @@ describe("gateway plugin HTTP auth boundary", () => {
 
     await withTempConfig({
       cfg: createMattermostCallbackConfig("/api/channels/nostr/default/profile"),
-      prefix: "openclaw-plugin-http-auth-mm-misconfig-",
+      prefix: "remoteclaw-plugin-http-auth-mm-misconfig-",
       run: async () => {
         const server = createTestGatewayServer({
           resolvedAuth: AUTH_TOKEN,
@@ -507,7 +507,7 @@ describe("gateway plugin HTTP auth boundary", () => {
     const handlePluginRequest = vi.fn(async () => false);
 
     await withRootMountedControlUiServer({
-      prefix: "openclaw-plugin-http-control-ui-probes-test-",
+      prefix: "remoteclaw-plugin-http-control-ui-probes-test-",
       handlePluginRequest,
       run: async (server) => {
         await expectProbeRoutesHealthy(server);
@@ -520,7 +520,7 @@ describe("gateway plugin HTTP auth boundary", () => {
     const handlePluginRequest = createHealthzPluginHandler();
 
     await withRootMountedControlUiServer({
-      prefix: "openclaw-plugin-http-control-ui-probe-shadow-test-",
+      prefix: "remoteclaw-plugin-http-control-ui-probe-shadow-test-",
       handlePluginRequest,
       run: async (server) => {
         await expectHealthzPluginShadow({ server, handlePluginRequest });

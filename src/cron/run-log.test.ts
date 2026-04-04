@@ -98,7 +98,7 @@ describe("cron run log", () => {
   it.skipIf(process.platform === "win32")(
     "writes run log files with secure permissions",
     async () => {
-      await withRunLogDir("openclaw-cron-log-perms-", async (dir) => {
+      await withRunLogDir("remoteclaw-cron-log-perms-", async (dir) => {
         const logPath = path.join(dir, "runs", "job-1.jsonl");
 
         await appendCronRunLog(logPath, {
@@ -117,7 +117,7 @@ describe("cron run log", () => {
   it.skipIf(process.platform === "win32")(
     "hardens an existing run-log directory to owner-only permissions",
     async () => {
-      await withRunLogDir("openclaw-cron-log-dir-perms-", async (dir) => {
+      await withRunLogDir("remoteclaw-cron-log-dir-perms-", async (dir) => {
         const runDir = path.join(dir, "runs");
         const logPath = path.join(runDir, "job-1.jsonl");
         await fs.mkdir(runDir, { recursive: true, mode: 0o755 });
@@ -288,7 +288,7 @@ describe("cron run log", () => {
   });
 
   it("read drains pending fire-and-forget writes", async () => {
-    await withRunLogDir("openclaw-cron-log-drain-", async (dir) => {
+    await withRunLogDir("remoteclaw-cron-log-drain-", async (dir) => {
       const logPath = path.join(dir, "runs", "job-drain.jsonl");
 
       // Fire-and-forget write (simulates the `void appendCronRunLog(...)` pattern

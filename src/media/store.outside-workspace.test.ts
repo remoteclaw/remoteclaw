@@ -32,7 +32,7 @@ describe("media store outside-workspace mapping", () => {
   });
 
   beforeAll(async () => {
-    tempHome = await createTempHomeEnv("openclaw-media-store-test-home-");
+    tempHome = await createTempHomeEnv("remoteclaw-media-store-test-home-");
     home = tempHome.home;
   });
 

@@ -142,7 +142,7 @@ describe("gateway talk.config", () => {
       expect(res.ok).toBe(true);
       expectElevenLabsTalkConfig(res.payload?.config?.talk, {
         voiceId: "voice-123",
-        apiKey: "__OPENCLAW_REDACTED__",
+        apiKey: "__REMOTECLAW_REDACTED__",
         silenceTimeoutMs: 1500,
       });
       expect(res.payload?.config?.session?.mainKey).toBe("main-test");

@@ -135,7 +135,7 @@ describe("isSystemdServiceEnabled", () => {
       err.code = "EACCES";
       cb(err, "", "");
     });
-    const result = await isSystemdServiceEnabled({ env: { HOME: "/tmp/openclaw-test-home" } });
+    const result = await isSystemdServiceEnabled({ env: { HOME: "/tmp/remoteclaw-test-home" } });
     expect(result).toBe(false);
   });
 
@@ -145,7 +145,7 @@ describe("isSystemdServiceEnabled", () => {
     err.code = "ENOENT";
     vi.spyOn(fs, "access").mockRejectedValueOnce(err);
 
-    const result = await isSystemdServiceEnabled({ env: { HOME: "/tmp/openclaw-test-home" } });
+    const result = await isSystemdServiceEnabled({ env: { HOME: "/tmp/remoteclaw-test-home" } });
 
     expect(result).toBe(false);
     expect(execFileMock).not.toHaveBeenCalled();
@@ -158,7 +158,7 @@ describe("isSystemdServiceEnabled", () => {
       expect(args).toEqual(["--user", "is-enabled", "remoteclaw-gateway.service"]);
       cb(null, "enabled", "");
     });
-    const result = await isSystemdServiceEnabled({ env: { HOME: "/tmp/openclaw-test-home" } });
+    const result = await isSystemdServiceEnabled({ env: { HOME: "/tmp/remoteclaw-test-home" } });
     expect(result).toBe(true);
   });
 
@@ -170,7 +170,7 @@ describe("isSystemdServiceEnabled", () => {
       err.code = 1;
       cb(err, "disabled", "");
     });
-    const result = await isSystemdServiceEnabled({ env: { HOME: "/tmp/openclaw-test-home" } });
+    const result = await isSystemdServiceEnabled({ env: { HOME: "/tmp/remoteclaw-test-home" } });
     expect(result).toBe(false);
   });
 
@@ -186,7 +186,7 @@ describe("isSystemdServiceEnabled", () => {
       cb(err, "", "");
     });
 
-    const result = await isSystemdServiceEnabled({ env: { HOME: "/tmp/openclaw-test-home" } });
+    const result = await isSystemdServiceEnabled({ env: { HOME: "/tmp/remoteclaw-test-home" } });
     expect(result).toBe(false);
   });
 
@@ -206,7 +206,7 @@ describe("isSystemdServiceEnabled", () => {
     });
 
     const result = await isSystemdServiceEnabled({
-      env: { HOME: "/tmp/openclaw-test-home", USER: "", LOGNAME: "" },
+      env: { HOME: "/tmp/remoteclaw-test-home", USER: "", LOGNAME: "" },
     });
     expect(result).toBe(false);
   });
@@ -242,7 +242,7 @@ describe("isSystemdServiceEnabled", () => {
       });
 
     const result = await isSystemdServiceEnabled({
-      env: { HOME: "/tmp/openclaw-test-home", USER: "debian" },
+      env: { HOME: "/tmp/remoteclaw-test-home", USER: "debian" },
     });
     expect(result).toBe(false);
   });
@@ -260,7 +260,7 @@ describe("isSystemdServiceEnabled", () => {
     });
 
     await expect(
-      isSystemdServiceEnabled({ env: { HOME: "/tmp/openclaw-test-home" } }),
+      isSystemdServiceEnabled({ env: { HOME: "/tmp/remoteclaw-test-home" } }),
     ).rejects.toThrow("systemctl is-enabled unavailable: read-only file system");
   });
 
@@ -283,7 +283,7 @@ describe("isSystemdServiceEnabled", () => {
         cb(err, "", "permission denied");
       });
     await expect(
-      isSystemdServiceEnabled({ env: { HOME: "/tmp/openclaw-test-home" } }),
+      isSystemdServiceEnabled({ env: { HOME: "/tmp/remoteclaw-test-home" } }),
     ).rejects.toThrow("systemctl is-enabled unavailable: permission denied");
   });
 
@@ -299,7 +299,7 @@ describe("isSystemdServiceEnabled", () => {
       err.code = 4;
       cb(err, "not-found\n", "");
     });
-    const result = await isSystemdServiceEnabled({ env: { HOME: "/tmp/openclaw-test-home" } });
+    const result = await isSystemdServiceEnabled({ env: { HOME: "/tmp/remoteclaw-test-home" } });
     expect(result).toBe(false);
   });
 });

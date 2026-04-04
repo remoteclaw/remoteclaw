@@ -95,8 +95,8 @@ describe("installFromNpmSpecArchive", () => {
     const installFromArchive = vi.fn(async () => ({ ok: true as const }));
 
     const result = await installFromNpmSpecArchive({
-      tempDirPrefix: "openclaw-test-",
-      spec: "file:/tmp/openclaw.tgz",
+      tempDirPrefix: "remoteclaw-test-",
+      spec: "file:/tmp/remoteclaw.tgz",
       timeoutMs: 1000,
       installFromArchive,
     });
@@ -200,7 +200,7 @@ describe("installFromNpmSpecArchive", () => {
       ok: true,
       archivePath: baseArchivePath,
       metadata: {
-        resolvedSpec: "@openclaw/test@latest",
+        resolvedSpec: "@remoteclaw/test@latest",
         integrity: "sha512-same",
         version: "1.1.0-beta.1",
       },
@@ -208,8 +208,8 @@ describe("installFromNpmSpecArchive", () => {
     const installFromArchive = vi.fn(async () => ({ ok: true as const }));
 
     const result = await installFromNpmSpecArchive({
-      tempDirPrefix: "openclaw-test-",
-      spec: "@openclaw/test@latest",
+      tempDirPrefix: "remoteclaw-test-",
+      spec: "@remoteclaw/test@latest",
       timeoutMs: 1000,
       installFromArchive,
     });
@@ -227,7 +227,7 @@ describe("installFromNpmSpecArchive", () => {
       ok: true,
       archivePath: baseArchivePath,
       metadata: {
-        resolvedSpec: "@openclaw/test@beta",
+        resolvedSpec: "@remoteclaw/test@beta",
         integrity: "sha512-same",
         version: "1.1.0-beta.1",
       },
@@ -235,8 +235,8 @@ describe("installFromNpmSpecArchive", () => {
     const installFromArchive = vi.fn(async () => ({ ok: true as const, pluginId: "beta-plugin" }));
 
     const result = await installFromNpmSpecArchive({
-      tempDirPrefix: "openclaw-test-",
-      spec: "@openclaw/test@beta",
+      tempDirPrefix: "remoteclaw-test-",
+      spec: "@remoteclaw/test@beta",
       timeoutMs: 1000,
       installFromArchive,
     });

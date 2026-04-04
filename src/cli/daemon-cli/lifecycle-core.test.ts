@@ -86,7 +86,7 @@ describe("runServiceRestart token drift", () => {
     vi.unstubAllEnvs();
     vi.stubEnv("REMOTECLAW_GATEWAY_TOKEN", "");
     vi.stubEnv("CLAWDBOT_GATEWAY_TOKEN", "");
-    vi.stubEnv("OPENCLAW_GATEWAY_URL", "");
+    vi.stubEnv("REMOTECLAW_GATEWAY_URL", "");
     vi.stubEnv("CLAWDBOT_GATEWAY_URL", "");
   });
 

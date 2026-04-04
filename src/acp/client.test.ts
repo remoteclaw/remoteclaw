@@ -38,7 +38,7 @@ function makePermissionRequest(
 }
 
 const tempDirs = createTrackedTempDirs();
-const createTempDir = () => tempDirs.make("openclaw-acp-client-test-");
+const createTempDir = () => tempDirs.make("remoteclaw-acp-client-test-");
 
 afterEach(async () => {
   await tempDirs.cleanup();
@@ -48,12 +48,12 @@ describe("resolveAcpClientSpawnEnv", () => {
   it("sets REMOTECLAW_SHELL marker and preserves existing env values", () => {
     const env = resolveAcpClientSpawnEnv({
       PATH: "/usr/bin",
-      USER: "openclaw",
+      USER: "remoteclaw",
     });
 
     expect(env.REMOTECLAW_SHELL).toBe("acp-client");
     expect(env.PATH).toBe("/usr/bin");
-    expect(env.USER).toBe("openclaw");
+    expect(env.USER).toBe("remoteclaw");
   });
 
   it("overrides pre-existing REMOTECLAW_SHELL to acp-client", () => {
@@ -115,7 +115,7 @@ describe("resolveAcpClientSpawnEnv", () => {
 describe("resolveAcpClientSpawnInvocation", () => {
   it("keeps non-windows invocation unchanged", () => {
     const resolved = resolveAcpClientSpawnInvocation(
-      { serverCommand: "openclaw", serverArgs: ["acp", "--verbose"] },
+      { serverCommand: "remoteclaw", serverArgs: ["acp", "--verbose"] },
       {
         platform: "darwin",
         env: {},
@@ -123,7 +123,7 @@ describe("resolveAcpClientSpawnInvocation", () => {
       },
     );
     expect(resolved).toEqual({
-      command: "openclaw",
+      command: "remoteclaw",
       args: ["acp", "--verbose"],
       shell: undefined,
       windowsHide: undefined,
@@ -132,11 +132,11 @@ describe("resolveAcpClientSpawnInvocation", () => {
 
   it("unwraps .cmd shim entrypoint on windows", async () => {
     const dir = await createTempDir();
-    const scriptPath = path.join(dir, "openclaw", "dist", "entry.js");
-    const shimPath = path.join(dir, "openclaw.cmd");
+    const scriptPath = path.join(dir, "remoteclaw", "dist", "entry.js");
+    const shimPath = path.join(dir, "remoteclaw.cmd");
     await mkdir(path.dirname(scriptPath), { recursive: true });
     await writeFile(scriptPath, "console.log('ok')\n", "utf8");
-    await writeFile(shimPath, `@ECHO off\r\n"%~dp0\\openclaw\\dist\\entry.js" %*\r\n`, "utf8");
+    await writeFile(shimPath, `@ECHO off\r\n"%~dp0\\remoteclaw\\dist\\entry.js" %*\r\n`, "utf8");
 
     const resolved = resolveAcpClientSpawnInvocation(
       { serverCommand: shimPath, serverArgs: ["acp", "--verbose"] },
@@ -154,7 +154,7 @@ describe("resolveAcpClientSpawnInvocation", () => {
 
   it("falls back to shell mode for unresolved wrappers on windows", async () => {
     const dir = await createTempDir();
-    const shimPath = path.join(dir, "openclaw.cmd");
+    const shimPath = path.join(dir, "remoteclaw.cmd");
     await writeFile(shimPath, "@ECHO off\r\necho wrapper\r\n", "utf8");
 
     const resolved = resolveAcpClientSpawnInvocation(

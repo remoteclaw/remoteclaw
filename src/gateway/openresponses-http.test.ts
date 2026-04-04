@@ -242,7 +242,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       const resChannelHeader = await postResponses(
         port,
         { model: "remoteclaw", input: "hi" },
-        { "x-openclaw-message-channel": "custom-client-channel" },
+        { "x-remoteclaw-message-channel": "custom-client-channel" },
       );
       expect(resChannelHeader.status).toBe(200);
       const optsChannelHeader = (agentCommand.mock.calls[0] as unknown[] | undefined)?.[0];

@@ -302,7 +302,7 @@ describe("resolveControlUiClientVersion", () => {
       resolveControlUiClientVersion({
         gatewayUrl: "ws://localhost:8787",
         serverVersion: "2026.3.3",
-        pageUrl: "http://localhost:8787/openclaw/",
+        pageUrl: "http://localhost:8787/remoteclaw/",
       }),
     ).toBe("2026.3.3");
   });
@@ -312,7 +312,7 @@ describe("resolveControlUiClientVersion", () => {
       resolveControlUiClientVersion({
         gatewayUrl: "/ws",
         serverVersion: "2026.3.3",
-        pageUrl: "https://control.example.com/openclaw/",
+        pageUrl: "https://control.example.com/remoteclaw/",
       }),
     ).toBe("2026.3.3");
   });
@@ -322,7 +322,7 @@ describe("resolveControlUiClientVersion", () => {
       resolveControlUiClientVersion({
         gatewayUrl: "https://control.example.com/ws",
         serverVersion: "2026.3.3",
-        pageUrl: "https://control.example.com/openclaw/",
+        pageUrl: "https://control.example.com/remoteclaw/",
       }),
     ).toBe("2026.3.3");
   });
@@ -332,7 +332,7 @@ describe("resolveControlUiClientVersion", () => {
       resolveControlUiClientVersion({
         gatewayUrl: "wss://gateway.example.com",
         serverVersion: "2026.3.3",
-        pageUrl: "https://control.example.com/openclaw/",
+        pageUrl: "https://control.example.com/remoteclaw/",
       }),
     ).toBeUndefined();
   });

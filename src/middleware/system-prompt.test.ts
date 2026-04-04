@@ -198,7 +198,7 @@ describe("buildSystemPrompt", () => {
       expect(result).toContain("NO_REPLY");
     });
 
-    it("contains no OpenClaw-specific references", () => {
+    it("contains no legacy OpenClaw-specific references", () => {
       const result = buildSystemPrompt(
         makeParams({
           userName: "Alice",
@@ -210,7 +210,7 @@ describe("buildSystemPrompt", () => {
         }),
       );
       expect(result).not.toContain("OpenClaw");
-      expect(result).not.toContain("remoteclaw");
+      expect(result).not.toContain("openclaw");
       expect(result).not.toContain("pi-embedded");
       expect(result).not.toContain("SOUL.md");
     });

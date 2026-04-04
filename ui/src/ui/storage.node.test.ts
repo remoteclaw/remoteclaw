@@ -108,7 +108,7 @@ describe("loadSettings default gateway URL derivation", () => {
       host: "gateway.example:8443",
       pathname: "/",
     });
-    sessionStorage.setItem("openclaw.control.token.v1", "legacy-session-token");
+    sessionStorage.setItem("remoteclaw.control.token.v1", "legacy-session-token");
     localStorage.setItem(
       "remoteclaw.control.settings.v1",
       JSON.stringify({
@@ -150,7 +150,7 @@ describe("loadSettings default gateway URL derivation", () => {
 
     const { loadSettings, saveSettings } = await import("./storage.ts");
     saveSettings({
-      gatewayUrl: "wss://gateway.example:8443/openclaw",
+      gatewayUrl: "wss://gateway.example:8443/remoteclaw",
       token: "session-token",
       sessionKey: "main",
       lastActiveSessionKey: "main",
@@ -166,7 +166,7 @@ describe("loadSettings default gateway URL derivation", () => {
     });
 
     expect(loadSettings()).toMatchObject({
-      gatewayUrl: "wss://gateway.example:8443/openclaw",
+      gatewayUrl: "wss://gateway.example:8443/remoteclaw",
       token: "session-token",
     });
   });
@@ -180,7 +180,7 @@ describe("loadSettings default gateway URL derivation", () => {
 
     const { loadSettings, saveSettings } = await import("./storage.ts");
     saveSettings({
-      gatewayUrl: "wss://gateway.example:8443/openclaw",
+      gatewayUrl: "wss://gateway.example:8443/remoteclaw",
       token: "gateway-a-token",
       sessionKey: "main",
       lastActiveSessionKey: "main",
@@ -196,9 +196,9 @@ describe("loadSettings default gateway URL derivation", () => {
     });
 
     localStorage.setItem(
-      "openclaw.control.settings.v1",
+      "remoteclaw.control.settings.v1",
       JSON.stringify({
-        gatewayUrl: "wss://other-gateway.example:8443/openclaw",
+        gatewayUrl: "wss://other-gateway.example:8443/remoteclaw",
         sessionKey: "main",
         lastActiveSessionKey: "main",
         theme: "claw",
@@ -214,7 +214,7 @@ describe("loadSettings default gateway URL derivation", () => {
     );
 
     expect(loadSettings()).toMatchObject({
-      gatewayUrl: "wss://other-gateway.example:8443/openclaw",
+      gatewayUrl: "wss://other-gateway.example:8443/remoteclaw",
       token: "",
     });
   });
@@ -243,7 +243,7 @@ describe("loadSettings default gateway URL derivation", () => {
       navGroupsCollapsed: {},
     });
     expect(loadSettings()).toMatchObject({
-      gatewayUrl: "wss://gateway.example:8443/openclaw",
+      gatewayUrl: "wss://gateway.example:8443/remoteclaw",
       token: "memory-only-token",
     });
 
@@ -273,7 +273,7 @@ describe("loadSettings default gateway URL derivation", () => {
 
     const { loadSettings, saveSettings } = await import("./storage.ts");
     saveSettings({
-      gatewayUrl: "wss://gateway.example:8443/openclaw",
+      gatewayUrl: "wss://gateway.example:8443/remoteclaw",
       token: "stale-token",
       sessionKey: "main",
       lastActiveSessionKey: "main",
@@ -288,7 +288,7 @@ describe("loadSettings default gateway URL derivation", () => {
       navGroupsCollapsed: {},
     });
     saveSettings({
-      gatewayUrl: "wss://gateway.example:8443/openclaw",
+      gatewayUrl: "wss://gateway.example:8443/remoteclaw",
       token: "",
       sessionKey: "main",
       lastActiveSessionKey: "main",
@@ -316,7 +316,7 @@ describe("loadSettings default gateway URL derivation", () => {
 
     const { saveSettings } = await import("./storage.ts");
     saveSettings({
-      gatewayUrl: "wss://gateway.example:8443/openclaw",
+      gatewayUrl: "wss://gateway.example:8443/remoteclaw",
       token: "",
       sessionKey: "main",
       lastActiveSessionKey: "main",
@@ -331,7 +331,9 @@ describe("loadSettings default gateway URL derivation", () => {
       navGroupsCollapsed: {},
     });
 
-    expect(JSON.parse(localStorage.getItem("openclaw.control.settings.v1") ?? "{}")).toMatchObject({
+    expect(
+      JSON.parse(localStorage.getItem("remoteclaw.control.settings.v1") ?? "{}"),
+    ).toMatchObject({
       theme: "dash",
       themeMode: "light",
       navWidth: 320,

@@ -6,7 +6,7 @@ import { loadJsonFile, saveJsonFile } from "./json-file.js";
 
 describe("json-file helpers", () => {
   it("returns undefined for missing and invalid JSON files", async () => {
-    await withTempDir("openclaw-json-file-", async (root) => {
+    await withTempDir("remoteclaw-json-file-", async (root) => {
       const pathname = path.join(root, "config.json");
       expect(loadJsonFile(pathname)).toBeUndefined();
 
@@ -16,7 +16,7 @@ describe("json-file helpers", () => {
   });
 
   it("creates parent dirs, writes a trailing newline, and loads the saved object", async () => {
-    await withTempDir("openclaw-json-file-", async (root) => {
+    await withTempDir("remoteclaw-json-file-", async (root) => {
       const pathname = path.join(root, "nested", "config.json");
       saveJsonFile(pathname, { enabled: true, count: 2 });
 

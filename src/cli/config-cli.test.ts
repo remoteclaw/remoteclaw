@@ -279,7 +279,7 @@ describe("config cli", () => {
 
     it("preserves allowed-values metadata in --json output", async () => {
       setSnapshotOnce({
-        path: "/tmp/custom-openclaw.json",
+        path: "/tmp/custom-remoteclaw.json",
         exists: true,
         raw: "{}",
         parsed: {},
@@ -315,7 +315,7 @@ describe("config cli", () => {
         }>;
       };
       expect(payload.valid).toBe(false);
-      expect(payload.path).toBe("/tmp/custom-openclaw.json");
+      expect(payload.path).toBe("/tmp/custom-remoteclaw.json");
       expect(payload.issues).toEqual([
         {
           path: "update.channel",

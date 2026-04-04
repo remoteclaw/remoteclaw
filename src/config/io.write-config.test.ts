@@ -543,7 +543,7 @@ describe("config io write", () => {
         env: {
           HOME: "undefined",
           USERPROFILE: "null",
-          OPENCLAW_HOME: "undefined",
+          REMOTECLAW_HOME: "undefined",
         } as NodeJS.ProcessEnv,
       });
       expect(lines.length).toBeGreaterThan(0);

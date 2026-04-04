@@ -12,7 +12,7 @@ import {
 } from "./archive.js";
 
 const tempDirs = createTrackedTempDirs();
-const createTempDir = () => tempDirs.make("openclaw-archive-helper-test-");
+const createTempDir = () => tempDirs.make("remoteclaw-archive-helper-test-");
 
 afterEach(async () => {
   vi.useRealTimers();

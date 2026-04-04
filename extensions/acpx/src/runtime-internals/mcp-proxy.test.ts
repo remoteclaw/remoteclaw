@@ -8,7 +8,7 @@ const tempDirs: string[] = [];
 const proxyPath = path.resolve("extensions/acpx/src/runtime-internals/mcp-proxy.mjs");
 
 async function makeTempScript(name: string, content: string): Promise<string> {
-  const dir = await mkdtemp(path.join(os.tmpdir(), "openclaw-acpx-mcp-proxy-"));
+  const dir = await mkdtemp(path.join(os.tmpdir(), "remoteclaw-acpx-mcp-proxy-"));
   tempDirs.push(dir);
   const scriptPath = path.join(dir, name);
   await writeFile(scriptPath, content, "utf8");

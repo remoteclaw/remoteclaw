@@ -245,7 +245,7 @@ describe("buildGatewayInstallPlan", () => {
   it("merges env-backed auth-profile refs into the service environment", async () => {
     mockNodeGatewayPlanFixture({
       serviceEnvironment: {
-        OPENCLAW_PORT: "3000",
+        REMOTECLAW_PORT: "3000",
       },
     });
     mocks.loadAuthProfileStoreForSecretsRuntime.mockReturnValue({
@@ -280,7 +280,7 @@ describe("buildGatewayInstallPlan", () => {
   it("skips unresolved auth-profile env refs", async () => {
     mockNodeGatewayPlanFixture({
       serviceEnvironment: {
-        OPENCLAW_PORT: "3000",
+        REMOTECLAW_PORT: "3000",
       },
     });
     mocks.loadAuthProfileStoreForSecretsRuntime.mockReturnValue({

@@ -70,27 +70,27 @@ describe("argv helpers", () => {
   it.each([
     {
       name: "root --version",
-      argv: ["node", "openclaw", "--version"],
+      argv: ["node", "remoteclaw", "--version"],
       expected: true,
     },
     {
       name: "root -V",
-      argv: ["node", "openclaw", "-V"],
+      argv: ["node", "remoteclaw", "-V"],
       expected: true,
     },
     {
       name: "root -v alias with profile",
-      argv: ["node", "openclaw", "--profile", "work", "-v"],
+      argv: ["node", "remoteclaw", "--profile", "work", "-v"],
       expected: true,
     },
     {
       name: "subcommand version flag",
-      argv: ["node", "openclaw", "status", "--version"],
+      argv: ["node", "remoteclaw", "status", "--version"],
       expected: false,
     },
     {
       name: "unknown root flag with version",
-      argv: ["node", "openclaw", "--unknown", "--version"],
+      argv: ["node", "remoteclaw", "--unknown", "--version"],
       expected: false,
     },
   ])("detects root-only version invocations: $name", ({ argv, expected }) => {
@@ -100,42 +100,42 @@ describe("argv helpers", () => {
   it.each([
     {
       name: "root --help",
-      argv: ["node", "openclaw", "--help"],
+      argv: ["node", "remoteclaw", "--help"],
       expected: true,
     },
     {
       name: "root -h",
-      argv: ["node", "openclaw", "-h"],
+      argv: ["node", "remoteclaw", "-h"],
       expected: true,
     },
     {
       name: "root --help with profile",
-      argv: ["node", "openclaw", "--profile", "work", "--help"],
+      argv: ["node", "remoteclaw", "--profile", "work", "--help"],
       expected: true,
     },
     {
       name: "subcommand --help",
-      argv: ["node", "openclaw", "status", "--help"],
+      argv: ["node", "remoteclaw", "status", "--help"],
       expected: false,
     },
     {
       name: "help before subcommand token",
-      argv: ["node", "openclaw", "--help", "status"],
+      argv: ["node", "remoteclaw", "--help", "status"],
       expected: false,
     },
     {
       name: "help after -- terminator",
-      argv: ["node", "openclaw", "nodes", "run", "--", "git", "--help"],
+      argv: ["node", "remoteclaw", "nodes", "run", "--", "git", "--help"],
       expected: false,
     },
     {
       name: "unknown root flag before help",
-      argv: ["node", "openclaw", "--unknown", "--help"],
+      argv: ["node", "remoteclaw", "--unknown", "--help"],
       expected: false,
     },
     {
       name: "unknown root flag after help",
-      argv: ["node", "openclaw", "--help", "--unknown"],
+      argv: ["node", "remoteclaw", "--help", "--unknown"],
       expected: false,
     },
   ])("detects root-only help invocations: $name", ({ argv, expected }) => {
@@ -165,7 +165,7 @@ describe("argv helpers", () => {
   it("extracts command path while skipping known root option values", () => {
     expect(
       getCommandPathWithRootOptions(
-        ["node", "openclaw", "--profile", "work", "--no-color", "config", "validate"],
+        ["node", "remoteclaw", "--profile", "work", "--no-color", "config", "validate"],
         2,
       ),
     ).toEqual(["config", "validate"]);
@@ -174,7 +174,7 @@ describe("argv helpers", () => {
   it("extracts routed config get positionals with interleaved root options", () => {
     expect(
       getCommandPositionalsWithRootOptions(
-        ["node", "openclaw", "config", "get", "--log-level", "debug", "update.channel", "--json"],
+        ["node", "remoteclaw", "config", "get", "--log-level", "debug", "update.channel", "--json"],
         {
           commandPath: ["config", "get"],
           booleanFlags: ["--json"],
@@ -186,7 +186,7 @@ describe("argv helpers", () => {
   it("extracts routed config unset positionals with interleaved root options", () => {
     expect(
       getCommandPositionalsWithRootOptions(
-        ["node", "openclaw", "config", "unset", "--profile", "work", "update.channel"],
+        ["node", "remoteclaw", "config", "unset", "--profile", "work", "update.channel"],
         {
           commandPath: ["config", "unset"],
         },
@@ -197,7 +197,7 @@ describe("argv helpers", () => {
   it("returns null when routed command sees unknown options", () => {
     expect(
       getCommandPositionalsWithRootOptions(
-        ["node", "openclaw", "config", "get", "--mystery", "value", "update.channel"],
+        ["node", "remoteclaw", "config", "get", "--mystery", "value", "update.channel"],
         {
           commandPath: ["config", "get"],
           booleanFlags: ["--json"],
@@ -219,7 +219,7 @@ describe("argv helpers", () => {
     },
     {
       name: "skips known root option values",
-      argv: ["node", "openclaw", "--log-level", "debug", "status"],
+      argv: ["node", "remoteclaw", "--log-level", "debug", "status"],
       expected: "status",
     },
   ])("returns primary command: $name", ({ argv, expected }) => {

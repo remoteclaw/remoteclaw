@@ -179,31 +179,31 @@ describe("gateway hot reload", () => {
   let prevGeminiApiKey: string | undefined;
 
   beforeEach(() => {
-    prevSkipChannels = process.env.OPENCLAW_SKIP_CHANNELS;
-    prevSkipGmail = process.env.OPENCLAW_SKIP_GMAIL_WATCHER;
-    prevSkipProviders = process.env.OPENCLAW_SKIP_PROVIDERS;
+    prevSkipChannels = process.env.REMOTECLAW_SKIP_CHANNELS;
+    prevSkipGmail = process.env.REMOTECLAW_SKIP_GMAIL_WATCHER;
+    prevSkipProviders = process.env.REMOTECLAW_SKIP_PROVIDERS;
     prevOpenAiApiKey = process.env.OPENAI_API_KEY;
     prevGeminiApiKey = process.env.GEMINI_API_KEY;
-    process.env.OPENCLAW_SKIP_CHANNELS = "0";
-    delete process.env.OPENCLAW_SKIP_GMAIL_WATCHER;
-    delete process.env.OPENCLAW_SKIP_PROVIDERS;
+    process.env.REMOTECLAW_SKIP_CHANNELS = "0";
+    delete process.env.REMOTECLAW_SKIP_GMAIL_WATCHER;
+    delete process.env.REMOTECLAW_SKIP_PROVIDERS;
   });
 
   afterEach(() => {
     if (prevSkipChannels === undefined) {
-      delete process.env.OPENCLAW_SKIP_CHANNELS;
+      delete process.env.REMOTECLAW_SKIP_CHANNELS;
     } else {
-      process.env.OPENCLAW_SKIP_CHANNELS = prevSkipChannels;
+      process.env.REMOTECLAW_SKIP_CHANNELS = prevSkipChannels;
     }
     if (prevSkipGmail === undefined) {
-      delete process.env.OPENCLAW_SKIP_GMAIL_WATCHER;
+      delete process.env.REMOTECLAW_SKIP_GMAIL_WATCHER;
     } else {
-      process.env.OPENCLAW_SKIP_GMAIL_WATCHER = prevSkipGmail;
+      process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = prevSkipGmail;
     }
     if (prevSkipProviders === undefined) {
-      delete process.env.OPENCLAW_SKIP_PROVIDERS;
+      delete process.env.REMOTECLAW_SKIP_PROVIDERS;
     } else {
-      process.env.OPENCLAW_SKIP_PROVIDERS = prevSkipProviders;
+      process.env.REMOTECLAW_SKIP_PROVIDERS = prevSkipProviders;
     }
     if (prevOpenAiApiKey === undefined) {
       delete process.env.OPENAI_API_KEY;
@@ -218,9 +218,9 @@ describe("gateway hot reload", () => {
   });
 
   async function writeEnvRefConfig() {
-    const configPath = process.env.OPENCLAW_CONFIG_PATH;
+    const configPath = process.env.REMOTECLAW_CONFIG_PATH;
     if (!configPath) {
-      throw new Error("OPENCLAW_CONFIG_PATH is not set");
+      throw new Error("REMOTECLAW_CONFIG_PATH is not set");
     }
     await fs.writeFile(
       configPath,
@@ -244,9 +244,9 @@ describe("gateway hot reload", () => {
   }
 
   async function writeTalkApiKeyEnvRefConfig(refId = "TALK_API_KEY_REF") {
-    const configPath = process.env.OPENCLAW_CONFIG_PATH;
+    const configPath = process.env.REMOTECLAW_CONFIG_PATH;
     if (!configPath) {
-      throw new Error("OPENCLAW_CONFIG_PATH is not set");
+      throw new Error("REMOTECLAW_CONFIG_PATH is not set");
     }
     await fs.writeFile(
       configPath,
@@ -264,9 +264,9 @@ describe("gateway hot reload", () => {
   }
 
   async function writeGatewayTraversalExecRefConfig() {
-    const configPath = process.env.OPENCLAW_CONFIG_PATH;
+    const configPath = process.env.REMOTECLAW_CONFIG_PATH;
     if (!configPath) {
-      throw new Error("OPENCLAW_CONFIG_PATH is not set");
+      throw new Error("REMOTECLAW_CONFIG_PATH is not set");
     }
     await fs.writeFile(
       configPath,
@@ -299,9 +299,9 @@ describe("gateway hot reload", () => {
     modePath: string;
     tokenValue: string;
   }) {
-    const configPath = process.env.OPENCLAW_CONFIG_PATH;
+    const configPath = process.env.REMOTECLAW_CONFIG_PATH;
     if (!configPath) {
-      throw new Error("OPENCLAW_CONFIG_PATH is not set");
+      throw new Error("REMOTECLAW_CONFIG_PATH is not set");
     }
     await fs.writeFile(
       configPath,
@@ -332,9 +332,9 @@ describe("gateway hot reload", () => {
   }
 
   async function writeDisabledSurfaceRefConfig() {
-    const configPath = process.env.OPENCLAW_CONFIG_PATH;
+    const configPath = process.env.REMOTECLAW_CONFIG_PATH;
     if (!configPath) {
-      throw new Error("OPENCLAW_CONFIG_PATH is not set");
+      throw new Error("REMOTECLAW_CONFIG_PATH is not set");
     }
     await fs.writeFile(
       configPath,
@@ -367,9 +367,9 @@ describe("gateway hot reload", () => {
   }
 
   async function writeGatewayTokenRefConfig() {
-    const configPath = process.env.OPENCLAW_CONFIG_PATH;
+    const configPath = process.env.REMOTECLAW_CONFIG_PATH;
     if (!configPath) {
-      throw new Error("OPENCLAW_CONFIG_PATH is not set");
+      throw new Error("REMOTECLAW_CONFIG_PATH is not set");
     }
     await fs.writeFile(
       configPath,
@@ -395,9 +395,9 @@ describe("gateway hot reload", () => {
   }
 
   async function writeAuthProfileEnvRefStore() {
-    const stateDir = process.env.OPENCLAW_STATE_DIR;
+    const stateDir = process.env.REMOTECLAW_STATE_DIR;
     if (!stateDir) {
-      throw new Error("OPENCLAW_STATE_DIR is not set");
+      throw new Error("REMOTECLAW_STATE_DIR is not set");
     }
     const authStorePath = path.join(stateDir, "agents", "main", "agent", "auth-profiles.json");
     await fs.mkdir(path.dirname(authStorePath), { recursive: true });
@@ -410,7 +410,7 @@ describe("gateway hot reload", () => {
             missing: {
               type: "api_key",
               provider: "openai",
-              keyRef: { source: "env", provider: "default", id: "MISSING_OPENCLAW_AUTH_REF" },
+              keyRef: { source: "env", provider: "default", id: "MISSING_REMOTECLAW_AUTH_REF" },
             },
           },
           selectedProfileId: "missing",
@@ -425,9 +425,9 @@ describe("gateway hot reload", () => {
   }
 
   async function writeWebSearchGeminiRefConfig() {
-    const configPath = process.env.OPENCLAW_CONFIG_PATH;
+    const configPath = process.env.REMOTECLAW_CONFIG_PATH;
     if (!configPath) {
-      throw new Error("OPENCLAW_CONFIG_PATH is not set");
+      throw new Error("REMOTECLAW_CONFIG_PATH is not set");
     }
     await fs.writeFile(
       configPath,
@@ -453,7 +453,7 @@ describe("gateway hot reload", () => {
   }
 
   async function removeMainAuthProfileStore() {
-    const stateDir = process.env.OPENCLAW_STATE_DIR;
+    const stateDir = process.env.REMOTECLAW_STATE_DIR;
     if (!stateDir) {
       return;
     }
@@ -605,10 +605,10 @@ describe("gateway hot reload", () => {
 
   it("fails startup when auth-profile secret refs are unresolved", async () => {
     await writeAuthProfileEnvRefStore();
-    delete process.env.MISSING_OPENCLAW_AUTH_REF;
+    delete process.env.MISSING_REMOTECLAW_AUTH_REF;
     try {
       await expect(withGatewayServer(async () => {})).rejects.toThrow(
-        'Environment variable "MISSING_OPENCLAW_AUTH_REF" is missing or empty.',
+        'Environment variable "MISSING_REMOTECLAW_AUTH_REF" is missing or empty.',
       );
     } finally {
       await removeMainAuthProfileStore();
@@ -793,9 +793,9 @@ describe("gateway hot reload", () => {
   });
 
   it("keeps last-known-good auth snapshot active when gateway auth token exec reload fails", async () => {
-    const stateDir = process.env.OPENCLAW_STATE_DIR;
+    const stateDir = process.env.REMOTECLAW_STATE_DIR;
     if (!stateDir) {
-      throw new Error("OPENCLAW_STATE_DIR is not set");
+      throw new Error("REMOTECLAW_STATE_DIR is not set");
     }
     const resolverScriptPath = path.join(stateDir, "gateway-auth-token-resolver.cjs");
     const modePath = path.join(stateDir, "gateway-auth-token-resolver.mode");
@@ -847,9 +847,9 @@ process.stdin.on("end", () => {
     });
 
     const previousGatewayAuth = testState.gatewayAuth;
-    const previousGatewayTokenEnv = process.env.OPENCLAW_GATEWAY_TOKEN;
+    const previousGatewayTokenEnv = process.env.REMOTECLAW_GATEWAY_TOKEN;
     testState.gatewayAuth = undefined;
-    delete process.env.OPENCLAW_GATEWAY_TOKEN;
+    delete process.env.REMOTECLAW_GATEWAY_TOKEN;
 
     const started = await startServerWithClient();
     const { server, ws, envSnapshot } = started;
@@ -885,9 +885,9 @@ process.stdin.on("end", () => {
     } finally {
       testState.gatewayAuth = previousGatewayAuth;
       if (previousGatewayTokenEnv === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_TOKEN;
+        delete process.env.REMOTECLAW_GATEWAY_TOKEN;
       } else {
-        process.env.OPENCLAW_GATEWAY_TOKEN = previousGatewayTokenEnv;
+        process.env.REMOTECLAW_GATEWAY_TOKEN = previousGatewayTokenEnv;
       }
       envSnapshot.restore();
       ws.close();

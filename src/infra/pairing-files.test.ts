@@ -7,10 +7,10 @@ import {
 
 describe("pairing file helpers", () => {
   it("resolves pairing file paths from explicit base dirs", () => {
-    expect(resolvePairingPaths("/tmp/openclaw-state", "devices")).toEqual({
-      dir: "/tmp/openclaw-state/devices",
-      pendingPath: "/tmp/openclaw-state/devices/pending.json",
-      pairedPath: "/tmp/openclaw-state/devices/paired.json",
+    expect(resolvePairingPaths("/tmp/remoteclaw-state", "devices")).toEqual({
+      dir: "/tmp/remoteclaw-state/devices",
+      pendingPath: "/tmp/remoteclaw-state/devices/pending.json",
+      pairedPath: "/tmp/remoteclaw-state/devices/paired.json",
     });
   });
 

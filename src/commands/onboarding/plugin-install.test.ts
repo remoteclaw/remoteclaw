@@ -191,8 +191,8 @@ describe("ensureOnboardingPluginInstalled", () => {
           "zalo",
           {
             pluginId: "zalo",
-            localPath: "/opt/openclaw/extensions/zalo",
-            npmSpec: "@openclaw/zalo",
+            localPath: "/opt/remoteclaw/extensions/zalo",
+            npmSpec: "@remoteclaw/zalo",
           },
         ],
       ]),
@@ -211,7 +211,7 @@ describe("ensureOnboardingPluginInstalled", () => {
         options: expect.arrayContaining([
           expect.objectContaining({
             value: "local",
-            hint: "/opt/openclaw/extensions/zalo",
+            hint: "/opt/remoteclaw/extensions/zalo",
           }),
         ]),
       }),
@@ -253,14 +253,14 @@ describe("ensureOnboardingPluginInstalled", () => {
     reloadOnboardingPluginRegistry({
       cfg,
       runtime,
-      workspaceDir: "/tmp/openclaw-workspace",
+      workspaceDir: "/tmp/remoteclaw-workspace",
     });
 
     expect(clearPluginDiscoveryCache).toHaveBeenCalledTimes(1);
     expect(loadRemoteClawPlugins).toHaveBeenCalledWith(
       expect.objectContaining({
         config: cfg,
-        workspaceDir: "/tmp/openclaw-workspace",
+        workspaceDir: "/tmp/remoteclaw-workspace",
         cache: false,
       }),
     );

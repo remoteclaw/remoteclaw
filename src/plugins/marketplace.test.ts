@@ -11,7 +11,7 @@ vi.mock("./install.js", () => ({
 }));
 
 async function withTempDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-marketplace-test-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-marketplace-test-"));
   try {
     return await fn(dir);
   } finally {
@@ -111,9 +111,9 @@ describe("marketplace plugins", () => {
 
   it("resolves Claude-style plugin@marketplace shortcuts from known_marketplaces.json", async () => {
     await withTempDir(async (homeDir) => {
-      const openClawHome = path.join(homeDir, "openclaw-home");
+      const remoteClawHome = path.join(homeDir, "remoteclaw-home");
       await fs.mkdir(path.join(homeDir, ".claude", "plugins"), { recursive: true });
-      await fs.mkdir(openClawHome, { recursive: true });
+      await fs.mkdir(remoteClawHome, { recursive: true });
       await fs.writeFile(
         path.join(homeDir, ".claude", "plugins", "known_marketplaces.json"),
         JSON.stringify({
@@ -129,7 +129,7 @@ describe("marketplace plugins", () => {
 
       const { resolveMarketplaceInstallShortcut } = await import("./marketplace.js");
       const shortcut = await withEnvAsync(
-        { HOME: homeDir, REMOTECLAW_HOME: openClawHome },
+        { HOME: homeDir, REMOTECLAW_HOME: remoteClawHome },
         async () => await resolveMarketplaceInstallShortcut("superpowers@claude-plugins-official"),
       );
 

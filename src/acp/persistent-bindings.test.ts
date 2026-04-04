@@ -73,7 +73,7 @@ describe("resolveConfiguredAcpBindingRecord", () => {
             peer: { kind: "channel", id: "1478836151241412759" },
           },
           acp: {
-            cwd: "/repo/openclaw",
+            cwd: "/repo/remoteclaw",
           },
         },
       ],
@@ -459,7 +459,7 @@ describe("ensureConfiguredAcpBindingSession", () => {
         agent: "codex",
         runtimeSessionName: "existing",
         mode: "persistent",
-        runtimeOptions: { cwd: "/workspace/openclaw" },
+        runtimeOptions: { cwd: "/workspace/remoteclaw" },
         state: "idle",
         lastActivityAt: Date.now(),
       },

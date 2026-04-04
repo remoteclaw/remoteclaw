@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const TEST_GAXIOS_CONSTRUCTOR_OVERRIDE = "__OPENCLAW_TEST_GAXIOS_CONSTRUCTOR__";
+const TEST_GAXIOS_CONSTRUCTOR_OVERRIDE = "__REMOTECLAW_TEST_GAXIOS_CONSTRUCTOR__";
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 let ProxyAgent: typeof import("undici").ProxyAgent;
 

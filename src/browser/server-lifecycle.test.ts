@@ -126,7 +126,7 @@ describe("stopKnownBrowserProfiles", () => {
     const localRuntime = {
       profile: {
         name: "deleted-local",
-        driver: "openclaw",
+        driver: "remoteclaw",
       },
       running: {
         pid: 42,

@@ -49,9 +49,15 @@ fi
 git add -- "${files[@]}"
 
 # This hook is also exercised from lightweight temp repos in tests, where the
-# staged-file safety behavior matters but the full OpenClaw workspace does not
+# staged-file safety behavior matters but the full RemoteClaw workspace does not
 # exist. Only run the repo-wide gate inside a real checkout.
 if [[ -f "$ROOT_DIR/package.json" ]] && [[ -f "$ROOT_DIR/pnpm-lock.yaml" ]]; then
   cd "$ROOT_DIR"
+
+  REBRAND_GATE="$ROOT_DIR/scripts/ci/check-rebrand-leakage.sh"
+  if [[ -x "$REBRAND_GATE" ]]; then
+    bash "$REBRAND_GATE" --staged
+  fi
+
   pnpm check
 fi

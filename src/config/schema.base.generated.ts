@@ -6752,12 +6752,12 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "agents.list[].runtime": {
       label: "Agent Runtime",
-      help: "Optional runtime descriptor for this agent. Use embedded for default OpenClaw execution or acp for external ACP harness defaults.",
+      help: "Optional runtime descriptor for this agent. Use embedded for default RemoteClaw execution or acp for external ACP harness defaults.",
       tags: ["advanced"],
     },
     "agents.list[].runtime.type": {
       label: "Agent Runtime Type",
-      help: 'Runtime type for this agent: "embedded" (default OpenClaw runtime) or "acp" (ACP harness defaults).',
+      help: 'Runtime type for this agent: "embedded" (default RemoteClaw runtime) or "acp" (ACP harness defaults).',
       tags: ["advanced"],
     },
     "agents.list[].runtime.acp": {
@@ -6767,7 +6767,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "agents.list[].runtime.acp.agent": {
       label: "Agent ACP Harness Agent",
-      help: "Optional ACP harness agent id to use for this OpenClaw agent (for example codex, claude).",
+      help: "Optional ACP harness agent id to use for this RemoteClaw agent (for example codex, claude).",
       tags: ["advanced"],
     },
     "agents.list[].runtime.acp.backend": {
@@ -7577,7 +7577,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "nodeHost.browserProxy.allowProfiles": {
       label: "Node Browser Proxy Allowed Profiles",
-      help: "Optional allowlist of browser profile names exposed through node proxy routing. Leave empty to preserve the default full profile surface, including profile create/delete routes. When set, OpenClaw enforces least-privilege profile access and blocks persistent profile create/delete through the proxy.",
+      help: "Optional allowlist of browser profile names exposed through node proxy routing. Leave empty to preserve the default full profile surface, including profile create/delete routes. When set, RemoteClaw enforces least-privilege profile access and blocks persistent profile create/delete through the proxy.",
       tags: ["access", "network", "storage"],
     },
     media: {

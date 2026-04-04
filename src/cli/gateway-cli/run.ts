@@ -89,7 +89,7 @@ const GATEWAY_TAILSCALE_MODES: readonly GatewayTailscaleMode[] = ["off", "serve"
 
 function warnInlinePasswordFlag() {
   defaultRuntime.error(
-    "Warning: --password can be exposed via process listings. Prefer --password-file or OPENCLAW_GATEWAY_PASSWORD.",
+    "Warning: --password can be exposed via process listings. Prefer --password-file or REMOTECLAW_GATEWAY_PASSWORD.",
   );
 }
 
@@ -208,7 +208,7 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
     defaultRuntime.exit(1);
     return;
   }
-  if (process.env.OPENCLAW_SERVICE_MARKER?.trim()) {
+  if (process.env.REMOTECLAW_SERVICE_MARKER?.trim()) {
     const stale = cleanStaleGatewayProcessesSync(port);
     if (stale.length > 0) {
       gatewayLog.info(

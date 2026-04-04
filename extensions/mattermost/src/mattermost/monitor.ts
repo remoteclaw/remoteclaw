@@ -438,10 +438,10 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
     try {
       const teams = await fetchMattermostUserTeams(client, botUserId);
 
-      // Use the *runtime* listener port when available (e.g. `openclaw gateway run --port <port>`).
-      // The gateway sets OPENCLAW_GATEWAY_PORT when it boots, but the config file may still contain
+      // Use the *runtime* listener port when available (e.g. `remoteclaw gateway run --port <port>`).
+      // The gateway sets REMOTECLAW_GATEWAY_PORT when it boots, but the config file may still contain
       // a different port.
-      const envPortRaw = process.env.OPENCLAW_GATEWAY_PORT?.trim();
+      const envPortRaw = process.env.REMOTECLAW_GATEWAY_PORT?.trim();
       const envPort = parseStrictPositiveInteger(envPortRaw);
       const slashGatewayPort = envPort ?? cfg.gateway?.port ?? 18789;
 

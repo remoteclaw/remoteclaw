@@ -26,7 +26,7 @@ let slackAllowFromCache = new WeakMap<SlackMonitorContext, SlackAllowFromCacheSt
 const DEFAULT_PAIRING_ALLOW_FROM_CACHE_TTL_MS = 5000;
 
 function getPairingAllowFromCacheTtlMs(): number {
-  const raw = process.env.OPENCLAW_SLACK_PAIRING_ALLOWFROM_CACHE_TTL_MS?.trim();
+  const raw = process.env.REMOTECLAW_SLACK_PAIRING_ALLOWFROM_CACHE_TTL_MS?.trim();
   if (!raw) {
     return DEFAULT_PAIRING_ALLOW_FROM_CACHE_TTL_MS;
   }

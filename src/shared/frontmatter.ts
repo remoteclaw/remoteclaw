@@ -136,7 +136,7 @@ export function parseRemoteClawManifestInstallBase(
   return spec;
 }
 
-export function applyOpenClawManifestInstallCommonFields<
+export function applyRemoteClawManifestInstallCommonFields<
   T extends { id?: string; label?: string; bins?: string[] },
 >(spec: T, parsed: Pick<ParsedRemoteClawManifestInstallBase, "id" | "label" | "bins">): T {
   if (parsed.id) {

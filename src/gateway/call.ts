@@ -148,7 +148,8 @@ export function buildGatewayConnectionDetails(
       : undefined;
   const envUrlOverride = cliUrlOverride
     ? undefined
-    : (trimToUndefined(process.env.OPENCLAW_GATEWAY_URL) ??
+    : (trimToUndefined(process.env.REMOTECLAW_GATEWAY_URL) ??
+      trimToUndefined(process.env.OPENCLAW_GATEWAY_URL) ??
       trimToUndefined(process.env.CLAWDBOT_GATEWAY_URL));
   const urlOverride = cliUrlOverride ?? envUrlOverride;
   const remoteUrl =
@@ -159,7 +160,7 @@ export function buildGatewayConnectionDetails(
   const url = urlOverride || remoteUrl || localUrl;
   const urlSource = urlOverride
     ? urlSourceHint === "env"
-      ? "env OPENCLAW_GATEWAY_URL"
+      ? "env REMOTECLAW_GATEWAY_URL"
       : "cli --url"
     : remoteUrl
       ? "config gateway.remote.url"
@@ -253,7 +254,8 @@ function resolveGatewayCallContext(opts: CallGatewayBaseOptions): ResolvedGatewa
   const cliUrlOverride = trimToUndefined(opts.url);
   const envUrlOverride = cliUrlOverride
     ? undefined
-    : (trimToUndefined(process.env.OPENCLAW_GATEWAY_URL) ??
+    : (trimToUndefined(process.env.REMOTECLAW_GATEWAY_URL) ??
+      trimToUndefined(process.env.OPENCLAW_GATEWAY_URL) ??
       trimToUndefined(process.env.CLAWDBOT_GATEWAY_URL));
   const urlOverride = cliUrlOverride ?? envUrlOverride;
   const urlOverrideSource = cliUrlOverride ? "cli" : envUrlOverride ? "env" : undefined;

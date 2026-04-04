@@ -1,6 +1,6 @@
 import { describe, expect, it, test } from "vitest";
 import {
-  applyOpenClawManifestInstallCommonFields,
+  applyRemoteClawManifestInstallCommonFields,
   getFrontmatterString,
   normalizeStringList,
   parseFrontmatterBool,
@@ -106,7 +106,7 @@ describe("shared/frontmatter", () => {
     });
     expect(parseRemoteClawManifestInstallBase({ kind: "bad" }, ["brew"])).toBeUndefined();
     expect(
-      applyOpenClawManifestInstallCommonFields({ id: "old", label: "Old", bins: [] }, parsed!),
+      applyRemoteClawManifestInstallCommonFields({ id: "old", label: "Old", bins: [] }, parsed!),
     ).toEqual({
       id: "brew.git",
       label: "Git",

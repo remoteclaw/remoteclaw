@@ -471,9 +471,9 @@ export async function ensureChromeExtensionRelayServer(opts: {
         case "Browser.getVersion":
           return {
             protocolVersion: "1.3",
-            product: "Chrome/OpenClaw-Extension-Relay",
+            product: "Chrome/RemoteClaw-Extension-Relay",
             revision: "0",
-            userAgent: "OpenClaw-Extension-Relay",
+            userAgent: "RemoteClaw-Extension-Relay",
             jsVersion: "V8",
           };
         case "Browser.setDownloadBehavior":
@@ -607,7 +607,7 @@ export async function ensureChromeExtensionRelayServer(opts: {
         (req.method === "GET" || req.method === "PUT")
       ) {
         const payload: Record<string, unknown> = {
-          Browser: "OpenClaw/extension-relay",
+          Browser: "RemoteClaw/extension-relay",
           "Protocol-Version": "1.3",
         };
         // Keep reporting CDP WS while attached targets are cached, so callers can

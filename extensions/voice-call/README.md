@@ -17,7 +17,7 @@ Plugin system: `https://docs.remoteclaw.org/plugin`
 ### Option A: install via RemoteClaw (recommended)
 
 ```bash
-remoteclaw plugins install @openclaw/voice-call
+remoteclaw plugins install @remoteclaw/voice-call
 ```
 
 Restart the Gateway afterwards.

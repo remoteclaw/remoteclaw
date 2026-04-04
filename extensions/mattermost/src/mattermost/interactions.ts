@@ -10,7 +10,7 @@ import { updateMattermostPost, type MattermostClient, type MattermostPost } from
 
 const INTERACTION_MAX_BODY_BYTES = 64 * 1024;
 const INTERACTION_BODY_TIMEOUT_MS = 10_000;
-const SIGNED_CHANNEL_ID_CONTEXT_KEY = "__openclaw_channel_id";
+const SIGNED_CHANNEL_ID_CONTEXT_KEY = "__remoteclaw_channel_id";
 
 /**
  * Mattermost interactive message callback payload.

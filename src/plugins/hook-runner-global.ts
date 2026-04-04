@@ -18,7 +18,7 @@ type HookRunnerGlobalState = {
   registry: PluginRegistry | null;
 };
 
-const hookRunnerGlobalStateKey = Symbol.for("openclaw.plugins.hook-runner-global-state");
+const hookRunnerGlobalStateKey = Symbol.for("remoteclaw.plugins.hook-runner-global-state");
 const state = resolveGlobalSingleton<HookRunnerGlobalState>(hookRunnerGlobalStateKey, () => ({
   hookRunner: null,
   registry: null,

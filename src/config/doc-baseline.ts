@@ -81,7 +81,7 @@ const DEFAULT_JSON_OUTPUT = "docs/.generated/config-baseline.json";
 const DEFAULT_STATEFILE_OUTPUT = "docs/.generated/config-baseline.jsonl";
 
 function logConfigDocBaselineDebug(message: string): void {
-  if (process.env.OPENCLAW_CONFIG_DOC_BASELINE_DEBUG === "1") {
+  if (process.env.REMOTECLAW_CONFIG_DOC_BASELINE_DEBUG === "1") {
     console.error(`[config-doc-baseline] ${message}`);
   }
 }
@@ -332,7 +332,7 @@ function loadPackageChannelMetadata(rootDir: string): PackageChannelMetadata | n
     const packageJson = JSON.parse(
       fsSync.readFileSync(path.join(rootDir, "package.json"), "utf8"),
     ) as {
-      openclaw?: {
+      remoteclaw?: {
         channel?: {
           id?: unknown;
           label?: unknown;
@@ -340,7 +340,7 @@ function loadPackageChannelMetadata(rootDir: string): PackageChannelMetadata | n
         };
       };
     };
-    const channel = packageJson.openclaw?.channel;
+    const channel = packageJson.remoteclaw?.channel;
     if (!channel) {
       return null;
     }
@@ -513,8 +513,8 @@ async function loadBundledConfigSchemaResponse(): Promise<ConfigSchemaResponse> 
   const env = {
     ...process.env,
     HOME: os.tmpdir(),
-    OPENCLAW_STATE_DIR: path.join(os.tmpdir(), "openclaw-config-doc-baseline-state"),
-    OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(repoRoot, "extensions"),
+    REMOTECLAW_STATE_DIR: path.join(os.tmpdir(), "remoteclaw-config-doc-baseline-state"),
+    REMOTECLAW_BUNDLED_PLUGINS_DIR: path.join(repoRoot, "extensions"),
   };
 
   const manifestRegistry = loadPluginManifestRegistry({
@@ -526,7 +526,7 @@ async function loadBundledConfigSchemaResponse(): Promise<ConfigSchemaResponse> 
   const bundledChannelPlugins = manifestRegistry.plugins.filter(
     (plugin) => plugin.origin === "bundled" && plugin.channels.length > 0,
   );
-  const loadChannelsSequentiallyForDebug = process.env.OPENCLAW_CONFIG_DOC_BASELINE_DEBUG === "1";
+  const loadChannelsSequentiallyForDebug = process.env.REMOTECLAW_CONFIG_DOC_BASELINE_DEBUG === "1";
   const channelPlugins = loadChannelsSequentiallyForDebug
     ? await bundledChannelPlugins.reduce<Promise<ChannelSurfaceMetadata[]>>(
         async (promise, plugin) => {

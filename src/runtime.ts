@@ -27,7 +27,7 @@ function shouldEmitRuntimeStdout(env: NodeJS.ProcessEnv = process.env): boolean 
   if (env.VITEST !== "true") {
     return true;
   }
-  if (env.OPENCLAW_TEST_RUNTIME_LOG === "1") {
+  if (env.REMOTECLAW_TEST_RUNTIME_LOG === "1") {
     return true;
   }
   const stdout = process.stdout as NodeJS.WriteStream & {

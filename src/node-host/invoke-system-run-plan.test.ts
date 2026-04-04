@@ -152,7 +152,7 @@ describe("hardenApprovedExecutionPaths", () => {
 
   // Upstream test: mutableFileOperand requires analyzeArgvCommand which is stubbed in the fork.
   it.skip("captures mutable shell script operands in approval plans", () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-approval-script-plan-"));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-approval-script-plan-"));
     const fixture = createScriptOperandFixture(tmp);
     fs.writeFileSync(fixture.scriptPath, fixture.initialBody);
     if (process.platform !== "win32") {

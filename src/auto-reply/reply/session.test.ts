@@ -459,7 +459,7 @@ describe("initSessionState RawBody", () => {
   });
 
   it("does not rotate local session state for /new on bound ACP sessions", async () => {
-    const root = await makeCaseDir("openclaw-rawbody-acp-reset-");
+    const root = await makeCaseDir("remoteclaw-rawbody-acp-reset-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:codex:acp:binding:discord:default:feedface";
     const existingSessionId = "session-existing";
@@ -515,7 +515,7 @@ describe("initSessionState RawBody", () => {
   });
 
   it("does not rotate local session state for ACP /new when conversation IDs are unavailable", async () => {
-    const root = await makeCaseDir("openclaw-rawbody-acp-reset-no-conversation-");
+    const root = await makeCaseDir("remoteclaw-rawbody-acp-reset-no-conversation-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:codex:acp:binding:discord:default:feedface";
     const existingSessionId = "session-existing";
@@ -560,7 +560,7 @@ describe("initSessionState RawBody", () => {
   });
 
   it("keeps custom reset triggers working on bound ACP sessions", async () => {
-    const root = await makeCaseDir("openclaw-rawbody-acp-custom-reset-");
+    const root = await makeCaseDir("remoteclaw-rawbody-acp-custom-reset-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:codex:acp:binding:discord:default:feedface";
     const existingSessionId = "session-existing";
@@ -619,7 +619,7 @@ describe("initSessionState RawBody", () => {
   });
 
   it("keeps normal /new behavior for unbound ACP-shaped session keys", async () => {
-    const root = await makeCaseDir("openclaw-rawbody-acp-unbound-reset-");
+    const root = await makeCaseDir("remoteclaw-rawbody-acp-unbound-reset-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:codex:acp:binding:discord:default:feedface";
     const existingSessionId = "session-existing";
@@ -663,7 +663,7 @@ describe("initSessionState RawBody", () => {
   });
 
   it("does not suppress /new when active conversation binding points to a non-ACP session", async () => {
-    const root = await makeCaseDir("openclaw-rawbody-acp-nonacp-binding-");
+    const root = await makeCaseDir("remoteclaw-rawbody-acp-nonacp-binding-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:codex:acp:binding:discord:default:feedface";
     const existingSessionId = "session-existing";
@@ -748,7 +748,7 @@ describe("initSessionState RawBody", () => {
   });
 
   it("does not suppress /new when active target session key is non-ACP even with configured ACP binding", async () => {
-    const root = await makeCaseDir("openclaw-rawbody-acp-configured-fallback-target-");
+    const root = await makeCaseDir("remoteclaw-rawbody-acp-configured-fallback-target-");
     const storePath = path.join(root, "sessions.json");
     const channelId = "1478836151241412759";
     const fallbackSessionKey = "agent:main:discord:channel:focus-target";

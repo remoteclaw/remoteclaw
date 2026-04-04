@@ -21,13 +21,13 @@ describe("session tab registry", () => {
       sessionKey: "Agent:Main:Main",
       targetId: "tab-a",
       baseUrl: "http://127.0.0.1:9222",
-      profile: "OpenClaw",
+      profile: "RemoteClaw",
     });
     trackSessionBrowserTab({
       sessionKey: "agent:main:main",
       targetId: "tab-b",
       baseUrl: "http://127.0.0.1:9222",
-      profile: "OpenClaw",
+      profile: "RemoteClaw",
     });
     expect(__countTrackedSessionBrowserTabsForTests("agent:main:main")).toBe(2);
 

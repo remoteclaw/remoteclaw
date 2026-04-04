@@ -26,7 +26,7 @@ describe("pw-tools-core", () => {
   });
 
   async function withTempDir<T>(run: (tempDir: string) => Promise<T>): Promise<T> {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-browser-download-test-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-browser-download-test-"));
     try {
       return await run(tempDir);
     } finally {
@@ -92,7 +92,7 @@ describe("pw-tools-core", () => {
       fs.realpath(params.tempDir).catch(() => params.tempDir),
     ]);
     expect(savedDirReal).toBe(tempDirReal);
-    expect(path.basename(String(savedPath))).toContain(".openclaw-output-");
+    expect(path.basename(String(savedPath))).toContain(".remoteclaw-output-");
     expect(path.basename(String(savedPath))).toContain(".part");
     expect(await fs.readFile(params.targetPath, "utf8")).toBe(params.content);
   }

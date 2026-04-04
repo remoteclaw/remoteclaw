@@ -6,7 +6,7 @@ import { detectPackageManager } from "./detect-package-manager.js";
 
 describe("detectPackageManager", () => {
   it("prefers packageManager from package.json when supported", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-detect-pm-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-detect-pm-"));
     await fs.writeFile(
       path.join(root, "package.json"),
       JSON.stringify({ packageManager: "pnpm@10.8.1" }),
@@ -18,15 +18,15 @@ describe("detectPackageManager", () => {
   });
 
   it("falls back to lockfiles when package.json is missing or unsupported", async () => {
-    const bunRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-detect-pm-"));
+    const bunRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-detect-pm-"));
     await fs.writeFile(path.join(bunRoot, "bun.lock"), "", "utf8");
     await expect(detectPackageManager(bunRoot)).resolves.toBe("bun");
 
-    const legacyBunRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-detect-pm-"));
+    const legacyBunRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-detect-pm-"));
     await fs.writeFile(path.join(legacyBunRoot, "bun.lockb"), "", "utf8");
     await expect(detectPackageManager(legacyBunRoot)).resolves.toBe("bun");
 
-    const npmRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-detect-pm-"));
+    const npmRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-detect-pm-"));
     await fs.writeFile(
       path.join(npmRoot, "package.json"),
       JSON.stringify({ packageManager: "yarn@4.0.0" }),
@@ -37,7 +37,7 @@ describe("detectPackageManager", () => {
   });
 
   it("returns null when no package manager markers exist", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-detect-pm-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-detect-pm-"));
     await fs.writeFile(path.join(root, "package.json"), "{not-json}", "utf8");
 
     await expect(detectPackageManager(root)).resolves.toBeNull();

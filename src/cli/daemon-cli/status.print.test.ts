@@ -38,7 +38,7 @@ vi.mock("../../infra/wsl.js", () => ({
 }));
 
 vi.mock("../../logging.js", () => ({
-  getResolvedLoggerSettings: () => ({ file: "/tmp/openclaw.log" }),
+  getResolvedLoggerSettings: () => ({ file: "/tmp/remoteclaw.log" }),
 }));
 
 vi.mock("./shared.js", () => ({
@@ -111,6 +111,8 @@ describe("printDaemonStatus", () => {
     expect(runtime.error).toHaveBeenCalledWith(
       expect.stringContaining("Gateway runtime PID does not own the listening port"),
     );
-    expect(runtime.error).toHaveBeenCalledWith(expect.stringContaining("openclaw gateway restart"));
+    expect(runtime.error).toHaveBeenCalledWith(
+      expect.stringContaining("remoteclaw gateway restart"),
+    );
   });
 });

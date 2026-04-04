@@ -100,7 +100,7 @@ describe("renderTable", () => {
             `\x1b[2mGet current weather and forecasts via wttr.in or Open-Meteo. ` +
             `Use when: user asks about weather, temperature, or forecasts for any location.` +
             `\x1b[0m`,
-          Source: "openclaw-bundled",
+          Source: "remoteclaw-bundled",
         },
       ],
     });

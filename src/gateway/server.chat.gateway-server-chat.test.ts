@@ -114,7 +114,7 @@ describe("gateway server chat", () => {
   };
 
   const withMainSessionStore = async <T>(run: (dir: string) => Promise<T>): Promise<T> => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gw-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-gw-"));
     try {
       testState.sessionStorePath = path.join(dir, "sessions.json");
       await writeSessionStore({
@@ -564,7 +564,7 @@ describe("gateway server chat", () => {
   });
 
   test("agent.wait ignores stale chat dedupe when an agent run with the same runId is in flight", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gw-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-gw-"));
     let resolveAgentRun: (() => void) | undefined;
     const blockedAgentRun = new Promise<void>((resolve) => {
       resolveAgentRun = resolve;

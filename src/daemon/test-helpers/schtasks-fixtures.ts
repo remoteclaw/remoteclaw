@@ -16,8 +16,8 @@ export async function withWindowsEnv(
   const env = {
     USERPROFILE: tmpDir,
     APPDATA: path.join(tmpDir, "AppData", "Roaming"),
-    OPENCLAW_PROFILE: "default",
-    OPENCLAW_GATEWAY_PORT: "18789",
+    REMOTECLAW_PROFILE: "default",
+    REMOTECLAW_GATEWAY_PORT: "18789",
   };
   try {
     await run({ tmpDir, env });

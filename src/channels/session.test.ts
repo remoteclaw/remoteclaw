@@ -108,7 +108,7 @@ describe("recordInboundSession", () => {
     const onSkip = vi.fn();
 
     await recordInboundSession({
-      storePath: "/tmp/openclaw-session-store.json",
+      storePath: "/tmp/remoteclaw-session-store.json",
       sessionKey: "agent:main:telegram:1234:thread:42",
       ctx,
       updateLastRoute: {

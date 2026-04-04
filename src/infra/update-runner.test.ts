@@ -522,7 +522,7 @@ describe("runGatewayUpdate", () => {
     const localAppData = path.join(tempDir, "local-app-data");
     const portableGitMingw = path.join(
       localAppData,
-      "OpenClaw",
+      "RemoteClaw",
       "deps",
       "portable-git",
       "mingw64",
@@ -530,7 +530,7 @@ describe("runGatewayUpdate", () => {
     );
     const portableGitUsr = path.join(
       localAppData,
-      "OpenClaw",
+      "RemoteClaw",
       "deps",
       "portable-git",
       "usr",

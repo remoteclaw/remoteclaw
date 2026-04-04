@@ -86,7 +86,7 @@ export function createDiscordPreflightArgs(params: {
     accountId: "default",
     token: "token",
     runtime: {} as import("../../../../src/runtime.js").RuntimeEnv,
-    botUserId: params.botUserId ?? "openclaw-bot",
+    botUserId: params.botUserId ?? "remoteclaw-bot",
     guildHistories: new Map(),
     historyLimit: 0,
     mediaMaxBytes: 1_000_000,

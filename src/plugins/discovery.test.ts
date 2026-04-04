@@ -398,7 +398,7 @@ describe("discoverRemoteClawPlugins", () => {
 
     const first = await withEnvAsync(
       {
-        OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS: "5000",
+        REMOTECLAW_PLUGIN_DISCOVERY_CACHE_MS: "5000",
       },
       async () => withStateDir(stateDir, async () => discoverRemoteClawPlugins({})),
     );
@@ -408,7 +408,7 @@ describe("discoverRemoteClawPlugins", () => {
 
     const second = await withEnvAsync(
       {
-        OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS: "5000",
+        REMOTECLAW_PLUGIN_DISCOVERY_CACHE_MS: "5000",
       },
       async () => withStateDir(stateDir, async () => discoverRemoteClawPlugins({})),
     );
@@ -418,7 +418,7 @@ describe("discoverRemoteClawPlugins", () => {
 
     const third = await withEnvAsync(
       {
-        OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS: "5000",
+        REMOTECLAW_PLUGIN_DISCOVERY_CACHE_MS: "5000",
       },
       async () => withStateDir(stateDir, async () => discoverRemoteClawPlugins({})),
     );

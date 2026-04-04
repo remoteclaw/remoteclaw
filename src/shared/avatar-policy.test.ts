@@ -21,7 +21,7 @@ describe("avatar policy", () => {
     expect(isAvatarHttpUrl("https://example.com/avatar.png")).toBe(true);
     expect(isAvatarHttpUrl("ftp://example.com/avatar.png")).toBe(false);
     expect(hasAvatarUriScheme("slack://avatar")).toBe(true);
-    expect(isWindowsAbsolutePath("C:\\\\avatars\\\\openclaw.png")).toBe(true);
+    expect(isWindowsAbsolutePath("C:\\\\avatars\\\\remoteclaw.png")).toBe(true);
   });
 
   it("accepts workspace-relative avatar paths and rejects URI schemes", () => {

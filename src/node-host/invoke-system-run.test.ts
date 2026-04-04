@@ -357,7 +357,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
 
   // Upstream test: mutableFileOperand drift detection requires analyzeArgvCommand which is stubbed in the fork.
   it.skip("denies approval-based execution when a script operand changes after approval", async () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-approval-script-drift-"));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-approval-script-drift-"));
     const script = path.join(tmp, "run.sh");
     fs.writeFileSync(script, "#!/bin/sh\necho SAFE\n");
     fs.chmodSync(script, 0o755);
@@ -395,7 +395,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
 
   // Upstream test: mutableFileOperand validation requires analyzeArgvCommand which is stubbed in the fork.
   it.skip("keeps approved shell script execution working when the script is unchanged", async () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-approval-script-stable-"));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-approval-script-stable-"));
     const script = path.join(tmp, "run.sh");
     fs.writeFileSync(script, "#!/bin/sh\necho SAFE\n");
     fs.chmodSync(script, 0o755);

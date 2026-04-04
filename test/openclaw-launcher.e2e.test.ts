@@ -5,17 +5,17 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 async function makeLauncherFixture(fixtureRoots: string[]): Promise<string> {
-  const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-launcher-"));
+  const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-launcher-"));
   fixtureRoots.push(fixtureRoot);
   await fs.copyFile(
-    path.resolve(process.cwd(), "openclaw.mjs"),
-    path.join(fixtureRoot, "openclaw.mjs"),
+    path.resolve(process.cwd(), "remoteclaw.mjs"),
+    path.join(fixtureRoot, "remoteclaw.mjs"),
   );
   await fs.mkdir(path.join(fixtureRoot, "dist"), { recursive: true });
   return fixtureRoot;
 }
 
-describe("openclaw launcher", () => {
+describe("remoteclaw launcher", () => {
   const fixtureRoots: string[] = [];
 
   afterEach(async () => {
@@ -30,27 +30,35 @@ describe("openclaw launcher", () => {
     const fixtureRoot = await makeLauncherFixture(fixtureRoots);
     await fs.writeFile(
       path.join(fixtureRoot, "dist", "entry.js"),
-      'import "missing-openclaw-launcher-dep";\nexport {};\n',
+      'import "missing-remoteclaw-launcher-dep";\nexport {};\n',
       "utf8",
     );
 
-    const result = spawnSync(process.execPath, [path.join(fixtureRoot, "openclaw.mjs"), "--help"], {
-      cwd: fixtureRoot,
-      encoding: "utf8",
-    });
+    const result = spawnSync(
+      process.execPath,
+      [path.join(fixtureRoot, "remoteclaw.mjs"), "--help"],
+      {
+        cwd: fixtureRoot,
+        encoding: "utf8",
+      },
+    );
 
     expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain("missing-openclaw-launcher-dep");
+    expect(result.stderr).toContain("missing-remoteclaw-launcher-dep");
     expect(result.stderr).not.toContain("missing dist/entry.(m)js");
   });
 
   it("keeps the friendly launcher error for a truly missing entry build output", async () => {
     const fixtureRoot = await makeLauncherFixture(fixtureRoots);
 
-    const result = spawnSync(process.execPath, [path.join(fixtureRoot, "openclaw.mjs"), "--help"], {
-      cwd: fixtureRoot,
-      encoding: "utf8",
-    });
+    const result = spawnSync(
+      process.execPath,
+      [path.join(fixtureRoot, "remoteclaw.mjs"), "--help"],
+      {
+        cwd: fixtureRoot,
+        encoding: "utf8",
+      },
+    );
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("missing dist/entry.(m)js");

@@ -69,7 +69,7 @@ describe("runServiceRestart config pre-flight (#35862)", () => {
     service.readCommand.mockResolvedValue({ environment: {} });
     service.restart.mockResolvedValue({ outcome: "completed" });
     vi.unstubAllEnvs();
-    vi.stubEnv("OPENCLAW_GATEWAY_TOKEN", "");
+    vi.stubEnv("REMOTECLAW_GATEWAY_TOKEN", "");
     vi.stubEnv("CLAWDBOT_GATEWAY_TOKEN", "");
   });
 

@@ -10,7 +10,7 @@ import {
 
 describe("executable path helpers", () => {
   it("detects executable files and rejects directories or non-executables", async () => {
-    const base = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-exec-path-"));
+    const base = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-exec-path-"));
     const execPath = path.join(base, "tool");
     const filePath = path.join(base, "plain.txt");
     const dirPath = path.join(base, "dir");
@@ -26,7 +26,7 @@ describe("executable path helpers", () => {
   });
 
   it("resolves executables from PATH entries and cwd-relative paths", async () => {
-    const base = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-exec-path-"));
+    const base = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-exec-path-"));
     const binDir = path.join(base, "bin");
     const cwd = path.join(base, "cwd");
     await fs.mkdir(binDir, { recursive: true });
@@ -49,7 +49,7 @@ describe("executable path helpers", () => {
   });
 
   it("resolves absolute, home-relative, and Path-cased env executables", async () => {
-    const base = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-exec-path-"));
+    const base = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-exec-path-"));
     const homeDir = path.join(base, "home");
     const binDir = path.join(base, "bin");
     await fs.mkdir(homeDir, { recursive: true });

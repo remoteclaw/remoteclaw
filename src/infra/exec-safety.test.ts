@@ -5,8 +5,8 @@ describe("isSafeExecutableValue", () => {
   it("accepts bare executable names and likely paths", () => {
     expect(isSafeExecutableValue("node")).toBe(true);
     expect(isSafeExecutableValue("/usr/bin/node")).toBe(true);
-    expect(isSafeExecutableValue("./bin/openclaw")).toBe(true);
-    expect(isSafeExecutableValue("C:\\Tools\\openclaw.exe")).toBe(true);
+    expect(isSafeExecutableValue("./bin/remoteclaw")).toBe(true);
+    expect(isSafeExecutableValue("C:\\Tools\\remoteclaw.exe")).toBe(true);
     expect(isSafeExecutableValue(" tool ")).toBe(true);
   });
 

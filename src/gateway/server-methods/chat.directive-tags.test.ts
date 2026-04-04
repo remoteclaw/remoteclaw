@@ -333,7 +333,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
   });
 
   it("rejects oversized chat.send session keys before dispatch", async () => {
-    createTranscriptFixture("openclaw-chat-send-session-key-too-long-");
+    createTranscriptFixture("remoteclaw-chat-send-session-key-too-long-");
     const respond = vi.fn();
     const context = createChatContext();
 
@@ -727,7 +727,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
   });
 
   it("chat.send does not inherit external delivery context for UI clients on main sessions when deliver is enabled", async () => {
-    createTranscriptFixture("openclaw-chat-send-main-ui-deliver-no-route-");
+    createTranscriptFixture("remoteclaw-chat-send-main-ui-deliver-no-route-");
     mockState.finalText = "ok";
     mockState.sessionEntry = {
       deliveryContext: {
@@ -750,7 +750,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
         connect: {
           client: {
             mode: GATEWAY_CLIENT_MODES.UI,
-            id: "openclaw-tui",
+            id: "remoteclaw-tui",
           },
         },
       } as unknown,
@@ -813,7 +813,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
   });
 
   it("chat.send keeps configured main delivery inheritance when connect metadata omits client details", async () => {
-    createTranscriptFixture("openclaw-chat-send-config-main-connect-no-client-");
+    createTranscriptFixture("remoteclaw-chat-send-config-main-connect-no-client-");
     mockState.mainSessionKey = "work";
     mockState.finalText = "ok";
     mockState.sessionEntry = {
@@ -920,7 +920,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
   });
 
   it("chat.send does not inherit external routes for webchat clients on channel-scoped sessions", async () => {
-    createTranscriptFixture("openclaw-chat-send-webchat-channel-scoped-no-inherit-");
+    createTranscriptFixture("remoteclaw-chat-send-webchat-channel-scoped-no-inherit-");
     mockState.finalText = "ok";
     mockState.sessionEntry = {
       deliveryContext: {
@@ -945,7 +945,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
         connect: {
           client: {
             mode: GATEWAY_CLIENT_MODES.WEBCHAT,
-            id: "openclaw-webchat",
+            id: "remoteclaw-webchat",
           },
         },
       } as unknown,
@@ -965,7 +965,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
   });
 
   it("chat.send still inherits external routes for UI clients on channel-scoped sessions", async () => {
-    createTranscriptFixture("openclaw-chat-send-ui-channel-scoped-inherit-");
+    createTranscriptFixture("remoteclaw-chat-send-ui-channel-scoped-inherit-");
     mockState.finalText = "ok";
     mockState.sessionEntry = {
       deliveryContext: {
@@ -988,7 +988,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
         connect: {
           client: {
             mode: GATEWAY_CLIENT_MODES.UI,
-            id: "openclaw-tui",
+            id: "remoteclaw-tui",
           },
         },
       } as unknown,

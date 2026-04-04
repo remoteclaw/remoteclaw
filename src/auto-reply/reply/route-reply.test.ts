@@ -223,7 +223,7 @@ describe("routeReply", () => {
         blocks: [
           expect.objectContaining({
             type: "actions",
-            block_id: "openclaw_reply_select_1",
+            block_id: "remoteclaw_reply_select_1",
           }),
         ],
       }),

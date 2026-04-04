@@ -35,8 +35,8 @@ describe("classifyControlUiRequest", () => {
   it("falls through PUT/DELETE/PATCH/OPTIONS under basePath for plugin handlers", () => {
     for (const method of ["PUT", "DELETE", "PATCH", "OPTIONS"]) {
       const classified = classifyControlUiRequest({
-        basePath: "/openclaw",
-        pathname: "/openclaw/webhook",
+        basePath: "/remoteclaw",
+        pathname: "/remoteclaw/webhook",
         search: "",
         method,
       });

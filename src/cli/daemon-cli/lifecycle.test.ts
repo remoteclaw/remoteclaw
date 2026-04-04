@@ -166,14 +166,14 @@ describe("runDaemonRestart health checks", () => {
       }
       const pid = Number.parseInt(match[1] ?? "", 10);
       if ([4200, 4300].includes(pid)) {
-        return ["openclaw", "gateway", "--port", "18789", ""].join("\0");
+        return ["remoteclaw", "gateway", "--port", "18789", ""].join("\0");
       }
       throw new Error(`unknown pid ${pid}`);
     });
     mockSpawnSync.mockReturnValue({
       error: null,
       status: 0,
-      stdout: "openclaw gateway --port 18789",
+      stdout: "remoteclaw gateway --port 18789",
       stderr: "",
     });
   });
@@ -250,7 +250,7 @@ describe("runDaemonRestart health checks", () => {
       error: null,
       status: 0,
       stdout:
-        'CommandLine="C:\\\\Program Files\\\\OpenClaw\\\\openclaw.exe" gateway --port 18789\r\n',
+        'CommandLine="C:\\\\Program Files\\\\RemoteClaw\\\\remoteclaw.exe" gateway --port 18789\r\n',
       stderr: "",
     });
     runServiceStop.mockImplementation(async (params: { onNotLoaded?: () => Promise<unknown> }) => {
@@ -272,7 +272,7 @@ describe("runDaemonRestart health checks", () => {
       error: null,
       status: 0,
       stdout:
-        'CommandLine="C:\\\\Program Files\\\\OpenClaw\\\\openclaw.exe" gateway --port 18789\r\n',
+        'CommandLine="C:\\\\Program Files\\\\RemoteClaw\\\\remoteclaw.exe" gateway --port 18789\r\n',
       stderr: "",
     });
     runServiceRestart.mockImplementation(
@@ -308,7 +308,7 @@ describe("runDaemonRestart health checks", () => {
       error: null,
       status: 0,
       stdout:
-        'CommandLine="C:\\\\Program Files\\\\OpenClaw\\\\openclaw.exe" gateway --port 18789\r\n',
+        'CommandLine="C:\\\\Program Files\\\\RemoteClaw\\\\remoteclaw.exe" gateway --port 18789\r\n',
       stderr: "",
     });
     runServiceRestart.mockImplementation(

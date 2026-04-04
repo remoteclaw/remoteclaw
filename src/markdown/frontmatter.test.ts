@@ -91,10 +91,10 @@ description: |-
     const content = `---
 name: sample-skill
 metadata:
-  openclaw: true
+  remoteclaw: true
 ---`;
     const result = parseFrontmatterBlock(content);
-    expect(result.metadata).toBe('{"openclaw":true}');
+    expect(result.metadata).toBe('{"remoteclaw":true}');
   });
 
   it("returns empty when frontmatter is missing", () => {

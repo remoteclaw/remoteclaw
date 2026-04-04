@@ -16,7 +16,7 @@ afterEach(() => {
 });
 
 function makeTempDir(): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-conflict-markers-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-conflict-markers-"));
   tempDirs.push(dir);
   return dir;
 }

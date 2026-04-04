@@ -216,7 +216,7 @@ describe("session cost usage", () => {
   });
 
   it("counts reset and deleted transcripts in global usage summary, but excludes bak archives", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-usage-archives-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-usage-archives-"));
     const sessionsDir = path.join(root, "agents", "main", "sessions");
     await fs.mkdir(sessionsDir, { recursive: true });
 
@@ -281,7 +281,7 @@ describe("session cost usage", () => {
   });
 
   it("discovers reset and deleted transcripts as usage sessions", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-discover-archives-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-discover-archives-"));
     const sessionsDir = path.join(root, "agents", "main", "sessions");
     await fs.mkdir(sessionsDir, { recursive: true });
 
@@ -316,7 +316,7 @@ describe("session cost usage", () => {
   });
 
   it("deduplicates discovered sessions by sessionId and keeps the newest archive", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-discover-dedupe-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-discover-dedupe-"));
     const sessionsDir = path.join(root, "agents", "main", "sessions");
     await fs.mkdir(sessionsDir, { recursive: true });
 
@@ -360,7 +360,7 @@ describe("session cost usage", () => {
   });
 
   it("prefers the active transcript over archives during discovery dedupe", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-discover-active-preferred-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-discover-active-preferred-"));
     const sessionsDir = path.join(root, "agents", "main", "sessions");
     await fs.mkdir(sessionsDir, { recursive: true });
 
@@ -401,7 +401,7 @@ describe("session cost usage", () => {
   });
 
   it("falls back to archived reset transcripts for per-session detail queries", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-session-archive-fallback-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-session-archive-fallback-"));
     const sessionsDir = path.join(root, "agents", "main", "sessions");
     await fs.mkdir(sessionsDir, { recursive: true });
 
@@ -433,7 +433,7 @@ describe("session cost usage", () => {
   });
 
   it("uses the candidate session directory for archived fallback lookups", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-session-custom-archive-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-session-custom-archive-"));
     const customSessionsDir = path.join(root, "custom-store", "sessions");
     await fs.mkdir(customSessionsDir, { recursive: true });
 
@@ -472,7 +472,7 @@ describe("session cost usage", () => {
   });
 
   it("picks the newest archive by timestamp when reset and deleted archives coexist", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-session-archive-order-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-session-archive-order-"));
     const sessionsDir = path.join(root, "agents", "main", "sessions");
     await fs.mkdir(sessionsDir, { recursive: true });
 

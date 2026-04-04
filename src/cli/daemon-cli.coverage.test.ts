@@ -27,8 +27,8 @@ const buildGatewayInstallPlan = vi.fn(
     programArguments: ["/bin/node", "cli", "gateway", "--port", String(params.port)],
     workingDirectory: process.cwd(),
     environment: {
-      OPENCLAW_GATEWAY_PORT: String(params.port),
-      ...(params.token ? { OPENCLAW_GATEWAY_TOKEN: params.token } : {}),
+      REMOTECLAW_GATEWAY_PORT: String(params.port),
+      ...(params.token ? { REMOTECLAW_GATEWAY_TOKEN: params.token } : {}),
     },
   }),
 );

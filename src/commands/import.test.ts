@@ -24,47 +24,47 @@ import {
 import { createTestRuntime, type TestRuntime } from "./test-runtime-config-helpers.js";
 
 describe("transformConfigContent", () => {
-  it("replaces ${OPENCLAW_*} template references with ${REMOTECLAW_*}", () => {
+  it("replaces ${REMOTECLAW_*} template references with ${REMOTECLAW_*}", () => {
     const input = `{
   "env": {
     "vars": {
-      "token": "\${OPENCLAW_GATEWAY_TOKEN}",
-      "password": "\${OPENCLAW_GATEWAY_PASSWORD}"
+      "token": "\${REMOTECLAW_GATEWAY_TOKEN}",
+      "password": "\${REMOTECLAW_GATEWAY_PASSWORD}"
     }
   }
 }`;
     const { content, renames } = transformConfigContent(input);
     expect(content).toContain("${REMOTECLAW_GATEWAY_TOKEN}");
     expect(content).toContain("${REMOTECLAW_GATEWAY_PASSWORD}");
-    expect(content).not.toContain("${OPENCLAW_");
-    expect(renames).toContain("${OPENCLAW_GATEWAY_TOKEN} -> ${REMOTECLAW_GATEWAY_TOKEN}");
-    expect(renames).toContain("${OPENCLAW_GATEWAY_PASSWORD} -> ${REMOTECLAW_GATEWAY_PASSWORD}");
+    expect(content).not.toContain("${REMOTECLAW_");
+    expect(renames).toContain("${REMOTECLAW_GATEWAY_TOKEN} -> ${REMOTECLAW_GATEWAY_TOKEN}");
+    expect(renames).toContain("${REMOTECLAW_GATEWAY_PASSWORD} -> ${REMOTECLAW_GATEWAY_PASSWORD}");
   });
 
-  it("replaces bare OPENCLAW_* string values in JSON", () => {
+  it("replaces bare REMOTECLAW_* string values in JSON", () => {
     const input = `{
-  "envVar": "OPENCLAW_STATE_DIR",
-  "other": "OPENCLAW_CONFIG_PATH"
+  "envVar": "REMOTECLAW_STATE_DIR",
+  "other": "REMOTECLAW_CONFIG_PATH"
 }`;
     const { content, renames } = transformConfigContent(input);
     expect(content).toContain('"REMOTECLAW_STATE_DIR"');
     expect(content).toContain('"REMOTECLAW_CONFIG_PATH"');
-    expect(renames).toContain("OPENCLAW_STATE_DIR -> REMOTECLAW_STATE_DIR");
-    expect(renames).toContain("OPENCLAW_CONFIG_PATH -> REMOTECLAW_CONFIG_PATH");
+    expect(renames).toContain("REMOTECLAW_STATE_DIR -> REMOTECLAW_STATE_DIR");
+    expect(renames).toContain("REMOTECLAW_CONFIG_PATH -> REMOTECLAW_CONFIG_PATH");
   });
 
-  it("replaces .openclaw path references with .remoteclaw", () => {
+  it("replaces .remoteclaw path references with .remoteclaw", () => {
     const input = `{
-  "workspace": "/home/user/.openclaw/workspace",
-  "sessions": "/home/user/.openclaw/sessions"
+  "workspace": "/home/user/.remoteclaw/workspace",
+  "sessions": "/home/user/.remoteclaw/sessions"
 }`;
     const { content } = transformConfigContent(input);
     expect(content).toContain("/.remoteclaw/workspace");
     expect(content).toContain("/.remoteclaw/sessions");
-    expect(content).not.toContain("/.openclaw/");
+    expect(content).not.toContain("/.remoteclaw/");
   });
 
-  it("returns empty renames when no OPENCLAW_ references exist", () => {
+  it("returns empty renames when no REMOTECLAW_ references exist", () => {
     const input = `{
   "gateway": {
     "port": 18789
@@ -77,11 +77,11 @@ describe("transformConfigContent", () => {
 
   it("deduplicates renames", () => {
     const input = `{
-  "a": "\${OPENCLAW_TOKEN}",
-  "b": "\${OPENCLAW_TOKEN}"
+  "a": "\${REMOTECLAW_TOKEN}",
+  "b": "\${REMOTECLAW_TOKEN}"
 }`;
     const { renames } = transformConfigContent(input);
-    const tokenRenames = renames.filter((r) => r.includes("OPENCLAW_TOKEN"));
+    const tokenRenames = renames.filter((r) => r.includes("REMOTECLAW_TOKEN"));
     expect(tokenRenames).toHaveLength(1);
   });
 
@@ -319,7 +319,7 @@ describe("clearWizardSection", () => {
         lastRunAt: "2025-01-01T00:00:00Z",
         lastRunVersion: "2026.2.6-3",
         lastRunCommit: "abc123",
-        lastRunCommand: "openclaw onboard",
+        lastRunCommand: "remoteclaw onboard",
         lastRunMode: "full",
       },
     });
@@ -354,7 +354,7 @@ describe("clearWizardSection", () => {
 describe("stripSchemaField", () => {
   it("strips $schema field from config JSON", () => {
     const input = JSON.stringify({
-      $schema: "https://openclaw.org/config.json",
+      $schema: "https://remoteclaw.org/config.json",
       gateway: { port: 18789 },
     });
     const result = JSON.parse(stripSchemaField(input));
@@ -892,7 +892,7 @@ describe("materializeAuthDefaults", () => {
 
 describe("isImportableRootEntry", () => {
   it("accepts known config files", () => {
-    expect(isImportableRootEntry("openclaw.json")).toBe(true);
+    expect(isImportableRootEntry("remoteclaw.json")).toBe(true);
     expect(isImportableRootEntry("remoteclaw.json")).toBe(true);
     expect(isImportableRootEntry(".env")).toBe(true);
   });
@@ -945,12 +945,12 @@ describe("discoverImportableFiles", () => {
     await fsp.mkdir(path.join(tmpDir, "agents", "main", "sessions"), { recursive: true });
     await fsp.writeFile(path.join(tmpDir, "agents", "main", "sessions", "data.bin"), "bin");
     await fsp.writeFile(path.join(tmpDir, ".env"), "KEY=value");
-    await fsp.writeFile(path.join(tmpDir, "openclaw.json"), "{}");
+    await fsp.writeFile(path.join(tmpDir, "remoteclaw.json"), "{}");
 
     const files = await discoverImportableFiles(tmpDir);
 
     expect(files).toContain(".env");
-    expect(files).toContain("openclaw.json");
+    expect(files).toContain("remoteclaw.json");
     expect(files).toContain(path.join("agents", "main", "sessions", "data.bin"));
   });
 
@@ -975,14 +975,14 @@ describe("discoverImportableFiles", () => {
 
   it("excludes files outside importable patterns", async () => {
     await fsp.mkdir(path.join(tmpDir, "completions"));
-    await fsp.writeFile(path.join(tmpDir, "completions", "openclaw.zsh"), "# completions");
+    await fsp.writeFile(path.join(tmpDir, "completions", "remoteclaw.zsh"), "# completions");
     await fsp.writeFile(path.join(tmpDir, "restart-sentinel.json"), "{}");
     await fsp.writeFile(path.join(tmpDir, ".env"), "KEY=value");
 
     const files = await discoverImportableFiles(tmpDir);
 
     expect(files).toContain(".env");
-    expect(files).not.toContain(path.join("completions", "openclaw.zsh"));
+    expect(files).not.toContain(path.join("completions", "remoteclaw.zsh"));
     expect(files).not.toContain("restart-sentinel.json");
   });
 
@@ -1019,7 +1019,7 @@ describe("stampImportedConfigVersion", () => {
     expect(result.meta.lastTouchedAt).toEqual(expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/));
   });
 
-  it("overwrites existing meta.lastTouchedVersion from OpenClaw", () => {
+  it("overwrites existing meta.lastTouchedVersion from RemoteClaw", () => {
     const input = JSON.stringify({
       gateway: { port: 18789 },
       meta: { lastTouchedVersion: "2026.2.6-3", lastTouchedAt: "2025-01-01T00:00:00.000Z" },
@@ -1044,8 +1044,8 @@ describe("stampImportedConfigVersion", () => {
 });
 
 describe("resolveTargetFilename", () => {
-  it("renames openclaw.json to remoteclaw.json", () => {
-    expect(resolveTargetFilename("openclaw.json")).toBe("remoteclaw.json");
+  it("renames remoteclaw.json to remoteclaw.json", () => {
+    expect(resolveTargetFilename("remoteclaw.json")).toBe("remoteclaw.json");
   });
 
   it("keeps other filenames unchanged", () => {
@@ -1066,17 +1066,17 @@ describe("detectOpenClawInstallation", () => {
     await fsp.rm(tmpDir, { recursive: true, force: true });
   });
 
-  it("returns path when .openclaw directory exists", async () => {
-    await fsp.mkdir(path.join(tmpDir, ".openclaw"));
-    expect(detectOpenClawInstallation(tmpDir)).toBe(path.join(tmpDir, ".openclaw"));
+  it("returns path when .remoteclaw directory exists", async () => {
+    await fsp.mkdir(path.join(tmpDir, ".remoteclaw"));
+    expect(detectOpenClawInstallation(tmpDir)).toBe(path.join(tmpDir, ".remoteclaw"));
   });
 
-  it("returns null when .openclaw does not exist", () => {
+  it("returns null when .remoteclaw does not exist", () => {
     expect(detectOpenClawInstallation(tmpDir)).toBeNull();
   });
 
-  it("returns null when .openclaw is a file not a directory", async () => {
-    await fsp.writeFile(path.join(tmpDir, ".openclaw"), "not a dir");
+  it("returns null when .remoteclaw is a file not a directory", async () => {
+    await fsp.writeFile(path.join(tmpDir, ".remoteclaw"), "not a dir");
     expect(detectOpenClawInstallation(tmpDir)).toBeNull();
   });
 });
@@ -1123,7 +1123,7 @@ describe("importCommand", () => {
 
   it("skips non-importable root-level entries", async () => {
     await fsp.mkdir(path.join(sourceDir, "completions"));
-    await fsp.writeFile(path.join(sourceDir, "completions", "openclaw.zsh"), "# completions");
+    await fsp.writeFile(path.join(sourceDir, "completions", "remoteclaw.zsh"), "# completions");
     await fsp.writeFile(path.join(sourceDir, "restart-sentinel.json"), "{}");
     await fsp.writeFile(path.join(sourceDir, ".env"), "KEY=value");
 
@@ -1218,12 +1218,12 @@ describe("importCommand", () => {
     const configContent = `{
   "env": {
     "vars": {
-      "token": "\${OPENCLAW_GATEWAY_TOKEN}",
-      "workspace": "/home/user/.openclaw/workspace"
+      "token": "\${REMOTECLAW_GATEWAY_TOKEN}",
+      "workspace": "/home/user/.remoteclaw/workspace"
     }
   }
 }`;
-    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+    await fsp.writeFile(path.join(sourceDir, "remoteclaw.json"), configContent);
 
     const pathsMod = await import("../config/paths.js");
     vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
@@ -1232,14 +1232,14 @@ describe("importCommand", () => {
 
     // File should be renamed
     expect(fs.existsSync(path.join(targetDir, "remoteclaw.json"))).toBe(true);
-    expect(fs.existsSync(path.join(targetDir, "openclaw.json"))).toBe(false);
+    expect(fs.existsSync(path.join(targetDir, "remoteclaw.json"))).toBe(false);
 
     // Content should be transformed
     const written = await fsp.readFile(path.join(targetDir, "remoteclaw.json"), "utf-8");
     expect(written).toContain("${REMOTECLAW_GATEWAY_TOKEN}");
     expect(written).toContain("/.remoteclaw/workspace");
-    expect(written).not.toContain("OPENCLAW_");
-    expect(written).not.toContain("/.openclaw/");
+    expect(written).not.toContain("REMOTECLAW_");
+    expect(written).not.toContain("/.remoteclaw/");
 
     expect(result.transformedFiles).toHaveLength(1);
     expect(result.envVarRenames.length).toBeGreaterThan(0);
@@ -1319,7 +1319,7 @@ describe("importCommand", () => {
       channels: { whatsapp: {} },
       agents: { list: [{ id: "main" }] },
     });
-    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+    await fsp.writeFile(path.join(sourceDir, "remoteclaw.json"), configContent);
 
     const pathsMod = await import("../config/paths.js");
     vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
@@ -1339,7 +1339,7 @@ describe("importCommand", () => {
         list: [{ id: "main", workspace: "~/ws" }],
       },
     });
-    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+    await fsp.writeFile(path.join(sourceDir, "remoteclaw.json"), configContent);
 
     // Create auth profiles in the source
     const agentDir = path.join(sourceDir, "agents", "main", "agent");
@@ -1372,11 +1372,11 @@ describe("importCommand", () => {
         lastRunAt: "2025-01-01T00:00:00Z",
         lastRunVersion: "2026.2.6-3",
         lastRunCommit: "abc123",
-        lastRunCommand: "openclaw onboard",
+        lastRunCommand: "remoteclaw onboard",
         lastRunMode: "full",
       },
     });
-    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+    await fsp.writeFile(path.join(sourceDir, "remoteclaw.json"), configContent);
 
     const pathsMod = await import("../config/paths.js");
     vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
@@ -1396,7 +1396,7 @@ describe("importCommand", () => {
         list: [{ id: "main", workspace: "~/ws" }],
       },
     });
-    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+    await fsp.writeFile(path.join(sourceDir, "remoteclaw.json"), configContent);
 
     const pathsMod = await import("../config/paths.js");
     vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
@@ -1414,7 +1414,7 @@ describe("importCommand", () => {
         list: [{ id: "main", workspace: "~/ws" }],
       },
     });
-    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+    await fsp.writeFile(path.join(sourceDir, "remoteclaw.json"), configContent);
 
     const agentDir = path.join(sourceDir, "agents", "main", "agent");
     await fsp.mkdir(agentDir, { recursive: true });
@@ -1443,7 +1443,7 @@ describe("importCommand", () => {
       gateway: { port: 18789 },
       meta: { lastTouchedVersion: "2026.2.6-3", lastTouchedAt: "2025-01-01T00:00:00.000Z" },
     });
-    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+    await fsp.writeFile(path.join(sourceDir, "remoteclaw.json"), configContent);
 
     const pathsMod = await import("../config/paths.js");
     vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
@@ -1459,11 +1459,11 @@ describe("importCommand", () => {
 
   it("strips $schema field from main config during import", async () => {
     const configContent = JSON.stringify({
-      $schema: "https://openclaw.org/config.json",
+      $schema: "https://remoteclaw.org/config.json",
       gateway: { port: 18789 },
       agents: { list: [{ id: "main", workspace: "~/ws" }] },
     });
-    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+    await fsp.writeFile(path.join(sourceDir, "remoteclaw.json"), configContent);
 
     const pathsMod = await import("../config/paths.js");
     vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
@@ -1483,7 +1483,7 @@ describe("importCommand", () => {
         list: [{ id: "main", workspace: "~/ws" }],
       },
     });
-    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+    await fsp.writeFile(path.join(sourceDir, "remoteclaw.json"), configContent);
 
     // Create auth profiles in two agent directories
     const agent1 = path.join(sourceDir, "agents", "main", "agent");
@@ -1542,7 +1542,7 @@ describe("importCommand", () => {
         list: [{ id: "main", workspace: "~/ws" }],
       },
     });
-    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+    await fsp.writeFile(path.join(sourceDir, "remoteclaw.json"), configContent);
 
     // Same profile ID in two agents with different keys
     const agent1 = path.join(sourceDir, "agents", "main", "agent");
@@ -1586,13 +1586,13 @@ describe("importCommand", () => {
   });
 
   it("handles nested directory structures with mixed file types", async () => {
-    // Create a realistic OpenClaw directory structure
+    // Create a realistic RemoteClaw directory structure
     await fsp.mkdir(path.join(sourceDir, "agents", "default", "sessions"), { recursive: true });
     await fsp.mkdir(path.join(sourceDir, "credentials"), { recursive: true });
 
     await fsp.writeFile(
-      path.join(sourceDir, "openclaw.json"),
-      '{"gateway": {"port": 18789}, "env": {"vars": {"token": "${OPENCLAW_GATEWAY_TOKEN}"}}}',
+      path.join(sourceDir, "remoteclaw.json"),
+      '{"gateway": {"port": 18789}, "env": {"vars": {"token": "${REMOTECLAW_GATEWAY_TOKEN}"}}}',
     );
     await fsp.writeFile(
       path.join(sourceDir, "agents", "default", "sessions", "sessions.json"),

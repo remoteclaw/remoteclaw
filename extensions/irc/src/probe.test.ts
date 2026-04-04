@@ -45,7 +45,7 @@ describe("probeIrc", () => {
       host: "irc.libera.chat",
       port: 6697,
       tls: true,
-      nick: "openclaw",
+      nick: "remoteclaw",
     });
     buildIrcConnectOptionsMock.mockReturnValue({ host: "irc.libera.chat" });
     const quit = vi.fn();
@@ -64,7 +64,7 @@ describe("probeIrc", () => {
         host: "irc.libera.chat",
         port: 6697,
         tls: true,
-        nick: "openclaw",
+        nick: "remoteclaw",
         latencyMs: 45,
       });
       expect(quit).toHaveBeenCalledWith("probe");
@@ -79,7 +79,7 @@ describe("probeIrc", () => {
       host: "irc.libera.chat",
       port: 6667,
       tls: false,
-      nick: "openclaw",
+      nick: "remoteclaw",
     });
     buildIrcConnectOptionsMock.mockReturnValue({ host: "irc.libera.chat" });
     connectIrcClientMock.mockRejectedValue({ code: "ECONNREFUSED" });
@@ -89,7 +89,7 @@ describe("probeIrc", () => {
       host: "irc.libera.chat",
       port: 6667,
       tls: false,
-      nick: "openclaw",
+      nick: "remoteclaw",
       error: JSON.stringify({ code: "ECONNREFUSED" }),
     });
   });

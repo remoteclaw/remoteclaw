@@ -8,10 +8,10 @@ describe("shared/assistant-identity-values", () => {
   });
 
   it("trims values and preserves strings within the limit", () => {
-    expect(coerceIdentityValue("  OpenClaw  ", 20)).toBe("OpenClaw");
+    expect(coerceIdentityValue("  RemoteClaw  ", 20)).toBe("RemoteClaw");
   });
 
   it("truncates overlong trimmed values at the exact limit", () => {
-    expect(coerceIdentityValue("  OpenClaw Assistant  ", 8)).toBe("OpenClaw");
+    expect(coerceIdentityValue("  RemoteClaw Assistant  ", 8)).toBe("RemoteClaw");
   });
 });

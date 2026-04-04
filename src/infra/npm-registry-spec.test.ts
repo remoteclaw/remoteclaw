@@ -10,18 +10,18 @@ import {
 
 describe("npm registry spec validation", () => {
   it("accepts bare package names, exact versions, and dist-tags", () => {
-    expect(validateRegistryNpmSpec("@openclaw/voice-call")).toBeNull();
-    expect(validateRegistryNpmSpec("@openclaw/voice-call@1.2.3")).toBeNull();
-    expect(validateRegistryNpmSpec("@openclaw/voice-call@1.2.3-beta.4")).toBeNull();
-    expect(validateRegistryNpmSpec("@openclaw/voice-call@latest")).toBeNull();
-    expect(validateRegistryNpmSpec("@openclaw/voice-call@beta")).toBeNull();
+    expect(validateRegistryNpmSpec("@remoteclaw/voice-call")).toBeNull();
+    expect(validateRegistryNpmSpec("@remoteclaw/voice-call@1.2.3")).toBeNull();
+    expect(validateRegistryNpmSpec("@remoteclaw/voice-call@1.2.3-beta.4")).toBeNull();
+    expect(validateRegistryNpmSpec("@remoteclaw/voice-call@latest")).toBeNull();
+    expect(validateRegistryNpmSpec("@remoteclaw/voice-call@beta")).toBeNull();
   });
 
   it("rejects semver ranges", () => {
-    expect(validateRegistryNpmSpec("@openclaw/voice-call@^1.2.3")).toContain(
+    expect(validateRegistryNpmSpec("@remoteclaw/voice-call@^1.2.3")).toContain(
       "exact version or dist-tag",
     );
-    expect(validateRegistryNpmSpec("@openclaw/voice-call@~1.2.3")).toContain(
+    expect(validateRegistryNpmSpec("@remoteclaw/voice-call@~1.2.3")).toContain(
       "exact version or dist-tag",
     );
   });
@@ -31,10 +31,10 @@ describe("npm registry spec validation", () => {
     expect(validateRegistryNpmSpec("git+ssh://github.com/openclaw/openclaw")).toContain(
       "URLs are not allowed",
     );
-    expect(validateRegistryNpmSpec("@openclaw/voice-call@")).toContain(
+    expect(validateRegistryNpmSpec("@remoteclaw/voice-call@")).toContain(
       "missing version/tag after @",
     );
-    expect(validateRegistryNpmSpec("@openclaw/voice-call@../beta")).toContain(
+    expect(validateRegistryNpmSpec("@remoteclaw/voice-call@../beta")).toContain(
       "invalid version/tag",
     );
   });
@@ -42,22 +42,22 @@ describe("npm registry spec validation", () => {
 
 describe("npm registry spec parsing helpers", () => {
   it("parses bare, tag, and exact prerelease specs", () => {
-    expect(parseRegistryNpmSpec("@openclaw/voice-call")).toEqual({
-      name: "@openclaw/voice-call",
-      raw: "@openclaw/voice-call",
+    expect(parseRegistryNpmSpec("@remoteclaw/voice-call")).toEqual({
+      name: "@remoteclaw/voice-call",
+      raw: "@remoteclaw/voice-call",
       selectorKind: "none",
       selectorIsPrerelease: false,
     });
-    expect(parseRegistryNpmSpec("@openclaw/voice-call@beta")).toEqual({
-      name: "@openclaw/voice-call",
-      raw: "@openclaw/voice-call@beta",
+    expect(parseRegistryNpmSpec("@remoteclaw/voice-call@beta")).toEqual({
+      name: "@remoteclaw/voice-call",
+      raw: "@remoteclaw/voice-call@beta",
       selector: "beta",
       selectorKind: "tag",
       selectorIsPrerelease: false,
     });
-    expect(parseRegistryNpmSpec("@openclaw/voice-call@1.2.3-beta.1")).toEqual({
-      name: "@openclaw/voice-call",
-      raw: "@openclaw/voice-call@1.2.3-beta.1",
+    expect(parseRegistryNpmSpec("@remoteclaw/voice-call@1.2.3-beta.1")).toEqual({
+      name: "@remoteclaw/voice-call",
+      raw: "@remoteclaw/voice-call@1.2.3-beta.1",
       selector: "1.2.3-beta.1",
       selectorKind: "exact-version",
       selectorIsPrerelease: true,
@@ -74,7 +74,7 @@ describe("npm registry spec parsing helpers", () => {
 
 describe("npm prerelease resolution policy", () => {
   it("blocks prerelease resolutions for bare specs", () => {
-    const spec = parseRegistryNpmSpec("@openclaw/voice-call");
+    const spec = parseRegistryNpmSpec("@remoteclaw/voice-call");
     expect(spec).not.toBeNull();
     expect(
       isPrereleaseResolutionAllowed({
@@ -85,7 +85,7 @@ describe("npm prerelease resolution policy", () => {
   });
 
   it("blocks prerelease resolutions for latest", () => {
-    const spec = parseRegistryNpmSpec("@openclaw/voice-call@latest");
+    const spec = parseRegistryNpmSpec("@remoteclaw/voice-call@latest");
     expect(spec).not.toBeNull();
     expect(
       isPrereleaseResolutionAllowed({
@@ -96,8 +96,8 @@ describe("npm prerelease resolution policy", () => {
   });
 
   it("allows prerelease resolutions when the user explicitly opted in", () => {
-    const tagSpec = parseRegistryNpmSpec("@openclaw/voice-call@beta");
-    const versionSpec = parseRegistryNpmSpec("@openclaw/voice-call@1.2.3-beta.1");
+    const tagSpec = parseRegistryNpmSpec("@remoteclaw/voice-call@beta");
+    const versionSpec = parseRegistryNpmSpec("@remoteclaw/voice-call@1.2.3-beta.1");
 
     expect(tagSpec).not.toBeNull();
     expect(versionSpec).not.toBeNull();
@@ -116,8 +116,8 @@ describe("npm prerelease resolution policy", () => {
   });
 
   it("allows stable resolutions even for bare and latest specs", () => {
-    const bareSpec = parseRegistryNpmSpec("@openclaw/voice-call");
-    const latestSpec = parseRegistryNpmSpec("@openclaw/voice-call@latest");
+    const bareSpec = parseRegistryNpmSpec("@remoteclaw/voice-call");
+    const latestSpec = parseRegistryNpmSpec("@remoteclaw/voice-call@latest");
 
     expect(bareSpec).not.toBeNull();
     expect(latestSpec).not.toBeNull();
@@ -136,8 +136,8 @@ describe("npm prerelease resolution policy", () => {
   });
 
   it("formats prerelease resolution guidance based on selector intent", () => {
-    const bareSpec = parseRegistryNpmSpec("@openclaw/voice-call");
-    const tagSpec = parseRegistryNpmSpec("@openclaw/voice-call@beta");
+    const bareSpec = parseRegistryNpmSpec("@remoteclaw/voice-call");
+    const tagSpec = parseRegistryNpmSpec("@remoteclaw/voice-call@beta");
 
     expect(bareSpec).not.toBeNull();
     expect(tagSpec).not.toBeNull();
@@ -146,7 +146,7 @@ describe("npm prerelease resolution policy", () => {
         spec: bareSpec!,
         resolvedVersion: "1.2.3-beta.1",
       }),
-    ).toContain(`Use "@openclaw/voice-call@beta"`);
+    ).toContain(`Use "@remoteclaw/voice-call@beta"`);
     expect(
       formatPrereleaseResolutionError({
         spec: tagSpec!,

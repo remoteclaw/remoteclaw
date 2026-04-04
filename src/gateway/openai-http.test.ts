@@ -140,7 +140,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     const expectInvalidRequestNoDispatch = async (messages: unknown[]) => {
       agentCommand.mockClear();
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "remoteclaw",
         messages,
       });
       expect(res.status).toBe(400);
@@ -269,7 +269,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const imageData = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAA";
         mockAgentOnce([{ text: "looks good" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "remoteclaw",
           messages: [
             {
               role: "user",
@@ -297,7 +297,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const imageData = "QUJDRA==";
         mockAgentOnce([{ text: "supports data-uri params" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "remoteclaw",
           messages: [
             {
               role: "user",
@@ -337,7 +337,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         mockAgentOnce([{ text: "I can see the image" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "remoteclaw",
           messages: [
             {
               role: "user",
@@ -363,7 +363,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         mockAgentOnce([{ text: "follow up answer" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "remoteclaw",
           messages: [
             {
               role: "user",
@@ -386,7 +386,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         mockAgentOnce([{ text: "latest image only" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "remoteclaw",
           messages: [
             {
               role: "user",
@@ -418,7 +418,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const largeMessage = "x".repeat(1_200_000);
         mockAgentOnce([{ text: "accepted" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "remoteclaw",
           messages: [{ role: "user", content: largeMessage }],
         });
         expect(res.status).toBe(200);
@@ -531,7 +531,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         mockAgentOnce([{ text: "tool follow-up ok" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "remoteclaw",
           messages: [
             {
               role: "user",

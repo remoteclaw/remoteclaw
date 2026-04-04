@@ -44,7 +44,7 @@ describe("Dockerfile", () => {
     expect(dockerfile).toContain('find "$dir" -type f -exec chmod 644 {} +');
   });
 
-  it("Docker GPG fingerprint awk uses correct quoting for OPENCLAW_SANDBOX=1 build", async () => {
+  it("Docker GPG fingerprint awk uses correct quoting for REMOTECLAW_SANDBOX=1 build", async () => {
     const dockerfile = await readFile(dockerfilePath, "utf8");
     expect(dockerfile).toContain('== "fpr" {');
     expect(dockerfile).not.toContain('\\"fpr\\"');

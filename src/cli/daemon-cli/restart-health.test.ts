@@ -222,7 +222,7 @@ describe("inspectGatewayRestart", () => {
     inspectPortUsage.mockResolvedValue({
       port: 18789,
       status: "busy",
-      listeners: [{ pid: 9100, commandLine: "openclaw-gateway" }],
+      listeners: [{ pid: 9100, commandLine: "remoteclaw-gateway" }],
       hints: [],
     });
     classifyPortListener.mockReturnValue("gateway");

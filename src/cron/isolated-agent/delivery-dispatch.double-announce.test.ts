@@ -374,7 +374,7 @@ describe("dispatchCronDelivery — double-announce guard", () => {
       .mockRejectedValueOnce(new Error("gateway timeout"))
       .mockResolvedValueOnce([{ ok: true } as never]);
 
-    vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+    vi.stubEnv("REMOTECLAW_TEST_FAST", "1");
     try {
       const params = makeBaseParams({ synthesizedText: "Retry test." });
       const state = await dispatchCronDelivery(params);

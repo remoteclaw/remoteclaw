@@ -20,8 +20,8 @@ describe("updateNpmInstalledPlugins", () => {
   it("skips integrity drift checks for unpinned npm specs during dry-run updates", async () => {
     installPluginFromNpmSpecMock.mockResolvedValue({
       ok: true,
-      pluginId: "opik-openclaw",
-      targetDir: "/tmp/opik-openclaw",
+      pluginId: "opik-remoteclaw",
+      targetDir: "/tmp/opik-remoteclaw",
       version: "0.2.6",
       extensions: ["index.ts"],
     });
@@ -30,22 +30,22 @@ describe("updateNpmInstalledPlugins", () => {
       config: {
         plugins: {
           installs: {
-            "opik-openclaw": {
+            "opik-remoteclaw": {
               source: "npm",
-              spec: "@opik/opik-openclaw",
+              spec: "@opik/opik-remoteclaw",
               integrity: "sha512-old",
-              installPath: "/tmp/opik-openclaw",
+              installPath: "/tmp/opik-remoteclaw",
             },
           },
         },
       },
-      pluginIds: ["opik-openclaw"],
+      pluginIds: ["opik-remoteclaw"],
       dryRun: true,
     });
 
     expect(installPluginFromNpmSpecMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        spec: "@opik/opik-openclaw",
+        spec: "@opik/opik-remoteclaw",
         expectedIntegrity: undefined,
       }),
     );
@@ -54,8 +54,8 @@ describe("updateNpmInstalledPlugins", () => {
   it("keeps integrity drift checks for exact-version npm specs during dry-run updates", async () => {
     installPluginFromNpmSpecMock.mockResolvedValue({
       ok: true,
-      pluginId: "opik-openclaw",
-      targetDir: "/tmp/opik-openclaw",
+      pluginId: "opik-remoteclaw",
+      targetDir: "/tmp/opik-remoteclaw",
       version: "0.2.6",
       extensions: ["index.ts"],
     });
@@ -64,22 +64,22 @@ describe("updateNpmInstalledPlugins", () => {
       config: {
         plugins: {
           installs: {
-            "opik-openclaw": {
+            "opik-remoteclaw": {
               source: "npm",
-              spec: "@opik/opik-openclaw@0.2.5",
+              spec: "@opik/opik-remoteclaw@0.2.5",
               integrity: "sha512-old",
-              installPath: "/tmp/opik-openclaw",
+              installPath: "/tmp/opik-remoteclaw",
             },
           },
         },
       },
-      pluginIds: ["opik-openclaw"],
+      pluginIds: ["opik-remoteclaw"],
       dryRun: true,
     });
 
     expect(installPluginFromNpmSpecMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        spec: "@opik/opik-openclaw@0.2.5",
+        spec: "@opik/opik-remoteclaw@0.2.5",
         expectedIntegrity: "sha512-old",
       }),
     );
@@ -89,7 +89,7 @@ describe("updateNpmInstalledPlugins", () => {
     installPluginFromNpmSpecMock.mockResolvedValue({
       ok: false,
       code: "npm_package_not_found",
-      error: "Package not found on npm: @openclaw/missing.",
+      error: "Package not found on npm: @remoteclaw/missing.",
     });
 
     const result = await updateNpmInstalledPlugins({
@@ -98,7 +98,7 @@ describe("updateNpmInstalledPlugins", () => {
           installs: {
             missing: {
               source: "npm",
-              spec: "@openclaw/missing",
+              spec: "@remoteclaw/missing",
               installPath: "/tmp/missing",
             },
           },
@@ -112,7 +112,7 @@ describe("updateNpmInstalledPlugins", () => {
       {
         pluginId: "missing",
         status: "error",
-        message: "Failed to check missing: npm package not found for @openclaw/missing.",
+        message: "Failed to check missing: npm package not found for @remoteclaw/missing.",
       },
     ]);
   });

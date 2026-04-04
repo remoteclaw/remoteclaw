@@ -49,7 +49,7 @@ describe("promptRemoteGatewayConfig", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     envSnapshot.restore();
-    delete process.env.OPENCLAW_ALLOW_INSECURE_PRIVATE_WS;
+    delete process.env.REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS;
     detectBinary.mockResolvedValue(false);
     discoverGatewayBeacons.mockResolvedValue([]);
     resolveWideAreaDiscoveryDomain.mockReturnValue(undefined);
@@ -57,7 +57,7 @@ describe("promptRemoteGatewayConfig", () => {
 
   afterEach(() => {
     envSnapshot.restore();
-    delete process.env.OPENCLAW_ALLOW_INSECURE_PRIVATE_WS;
+    delete process.env.REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS;
   });
 
   it("defaults discovered direct remote URLs to wss://", async () => {

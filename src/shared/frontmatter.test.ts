@@ -142,7 +142,7 @@ describe("shared/frontmatter", () => {
     expect(
       applyOpenClawManifestInstallCommonFields(
         { id: "keep", label: "Keep", bins: ["bun"] },
-        parsed!,
+        parsed,
       ),
     ).toEqual({
       id: "keep",

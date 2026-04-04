@@ -258,12 +258,12 @@ else
 fi
 
 echo "📦 Copying RemoteClawKit resources"
-OPENCLAWKIT_BUNDLE="$(build_path_for_arch "$PRIMARY_ARCH")/$BUILD_CONFIG/RemoteClawKit_RemoteClawKit.bundle"
-if [ -d "$OPENCLAWKIT_BUNDLE" ]; then
+REMOTECLAWKIT_BUNDLE="$(build_path_for_arch "$PRIMARY_ARCH")/$BUILD_CONFIG/RemoteClawKit_RemoteClawKit.bundle"
+if [ -d "$REMOTECLAWKIT_BUNDLE" ]; then
   rm -rf "$APP_ROOT/Contents/Resources/RemoteClawKit_RemoteClawKit.bundle"
-  cp -R "$OPENCLAWKIT_BUNDLE" "$APP_ROOT/Contents/Resources/RemoteClawKit_RemoteClawKit.bundle"
+  cp -R "$REMOTECLAWKIT_BUNDLE" "$APP_ROOT/Contents/Resources/RemoteClawKit_RemoteClawKit.bundle"
 else
-  echo "WARN: RemoteClawKit resource bundle not found at $OPENCLAWKIT_BUNDLE (continuing)" >&2
+  echo "WARN: RemoteClawKit resource bundle not found at $REMOTECLAWKIT_BUNDLE (continuing)" >&2
 fi
 
 echo "📦 Copying Textual resources"

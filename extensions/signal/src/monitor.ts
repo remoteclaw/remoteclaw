@@ -19,7 +19,10 @@ import {
   resolveChunkMode,
   resolveTextChunkLimit,
 } from "remoteclaw/plugin-sdk/reply-runtime";
-import { DEFAULT_GROUP_HISTORY_LIMIT, type HistoryEntry } from "remoteclaw/plugin-sdk/reply-runtime";
+import {
+  DEFAULT_GROUP_HISTORY_LIMIT,
+  type HistoryEntry,
+} from "remoteclaw/plugin-sdk/reply-runtime";
 import { createNonExitingRuntime, type RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import { normalizeStringEntries } from "remoteclaw/plugin-sdk/text-runtime";
 import { normalizeE164 } from "remoteclaw/plugin-sdk/text-runtime";

@@ -58,7 +58,10 @@ function setFeishuGroupPolicy(
   }) as RemoteClawConfig;
 }
 
-function setFeishuGroupAllowFrom(cfg: RemoteClawConfig, groupAllowFrom: string[]): RemoteClawConfig {
+function setFeishuGroupAllowFrom(
+  cfg: RemoteClawConfig,
+  groupAllowFrom: string[],
+): RemoteClawConfig {
   return {
     ...cfg,
     channels: {

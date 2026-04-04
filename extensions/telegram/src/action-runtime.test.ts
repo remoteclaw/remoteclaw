@@ -49,7 +49,9 @@ describe("handleTelegramAction", () => {
     emoji: "✅",
   } as const;
 
-  function reactionConfig(reactionLevel: "minimal" | "extensive" | "off" | "ack"): RemoteClawConfig {
+  function reactionConfig(
+    reactionLevel: "minimal" | "extensive" | "off" | "ack",
+  ): RemoteClawConfig {
     return {
       channels: { telegram: { botToken: "tok", reactionLevel } },
     } as RemoteClawConfig;

@@ -111,7 +111,10 @@ function toConcretePathSegments(pathPattern: string): string[] {
   return out;
 }
 
-function buildConfigForRemoteClawTarget(entry: SecretRegistryEntry, envId: string): RemoteClawConfig {
+function buildConfigForRemoteClawTarget(
+  entry: SecretRegistryEntry,
+  envId: string,
+): RemoteClawConfig {
   const config = {} as RemoteClawConfig;
   const refTargetPath =
     entry.secretShape === "sibling_ref" && entry.refPathPattern // pragma: allowlist secret

@@ -1268,7 +1268,9 @@ export type RemoteClawPluginCliContext = {
   logger: PluginLogger;
 };
 
-export type RemoteClawPluginCliRegistrar = (ctx: RemoteClawPluginCliContext) => void | Promise<void>;
+export type RemoteClawPluginCliRegistrar = (
+  ctx: RemoteClawPluginCliContext,
+) => void | Promise<void>;
 
 /** Context passed to long-lived plugin services. */
 export type RemoteClawPluginServiceContext = {

@@ -37,8 +37,13 @@ const lineConfigureAdapter = buildChannelSetupFlowAdapterFromSetupWizard({
     config: {
       listAccountIds: listLineAccountIds,
       defaultAccountId: resolveDefaultLineAccountId,
-      resolveAllowFrom: ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId?: string | null }) =>
-        resolveLineAccount({ cfg, accountId: accountId ?? undefined }).config.allowFrom,
+      resolveAllowFrom: ({
+        cfg,
+        accountId,
+      }: {
+        cfg: RemoteClawConfig;
+        accountId?: string | null;
+      }) => resolveLineAccount({ cfg, accountId: accountId ?? undefined }).config.allowFrom,
     },
     setup: lineSetupAdapter,
   } as Parameters<typeof buildChannelSetupFlowAdapterFromSetupWizard>[0]["plugin"],

@@ -1,17 +1,9 @@
-<<<<<<<< HEAD:src/channels/plugins/onboarding/helpers.test.ts
 import { describe, expect, it, vi } from "vitest";
 import {
   resolveSetupWizardAllowFromEntries,
   resolveSetupWizardGroupAllowlist,
 } from "../../../test/helpers/extensions/setup-wizard.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-|||||||| parent of 656848dcd7 (refactor: rename setup wizard surfaces):src/channels/plugins/setup-flow-helpers.test.ts
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { RemoteClawConfig } from "../../config/config.js";
-========
-import { describe, expect, it, vi } from "vitest";
-import type { RemoteClawConfig } from "../../config/config.js";
->>>>>>>> 656848dcd7 (refactor: rename setup wizard surfaces):src/channels/plugins/setup-wizard-helpers.test.ts
 import { DEFAULT_ACCOUNT_ID } from "../../routing/session-key.js";
 import {
   applySingleTokenPromptResult,

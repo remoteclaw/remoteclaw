@@ -17,7 +17,9 @@ const pluginApiMocks = vi.hoisted(() => ({
   })),
   revokeDeviceBootstrapToken: vi.fn(async () => ({ removed: true })),
   renderQrPngBase64: vi.fn(async () => "ZmFrZXBuZw=="),
-  resolvePreferredRemoteClawTmpDir: vi.fn(() => path.join(os.tmpdir(), "remoteclaw-device-pair-tests")),
+  resolvePreferredRemoteClawTmpDir: vi.fn(() =>
+    path.join(os.tmpdir(), "remoteclaw-device-pair-tests"),
+  ),
 }));
 
 vi.mock("./api.js", () => {
@@ -140,7 +142,10 @@ describe("device-pair /pair qr", () => {
   });
 
   afterEach(async () => {
-    await fs.rm(pluginApiMocks.resolvePreferredRemoteClawTmpDir(), { recursive: true, force: true });
+    await fs.rm(pluginApiMocks.resolvePreferredRemoteClawTmpDir(), {
+      recursive: true,
+      force: true,
+    });
   });
 
   it("returns an inline QR image for webchat surfaces", async () => {

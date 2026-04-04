@@ -1,16 +1,7 @@
 import type { Block, KnownBlock } from "@slack/web-api";
-<<<<<<<< HEAD:extensions/slack/src/shared-interactive.ts
-import { truncateSlackText } from "../../../extensions/slack/src/truncate.js";
-|||||||| parent of c7d31bae8a (Channels: centralize shared interactive rendering):extensions/slack/src/shared-interactive.ts
-import type { InteractiveReply } from "../../../src/interactive/payload.js";
-import { truncateSlackText } from "./truncate.js";
-========
 import { reduceInteractiveReply } from "../../../src/channels/plugins/outbound/interactive.js";
-import type { InteractiveReply } from "../../../src/interactive/payload.js";
 import { truncateSlackText } from "./truncate.js";
->>>>>>>> c7d31bae8a (Channels: centralize shared interactive rendering):extensions/slack/src/blocks-render.ts
 
-<<<<<<<< HEAD:extensions/slack/src/shared-interactive.ts
 type InteractiveButtonStyle = "primary" | "secondary" | "success" | "danger";
 
 type InteractiveReplyButton = {
@@ -49,15 +40,8 @@ type InteractiveReply = {
   blocks: InteractiveReplyBlock[];
 };
 
-const SLACK_REPLY_BUTTON_ACTION_ID = "remoteclaw:reply_button";
-const SLACK_REPLY_SELECT_ACTION_ID = "remoteclaw:reply_select";
-|||||||| parent of c7d31bae8a (Channels: centralize shared interactive rendering):extensions/slack/src/shared-interactive.ts
-const SLACK_REPLY_BUTTON_ACTION_ID = "remoteclaw:reply_button";
-const SLACK_REPLY_SELECT_ACTION_ID = "remoteclaw:reply_select";
-========
 export const SLACK_REPLY_BUTTON_ACTION_ID = "remoteclaw:reply_button";
 export const SLACK_REPLY_SELECT_ACTION_ID = "remoteclaw:reply_select";
->>>>>>>> c7d31bae8a (Channels: centralize shared interactive rendering):extensions/slack/src/blocks-render.ts
 const SLACK_SECTION_TEXT_MAX = 3000;
 const SLACK_PLAIN_TEXT_MAX = 75;
 
@@ -90,13 +74,7 @@ export function buildSlackInteractiveBlocks(interactive?: InteractiveReply): Sla
       }
       state.blocks.push({
         type: "actions",
-<<<<<<<< HEAD:extensions/slack/src/shared-interactive.ts
-        block_id: `remoteclaw_reply_buttons_${++buttonIndex}`,
-|||||||| parent of c7d31bae8a (Channels: centralize shared interactive rendering):extensions/slack/src/shared-interactive.ts
-        block_id: `remoteclaw_reply_buttons_${++buttonIndex}`,
-========
         block_id: `remoteclaw_reply_buttons_${++state.buttonIndex}`,
->>>>>>>> c7d31bae8a (Channels: centralize shared interactive rendering):extensions/slack/src/blocks-render.ts
         elements: block.buttons.map((button, choiceIndex) => ({
           type: "button",
           action_id: SLACK_REPLY_BUTTON_ACTION_ID,
@@ -115,13 +93,7 @@ export function buildSlackInteractiveBlocks(interactive?: InteractiveReply): Sla
     }
     state.blocks.push({
       type: "actions",
-<<<<<<<< HEAD:extensions/slack/src/shared-interactive.ts
-      block_id: `remoteclaw_reply_select_${++selectIndex}`,
-|||||||| parent of c7d31bae8a (Channels: centralize shared interactive rendering):extensions/slack/src/shared-interactive.ts
-      block_id: `remoteclaw_reply_select_${++selectIndex}`,
-========
       block_id: `remoteclaw_reply_select_${++state.selectIndex}`,
->>>>>>>> c7d31bae8a (Channels: centralize shared interactive rendering):extensions/slack/src/blocks-render.ts
       elements: [
         {
           type: "static_select",

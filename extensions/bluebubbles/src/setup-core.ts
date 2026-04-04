@@ -12,7 +12,10 @@ import { applyBlueBubblesConnectionConfig } from "./config-apply.js";
 
 const channel = "bluebubbles" as const;
 
-export function setBlueBubblesDmPolicy(cfg: RemoteClawConfig, dmPolicy: DmPolicy): RemoteClawConfig {
+export function setBlueBubblesDmPolicy(
+  cfg: RemoteClawConfig,
+  dmPolicy: DmPolicy,
+): RemoteClawConfig {
   return setTopLevelChannelDmPolicyWithAllowFrom({
     cfg,
     channel,

@@ -1,7 +1,10 @@
 import os from "node:os";
 import path from "node:path";
 import { normalizeAccountId as normalizeSharedAccountId } from "remoteclaw/plugin-sdk/account-id";
-import { readJsonFileWithFallback, writeJsonFileAtomically } from "remoteclaw/plugin-sdk/json-store";
+import {
+  readJsonFileWithFallback,
+  writeJsonFileAtomically,
+} from "remoteclaw/plugin-sdk/json-store";
 import { normalizeProviderId } from "../../../../src/agents/model-selection.js";
 import { resolveStateDir } from "../../../../src/config/paths.js";
 import { withFileLock } from "../../../../src/infra/file-lock.js";

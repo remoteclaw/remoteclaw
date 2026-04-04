@@ -78,7 +78,8 @@ function createPairingStoreMocks() {
 }
 
 vi.mock("remoteclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/conversation-runtime")>();
+  const actual =
+    await importOriginal<typeof import("remoteclaw/plugin-sdk/conversation-runtime")>();
   return {
     ...actual,
     ...createPairingStoreMocks(),

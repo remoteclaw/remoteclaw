@@ -1,43 +1,17 @@
 import {
   promptSecretRefForSetup,
   resolveSecretInputModeForEnvSelection,
-<<<<<<<< HEAD:src/channels/plugins/onboarding/helpers.ts
-} from "../../../commands/auth-choice.apply-helpers.js";
-import type { RemoteClawConfig } from "../../../config/config.js";
-import type { DmPolicy, GroupPolicy } from "../../../config/types.js";
-import type { SecretInput } from "../../../config/types.secrets.js";
-import { promptAccountId as promptAccountIdSdk } from "../../../plugin-sdk/onboarding.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../routing/session-key.js";
-import type { WizardPrompter } from "../../../wizard/prompts.js";
-import type { PromptAccountId, PromptAccountIdParams } from "../onboarding-types.js";
-|||||||| parent of 656848dcd7 (refactor: rename setup wizard surfaces):src/channels/plugins/setup-flow-helpers.ts
-} from "../../commands/auth-choice.apply-helpers.js";
-import type { RemoteClawConfig } from "../../config/config.js";
-import type { DmPolicy, GroupPolicy } from "../../config/types.js";
-import type { SecretInput } from "../../config/types.secrets.js";
-import { promptAccountId as promptAccountIdSdk } from "../../plugin-sdk/setup.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
-import type { WizardPrompter } from "../../wizard/prompts.js";
-import type { PromptAccountId, PromptAccountIdParams } from "./setup-flow-types.js";
-========
 } from "../../commands/auth-choice.apply-helpers.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { DmPolicy, GroupPolicy } from "../../config/types.js";
 import type { SecretInput } from "../../config/types.secrets.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
 import type { WizardPrompter } from "../../wizard/prompts.js";
->>>>>>>> 656848dcd7 (refactor: rename setup wizard surfaces):src/channels/plugins/setup-wizard-helpers.ts
 import {
   moveSingleAccountChannelSectionToDefaultAccount,
   patchScopedAccountConfig,
-<<<<<<<< HEAD:src/channels/plugins/onboarding/helpers.ts
-} from "../setup-helpers.js";
-|||||||| parent of 656848dcd7 (refactor: rename setup wizard surfaces):src/channels/plugins/setup-flow-helpers.ts
-} from "./setup-helpers.js";
-========
 } from "./setup-helpers.js";
 import type { PromptAccountId, PromptAccountIdParams } from "./setup-wizard-types.js";
->>>>>>>> 656848dcd7 (refactor: rename setup wizard surfaces):src/channels/plugins/setup-wizard-helpers.ts
 
 export const promptAccountId: PromptAccountId = async (params: PromptAccountIdParams) => {
   const existingIds = params.listAccountIds(params.cfg);

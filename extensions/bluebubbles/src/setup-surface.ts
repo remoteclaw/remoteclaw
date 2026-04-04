@@ -133,7 +133,10 @@ function resolveBlueBubblesServerUrl(cfg: RemoteClawConfig, accountId: string): 
   return resolveBlueBubblesAccount({ cfg, accountId }).config.serverUrl?.trim() || undefined;
 }
 
-function resolveBlueBubblesWebhookPath(cfg: RemoteClawConfig, accountId: string): string | undefined {
+function resolveBlueBubblesWebhookPath(
+  cfg: RemoteClawConfig,
+  accountId: string,
+): string | undefined {
   return resolveBlueBubblesAccount({ cfg, accountId }).config.webhookPath?.trim() || undefined;
 }
 

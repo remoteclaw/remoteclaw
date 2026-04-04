@@ -1,4 +1,3 @@
-import { createScopedChannelConfigAdapter } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
   listLineAccountIds,
   resolveDefaultLineAccountId,
@@ -6,6 +5,7 @@ import {
   type RemoteClawConfig,
   type ResolvedLineAccount,
 } from "openclaw/plugin-sdk/line-core";
+import { createScopedChannelConfigAdapter } from "remoteclaw/plugin-sdk/channel-config-helpers";
 
 export function normalizeLineAllowFrom(entry: string): string {
   return entry.replace(/^line:(?:user:)?/i, "");

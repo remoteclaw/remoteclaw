@@ -49,7 +49,7 @@ describe("telegram inbound contract", () => {
           username: "ada",
         },
       },
-      me: { username: "openclaw_bot" },
+      me: { username: "remoteclaw_bot" },
       getFile: async () => ({ download: async () => new Uint8Array() }),
     });
 

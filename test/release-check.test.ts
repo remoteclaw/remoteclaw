@@ -104,7 +104,9 @@ describe("collectBundledExtensionManifestErrors", () => {
           },
         },
       ]),
-    ).toEqual(["bundled extension 'broken' manifest invalid | remoteclaw.install must be an object"]);
+    ).toEqual([
+      "bundled extension 'broken' manifest invalid | remoteclaw.install must be an object",
+    ]);
   });
 });
 

@@ -83,11 +83,13 @@ describe("telegramSetupWizard.finalize", () => {
     );
 
     expect(note).toHaveBeenCalledWith(
-      expect.stringContaining('openclaw config set channels.telegram.dmPolicy "allowlist"'),
+      expect.stringContaining('remoteclaw config set channels.telegram.dmPolicy "allowlist"'),
       "Telegram DM access warning",
     );
     expect(note).toHaveBeenCalledWith(
-      expect.stringContaining(`openclaw config set channels.telegram.allowFrom '["YOUR_USER_ID"]'`),
+      expect.stringContaining(
+        `remoteclaw config set channels.telegram.allowFrom '["YOUR_USER_ID"]'`,
+      ),
       "Telegram DM access warning",
     );
   });
@@ -110,13 +112,13 @@ describe("telegramSetupWizard.finalize", () => {
 
     expect(note).toHaveBeenCalledWith(
       expect.stringContaining(
-        'openclaw config set channels.telegram.accounts.alerts.dmPolicy "allowlist"',
+        'remoteclaw config set channels.telegram.accounts.alerts.dmPolicy "allowlist"',
       ),
       "Telegram DM access warning",
     );
     expect(note).toHaveBeenCalledWith(
       expect.stringContaining(
-        `openclaw config set channels.telegram.accounts.alerts.allowFrom '["YOUR_USER_ID"]'`,
+        `remoteclaw config set channels.telegram.accounts.alerts.allowFrom '["YOUR_USER_ID"]'`,
       ),
       "Telegram DM access warning",
     );

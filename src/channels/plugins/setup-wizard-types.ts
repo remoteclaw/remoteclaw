@@ -84,13 +84,7 @@ export type ChannelOnboardingDmPolicy = {
   }) => Promise<RemoteClawConfig>;
 };
 
-<<<<<<<< HEAD:src/channels/plugins/onboarding-types.ts
 export type ChannelOnboardingAdapter = {
-|||||||| parent of 656848dcd7 (refactor: rename setup wizard surfaces):src/channels/plugins/setup-flow-types.ts
-export type ChannelSetupFlowAdapter = {
-========
-export type ChannelSetupWizardAdapter = {
->>>>>>>> 656848dcd7 (refactor: rename setup wizard surfaces):src/channels/plugins/setup-wizard-types.ts
   channel: ChannelId;
   getStatus: (ctx: ChannelOnboardingStatusContext) => Promise<ChannelOnboardingStatus>;
   configure: (ctx: ChannelOnboardingConfigureContext) => Promise<ChannelOnboardingResult>;

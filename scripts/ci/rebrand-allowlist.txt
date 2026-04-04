@@ -1,0 +1,204 @@
+# Rebrand allowlist — intentional openclaw references exempt from the leakage gate.
+#
+# FILE:path   — exempt a single file (exact match, relative to repo root)
+# FILE:dir/   — exempt an entire directory (trailing slash = prefix match)
+# pattern     — exempt any match whose line contains this substring (case-sensitive)
+#
+# Validate: bash scripts/ci/check-rebrand-leakage.sh --all
+
+# ---------------------------------------------------------------------------
+# Gate infrastructure (self-referential)
+# ---------------------------------------------------------------------------
+FILE:scripts/ci/check-rebrand-leakage.sh
+FILE:scripts/ci/rebrand-allowlist.txt
+
+# ---------------------------------------------------------------------------
+# Upstream release workflow and compat scripts
+# ---------------------------------------------------------------------------
+FILE:.github/workflows/openclaw-npm-release.yml
+FILE:scripts/openclaw-npm-release-check.ts
+FILE:test/openclaw-npm-release-check.test.ts
+FILE:test/openclaw-launcher.e2e.test.ts
+FILE:test/openshell-sandbox.e2e.test.ts
+FILE:test/plugin-npm-release.test.ts
+FILE:test/scripts/check-no-conflict-markers.test.ts
+
+# ---------------------------------------------------------------------------
+# Legal attribution and fork context
+# ---------------------------------------------------------------------------
+FILE:NOTICE.md
+FILE:REUSE.toml
+FILE:CONTRIBUTING.md
+FILE:README.md
+FILE:VISION.md
+FILE:CLAUDE.md
+FILE:docs.acp.md
+
+# ---------------------------------------------------------------------------
+# Documentation (upstream refs pervasive in migration/comparison docs)
+# ---------------------------------------------------------------------------
+FILE:docs/
+
+# ---------------------------------------------------------------------------
+# Generated reference docs
+# ---------------------------------------------------------------------------
+FILE:docs/.generated/
+
+# ---------------------------------------------------------------------------
+# Config, build, and CI infrastructure with openclaw compat
+# ---------------------------------------------------------------------------
+FILE:knip.config.ts
+FILE:vitest.config.ts
+FILE:vitest.performance-config.ts
+FILE:tsdown.config.ts
+FILE:package.json
+FILE:ui/package.json
+FILE:.gitignore
+FILE:.dockerignore
+FILE:.detect-secrets.cfg
+FILE:.secrets.baseline
+FILE:.devcontainer/devcontainer.json
+FILE:.agents/
+
+# ---------------------------------------------------------------------------
+# Native apps (upstream compat references in config/tests)
+# ---------------------------------------------------------------------------
+FILE:apps/
+
+# ---------------------------------------------------------------------------
+# Upstream repo URL (github.com/openclaw/openclaw)
+# ---------------------------------------------------------------------------
+openclaw/openclaw
+
+# ---------------------------------------------------------------------------
+# @openclaw/ compat package scope
+# ---------------------------------------------------------------------------
+@openclaw/
+
+# ---------------------------------------------------------------------------
+# Gateway protocol paths (__openclaw__/cap/, __openclaw__/canvas/)
+# ---------------------------------------------------------------------------
+__openclaw__
+
+# ---------------------------------------------------------------------------
+# OPENCLAW_ environment variables (backwards-compat namespace)
+# ---------------------------------------------------------------------------
+OPENCLAW_
+
+# ---------------------------------------------------------------------------
+# OpenClaw brand name (PascalCase — compat code, migration, import wizard)
+# ---------------------------------------------------------------------------
+OpenClaw
+
+# ---------------------------------------------------------------------------
+# Gateway URL path segments (/openclaw/ base path)
+# ---------------------------------------------------------------------------
+/openclaw
+
+# ---------------------------------------------------------------------------
+# Hyphenated identifiers (docker images, temp dirs, CLI names, plugins)
+# ---------------------------------------------------------------------------
+openclaw-
+
+# ---------------------------------------------------------------------------
+# Dot-separated identifiers (Symbols, domains, config files, extensions)
+# ---------------------------------------------------------------------------
+openclaw.
+
+# ---------------------------------------------------------------------------
+# Config directory references (.openclaw/)
+# ---------------------------------------------------------------------------
+.openclaw
+
+# ---------------------------------------------------------------------------
+# Colon-separated compat keys, DOM events, and format strings
+# ---------------------------------------------------------------------------
+openclaw:
+
+# ---------------------------------------------------------------------------
+# Plugin SDK import specifier (openclaw/plugin-sdk/*)
+# ---------------------------------------------------------------------------
+openclaw/plugin-sdk
+
+# ---------------------------------------------------------------------------
+# Single-underscore context keys (__openclaw_channel_id etc.)
+# ---------------------------------------------------------------------------
+__openclaw_
+
+# ---------------------------------------------------------------------------
+# Third-party plugin references
+# ---------------------------------------------------------------------------
+opik-openclaw
+
+# ---------------------------------------------------------------------------
+# Upstream issue references (openclaw#31186 etc.)
+# ---------------------------------------------------------------------------
+openclaw#
+
+# ---------------------------------------------------------------------------
+# Double-underscore package path variant (@openclaw__matrix)
+# ---------------------------------------------------------------------------
+@openclaw__
+
+# ---------------------------------------------------------------------------
+# Windows path separators in test fixtures
+# ---------------------------------------------------------------------------
+openclaw\
+
+# ---------------------------------------------------------------------------
+# Fork attribution in commit trailers and comments
+# ---------------------------------------------------------------------------
+Cherry-picked-from:
+
+# ---------------------------------------------------------------------------
+# Quoted compat package/binary names
+# ---------------------------------------------------------------------------
+"openclaw"
+'openclaw'
+
+# ---------------------------------------------------------------------------
+# Source files with compat references (CLI command strings, variable names,
+# config fields, import wizard, probe strings, plugin fixtures). These are
+# existing upstream artifacts; new files are NOT exempt and will be caught.
+# ---------------------------------------------------------------------------
+FILE:remoteclaw.mjs
+FILE:scripts/ci-changed-scope.mjs
+FILE:scripts/e2e/parallels-macos-smoke.sh
+FILE:scripts/lib/plugin-npm-release.ts
+FILE:scripts/lib/plugin-sdk-doc-metadata.ts
+FILE:scripts/check-plugin-sdk-exports.mjs
+FILE:scripts/test-built-plugin-singleton.mjs
+FILE:scripts/check-cli-startup-memory.mjs
+FILE:scripts/check-gateway-watch-regression.mjs
+FILE:scripts/test-hotspots.mjs
+FILE:scripts/test-parallel.mjs
+FILE:scripts/test-perf-budget.mjs
+FILE:scripts/pr
+FILE:scripts/release-check.ts
+FILE:src/acp/client.test.ts
+FILE:src/auto-reply/reply/abort-primitives.ts
+FILE:src/auto-reply/reply/route-reply.test.ts
+FILE:src/channels/plugins/helpers.test.ts
+FILE:src/cli/daemon-cli/lifecycle-core.ts
+FILE:src/cli/daemon-cli/lifecycle.test.ts
+FILE:src/cli/daemon-cli/lifecycle.ts
+FILE:src/cli/daemon-cli/status.print.test.ts
+FILE:src/cli/daemon-cli/status.print.ts
+FILE:src/commands/doctor/shared/config-mutation-state.test.ts
+FILE:src/commands/import.test.ts
+FILE:src/commands/import.ts
+FILE:src/commands/onboard-search.ts
+FILE:src/config/doc-baseline.ts
+FILE:src/entry.ts
+FILE:src/gateway/android-node.capabilities.live.test.ts
+FILE:src/gateway/live-tool-probe-utils.ts
+FILE:src/infra/fs-safe.ts
+FILE:src/infra/install-safe-path.test.ts
+FILE:src/infra/path-env.test.ts
+FILE:src/node-host/invoke-browser.test.ts
+FILE:src/plugins/marketplace.test.ts
+FILE:src/plugins/update.test.ts
+FILE:src/wizard/onboarding.ts
+FILE:extensions/line/src/channel.ts
+FILE:extensions/mattermost/src/mattermost/monitor.ts
+FILE:extensions/zalouser/src/status-issues.ts

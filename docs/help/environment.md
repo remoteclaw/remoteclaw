@@ -60,11 +60,11 @@ Env var equivalents:
 
 - `REMOTECLAW_THEME=light`: force the light TUI palette when your terminal has a light background.
 - `REMOTECLAW_THEME=dark`: force the dark TUI palette.
-- `COLORFGBG`: if your terminal exports it, OpenClaw uses the background color hint to auto-pick the TUI palette.
+- `COLORFGBG`: if your terminal exports it, RemoteClaw uses the background color hint to auto-pick the TUI palette.
 
 ## Runtime-injected env vars
 
-OpenClaw also injects context markers into spawned child processes:
+RemoteClaw also injects context markers into spawned child processes:
 
 - `REMOTECLAW_SHELL=exec`: set for commands run through the `exec` tool.
 - `REMOTECLAW_SHELL=acp`: set for ACP runtime backend process spawns (for example `acpx`).

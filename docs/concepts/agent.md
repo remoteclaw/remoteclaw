@@ -59,7 +59,7 @@ Session transcripts are stored as JSONL at:
 - `~/.remoteclaw/agents/<agentId>/sessions/<SessionId>.jsonl`
 
 The session ID is stable and chosen by RemoteClaw.
-Session folders from prior OpenClaw versions (Pi/Tau) are **not** read.
+Session folders from prior RemoteClaw versions (Pi/Tau) are **not** read.
 
 ## Steering while streaming
 

@@ -52,11 +52,11 @@ Name lookup:
 
 ## SecretRef behavior
 
-- `openclaw message` resolves supported channel SecretRefs before running the selected action.
+- `remoteclaw message` resolves supported channel SecretRefs before running the selected action.
 - Resolution is scoped to the active action target when possible:
   - channel-scoped when `--channel` is set (or inferred from prefixed targets like `discord:...`)
   - account-scoped when `--account` is set (channel globals + selected account surfaces)
-  - when `--account` is omitted, OpenClaw does not force a `default` account SecretRef scope
+  - when `--account` is omitted, RemoteClaw does not force a `default` account SecretRef scope
 - Unresolved SecretRefs on unrelated channels do not block a targeted message action.
 - If the selected channel/account SecretRef is unresolved, the command fails closed for that action.
 
@@ -273,6 +273,6 @@ remoteclaw message send --channel telegram --target @mychat --message "Choose:" 
 Send a Telegram image as a document to avoid compression:
 
 ```bash
-openclaw message send --channel telegram --target @mychat \
+remoteclaw message send --channel telegram --target @mychat \
   --media ./diagram.png --force-document
 ```

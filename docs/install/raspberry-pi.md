@@ -128,7 +128,7 @@ Run a persistent, always-on RemoteClaw Gateway on a Raspberry Pi. Since the Pi i
 grep -q 'NODE_COMPILE_CACHE=/var/tmp/remoteclaw-compile-cache' ~/.bashrc || cat >> ~/.bashrc <<'EOF' # pragma: allowlist secret
 export NODE_COMPILE_CACHE=/var/tmp/remoteclaw-compile-cache
 mkdir -p /var/tmp/remoteclaw-compile-cache
-export OPENCLAW_NO_RESPAWN=1
+export REMOTECLAW_NO_RESPAWN=1
 EOF
 source ~/.bashrc
 ```

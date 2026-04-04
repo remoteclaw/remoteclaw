@@ -265,7 +265,7 @@ curl "https://api.telegram.org/bot<bot_token>/getUpdates"
 
     Preview streaming is separate from block streaming. When block streaming is explicitly enabled for Telegram, RemoteClaw skips the preview stream to avoid double-streaming.
 
-    If native draft transport is unavailable/rejected, OpenClaw automatically falls back to `sendMessage` + `editMessageText`.
+    If native draft transport is unavailable/rejected, RemoteClaw automatically falls back to `sendMessage` + `editMessageText`.
 
     Telegram-only reasoning stream:
 
@@ -512,7 +512,7 @@ curl "https://api.telegram.org/bot<bot_token>/getUpdates"
                 agent: "codex",
                 backend: "acpx",
                 mode: "persistent",
-                cwd: "/workspace/openclaw",
+                cwd: "/workspace/remoteclaw",
               },
             },
           },
@@ -551,7 +551,7 @@ curl "https://api.telegram.org/bot<bot_token>/getUpdates"
 
     - `/acp spawn <agent> --thread here|auto` can bind the current Telegram topic to a new ACP session.
     - Follow-up topic messages route to the bound ACP session directly (no `/acp steer` required).
-    - OpenClaw pins the spawn confirmation message in-topic after a successful bind.
+    - RemoteClaw pins the spawn confirmation message in-topic after a successful bind.
     - Requires `channels.telegram.threadBindings.spawnAcpSessions=true`.
 
     Template context includes:
@@ -884,7 +884,7 @@ Primary reference:
 - `channels.telegram.groupAllowFrom`: group sender allowlist (numeric Telegram user IDs). `remoteclaw doctor --fix` can resolve legacy `@username` entries to IDs. Non-numeric entries are ignored at auth time. Group auth does not use DM pairing-store fallback (`2026.2.25+`).
 - Multi-account precedence:
   - When two or more account IDs are configured, set `channels.telegram.defaultAccount` (or include `channels.telegram.accounts.default`) to make default routing explicit.
-  - If neither is set, OpenClaw falls back to the first normalized account ID and `openclaw doctor` warns.
+  - If neither is set, RemoteClaw falls back to the first normalized account ID and `remoteclaw doctor` warns.
   - `channels.telegram.accounts.default.allowFrom` and `channels.telegram.accounts.default.groupAllowFrom` apply only to the `default` account.
   - Named accounts inherit `channels.telegram.allowFrom` and `channels.telegram.groupAllowFrom` when account-level values are unset.
   - Named accounts do not inherit `channels.telegram.accounts.default.allowFrom` / `groupAllowFrom`.

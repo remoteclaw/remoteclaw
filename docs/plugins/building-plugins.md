@@ -1,22 +1,22 @@
 ---
 title: "Building Plugins"
 sidebarTitle: "Building Plugins"
-summary: "Step-by-step guide for creating OpenClaw plugins with any combination of capabilities"
+summary: "Step-by-step guide for creating RemoteClaw plugins with any combination of capabilities"
 read_when:
-  - You want to create a new OpenClaw plugin
+  - You want to create a new RemoteClaw plugin
   - You need to understand the plugin SDK import patterns
-  - You are adding a new channel, provider, tool, or other capability to OpenClaw
+  - You are adding a new channel, provider, tool, or other capability to RemoteClaw
 ---
 
 # Building Plugins
 
-Plugins extend OpenClaw with new capabilities: channels, model providers, speech,
+Plugins extend RemoteClaw with new capabilities: channels, model providers, speech,
 image generation, web search, agent tools, or any combination. A single plugin
 can register multiple capabilities.
 
-OpenClaw encourages **external plugin development**. You do not need to add your
-plugin to the OpenClaw repository. Publish your plugin on npm, and users install
-it with `openclaw plugins install <npm-spec>`. OpenClaw also maintains a set of
+RemoteClaw encourages **external plugin development**. You do not need to add your
+plugin to the RemoteClaw repository. Publish your plugin on npm, and users install
+it with `remoteclaw plugins install <npm-spec>`. RemoteClaw also maintains a set of
 core plugins in-repo, but the plugin system is designed for independent ownership
 and distribution.
 
@@ -24,12 +24,12 @@ and distribution.
 
 - Node >= 22 and a package manager (npm or pnpm)
 - Familiarity with TypeScript (ESM)
-- For in-repo plugins: OpenClaw repository cloned and `pnpm install` done
+- For in-repo plugins: RemoteClaw repository cloned and `pnpm install` done
 
 ## Plugin capabilities
 
 A plugin can register one or more capabilities. The capability you register
-determines what your plugin provides to OpenClaw:
+determines what your plugin provides to RemoteClaw:
 
 | Capability          | Registration method                           | What it adds                   |
 | ------------------- | --------------------------------------------- | ------------------------------ |
@@ -50,8 +50,8 @@ Plugins follow this layout (whether in-repo or standalone):
 
 ```
 my-plugin/
-├── package.json          # npm metadata + openclaw config
-├── openclaw.plugin.json  # Plugin manifest
+├── package.json          # npm metadata + remoteclaw config
+├── remoteclaw.plugin.json  # Plugin manifest
 ├── index.ts              # Entry point
 ├── setup-entry.ts        # Setup wizard (optional)
 ├── api.ts                # Public exports (optional)
@@ -66,17 +66,17 @@ my-plugin/
 
 <Steps>
   <Step title="Create the package">
-    Create `package.json` with the `openclaw` metadata block. The structure
+    Create `package.json` with the `remoteclaw` metadata block. The structure
     depends on what capabilities your plugin provides.
 
     **Channel plugin example:**
 
     ```json
     {
-      "name": "@myorg/openclaw-my-channel",
+      "name": "@myorg/remoteclaw-my-channel",
       "version": "1.0.0",
       "type": "module",
-      "openclaw": {
+      "remoteclaw": {
         "extensions": ["./index.ts"],
         "channel": {
           "id": "my-channel",
@@ -91,17 +91,17 @@ my-plugin/
 
     ```json
     {
-      "name": "@myorg/openclaw-my-provider",
+      "name": "@myorg/remoteclaw-my-provider",
       "version": "1.0.0",
       "type": "module",
-      "openclaw": {
+      "remoteclaw": {
         "extensions": ["./index.ts"],
         "providers": ["my-provider"]
       }
     }
     ```
 
-    The `openclaw` field tells the plugin system what your plugin provides.
+    The `remoteclaw` field tells the plugin system what your plugin provides.
     A plugin can declare both `channel` and `providers` if it provides multiple
     capabilities.
 
@@ -118,7 +118,7 @@ my-plugin/
     export default defineChannelPluginEntry({
       id: "my-channel",
       name: "My Channel",
-      description: "Connects OpenClaw to My Channel",
+      description: "Connects RemoteClaw to My Channel",
       plugin: {
         // Channel adapter implementation
       },
@@ -221,14 +221,14 @@ my-plugin/
   </Step>
 
   <Step title="Add a plugin manifest">
-    Create `openclaw.plugin.json` in your plugin root:
+    Create `remoteclaw.plugin.json` in your plugin root:
 
     ```json
     {
       "id": "my-plugin",
       "kind": "provider",
       "name": "My Plugin",
-      "description": "Adds My Provider to OpenClaw"
+      "description": "Adds My Provider to RemoteClaw"
     }
     ```
 
@@ -241,7 +241,7 @@ my-plugin/
   <Step title="Test your plugin">
     **External plugins:** run your own test suite against the plugin SDK contracts.
 
-    **In-repo plugins:** OpenClaw runs contract tests against all registered plugins:
+    **In-repo plugins:** RemoteClaw runs contract tests against all registered plugins:
 
     ```bash
     pnpm test:contracts:channels   # channel plugins
@@ -261,7 +261,7 @@ my-plugin/
 
     ```bash
     npm publish
-    openclaw plugins install @myorg/openclaw-my-plugin
+    remoteclaw plugins install @myorg/remoteclaw-my-plugin
     ```
 
     **In-repo plugins:** place the plugin under `extensions/` and it is
@@ -270,8 +270,8 @@ my-plugin/
     Users can browse and install community plugins with:
 
     ```bash
-    openclaw plugins search <query>
-    openclaw plugins install <npm-spec>
+    remoteclaw plugins search <query>
+    remoteclaw plugins install <npm-spec>
     ```
 
   </Step>
@@ -279,7 +279,7 @@ my-plugin/
 
 ## Lint enforcement (in-repo plugins)
 
-Three scripts enforce SDK boundaries for plugins in the OpenClaw repository:
+Three scripts enforce SDK boundaries for plugins in the RemoteClaw repository:
 
 1. **No monolithic root imports** — `remoteclaw/plugin-sdk` root is rejected
 2. **No direct src/ imports** — plugins cannot import `../../src/` directly
@@ -292,11 +292,11 @@ patterns is strongly recommended.
 
 ## Pre-submission checklist
 
-<Check>**package.json** has correct `openclaw` metadata</Check>
+<Check>**package.json** has correct `remoteclaw` metadata</Check>
 <Check>Entry point uses `defineChannelPluginEntry` or `definePluginEntry`</Check>
 <Check>All imports use focused `plugin-sdk/\<subpath\>` paths</Check>
 <Check>Internal imports use local modules, not SDK self-imports</Check>
-<Check>`openclaw.plugin.json` manifest is present and valid</Check>
+<Check>`remoteclaw.plugin.json` manifest is present and valid</Check>
 <Check>Tests pass</Check>
 <Check>`pnpm check` passes (in-repo plugins)</Check>
 

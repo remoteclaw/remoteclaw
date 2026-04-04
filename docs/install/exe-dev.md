@@ -18,7 +18,7 @@ This page assumes exe.dev's default **exeuntu** image. If you picked a different
 2. Fill in your auth key/token as needed
 3. Click on "Agent" next to your VM and wait for Shelley to finish provisioning
 4. Open `https://<vm-name>.exe.xyz/` and paste your gateway token to authenticate
-5. Approve any pending device pairing requests with `openclaw devices approve <requestId>`
+5. Approve any pending device pairing requests with `remoteclaw devices approve <requestId>`
 
 ## What you need
 

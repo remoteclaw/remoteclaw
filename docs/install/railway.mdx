@@ -1,12 +1,12 @@
 ---
-summary: "Deploy OpenClaw on Railway with one-click template"
+summary: "Deploy RemoteClaw on Railway with one-click template"
 read_when:
-  - Deploying OpenClaw to Railway
+  - Deploying RemoteClaw to Railway
   - You want a one-click cloud deploy with browser-based setup
 title: Deploy on Railway
 ---
 
-Deploy OpenClaw on Railway with a one-click template and finish setup in your browser.
+Deploy RemoteClaw on Railway with a one-click template and finish setup in your browser.
 This is the easiest “no terminal on the server” path: Railway runs the Gateway for you,
 and you configure everything via the `/setup` web wizard.
 
@@ -34,11 +34,11 @@ Railway will either:
 Then open:
 
 - `https://<your-railway-domain>/setup` — web setup (password protected)
-- `https://<your-railway-domain>/openclaw` — Control UI
+- `https://<your-railway-domain>/remoteclaw` — Control UI
 
 ## What you get
 
-- Hosted OpenClaw Gateway + Control UI
+- Hosted RemoteClaw Gateway + Control UI
 - Web setup at `/setup` (no terminal commands)
 - Persistent storage via Railway Volume (`/data`) so config/credentials/workspace survive redeploys
 - Backup export at `/setup/export` to migrate off Railway later
@@ -63,9 +63,9 @@ Set these variables on the service:
 
 - `SETUP_PASSWORD` (required)
 - `PORT=8080` (required — must match the port in Public Networking)
-- `OPENCLAW_STATE_DIR=/data/.openclaw` (recommended)
-- `OPENCLAW_WORKSPACE_DIR=/data/workspace` (recommended)
-- `OPENCLAW_GATEWAY_TOKEN` (recommended; treat as an admin secret)
+- `REMOTECLAW_STATE_DIR=/data/.remoteclaw` (recommended)
+- `REMOTECLAW_WORKSPACE_DIR=/data/workspace` (recommended)
+- `REMOTECLAW_GATEWAY_TOKEN` (recommended; treat as an admin secret)
 
 ## Setup flow
 
@@ -91,10 +91,10 @@ Download a backup at:
 
 - `https://<your-railway-domain>/setup/export`
 
-This exports your OpenClaw state + workspace so you can migrate to another host without losing config or memory.
+This exports your RemoteClaw state + workspace so you can migrate to another host without losing config or memory.
 
 ## Next steps
 
 - Set up messaging channels: [Channels](/channels)
 - Configure the Gateway: [Gateway configuration](/gateway/configuration)
-- Keep OpenClaw up to date: [Updating](/install/updating)
+- Keep RemoteClaw up to date: [Updating](/install/updating)

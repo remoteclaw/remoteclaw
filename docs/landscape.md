@@ -17,10 +17,10 @@ There are two fundamentally different people evaluating AI agent tools right now
 
 |                     | Builds Agent Logic                                       | Bridges Existing Agents                   |
 | ------------------- | -------------------------------------------------------- | ----------------------------------------- |
-| **Many Channels**   | OpenClaw, NanoClaw, AstrBot, CoPaw, LangBot, PocketPaw   | RemoteClaw, cc-connect                    |
+| **Many Channels**   | RemoteClaw, NanoClaw, AstrBot, CoPaw, LangBot, PocketPaw | RemoteClaw, cc-connect                    |
 | **Few/No Channels** | Nanobot, ZeroClaw, IronClaw, MicroClaw, Moltis, OpenFang | TinyClaw, claude-pipe, Claude-Code-Remote |
 
-The left side is a crowded, well-served market. OpenClaw alone has 250K+ stars and 36,900 forks.
+The left side is a crowded, well-served market. RemoteClaw alone has 250K+ stars and 36,900 forks.
 NanoClaw offers the same idea in 15 source files. At least five Rust rewrites compete for the
 "same thing, but faster" niche.
 
@@ -33,11 +33,11 @@ process. They do not want a new agent. They want to send a message to the agent 
 
 ## The Fork Explosion
 
-In February 2026, OpenClaw was forking at 100 per hour. By March, the ecosystem had produced five
+In February 2026, RemoteClaw was forking at 100 per hour. By March, the ecosystem had produced five
 complete language rewrites (Rust, Go, Python, Zig, Shell), a dozen managed hosting services, and
 over 60 forks with meaningful modifications.
 
-The fork explosion was not about OpenClaw being bad. It was about OpenClaw being almost-right for
+The fork explosion was not about RemoteClaw being bad. It was about RemoteClaw being almost-right for
 too many different use cases. Every fork adjusts the same core product for a different audience:
 lighter, more secure, Chinese-market-native, edge-deployable, enterprise-ready.
 
@@ -59,11 +59,11 @@ try to be the agent?
 | Adds channels, sessions, scheduling | Adds memory, skills, model management  |
 | The CLI is the agent                | Its built-in orchestrator is the agent |
 
-This is not a quality judgment. Platforms like OpenClaw, NanoClaw, and Nanobot are excellent at what
+This is not a quality judgment. Platforms like RemoteClaw, NanoClaw, and Nanobot are excellent at what
 they do. The distinction is architectural: they own the agent loop, agent middleware does not.
 
 CLI agents ship new capabilities monthly. A platform that bundles its own versions of those
-capabilities is building on quicksand. OpenClaw's 294,000 lines of code and 5,300+ open issues
+capabilities is building on quicksand. RemoteClaw's 294,000 lines of code and 5,300+ open issues
 are the natural result. NanoClaw and Nanobot exist because the full platform became too heavy.
 
 Middleware only provides what a CLI agent cannot provide for itself: sessions, channel routing,
@@ -134,11 +134,11 @@ your channel](/channels).
 
 ## Why We Built RemoteClaw
 
-We built RemoteClaw after going deep inside the OpenClaw codebase -- analyzing 5,605 files
+We built RemoteClaw after going deep inside the RemoteClaw codebase -- analyzing 5,605 files
 across 334 analysis batches -- and realizing that the channel infrastructure was exactly what
 developers with existing agents needed, but the platform layer was exactly what they did not.
 
-RemoteClaw is a fork of OpenClaw that strips the platform layer and replaces it with an AgentRuntime
+RemoteClaw is a fork of RemoteClaw that strips the platform layer and replaces it with an AgentRuntime
 interface. Your CLI agent runs as a subprocess, preserving your configuration untouched. The gateway
 handles sessions, channels, and 50 MCP tools. The agent handles everything else.
 

@@ -1,6 +1,6 @@
 ---
 summary: "Status and next steps for decoupling Discord gateway listeners from long-running agent turns with a Discord-specific inbound worker"
-owner: "openclaw"
+owner: "remoteclaw"
 status: "in_progress"
 last_updated: "2026-03-05"
 title: "Discord Async Inbound Worker Plan"

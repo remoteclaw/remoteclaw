@@ -127,7 +127,7 @@ function extractTokenFromHeaders(req: IncomingMessage): string | undefined {
   const explicit =
     headerValue(req.headers["x-synology-token"]) ??
     headerValue(req.headers["x-webhook-token"]) ??
-    headerValue(req.headers["x-openclaw-token"]);
+    headerValue(req.headers["x-remoteclaw-token"]);
   if (explicit) return explicit;
 
   const auth = headerValue(req.headers.authorization);

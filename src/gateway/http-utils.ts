@@ -96,7 +96,7 @@ export function resolveGatewayRequestContext(params: {
   });
 
   const messageChannel = params.useMessageChannelHeader
-    ? (normalizeMessageChannel(getHeader(params.req, "x-openclaw-message-channel")) ??
+    ? (normalizeMessageChannel(getHeader(params.req, "x-remoteclaw-message-channel")) ??
       params.defaultMessageChannel)
     : params.defaultMessageChannel;
 

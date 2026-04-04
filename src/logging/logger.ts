@@ -150,7 +150,7 @@ export function isFileLogLevelEnabled(level: LogLevel): boolean {
 
 function buildLogger(settings: ResolvedSettings): TsLogger<LogObj> {
   const logger = new TsLogger<LogObj>({
-    name: "openclaw",
+    name: "remoteclaw",
     minLevel: levelToMinLevel(settings.level),
     type: "hidden", // no ansi formatting
   });

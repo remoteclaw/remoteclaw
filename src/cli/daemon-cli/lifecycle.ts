@@ -81,7 +81,7 @@ function isGatewayArgv(args: string[]): boolean {
   const entryCandidates = [
     "dist/index.js",
     "dist/entry.js",
-    "openclaw.mjs",
+    "remoteclaw.mjs",
     "scripts/run-node.mjs",
     "src/index.ts",
   ];
@@ -90,7 +90,7 @@ function isGatewayArgv(args: string[]): boolean {
   }
 
   const exe = stripExecutableExtension(normalized[0] ?? "");
-  return exe.endsWith("/openclaw") || exe === "openclaw" || exe.endsWith("/openclaw-gateway");
+  return exe.endsWith("/remoteclaw") || exe === "remoteclaw" || exe.endsWith("/remoteclaw-gateway");
 }
 
 function readGatewayProcessArgsSync(pid: number): string[] | null {
@@ -161,8 +161,8 @@ async function assertUnmanagedGatewayRestartEnabled(port: number): Promise<void>
   const probe = await probeGateway({
     url: `ws://127.0.0.1:${port}`,
     auth: {
-      token: process.env.OPENCLAW_GATEWAY_TOKEN?.trim() || undefined,
-      password: process.env.OPENCLAW_GATEWAY_PASSWORD?.trim() || undefined,
+      token: process.env.REMOTECLAW_GATEWAY_TOKEN?.trim() || undefined,
+      password: process.env.REMOTECLAW_GATEWAY_PASSWORD?.trim() || undefined,
     },
     timeoutMs: 1_000,
   }).catch(() => null);
@@ -205,7 +205,7 @@ async function restartGatewayWithoutServiceManager(port: number) {
   }
   if (pids.length > 1) {
     throw new Error(
-      `multiple gateway processes are listening on port ${port}: ${formatGatewayPidList(pids)}; use "openclaw gateway status --deep" before retrying restart`,
+      `multiple gateway processes are listening on port ${port}: ${formatGatewayPidList(pids)}; use "remoteclaw gateway status --deep" before retrying restart`,
     );
   }
   signalGatewayPid(pids[0], "SIGUSR1");
@@ -299,8 +299,8 @@ export async function runDaemonRestart(opts: DaemonLifecycleOptions = {}): Promi
         }
 
         fail(`Gateway restart timed out after ${restartWaitSeconds}s waiting for health checks.`, [
-          formatCliCommand("openclaw gateway status --deep"),
-          formatCliCommand("openclaw doctor"),
+          formatCliCommand("remoteclaw gateway status --deep"),
+          formatCliCommand("remoteclaw doctor"),
         ]);
       }
 

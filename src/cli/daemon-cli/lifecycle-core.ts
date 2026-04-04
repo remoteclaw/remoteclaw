@@ -217,7 +217,7 @@ export async function runServiceStart(params: {
     const configError = await getConfigValidationError();
     if (configError) {
       fail(
-        `${params.serviceNoun} aborted: config is invalid.\n${configError}\nFix the config and retry, or run "openclaw doctor" to repair.`,
+        `${params.serviceNoun} aborted: config is invalid.\n${configError}\nFix the config and retry, or run "remoteclaw doctor" to repair.`,
       );
       return;
     }
@@ -370,7 +370,7 @@ export async function runServiceRestart(params: {
     const configError = await getConfigValidationError();
     if (configError) {
       fail(
-        `${params.serviceNoun} aborted: config is invalid.\n${configError}\nFix the config and retry, or run "openclaw doctor" to repair.`,
+        `${params.serviceNoun} aborted: config is invalid.\n${configError}\nFix the config and retry, or run "remoteclaw doctor" to repair.`,
       );
       return false;
     }

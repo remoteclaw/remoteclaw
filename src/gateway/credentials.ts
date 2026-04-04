@@ -34,7 +34,7 @@ export class GatewaySecretRefUnavailableError extends Error {
     super(
       [
         `${path} is configured as a secret reference but is unavailable in this command path.`,
-        "Fix: set OPENCLAW_GATEWAY_TOKEN/OPENCLAW_GATEWAY_PASSWORD, pass explicit --token/--password,",
+        "Fix: set REMOTECLAW_GATEWAY_TOKEN/REMOTECLAW_GATEWAY_PASSWORD, pass explicit --token/--password,",
         "or run a gateway command path that resolves secret references before credential selection.",
       ].join("\n"),
     );
@@ -66,7 +66,7 @@ export function trimToUndefined(value: unknown): string | undefined {
 
 /**
  * Like trimToUndefined but also rejects unresolved env var placeholders (e.g. `${VAR}`).
- * This prevents literal placeholder strings like `${OPENCLAW_GATEWAY_TOKEN}` from being
+ * This prevents literal placeholder strings like `${REMOTECLAW_GATEWAY_TOKEN}` from being
  * accepted as valid credentials when the referenced env var is missing.
  * Note: legitimate credential values containing literal `${UPPER_CASE}` patterns will
  * also be rejected, but this is an extremely unlikely edge case.
@@ -112,9 +112,13 @@ export function readGatewayTokenEnv(
   env: NodeJS.ProcessEnv = process.env,
   includeLegacyEnv = true,
 ): string | undefined {
-  const primary = trimToUndefined(env.OPENCLAW_GATEWAY_TOKEN);
+  const primary = trimToUndefined(env.REMOTECLAW_GATEWAY_TOKEN);
   if (primary) {
     return primary;
+  }
+  const legacy = trimToUndefined(env.OPENCLAW_GATEWAY_TOKEN);
+  if (legacy) {
+    return legacy;
   }
   if (!includeLegacyEnv) {
     return undefined;
@@ -126,9 +130,13 @@ export function readGatewayPasswordEnv(
   env: NodeJS.ProcessEnv = process.env,
   includeLegacyEnv = true,
 ): string | undefined {
-  const primary = trimToUndefined(env.OPENCLAW_GATEWAY_PASSWORD);
+  const primary = trimToUndefined(env.REMOTECLAW_GATEWAY_PASSWORD);
   if (primary) {
     return primary;
+  }
+  const legacy = trimToUndefined(env.OPENCLAW_GATEWAY_PASSWORD);
+  if (legacy) {
+    return legacy;
   }
   if (!includeLegacyEnv) {
     return undefined;
@@ -254,7 +262,7 @@ export function resolveGatewayCredentialsFromConfig(params: {
 
   const localTokenPrecedence =
     params.localTokenPrecedence ??
-    (env.OPENCLAW_SERVICE_KIND === "gateway" ? "config-first" : "env-first");
+    (env.REMOTECLAW_SERVICE_KIND === "gateway" ? "config-first" : "env-first");
   const localPasswordPrecedence = params.localPasswordPrecedence ?? "env-first";
 
   if (mode === "local") {

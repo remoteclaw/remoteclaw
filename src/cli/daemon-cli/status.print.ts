@@ -207,7 +207,7 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
     );
     defaultRuntime.error(
       errorText(
-        `Fix: run ${formatCliCommand("openclaw gateway restart")} and re-check with ${formatCliCommand("openclaw gateway status --deep")}.`,
+        `Fix: run ${formatCliCommand("remoteclaw gateway restart")} and re-check with ${formatCliCommand("remoteclaw gateway status --deep")}.`,
       ),
     );
     spacer();

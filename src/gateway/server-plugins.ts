@@ -9,7 +9,7 @@ import type { GatewayRequestContext, GatewayRequestHandler } from "./server-meth
 // plugin subagent dispatch can use it as a fallback.
 
 const FALLBACK_GATEWAY_CONTEXT_STATE_KEY: unique symbol = Symbol.for(
-  "openclaw.fallbackGatewayContextState",
+  "remoteclaw.fallbackGatewayContextState",
 );
 
 type FallbackGatewayContextState = {

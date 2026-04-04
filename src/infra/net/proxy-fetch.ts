@@ -1,7 +1,7 @@
 import { EnvHttpProxyAgent, ProxyAgent, fetch as undiciFetch } from "undici";
 import { logWarn } from "../../logger.js";
 
-export const PROXY_FETCH_PROXY_URL = Symbol.for("openclaw.proxyFetch.proxyUrl");
+export const PROXY_FETCH_PROXY_URL = Symbol.for("remoteclaw.proxyFetch.proxyUrl");
 type ProxyFetchWithMetadata = typeof fetch & {
   [PROXY_FETCH_PROXY_URL]?: string;
 };

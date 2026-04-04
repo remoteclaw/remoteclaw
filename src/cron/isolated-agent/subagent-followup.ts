@@ -3,7 +3,7 @@ import { readLatestAssistantReply } from "../../agents/tools/agent-step.js";
 import { SILENT_REPLY_TOKEN } from "../../auto-reply/tokens.js";
 import { callGateway } from "../../gateway/call.js";
 
-const FAST_TEST_MODE = process.env.OPENCLAW_TEST_FAST === "1";
+const FAST_TEST_MODE = process.env.REMOTECLAW_TEST_FAST === "1";
 
 const CRON_SUBAGENT_WAIT_MIN_MS = FAST_TEST_MODE ? 10 : 30_000;
 const CRON_SUBAGENT_FINAL_REPLY_GRACE_MS = FAST_TEST_MODE ? 50 : 5_000;

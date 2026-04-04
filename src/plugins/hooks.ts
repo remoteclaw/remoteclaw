@@ -109,7 +109,7 @@ function getHooksForName<K extends PluginHookName>(
 export function createHookRunner(registry: PluginRegistry, options: HookRunnerOptions = {}) {
   const logger = options.logger;
   const catchErrors = options.catchErrors ?? true;
-  const hookCheckpointLogsEnabled = process.env.OPENCLAW_PLUGIN_CHECKPOINTS === "1";
+  const hookCheckpointLogsEnabled = process.env.REMOTECLAW_PLUGIN_CHECKPOINTS === "1";
 
   const mergeSubagentSpawningResult = (
     acc: PluginHookSubagentSpawningResult | undefined,

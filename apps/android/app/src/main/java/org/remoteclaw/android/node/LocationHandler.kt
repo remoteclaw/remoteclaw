@@ -36,7 +36,7 @@ class LocationHandler(
     if (!isForeground()) {
       return GatewaySession.InvokeResult.error(
         code = "LOCATION_BACKGROUND_UNAVAILABLE",
-        message = "LOCATION_BACKGROUND_UNAVAILABLE: location requires OpenClaw to stay open",
+        message = "LOCATION_BACKGROUND_UNAVAILABLE: location requires RemoteClaw to stay open",
       )
     }
     if (!hasFineLocationPermission() && !hasCoarseLocationPermission()) {

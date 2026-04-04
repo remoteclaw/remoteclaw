@@ -65,7 +65,7 @@ struct SettingsTab: View {
                     DisclosureGroup(isExpanded: self.$gatewayExpanded) {
                         if !self.isGatewayConnected {
                             Text(
-                                "1. Open a chat with your OpenClaw agent and send /pair\n"
+                                "1. Open a chat with your RemoteClaw agent and send /pair\n"
                                     + "2. Copy the setup code it returns\n"
                                     + "3. Paste here and tap Connect\n"
                                     + "4. Back in that chat, run /pair approve")
@@ -896,7 +896,7 @@ struct SettingsTab: View {
         guard !trimmed.isEmpty else { return nil }
         let lower = trimmed.lowercased()
         if lower.contains("pairing required") {
-            return "Pairing required. Go back to your OpenClaw chat and run /pair approve, then tap Connect again."
+            return "Pairing required. Go back to your RemoteClaw chat and run /pair approve, then tap Connect again."
         }
         if lower.contains("device nonce required") || lower.contains("device nonce mismatch") {
             return "Secure handshake failed. Make sure Tailscale is connected, then tap Connect again."

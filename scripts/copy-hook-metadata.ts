@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
-const verbose = process.env.OPENCLAW_BUILD_VERBOSE === "1";
+const verbose = process.env.REMOTECLAW_BUILD_VERBOSE === "1";
 
 const srcBundled = path.join(projectRoot, "src", "hooks", "bundled");
 const distBundled = path.join(projectRoot, "dist", "bundled");

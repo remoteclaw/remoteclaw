@@ -183,13 +183,13 @@ class GatewaySession(
           timeoutMs = timeoutMs,
         )
       } catch (err: Throwable) {
-        Log.w("OpenClawGateway", "node.canvas.capability.refresh failed: ${err.message ?: err::class.java.simpleName}")
+        Log.w("RemoteClawGateway", "node.canvas.capability.refresh failed: ${err.message ?: err::class.java.simpleName}")
         return false
       }
     if (!response.ok) {
       val err = response.error
       Log.w(
-        "OpenClawGateway",
+        "RemoteClawGateway",
         "node.canvas.capability.refresh rejected: ${err?.code ?: "UNAVAILABLE"}: ${err?.message ?: "request failed"}",
       )
       return false
@@ -197,17 +197,17 @@ class GatewaySession(
     val payloadObj = response.payloadJson?.let(::parseJsonOrNull)?.asObjectOrNull()
     val refreshedCapability = payloadObj?.get("canvasCapability").asStringOrNull()?.trim().orEmpty()
     if (refreshedCapability.isEmpty()) {
-      Log.w("OpenClawGateway", "node.canvas.capability.refresh missing canvasCapability")
+      Log.w("RemoteClawGateway", "node.canvas.capability.refresh missing canvasCapability")
       return false
     }
     val scopedCanvasHostUrl = canvasHostUrl?.trim().orEmpty()
     if (scopedCanvasHostUrl.isEmpty()) {
-      Log.w("OpenClawGateway", "node.canvas.capability.refresh missing local canvasHostUrl")
+      Log.w("RemoteClawGateway", "node.canvas.capability.refresh missing local canvasHostUrl")
       return false
     }
     val refreshedUrl = replaceCanvasCapabilityInScopedHostUrl(scopedCanvasHostUrl, refreshedCapability)
     if (refreshedUrl == null) {
-      Log.w("OpenClawGateway", "node.canvas.capability.refresh unable to rewrite scoped canvas URL")
+      Log.w("RemoteClawGateway", "node.canvas.capability.refresh unable to rewrite scoped canvas URL")
       return false
     }
     canvasHostUrl = refreshedUrl

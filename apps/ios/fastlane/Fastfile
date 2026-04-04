@@ -53,7 +53,7 @@ end
 
 def read_asc_key_content_from_keychain
   service = ENV["ASC_KEYCHAIN_SERVICE"]
-  service = "openclaw-asc-key" unless env_present?(service)
+  service = "remoteclaw-asc-key" unless env_present?(service)
 
   account = ENV["ASC_KEYCHAIN_ACCOUNT"]
   account = ENV["USER"] unless env_present?(account)

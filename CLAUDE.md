@@ -111,6 +111,18 @@ GitHub Actions (`.github/workflows/ci.yml`):
 - Both run on `ubuntu-latest` with Node 22 and pnpm 10.23.0
 - Branch protection requires `build`, `test`, `lint`, and `docs` to pass
 
+### Release publishing
+
+- **Trigger**: `publish-latest` runs on `release: [published]` event —
+  create a GitHub release (which auto-creates the tag) to trigger it.
+  A bare `git tag` push does NOT trigger publishing.
+- **Version gate**: CI validates that the release tag (`v0.1.0`) matches
+  `package.json` version (`0.1.0`) before publishing.
+- **npm tag routing**: pre-release → `beta` tag; stable release → `latest` tag.
+- **`next` channel**: `publish-next` runs on every push to `main` — automatic,
+  no manual step.
+- **Checklist**: `docs/reference/RELEASING.md` (upstream-inherited, adapted).
+
 ## Security
 
 - Never commit real phone numbers, API keys, or live configuration values

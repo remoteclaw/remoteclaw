@@ -114,10 +114,6 @@ jobs:
         with:
           registry-url: "https://registry.npmjs.org"
 
-      # Trusted publishing requires npm >=11.5.1 for OIDC token exchange
-      - name: Upgrade npm
-        run: npm install -g "npm@>=11.5.1"
-
       - name: Build
         run: pnpm build
 

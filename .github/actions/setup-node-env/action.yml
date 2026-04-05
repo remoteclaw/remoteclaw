@@ -6,7 +6,7 @@ inputs:
   node-version:
     description: Node.js version to install.
     required: false
-    default: "22.x"
+    default: "24.x"
   pnpm-version:
     description: pnpm version for corepack.
     required: false
@@ -46,7 +46,7 @@ runs:
       uses: ./.github/actions/setup-pnpm-store-cache
       with:
         pnpm-version: ${{ inputs.pnpm-version }}
-        cache-key-suffix: "node22"
+        cache-key-suffix: "node24"
 
     - name: Setup Bun
       if: inputs.install-bun == 'true'

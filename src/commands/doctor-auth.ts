@@ -124,6 +124,21 @@ type AuthIssue = {
   status: string;
 };
 
+export function resolveUnusableProfileHint(params: {
+  kind: "cooldown" | "disabled";
+  reason?: string;
+}): string {
+  if (params.kind === "disabled") {
+    if (params.reason === "billing") {
+      return "Top up credits (provider billing) or switch provider.";
+    }
+    if (params.reason === "auth_permanent" || params.reason === "auth") {
+      return "Refresh or replace credentials, then retry.";
+    }
+  }
+  return "Wait for cooldown or switch provider.";
+}
+
 function formatAuthIssueHint(issue: AuthIssue): string | null {
   if (issue.provider === "anthropic" && issue.profileId === CLAUDE_CLI_PROFILE_ID) {
     return `Deprecated profile. Use ${formatCliCommand("remoteclaw configure")}.`;

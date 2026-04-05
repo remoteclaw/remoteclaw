@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "RemoteClawNodeAndroid"
 include(":app")
+include(":benchmark")

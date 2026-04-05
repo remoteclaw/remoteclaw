@@ -1,7 +1,10 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 import { resolveAgentConfig } from "../agents/agent-scope.js";
 import { loadConfig } from "../config/config.js";
 import type { GatewayClient } from "../gateway/client.js";
+import { sameFileIdentity } from "../infra/file-identity.js";
 import { sanitizeSystemRunEnvOverrides } from "../infra/host-env-security.js";
 
 // Stub types and functions: exec-approvals, exec-host, exec-safe-bin, system-run-command,
@@ -212,6 +215,100 @@ function normalizeDeniedReason(reason: string | null | undefined): SystemRunDeni
     default:
       return "approval-required";
   }
+}
+
+function isPathLikeExecutableToken(value: string): boolean {
+  if (!value) {
+    return false;
+  }
+  if (value.startsWith(".") || value.startsWith("/") || value.startsWith("\\")) {
+    return true;
+  }
+  if (value.includes("/") || value.includes("\\")) {
+    return true;
+  }
+  if (process.platform === "win32" && /^[a-zA-Z]:[\\/]/.test(value)) {
+    return true;
+  }
+  return false;
+}
+
+function hardenApprovedExecutionPaths(params: {
+  approvedByAsk: boolean;
+  argv: string[];
+  shellCommand: string | null;
+  cwd: string | undefined;
+}): { ok: true; argv: string[]; cwd: string | undefined } | { ok: false; message: string } {
+  if (!params.approvedByAsk) {
+    return { ok: true, argv: params.argv, cwd: params.cwd };
+  }
+
+  let hardenedCwd = params.cwd;
+  if (hardenedCwd) {
+    const requestedCwd = path.resolve(hardenedCwd);
+    let cwdLstat: fs.Stats;
+    let cwdStat: fs.Stats;
+    let cwdReal: string;
+    let cwdRealStat: fs.Stats;
+    try {
+      cwdLstat = fs.lstatSync(requestedCwd);
+      cwdStat = fs.statSync(requestedCwd);
+      cwdReal = fs.realpathSync(requestedCwd);
+      cwdRealStat = fs.statSync(cwdReal);
+    } catch {
+      return {
+        ok: false,
+        message: "SYSTEM_RUN_DENIED: approval requires an existing canonical cwd",
+      };
+    }
+    if (!cwdStat.isDirectory()) {
+      return {
+        ok: false,
+        message: "SYSTEM_RUN_DENIED: approval requires cwd to be a directory",
+      };
+    }
+    if (cwdLstat.isSymbolicLink()) {
+      return {
+        ok: false,
+        message: "SYSTEM_RUN_DENIED: approval requires canonical cwd (no symlink cwd)",
+      };
+    }
+    if (
+      !sameFileIdentity(cwdStat, cwdLstat) ||
+      !sameFileIdentity(cwdStat, cwdRealStat) ||
+      !sameFileIdentity(cwdLstat, cwdRealStat)
+    ) {
+      return {
+        ok: false,
+        message: "SYSTEM_RUN_DENIED: approval cwd identity mismatch",
+      };
+    }
+    hardenedCwd = cwdReal;
+  }
+
+  if (params.shellCommand !== null || params.argv.length === 0) {
+    return { ok: true, argv: params.argv, cwd: hardenedCwd };
+  }
+
+  const argv = [...params.argv];
+  const rawExecutable = argv[0] ?? "";
+  if (!isPathLikeExecutableToken(rawExecutable)) {
+    return { ok: true, argv, cwd: hardenedCwd };
+  }
+
+  const base = hardenedCwd ?? process.cwd();
+  const candidate = path.isAbsolute(rawExecutable)
+    ? rawExecutable
+    : path.resolve(base, rawExecutable);
+  try {
+    argv[0] = fs.realpathSync(candidate);
+  } catch {
+    return {
+      ok: false,
+      message: "SYSTEM_RUN_DENIED: approval requires a stable executable path",
+    };
+  }
+  return { ok: true, argv, cwd: hardenedCwd };
 }
 
 export type HandleSystemRunInvokeOptions = {
@@ -504,6 +601,20 @@ async function evaluateSystemRunPolicyPhase(
     return null;
   }
 
+  const hardenedPaths = hardenApprovedExecutionPaths({
+    approvedByAsk: policy.approvedByAsk,
+    argv: parsed.argv,
+    shellCommand: parsed.shellCommand,
+    cwd: parsed.cwd,
+  });
+  if (!hardenedPaths.ok) {
+    await sendSystemRunDenied(opts, parsed.execution, {
+      reason: "approval-required",
+      message: hardenedPaths.message,
+    });
+    return null;
+  }
+
   // Fail closed if policy/runtime drift re-allows unapproved shell wrappers.
   if (security === "allowlist" && parsed.shellCommand && !policy.approvedByAsk) {
     await sendSystemRunDenied(opts, parsed.execution, {
@@ -528,6 +639,8 @@ async function evaluateSystemRunPolicyPhase(
   }
   return {
     ...parsed,
+    argv: hardenedPaths.argv,
+    cwd: hardenedPaths.cwd,
     approvals,
     security,
     policy,

@@ -16,6 +16,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
       payload: Record<string, unknown>;
     } | null;
     command?: string[];
+    cwd?: string;
     security?: "full" | "allowlist";
     ask?: "off" | "on-miss" | "always";
     approved?: boolean;
@@ -37,6 +38,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
       client: {} as never,
       params: {
         command: params.command ?? ["echo", "ok"],
+        cwd: params.cwd,
         approved: params.approved ?? false,
         sessionKey: "agent:main:main",
       },
@@ -108,5 +110,76 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
         payloadJSON: expect.stringContaining("app-ok"),
       }),
     );
+  });
+
+  it.runIf(process.platform !== "win32")(
+    "denies approval-based execution when cwd is a symlink",
+    async () => {
+      const fs = await import("node:fs");
+      const path = await import("node:path");
+      const os = await import("node:os");
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-approval-cwd-link-"));
+      const safeDir = path.join(tmp, "safe");
+      const linkDir = path.join(tmp, "cwd-link");
+      const script = path.join(safeDir, "run.sh");
+      fs.mkdirSync(safeDir, { recursive: true });
+      fs.writeFileSync(script, "#!/bin/sh\necho SAFE\n");
+      fs.chmodSync(script, 0o755);
+      fs.symlinkSync(safeDir, linkDir, "dir");
+      try {
+        const { runCommand, sendInvokeResult } = await runSystemInvoke({
+          preferMacAppExecHost: false,
+          command: ["./run.sh"],
+          cwd: linkDir,
+          approved: true,
+          security: "full",
+          ask: "off",
+        });
+        expect(runCommand).not.toHaveBeenCalled();
+        expect(sendInvokeResult).toHaveBeenCalledWith(
+          expect.objectContaining({
+            ok: false,
+            error: expect.objectContaining({
+              message: expect.stringContaining("canonical cwd"),
+            }),
+          }),
+        );
+      } finally {
+        fs.rmSync(tmp, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it("uses canonical executable path for approval-based relative command execution", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const os = await import("node:os");
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-approval-cwd-real-"));
+    const script = path.join(tmp, "run.sh");
+    fs.writeFileSync(script, "#!/bin/sh\necho SAFE\n");
+    fs.chmodSync(script, 0o755);
+    try {
+      const { runCommand, sendInvokeResult } = await runSystemInvoke({
+        preferMacAppExecHost: false,
+        command: ["./run.sh", "--flag"],
+        cwd: tmp,
+        approved: true,
+        security: "full",
+        ask: "off",
+      });
+      expect(runCommand).toHaveBeenCalledWith(
+        [fs.realpathSync(script), "--flag"],
+        fs.realpathSync(tmp),
+        undefined,
+        undefined,
+      );
+      expect(sendInvokeResult).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ok: true,
+        }),
+      );
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
   });
 });

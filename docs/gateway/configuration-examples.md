@@ -233,6 +233,7 @@ Save to `~/.remoteclaw/remoteclaw.json` and you can DM the bot from that number.
       heartbeat: {
         every: "30m",
         target: "last",
+        directPolicy: "allow", // allow (default) | block
         to: "+15555550123",
         prompt: "HEARTBEAT",
       },

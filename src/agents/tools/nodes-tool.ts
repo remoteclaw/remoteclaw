@@ -481,6 +481,7 @@ export function createNodesTool(options?: {
               {
                 id: approvalId,
                 command: cmdText,
+                commandArgv: command,
                 cwd,
                 nodeId,
                 host: "node",

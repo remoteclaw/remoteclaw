@@ -151,3 +151,87 @@ describe("buildTelegramMessageContext audio transcript body", () => {
     expectAudioPlaceholderRendered(ctx);
   });
 });
+
+describe("Telegram Premium native voice transcript", () => {
+  it("uses native voice.transcript for DM voice messages", async () => {
+    const ctx = await buildTelegramMessageContextForTest({
+      message: {
+        message_id: 10,
+        chat: { id: 42, type: "private" },
+        date: 1700000000,
+        from: { id: 42, first_name: "Alice" },
+        voice: { file_id: "voice-10", transcript: "привіт це голосове повідомлення" },
+      },
+      allMedia: [{ path: "/tmp/voice.ogg", contentType: "audio/ogg" }],
+      cfg: {
+        agents: { defaults: { model: DEFAULT_MODEL, workspace: DEFAULT_WORKSPACE } },
+        channels: { telegram: {} },
+      },
+    });
+
+    expect(ctx).not.toBeNull();
+    expect(ctx?.ctxPayload?.BodyForAgent).toBe("привіт це голосове повідомлення");
+    expect(ctx?.ctxPayload?.Body).not.toContain("<media:audio>");
+  });
+
+  it("uses native voice.transcript for group voice messages", async () => {
+    const ctx = await buildGroupVoiceContext({
+      messageId: 11,
+      chatId: -1001234567890,
+      title: "Test Group",
+      date: 1700000000,
+      fromId: 42,
+      firstName: "Alice",
+      fileId: "voice-11",
+      mediaPath: "/tmp/voice.ogg",
+    });
+
+    // Without native transcript and without preflight mock, should fall back to placeholder
+    expectAudioPlaceholderRendered(ctx);
+  });
+
+  it("uses native transcript even when no preflight transcription is available", async () => {
+    transcribeFirstAudioMock.mockClear();
+
+    const ctx = await buildTelegramMessageContextForTest({
+      message: {
+        message_id: 12,
+        chat: { id: -1001234567890, type: "supergroup", title: "Test Group" },
+        date: 1700000000,
+        from: { id: 42, first_name: "Alice" },
+        voice: { file_id: "voice-12", transcript: "native transcript wins" },
+      },
+      allMedia: [{ path: "/tmp/voice.ogg", contentType: "audio/ogg" }],
+      options: { forceWasMentioned: true },
+      cfg: {
+        agents: { defaults: { model: DEFAULT_MODEL, workspace: DEFAULT_WORKSPACE } },
+        channels: { telegram: {} },
+        messages: { groupChat: { mentionPatterns: [DEFAULT_MENTION_PATTERN] } },
+      },
+      resolveGroupActivation: () => true,
+      resolveGroupRequireMention: () => true,
+      resolveTelegramGroupConfig: () => ({ groupConfig: { requireMention: true } }),
+    });
+
+    expect(ctx).not.toBeNull();
+    expect(ctx?.ctxPayload?.BodyForAgent).toBe("native transcript wins");
+    expect(ctx?.ctxPayload?.Body).not.toContain("<media:audio>");
+  });
+
+  it("falls back to <media:audio> when neither native transcript nor preflight available", async () => {
+    transcribeFirstAudioMock.mockResolvedValueOnce(undefined);
+
+    const ctx = await buildGroupVoiceContext({
+      messageId: 13,
+      chatId: -1001234567890,
+      title: "Test Group",
+      date: 1700000000,
+      fromId: 42,
+      firstName: "Alice",
+      fileId: "voice-13",
+      mediaPath: "/tmp/voice.ogg",
+    });
+
+    expectAudioPlaceholderRendered(ctx);
+  });
+});

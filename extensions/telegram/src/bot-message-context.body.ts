@@ -144,9 +144,21 @@ export async function resolveTelegramInboundBody(params: {
 
   let bodyText = rawBody;
   const hasAudio = allMedia.some((media) => media.contentType?.startsWith("audio/"));
+
+  // Telegram Premium provides server-side voice transcripts in voice.transcript.
+  // grammyjs/types does not yet include this field, so we cast to access it.
+  const nativeVoiceTranscript: string | undefined =
+    (msg as Record<string, any>).voice?.transcript ??
+    (msg as Record<string, any>).audio?.transcript ??
+    undefined;
+
+  if (hasAudio && bodyText === "<media:audio>" && nativeVoiceTranscript) {
+    bodyText = nativeVoiceTranscript;
+  }
+
   if (!bodyText && allMedia.length > 0) {
     if (hasAudio) {
-      bodyText = "<media:audio>";
+      bodyText = nativeVoiceTranscript || "<media:audio>";
     } else {
       bodyText = `<media:image>${allMedia.length > 1 ? ` (${allMedia.length} images)` : ""}`;
     }
@@ -162,7 +174,7 @@ export async function resolveTelegramInboundBody(params: {
       isExplicitlyMentioned: explicitlyMentioned,
       canResolveExplicit: Boolean(botUsername),
     },
-    transcript: undefined,
+    transcript: nativeVoiceTranscript,
   });
   const wasMentioned = options?.forceWasMentioned === true ? true : computedWasMentioned;
 

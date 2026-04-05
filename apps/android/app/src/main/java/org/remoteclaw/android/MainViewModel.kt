@@ -8,6 +8,7 @@ import org.remoteclaw.android.node.CameraCaptureManager
 import org.remoteclaw.android.node.CanvasController
 import org.remoteclaw.android.node.ScreenRecordManager
 import org.remoteclaw.android.node.SmsManager
+import org.remoteclaw.android.voice.VoiceConversationEntry
 import kotlinx.coroutines.flow.StateFlow
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
@@ -45,14 +46,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
   val locationMode: StateFlow<LocationMode> = runtime.locationMode
   val locationPreciseEnabled: StateFlow<Boolean> = runtime.locationPreciseEnabled
   val preventSleep: StateFlow<Boolean> = runtime.preventSleep
-  val wakeWords: StateFlow<List<String>> = runtime.wakeWords
-  val voiceWakeMode: StateFlow<VoiceWakeMode> = runtime.voiceWakeMode
-  val voiceWakeStatusText: StateFlow<String> = runtime.voiceWakeStatusText
-  val voiceWakeIsListening: StateFlow<Boolean> = runtime.voiceWakeIsListening
-  val talkEnabled: StateFlow<Boolean> = runtime.talkEnabled
-  val talkStatusText: StateFlow<String> = runtime.talkStatusText
-  val talkIsListening: StateFlow<Boolean> = runtime.talkIsListening
-  val talkIsSpeaking: StateFlow<Boolean> = runtime.talkIsSpeaking
+  val micEnabled: StateFlow<Boolean> = runtime.micEnabled
+  val micStatusText: StateFlow<String> = runtime.micStatusText
+  val micLiveTranscript: StateFlow<String?> = runtime.micLiveTranscript
+  val micIsListening: StateFlow<Boolean> = runtime.micIsListening
+  val micQueuedMessages: StateFlow<List<String>> = runtime.micQueuedMessages
+  val micConversation: StateFlow<List<VoiceConversationEntry>> = runtime.micConversation
+  val micInputLevel: StateFlow<Float> = runtime.micInputLevel
+  val micIsSending: StateFlow<Boolean> = runtime.micIsSending
   val manualEnabled: StateFlow<Boolean> = runtime.manualEnabled
   val manualHost: StateFlow<String> = runtime.manualHost
   val manualPort: StateFlow<Int> = runtime.manualPort
@@ -66,6 +67,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
   val chatMessages = runtime.chatMessages
   val chatError: StateFlow<String?> = runtime.chatError
   val chatHealthOk: StateFlow<Boolean> = runtime.chatHealthOk
+  val chatThinkingLevel: StateFlow<String> = runtime.chatThinkingLevel
   val chatStreamingAssistantText: StateFlow<String?> = runtime.chatStreamingAssistantText
   val chatPendingToolCalls = runtime.chatPendingToolCalls
   val chatSessions = runtime.chatSessions
@@ -127,24 +129,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     runtime.setCanvasDebugStatusEnabled(value)
   }
 
-  fun setWakeWords(words: List<String>) {
-    runtime.setWakeWords(words)
-  }
-
-  fun resetWakeWordsDefaults() {
-    runtime.resetWakeWordsDefaults()
-  }
-
-  fun setVoiceWakeMode(mode: VoiceWakeMode) {
-    runtime.setVoiceWakeMode(mode)
-  }
-
-  fun setTalkEnabled(enabled: Boolean) {
-    runtime.setTalkEnabled(enabled)
-  }
-
-  fun logGatewayDebugSnapshot(source: String = "manual") {
-    runtime.logGatewayDebugSnapshot(source)
+  fun setMicEnabled(enabled: Boolean) {
+    runtime.setMicEnabled(enabled)
   }
 
   fun refreshGatewayConnection() {
@@ -191,6 +177,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     runtime.refreshChatSessions(limit = limit)
   }
 
+  fun setChatThinkingLevel(level: String) {
+    runtime.setChatThinkingLevel(level)
+  }
+
   fun switchChatSession(sessionKey: String) {
     runtime.switchChatSession(sessionKey)
   }
@@ -199,7 +189,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     runtime.abortChat()
   }
 
-  fun sendChat(message: String, attachments: List<OutgoingAttachment>) {
-    runtime.sendChat(message = message, attachments = attachments)
+  fun sendChat(message: String, thinking: String, attachments: List<OutgoingAttachment>) {
+    runtime.sendChat(message = message, thinking = thinking, attachments = attachments)
   }
 }

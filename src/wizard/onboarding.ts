@@ -274,11 +274,17 @@ async function requireRiskAcknowledgement(params: {
       "Security notice",
       "",
       "RemoteClaw connects AI agent CLIs to messaging channels.",
+      "By default, RemoteClaw is a personal agent: one trusted operator boundary.",
       "Agents can read messages, run tools, and take actions on your behalf.",
       "",
+      "RemoteClaw is not a hostile multi-tenant boundary by default.",
+      "If multiple users can message one tool-enabled agent, they share that delegated tool authority.",
+      "",
       "Before exposing to the internet:",
-      "- Configure allowlists to control who can interact.",
-      "- Enable mention gating for group channels.",
+      "- Pairing/allowlists + mention gating.",
+      "- Multi-user/shared inbox: split trust boundaries (separate gateway/credentials, ideally separate OS users/hosts).",
+      "- Sandbox + least-privilege tools.",
+      "- Shared inboxes: isolate DM sessions (`session.dmScope: per-channel-peer`) and keep tool access minimal.",
       "- Keep secrets out of the agent’s reachable filesystem.",
       "",
       "Docs: https://docs.remoteclaw.org/gateway/security",
@@ -287,7 +293,8 @@ async function requireRiskAcknowledgement(params: {
   );
 
   const ok = await params.prompter.confirm({
-    message: "I understand the security implications. Continue?",
+    message:
+      "I understand this is personal-by-default and shared/multi-user use requires lock-down. Continue?",
     initialValue: false,
   });
   if (!ok) {

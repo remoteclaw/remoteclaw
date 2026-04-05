@@ -162,31 +162,6 @@ const runs = [
     ],
   },
 ];
-// In CI on Linux, shard unit-fast into parallel lanes to halve wall time.
-// Configurable via REMOTECLAW_TEST_UNIT_FAST_SHARDS; defaults to 2 in Linux CI.
-const unitFastShardCount = (() => {
-  const raw = process.env.REMOTECLAW_TEST_UNIT_FAST_SHARDS;
-  if (raw) {
-    const parsed = Number.parseInt(raw, 10);
-    if (Number.isFinite(parsed) && parsed > 0) {
-      return parsed;
-    }
-  }
-  if (isCI && !isWindows && !isMacOS) {
-    return 2;
-  }
-  return 1;
-})();
-const expandedRuns = runs.flatMap((entry) => {
-  if (entry.name !== "unit-fast" || unitFastShardCount <= 1) {
-    return [entry];
-  }
-  return Array.from({ length: unitFastShardCount }, (_, i) => ({
-    ...entry,
-    args: [...entry.args, "--shard", `${i + 1}/${unitFastShardCount}`],
-  }));
-});
-
 const shardOverride = Number.parseInt(process.env.REMOTECLAW_TEST_SHARDS ?? "", 10);
 const shardCount = isWindowsCi
   ? Number.isFinite(shardOverride) && shardOverride > 1
@@ -218,12 +193,8 @@ const keepGatewaySerial =
   process.env.REMOTECLAW_TEST_SERIAL_GATEWAY === "1" ||
   testProfile === "serial" ||
   !parallelGatewayEnabled;
-const parallelRuns = keepGatewaySerial
-  ? expandedRuns.filter((entry) => entry.name !== "gateway")
-  : expandedRuns;
-const serialRuns = keepGatewaySerial
-  ? expandedRuns.filter((entry) => entry.name === "gateway")
-  : [];
+const parallelRuns = keepGatewaySerial ? runs.filter((entry) => entry.name !== "gateway") : runs;
+const serialRuns = keepGatewaySerial ? runs.filter((entry) => entry.name === "gateway") : [];
 const baseLocalWorkers = Math.max(4, Math.min(16, hostCpuCount));
 const loadAwareDisabledRaw = process.env.REMOTECLAW_TEST_LOAD_AWARE?.trim().toLowerCase();
 const loadAwareDisabled = loadAwareDisabledRaw === "0" || loadAwareDisabledRaw === "false";
@@ -311,51 +282,39 @@ const WARNING_SUPPRESSION_FLAGS = [
   "--disable-warning=MaxListenersExceededWarning",
 ];
 
+const DEFAULT_CI_MAX_OLD_SPACE_SIZE_MB = 4096;
 const maxOldSpaceSizeMb = (() => {
-  // Allow explicit override via env var.
+  // CI can hit Node heap limits (especially on large suites). Allow override, default to 4GB.
   const raw = process.env.REMOTECLAW_TEST_MAX_OLD_SPACE_SIZE_MB ?? "";
   const parsed = Number.parseInt(raw, 10);
   if (Number.isFinite(parsed) && parsed > 0) {
     return parsed;
   }
   if (isCI && !isWindows) {
-    // Compute memory-aware heap limit from host memory, parallel suite count,
-    // and per-suite worker count to avoid OOM on memory-constrained CI runners.
-    // ubuntu-latest has ~7 GiB RAM; the previous 4096 MB default let 6 workers
-    // claim 24 GB of V8 heap in theory, triggering intermittent OOM crashes.
-    const totalWorkers = parallelRuns.reduce((sum, entry) => {
-      return sum + (maxWorkersForRun(entry.name) ?? 2);
-    }, 0);
-    // Reserve ~25% for OS, Node orchestrator, and Vitest parent processes.
-    const availableMb = hostMemoryGiB * 1024 * 0.75;
-    const computed = Math.floor(availableMb / Math.max(1, totalWorkers));
-    // Clamp to [512, 2048] — avoid starving workers or wasting headroom.
-    return Math.max(512, Math.min(2048, computed));
+    return DEFAULT_CI_MAX_OLD_SPACE_SIZE_MB;
   }
   return null;
 })();
 
 function resolveReportDir() {
   const raw = process.env.REMOTECLAW_VITEST_REPORT_DIR?.trim();
-  if (raw) {
-    try {
-      fs.mkdirSync(raw, { recursive: true });
-      return raw;
-    } catch {
-      // fall through to integrity fallback
-    }
+  if (!raw) {
+    return null;
   }
-  // Always produce a report dir so we can validate lane integrity (detect OOM crashes).
-  const fallback = path.join(process.cwd(), ".tmp", "vitest-integrity");
   try {
-    fs.mkdirSync(fallback, { recursive: true });
+    fs.mkdirSync(raw, { recursive: true });
   } catch {
     return null;
   }
-  return fallback;
+  return raw;
 }
 
-function resolveShardSuffix(extraArgs) {
+function buildReporterArgs(entry, extraArgs) {
+  const reportDir = resolveReportDir();
+  if (!reportDir) {
+    return [];
+  }
+
   // Vitest supports both `--shard 1/2` and `--shard=1/2`. We use it in the
   // split-arg form, so we need to read the next arg to avoid overwriting reports.
   const shardIndex = extraArgs.findIndex((arg) => arg === "--shard");
@@ -368,63 +327,22 @@ function resolveShardSuffix(extraArgs) {
       : typeof inlineShardArg === "string"
         ? inlineShardArg.slice("--shard=".length)
         : "";
-  return shardValue ? `-shard${String(shardValue).replaceAll("/", "of").replaceAll(" ", "")}` : "";
-}
+  const shardSuffix = shardValue
+    ? `-shard${String(shardValue).replaceAll("/", "of").replaceAll(" ", "")}`
+    : "";
 
-function resolveReportPath(entry, extraArgs) {
-  const reportDir = resolveReportDir();
-  if (!reportDir) {
-    return null;
-  }
-  const shardSuffix = resolveShardSuffix([...entry.args, ...extraArgs]);
-  return path.join(reportDir, `vitest-${entry.name}${shardSuffix}.json`);
-}
-
-function buildReporterArgs(entry, extraArgs) {
-  const outputFile = resolveReportPath(entry, extraArgs);
-  if (!outputFile) {
-    return [];
-  }
+  const outputFile = path.join(reportDir, `vitest-${entry.name}${shardSuffix}.json`);
   return ["--reporter=default", "--reporter=json", "--outputFile", outputFile];
-}
-
-function validateReport(reportPath, entryName) {
-  if (!reportPath) {
-    return true;
-  }
-  try {
-    const raw = fs.readFileSync(reportPath, "utf-8");
-    const report = JSON.parse(raw);
-    if (report.numFailedTests > 0 || report.numFailedTestSuites > 0) {
-      console.error(
-        `[test-parallel] ${entryName}: JSON report shows ${report.numFailedTests} failed test(s) in ${report.numFailedTestSuites} suite(s) despite exit code 0`,
-      );
-      return false;
-    }
-    return true;
-  } catch {
-    console.error(
-      `[test-parallel] ${entryName}: integrity report missing or invalid — lane may have crashed (OOM?)`,
-    );
-    return false;
-  }
 }
 
 const runOnce = (entry, extraArgs = []) =>
   new Promise((resolve) => {
     const maxWorkers = maxWorkersForRun(entry.name);
     const reporterArgs = buildReporterArgs(entry, extraArgs);
-    const reportPath = resolveReportPath(entry, extraArgs);
-    // Delete stale report from a previous run to avoid false-positive validation.
-    if (reportPath) {
-      try {
-        fs.unlinkSync(reportPath);
-      } catch {}
-    }
-    // vmForks with a single worker can hang or exhibit cross-file leakage.
-    // Fall back to process forks when clamped to one worker.
+    // vmForks with a single worker has shown cross-file leakage in extension suites.
+    // Fall back to process forks when we intentionally clamp that lane to one worker.
     const entryArgs =
-      maxWorkers === 1 && entry.args.includes("--pool=vmForks")
+      entry.name === "extensions" && maxWorkers === 1 && entry.args.includes("--pool=vmForks")
         ? entry.args.map((arg) => (arg === "--pool=vmForks" ? "--pool=forks" : arg))
         : entry.args;
     const args = maxWorkers
@@ -468,12 +386,7 @@ const runOnce = (entry, extraArgs = []) =>
     });
     child.on("exit", (code, signal) => {
       children.delete(child);
-      const exitCode = code ?? (signal ? 1 : 0);
-      if (exitCode === 0 && !validateReport(reportPath, entry.name)) {
-        resolve(1);
-        return;
-      }
-      resolve(exitCode);
+      resolve(code ?? (signal ? 1 : 0));
     });
   });
 

@@ -107,7 +107,15 @@ export function createFollowupRunner(params: {
       await bridge.handle(message, callbacks, opts?.abortSignal);
       logVerbose("followup queue: bridge.handle() completed");
     } finally {
+      // Both signals are required for the typing controller to clean up.
+      // The main inbound dispatch path calls markDispatchIdle() from the
+      // buffered dispatcher's finally block, but followup turns bypass the
+      // dispatcher entirely — so we must fire both signals here.  Without
+      // this, NO_REPLY / empty-payload followups leave the typing indicator
+      // stuck (the keepalive loop keeps sending "typing" to Telegram
+      // indefinitely until the TTL expires).
       typing.markRunComplete();
+      typing.markDispatchIdle();
     }
   };
 }

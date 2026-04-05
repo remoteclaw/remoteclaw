@@ -48,6 +48,7 @@ import {
   createDiscordComponentUserSelect,
 } from "./agent-components.js";
 import { resolveDiscordSlashCommandConfig } from "./commands.js";
+import { attachEarlyGatewayErrorGuard } from "./gateway-error-guard.js";
 import { createDiscordGatewayPlugin } from "./gateway-plugin.js";
 import {
   DiscordMessageListener,
@@ -321,6 +322,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       })
     : createNoopThreadBindingManager(account.accountId);
   let lifecycleStarted = false;
+  let releaseEarlyGatewayErrorGuard = () => {};
   try {
     const commands: BaseCommand[] = commandSpecs.map((spec) =>
       createDiscordNativeCommand({
@@ -422,6 +424,8 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       },
       clientPlugins,
     );
+    const earlyGatewayErrorGuard = attachEarlyGatewayErrorGuard(client);
+    releaseEarlyGatewayErrorGuard = earlyGatewayErrorGuard.release;
 
     await deployDiscordCommands({ client, runtime, enabled: nativeEnabled });
 
@@ -487,6 +491,12 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
         accountId: account.accountId,
         runtime,
         botUserId,
+        dmEnabled,
+        groupDmEnabled,
+        groupDmChannels: groupDmChannels ?? [],
+        dmPolicy,
+        allowFrom: allowFrom ?? [],
+        groupPolicy,
         allowNameMatching: isDangerousNameMatchingEnabled(discordCfg),
         guildEntries,
         logger,
@@ -499,6 +509,12 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
         accountId: account.accountId,
         runtime,
         botUserId,
+        dmEnabled,
+        groupDmEnabled,
+        groupDmChannels: groupDmChannels ?? [],
+        dmPolicy,
+        allowFrom: allowFrom ?? [],
+        groupPolicy,
         allowNameMatching: isDangerousNameMatchingEnabled(discordCfg),
         guildEntries,
         logger,
@@ -526,8 +542,11 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       voiceManagerRef,
       execApprovalsHandler: null,
       threadBindings,
+      pendingGatewayErrors: earlyGatewayErrorGuard.pendingErrors,
+      releaseEarlyGatewayErrorGuard,
     });
   } finally {
+    releaseEarlyGatewayErrorGuard();
     if (!lifecycleStarted) {
       threadBindings.stop();
     }

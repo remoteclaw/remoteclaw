@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { listAgentIds } from "../../agents/agent-scope.js";
+import { registerSessionRun, unregisterSessionRun } from "../../agents/session-run-registry.js";
 import { BARE_SESSION_RESET_PROMPT } from "../../auto-reply/reply/session-reset-prompt.js";
 import { CHANNEL_IDS, type ChatChannelId } from "../../channels/registry.js";
 import { agentCommand } from "../../commands/agent.js";
@@ -612,6 +613,15 @@ export const agentHandlers: GatewayRequestHandlers = {
 
     const resolvedThreadId = explicitThreadId ?? deliveryPlan.resolvedThreadId;
 
+    // Track active session run for concurrency visibility
+    if (resolvedSessionKey) {
+      registerSessionRun(resolvedSessionKey, {
+        startedAt: Date.now(),
+        sessionKey: resolvedSessionKey,
+        agentId: agentId ?? "main",
+      });
+    }
+
     void agentCommand(
       {
         message,
@@ -681,6 +691,11 @@ export const agentHandlers: GatewayRequestHandlers = {
           runId,
           error: formatForLog(err),
         });
+      })
+      .finally(() => {
+        if (resolvedSessionKey) {
+          unregisterSessionRun(resolvedSessionKey);
+        }
       });
   },
   "agent.identity.get": ({ params, respond }) => {

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { registerSessionRun, unregisterSessionRun } from "../agents/session-run-registry.js";
 import type { ReplyPayload } from "../auto-reply/types.js";
 import { logDebug } from "../logger.js";
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
@@ -158,6 +159,12 @@ export class ChannelBridge {
       let workspaceDir = this.#workspaceDir;
       let hookEnv: Record<string, string> | undefined;
       const runId = randomUUID();
+      const sessionKeyStr = formatSessionKeyString(sessionKey);
+      registerSessionRun(sessionKeyStr, {
+        startedAt: Date.now(),
+        sessionKey: sessionKeyStr,
+        agentId: message.agentId ?? "default",
+      });
 
       // Hook: before_runtime_spawn — extensions can modify env and workspaceDir
       if (hookRunner?.hasHooks("before_runtime_spawn")) {
@@ -333,6 +340,7 @@ export class ChannelBridge {
         error: lastError,
       };
     } finally {
+      unregisterSessionRun(formatSessionKeyString(sessionKey));
       // Cleanup temp directory
       await rm(invocationDir, { recursive: true, force: true }).catch(() => {});
     }

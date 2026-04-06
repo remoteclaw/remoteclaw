@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/discord",
-  "version": "2026.2.26",
+  "version": "0.2.0",
   "description": "RemoteClaw Discord channel plugin",
   "type": "module",
   "remoteclaw": {

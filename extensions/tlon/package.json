@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/tlon",
-  "version": "2026.2.26",
+  "version": "0.2.0",
   "description": "RemoteClaw Tlon/Urbit channel plugin",
   "type": "module",
   "dependencies": {

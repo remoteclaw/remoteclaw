@@ -158,15 +158,17 @@ jobs:
         with:
           registry-url: "https://registry.npmjs.org"
 
-      - name: Validate version matches tag
+      - name: Stamp version from tag
         run: |
           TAG="${{ github.event.release.tag_name }}"
           VERSION="${TAG#v}"
           PKG_VERSION=$(node -p "require('./package.json').version")
+          echo "Release tag: $TAG (version: $VERSION)"
+          echo "package.json version: $PKG_VERSION"
           if [ "$VERSION" != "$PKG_VERSION" ]; then
-            echo "::error::Tag $TAG does not match package.json version $PKG_VERSION"
-            exit 1
+            echo "::notice::Stamping version from tag: $PKG_VERSION → $VERSION"
           fi
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
 
       - name: Build
         run: pnpm build

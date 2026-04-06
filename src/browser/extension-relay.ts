@@ -365,9 +365,41 @@ export async function ensureChromeExtensionRelayServer(opts: {
   const server = createServer((req, res) => {
     const url = new URL(req.url ?? "/", info.baseUrl);
     const path = url.pathname;
+    const origin = getHeader(req, "origin");
+    const isChromeExtensionOrigin =
+      typeof origin === "string" && origin.startsWith("chrome-extension://");
+
+    if (isChromeExtensionOrigin && origin) {
+      // Let extension pages call relay HTTP endpoints cross-origin.
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Vary", "Origin");
+    }
+
+    // Handle CORS preflight requests from the browser extension.
+    if (req.method === "OPTIONS") {
+      if (origin && !isChromeExtensionOrigin) {
+        res.writeHead(403);
+        res.end("Forbidden");
+        return;
+      }
+      const requestedHeaders = (getHeader(req, "access-control-request-headers") ?? "")
+        .split(",")
+        .map((header) => header.trim().toLowerCase())
+        .filter((header) => header.length > 0);
+      const allowedHeaders = new Set(["content-type", RELAY_AUTH_HEADER, ...requestedHeaders]);
+      res.writeHead(204, {
+        "Access-Control-Allow-Origin": origin ?? "*",
+        "Access-Control-Allow-Methods": "GET, PUT, POST, OPTIONS",
+        "Access-Control-Allow-Headers": Array.from(allowedHeaders).join(", "),
+        "Access-Control-Max-Age": "86400",
+        Vary: "Origin, Access-Control-Request-Headers",
+      });
+      res.end();
+      return;
+    }
 
     if (path.startsWith("/json")) {
-      const token = getHeader(req, RELAY_AUTH_HEADER)?.trim();
+      const token = getRelayAuthTokenFromRequest(req, url);
       if (!token || !relayAuthTokens.has(token)) {
         res.writeHead(401);
         res.end("Unauthorized");
@@ -437,7 +469,14 @@ export async function ensureChromeExtensionRelayServer(opts: {
       if (!match || (req.method !== "GET" && req.method !== "PUT")) {
         return false;
       }
-      const targetId = decodeURIComponent(match[1] ?? "").trim();
+      let targetId = "";
+      try {
+        targetId = decodeURIComponent(match[1] ?? "").trim();
+      } catch {
+        res.writeHead(400);
+        res.end("invalid targetId encoding");
+        return true;
+      }
       if (!targetId) {
         res.writeHead(400);
         res.end("targetId required");
@@ -495,11 +534,8 @@ export async function ensureChromeExtensionRelayServer(opts: {
         rejectUpgrade(socket, 401, "Unauthorized");
         return;
       }
-      if (extensionConnected()) {
-        rejectUpgrade(socket, 409, "Extension already connected");
-        return;
-      }
       // MV3 worker reconnect races can leave a stale non-OPEN socket reference.
+      // Clean up before checking extensionConnected() to avoid false 409 rejections.
       if (extensionWs && extensionWs.readyState !== WebSocket.OPEN) {
         try {
           extensionWs.terminate();
@@ -507,6 +543,10 @@ export async function ensureChromeExtensionRelayServer(opts: {
           // ignore
         }
         extensionWs = null;
+      }
+      if (extensionConnected()) {
+        rejectUpgrade(socket, 409, "Extension already connected");
+        return;
       }
       wssExtension.handleUpgrade(req, socket, head, (ws) => {
         wssExtension.emit("connection", ws, req);

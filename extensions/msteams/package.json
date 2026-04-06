@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/msteams",
-  "version": "0.2.0",
+  "version": "2026.2.26",
   "description": "RemoteClaw Microsoft Teams channel plugin",
   "type": "module",
   "dependencies": {

@@ -92,8 +92,8 @@ targets:
           - CFBundleURLName: org.remoteclaw.ios
             CFBundleURLSchemes:
               - remoteclaw
-        CFBundleShortVersionString: "2026.2.23"
-        CFBundleVersion: "20260223"
+        CFBundleShortVersionString: "2026.2.26"
+        CFBundleVersion: "20260226"
         UILaunchScreen: {}
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
@@ -133,11 +133,13 @@ targets:
       - path: ShareExtension
     dependencies:
       - package: RemoteClawKit
+      - sdk: AppIntents.framework
     settings:
       base:
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_STYLE: "$(REMOTECLAW_CODE_SIGN_STYLE)"
         DEVELOPMENT_TEAM: "$(REMOTECLAW_DEVELOPMENT_TEAM)"
+        ENABLE_APPINTENTS_METADATA: NO
         PRODUCT_BUNDLE_IDENTIFIER: "$(REMOTECLAW_SHARE_BUNDLE_ID)"
         PROVISIONING_PROFILE_SPECIFIER: "$(REMOTECLAW_SHARE_PROFILE)"
         SWIFT_VERSION: "6.0"
@@ -146,8 +148,8 @@ targets:
       path: ShareExtension/Info.plist
       properties:
         CFBundleDisplayName: RemoteClaw Share
-        CFBundleShortVersionString: "2026.2.23"
-        CFBundleVersion: "20260223"
+        CFBundleShortVersionString: "2026.2.26"
+        CFBundleVersion: "20260226"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.share-services
           NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).ShareViewController"
@@ -171,13 +173,14 @@ targets:
       Release: Config/Signing.xcconfig
     settings:
       base:
+        ENABLE_APPINTENTS_METADATA: NO
         PRODUCT_BUNDLE_IDENTIFIER: "$(REMOTECLAW_WATCH_APP_BUNDLE_ID)"
     info:
       path: WatchApp/Info.plist
       properties:
         CFBundleDisplayName: RemoteClaw
-        CFBundleShortVersionString: "2026.2.23"
-        CFBundleVersion: "20260223"
+        CFBundleShortVersionString: "2026.2.26"
+        CFBundleVersion: "20260226"
         WKCompanionAppBundleIdentifier: "$(REMOTECLAW_APP_BUNDLE_ID)"
         WKWatchKitApp: true
 
@@ -200,8 +203,8 @@ targets:
       path: WatchExtension/Info.plist
       properties:
         CFBundleDisplayName: RemoteClaw
-        CFBundleShortVersionString: "2026.2.23"
-        CFBundleVersion: "20260223"
+        CFBundleShortVersionString: "2026.2.26"
+        CFBundleVersion: "20260226"
         NSExtension:
           NSExtensionAttributes:
             WKAppBundleIdentifier: "$(REMOTECLAW_WATCH_APP_BUNDLE_ID)"
@@ -234,5 +237,5 @@ targets:
       path: Tests/Info.plist
       properties:
         CFBundleDisplayName: RemoteClawTests
-        CFBundleShortVersionString: "2026.2.23"
-        CFBundleVersion: "20260223"
+        CFBundleShortVersionString: "2026.2.26"
+        CFBundleVersion: "20260226"

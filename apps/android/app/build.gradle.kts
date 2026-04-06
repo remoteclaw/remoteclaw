@@ -20,8 +20,8 @@ android {
     applicationId = "org.remoteclaw.android"
     minSdk = 31
     targetSdk = 36
-    versionCode = 1
-    versionName = "0.1.0"
+    versionCode = 202602260
+    versionName = "2026.2.26"
     ndk {
       // Support all major ABIs — native libs are tiny (~47 KB per ABI)
       abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
@@ -146,6 +146,7 @@ dependencies {
   testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
   testImplementation("io.kotest:kotest-runner-junit5-jvm:6.1.3")
   testImplementation("io.kotest:kotest-assertions-core-jvm:6.1.3")
+  testImplementation("com.squareup.okhttp3:mockwebserver:5.3.2")
   testImplementation("org.robolectric:robolectric:4.16.1")
   testRuntimeOnly("org.junit.vintage:junit-vintage-engine:6.0.2")
 }

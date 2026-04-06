@@ -1,4 +1,8 @@
-import { firstDefined, isSenderIdAllowed, mergeAllowFromSources } from "../channels/allow-from.js";
+import {
+  firstDefined,
+  isSenderIdAllowed,
+  mergeDmAllowFromSources,
+} from "../channels/allow-from.js";
 
 export type NormalizedAllowFrom = {
   entries: string[];
@@ -31,7 +35,7 @@ export const normalizeAllowFromWithStore = (params: {
   allowFrom?: Array<string | number>;
   storeAllowFrom?: string[];
   dmPolicy?: string;
-}): NormalizedAllowFrom => normalizeAllowFrom(mergeAllowFromSources(params));
+}): NormalizedAllowFrom => normalizeAllowFrom(mergeDmAllowFromSources(params));
 
 export const isSenderAllowed = (params: {
   allow: NormalizedAllowFrom;

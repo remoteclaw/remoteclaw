@@ -1,5 +1,5 @@
 ---
-description: "Agent tool surface for RemoteClaw (browser, canvas, nodes, message, cron) replacing legacy `remoteclaw-*` skills"
+summary: "Agent tool surface for RemoteClaw (browser, canvas, nodes, message, cron) replacing legacy `remoteclaw-*` skills"
 read_when:
   - Adding or modifying agent tools
   - Retiring or changing `remoteclaw-*` skills
@@ -15,7 +15,7 @@ and the agent should rely on them directly.
 ## Disabling tools
 
 You can globally allow/deny tools via `tools.allow` / `tools.deny` in `remoteclaw.json`
-(deny wins). This prevents disallowed tools from being presented to the agent.
+(deny wins). This prevents disallowed tools from being sent to model providers.
 
 ```json5
 {
@@ -37,7 +37,7 @@ Per-agent override: `agents.list[].tools.profile`.
 Profiles:
 
 - `minimal`: `session_status` only
-- `coding`: `group:fs`, `group:runtime`, `group:sessions`, `image`
+- `coding`: `group:fs`, `group:runtime`, `group:sessions`, `group:memory`, `image`
 - `messaging`: `group:messaging`, `sessions_list`, `sessions_history`, `sessions_send`, `session_status`
 - `full`: no restriction (same as unset)
 
@@ -79,6 +79,62 @@ Example (global coding profile, messaging-only support agent):
 }
 ```
 
+## Provider-specific tool policy
+
+Use `tools.byProvider` to **further restrict** tools for specific providers
+(or a single `provider/model`) without changing your global defaults.
+Per-agent override: `agents.list[].tools.byProvider`.
+
+This is applied **after** the base tool profile and **before** allow/deny lists,
+so it can only narrow the tool set.
+Provider keys accept either `provider` (e.g. `google-antigravity`) or
+`provider/model` (e.g. `openai/gpt-5.2`).
+
+Example (keep global coding profile, but minimal tools for Google Antigravity):
+
+```json5
+{
+  tools: {
+    profile: "coding",
+    byProvider: {
+      "google-antigravity": { profile: "minimal" },
+    },
+  },
+}
+```
+
+Example (provider/model-specific allowlist for a flaky endpoint):
+
+```json5
+{
+  tools: {
+    allow: ["group:fs", "group:runtime", "sessions_list"],
+    byProvider: {
+      "openai/gpt-5.2": { allow: ["group:fs", "sessions_list"] },
+    },
+  },
+}
+```
+
+Example (agent-specific override for a single provider):
+
+```json5
+{
+  agents: {
+    list: [
+      {
+        id: "support",
+        tools: {
+          byProvider: {
+            "google-antigravity": { allow: ["message", "sessions_list"] },
+          },
+        },
+      },
+    ],
+  },
+}
+```
+
 ## Tool groups (shorthands)
 
 Tool policies (global, agent, sandbox) support `group:*` entries that expand to multiple tools.
@@ -87,8 +143,9 @@ Use these in `tools.allow` / `tools.deny`.
 Available groups:
 
 - `group:runtime`: `exec`, `bash`, `process`
-- `group:fs`: `read`, `write`, `edit`
+- `group:fs`: `read`, `write`, `edit`, `apply_patch`
 - `group:sessions`: `sessions_list`, `sessions_history`, `sessions_send`, `sessions_spawn`, `session_status`
+- `group:memory`: `memory_search`, `memory_get`
 - `group:web`: `web_search`, `web_fetch`
 - `group:ui`: `browser`, `canvas`
 - `group:automation`: `cron`, `gateway`
@@ -109,13 +166,22 @@ Example (allow only file tools + browser):
 ## Plugins + tools
 
 Plugins can register **additional tools** (and CLI commands) beyond the core set.
-See [Plugins](/tools/plugin) for install + config.
+See [Plugins](/tools/plugin) for install + config, and [Skills](/tools/skills) for how
+tool usage guidance is injected into prompts. Some plugins ship their own skills
+alongside tools (for example, the voice-call plugin).
 
 Optional plugin tools:
 
+- [Lobster](/tools/lobster): typed workflow runtime with resumable approvals (requires the Lobster CLI on the gateway host).
 - [LLM Task](/tools/llm-task): JSON-only LLM step for structured workflow output (optional schema validation).
 
 ## Tool inventory
+
+### `apply_patch`
+
+Apply structured patches across one or more files. Use for multi-hunk edits.
+Experimental: enable via `tools.exec.applyPatch.enabled` (OpenAI models only).
+`tools.exec.applyPatch.workspaceOnly` defaults to `true` (workspace-contained). Set it to `false` only if you intentionally want `apply_patch` to write/delete outside the workspace directory.
 
 ### `exec`
 
@@ -127,6 +193,7 @@ Core parameters:
 - `yieldMs` (auto-background after timeout, default 10000)
 - `background` (immediate background)
 - `timeout` (seconds; kills the process if exceeded, default 1800)
+- `elevated` (bool; run on host if elevated mode is enabled/allowed; only changes behavior when the agent is sandboxed)
 - `host` (`sandbox | gateway | node`)
 - `security` (`deny | allowlist | full`)
 - `ask` (`off | on-miss | always`)
@@ -138,8 +205,10 @@ Notes:
 - Returns `status: "running"` with a `sessionId` when backgrounded.
 - Use `process` to poll/log/write/kill/clear background sessions.
 - If `process` is disallowed, `exec` runs synchronously and ignores `yieldMs`/`background`.
+- `elevated` is gated by `tools.elevated` plus any `agents.list[].tools.elevated` override (both must allow) and is an alias for `host=gateway` + `security=full`.
+- `elevated` only changes behavior when the agent is sandboxed (otherwise it’s a no-op).
 - `host=node` can target a macOS companion app or a headless node host (`remoteclaw node run`).
-- gateway/node approvals and allowlists are controlled by `~/.remoteclaw/exec-approvals.json`.
+- gateway/node approvals and allowlists: [Exec approvals](/tools/exec-approvals).
 
 ### `process`
 
@@ -323,8 +392,8 @@ Core parameters:
 
 Notes:
 
-- Requires a configured image model (see agent configuration).
-- Image analysis runs independently of the main chat model.
+- Only available when `agents.defaults.imageModel` is configured (primary or fallbacks), or when an implicit image model can be inferred from your default model + configured auth (best-effort pairing).
+- Uses the image model directly (independent of the main chat model).
 
 ### `message`
 
@@ -395,8 +464,8 @@ Core parameters:
 - `sessions_list`: `kinds?`, `limit?`, `activeMinutes?`, `messageLimit?` (0 = none)
 - `sessions_history`: `sessionKey` (or `sessionId`), `limit?`, `includeTools?`
 - `sessions_send`: `sessionKey` (or `sessionId`), `message`, `timeoutSeconds?` (0 = fire-and-forget)
-- `sessions_spawn`: `task`, `label?`, `agentId?`, `model?` (passed through to CLI agent), `thinking?` (passed through to CLI agent), `runTimeoutSeconds?`, `thread?`, `mode?`, `cleanup?`
-- `session_status`: `sessionKey?` (default current; accepts `sessionId`)
+- `sessions_spawn`: `task`, `label?`, `runtime?`, `agentId?`, `model?`, `thinking?`, `cwd?`, `runTimeoutSeconds?`, `thread?`, `mode?`, `cleanup?`
+- `session_status`: `sessionKey?` (default current; accepts `sessionId`), `model?` (`default` clears override)
 
 Notes:
 
@@ -405,6 +474,7 @@ Notes:
 - Session targeting is controlled by `tools.sessions.visibility` (default `tree`: current session + spawned subagent sessions). If you run a shared agent for multiple users, consider setting `tools.sessions.visibility: "self"` to prevent cross-session browsing.
 - `sessions_send` waits for final completion when `timeoutSeconds > 0`.
 - Delivery/announce happens after completion and is best-effort; `status: "ok"` confirms the agent run finished, not that the announce was delivered.
+- `sessions_spawn` supports `runtime: "subagent" | "acp"` (`subagent` default). For ACP runtime behavior, see [ACP Agents](/tools/acp-agents).
 - `sessions_spawn` starts a sub-agent run and posts an announce reply back to the requester chat.
   - Supports one-shot mode (`mode: "run"`) and persistent thread-bound mode (`mode: "session"` with `thread: true`).
   - If `thread: true` and `mode` is omitted, mode defaults to `session`.
@@ -477,7 +547,7 @@ Node targeting:
 Tools are exposed in two parallel channels:
 
 1. **System prompt text**: a human-readable list + guidance.
-2. **Tool schema**: the structured function definitions forwarded to the CLI agent.
+2. **Tool schema**: the structured function definitions sent to the model API.
 
 That means the agent sees both “what tools exist” and “how to call them.” If a tool
 doesn’t appear in the system prompt or the schema, the model cannot call it.

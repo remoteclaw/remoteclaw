@@ -1,5 +1,5 @@
 import path from "node:path";
-import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
+import { resolveAgentWorkspaceDirOrNull } from "../agents/agent-scope.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
@@ -44,7 +44,7 @@ export function getAgentScopedMediaLocalRoots(
   if (!agentId?.trim()) {
     return roots;
   }
-  const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
+  const workspaceDir = resolveAgentWorkspaceDirOrNull(cfg, agentId);
   if (!workspaceDir) {
     return roots;
   }

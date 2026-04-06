@@ -21,7 +21,16 @@ import type {
 } from "./types.core.js";
 
 export type ChannelSetupAdapter = {
-  resolveAccountId?: (params: { cfg: RemoteClawConfig; accountId?: string }) => string;
+  resolveAccountId?: (params: {
+    cfg: RemoteClawConfig;
+    accountId?: string;
+    input?: ChannelSetupInput;
+  }) => string;
+  resolveBindingAccountId?: (params: {
+    cfg: RemoteClawConfig;
+    agentId: string;
+    accountId?: string;
+  }) => string | undefined;
   applyAccountName?: (params: {
     cfg: RemoteClawConfig;
     accountId: string;
@@ -291,6 +300,13 @@ export type ChannelResolverAdapter = {
     kind: ChannelResolveKind;
     runtime: RuntimeEnv;
   }) => Promise<ChannelResolveResult[]>;
+};
+
+export type ChannelElevatedAdapter = {
+  allowFromFallback?: (params: {
+    cfg: RemoteClawConfig;
+    accountId?: string | null;
+  }) => Array<string | number> | undefined;
 };
 
 export type ChannelCommandAdapter = {

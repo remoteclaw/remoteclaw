@@ -1,5 +1,8 @@
 import { createRequire } from "node:module";
 import { resolveEffectiveMessagesConfig, resolveHumanDelayConfig } from "../../agents/identity.js";
+// Memory tools gutted in RemoteClaw fork (Middleware Boundary Principle)
+const createMemoryGetTool = (..._args: unknown[]) => undefined as unknown;
+const createMemorySearchTool = (..._args: unknown[]) => undefined as unknown;
 import { handleSlackAction } from "../../agents/tools/slack-actions.js";
 import {
   chunkByNewline,
@@ -16,6 +19,7 @@ import {
   shouldComputeCommandAuthorized,
 } from "../../auto-reply/command-detection.js";
 import { shouldHandleTextCommands } from "../../auto-reply/commands-registry.js";
+import { withReplyDispatcher } from "../../auto-reply/dispatch.js";
 import {
   formatAgentEnvelope,
   formatInboundEnvelope,
@@ -41,6 +45,8 @@ import { signalMessageActions } from "../../channels/plugins/actions/signal.js";
 import { telegramMessageActions } from "../../channels/plugins/actions/telegram.js";
 import { createWhatsAppLoginTool } from "../../channels/plugins/agent-tools/whatsapp-login.js";
 import { recordInboundSession } from "../../channels/session.js";
+// Memory CLI gutted in RemoteClaw fork (Middleware Boundary Principle)
+const registerMemoryCli = (..._args: unknown[]) => undefined as unknown;
 import { loadConfig, writeConfigFile } from "../../config/config.js";
 import {
   resolveChannelGroupPolicy,
@@ -275,7 +281,11 @@ function createRuntimeMedia(): PluginRuntime["media"] {
 }
 
 function createRuntimeTools(): PluginRuntime["tools"] {
-  return {};
+  return {
+    createMemoryGetTool,
+    createMemorySearchTool,
+    registerMemoryCli,
+  };
 }
 
 function createRuntimeChannel(): PluginRuntime["channel"] {
@@ -298,6 +308,7 @@ function createRuntimeChannel(): PluginRuntime["channel"] {
       resolveEffectiveMessagesConfig,
       resolveHumanDelayConfig,
       dispatchReplyFromConfig,
+      withReplyDispatcher,
       finalizeInboundContext,
       formatAgentEnvelope,
       /** @deprecated Prefer `BodyForAgent` + structured user-context blocks (do not build plaintext envelopes for prompts). */
@@ -309,8 +320,17 @@ function createRuntimeChannel(): PluginRuntime["channel"] {
     },
     pairing: {
       buildPairingReply,
-      readAllowFromStore: readChannelAllowFromStore,
-      upsertPairingRequest: upsertChannelPairingRequest,
+      readAllowFromStore: ({ channel, accountId, env }) =>
+        readChannelAllowFromStore(channel, env, accountId),
+      upsertPairingRequest: ({ channel, id, accountId, meta, env, pairingAdapter }) =>
+        upsertChannelPairingRequest({
+          channel,
+          id,
+          accountId,
+          meta,
+          env,
+          pairingAdapter,
+        }),
     },
     media: {
       fetchRemoteMedia,

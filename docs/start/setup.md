@@ -1,5 +1,5 @@
 ---
-description: "Advanced setup and development workflows for RemoteClaw"
+summary: "Advanced setup and development workflows for RemoteClaw"
 read_when:
   - Setting up a new machine
   - You want “latest + greatest” without breaking your personal setup
@@ -8,10 +8,10 @@ title: "Setup"
 
 # Setup
 
-:::note
+<Note>
 If you are setting up for the first time, start with [Getting Started](/start/getting-started).
-For configuration details, see [Configuration](/gateway/configuration).
-:::
+For wizard details, see [Onboarding Wizard](/start/wizard).
+</Note>
 
 Last updated: 2026-01-01
 
@@ -130,8 +130,12 @@ Use this when debugging auth or deciding what to back up:
 - **Telegram bot token**: config/env or `channels.telegram.tokenFile`
 - **Discord bot token**: config/env (token file not yet supported)
 - **Slack tokens**: config/env (`channels.slack.*`)
-- **Pairing allowlists**: `~/.remoteclaw/credentials/<channel>-allowFrom.json`
-- **Agent auth profiles**: `~/.remoteclaw/agents/<agentId>/agent/auth-profiles.json`
+- **Pairing allowlists**:
+  - `~/.remoteclaw/credentials/<channel>-allowFrom.json` (default account)
+  - `~/.remoteclaw/credentials/<channel>-<accountId>-allowFrom.json` (non-default accounts)
+- **Model auth profiles**: `~/.remoteclaw/agents/<agentId>/agent/auth-profiles.json`
+- **File-backed secrets payload (optional)**: `~/.remoteclaw/secrets.json`
+- **Legacy OAuth import**: `~/.remoteclaw/credentials/oauth.json`
   More detail: [Security](/gateway/security#credential-storage-map).
 
 ## Updating (without wrecking your setup)

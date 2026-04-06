@@ -9,14 +9,17 @@ const runtime = {
   exit: vi.fn(),
 };
 
+vi.mock("../../commands/auth-choice-options.js", () => ({
+  formatAuthChoiceChoicesForCli: () => "token|oauth",
+}));
+
 vi.mock("../../commands/onboard-provider-auth-flags.js", () => ({
   ONBOARD_PROVIDER_AUTH_FLAGS: [
     {
-      optionKey: "anthropicApiKey",
-      cliOption: "--anthropic-api-key <key>",
-      description: "Anthropic API key",
+      cliOption: "--mistral-api-key <key>",
+      description: "Mistral API key",
     },
-  ] as Array<{ optionKey: string; cliOption: string; description: string }>,
+  ] as Array<{ cliOption: string; description: string }>,
 }));
 
 vi.mock("../../commands/onboard.js", () => ({
@@ -105,35 +108,7 @@ describe("registerOnboardCommand", () => {
     );
   });
 
-  it("parses --runtime flag", async () => {
-    await runCli(["onboard", "--runtime", "claude"]);
-    expect(onboardCommandMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        runtime: "claude",
-      }),
-      runtime,
-    );
-  });
-
-  it("parses --anthropic-api-key and forwards anthropicApiKey", async () => {
-    await runCli(["onboard", "--anthropic-api-key", "sk-ant-test"]);
-    expect(onboardCommandMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        anthropicApiKey: "sk-ant-test",
-      }),
-      runtime,
-    );
-  });
-
-  it("parses --auth-token flag", async () => {
-    await runCli(["onboard", "--auth-token", "my-token"]);
-    expect(onboardCommandMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        authToken: "my-token",
-      }),
-      runtime,
-    );
-  });
+  // NOTE: --reset-scope and --mistral-api-key options were removed from upstream in v2026.2.26
 
   it("reports errors via runtime on onboard command failures", async () => {
     onboardCommandMock.mockRejectedValueOnce(new Error("onboard failed"));

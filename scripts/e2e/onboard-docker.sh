@@ -406,6 +406,7 @@ NODE
     # Seed a remote config to exercise reset path.
 	    cat > "$HOME/.remoteclaw/remoteclaw.json" <<'"'"'JSON'"'"'
 {
+  "meta": {},
   "agents": { "defaults": { "workspace": "/root/old" } },
   "gateway": {
     "mode": "remote",
@@ -501,6 +502,7 @@ NODE
     # Seed skills config to ensure it survives the wizard.
 	    cat > "$HOME/.remoteclaw/remoteclaw.json" <<'"'"'JSON'"'"'
 {
+  "meta": {},
   "skills": {
     "allowBundled": ["__none__"],
     "install": { "nodeManager": "bun" }

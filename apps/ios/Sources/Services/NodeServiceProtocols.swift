@@ -3,10 +3,13 @@ import Foundation
 import RemoteClawKit
 import UIKit
 
+typealias RemoteClawCameraSnapResult = (format: String, base64: String, width: Int, height: Int)
+typealias RemoteClawCameraClipResult = (format: String, base64: String, durationMs: Int, hasAudio: Bool)
+
 protocol CameraServicing: Sendable {
     func listDevices() async -> [CameraController.CameraDeviceInfo]
-    func snap(params: RemoteClawCameraSnapParams) async throws -> (format: String, base64: String, width: Int, height: Int)
-    func clip(params: RemoteClawCameraClipParams) async throws -> (format: String, base64: String, durationMs: Int, hasAudio: Bool)
+    func snap(params: RemoteClawCameraSnapParams) async throws -> RemoteClawCameraSnapResult
+    func clip(params: RemoteClawCameraClipParams) async throws -> RemoteClawCameraClipResult
 }
 
 protocol ScreenRecordingServicing: Sendable {

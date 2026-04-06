@@ -573,3 +573,24 @@ export type {
   VoiceCredentialReport,
   VoiceCredentialStatus,
 } from "../channels/voice-credentials.js";
+
+// B2 DIFF-SYNC: new upstream exports from non-gutted modules
+export { createScopedPairingAccess } from "./pairing-access.js";
+export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
+export {
+  formatUtcTimestamp,
+  formatZonedTimestamp,
+  resolveTimezone,
+} from "../infra/format-time/format-datetime.js";
+export {
+  buildHostnameAllowlistPolicyFromSuffixAllowlist,
+  isHttpsUrlAllowedByHostnameSuffixAllowlist,
+  normalizeHostnameSuffixAllowlist,
+} from "./ssrf-policy.js";
+export { fetchWithBearerAuthScopeFallback } from "./fetch-auth.js";
+export type { ScopeTokenProvider } from "./fetch-auth.js";
+export {
+  DM_GROUP_ACCESS_REASON,
+  readStoreAllowFromForDmPolicy,
+} from "../security/dm-policy-shared.js";
+export type { DmGroupAccessReasonCode } from "../security/dm-policy-shared.js";

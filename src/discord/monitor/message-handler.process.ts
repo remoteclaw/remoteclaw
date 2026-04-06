@@ -495,7 +495,8 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
     }
     // Strip reasoning/thinking tags that may leak through the stream.
     const cleaned = stripReasoningTagsFromText(text, { mode: "strict", trim: "both" });
-    if (!cleaned) {
+    // Skip pure-reasoning messages (e.g. "Reasoning:\n…") that contain no answer text.
+    if (!cleaned || cleaned.startsWith("Reasoning:\n")) {
       return;
     }
     if (cleaned === lastPartialText) {

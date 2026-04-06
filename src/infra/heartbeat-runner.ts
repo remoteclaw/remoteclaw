@@ -655,7 +655,6 @@ export async function runHeartbeatOnce(opts: {
       accountId: delivery.accountId,
       threadId: delivery.threadId,
       payloads: [{ text: summary }],
-      agentId,
       deps: opts.deps,
     });
     return true;
@@ -833,7 +832,6 @@ export async function runHeartbeatOnce(opts: {
       channel: delivery.channel,
       to: delivery.to,
       accountId: deliveryAccountId,
-      agentId,
       threadId: delivery.threadId,
       payloads: [
         {

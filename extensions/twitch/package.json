@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/twitch",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "RemoteClaw Twitch channel plugin",
   "type": "module",
   "dependencies": {

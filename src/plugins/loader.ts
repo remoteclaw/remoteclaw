@@ -4,8 +4,8 @@ import { fileURLToPath } from "node:url";
 import { createJiti } from "jiti";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { GatewayRequestHandler } from "../gateway/server-methods/types.js";
+import { openBoundaryFileSync } from "../infra/boundary-file-read.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
-import { isPathInsideWithRealpath } from "../security/scan-paths.js";
 import { resolveUserPath } from "../utils.js";
 import { clearPluginCommands } from "./commands.js";
 import {
@@ -47,20 +47,25 @@ const defaultLogger = () => createSubsystemLogger("plugins");
 const resolvePluginSdkAliasFile = (params: {
   srcFile: string;
   distFile: string;
+  modulePath?: string;
 }): string | null => {
   try {
-    const modulePath = fileURLToPath(import.meta.url);
+    const modulePath = params.modulePath ?? fileURLToPath(import.meta.url);
     const isProduction = process.env.NODE_ENV === "production";
     const isTest = process.env.VITEST || process.env.NODE_ENV === "test";
+    const normalizedModulePath = modulePath.replace(/\\/g, "/");
+    const isDistRuntime = normalizedModulePath.includes("/dist/");
     let cursor = path.dirname(modulePath);
     for (let i = 0; i < 6; i += 1) {
       const srcCandidate = path.join(cursor, "src", "plugin-sdk", params.srcFile);
       const distCandidate = path.join(cursor, "dist", "plugin-sdk", params.distFile);
-      const orderedCandidates = isProduction
-        ? isTest
-          ? [distCandidate, srcCandidate]
-          : [distCandidate]
-        : [srcCandidate, distCandidate];
+      const orderedCandidates = isDistRuntime
+        ? [distCandidate, srcCandidate]
+        : isProduction
+          ? isTest
+            ? [distCandidate, srcCandidate]
+            : [distCandidate]
+          : [srcCandidate, distCandidate];
       for (const candidate of orderedCandidates) {
         if (fs.existsSync(candidate)) {
           return candidate;
@@ -83,6 +88,10 @@ const resolvePluginSdkAlias = (): string | null =>
 
 const resolvePluginSdkAccountIdAlias = (): string | null => {
   return resolvePluginSdkAliasFile({ srcFile: "account-id.ts", distFile: "account-id.js" });
+};
+
+export const __testing = {
+  resolvePluginSdkAliasFile,
 };
 
 function buildCacheKey(params: {
@@ -513,13 +522,19 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
       continue;
     }
 
-    if (
-      !isPathInsideWithRealpath(candidate.rootDir, candidate.source, {
-        requireRealpath: true,
-      })
-    ) {
+    const pluginRoot = safeRealpathOrResolve(candidate.rootDir);
+    const opened = openBoundaryFileSync({
+      absolutePath: candidate.source,
+      rootPath: pluginRoot,
+      boundaryLabel: "plugin root",
+      // Discovery stores rootDir as realpath but source may still be a lexical alias
+      // (e.g. /var/... vs /private/var/... on macOS). Canonical boundary checks
+      // still enforce containment; skip lexical pre-check to avoid false escapes.
+      skipLexicalRootCheck: true,
+    });
+    if (!opened.ok) {
       record.status = "error";
-      record.error = "plugin entry path escapes plugin root";
+      record.error = "plugin entry path escapes plugin root or fails alias checks";
       registry.plugins.push(record);
       seenIds.set(pluginId, candidate.origin);
       registry.diagnostics.push({
@@ -530,10 +545,12 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
       });
       continue;
     }
+    const safeSource = opened.path;
+    fs.closeSync(opened.fd);
 
     let mod: RemoteClawPluginModule | null = null;
     try {
-      mod = getJiti()(candidate.source) as RemoteClawPluginModule;
+      mod = getJiti()(safeSource) as RemoteClawPluginModule;
     } catch (err) {
       recordPluginError({
         logger,
@@ -663,4 +680,12 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
   setActivePluginRegistry(registry, cacheKey);
   initializeGlobalHookRunner(registry);
   return registry;
+}
+
+function safeRealpathOrResolve(value: string): string {
+  try {
+    return fs.realpathSync(value);
+  } catch {
+    return path.resolve(value);
+  }
 }

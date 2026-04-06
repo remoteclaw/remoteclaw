@@ -60,6 +60,7 @@ describe("deliverAgentCommandResult", () => {
 
   async function runDelivery(params: {
     opts: Record<string, unknown>;
+    outboundSession?: { key?: string; agentId?: string };
     sessionEntry?: SessionEntry;
     runtime?: RuntimeEnv;
     resultText?: string;
@@ -74,6 +75,7 @@ describe("deliverAgentCommandResult", () => {
       deps,
       runtime,
       opts: params.opts as never,
+      outboundSession: params.outboundSession,
       sessionEntry: params.sessionEntry,
       result,
       payloads: result.payloads,
@@ -243,6 +245,30 @@ describe("deliverAgentCommandResult", () => {
 
     expect(mocks.resolveOutboundTarget).toHaveBeenCalledWith(
       expect.objectContaining({ channel: "whatsapp", to: undefined }),
+    );
+  });
+
+  it("uses caller-provided outbound session context when opts.sessionKey is absent", async () => {
+    await runDelivery({
+      opts: {
+        message: "hello",
+        deliver: true,
+        channel: "whatsapp",
+        to: "+15551234567",
+      },
+      outboundSession: {
+        key: "agent:exec:hook:gmail:thread-1",
+        agentId: "exec",
+      },
+    });
+
+    expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(
+      expect.objectContaining({
+        session: expect.objectContaining({
+          key: "agent:exec:hook:gmail:thread-1",
+          agentId: "exec",
+        }),
+      }),
     );
   });
 

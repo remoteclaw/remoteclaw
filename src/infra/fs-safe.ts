@@ -41,7 +41,12 @@ const OPEN_READ_FLAGS = fsConstants.O_RDONLY | (SUPPORTS_NOFOLLOW ? fsConstants.
 
 const ensureTrailingSep = (value: string) => (value.endsWith(path.sep) ? value : value + path.sep);
 
-async function openVerifiedLocalFile(filePath: string): Promise<SafeOpenResult> {
+async function openVerifiedLocalFile(
+  filePath: string,
+  options?: {
+    rejectHardlinks?: boolean;
+  },
+): Promise<SafeOpenResult> {
   let handle: FileHandle;
   try {
     handle = await fs.open(filePath, OPEN_READ_FLAGS);
@@ -63,12 +68,18 @@ async function openVerifiedLocalFile(filePath: string): Promise<SafeOpenResult> 
     if (!stat.isFile()) {
       throw new SafeOpenError("not-file", "not a file");
     }
+    if (options?.rejectHardlinks && stat.nlink > 1) {
+      throw new SafeOpenError("invalid-path", "hardlinked path not allowed");
+    }
     if (!sameFileIdentity(stat, lstat)) {
       throw new SafeOpenError("path-mismatch", "path changed during read");
     }
 
     const realPath = await fs.realpath(filePath);
     const realStat = await fs.stat(realPath);
+    if (options?.rejectHardlinks && realStat.nlink > 1) {
+      throw new SafeOpenError("invalid-path", "hardlinked path not allowed");
+    }
     if (!sameFileIdentity(stat, realStat)) {
       throw new SafeOpenError("path-mismatch", "path mismatch");
     }
@@ -89,6 +100,7 @@ async function openVerifiedLocalFile(filePath: string): Promise<SafeOpenResult> 
 export async function openFileWithinRoot(params: {
   rootDir: string;
   relativePath: string;
+  rejectHardlinks?: boolean;
 }): Promise<SafeOpenResult> {
   let rootReal: string;
   try {
@@ -118,6 +130,11 @@ export async function openFileWithinRoot(params: {
       });
     }
     throw err;
+  }
+
+  if (params.rejectHardlinks !== false && opened.stat.nlink > 1) {
+    await opened.handle.close().catch(() => {});
+    throw new SafeOpenError("invalid-path", "hardlinked path not allowed");
   }
 
   if (!isPathInside(rootWithSep, opened.realPath)) {

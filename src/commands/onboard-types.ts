@@ -87,6 +87,7 @@ export type TailscaleMode = "off" | "serve" | "funnel";
 export type ChannelChoice = ChannelId;
 // Legacy alias (pre-rename).
 export type ProviderChoice = ChannelChoice;
+export type SecretInputMode = "plaintext" | "ref";
 
 export type AgentRuntime = "claude" | "gemini" | "codex" | "opencode";
 
@@ -99,6 +100,7 @@ export type OnboardOptions = {
   /** Required for non-interactive onboarding; skips the interactive risk prompt when true. */
   acceptRisk?: boolean;
   reset?: boolean;
+  resetScope?: ResetScope;
   runtime?: AgentRuntime;
   anthropicApiKey?: string;
   openaiApiKey?: string;
@@ -106,6 +108,8 @@ export type OnboardOptions = {
   codexApiKey?: string;
   /** Auth token (e.g., CLAUDE_CODE_OAUTH_TOKEN for Claude). */
   authToken?: string;
+  /** API key persistence mode for onboarding flows (default: plaintext). */
+  secretInputMode?: SecretInputMode;
   // Provider API key fields (consumed by legacy auth-choice system via ONBOARD_PROVIDER_AUTH_FLAGS).
   mistralApiKey?: string;
   openrouterApiKey?: string;

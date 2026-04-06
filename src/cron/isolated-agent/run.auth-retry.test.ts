@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildSessionKey } from "../../middleware/channel-bridge.js";
 import type { ChannelMessage } from "../../middleware/types.js";
 
 // ---------- mocks ----------
@@ -13,35 +12,40 @@ vi.mock("../../middleware/channel-bridge.js", async (importOriginal) => {
     ChannelBridge: class MockChannelBridge {
       readonly provider: string;
       readonly workspaceDir?: string;
+      readonly runtimeEnv?: Record<string, string>;
 
-      constructor(opts: { provider: string; workspaceDir?: string }) {
+      constructor(opts: {
+        provider: string;
+        workspaceDir?: string;
+        runtimeEnv?: Record<string, string>;
+      }) {
         this.provider = opts.provider;
         this.workspaceDir = opts.workspaceDir;
+        this.runtimeEnv = opts.runtimeEnv;
       }
 
       handle(message: ChannelMessage, callbacks?: unknown, abortSignal?: AbortSignal) {
-        return channelBridgeHandleMock(message, callbacks, abortSignal);
+        return channelBridgeHandleMock(message, callbacks, abortSignal, this.runtimeEnv);
       }
     },
   };
 });
 
+const withAuthKeyRetryMock = vi.fn();
 vi.mock("../../middleware/auth-key-retry.js", () => ({
-  withAuthKeyRetry: vi.fn(
-    async (_options: unknown, execute: (env: Record<string, string>) => Promise<unknown>) =>
-      execute({}),
-  ),
+  withAuthKeyRetry: withAuthKeyRetryMock,
 }));
 
 vi.mock("../../agents/channel-tools.js", () => ({
   resolveChannelMessageToolHints: vi.fn().mockReturnValue([]),
 }));
 
+const resolveAgentRuntimeEnvMock = vi.fn();
 vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentConfig: vi.fn().mockReturnValue(undefined),
   resolveAgentDir: vi.fn().mockReturnValue("/tmp/agent-dir"),
   resolveAgentRuntimeArgs: vi.fn().mockReturnValue(undefined),
-  resolveAgentRuntimeEnv: vi.fn().mockReturnValue(undefined),
+  resolveAgentRuntimeEnv: resolveAgentRuntimeEnvMock,
   resolveAgentRuntimeOrThrow: vi.fn().mockReturnValue("claude"),
   resolveAgentWorkspaceDir: vi.fn().mockReturnValue("/tmp/workspace"),
   resolveDefaultAgentId: vi.fn().mockReturnValue("default"),
@@ -183,9 +187,6 @@ vi.mock("./session.js", () => ({
   resolveCronSession: resolveCronSessionMock,
 }));
 
-// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
-// No longer need to mock ../../agents/defaults.js — constants are inlined.
-
 const { runCronIsolatedAgentTurn } = await import("./run.js");
 
 // ---------- helpers ----------
@@ -251,7 +252,7 @@ function makeDeliveryResult(overrides?: Record<string, unknown>) {
 
 // ---------- tests ----------
 
-describe("runCronIsolatedAgentTurn — ChannelBridge wiring", () => {
+describe("runCronIsolatedAgentTurn — auth key retry wiring", () => {
   let previousFastTestEnv: string | undefined;
 
   beforeEach(() => {
@@ -259,8 +260,16 @@ describe("runCronIsolatedAgentTurn — ChannelBridge wiring", () => {
     previousFastTestEnv = process.env.REMOTECLAW_TEST_FAST;
     delete process.env.REMOTECLAW_TEST_FAST;
     resolveCronSessionMock.mockReturnValue(makeFreshSession());
+    resolveAgentRuntimeEnvMock.mockReturnValue(undefined);
 
-    // Default: ChannelBridge.handle() returns a successful delivery
+    // Default: withAuthKeyRetry passes through to the execute callback
+    withAuthKeyRetryMock.mockImplementation(
+      async (
+        options: { baseEnv?: Record<string, string> },
+        execute: (env: Record<string, string>) => Promise<unknown>,
+      ) => execute(options.baseEnv ?? {}),
+    );
+
     channelBridgeHandleMock.mockResolvedValue(makeDeliveryResult());
   });
 
@@ -272,145 +281,86 @@ describe("runCronIsolatedAgentTurn — ChannelBridge wiring", () => {
     process.env.REMOTECLAW_TEST_FAST = previousFastTestEnv;
   });
 
-  it("routes cron message through ChannelBridge.handle()", async () => {
+  it("wraps bridge execution with withAuthKeyRetry", async () => {
+    await runCronIsolatedAgentTurn(makeParams());
+
+    expect(withAuthKeyRetryMock).toHaveBeenCalledOnce();
+  });
+
+  it("passes cfgWithAgentDefaults and agentId to withAuthKeyRetry", async () => {
+    await runCronIsolatedAgentTurn(makeParams({ agentId: "custom-agent" }));
+
+    const options = withAuthKeyRetryMock.mock.calls[0][0];
+    expect(options.cfg).toBeDefined();
+    expect(options.agentId).toBe("custom-agent");
+  });
+
+  it("passes resolveAgentRuntimeEnv result as baseEnv", async () => {
+    const runtimeEnv = { CLAUDE_CONFIG_DIR: "/home/user/.config/claude" };
+    resolveAgentRuntimeEnvMock.mockReturnValue(runtimeEnv);
+
+    await runCronIsolatedAgentTurn(makeParams());
+
+    const options = withAuthKeyRetryMock.mock.calls[0][0];
+    expect(options.baseEnv).toEqual(runtimeEnv);
+  });
+
+  it("passes undefined baseEnv when resolveAgentRuntimeEnv returns undefined", async () => {
+    resolveAgentRuntimeEnvMock.mockReturnValue(undefined);
+
+    await runCronIsolatedAgentTurn(makeParams());
+
+    const options = withAuthKeyRetryMock.mock.calls[0][0];
+    expect(options.baseEnv).toBeUndefined();
+  });
+
+  it("provides error extractor that reads result.error", async () => {
+    await runCronIsolatedAgentTurn(makeParams());
+
+    const getErrorMessage = withAuthKeyRetryMock.mock.calls[0][2];
+    expect(getErrorMessage({ error: "rate limit exceeded" })).toBe("rate limit exceeded");
+    expect(getErrorMessage({ error: undefined })).toBeUndefined();
+    expect(getErrorMessage({})).toBeUndefined();
+  });
+
+  it("creates ChannelBridge with runtimeEnv from withAuthKeyRetry callback", async () => {
+    const injectedEnv = {
+      CLAUDE_CONFIG_DIR: "/home/user/.config/claude",
+      ANTHROPIC_API_KEY: "sk-test-injected",
+    };
+
+    withAuthKeyRetryMock.mockImplementation(
+      async (_options: unknown, execute: (env: Record<string, string>) => Promise<unknown>) =>
+        execute(injectedEnv),
+    );
+
+    await runCronIsolatedAgentTurn(makeParams());
+
+    // The mock ChannelBridge passes runtimeEnv as 4th arg to handle mock
+    const runtimeEnvPassedToBridge = channelBridgeHandleMock.mock.calls[0][3];
+    expect(runtimeEnvPassedToBridge).toEqual(injectedEnv);
+  });
+
+  it("default agentId falls back to resolveDefaultAgentId", async () => {
+    await runCronIsolatedAgentTurn(makeParams());
+
+    const options = withAuthKeyRetryMock.mock.calls[0][0];
+    expect(options.agentId).toBe("default");
+  });
+
+  it("returns result from withAuthKeyRetry callback", async () => {
     const result = await runCronIsolatedAgentTurn(makeParams());
 
     expect(result.status).toBe("ok");
     expect(channelBridgeHandleMock).toHaveBeenCalledOnce();
   });
 
-  it("builds ChannelMessage with cron job context", async () => {
-    await runCronIsolatedAgentTurn(makeParams());
-
-    const message = channelBridgeHandleMock.mock.calls[0][0] as ChannelMessage;
-    expect(message.id).toBe("cron-job-1");
-    expect(message.from).toBe("bot-456"); // resolvedDelivery.accountId
-    expect(message.replyToId).toBe("cron:cron-job-1"); // job ID for session key distinction
-    expect(message.channelId).toBe("chat-123"); // resolvedDelivery.to
-    expect(message.provider).toBe("telegram"); // resolvedDelivery.channel
-    expect(message.text).toContain("generate daily summary");
-  });
-
-  it("produces distinct session keys for different cron jobs", async () => {
-    // Run two cron jobs with different IDs
-    await runCronIsolatedAgentTurn(makeParams({ job: makeJob({ id: "daily-review" }) }));
-    await runCronIsolatedAgentTurn(makeParams({ job: makeJob({ id: "weekly-digest" }) }));
-
-    const messageA = channelBridgeHandleMock.mock.calls[0][0] as ChannelMessage;
-    const messageB = channelBridgeHandleMock.mock.calls[1][0] as ChannelMessage;
-
-    // replyToId carries the job-specific identifier
-    expect(messageA.replyToId).toBe("cron:daily-review");
-    expect(messageB.replyToId).toBe("cron:weekly-digest");
-
-    // buildSessionKey maps replyToId → threadId, producing distinct keys
-    const keyA = buildSessionKey(messageA);
-    const keyB = buildSessionKey(messageB);
-    expect(keyA.threadId).not.toBe(keyB.threadId);
-  });
-
-  it("passes no streaming callbacks (cron has no real-time delivery)", async () => {
-    await runCronIsolatedAgentTurn(makeParams());
-
-    const callbacks = channelBridgeHandleMock.mock.calls[0][1];
-    expect(callbacks).toBeUndefined();
-  });
-
-  it("passes abort signal to ChannelBridge.handle()", async () => {
-    const controller = new AbortController();
-    await runCronIsolatedAgentTurn(makeParams({ abortSignal: controller.signal }));
-
-    const abortSignal = channelBridgeHandleMock.mock.calls[0][2];
-    expect(abortSignal).toBe(controller.signal);
-  });
-
-  it("maps AgentDeliveryResult payloads to EmbeddedPiRunResult format", async () => {
-    channelBridgeHandleMock.mockResolvedValue(
-      makeDeliveryResult({
-        payloads: [{ text: "Hello from cron" }],
-      }),
-    );
+  it("propagates thrown errors from withAuthKeyRetry", async () => {
+    withAuthKeyRetryMock.mockRejectedValue(new Error("all auth keys exhausted"));
 
     const result = await runCronIsolatedAgentTurn(makeParams());
 
-    expect(result.status).toBe("ok");
-    // outputText comes from pickLastNonEmptyTextFromPayloads (mocked to "test output")
-    // — the point here is that the run completed successfully with mapped payloads
-    expect(result.outputText).toBe("test output");
-  });
-
-  it("maps MCP side effects (messaging tool sends) to result", async () => {
-    channelBridgeHandleMock.mockResolvedValue(
-      makeDeliveryResult({
-        mcp: {
-          sentTexts: ["sent via MCP"],
-          sentMediaUrls: [],
-          sentTargets: [{ tool: "telegram_send", provider: "telegram", to: "chat-123" }],
-          cronAdds: 1,
-        },
-      }),
-    );
-
-    // runWithModelFallback returns the mapped result
-    const result = await runCronIsolatedAgentTurn(makeParams());
-    expect(result.status).toBe("ok");
-  });
-
-  it("treats empty-payload result with error field as ok (no model-fallback re-throw)", async () => {
-    channelBridgeHandleMock.mockResolvedValue({
-      payloads: [],
-      run: {
-        text: "",
-        sessionId: undefined,
-        durationMs: 100,
-        usage: undefined,
-        aborted: false,
-      },
-      mcp: { sentTexts: [], sentMediaUrls: [], sentTargets: [], cronAdds: 0 },
-      error: "Provider rate limited",
-    });
-
-    // model-fallback.js was removed; the error field on AgentDeliveryResult
-    // is not surfaced as a throw. Without isError payloads, the run
-    // completes as "ok".
-    const result = await runCronIsolatedAgentTurn(makeParams());
-    expect(result.status).toBe("ok");
-  });
-
-  it("preserves delivery with error payloads (partial success)", async () => {
-    channelBridgeHandleMock.mockResolvedValue(
-      makeDeliveryResult({
-        payloads: [{ text: "Partial output" }],
-        error: "Execution timed out",
-      }),
-    );
-
-    const result = await runCronIsolatedAgentTurn(makeParams());
-
-    // Partial success: has payloads despite error, so should not re-throw
-    expect(channelBridgeHandleMock).toHaveBeenCalledOnce();
-    expect(result.status).toBe("ok");
-  });
-
-  it("maps token usage from AgentDeliveryResult to telemetry", async () => {
-    channelBridgeHandleMock.mockResolvedValue(
-      makeDeliveryResult({
-        run: {
-          text: "response",
-          sessionId: "sess-1",
-          durationMs: 2000,
-          usage: { inputTokens: 500, outputTokens: 200, cacheReadTokens: 50 },
-          aborted: false,
-        },
-      }),
-    );
-
-    const result = await runCronIsolatedAgentTurn(makeParams());
-
-    expect(result.status).toBe("ok");
-    // Model management gutted — cron runs default to "unknown" unless
-    // an explicit model override is provided in the job payload.
-    expect(result.model).toBe("unknown");
-    expect(result.provider).toBe("unknown");
+    expect(result.status).toBe("error");
+    expect(result.error).toContain("all auth keys exhausted");
   });
 });

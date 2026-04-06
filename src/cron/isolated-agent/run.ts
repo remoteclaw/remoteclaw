@@ -25,6 +25,7 @@ import type { AgentDefaultsConfig } from "../../config/types.js";
 import { resolveGatewayCredentialsFromConfig } from "../../gateway/credentials.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
 import { logWarn } from "../../logger.js";
+import { withAuthKeyRetry } from "../../middleware/auth-key-retry.js";
 import { ChannelBridge } from "../../middleware/channel-bridge.js";
 import type { SessionMap } from "../../middleware/session-map.js";
 import type { AgentDeliveryResult, ChannelMessage } from "../../middleware/types.js";
@@ -353,16 +354,6 @@ export async function runCronIsolatedAgentTurn(params: {
       getSessionId: () => getCliSessionId(cronSession.sessionEntry, provider),
     });
 
-    const bridge = new ChannelBridge({
-      provider: resolveAgentRuntimeOrThrow(params.cfg, agentId),
-      sessionMap,
-      gatewayUrl: resolveGatewayUrlFromConfig(cfgWithAgentDefaults),
-      gatewayToken: resolveGatewayTokenFromConfig(cfgWithAgentDefaults),
-      workspaceDir,
-      runtimeArgs: resolveAgentRuntimeArgs(params.cfg, agentId),
-      runtimeEnv: resolveAgentRuntimeEnv(params.cfg, agentId),
-    });
-
     const messageToolHints = resolveChannelMessageToolHints({
       cfg: cfgWithAgentDefaults,
       channel: resolvedDelivery.channel,
@@ -379,7 +370,27 @@ export async function runCronIsolatedAgentTurn(params: {
       timezone: resolveUserTimezone(cfgWithAgentDefaults.agents?.defaults?.userTimezone),
     });
 
-    runResult = await bridge.handle(message, undefined, abortSignal);
+    // Execute with auth key retry — rotates to next profile on rate-limit/auth errors.
+    runResult = await withAuthKeyRetry<AgentDeliveryResult>(
+      {
+        cfg: cfgWithAgentDefaults,
+        agentId,
+        baseEnv: resolveAgentRuntimeEnv(params.cfg, agentId),
+      },
+      async (runtimeEnv) => {
+        const bridge = new ChannelBridge({
+          provider: resolveAgentRuntimeOrThrow(params.cfg, agentId),
+          sessionMap,
+          gatewayUrl: resolveGatewayUrlFromConfig(cfgWithAgentDefaults),
+          gatewayToken: resolveGatewayTokenFromConfig(cfgWithAgentDefaults),
+          workspaceDir,
+          runtimeArgs: resolveAgentRuntimeArgs(params.cfg, agentId),
+          runtimeEnv,
+        });
+        return await bridge.handle(message, undefined, abortSignal);
+      },
+      (result) => result.error,
+    );
     runEndedAt = Date.now();
   } catch (err) {
     return withRunSession({ status: "error", error: String(err) });

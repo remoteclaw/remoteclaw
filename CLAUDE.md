@@ -120,7 +120,12 @@ GitHub Actions (`.github/workflows/ci.yml`):
   `package.json` version (`0.1.0`) before publishing.
 - **npm tag routing**: pre-release → `beta` tag; stable release → `latest` tag.
 - **`next` channel**: `publish-next` runs on every push to `main` — automatic,
-  no manual step.
+  no manual step. Stamps dynamic version on root + all extensions.
+- **Version sync**: Both publish jobs run `pnpm release:check` which validates
+  extension versions match root. Extensions are synced automatically in CI.
+- **Post-release bump**: After a release is confirmed green, bump `package.json`
+  and all `extensions/*/package.json` to the next minor version (e.g.,
+  `0.1.0` → `0.2.0`) so `next` builds start on the new development version.
 - **Checklist**: `docs/reference/RELEASING.md` (upstream-inherited, adapted).
 
 ## Security

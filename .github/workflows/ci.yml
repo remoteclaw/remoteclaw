@@ -117,20 +117,22 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Publish next
+      - name: Stamp next version
         run: |
           PKG_VERSION=$(node -p "require('./package.json').version")
           SHORT_SHA=$(git rev-parse --short HEAD)
           BUILD_TS=$(date -u +%Y%m%d%H%M%S)
           NEXT_VERSION="${PKG_VERSION}-next.${BUILD_TS}.${SHORT_SHA}"
-
-          if npm view "remoteclaw@${NEXT_VERSION}" version &>/dev/null; then
-            echo "Version ${NEXT_VERSION} already published, skipping"
-            exit 0
-          fi
-
           npm version "$NEXT_VERSION" --no-git-tag-version
-          npm publish --tag next --provenance --access public || true
+
+      - name: Sync extension versions
+        run: pnpm plugins:sync-version
+
+      - name: Validate release artifacts
+        run: pnpm release:check
+
+      - name: Publish next
+        run: npm publish --tag next --provenance --access public
 
   publish-latest:
     if: github.event_name == 'release'
@@ -156,9 +158,6 @@ jobs:
         with:
           registry-url: "https://registry.npmjs.org"
 
-      - name: Upgrade npm
-        run: npm install -g "npm@>=11.5.1"
-
       - name: Validate version matches tag
         run: |
           TAG="${{ github.event.release.tag_name }}"
@@ -172,11 +171,11 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Test
-        run: pnpm test
-        env:
-          REMOTECLAW_TEST_WORKERS: 1
-          REMOTECLAW_TEST_MAX_OLD_SPACE_SIZE_MB: 1536
+      - name: Sync extension versions
+        run: pnpm plugins:sync-version
+
+      - name: Validate release artifacts
+        run: pnpm release:check
 
       - name: Publish
         run: |

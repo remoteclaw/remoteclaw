@@ -86,4 +86,37 @@ describe("bot-native-command-menu", () => {
 
     expect(callOrder).toEqual(["delete", "set"]);
   });
+
+  it("retries with fewer commands on BOT_COMMANDS_TOO_MUCH", async () => {
+    const deleteMyCommands = vi.fn(async () => undefined);
+    const setMyCommands = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("400: Bad Request: BOT_COMMANDS_TOO_MUCH"))
+      .mockResolvedValue(undefined);
+    const runtimeLog = vi.fn();
+
+    syncTelegramMenuCommands({
+      bot: {
+        api: {
+          deleteMyCommands,
+          setMyCommands,
+        },
+      } as unknown as Parameters<typeof syncTelegramMenuCommands>[0]["bot"],
+      runtime: {
+        log: runtimeLog,
+        error: vi.fn(),
+        exit: vi.fn(),
+      } as Parameters<typeof syncTelegramMenuCommands>[0]["runtime"],
+      commandsToRegister: Array.from({ length: 100 }, (_, i) => ({
+        command: `cmd_${i}`,
+        description: `Command ${i}`,
+      })),
+    });
+
+    await vi.waitFor(() => {
+      expect(setMyCommands).toHaveBeenCalledTimes(1);
+    });
+    const firstPayload = setMyCommands.mock.calls[0]?.[0] as Array<unknown>;
+    expect(firstPayload).toHaveLength(100);
+  });
 });

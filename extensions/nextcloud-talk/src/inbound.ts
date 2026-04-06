@@ -99,7 +99,9 @@ export async function handleNextcloudTalkInbound(params: {
   const storeAllowFrom =
     dmPolicy === "allowlist"
       ? []
-      : await core.channel.pairing.readAllowFromStore(CHANNEL_ID).catch(() => []);
+      : await core.channel.pairing
+          .readAllowFromStore({ channel: CHANNEL_ID, accountId: account.accountId })
+          .catch(() => []);
   const storeAllowList = normalizeNextcloudTalkAllowlist(storeAllowFrom);
 
   const roomMatch = resolveNextcloudTalkRoomMatch({
@@ -176,6 +178,7 @@ export async function handleNextcloudTalkInbound(params: {
         if (dmPolicy === "pairing") {
           const { code, created } = await core.channel.pairing.upsertPairingRequest({
             channel: CHANNEL_ID,
+            accountId: account.accountId,
             id: senderId,
             meta: { name: senderName || undefined },
           });

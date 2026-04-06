@@ -1,5 +1,5 @@
 ---
-description: "Run the ACP bridge for IDE integrations"
+summary: "Run the ACP bridge for IDE integrations"
 read_when:
   - Setting up ACP-based IDE integrations
   - Debugging ACP session routing to the Gateway
@@ -8,7 +8,7 @@ title: "acp"
 
 # acp
 
-Run the ACP (Agent Client Protocol) bridge that talks to a RemoteClaw Gateway.
+Run the [Agent Client Protocol (ACP)](https://agentclientprotocol.com/) bridge that talks to a RemoteClaw Gateway.
 
 This command speaks ACP over stdio for IDEs and forwards prompts to the Gateway
 over WebSocket. It keeps ACP sessions mapped to Gateway session keys.

@@ -81,6 +81,8 @@ const BASE_RELOAD_RULES_TAIL: ReloadRule[] = [
   { prefix: "messages", kind: "none" },
   { prefix: "session", kind: "none" },
   { prefix: "talk", kind: "none" },
+  { prefix: "skills", kind: "none" },
+  { prefix: "secrets", kind: "none" },
   { prefix: "plugins", kind: "restart" },
   { prefix: "ui", kind: "none" },
   { prefix: "gateway", kind: "restart" },
@@ -152,7 +154,7 @@ export function diffConfigPaths(prev: unknown, next: unknown, prefix = ""): stri
     return paths;
   }
   if (Array.isArray(prev) && Array.isArray(next)) {
-    // Arrays can contain object entries (for example scope.rules);
+    // Arrays can contain object entries (for example memory.qmd.paths/scope.rules);
     // compare structurally so identical values are not reported as changed.
     if (isDeepStrictEqual(prev, next)) {
       return [];
@@ -254,7 +256,7 @@ export function startGatewayConfigReloader(opts: {
   initialConfig: RemoteClawConfig;
   readSnapshot: () => Promise<ConfigFileSnapshot>;
   onHotReload: (plan: GatewayReloadPlan, nextConfig: RemoteClawConfig) => Promise<void>;
-  onRestart: (plan: GatewayReloadPlan, nextConfig: RemoteClawConfig) => void;
+  onRestart: (plan: GatewayReloadPlan, nextConfig: RemoteClawConfig) => void | Promise<void>;
   log: {
     info: (msg: string) => void;
     warn: (msg: string) => void;
@@ -290,7 +292,16 @@ export function startGatewayConfigReloader(opts: {
       return;
     }
     restartQueued = true;
-    opts.onRestart(plan, nextConfig);
+    void (async () => {
+      try {
+        await opts.onRestart(plan, nextConfig);
+      } catch (err) {
+        // Restart checks can fail (for example unresolved SecretRefs). Keep the
+        // reloader alive and allow a future change to retry restart scheduling.
+        restartQueued = false;
+        opts.log.error(`config restart failed: ${String(err)}`);
+      }
+    })();
   };
 
   const handleMissingSnapshot = (snapshot: ConfigFileSnapshot): boolean => {

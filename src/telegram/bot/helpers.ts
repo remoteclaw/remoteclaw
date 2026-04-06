@@ -39,7 +39,7 @@ export async function resolveTelegramGroupAllowFromContext(params: {
   const storeAllowFrom = await readChannelAllowFromStore(
     "telegram",
     process.env,
-    params.accountId,
+    params.accountId ?? "",
   ).catch(() => []);
   const { groupConfig, topicConfig } = params.resolveTelegramGroupConfig(
     params.chatId,

@@ -53,8 +53,12 @@ const dispatchInboundMessage = vi.fn(async (_params?: DispatchInboundParams) => 
   counts: { final: 0, tool: 0, block: 0 },
 }));
 const recordInboundSession = vi.fn(async () => {});
-const readSessionUpdatedAt = vi.fn(() => undefined);
-const resolveStorePath = vi.fn(() => "/tmp/remoteclaw-discord-process-test-sessions.json");
+const configSessionsMocks = vi.hoisted(() => ({
+  readSessionUpdatedAt: vi.fn(() => undefined),
+  resolveStorePath: vi.fn(() => "/tmp/remoteclaw-discord-process-test-sessions.json"),
+}));
+const readSessionUpdatedAt = configSessionsMocks.readSessionUpdatedAt;
+const resolveStorePath = configSessionsMocks.resolveStorePath;
 
 vi.mock("../send.js", () => ({
   reactMessageDiscord: sendMocks.reactMessageDiscord,
@@ -105,8 +109,8 @@ vi.mock("../../channels/session.js", () => ({
 }));
 
 vi.mock("../../config/sessions.js", () => ({
-  readSessionUpdatedAt,
-  resolveStorePath,
+  readSessionUpdatedAt: configSessionsMocks.readSessionUpdatedAt,
+  resolveStorePath: configSessionsMocks.resolveStorePath,
 }));
 
 const { processDiscordMessage } = await import("./message-handler.process.js");
@@ -566,5 +570,26 @@ describe("processDiscordMessage draft streaming", () => {
     for (const text of updates) {
       expect(text).not.toContain("<thinking>");
     }
+  });
+
+  it("skips pure-reasoning partial updates without updating draft", async () => {
+    const draftStream = createMockDraftStream();
+    createDiscordDraftStream.mockReturnValueOnce(draftStream);
+
+    dispatchInboundMessage.mockImplementationOnce(async (params?: DispatchInboundParams) => {
+      await params?.replyOptions?.onPartialReply?.({
+        text: "Reasoning:\nThe user asked about X so I need to consider Y",
+      });
+      return { queuedFinal: false, counts: { final: 0, tool: 0, block: 0 } };
+    });
+
+    const ctx = await createBaseContext({
+      discordConfig: { streamMode: "partial" },
+    });
+
+    // oxlint-disable-next-line typescript/no-explicit-any
+    await processDiscordMessage(ctx as any);
+
+    expect(draftStream.update).not.toHaveBeenCalled();
   });
 });

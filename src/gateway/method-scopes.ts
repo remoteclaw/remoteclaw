@@ -19,7 +19,7 @@ export const CLI_DEFAULT_OPERATOR_SCOPES: OperatorScope[] = [
   PAIRING_SCOPE,
 ];
 
-const NODE_ROLE_METHODS = new Set(["node.invoke.result", "node.event"]);
+const NODE_ROLE_METHODS = new Set(["node.invoke.result", "node.event", "skills.bins"]);
 
 const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
   [APPROVALS_SCOPE]: [
@@ -43,6 +43,7 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
   ],
   [READ_SCOPE]: [
     "health",
+    "doctor.memory.status",
     "logs.tail",
     "channels.status",
     "status",
@@ -50,10 +51,11 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "usage.cost",
     "tts.status",
     "tts.providers",
+    "models.list",
     "tools.catalog",
-    "plugin:tools:list",
     "agents.list",
     "agent.identity.get",
+    "skills.status",
     "voicewake.get",
     "sessions.list",
     "sessions.preview",
@@ -73,6 +75,9 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "talk.config",
     "agents.files.list",
     "agents.files.get",
+    "sessions.subagents",
+    "message:readMessages",
+    "plugin:tools:list",
   ],
   [WRITE_SCOPE]: [
     "send",
@@ -87,27 +92,32 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "tts.setProvider",
     "voicewake.set",
     "node.invoke",
-    "sessions.spawn",
-    "sessions.subagents",
     "chat.send",
     "chat.abort",
     "browser.request",
     "push.test",
-    "hooks.tool.before",
-    "hooks.tool.after",
-    "plugin:tools:invoke",
+    "sessions.spawn",
     "message:send",
     "message:reply",
     "message:thread-reply",
     "message:broadcast",
+    "message:react",
+    "message:delete",
     "message:sendAttachment",
     "message:sendWithEffect",
+    "message:pin",
+    "plugin:tools:invoke",
+    "hooks.tool.before",
+    "hooks.tool.after",
   ],
   [ADMIN_SCOPE]: [
     "channels.logout",
     "agents.create",
     "agents.update",
     "agents.delete",
+    "skills.install",
+    "skills.update",
+    "secrets.reload",
     "cron.add",
     "cron.update",
     "cron.remove",
@@ -123,10 +133,6 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "set-heartbeats",
     "system-event",
     "agents.files.set",
-    "message:delete",
-    "message:react",
-    "message:pin",
-    "message:readMessages",
   ],
 };
 

@@ -15,13 +15,29 @@ describe("Telegram webhookPort config", () => {
     expect(res.ok).toBe(true);
   });
 
-  it("rejects non-positive webhookPort", () => {
+  it("rejects webhookPort set to 0 (must be positive)", () => {
     const res = validateConfigObject({
       channels: {
         telegram: {
           webhookUrl: "https://example.com/telegram-webhook",
           webhookSecret: "secret",
           webhookPort: 0,
+        },
+      },
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(res.issues.some((issue) => issue.path === "channels.telegram.webhookPort")).toBe(true);
+    }
+  });
+
+  it("rejects negative webhookPort", () => {
+    const res = validateConfigObject({
+      channels: {
+        telegram: {
+          webhookUrl: "https://example.com/telegram-webhook",
+          webhookSecret: "secret",
+          webhookPort: -1,
         },
       },
     });

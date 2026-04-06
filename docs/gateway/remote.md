@@ -1,5 +1,5 @@
 ---
-description: "Remote access using SSH tunnels (Gateway WS) and tailnets"
+summary: "Remote access using SSH tunnels (Gateway WS) and tailnets"
 read_when:
   - Running or troubleshooting remote gateway setups
 title: "Remote Access"
@@ -19,7 +19,7 @@ This repo supports “remote over SSH” by keeping a single Gateway (the master
 
 ## Common VPN/tailnet setups (where the agent lives)
 
-Think of the **Gateway host** as “where the agent lives.” It owns sessions, channels, and state.
+Think of the **Gateway host** as “where the agent lives.” It owns sessions, auth profiles, channels, and state.
 Your laptop/desktop (and nodes) connect to that host.
 
 ### 1) Always-on Gateway in your tailnet (VPS or home server)
@@ -107,8 +107,8 @@ Gateway call/probe credential resolution now follows one shared contract:
 
 - Explicit credentials (`--token`, `--password`, or tool `gatewayToken`) always win.
 - Local mode defaults:
-  - token: `REMOTECLAW_GATEWAY_TOKEN` -> `gateway.auth.token`
-  - password: `REMOTECLAW_GATEWAY_PASSWORD` -> `gateway.auth.password`
+  - token: `REMOTECLAW_GATEWAY_TOKEN` -> `gateway.auth.token` -> `gateway.remote.token`
+  - password: `REMOTECLAW_GATEWAY_PASSWORD` -> `gateway.auth.password` -> `gateway.remote.password`
 - Remote mode defaults:
   - token: `gateway.remote.token` -> `REMOTECLAW_GATEWAY_TOKEN` -> `gateway.auth.token`
   - password: `REMOTECLAW_GATEWAY_PASSWORD` -> `gateway.remote.password` -> `gateway.auth.password`
@@ -134,7 +134,8 @@ Short version: **keep the Gateway loopback-only** unless you’re sure you need 
 
 - **Loopback + SSH/Tailscale Serve** is the safest default (no public exposure).
 - **Non-loopback binds** (`lan`/`tailnet`/`custom`, or `auto` when loopback is unavailable) must use auth tokens/passwords.
-- `gateway.remote.token` is **only** for remote CLI calls — it does **not** enable local auth.
+- `gateway.remote.token` / `.password` are client credential sources. They do **not** configure server auth by themselves.
+- Local call paths can use `gateway.remote.*` as fallback when `gateway.auth.*` is unset.
 - `gateway.remote.tlsFingerprint` pins the remote TLS cert when using `wss://`.
 - **Tailscale Serve** can authenticate Control UI/WebSocket traffic via identity
   headers when `gateway.auth.allowTailscale: true`; HTTP API endpoints still

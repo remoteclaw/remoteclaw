@@ -47,7 +47,7 @@ export const FIELD_HELP: Record<string, string> = {
     "Additional custom redact regex patterns applied to log output before emission/storage. Use this to mask org-specific tokens and identifiers not covered by built-in redaction rules.",
   update:
     "Update-channel and startup-check behavior for keeping RemoteClaw runtime versions current. Use conservative channels in production and more experimental channels only in controlled environments.",
-  "update.channel": 'Update channel ("stable", "beta", or "next").',
+  "update.channel": 'Update channel for git + npm installs ("stable", "beta", or "dev").',
   "update.checkOnStart": "Check for npm updates when the gateway starts (default: true).",
   "update.auto.enabled": "Enable background auto-update for package installs (default: false).",
   "update.auto.stableDelayHours":
@@ -153,6 +153,32 @@ export const FIELD_HELP: Record<string, string> = {
     "Use this legacy ElevenLabs API key for Talk mode only during migration, and keep secrets in env-backed storage. Prefer talk.providers.elevenlabs.apiKey (fallback: ELEVENLABS_API_KEY).",
   "talk.interruptOnSpeech":
     "If true (default), stop assistant speech when the user starts speaking in Talk mode. Keep enabled for conversational turn-taking.",
+  acp: "ACP runtime controls for enabling dispatch, selecting backends, constraining allowed agent targets, and tuning streamed turn projection behavior.",
+  "acp.enabled":
+    "Global ACP feature gate. Keep disabled unless ACP runtime + policy are configured.",
+  "acp.dispatch.enabled":
+    "Independent dispatch gate for ACP session turns. Disable to keep ACP commands available while blocking ACP turn execution.",
+  "acp.backend":
+    "Default ACP runtime backend id (for example: acpx). Must match a registered ACP runtime plugin backend.",
+  "acp.defaultAgent":
+    "Fallback ACP target agent id used when ACP spawns do not specify an explicit target.",
+  "acp.allowedAgents":
+    "Allowlist of ACP target agent ids permitted for ACP runtime sessions. Empty means no additional allowlist restriction.",
+  "acp.maxConcurrentSessions":
+    "Maximum concurrently active ACP sessions across this gateway process.",
+  "acp.stream": "ACP streaming projection controls for chunk sizing and coalescer flush timing.",
+  "acp.stream.coalesceIdleMs":
+    "Coalescer idle flush window in milliseconds for ACP streamed text before block replies are emitted.",
+  "acp.stream.maxChunkChars":
+    "Maximum chunk size for ACP streamed block projection before splitting into multiple block replies.",
+  "acp.runtime.ttlMinutes":
+    "Idle runtime TTL in minutes for ACP session workers before eligible cleanup.",
+  "acp.runtime.installCommand":
+    "Optional operator install/setup command shown by `/acp install` and `/acp doctor` when ACP backend wiring is missing.",
+  "agents.list.*.skills":
+    "Optional allowlist of skills for this agent (omit = all skills; empty = no skills).",
+  "agents.list[].skills":
+    "Optional allowlist of skills for this agent (omit = all skills; empty = no skills).",
   agents:
     "Agent runtime configuration root covering defaults and explicit agent entries used for routing and execution context. Keep this section explicit so model/tool behavior stays predictable across multi-agent workflows.",
   "agents.defaults":
@@ -224,13 +250,15 @@ export const FIELD_HELP: Record<string, string> = {
   "discovery.mdns":
     "mDNS discovery configuration group for local network advertisement and discovery behavior tuning. Keep minimal mode for routine LAN discovery unless extra metadata is required.",
   tools:
-    "Global tool access policy and capability configuration across web, exec, media, and messaging surfaces. Use this section to constrain risky capabilities before broad rollout.",
+    "Global tool access policy and capability configuration across web, exec, media, messaging, and elevated surfaces. Use this section to constrain risky capabilities before broad rollout.",
   "tools.allow":
     "Absolute tool allowlist that replaces profile-derived defaults for strict environments. Use this only when you intentionally run a tightly curated subset of tool capabilities.",
   "tools.deny":
     "Global tool denylist that blocks listed tools even when profile or provider rules would allow them. Use deny rules for emergency lockouts and long-term defense-in-depth.",
+  "tools.web":
+    "Web-tool policy grouping for search/fetch providers, limits, and fallback behavior tuning. Keep enabled settings aligned with API key availability and outbound networking policy.",
   "tools.exec":
-    "Exec-tool policy grouping for shell execution host, security mode, approval behavior, and runtime bindings. Keep conservative defaults in production.",
+    "Exec-tool policy grouping for shell execution host, security mode, approval behavior, and runtime bindings. Keep conservative defaults in production and tighten elevated execution paths.",
   "tools.exec.host":
     "Selects execution host strategy for shell commands, typically controlling local vs delegated execution environment. Use the safest host mode that still satisfies your automation requirements.",
   "tools.exec.security":
@@ -245,6 +273,12 @@ export const FIELD_HELP: Record<string, string> = {
     "Enables the agent_to_agent tool surface so one agent can invoke another agent at runtime. Keep off in simple deployments and enable only when orchestration value outweighs complexity.",
   "tools.agentToAgent.allow":
     "Allowlist of target agent IDs permitted for agent_to_agent calls when orchestration is enabled. Use explicit allowlists to avoid uncontrolled cross-agent call graphs.",
+  "tools.elevated":
+    "Elevated tool access controls for privileged command surfaces that should only be reachable from trusted senders. Keep disabled unless operator workflows explicitly require elevated actions.",
+  "tools.elevated.enabled":
+    "Enables elevated tool execution path when sender and policy checks pass. Keep disabled in public/shared channels and enable only for trusted owner-operated contexts.",
+  "tools.elevated.allowFrom":
+    "Sender allow rules for elevated tools, usually keyed by channel/provider identity formats. Use narrow, explicit identities so elevated commands cannot be triggered by unintended users.",
   "tools.subagents":
     "Tool policy wrapper for spawned subagents to restrict or expand tool availability compared to parent defaults. Use this to keep delegated agent capabilities scoped to task intent.",
   "tools.subagents.tools":
@@ -399,6 +433,26 @@ export const FIELD_HELP: Record<string, string> = {
     "Include full message payloads in trace output (default: true).",
   "diagnostics.cacheTrace.includePrompt": "Include prompt text in trace output (default: true).",
   "diagnostics.cacheTrace.includeSystem": "Include system prompt in trace output (default: true).",
+  "tools.exec.applyPatch.enabled":
+    "Experimental. Enables apply_patch for OpenAI models when allowed by tool policy.",
+  "tools.exec.applyPatch.workspaceOnly":
+    "Restrict apply_patch paths to the workspace directory (default: true). Set false to allow writing outside the workspace (dangerous).",
+  "tools.exec.applyPatch.allowModels":
+    'Optional allowlist of model ids (e.g. "gpt-5.2" or "openai/gpt-5.2").',
+  "tools.loopDetection.enabled":
+    "Enable repetitive tool-call loop detection and backoff safety checks (default: false).",
+  "tools.loopDetection.historySize": "Tool history window size for loop detection (default: 30).",
+  "tools.loopDetection.warningThreshold":
+    "Warning threshold for repetitive patterns when detector is enabled (default: 10).",
+  "tools.loopDetection.criticalThreshold":
+    "Critical threshold for repetitive patterns when detector is enabled (default: 20).",
+  "tools.loopDetection.globalCircuitBreakerThreshold":
+    "Global no-progress breaker threshold (default: 30).",
+  "tools.loopDetection.detectors.genericRepeat":
+    "Enable generic repeated same-tool/same-params loop detection (default: true).",
+  "tools.loopDetection.detectors.knownPollNoProgress":
+    "Enable known poll tool no-progress loop detection (default: true).",
+  "tools.loopDetection.detectors.pingPong": "Enable ping-pong loop detection (default: true).",
   "tools.exec.notifyOnExit":
     "When true (default), backgrounded exec sessions on exit and node exec lifecycle events enqueue a system event and request a heartbeat.",
   "tools.exec.notifyOnExitEmptySuccess":
@@ -424,6 +478,36 @@ export const FIELD_HELP: Record<string, string> = {
     "Per-agent provider-specific tool policy overrides for channel-scoped capability control. Use this when a single agent needs tighter restrictions on one provider than others.",
   "tools.exec.approvalRunningNoticeMs":
     "Delay in milliseconds before showing an in-progress notice after an exec approval is granted. Increase to reduce flicker for fast commands, or lower for quicker operator feedback.",
+  "tools.links.enabled":
+    "Enable automatic link understanding pre-processing so URLs can be summarized before agent reasoning. Keep enabled for richer context, and disable when strict minimal processing is required.",
+  "tools.links.maxLinks":
+    "Maximum number of links expanded per turn during link understanding. Use lower values to control latency/cost in chatty threads and higher values when multi-link context is critical.",
+  "tools.links.timeoutSeconds":
+    "Per-link understanding timeout budget in seconds before unresolved links are skipped. Keep this bounded to avoid long stalls when external sites are slow or unreachable.",
+  "tools.links.models":
+    "Preferred model list for link understanding tasks, evaluated in order as fallbacks when supported. Use lightweight models first for routine summarization and heavier models only when needed.",
+  "tools.links.scope":
+    "Controls when link understanding runs relative to conversation context and message type. Keep scope conservative to avoid unnecessary fetches on messages where links are not actionable.",
+  "tools.media.models":
+    "Shared fallback model list used by media understanding tools when modality-specific model lists are not set. Keep this aligned with available multimodal providers to avoid runtime fallback churn.",
+  "tools.media.concurrency":
+    "Maximum number of concurrent media understanding operations per turn across image, audio, and video tasks. Lower this in resource-constrained deployments to prevent CPU/network saturation.",
+  "tools.media.image.enabled":
+    "Enable image understanding so attached or referenced images can be interpreted into textual context. Disable if you need text-only operation or want to avoid image-processing cost.",
+  "tools.media.image.maxBytes":
+    "Maximum accepted image payload size in bytes before the item is skipped or truncated by policy. Keep limits realistic for your provider caps and infrastructure bandwidth.",
+  "tools.media.image.maxChars":
+    "Maximum characters returned from image understanding output after model response normalization. Use tighter limits to reduce prompt bloat and larger limits for detail-heavy OCR tasks.",
+  "tools.media.image.prompt":
+    "Instruction template used for image understanding requests to shape extraction style and detail level. Keep prompts deterministic so outputs stay consistent across turns and channels.",
+  "tools.media.image.timeoutSeconds":
+    "Timeout in seconds for each image understanding request before it is aborted. Increase for high-resolution analysis and lower it for latency-sensitive operator workflows.",
+  "tools.media.image.attachments":
+    "Attachment handling policy for image inputs, including which message attachments qualify for image analysis. Use restrictive settings in untrusted channels to reduce unexpected processing.",
+  "tools.media.image.models":
+    "Ordered model preferences specifically for image understanding when you want to override shared media models. Put the most reliable multimodal model first to reduce fallback attempts.",
+  "tools.media.image.scope":
+    "Scope selector for when image understanding is attempted (for example only explicit requests versus broader auto-detection). Keep narrow scope in busy channels to control token and API spend.",
   "tools.media.audio.enabled":
     "Enable audio understanding so voice notes or audio clips can be transcribed/summarized for agent context. Disable when audio ingestion is outside policy or unnecessary for your workflows.",
   "tools.media.audio.maxBytes":
@@ -436,8 +520,32 @@ export const FIELD_HELP: Record<string, string> = {
     "Timeout in seconds for audio understanding execution before the operation is cancelled. Use longer timeouts for long recordings and tighter ones for interactive chat responsiveness.",
   "tools.media.audio.language":
     "Preferred language hint for audio understanding/transcription when provider support is available. Set this to improve recognition accuracy for known primary languages.",
+  "tools.media.audio.attachments":
+    "Attachment policy for audio inputs indicating which uploaded files are eligible for audio processing. Keep restrictive defaults in mixed-content channels to avoid unintended audio workloads.",
   "tools.media.audio.models":
-    "Ordered model preferences specifically for audio understanding. Choose models optimized for transcription quality in your primary language/domain.",
+    "Ordered model preferences specifically for audio understanding, used before shared media model fallback. Choose models optimized for transcription quality in your primary language/domain.",
+  "tools.media.audio.scope":
+    "Scope selector for when audio understanding runs across inbound messages and attachments. Keep focused scopes in high-volume channels to reduce cost and avoid accidental transcription.",
+  "tools.media.video.enabled":
+    "Enable video understanding so clips can be summarized into text for downstream reasoning and responses. Disable when processing video is out of policy or too expensive for your deployment.",
+  "tools.media.video.maxBytes":
+    "Maximum accepted video payload size in bytes before policy rejection or trimming occurs. Tune this to provider and infrastructure limits to avoid repeated timeout/failure loops.",
+  "tools.media.video.maxChars":
+    "Maximum characters retained from video understanding output to control prompt growth. Raise for dense scene descriptions and lower when concise summaries are preferred.",
+  "tools.media.video.prompt":
+    "Instruction template for video understanding describing desired summary granularity and focus areas. Keep this stable so output quality remains predictable across model/provider fallbacks.",
+  "tools.media.video.timeoutSeconds":
+    "Timeout in seconds for each video understanding request before cancellation. Use conservative values in interactive channels and longer values for offline or batch-heavy processing.",
+  "tools.media.video.attachments":
+    "Attachment eligibility policy for video analysis, defining which message files can trigger video processing. Keep this explicit in shared channels to prevent accidental large media workloads.",
+  "tools.media.video.models":
+    "Ordered model preferences specifically for video understanding before shared media fallback applies. Prioritize models with strong multimodal video support to minimize degraded summaries.",
+  "tools.media.video.scope":
+    "Scope selector controlling when video understanding is attempted across incoming events. Narrow scope in noisy channels, and broaden only where video interpretation is core to workflow.",
+  "skills.load.watch":
+    "Enable filesystem watching for skill-definition changes so updates can be applied without full process restart. Keep enabled in development workflows and disable in immutable production images.",
+  "skills.load.watchDebounceMs":
+    "Debounce window in milliseconds for coalescing rapid skill file changes before reload logic runs. Increase to reduce reload churn on frequent writes, or lower for faster edit feedback.",
   approvals:
     "Approval routing controls for forwarding exec approval requests to chat destinations outside the originating session. Keep this disabled unless operators need explicit out-of-band approval visibility.",
   "approvals.exec":
@@ -461,7 +569,7 @@ export const FIELD_HELP: Record<string, string> = {
   "approvals.exec.targets[].threadId":
     "Optional thread/topic target for channels that support threaded delivery of forwarded approvals. Use this to keep approval traffic contained in operational threads instead of main channels.",
   "tools.fs.workspaceOnly":
-    "Restrict filesystem tools to the workspace directory (default: false).",
+    "Restrict filesystem tools (read/write/edit/apply_patch) to the workspace directory (default: false).",
   "tools.sessions.visibility":
     'Controls which sessions can be targeted by sessions_list/sessions_history/sessions_send. ("tree" default = current session + spawned subagent sessions; "self" = only current; "agent" = any session in the current agent id; "all" = any session; cross-agent still requires tools.agentToAgent).',
   "tools.message.allowCrossContextSend":
@@ -477,10 +585,52 @@ export const FIELD_HELP: Record<string, string> = {
   "tools.message.crossContext.marker.suffix":
     'Text suffix for cross-context markers (supports "{channel}").',
   "tools.message.broadcast.enabled": "Enable broadcast action (default: true).",
+  "tools.web.search.enabled": "Enable the web_search tool (requires a provider API key).",
+  "tools.web.search.provider":
+    'Search provider ("brave", "perplexity", "grok", "gemini", or "kimi"). Auto-detected from available API keys if omitted.',
+  "tools.web.search.apiKey": "Brave Search API key (fallback: BRAVE_API_KEY env var).",
+  "tools.web.search.maxResults": "Default number of results to return (1-10).",
+  "tools.web.search.timeoutSeconds": "Timeout in seconds for web_search requests.",
+  "tools.web.search.cacheTtlMinutes": "Cache TTL in minutes for web_search results.",
+  "tools.web.search.gemini.apiKey":
+    "Gemini API key for Google Search grounding (fallback: GEMINI_API_KEY env var).",
+  "tools.web.search.gemini.model": 'Gemini model override (default: "gemini-2.5-flash").',
+  "tools.web.search.grok.apiKey": "Grok (xAI) API key (fallback: XAI_API_KEY env var).",
+  "tools.web.search.grok.model": 'Grok model override (default: "grok-4-1-fast").',
+  "tools.web.search.kimi.apiKey":
+    "Moonshot/Kimi API key (fallback: KIMI_API_KEY or MOONSHOT_API_KEY env var).",
+  "tools.web.search.kimi.baseUrl":
+    'Kimi base URL override (default: "https://api.moonshot.ai/v1").',
+  "tools.web.search.kimi.model": 'Kimi model override (default: "moonshot-v1-128k").',
+  "tools.web.search.perplexity.apiKey":
+    "Perplexity or OpenRouter API key (fallback: PERPLEXITY_API_KEY or OPENROUTER_API_KEY env var).",
+  "tools.web.search.perplexity.baseUrl":
+    "Perplexity base URL override (default: https://openrouter.ai/api/v1 or https://api.perplexity.ai).",
+  "tools.web.search.perplexity.model":
+    'Perplexity model override (default: "perplexity/sonar-pro").',
+  "tools.web.fetch.enabled": "Enable the web_fetch tool (lightweight HTTP fetch).",
+  "tools.web.fetch.maxChars": "Max characters returned by web_fetch (truncated).",
+  "tools.web.fetch.maxCharsCap":
+    "Hard cap for web_fetch maxChars (applies to config and tool calls).",
+  "tools.web.fetch.timeoutSeconds": "Timeout in seconds for web_fetch requests.",
+  "tools.web.fetch.cacheTtlMinutes": "Cache TTL in minutes for web_fetch results.",
+  "tools.web.fetch.maxRedirects": "Maximum redirects allowed for web_fetch (default: 3).",
+  "tools.web.fetch.userAgent": "Override User-Agent header for web_fetch requests.",
+  "tools.web.fetch.readability":
+    "Use Readability to extract main content from HTML (fallbacks to basic HTML cleanup).",
+  "tools.web.fetch.firecrawl.enabled": "Enable Firecrawl fallback for web_fetch (if configured).",
+  "tools.web.fetch.firecrawl.apiKey": "Firecrawl API key (fallback: FIRECRAWL_API_KEY env var).",
+  "tools.web.fetch.firecrawl.baseUrl":
+    "Firecrawl base URL (e.g. https://api.firecrawl.dev or custom endpoint).",
+  "tools.web.fetch.firecrawl.onlyMainContent":
+    "When true, Firecrawl returns only the main content (default: true).",
+  "tools.web.fetch.firecrawl.maxAgeMs":
+    "Firecrawl maxAge (ms) for cached results when supported by the API.",
+  "tools.web.fetch.firecrawl.timeoutSeconds": "Timeout in seconds for Firecrawl requests.",
   models:
     "Model catalog root for provider definitions, merge/replace behavior, and optional Bedrock discovery integration. Keep provider definitions explicit and validated before relying on production failover paths.",
   "models.mode":
-    'Controls provider catalog behavior: "merge" keeps built-ins and overlays your custom providers, while "replace" uses only your configured providers. Keep "merge" unless you intentionally want a strict custom list.',
+    'Controls provider catalog behavior: "merge" keeps built-ins and overlays your custom providers, while "replace" uses only your configured providers. In "merge", matching provider IDs preserve non-empty agent models.json apiKey/baseUrl values and fall back to config when agent values are empty or missing.',
   "models.providers":
     "Provider map keyed by provider ID containing connection/auth settings and concrete model definitions. Use stable provider keys so references from agents and tooling remain portable across environments.",
   "models.providers.*.baseUrl":
@@ -539,16 +689,12 @@ export const FIELD_HELP: Record<string, string> = {
     "Optional per-provider overrides for billing backoff (hours).",
   "auth.cooldowns.billingMaxHours": "Cap (hours) for billing backoff (default: 24).",
   "auth.cooldowns.failureWindowHours": "Failure window (hours) for backoff counters (default: 24).",
-  "agents.defaults.boot":
-    "Boot prompt configuration for gateway startup runs. Set `prompt` for an inline prompt or `file` for a path relative to the workspace directory. If neither is set, boot is skipped.",
-  "agents.defaults.boot.prompt":
-    "Inline boot prompt text. Takes precedence over `file` if both are set.",
-  "agents.defaults.boot.file":
-    "Path to a boot prompt file (relative to workspace directory). Read at runtime on each gateway startup.",
-  "agents.list[].boot": "Per-agent boot prompt override. Same shape as `agents.defaults.boot`.",
-  "agents.list[].boot.prompt": "Per-agent inline boot prompt text.",
-  "agents.list[].boot.file":
-    "Per-agent boot prompt file path (relative to agent workspace directory).",
+  "agents.defaults.workspace":
+    "Default workspace path exposed to agent runtime tools for filesystem context and repo-aware behavior. Set this explicitly when running from wrappers so path resolution stays deterministic.",
+  "agents.defaults.bootstrapMaxChars":
+    "Max characters of each workspace bootstrap file injected into the system prompt before truncation (default: 20000).",
+  "agents.defaults.bootstrapTotalMaxChars":
+    "Max total characters across all injected workspace bootstrap files (default: 150000).",
   "agents.defaults.repoRoot":
     "Optional repository root shown in the system prompt runtime line (overrides auto-detect).",
   "agents.defaults.envelopeTimezone":
@@ -557,6 +703,145 @@ export const FIELD_HELP: Record<string, string> = {
     'Include absolute timestamps in message envelopes ("on" or "off").',
   "agents.defaults.envelopeElapsed": 'Include elapsed time in message envelopes ("on" or "off").',
   "agents.defaults.models": "Configured model catalog (keys are full provider/model IDs).",
+  "agents.defaults.memorySearch":
+    "Vector search over MEMORY.md and memory/*.md (per-agent overrides supported).",
+  "agents.defaults.memorySearch.enabled":
+    "Master toggle for memory search indexing and retrieval behavior on this agent profile. Keep enabled for semantic recall, and disable when you want fully stateless responses.",
+  "agents.defaults.memorySearch.sources":
+    'Chooses which sources are indexed: "memory" reads MEMORY.md + memory files, and "sessions" includes transcript history. Keep ["memory"] unless you need recall from prior chat transcripts.',
+  "agents.defaults.memorySearch.extraPaths":
+    "Adds extra directories or .md files to the memory index beyond default memory files. Use this when key reference docs live elsewhere in your repo; keep paths small and intentional to avoid noisy recall.",
+  "agents.defaults.memorySearch.experimental.sessionMemory":
+    "Indexes session transcripts into memory search so responses can reference prior chat turns. Keep this off unless transcript recall is needed, because indexing cost and storage usage both increase.",
+  "agents.defaults.memorySearch.provider":
+    'Selects the embedding backend used to build/query memory vectors: "openai", "gemini", "voyage", "mistral", or "local". Keep your most reliable provider here and configure fallback for resilience.',
+  "agents.defaults.memorySearch.model":
+    "Embedding model override used by the selected memory provider when a non-default model is required. Set this only when you need explicit recall quality/cost tuning beyond provider defaults.",
+  "agents.defaults.memorySearch.remote.baseUrl":
+    "Overrides the embedding API endpoint, such as an OpenAI-compatible proxy or custom Gemini base URL. Use this only when routing through your own gateway or vendor endpoint; keep provider defaults otherwise.",
+  "agents.defaults.memorySearch.remote.apiKey":
+    "Supplies a dedicated API key for remote embedding calls used by memory indexing and query-time embeddings. Use this when memory embeddings should use different credentials than global defaults or environment variables.",
+  "agents.defaults.memorySearch.remote.headers":
+    "Adds custom HTTP headers to remote embedding requests, merged with provider defaults. Use this for proxy auth and tenant routing headers, and keep values minimal to avoid leaking sensitive metadata.",
+  "agents.defaults.memorySearch.remote.batch.enabled":
+    "Enables provider batch APIs for embedding jobs when supported (OpenAI/Gemini), improving throughput on larger index runs. Keep this enabled unless debugging provider batch failures or running very small workloads.",
+  "agents.defaults.memorySearch.remote.batch.wait":
+    "Waits for batch embedding jobs to fully finish before the indexing operation completes. Keep this enabled for deterministic indexing state; disable only if you accept delayed consistency.",
+  "agents.defaults.memorySearch.remote.batch.concurrency":
+    "Limits how many embedding batch jobs run at the same time during indexing (default: 2). Increase carefully for faster bulk indexing, but watch provider rate limits and queue errors.",
+  "agents.defaults.memorySearch.remote.batch.pollIntervalMs":
+    "Controls how often the system polls provider APIs for batch job status in milliseconds (default: 2000). Use longer intervals to reduce API chatter, or shorter intervals for faster completion detection.",
+  "agents.defaults.memorySearch.remote.batch.timeoutMinutes":
+    "Sets the maximum wait time for a full embedding batch operation in minutes (default: 60). Increase for very large corpora or slower providers, and lower it to fail fast in automation-heavy flows.",
+  "agents.defaults.memorySearch.local.modelPath":
+    "Specifies the local embedding model source for local memory search, such as a GGUF file path or `hf:` URI. Use this only when provider is `local`, and verify model compatibility before large index rebuilds.",
+  "agents.defaults.memorySearch.fallback":
+    'Backup provider used when primary embeddings fail: "openai", "gemini", "voyage", "mistral", "local", or "none". Set a real fallback for production reliability; use "none" only if you prefer explicit failures.',
+  "agents.defaults.memorySearch.store.path":
+    "Sets where the SQLite memory index is stored on disk for each agent. Keep the default `~/.remoteclaw/memory/{agentId}.sqlite` unless you need custom storage placement or backup policy alignment.",
+  "agents.defaults.memorySearch.store.vector.enabled":
+    "Enables the sqlite-vec extension used for vector similarity queries in memory search (default: true). Keep this enabled for normal semantic recall; disable only for debugging or fallback-only operation.",
+  "agents.defaults.memorySearch.store.vector.extensionPath":
+    "Overrides the auto-discovered sqlite-vec extension library path (`.dylib`, `.so`, or `.dll`). Use this when your runtime cannot find sqlite-vec automatically or you pin a known-good build.",
+  "agents.defaults.memorySearch.chunking.tokens":
+    "Chunk size in tokens used when splitting memory sources before embedding/indexing. Increase for broader context per chunk, or lower to improve precision on pinpoint lookups.",
+  "agents.defaults.memorySearch.chunking.overlap":
+    "Token overlap between adjacent memory chunks to preserve context continuity near split boundaries. Use modest overlap to reduce boundary misses without inflating index size too aggressively.",
+  "agents.defaults.memorySearch.query.maxResults":
+    "Maximum number of memory hits returned from search before downstream reranking and prompt injection. Raise for broader recall, or lower for tighter prompts and faster responses.",
+  "agents.defaults.memorySearch.query.minScore":
+    "Minimum relevance score threshold for including memory results in final recall output. Increase to reduce weak/noisy matches, or lower when you need more permissive retrieval.",
+  "agents.defaults.memorySearch.query.hybrid.enabled":
+    "Combines BM25 keyword matching with vector similarity for better recall on mixed exact + semantic queries. Keep enabled unless you are isolating ranking behavior for troubleshooting.",
+  "agents.defaults.memorySearch.query.hybrid.vectorWeight":
+    "Controls how strongly semantic similarity influences hybrid ranking (0-1). Increase when paraphrase matching matters more than exact terms; decrease for stricter keyword emphasis.",
+  "agents.defaults.memorySearch.query.hybrid.textWeight":
+    "Controls how strongly BM25 keyword relevance influences hybrid ranking (0-1). Increase for exact-term matching; decrease when semantic matches should rank higher.",
+  "agents.defaults.memorySearch.query.hybrid.candidateMultiplier":
+    "Expands the candidate pool before reranking (default: 4). Raise this for better recall on noisy corpora, but expect more compute and slightly slower searches.",
+  "agents.defaults.memorySearch.query.hybrid.mmr.enabled":
+    "Adds MMR reranking to diversify results and reduce near-duplicate snippets in a single answer window. Enable when recall looks repetitive; keep off for strict score ordering.",
+  "agents.defaults.memorySearch.query.hybrid.mmr.lambda":
+    "Sets MMR relevance-vs-diversity balance (0 = most diverse, 1 = most relevant, default: 0.7). Lower values reduce repetition; higher values keep tightly relevant but may duplicate.",
+  "agents.defaults.memorySearch.query.hybrid.temporalDecay.enabled":
+    "Applies recency decay so newer memory can outrank older memory when scores are close. Enable when timeliness matters; keep off for timeless reference knowledge.",
+  "agents.defaults.memorySearch.query.hybrid.temporalDecay.halfLifeDays":
+    "Controls how fast older memory loses rank when temporal decay is enabled (half-life in days, default: 30). Lower values prioritize recent context more aggressively.",
+  "agents.defaults.memorySearch.cache.enabled":
+    "Caches computed chunk embeddings in SQLite so reindexing and incremental updates run faster (default: true). Keep this enabled unless investigating cache correctness or minimizing disk usage.",
+  memory: "Memory backend configuration (global).",
+  "memory.backend":
+    'Selects the global memory engine: "builtin" uses RemoteClaw memory internals, while "qmd" uses the QMD sidecar pipeline. Keep "builtin" unless you intentionally operate QMD.',
+  "memory.citations":
+    'Controls citation visibility in replies: "auto" shows citations when useful, "on" always shows them, and "off" hides them. Keep "auto" for a balanced signal-to-noise default.',
+  "memory.qmd.command":
+    "Sets the executable path for the `qmd` binary used by the QMD backend (default: resolved from PATH). Use an explicit absolute path when multiple qmd installs exist or PATH differs across environments.",
+  "memory.qmd.mcporter":
+    "Routes QMD work through mcporter (MCP runtime) instead of spawning `qmd` for each call. Use this when cold starts are expensive on large models; keep direct process mode for simpler local setups.",
+  "memory.qmd.mcporter.enabled":
+    "Routes QMD through an mcporter daemon instead of spawning qmd per request, reducing cold-start overhead for larger models. Keep disabled unless mcporter is installed and configured.",
+  "memory.qmd.mcporter.serverName":
+    "Names the mcporter server target used for QMD calls (default: qmd). Change only when your mcporter setup uses a custom server name for qmd mcp keep-alive.",
+  "memory.qmd.mcporter.startDaemon":
+    "Automatically starts the mcporter daemon when mcporter-backed QMD mode is enabled (default: true). Keep enabled unless process lifecycle is managed externally by your service supervisor.",
+  "memory.qmd.searchMode":
+    'Selects the QMD retrieval path: "query" uses standard query flow, "search" uses search-oriented retrieval, and "vsearch" emphasizes vector retrieval. Keep default unless tuning relevance quality.',
+  "memory.qmd.includeDefaultMemory":
+    "Automatically indexes default memory files (MEMORY.md and memory/**/*.md) into QMD collections. Keep enabled unless you want indexing controlled only through explicit custom paths.",
+  "memory.qmd.paths":
+    "Adds custom directories or files to include in QMD indexing, each with an optional name and glob pattern. Use this for project-specific knowledge locations that are outside default memory paths.",
+  "memory.qmd.paths.path":
+    "Defines the root location QMD should scan, using an absolute path or `~`-relative path. Use stable directories so collection identity does not drift across environments.",
+  "memory.qmd.paths.pattern":
+    "Filters files under each indexed root using a glob pattern, with default `**/*.md`. Use narrower patterns to reduce noise and indexing cost when directories contain mixed file types.",
+  "memory.qmd.paths.name":
+    "Sets a stable collection name for an indexed path instead of deriving it from filesystem location. Use this when paths vary across machines but you want consistent collection identity.",
+  "memory.qmd.sessions.enabled":
+    "Indexes session transcripts into QMD so recall can include prior conversation content (experimental, default: false). Enable only when transcript memory is required and you accept larger index churn.",
+  "memory.qmd.sessions.exportDir":
+    "Overrides where sanitized session exports are written before QMD indexing. Use this when default state storage is constrained or when exports must land on a managed volume.",
+  "memory.qmd.sessions.retentionDays":
+    "Defines how long exported session files are kept before automatic pruning, in days (default: unlimited). Set a finite value for storage hygiene or compliance retention policies.",
+  "memory.qmd.update.interval":
+    "Sets how often QMD refreshes indexes from source content (duration string, default: 5m). Shorter intervals improve freshness but increase background CPU and I/O.",
+  "memory.qmd.update.debounceMs":
+    "Sets the minimum delay between consecutive QMD refresh attempts in milliseconds (default: 15000). Increase this if frequent file changes cause update thrash or unnecessary background load.",
+  "memory.qmd.update.onBoot":
+    "Runs an initial QMD update once during gateway startup (default: true). Keep enabled so recall starts from a fresh baseline; disable only when startup speed is more important than immediate freshness.",
+  "memory.qmd.update.waitForBootSync":
+    "Blocks startup completion until the initial boot-time QMD sync finishes (default: false). Enable when you need fully up-to-date recall before serving traffic, and keep off for faster boot.",
+  "memory.qmd.update.embedInterval":
+    "Sets how often QMD recomputes embeddings (duration string, default: 60m; set 0 to disable periodic embeds). Lower intervals improve freshness but increase embedding workload and cost.",
+  "memory.qmd.update.commandTimeoutMs":
+    "Sets timeout for QMD maintenance commands such as collection list/add in milliseconds (default: 30000). Increase when running on slower disks or remote filesystems that delay command completion.",
+  "memory.qmd.update.updateTimeoutMs":
+    "Sets maximum runtime for each `qmd update` cycle in milliseconds (default: 120000). Raise this for larger collections; lower it when you want quicker failure detection in automation.",
+  "memory.qmd.update.embedTimeoutMs":
+    "Sets maximum runtime for each `qmd embed` cycle in milliseconds (default: 120000). Increase for heavier embedding workloads or slower hardware, and lower to fail fast under tight SLAs.",
+  "memory.qmd.limits.maxResults":
+    "Limits how many QMD hits are returned into the agent loop for each recall request (default: 6). Increase for broader recall context, or lower to keep prompts tighter and faster.",
+  "memory.qmd.limits.maxSnippetChars":
+    "Caps per-result snippet length extracted from QMD hits in characters (default: 700). Lower this when prompts bloat quickly, and raise only if answers consistently miss key details.",
+  "memory.qmd.limits.maxInjectedChars":
+    "Caps how much QMD text can be injected into one turn across all hits. Use lower values to control prompt bloat and latency; raise only when context is consistently truncated.",
+  "memory.qmd.limits.timeoutMs":
+    "Sets per-query QMD search timeout in milliseconds (default: 4000). Increase for larger indexes or slower environments, and lower to keep request latency bounded.",
+  "memory.qmd.scope":
+    "Defines which sessions/channels are eligible for QMD recall using session.sendPolicy-style rules. Keep default direct-only scope unless you intentionally want cross-chat memory sharing.",
+  "agents.defaults.memorySearch.cache.maxEntries":
+    "Sets a best-effort upper bound on cached embeddings kept in SQLite for memory search. Use this when controlling disk growth matters more than peak reindex speed.",
+  "agents.defaults.memorySearch.sync.onSessionStart":
+    "Triggers a memory index sync when a session starts so early turns see fresh memory content. Keep enabled when startup freshness matters more than initial turn latency.",
+  "agents.defaults.memorySearch.sync.onSearch":
+    "Uses lazy sync by scheduling reindex on search after content changes are detected. Keep enabled for lower idle overhead, or disable if you require pre-synced indexes before any query.",
+  "agents.defaults.memorySearch.sync.watch":
+    "Watches memory files and schedules index updates from file-change events (chokidar). Enable for near-real-time freshness; disable on very large workspaces if watch churn is too noisy.",
+  "agents.defaults.memorySearch.sync.watchDebounceMs":
+    "Debounce window in milliseconds for coalescing rapid file-watch events before reindex runs. Increase to reduce churn on frequently-written files, or lower for faster freshness.",
+  "agents.defaults.memorySearch.sync.sessions.deltaBytes":
+    "Requires at least this many newly appended bytes before session transcript changes trigger reindex (default: 100000). Increase to reduce frequent small reindexes, or lower for faster transcript freshness.",
+  "agents.defaults.memorySearch.sync.sessions.deltaMessages":
+    "Requires at least this many appended transcript messages before reindex is triggered (default: 50). Lower this for near-real-time transcript recall, or raise it to reduce indexing churn.",
   ui: "UI presentation settings for accenting and assistant identity shown in control surfaces. Use this for branding and readability customization without changing runtime behavior.",
   "ui.seamColor":
     "Primary accent/seam color used by UI surfaces for emphasis, badges, and visual identity cues. Use high-contrast values that remain readable across light/dark themes.",
@@ -579,7 +864,9 @@ export const FIELD_HELP: Record<string, string> = {
   "plugins.load.paths":
     "Additional plugin files or directories scanned by the loader beyond built-in defaults. Use dedicated extension directories and avoid broad paths with unrelated executable content.",
   "plugins.slots":
-    "Selects which plugins own exclusive runtime slots so only one plugin provides a given capability. Use explicit slot ownership to avoid overlapping providers with conflicting behavior.",
+    "Selects which plugins own exclusive runtime slots such as memory so only one plugin provides that capability. Use explicit slot ownership to avoid overlapping providers with conflicting behavior.",
+  "plugins.slots.memory":
+    'Select the active memory plugin by id, or "none" to disable memory plugins.',
   "plugins.entries":
     "Per-plugin settings keyed by plugin ID including enablement and plugin-specific runtime configuration payloads. Use this for scoped plugin tuning without changing global loader policy.",
   "plugins.entries.*.enabled":
@@ -612,19 +899,56 @@ export const FIELD_HELP: Record<string, string> = {
   "plugins.installs.*.installedAt": "ISO timestamp of last install/update.",
   "agents.list.*.identity.avatar":
     "Agent avatar (workspace-relative path, http(s) URL, or data URI).",
+  "agents.defaults.model.primary": "Primary model (provider/model).",
+  "agents.defaults.model.fallbacks":
+    "Ordered fallback models (provider/model). Used when the primary model fails.",
+  "agents.defaults.imageModel.primary":
+    "Optional image model (provider/model) used when the primary model lacks image input.",
+  "agents.defaults.imageModel.fallbacks": "Ordered fallback image models (provider/model).",
   "agents.defaults.imageMaxDimensionPx":
     "Max image side length in pixels when sanitizing transcript/tool-result image payloads (default: 1200).",
   "agents.defaults.cliBackends": "Optional CLI backends for text-only fallback (claude-cli, etc.).",
+  "agents.defaults.compaction":
+    "Compaction tuning for when context nears token limits, including history share, reserve headroom, and pre-compaction memory flush behavior. Use this when long-running sessions need stable continuity under tight context windows.",
+  "agents.defaults.compaction.mode":
+    'Compaction strategy mode: "default" uses baseline behavior, while "safeguard" applies stricter guardrails to preserve recent context. Keep "default" unless you observe aggressive history loss near limit boundaries.',
+  "agents.defaults.compaction.reserveTokens":
+    "Token headroom reserved for reply generation and tool output after compaction runs. Use higher reserves for verbose/tool-heavy sessions, and lower reserves when maximizing retained history matters more.",
+  "agents.defaults.compaction.keepRecentTokens":
+    "Minimum token budget preserved from the most recent conversation window during compaction. Use higher values to protect immediate context continuity and lower values to keep more long-tail history.",
+  "agents.defaults.compaction.reserveTokensFloor":
+    "Minimum floor enforced for reserveTokens in Pi compaction paths (0 disables the floor guard). Use a non-zero floor to avoid over-aggressive compression under fluctuating token estimates.",
+  "agents.defaults.compaction.maxHistoryShare":
+    "Maximum fraction of total context budget allowed for retained history after compaction (range 0.1-0.9). Use lower shares for more generation headroom or higher shares for deeper historical continuity.",
+  "agents.defaults.compaction.memoryFlush":
+    "Pre-compaction memory flush settings that run an agentic memory write before heavy compaction. Keep enabled for long sessions so salient context is persisted before aggressive trimming.",
+  "agents.defaults.compaction.memoryFlush.enabled":
+    "Enables pre-compaction memory flush before the runtime performs stronger history reduction near token limits. Keep enabled unless you intentionally disable memory side effects in constrained environments.",
+  "agents.defaults.compaction.memoryFlush.softThresholdTokens":
+    "Threshold distance to compaction (in tokens) that triggers pre-compaction memory flush execution. Use earlier thresholds for safer persistence, or tighter thresholds for lower flush frequency.",
+  "agents.defaults.compaction.memoryFlush.prompt":
+    "User-prompt template used for the pre-compaction memory flush turn when generating memory candidates. Use this only when you need custom extraction instructions beyond the default memory flush behavior.",
+  "agents.defaults.compaction.memoryFlush.systemPrompt":
+    "System-prompt override for the pre-compaction memory flush turn to control extraction style and safety constraints. Use carefully so custom instructions do not reduce memory quality or leak sensitive context.",
+  "agents.defaults.embeddedPi":
+    "Embedded Pi runner hardening controls for how workspace-local Pi settings are trusted and applied in RemoteClaw sessions.",
+  "agents.defaults.embeddedPi.projectSettingsPolicy":
+    'How embedded Pi handles workspace-local `.pi/config/settings.json`: "sanitize" (default) strips shellPath/shellCommandPrefix, "ignore" disables project settings entirely, and "trusted" applies project settings as-is.',
   "agents.defaults.humanDelay.mode": 'Delay style for block replies ("off", "natural", "custom").',
   "agents.defaults.humanDelay.minMs": "Minimum delay in ms for custom humanDelay (default: 800).",
   "agents.defaults.humanDelay.maxMs": "Maximum delay in ms for custom humanDelay (default: 2500).",
   commands:
-    "Controls chat command surfaces and owner gating behavior across providers. Keep defaults unless you need stricter operator controls or broader command availability.",
+    "Controls chat command surfaces, owner gating, and elevated command access behavior across providers. Keep defaults unless you need stricter operator controls or broader command availability.",
   "commands.native":
     "Registers native slash/menu commands with channels that support command registration (Discord, Slack, Telegram). Keep enabled for discoverability unless you intentionally run text-only command workflows.",
-
+  "commands.nativeSkills":
+    "Registers native skill commands so users can invoke skills directly from provider command menus where supported. Keep aligned with your skill policy so exposed commands match what operators expect.",
   "commands.text":
     "Enables text-command parsing in chat input in addition to native command surfaces where available. Keep this enabled for compatibility across channels that do not support native command registration.",
+  "commands.bash":
+    "Allow bash chat command (`!`; `/bash` alias) to run host shell commands (default: false; requires tools.elevated).",
+  "commands.bashForegroundMs":
+    "How long bash waits before backgrounding (default: 2000; 0 backgrounds immediately).",
   "commands.config": "Allow /config chat command to read/write config on disk (default: false).",
   "commands.debug": "Allow /debug chat command for runtime-only overrides (default: false).",
   "commands.restart": "Allow /restart and gateway restart tool actions (default: true).",
@@ -636,7 +960,7 @@ export const FIELD_HELP: Record<string, string> = {
   "commands.ownerDisplaySecret":
     "Optional secret used to HMAC hash owner IDs when ownerDisplay=hash. Prefer env substitution.",
   "commands.allowFrom":
-    "Defines command allow rules by channel and sender for owner-level command surfaces. Use narrow provider-specific identities so privileged commands are not exposed to broad chat audiences.",
+    "Defines elevated command allow rules by channel and sender for owner-level command surfaces. Use narrow provider-specific identities so privileged commands are not exposed to broad chat audiences.",
   session:
     "Global session routing, reset, delivery policy, and maintenance controls for conversation history behavior. Keep defaults unless you need stricter isolation, retention, or delivery constraints.",
   "session.scope":
@@ -984,11 +1308,14 @@ export const FIELD_HELP: Record<string, string> = {
     "Map provider -> channel id -> model override (values are provider/model or aliases).",
   ...IRC_FIELD_HELP,
   "channels.discord.commands.native": 'Override native commands for Discord (bool or "auto").',
-
+  "channels.discord.commands.nativeSkills":
+    'Override native skill commands for Discord (bool or "auto").',
   "channels.telegram.commands.native": 'Override native commands for Telegram (bool or "auto").',
-
+  "channels.telegram.commands.nativeSkills":
+    'Override native skill commands for Telegram (bool or "auto").',
   "channels.slack.commands.native": 'Override native commands for Slack (bool or "auto").',
-
+  "channels.slack.commands.nativeSkills":
+    'Override native skill commands for Slack (bool or "auto").',
   "channels.slack.streaming":
     'Unified Slack stream preview mode: "off" | "partial" | "block" | "progress". Legacy boolean/streamMode keys are auto-mapped.',
   "channels.slack.nativeStreaming":
@@ -1063,6 +1390,8 @@ export const FIELD_HELP: Record<string, string> = {
     "Auto-unfocus TTL in hours for Discord thread-bound sessions (/focus and spawned thread sessions). Set 0 to disable (default: 24). Overrides session.threadBindings.ttlHours when set.",
   "channels.discord.threadBindings.spawnSubagentSessions":
     "Allow subagent spawns with thread=true to auto-create and bind Discord threads (default: false; opt-in). Set true to enable thread-bound subagent spawns for this account/channel.",
+  "channels.discord.threadBindings.spawnAcpSessions":
+    "Allow /acp spawn to auto-create and bind Discord threads for ACP sessions (default: false; opt-in). Set true to enable thread-bound ACP spawns for this account/channel.",
   "channels.discord.ui.components.accentColor":
     "Accent color for Discord component containers (hex). Set per account via channels.discord.accounts.<id>.ui.components.accentColor.",
   "channels.discord.voice.enabled":

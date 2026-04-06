@@ -5,6 +5,7 @@ import { CHANNEL_IDS, type ChatChannelId } from "../../channels/registry.js";
 import { agentCommand } from "../../commands/agent.js";
 import { loadConfig } from "../../config/config.js";
 import {
+  mergeSessionEntry,
   resolveAgentIdFromSessionKey,
   resolveExplicitAgentSessionKey,
   resolveAgentMainSessionKey,
@@ -389,7 +390,7 @@ export const agentHandlers: GatewayRequestHandlers = {
       resolvedGroupChannel = resolvedGroupChannel || inheritedGroup?.groupChannel;
       resolvedGroupSpace = resolvedGroupSpace || inheritedGroup?.groupSpace;
       const deliveryFields = normalizeSessionDeliveryFields(entry);
-      const nextEntry: SessionEntry = {
+      const nextEntryPatch: SessionEntry = {
         sessionId,
         updatedAt: now,
         verboseLevel: entry?.verboseLevel,
@@ -411,7 +412,7 @@ export const agentHandlers: GatewayRequestHandlers = {
         cliSessionIds: entry?.cliSessionIds,
         claudeCliSessionId: entry?.claudeCliSessionId,
       };
-      sessionEntry = nextEntry;
+      sessionEntry = mergeSessionEntry(entry, nextEntryPatch);
       const sendPolicy = resolveSendPolicy({
         cfg,
         entry,
@@ -433,7 +434,7 @@ export const agentHandlers: GatewayRequestHandlers = {
       const agentId = resolveAgentIdFromSessionKey(canonicalSessionKey);
       const mainSessionKey = resolveAgentMainSessionKey({ cfg, agentId });
       if (storePath) {
-        await updateSessionStore(storePath, (store) => {
+        const persisted = await updateSessionStore(storePath, (store) => {
           const target = resolveGatewaySessionStoreTarget({
             cfg,
             key: requestedSessionKey,
@@ -444,8 +445,11 @@ export const agentHandlers: GatewayRequestHandlers = {
             canonicalKey: target.canonicalKey,
             candidates: target.storeKeys,
           });
-          store[canonicalSessionKey] = nextEntry;
+          const merged = mergeSessionEntry(store[canonicalSessionKey], nextEntryPatch);
+          store[canonicalSessionKey] = merged;
+          return merged;
         });
+        sessionEntry = persisted;
       }
       if (canonicalSessionKey === mainSessionKey || canonicalSessionKey === "global") {
         context.addChatRun(idem, {
@@ -580,6 +584,17 @@ export const agentHandlers: GatewayRequestHandlers = {
       return;
     }
 
+    const normalizedTurnSource = normalizeMessageChannel(turnSourceChannel);
+    const turnSourceMessageChannel =
+      normalizedTurnSource && isGatewayMessageChannel(normalizedTurnSource)
+        ? normalizedTurnSource
+        : undefined;
+    const originMessageChannel =
+      turnSourceMessageChannel ??
+      (client?.connect && isWebchatConnect(client.connect)
+        ? INTERNAL_MESSAGE_CHANNEL
+        : resolvedChannel);
+
     const deliver = request.deliver === true && resolvedChannel !== INTERNAL_MESSAGE_CHANNEL;
 
     const accepted = {
@@ -611,7 +626,7 @@ export const agentHandlers: GatewayRequestHandlers = {
         accountId: resolvedAccountId,
         threadId: resolvedThreadId,
         runContext: {
-          messageChannel: resolvedChannel,
+          messageChannel: originMessageChannel,
           accountId: resolvedAccountId,
           groupId: resolvedGroupId,
           groupChannel: resolvedGroupChannel,
@@ -624,7 +639,7 @@ export const agentHandlers: GatewayRequestHandlers = {
         spawnedBy: spawnedByValue,
         timeout: request.timeout?.toString(),
         bestEffortDeliver,
-        messageChannel: resolvedChannel,
+        messageChannel: originMessageChannel,
         runId,
         lane: request.lane,
         extraSystemPrompt: request.extraSystemPrompt,

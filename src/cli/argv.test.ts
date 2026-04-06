@@ -56,7 +56,7 @@ describe("argv helpers", () => {
     },
     {
       name: "subcommand path after global root flags should not be treated as version",
-      argv: ["node", "remoteclaw", "--dev", "status", "list", "-v"],
+      argv: ["node", "remoteclaw", "--dev", "skills", "list", "-v"],
       expected: false,
     },
   ])("detects help/version flags: $name", ({ argv, expected }) => {
@@ -203,6 +203,18 @@ describe("argv helpers", () => {
       {
         rawArgs: ["/usr/bin/node-22.2.0", "remoteclaw", "status"],
         expected: ["/usr/bin/node-22.2.0", "remoteclaw", "status"],
+      },
+      {
+        rawArgs: ["node24", "remoteclaw", "status"],
+        expected: ["node24", "remoteclaw", "status"],
+      },
+      {
+        rawArgs: ["/usr/bin/node24", "remoteclaw", "status"],
+        expected: ["/usr/bin/node24", "remoteclaw", "status"],
+      },
+      {
+        rawArgs: ["node24.exe", "remoteclaw", "status"],
+        expected: ["node24.exe", "remoteclaw", "status"],
       },
       {
         rawArgs: ["nodejs", "remoteclaw", "status"],

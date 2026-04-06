@@ -1,5 +1,5 @@
 ---
-description: "Security considerations and threat model for running an AI gateway with shell access"
+summary: "Security considerations and threat model for running an AI gateway with shell access"
 read_when:
   - Adding features that widen access or automation
 title: "Security"
@@ -36,7 +36,7 @@ remoteclaw security audit --fix
 remoteclaw security audit --json
 ```
 
-It flags common footguns (Gateway auth exposure, browser control exposure, exec allowlists, filesystem permissions).
+It flags common footguns (Gateway auth exposure, browser control exposure, elevated allowlists, filesystem permissions).
 
 RemoteClaw is both a product and an experiment: you’re wiring frontier-model behavior into real messaging surfaces and real tools. **There is no “perfectly secure” setup.** The goal is to be deliberate about:
 
@@ -161,6 +161,7 @@ Use this baseline first, then selectively re-enable tools per trusted agent:
     deny: ["group:automation", "group:runtime", "group:fs", "sessions_spawn", "sessions_send"],
     fs: { workspaceOnly: true },
     exec: { security: "deny", ask: "always" },
+    elevated: { enabled: false },
   },
   channels: {
     whatsapp: { dmPolicy: "pairing", groups: { "*": { requireMention: true } } },
@@ -182,13 +183,14 @@ If more than one person can DM your bot:
 ### What the audit checks (high level)
 
 - **Inbound access** (DM policies, group policies, allowlists): can strangers trigger the bot?
-- **Tool blast radius** (open rooms): could prompt injection turn into shell/file/network actions?
+- **Tool blast radius** (elevated tools + open rooms): could prompt injection turn into shell/file/network actions?
 - **Network exposure** (Gateway bind/auth, Tailscale Serve/Funnel, weak/short auth tokens).
 - **Browser control exposure** (remote nodes, relay ports, remote CDP endpoints).
 - **Local disk hygiene** (permissions, symlinks, config includes, “synced folder” paths).
 - **Plugins** (extensions exist without an explicit allowlist).
 - **Policy drift/misconfig** (sandbox docker settings configured but sandbox mode off; ineffective `gateway.nodes.denyCommands` patterns because matching is exact command-name only (for example `system.run`) and does not inspect shell text; dangerous `gateway.nodes.allowCommands` entries; global `tools.profile="minimal"` overridden by per-agent profiles; extension plugin tools reachable under permissive tool policy).
 - **Runtime expectation drift** (for example `tools.exec.host="sandbox"` while sandbox mode is off, which runs directly on the gateway host).
+- **Model hygiene** (warn when configured models look legacy; not a hard block).
 
 If you run `--deep`, RemoteClaw also attempts a best-effort live Gateway probe.
 
@@ -200,7 +202,12 @@ Use this when auditing access or deciding what to back up:
 - **Telegram bot token**: config/env or `channels.telegram.tokenFile`
 - **Discord bot token**: config/env (token file not yet supported)
 - **Slack tokens**: config/env (`channels.slack.*`)
-- **Pairing allowlists**: `~/.remoteclaw/credentials/<channel>-allowFrom.json`
+- **Pairing allowlists**:
+  - `~/.remoteclaw/credentials/<channel>-allowFrom.json` (default account)
+  - `~/.remoteclaw/credentials/<channel>-<accountId>-allowFrom.json` (non-default accounts)
+- **Model auth profiles**: `~/.remoteclaw/agents/<agentId>/agent/auth-profiles.json`
+- **File-backed secrets payload (optional)**: `~/.remoteclaw/secrets.json`
+- **Legacy OAuth import**: `~/.remoteclaw/credentials/oauth.json`
 
 ## Security Audit Checklist
 
@@ -211,6 +218,7 @@ When the audit prints findings, treat this as a priority order:
 3. **Browser control remote exposure**: treat it like operator access (tailnet-only, pair nodes deliberately, avoid public exposure).
 4. **Permissions**: make sure state/config/credentials/auth are not group/world-readable.
 5. **Plugins/extensions**: only load what you explicitly trust.
+6. **Model choice**: prefer modern, instruction-hardened models for any bot with tools.
 
 ## Security audit glossary
 
@@ -243,10 +251,12 @@ High-signal `checkId` values you will most likely see in real deployments (not e
 | `tools.exec.host_sandbox_no_sandbox_defaults`      | warn          | `exec host=sandbox` resolves to host exec when sandbox is off                      | `tools.exec.host`, `agents.defaults.sandbox.mode`                                                 | no       |
 | `tools.exec.host_sandbox_no_sandbox_agents`        | warn          | Per-agent `exec host=sandbox` resolves to host exec when sandbox is off            | `agents.list[].tools.exec.host`, `agents.list[].sandbox.mode`                                     | no       |
 | `tools.exec.safe_bins_interpreter_unprofiled`      | warn          | Interpreter/runtime bins in `safeBins` without explicit profiles broaden exec risk | `tools.exec.safeBins`, `tools.exec.safeBinProfiles`, `agents.list[].tools.exec.*`                 | no       |
+| `security.exposure.open_groups_with_elevated`      | critical      | Open groups + elevated tools create high-impact prompt-injection paths             | `channels.*.groupPolicy`, `tools.elevated.*`                                                      | no       |
 | `security.exposure.open_groups_with_runtime_or_fs` | critical/warn | Open groups can reach command/file tools without sandbox/workspace guards          | `channels.*.groupPolicy`, `tools.profile/deny`, `tools.fs.workspaceOnly`, `agents.*.sandbox.mode` | no       |
 | `security.trust_model.multi_user_heuristic`        | warn          | Config looks multi-user while gateway trust model is personal-assistant            | split trust boundaries, or shared-user hardening (`sandbox.mode`, tool deny/workspace scoping)    | no       |
 | `tools.profile_minimal_overridden`                 | warn          | Agent overrides bypass global minimal profile                                      | `agents.list[].tools.profile`                                                                     | no       |
 | `plugins.tools_reachable_permissive_policy`        | warn          | Extension tools reachable in permissive contexts                                   | `tools.profile` + tool allow/deny                                                                 | no       |
+| `models.small_params`                              | critical/info | Small models + unsafe tool surfaces raise injection risk                           | model choice + sandbox/tool policy                                                                | no       |
 
 ## Control UI over HTTP
 
@@ -481,7 +491,7 @@ If you run multiple accounts on the same channel, use `per-account-channel-peer`
 RemoteClaw has two separate “who can trigger me?” layers:
 
 - **DM allowlist** (`allowFrom` / `channels.discord.allowFrom` / `channels.slack.allowFrom`; legacy: `channels.discord.dm.allowFrom`, `channels.slack.dm.allowFrom`): who is allowed to talk to the bot in direct messages.
-  - When `dmPolicy="pairing"`, approvals are written to `~/.remoteclaw/credentials/<channel>-allowFrom.json` (merged with config allowlists).
+  - When `dmPolicy="pairing"`, approvals are written to the account-scoped pairing allowlist store under `~/.remoteclaw/credentials/` (`<channel>-allowFrom.json` for default account, `<channel>-<accountId>-allowFrom.json` for non-default accounts), merged with config allowlists.
 - **Group allowlist** (channel-specific): which groups/channels/guilds the bot will accept messages from at all.
   - Common patterns:
     - `channels.whatsapp.groups`, `channels.telegram.groups`, `channels.imessage.groups`: per-group defaults like `requireMention`; when set, it also acts as a group allowlist (include `"*"` to keep allow-all behavior).
@@ -505,7 +515,7 @@ Even with strong system prompts, **prompt injection is not solved**. System prom
 - Run sensitive tool execution in a sandbox; keep secrets out of the agent’s reachable filesystem.
 - Note: sandboxing is opt-in. If sandbox mode is off, exec runs on the gateway host even though tools.exec.host defaults to sandbox, and host exec does not require approvals unless you set host=gateway and configure exec approvals.
 - Limit high-risk tools (`exec`, `browser`, `web_fetch`, `web_search`) to trusted agents or explicit allowlists.
-- **Model choice matters:** when configuring your CLI agent, prefer a modern, instruction-hardened model. For Claude, this means Opus-class models (see [“A step forward on safety”](https://www.anthropic.com/news/claude-opus-4-5)). Model selection is managed by your CLI agent, not RemoteClaw.
+- **Model choice matters:** older/legacy models can be less robust against prompt injection and tool misuse. Prefer modern, instruction-hardened models for any bot with tools. We recommend Anthropic Opus 4.6 (or the latest Opus) because it’s strong at recognizing prompt injections (see [“A step forward on safety”](https://www.anthropic.com/news/claude-opus-4-5)).
 
 Red flags to treat as untrusted:
 
@@ -676,8 +686,10 @@ Set a token so **all** WS clients must authenticate:
 
 Doctor can generate one for you: `remoteclaw doctor --generate-gateway-token`.
 
-Note: `gateway.remote.token` is **only** for remote CLI calls; it does not
-protect local WS access.
+Note: `gateway.remote.token` / `.password` are client credential sources. They
+do **not** protect local WS access by themselves.
+Local call paths can use `gateway.remote.*` as fallback when `gateway.auth.*`
+is unset.
 Optional: pin remote TLS with `gateway.remote.tlsFingerprint` when using `wss://`.
 
 Local device pairing:
@@ -750,7 +762,10 @@ Avoid:
 Assume anything under `~/.remoteclaw/` (or `$REMOTECLAW_STATE_DIR/`) may contain secrets or private data:
 
 - `remoteclaw.json`: config may include tokens (gateway, remote gateway), provider settings, and allowlists.
-- `credentials/**`: channel credentials (example: WhatsApp creds), pairing allowlists.
+- `credentials/**`: channel credentials (example: WhatsApp creds), pairing allowlists, legacy OAuth imports.
+- `agents/<agentId>/agent/auth-profiles.json`: API keys, token profiles, OAuth tokens, and optional `keyRef`/`tokenRef`.
+- `secrets.json` (optional): file-backed secret payload used by `file` SecretRef providers (`secrets.providers`).
+- `agents/<agentId>/agent/auth.json`: legacy compatibility file. Static `api_key` entries are scrubbed when discovered.
 - `agents/<agentId>/sessions/**`: session transcripts (`*.jsonl`) + routing metadata (`sessions.json`) that can contain private messages and tool output.
 - `extensions/**`: installed plugins (plus their `node_modules/`).
 - `sandboxes/**`: tool sandbox workspaces; can accumulate copies of files you read/write inside the sandbox.
@@ -858,10 +873,12 @@ Built-in baseline for chat-driven agent turns: non-owner senders cannot use the 
 
 ## Sandboxing (recommended)
 
+Dedicated doc: [Sandboxing](/gateway/sandboxing)
+
 Two complementary approaches:
 
 - **Run the full Gateway in Docker** (container boundary): [Docker](/install/docker)
-- **Tool sandbox** (`agents.defaults.sandbox`, host gateway + Docker-isolated tools): [Gateway configuration](/gateway/configuration#agentsdefaultssandbox)
+- **Tool sandbox** (`agents.defaults.sandbox`, host gateway + Docker-isolated tools): [Sandboxing](/gateway/sandboxing)
 
 Note: to prevent cross-agent access, keep `agents.defaults.sandbox.scope` at `"agent"` (default)
 or `"session"` for stricter per-session isolation. `scope: "shared"` uses a
@@ -872,6 +889,8 @@ Also consider agent workspace access inside the sandbox:
 - `agents.defaults.sandbox.workspaceAccess: "none"` (default) keeps the agent workspace off-limits; tools run against a sandbox workspace under `~/.remoteclaw/sandboxes`
 - `agents.defaults.sandbox.workspaceAccess: "ro"` mounts the agent workspace read-only at `/agent` (disables `write`/`edit`/`apply_patch`)
 - `agents.defaults.sandbox.workspaceAccess: "rw"` mounts the agent workspace read/write at `/workspace`
+
+Important: `tools.elevated` is the global baseline escape hatch that runs exec on the host. Keep `tools.elevated.allowFrom` tight and don’t enable it for strangers. You can further restrict elevated per agent via `agents.list[].tools.elevated`. See [Elevated Mode](/tools/elevated).
 
 ## Browser control risks
 
@@ -918,7 +937,7 @@ Example strict policy:
 
 With multi-agent routing, each agent can have its own sandbox + tool policy:
 use this to give **full access**, **read-only**, or **no access** per agent.
-See [Multi-Agent Routing](/concepts/multi-agent) for full details
+See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for full details
 and precedence rules.
 
 Common use cases:
@@ -1045,13 +1064,13 @@ If your AI does something bad:
 
 1. Rotate Gateway auth (`gateway.auth.token` / `REMOTECLAW_GATEWAY_PASSWORD`) and restart.
 2. Rotate remote client secrets (`gateway.remote.token` / `.password`) on any machine that can call the Gateway.
-3. Rotate channel credentials (WhatsApp creds, Slack/Discord tokens).
+3. Rotate provider/API credentials (WhatsApp creds, Slack/Discord tokens, model/API keys in `auth-profiles.json`, and encrypted secrets payload values when used).
 
 ### Audit
 
 1. Check Gateway logs: `/tmp/remoteclaw/remoteclaw-YYYY-MM-DD.log` (or `logging.file`).
 2. Review the relevant transcript(s): `~/.remoteclaw/agents/<agentId>/sessions/*.jsonl`.
-3. Review recent config changes (anything that could have widened access: `gateway.bind`, `gateway.auth`, dm/group policies, plugin changes).
+3. Review recent config changes (anything that could have widened access: `gateway.bind`, `gateway.auth`, dm/group policies, `tools.elevated`, plugin changes).
 4. Re-run `remoteclaw security audit --deep` and confirm critical findings are resolved.
 
 ### Collect for a report

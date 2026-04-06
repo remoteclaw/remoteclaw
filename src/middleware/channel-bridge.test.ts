@@ -253,7 +253,7 @@ describe("ChannelBridge", () => {
       expect(params.workingDirectory).toBe("/my/workspace");
     });
 
-    it("forwards abortSignal to runtime", async () => {
+    it("forwards abortSignal to runtime (combined with internal controller)", async () => {
       const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
       mockRuntimeInstance = { execute: executeFn };
 
@@ -262,7 +262,11 @@ describe("ChannelBridge", () => {
       await bridge.handle(makeMessage(), undefined, controller.signal);
 
       const params = executeFn.mock.calls[0][0];
-      expect(params.abortSignal).toBe(controller.signal);
+      // Signal is combined via AbortSignal.any(); aborting external controller propagates.
+      expect(params.abortSignal).toBeDefined();
+      expect(params.abortSignal!.aborted).toBe(false);
+      controller.abort();
+      expect(params.abortSignal!.aborted).toBe(true);
     });
 
     it("includes MCP server config in runtime params", async () => {

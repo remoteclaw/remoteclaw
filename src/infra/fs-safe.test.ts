@@ -81,6 +81,33 @@ describe("fs-safe", () => {
     ).rejects.toMatchObject({ code: "invalid-path" });
   });
 
+  it.runIf(process.platform !== "win32")("blocks hardlink aliases under root", async () => {
+    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
+    const outside = await tempDirs.make("remoteclaw-fs-safe-outside-");
+    const outsideFile = path.join(outside, "outside.txt");
+    const hardlinkPath = path.join(root, "link.txt");
+    await fs.writeFile(outsideFile, "outside");
+    try {
+      try {
+        await fs.link(outsideFile, hardlinkPath);
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === "EXDEV") {
+          return;
+        }
+        throw err;
+      }
+      await expect(
+        openFileWithinRoot({
+          rootDir: root,
+          relativePath: "link.txt",
+        }),
+      ).rejects.toMatchObject({ code: "invalid-path" });
+    } finally {
+      await fs.rm(hardlinkPath, { force: true });
+      await fs.rm(outsideFile, { force: true });
+    }
+  });
+
   it("returns not-found for missing files", async () => {
     const dir = await tempDirs.make("remoteclaw-fs-safe-");
     const missing = path.join(dir, "missing.txt");

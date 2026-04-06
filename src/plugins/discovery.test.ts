@@ -172,6 +172,7 @@ describe("discoverRemoteClawPlugins", () => {
     const ids = candidates.map((c) => c.idHint);
     expect(ids).toContain("demo-plugin-dir");
   });
+
   it("blocks extension entries that escape package directory", async () => {
     const stateDir = makeTempDir();
     const globalExt = path.join(stateDir, "extensions", "escape-pack");
@@ -229,6 +230,82 @@ describe("discoverRemoteClawPlugins", () => {
     expect(diagnostics.some((entry) => entry.message.includes("escapes package directory"))).toBe(
       true,
     );
+  });
+
+  it("rejects package extension entries that are hardlinked aliases", async () => {
+    if (process.platform === "win32") {
+      return;
+    }
+    const stateDir = makeTempDir();
+    const globalExt = path.join(stateDir, "extensions", "pack");
+    const outsideDir = path.join(stateDir, "outside");
+    const outsideFile = path.join(outsideDir, "escape.ts");
+    const linkedFile = path.join(globalExt, "escape.ts");
+    fs.mkdirSync(globalExt, { recursive: true });
+    fs.mkdirSync(outsideDir, { recursive: true });
+    fs.writeFileSync(outsideFile, "export default {}", "utf-8");
+    try {
+      fs.linkSync(outsideFile, linkedFile);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "EXDEV") {
+        return;
+      }
+      throw err;
+    }
+
+    fs.writeFileSync(
+      path.join(globalExt, "package.json"),
+      JSON.stringify({
+        name: "@remoteclaw/pack",
+        remoteclaw: { extensions: ["./escape.ts"] },
+      }),
+      "utf-8",
+    );
+
+    const { candidates, diagnostics } = await withStateDir(stateDir, async () => {
+      return discoverRemoteClawPlugins({});
+    });
+
+    expect(candidates.some((candidate) => candidate.idHint === "pack")).toBe(false);
+    expect(diagnostics.some((entry) => entry.message.includes("escapes package directory"))).toBe(
+      true,
+    );
+  });
+
+  it("ignores package manifests that are hardlinked aliases", async () => {
+    if (process.platform === "win32") {
+      return;
+    }
+    const stateDir = makeTempDir();
+    const globalExt = path.join(stateDir, "extensions", "pack");
+    const outsideDir = path.join(stateDir, "outside");
+    const outsideManifest = path.join(outsideDir, "package.json");
+    const linkedManifest = path.join(globalExt, "package.json");
+    fs.mkdirSync(globalExt, { recursive: true });
+    fs.mkdirSync(outsideDir, { recursive: true });
+    fs.writeFileSync(path.join(globalExt, "entry.ts"), "export default {}", "utf-8");
+    fs.writeFileSync(
+      outsideManifest,
+      JSON.stringify({
+        name: "@remoteclaw/pack",
+        remoteclaw: { extensions: ["./entry.ts"] },
+      }),
+      "utf-8",
+    );
+    try {
+      fs.linkSync(outsideManifest, linkedManifest);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "EXDEV") {
+        return;
+      }
+      throw err;
+    }
+
+    const { candidates } = await withStateDir(stateDir, async () => {
+      return discoverRemoteClawPlugins({});
+    });
+
+    expect(candidates.some((candidate) => candidate.idHint === "pack")).toBe(false);
   });
 
   it.runIf(process.platform !== "win32")("blocks world-writable plugin paths", async () => {

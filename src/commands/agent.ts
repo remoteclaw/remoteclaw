@@ -363,6 +363,7 @@ export async function agentCommand(
       deps,
       runtime,
       opts,
+      outboundSession: undefined,
       sessionEntry,
       result,
       payloads,

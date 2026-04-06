@@ -8,7 +8,7 @@ inputs:
   cache-key-suffix:
     description: Suffix appended to the cache key.
     required: false
-    default: "node22"
+    default: "node24"
 runs:
   using: composite
   steps:
@@ -39,7 +39,7 @@ runs:
       run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
 
     - name: Restore pnpm store cache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ${{ steps.pnpm-store.outputs.path }}
         key: ${{ runner.os }}-pnpm-store-${{ inputs.cache-key-suffix }}-${{ hashFiles('pnpm-lock.yaml') }}

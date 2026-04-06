@@ -1,6 +1,6 @@
 name: Setup Node environment
 description: >
-  Initialize submodules with retry, install Node 22, pnpm, optionally Bun,
+  Initialize submodules with retry, install Node 24, pnpm, optionally Bun,
   and run pnpm install. Requires actions/checkout to run first.
 inputs:
   node-version:
@@ -37,7 +37,7 @@ runs:
         exit 1
 
     - name: Setup Node.js
-      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
       with:
         node-version: ${{ inputs.node-version }}
         check-latest: true

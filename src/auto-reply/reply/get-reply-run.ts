@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { isSessionRunActive } from "../../agents/session-run-registry.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
   resolveGroupSessionKey,
@@ -351,7 +352,7 @@ export async function runPreparedReply(
     logVerbose(`Interrupting ${sessionLaneKey} (cleared ${cleared})`);
   }
   const queueKey = sessionKey ?? sessionIdFinal;
-  const isActive = false;
+  const isActive = isSessionRunActive(queueKey);
   const shouldFollowup =
     resolvedQueue.mode === "followup" ||
     resolvedQueue.mode === "collect" ||

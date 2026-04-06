@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
+import { killSessionRun, waitForSessionRunEnd } from "../../agents/session-run-registry.js";
 import {
   listSubagentRunsForRequester,
   markSubagentRunTerminated,
@@ -189,7 +190,9 @@ async function ensureSessionRuntimeCleanup(params: {
     queueKeys.add(params.sessionId);
   }
   clearSessionQueues([...queueKeys]);
+  killSessionRun(params.target.canonicalKey);
   stopSubagentsForRequester({ cfg: params.cfg, requesterSessionKey: params.target.canonicalKey });
+  await waitForSessionRunEnd(params.target.canonicalKey, 5_000);
   return undefined;
 }
 

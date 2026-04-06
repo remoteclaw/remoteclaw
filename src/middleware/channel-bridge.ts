@@ -160,11 +160,16 @@ export class ChannelBridge {
       let hookEnv: Record<string, string> | undefined;
       const runId = randomUUID();
       const sessionKeyStr = formatSessionKeyString(sessionKey);
+      const internalAbortCtrl = new AbortController();
       registerSessionRun(sessionKeyStr, {
         startedAt: Date.now(),
         sessionKey: sessionKeyStr,
         agentId: message.agentId ?? "default",
+        abortController: internalAbortCtrl,
       });
+      const combinedSignal = abortSignal
+        ? AbortSignal.any([abortSignal, internalAbortCtrl.signal])
+        : internalAbortCtrl.signal;
 
       // Hook: before_runtime_spawn — extensions can modify env and workspaceDir
       if (hookRunner?.hasHooks("before_runtime_spawn")) {
@@ -238,7 +243,7 @@ export class ChannelBridge {
             media: supportedMedia?.length ? supportedMedia : undefined,
             sessionId: existingSessionId,
             mcpServers,
-            abortSignal,
+            abortSignal: combinedSignal,
             workingDirectory: workspaceDir,
             env: this.#runtimeEnv || hookEnv ? { ...this.#runtimeEnv, ...hookEnv } : undefined,
             extraArgs: this.#runtimeArgs,

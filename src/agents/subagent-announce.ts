@@ -27,6 +27,7 @@ import {
   buildAnnounceIdempotencyKey,
   resolveQueueAnnounceId,
 } from "./announce-idempotency.js";
+import { isSessionRunActive } from "./session-run-registry.js";
 import { type AnnounceQueueItem, enqueueAnnounce } from "./subagent-announce-queue.js";
 import { getSubagentDepthFromSessionStore } from "./subagent-depth.js";
 import type { SpawnSubagentMode } from "./subagent-spawn.js";
@@ -664,7 +665,7 @@ async function maybeQueueSubagentAnnounce(params: {
     channel: entry?.channel ?? entry?.lastChannel,
     sessionEntry: entry,
   });
-  const isActive = false;
+  const isActive = isSessionRunActive(canonicalKey);
 
   const shouldFollowup =
     queueSettings.mode === "followup" ||
@@ -1128,7 +1129,7 @@ export async function runSubagentAnnounceFlow(params: {
     const settleTimeoutMs = Math.min(Math.max(params.timeoutMs, 1), 120_000);
     let reply = params.roundOneReply;
     let outcome: SubagentRunOutcome | undefined = params.outcome;
-    // Embedded engine removed (#74); no active runs to settle.
+    // Session runs tracked via session-run-registry; gateway handles waits for cross-process runs.
 
     if (!reply && params.waitForCompletion !== false) {
       const waitMs = settleTimeoutMs;
@@ -1178,7 +1179,7 @@ export async function runSubagentAnnounceFlow(params: {
       });
     }
 
-    // Embedded engine removed (#74); no active runs to check.
+    // Session runs tracked via session-run-registry; no embedded run state to check here.
 
     if (isAnnounceSkip(reply)) {
       return true;

@@ -1,10 +1,13 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   getActiveSessionRunCount,
+  getSessionRunHandle,
   isSessionRunActive,
+  killSessionRun,
   registerSessionRun,
   resetSessionRunRegistryForTest,
   unregisterSessionRun,
+  waitForSessionRunEnd,
 } from "./session-run-registry.js";
 
 describe("session-run-registry", () => {
@@ -96,5 +99,82 @@ describe("session-run-registry", () => {
     });
     expect(getActiveSessionRunCount()).toBe(1);
     expect(isSessionRunActive("session-1")).toBe(true);
+  });
+
+  describe("getSessionRunHandle", () => {
+    it("returns undefined for unknown key", () => {
+      expect(getSessionRunHandle("unknown")).toBeUndefined();
+    });
+
+    it("returns the registered handle", () => {
+      registerSessionRun("session-1", {
+        startedAt: 1000,
+        sessionKey: "session-1",
+        agentId: "main",
+      });
+      const handle = getSessionRunHandle("session-1");
+      expect(handle).toBeDefined();
+      expect(handle!.startedAt).toBe(1000);
+      expect(handle!.agentId).toBe("main");
+    });
+  });
+
+  describe("killSessionRun", () => {
+    it("returns false for unknown key", () => {
+      expect(killSessionRun("unknown")).toBe(false);
+    });
+
+    it("aborts via AbortController when present", () => {
+      const ctrl = new AbortController();
+      registerSessionRun("session-1", {
+        startedAt: Date.now(),
+        sessionKey: "session-1",
+        agentId: "main",
+        abortController: ctrl,
+      });
+      expect(ctrl.signal.aborted).toBe(false);
+      expect(killSessionRun("session-1")).toBe(true);
+      expect(ctrl.signal.aborted).toBe(true);
+    });
+
+    it("returns false when AbortController is already aborted and no PID", () => {
+      const ctrl = new AbortController();
+      ctrl.abort();
+      registerSessionRun("session-1", {
+        startedAt: Date.now(),
+        sessionKey: "session-1",
+        agentId: "main",
+        abortController: ctrl,
+      });
+      expect(killSessionRun("session-1")).toBe(false);
+    });
+  });
+
+  describe("waitForSessionRunEnd", () => {
+    it("resolves true immediately when no active run", async () => {
+      const result = await waitForSessionRunEnd("unknown", 100);
+      expect(result).toBe(true);
+    });
+
+    it("resolves true when run is unregistered before timeout", async () => {
+      registerSessionRun("session-1", {
+        startedAt: Date.now(),
+        sessionKey: "session-1",
+        agentId: "main",
+      });
+      setTimeout(() => unregisterSessionRun("session-1"), 30);
+      const result = await waitForSessionRunEnd("session-1", 500);
+      expect(result).toBe(true);
+    });
+
+    it("resolves false on timeout", async () => {
+      registerSessionRun("session-1", {
+        startedAt: Date.now(),
+        sessionKey: "session-1",
+        agentId: "main",
+      });
+      const result = await waitForSessionRunEnd("session-1", 80);
+      expect(result).toBe(false);
+    });
   });
 });

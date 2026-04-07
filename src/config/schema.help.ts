@@ -30,7 +30,7 @@ export const FIELD_HELP: Record<string, string> = {
   "diagnostics.otel":
     "OpenTelemetry export settings for traces, metrics, and logs emitted by gateway components. Use this when integrating with centralized observability backends and distributed tracing pipelines.",
   "diagnostics.cacheTrace":
-    "Cache-trace logging settings for observing cache decisions and payload context in embedded runs. Enable this temporarily for debugging and disable afterward to reduce sensitive log footprint.",
+    "Cache-trace logging settings for observing cache decisions and payload context in session runs. Enable this temporarily for debugging and disable afterward to reduce sensitive log footprint.",
   logging:
     "Logging behavior controls for severity, output destinations, formatting, and sensitive-data redaction. Keep levels and redaction strict enough for production while preserving useful diagnostics.",
   "logging.level":
@@ -426,7 +426,7 @@ export const FIELD_HELP: Record<string, string> = {
   "diagnostics.otel.flushIntervalMs":
     "Interval in milliseconds for periodic telemetry flush from buffers to the collector. Increase to reduce export chatter, or lower for faster visibility during active incident response.",
   "diagnostics.cacheTrace.enabled":
-    "Log cache trace snapshots for embedded agent runs (default: false).",
+    "Log cache trace snapshots for agent session runs (default: false).",
   "diagnostics.cacheTrace.filePath":
     "JSONL output path for cache trace logs (default: $REMOTECLAW_STATE_DIR/logs/cache-trace.jsonl).",
   "diagnostics.cacheTrace.includeMessages":

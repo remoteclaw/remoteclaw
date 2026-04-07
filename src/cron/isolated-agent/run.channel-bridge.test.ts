@@ -324,7 +324,7 @@ describe("runCronIsolatedAgentTurn — ChannelBridge wiring", () => {
     expect(abortSignal).toBe(controller.signal);
   });
 
-  it("maps AgentDeliveryResult payloads to EmbeddedPiRunResult format", async () => {
+  it("maps AgentDeliveryResult payloads to run result format", async () => {
     channelBridgeHandleMock.mockResolvedValue(
       makeDeliveryResult({
         payloads: [{ text: "Hello from cron" }],

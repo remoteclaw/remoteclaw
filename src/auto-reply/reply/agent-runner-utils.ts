@@ -154,7 +154,7 @@ export function resolveModelFallbackOptions(run: FollowupRun["run"]) {
   };
 }
 
-export function buildEmbeddedRunBaseParams(params: {
+export function buildRunBaseParams(params: {
   run: FollowupRun["run"];
   provider: string;
   model: string;
@@ -176,7 +176,7 @@ export function buildEmbeddedRunBaseParams(params: {
   };
 }
 
-export function buildEmbeddedContextFromTemplate(params: {
+export function buildRunContextFromTemplate(params: {
   run: FollowupRun["run"];
   sessionCtx: TemplateContext;
   hasRepliedRef: { value: boolean } | undefined;
@@ -213,14 +213,14 @@ export function buildTemplateSenderContext(sessionCtx: TemplateContext) {
   };
 }
 
-export function buildEmbeddedRunContexts(params: {
+export function buildRunContexts(params: {
   run: FollowupRun["run"];
   sessionCtx: TemplateContext;
   hasRepliedRef: { value: boolean } | undefined;
   provider: string;
 }) {
   return {
-    embeddedContext: buildEmbeddedContextFromTemplate({
+    runContext: buildRunContextFromTemplate({
       run: params.run,
       sessionCtx: params.sessionCtx,
       hasRepliedRef: params.hasRepliedRef,

@@ -858,8 +858,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       await fs.writeFile(transcriptPath, "ok", "utf-8");
 
       // Return an AgentDeliveryResult with context overflow error.
-      // The production code maps this via mapToEmbeddedPiRunResult which
-      // produces meta.error.kind === "context_overflow".
+      // The production code maps this to meta.error.kind === "context_overflow".
       state.channelBridgeHandleMock.mockImplementationOnce(async () =>
         makeDeliveryResult({
           payloads: [{ text: "Context overflow: prompt too large", isError: true }],
@@ -906,31 +905,8 @@ describe("runReplyAgent typing (heartbeat)", () => {
       await fs.writeFile(transcriptPath, "ok", "utf-8");
 
       // Return an AgentDeliveryResult with role_ordering error.
-      // mapToEmbeddedPiRunResult does NOT map this to meta.error
-      // (only context_window maps to meta.error). But the production code
-      // in agent-runner-execution.ts checks delivery.error and delivery.payloads.
-      // Since payloads is non-empty, it won't throw. The error is surfaced
-      // via the mapped EmbeddedPiRunResult meta.error.kind === "role_ordering".
-      // Let's check what mapToEmbeddedPiRunResult does...
-      // Actually: mapToEmbeddedPiRunResult only sets meta.error for
-      // errorSubtype === "context_window". For role_ordering, the error
-      // needs to be thrown or handled differently.
-      // Looking at the production code again: the old mock returned
-      // meta.error.kind === "role_ordering". Let me check how the
-      // production code surfaces that.
-      // The old code: runEmbeddedPiAgent returned { payloads, meta: { error: { kind: "role_ordering", message } } }
-      // In the new code: mapToEmbeddedPiRunResult only maps context_window to meta.error.
-      // So role_ordering must come through a different path.
-      // Actually, looking at agent-runner-execution.ts lines 474: it checks
-      // bridgeError?.kind === "role_ordering". And bridgeError comes from
-      // runResult.meta?.error. So mapToEmbeddedPiRunResult must produce this.
-      // But looking at the code, only context_window errorSubtype maps to meta.error.
-      // Wait - let me re-read. The role_ordering may be thrown as an exception instead.
-      // Actually, if the bridge returns an error with no payloads, the production
-      // code at line 384-386 throws: throw new Error(delivery.error).
-      // Then the catch block at line 491-492 checks isRoleOrderingError.
-      // So for role ordering, the bridge should return error with empty payloads,
-      // which triggers the throw, which hits the catch.
+      // The bridge returns an error with empty payloads, which triggers a throw
+      // in the production code. The catch block then checks isRoleOrderingError.
       state.channelBridgeHandleMock.mockImplementationOnce(async () =>
         makeDeliveryResult({
           payloads: [],
@@ -1165,12 +1141,12 @@ describe("runReplyAgent memory flush", () => {
 
       // Main run goes through ChannelBridge
       expect(state.channelBridgeHandleMock).toHaveBeenCalledTimes(1);
-      // Memory flush does NOT run for CLI providers, so runEmbeddedPiAgent should not be called
+      // Memory flush does NOT run for CLI providers
       expect(state.runAgentMock).not.toHaveBeenCalled();
     });
   });
 
-  it("does not run memory flush (embedded engine removed)", async () => {
+  it("does not run memory flush (engine removed)", async () => {
     await withTempStore(async (storePath) => {
       const sessionKey = "main";
       const sessionEntry = {
@@ -1202,7 +1178,7 @@ describe("runReplyAgent memory flush", () => {
         commandBody: "hello",
       });
 
-      // Memory flush is gutted (#74) — runEmbeddedPiAgent should NOT be called
+      // Memory flush is gutted (#74) — no separate agent call expected
       expect(state.runAgentMock).not.toHaveBeenCalled();
       // Main run uses ChannelBridge
       expect(state.channelBridgeHandleMock).toHaveBeenCalledTimes(1);

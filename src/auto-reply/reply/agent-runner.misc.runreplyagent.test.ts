@@ -1039,7 +1039,7 @@ describe("runReplyAgent fallback provider routing", () => {
       },
     });
 
-    // Bridge was called at least once (main run; memory flush uses runEmbeddedPiAgent directly)
+    // Bridge was called at least once (main run; memory flush is gutted)
     expect(channelBridgeHandleMock).toHaveBeenCalled();
   });
 });

@@ -941,7 +941,7 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  // pi-embedded abort/wait was gutted (#76) — sessions.reset and sessions.delete
+  // Engine abort/wait was gutted (#76) — sessions.reset and sessions.delete
   // always succeed now; the "returns unavailable when active run does not stop"
   // error path no longer exists.
 

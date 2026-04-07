@@ -67,7 +67,7 @@ const MAX_ANNOUNCE_RETRY_COUNT = 3;
 const ANNOUNCE_EXPIRY_MS = 5 * 60_000; // 5 minutes
 type SubagentRunOrphanReason = "missing-session-entry" | "missing-session-id";
 /**
- * Embedded runs can emit transient lifecycle `error` events while provider/model
+ * Session runs can emit transient lifecycle `error` events while provider/model
  * retry is still in progress. Defer terminal error cleanup briefly so a
  * subsequent lifecycle `start` / `end` can cancel premature failure announces.
  */
@@ -939,7 +939,7 @@ export function registerSubagentRun(params: {
     startSweeper();
   }
   // Wait for subagent completion via gateway RPC (cross-process).
-  // The in-process lifecycle listener is a fallback for embedded runs.
+  // The in-process lifecycle listener is a fallback for session runs.
   void waitForSubagentCompletion(params.runId, waitTimeoutMs);
 }
 

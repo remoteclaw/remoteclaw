@@ -278,7 +278,7 @@ export async function runPreparedReply(
     };
   }
   // When the user sends media without text, provide a minimal body so the agent
-  // run proceeds and the image/document is injected by the embedded runner.
+  // run proceeds and the image/document is injected by the agent runtime.
   const effectiveBaseBody = baseBodyTrimmed
     ? baseBodyForPrompt
     : "[User sent media without caption]";

@@ -2,7 +2,7 @@ import type { ChannelOutboundTargetMode } from "../../channels/plugins/types.js"
 
 /**
  * OpenAI-compatible function-calling tool definition.
- * Previously imported from the pi-embedded-runner; inlined after engine
+ * OpenAI-compatible function-calling tool definition, inlined after engine
  * removal (#74).
  */
 export type ClientToolDefinition = {
@@ -70,7 +70,7 @@ export type AgentCommandOpts = {
   channel?: string; // delivery channel (whatsapp|telegram|...)
   /** Account ID for multi-account channel routing (e.g., WhatsApp account). */
   accountId?: string;
-  /** Context for embedded run routing (channel/account/thread). */
+  /** Context for session run routing (channel/account/thread). */
   runContext?: AgentRunContext;
   /** Group id for channel-level tool policy resolution. */
   groupId?: string | null;

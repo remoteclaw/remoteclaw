@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/whatsapp",
-  "version": "0.3.0",
+  "version": "0.2.1",
   "private": true,
   "description": "RemoteClaw WhatsApp channel plugin",
   "type": "module",

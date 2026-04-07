@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/irc",
-  "version": "0.3.0",
+  "version": "0.2.1",
   "description": "RemoteClaw IRC channel plugin",
   "type": "module",
   "remoteclaw": {

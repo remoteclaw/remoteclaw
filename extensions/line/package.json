@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/line",
-  "version": "0.3.0",
+  "version": "0.2.1",
   "private": true,
   "description": "RemoteClaw LINE channel plugin",
   "type": "module",

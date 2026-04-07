@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/voice-call",
-  "version": "0.3.0",
+  "version": "0.2.1",
   "description": "RemoteClaw voice-call plugin",
   "type": "module",
   "dependencies": {

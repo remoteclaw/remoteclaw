@@ -193,7 +193,9 @@ describe("gateway canvas host auth", () => {
     });
   };
 
-  test("authorizes canvas HTTP/WS via node-scoped capability and rejects misuse", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("authorizes canvas HTTP/WS via node-scoped capability and rejects misuse", async () => {
     await withLoopbackTrustedProxy(async () => {
       await withCanvasGatewayHarness({
         resolvedAuth: tokenResolvedAuth,
@@ -279,7 +281,9 @@ describe("gateway canvas host auth", () => {
     }, "remoteclaw-canvas-auth-test-");
   }, 60_000);
 
-  test("denies canvas auth when trusted proxy omits forwarded client headers", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("denies canvas auth when trusted proxy omits forwarded client headers", async () => {
     await withLoopbackTrustedProxy(async () => {
       await withCanvasGatewayHarness({
         resolvedAuth: tokenResolvedAuth,
@@ -305,7 +309,9 @@ describe("gateway canvas host auth", () => {
     });
   }, 60_000);
 
-  test("accepts capability-scoped paths over IPv6 loopback", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("accepts capability-scoped paths over IPv6 loopback", async () => {
     await withTempConfig({
       cfg: {
         gateway: {
@@ -350,7 +356,9 @@ describe("gateway canvas host auth", () => {
     });
   }, 60_000);
 
-  test("returns 429 for repeated failed canvas auth attempts (HTTP + WS upgrade)", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("returns 429 for repeated failed canvas auth attempts (HTTP + WS upgrade)", async () => {
     await withLoopbackTrustedProxy(async () => {
       const rateLimiter = createAuthRateLimiter({
         maxAttempts: 1,

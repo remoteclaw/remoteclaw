@@ -1,5 +1,5 @@
 ---
-description: "Terminal UI (TUI): connect to the Gateway from any machine"
+summary: "Terminal UI (TUI): connect to the Gateway from any machine"
 read_when:
   - You want a beginner-friendly walkthrough of the TUI
   - You need the complete list of TUI features, commands, and shortcuts
@@ -37,7 +37,7 @@ Use `--password` if your Gateway uses password auth.
 - Header: connection URL, current agent, current session.
 - Chat log: user messages, assistant replies, system notices, tool cards.
 - Status line: connection/run state (connecting, running, streaming, idle, error).
-- Footer: connection state + agent + session + runtime + think/verbose/reasoning + token counts + deliver.
+- Footer: connection state + agent + session + model + think/verbose/reasoning + token counts + deliver.
 - Input: text editor with autocomplete.
 
 ## Mental model: agents + sessions
@@ -62,7 +62,7 @@ Use `--password` if your Gateway uses password auth.
 
 ## Pickers + overlays
 
-- Runtime picker: choose the CLI agent runtime.
+- Model picker: list available models and set the session override.
 - Agent picker: choose a different agent.
 - Session picker: shows only sessions for the current agent.
 - Settings: toggle deliver, tool output expansion, and thinking visibility.
@@ -87,7 +87,7 @@ Core:
 - `/status`
 - `/agent <id>` (or `/agents`)
 - `/session <key>` (or `/sessions`)
-- `/model <hint>` (forward a model hint to the CLI agent)
+- `/model <provider/model>` (or `/models`)
 
 Session controls:
 
@@ -95,6 +95,7 @@ Session controls:
 - `/verbose <on|full|off>`
 - `/reasoning <on|off|stream>`
 - `/usage <off|tokens|full>`
+- `/elevated <on|off|ask|full>` (alias: `/elev`)
 - `/activation <mention|always>`
 - `/deliver <on|off>`
 
@@ -112,6 +113,7 @@ Other Gateway slash commands (for example, `/context`) are forwarded to the Gate
 - Prefix a line with `!` to run a local shell command on the TUI host.
 - The TUI prompts once per session to allow local execution; declining keeps `!` disabled for the session.
 - Commands run in a fresh, non-interactive shell in the TUI working directory (no persistent `cd`/env).
+- Local shell commands receive `REMOTECLAW_SHELL=tui-local` in their environment.
 - A lone `!` is sent as a normal message; leading spaces do not trigger local exec.
 
 ## Tool output
@@ -150,7 +152,7 @@ No output after sending a message:
 
 - Run `/status` in the TUI to confirm the Gateway is connected and idle/busy.
 - Check the Gateway logs: `remoteclaw logs --follow`.
-- Confirm the agent can run: `remoteclaw status`.
+- Confirm the agent can run: `remoteclaw status` and `remoteclaw models status`.
 - If you expect messages in a chat channel, enable delivery (`/deliver on` or `--deliver`).
 - `--history-limit <n>`: History entries to load (default 200)
 

@@ -9,7 +9,9 @@ vi.doUnmock("./doctor-state-integrity.js");
 
 let doctorCommand: typeof import("./doctor.js").doctorCommand;
 
-describe("doctor command", () => {
+// Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+describe.skip("doctor command", () => {
   beforeAll(async () => {
     ({ doctorCommand } = await import("./doctor.js"));
   });

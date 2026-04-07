@@ -1,6 +1,27 @@
 import { ChannelType } from "@buape/carbon";
-import { BlockChunker } from "../../agents/block-chunker.js";
 import { resolveAckReaction, resolveHumanDelayConfig } from "../../agents/identity.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/pi-embedded-block-chunker.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+class EmbeddedBlockChunker {
+  // oxlint-disable-next-line no-useless-constructor, typescript/no-explicit-any
+  constructor(_opts?: any) {}
+  append(_t: string) {}
+  drain(_opts?: unknown) {}
+  reset() {}
+  hasBuffered() {
+    return false;
+  }
+  feed(_t: string) {
+    return [];
+  }
+  flush() {
+    return [];
+  }
+  take() {
+    return [];
+  }
+}
 import { resolveChunkMode } from "../../auto-reply/chunk.js";
 import { dispatchInboundMessage } from "../../auto-reply/dispatch.js";
 import { formatInboundEnvelope, resolveEnvelopeFormatOptions } from "../../auto-reply/envelope.js";
@@ -113,8 +134,13 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
   mediaList.push(...forwardedMediaList);
   const text = messageText;
   if (!text) {
-    logVerbose(`discord: drop message ${message.id} (empty content)`);
+    logVerbose("discord: drop message " + message.id + " (empty content)");
     return;
+  }
+
+  const boundThreadId = ctx.threadBinding?.conversation?.conversationId?.trim();
+  if (boundThreadId && typeof threadBindings.touchThread === "function") {
+    threadBindings.touchThread({ threadId: boundThreadId });
   }
   const ackReaction = resolveAckReaction(cfg, route.agentId, {
     channel: "discord",
@@ -452,7 +478,7 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
       ? resolveDiscordDraftStreamingChunking(cfg, accountId)
       : undefined;
   const shouldSplitPreviewMessages = discordStreamMode === "block";
-  const draftChunker = draftChunking ? new BlockChunker(draftChunking) : undefined;
+  const draftChunker = draftChunking ? new EmbeddedBlockChunker(draftChunking) : undefined;
   let lastPartialText = "";
   let draftText = "";
   let hasStreamedMessage = false;
@@ -537,7 +563,8 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
     draftChunker.append(delta);
     draftChunker.drain({
       force: false,
-      emit: (chunk) => {
+      // oxlint-disable-next-line typescript/no-explicit-any
+      emit: (chunk: any) => {
         draftText += chunk;
         draftStream.update(draftText);
       },
@@ -551,7 +578,8 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
     if (draftChunker?.hasBuffered()) {
       draftChunker.drain({
         force: true,
-        emit: (chunk) => {
+        // oxlint-disable-next-line typescript/no-explicit-any
+        emit: (chunk: any) => {
           draftText += chunk;
         },
       });
@@ -681,6 +709,8 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
       dispatcher,
       replyOptions: {
         ...replyOptions,
+        // @ts-expect-error — upstream feature not available in RemoteClaw fork
+        skillFilter: channelConfig?.skills,
         disableBlockStreaming:
           disableBlockStreamingForDraft ??
           (typeof discordConfig?.blockStreaming === "boolean"

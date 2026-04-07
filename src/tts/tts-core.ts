@@ -543,3 +543,8 @@ export async function edgeTTS(params: {
   });
   await tts.ttsPromise(text, outputPath);
 }
+
+// Gutted in RemoteClaw fork — stub export for upstream compat
+export function summarizeText(..._args: unknown[]): string {
+  return "";
+}

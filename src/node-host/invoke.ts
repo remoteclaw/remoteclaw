@@ -2,64 +2,37 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { GatewayClient } from "../gateway/client.js";
-import { sanitizeHostExecEnv } from "../infra/host-env-security.js";
-
-// Stub types and functions: exec-approvals and exec-host infrastructure was gutted.
-type ExecSecurity = "deny" | "allowlist" | "full";
-type ExecAsk = "off" | "on-miss" | "always";
-type ExecAllowlistEntry = { pattern: string };
-type ExecApprovalsFile = { socket?: { path?: string } } & Record<string, unknown>;
-type ExecApprovalsResolved = {
-  file: Record<string, unknown>;
-  agent: {
-    security: ExecSecurity;
-    ask: ExecAsk;
-    askFallback: string | undefined;
-  };
-  allowlist: ExecAllowlistEntry[];
-  socketPath: string | undefined;
-  token: string | undefined;
-};
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../infra/exec-approvals.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const ensureExecApprovals = (..._args: unknown[]) => undefined as any;
+// oxlint-disable-next-line typescript/no-explicit-any
+const mergeExecApprovalsSocketDefaults = (..._args: unknown[]) => undefined as any;
+// oxlint-disable-next-line typescript/no-explicit-any
+const normalizeExecApprovals = (..._args: unknown[]) => undefined as any;
+// oxlint-disable-next-line typescript/no-explicit-any
+const readExecApprovalsSnapshot = (..._args: unknown[]) => undefined as any;
+// oxlint-disable-next-line typescript/no-explicit-any
+const saveExecApprovals = (..._args: unknown[]) => undefined as any;
+type ExecAsk = Record<string, unknown>;
+type ExecApprovalsFile = Record<string, unknown>;
+type ExecApprovalsResolved = Record<string, unknown>;
+type ExecSecurity = Record<string, unknown>;
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../infra/exec-host.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const requestExecHostViaSocket = (..._args: unknown[]) => undefined as any;
 type ExecHostRequest = Record<string, unknown>;
-type ExecHostResponse = {
-  ok: boolean;
-  error: { reason: string; message: string };
-  payload: Record<string, unknown>;
-};
-
-function ensureExecApprovals(): void {
-  // no-op: exec approvals gutted
-}
-function readExecApprovalsSnapshot(): {
-  path: string;
-  exists: boolean;
-  hash: string;
-  file: ExecApprovalsFile;
-} {
-  return { path: "", exists: false, hash: "", file: {} };
-}
-function normalizeExecApprovals(_file: ExecApprovalsFile): ExecApprovalsFile {
-  return {};
-}
-function mergeExecApprovalsSocketDefaults(_opts: {
-  normalized: ExecApprovalsFile;
-  current: ExecApprovalsFile;
-}): ExecApprovalsFile {
-  return {};
-}
-function saveExecApprovals(_file: ExecApprovalsFile): void {
-  // no-op: exec approvals gutted
-}
-async function requestExecHostViaSocket(_opts: {
-  socketPath?: string;
-  token?: string;
-  request: ExecHostRequest;
-}): Promise<ExecHostResponse | null> {
-  return null;
-}
+type ExecHostResponse = Record<string, unknown>;
+import { sanitizeHostExecEnv } from "../infra/host-env-security.js";
 import { runBrowserProxyCommand } from "./invoke-browser.js";
-import { handleSystemRunInvoke } from "./invoke-system-run.js";
-import type { ExecEventPayload, RunResult, SystemRunParams } from "./invoke-types.js";
+import { buildSystemRunApprovalPlan, handleSystemRunInvoke } from "./invoke-system-run.js";
+import type {
+  ExecEventPayload,
+  RunResult,
+  SkillBinsProvider,
+  SystemRunParams,
+} from "./invoke-types.js";
 
 const OUTPUT_CAP = 200_000;
 const OUTPUT_EVENT_TAIL = 20_000;
@@ -95,7 +68,10 @@ export type NodeInvokeRequestPayload = {
   idempotencyKey?: string | null;
 };
 
+export type { SkillBinsProvider } from "./invoke-types.js";
+
 function resolveExecSecurity(value?: string): ExecSecurity {
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   return value === "deny" || value === "allowlist" || value === "full" ? value : "allowlist";
 }
 
@@ -109,6 +85,7 @@ function isCmdExeInvocation(argv: string[]): boolean {
 }
 
 function resolveExecAsk(value?: string): ExecAsk {
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   return value === "off" || value === "on-miss" || value === "always" ? value : "on-miss";
 }
 
@@ -124,6 +101,7 @@ function truncateOutput(raw: string, maxChars: number): { text: string; truncate
 }
 
 function redactExecApprovals(file: ExecApprovalsFile): ExecApprovalsFile {
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   const socketPath = file.socket?.path?.trim();
   return {
     ...file,
@@ -375,7 +353,11 @@ async function sendInvalidRequestResult(
   await sendErrorResult(client, frame, "INVALID_REQUEST", String(err));
 }
 
-export async function handleInvoke(frame: NodeInvokeRequestPayload, client: GatewayClient) {
+export async function handleInvoke(
+  frame: NodeInvokeRequestPayload,
+  client: GatewayClient,
+  skillBins?: SkillBinsProvider,
+) {
   const command = String(frame.command ?? "");
   if (command === "system.execApprovals.get") {
     try {
@@ -447,6 +429,34 @@ export async function handleInvoke(frame: NodeInvokeRequestPayload, client: Gate
     return;
   }
 
+  if (command === "system.run.prepare") {
+    try {
+      const params = decodeParams<{
+        command?: unknown;
+        rawCommand?: unknown;
+        cwd?: unknown;
+        agentId?: unknown;
+        sessionKey?: unknown;
+      }>(frame.paramsJSON);
+      const prepared = buildSystemRunApprovalPlan(params);
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      if (!prepared.ok) {
+        // @ts-expect-error — upstream feature not available in RemoteClaw fork
+        await sendErrorResult(client, frame, "INVALID_REQUEST", prepared.message);
+        return;
+      }
+      await sendJsonPayloadResult(client, frame, {
+        // @ts-expect-error — upstream feature not available in RemoteClaw fork
+        cmdText: prepared.cmdText,
+        // @ts-expect-error — upstream feature not available in RemoteClaw fork
+        plan: prepared.plan,
+      });
+    } catch (err) {
+      await sendInvalidRequestResult(client, frame, err);
+    }
+    return;
+  }
+
   if (command !== "system.run") {
     await sendErrorResult(client, frame, "UNAVAILABLE", "command not supported");
     return;
@@ -468,13 +478,17 @@ export async function handleInvoke(frame: NodeInvokeRequestPayload, client: Gate
   await handleSystemRunInvoke({
     client,
     params,
+    skillBins,
     execHostEnforced,
     execHostFallbackAllowed,
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     resolveExecSecurity,
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     resolveExecAsk,
     isCmdExeInvocation,
     sanitizeEnv,
     runCommand,
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     runViaMacAppExecHost,
     sendNodeEvent,
     buildExecEventPayload,

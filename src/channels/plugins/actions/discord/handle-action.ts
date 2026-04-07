@@ -1,3 +1,6 @@
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "@mariozechner/pi-agent-core";
+import type { AgentToolResult } from "../../../../agents/agent-types.js";
 import {
   readNumberParam,
   readStringArrayParam,
@@ -5,7 +8,6 @@ import {
 } from "../../../../agents/tools/common.js";
 import { handleDiscordAction } from "../../../../agents/tools/discord-actions.js";
 import { resolveDiscordChannelId } from "../../../../discord/targets.js";
-import type { AgentToolResult } from "../../../../types/agent-types.js";
 import type { ChannelMessageActionContext } from "../../types.js";
 import { tryHandleDiscordMessageActionGuildAdmin } from "./handle-action.guild-admin.js";
 
@@ -32,7 +34,8 @@ export async function handleDiscordMessageAction(
     | "toolContext"
     | "mediaLocalRoots"
   >,
-): Promise<AgentToolResult> {
+  // oxlint-disable-next-line
+): Promise<AgentToolResult<unknown>> {
   const { action, params, cfg } = ctx;
   const accountId = ctx.accountId ?? readStringParam(params, "accountId");
   const actionOptions = {
@@ -230,6 +233,7 @@ export async function handleDiscordMessageAction(
     const autoArchiveMinutes = readNumberParam(params, "autoArchiveMin", {
       integer: true,
     });
+    const appliedTags = readStringArrayParam(params, "appliedTags");
     return await handleDiscordAction(
       {
         action: "threadCreate",
@@ -239,6 +243,7 @@ export async function handleDiscordMessageAction(
         messageId,
         content,
         autoArchiveMinutes,
+        appliedTags: appliedTags ?? undefined,
       },
       cfg,
       actionOptions,

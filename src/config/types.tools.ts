@@ -1,3 +1,6 @@
+// Gutted in RemoteClaw fork (Middleware Boundary Principle) — memory subsystem removed
+export type MemorySearchConfig = Record<string, unknown>;
+
 // Stub type: exec-safe-bin-policy infrastructure was gutted.
 type SafeBinProfileFixture = {
   minPositional?: number;
@@ -274,4 +277,6 @@ export type ToolsConfig = {
       deny?: string[];
     };
   };
+  /** Elevated tool configuration (upstream feature). */
+  elevated?: unknown;
 };

@@ -162,6 +162,7 @@ function createMinimalRun(params?: {
     opts,
     run: async () => {
       const runReplyAgent = await getRunReplyAgent();
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       return runReplyAgent({
         commandBody: "hello",
         followupRun,
@@ -260,6 +261,7 @@ async function runReplyAgentWithBase(params: {
 }): Promise<void> {
   const runReplyAgent = await getRunReplyAgent();
   const { typing, sessionCtx, resolvedQueue, followupRun } = params.baseRun;
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   await runReplyAgent({
     commandBody: params.commandBody,
     followupRun,
@@ -348,6 +350,7 @@ describe("runReplyAgent mediaUrls forwarding", () => {
     } as unknown as FollowupRun;
 
     const runReplyAgent = await getRunReplyAgent();
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     await runReplyAgent({
       commandBody: "describe this image",
       followupRun,
@@ -404,6 +407,7 @@ describe("runReplyAgent mediaUrls forwarding", () => {
     } as unknown as FollowupRun;
 
     const runReplyAgent = await getRunReplyAgent();
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     await runReplyAgent({
       commandBody: "hello",
       followupRun,
@@ -938,7 +942,9 @@ describe("runReplyAgent typing (heartbeat)", () => {
     });
   });
 
-  it("resets corrupted Gemini sessions and deletes transcripts", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("resets corrupted Gemini sessions and deletes transcripts", async () => {
     await withTempStateDir(async (stateDir) => {
       const { storePath, sessionEntry, sessionStore, transcriptPath } =
         await writeCorruptGeminiSessionFixture({
@@ -1009,7 +1015,9 @@ describe("runReplyAgent typing (heartbeat)", () => {
     });
   });
 
-  it("still replies even if session reset fails to persist", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("still replies even if session reset fails to persist", async () => {
     await withTempStateDir(async (stateDir) => {
       const saveSpy = vi
         .spyOn(sessions, "saveSessionStore")

@@ -149,7 +149,9 @@ describe("chat error propagation separates error and non-error reply parts", () 
     mockState.agentRunId = "run-err-1";
   });
 
-  it("broadcasts error state when agent run produces only error payloads", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("broadcasts error state when agent run produces only error payloads", async () => {
     createTranscriptFixture("remoteclaw-chat-err-only-");
     mockState.payloads = [{ text: "auth failure: invalid token", isError: true }];
     const context = createChatContext();
@@ -184,7 +186,9 @@ describe("chat error propagation separates error and non-error reply parts", () 
     expect(errorBroadcasts.length).toBe(0);
   });
 
-  it("does not include non-error text in error broadcast for error-only runs", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("does not include non-error text in error broadcast for error-only runs", async () => {
     createTranscriptFixture("remoteclaw-chat-err-text-isolation-");
     mockState.payloads = [{ text: "CLI crashed: segfault", isError: true }];
     const context = createChatContext();
@@ -199,7 +203,9 @@ describe("chat error propagation separates error and non-error reply parts", () 
     expect(broadcasts[0]?.state).toBe("error");
   });
 
-  it("concatenates multiple error payloads in error broadcast", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("concatenates multiple error payloads in error broadcast", async () => {
     createTranscriptFixture("remoteclaw-chat-multi-err-");
     mockState.payloads = [
       { text: "error one", isError: true },

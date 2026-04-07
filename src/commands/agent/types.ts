@@ -1,18 +1,11 @@
-import type { ChannelOutboundTargetMode } from "../../channels/plugins/types.js";
-
-/**
- * OpenAI-compatible function-calling tool definition.
- * OpenAI-compatible function-calling tool definition, inlined after engine
- * removal (#74).
- */
+import type { AgentInternalEvent } from "../../agents/internal-events.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/pi-embedded-runner/run/params.js";
 export type ClientToolDefinition = {
-  type: string;
-  function: {
-    name: string;
-    description?: string;
-    parameters?: Record<string, unknown>;
-  };
+  function?: { name?: string; description?: string; parameters?: Record<string, unknown> };
+  [key: string]: unknown;
 };
+import type { ChannelOutboundTargetMode } from "../../channels/plugins/types.js";
 import type { InputProvenance } from "../../sessions/input-provenance.js";
 
 /** Image content block for Claude API multimodal messages. */
@@ -70,8 +63,10 @@ export type AgentCommandOpts = {
   channel?: string; // delivery channel (whatsapp|telegram|...)
   /** Account ID for multi-account channel routing (e.g., WhatsApp account). */
   accountId?: string;
-  /** Context for session run routing (channel/account/thread). */
+  /** Context for embedded run routing (channel/account/thread). */
   runContext?: AgentRunContext;
+  /** Whether this caller is authorized for owner-only tools (defaults true for local CLI calls). */
+  senderIsOwner?: boolean;
   /** Group id for channel-level tool policy resolution. */
   groupId?: string | null;
   /** Group channel label for channel-level tool policy resolution. */
@@ -86,6 +81,7 @@ export type AgentCommandOpts = {
   lane?: string;
   runId?: string;
   extraSystemPrompt?: string;
+  internalEvents?: AgentInternalEvent[];
   inputProvenance?: InputProvenance;
   /** Per-call stream param overrides (best-effort). */
   streamParams?: AgentStreamParams;

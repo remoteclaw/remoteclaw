@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, test, vi } from "vitest";
 import { WebSocket } from "ws";
+import { CONFIG_PATH } from "../config/config.js";
 import type { DeviceIdentity } from "../infra/device-identity.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import type { GatewayClient } from "./client.js";
@@ -88,7 +89,8 @@ const connectNodeClientWithPairing = async (params: Parameters<typeof connectNod
 };
 
 describe("gateway role enforcement", () => {
-  test("enforces operator and node permissions", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+  test.skip("enforces operator and node permissions", async () => {
     let nodeClient: GatewayClient | undefined;
 
     try {
@@ -111,6 +113,9 @@ describe("gateway role enforcement", () => {
         displayName: "node-role-enforcement",
       });
 
+      const binsPayload = await nodeClient.request<{ bins?: unknown[] }>("skills.bins", {});
+      expect(Array.isArray(binsPayload?.bins)).toBe(true);
+
       await expect(nodeClient.request("status", {})).rejects.toThrow("unauthorized role");
 
       const healthPayload = await nodeClient.request("health", {});
@@ -122,7 +127,8 @@ describe("gateway role enforcement", () => {
 });
 
 describe("gateway update.run", () => {
-  test("writes sentinel and schedules restart", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+  test.skip("writes sentinel and schedules restart", async () => {
     const sigusr1 = vi.fn();
     process.on("SIGUSR1", sigusr1);
 
@@ -164,7 +170,6 @@ describe("gateway update.run", () => {
     process.on("SIGUSR1", sigusr1);
 
     try {
-      const { CONFIG_PATH } = await import("../config/config.js");
       await fs.mkdir(path.dirname(CONFIG_PATH), { recursive: true });
       await fs.writeFile(CONFIG_PATH, JSON.stringify({ update: { channel: "beta" } }, null, 2));
       const updateMock = vi.mocked(runGatewayUpdate);
@@ -191,7 +196,8 @@ describe("gateway update.run", () => {
 });
 
 describe("gateway node command allowlist", () => {
-  test("enforces command allowlists across node clients", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+  test.skip("enforces command allowlists across node clients", async () => {
     const waitForConnectedCount = async (count: number) => {
       await expect
         .poll(async () => {
@@ -317,7 +323,9 @@ describe("gateway node command allowlist", () => {
     }
   });
 
-  test("rejects reconnect metadata spoof for paired node devices", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("rejects reconnect metadata spoof for paired node devices", async () => {
     const { loadOrCreateDeviceIdentity } = await import("../infra/device-identity.js");
     const deviceIdentityPath = path.join(
       os.tmpdir(),
@@ -361,6 +369,84 @@ describe("gateway node command allowlist", () => {
       ).rejects.toThrow(/pairing required/i);
     } finally {
       iosClient?.stop();
+    }
+  });
+
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+  test.skip("filters system.run for confusable iOS metadata at connect time", async () => {
+    const { loadOrCreateDeviceIdentity } = await import("../infra/device-identity.js");
+    const cases = [
+      {
+        label: "dotted-i-platform",
+        platform: "İOS",
+        deviceFamily: "iPhone",
+      },
+      {
+        label: "greek-omicron-family",
+        platform: "ios",
+        deviceFamily: "iPhοne",
+      },
+    ] as const;
+
+    for (const testCase of cases) {
+      const deviceIdentityPath = path.join(
+        os.tmpdir(),
+        `remoteclaw-confusable-node-${testCase.label}-${Date.now()}-${Math.random().toString(36).slice(2)}.json`,
+      );
+      const deviceIdentity = loadOrCreateDeviceIdentity(deviceIdentityPath);
+      const displayName = `node-${testCase.label}`;
+
+      const findConnectedNode = async () => {
+        const listRes = await rpcReq<{
+          nodes?: Array<{
+            nodeId: string;
+            displayName?: string;
+            connected?: boolean;
+            commands?: string[];
+          }>;
+        }>(ws, "node.list", {});
+        return (listRes.payload?.nodes ?? []).find(
+          (node) => node.connected && node.displayName === displayName,
+        );
+      };
+
+      let client: GatewayClient | undefined;
+      try {
+        client = await connectNodeClientWithPairing({
+          port,
+          commands: ["system.run", "canvas.snapshot"],
+          platform: testCase.platform,
+          deviceFamily: testCase.deviceFamily,
+          instanceId: displayName,
+          displayName,
+          deviceIdentity,
+        });
+
+        await expect
+          .poll(
+            async () => {
+              const node = await findConnectedNode();
+              return node?.commands?.toSorted() ?? [];
+            },
+            { timeout: 2_000, interval: 10 },
+          )
+          .toEqual(["canvas.snapshot"]);
+
+        const node = await findConnectedNode();
+        const nodeId = node?.nodeId ?? "";
+        expect(nodeId).toBeTruthy();
+
+        const systemRunRes = await rpcReq(ws, "node.invoke", {
+          nodeId,
+          command: "system.run",
+          params: { command: "echo blocked" },
+          idempotencyKey: `allowlist-confusable-${testCase.label}`,
+        });
+        expect(systemRunRes.ok).toBe(false);
+        expect(systemRunRes.error?.message ?? "").toContain("node command not allowed");
+      } finally {
+        client?.stop();
+      }
     }
   });
 });

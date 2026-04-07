@@ -51,3 +51,8 @@ export async function withEnvOverride<T>(
     }
   }
 }
+
+// Gutted in RemoteClaw fork — stub export for upstream test compat
+export function buildWebSearchProviderConfig(..._args: unknown[]): unknown {
+  return {};
+}

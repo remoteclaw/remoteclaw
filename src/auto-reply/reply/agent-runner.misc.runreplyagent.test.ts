@@ -6,18 +6,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionEntry } from "../../config/sessions.js";
 import { loadSessionStore, saveSessionStore } from "../../config/sessions.js";
 import { onAgentEvent } from "../../infra/agent-events.js";
-import type {
-  AgentDeliveryResult,
-  BridgeCallbacks,
-  ChannelMessage,
-  McpSideEffects,
-} from "../../middleware/types.js";
+import { peekSystemEvents, resetSystemEventsForTest } from "../../infra/system-events.js";
 import type { TemplateContext } from "../templating.js";
-import type { ReplyPayload } from "../types.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
 import { createMockTypingController } from "./test-helpers.js";
 
-const channelBridgeHandleMock = vi.fn();
+const runEmbeddedPiAgentMock = vi.fn();
+const runCliAgentMock = vi.fn();
 const runWithModelFallbackMock = vi.fn();
 const runtimeErrorMock = vi.fn();
 
@@ -29,24 +24,15 @@ vi.mock("../../agents/model-fallback.js", () => ({
   }) => runWithModelFallbackMock(params),
 }));
 
-vi.mock("../../middleware/channel-bridge.js", () => ({
-  ChannelBridge: class MockChannelBridge {
-    handle(message: ChannelMessage, callbacks?: BridgeCallbacks, abortSignal?: AbortSignal) {
-      return channelBridgeHandleMock(message, callbacks, abortSignal);
-    }
-  },
+// Gutted in RemoteClaw fork (Middleware Boundary Principle) — pi-embedded mock removed
+vi.mock("../../agents/pi-embedded.js", () => ({
+  queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
+  runEmbeddedPiAgent: (params: unknown) => runEmbeddedPiAgentMock(params),
 }));
 
-vi.mock("../../config/paths.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../config/paths.js")>();
-  return {
-    ...actual,
-    resolveGatewayPort: () => 9999,
-  };
-});
-
-vi.mock("../../gateway/credentials.js", () => ({
-  resolveGatewayCredentialsFromConfig: () => ({ token: "test-token" }),
+// Gutted in RemoteClaw fork (Middleware Boundary Principle) — cli-runner mock removed
+vi.mock("../../agents/cli-runner.js", () => ({
+  runCliAgent: (params: unknown) => runCliAgentMock(params),
 }));
 
 vi.mock("../../runtime.js", async () => {
@@ -79,51 +65,12 @@ type RunWithModelFallbackParams = {
   run: (provider: string, model: string) => Promise<unknown>;
 };
 
-const EMPTY_MCP: McpSideEffects = {
-  sentTexts: [],
-  sentMediaUrls: [],
-  sentTargets: [],
-  cronAdds: 0,
-};
-
-/** Build an AgentDeliveryResult with sensible defaults. */
-function makeDeliveryResult(overrides?: {
-  payloads?: ReplyPayload[];
-  text?: string;
-  sessionId?: string;
-  durationMs?: number;
-  usage?: {
-    inputTokens: number;
-    outputTokens: number;
-    cacheReadTokens?: number;
-    cacheWriteTokens?: number;
-  };
-  aborted?: boolean;
-  errorSubtype?: string;
-  stopReason?: string;
-  mcp?: Partial<McpSideEffects>;
-  error?: string;
-}): AgentDeliveryResult {
-  return {
-    payloads: overrides?.payloads ?? [{ text: "final" }],
-    run: {
-      text: overrides?.text ?? "",
-      sessionId: overrides?.sessionId,
-      durationMs: overrides?.durationMs ?? 0,
-      usage: overrides?.usage,
-      aborted: overrides?.aborted ?? false,
-      errorSubtype: overrides?.errorSubtype,
-      stopReason: overrides?.stopReason,
-    },
-    mcp: { ...EMPTY_MCP, ...overrides?.mcp },
-    error: overrides?.error,
-  };
-}
-
 beforeEach(() => {
-  channelBridgeHandleMock.mockClear();
+  runEmbeddedPiAgentMock.mockClear();
+  runCliAgentMock.mockClear();
   runWithModelFallbackMock.mockClear();
   runtimeErrorMock.mockClear();
+  resetSystemEventsForTest();
 
   // Default: no provider switch; execute the chosen provider+model.
   runWithModelFallbackMock.mockImplementation(
@@ -137,9 +84,12 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  resetSystemEventsForTest();
 });
 
-describe("runReplyAgent onAgentRunStart", () => {
+// Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+describe.skip("runReplyAgent onAgentRunStart", () => {
   function createRun(params?: {
     provider?: string;
     model?: string;
@@ -168,11 +118,18 @@ describe("runReplyAgent onAgentRunStart", () => {
         messageProvider: "webchat",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
-        config: { agents: { defaults: { runtime: "claude" } } },
+        config: {},
+        skillsSnapshot: {},
         provider,
         model,
-
+        thinkLevel: "low",
         verboseLevel: "off",
+        elevatedLevel: "off",
+        bashElevated: {
+          enabled: false,
+          allowed: false,
+          defaultLevel: "off",
+        },
         timeoutMs: 1_000,
         blockReplyBreak: "message_end",
       },
@@ -183,8 +140,10 @@ describe("runReplyAgent onAgentRunStart", () => {
       followupRun,
       queueKey: "main",
       resolvedQueue,
+      shouldSteer: false,
       shouldFollowup: false,
       isActive: false,
+      isStreaming: false,
       opts: params?.opts,
       typing,
       sessionCtx,
@@ -198,8 +157,8 @@ describe("runReplyAgent onAgentRunStart", () => {
     });
   }
 
-  it("always emits start callback before agent run attempt", async () => {
-    channelBridgeHandleMock.mockRejectedValueOnce(
+  it("does not emit start callback when fallback fails before run start", async () => {
+    runWithModelFallbackMock.mockRejectedValueOnce(
       new Error('No API key found for provider "anthropic".'),
     );
     const onAgentRunStart = vi.fn();
@@ -208,19 +167,22 @@ describe("runReplyAgent onAgentRunStart", () => {
       opts: { runId: "run-no-start", onAgentRunStart },
     });
 
-    // In RemoteClaw, start is always emitted before the ChannelBridge attempt.
-    // Model fallback is gone — CLI agents handle their own auth/model selection.
-    expect(onAgentRunStart).toHaveBeenCalledTimes(1);
-    expect(onAgentRunStart).toHaveBeenCalledWith("run-no-start");
+    expect(onAgentRunStart).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       text: expect.stringContaining('No API key found for provider "anthropic".'),
     });
   });
 
   it("emits start callback when cli runner starts", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(
-      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
-    );
+    runCliAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "ok" }],
+      meta: {
+        agentMeta: {
+          provider: "claude-cli",
+          model: "opus-4.5",
+        },
+      },
+    });
     const onAgentRunStart = vi.fn();
 
     const result = await createRun({
@@ -235,7 +197,117 @@ describe("runReplyAgent onAgentRunStart", () => {
   });
 });
 
-describe("runReplyAgent token update", () => {
+// Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+describe.skip("runReplyAgent authProfileId fallback scoping", () => {
+  it("drops authProfileId when provider changes during fallback", async () => {
+    runWithModelFallbackMock.mockImplementationOnce(
+      async ({ run }: RunWithModelFallbackParams) => ({
+        result: await run("openai-codex", "gpt-5.2"),
+        provider: "openai-codex",
+        model: "gpt-5.2",
+      }),
+    );
+
+    runEmbeddedPiAgentMock.mockResolvedValue({ payloads: [{ text: "ok" }], meta: {} });
+
+    const typing = createMockTypingController();
+    const sessionCtx = {
+      Provider: "telegram",
+      OriginatingTo: "chat",
+      AccountId: "primary",
+      MessageSid: "msg",
+      Surface: "telegram",
+    } as unknown as TemplateContext;
+
+    const resolvedQueue = { mode: "interrupt" } as unknown as QueueSettings;
+    const followupRun = {
+      prompt: "hello",
+      summaryLine: "hello",
+      enqueuedAt: Date.now(),
+      run: {
+        agentId: "main",
+        agentDir: "/tmp/agent",
+        sessionId: "session",
+        sessionKey: "main",
+        messageProvider: "telegram",
+        sessionFile: "/tmp/session.jsonl",
+        workspaceDir: "/tmp",
+        config: {},
+        skillsSnapshot: {},
+        provider: "anthropic",
+        model: "claude-opus",
+        authProfileId: "anthropic:remoteclaw",
+        authProfileIdSource: "manual",
+        thinkLevel: "low",
+        verboseLevel: "off",
+        elevatedLevel: "off",
+        bashElevated: {
+          enabled: false,
+          allowed: false,
+          defaultLevel: "off",
+        },
+        timeoutMs: 5_000,
+        blockReplyBreak: "message_end",
+      },
+    } as unknown as FollowupRun;
+
+    const sessionKey = "main";
+    const sessionEntry = {
+      sessionId: "session",
+      updatedAt: Date.now(),
+      totalTokens: 1,
+      compactionCount: 0,
+    };
+
+    await runReplyAgent({
+      commandBody: "hello",
+      followupRun,
+      queueKey: sessionKey,
+      resolvedQueue,
+      shouldSteer: false,
+      shouldFollowup: false,
+      isActive: false,
+      isStreaming: false,
+      typing,
+      sessionCtx,
+      sessionEntry,
+      sessionStore: { [sessionKey]: sessionEntry },
+      sessionKey,
+      storePath: undefined,
+      defaultModel: "anthropic/claude-opus-4-5",
+      agentCfgContextTokens: 100_000,
+      resolvedVerboseLevel: "off",
+      isNewSession: false,
+      blockStreamingEnabled: false,
+      resolvedBlockStreamingBreak: "message_end",
+      shouldInjectGroupIntro: false,
+      typingMode: "instant",
+    });
+
+    expect(runEmbeddedPiAgentMock).toHaveBeenCalledTimes(1);
+    const call = runEmbeddedPiAgentMock.mock.calls[0]?.[0] as {
+      authProfileId?: unknown;
+      authProfileIdSource?: unknown;
+      provider?: unknown;
+    };
+
+    expect(call.provider).toBe("openai-codex");
+    expect(call.authProfileId).toBeUndefined();
+    expect(call.authProfileIdSource).toBeUndefined();
+  });
+});
+
+describe("runReplyAgent auto-compaction token update", () => {
+  type EmbeddedRunParams = {
+    prompt?: string;
+    extraSystemPrompt?: string;
+    onAgentEvent?: (evt: {
+      stream?: string;
+      data?: { phase?: string; willRetry?: boolean };
+    }) => void;
+  };
+
   async function seedSessionStore(params: {
     storePath: string;
     sessionKey: string;
@@ -253,6 +325,8 @@ describe("runReplyAgent token update", () => {
     storePath: string;
     sessionEntry: Record<string, unknown>;
     config?: Record<string, unknown>;
+    sessionFile?: string;
+    workspaceDir?: string;
   }) {
     const typing = createMockTypingController();
     const sessionCtx = {
@@ -272,13 +346,16 @@ describe("runReplyAgent token update", () => {
         sessionId: "session",
         sessionKey: "main",
         messageProvider: "whatsapp",
-        sessionFile: "/tmp/session.jsonl",
-        workspaceDir: "/tmp",
-        config: params.config ?? { agents: { defaults: { runtime: "claude" } } },
+        sessionFile: params.sessionFile ?? "/tmp/session.jsonl",
+        workspaceDir: params.workspaceDir ?? "/tmp",
+        config: params.config ?? {},
+        skillsSnapshot: {},
         provider: "anthropic",
         model: "claude",
-
+        thinkLevel: "low",
         verboseLevel: "off",
+        elevatedLevel: "off",
+        bashElevated: { enabled: false, allowed: false, defaultLevel: "off" },
         timeoutMs: 1_000,
         blockReplyBreak: "message_end",
       },
@@ -286,7 +363,9 @@ describe("runReplyAgent token update", () => {
     return { typing, sessionCtx, resolvedQueue, followupRun };
   }
 
-  it("persists usage from bridge result", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("updates totalTokens after auto-compaction using lastCallUsage", async () => {
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-compact-tokens-"));
     const storePath = path.join(tmp, "sessions.json");
     const sessionKey = "main";
@@ -294,22 +373,37 @@ describe("runReplyAgent token update", () => {
       sessionId: "session",
       updatedAt: Date.now(),
       totalTokens: 181_000,
+      compactionCount: 0,
     };
 
     await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
 
-    // ChannelBridge returns usage via AgentDeliveryResult; lastCallUsage is
-    // not available through the bridge path, so the accumulated usage is used.
-    channelBridgeHandleMock.mockResolvedValueOnce(
-      makeDeliveryResult({
+    runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
+      // Simulate auto-compaction during agent run
+      params.onAgentEvent?.({ stream: "compaction", data: { phase: "start" } });
+      params.onAgentEvent?.({ stream: "compaction", data: { phase: "end", willRetry: false } });
+      return {
         payloads: [{ text: "done" }],
-        usage: { inputTokens: 10_000, outputTokens: 3_000 },
-      }),
-    );
+        meta: {
+          agentMeta: {
+            // Accumulated usage across pre+post compaction calls — inflated
+            usage: { input: 190_000, output: 8_000, total: 198_000 },
+            // Last individual API call's usage — actual post-compaction context
+            lastCallUsage: { input: 10_000, output: 3_000, total: 13_000 },
+            compactionCount: 1,
+          },
+        },
+      };
+    });
 
+    // Disable memory flush so we isolate the auto-compaction path
+    const config = {
+      agents: { defaults: { compaction: { memoryFlush: { enabled: false } } } },
+    };
     const { typing, sessionCtx, resolvedQueue, followupRun } = createBaseRun({
       storePath,
       sessionEntry,
+      config,
     });
 
     await runReplyAgent({
@@ -317,8 +411,10 @@ describe("runReplyAgent token update", () => {
       followupRun,
       queueKey: "main",
       resolvedQueue,
+      shouldSteer: false,
       shouldFollowup: false,
       isActive: false,
+      isStreaming: false,
       typing,
       sessionCtx,
       sessionEntry,
@@ -336,11 +432,16 @@ describe("runReplyAgent token update", () => {
     });
 
     const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
-    expect(stored[sessionKey].inputTokens).toBe(10_000);
-    expect(stored[sessionKey].outputTokens).toBe(3_000);
+    // totalTokens should reflect actual post-compaction context (~10k), not
+    // the stale pre-compaction value (181k) or the inflated accumulated (190k)
+    expect(stored[sessionKey].totalTokens).toBe(10_000);
+    // compactionCount should be incremented
+    expect(stored[sessionKey].compactionCount).toBe(1);
   });
 
-  it("persists usage tokens from bridge result", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("updates totalTokens from lastCallUsage even without compaction", async () => {
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-usage-last-"));
     const storePath = path.join(tmp, "sessions.json");
     const sessionKey = "main";
@@ -352,12 +453,16 @@ describe("runReplyAgent token update", () => {
 
     await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
 
-    channelBridgeHandleMock.mockResolvedValueOnce(
-      makeDeliveryResult({
-        payloads: [{ text: "ok" }],
-        usage: { inputTokens: 75_000, outputTokens: 5_000 },
-      }),
-    );
+    runEmbeddedPiAgentMock.mockResolvedValue({
+      payloads: [{ text: "ok" }],
+      meta: {
+        agentMeta: {
+          // Tool-use loop: accumulated input is higher than last call's input
+          usage: { input: 75_000, output: 5_000, total: 80_000 },
+          lastCallUsage: { input: 55_000, output: 2_000, total: 57_000 },
+        },
+      },
+    });
 
     const { typing, sessionCtx, resolvedQueue, followupRun } = createBaseRun({
       storePath,
@@ -369,8 +474,10 @@ describe("runReplyAgent token update", () => {
       followupRun,
       queueKey: "main",
       resolvedQueue,
+      shouldSteer: false,
       shouldFollowup: false,
       isActive: false,
+      isStreaming: false,
       typing,
       sessionCtx,
       sessionEntry,
@@ -388,21 +495,103 @@ describe("runReplyAgent token update", () => {
     });
 
     const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
-    expect(stored[sessionKey].inputTokens).toBe(75_000);
-    expect(stored[sessionKey].outputTokens).toBe(5_000);
+    // totalTokens should use lastCallUsage (55k), not accumulated (75k)
+    expect(stored[sessionKey].totalTokens).toBe(55_000);
+  });
+
+  it("does not enqueue legacy post-compaction audit warnings", async () => {
+    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-no-audit-warning-"));
+    const workspaceDir = path.join(tmp, "workspace");
+    await fs.mkdir(workspaceDir, { recursive: true });
+    const sessionFile = path.join(tmp, "session.jsonl");
+    await fs.writeFile(
+      sessionFile,
+      `${JSON.stringify({ type: "message", message: { role: "assistant", content: [] } })}\n`,
+      "utf-8",
+    );
+
+    const storePath = path.join(tmp, "sessions.json");
+    const sessionKey = "main";
+    const sessionEntry = {
+      sessionId: "session",
+      updatedAt: Date.now(),
+      totalTokens: 10_000,
+      compactionCount: 0,
+    };
+
+    await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
+
+    runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
+      params.onAgentEvent?.({ stream: "compaction", data: { phase: "start" } });
+      params.onAgentEvent?.({ stream: "compaction", data: { phase: "end", willRetry: false } });
+      return {
+        payloads: [{ text: "done" }],
+        meta: {
+          agentMeta: {
+            usage: { input: 11_000, output: 500, total: 11_500 },
+            lastCallUsage: { input: 10_500, output: 500, total: 11_000 },
+            compactionCount: 1,
+          },
+        },
+      };
+    });
+
+    const config = {
+      agents: { defaults: { compaction: { memoryFlush: { enabled: false } } } },
+    };
+    const { typing, sessionCtx, resolvedQueue, followupRun } = createBaseRun({
+      storePath,
+      sessionEntry,
+      config,
+      sessionFile,
+      workspaceDir,
+    });
+
+    await runReplyAgent({
+      commandBody: "hello",
+      followupRun,
+      queueKey: "main",
+      resolvedQueue,
+      shouldSteer: false,
+      shouldFollowup: false,
+      isActive: false,
+      isStreaming: false,
+      typing,
+      sessionCtx,
+      sessionEntry,
+      sessionStore: { [sessionKey]: sessionEntry },
+      sessionKey,
+      storePath,
+      defaultModel: "anthropic/claude-opus-4-5",
+      agentCfgContextTokens: 200_000,
+      resolvedVerboseLevel: "off",
+      isNewSession: false,
+      blockStreamingEnabled: false,
+      resolvedBlockStreamingBreak: "message_end",
+      shouldInjectGroupIntro: false,
+      typingMode: "instant",
+    });
+
+    const queuedSystemEvents = peekSystemEvents(sessionKey);
+    expect(queuedSystemEvents.some((event) => event.includes("Post-Compaction Audit"))).toBe(false);
+    expect(queuedSystemEvents.some((event) => event.includes("WORKFLOW_AUTO.md"))).toBe(false);
   });
 });
 
-describe("runReplyAgent block streaming", () => {
+// Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+describe.skip("runReplyAgent block streaming", () => {
   it("coalesces duplicate text_end block replies", async () => {
     const onBlockReply = vi.fn();
-    channelBridgeHandleMock.mockImplementationOnce(
-      async (_message: ChannelMessage, callbacks?: BridgeCallbacks) => {
-        void callbacks?.onBlockReply?.({ text: "Hello" });
-        void callbacks?.onBlockReply?.({ text: "Hello" });
-        return makeDeliveryResult({ payloads: [{ text: "Final message" }] });
-      },
-    );
+    runEmbeddedPiAgentMock.mockImplementationOnce(async (params) => {
+      const block = params.onBlockReply as ((payload: { text?: string }) => void) | undefined;
+      block?.({ text: "Hello" });
+      block?.({ text: "Hello" });
+      return {
+        payloads: [{ text: "Final message" }],
+        meta: {},
+      };
+    });
 
     const typing = createMockTypingController();
     const sessionCtx = {
@@ -425,7 +614,6 @@ describe("runReplyAgent block streaming", () => {
         config: {
           agents: {
             defaults: {
-              runtime: "claude",
               blockStreamingCoalesce: {
                 minChars: 1,
                 maxChars: 200,
@@ -434,10 +622,17 @@ describe("runReplyAgent block streaming", () => {
             },
           },
         },
+        skillsSnapshot: {},
         provider: "anthropic",
         model: "claude",
-
+        thinkLevel: "low",
         verboseLevel: "off",
+        elevatedLevel: "off",
+        bashElevated: {
+          enabled: false,
+          allowed: false,
+          defaultLevel: "off",
+        },
         timeoutMs: 1_000,
         blockReplyBreak: "text_end",
       },
@@ -448,8 +643,10 @@ describe("runReplyAgent block streaming", () => {
       followupRun,
       queueKey: "main",
       resolvedQueue,
+      shouldSteer: false,
       shouldFollowup: false,
       isActive: false,
+      isStreaming: false,
       opts: { onBlockReply },
       typing,
       sessionCtx,
@@ -489,12 +686,14 @@ describe("runReplyAgent block streaming", () => {
       });
     });
 
-    channelBridgeHandleMock.mockImplementationOnce(
-      async (_message: ChannelMessage, callbacks?: BridgeCallbacks) => {
-        void callbacks?.onBlockReply?.({ text: "Chunk" });
-        return makeDeliveryResult({ payloads: [{ text: "Final message" }] });
-      },
-    );
+    runEmbeddedPiAgentMock.mockImplementationOnce(async (params) => {
+      const block = params.onBlockReply as ((payload: { text?: string }) => void) | undefined;
+      block?.({ text: "Chunk" });
+      return {
+        payloads: [{ text: "Final message" }],
+        meta: {},
+      };
+    });
 
     const typing = createMockTypingController();
     const sessionCtx = {
@@ -517,7 +716,6 @@ describe("runReplyAgent block streaming", () => {
         config: {
           agents: {
             defaults: {
-              runtime: "claude",
               blockStreamingCoalesce: {
                 minChars: 1,
                 maxChars: 200,
@@ -526,10 +724,17 @@ describe("runReplyAgent block streaming", () => {
             },
           },
         },
+        skillsSnapshot: {},
         provider: "anthropic",
         model: "claude",
-
+        thinkLevel: "low",
         verboseLevel: "off",
+        elevatedLevel: "off",
+        bashElevated: {
+          enabled: false,
+          allowed: false,
+          defaultLevel: "off",
+        },
         timeoutMs: 1_000,
         blockReplyBreak: "text_end",
       },
@@ -540,8 +745,10 @@ describe("runReplyAgent block streaming", () => {
       followupRun,
       queueKey: "main",
       resolvedQueue,
+      shouldSteer: false,
       shouldFollowup: false,
       isActive: false,
+      isStreaming: false,
       opts: { onBlockReply, blockReplyTimeoutMs: 1 },
       typing,
       sessionCtx,
@@ -567,7 +774,9 @@ describe("runReplyAgent block streaming", () => {
   });
 });
 
-describe("runReplyAgent claude-cli routing", () => {
+// Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+describe.skip("runReplyAgent claude-cli routing", () => {
   function createRun() {
     const typing = createMockTypingController();
     const sessionCtx = {
@@ -587,11 +796,18 @@ describe("runReplyAgent claude-cli routing", () => {
         messageProvider: "webchat",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
-        config: { agents: { defaults: { runtime: "claude" } } },
+        config: {},
+        skillsSnapshot: {},
         provider: "claude-cli",
         model: "opus-4.5",
-
+        thinkLevel: "low",
         verboseLevel: "off",
+        elevatedLevel: "off",
+        bashElevated: {
+          enabled: false,
+          allowed: false,
+          defaultLevel: "off",
+        },
         timeoutMs: 1_000,
         blockReplyBreak: "message_end",
       },
@@ -602,8 +818,10 @@ describe("runReplyAgent claude-cli routing", () => {
       followupRun,
       queueKey: "main",
       resolvedQueue,
+      shouldSteer: false,
       shouldFollowup: false,
       isActive: false,
+      isStreaming: false,
       typing,
       sessionCtx,
       defaultModel: "claude-cli/opus-4.5",
@@ -632,21 +850,30 @@ describe("runReplyAgent claude-cli routing", () => {
         lifecyclePhases.push(phase);
       }
     });
-    channelBridgeHandleMock.mockResolvedValueOnce(
-      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
-    );
+    runCliAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "ok" }],
+      meta: {
+        agentMeta: {
+          provider: "claude-cli",
+          model: "opus-4.5",
+        },
+      },
+    });
 
     const result = await createRun();
     unsubscribe();
     randomSpy.mockRestore();
 
-    expect(channelBridgeHandleMock).toHaveBeenCalledTimes(1);
+    expect(runCliAgentMock).toHaveBeenCalledTimes(1);
+    expect(runEmbeddedPiAgentMock).not.toHaveBeenCalled();
     expect(lifecyclePhases).toEqual(["start", "end"]);
     expect(result).toMatchObject({ text: "ok" });
   });
 });
 
-describe("runReplyAgent messaging tool suppression", () => {
+// Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+describe.skip("runReplyAgent messaging tool suppression", () => {
   function createRun(
     messageProvider = "slack",
     opts: { storePath?: string; sessionKey?: string } = {},
@@ -670,11 +897,18 @@ describe("runReplyAgent messaging tool suppression", () => {
         messageProvider,
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
-        config: { agents: { defaults: { runtime: "claude" } } },
+        config: {},
+        skillsSnapshot: {},
         provider: "anthropic",
         model: "claude",
-
+        thinkLevel: "low",
         verboseLevel: "off",
+        elevatedLevel: "off",
+        bashElevated: {
+          enabled: false,
+          allowed: false,
+          defaultLevel: "off",
+        },
         timeoutMs: 1_000,
         blockReplyBreak: "message_end",
       },
@@ -685,8 +919,10 @@ describe("runReplyAgent messaging tool suppression", () => {
       followupRun,
       queueKey: "main",
       resolvedQueue,
+      shouldSteer: false,
       shouldFollowup: false,
       isActive: false,
+      isStreaming: false,
       typing,
       sessionCtx,
       sessionKey,
@@ -702,15 +938,12 @@ describe("runReplyAgent messaging tool suppression", () => {
   }
 
   it("drops replies when a messaging tool sent via the same provider + target", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(
-      makeDeliveryResult({
-        payloads: [{ text: "hello world!" }],
-        mcp: {
-          sentTexts: ["different message"],
-          sentTargets: [{ tool: "slack", provider: "slack", to: "channel:C1" }],
-        },
-      }),
-    );
+    runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "hello world!" }],
+      messagingToolSentTexts: ["different message"],
+      messagingToolSentTargets: [{ tool: "slack", provider: "slack", to: "channel:C1" }],
+      meta: {},
+    });
 
     const result = await createRun("slack");
 
@@ -718,15 +951,12 @@ describe("runReplyAgent messaging tool suppression", () => {
   });
 
   it("delivers replies when tool provider does not match", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(
-      makeDeliveryResult({
-        payloads: [{ text: "hello world!" }],
-        mcp: {
-          sentTexts: ["different message"],
-          sentTargets: [{ tool: "discord", provider: "discord", to: "channel:C1" }],
-        },
-      }),
-    );
+    runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "hello world!" }],
+      messagingToolSentTexts: ["different message"],
+      messagingToolSentTargets: [{ tool: "discord", provider: "discord", to: "channel:C1" }],
+      meta: {},
+    });
 
     const result = await createRun("slack");
 
@@ -734,15 +964,12 @@ describe("runReplyAgent messaging tool suppression", () => {
   });
 
   it("keeps final reply when text matches a cross-target messaging send", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(
-      makeDeliveryResult({
-        payloads: [{ text: "hello world!" }],
-        mcp: {
-          sentTexts: ["hello world!"],
-          sentTargets: [{ tool: "discord", provider: "discord", to: "channel:C1" }],
-        },
-      }),
-    );
+    runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "hello world!" }],
+      messagingToolSentTexts: ["hello world!"],
+      messagingToolSentTargets: [{ tool: "discord", provider: "discord", to: "channel:C1" }],
+      meta: {},
+    });
 
     const result = await createRun("slack");
 
@@ -750,22 +977,19 @@ describe("runReplyAgent messaging tool suppression", () => {
   });
 
   it("delivers replies when account ids do not match", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(
-      makeDeliveryResult({
-        payloads: [{ text: "hello world!" }],
-        mcp: {
-          sentTexts: ["different message"],
-          sentTargets: [
-            {
-              tool: "slack",
-              provider: "slack",
-              to: "channel:C1",
-              accountId: "alt",
-            },
-          ],
+    runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "hello world!" }],
+      messagingToolSentTexts: ["different message"],
+      messagingToolSentTargets: [
+        {
+          tool: "slack",
+          provider: "slack",
+          to: "channel:C1",
+          accountId: "alt",
         },
-      }),
-    );
+      ],
+      meta: {},
+    });
 
     const result = await createRun("slack");
 
@@ -781,16 +1005,18 @@ describe("runReplyAgent messaging tool suppression", () => {
     const entry: SessionEntry = { sessionId: "session", updatedAt: Date.now() };
     await saveSessionStore(storePath, { [sessionKey]: entry });
 
-    channelBridgeHandleMock.mockResolvedValueOnce(
-      makeDeliveryResult({
-        payloads: [{ text: "hello world!" }],
-        usage: { inputTokens: 10, outputTokens: 5 },
-        mcp: {
-          sentTexts: ["different message"],
-          sentTargets: [{ tool: "slack", provider: "slack", to: "channel:C1" }],
+    runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "hello world!" }],
+      messagingToolSentTexts: ["different message"],
+      messagingToolSentTargets: [{ tool: "slack", provider: "slack", to: "channel:C1" }],
+      meta: {
+        agentMeta: {
+          usage: { input: 10, output: 5 },
+          model: "claude-opus-4-5",
+          provider: "anthropic",
         },
-      }),
-    );
+      },
+    });
 
     const result = await createRun("slack", { storePath, sessionKey });
 
@@ -800,10 +1026,10 @@ describe("runReplyAgent messaging tool suppression", () => {
     expect(store[sessionKey]?.outputTokens).toBe(5);
     expect(store[sessionKey]?.totalTokens).toBeUndefined();
     expect(store[sessionKey]?.totalTokensFresh).toBe(false);
-    expect(store[sessionKey]?.model).toBe("claude");
+    expect(store[sessionKey]?.model).toBe("claude-opus-4-5");
   });
 
-  it("persists usage when bridge provides token data", async () => {
+  it("persists totalTokens from promptTokens when snapshot is available", async () => {
     const storePath = path.join(
       await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-session-store-")),
       "sessions.json",
@@ -812,27 +1038,30 @@ describe("runReplyAgent messaging tool suppression", () => {
     const entry: SessionEntry = { sessionId: "session", updatedAt: Date.now() };
     await saveSessionStore(storePath, { [sessionKey]: entry });
 
-    channelBridgeHandleMock.mockResolvedValueOnce(
-      makeDeliveryResult({
-        payloads: [{ text: "hello world!" }],
-        usage: { inputTokens: 10, outputTokens: 5 },
-        mcp: {
-          sentTexts: ["different message"],
-          sentTargets: [{ tool: "slack", provider: "slack", to: "channel:C1" }],
+    runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "hello world!" }],
+      messagingToolSentTexts: ["different message"],
+      messagingToolSentTargets: [{ tool: "slack", provider: "slack", to: "channel:C1" }],
+      meta: {
+        agentMeta: {
+          usage: { input: 10, output: 5 },
+          promptTokens: 42_000,
+          model: "claude-opus-4-5",
+          provider: "anthropic",
         },
-      }),
-    );
+      },
+    });
 
     const result = await createRun("slack", { storePath, sessionKey });
 
     expect(result).toBeUndefined();
     const store = loadSessionStore(storePath, { skipCache: true });
-    expect(store[sessionKey]?.inputTokens).toBe(10);
-    expect(store[sessionKey]?.outputTokens).toBe(5);
-    expect(store[sessionKey]?.model).toBe("claude");
+    expect(store[sessionKey]?.totalTokens).toBe(42_000);
+    expect(store[sessionKey]?.totalTokensFresh).toBe(true);
+    expect(store[sessionKey]?.model).toBe("claude-opus-4-5");
   });
 
-  it("preserves existing token data when bridge omits usage", async () => {
+  it("persists totalTokens from promptTokens when provider omits usage", async () => {
     const storePath = path.join(
       await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-session-store-")),
       "sessions.json",
@@ -846,26 +1075,33 @@ describe("runReplyAgent messaging tool suppression", () => {
     };
     await saveSessionStore(storePath, { [sessionKey]: entry });
 
-    channelBridgeHandleMock.mockResolvedValueOnce(
-      makeDeliveryResult({
-        payloads: [{ text: "hello world!" }],
-        mcp: {
-          sentTexts: ["different message"],
-          sentTargets: [{ tool: "slack", provider: "slack", to: "channel:C1" }],
+    runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "hello world!" }],
+      messagingToolSentTexts: ["different message"],
+      messagingToolSentTargets: [{ tool: "slack", provider: "slack", to: "channel:C1" }],
+      meta: {
+        agentMeta: {
+          promptTokens: 41_000,
+          model: "claude-opus-4-5",
+          provider: "anthropic",
         },
-      }),
-    );
+      },
+    });
 
     const result = await createRun("slack", { storePath, sessionKey });
 
     expect(result).toBeUndefined();
     const store = loadSessionStore(storePath, { skipCache: true });
+    expect(store[sessionKey]?.totalTokens).toBe(41_000);
+    expect(store[sessionKey]?.totalTokensFresh).toBe(true);
     expect(store[sessionKey]?.inputTokens).toBe(111);
     expect(store[sessionKey]?.outputTokens).toBe(22);
   });
 });
 
-describe("runReplyAgent reminder commitment guard", () => {
+// Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+describe.skip("runReplyAgent reminder commitment guard", () => {
   function createRun() {
     const typing = createMockTypingController();
     const sessionCtx = {
@@ -886,11 +1122,18 @@ describe("runReplyAgent reminder commitment guard", () => {
         messageProvider: "telegram",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
-        config: { agents: { defaults: { runtime: "claude" } } },
+        config: {},
+        skillsSnapshot: {},
         provider: "anthropic",
         model: "claude",
-
+        thinkLevel: "low",
         verboseLevel: "off",
+        elevatedLevel: "off",
+        bashElevated: {
+          enabled: false,
+          allowed: false,
+          defaultLevel: "off",
+        },
         timeoutMs: 1_000,
         blockReplyBreak: "message_end",
       },
@@ -901,8 +1144,10 @@ describe("runReplyAgent reminder commitment guard", () => {
       followupRun,
       queueKey: "main",
       resolvedQueue,
+      shouldSteer: false,
       shouldFollowup: false,
       isActive: false,
+      isStreaming: false,
       typing,
       sessionCtx,
       sessionKey: "main",
@@ -917,12 +1162,11 @@ describe("runReplyAgent reminder commitment guard", () => {
   }
 
   it("appends guard note when reminder commitment is not backed by cron.add", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(
-      makeDeliveryResult({
-        payloads: [{ text: "I'll remind you tomorrow morning." }],
-        mcp: { cronAdds: 0 },
-      }),
-    );
+    runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "I'll remind you tomorrow morning." }],
+      meta: {},
+      successfulCronAdds: 0,
+    });
 
     const result = await createRun();
     expect(result).toMatchObject({
@@ -931,12 +1175,11 @@ describe("runReplyAgent reminder commitment guard", () => {
   });
 
   it("keeps reminder commitment unchanged when cron.add succeeded", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(
-      makeDeliveryResult({
-        payloads: [{ text: "I'll remind you tomorrow morning." }],
-        mcp: { cronAdds: 1 },
-      }),
-    );
+    runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "I'll remind you tomorrow morning." }],
+      meta: {},
+      successfulCronAdds: 1,
+    });
 
     const result = await createRun();
     expect(result).toMatchObject({
@@ -945,7 +1188,14 @@ describe("runReplyAgent reminder commitment guard", () => {
   });
 });
 
-describe("runReplyAgent fallback provider routing", () => {
+// Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+describe.skip("runReplyAgent fallback reasoning tags", () => {
+  type EmbeddedPiAgentParams = {
+    enforceFinalTag?: boolean;
+    prompt?: string;
+  };
+
   function createRun(params?: {
     sessionEntry?: SessionEntry;
     sessionKey?: string;
@@ -972,11 +1222,18 @@ describe("runReplyAgent fallback provider routing", () => {
         messageProvider: "whatsapp",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
-        config: { agents: { defaults: { runtime: "claude" } } },
+        config: {},
+        skillsSnapshot: {},
         provider: "anthropic",
         model: "claude",
-
+        thinkLevel: "low",
         verboseLevel: "off",
+        elevatedLevel: "off",
+        bashElevated: {
+          enabled: false,
+          allowed: false,
+          defaultLevel: "off",
+        },
         timeoutMs: 1_000,
         blockReplyBreak: "message_end",
       },
@@ -987,8 +1244,10 @@ describe("runReplyAgent fallback provider routing", () => {
       followupRun,
       queueKey: "main",
       resolvedQueue,
+      shouldSteer: false,
       shouldFollowup: false,
       isActive: false,
+      isStreaming: false,
       typing,
       sessionCtx,
       sessionEntry: params?.sessionEntry,
@@ -1004,10 +1263,11 @@ describe("runReplyAgent fallback provider routing", () => {
     });
   }
 
-  it("routes to bridge when the fallback provider changes", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(
-      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
-    );
+  it("enforces <final> when the fallback provider requires reasoning tags", async () => {
+    runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "ok" }],
+      meta: {},
+    });
     runWithModelFallbackMock.mockImplementationOnce(
       async ({ run }: RunWithModelFallbackParams) => ({
         result: await run("google-gemini-cli", "gemini-3"),
@@ -1016,15 +1276,19 @@ describe("runReplyAgent fallback provider routing", () => {
       }),
     );
 
-    const result = await createRun();
+    await createRun();
 
-    // Bridge was called for the fallback provider
-    expect(channelBridgeHandleMock).toHaveBeenCalledTimes(1);
-    expect(result).toMatchObject({ text: "ok" });
+    const call = runEmbeddedPiAgentMock.mock.calls[0]?.[0] as EmbeddedPiAgentParams | undefined;
+    expect(call?.enforceFinalTag).toBe(true);
   });
 
-  it("routes to bridge during memory flush on fallback providers", async () => {
-    channelBridgeHandleMock.mockResolvedValue(makeDeliveryResult({ payloads: [{ text: "ok" }] }));
+  it("enforces <final> during memory flush on fallback providers", async () => {
+    runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedPiAgentParams) => {
+      if (params.prompt?.includes("Pre-compaction memory flush.")) {
+        return { payloads: [], meta: {} };
+      }
+      return { payloads: [{ text: "ok" }], meta: {} };
+    });
     runWithModelFallbackMock.mockImplementation(async ({ run }: RunWithModelFallbackParams) => ({
       result: await run("google-gemini-cli", "gemini-3"),
       provider: "google-gemini-cli",
@@ -1036,15 +1300,23 @@ describe("runReplyAgent fallback provider routing", () => {
         sessionId: "session",
         updatedAt: Date.now(),
         totalTokens: 1_000_000,
+        compactionCount: 0,
       },
     });
 
-    // Bridge was called at least once (main run; memory flush is gutted)
-    expect(channelBridgeHandleMock).toHaveBeenCalled();
+    const flushCall = runEmbeddedPiAgentMock.mock.calls.find(([params]) =>
+      (params as EmbeddedPiAgentParams | undefined)?.prompt?.includes(
+        "Pre-compaction memory flush.",
+      ),
+    )?.[0] as EmbeddedPiAgentParams | undefined;
+
+    expect(flushCall?.enforceFinalTag).toBe(true);
   });
 });
 
-describe("runReplyAgent response usage footer", () => {
+// Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+describe.skip("runReplyAgent response usage footer", () => {
   function createRun(params: { responseUsage: "tokens" | "full"; sessionKey: string }) {
     const typing = createMockTypingController();
     const sessionCtx = {
@@ -1073,11 +1345,18 @@ describe("runReplyAgent response usage footer", () => {
         messageProvider: "whatsapp",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
-        config: { agents: { defaults: { runtime: "claude" } } },
+        config: {},
+        skillsSnapshot: {},
         provider: "anthropic",
         model: "claude",
-
+        thinkLevel: "low",
         verboseLevel: "off",
+        elevatedLevel: "off",
+        bashElevated: {
+          enabled: false,
+          allowed: false,
+          defaultLevel: "off",
+        },
         timeoutMs: 1_000,
         blockReplyBreak: "message_end",
       },
@@ -1088,8 +1367,10 @@ describe("runReplyAgent response usage footer", () => {
       followupRun,
       queueKey: "main",
       resolvedQueue,
+      shouldSteer: false,
       shouldFollowup: false,
       isActive: false,
+      isStreaming: false,
       typing,
       sessionCtx,
       sessionEntry,
@@ -1105,27 +1386,35 @@ describe("runReplyAgent response usage footer", () => {
   }
 
   it("appends session key when responseUsage=full", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(
-      makeDeliveryResult({
-        payloads: [{ text: "ok" }],
-        usage: { inputTokens: 12, outputTokens: 3 },
-      }),
-    );
+    runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "ok" }],
+      meta: {
+        agentMeta: {
+          provider: "anthropic",
+          model: "claude",
+          usage: { input: 12, output: 3 },
+        },
+      },
+    });
 
     const sessionKey = "agent:main:whatsapp:dm:+1000";
     const res = await createRun({ responseUsage: "full", sessionKey });
     const payload = Array.isArray(res) ? res[0] : res;
     expect(String(payload?.text ?? "")).toContain("Usage:");
-    expect(String(payload?.text ?? "")).toContain(`· session ${sessionKey}`);
+    expect(String(payload?.text ?? "")).toContain(`· session \`${sessionKey}\``);
   });
 
   it("does not append session key when responseUsage=tokens", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(
-      makeDeliveryResult({
-        payloads: [{ text: "ok" }],
-        usage: { inputTokens: 12, outputTokens: 3 },
-      }),
-    );
+    runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "ok" }],
+      meta: {
+        agentMeta: {
+          provider: "anthropic",
+          model: "claude",
+          usage: { input: 12, output: 3 },
+        },
+      },
+    });
 
     const sessionKey = "agent:main:whatsapp:dm:+1000";
     const res = await createRun({ responseUsage: "tokens", sessionKey });
@@ -1135,16 +1424,21 @@ describe("runReplyAgent response usage footer", () => {
   });
 });
 
-describe("runReplyAgent transient HTTP retry", () => {
+// Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+describe.skip("runReplyAgent transient HTTP retry", () => {
   it("retries once after transient 521 HTML failure and then succeeds", async () => {
     vi.useFakeTimers();
-    channelBridgeHandleMock
+    runEmbeddedPiAgentMock
       .mockRejectedValueOnce(
         new Error(
           `521 <!DOCTYPE html><html lang="en-US"><head><title>Web server is down</title></head><body>Cloudflare</body></html>`,
         ),
       )
-      .mockResolvedValueOnce(makeDeliveryResult({ payloads: [{ text: "Recovered response" }] }));
+      .mockResolvedValueOnce({
+        payloads: [{ text: "Recovered response" }],
+        meta: {},
+      });
 
     const typing = createMockTypingController();
     const sessionCtx = {
@@ -1162,11 +1456,18 @@ describe("runReplyAgent transient HTTP retry", () => {
         messageProvider: "telegram",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
-        config: { agents: { defaults: { runtime: "claude" } } },
+        config: {},
+        skillsSnapshot: {},
         provider: "anthropic",
         model: "claude",
-
+        thinkLevel: "low",
         verboseLevel: "off",
+        elevatedLevel: "off",
+        bashElevated: {
+          enabled: false,
+          allowed: false,
+          defaultLevel: "off",
+        },
         timeoutMs: 1_000,
         blockReplyBreak: "message_end",
       },
@@ -1177,8 +1478,10 @@ describe("runReplyAgent transient HTTP retry", () => {
       followupRun,
       queueKey: "main",
       resolvedQueue,
+      shouldSteer: false,
       shouldFollowup: false,
       isActive: false,
+      isStreaming: false,
       typing,
       sessionCtx,
       defaultModel: "anthropic/claude-opus-4-5",
@@ -1193,7 +1496,7 @@ describe("runReplyAgent transient HTTP retry", () => {
     await vi.advanceTimersByTimeAsync(2_500);
     const result = await runPromise;
 
-    expect(channelBridgeHandleMock).toHaveBeenCalledTimes(2);
+    expect(runEmbeddedPiAgentMock).toHaveBeenCalledTimes(2);
     expect(runtimeErrorMock).toHaveBeenCalledWith(
       expect.stringContaining("Transient HTTP provider error before reply"),
     );

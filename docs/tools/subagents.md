@@ -1,5 +1,5 @@
 ---
-description: "Sub-agents: spawning isolated agent runs that announce results back to the requester chat"
+summary: "Sub-agents: spawning isolated agent runs that announce results back to the requester chat"
 read_when:
   - You want background/parallel work via the agent
   - You are changing sessions_spawn or sub-agent tool policy
@@ -21,7 +21,7 @@ Use `/subagents` to inspect or control sub-agent runs for the **current session*
 - `/subagents info <id|#>`
 - `/subagents send <id|#> <message>`
 - `/subagents steer <id|#> <message>`
-- `/subagents spawn <agentId> <task> [--model <model>] [--thinking <level>]` (flags are passed through to the CLI agent)
+- `/subagents spawn <agentId> <task> [--model <model>] [--thinking <level>]`
 
 Thread binding controls:
 
@@ -30,7 +30,8 @@ These commands work on channels that support persistent thread bindings. See **T
 - `/focus <subagent-label|session-key|session-id|session-label>`
 - `/unfocus`
 - `/agents`
-- `/session ttl <duration|off>`
+- `/session idle <duration|off>`
+- `/session max-age <duration|off>`
 
 `/subagents info` shows run metadata (status, timestamps, session id, transcript path, cleanup).
 
@@ -44,11 +45,12 @@ These commands work on channels that support persistent thread bindings. See **T
   - RemoteClaw tries direct `agent` delivery first with a stable idempotency key.
   - If direct delivery fails, it falls back to queue routing.
   - If queue routing is still not available, the announce is retried with a short exponential backoff before final give-up.
-- The completion message is a system message and includes:
+- The completion handoff to the requester session is runtime-generated internal context (not user-authored text) and includes:
   - `Result` (`assistant` reply text, or latest `toolResult` if the assistant reply is empty)
-  - `Status` (`completed successfully` / `failed` / `timed out`)
+  - `Status` (`completed successfully` / `failed` / `timed out` / `unknown`)
   - compact runtime/token stats
-- `--model` and `--thinking` are passed through to the CLI agent subprocess for that specific run.
+  - a delivery instruction telling the requester agent to rewrite in normal assistant voice (not forward raw internal metadata)
+- `--model` and `--thinking` override defaults for that specific run.
 - Use `info`/`log` to inspect details and output after completion.
 - `/subagents spawn` is one-shot mode (`mode: "run"`). For persistent thread-bound sessions, use `sessions_spawn` with `thread: true` and `mode: "session"`.
 - For ACP harness sessions (Codex, Claude Code, Gemini CLI), use `sessions_spawn` with `runtime: "acp"` and see [ACP Agents](/tools/acp-agents).
@@ -60,9 +62,9 @@ Primary goals:
 - Keep the tool surface hard to misuse: sub-agents do **not** get session tools by default.
 - Support configurable nesting depth for orchestrator patterns.
 
-Cost note: each sub-agent has its **own** context and token usage. The `model` and
-`thinking` flags are passed through to the CLI agent subprocess — model selection is the
-CLI agent's responsibility, not RemoteClaw's.
+Cost note: each sub-agent has its **own** context and token usage. For heavy or repetitive
+tasks, set a cheaper model for sub-agents and keep your main agent on a higher-quality model.
+You can configure this via `agents.defaults.subagents.model` or per-agent overrides.
 
 ## Tool
 
@@ -70,8 +72,8 @@ Use `sessions_spawn`:
 
 - Starts a sub-agent run (`deliver: false`, global lane: `subagent`)
 - Then runs an announce step and posts the announce reply to the requester chat channel
-- Default model: inherits the caller; an explicit `sessions_spawn.model` is passed through to the CLI agent subprocess.
-- Default thinking: inherits the caller; an explicit `sessions_spawn.thinking` is passed through to the CLI agent subprocess.
+- Default model: inherits the caller unless you set `agents.defaults.subagents.model` (or per-agent `agents.list[].subagents.model`); an explicit `sessions_spawn.model` still wins.
+- Default thinking: inherits the caller unless you set `agents.defaults.subagents.thinking` (or per-agent `agents.list[].subagents.thinking`); an explicit `sessions_spawn.thinking` still wins.
 - Default run timeout: if `sessions_spawn.runTimeoutSeconds` is omitted, RemoteClaw uses `agents.defaults.subagents.runTimeoutSeconds` when set; otherwise it falls back to `0` (no timeout).
 
 Tool params:
@@ -79,8 +81,8 @@ Tool params:
 - `task` (required)
 - `label?` (optional)
 - `agentId?` (optional; spawn under another agent id if allowed)
-- `model?` (optional; passed through to the CLI agent subprocess)
-- `thinking?` (optional; passed through to the CLI agent subprocess)
+- `model?` (optional; overrides the sub-agent model; invalid values are skipped and the sub-agent runs on the default model with a warning in the tool result)
+- `thinking?` (optional; overrides thinking level for the sub-agent run)
 - `runTimeoutSeconds?` (defaults to `agents.defaults.subagents.runTimeoutSeconds` when set, otherwise `0`; when set, the sub-agent run is aborted after N seconds)
 - `thread?` (default `false`; when `true`, requests channel thread binding for this sub-agent session)
 - `mode?` (`run|session`)
@@ -88,6 +90,8 @@ Tool params:
   - if `thread: true` and `mode` omitted, default becomes `session`
   - `mode: "session"` requires `thread: true`
 - `cleanup?` (`delete|keep`, default `keep`)
+- `sandbox?` (`inherit|require`, default `inherit`; `require` rejects spawn unless target child runtime is sandboxed)
+- `sessions_spawn` does **not** accept channel-delivery params (`target`, `channel`, `to`, `threadId`, `replyTo`, `transport`). For delivery, use `message`/`sessions_send` from the spawned run.
 
 ## Thread-bound sessions
 
@@ -95,14 +99,14 @@ When thread bindings are enabled for a channel, a sub-agent can stay bound to a 
 
 ### Thread supporting channels
 
-- Discord (currently the only supported channel): supports persistent thread-bound subagent sessions (`sessions_spawn` with `thread: true`), manual thread controls (`/focus`, `/unfocus`, `/agents`, `/session ttl`), and adapter keys `channels.discord.threadBindings.enabled`, `channels.discord.threadBindings.ttlHours`, and `channels.discord.threadBindings.spawnSubagentSessions`.
+- Discord (currently the only supported channel): supports persistent thread-bound subagent sessions (`sessions_spawn` with `thread: true`), manual thread controls (`/focus`, `/unfocus`, `/agents`, `/session idle`, `/session max-age`), and adapter keys `channels.discord.threadBindings.enabled`, `channels.discord.threadBindings.idleHours`, `channels.discord.threadBindings.maxAgeHours`, and `channels.discord.threadBindings.spawnSubagentSessions`.
 
 Quick flow:
 
 1. Spawn with `sessions_spawn` using `thread: true` (and optionally `mode: "session"`).
 2. RemoteClaw creates or binds a thread to that session target in the active channel.
 3. Replies and follow-up messages in that thread route to the bound session.
-4. Use `/session ttl` to inspect/update auto-unfocus TTL.
+4. Use `/session idle` to inspect/update inactivity auto-unfocus and `/session max-age` to control the hard cap.
 5. Use `/unfocus` to detach manually.
 
 Manual controls:
@@ -110,11 +114,11 @@ Manual controls:
 - `/focus <target>` binds the current thread (or creates one) to a sub-agent/session target.
 - `/unfocus` removes the binding for the current bound thread.
 - `/agents` lists active runs and binding state (`thread:<id>` or `unbound`).
-- `/session ttl` only works for focused bound threads.
+- `/session idle` and `/session max-age` only work for focused bound threads.
 
 Config switches:
 
-- Global default: `session.threadBindings.enabled`, `session.threadBindings.ttlHours`
+- Global default: `session.threadBindings.enabled`, `session.threadBindings.idleHours`, `session.threadBindings.maxAgeHours`
 - Channel override and spawn auto-bind keys are adapter-specific. See **Thread supporting channels** above.
 
 See [Configuration Reference](/gateway/configuration-reference) and [Slash commands](/tools/slash-commands) for current adapter details.
@@ -122,6 +126,7 @@ See [Configuration Reference](/gateway/configuration-reference) and [Slash comma
 Allowlist:
 
 - `agents.list[].subagents.allowAgents`: list of agent ids that can be targeted via `agentId` (`["*"]` to allow any). Default: only the requester agent.
+- Sandbox inheritance guard: if the requester session is sandboxed, `sessions_spawn` rejects targets that would run unsandboxed.
 
 Discovery:
 
@@ -211,18 +216,22 @@ Sub-agents report back via an announce step:
 - If the sub-agent replies exactly `ANNOUNCE_SKIP`, nothing is posted.
 - Otherwise the announce reply is posted to the requester chat channel via a follow-up `agent` call (`deliver=true`).
 - Announce replies preserve thread/topic routing when available on channel adapters.
-- Announce messages are normalized to a stable template:
-  - `Status:` derived from the run outcome (`success`, `error`, `timeout`, or `unknown`).
-  - `Result:` the summary content from the announce step (or `(not available)` if missing).
-  - `Notes:` error details and other useful context.
+- Announce context is normalized to a stable internal event block:
+  - source (`subagent` or `cron`)
+  - child session key/id
+  - announce type + task label
+  - status line derived from runtime outcome (`success`, `error`, `timeout`, or `unknown`)
+  - result content from the announce step (or `(no output)` if missing)
+  - a follow-up instruction describing when to reply vs. stay silent
 - `Status` is not inferred from model output; it comes from runtime outcome signals.
 
 Announce payloads include a stats line at the end (even when wrapped):
 
 - Runtime (e.g., `runtime 5m12s`)
 - Token usage (input/output/total)
-- Estimated cost (when available from the CLI agent)
+- Estimated cost when model pricing is configured (`models.providers.*.models[].cost`)
 - `sessionKey`, `sessionId`, and transcript path (so the main agent can fetch history via `sessions_history` or inspect the file on disk)
+- Internal metadata is meant for orchestration only; user-facing replies should be rewritten in normal assistant voice.
 
 ## Tool Policy (sub-agent tools)
 
@@ -276,6 +285,6 @@ Sub-agents use a dedicated in-process queue lane:
 - Sub-agent announce is **best-effort**. If the gateway restarts, pending "announce back" work is lost.
 - Sub-agents still share the same gateway process resources; treat `maxConcurrent` as a safety valve.
 - `sessions_spawn` is always non-blocking: it returns `{ status: "accepted", runId, childSessionKey }` immediately.
-- Sub-agents run in their own session context with minimal workspace file injection.
+- Sub-agent context only injects `AGENTS.md` + `TOOLS.md` (no `SOUL.md`, `IDENTITY.md`, `USER.md`, `HEARTBEAT.md`, or `BOOTSTRAP.md`).
 - Maximum nesting depth is 5 (`maxSpawnDepth` range: 1–5). Depth 2 is recommended for most use cases.
 - `maxChildrenPerAgent` caps active children per session (default: 5, range: 1–20).

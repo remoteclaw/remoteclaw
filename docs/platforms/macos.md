@@ -1,5 +1,5 @@
 ---
-description: "RemoteClaw macOS companion app (menu bar + gateway broker)"
+summary: "RemoteClaw macOS companion app (menu bar + gateway broker)"
 read_when:
   - Implementing macOS app features
   - Changing gateway lifecycle or node bridging on macOS
@@ -142,6 +142,25 @@ Safety:
 2. Complete the permissions checklist (TCC prompts).
 3. Ensure **Local** mode is active and the Gateway is running.
 4. Install the CLI if you want terminal access.
+
+## State dir placement (macOS)
+
+Avoid putting your RemoteClaw state dir in iCloud or other cloud-synced folders.
+Sync-backed paths can add latency and occasionally cause file-lock/sync races for
+sessions and credentials.
+
+Prefer a local non-synced state path such as:
+
+```bash
+REMOTECLAW_STATE_DIR=~/.remoteclaw
+```
+
+If `remoteclaw doctor` detects state under:
+
+- `~/Library/Mobile Documents/com~apple~CloudDocs/...`
+- `~/Library/CloudStorage/...`
+
+it will warn and recommend moving back to a local path.
 
 ## Build & dev workflow (native)
 

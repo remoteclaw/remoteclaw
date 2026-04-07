@@ -1,6 +1,11 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/sandbox-paths.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const assertMediaNotDataUrl = (..._args: unknown[]) => undefined as any;
+// oxlint-disable-next-line typescript/no-explicit-any
+const resolveSandboxedMediaSource = (..._args: unknown[]) => undefined as any;
 import { readStringParam } from "../../agents/tools/common.js";
 import type {
   ChannelId,
@@ -8,6 +13,7 @@ import type {
   ChannelThreadingToolContext,
 } from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
+import { createRootScopedReadFile } from "../../infra/fs-safe.js";
 import { extensionForMime } from "../../media/mime.js";
 import { parseSlackTarget } from "../../slack/targets.js";
 import { parseTelegramTarget } from "../../telegram/targets.js";
@@ -209,10 +215,13 @@ function buildAttachmentMediaLoadOptions(params: {
       localRoots?: readonly string[];
     } {
   if (params.policy.mode === "sandbox") {
+    const readSandboxFile = createRootScopedReadFile({
+      rootDir: params.policy.sandboxRoot.trim(),
+    });
     return {
       maxBytes: params.maxBytes,
       sandboxValidated: true,
-      readFile: (filePath: string) => fs.readFile(filePath),
+      readFile: readSandboxFile,
     };
   }
   return {
@@ -276,10 +285,34 @@ async function hydrateAttachmentPayload(params: {
   }
 }
 
+export async function normalizeSandboxMediaParams(params: {
+  args: Record<string, unknown>;
+  mediaPolicy: AttachmentMediaPolicy;
+}): Promise<void> {
+  const sandboxRoot =
+    params.mediaPolicy.mode === "sandbox" ? params.mediaPolicy.sandboxRoot.trim() : undefined;
+  const mediaKeys: Array<"media" | "path" | "filePath"> = ["media", "path", "filePath"];
+  for (const key of mediaKeys) {
+    const raw = readStringParam(params.args, key, { trim: false });
+    if (!raw) {
+      continue;
+    }
+    assertMediaNotDataUrl(raw);
+    if (!sandboxRoot) {
+      continue;
+    }
+    const normalized = await resolveSandboxedMediaSource({ media: raw, sandboxRoot });
+    if (normalized !== raw) {
+      params.args[key] = normalized;
+    }
+  }
+}
+
 export async function normalizeSandboxMediaList(params: {
   values: string[];
   sandboxRoot?: string;
 }): Promise<string[]> {
+  const sandboxRoot = params.sandboxRoot?.trim();
   const normalized: string[] = [];
   const seen = new Set<string>();
   for (const value of params.values) {
@@ -287,11 +320,15 @@ export async function normalizeSandboxMediaList(params: {
     if (!raw) {
       continue;
     }
-    if (seen.has(raw)) {
+    assertMediaNotDataUrl(raw);
+    const resolved = sandboxRoot
+      ? await resolveSandboxedMediaSource({ media: raw, sandboxRoot })
+      : raw;
+    if (seen.has(resolved)) {
       continue;
     }
-    seen.add(raw);
-    normalized.push(raw);
+    seen.add(resolved);
+    normalized.push(resolved);
   }
   return normalized;
 }

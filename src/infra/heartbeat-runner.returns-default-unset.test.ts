@@ -168,12 +168,12 @@ describe("resolveHeartbeatIntervalMs", () => {
 describe("resolveHeartbeatPrompt", () => {
   it("returns empty when unconfigured, trimmed prompt when set", async () => {
     expect(
-      await resolveHeartbeatPrompt({
+      resolveHeartbeatPrompt({
         agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       } as RemoteClawConfig),
     ).toBe("");
     expect(
-      await resolveHeartbeatPrompt({
+      resolveHeartbeatPrompt({
         agents: {
           defaults: { heartbeat: { prompt: "  ping  " } },
           list: [{ id: "main", workspace: "/tmp/test-workspace" }],
@@ -182,7 +182,9 @@ describe("resolveHeartbeatPrompt", () => {
     ).toBe("ping");
   });
 
-  it("reads file relative to workspace when file is set", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("reads file relative to workspace when file is set", async () => {
     const dir = await createCaseDir("hb-prompt-file");
     await fs.writeFile(path.join(dir, "heartbeat-tasks.md"), "- Check status\n", "utf-8");
 
@@ -194,7 +196,7 @@ describe("resolveHeartbeatPrompt", () => {
         list: [{ id: "main", workspace: dir }],
       },
     };
-    expect(await resolveHeartbeatPrompt(cfg)).toBe("- Check status");
+    expect(resolveHeartbeatPrompt(cfg)).toBe("- Check status");
   });
 
   it("prompt takes precedence over file", async () => {
@@ -209,7 +211,7 @@ describe("resolveHeartbeatPrompt", () => {
         list: [{ id: "main", workspace: dir }],
       },
     };
-    expect(await resolveHeartbeatPrompt(cfg)).toBe("Config prompt");
+    expect(resolveHeartbeatPrompt(cfg)).toBe("Config prompt");
   });
 });
 
@@ -598,7 +600,9 @@ describe("runHeartbeatOnce", () => {
     }
   });
 
-  it("skips when neither prompt nor file is configured", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("skips when neither prompt nor file is configured", async () => {
     const tmpDir = await createCaseDir("hb-no-prompt");
     const storePath = path.join(tmpDir, "sessions.json");
     const cfg: RemoteClawConfig = {
@@ -998,7 +1002,9 @@ describe("runHeartbeatOnce", () => {
     }
   });
 
-  it("reads heartbeat prompt from file when configured", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("reads heartbeat prompt from file when configured", async () => {
     const tmpDir = await createCaseDir("hb-file-prompt");
     const storePath = path.join(tmpDir, "sessions.json");
     await fs.writeFile(
@@ -1054,7 +1060,9 @@ describe("runHeartbeatOnce", () => {
     }
   });
 
-  it("skips when file is configured but missing", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("skips when file is configured but missing", async () => {
     const tmpDir = await createCaseDir("hb-file-missing");
     const storePath = path.join(tmpDir, "sessions.json");
     const cfg: RemoteClawConfig = {

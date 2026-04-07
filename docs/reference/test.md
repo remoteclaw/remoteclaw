@@ -1,5 +1,5 @@
 ---
-description: "How to run tests locally (vitest) and when to use force/coverage modes"
+summary: "How to run tests locally (vitest) and when to use force/coverage modes"
 read_when:
   - Running or fixing tests
 title: "Tests"
@@ -13,7 +13,7 @@ title: "Tests"
 - `pnpm test:coverage`: Runs the unit suite with V8 coverage (via `vitest.unit.config.ts`). Global thresholds are 70% lines/branches/functions/statements. Coverage excludes integration-heavy entrypoints (CLI wiring, gateway/telegram bridges, webchat static server) to keep the target focused on unit-testable logic.
 - `pnpm test` on Node 24+: RemoteClaw auto-disables Vitest `vmForks` and uses `forks` to avoid `ERR_VM_MODULE_LINK_FAILURE` / `module is already linked`. You can force behavior with `REMOTECLAW_TEST_VM_FORKS=0|1`.
 - `pnpm test:e2e`: Runs gateway end-to-end smoke tests (multi-instance WS/HTTP/node pairing). Defaults to `vmForks` + adaptive workers in `vitest.e2e.config.ts`; tune with `REMOTECLAW_E2E_WORKERS=<n>` and set `REMOTECLAW_E2E_VERBOSE=1` for verbose logs.
-- `pnpm test:live`: Runs live smoke tests (gateway + CLI agent pipeline). Requires API keys and `LIVE=1` (or provider-specific `*_LIVE_TEST=1`) to unskip.
+- `pnpm test:live`: Runs provider live tests (minimax/zai). Requires API keys and `LIVE=1` (or provider-specific `*_LIVE_TEST=1`) to unskip.
 
 ## Local PR gate
 
@@ -28,11 +28,9 @@ If `pnpm test` flakes on a loaded host, rerun once before treating it as a regre
 
 - `REMOTECLAW_TEST_PROFILE=low REMOTECLAW_TEST_SERIAL_GATEWAY=1 pnpm test`
 
-## CLI agent response latency bench (local keys)
+## Model latency bench (local keys)
 
 Script: [`scripts/bench-model.ts`](https://github.com/remoteclaw/remoteclaw/blob/main/scripts/bench-model.ts)
-
-Benchmarks round-trip latency of API calls to CLI agent backends. This measures raw provider response time for testing and capacity-planning purposes — model selection and API interaction are owned by the CLI agent, not by RemoteClaw middleware.
 
 Usage:
 
@@ -45,6 +43,26 @@ Last run (2025-12-31, 20 runs):
 - minimax median 1279ms (min 1114, max 2431)
 - opus median 2454ms (min 1224, max 3170)
 
+## CLI startup bench
+
+Script: [`scripts/bench-cli-startup.ts`](https://github.com/remoteclaw/remoteclaw/blob/main/scripts/bench-cli-startup.ts)
+
+Usage:
+
+- `pnpm tsx scripts/bench-cli-startup.ts`
+- `pnpm tsx scripts/bench-cli-startup.ts --runs 12`
+- `pnpm tsx scripts/bench-cli-startup.ts --entry dist/entry.js --timeout-ms 45000`
+
+This benchmarks these commands:
+
+- `--version`
+- `--help`
+- `health --json`
+- `status --json`
+- `status`
+
+Output includes avg, p50, p95, min/max, and exit-code/signal distribution for each command.
+
 ## Onboarding E2E (Docker)
 
 Docker is optional; this is only needed for containerized onboarding smoke tests.
@@ -55,7 +73,7 @@ Full cold-start flow in a clean Linux container:
 scripts/e2e/onboard-docker.sh
 ```
 
-This script drives the interactive setup flow via a pseudo-tty, verifies config/workspace/session files, then starts the gateway and runs `remoteclaw health`.
+This script drives the interactive wizard via a pseudo-tty, verifies config/workspace/session files, then starts the gateway and runs `remoteclaw health`.
 
 ## QR import smoke (Docker)
 

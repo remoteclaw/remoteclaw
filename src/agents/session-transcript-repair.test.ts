@@ -1,5 +1,7 @@
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "@mariozechner/pi-agent-core";
+type AgentMessage = Record<string, unknown>;
 import { describe, expect, it } from "vitest";
-import type { AgentMessage } from "./agent-types.js";
 import {
   sanitizeToolCallInputs,
   sanitizeToolUseResultPairing,
@@ -9,11 +11,16 @@ import {
 const TOOL_CALL_BLOCK_TYPES = new Set(["toolCall", "toolUse", "functionCall"]);
 
 function getAssistantToolCallBlocks(messages: AgentMessage[]) {
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  // oxlint-disable-next-line
   const assistant = messages[0] as Extract<AgentMessage, { role: "assistant" }> | undefined;
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   if (!assistant || !Array.isArray(assistant.content)) {
     return [] as Array<{ type?: unknown; id?: unknown; name?: unknown }>;
   }
-  return assistant.content.filter((block) => {
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  // oxlint-disable-next-line typescript/no-explicit-any
+  return assistant.content.filter((block: any) => {
     const type = (block as { type?: unknown }).type;
     return typeof type === "string" && TOOL_CALL_BLOCK_TYPES.has(type);
   }) as Array<{ type?: unknown; id?: unknown; name?: unknown }>;
@@ -72,6 +79,29 @@ describe("sanitizeToolUseResultPairing", () => {
     expect(out[2]?.role).toBe("toolResult");
     expect((out[2] as { toolCallId?: string }).toolCallId).toBe("call_2");
     expect(out[3]?.role).toBe("user");
+  });
+
+  it("repairs blank tool result names from matching tool calls", () => {
+    const input = [
+      {
+        role: "assistant",
+        content: [{ type: "toolCall", id: "call_1", name: "read", arguments: {} }],
+      },
+      {
+        role: "toolResult",
+        toolCallId: "call_1",
+        toolName: "   ",
+        content: [{ type: "text", text: "ok" }],
+        isError: false,
+      },
+    ] as unknown as AgentMessage[];
+
+    const out = sanitizeToolUseResultPairing(input);
+    const toolResult = out.find((message) => message.role === "toolResult") as {
+      toolName?: string;
+    };
+
+    expect(toolResult?.toolName).toBe("read");
   });
 
   it("drops duplicate tool results for the same id within a span", () => {
@@ -179,6 +209,7 @@ describe("sanitizeToolUseResultPairing", () => {
 
     // Should add a synthetic tool result for the missing result
     expect(result.added).toHaveLength(1);
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     expect(result.added[0]?.toolCallId).toBe("call_normal");
   });
 
@@ -309,9 +340,98 @@ describe("sanitizeToolCallInputs", () => {
 
     const out = sanitizeToolCallInputs(input);
     const assistant = out[0] as Extract<AgentMessage, { role: "assistant" }>;
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     const types = Array.isArray(assistant.content)
-      ? assistant.content.map((block) => (block as { type?: unknown }).type)
+      ? // @ts-expect-error — upstream feature not available in RemoteClaw fork
+        // oxlint-disable-next-line typescript/no-explicit-any
+        assistant.content.map((block: any) => (block as { type?: unknown }).type)
       : [];
     expect(types).toEqual(["text", "toolUse"]);
+  });
+
+  it("trims leading whitespace from tool names", () => {
+    const input = [
+      {
+        role: "assistant",
+        content: [{ type: "toolCall", id: "call_1", name: " read", arguments: {} }],
+      },
+    ] as unknown as AgentMessage[];
+
+    const out = sanitizeToolCallInputs(input);
+    const toolCalls = getAssistantToolCallBlocks(out);
+
+    expect(toolCalls).toHaveLength(1);
+    expect((toolCalls[0] as { name?: unknown }).name).toBe("read");
+  });
+
+  it("trims trailing whitespace from tool names", () => {
+    const input = [
+      {
+        role: "assistant",
+        content: [{ type: "toolUse", id: "call_1", name: "exec ", input: { command: "ls" } }],
+      },
+    ] as unknown as AgentMessage[];
+
+    const out = sanitizeToolCallInputs(input);
+    const toolCalls = getAssistantToolCallBlocks(out);
+
+    expect(toolCalls).toHaveLength(1);
+    expect((toolCalls[0] as { name?: unknown }).name).toBe("exec");
+  });
+
+  it("trims both leading and trailing whitespace from tool names", () => {
+    const input = [
+      {
+        role: "assistant",
+        content: [
+          { type: "toolCall", id: "call_1", name: " read ", arguments: {} },
+          { type: "toolUse", id: "call_2", name: "  exec  ", input: {} },
+        ],
+      },
+    ] as unknown as AgentMessage[];
+
+    const out = sanitizeToolCallInputs(input);
+    const toolCalls = getAssistantToolCallBlocks(out);
+
+    expect(toolCalls).toHaveLength(2);
+    expect((toolCalls[0] as { name?: unknown }).name).toBe("read");
+    expect((toolCalls[1] as { name?: unknown }).name).toBe("exec");
+  });
+
+  it("trims tool names and matches against allowlist", () => {
+    const input = [
+      {
+        role: "assistant",
+        content: [
+          { type: "toolCall", id: "call_1", name: " read ", arguments: {} },
+          { type: "toolCall", id: "call_2", name: " write ", arguments: {} },
+        ],
+      },
+    ] as unknown as AgentMessage[];
+
+    const out = sanitizeToolCallInputs(input, { allowedToolNames: ["read"] });
+    const toolCalls = getAssistantToolCallBlocks(out);
+
+    expect(toolCalls).toHaveLength(1);
+    expect((toolCalls[0] as { name?: unknown }).name).toBe("read");
+  });
+
+  it("preserves other block properties when trimming tool names", () => {
+    const input = [
+      {
+        role: "assistant",
+        content: [
+          { type: "toolCall", id: "call_1", name: " read ", arguments: { path: "/tmp/test" } },
+        ],
+      },
+    ] as unknown as AgentMessage[];
+
+    const out = sanitizeToolCallInputs(input);
+    const toolCalls = getAssistantToolCallBlocks(out);
+
+    expect(toolCalls).toHaveLength(1);
+    expect((toolCalls[0] as { name?: unknown }).name).toBe("read");
+    expect((toolCalls[0] as { id?: unknown }).id).toBe("call_1");
+    expect((toolCalls[0] as { arguments?: unknown }).arguments).toEqual({ path: "/tmp/test" });
   });
 });

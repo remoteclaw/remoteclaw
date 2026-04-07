@@ -1,4 +1,4 @@
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
+// Heartbeat file resolution removed (upstream simplified to string prompt)
 import { appendCronStyleCurrentTimeLine } from "../../agents/current-time.js";
 import { resolveHeartbeatReplyPayload } from "../../auto-reply/heartbeat-reply-payload.js";
 import { resolveHeartbeatPrompt } from "../../auto-reply/heartbeat.js";
@@ -157,12 +157,7 @@ export async function runWebHeartbeatOnce(opts: {
     }
 
     const defaults = cfg.agents?.defaults?.heartbeat;
-    const workspaceDir = resolveAgentWorkspaceDir(cfg, resolveDefaultAgentId(cfg));
-    const heartbeatPrompt = await resolveHeartbeatPrompt({
-      prompt: defaults?.prompt,
-      file: defaults?.file,
-      workspaceDir,
-    });
+    const heartbeatPrompt = resolveHeartbeatPrompt(defaults?.prompt);
     if (!heartbeatPrompt) {
       heartbeatLogger.info({ to: redactedTo, reason: "no-prompt" }, "heartbeat skipped");
       emitHeartbeatEvent({
@@ -210,6 +205,7 @@ export async function runWebHeartbeatOnce(opts: {
     }
 
     const hasMedia = Boolean(replyPayload.mediaUrl || (replyPayload.mediaUrls?.length ?? 0) > 0);
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     const report = replyPayload.heartbeatReport;
     // When heartbeat_report says nothing done, skip delivery (restore session timestamp).
     if (report && !report.anythingDone && !hasMedia) {

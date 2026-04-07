@@ -25,6 +25,46 @@
     ]
   },
   "tools": {
+    "exec": {
+      "emoji": "🛠️",
+      "title": "Exec",
+      "detailKeys": ["command"]
+    },
+    "tool_call": {
+      "emoji": "🧰",
+      "title": "Tool Call",
+      "detailKeys": []
+    },
+    "tool_call_update": {
+      "emoji": "🧰",
+      "title": "Tool Call",
+      "detailKeys": []
+    },
+    "process": {
+      "emoji": "🧰",
+      "title": "Process",
+      "detailKeys": ["sessionId"]
+    },
+    "read": {
+      "emoji": "📖",
+      "title": "Read",
+      "detailKeys": ["path"]
+    },
+    "write": {
+      "emoji": "✍️",
+      "title": "Write",
+      "detailKeys": ["path"]
+    },
+    "edit": {
+      "emoji": "📝",
+      "title": "Edit",
+      "detailKeys": ["path"]
+    },
+    "apply_patch": {
+      "emoji": "🩹",
+      "title": "Apply Patch",
+      "detailKeys": []
+    },
     "attach": {
       "emoji": "📎",
       "title": "Attach",
@@ -253,6 +293,26 @@
       "emoji": "📊",
       "title": "Session Status",
       "detailKeys": ["sessionKey", "model"]
+    },
+    "memory_search": {
+      "emoji": "🧠",
+      "title": "Memory Search",
+      "detailKeys": ["query"]
+    },
+    "memory_get": {
+      "emoji": "📓",
+      "title": "Memory Get",
+      "detailKeys": ["path", "from", "lines"]
+    },
+    "web_search": {
+      "emoji": "🔎",
+      "title": "Web Search",
+      "detailKeys": ["query", "count"]
+    },
+    "web_fetch": {
+      "emoji": "📄",
+      "title": "Web Fetch",
+      "detailKeys": ["url", "extractMode", "maxChars"]
     },
     "whatsapp_login": {
       "emoji": "🟢",

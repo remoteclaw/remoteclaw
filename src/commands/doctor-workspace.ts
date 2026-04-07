@@ -22,3 +22,9 @@ export function formatLegacyWorkspaceWarning(detection: LegacyWorkspaceDetection
     "If unused, archive or move to Trash.",
   ].join("\n");
 }
+
+// Gutted in RemoteClaw fork — stub exports for upstream compat
+export const MEMORY_SYSTEM_PROMPT = "";
+export function shouldSuggestMemorySystem(..._args: unknown[]): boolean {
+  return false;
+}

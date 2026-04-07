@@ -1,6 +1,25 @@
 import fs from "node:fs";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/context.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const lookupContextTokens = (..._args: unknown[]) => undefined as any;
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/defaults.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const DEFAULT_CONTEXT_TOKENS = undefined as any;
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/model-auth.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const resolveModelAuthMode = (..._args: unknown[]) => undefined as any;
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/model-selection.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const isCliProvider = (..._args: unknown[]) => undefined as any;
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/pi-embedded.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const queueEmbeddedPiMessage = (..._args: unknown[]) => undefined as any;
 import { hasNonzeroUsage } from "../../agents/usage.js";
-import { resolveModelAuthMode } from "../../auth/provider-auth.js";
 import {
   resolveAgentIdFromSessionKey,
   resolveSessionFilePath,
@@ -14,6 +33,7 @@ import type { TypingMode } from "../../config/types.js";
 import { emitAgentEvent } from "../../infra/agent-events.js";
 import { emitDiagnosticEvent, isDiagnosticsEnabled } from "../../infra/diagnostic-events.js";
 import { generateSecureUuid } from "../../infra/secure-random.js";
+import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { defaultRuntime } from "../../runtime.js";
 import { estimateUsageCost, resolveModelCostConfig } from "../../utils/usage-format.js";
 import {
@@ -32,16 +52,24 @@ import {
   isAudioPayload,
   signalTypingIfNeeded,
 } from "./agent-runner-helpers.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "./agent-runner-memory.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const runMemoryFlushIfNeeded = (..._args: unknown[]) => undefined as any;
 import { buildReplyPayloads } from "./agent-runner-payloads.js";
 import { appendUsageLine, formatResponseUsageLine } from "./agent-runner-utils.js";
 import { createAudioAsVoiceBuffer, createBlockReplyPipeline } from "./block-reply-pipeline.js";
 import { resolveEffectiveBlockStreamingConfig } from "./block-streaming.js";
 import { createFollowupRunner } from "./followup-runner.js";
 import { resolveOriginMessageProvider, resolveOriginMessageTo } from "./origin-routing.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "./post-compaction-context.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const readPostCompactionContext = (..._args: unknown[]) => undefined as any;
 import { resolveActiveRunQueueAction } from "./queue-policy.js";
 import { enqueueFollowupRun, type FollowupRun, type QueueSettings } from "./queue.js";
 import { createReplyToModeFilterForChannel, resolveReplyToMode } from "./reply-threading.js";
-import { persistRunSessionUsage } from "./session-run-accounting.js";
+import { incrementRunCompactionCount, persistRunSessionUsage } from "./session-run-accounting.js";
 import { createTypingSignaler } from "./typing-mode.js";
 import type { TypingController } from "./typing.js";
 
@@ -87,8 +115,10 @@ export async function runReplyAgent(params: {
   followupRun: FollowupRun;
   queueKey: string;
   resolvedQueue: QueueSettings;
+  shouldSteer: boolean;
   shouldFollowup: boolean;
   isActive: boolean;
+  isStreaming: boolean;
   opts?: GetReplyOptions;
   typing: TypingController;
   sessionEntry?: SessionEntry;
@@ -116,8 +146,10 @@ export async function runReplyAgent(params: {
     followupRun,
     queueKey,
     resolvedQueue,
+    shouldSteer,
     shouldFollowup,
     isActive,
+    isStreaming,
     opts,
     typing,
     sessionEntry,
@@ -207,6 +239,15 @@ export async function runReplyAgent(params: {
     }
   };
 
+  if (shouldSteer && isStreaming) {
+    const steered = queueEmbeddedPiMessage(followupRun.run.sessionId, followupRun.prompt);
+    if (steered && !shouldFollowup) {
+      await touchActiveSessionEntry();
+      typing.cleanup();
+      return undefined;
+    }
+  }
+
   const activeRunQueueAction = resolveActiveRunQueueAction({
     isActive,
     isHeartbeat,
@@ -227,6 +268,22 @@ export async function runReplyAgent(params: {
   }
 
   await typingSignals.signalRunStart();
+
+  activeSessionEntry = await runMemoryFlushIfNeeded({
+    cfg,
+    followupRun,
+    promptForEstimate: followupRun.prompt,
+    sessionCtx,
+    opts,
+    defaultModel,
+    agentCfgContextTokens,
+    resolvedVerboseLevel,
+    sessionEntry: activeSessionEntry,
+    sessionStore: activeSessionStore,
+    sessionKey,
+    storePath,
+    isHeartbeat,
+  });
 
   const runFollowupTurn = createFollowupRunner({
     opts,
@@ -364,7 +421,8 @@ export async function runReplyAgent(params: {
       fallbackAttempts,
       directlySentBlockKeys,
     } = runOutcome;
-    let { didLogHeartbeatStrip } = runOutcome;
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
+    let { didLogHeartbeatStrip, autoCompactionCompleted } = runOutcome;
 
     if (
       shouldInjectGroupIntro &&
@@ -399,19 +457,11 @@ export async function runReplyAgent(params: {
       await Promise.allSettled(pendingToolTasks);
     }
 
-    // Map AgentUsage (inputTokens/outputTokens) to NormalizedUsage shape (input/output).
-    const runUsage = runResult.run.usage;
-    const usage = runUsage
-      ? {
-          input: runUsage.inputTokens,
-          output: runUsage.outputTokens,
-          cacheRead: runUsage.cacheReadTokens,
-          cacheWrite: runUsage.cacheWriteTokens,
-        }
-      : undefined;
-    const promptTokens: number | undefined = undefined;
-    const modelUsed = fallbackModel ?? defaultModel;
-    const providerUsed = fallbackProvider ?? followupRun.run.provider;
+    const usage = runResult.meta?.agentMeta?.usage;
+    const promptTokens = runResult.meta?.agentMeta?.promptTokens;
+    const modelUsed = runResult.meta?.agentMeta?.model ?? fallbackModel ?? defaultModel;
+    const providerUsed =
+      runResult.meta?.agentMeta?.provider ?? fallbackProvider ?? followupRun.run.provider;
     const verboseEnabled = resolvedVerboseLevel !== "off";
     const selectedProvider = followupRun.run.provider;
     const selectedModel = followupRun.run.model;
@@ -420,7 +470,9 @@ export async function runReplyAgent(params: {
     const fallbackTransition = resolveFallbackTransition({
       selectedProvider,
       selectedModel,
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       activeProvider: providerUsed,
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       activeModel: modelUsed,
       attempts: fallbackAttempts,
       state: fallbackStateEntry,
@@ -448,22 +500,32 @@ export async function runReplyAgent(params: {
         });
       }
     }
-    // All providers now route through ChannelBridge (CLI-only execution), so
-    // the session ID is always present when returned by the runtime.
-    const cliSessionId = runResult.run.sessionId?.trim() || undefined;
-    // Context token lookup from model catalog gutted in RemoteClaw — CLI agents manage their own context.
-    const contextTokensUsed = agentCfgContextTokens ?? activeSessionEntry?.contextTokens ?? 200_000;
+    const cliSessionId = isCliProvider(providerUsed, cfg)
+      ? // @ts-expect-error — upstream feature not available in RemoteClaw fork
+        runResult.meta?.agentMeta?.sessionId?.trim()
+      : undefined;
+    const contextTokensUsed =
+      agentCfgContextTokens ??
+      lookupContextTokens(modelUsed) ??
+      activeSessionEntry?.contextTokens ??
+      DEFAULT_CONTEXT_TOKENS;
 
     await persistRunSessionUsage({
       storePath,
       sessionKey,
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       usage,
-      lastCallUsage: undefined,
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      lastCallUsage: runResult.meta?.agentMeta?.lastCallUsage,
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       promptTokens,
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       modelUsed,
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       providerUsed,
       contextTokensUsed,
-      systemPromptReport: undefined,
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      systemPromptReport: runResult.meta?.systemPromptReport,
       cliSessionId,
     });
 
@@ -485,9 +547,10 @@ export async function runReplyAgent(params: {
       replyToChannel,
       currentMessageId: sessionCtx.MessageSidFull ?? sessionCtx.MessageSid,
       messageProvider: followupRun.run.messageProvider,
-      messagingToolSentTexts: runResult.mcp.sentTexts,
-      messagingToolSentMediaUrls: runResult.mcp.sentMediaUrls,
-      messagingToolSentTargets: runResult.mcp.sentTargets,
+      messagingToolSentTexts: runResult.messagingToolSentTexts,
+      messagingToolSentMediaUrls: runResult.messagingToolSentMediaUrls,
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      messagingToolSentTargets: runResult.messagingToolSentTargets,
       originatingChannel: sessionCtx.OriginatingChannel,
       originatingTo: resolveOriginMessageTo({
         originatingTo: sessionCtx.OriginatingTo,
@@ -495,32 +558,14 @@ export async function runReplyAgent(params: {
       }),
       accountId: sessionCtx.AccountId,
     });
-    let { replyPayloads } = payloadResult;
+    const { replyPayloads } = payloadResult;
     didLogHeartbeatStrip = payloadResult.didLogHeartbeatStrip;
 
-    // Tag the primary payload with heartbeat report data from MCP side effects.
-    if (isHeartbeat && runResult.mcp.heartbeatReport && replyPayloads.length > 0) {
-      const report = runResult.mcp.heartbeatReport;
-      replyPayloads = replyPayloads.map((payload, i) =>
-        i === 0 ? { ...payload, heartbeatReport: report } : payload,
-      );
-    }
-
     if (replyPayloads.length === 0) {
-      // If heartbeat_report was called with anything_done: false and no payloads,
-      // return a tagged empty payload so the heartbeat runner can detect the tool call.
-      if (isHeartbeat && runResult.mcp.heartbeatReport) {
-        const report = runResult.mcp.heartbeatReport;
-        return finalizeWithFollowup(
-          { text: report.summary ?? "", heartbeatReport: report },
-          queueKey,
-          runFollowupTurn,
-        );
-      }
       return finalizeWithFollowup(undefined, queueKey, runFollowupTurn);
     }
 
-    const successfulCronAdds = runResult.mcp.cronAdds ?? 0;
+    const successfulCronAdds = runResult.successfulCronAdds ?? 0;
     const hasReminderCommitment = replyPayloads.some(
       (payload) =>
         !payload.isError &&
@@ -534,6 +579,7 @@ export async function runReplyAgent(params: {
 
     await signalTypingIfNeeded(guardedReplyPayloads, typingSignals);
 
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     if (isDiagnosticsEnabled(cfg) && hasNonzeroUsage(usage)) {
       const input = usage.input ?? 0;
       const output = usage.output ?? 0;
@@ -542,7 +588,9 @@ export async function runReplyAgent(params: {
       const promptTokens = input + cacheRead + cacheWrite;
       const totalTokens = usage.total ?? promptTokens + output;
       const costConfig = resolveModelCostConfig({
+        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         provider: providerUsed,
+        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         model: modelUsed,
         config: cfg,
       });
@@ -552,7 +600,9 @@ export async function runReplyAgent(params: {
         sessionKey,
         sessionId: followupRun.run.sessionId,
         channel: replyToChannel,
+        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         provider: providerUsed,
+        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         model: modelUsed,
         usage: {
           input,
@@ -562,7 +612,8 @@ export async function runReplyAgent(params: {
           promptTokens,
           total: totalTokens,
         },
-        lastCallUsage: undefined,
+        // @ts-expect-error — upstream feature not available in RemoteClaw fork
+        lastCallUsage: runResult.meta?.agentMeta?.lastCallUsage,
         context: {
           limit: contextTokensUsed,
           used: totalTokens,
@@ -576,12 +627,15 @@ export async function runReplyAgent(params: {
       activeSessionEntry?.responseUsage ??
       (sessionKey ? activeSessionStore?.[sessionKey]?.responseUsage : undefined);
     const responseUsageMode = resolveResponseUsageMode(responseUsageRaw);
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     if (responseUsageMode !== "off" && hasNonzeroUsage(usage)) {
       const authMode = resolveModelAuthMode(providerUsed, cfg);
       const showCost = authMode === "api-key";
       const costConfig = showCost
         ? resolveModelCostConfig({
+            // @ts-expect-error — upstream feature not available in RemoteClaw fork
             provider: providerUsed,
+            // @ts-expect-error — upstream feature not available in RemoteClaw fork
             model: modelUsed,
             config: cfg,
           })
@@ -592,7 +646,7 @@ export async function runReplyAgent(params: {
         costConfig,
       });
       if (formatted && responseUsageMode === "full" && sessionKey) {
-        formatted = `${formatted} · session ${sessionKey}`;
+        formatted = `${formatted} · session \`${sessionKey}\``;
       }
       if (formatted) {
         responseUsageLine = formatted;
@@ -627,7 +681,9 @@ export async function runReplyAgent(params: {
         const fallbackNotice = buildFallbackNotice({
           selectedProvider,
           selectedModel,
+          // @ts-expect-error — upstream feature not available in RemoteClaw fork
           activeProvider: providerUsed,
+          // @ts-expect-error — upstream feature not available in RemoteClaw fork
           activeModel: modelUsed,
           attempts: fallbackAttempts,
         });
@@ -661,6 +717,38 @@ export async function runReplyAgent(params: {
       }
     }
 
+    if (autoCompactionCompleted) {
+      // oxlint-disable-next-line
+      const count = await incrementRunCompactionCount({
+        sessionEntry: activeSessionEntry,
+        sessionStore: activeSessionStore,
+        sessionKey,
+        storePath,
+        lastCallUsage: runResult.meta?.agentMeta?.lastCallUsage,
+        contextTokensUsed,
+      });
+
+      // Inject post-compaction workspace context for the next agent turn
+      if (sessionKey) {
+        const workspaceDir = process.cwd();
+        readPostCompactionContext(workspaceDir)
+          // oxlint-disable-next-line typescript/no-explicit-any
+          .then((contextContent: any) => {
+            if (contextContent) {
+              enqueueSystemEvent(contextContent, { sessionKey });
+            }
+          })
+          .catch(() => {
+            // Silent failure — post-compaction context is best-effort
+          });
+      }
+
+      if (verboseEnabled) {
+        // oxlint-disable-next-line
+        const suffix = typeof count === "number" ? ` (count ${count})` : "";
+        verboseNotices.push({ text: `🧹 Auto-compaction complete${suffix}.` });
+      }
+    }
     if (verboseNotices.length > 0) {
       finalPayloads = [...verboseNotices, ...finalPayloads];
     }
@@ -673,6 +761,11 @@ export async function runReplyAgent(params: {
       queueKey,
       runFollowupTurn,
     );
+  } catch (error) {
+    // Keep the followup queue moving even when an unexpected exception escapes
+    // the run path; the caller still receives the original error.
+    finalizeWithFollowup(undefined, queueKey, runFollowupTurn);
+    throw error;
   } finally {
     blockReplyPipeline?.stop();
     typing.markRunComplete();

@@ -25,6 +25,8 @@ export type MatrixRoomConfig = {
   autoReply?: boolean;
   /** Optional allowlist for room senders (matrix user IDs). */
   users?: Array<string | number>;
+  /** Optional skill filter for this room. */
+  skills?: string[];
   /** Optional system prompt snippet for this room. */
   systemPrompt?: string;
 };
@@ -47,6 +49,8 @@ export type MatrixConfig = {
   enabled?: boolean;
   /** Multi-account configuration keyed by account ID. */
   accounts?: Record<string, MatrixAccountConfig>;
+  /** Optional default account id when multiple accounts are configured. */
+  defaultAccount?: string;
   /** Matrix homeserver URL (https://matrix.example.org). */
   homeserver?: string;
   /** Matrix user id (@user:server). */
@@ -108,7 +112,7 @@ export type CoreConfig = {
   };
   messages?: {
     ackReaction?: string;
-    ackReactionScope?: "group-mentions" | "group-all" | "direct" | "all";
+    ackReactionScope?: "group-mentions" | "group-all" | "direct" | "all" | "off" | "none";
   };
   [key: string]: unknown;
 };

@@ -137,6 +137,7 @@ export async function getReplyFromConfig(
     ctx: finalized,
     cfg,
     agentId,
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     workspaceDir,
     agentCfg,
     sessionCtx,
@@ -202,6 +203,7 @@ export async function getReplyFromConfig(
       sessionKey,
       sessionEntry,
       previousSessionEntry,
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       workspaceDir,
     });
   };
@@ -218,6 +220,7 @@ export async function getReplyFromConfig(
     sessionKey,
     storePath,
     sessionScope,
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     workspaceDir,
     isGroup,
     opts,
@@ -278,6 +281,7 @@ export async function getReplyFromConfig(
     sessionKey,
     sessionId,
     storePath,
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     workspaceDir,
     abortedLastRun,
   });

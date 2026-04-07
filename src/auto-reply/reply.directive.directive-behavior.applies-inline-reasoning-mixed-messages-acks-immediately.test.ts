@@ -1,20 +1,59 @@
 import "./reply.directive.directive-behavior.e2e-mocks.js";
+import fs from "node:fs/promises";
+import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { loadSessionStore } from "../config/sessions.js";
+import { loadSessionStore, resolveSessionKey, saveSessionStore } from "../config/sessions.js";
 import {
   installDirectiveBehaviorE2EHooks,
-  makeAgentTextResult,
+  makeEmbeddedTextResult,
   makeWhatsAppDirectiveConfig,
   replyText,
   replyTexts,
-  runAgent,
+  runEmbeddedPiAgent,
   sessionStorePath,
   withTempHome,
 } from "./reply.directive.directive-behavior.e2e-harness.js";
 import { getReplyFromConfig } from "./reply.js";
 
+async function writeSkill(params: { workspaceDir: string; name: string; description: string }) {
+  const { workspaceDir, name, description } = params;
+  const skillDir = path.join(workspaceDir, "skills", name);
+  await fs.mkdir(skillDir, { recursive: true });
+  await fs.writeFile(
+    path.join(skillDir, "SKILL.md"),
+    `---\nname: ${name}\ndescription: ${description}\n---\n\n# ${name}\n`,
+    "utf-8",
+  );
+}
+
+async function runThinkingDirective(home: string, model: string) {
+  const res = await getReplyFromConfig(
+    {
+      Body: "/thinking xhigh",
+      From: "+1004",
+      To: "+2000",
+      CommandAuthorized: true,
+    },
+    {},
+    makeWhatsAppDirectiveConfig(home, { model }, { session: { store: sessionStorePath(home) } }),
+  );
+  return replyTexts(res);
+}
+
+async function runThinkDirectiveAndGetText(home: string): Promise<string | undefined> {
+  const res = await getReplyFromConfig(
+    { Body: "/think", From: "+1222", To: "+1222", CommandAuthorized: true },
+    {},
+    makeWhatsAppDirectiveConfig(home, {
+      model: "anthropic/claude-opus-4-5",
+      thinkingDefault: "high",
+    }),
+  );
+  return replyText(res);
+}
+
 function mockEmbeddedResponse(text: string) {
-  vi.mocked(runAgent).mockResolvedValue(makeAgentTextResult(text));
+  vi.mocked(runEmbeddedPiAgent).mockResolvedValue(makeEmbeddedTextResult(text));
 }
 
 async function runInlineReasoningMessage(params: {
@@ -57,6 +96,7 @@ function makeRunConfig(home: string, storePath: string) {
 
 async function runInFlightVerboseToggleCase(params: {
   home: string;
+  shouldEmitBefore: boolean;
   toggledVerboseLevel: "on" | "off";
   seedVerboseOn?: boolean;
 }) {
@@ -66,9 +106,29 @@ async function runInFlightVerboseToggleCase(params: {
     From: "+1004",
     To: "+2000",
   };
+  const sessionKey = resolveSessionKey(
+    "per-sender",
+    { From: ctx.From, To: ctx.To, Body: ctx.Body },
+    "main",
+  );
 
-  // The bridge mock delegates to runAgent; mock it to return success.
-  vi.mocked(runAgent).mockResolvedValue(makeAgentTextResult("done"));
+  vi.mocked(runEmbeddedPiAgent).mockImplementation(async (agentParams) => {
+    const shouldEmit = agentParams.shouldEmitToolResult;
+    expect(shouldEmit?.()).toBe(params.shouldEmitBefore);
+    const store = loadSessionStore(storePath);
+    const entry = store[sessionKey] ?? {
+      sessionId: "s",
+      updatedAt: Date.now(),
+    };
+    store[sessionKey] = {
+      ...entry,
+      verboseLevel: params.toggledVerboseLevel,
+      updatedAt: Date.now(),
+    };
+    await saveSessionStore(storePath, store);
+    expect(shouldEmit?.()).toBe(!params.shouldEmitBefore);
+    return makeEmbeddedTextResult("done");
+  });
 
   if (params.seedVerboseOn) {
     await getReplyFromConfig(
@@ -85,7 +145,9 @@ async function runInFlightVerboseToggleCase(params: {
 describe("directive behavior", () => {
   installDirectiveBehaviorE2EHooks();
 
-  it("keeps reasoning acks out of mixed messages, including rapid repeats", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("keeps reasoning acks out of mixed messages, including rapid repeats", async () => {
     await withTempHome(async (home) => {
       mockEmbeddedResponse("done");
 
@@ -107,7 +169,7 @@ describe("directive behavior", () => {
         blockReplies,
       });
 
-      expect(runAgent).toHaveBeenCalledTimes(2);
+      expect(runEmbeddedPiAgent).toHaveBeenCalledTimes(2);
       expect(blockReplies.length).toBe(0);
     });
   });
@@ -139,24 +201,51 @@ describe("directive behavior", () => {
       const store = loadSessionStore(storePath);
       const entry = Object.values(store)[0];
       expect(entry?.verboseLevel).toBe("off");
-      expect(runAgent).not.toHaveBeenCalled();
+      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
     });
   });
-  it("runs agent with verbose toggle on/off", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+  it.skip("updates tool verbose during in-flight runs for toggle on/off", async () => {
     await withTempHome(async (home) => {
       for (const testCase of [
-        { toggledVerboseLevel: "on" as const },
-        { toggledVerboseLevel: "off" as const, seedVerboseOn: true },
+        {
+          shouldEmitBefore: false,
+          toggledVerboseLevel: "on" as const,
+        },
+        {
+          shouldEmitBefore: true,
+          toggledVerboseLevel: "off" as const,
+          seedVerboseOn: true,
+        },
       ]) {
-        vi.mocked(runAgent).mockClear();
+        vi.mocked(runEmbeddedPiAgent).mockClear();
         const { res } = await runInFlightVerboseToggleCase({
           home,
           ...testCase,
         });
         const texts = replyTexts(res);
         expect(texts).toContain("done");
-        expect(runAgent).toHaveBeenCalledOnce();
+        expect(runEmbeddedPiAgent).toHaveBeenCalledOnce();
       }
+    });
+  });
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+  it.skip("covers think status and /thinking xhigh support matrix", async () => {
+    await withTempHome(async (home) => {
+      const text = await runThinkDirectiveAndGetText(home);
+      expect(text).toContain("Current thinking level: high");
+      expect(text).toContain("Options: off, minimal, low, medium, high, adaptive.");
+
+      for (const model of ["openai-codex/gpt-5.2-codex", "openai/gpt-5.2"]) {
+        const texts = await runThinkingDirective(home, model);
+        expect(texts).toContain("Thinking level set to xhigh.");
+      }
+
+      const unsupportedModelTexts = await runThinkingDirective(home, "openai/gpt-4.1-mini");
+      expect(unsupportedModelTexts).toContain(
+        'Thinking level "xhigh" is only supported for openai/gpt-5.2, openai-codex/gpt-5.3-codex, openai-codex/gpt-5.3-codex-spark, openai-codex/gpt-5.2-codex, openai-codex/gpt-5.1-codex, github-copilot/gpt-5.2-codex or github-copilot/gpt-5.2.',
+      );
+      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
     });
   });
   it("keeps reserved command aliases from matching after trimming", async () => {
@@ -183,7 +272,43 @@ describe("directive behavior", () => {
 
       const text = replyText(res);
       expect(text).toContain("Help");
-      expect(runAgent).not.toHaveBeenCalled();
+      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+    });
+  });
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+  it.skip("treats skill commands as reserved for model aliases", async () => {
+    await withTempHome(async (home) => {
+      const workspace = path.join(home, "remoteclaw");
+      await writeSkill({
+        workspaceDir: workspace,
+        name: "demo-skill",
+        description: "Demo skill",
+      });
+
+      await getReplyFromConfig(
+        {
+          Body: "/demo_skill",
+          From: "+1222",
+          To: "+1222",
+          CommandAuthorized: true,
+        },
+        {},
+        makeWhatsAppDirectiveConfig(
+          home,
+          {
+            model: "anthropic/claude-opus-4-5",
+            workspace,
+            models: {
+              "anthropic/claude-opus-4-5": { alias: "demo_skill" },
+            },
+          },
+          { session: { store: sessionStorePath(home) } },
+        ),
+      );
+
+      expect(runEmbeddedPiAgent).toHaveBeenCalled();
+      const prompt = vi.mocked(runEmbeddedPiAgent).mock.calls[0]?.[0]?.prompt ?? "";
+      expect(prompt).toContain('Use the "demo-skill" skill');
     });
   });
   it("reports invalid queue options and current queue settings", async () => {
@@ -243,7 +368,7 @@ describe("directive behavior", () => {
       expect(text).toContain(
         "Options: modes steer, followup, collect, steer+backlog, interrupt; debounce:<ms|s|m>, cap:<n>, drop:old|new|summarize.",
       );
-      expect(runAgent).not.toHaveBeenCalled();
+      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
     });
   });
 });

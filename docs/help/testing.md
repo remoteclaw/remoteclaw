@@ -1,5 +1,5 @@
 ---
-description: "Testing kit: unit/e2e/live suites, Docker runners, and what each test covers"
+summary: "Testing kit: unit/e2e/live suites, Docker runners, and what each test covers"
 read_when:
   - Running tests locally or in CI
   - Adding regressions for model/provider bugs
@@ -91,7 +91,7 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
   - Costs money / uses rate limits
   - Prefer running narrowed subsets instead of “everything”
   - Live runs will source `~/.profile` to pick up missing API keys
-- Test credential rotation: set `*_API_KEYS` with comma/semicolon format or `*_API_KEY_1`, `*_API_KEY_2` (for example `OPENAI_API_KEYS`, `ANTHROPIC_API_KEYS`, `GEMINI_API_KEYS`) or per-live override via `REMOTECLAW_LIVE_*_KEY`; tests retry on rate limit responses. These env vars are used by the live test harness for credential cycling and are not part of the production runtime.
+- API key rotation (provider-specific): set `*_API_KEYS` with comma/semicolon format or `*_API_KEY_1`, `*_API_KEY_2` (for example `OPENAI_API_KEYS`, `ANTHROPIC_API_KEYS`, `GEMINI_API_KEYS`) or per-live override via `REMOTECLAW_LIVE_*_KEY`; tests retry on rate limit responses.
 
 ## Which suite should I run?
 
@@ -101,6 +101,23 @@ Use this decision table:
 - Touching gateway networking / WS protocol / pairing: add `pnpm test:e2e`
 - Debugging “my bot is down” / provider-specific failures / tool calling: run a narrowed `pnpm test:live`
 
+## Live: Android node capability sweep
+
+- Test: `src/gateway/android-node.capabilities.live.test.ts`
+- Script: `pnpm android:test:integration`
+- Goal: invoke **every command currently advertised** by a connected Android node and assert command contract behavior.
+- Scope:
+  - Preconditioned/manual setup (the suite does not install/run/pair the app).
+  - Command-by-command gateway `node.invoke` validation for the selected Android node.
+- Required pre-setup:
+  - Android app already connected + paired to the gateway.
+  - App kept in foreground.
+  - Permissions/capture consent granted for capabilities you expect to pass.
+- Optional target overrides:
+  - `REMOTECLAW_ANDROID_NODE_ID` or `REMOTECLAW_ANDROID_NODE_NAME`.
+  - `REMOTECLAW_ANDROID_GATEWAY_URL` / `REMOTECLAW_ANDROID_GATEWAY_TOKEN` / `REMOTECLAW_ANDROID_GATEWAY_PASSWORD`.
+- Full Android setup details: [Android App](/platforms/android)
+
 ## Live: model smoke (profile keys)
 
 Live tests are split into two layers so we can isolate failures:
@@ -108,22 +125,22 @@ Live tests are split into two layers so we can isolate failures:
 - “Direct model” tells us the provider/model can answer at all with the given key.
 - “Gateway smoke” tells us the full gateway+agent pipeline works for that model (sessions, history, tools, sandbox policy, etc.).
 
-### Layer 1: Direct model provider connectivity (no gateway)
+### Layer 1: Direct model completion (no gateway)
 
 - Test: `src/agents/models.profiles.live.test.ts`
 - Goal:
-  - Verify that model provider credentials are valid and the provider API is reachable
-  - Run a small completion per model as a diagnostic connectivity check (and targeted regressions where needed)
-  - **Note:** In production, RemoteClaw delegates model interaction to CLI agents (Claude, Gemini, Codex, etc.). This test exercises the provider API directly for diagnostic isolation only — it is not representative of the production request path.
+  - Enumerate discovered models
+  - Use `getApiKeyForModel` to select models you have creds for
+  - Run a small completion per model (and targeted regressions where needed)
 - How to enable:
   - `pnpm test:live` (or `REMOTECLAW_LIVE_TEST=1` if invoking Vitest directly)
 - Set `REMOTECLAW_LIVE_MODELS=modern` (or `all`, alias for modern) to actually run this suite; otherwise it skips to keep `pnpm test:live` focused on gateway smoke
 - How to select models:
   - `REMOTECLAW_LIVE_MODELS=modern` to run the modern allowlist (Opus/Sonnet/Haiku 4.5, GPT-5.x + Codex, Gemini 3, GLM 4.7, MiniMax M2.1, Grok 4)
   - `REMOTECLAW_LIVE_MODELS=all` is an alias for the modern allowlist
-  - or `REMOTECLAW_LIVE_MODELS=”openai/gpt-5.2,anthropic/claude-opus-4-6,...”` (comma allowlist)
+  - or `REMOTECLAW_LIVE_MODELS="openai/gpt-5.2,anthropic/claude-opus-4-6,..."` (comma allowlist)
 - How to select providers:
-  - `REMOTECLAW_LIVE_PROVIDERS=”google,google-antigravity,google-gemini-cli”` (comma allowlist)
+  - `REMOTECLAW_LIVE_PROVIDERS="google,google-antigravity,google-gemini-cli"` (comma allowlist)
 - Where keys come from:
   - By default: profile store and env fallbacks
   - Set `REMOTECLAW_LIVE_REQUIRE_PROFILE_KEYS=1` to enforce **profile store** only
@@ -246,8 +263,8 @@ Notes:
 - `google-antigravity/...` uses the Antigravity OAuth bridge (Cloud Code Assist-style agent endpoint).
 - `google-gemini-cli/...` uses the local Gemini CLI on your machine (separate auth + tooling quirks).
 - Gemini API vs Gemini CLI:
-  - API: RemoteClaw routes requests to Google’s Gemini API via the gateway’s model provider integration (API key / profile auth); this is what most users mean by “Gemini”.
-  - CLI: RemoteClaw delegates to a local `gemini` binary as a CLI agent runtime; it has its own auth and can behave differently (streaming/tool support/version skew).
+  - API: RemoteClaw calls Google’s hosted Gemini API over HTTP (API key / profile auth); this is what most users mean by “Gemini”.
+  - CLI: RemoteClaw shells out to a local `gemini` binary; it has its own auth and can behave differently (streaming/tool support/version skew).
 
 ## Live: model matrix (what we cover)
 
@@ -293,15 +310,15 @@ Include at least one image-capable model in `REMOTECLAW_LIVE_GATEWAY_MODELS` (Cl
 
 If you have keys enabled, we also support testing via:
 
-- OpenRouter: `openrouter/...` (hundreds of models; use `remoteclaw models list` to find tool+image capable candidates)
+- OpenRouter: `openrouter/...` (hundreds of models; use `remoteclaw models scan` to find tool+image capable candidates)
 - OpenCode Zen: `opencode/...` (auth via `OPENCODE_API_KEY` / `OPENCODE_ZEN_API_KEY`)
 
 More providers you can include in the live matrix (if you have creds/config):
 
-- Supported runtimes/providers: `openai`, `openai-codex`, `anthropic`, `google`, `google-vertex`, `google-antigravity`, `google-gemini-cli`, `zai`, `openrouter`, `opencode`, `xai`, `groq`, `cerebras`, `mistral`, `github-copilot`
-- Custom endpoints (OpenAI/Anthropic-compatible proxies): `minimax` (cloud/API), LM Studio, vLLM, LiteLLM, etc. — configured via custom provider entries
+- Built-in: `openai`, `openai-codex`, `anthropic`, `google`, `google-vertex`, `google-antigravity`, `google-gemini-cli`, `zai`, `openrouter`, `opencode`, `xai`, `groq`, `cerebras`, `mistral`, `github-copilot`
+- Via `models.providers` (custom endpoints): `minimax` (cloud/API), plus any OpenAI/Anthropic-compatible proxy (LM Studio, vLLM, LiteLLM, etc.)
 
-Tip: don’t try to hardcode “all models” in docs. The authoritative list is whatever `remoteclaw models list` returns on your machine + whatever keys are available. Consult each CLI agent’s own documentation for model-specific details.
+Tip: don’t try to hardcode “all models” in docs. The authoritative list is whatever `discoverModels(...)` returns on your machine + whatever keys are available.
 
 ## Credentials (never commit)
 
@@ -344,7 +361,7 @@ Manual ACP plain-language thread smoke (not CI):
 Useful env vars:
 
 - `REMOTECLAW_CONFIG_DIR=...` (default: `~/.remoteclaw`) mounted to `/home/node/.remoteclaw`
-- `REMOTECLAW_WORKSPACE_DIR=...` (no built-in default — must be set) mounted to `/home/node/.remoteclaw/workspace`
+- `REMOTECLAW_WORKSPACE_DIR=...` (default: `~/.remoteclaw/workspace`) mounted to `/home/node/.remoteclaw/workspace`
 - `REMOTECLAW_PROFILE_FILE=...` (default: `~/.profile`) mounted to `/home/node/.profile` and sourced before running tests
 - `REMOTECLAW_LIVE_GATEWAY_MODELS=...` / `REMOTECLAW_LIVE_MODELS=...` to narrow the run
 - `REMOTECLAW_LIVE_REQUIRE_PROFILE_KEYS=1` to ensure creds come from the profile store (not env)
@@ -367,7 +384,7 @@ We already have a few CI-safe tests that behave like “agent reliability evals�
 - Mock tool-calling through the real gateway + agent loop (`src/gateway/gateway.test.ts`).
 - End-to-end wizard flows that validate session wiring and config effects (`src/gateway/gateway.test.ts`).
 
-What’s still missing for skills:
+What’s still missing for skills (see [Skills](/tools/skills)):
 
 - **Decisioning:** when skills are listed in the prompt, does the agent pick the right skill (or avoid irrelevant ones)?
 - **Compliance:** does the agent read `SKILL.md` before use and follow required steps/args?

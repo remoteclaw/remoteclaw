@@ -1,13 +1,20 @@
 import fs from "node:fs";
 import path from "node:path";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "@mariozechner/pi-coding-agent";
+// oxlint-disable-next-line typescript/no-explicit-any
+const CURRENT_SESSION_VERSION = undefined as any;
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/model-selection.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const resolveThinkingDefault = (..._args: unknown[]) => undefined as any;
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { dispatchInboundMessage } from "../../auto-reply/dispatch.js";
 import { createReplyDispatcher } from "../../auto-reply/reply/reply-dispatcher.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import { createReplyPrefixOptions } from "../../channels/reply-prefix.js";
 import { resolveSessionFilePath } from "../../config/sessions.js";
-import { CURRENT_SESSION_VERSION } from "../../config/sessions/constants.js";
 import { resolveSendPolicy } from "../../sessions/send-policy.js";
 import {
   stripInlineDirectiveTagsForDisplay,
@@ -35,7 +42,12 @@ import {
   validateChatSendParams,
 } from "../protocol/index.js";
 import { getMaxChatHistoryMessagesBytes } from "../server-constants.js";
-import { capArrayByJsonBytes, loadSessionEntry, readSessionMessages } from "../session-utils.js";
+import {
+  capArrayByJsonBytes,
+  loadSessionEntry,
+  readSessionMessages,
+  resolveSessionModelRef,
+} from "../session-utils.js";
 import { formatForLog } from "../ws-log.js";
 import { injectTimestamp, timestampOptsFromConfig } from "./agent-timestamp.js";
 import { normalizeRpcAttachmentsToChatAttachments } from "./attachment-normalize.js";
@@ -566,11 +578,24 @@ export const chatHandlers: GatewayRequestHandlers = {
         `chat.history omitted oversized payloads placeholders=${placeholderCount} total=${chatHistoryPlaceholderEmitCount}`,
       );
     }
+    let thinkingLevel = entry?.thinkingLevel;
+    if (!thinkingLevel) {
+      const sessionAgentId = resolveSessionAgentId({ sessionKey, config: cfg });
+      const { provider, model } = resolveSessionModelRef(cfg, entry, sessionAgentId);
+      const catalog = await context.loadGatewayModelCatalog();
+      thinkingLevel = resolveThinkingDefault({
+        cfg,
+        provider,
+        model,
+        catalog,
+      });
+    }
     const verboseLevel = entry?.verboseLevel ?? cfg.agents?.defaults?.verboseDefault;
     respond(true, {
       sessionKey,
       sessionId,
       messages: bounded.messages,
+      thinkingLevel,
       verboseLevel,
     });
   },
@@ -816,8 +841,6 @@ export const chatHandlers: GatewayRequestHandlers = {
         channel: INTERNAL_MESSAGE_CHANNEL,
       });
       const finalReplyParts: string[] = [];
-      const errorReplyParts: string[] = [];
-      let hasErrorPayload = false;
       const dispatcher = createReplyDispatcher({
         ...prefixOptions,
         onError: (err) => {
@@ -827,18 +850,11 @@ export const chatHandlers: GatewayRequestHandlers = {
           if (info.kind !== "final") {
             return;
           }
-          if (payload.isError) {
-            hasErrorPayload = true;
-          }
           const text = payload.text?.trim() ?? "";
           if (!text) {
             return;
           }
-          if (payload.isError) {
-            errorReplyParts.push(text);
-          } else {
-            finalReplyParts.push(text);
-          }
+          finalReplyParts.push(text);
         },
       });
 
@@ -917,27 +933,6 @@ export const chatHandlers: GatewayRequestHandlers = {
               sessionKey: rawSessionKey,
               message,
             });
-          } else if (
-            hasErrorPayload &&
-            finalReplyParts.length === 0 &&
-            errorReplyParts.length > 0
-          ) {
-            // When the agent run started but produced only error payloads
-            // (e.g. auth failure, CLI crash), the lifecycle events carry no
-            // assistant text. Surface the error to the UI/TUI explicitly.
-            const combinedError = errorReplyParts
-              .map((part) => part.trim())
-              .filter(Boolean)
-              .join("\n\n")
-              .trim();
-            if (combinedError) {
-              broadcastChatError({
-                context,
-                runId: clientRunId,
-                sessionKey: rawSessionKey,
-                errorMessage: combinedError,
-              });
-            }
           }
           context.dedupe.set(`chat:${clientRunId}`, {
             ts: Date.now(),

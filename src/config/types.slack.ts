@@ -38,6 +38,8 @@ export type SlackChannelConfig = {
   allowBots?: boolean;
   /** Allowlist of users that can invoke the bot in this channel. */
   users?: Array<string | number>;
+  /** Optional skill filter for this channel. */
+  skills?: string[];
   /** Optional system prompt for this channel. */
   systemPrompt?: string;
 };
@@ -190,4 +192,6 @@ export type SlackAccountConfig = {
 export type SlackConfig = {
   /** Optional per-account Slack configuration (multi-account). */
   accounts?: Record<string, SlackAccountConfig>;
+  /** Optional default account id when multiple accounts are configured. */
+  defaultAccount?: string;
 } & SlackAccountConfig;

@@ -114,3 +114,18 @@ export function installDirectiveBehaviorE2EHooks() {
     vi.restoreAllMocks();
   });
 }
+
+// Gutted in RemoteClaw fork — stub exports for upstream test compat
+import { vi as _vi } from "vitest";
+// oxlint-disable-next-line typescript/no-explicit-any
+export const loadModelCatalog = _vi.fn(async () => [] as any[]);
+// oxlint-disable-next-line typescript/no-explicit-any
+export const makeEmbeddedTextResult = (text: string) => ({ text, usage: {}, toolCalls: [] });
+// oxlint-disable-next-line typescript/no-explicit-any
+export const mockEmbeddedTextResult: import("vitest").Mock = _vi.fn();
+// oxlint-disable-next-line typescript/no-explicit-any
+export const runEmbeddedPiAgent = _vi.fn(async (..._args: any[]) => ({
+  text: "",
+  usage: {},
+  toolCalls: [],
+}));

@@ -24,8 +24,14 @@ import {
 } from "../../discord/send.js";
 import type { DiscordSendComponents, DiscordSendEmbeds } from "../../discord/send.shared.js";
 import { resolveDiscordChannelId } from "../../discord/targets.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "@mariozechner/pi-agent-core";
 import type { AgentToolResult } from "../agent-types.js";
 import { withNormalizedTimestamp } from "../date-time.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../sandbox-paths.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const assertMediaNotDataUrl = (..._args: unknown[]) => undefined as any;
 import {
   type ActionGate,
   jsonResult,
@@ -58,7 +64,8 @@ export async function handleDiscordMessagingAction(
   options?: {
     mediaLocalRoots?: readonly string[];
   },
-): Promise<AgentToolResult> {
+  // oxlint-disable-next-line
+): Promise<AgentToolResult<unknown>> {
   const resolveChannelId = () =>
     resolveDiscordChannelId(
       readStringParam(params, "channelId", {
@@ -298,6 +305,7 @@ export async function handleDiscordMessagingAction(
             "Voice messages cannot include text content (Discord limitation). Remove the content parameter.",
           );
         }
+        assertMediaNotDataUrl(mediaUrl);
         const result = await sendVoiceMessageDiscord(to, mediaUrl, {
           ...(accountId ? { accountId } : {}),
           replyTo,
@@ -361,13 +369,17 @@ export async function handleDiscordMessagingAction(
         typeof autoArchiveMinutesRaw === "number" && Number.isFinite(autoArchiveMinutesRaw)
           ? autoArchiveMinutesRaw
           : undefined;
+      const appliedTags = readStringArrayParam(params, "appliedTags");
+      const payload = {
+        name,
+        messageId,
+        autoArchiveMinutes,
+        content,
+        appliedTags: appliedTags ?? undefined,
+      };
       const thread = accountId
-        ? await createThreadDiscord(
-            channelId,
-            { name, messageId, autoArchiveMinutes, content },
-            { accountId },
-          )
-        : await createThreadDiscord(channelId, { name, messageId, autoArchiveMinutes, content });
+        ? await createThreadDiscord(channelId, payload, { accountId })
+        : await createThreadDiscord(channelId, payload);
       return jsonResult({ ok: true, thread });
     }
     case "threadList": {

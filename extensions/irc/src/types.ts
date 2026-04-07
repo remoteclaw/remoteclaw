@@ -14,6 +14,7 @@ export type IrcChannelConfig = {
   requireMention?: boolean;
   tools?: GroupToolPolicyConfig;
   toolsBySender?: GroupToolPolicyBySenderConfig;
+  skills?: string[];
   enabled?: boolean;
   allowFrom?: Array<string | number>;
   systemPrompt?: string;
@@ -67,6 +68,7 @@ export type IrcAccountConfig = {
 
 export type IrcConfig = IrcAccountConfig & {
   accounts?: Record<string, IrcAccountConfig>;
+  defaultAccount?: string;
 };
 
 export type CoreConfig = RemoteClawConfig & {

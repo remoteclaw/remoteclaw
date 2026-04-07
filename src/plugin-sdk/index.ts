@@ -70,11 +70,42 @@ export {
   listThreadBindingsBySessionKey,
   unbindThreadBindingsBySessionKey,
 } from "../discord/monitor/thread-bindings.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle) — ACP runtime removed
+export type AcpRuntimeCapabilities = Record<string, unknown>;
+export type AcpRuntimeControl = Record<string, unknown>;
+export type AcpRuntimeDoctorReport = Record<string, unknown>;
+export type AcpRuntime = Record<string, unknown>;
+export type AcpRuntimeEnsureInput = Record<string, unknown>;
+export type AcpRuntimeEvent = Record<string, unknown>;
+export type AcpRuntimeHandle = Record<string, unknown>;
+export type AcpRuntimePromptMode = string;
+export type AcpSessionUpdateTag = string;
+export type AcpRuntimeSessionMode = string;
+export type AcpRuntimeStatus = Record<string, unknown>;
+export type AcpRuntimeTurnInput = Record<string, unknown>;
+export type AcpRuntimeBackend = Record<string, unknown>;
+// oxlint-disable-next-line typescript/no-explicit-any
+export const getAcpRuntimeBackend = (..._args: unknown[]) => undefined as any;
+// oxlint-disable-next-line typescript/no-explicit-any
+export const registerAcpRuntimeBackend = (..._args: unknown[]) => undefined as any;
+// oxlint-disable-next-line typescript/no-explicit-any
+export const requireAcpRuntimeBackend = (..._args: unknown[]) => undefined as any;
+// oxlint-disable-next-line typescript/no-explicit-any
+export const unregisterAcpRuntimeBackend = (..._args: unknown[]) => undefined as any;
+export const ACP_ERROR_CODES = {} as Record<string, string>;
+export class AcpRuntimeError extends Error {
+  constructor(..._args: unknown[]) {
+    super();
+  }
+}
+export type AcpRuntimeErrorCode = string;
 export type {
   AnyAgentTool,
+  RemoteClawPluginConfigSchema,
   RemoteClawPluginApi,
   RemoteClawPluginService,
   RemoteClawPluginServiceContext,
+  PluginLogger,
   ProviderAuthContext,
   ProviderAuthResult,
 } from "../plugins/types.js";
@@ -103,6 +134,11 @@ export {
   resolveWebhookTargets,
 } from "./webhook-targets.js";
 export type { WebhookTargetMatchResult } from "./webhook-targets.js";
+export {
+  applyBasicWebhookRequestGuards,
+  isJsonContentType,
+  readJsonWebhookBodyOrReject,
+} from "./webhook-request-guards.js";
 export type { AgentMediaPayload } from "./agent-media-payload.js";
 export { buildAgentMediaPayload } from "./agent-media-payload.js";
 export {
@@ -112,6 +148,9 @@ export {
   collectStatusIssuesFromLastError,
   createDefaultChannelRuntimeState,
 } from "./status-helpers.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle) — provider auth result removed
+// oxlint-disable-next-line typescript/no-explicit-any
+export const buildOauthProviderAuthResult = (..._args: unknown[]) => undefined as any;
 export type { ChannelDock } from "../channels/dock.js";
 export { getChatChannelMeta } from "../channels/registry.js";
 export type {
@@ -190,6 +229,8 @@ export {
   type SenderGroupAccessReason,
 } from "./group-access.js";
 export { resolveSenderCommandAuthorization } from "./command-auth.js";
+export { createScopedPairingAccess } from "./pairing-access.js";
+export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
 export { handleSlackMessageAction } from "./slack-message-actions.js";
 export { extractToolSend } from "./tool-send.js";
 export {
@@ -200,6 +241,8 @@ export {
   sendMediaWithLeadingCaption,
 } from "./reply-payload.js";
 export type { OutboundReplyPayload } from "./reply-payload.js";
+export type { OutboundMediaLoadOptions } from "./outbound-media.js";
+export { loadOutboundMediaFromUrl } from "./outbound-media.js";
 export { resolveChannelAccountConfigBasePath } from "./config-paths.js";
 export { buildMediaPayload } from "../channels/plugins/media-payload.js";
 export type { MediaPayload, MediaPayloadInput } from "../channels/plugins/media-payload.js";
@@ -207,6 +250,22 @@ export { createLoggerBackedRuntime } from "./runtime.js";
 export { chunkTextForOutbound } from "./text-chunking.js";
 export { readJsonFileWithFallback, writeJsonFileAtomically } from "./json-store.js";
 export { buildRandomTempFilePath, withTempDownloadPath } from "./temp-path.js";
+export {
+  applyWindowsSpawnProgramPolicy,
+  materializeWindowsSpawnProgram,
+  resolveWindowsExecutablePath,
+  resolveWindowsSpawnProgramCandidate,
+  resolveWindowsSpawnProgram,
+} from "./windows-spawn.js";
+export type {
+  ResolveWindowsSpawnProgramCandidateParams,
+  ResolveWindowsSpawnProgramParams,
+  WindowsSpawnCandidateResolution,
+  WindowsSpawnInvocation,
+  WindowsSpawnProgramCandidate,
+  WindowsSpawnProgram,
+  WindowsSpawnResolution,
+} from "./windows-spawn.js";
 export { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
 export {
   runPluginCommandWithTimeout,
@@ -224,9 +283,7 @@ export type { ChatType } from "../channels/chat-type.js";
 /** @deprecated Use ChatType instead */
 export type { RoutePeerKind } from "../routing/resolve-route.js";
 export { resolveAckReaction } from "../agents/identity.js";
-export type { AgentToolResult } from "../types/agent-types.js";
 export type { ReplyPayload } from "../auto-reply/types.js";
-export type { OutboundDeliveryResult } from "../infra/outbound/deliver.js";
 export type { ChunkMode } from "../auto-reply/chunk.js";
 export { SILENT_REPLY_TOKEN, isSilentReplyText } from "../auto-reply/tokens.js";
 export { formatInboundFromLabel } from "../auto-reply/envelope.js";
@@ -245,6 +302,11 @@ export type {
 } from "./persistent-dedupe.js";
 export { formatErrorMessage } from "../infra/errors.js";
 export {
+  formatUtcTimestamp,
+  formatZonedTimestamp,
+  resolveTimezone,
+} from "../infra/format-time/format-datetime.js";
+export {
   DEFAULT_WEBHOOK_BODY_TIMEOUT_MS,
   DEFAULT_WEBHOOK_MAX_BODY_BYTES,
   RequestBodyLimitError,
@@ -254,6 +316,19 @@ export {
   readRequestBodyWithLimit,
   requestBodyErrorToText,
 } from "../infra/http-body.js";
+export {
+  WEBHOOK_ANOMALY_COUNTER_DEFAULTS,
+  WEBHOOK_ANOMALY_STATUS_CODES,
+  WEBHOOK_RATE_LIMIT_DEFAULTS,
+  createBoundedCounter,
+  createFixedWindowRateLimiter,
+  createWebhookAnomalyTracker,
+} from "./webhook-memory-guards.js";
+export type {
+  BoundedCounter,
+  FixedWindowRateLimiter,
+  WebhookAnomalyTracker,
+} from "./webhook-memory-guards.js";
 
 export { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
 export {
@@ -263,10 +338,17 @@ export {
   isPrivateIpAddress,
 } from "../infra/net/ssrf.js";
 export type { LookupFn, SsrFPolicy } from "../infra/net/ssrf.js";
+export {
+  buildHostnameAllowlistPolicyFromSuffixAllowlist,
+  isHttpsUrlAllowedByHostnameSuffixAllowlist,
+  normalizeHostnameSuffixAllowlist,
+} from "./ssrf-policy.js";
+export { fetchWithBearerAuthScopeFallback } from "./fetch-auth.js";
+export type { ScopeTokenProvider } from "./fetch-auth.js";
 export { rawDataToString } from "../infra/ws.js";
 export { isWSLSync, isWSL2Sync, isWSLEnv } from "../infra/wsl.js";
 export { isTruthyEnvValue } from "../infra/env.js";
-export { resolveChannelGroupPolicy, resolveToolsBySender } from "../config/group-policy.js";
+export { resolveToolsBySender } from "../config/group-policy.js";
 export {
   buildPendingHistoryContextFromMap,
   clearHistoryEntries,
@@ -373,12 +455,15 @@ export {
 } from "../agents/tools/common.js";
 export { formatDocsLink } from "../terminal/links.js";
 export {
+  DM_GROUP_ACCESS_REASON,
+  readStoreAllowFromForDmPolicy,
   resolveDmAllowState,
   resolveDmGroupAccessDecision,
   resolveDmGroupAccessWithCommandGate,
   resolveDmGroupAccessWithLists,
   resolveEffectiveAllowFromLists,
 } from "../security/dm-policy-shared.js";
+export type { DmGroupAccessReasonCode } from "../security/dm-policy-shared.js";
 export type { HookEntry } from "../hooks/types.js";
 export { clamp, escapeRegExp, normalizeE164, safeParseJson, sleep } from "../utils.js";
 export { stripAnsi } from "../terminal/ansi.js";
@@ -554,44 +639,9 @@ export { loadWebMedia, type WebMediaResult } from "../web/media.js";
 // Security utilities
 export { redactSensitiveText } from "../logging/redact.js";
 
-// STT provider types
-export type {
-  AudioTranscriptionRequest,
-  AudioTranscriptionResult,
-  SttProvider,
-} from "../stt/types.js";
-
-// TTS provider types
-export type { TtsProviderImpl, TtsSynthesisRequest, TtsSynthesisResult } from "../tts/types.js";
-
-// Voice credential validation
-export {
-  checkSttCredentials,
-  checkTtsCredentials,
-  validateVoiceCredentials,
-} from "../channels/voice-credentials.js";
-export type {
-  VoiceCredentialReport,
-  VoiceCredentialStatus,
-} from "../channels/voice-credentials.js";
-
-// B2 DIFF-SYNC: new upstream exports from non-gutted modules
-export { createScopedPairingAccess } from "./pairing-access.js";
-export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
-export {
-  formatUtcTimestamp,
-  formatZonedTimestamp,
-  resolveTimezone,
-} from "../infra/format-time/format-datetime.js";
-export {
-  buildHostnameAllowlistPolicyFromSuffixAllowlist,
-  isHttpsUrlAllowedByHostnameSuffixAllowlist,
-  normalizeHostnameSuffixAllowlist,
-} from "./ssrf-policy.js";
-export { fetchWithBearerAuthScopeFallback } from "./fetch-auth.js";
-export type { ScopeTokenProvider } from "./fetch-auth.js";
-export {
-  DM_GROUP_ACCESS_REASON,
-  readStoreAllowFromForDmPolicy,
-} from "../security/dm-policy-shared.js";
-export type { DmGroupAccessReasonCode } from "../security/dm-policy-shared.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle) — stub exports for extension compat
+// Re-export real AgentToolResult from agent-types to avoid structural mismatch with jsonResult()
+export type { AgentToolResult } from "../agents/agent-types.js";
+export type OutboundDeliveryResult = Record<string, unknown>;
+// oxlint-disable-next-line typescript/no-explicit-any
+export const validateVoiceCredentials = (..._args: unknown[]) => undefined as any;

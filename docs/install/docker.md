@@ -1,5 +1,5 @@
 ---
-description: "Optional Docker-based setup and onboarding for RemoteClaw"
+summary: "Optional Docker-based setup and onboarding for RemoteClaw"
 read_when:
   - You want a containerized gateway instead of local installs
   - You are validating the Docker flow
@@ -14,14 +14,14 @@ Docker is **optional**. Use it only if you want a containerized gateway or to va
 
 - **Yes**: you want an isolated, throwaway gateway environment or to run RemoteClaw on a host without local installs.
 - **No**: you’re running on your own machine and just want the fastest dev loop. Use the normal install flow instead.
-- **Sandboxing note**: agent sandboxing uses Docker too, but it does **not** require the full gateway to run in Docker. See [Gateway configuration](/gateway/configuration#agentsdefaultssandbox).
+- **Sandboxing note**: agent sandboxing uses Docker too, but it does **not** require the full gateway to run in Docker. See [Sandboxing](/gateway/sandboxing).
 
 This guide covers:
 
 - Containerized Gateway (full RemoteClaw in Docker)
 - Per-session Agent Sandbox (host gateway + Docker-isolated agent tools)
 
-Sandboxing details: [Gateway configuration](/gateway/configuration#agentsdefaultssandbox)
+Sandboxing details: [Sandboxing](/gateway/sandboxing)
 
 ## Requirements
 
@@ -33,6 +33,12 @@ Sandboxing details: [Gateway configuration](/gateway/configuration#agentsdefault
 
 ### Quick start (recommended)
 
+<Note>
+Docker defaults here assume bind modes (`lan`/`loopback`), not host aliases. Use bind
+mode values in `gateway.bind` (for example `lan` or `loopback`), not host aliases like
+`0.0.0.0` or `localhost`.
+</Note>
+
 From repo root:
 
 ```bash
@@ -41,14 +47,15 @@ From repo root:
 
 This script:
 
-- builds the gateway image
+- builds the gateway image locally (or pulls a remote image if `REMOTECLAW_IMAGE` is set)
 - runs the onboarding wizard
-- prints optional channel setup hints
+- prints optional provider setup hints
 - starts the gateway via Docker Compose
 - generates a gateway token and writes it to `.env`
 
 Optional env vars:
 
+- `REMOTECLAW_IMAGE` — use a remote image instead of building locally (e.g. `ghcr.io/remoteclaw/remoteclaw:latest`)
 - `REMOTECLAW_DOCKER_APT_PACKAGES` — install extra apt packages during build
 - `REMOTECLAW_EXTRA_MOUNTS` — add extra host bind mounts
 - `REMOTECLAW_HOME_VOLUME` — persist `/home/node` in a named volume
@@ -59,12 +66,93 @@ After it finishes:
 - Paste the token into the Control UI (Settings → token).
 - Need the URL again? Run `docker compose run --rm remoteclaw-cli dashboard --no-open`.
 
+### Automation/CI (non-interactive, no TTY noise)
+
+For scripts and CI, disable Compose pseudo-TTY allocation with `-T`:
+
+```bash
+docker compose run -T --rm remoteclaw-cli gateway probe
+docker compose run -T --rm remoteclaw-cli devices list --json
+```
+
+If your automation exports no Claude session vars, leaving them unset now resolves to
+empty values by default in `docker-compose.yml` to avoid repeated "variable is not set"
+warnings.
+
+### Shared-network security note (CLI + gateway)
+
+`remoteclaw-cli` uses `network_mode: "service:remoteclaw-gateway"` so CLI commands can
+reliably reach the gateway over `127.0.0.1` in Docker.
+
+Treat this as a shared trust boundary: loopback binding is not isolation between these two
+containers. If you need stronger separation, run commands from a separate container/host
+network path instead of the bundled `remoteclaw-cli` service.
+
+To reduce impact if the CLI process is compromised, the compose config drops
+`NET_RAW`/`NET_ADMIN` and enables `no-new-privileges` on `remoteclaw-cli`.
+
 It writes config/workspace on the host:
 
 - `~/.remoteclaw/`
 - `~/.remoteclaw/workspace`
 
 Running on a VPS? See [Hetzner (Docker VPS)](/install/hetzner).
+
+### Use a remote image (skip local build)
+
+Official pre-built images are published at:
+
+- [GitHub Container Registry package](https://github.com/remoteclaw/remoteclaw/pkgs/container/remoteclaw)
+
+Use image name `ghcr.io/remoteclaw/remoteclaw` (not similarly named Docker Hub
+images).
+
+Common tags:
+
+- `main` — latest build from `main`
+- `<version>` — release tag builds (for example `2026.2.26`)
+- `latest` — latest stable release tag
+
+### Base image metadata
+
+The main Docker image currently uses:
+
+- `node:22-bookworm`
+
+The docker image now publishes OCI base-image annotations (sha256 is an example):
+
+- `org.opencontainers.image.base.name=docker.io/library/node:22-bookworm`
+- `org.opencontainers.image.base.digest=sha256:cd7bcd2e7a1e6f72052feb023c7f6b722205d3fcab7bbcbd2d1bfdab10b1e935`
+- `org.opencontainers.image.source=https://github.com/remoteclaw/remoteclaw`
+- `org.opencontainers.image.url=https://remoteclaw.ai`
+- `org.opencontainers.image.documentation=https://docs.remoteclaw.ai/install/docker`
+- `org.opencontainers.image.licenses=MIT`
+- `org.opencontainers.image.title=RemoteClaw`
+- `org.opencontainers.image.description=RemoteClaw gateway and CLI runtime container image`
+- `org.opencontainers.image.revision=<git-sha>`
+- `org.opencontainers.image.version=<tag-or-main>`
+- `org.opencontainers.image.created=<rfc3339 timestamp>`
+
+Reference: [OCI image annotations](https://github.com/opencontainers/image-spec/blob/main/annotations.md)
+
+Release context: this repository's tagged history already uses Bookworm in
+`v2026.2.22` and earlier 2026 tags (for example `v2026.2.21`, `v2026.2.9`).
+
+By default the setup script builds the image from source. To pull a pre-built
+image instead, set `REMOTECLAW_IMAGE` before running the script:
+
+```bash
+export REMOTECLAW_IMAGE="ghcr.io/remoteclaw/remoteclaw:latest"
+./docker-setup.sh
+```
+
+The script detects that `REMOTECLAW_IMAGE` is not the default `remoteclaw:local` and
+runs `docker pull` instead of `docker build`. Everything else (onboarding,
+gateway start, token generation) works the same way.
+
+`docker-setup.sh` still runs from the repository root because it uses the local
+`docker-compose.yml` and helper files. `REMOTECLAW_IMAGE` skips local image build
+time; it does not replace the compose/setup workflow.
 
 ### Shell Helpers (optional)
 
@@ -297,14 +385,25 @@ docker compose run --rm remoteclaw-cli channels add --channel discord --token "<
 
 Docs: [WhatsApp](/channels/whatsapp), [Telegram](/channels/telegram), [Discord](/channels/discord)
 
-### CLI agent OAuth (headless Docker)
+### OpenAI Codex OAuth (headless Docker)
 
-Some CLI agents (e.g. Codex) use OAuth flows that open a browser URL and try
-to capture a callback on a local port. In Docker or headless setups that
-callback can show a browser error. Copy the full redirect URL you land on and
-paste it back into the CLI agent's auth flow to finish auth.
+If you pick OpenAI Codex OAuth in the wizard, it opens a browser URL and tries
+to capture a callback on `http://127.0.0.1:1455/auth/callback`. In Docker or
+headless setups that callback can show a browser error. Copy the full redirect
+URL you land on and paste it back into the wizard to finish auth.
 
-### Health check
+### Health checks
+
+Container probe endpoints (no auth required):
+
+```bash
+curl -fsS http://127.0.0.1:18789/healthz
+curl -fsS http://127.0.0.1:18789/readyz
+```
+
+Aliases: `/health` and `/ready`.
+
+Authenticated deep health snapshot (gateway + channels):
 
 ```bash
 docker compose exec remoteclaw-gateway node dist/index.js health --token "$REMOTECLAW_GATEWAY_TOKEN"
@@ -322,15 +421,40 @@ scripts/e2e/onboard-docker.sh
 pnpm test:docker:qr
 ```
 
+### LAN vs loopback (Docker Compose)
+
+`docker-setup.sh` defaults `REMOTECLAW_GATEWAY_BIND=lan` so host access to
+`http://127.0.0.1:18789` works with Docker port publishing.
+
+- `lan` (default): host browser + host CLI can reach the published gateway port.
+- `loopback`: only processes inside the container network namespace can reach
+  the gateway directly; host-published port access may fail.
+
+The setup script also pins `gateway.mode=local` after onboarding so Docker CLI
+commands default to local loopback targeting.
+
+Legacy config note: use bind mode values in `gateway.bind` (`lan` / `loopback` /
+`custom` / `tailnet` / `auto`), not host aliases (`0.0.0.0`, `127.0.0.1`,
+`localhost`, `::`, `::1`).
+
+If you see `Gateway target: ws://172.x.x.x:18789` or repeated `pairing required`
+errors from Docker CLI commands, run:
+
+```bash
+docker compose run --rm remoteclaw-cli config set gateway.mode local
+docker compose run --rm remoteclaw-cli config set gateway.bind lan
+docker compose run --rm remoteclaw-cli devices list --url ws://127.0.0.1:18789
+```
+
 ### Notes
 
-- Gateway bind defaults to `lan` for container use.
+- Gateway bind defaults to `lan` for container use (`REMOTECLAW_GATEWAY_BIND`).
 - Dockerfile CMD uses `--allow-unconfigured`; mounted config with `gateway.mode` not `local` will still start. Override CMD to enforce the guard.
 - The gateway container is the source of truth for sessions (`~/.remoteclaw/agents/<agentId>/sessions/`).
 
 ## Agent Sandbox (host gateway + Docker tools)
 
-Deep dive: [Gateway configuration](/gateway/configuration#agentsdefaultssandbox)
+Deep dive: [Sandboxing](/gateway/sandboxing)
 
 ### What it does
 
@@ -357,7 +481,7 @@ mixed access levels in one gateway:
 - Read-only tools + read-only workspace (family/work agent)
 - No filesystem/shell tools (public agent)
 
-See [Multi-Agent Routing](/concepts/multi-agent) for examples,
+See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for examples,
 precedence, and troubleshooting.
 
 ### Default behavior
@@ -504,7 +628,7 @@ Notes:
 - No full desktop environment (GNOME) is needed; Xvfb provides the display.
 - Browser containers default to a dedicated Docker network (`remoteclaw-sandbox-browser`) instead of global `bridge`.
 - Optional `agents.defaults.sandbox.browser.cdpSourceRange` restricts container-edge CDP ingress by CIDR (for example `172.21.0.1/32`).
-- noVNC observer access is password-protected by default; RemoteClaw provides a short-lived observer token URL instead of sharing the raw password in the URL.
+- noVNC observer access is password-protected by default; RemoteClaw provides a short-lived observer token URL that serves a local bootstrap page and keeps the password in URL fragment (instead of URL query).
 
 Use config:
 

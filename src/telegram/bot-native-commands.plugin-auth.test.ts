@@ -43,6 +43,7 @@ describe("registerTelegramNativeCommands (plugin auth)", () => {
       },
     } as const;
 
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     registerTelegramNativeCommands({
       bot: bot as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
       cfg: {
@@ -110,6 +111,7 @@ describe("registerTelegramNativeCommands (plugin auth)", () => {
         allowed: true,
       }) as ChannelGroupPolicy;
 
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     registerTelegramNativeCommands({
       bot: bot as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
       cfg,

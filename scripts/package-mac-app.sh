@@ -14,7 +14,7 @@ BUILD_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 GIT_COMMIT=$(cd "$ROOT_DIR" && git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 GIT_BUILD_NUMBER=$(cd "$ROOT_DIR" && git rev-list --count HEAD 2>/dev/null || echo "0")
 APP_VERSION="${APP_VERSION:-$PKG_VERSION}"
-APP_BUILD="${APP_BUILD:-$GIT_BUILD_NUMBER}"
+APP_BUILD="${APP_BUILD:-}"
 BUILD_CONFIG="${BUILD_CONFIG:-debug}"
 BUILD_ARCHS_VALUE="${BUILD_ARCHS:-$(uname -m)}"
 if [[ "${BUILD_ARCHS_VALUE}" == "all" ]]; then
@@ -29,10 +29,10 @@ if [[ "$BUNDLE_ID" == *.debug ]]; then
   SPARKLE_FEED_URL=""
   AUTO_CHECKS=false
 fi
-if [[ "$AUTO_CHECKS" == "true" && ! "$APP_BUILD" =~ ^[0-9]+$ ]]; then
-  echo "ERROR: APP_BUILD must be numeric for Sparkle compare (CFBundleVersion). Got: $APP_BUILD" >&2
-  exit 1
-fi
+
+sparkle_canonical_build_from_version() {
+  node --import tsx "$ROOT_DIR/scripts/sparkle-build.ts" canonical-build "$1"
+}
 
 build_path_for_arch() {
   echo "$BUILD_ROOT/$1"
@@ -109,6 +109,25 @@ merge_framework_machos() {
 
 echo "📦 Ensuring deps (pnpm install)"
 (cd "$ROOT_DIR" && pnpm install --no-frozen-lockfile --config.node-linker=hoisted)
+
+if [[ -z "${APP_BUILD:-}" ]]; then
+  APP_BUILD="$GIT_BUILD_NUMBER"
+  if [[ "$APP_VERSION" =~ ^[0-9]{4}\.[0-9]{1,2}\.[0-9]{1,2}([.-].*)?$ ]]; then
+    CANONICAL_BUILD="$(sparkle_canonical_build_from_version "$APP_VERSION")" || {
+      echo "ERROR: Failed to derive canonical Sparkle APP_BUILD from APP_VERSION '$APP_VERSION'." >&2
+      exit 1
+    }
+    if [[ "$CANONICAL_BUILD" =~ ^[0-9]+$ ]] && (( CANONICAL_BUILD > APP_BUILD )); then
+      APP_BUILD="$CANONICAL_BUILD"
+    fi
+  fi
+fi
+
+if [[ "$AUTO_CHECKS" == "true" && ! "$APP_BUILD" =~ ^[0-9]+$ ]]; then
+  echo "ERROR: APP_BUILD must be numeric for Sparkle compare (CFBundleVersion). Got: $APP_BUILD" >&2
+  exit 1
+fi
+
 if [[ "${SKIP_TSC:-0}" != "1" ]]; then
   echo "📦 Building JS (pnpm build)"
   (cd "$ROOT_DIR" && pnpm build)
@@ -206,6 +225,15 @@ cp "$ROOT_DIR/apps/macos/Sources/RemoteClaw/Resources/RemoteClaw.icns" "$APP_ROO
 echo "📦 Copying device model resources"
 rm -rf "$APP_ROOT/Contents/Resources/DeviceModels"
 cp -R "$ROOT_DIR/apps/macos/Sources/RemoteClaw/Resources/DeviceModels" "$APP_ROOT/Contents/Resources/DeviceModels"
+
+echo "📦 Copying model catalog"
+MODEL_CATALOG_SRC="$ROOT_DIR/node_modules/@mariozechner/pi-ai/dist/models.generated.js"
+MODEL_CATALOG_DEST="$APP_ROOT/Contents/Resources/models.generated.js"
+if [ -f "$MODEL_CATALOG_SRC" ]; then
+  cp "$MODEL_CATALOG_SRC" "$MODEL_CATALOG_DEST"
+else
+  echo "WARN: model catalog missing at $MODEL_CATALOG_SRC (continuing)" >&2
+fi
 
 echo "📦 Copying RemoteClawKit resources"
 REMOTECLAWKIT_BUNDLE="$(build_path_for_arch "$PRIMARY_ARCH")/$BUILD_CONFIG/RemoteClawKit_RemoteClawKit.bundle"

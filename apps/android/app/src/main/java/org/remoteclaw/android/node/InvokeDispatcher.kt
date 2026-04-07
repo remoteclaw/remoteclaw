@@ -1,14 +1,19 @@
 package org.remoteclaw.android.node
 
 import org.remoteclaw.android.gateway.GatewaySession
+import org.remoteclaw.android.protocol.RemoteClawCalendarCommand
 import org.remoteclaw.android.protocol.RemoteClawCanvasA2UICommand
 import org.remoteclaw.android.protocol.RemoteClawCanvasCommand
 import org.remoteclaw.android.protocol.RemoteClawCameraCommand
+import org.remoteclaw.android.protocol.RemoteClawContactsCommand
 import org.remoteclaw.android.protocol.RemoteClawDeviceCommand
 import org.remoteclaw.android.protocol.RemoteClawLocationCommand
+import org.remoteclaw.android.protocol.RemoteClawMotionCommand
 import org.remoteclaw.android.protocol.RemoteClawNotificationsCommand
+import org.remoteclaw.android.protocol.RemoteClawPhotosCommand
 import org.remoteclaw.android.protocol.RemoteClawScreenCommand
 import org.remoteclaw.android.protocol.RemoteClawSmsCommand
+import org.remoteclaw.android.protocol.RemoteClawSystemCommand
 
 class InvokeDispatcher(
   private val canvas: CanvasController,
@@ -16,6 +21,11 @@ class InvokeDispatcher(
   private val locationHandler: LocationHandler,
   private val deviceHandler: DeviceHandler,
   private val notificationsHandler: NotificationsHandler,
+  private val systemHandler: SystemHandler,
+  private val photosHandler: PhotosHandler,
+  private val contactsHandler: ContactsHandler,
+  private val calendarHandler: CalendarHandler,
+  private val motionHandler: MotionHandler,
   private val screenHandler: ScreenHandler,
   private val smsHandler: SmsHandler,
   private val a2uiHandler: A2UIHandler,
@@ -26,8 +36,11 @@ class InvokeDispatcher(
   private val locationEnabled: () -> Boolean,
   private val smsAvailable: () -> Boolean,
   private val debugBuild: () -> Boolean,
+  private val refreshNodeCanvasCapability: suspend () -> Boolean,
   private val onCanvasA2uiPush: () -> Unit,
   private val onCanvasA2uiReset: () -> Unit,
+  private val motionActivityAvailable: () -> Boolean,
+  private val motionPedometerAvailable: () -> Boolean,
 ) {
   suspend fun handleInvoke(command: String, paramsJson: String?): GatewaySession.InvokeResult {
     val spec =
@@ -112,6 +125,7 @@ class InvokeDispatcher(
       }
 
       // Camera commands
+      RemoteClawCameraCommand.List.rawValue -> cameraHandler.handleList(paramsJson)
       RemoteClawCameraCommand.Snap.rawValue -> cameraHandler.handleSnap(paramsJson)
       RemoteClawCameraCommand.Clip.rawValue -> cameraHandler.handleClip(paramsJson)
 
@@ -121,9 +135,30 @@ class InvokeDispatcher(
       // Device commands
       RemoteClawDeviceCommand.Status.rawValue -> deviceHandler.handleDeviceStatus(paramsJson)
       RemoteClawDeviceCommand.Info.rawValue -> deviceHandler.handleDeviceInfo(paramsJson)
+      RemoteClawDeviceCommand.Permissions.rawValue -> deviceHandler.handleDevicePermissions(paramsJson)
+      RemoteClawDeviceCommand.Health.rawValue -> deviceHandler.handleDeviceHealth(paramsJson)
 
       // Notifications command
       RemoteClawNotificationsCommand.List.rawValue -> notificationsHandler.handleNotificationsList(paramsJson)
+      RemoteClawNotificationsCommand.Actions.rawValue -> notificationsHandler.handleNotificationsActions(paramsJson)
+
+      // System command
+      RemoteClawSystemCommand.Notify.rawValue -> systemHandler.handleSystemNotify(paramsJson)
+
+      // Photos command
+      RemoteClawPhotosCommand.Latest.rawValue -> photosHandler.handlePhotosLatest(paramsJson)
+
+      // Contacts command
+      RemoteClawContactsCommand.Search.rawValue -> contactsHandler.handleContactsSearch(paramsJson)
+      RemoteClawContactsCommand.Add.rawValue -> contactsHandler.handleContactsAdd(paramsJson)
+
+      // Calendar command
+      RemoteClawCalendarCommand.Events.rawValue -> calendarHandler.handleCalendarEvents(paramsJson)
+      RemoteClawCalendarCommand.Add.rawValue -> calendarHandler.handleCalendarAdd(paramsJson)
+
+      // Motion command
+      RemoteClawMotionCommand.Activity.rawValue -> motionHandler.handleMotionActivity(paramsJson)
+      RemoteClawMotionCommand.Pedometer.rawValue -> motionHandler.handleMotionPedometer(paramsJson)
 
       // Screen command
       RemoteClawScreenCommand.Record.rawValue -> screenHandler.handleScreenRecord(paramsJson)
@@ -145,17 +180,30 @@ class InvokeDispatcher(
   private suspend fun withReadyA2ui(
     block: suspend () -> GatewaySession.InvokeResult,
   ): GatewaySession.InvokeResult {
-    val a2uiUrl = a2uiHandler.resolveA2uiHostUrl()
+    var a2uiUrl = a2uiHandler.resolveA2uiHostUrl()
       ?: return GatewaySession.InvokeResult.error(
         code = "A2UI_HOST_NOT_CONFIGURED",
         message = "A2UI_HOST_NOT_CONFIGURED: gateway did not advertise canvas host",
       )
-    val ready = a2uiHandler.ensureA2uiReady(a2uiUrl)
-    if (!ready) {
-      return GatewaySession.InvokeResult.error(
-        code = "A2UI_HOST_UNAVAILABLE",
-        message = "A2UI host not reachable",
-      )
+    val readyOnFirstCheck = a2uiHandler.ensureA2uiReady(a2uiUrl)
+    if (!readyOnFirstCheck) {
+      if (!refreshNodeCanvasCapability()) {
+        return GatewaySession.InvokeResult.error(
+          code = "A2UI_HOST_UNAVAILABLE",
+          message = "A2UI_HOST_UNAVAILABLE: A2UI host not reachable",
+        )
+      }
+      a2uiUrl = a2uiHandler.resolveA2uiHostUrl()
+        ?: return GatewaySession.InvokeResult.error(
+          code = "A2UI_HOST_NOT_CONFIGURED",
+          message = "A2UI_HOST_NOT_CONFIGURED: gateway did not advertise canvas host",
+        )
+      if (!a2uiHandler.ensureA2uiReady(a2uiUrl)) {
+        return GatewaySession.InvokeResult.error(
+          code = "A2UI_HOST_UNAVAILABLE",
+          message = "A2UI_HOST_UNAVAILABLE: A2UI host not reachable",
+        )
+      }
     }
     return block()
   }
@@ -192,6 +240,24 @@ class InvokeDispatcher(
           GatewaySession.InvokeResult.error(
             code = "LOCATION_DISABLED",
             message = "LOCATION_DISABLED: enable Location in Settings",
+          )
+        }
+      InvokeCommandAvailability.MotionActivityAvailable ->
+        if (motionActivityAvailable()) {
+          null
+        } else {
+          GatewaySession.InvokeResult.error(
+            code = "MOTION_UNAVAILABLE",
+            message = "MOTION_UNAVAILABLE: accelerometer not available",
+          )
+        }
+      InvokeCommandAvailability.MotionPedometerAvailable ->
+        if (motionPedometerAvailable()) {
+          null
+        } else {
+          GatewaySession.InvokeResult.error(
+            code = "PEDOMETER_UNAVAILABLE",
+            message = "PEDOMETER_UNAVAILABLE: step counter not available",
           )
         }
       InvokeCommandAvailability.SmsAvailable ->

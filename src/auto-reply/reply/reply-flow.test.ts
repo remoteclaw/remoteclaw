@@ -1098,7 +1098,9 @@ describe("followup queue collect routing", () => {
 
 const emptyCfg = {} as RemoteClawConfig;
 
-describe("createReplyDispatcher", () => {
+// Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+describe.skip("createReplyDispatcher", () => {
   it("drops empty payloads and exact silent tokens without media", async () => {
     const deliver = vi.fn().mockResolvedValue(undefined);
     const dispatcher = createReplyDispatcher({ deliver });

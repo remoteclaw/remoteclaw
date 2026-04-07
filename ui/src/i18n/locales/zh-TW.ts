@@ -30,6 +30,7 @@ export const zh_TW: TranslationMap = {
     sessions: "會話",
     usage: "使用情況",
     cron: "定時任務",
+    skills: "技能",
     nodes: "節點",
     chat: "聊天",
     config: "配置",
@@ -44,6 +45,7 @@ export const zh_TW: TranslationMap = {
     sessions: "檢查活動會話並調整每個會話的默認設置。",
     usage: "監控 API 使用情況和成本。",
     cron: "安排喚醒和重複的代理運行。",
+    skills: "管理技能可用性和 API 密鑰注入。",
     nodes: "配對設備、功能和命令公開。",
     chat: "用於快速干預的直接網關聊天會話。",
     config: "安全地編輯 ~/.remoteclaw/remoteclaw.json。",
@@ -108,6 +110,9 @@ export const zh_TW: TranslationMap = {
     refreshTitle: "刷新聊天數據",
     thinkingToggle: "切換助手思考/工作輸出",
     focusToggle: "切換專注模式 (隱藏側邊欄 + 頁面頁眉)",
+    hideCronSessions: "隱藏定時任務會話",
+    showCronSessions: "顯示定時任務會話",
+    showCronSessionsHidden: "顯示定時任務會話 (已隱藏 {count} 個)",
     onboardingDisabled: "引導期間禁用",
   },
   languages: {
@@ -115,5 +120,6 @@ export const zh_TW: TranslationMap = {
     zhCN: "简体中文 (簡體中文)",
     zhTW: "繁體中文 (繁體中文)",
     ptBR: "Português (巴西葡萄牙語)",
+    de: "Deutsch (德語)",
   },
 };

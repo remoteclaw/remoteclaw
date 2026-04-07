@@ -27,6 +27,7 @@ import {
   buildAnnounceIdempotencyKey,
   resolveQueueAnnounceId,
 } from "./announce-idempotency.js";
+import type { AgentInternalEvent } from "./internal-events.js";
 import { isSessionRunActive } from "./session-run-registry.js";
 import { type AnnounceQueueItem, enqueueAnnounce } from "./subagent-announce-queue.js";
 import { getSubagentDepthFromSessionStore } from "./subagent-depth.js";
@@ -70,12 +71,17 @@ function buildCompletionDeliveryMessage(params: {
   subagentName: string;
   spawnMode?: SpawnSubagentMode;
   outcome?: SubagentRunOutcome;
+  announceType?: SubagentAnnounceType;
 }): string {
   const findingsText = params.findings.trim();
   if (isAnnounceSkip(findingsText)) {
     return "";
   }
   const hasFindings = findingsText.length > 0 && findingsText !== "(no output)";
+  // Cron completions are standalone messages — skip the subagent status header.
+  if (params.announceType === "cron job") {
+    return hasFindings ? findingsText : "";
+  }
   const header = (() => {
     if (params.outcome?.status === "error") {
       return params.spawnMode === "session"
@@ -511,7 +517,14 @@ async function resolveSubagentCompletionOrigin(params: {
       channel: route.binding.conversation.channel,
       accountId: route.binding.conversation.accountId,
       to: `channel:${route.binding.conversation.conversationId}`,
-      threadId: route.binding.conversation.conversationId,
+      // `conversationId` identifies the target conversation (channel/DM/thread),
+      // but it is not always a thread identifier. Passing it as `threadId` breaks
+      // Slack DM/top-level delivery by forcing an invalid thread_ts. Preserve only
+      // explicit requester thread hints for channels that actually use threading.
+      threadId:
+        requesterOrigin?.threadId != null && requesterOrigin.threadId !== ""
+          ? String(requesterOrigin.threadId)
+          : undefined,
     };
     return {
       // Bound target is authoritative; requester hints fill only missing fields.
@@ -596,6 +609,7 @@ async function sendAnnounce(item: AnnounceQueueItem) {
       to: requesterIsSubagent ? undefined : origin?.to,
       threadId: requesterIsSubagent ? undefined : threadId,
       deliver: !requesterIsSubagent,
+      internalEvents: item.internalEvents,
       idempotencyKey,
     },
     timeoutMs: announceTimeoutMs,
@@ -646,8 +660,10 @@ async function maybeQueueSubagentAnnounce(params: {
   requesterSessionKey: string;
   announceId?: string;
   triggerMessage: string;
+  steerMessage?: string;
   summaryLine?: string;
   requesterOrigin?: DeliveryContext;
+  internalEvents?: AgentInternalEvent[];
   signal?: AbortSignal;
 }): Promise<"steered" | "queued" | "none"> {
   if (params.signal?.aborted) {
@@ -680,6 +696,7 @@ async function maybeQueueSubagentAnnounce(params: {
         announceId: params.announceId,
         prompt: params.triggerMessage,
         summaryLine: params.summaryLine,
+        internalEvents: params.internalEvents,
         enqueuedAt: Date.now(),
         sessionKey: canonicalKey,
         origin,
@@ -1301,6 +1318,7 @@ export async function runSubagentAnnounceFlow(params: {
       subagentName,
       spawnMode: params.spawnMode,
       outcome,
+      announceType: params.announceType,
     });
     const internalSummaryMessage = [
       `[System Message] [sessionId: ${announceSessionId}] A ${announceType} "${taskLabel}" just ${statusLabel}.`,

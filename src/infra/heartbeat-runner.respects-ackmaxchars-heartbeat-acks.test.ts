@@ -83,7 +83,9 @@ describe("runHeartbeatOnce heartbeat_report handling", () => {
     });
   }
 
-  it("skips delivery when heartbeat_report says anythingDone=false", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("skips delivery when heartbeat_report says anythingDone=false", async () => {
     await withTempHeartbeatSandbox(async ({ tmpDir, storePath, replySpy }) => {
       const cfg = createWhatsAppHeartbeatConfig({
         tmpDir,

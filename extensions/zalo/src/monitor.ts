@@ -32,6 +32,9 @@ import {
   resolveZaloRuntimeGroupPolicy,
 } from "./group-access.js";
 import {
+  clearZaloWebhookSecurityStateForTest,
+  getZaloWebhookRateLimitStateSizeForTest,
+  getZaloWebhookStatusCounterSizeForTest,
   handleZaloWebhookRequest as handleZaloWebhookRequestInternal,
   registerZaloWebhookTarget as registerZaloWebhookTargetInternal,
   type ZaloWebhookTarget,
@@ -76,6 +79,12 @@ function logVerbose(core: ZaloCoreRuntime, runtime: ZaloRuntimeEnv, message: str
 export function registerZaloWebhookTarget(target: ZaloWebhookTarget): () => void {
   return registerZaloWebhookTargetInternal(target);
 }
+
+export {
+  clearZaloWebhookSecurityStateForTest,
+  getZaloWebhookRateLimitStateSizeForTest,
+  getZaloWebhookStatusCounterSizeForTest,
+};
 
 export async function handleZaloWebhookRequest(
   req: IncomingMessage,
@@ -147,7 +156,7 @@ function startPollingLoop(params: {
       if (err instanceof ZaloApiError && err.isPollingTimeout) {
         // no updates
       } else if (!isStopped() && !abortSignal.aborted) {
-        console.error(`[${account.accountId}] Zalo polling error:`, err);
+        runtime.error?.(`[${account.accountId}] Zalo polling error: ${String(err)}`);
         await new Promise((resolve) => setTimeout(resolve, 5000));
       }
     }
@@ -194,10 +203,12 @@ async function processUpdate(
       );
       break;
     case "message.sticker.received":
-      console.log(`[${account.accountId}] Received sticker from ${message.from.id}`);
+      logVerbose(core, runtime, `[${account.accountId}] Received sticker from ${message.from.id}`);
       break;
     case "message.unsupported.received":
-      console.log(
+      logVerbose(
+        core,
+        runtime,
         `[${account.accountId}] Received unsupported message type from ${message.from.id}`,
       );
       break;
@@ -263,7 +274,7 @@ async function handleImageMessage(
       mediaPath = saved.path;
       mediaType = saved.contentType;
     } catch (err) {
-      console.error(`[${account.accountId}] Failed to download Zalo image:`, err);
+      runtime.error?.(`[${account.accountId}] Failed to download Zalo image: ${String(err)}`);
     }
   }
 

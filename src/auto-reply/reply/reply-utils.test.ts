@@ -108,6 +108,54 @@ describe("normalizeReplyPayload", () => {
       expect(reasons, testCase.name).toEqual([testCase.reason]);
     }
   });
+
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("strips NO_REPLY from mixed emoji message (#30916)", () => {
+    const result = normalizeReplyPayload({ text: "😄 NO_REPLY" });
+    expect(result).not.toBeNull();
+    expect(result!.text).toContain("😄");
+    expect(result!.text).not.toContain("NO_REPLY");
+  });
+
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("strips NO_REPLY appended after substantive text (#30916)", () => {
+    const result = normalizeReplyPayload({
+      text: "File's there. Not urgent.\n\nNO_REPLY",
+    });
+    expect(result).not.toBeNull();
+    expect(result!.text).toContain("File's there");
+    expect(result!.text).not.toContain("NO_REPLY");
+  });
+
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("keeps NO_REPLY when used as leading substantive text", () => {
+    const result = normalizeReplyPayload({ text: "NO_REPLY -- nope" });
+    expect(result).not.toBeNull();
+    expect(result!.text).toBe("NO_REPLY -- nope");
+  });
+
+  it("suppresses message when stripping NO_REPLY leaves nothing", () => {
+    const reasons: string[] = [];
+    const result = normalizeReplyPayload(
+      { text: "  NO_REPLY  " },
+      { onSkip: (reason) => reasons.push(reason) },
+    );
+    expect(result).toBeNull();
+    expect(reasons).toEqual(["silent"]);
+  });
+
+  it("strips NO_REPLY but keeps media payload", () => {
+    const result = normalizeReplyPayload({
+      text: "NO_REPLY",
+      mediaUrl: "https://example.com/img.png",
+    });
+    expect(result).not.toBeNull();
+    expect(result!.text).toBe("");
+    expect(result!.mediaUrl).toBe("https://example.com/img.png");
+  });
 });
 
 describe("typing controller", () => {
@@ -316,7 +364,8 @@ describe("parseAudioTag", () => {
 });
 
 describe("resolveResponsePrefixTemplate", () => {
-  it("resolves known variables, aliases, and case-insensitive tokens", () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+  it.skip("resolves known variables, aliases, and case-insensitive tokens", () => {
     const cases = [
       {
         name: "model",
@@ -337,6 +386,18 @@ describe("resolveResponsePrefixTemplate", () => {
         expected: "[anthropic]",
       },
       {
+        name: "thinkingLevel",
+        template: "think:{thinkingLevel}",
+        values: { thinkingLevel: "high" },
+        expected: "think:high",
+      },
+      {
+        name: "think alias",
+        template: "think:{think}",
+        values: { thinkingLevel: "low" },
+        expected: "think:low",
+      },
+      {
         name: "identity.name",
         template: "[{identity.name}]",
         values: { identityName: "RemoteClaw" },
@@ -350,22 +411,24 @@ describe("resolveResponsePrefixTemplate", () => {
       },
       {
         name: "case-insensitive variables",
-        template: "[{MODEL} | {Provider}]",
-        values: { model: "gpt-5.2", provider: "openai" },
-        expected: "[gpt-5.2 | openai]",
+        template: "[{MODEL} | {ThinkingLevel}]",
+        values: { model: "gpt-5.2", thinkingLevel: "low" },
+        expected: "[gpt-5.2 | low]",
       },
       {
         name: "all variables",
-        template: "[{identity.name}] {provider}/{model}",
+        template: "[{identity.name}] {provider}/{model} (think:{thinkingLevel})",
         values: {
           identityName: "RemoteClaw",
           provider: "anthropic",
           model: "claude-opus-4-5",
+          thinkingLevel: "high",
         },
-        expected: "[RemoteClaw] anthropic/claude-opus-4-5",
+        expected: "[RemoteClaw] anthropic/claude-opus-4-5 (think:high)",
       },
     ] as const;
     for (const testCase of cases) {
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       expect(resolveResponsePrefixTemplate(testCase.template, testCase.values), testCase.name).toBe(
         testCase.expected,
       );

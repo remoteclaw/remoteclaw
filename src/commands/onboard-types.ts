@@ -147,4 +147,6 @@ export type OnboardOptions = {
   remoteUrl?: string;
   remoteToken?: string;
   json?: boolean;
+  /** Upstream feature: auth choice for onboarding. */
+  authChoice?: string;
 };

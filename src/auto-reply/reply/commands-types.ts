@@ -43,6 +43,8 @@ export type HandleCommandsParams = {
   model: string;
   contextTokens: number;
   isGroup: boolean;
+  /** Elevated tool config (upstream feature). */
+  elevated?: unknown;
 };
 
 export type CommandHandlerResult = {

@@ -1,5 +1,5 @@
-import RemoteClawProtocol
 import Foundation
+import RemoteClawProtocol
 import Testing
 
 @Suite struct GatewayFrameDecodeTests {

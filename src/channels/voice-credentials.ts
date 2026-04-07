@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { resolveApiKeyForProvider } from "../auth/provider-auth.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { AUTO_AUDIO_KEY_PROVIDERS } from "../stt/defaults.js";

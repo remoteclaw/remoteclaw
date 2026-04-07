@@ -95,9 +95,10 @@ export type MessagesConfig = {
    * - `{model}` - short model name (e.g., `claude-opus-4-6`, `gpt-4o`)
    * - `{modelFull}` - full model identifier (e.g., `anthropic/claude-opus-4-6`)
    * - `{provider}` - provider name (e.g., `anthropic`, `openai`)
+   * - `{thinkingLevel}` or `{think}` - current thinking level (`high`, `low`, `off`)
    * - `{identity.name}` or `{identityName}` - agent identity name
    *
-   * Example: `"[{model}]"` → `"[claude-opus-4-6]"`
+   * Example: `"[{model} | think:{thinkingLevel}]"` → `"[claude-opus-4-6 | think:high]"`
    *
    * Unresolved variables remain as literal text (e.g., `{model}` if context unavailable).
    *
@@ -111,7 +112,7 @@ export type MessagesConfig = {
   /** Emoji reaction used to acknowledge inbound messages (empty disables). */
   ackReaction?: string;
   /** When to send ack reactions. Default: "group-mentions". */
-  ackReactionScope?: "group-mentions" | "group-all" | "direct" | "all";
+  ackReactionScope?: "group-mentions" | "group-all" | "direct" | "all" | "off" | "none";
   /** Remove ack reaction after reply is sent (default: false). */
   removeAckAfterReply?: boolean;
   /** Lifecycle status reactions configuration. */
@@ -136,8 +137,14 @@ export type CommandAllowFrom = Record<string, Array<string | number>>;
 export type CommandsConfig = {
   /** Enable native command registration when supported (default: "auto"). */
   native?: NativeCommandsSetting;
+  /** Enable native skill command registration when supported (default: "auto"). */
+  nativeSkills?: NativeCommandsSetting;
   /** Enable text command parsing (default: true). */
   text?: boolean;
+  /** Allow bash chat command (`!`; `/bash` alias) (default: false). */
+  bash?: boolean;
+  /** How long bash waits before backgrounding (default: 2000; 0 backgrounds immediately). */
+  bashForegroundMs?: number;
   /** Allow /config command (default: false). */
   config?: boolean;
   /** Allow /debug command (default: false). */
@@ -164,4 +171,6 @@ export type CommandsConfig = {
 export type ProviderCommandsConfig = {
   /** Override native command registration for this provider (bool or "auto"). */
   native?: NativeCommandsSetting;
+  /** Override native skill command registration for this provider (bool or "auto"). */
+  nativeSkills?: NativeCommandsSetting;
 };

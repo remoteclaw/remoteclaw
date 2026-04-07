@@ -1,7 +1,11 @@
 import path from "node:path";
-import { resolveAgentWorkspaceDirOrNull, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { CHANNEL_IDS, normalizeChatChannelId } from "../channels/registry.js";
-import { normalizePluginsConfig, resolveEffectiveEnableState } from "../plugins/config-state.js";
+import {
+  normalizePluginsConfig,
+  resolveEffectiveEnableState,
+  resolveMemorySlotDecision,
+} from "../plugins/config-state.js";
 import { loadPluginManifestRegistry } from "../plugins/manifest-registry.js";
 import { validateJsonSchemaValue } from "../plugins/schema-validator.js";
 import {
@@ -11,6 +15,7 @@ import {
   isPathWithinRoot,
   isWindowsAbsolutePath,
 } from "../shared/avatar-policy.js";
+import { isCanonicalDottedDecimalIPv4, isLoopbackIpAddress } from "../shared/net/ip.js";
 import { isRecord } from "../utils.js";
 import { findDuplicateAgentDirs, formatDuplicateAgentDirError } from "./agent-dirs.js";
 import { applyAgentDefaults, applyModelDefaults, applySessionDefaults } from "./defaults.js";
@@ -62,11 +67,11 @@ function validateIdentityAvatar(config: RemoteClawConfig): ConfigValidationIssue
       });
       continue;
     }
-    const workspaceDir = resolveAgentWorkspaceDirOrNull(
+    const workspaceDir = resolveAgentWorkspaceDir(
       config,
       entry.id ?? resolveDefaultAgentId(config),
     );
-    if (workspaceDir != null && !isWorkspaceAvatarPath(avatar, workspaceDir)) {
+    if (!isWorkspaceAvatarPath(avatar, workspaceDir)) {
       issues.push({
         path: `agents.list.${index}.identity.avatar`,
         message: "identity.avatar must stay within the agent workspace.",
@@ -74,6 +79,33 @@ function validateIdentityAvatar(config: RemoteClawConfig): ConfigValidationIssue
     }
   }
   return issues;
+}
+
+function validateGatewayTailscaleBind(config: RemoteClawConfig): ConfigValidationIssue[] {
+  const tailscaleMode = config.gateway?.tailscale?.mode ?? "off";
+  if (tailscaleMode !== "serve" && tailscaleMode !== "funnel") {
+    return [];
+  }
+  const bindMode = config.gateway?.bind ?? "loopback";
+  if (bindMode === "loopback") {
+    return [];
+  }
+  const customBindHost = config.gateway?.customBindHost;
+  if (
+    bindMode === "custom" &&
+    isCanonicalDottedDecimalIPv4(customBindHost) &&
+    isLoopbackIpAddress(customBindHost)
+  ) {
+    return [];
+  }
+  return [
+    {
+      path: "gateway.bind",
+      message:
+        `gateway.bind must resolve to loopback when gateway.tailscale.mode=${tailscaleMode} ` +
+        '(use gateway.bind="loopback" or gateway.bind="custom" with gateway.customBindHost="127.0.0.1")',
+    },
+  ];
 }
 
 /**
@@ -118,6 +150,12 @@ export function validateConfigObjectRaw(
   const avatarIssues = validateIdentityAvatar(validated.data as RemoteClawConfig);
   if (avatarIssues.length > 0) {
     return { ok: false, issues: avatarIssues };
+  }
+  const gatewayTailscaleBindIssues = validateGatewayTailscaleBind(
+    validated.data as RemoteClawConfig,
+  );
+  if (gatewayTailscaleBindIssues.length > 0) {
+    return { ok: false, issues: gatewayTailscaleBindIssues };
   }
   return {
     ok: true,
@@ -204,7 +242,7 @@ function validateConfigObjectWithPluginsBase(
       return registryInfo;
     }
 
-    const workspaceDir = resolveAgentWorkspaceDirOrNull(config, resolveDefaultAgentId(config));
+    const workspaceDir = resolveAgentWorkspaceDir(config, resolveDefaultAgentId(config));
     const registry = loadPluginManifestRegistry({
       config,
       workspaceDir: workspaceDir ?? undefined,
@@ -368,6 +406,13 @@ function validateConfigObjectWithPluginsBase(
     }
   }
 
+  const memorySlot = normalizedPlugins.slots.memory;
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  if (typeof memorySlot === "string" && memorySlot.trim() && !knownIds.has(memorySlot)) {
+    pushMissingPluginIssue("plugins.slots.memory", memorySlot);
+  }
+
+  let selectedMemoryPluginId: string | null = null;
   const seenPlugins = new Set<string>();
   for (const record of registry.plugins) {
     const pluginId = record.id;
@@ -386,6 +431,25 @@ function validateConfigObjectWithPluginsBase(
     });
     let enabled = enableState.enabled;
     let reason = enableState.reason;
+
+    if (enabled) {
+      const memoryDecision = resolveMemorySlotDecision({
+        id: pluginId,
+        kind: record.kind,
+        slot: memorySlot,
+        selectedId: selectedMemoryPluginId,
+      });
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      if (!memoryDecision.enabled) {
+        enabled = false;
+        // @ts-expect-error — upstream feature not available in RemoteClaw fork
+        reason = memoryDecision.reason;
+      }
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      if (memoryDecision.selected && record.kind === "memory") {
+        selectedMemoryPluginId = pluginId;
+      }
+    }
 
     const shouldValidate = enabled || entryHasConfig;
     if (shouldValidate) {

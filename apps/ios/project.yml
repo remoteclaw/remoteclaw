@@ -8,6 +8,7 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
+    ENABLE_APP_INTENTS_METADATA_GENERATION: NO
 
 packages:
   RemoteClawKit:
@@ -80,9 +81,11 @@ targets:
         DEVELOPMENT_TEAM: "$(REMOTECLAW_DEVELOPMENT_TEAM)"
         PRODUCT_BUNDLE_IDENTIFIER: "$(REMOTECLAW_APP_BUNDLE_ID)"
         PROVISIONING_PROFILE_SPECIFIER: "$(REMOTECLAW_APP_PROFILE)"
+        TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "6.0"
         SWIFT_STRICT_CONCURRENCY: complete
         ENABLE_APPINTENTS_METADATA: NO
+        ENABLE_APP_INTENTS_METADATA_GENERATION: NO
     info:
       path: Sources/Info.plist
       properties:
@@ -92,8 +95,8 @@ targets:
           - CFBundleURLName: org.remoteclaw.ios
             CFBundleURLSchemes:
               - remoteclaw
-        CFBundleShortVersionString: "2026.2.26"
-        CFBundleVersion: "20260226"
+        CFBundleShortVersionString: "2026.3.1"
+        CFBundleVersion: "20260301"
         UILaunchScreen: {}
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
@@ -140,6 +143,7 @@ targets:
         CODE_SIGN_STYLE: "$(REMOTECLAW_CODE_SIGN_STYLE)"
         DEVELOPMENT_TEAM: "$(REMOTECLAW_DEVELOPMENT_TEAM)"
         ENABLE_APPINTENTS_METADATA: NO
+        ENABLE_APP_INTENTS_METADATA_GENERATION: NO
         PRODUCT_BUNDLE_IDENTIFIER: "$(REMOTECLAW_SHARE_BUNDLE_ID)"
         PROVISIONING_PROFILE_SPECIFIER: "$(REMOTECLAW_SHARE_PROFILE)"
         SWIFT_VERSION: "6.0"
@@ -148,8 +152,8 @@ targets:
       path: ShareExtension/Info.plist
       properties:
         CFBundleDisplayName: RemoteClaw Share
-        CFBundleShortVersionString: "2026.2.26"
-        CFBundleVersion: "20260226"
+        CFBundleShortVersionString: "2026.3.1"
+        CFBundleVersion: "20260301"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.share-services
           NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).ShareViewController"
@@ -174,13 +178,14 @@ targets:
     settings:
       base:
         ENABLE_APPINTENTS_METADATA: NO
+        ENABLE_APP_INTENTS_METADATA_GENERATION: NO
         PRODUCT_BUNDLE_IDENTIFIER: "$(REMOTECLAW_WATCH_APP_BUNDLE_ID)"
     info:
       path: WatchApp/Info.plist
       properties:
         CFBundleDisplayName: RemoteClaw
-        CFBundleShortVersionString: "2026.2.26"
-        CFBundleVersion: "20260226"
+        CFBundleShortVersionString: "2026.3.1"
+        CFBundleVersion: "20260301"
         WKCompanionAppBundleIdentifier: "$(REMOTECLAW_APP_BUNDLE_ID)"
         WKWatchKitApp: true
 
@@ -191,6 +196,7 @@ targets:
     sources:
       - path: WatchExtension/Sources
     dependencies:
+      - sdk: AppIntents.framework
       - sdk: WatchConnectivity.framework
       - sdk: UserNotifications.framework
     configFiles:
@@ -203,8 +209,8 @@ targets:
       path: WatchExtension/Info.plist
       properties:
         CFBundleDisplayName: RemoteClaw
-        CFBundleShortVersionString: "2026.2.26"
-        CFBundleVersion: "20260226"
+        CFBundleShortVersionString: "2026.3.1"
+        CFBundleVersion: "20260301"
         NSExtension:
           NSExtensionAttributes:
             WKAppBundleIdentifier: "$(REMOTECLAW_WATCH_APP_BUNDLE_ID)"
@@ -229,6 +235,7 @@ targets:
         CODE_SIGN_STYLE: "$(REMOTECLAW_CODE_SIGN_STYLE)"
         DEVELOPMENT_TEAM: "$(REMOTECLAW_DEVELOPMENT_TEAM)"
         PRODUCT_BUNDLE_IDENTIFIER: org.remoteclaw.ios.tests
+        ENABLE_APP_INTENTS_METADATA_GENERATION: NO
         SWIFT_VERSION: "6.0"
         SWIFT_STRICT_CONCURRENCY: complete
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/RemoteClaw.app/RemoteClaw"
@@ -237,5 +244,5 @@ targets:
       path: Tests/Info.plist
       properties:
         CFBundleDisplayName: RemoteClawTests
-        CFBundleShortVersionString: "2026.2.26"
-        CFBundleVersion: "20260226"
+        CFBundleShortVersionString: "2026.3.1"
+        CFBundleVersion: "20260301"

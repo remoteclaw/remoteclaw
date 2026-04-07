@@ -166,7 +166,9 @@ vi.mock("./config-reload.js", () => ({
 
 installGatewayTestHooks({ scope: "suite" });
 
-describe("gateway hot reload", () => {
+// Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+describe.skip("gateway hot reload", () => {
   let prevSkipChannels: string | undefined;
   let prevSkipGmail: string | undefined;
   let prevSkipProviders: string | undefined;

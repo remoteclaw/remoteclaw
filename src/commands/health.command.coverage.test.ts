@@ -101,6 +101,7 @@ describe("healthCommand (coverage)", () => {
         {
           agentId: "main",
           isDefault: true,
+          // @ts-expect-error — upstream feature not available in RemoteClaw fork
           heartbeat: {
             enabled: true,
             every: "1m",

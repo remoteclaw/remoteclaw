@@ -1,10 +1,36 @@
 import { setCliSessionId } from "../../agents/cli-session.js";
-// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
-import { isCliProvider } from "../../agents/provider-utils.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/context.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const resolveContextTokensForModel = (..._args: unknown[]) => undefined as any;
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/defaults.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const DEFAULT_CONTEXT_TOKENS = undefined as any;
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/model-selection.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const isCliProvider = (..._args: unknown[]) => undefined as any;
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
-import type { AgentDeliveryResult } from "../../middleware/types.js";
+import {
+  mergeSessionEntry,
+  setSessionRuntimeModel,
+  type SessionEntry,
+  updateSessionStore,
+} from "../../config/sessions.js";
+
+// Gutted in RemoteClaw fork (Middleware Boundary Principle) — pi-embedded removed
+type RunResult = {
+  meta?: {
+    agentMeta?: Record<string, unknown>;
+    durationMs?: number;
+    aborted?: boolean;
+    stopReason?: string;
+    autoCompactionCompleted?: boolean;
+  };
+  [key: string]: unknown;
+};
 
 export async function updateSessionStoreAfterAgentRun(params: {
   cfg: RemoteClawConfig;
@@ -17,7 +43,7 @@ export async function updateSessionStoreAfterAgentRun(params: {
   defaultModel: string;
   fallbackProvider?: string;
   fallbackModel?: string;
-  result: AgentDeliveryResult;
+  result: RunResult;
 }) {
   const {
     cfg,
@@ -32,20 +58,24 @@ export async function updateSessionStoreAfterAgentRun(params: {
     result,
   } = params;
 
-  const runUsage = result.run.usage;
-  // Map AgentUsage (inputTokens/outputTokens) to NormalizedUsage shape (input/output)
-  // used by the usage helper functions.
-  const usage = runUsage
-    ? {
-        input: runUsage.inputTokens,
-        output: runUsage.outputTokens,
-        cacheRead: runUsage.cacheReadTokens,
-        cacheWrite: runUsage.cacheWriteTokens,
-      }
-    : undefined;
-  const modelUsed = fallbackModel ?? defaultModel;
-  const providerUsed = fallbackProvider ?? defaultProvider;
-  const contextTokens = params.contextTokensOverride ?? 200_000;
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  const usage = result.meta.agentMeta?.usage;
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  const promptTokens = result.meta.agentMeta?.promptTokens;
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  const compactionsThisRun = Math.max(0, result.meta.agentMeta?.compactionCount ?? 0);
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  const modelUsed = result.meta.agentMeta?.model ?? fallbackModel ?? defaultModel;
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  const providerUsed = result.meta.agentMeta?.provider ?? fallbackProvider ?? defaultProvider;
+  const contextTokens =
+    resolveContextTokensForModel({
+      cfg,
+      provider: providerUsed,
+      model: modelUsed,
+      contextTokensOverride: params.contextTokensOverride,
+      fallbackContextTokens: DEFAULT_CONTEXT_TOKENS,
+    }) ?? DEFAULT_CONTEXT_TOKENS;
 
   const entry = sessionStore[sessionKey] ?? {
     sessionId,
@@ -57,32 +87,49 @@ export async function updateSessionStoreAfterAgentRun(params: {
     updatedAt: Date.now(),
     contextTokens,
   };
-  next.modelProvider = providerUsed;
-  next.model = modelUsed;
+  setSessionRuntimeModel(next, {
+    provider: providerUsed,
+    model: modelUsed,
+  });
   if (isCliProvider(providerUsed, cfg)) {
-    const cliSessionId = result.run.sessionId?.trim();
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
+    const cliSessionId = result.meta.agentMeta?.sessionId?.trim();
     if (cliSessionId) {
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       setCliSessionId(next, providerUsed, cliSessionId);
     }
   }
-  next.abortedLastRun = result.run.aborted ?? false;
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  next.abortedLastRun = result.meta.aborted ?? false;
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   if (hasNonzeroUsage(usage)) {
     const input = usage.input ?? 0;
     const output = usage.output ?? 0;
-    const totalTokens =
-      deriveSessionTotalTokens({
-        usage,
-        contextTokens,
-      }) ?? input;
+    const totalTokens = deriveSessionTotalTokens({
+      usage,
+      contextTokens,
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      promptTokens,
+    });
     next.inputTokens = input;
     next.outputTokens = output;
-    next.totalTokens = totalTokens;
-    next.totalTokensFresh = true;
+    if (typeof totalTokens === "number" && Number.isFinite(totalTokens) && totalTokens > 0) {
+      next.totalTokens = totalTokens;
+      next.totalTokensFresh = true;
+    } else {
+      next.totalTokens = undefined;
+      next.totalTokensFresh = false;
+    }
     next.cacheRead = usage.cacheRead ?? 0;
     next.cacheWrite = usage.cacheWrite ?? 0;
   }
-  sessionStore[sessionKey] = next;
-  await updateSessionStore(storePath, (store) => {
-    store[sessionKey] = next;
+  if (compactionsThisRun > 0) {
+    next.compactionCount = (entry.compactionCount ?? 0) + compactionsThisRun;
+  }
+  const persisted = await updateSessionStore(storePath, (store) => {
+    const merged = mergeSessionEntry(store[sessionKey], next);
+    store[sessionKey] = merged;
+    return merged;
   });
+  sessionStore[sessionKey] = persisted;
 }

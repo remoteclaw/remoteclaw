@@ -286,7 +286,9 @@ describe("monitorSignalProvider tool results", () => {
     ).resolves.toBeUndefined();
   });
 
-  it("skips tool summaries with responsePrefix", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("skips tool summaries with responsePrefix", async () => {
     replyMock.mockResolvedValue({ text: "final reply" });
 
     await receiveSignalPayloads({
@@ -437,7 +439,9 @@ describe("monitorSignalProvider tool results", () => {
     expect(events.some((text) => text.includes("Signal reaction added"))).toBe(true);
   });
 
-  it("processes messages when reaction metadata is present", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("processes messages when reaction metadata is present", async () => {
     replyMock.mockResolvedValue({ text: "pong" });
 
     await receiveSignalPayloads({

@@ -52,7 +52,23 @@ export type ModelProviderConfig = {
   apiKey?: SecretInput;
   auth?: ModelProviderAuthMode;
   api?: ModelApi;
+  injectNumCtxForOpenAICompat?: boolean;
   headers?: Record<string, string>;
   authHeader?: boolean;
   models: ModelDefinitionConfig[];
+};
+
+export type BedrockDiscoveryConfig = {
+  enabled?: boolean;
+  region?: string;
+  providerFilter?: string[];
+  refreshInterval?: number;
+  defaultContextWindow?: number;
+  defaultMaxTokens?: number;
+};
+
+export type ModelsConfig = {
+  mode?: "merge" | "replace";
+  providers?: Record<string, ModelProviderConfig>;
+  bedrockDiscovery?: BedrockDiscoveryConfig;
 };

@@ -4,12 +4,22 @@ import { parseDurationMs } from "../cli/parse-duration.js";
 import { ToolsSchema } from "./zod-schema.agent-runtime.js";
 import { AgentsSchema, AudioSchema, BindingsSchema, BroadcastSchema } from "./zod-schema.agents.js";
 import { ApprovalsSchema } from "./zod-schema.approvals.js";
-import { HexColorSchema } from "./zod-schema.core.js";
+import {
+  HexColorSchema,
+  ModelsConfigSchema,
+  SecretInputSchema,
+  SecretsConfigSchema,
+} from "./zod-schema.core.js";
 import { HookMappingSchema, HooksGmailSchema, InternalHooksSchema } from "./zod-schema.hooks.js";
 import { InstallRecordShape } from "./zod-schema.installs.js";
 import { ChannelsSchema } from "./zod-schema.providers.js";
 import { sensitive } from "./zod-schema.sensitive.js";
-import { CommandsSchema, MessagesSchema, SessionSchema } from "./zod-schema.session.js";
+import {
+  CommandsSchema,
+  MessagesSchema,
+  SessionSchema,
+  SessionSendPolicySchema,
+} from "./zod-schema.session.js";
 
 const BrowserSnapshotDefaultsSchema = z
   .object({
@@ -31,6 +41,52 @@ const NodeHostSchema = z
   .strict()
   .optional();
 
+const MemoryQmdPathSchema = z
+  .object({
+    path: z.string(),
+    name: z.string().optional(),
+    pattern: z.string().optional(),
+  })
+  .strict();
+
+const MemoryQmdSessionSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    exportDir: z.string().optional(),
+    retentionDays: z.number().int().nonnegative().optional(),
+  })
+  .strict();
+
+const MemoryQmdUpdateSchema = z
+  .object({
+    interval: z.string().optional(),
+    debounceMs: z.number().int().nonnegative().optional(),
+    onBoot: z.boolean().optional(),
+    waitForBootSync: z.boolean().optional(),
+    embedInterval: z.string().optional(),
+    commandTimeoutMs: z.number().int().nonnegative().optional(),
+    updateTimeoutMs: z.number().int().nonnegative().optional(),
+    embedTimeoutMs: z.number().int().nonnegative().optional(),
+  })
+  .strict();
+
+const MemoryQmdLimitsSchema = z
+  .object({
+    maxResults: z.number().int().positive().optional(),
+    maxSnippetChars: z.number().int().positive().optional(),
+    maxInjectedChars: z.number().int().positive().optional(),
+    timeoutMs: z.number().int().nonnegative().optional(),
+  })
+  .strict();
+
+const MemoryQmdMcporterSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    serverName: z.string().optional(),
+    startDaemon: z.boolean().optional(),
+  })
+  .strict();
+
 const LoggingLevelSchema = z.union([
   z.literal("silent"),
   z.literal("fatal"),
@@ -40,6 +96,29 @@ const LoggingLevelSchema = z.union([
   z.literal("debug"),
   z.literal("trace"),
 ]);
+
+const MemoryQmdSchema = z
+  .object({
+    command: z.string().optional(),
+    mcporter: MemoryQmdMcporterSchema.optional(),
+    searchMode: z.union([z.literal("query"), z.literal("search"), z.literal("vsearch")]).optional(),
+    includeDefaultMemory: z.boolean().optional(),
+    paths: z.array(MemoryQmdPathSchema).optional(),
+    sessions: MemoryQmdSessionSchema.optional(),
+    update: MemoryQmdUpdateSchema.optional(),
+    limits: MemoryQmdLimitsSchema.optional(),
+    scope: SessionSendPolicySchema.optional(),
+  })
+  .strict();
+
+const MemorySchema = z
+  .object({
+    backend: z.union([z.literal("builtin"), z.literal("qmd")]).optional(),
+    citations: z.union([z.literal("auto"), z.literal("on"), z.literal("off")]).optional(),
+    qmd: MemoryQmdSchema.optional(),
+  })
+  .strict()
+  .optional();
 
 const HttpUrlSchema = z
   .string()
@@ -100,6 +179,7 @@ export const RemoteClawSchema = z
       .object({
         enabled: z.boolean().optional(),
         flags: z.array(z.string()).optional(),
+        stuckSessionWarnMs: z.number().int().positive().optional(),
         otel: z
           .object({
             enabled: z.boolean().optional(),
@@ -144,7 +224,7 @@ export const RemoteClawSchema = z
       .optional(),
     update: z
       .object({
-        channel: z.union([z.literal("stable"), z.literal("beta"), z.literal("next")]).optional(),
+        channel: z.union([z.literal("stable"), z.literal("beta"), z.literal("dev")]).optional(),
         checkOnStart: z.boolean().optional(),
         auto: z
           .object({
@@ -215,6 +295,7 @@ export const RemoteClawSchema = z
       })
       .strict()
       .optional(),
+    secrets: SecretsConfigSchema,
     auth: z
       .object({
         profiles: z
@@ -242,6 +323,50 @@ export const RemoteClawSchema = z
       })
       .strict()
       .optional(),
+    acp: z
+      .object({
+        enabled: z.boolean().optional(),
+        dispatch: z
+          .object({
+            enabled: z.boolean().optional(),
+          })
+          .strict()
+          .optional(),
+        backend: z.string().optional(),
+        defaultAgent: z.string().optional(),
+        allowedAgents: z.array(z.string()).optional(),
+        maxConcurrentSessions: z.number().int().positive().optional(),
+        stream: z
+          .object({
+            coalesceIdleMs: z.number().int().nonnegative().optional(),
+            maxChunkChars: z.number().int().positive().optional(),
+            repeatSuppression: z.boolean().optional(),
+            deliveryMode: z.union([z.literal("live"), z.literal("final_only")]).optional(),
+            hiddenBoundarySeparator: z
+              .union([
+                z.literal("none"),
+                z.literal("space"),
+                z.literal("newline"),
+                z.literal("paragraph"),
+              ])
+              .optional(),
+            maxOutputChars: z.number().int().positive().optional(),
+            maxSessionUpdateChars: z.number().int().positive().optional(),
+            tagVisibility: z.record(z.string(), z.boolean()).optional(),
+          })
+          .strict()
+          .optional(),
+        runtime: z
+          .object({
+            ttlMinutes: z.number().int().positive().optional(),
+            installCommand: z.string().optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
+    models: ModelsConfigSchema,
     nodeHost: NodeHostSchema,
     agents: AgentsSchema,
     tools: ToolsSchema,
@@ -263,6 +388,17 @@ export const RemoteClawSchema = z
         enabled: z.boolean().optional(),
         store: z.string().optional(),
         maxConcurrentRuns: z.number().int().positive().optional(),
+        retry: z
+          .object({
+            maxAttempts: z.number().int().min(0).max(10).optional(),
+            backoffMs: z.array(z.number().int().nonnegative()).min(1).max(10).optional(),
+            retryOn: z
+              .array(z.enum(["rate_limit", "network", "timeout", "server_error"]))
+              .min(1)
+              .optional(),
+          })
+          .strict()
+          .optional(),
         webhook: HttpUrlSchema.optional(),
         webhookToken: z.string().optional().register(sensitive),
         sessionRetention: z.union([z.string(), z.literal(false)]).optional(),
@@ -270,6 +406,14 @@ export const RemoteClawSchema = z
           .object({
             maxBytes: z.union([z.string(), z.number()]).optional(),
             keepLines: z.number().int().positive().optional(),
+          })
+          .strict()
+          .optional(),
+        failureAlert: z
+          .object({
+            enabled: z.boolean().optional(),
+            after: z.number().int().min(1).optional(),
+            cooldownMs: z.number().int().min(0).optional(),
           })
           .strict()
           .optional(),
@@ -579,7 +723,53 @@ export const RemoteClawSchema = z
       })
       .strict()
       .optional(),
-    memory: z.unknown().optional(),
+    memory: MemorySchema,
+    skills: z
+      .object({
+        allowBundled: z.array(z.string()).optional(),
+        load: z
+          .object({
+            extraDirs: z.array(z.string()).optional(),
+            watch: z.boolean().optional(),
+            watchDebounceMs: z.number().int().min(0).optional(),
+          })
+          .strict()
+          .optional(),
+        install: z
+          .object({
+            preferBrew: z.boolean().optional(),
+            nodeManager: z
+              .union([z.literal("npm"), z.literal("pnpm"), z.literal("yarn"), z.literal("bun")])
+              .optional(),
+          })
+          .strict()
+          .optional(),
+        limits: z
+          .object({
+            maxCandidatesPerRoot: z.number().int().min(1).optional(),
+            maxSkillsLoadedPerSource: z.number().int().min(1).optional(),
+            maxSkillsInPrompt: z.number().int().min(0).optional(),
+            maxSkillsPromptChars: z.number().int().min(0).optional(),
+            maxSkillFileBytes: z.number().int().min(0).optional(),
+          })
+          .strict()
+          .optional(),
+        entries: z
+          .record(
+            z.string(),
+            z
+              .object({
+                enabled: z.boolean().optional(),
+                apiKey: SecretInputSchema.optional().register(sensitive),
+                env: z.record(z.string(), z.string()).optional(),
+                config: z.record(z.string(), z.unknown()).optional(),
+              })
+              .strict(),
+          )
+          .optional(),
+      })
+      .strict()
+      .optional(),
     plugins: z
       .object({
         enabled: z.boolean().optional(),

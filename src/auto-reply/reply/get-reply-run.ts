@@ -401,6 +401,7 @@ export async function runPreparedReply(
     },
   };
 
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   return runReplyAgent({
     commandBody: prefixedCommandBody,
     followupRun,

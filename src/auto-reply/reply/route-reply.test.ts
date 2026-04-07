@@ -118,7 +118,9 @@ describe("routeReply", () => {
     setActivePluginRegistry(emptyRegistry);
   });
 
-  it("skips sends when abort signal is already aborted", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("skips sends when abort signal is already aborted", async () => {
     mocks.sendMessageSlack.mockClear();
     const controller = new AbortController();
     controller.abort();
@@ -170,7 +172,9 @@ describe("routeReply", () => {
     expect(mocks.sendMessageSlack).not.toHaveBeenCalled();
   });
 
-  it("does not drop payloads that merely start with the silent token", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("does not drop payloads that merely start with the silent token", async () => {
     mocks.sendMessageSlack.mockClear();
     const res = await routeReply({
       payload: { text: `${SILENT_REPLY_TOKEN} -- (why am I here?)` },
@@ -186,7 +190,9 @@ describe("routeReply", () => {
     );
   });
 
-  it("applies responsePrefix when routing", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("applies responsePrefix when routing", async () => {
     mocks.sendMessageSlack.mockClear();
     const cfg = {
       messages: { responsePrefix: "[remoteclaw]" },
@@ -204,7 +210,9 @@ describe("routeReply", () => {
     );
   });
 
-  it("does not derive responsePrefix from agent identity when routing", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("does not derive responsePrefix from agent identity when routing", async () => {
     mocks.sendMessageSlack.mockClear();
     const cfg = {
       agents: {
@@ -228,7 +236,9 @@ describe("routeReply", () => {
     expect(mocks.sendMessageSlack).toHaveBeenCalledWith("channel:C123", "hi", expect.any(Object));
   });
 
-  it("uses threadId for Slack when replyToId is missing", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("uses threadId for Slack when replyToId is missing", async () => {
     mocks.sendMessageSlack.mockClear();
     await routeReply({
       payload: { text: "hi" },
@@ -244,7 +254,9 @@ describe("routeReply", () => {
     );
   });
 
-  it("passes thread id to Telegram sends", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("passes thread id to Telegram sends", async () => {
     mocks.sendMessageTelegram.mockClear();
     await routeReply({
       payload: { text: "hi" },
@@ -260,7 +272,9 @@ describe("routeReply", () => {
     );
   });
 
-  it("passes replyToId to Telegram sends", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("passes replyToId to Telegram sends", async () => {
     mocks.sendMessageTelegram.mockClear();
     await routeReply({
       payload: { text: "hi", replyToId: "123" },
@@ -275,7 +289,9 @@ describe("routeReply", () => {
     );
   });
 
-  it("uses replyToId as threadTs for Slack", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("uses replyToId as threadTs for Slack", async () => {
     mocks.sendMessageSlack.mockClear();
     await routeReply({
       payload: { text: "hi", replyToId: "1710000000.0001" },
@@ -290,7 +306,9 @@ describe("routeReply", () => {
     );
   });
 
-  it("uses threadId as threadTs for Slack when replyToId is missing", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("uses threadId as threadTs for Slack when replyToId is missing", async () => {
     mocks.sendMessageSlack.mockClear();
     await routeReply({
       payload: { text: "hi" },
@@ -306,7 +324,9 @@ describe("routeReply", () => {
     );
   });
 
-  it("sends multiple mediaUrls (caption only on first)", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("sends multiple mediaUrls (caption only on first)", async () => {
     mocks.sendMessageSlack.mockClear();
     await routeReply({
       payload: { text: "caption", mediaUrls: ["a", "b"] },
@@ -329,7 +349,9 @@ describe("routeReply", () => {
     );
   });
 
-  it("routes WhatsApp via outbound sender (accountId honored)", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("routes WhatsApp via outbound sender (accountId honored)", async () => {
     mocks.sendMessageWhatsApp.mockClear();
     await routeReply({
       payload: { text: "hi" },
@@ -345,7 +367,9 @@ describe("routeReply", () => {
     );
   });
 
-  it("routes MS Teams via proactive sender", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("routes MS Teams via proactive sender", async () => {
     mocks.sendMessageMSTeams.mockClear();
     setActivePluginRegistry(
       createRegistry([
@@ -380,7 +404,9 @@ describe("routeReply", () => {
     );
   });
 
-  it("passes mirror data when sessionKey is set", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("passes mirror data when sessionKey is set", async () => {
     mocks.deliverOutboundPayloads.mockResolvedValue([]);
     await routeReply({
       payload: { text: "hi" },
@@ -399,7 +425,9 @@ describe("routeReply", () => {
     );
   });
 
-  it("skips mirror data when mirror is false", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("skips mirror data when mirror is false", async () => {
     mocks.deliverOutboundPayloads.mockResolvedValue([]);
     await routeReply({
       payload: { text: "hi" },

@@ -278,7 +278,9 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     expect(extractFirstTextBlock(chatCall?.[1])).toBe("");
   });
 
-  it("chat.send non-streaming final keeps message defined for directive-only assistant text", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("chat.send non-streaming final keeps message defined for directive-only assistant text", async () => {
     createTranscriptFixture("remoteclaw-chat-send-directive-only-");
     mockState.finalText = "[[reply_to_current]]";
     const respond = vi.fn();
@@ -323,7 +325,9 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     expect(extractFirstTextBlock(chatCall?.[1])).toBe("hello");
   });
 
-  it("chat.send non-streaming final strips external untrusted wrapper metadata from final payload text", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("chat.send non-streaming final strips external untrusted wrapper metadata from final payload text", async () => {
     createTranscriptFixture("remoteclaw-chat-send-untrusted-meta-");
     mockState.finalText = `hello\n\n${UNTRUSTED_CONTEXT_SUFFIX}`;
     const respond = vi.fn();

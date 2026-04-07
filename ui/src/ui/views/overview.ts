@@ -1,6 +1,6 @@
 import { html } from "lit";
 import { ConnectErrorDetailCodes } from "../../../../src/gateway/protocol/connect-error-details.js";
-import { t, i18n, type Locale } from "../../i18n/index.ts";
+import { t, i18n, SUPPORTED_LOCALES, type Locale } from "../../i18n/index.ts";
 import { buildExternalLinkRel, EXTERNAL_LINK_TARGET } from "../external-link.ts";
 import { formatRelativeTimestamp, formatDurationHuman } from "../format.ts";
 import type { GatewayHelloOk } from "../gateway.ts";
@@ -59,7 +59,7 @@ export function renderOverview(props: OverviewProps) {
         <div style="margin-top: 6px">
           <a
             class="session-link"
-            href="https://docs.remoteclaw.org/web/control-ui#device-pairing-first-connection"
+            href="https://docs.remoteclaw.ai/web/control-ui#device-pairing-first-connection"
             target=${EXTERNAL_LINK_TARGET}
             rel=${buildExternalLinkRel()}
             title="Device pairing docs (opens in new tab)"
@@ -116,7 +116,7 @@ export function renderOverview(props: OverviewProps) {
           <div style="margin-top: 6px">
             <a
               class="session-link"
-              href="https://docs.remoteclaw.org/web/dashboard"
+              href="https://docs.remoteclaw.ai/web/dashboard"
               target=${EXTERNAL_LINK_TARGET}
               rel=${buildExternalLinkRel()}
               title="Control UI auth docs (opens in new tab)"
@@ -132,7 +132,7 @@ export function renderOverview(props: OverviewProps) {
         <div style="margin-top: 6px">
           <a
             class="session-link"
-            href="https://docs.remoteclaw.org/web/dashboard"
+            href="https://docs.remoteclaw.ai/web/dashboard"
             target=${EXTERNAL_LINK_TARGET}
             rel=${buildExternalLinkRel()}
             title="Control UI auth docs (opens in new tab)"
@@ -171,7 +171,7 @@ export function renderOverview(props: OverviewProps) {
         <div style="margin-top: 6px">
           <a
             class="session-link"
-            href="https://docs.remoteclaw.org/gateway/tailscale"
+            href="https://docs.remoteclaw.ai/gateway/tailscale"
             target=${EXTERNAL_LINK_TARGET}
             rel=${buildExternalLinkRel()}
             title="Tailscale Serve docs (opens in new tab)"
@@ -180,7 +180,7 @@ export function renderOverview(props: OverviewProps) {
           <span class="muted"> · </span>
           <a
             class="session-link"
-            href="https://docs.remoteclaw.org/web/control-ui#insecure-http"
+            href="https://docs.remoteclaw.ai/web/control-ui#insecure-http"
             target=${EXTERNAL_LINK_TARGET}
             rel=${buildExternalLinkRel()}
             title="Insecure HTTP docs (opens in new tab)"
@@ -259,10 +259,10 @@ export function renderOverview(props: OverviewProps) {
                 props.onSettingsChange({ ...props.settings, locale: v });
               }}
             >
-              <option value="en">${t("languages.en")}</option>
-              <option value="zh-CN">${t("languages.zhCN")}</option>
-              <option value="zh-TW">${t("languages.zhTW")}</option>
-              <option value="pt-BR">${t("languages.ptBR")}</option>
+              ${SUPPORTED_LOCALES.map((loc) => {
+                const key = loc.replace(/-([a-zA-Z])/g, (_, c) => c.toUpperCase());
+                return html`<option value=${loc}>${t(`languages.${key}`)}</option>`;
+              })}
             </select>
           </label>
         </div>

@@ -23,7 +23,7 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
   - [It is stuck on "wake up my friend" / onboarding will not hatch. What now?](#it-is-stuck-on-wake-up-my-friend-onboarding-will-not-hatch-what-now)
   - [Can I migrate my setup to a new machine (Mac mini) without redoing onboarding?](#can-i-migrate-my-setup-to-a-new-machine-mac-mini-without-redoing-onboarding)
   - [Where do I see what is new in the latest version?](#where-do-i-see-what-is-new-in-the-latest-version)
-  - [I can't access docs.remoteclaw.org (SSL error). What now?](#i-cant-access-docsremoteclawai-ssl-error-what-now)
+  - [I can't access docs.remoteclaw.ai (SSL error). What now?](#i-cant-access-docsremoteclawai-ssl-error-what-now)
   - [What's the difference between stable and beta?](#whats-the-difference-between-stable-and-beta)
   - [How do I install the beta version, and what's the difference between beta and dev?](#how-do-i-install-the-beta-version-and-whats-the-difference-between-beta-and-dev)
   - [How do I try the latest bits?](#how-do-i-try-the-latest-bits)
@@ -279,7 +279,7 @@ setup (PATH, services, permissions, auth files). Give them the **full source che
 the hackable (git) install:
 
 ```bash
-curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --install-method git
+curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --install-method git
 ```
 
 This installs RemoteClaw **from a git checkout**, so the agent can read the code + docs and
@@ -318,7 +318,7 @@ Install docs: [Install](/install), [Installer flags](/install/installer), [Updat
 The repo recommends running from source and using the onboarding wizard:
 
 ```bash
-curl -fsSL https://remoteclaw.org/install.sh | bash
+curl -fsSL https://remoteclaw.ai/install.sh | bash
 remoteclaw onboard --install-daemon
 ```
 
@@ -443,10 +443,10 @@ Newest entries are at the top. If the top section is marked **Unreleased**, the 
 section is the latest shipped version. Entries are grouped by **Highlights**, **Changes**, and
 **Fixes** (plus docs/other sections when needed).
 
-### I can't access docs.remoteclaw.org SSL error What now
+### I can't access docs.remoteclaw.ai SSL error What now
 
-Some Comcast/Xfinity connections incorrectly block `docs.remoteclaw.org` via Xfinity
-Advanced Security. Disable it or allowlist `docs.remoteclaw.org`, then retry. More
+Some Comcast/Xfinity connections incorrectly block `docs.remoteclaw.ai` via Xfinity
+Advanced Security. Disable it or allowlist `docs.remoteclaw.ai`, then retry. More
 detail: [Troubleshooting](/help/troubleshooting#docsremoteclawai-shows-an-ssl-error-comcastxfinity).
 Please help us unblock it by reporting here: [https://spa.xfinity.com/check_url_status](https://spa.xfinity.com/check_url_status).
 
@@ -475,15 +475,15 @@ See what changed:
 One-liners (macOS/Linux):
 
 ```bash
-curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s -- --beta
+curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.ai/install.sh | bash -s -- --beta
 ```
 
 ```bash
-curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s -- --install-method git
+curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.ai/install.sh | bash -s -- --install-method git
 ```
 
 Windows installer (PowerShell):
-[https://remoteclaw.org/install.ps1](https://remoteclaw.org/install.ps1)
+[https://remoteclaw.ai/install.ps1](https://remoteclaw.ai/install.ps1)
 
 More detail: [Development channels](/install/development-channels) and [Installer flags](/install/installer).
 
@@ -512,7 +512,7 @@ This switches to the `main` branch and updates from source.
 2. **Hackable install (from the installer site):**
 
 ```bash
-curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --install-method git
+curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --install-method git
 ```
 
 That gives you a local repo you can edit, then update via git.
@@ -534,19 +534,19 @@ Docs: [Update](/cli/update), [Development channels](/install/development-channel
 Re-run the installer with **verbose output**:
 
 ```bash
-curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --verbose
+curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --verbose
 ```
 
 Beta install with verbose:
 
 ```bash
-curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --beta --verbose
+curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --beta --verbose
 ```
 
 For a hackable (git) install:
 
 ```bash
-curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --install-method git --verbose
+curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --install-method git --verbose
 ```
 
 Windows (PowerShell) equivalent:
@@ -554,7 +554,7 @@ Windows (PowerShell) equivalent:
 ```powershell
 # install.ps1 has no dedicated -Verbose flag yet.
 Set-PSDebug -Trace 1
-& ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1))) -NoOnboard
+& ([scriptblock]::Create((iwr -useb https://remoteclaw.ai/install.ps1))) -NoOnboard
 Set-PSDebug -Trace 0
 ```
 
@@ -590,7 +590,7 @@ Use the **hackable (git) install** so you have the full source and docs locally,
 your bot (or Claude/Codex) _from that folder_ so it can read the repo and answer precisely.
 
 ```bash
-curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --install-method git
+curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --install-method git
 ```
 
 More detail: [Install](/install) and [Installer flags](/install/installer).
@@ -714,8 +714,15 @@ use a **Claude subscription** (setup-token or Claude Code OAuth), wait for the w
 reset or upgrade your plan. If you use an **Anthropic API key**, check the Anthropic Console
 for usage/billing and raise limits as needed.
 
+If the message is specifically:
+`Extra usage is required for long context requests`, the request is trying to use
+Anthropic's 1M context beta (`context1m: true`). That only works when your
+credential is eligible for long-context billing (API key billing or subscription
+with Extra Usage enabled).
+
 Tip: set a **fallback model** so RemoteClaw can keep replying while a provider is rate-limited.
-See [Models](/cli/models) and [OAuth](/concepts/oauth).
+See [Models](/cli/models), [OAuth](/concepts/oauth), and
+[/gateway/troubleshooting#anthropic-429-extra-usage-required-for-long-context](/gateway/troubleshooting#anthropic-429-extra-usage-required-for-long-context).
 
 ### Is AWS Bedrock supported
 
@@ -1006,7 +1013,7 @@ Advantages:
 - **Always-on Gateway** (run on a VPS, interact from anywhere)
 - **Nodes** for local browser/screen/camera/exec
 
-Showcase: [https://remoteclaw.org/showcase](https://remoteclaw.org/showcase)
+Showcase: [https://remoteclaw.ai/showcase](https://remoteclaw.ai/showcase)
 
 ## Skills and automation
 
@@ -1050,13 +1057,13 @@ Basic flow:
 - Spawn with `sessions_spawn` using `thread: true` (and optionally `mode: "session"` for persistent follow-up).
 - Or manually bind with `/focus <target>`.
 - Use `/agents` to inspect binding state.
-- Use `/session ttl <duration|off>` to control auto-unfocus.
+- Use `/session idle <duration|off>` and `/session max-age <duration|off>` to control auto-unfocus.
 - Use `/unfocus` to detach the thread.
 
 Required config:
 
-- Global defaults: `session.threadBindings.enabled`, `session.threadBindings.ttlHours`.
-- Discord overrides: `channels.discord.threadBindings.enabled`, `channels.discord.threadBindings.ttlHours`.
+- Global defaults: `session.threadBindings.enabled`, `session.threadBindings.idleHours`, `session.threadBindings.maxAgeHours`.
+- Discord overrides: `channels.discord.threadBindings.enabled`, `channels.discord.threadBindings.idleHours`, `channels.discord.threadBindings.maxAgeHours`.
 - Auto-bind on spawn: set `channels.discord.threadBindings.spawnSubagentSessions: true`.
 
 Docs: [Sub-agents](/tools/subagents), [Discord](/channels/discord), [Configuration Reference](/gateway/configuration-reference), [Slash commands](/tools/slash-commands).

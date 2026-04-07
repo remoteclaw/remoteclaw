@@ -25,9 +25,7 @@ vi.mock("../web/media.js", () => ({
 }));
 
 const { loadConfig } = vi.hoisted((): { loadConfig: AnyMock } => ({
-  loadConfig: vi.fn(() => ({
-    agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
-  })),
+  loadConfig: vi.fn(() => ({})),
 }));
 
 export function getLoadConfigMock(): AnyMock {
@@ -75,6 +73,15 @@ vi.mock("../pairing/pairing-store.js", () => ({
   upsertChannelPairingRequest,
 }));
 
+const skillCommandsHoisted = vi.hoisted(() => ({
+  listSkillCommandsForAgents: vi.fn(() => []),
+}));
+export const listSkillCommandsForAgents = skillCommandsHoisted.listSkillCommandsForAgents;
+
+vi.mock("../auto-reply/skill-commands.js", () => ({
+  listSkillCommandsForAgents,
+}));
+
 const systemEventsHoisted = vi.hoisted(() => ({
   enqueueSystemEventSpy: vi.fn(),
 }));
@@ -113,6 +120,7 @@ export const getMeSpy: AnyAsyncMock = vi.fn(async () => ({
 export const sendMessageSpy: AnyAsyncMock = vi.fn(async () => ({ message_id: 77 }));
 export const sendAnimationSpy: AnyAsyncMock = vi.fn(async () => ({ message_id: 78 }));
 export const sendPhotoSpy: AnyAsyncMock = vi.fn(async () => ({ message_id: 79 }));
+export const getFileSpy: AnyAsyncMock = vi.fn(async () => ({ file_path: "media/file.jpg" }));
 
 type ApiStub = {
   config: { use: (arg: unknown) => void };
@@ -125,6 +133,7 @@ type ApiStub = {
   sendMessage: typeof sendMessageSpy;
   sendAnimation: typeof sendAnimationSpy;
   sendPhoto: typeof sendPhotoSpy;
+  getFile: typeof getFileSpy;
 };
 
 const apiStub: ApiStub = {
@@ -138,6 +147,7 @@ const apiStub: ApiStub = {
   sendMessage: sendMessageSpy,
   sendAnimation: sendAnimationSpy,
   sendPhoto: sendPhotoSpy,
+  getFile: getFileSpy,
 };
 
 vi.mock("grammy", () => ({
@@ -257,7 +267,6 @@ beforeEach(() => {
       defaults: {
         envelopeTimezone: "utc",
       },
-      list: [{ id: "main", workspace: "/tmp/test-workspace" }],
     },
     channels: {
       telegram: { dmPolicy: "open", allowFrom: ["*"] },
@@ -284,6 +293,8 @@ beforeEach(() => {
   sendPhotoSpy.mockResolvedValue({ message_id: 79 });
   sendMessageSpy.mockReset();
   sendMessageSpy.mockResolvedValue({ message_id: 77 });
+  getFileSpy.mockReset();
+  getFileSpy.mockResolvedValue({ file_path: "media/file.jpg" });
 
   setMessageReactionSpy.mockReset();
   setMessageReactionSpy.mockResolvedValue(undefined);
@@ -303,7 +314,8 @@ beforeEach(() => {
   enqueueSystemEventSpy.mockReset();
   wasSentByBot.mockReset();
   wasSentByBot.mockReturnValue(false);
-
+  listSkillCommandsForAgents.mockReset();
+  listSkillCommandsForAgents.mockReturnValue([]);
   middlewareUseSpy.mockReset();
   sequentializeSpy.mockReset();
   botCtorSpy.mockReset();

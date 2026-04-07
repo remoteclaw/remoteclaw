@@ -1,5 +1,5 @@
 ---
-description: "Agent session tools for listing sessions, fetching history, and sending cross-session messages"
+summary: "Agent session tools for listing sessions, fetching history, and sending cross-session messages"
 read_when:
   - Adding or modifying session tools
 title: "Session Tools"
@@ -51,8 +51,8 @@ Row shape (JSON):
 - `displayName` (group display label if available)
 - `updatedAt` (ms)
 - `sessionId`
-- `runtime`, `contextTokens`, `totalTokens`
-- `verboseLevel`, `systemSent`, `abortedLastRun`
+- `model`, `contextTokens`, `totalTokens`
+- `thinkingLevel`, `verboseLevel`, `systemSent`, `abortedLastRun`
 - `sendPolicy` (session override if set)
 - `lastChannel`, `lastTo`
 - `deliveryContext` (normalized `{ channel, to, accountId }` when available)
@@ -150,16 +150,18 @@ Parameters:
 - `task` (required)
 - `label?` (optional; used for logs/UI)
 - `agentId?` (optional; spawn under another agent id if allowed)
-- `model?` (optional; forwarded to the CLI agent as a model hint)
+- `model?` (optional; overrides the sub-agent model; invalid values error)
 - `thinking?` (optional; overrides thinking level for the sub-agent run)
 - `runTimeoutSeconds?` (defaults to `agents.defaults.subagents.runTimeoutSeconds` when set, otherwise `0`; when set, aborts the sub-agent run after N seconds)
 - `thread?` (default false; request thread-bound routing for this spawn when supported by the channel/plugin)
 - `mode?` (`run|session`; defaults to `run`, but defaults to `session` when `thread=true`; `mode="session"` requires `thread=true`)
 - `cleanup?` (`delete|keep`, default `keep`)
+- `sandbox?` (`inherit|require`, default `inherit`; `require` rejects spawn unless the target child runtime is sandboxed)
 
 Allowlist:
 
 - `agents.list[].subagents.allowAgents`: list of agent ids allowed via `agentId` (`["*"]` to allow any). Default: only the requester agent.
+- Sandbox inheritance guard: if the requester session is sandboxed, `sessions_spawn` rejects targets that would run unsandboxed.
 
 Discovery:
 

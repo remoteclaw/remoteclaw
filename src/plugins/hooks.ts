@@ -12,7 +12,6 @@ import type {
   PluginHookAgentEndEvent,
   PluginHookAfterRuntimeExitEvent,
   PluginHookBeforeResetEvent,
-  PluginHookBeforeRuntimeSpawnEvent,
   PluginHookBeforeRuntimeSpawnResult,
   PluginHookBeforeToolCallEvent,
   PluginHookBeforeToolCallResult,
@@ -26,10 +25,8 @@ import type {
   PluginHookMessageSentEvent,
   PluginHookName,
   PluginHookRegistration,
-  PluginHookRuntimeContext,
   PluginHookSessionContext,
   PluginHookSessionEndEvent,
-  PluginHookSessionResumedEvent,
   PluginHookSessionStartEvent,
   PluginHookSubagentContext,
   PluginHookSubagentDeliveryTargetEvent,
@@ -45,11 +42,14 @@ import type {
 
 // Re-export types for consumers
 export type {
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   PluginHookAgentContext,
   PluginHookAgentEndEvent,
   PluginHookAfterRuntimeExitEvent,
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   PluginHookBeforeResetEvent,
-  PluginHookBeforeRuntimeSpawnEvent,
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  PluginHookBeforeResetEvent,
   PluginHookBeforeRuntimeSpawnResult,
   PluginHookMessageContext,
   PluginHookMessageReceivedEvent,
@@ -62,10 +62,13 @@ export type {
   PluginHookAfterToolCallEvent,
   PluginHookBeforeMessageWriteEvent,
   PluginHookBeforeMessageWriteResult,
-  PluginHookRuntimeContext,
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  PluginHookAgentContext,
   PluginHookSessionContext,
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   PluginHookSessionEndEvent,
-  PluginHookSessionResumedEvent,
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  PluginHookSessionEndEvent,
   PluginHookSessionStartEvent,
   PluginHookSubagentContext,
   PluginHookSubagentDeliveryTargetEvent,
@@ -509,8 +512,8 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
    * Runs sequentially (modifiable).
    */
   async function runBeforeRuntimeSpawn(
-    event: PluginHookBeforeRuntimeSpawnEvent,
-    ctx: PluginHookRuntimeContext,
+    event: PluginHookBeforeResetEvent,
+    ctx: PluginHookAgentContext,
   ): Promise<PluginHookBeforeRuntimeSpawnResult | undefined> {
     return runModifyingHook<"before_runtime_spawn", PluginHookBeforeRuntimeSpawnResult>(
       "before_runtime_spawn",
@@ -530,7 +533,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
    */
   async function runAfterRuntimeExit(
     event: PluginHookAfterRuntimeExitEvent,
-    ctx: PluginHookRuntimeContext,
+    ctx: PluginHookAgentContext,
   ): Promise<void> {
     return runVoidHook("after_runtime_exit", event, ctx);
   }
@@ -541,9 +544,10 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
    * Runs in parallel (fire-and-forget).
    */
   async function runSessionResumed(
-    event: PluginHookSessionResumedEvent,
-    ctx: PluginHookRuntimeContext,
+    event: PluginHookSessionEndEvent,
+    ctx: PluginHookAgentContext,
   ): Promise<void> {
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     return runVoidHook("session_resumed", event, ctx);
   }
 
@@ -554,7 +558,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
    */
   async function runAgentEnd(
     event: PluginHookAgentEndEvent,
-    ctx: PluginHookRuntimeContext,
+    ctx: PluginHookAgentContext,
   ): Promise<void> {
     return runVoidHook("agent_end", event, ctx);
   }

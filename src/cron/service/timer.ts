@@ -1,3 +1,4 @@
+import type { CronConfig, CronRetryOn } from "../../config/types.cron.js";
 import type { HeartbeatRunResult } from "../../infra/heartbeat-wake.js";
 import { DEFAULT_AGENT_ID } from "../../routing/session-key.js";
 import { resolveCronDeliveryPlan } from "../delivery.js";
@@ -5,6 +6,7 @@ import { sweepCronRunSessions } from "../session-reaper.js";
 import type {
   CronDeliveryStatus,
   CronJob,
+  CronMessageChannel,
   CronRunOutcome,
   CronRunStatus,
   CronRunTelemetry,
@@ -29,6 +31,8 @@ const MAX_TIMER_DELAY_MS = 60_000;
  * but always breaks an infinite re-trigger cycle.  (See #17821)
  */
 const MIN_REFIRE_GAP_MS = 2_000;
+const DEFAULT_FAILURE_ALERT_AFTER = 2;
+const DEFAULT_FAILURE_ALERT_COOLDOWN_MS = 60 * 60_000; // 1 hour
 
 /**
  * Maximum wall-clock time for a single job execution. Acts as a safety net
@@ -106,7 +110,7 @@ function isAbortError(err: unknown): boolean {
  * Exponential backoff delays (in ms) indexed by consecutive error count.
  * After the last entry the delay stays constant.
  */
-const ERROR_BACKOFF_SCHEDULE_MS = [
+const DEFAULT_BACKOFF_SCHEDULE_MS = [
   30_000, // 1st error  →  30 s
   60_000, // 2nd error  →   1 min
   5 * 60_000, // 3rd error  →   5 min
@@ -114,9 +118,43 @@ const ERROR_BACKOFF_SCHEDULE_MS = [
   60 * 60_000, // 5th+ error →  60 min
 ];
 
-function errorBackoffMs(consecutiveErrors: number): number {
-  const idx = Math.min(consecutiveErrors - 1, ERROR_BACKOFF_SCHEDULE_MS.length - 1);
-  return ERROR_BACKOFF_SCHEDULE_MS[Math.max(0, idx)];
+function errorBackoffMs(
+  consecutiveErrors: number,
+  scheduleMs = DEFAULT_BACKOFF_SCHEDULE_MS,
+): number {
+  const idx = Math.min(consecutiveErrors - 1, scheduleMs.length - 1);
+  return scheduleMs[Math.max(0, idx)];
+}
+
+/** Default max retries for one-shot jobs on transient errors (#24355). */
+const DEFAULT_MAX_TRANSIENT_RETRIES = 3;
+
+const TRANSIENT_PATTERNS: Record<string, RegExp> = {
+  rate_limit: /(rate[_ ]limit|too many requests|429|resource has been exhausted|cloudflare)/i,
+  network: /(network|econnreset|econnrefused|fetch failed|socket)/i,
+  timeout: /(timeout|etimedout)/i,
+  server_error: /\b5\d{2}\b/,
+};
+
+function _isTransientCronError(error: string | undefined, retryOn?: CronRetryOn[]): boolean {
+  if (!error || typeof error !== "string") {
+    return false;
+  }
+  const keys = retryOn?.length ? retryOn : (Object.keys(TRANSIENT_PATTERNS) as CronRetryOn[]);
+  return keys.some((k) => TRANSIENT_PATTERNS[k]?.test(error));
+}
+
+function _resolveRetryConfig(cronConfig?: CronConfig) {
+  const retry = cronConfig?.retry;
+  return {
+    maxAttempts:
+      typeof retry?.maxAttempts === "number" ? retry.maxAttempts : DEFAULT_MAX_TRANSIENT_RETRIES,
+    backoffMs:
+      Array.isArray(retry?.backoffMs) && retry.backoffMs.length > 0
+        ? retry.backoffMs
+        : DEFAULT_BACKOFF_SCHEDULE_MS.slice(0, 3),
+    retryOn: Array.isArray(retry?.retryOn) && retry.retryOn.length > 0 ? retry.retryOn : undefined,
+  };
 }
 
 function resolveDeliveryStatus(params: { job: CronJob; delivered?: boolean }): CronDeliveryStatus {
@@ -127,6 +165,106 @@ function resolveDeliveryStatus(params: { job: CronJob; delivered?: boolean }): C
     return "not-delivered";
   }
   return resolveCronDeliveryPlan(params.job).requested ? "unknown" : "not-requested";
+}
+
+function normalizeCronMessageChannel(input: unknown): CronMessageChannel | undefined {
+  if (typeof input !== "string") {
+    return undefined;
+  }
+  const channel = input.trim().toLowerCase();
+  return channel ? (channel as CronMessageChannel) : undefined;
+}
+
+function normalizeTo(input: unknown): string | undefined {
+  if (typeof input !== "string") {
+    return undefined;
+  }
+  const to = input.trim();
+  return to ? to : undefined;
+}
+
+function clampPositiveInt(value: unknown, fallback: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return fallback;
+  }
+  const floored = Math.floor(value);
+  return floored >= 1 ? floored : fallback;
+}
+
+function clampNonNegativeInt(value: unknown, fallback: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return fallback;
+  }
+  const floored = Math.floor(value);
+  return floored >= 0 ? floored : fallback;
+}
+
+function _resolveFailureAlert(
+  state: CronServiceState,
+  job: CronJob,
+): { after: number; cooldownMs: number; channel: CronMessageChannel; to?: string } | null {
+  const globalConfig = state.deps.cronConfig?.failureAlert;
+  const jobConfig = job.failureAlert === false ? undefined : job.failureAlert;
+
+  if (job.failureAlert === false) {
+    return null;
+  }
+  if (!jobConfig && globalConfig?.enabled !== true) {
+    return null;
+  }
+
+  return {
+    after: clampPositiveInt(jobConfig?.after ?? globalConfig?.after, DEFAULT_FAILURE_ALERT_AFTER),
+    cooldownMs: clampNonNegativeInt(
+      jobConfig?.cooldownMs ?? globalConfig?.cooldownMs,
+      DEFAULT_FAILURE_ALERT_COOLDOWN_MS,
+    ),
+    channel:
+      normalizeCronMessageChannel(jobConfig?.channel) ??
+      normalizeCronMessageChannel(job.delivery?.channel) ??
+      "last",
+    to: normalizeTo(jobConfig?.to) ?? normalizeTo(job.delivery?.to),
+  };
+}
+
+function _emitFailureAlert(
+  state: CronServiceState,
+  params: {
+    job: CronJob;
+    error?: string;
+    consecutiveErrors: number;
+    channel: CronMessageChannel;
+    to?: string;
+  },
+) {
+  const safeJobName = params.job.name || params.job.id;
+  const truncatedError = (params.error?.trim() || "unknown error").slice(0, 200);
+  const text = [
+    `Cron job "${safeJobName}" failed ${params.consecutiveErrors} times`,
+    `Last error: ${truncatedError}`,
+  ].join("\n");
+
+  if (state.deps.sendCronFailureAlert) {
+    void state.deps
+      .sendCronFailureAlert({
+        job: params.job,
+        text,
+        channel: params.channel,
+        to: params.to,
+      })
+      .catch((err) => {
+        state.deps.log.warn(
+          { jobId: params.job.id, err: String(err) },
+          "cron: failure alert delivery failed",
+        );
+      });
+    return;
+  }
+
+  state.deps.enqueueSystemEvent(text, { agentId: params.job.agentId });
+  if (params.job.wakeMode === "now") {
+    state.deps.requestHeartbeatNow({ reason: `cron:${params.job.id}:failure-alert` });
+  }
 }
 
 /**

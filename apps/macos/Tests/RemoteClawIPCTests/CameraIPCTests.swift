@@ -1,5 +1,5 @@
-import RemoteClawIPC
 import Foundation
+import RemoteClawIPC
 import Testing
 
 @Suite struct CameraIPCTests {

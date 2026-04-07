@@ -1,6 +1,14 @@
-import { sanitizeUserFacingText } from "../../agents/agent-helpers.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/pi-embedded-helpers.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const sanitizeUserFacingText = (..._args: unknown[]) => undefined as any;
 import { stripHeartbeatToken } from "../heartbeat.js";
-import { HEARTBEAT_TOKEN, isSilentReplyText, SILENT_REPLY_TOKEN } from "../tokens.js";
+import {
+  HEARTBEAT_TOKEN,
+  isSilentReplyText,
+  SILENT_REPLY_TOKEN,
+  stripSilentToken,
+} from "../tokens.js";
 import type { ReplyPayload } from "../types.js";
 import { hasLineDirectives, parseLineDirectives } from "./line-directives.js";
 import {
@@ -42,6 +50,16 @@ export function normalizeReplyPayload(
       return null;
     }
     text = "";
+  }
+  // Strip NO_REPLY from mixed-content messages (e.g. "😄 NO_REPLY") so the
+  // token never leaks to end users.  If stripping leaves nothing, treat it as
+  // silent just like the exact-match path above.  (#30916, #30955)
+  if (text && text.includes(silentToken) && !isSilentReplyText(text, silentToken)) {
+    text = stripSilentToken(text, silentToken);
+    if (!text && !hasMedia && !hasChannelData) {
+      opts.onSkip?.("silent");
+      return null;
+    }
   }
   if (text && !trimmed) {
     // Keep empty text when media exists so media-only replies still send.

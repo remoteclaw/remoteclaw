@@ -16,6 +16,12 @@ import {
   verifyDeviceToken,
 } from "../../../infra/device-pairing.js";
 import { updatePairedNodeMetadata } from "../../../infra/node-pairing.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../../infra/skills-remote.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const recordRemoteNodeInfo = (..._args: unknown[]) => undefined as any;
+// oxlint-disable-next-line typescript/no-explicit-any
+const refreshRemoteNodeBins = (..._args: unknown[]) => undefined as any;
 import { upsertPresence } from "../../../infra/system-presence.js";
 import { loadVoiceWakeConfig } from "../../../infra/voicewake.js";
 import { rawDataToString } from "../../../infra/ws.js";
@@ -47,6 +53,7 @@ import { checkBrowserOrigin } from "../../origin-check.js";
 import { GATEWAY_CLIENT_IDS } from "../../protocol/client-info.js";
 import {
   ConnectErrorDetailCodes,
+  resolveDeviceAuthConnectErrorDetailCode,
   resolveAuthConnectErrorDetailCode,
 } from "../../protocol/connect-error-details.js";
 import {
@@ -629,7 +636,7 @@ export function attachGatewayWsMessageHandler(params: {
               ok: false,
               error: errorShape(ErrorCodes.INVALID_REQUEST, message, {
                 details: {
-                  code: ConnectErrorDetailCodes.DEVICE_AUTH_INVALID,
+                  code: resolveDeviceAuthConnectErrorDetailCode(reason),
                   reason,
                 },
               }),
@@ -1014,6 +1021,7 @@ export function attachGatewayWsMessageHandler(params: {
           connId,
           presenceKey,
           clientIp: reportedClientIp,
+          canvasHostUrl,
           canvasCapability,
           canvasCapabilityExpiresAtMs,
         };
@@ -1037,6 +1045,26 @@ export function attachGatewayWsMessageHandler(params: {
               logGateway.warn(`failed to record last connect for ${nodeId}: ${formatForLog(err)}`),
             );
           }
+          recordRemoteNodeInfo({
+            nodeId: nodeSession.nodeId,
+            displayName: nodeSession.displayName,
+            platform: nodeSession.platform,
+            deviceFamily: nodeSession.deviceFamily,
+            commands: nodeSession.commands,
+            remoteIp: nodeSession.remoteIp,
+          });
+          void refreshRemoteNodeBins({
+            nodeId: nodeSession.nodeId,
+            platform: nodeSession.platform,
+            deviceFamily: nodeSession.deviceFamily,
+            commands: nodeSession.commands,
+            cfg: loadConfig(),
+            // oxlint-disable-next-line typescript/no-explicit-any
+          }).catch((err: any) =>
+            logGateway.warn(
+              `remote bin probe failed for ${nodeSession.nodeId}: ${formatForLog(err)}`,
+            ),
+          );
           void loadVoiceWakeConfig()
             .then((cfg) => {
               context.nodeRegistry.sendEvent(nodeSession.nodeId, "voicewake.changed", {

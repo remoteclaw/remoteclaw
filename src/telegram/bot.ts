@@ -10,6 +10,7 @@ import { DEFAULT_GROUP_HISTORY_LIMIT, type HistoryEntry } from "../auto-reply/re
 import {
   isNativeCommandsExplicitlyDisabled,
   resolveNativeCommandsEnabled,
+  resolveNativeSkillsEnabled,
 } from "../config/commands.js";
 import type { RemoteClawConfig, ReplyToMode } from "../config/config.js";
 import { loadConfig } from "../config/config.js";
@@ -269,17 +270,17 @@ export function createTelegramBot(opts: TelegramBotOptions) {
   const dmPolicy = telegramCfg.dmPolicy ?? "pairing";
   const allowFrom = opts.allowFrom ?? telegramCfg.allowFrom;
   const groupAllowFrom =
-    opts.groupAllowFrom ??
-    telegramCfg.groupAllowFrom ??
-    (telegramCfg.allowFrom && telegramCfg.allowFrom.length > 0
-      ? telegramCfg.allowFrom
-      : undefined) ??
-    (opts.allowFrom && opts.allowFrom.length > 0 ? opts.allowFrom : undefined);
+    opts.groupAllowFrom ?? telegramCfg.groupAllowFrom ?? telegramCfg.allowFrom ?? allowFrom;
   const replyToMode = opts.replyToMode ?? telegramCfg.replyToMode ?? "off";
   const nativeEnabled = resolveNativeCommandsEnabled({
     providerId: "telegram",
     providerSetting: telegramCfg.commands?.native,
     globalSetting: cfg.commands?.native,
+  });
+  const nativeSkillsEnabled = resolveNativeSkillsEnabled({
+    providerId: "telegram",
+    providerSetting: telegramCfg.commands?.nativeSkills,
+    globalSetting: cfg.commands?.nativeSkills,
   });
   const nativeDisabledExplicit = isNativeCommandsExplicitlyDisabled({
     providerSetting: telegramCfg.commands?.native,
@@ -333,11 +334,25 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     });
   const resolveTelegramGroupConfig = (chatId: string | number, messageThreadId?: number) => {
     const groups = telegramCfg.groups;
+    const direct = telegramCfg.direct;
+    const chatIdStr = String(chatId);
+    const isDm = !chatIdStr.startsWith("-");
+
+    if (isDm) {
+      const directConfig = direct?.[chatIdStr] ?? direct?.["*"];
+      if (directConfig) {
+        const topicConfig =
+          messageThreadId != null ? directConfig.topics?.[String(messageThreadId)] : undefined;
+        return { groupConfig: directConfig, topicConfig };
+      }
+      // DMs without direct config: don't fall through to groups lookup
+      return { groupConfig: undefined, topicConfig: undefined };
+    }
+
     if (!groups) {
       return { groupConfig: undefined, topicConfig: undefined };
     }
-    const groupKey = String(chatId);
-    const groupConfig = groups[groupKey] ?? groups["*"];
+    const groupConfig = groups[chatIdStr] ?? groups["*"];
     const topicConfig =
       messageThreadId != null ? groupConfig?.topics?.[String(messageThreadId)] : undefined;
     return { groupConfig, topicConfig };
@@ -367,6 +382,7 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     dmPolicy,
     allowFrom,
     groupAllowFrom,
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     ackReactionScope,
     logger,
     resolveGroupActivation,
@@ -392,6 +408,7 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     textLimit,
     useAccessGroups,
     nativeEnabled,
+    nativeSkillsEnabled,
     nativeDisabledExplicit,
     resolveGroupPolicy,
     resolveTelegramGroupConfig,

@@ -1,13 +1,16 @@
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "@mariozechner/pi-agent-core";
+import type { AgentToolResult } from "../agents/agent-types.js";
 import { readNumberParam, readStringParam } from "../agents/tools/common.js";
 import type { ChannelMessageActionContext } from "../channels/plugins/types.js";
 import { parseSlackBlocksInput } from "../slack/blocks-input.js";
-import type { AgentToolResult } from "../types/agent-types.js";
 
 type SlackActionInvoke = (
   action: Record<string, unknown>,
   cfg: ChannelMessageActionContext["cfg"],
   toolContext?: ChannelMessageActionContext["toolContext"],
-) => Promise<AgentToolResult>;
+  // oxlint-disable-next-line
+) => Promise<AgentToolResult<unknown>>;
 
 function readSlackBlocksParam(actionParams: Record<string, unknown>) {
   return parseSlackBlocksInput(actionParams.blocks) as Record<string, unknown>[] | undefined;
@@ -19,7 +22,8 @@ export async function handleSlackMessageAction(params: {
   invoke: SlackActionInvoke;
   normalizeChannelId?: (channelId: string) => string;
   includeReadThreadId?: boolean;
-}): Promise<AgentToolResult> {
+  // oxlint-disable-next-line
+}): Promise<AgentToolResult<unknown>> {
   const { providerId, ctx, invoke, normalizeChannelId, includeReadThreadId = false } = params;
   const { action, cfg, params: actionParams } = ctx;
   const accountId = ctx.accountId ?? undefined;
@@ -174,6 +178,24 @@ export async function handleSlackMessageAction(params: {
   if (action === "emoji-list") {
     const limit = readNumberParam(actionParams, "limit", { integer: true });
     return await invoke({ action: "emojiList", limit, accountId }, cfg);
+  }
+
+  if (action === "download-file") {
+    const fileId = readStringParam(actionParams, "fileId", { required: true });
+    const channelId =
+      readStringParam(actionParams, "channelId") ?? readStringParam(actionParams, "to");
+    const threadId =
+      readStringParam(actionParams, "threadId") ?? readStringParam(actionParams, "replyTo");
+    return await invoke(
+      {
+        action: "downloadFile",
+        fileId,
+        channelId: channelId ?? undefined,
+        threadId: threadId ?? undefined,
+        accountId,
+      },
+      cfg,
+    );
   }
 
   throw new Error(`Action ${action} is not supported for provider ${providerId}.`);

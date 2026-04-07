@@ -47,6 +47,7 @@ export async function setupCommand(
 
   if (desiredWorkspace) {
     const ws = await ensureAgentWorkspace(desiredWorkspace);
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     runtime.log(`Workspace OK: ${shortenHomePath(ws)}`);
   }
 

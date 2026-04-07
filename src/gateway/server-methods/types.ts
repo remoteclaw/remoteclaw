@@ -1,9 +1,15 @@
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/model-catalog.js";
+type ModelCatalogEntry = Record<string, unknown>;
 import type { createDefaultDeps } from "../../cli/deps.js";
 import type { HealthSummary } from "../../commands/health.js";
 import type { CronService } from "../../cron/service.js";
 import type { createSubsystemLogger } from "../../logging/subsystem.js";
 import type { WizardSession } from "../../wizard/session.js";
 import type { ChatAbortControllerEntry } from "../chat-abort.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../exec-approval-manager.js";
+type ExecApprovalManager = Record<string, unknown>;
 import type { NodeRegistry } from "../node-registry.js";
 import type { ConnectParams, ErrorShape, RequestFrame } from "../protocol/index.js";
 import type { GatewayBroadcastFn, GatewayBroadcastToConnIdsFn } from "../server-broadcast.js";
@@ -16,6 +22,9 @@ export type GatewayClient = {
   connect: ConnectParams;
   connId?: string;
   clientIp?: string;
+  canvasHostUrl?: string;
+  canvasCapability?: string;
+  canvasCapabilityExpiresAtMs?: number;
 };
 
 export type RespondFn = (
@@ -29,6 +38,8 @@ export type GatewayRequestContext = {
   deps: ReturnType<typeof createDefaultDeps>;
   cron: CronService;
   cronStorePath: string;
+  execApprovalManager?: ExecApprovalManager;
+  loadGatewayModelCatalog: () => Promise<ModelCatalogEntry[]>;
   getHealthCache: () => HealthSummary | null;
   refreshHealthSnapshot: (opts?: { probe?: boolean }) => Promise<HealthSummary>;
   logHealth: { error: (message: string) => void };
@@ -43,6 +54,7 @@ export type GatewayRequestContext = {
   nodeUnsubscribe: (nodeId: string, sessionKey: string) => void;
   nodeUnsubscribeAll: (nodeId: string) => void;
   hasConnectedMobileNode: () => boolean;
+  hasExecApprovalClients?: () => boolean;
   nodeRegistry: NodeRegistry;
   agentRunSeq: Map<string, number>;
   chatAbortControllers: Map<string, ChatAbortControllerEntry>;

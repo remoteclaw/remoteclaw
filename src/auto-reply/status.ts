@@ -1,10 +1,44 @@
 import fs from "node:fs";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../agents/context.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const resolveContextTokensForModel = (..._args: unknown[]) => 128000;
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../agents/defaults.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const DEFAULT_CONTEXT_TOKENS = 128000;
+// oxlint-disable-next-line typescript/no-explicit-any
+const DEFAULT_MODEL = "default";
+// oxlint-disable-next-line typescript/no-explicit-any
+const DEFAULT_PROVIDER = "cli";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../agents/model-auth.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const resolveModelAuthMode = (..._args: unknown[]) => undefined as any;
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../agents/model-selection.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const buildModelAliasIndex = (..._args: unknown[]) => undefined as any;
+// oxlint-disable-next-line typescript/no-explicit-any
+const resolveConfiguredModelRef = (..._args: unknown[]) => ({ provider: "cli", model: "default" });
+// oxlint-disable-next-line typescript/no-explicit-any
+const resolveModelRefFromString = (..._args: unknown[]) => undefined as any;
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../agents/sandbox.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const resolveSandboxRuntimeStatus = (..._args: unknown[]) => ({
+  sandboxed: false,
+  mode: "off" as const,
+});
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../agents/skills.js";
+type SkillCommandSpec = Record<string, unknown>;
 import { derivePromptTokens, normalizeUsage, type UsageLike } from "../agents/usage.js";
-import { resolveModelAuthMode } from "../auth/provider-auth.js";
 import { resolveChannelModelOverride } from "../channels/model-overrides.js";
 import { isCommandFlagEnabled } from "../config/commands.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import {
+  resolveMainSessionKey,
   resolveSessionFilePath,
   resolveSessionFilePathOptions,
   type SessionEntry,
@@ -12,6 +46,9 @@ import {
 } from "../config/sessions.js";
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import { resolveCommitHash } from "../infra/git-commit.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../media-understanding/types.js";
+type MediaUnderstandingDecision = Record<string, unknown>;
 import { listPluginCommands } from "../plugins/commands.js";
 import { resolveAgentIdFromSessionKey } from "../routing/session-key.js";
 import {
@@ -35,10 +72,22 @@ import {
   type ChatCommandDefinition,
 } from "./commands-registry.js";
 import type { CommandCategory } from "./commands-registry.types.js";
-import type { VerboseLevel } from "./thinking.js";
+import { resolveActiveFallbackState } from "./fallback-state.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "./model-runtime.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const formatProviderModelRef = (..._args: unknown[]) => undefined as any;
+// oxlint-disable-next-line typescript/no-explicit-any
+const resolveSelectedAndActiveModel = (..._args: unknown[]) => ({
+  selected: { provider: "cli", model: "default", label: "cli/default" },
+  active: { provider: "cli", model: "default", label: "cli/default" },
+});
+import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "./thinking.js";
 
 type AgentDefaults = NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]>;
-type AgentConfig = Partial<AgentDefaults>;
+type AgentConfig = Partial<AgentDefaults> & {
+  model?: AgentDefaults["model"] | string;
+};
 
 export const formatTokenCount = formatTokenCountShared;
 
@@ -61,20 +110,91 @@ type StatusArgs = {
   sessionScope?: SessionScope;
   sessionStorePath?: string;
   groupActivation?: "mention" | "always";
+  resolvedThink?: ThinkLevel;
   resolvedVerbose?: VerboseLevel;
+  resolvedReasoning?: ReasoningLevel;
+  resolvedElevated?: ElevatedLevel;
+  modelAuth?: string;
+  activeModelAuth?: string;
   usageLine?: string;
   timeLine?: string;
   queue?: QueueStatus;
+  mediaDecisions?: ReadonlyArray<MediaUnderstandingDecision>;
   subagentsLine?: string;
   includeTranscriptUsage?: boolean;
   now?: number;
 };
 
+type NormalizedAuthMode = "api-key" | "oauth" | "token" | "aws-sdk" | "mixed" | "unknown";
+
+function normalizeAuthMode(value?: string): NormalizedAuthMode | undefined {
+  const normalized = value?.trim().toLowerCase();
+  if (!normalized) {
+    return undefined;
+  }
+  if (normalized === "api-key" || normalized.startsWith("api-key ")) {
+    return "api-key";
+  }
+  if (normalized === "oauth" || normalized.startsWith("oauth ")) {
+    return "oauth";
+  }
+  if (normalized === "token" || normalized.startsWith("token ")) {
+    return "token";
+  }
+  if (normalized === "aws-sdk" || normalized.startsWith("aws-sdk ")) {
+    return "aws-sdk";
+  }
+  if (normalized === "mixed" || normalized.startsWith("mixed ")) {
+    return "mixed";
+  }
+  if (normalized === "unknown") {
+    return "unknown";
+  }
+  return undefined;
+}
+
 function resolveRuntimeLabel(
-  _args: Pick<StatusArgs, "config" | "agent" | "sessionKey" | "sessionScope">,
+  args: Pick<StatusArgs, "config" | "agent" | "sessionKey" | "sessionScope">,
 ): string {
-  // Sandbox infrastructure has been removed; runtime is always direct.
-  return "direct";
+  const sessionKey = args.sessionKey?.trim();
+  if (args.config && sessionKey) {
+    const runtimeStatus = resolveSandboxRuntimeStatus({
+      cfg: args.config,
+      sessionKey,
+    });
+    const sandboxMode = runtimeStatus.mode ?? "off";
+    if (sandboxMode === "off") {
+      return "direct";
+    }
+    const runtime = runtimeStatus.sandboxed ? "docker" : sessionKey ? "direct" : "unknown";
+    return `${runtime}/${String(sandboxMode)}`;
+  }
+
+  const sandboxMode = args.agent?.sandbox?.mode ?? "off";
+  if (sandboxMode === "off") {
+    return "direct";
+  }
+  const sandboxed = (() => {
+    if (!sessionKey) {
+      return false;
+    }
+    if (sandboxMode === "all") {
+      return true;
+    }
+    if (args.config) {
+      return resolveSandboxRuntimeStatus({
+        cfg: args.config,
+        sessionKey,
+      }).sandboxed;
+    }
+    const sessionScope = args.sessionScope ?? "per-sender";
+    const mainKey = resolveMainSessionKey({
+      session: { scope: sessionScope },
+    });
+    return sessionKey !== mainKey.trim();
+  })();
+  const runtime = sandboxed ? "docker" : sessionKey ? "direct" : "unknown";
+  return `${runtime}/${sandboxMode}`;
 }
 
 const formatTokens = (total: number | null | undefined, contextTokens: number | null) => {
@@ -256,10 +376,66 @@ const formatCacheLine = (
   return `🗄️ Cache: ${hitRate}% hit · ${cachedLabel} cached, ${newLabel} new`;
 };
 
-const formatVoiceModeLine = async (
+const formatMediaUnderstandingLine = (decisions?: ReadonlyArray<MediaUnderstandingDecision>) => {
+  if (!decisions || decisions.length === 0) {
+    return null;
+  }
+  const parts = decisions
+    .map((decision) => {
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      const count = decision.attachments.length;
+      const countLabel = count > 1 ? ` x${count}` : "";
+      if (decision.outcome === "success") {
+        // @ts-expect-error — upstream feature not available in RemoteClaw fork
+        // oxlint-disable-next-line typescript/no-explicit-any
+        const chosen = decision.attachments.find((entry: any) => entry.chosen)?.chosen;
+        const provider = chosen?.provider?.trim();
+        const model = chosen?.model?.trim();
+        const modelLabel = provider ? (model ? `${provider}/${model}` : provider) : null;
+        // oxlint-disable-next-line
+        return `${decision.capability}${countLabel} ok${modelLabel ? ` (${modelLabel})` : ""}`;
+      }
+      if (decision.outcome === "no-attachment") {
+        // oxlint-disable-next-line
+        return `${decision.capability} none`;
+      }
+      if (decision.outcome === "disabled") {
+        // oxlint-disable-next-line
+        return `${decision.capability} off`;
+      }
+      if (decision.outcome === "scope-deny") {
+        // oxlint-disable-next-line
+        return `${decision.capability} denied`;
+      }
+      if (decision.outcome === "skipped") {
+        // @ts-expect-error — upstream feature not available in RemoteClaw fork
+        const reason = decision.attachments
+          // oxlint-disable-next-line typescript/no-explicit-any
+          .flatMap((entry: any) =>
+            // oxlint-disable-next-line typescript/no-explicit-any
+            entry.attempts.map((attempt: any) => attempt.reason).filter(Boolean),
+          )
+          .find(Boolean);
+        const shortReason = reason ? reason.split(":")[0]?.trim() : undefined;
+        // oxlint-disable-next-line
+        return `${decision.capability} skipped${shortReason ? ` (${shortReason})` : ""}`;
+      }
+      return null;
+    })
+    .filter((part): part is string => part != null);
+  if (parts.length === 0) {
+    return null;
+  }
+  if (parts.every((part) => part.endsWith(" none"))) {
+    return null;
+  }
+  return `📎 Media: ${parts.join(" · ")}`;
+};
+
+const formatVoiceModeLine = (
   config?: RemoteClawConfig,
   sessionEntry?: SessionEntry,
-): Promise<string | null> => {
+): string | null => {
   if (!config) {
     return null;
   }
@@ -273,22 +449,58 @@ const formatVoiceModeLine = async (
   if (autoMode === "off") {
     return null;
   }
-  const provider = await getTtsProvider(ttsConfig, prefsPath);
+  const provider = getTtsProvider(ttsConfig, prefsPath);
   const maxLength = getTtsMaxLength(prefsPath);
   const summarize = isSummarizationEnabled(prefsPath) ? "on" : "off";
   return `🔊 Voice: ${autoMode} · provider=${provider} · limit=${maxLength} · summary=${summarize}`;
 };
 
-export async function buildStatusMessage(args: StatusArgs): Promise<string> {
+export function buildStatusMessage(args: StatusArgs): string {
   const now = args.now ?? Date.now();
   const entry = args.sessionEntry;
-  // Model selection gutted in RemoteClaw — CLI runtimes own model selection.
-  const selectedProvider = entry?.providerOverride ?? "unknown";
-  const selectedModel = entry?.modelOverride ?? "unknown";
-  let activeProvider = entry?.modelProvider ?? selectedProvider;
-  let activeModel = entry?.model ?? selectedModel;
-  // Context token lookup gutted in RemoteClaw — CLI agents manage their own context windows.
-  let contextTokens = entry?.contextTokens ?? args.agent?.contextTokens ?? 200_000;
+  const selectionConfig = {
+    agents: {
+      defaults: args.agent ?? {},
+    },
+  } as RemoteClawConfig;
+  const contextConfig = args.config
+    ? ({
+        ...args.config,
+        agents: {
+          ...args.config.agents,
+          defaults: {
+            ...args.config.agents?.defaults,
+            ...args.agent,
+          },
+        },
+      } as RemoteClawConfig)
+    : ({
+        agents: {
+          defaults: args.agent ?? {},
+        },
+      } as RemoteClawConfig);
+  const resolved = resolveConfiguredModelRef({
+    cfg: selectionConfig,
+    defaultProvider: DEFAULT_PROVIDER,
+    defaultModel: DEFAULT_MODEL,
+  });
+  const selectedProvider = entry?.providerOverride ?? resolved.provider ?? DEFAULT_PROVIDER;
+  const selectedModel = entry?.modelOverride ?? resolved.model ?? DEFAULT_MODEL;
+  const modelRefs = resolveSelectedAndActiveModel({
+    selectedProvider,
+    selectedModel,
+    sessionEntry: entry,
+  });
+  let activeProvider = modelRefs.active.provider;
+  let activeModel = modelRefs.active.model;
+  let contextTokens =
+    resolveContextTokensForModel({
+      cfg: contextConfig,
+      provider: activeProvider,
+      model: activeModel,
+      contextTokensOverride: entry?.contextTokens ?? args.agent?.contextTokens,
+      fallbackContextTokens: DEFAULT_CONTEXT_TOKENS,
+    }) ?? DEFAULT_CONTEXT_TOKENS;
 
   let inputTokens = entry?.inputTokens;
   let outputTokens = entry?.outputTokens;
@@ -324,8 +536,14 @@ export async function buildStatusMessage(args: StatusArgs): Promise<string> {
           activeModel = logUsage.model;
         }
       }
-      // Context token lookup from model catalog gutted in RemoteClaw.
-      // contextTokens remains at the config/default value.
+      if (!contextTokens && logUsage.model) {
+        contextTokens =
+          resolveContextTokensForModel({
+            cfg: contextConfig,
+            model: logUsage.model,
+            fallbackContextTokens: contextTokens ?? undefined,
+          }) ?? contextTokens;
+      }
       if (!inputTokens || inputTokens === 0) {
         inputTokens = logUsage.input;
       }
@@ -335,7 +553,16 @@ export async function buildStatusMessage(args: StatusArgs): Promise<string> {
     }
   }
 
-  const verboseLevel = args.resolvedVerbose ?? args.agent?.verboseDefault ?? "off";
+  const thinkLevel =
+    args.resolvedThink ?? args.sessionEntry?.thinkingLevel ?? args.agent?.thinkingDefault ?? "off";
+  const verboseLevel =
+    args.resolvedVerbose ?? args.sessionEntry?.verboseLevel ?? args.agent?.verboseDefault ?? "off";
+  const reasoningLevel = args.resolvedReasoning ?? args.sessionEntry?.reasoningLevel ?? "off";
+  const elevatedLevel =
+    args.resolvedElevated ??
+    args.sessionEntry?.elevatedLevel ??
+    args.agent?.elevatedDefault ??
+    "on";
 
   const runtime = { label: resolveRuntimeLabel(args) };
 
@@ -356,13 +583,30 @@ export async function buildStatusMessage(args: StatusArgs): Promise<string> {
     ? (args.groupActivation ?? entry?.groupActivation ?? "mention")
     : undefined;
 
-  const contextLine = `Context: ${formatTokens(totalTokens, contextTokens ?? null)}`;
+  const contextLine = [
+    `Context: ${formatTokens(totalTokens, contextTokens ?? null)}`,
+    `🧹 Compactions: ${entry?.compactionCount ?? 0}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   const queueMode = args.queue?.mode ?? "unknown";
   const queueDetails = formatQueueDetails(args.queue);
   const verboseLabel =
     verboseLevel === "full" ? "verbose:full" : verboseLevel === "on" ? "verbose" : null;
-  const optionParts = [`Runtime: ${runtime.label}`, verboseLabel];
+  const elevatedLabel =
+    elevatedLevel && elevatedLevel !== "off"
+      ? elevatedLevel === "on"
+        ? "elevated"
+        : `elevated:${elevatedLevel}`
+      : null;
+  const optionParts = [
+    `Runtime: ${runtime.label}`,
+    `Think: ${thinkLevel}`,
+    verboseLabel,
+    reasoningLevel !== "off" ? `Reasoning: ${reasoningLevel}` : null,
+    elevatedLabel,
+  ];
   const optionsLine = optionParts.filter(Boolean).join(" · ");
   const activationParts = [
     groupActivationValue ? `👥 Activation: ${groupActivationValue}` : null,
@@ -370,32 +614,27 @@ export async function buildStatusMessage(args: StatusArgs): Promise<string> {
   ];
   const activationLine = activationParts.filter(Boolean).join(" · ");
 
-  const selectedAuthMode = resolveModelAuthMode(selectedProvider, args.config);
-  const activeAuthMode = resolveModelAuthMode(activeProvider, args.config);
-  const selectedModelLabel =
-    selectedProvider !== "unknown" || selectedModel !== "unknown"
-      ? `${selectedProvider}/${selectedModel}`
-      : "unknown";
-  const activeModelLabel =
-    activeProvider !== "unknown" || activeModel !== "unknown"
-      ? `${activeProvider}/${activeModel}`
-      : "unknown";
-  // Show fallback line only when selected and active models differ AND the
-  // recorded fallback notice matches the current selected model (prevents
-  // showing stale fallback state from a prior model switch).
-  const isFallbackActive =
-    selectedModelLabel !== "unknown" &&
-    activeModelLabel !== "unknown" &&
-    selectedModelLabel !== activeModelLabel &&
-    (!entry?.fallbackNoticeSelectedModel ||
-      entry.fallbackNoticeSelectedModel === selectedModelLabel);
-  const fallbackReason = isFallbackActive
-    ? (entry?.fallbackNoticeReason ?? "selected model unavailable")
-    : undefined;
-  const effectiveCostAuthMode = isFallbackActive
+  const selectedAuthMode =
+    normalizeAuthMode(args.modelAuth) ?? resolveModelAuthMode(selectedProvider, args.config);
+  const selectedAuthLabelValue =
+    args.modelAuth ??
+    (selectedAuthMode && selectedAuthMode !== "unknown" ? selectedAuthMode : undefined);
+  const activeAuthMode =
+    normalizeAuthMode(args.activeModelAuth) ?? resolveModelAuthMode(activeProvider, args.config);
+  const activeAuthLabelValue =
+    args.activeModelAuth ??
+    (activeAuthMode && activeAuthMode !== "unknown" ? activeAuthMode : undefined);
+  const selectedModelLabel = modelRefs.selected.label || "unknown";
+  const activeModelLabel = formatProviderModelRef(activeProvider, activeModel) || "unknown";
+  const fallbackState = resolveActiveFallbackState({
+    selectedModelRef: selectedModelLabel,
+    activeModelRef: activeModelLabel,
+    state: entry,
+  });
+  const effectiveCostAuthMode = fallbackState.active
     ? activeAuthMode
     : (selectedAuthMode ?? activeAuthMode);
-  const showCost = effectiveCostAuthMode === "api-key";
+  const showCost = effectiveCostAuthMode === "api-key" || effectiveCostAuthMode === "mixed";
   const costConfig = showCost
     ? resolveModelCostConfig({
         provider: activeProvider,
@@ -416,6 +655,7 @@ export async function buildStatusMessage(args: StatusArgs): Promise<string> {
       : undefined;
   const costLabel = showCost && hasUsage ? formatUsd(cost) : undefined;
 
+  const selectedAuthLabel = selectedAuthLabelValue ? ` · 🔑 ${selectedAuthLabelValue}` : "";
   const channelModelNote = (() => {
     if (!args.config || !entry) {
       return undefined;
@@ -434,33 +674,43 @@ export async function buildStatusMessage(args: StatusArgs): Promise<string> {
     if (!channelOverride) {
       return undefined;
     }
-    // Model alias resolution gutted in RemoteClaw — parse channel override directly.
-    const overrideRaw = channelOverride.model.trim();
-    const slashIdx = overrideRaw.indexOf("/");
-    const overrideProvider = slashIdx > 0 ? overrideRaw.slice(0, slashIdx) : "unknown";
-    const overrideModel = slashIdx > 0 ? overrideRaw.slice(slashIdx + 1) : overrideRaw;
-    // Compare against active model (runtime-observed) since the selected model
-    // may be "unknown" when no explicit session override is set.
-    const compareProvider = selectedProvider !== "unknown" ? selectedProvider : activeProvider;
-    const compareModel = selectedModel !== "unknown" ? selectedModel : activeModel;
-    if (overrideProvider !== compareProvider || overrideModel !== compareModel) {
+    const aliasIndex = buildModelAliasIndex({
+      cfg: args.config,
+      defaultProvider: DEFAULT_PROVIDER,
+    });
+    const resolvedOverride = resolveModelRefFromString({
+      raw: channelOverride.model,
+      defaultProvider: DEFAULT_PROVIDER,
+      aliasIndex,
+    });
+    if (!resolvedOverride) {
+      return undefined;
+    }
+    if (
+      resolvedOverride.ref.provider !== selectedProvider ||
+      resolvedOverride.ref.model !== selectedModel
+    ) {
       return undefined;
     }
     return "channel override";
   })();
   const modelNote = channelModelNote ? ` · ${channelModelNote}` : "";
-  const modelLine = `🧠 Model: ${selectedModelLabel}${modelNote}`;
-  const fallbackLine = isFallbackActive
-    ? `↪️ Fallback: ${activeModelLabel} (${fallbackReason})`
+  const modelLine = `🧠 Model: ${selectedModelLabel}${selectedAuthLabel}${modelNote}`;
+  const showFallbackAuth = activeAuthLabelValue && activeAuthLabelValue !== selectedAuthLabelValue;
+  const fallbackLine = fallbackState.active
+    ? `↪️ Fallback: ${activeModelLabel}${
+        showFallbackAuth ? ` · 🔑 ${activeAuthLabelValue}` : ""
+      } (${fallbackState.reason ?? "selected model unavailable"})`
     : null;
   const commit = resolveCommitHash();
-  const versionLine = `🦀 RemoteClaw ${VERSION}${commit ? ` (${commit})` : ""}`;
+  const versionLine = `🦞 RemoteClaw ${VERSION}${commit ? ` (${commit})` : ""}`;
   const usagePair = formatUsagePair(inputTokens, outputTokens);
   const cacheLine = formatCacheLine(inputTokens, cacheRead, cacheWrite);
   const costLine = costLabel ? `💵 Cost: ${costLabel}` : null;
   const usageCostLine =
     usagePair && costLine ? `${usagePair} · ${costLine}` : (usagePair ?? costLine);
-  const voiceLine = await formatVoiceModeLine(args.config, args.sessionEntry);
+  const mediaLine = formatMediaUnderstandingLine(args.mediaDecisions);
+  const voiceLine = formatVoiceModeLine(args.config, args.sessionEntry);
 
   return [
     versionLine,
@@ -470,6 +720,7 @@ export async function buildStatusMessage(args: StatusArgs): Promise<string> {
     usageCostLine,
     cacheLine,
     `📚 ${contextLine}`,
+    mediaLine,
     args.usageLine,
     `🧵 ${sessionLine}`,
     args.subagentsLine,
@@ -521,10 +772,10 @@ export function buildHelpMessage(cfg?: RemoteClawConfig): string {
   const lines = ["ℹ️ Help", ""];
 
   lines.push("Session");
-  lines.push("  /new  |  /reset  |  /stop");
+  lines.push("  /new  |  /reset  |  /compact [instructions]  |  /stop");
   lines.push("");
 
-  const optionParts = ["/verbose on|off"];
+  const optionParts = ["/think <level>", "/model <id>", "/verbose on|off"];
   if (isCommandFlagEnabled(cfg, "config")) {
     optionParts.push("/config");
   }
@@ -536,7 +787,11 @@ export function buildHelpMessage(cfg?: RemoteClawConfig): string {
   lines.push("");
 
   lines.push("Status");
-  lines.push("  /status  |  /whoami  |  /remoteclaw");
+  lines.push("  /status  |  /whoami  |  /context");
+  lines.push("");
+
+  lines.push("Skills");
+  lines.push("  /skill <name> [input]");
 
   lines.push("");
   lines.push("More: /commands for full list");
@@ -635,21 +890,25 @@ function formatCommandList(items: CommandsListItem[]): string {
 
 export function buildCommandsMessage(
   cfg?: RemoteClawConfig,
+  skillCommands?: SkillCommandSpec[],
   options?: CommandsMessageOptions,
 ): string {
-  const result = buildCommandsMessagePaginated(cfg, options);
+  const result = buildCommandsMessagePaginated(cfg, skillCommands, options);
   return result.text;
 }
 
 export function buildCommandsMessagePaginated(
   cfg?: RemoteClawConfig,
+  skillCommands?: SkillCommandSpec[],
   options?: CommandsMessageOptions,
 ): CommandsMessageResult {
   const page = Math.max(1, options?.page ?? 1);
   const surface = options?.surface?.toLowerCase();
   const isTelegram = surface === "telegram";
 
-  const commands = cfg ? listChatCommandsForConfig(cfg) : listChatCommands();
+  const commands = cfg
+    ? listChatCommandsForConfig(cfg, { skillCommands })
+    : listChatCommands({ skillCommands });
   const pluginCommands = listPluginCommands();
   const items = buildCommandItems(commands, pluginCommands);
 

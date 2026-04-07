@@ -29,6 +29,7 @@ describe("boot startup hook integration", () => {
 
   it("dispatches gateway:startup through internal hooks and runs boot for each configured agent scope", async () => {
     const bootConfig = { prompt: "Check inbox and summarize" };
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     const cfg = {
       hooks: { internal: { enabled: true } },
       agents: {

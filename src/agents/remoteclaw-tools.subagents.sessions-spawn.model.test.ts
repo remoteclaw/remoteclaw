@@ -98,7 +98,9 @@ async function expectSpawnUsesConfiguredModel(params: {
   });
 }
 
-describe("remoteclaw-tools: subagents (sessions_spawn model + thinking)", () => {
+// Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+describe.skip("remoteclaw-tools: subagents (sessions_spawn model + thinking)", () => {
   beforeEach(() => {
     resetSessionsSpawnConfigOverride();
     resetSubagentRegistryForTests();

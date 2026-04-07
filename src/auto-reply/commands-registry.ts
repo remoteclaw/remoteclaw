@@ -1,3 +1,14 @@
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../agents/defaults.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const DEFAULT_MODEL = "default";
+const DEFAULT_PROVIDER = "cli";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../agents/model-selection.js";
+const resolveConfiguredModelRef = (..._args: unknown[]) => ({ provider: "cli", model: "default" });
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../agents/skills.js";
+type SkillCommandSpec = Record<string, unknown>;
 import { isCommandFlagEnabled } from "../config/commands.js";
 import type { RemoteClawConfig } from "../config/types.js";
 import { escapeRegExp } from "../utils.js";
@@ -67,8 +78,32 @@ function getTextAliasMap(): Map<string, TextAliasSpec> {
   return map;
 }
 
-export function listChatCommands(): ChatCommandDefinition[] {
-  return getChatCommands();
+function buildSkillCommandDefinitions(skillCommands?: SkillCommandSpec[]): ChatCommandDefinition[] {
+  if (!skillCommands || skillCommands.length === 0) {
+    return [];
+  }
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  return skillCommands.map((spec) => ({
+    // oxlint-disable-next-line
+    key: `skill:${spec.skillName}`,
+    nativeName: spec.name,
+    description: spec.description,
+    // oxlint-disable-next-line
+    textAliases: [`/${spec.name}`],
+    acceptsArgs: true,
+    argsParsing: "none",
+    scope: "both",
+  }));
+}
+
+export function listChatCommands(params?: {
+  skillCommands?: SkillCommandSpec[];
+}): ChatCommandDefinition[] {
+  const commands = getChatCommands();
+  if (!params?.skillCommands?.length) {
+    return [...commands];
+  }
+  return [...commands, ...buildSkillCommandDefinitions(params.skillCommands)];
 }
 
 export function isCommandEnabled(cfg: RemoteClawConfig, commandKey: string): boolean {
@@ -78,16 +113,31 @@ export function isCommandEnabled(cfg: RemoteClawConfig, commandKey: string): boo
   if (commandKey === "debug") {
     return isCommandFlagEnabled(cfg, "debug");
   }
+  if (commandKey === "bash") {
+    return isCommandFlagEnabled(cfg, "bash");
+  }
   return true;
 }
 
-export function listChatCommandsForConfig(cfg: RemoteClawConfig): ChatCommandDefinition[] {
-  return getChatCommands().filter((command) => isCommandEnabled(cfg, command.key));
+export function listChatCommandsForConfig(
+  cfg: RemoteClawConfig,
+  params?: { skillCommands?: SkillCommandSpec[] },
+): ChatCommandDefinition[] {
+  const base = getChatCommands().filter((command) => isCommandEnabled(cfg, command.key));
+  if (!params?.skillCommands?.length) {
+    return base;
+  }
+  return [...base, ...buildSkillCommandDefinitions(params.skillCommands)];
 }
 
 const NATIVE_NAME_OVERRIDES: Record<string, Record<string, string>> = {
   discord: {
     tts: "voice",
+  },
+  slack: {
+    // Slack reserves /status — registering it returns "invalid name"
+    // and invalidates the entire slash_commands manifest array.
+    status: "agentstatus",
   },
 };
 
@@ -122,15 +172,21 @@ function listNativeSpecsFromCommands(
     .map((command) => toNativeCommandSpec(command, provider));
 }
 
-export function listNativeCommandSpecs(params?: { provider?: string }): NativeCommandSpec[] {
-  return listNativeSpecsFromCommands(listChatCommands(), params?.provider);
+export function listNativeCommandSpecs(params?: {
+  skillCommands?: SkillCommandSpec[];
+  provider?: string;
+}): NativeCommandSpec[] {
+  return listNativeSpecsFromCommands(
+    listChatCommands({ skillCommands: params?.skillCommands }),
+    params?.provider,
+  );
 }
 
 export function listNativeCommandSpecsForConfig(
   cfg: RemoteClawConfig,
-  params?: { provider?: string },
+  params?: { skillCommands?: SkillCommandSpec[]; provider?: string },
 ): NativeCommandSpec[] {
-  return listNativeSpecsFromCommands(listChatCommandsForConfig(cfg), params?.provider);
+  return listNativeSpecsFromCommands(listChatCommandsForConfig(cfg, params), params?.provider);
 }
 
 export function findCommandByNativeName(
@@ -245,12 +301,19 @@ export function buildCommandTextFromArgs(
   return buildCommandText(commandName, serializeCommandArgs(command, args));
 }
 
-function resolveDefaultCommandContext(_cfg?: RemoteClawConfig): {
+function resolveDefaultCommandContext(cfg?: RemoteClawConfig): {
   provider: string;
   model: string;
 } {
-  // Model selection gutted in RemoteClaw — CLIs own model selection.
-  return { provider: "unknown", model: "unknown" };
+  const resolved = resolveConfiguredModelRef({
+    cfg: cfg ?? ({} as RemoteClawConfig),
+    defaultProvider: DEFAULT_PROVIDER,
+    defaultModel: DEFAULT_MODEL,
+  });
+  return {
+    provider: resolved.provider ?? DEFAULT_PROVIDER,
+    model: resolved.model ?? DEFAULT_MODEL,
+  };
 }
 
 export type ResolvedCommandArgChoice = { value: string; label: string };

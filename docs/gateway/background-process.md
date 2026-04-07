@@ -1,5 +1,5 @@
 ---
-description: "Background exec execution and process management"
+summary: "Background exec execution and process management"
 read_when:
   - Adding or modifying background exec behavior
   - Debugging long-running exec tasks
@@ -18,6 +18,7 @@ Key parameters:
 - `yieldMs` (default 10000): auto‑background after this delay
 - `background` (bool): background immediately
 - `timeout` (seconds, default 1800): kill the process after this timeout
+- `elevated` (bool): run on host if elevated mode is enabled/allowed
 - Need a real TTY? Set `pty: true`.
 - `workdir`, `env`
 
@@ -27,6 +28,7 @@ Behavior:
 - When backgrounded (explicit or timeout), the tool returns `status: "running"` + `sessionId` and a short tail.
 - Output is kept in memory until the session is polled or cleared.
 - If the `process` tool is disallowed, `exec` runs synchronously and ignores `yieldMs`/`background`.
+- Spawned exec commands receive `REMOTECLAW_SHELL=exec` for context-aware shell/profile rules.
 
 ## Child process bridging
 
@@ -34,10 +36,10 @@ When spawning long-running child processes outside the exec/process tools (for e
 
 Environment overrides:
 
-- `REMOTECLAW_BASH_YIELD_MS`: default yield (ms)
-- `REMOTECLAW_BASH_MAX_OUTPUT_CHARS`: in‑memory output cap (chars)
+- `PI_BASH_YIELD_MS`: default yield (ms)
+- `PI_BASH_MAX_OUTPUT_CHARS`: in‑memory output cap (chars)
 - `REMOTECLAW_BASH_PENDING_MAX_OUTPUT_CHARS`: pending stdout/stderr cap per stream (chars)
-- `REMOTECLAW_BASH_JOB_TTL_MS`: TTL for finished sessions (ms, bounded to 1m–3h)
+- `PI_BASH_JOB_TTL_MS`: TTL for finished sessions (ms, bounded to 1m–3h)
 
 Config (preferred):
 

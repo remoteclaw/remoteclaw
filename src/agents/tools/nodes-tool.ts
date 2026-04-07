@@ -39,14 +39,46 @@ const NODES_TOOL_ACTIONS = [
   "camera_clip",
   "screen_record",
   "location_get",
+  "notifications_list",
+  "notifications_action",
+  "device_status",
+  "device_info",
+  "device_permissions",
+  "device_health",
   "run",
   "invoke",
 ] as const;
 
 const NOTIFY_PRIORITIES = ["passive", "active", "timeSensitive"] as const;
 const NOTIFY_DELIVERIES = ["system", "overlay", "auto"] as const;
+const NOTIFICATIONS_ACTIONS = ["open", "dismiss", "reply"] as const;
 const CAMERA_FACING = ["front", "back", "both"] as const;
 const LOCATION_ACCURACY = ["coarse", "balanced", "precise"] as const;
+const NODE_READ_ACTION_COMMANDS = {
+  camera_list: "camera.list",
+  notifications_list: "notifications.list",
+  device_status: "device.status",
+  device_info: "device.info",
+  device_permissions: "device.permissions",
+  device_health: "device.health",
+} as const;
+type GatewayCallOptions = ReturnType<typeof readGatewayCallOptions>;
+
+async function invokeNodeCommandPayload(params: {
+  gatewayOpts: GatewayCallOptions;
+  node: string;
+  command: string;
+  params?: Record<string, unknown>;
+}): Promise<unknown> {
+  const nodeId = await resolveNodeId(params.gatewayOpts, params.node);
+  const raw = await callGatewayTool<{ payload: unknown }>("node.invoke", params.gatewayOpts, {
+    nodeId,
+    command: params.command,
+    params: params.params ?? {},
+    idempotencyKey: crypto.randomUUID(),
+  });
+  return raw?.payload ?? {};
+}
 
 function isPairingRequiredMessage(message: string): boolean {
   const lower = message.toLowerCase();
@@ -85,7 +117,7 @@ const NodesToolSchema = Type.Object({
   delayMs: Type.Optional(Type.Number()),
   deviceId: Type.Optional(Type.String()),
   duration: Type.Optional(Type.String()),
-  durationMs: Type.Optional(Type.Number()),
+  durationMs: Type.Optional(Type.Number({ maximum: 300_000 })),
   includeAudio: Type.Optional(Type.Boolean()),
   // screen_record
   fps: Type.Optional(Type.Number()),
@@ -95,6 +127,10 @@ const NodesToolSchema = Type.Object({
   maxAgeMs: Type.Optional(Type.Number()),
   locationTimeoutMs: Type.Optional(Type.Number()),
   desiredAccuracy: optionalStringEnum(LOCATION_ACCURACY),
+  // notifications_action
+  notificationAction: optionalStringEnum(NOTIFICATIONS_ACTIONS),
+  notificationKey: Type.Optional(Type.String()),
+  notificationReplyText: Type.Optional(Type.String()),
   // run
   command: Type.Optional(Type.Array(Type.String())),
   cwd: Type.Optional(Type.String()),
@@ -210,6 +246,9 @@ export function createNodesTool(options?: {
               typeof params.deviceId === "string" && params.deviceId.trim()
                 ? params.deviceId.trim()
                 : undefined;
+            if (deviceId && facings.length > 1) {
+              throw new Error("facing=both is not allowed when deviceId is set");
+            }
 
             const content: AgentToolResult["content"] = [];
             const details: Array<Record<string, unknown>> = [];
@@ -269,17 +308,44 @@ export function createNodesTool(options?: {
             const result: AgentToolResult = { content, details };
             return await sanitizeToolResultImages(result, "nodes:camera_snap", imageSanitization);
           }
-          case "camera_list": {
+          case "camera_list":
+          case "notifications_list":
+          case "device_status":
+          case "device_info":
+          case "device_permissions":
+          case "device_health": {
             const node = readStringParam(params, "node", { required: true });
             const nodeId = await resolveNodeId(gatewayOpts, node);
             const raw = await callGatewayTool<{ payload: unknown }>("node.invoke", gatewayOpts, {
               nodeId,
-              command: "camera.list",
+              command: NODE_READ_ACTION_COMMANDS[action],
               params: {},
               idempotencyKey: crypto.randomUUID(),
             });
             const payload =
               raw && typeof raw.payload === "object" && raw.payload !== null ? raw.payload : {};
+            return jsonResult(payload);
+          }
+          case "notifications_action": {
+            const node = readStringParam(params, "node", { required: true });
+            const notificationAction = readStringParam(params, "notificationAction", {
+              required: true,
+            });
+            const notificationKey = readStringParam(params, "notificationKey", { required: true });
+            const notificationReplyText =
+              typeof params.notificationReplyText === "string"
+                ? params.notificationReplyText
+                : undefined;
+            const payload = await invokeNodeCommandPayload({
+              gatewayOpts,
+              node,
+              command: "notifications.action",
+              params: {
+                action: notificationAction,
+                key: notificationKey,
+                replyText: notificationReplyText,
+              },
+            });
             return jsonResult(payload);
           }
           case "camera_clip": {
@@ -332,12 +398,14 @@ export function createNodesTool(options?: {
           case "screen_record": {
             const node = readStringParam(params, "node", { required: true });
             const nodeId = await resolveNodeId(gatewayOpts, node);
-            const durationMs =
+            const durationMs = Math.min(
               typeof params.durationMs === "number" && Number.isFinite(params.durationMs)
                 ? params.durationMs
                 : typeof params.duration === "string"
                   ? parseDurationMs(params.duration)
-                  : 10_000;
+                  : 10_000,
+              300_000,
+            );
             const fps =
               typeof params.fps === "number" && Number.isFinite(params.fps) ? params.fps : 10;
             const screenIndex =

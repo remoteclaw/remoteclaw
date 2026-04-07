@@ -149,6 +149,34 @@ export type SessionEntry = {
   lastThreadId?: string | number;
   systemPromptReport?: SessionSystemPromptReport;
   acp?: SessionAcpMeta;
+  /** Upstream thinking/reasoning level selection. */
+  thinkingLevel?: string;
+  /** Upstream reasoning level (alias for thinking-level UIs). */
+  reasoningLevel?: string;
+  /** Elevated security level override. */
+  elevatedLevel?: string;
+  /** Auth profile override ID. */
+  authProfileOverride?: string;
+  /** Number of compactions when the auth profile override was set. */
+  authProfileOverrideCompactionCount?: number;
+  /** Source of the auth profile override. */
+  authProfileOverrideSource?: string;
+  /** Compaction counter (how many times context was compacted). */
+  compactionCount?: number;
+  /** Exec mode: ask for user confirmation before running tools. */
+  execAsk?: boolean;
+  /** Exec mode: host-level execution control. */
+  execHost?: string;
+  /** Exec mode: node execution control. */
+  execNode?: string;
+  /** Exec mode: security level for exec. */
+  execSecurity?: string;
+  /** Timestamp when memory was last flushed. */
+  memoryFlushAt?: number;
+  /** Compaction count when memory was last flushed. */
+  memoryFlushCompactionCount?: number;
+  /** Snapshot of agent skills captured at session creation. */
+  skillsSnapshot?: unknown;
 };
 
 function normalizeRuntimeField(value: string | undefined): string | undefined {

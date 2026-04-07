@@ -246,6 +246,30 @@ export function createBackspaceDeduper(params?: { dedupeWindowMs?: number; now?:
   };
 }
 
+export function isIgnorableTuiStopError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+  const err = error as { code?: unknown; syscall?: unknown; message?: unknown };
+  const code = typeof err.code === "string" ? err.code : "";
+  const syscall = typeof err.syscall === "string" ? err.syscall : "";
+  const message = typeof err.message === "string" ? err.message : "";
+  if (code === "EBADF" && syscall === "setRawMode") {
+    return true;
+  }
+  return /setRawMode/i.test(message) && /EBADF/i.test(message);
+}
+
+export function stopTuiSafely(stop: () => void): void {
+  try {
+    stop();
+  } catch (error) {
+    if (!isIgnorableTuiStopError(error)) {
+      throw error;
+    }
+  }
+}
+
 type CtrlCAction = "clear" | "warn" | "exit";
 
 export function resolveCtrlCAction(params: {
@@ -700,12 +724,20 @@ export async function runTui(opts: TuiOptions) {
         : sessionInfo.model
       : "unknown";
     const tokens = formatTokens(sessionInfo.totalTokens ?? null, sessionInfo.contextTokens ?? null);
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
+    const think = sessionInfo.thinkingLevel ?? "off";
     const verbose = sessionInfo.verboseLevel ?? "off";
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
+    const reasoning = sessionInfo.reasoningLevel ?? "off";
+    const reasoningLabel =
+      reasoning === "on" ? "reasoning" : reasoning === "stream" ? "reasoning:stream" : null;
     const footerParts = [
       `agent ${agentLabel}`,
       `session ${sessionLabel}`,
       modelLabel,
+      think !== "off" ? `think ${think}` : null,
       verbose !== "off" ? `verbose ${verbose}` : null,
+      reasoningLabel,
       tokens,
     ].filter(Boolean);
     footer.setText(theme.dim(footerParts.join(" | ")));
@@ -764,11 +796,12 @@ export async function runTui(opts: TuiOptions) {
     }
     exitRequested = true;
     client.stop();
-    tui.stop();
+    stopTuiSafely(() => tui.stop());
     process.exit(0);
   };
 
-  const { handleCommand, sendMessage, openAgentSelector, openSessionSelector } =
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  const { handleCommand, sendMessage, openModelSelector, openAgentSelector, openSessionSelector } =
     createCommandHandlers({
       client,
       chatLog,
@@ -845,12 +878,20 @@ export async function runTui(opts: TuiOptions) {
     setActivityStatus(toolsExpanded ? "tools expanded" : "tools collapsed");
     tui.requestRender();
   };
+  editor.onCtrlL = () => {
+    void openModelSelector();
+  };
   editor.onCtrlG = () => {
     void openAgentSelector();
   };
   editor.onCtrlP = () => {
     void openSessionSelector();
   };
+  editor.onCtrlT = () => {
+    showThinking = !showThinking;
+    void loadHistory();
+  };
+
   client.onEvent = (evt) => {
     if (evt.event === "chat") {
       handleChatEvent(evt.payload);

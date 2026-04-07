@@ -2,8 +2,8 @@
  * In-process registry tracking which sessions currently have an active
  * CLI agent subprocess (ChannelBridge turn).
  *
- * Replaces the conceptual role of the Pi engine's ACTIVE_EMBEDDED_RUNS Map
- * that was stubbed to false/0 during Pi removal (b27cecc795, #76/#77).
+ * Replaces the conceptual role of the former engine's active-runs map
+ * that was stubbed to false/0 during engine removal (b27cecc795, #76/#77).
  */
 
 export type SessionRunHandle = {

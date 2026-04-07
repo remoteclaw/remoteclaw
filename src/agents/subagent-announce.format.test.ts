@@ -995,7 +995,7 @@ describe("subagent announce formatting", () => {
   });
 
   it("steers announcements into an active run when queue mode is steer", async () => {
-    // pi-embedded steer path removed; queueMode "steer" now falls through to direct delivery.
+    // Steer path removed; queueMode "steer" now falls through to direct delivery.
     sessionStore = {
       "agent:main:main": {
         sessionId: "session-123",
@@ -1086,7 +1086,7 @@ describe("subagent announce formatting", () => {
   });
 
   it("returns failure for completion-mode when direct delivery fails and queue fallback is inactive", async () => {
-    // pi-embedded queue fallback removed; direct failure is terminal when no embedded run is active.
+    // Queue fallback removed; direct failure is terminal when no session run is active.
     sessionStore = {
       "agent:main:main": {
         sessionId: "session-collect",
@@ -1653,8 +1653,8 @@ describe("subagent announce formatting", () => {
     expect(sessionsDeleteSpy).not.toHaveBeenCalled();
   });
 
-  it("proceeds with announce when pi-embedded settle is no longer active", async () => {
-    // pi-embedded active check removed; announce no longer defers on embedded run activity.
+  it("proceeds with announce when no session run is active", async () => {
+    // Active-run check removed; announce no longer defers on session run activity.
     const cases = [
       {
         childRunId: "run-child-active",

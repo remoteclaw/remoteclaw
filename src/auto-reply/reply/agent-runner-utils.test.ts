@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { FollowupRun } from "./queue.js";
 
-const { buildEmbeddedRunBaseParams, buildEmbeddedRunContexts, resolveModelFallbackOptions } =
+const { buildRunBaseParams, buildRunContexts, resolveModelFallbackOptions } =
   await import("./agent-runner-utils.js");
 
 function makeRun(overrides: Partial<FollowupRun["run"]> = {}): FollowupRun["run"] {
@@ -38,10 +38,10 @@ describe("agent-runner-utils", () => {
     });
   });
 
-  it("builds embedded run base params with run metadata", () => {
+  it("builds run base params with run metadata", () => {
     const run = makeRun({ enforceFinalTag: true });
 
-    const resolved = buildEmbeddedRunBaseParams({
+    const resolved = buildRunBaseParams({
       run,
       provider: "openai",
       model: "gpt-4.1-mini",
@@ -63,10 +63,10 @@ describe("agent-runner-utils", () => {
     });
   });
 
-  it("builds embedded contexts from run and session context", () => {
+  it("builds run contexts from run and session context", () => {
     const run = makeRun();
 
-    const resolved = buildEmbeddedRunContexts({
+    const resolved = buildRunContexts({
       run,
       sessionCtx: {
         Provider: "OpenAI",
@@ -77,7 +77,7 @@ describe("agent-runner-utils", () => {
       provider: "anthropic",
     });
 
-    expect(resolved.embeddedContext).toMatchObject({
+    expect(resolved.runContext).toMatchObject({
       sessionId: run.sessionId,
       sessionKey: run.sessionKey,
       agentId: run.agentId,
@@ -95,7 +95,7 @@ describe("agent-runner-utils", () => {
   it("prefers OriginatingChannel over Provider for messageProvider", () => {
     const run = makeRun();
 
-    const resolved = buildEmbeddedRunContexts({
+    const resolved = buildRunContexts({
       run,
       sessionCtx: {
         Provider: "heartbeat",
@@ -106,7 +106,7 @@ describe("agent-runner-utils", () => {
       provider: "openai",
     });
 
-    expect(resolved.embeddedContext.messageProvider).toBe("telegram");
-    expect(resolved.embeddedContext.messageTo).toBe("268300329");
+    expect(resolved.runContext.messageProvider).toBe("telegram");
+    expect(resolved.runContext.messageTo).toBe("268300329");
   });
 });

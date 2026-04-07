@@ -1179,7 +1179,7 @@ export async function runSubagentAnnounceFlow(params: {
       });
     }
 
-    // Session runs tracked via session-run-registry; no embedded run state to check here.
+    // Session runs tracked via session-run-registry; no run state to check here.
 
     if (isAnnounceSkip(reply)) {
       return true;

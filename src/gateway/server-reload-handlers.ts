@@ -152,12 +152,12 @@ export function createGatewayReloadHandlers(params: {
     const getActiveCounts = () => {
       const queueSize = getTotalQueueSize();
       const pendingReplies = getTotalPendingReplies();
-      const embeddedRuns = getActiveSessionRunCount();
+      const sessionRuns = getActiveSessionRunCount();
       return {
         queueSize,
         pendingReplies,
-        embeddedRuns,
-        totalActive: queueSize + pendingReplies + embeddedRuns,
+        sessionRuns,
+        totalActive: queueSize + pendingReplies + sessionRuns,
       };
     };
     const formatActiveDetails = (counts: ReturnType<typeof getActiveCounts>) => {
@@ -168,8 +168,8 @@ export function createGatewayReloadHandlers(params: {
       if (counts.pendingReplies > 0) {
         details.push(`${counts.pendingReplies} reply(ies)`);
       }
-      if (counts.embeddedRuns > 0) {
-        details.push(`${counts.embeddedRuns} embedded run(s)`);
+      if (counts.sessionRuns > 0) {
+        details.push(`${counts.sessionRuns} session run(s)`);
       }
       return details;
     };

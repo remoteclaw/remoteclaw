@@ -486,14 +486,14 @@ export async function runCronIsolatedAgentTurn(params: {
     .toReversed()
     .find((payload) => payload?.isError === true && Boolean(payload?.text?.trim()))
     ?.text?.trim();
-  const embeddedRunError = hasErrorPayload
+  const runError = hasErrorPayload
     ? (lastErrorPayloadText ?? "cron isolated run returned an error payload")
     : undefined;
   const resolveRunOutcome = (params?: { delivered?: boolean; deliveryAttempted?: boolean }) =>
     withRunSession({
       status: hasErrorPayload ? "error" : "ok",
       ...(hasErrorPayload
-        ? { error: embeddedRunError ?? "cron isolated run returned an error payload" }
+        ? { error: runError ?? "cron isolated run returned an error payload" }
         : {}),
       summary,
       outputText,

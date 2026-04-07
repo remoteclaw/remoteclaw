@@ -2,7 +2,7 @@ import { onAgentEvent } from "../../infra/agent-events.js";
 
 const AGENT_RUN_CACHE_TTL_MS = 10 * 60_000;
 /**
- * Embedded runs can emit transient lifecycle `error` events while auth/model
+ * Session runs can emit transient lifecycle `error` events while auth/model
  * failover is still in progress. Give errors a short grace window so a
  * subsequent `start` event can cancel premature terminal snapshots.
  */

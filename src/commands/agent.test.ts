@@ -28,6 +28,7 @@ type BridgeConstructorOpts = {
   gatewayUrl: string;
   gatewayToken: string;
   workspaceDir?: string;
+  runtimeEnv?: Record<string, string>;
 };
 
 const bridgeHandleMock =
@@ -77,6 +78,15 @@ vi.mock("../middleware/channel-bridge.js", () => ({
       return bridgeHandleMock(message, callbacks, abortSignal);
     }
   },
+}));
+
+// ── withAuthKeyRetry mock ──────────────────────────────────────────────
+
+const { withAuthKeyRetryMock } = vi.hoisted(() => ({
+  withAuthKeyRetryMock: vi.fn(),
+}));
+vi.mock("../middleware/auth-key-retry.js", () => ({
+  withAuthKeyRetry: withAuthKeyRetryMock,
 }));
 
 vi.mock("../config/paths.js", async (importOriginal) => {
@@ -205,6 +215,14 @@ beforeEach(() => {
   bridgeConstructorCalls.length = 0;
   bridgeHandleMock.mockResolvedValue(defaultBridgeResult());
   loadModelCatalogMock?.mockResolvedValue([]);
+
+  // Default: withAuthKeyRetry passes through to the execute callback
+  withAuthKeyRetryMock.mockImplementation(
+    async (
+      options: { baseEnv?: Record<string, string> },
+      execute: (env: Record<string, string>) => Promise<unknown>,
+    ) => execute(options.baseEnv ?? {}),
+  );
 });
 
 describe("agentCommand", () => {
@@ -668,6 +686,100 @@ describe("agentCommand", () => {
       });
 
       expect(runtime.log).toHaveBeenCalledWith("ok");
+    });
+  });
+
+  it("wraps bridge execution with withAuthKeyRetry", async () => {
+    await withTempHome(async (home) => {
+      const store = path.join(home, "sessions.json");
+      mockConfig(home, store);
+
+      await agentCommand({ message: "hi", to: "+1555" }, runtime);
+
+      expect(withAuthKeyRetryMock).toHaveBeenCalledOnce();
+    });
+  });
+
+  it("passes agentId to withAuthKeyRetry options", async () => {
+    await withTempHome(async (home) => {
+      await runWithDefaultAgentConfig({
+        home,
+        args: { message: "hi", agentId: "ops" },
+        agentsList: [{ id: "ops" }],
+      });
+
+      const options = withAuthKeyRetryMock.mock.calls[0][0];
+      expect(options.agentId).toBe("ops");
+    });
+  });
+
+  it("passes cfg to withAuthKeyRetry options", async () => {
+    await withTempHome(async (home) => {
+      const store = path.join(home, "sessions.json");
+      mockConfig(home, store);
+
+      await agentCommand({ message: "hi", to: "+1555" }, runtime);
+
+      const options = withAuthKeyRetryMock.mock.calls[0][0];
+      expect(options.cfg).toBeDefined();
+      expect(options.cfg.agents).toBeDefined();
+    });
+  });
+
+  it("provides error extractor that reads result.error", async () => {
+    await withTempHome(async (home) => {
+      const store = path.join(home, "sessions.json");
+      mockConfig(home, store);
+
+      await agentCommand({ message: "hi", to: "+1555" }, runtime);
+
+      const getErrorMessage = withAuthKeyRetryMock.mock.calls[0][2];
+      expect(getErrorMessage({ error: "rate limit exceeded" })).toBe("rate limit exceeded");
+      expect(getErrorMessage({ error: undefined })).toBeUndefined();
+    });
+  });
+
+  it("creates ChannelBridge with runtimeEnv from withAuthKeyRetry callback", async () => {
+    const injectedEnv = {
+      CLAUDE_CONFIG_DIR: "/custom/config",
+      ANTHROPIC_API_KEY: "sk-test-injected",
+    };
+
+    withAuthKeyRetryMock.mockImplementation(
+      async (_options: unknown, execute: (env: Record<string, string>) => Promise<unknown>) =>
+        execute(injectedEnv),
+    );
+
+    await withTempHome(async (home) => {
+      const store = path.join(home, "sessions.json");
+      mockConfig(home, store);
+
+      await agentCommand({ message: "hi", to: "+1555" }, runtime);
+
+      const lastBridgeOpts = bridgeConstructorCalls.at(-1);
+      expect(lastBridgeOpts?.runtimeEnv).toEqual(injectedEnv);
+    });
+  });
+
+  it("re-throws bridge errors with no payloads for auth retry eligibility", async () => {
+    withAuthKeyRetryMock.mockImplementation(
+      async (_options: unknown, execute: (env: Record<string, string>) => Promise<unknown>) => {
+        return execute({});
+      },
+    );
+    bridgeHandleMock.mockResolvedValueOnce({
+      ...defaultBridgeResult(),
+      payloads: [],
+      error: "Not logged in",
+    });
+
+    await withTempHome(async (home) => {
+      const store = path.join(home, "sessions.json");
+      mockConfig(home, store);
+
+      await expect(agentCommand({ message: "hi", to: "+1555" }, runtime)).rejects.toThrow(
+        "Not logged in",
+      );
     });
   });
 });

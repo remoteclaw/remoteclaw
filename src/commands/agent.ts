@@ -31,6 +31,7 @@ import {
   emitAgentEvent,
   registerAgentRunContext,
 } from "../infra/agent-events.js";
+import { withAuthKeyRetry } from "../middleware/auth-key-retry.js";
 import { ChannelBridge } from "../middleware/channel-bridge.js";
 import type { SessionMap } from "../middleware/session-map.js";
 import type { AgentDeliveryResult, ChannelMessage } from "../middleware/types.js";
@@ -288,15 +289,7 @@ export async function agentCommand(
         getSessionId: () => getCliSessionId(sessionEntry, provider),
       });
 
-      const bridge = new ChannelBridge({
-        provider: resolveAgentRuntimeOrThrow(cfg, sessionAgentId),
-        sessionMap,
-        gatewayUrl: resolveGatewayUrlFromConfig(cfg),
-        gatewayToken: resolveGatewayTokenFromConfig(cfg),
-        workspaceDir,
-        runtimeArgs: resolveAgentRuntimeArgs(cfg, sessionAgentId),
-        runtimeEnv: resolveAgentRuntimeEnv(cfg, sessionAgentId),
-      });
+      const baseRuntimeEnv = resolveAgentRuntimeEnv(cfg, sessionAgentId);
 
       const messageToolHints = resolveChannelMessageToolHints({
         cfg,
@@ -315,7 +308,30 @@ export async function agentCommand(
         messageToolHints,
       });
 
-      result = await bridge.handle(message, undefined, opts.abortSignal);
+      // Execute with auth key retry — rotates to next profile on rate-limit/auth errors.
+      result = await withAuthKeyRetry<AgentDeliveryResult>(
+        { cfg, agentId: sessionAgentId, baseEnv: baseRuntimeEnv },
+        async (runtimeEnv) => {
+          const bridge = new ChannelBridge({
+            provider: resolveAgentRuntimeOrThrow(cfg, sessionAgentId),
+            sessionMap,
+            gatewayUrl: resolveGatewayUrlFromConfig(cfg),
+            gatewayToken: resolveGatewayTokenFromConfig(cfg),
+            workspaceDir,
+            runtimeArgs: resolveAgentRuntimeArgs(cfg, sessionAgentId),
+            runtimeEnv,
+          });
+
+          const bridgeResult = await bridge.handle(message, undefined, opts.abortSignal);
+
+          if (bridgeResult.error && bridgeResult.payloads.length === 0) {
+            throw new Error(bridgeResult.error);
+          }
+
+          return bridgeResult;
+        },
+        (bridgeResult) => bridgeResult.error,
+      );
       emitAgentEvent({
         runId,
         stream: "lifecycle",

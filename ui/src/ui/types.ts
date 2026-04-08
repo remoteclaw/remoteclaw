@@ -553,8 +553,7 @@ export type CronRunLogEntry = {
   delivered?: boolean;
   runAtMs?: number;
   nextRunAtMs?: number;
-  model?: string;
-  provider?: string;
+  runtime?: string;
   usage?: {
     input_tokens?: number;
     output_tokens?: number;

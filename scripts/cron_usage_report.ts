@@ -14,8 +14,7 @@ type CronRunLogEntry = {
   jobId: string;
   action: "finished";
   status?: "ok" | "error" | "skipped";
-  model?: string;
-  provider?: string;
+  runtime?: string;
   usage?: Usage;
 };
 
@@ -54,7 +53,7 @@ function usageAndExit(code: number): never {
       "",
       "Filters:",
       "  --jobId <id>",
-      "  --model <name>",
+      "  --runtime <name>",
       "",
       "Output:",
       "  --json             (emit JSON)",
@@ -118,7 +117,7 @@ export async function main() {
   }
 
   const filterJobId = typeof args.jobId === "string" ? args.jobId.trim() : "";
-  const filterModel = typeof args.model === "string" ? args.model.trim() : "";
+  const filterRuntime = typeof args.runtime === "string" ? args.runtime.trim() : "";
   const asJson = args.json === true;
 
   const files = await listJsonlFiles(runsDir);
@@ -127,10 +126,10 @@ export async function main() {
     {
       jobId: string;
       runs: number;
-      models: Record<
+      runtimes: Record<
         string,
         {
-          model: string;
+          runtime: string;
           runs: number;
           input_tokens: number;
           output_tokens: number;
@@ -162,8 +161,8 @@ export async function main() {
       if (filterJobId && entry.jobId !== filterJobId) {
         continue;
       }
-      const model = (entry.model ?? "<unknown>").trim() || "<unknown>";
-      if (filterModel && model !== filterModel) {
+      const runtime = (entry.runtime ?? "<unknown>").trim() || "<unknown>";
+      if (filterRuntime && runtime !== filterRuntime) {
         continue;
       }
 
@@ -176,7 +175,7 @@ export async function main() {
       const jobAgg = (totalsByJob[jobId] ??= {
         jobId,
         runs: 0,
-        models: {},
+        runtimes: {},
         input_tokens: 0,
         output_tokens: 0,
         total_tokens: 0,
@@ -184,19 +183,19 @@ export async function main() {
       });
       jobAgg.runs++;
 
-      const modelAgg = (jobAgg.models[model] ??= {
-        model,
+      const runtimeAgg = (jobAgg.runtimes[runtime] ??= {
+        runtime,
         runs: 0,
         input_tokens: 0,
         output_tokens: 0,
         total_tokens: 0,
         missingUsageRuns: 0,
       });
-      modelAgg.runs++;
+      runtimeAgg.runs++;
 
       if (!hasUsage) {
         jobAgg.missingUsageRuns++;
-        modelAgg.missingUsageRuns++;
+        runtimeAgg.missingUsageRuns++;
         continue;
       }
 
@@ -208,16 +207,16 @@ export async function main() {
       jobAgg.output_tokens += output;
       jobAgg.total_tokens += total;
 
-      modelAgg.input_tokens += input;
-      modelAgg.output_tokens += output;
-      modelAgg.total_tokens += total;
+      runtimeAgg.input_tokens += input;
+      runtimeAgg.output_tokens += output;
+      runtimeAgg.total_tokens += total;
     }
   }
 
   const rows = Object.values(totalsByJob)
     .map((r) => ({
       ...r,
-      models: Object.values(r.models).toSorted((a, b) => b.total_tokens - a.total_tokens),
+      runtimes: Object.values(r.runtimes).toSorted((a, b) => b.total_tokens - a.total_tokens),
     }))
     .toSorted((a, b) => b.total_tokens - a.total_tokens);
 
@@ -243,8 +242,8 @@ export async function main() {
   if (filterJobId) {
     console.log(`  filter jobId: ${filterJobId}`);
   }
-  if (filterModel) {
-    console.log(`  filter model: ${filterModel}`);
+  if (filterRuntime) {
+    console.log(`  filter runtime: ${filterRuntime}`);
   }
   console.log("");
 
@@ -259,9 +258,9 @@ export async function main() {
     console.log(
       `  tokens: total ${fmtInt(job.total_tokens)} (in ${fmtInt(job.input_tokens)} / out ${fmtInt(job.output_tokens)})`,
     );
-    for (const m of job.models) {
+    for (const r of job.runtimes) {
       console.log(
-        `    model ${m.model}: runs ${fmtInt(m.runs)} (missing usage: ${fmtInt(m.missingUsageRuns)}), total ${fmtInt(m.total_tokens)} (in ${fmtInt(m.input_tokens)} / out ${fmtInt(m.output_tokens)})`,
+        `    runtime ${r.runtime}: runs ${fmtInt(r.runs)} (missing usage: ${fmtInt(r.missingUsageRuns)}), total ${fmtInt(r.total_tokens)} (in ${fmtInt(r.input_tokens)} / out ${fmtInt(r.output_tokens)})`,
       );
     }
     console.log("");

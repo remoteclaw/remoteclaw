@@ -41,8 +41,7 @@ export type CronUsageSummary = {
 };
 
 export type CronRunTelemetry = {
-  model?: string;
-  provider?: string;
+  runtime?: string;
   usage?: CronUsageSummary;
 };
 

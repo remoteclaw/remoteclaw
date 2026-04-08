@@ -416,8 +416,7 @@ export async function run(state: CronServiceState, id: string, mode?: "due" | "f
       runAtMs: startedAt,
       durationMs: job.state.lastDurationMs,
       nextRunAtMs: job.state.nextRunAtMs,
-      model: coreResult.model,
-      provider: coreResult.provider,
+      runtime: coreResult.runtime,
       usage: coreResult.usage,
     });
 

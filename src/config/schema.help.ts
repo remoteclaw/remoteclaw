@@ -924,7 +924,8 @@ export const FIELD_HELP: Record<string, string> = {
   "agents.defaults.imageModel.fallbacks": "Ordered fallback image models (provider/model).",
   "agents.defaults.imageMaxDimensionPx":
     "Max image side length in pixels when sanitizing transcript/tool-result image payloads (default: 1200).",
-  "agents.defaults.cliBackends": "Optional CLI backends for text-only fallback (claude-cli, etc.).",
+  "agents.defaults.cliBackends":
+    "Optional CLI backends for text-only fallback (claude, codex, etc.).",
   "agents.defaults.compaction":
     "Compaction tuning for when context nears token limits, including history share, reserve headroom, and pre-compaction memory flush behavior. Use this when long-running sessions need stable continuity under tight context windows.",
   "agents.defaults.compaction.mode":

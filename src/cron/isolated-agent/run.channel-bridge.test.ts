@@ -40,6 +40,7 @@ vi.mock("../../agents/channel-tools.js", () => ({
 vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentConfig: vi.fn().mockReturnValue(undefined),
   resolveAgentDir: vi.fn().mockReturnValue("/tmp/agent-dir"),
+  resolveAgentRuntime: vi.fn().mockReturnValue("claude"),
   resolveAgentRuntimeArgs: vi.fn().mockReturnValue(undefined),
   resolveAgentRuntimeEnv: vi.fn().mockReturnValue(undefined),
   resolveAgentRuntimeOrThrow: vi.fn().mockReturnValue("claude"),

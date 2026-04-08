@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import {
   resolveAgentConfig,
+  resolveAgentRuntime,
   resolveAgentRuntimeArgs,
   resolveAgentRuntimeEnv,
   resolveAgentRuntimeOrThrow,
@@ -12,7 +13,7 @@ import { getCliSessionId, setCliSessionId } from "../../agents/cli-session.js";
 import { resolveCronStyleNow } from "../../agents/current-time.js";
 import { resolveUserTimezone } from "../../agents/date-time.js";
 // Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
-import { isCliProvider, normalizeModelRef, parseModelRef } from "../../agents/provider-utils.js";
+import { isCliProvider, parseModelRef } from "../../agents/provider-utils.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
 import { ensureAgentWorkspace } from "../../agents/workspace.js";
@@ -189,14 +190,16 @@ export async function runCronIsolatedAgentTurn(params: {
   const workspaceDirRaw = resolveAgentWorkspaceDir(params.cfg, agentId);
   const workspaceDir = await ensureAgentWorkspace(workspaceDirRaw);
 
-  const resolvedDefault = normalizeModelRef("unknown", "unknown");
-  let provider = resolvedDefault.provider;
-  let model = resolvedDefault.model;
+  // Use agent runtime as the default provider so CLI session IDs are keyed
+  // by the actual runtime name (e.g. "claude") instead of "unknown".
+  const runtimeProvider = resolveAgentRuntime(cfgWithAgentDefaults, agentId) ?? "unknown";
+  let provider = runtimeProvider;
+  let model = "default";
   const modelOverrideRaw =
     params.job.payload.kind === "agentTurn" ? params.job.payload.model : undefined;
   const modelOverride = typeof modelOverrideRaw === "string" ? modelOverrideRaw.trim() : undefined;
   if (modelOverride !== undefined && modelOverride.length > 0) {
-    const parsed = parseModelRef(modelOverride, resolvedDefault.provider);
+    const parsed = parseModelRef(modelOverride, runtimeProvider);
     if (!parsed) {
       return { status: "error", error: `Unrecognized model "${modelOverride}".` };
     }
@@ -253,10 +256,10 @@ export async function runCronIsolatedAgentTurn(params: {
     const sessionModelOverride = cronSession.sessionEntry.modelOverride?.trim();
     if (sessionModelOverride) {
       const sessionProviderOverride =
-        cronSession.sessionEntry.providerOverride?.trim() || resolvedDefault.provider;
+        cronSession.sessionEntry.providerOverride?.trim() || runtimeProvider;
       const parsed = parseModelRef(
         `${sessionProviderOverride}/${sessionModelOverride}`,
-        resolvedDefault.provider,
+        runtimeProvider,
       );
       if (parsed) {
         provider = parsed.provider;

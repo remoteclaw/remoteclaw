@@ -42,6 +42,7 @@ vi.mock("../../agents/channel-tools.js", () => ({
 vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentConfig: vi.fn().mockReturnValue(undefined),
   resolveAgentDir: vi.fn().mockReturnValue("/tmp/agent-dir"),
+  resolveAgentRuntime: vi.fn().mockReturnValue("claude"),
   resolveAgentRuntimeArgs: vi.fn().mockReturnValue(undefined),
   resolveAgentRuntimeEnv: vi.fn().mockReturnValue(undefined),
   resolveAgentRuntimeOrThrow: vi.fn().mockReturnValue("claude"),
@@ -345,9 +346,9 @@ describe("runCronIsolatedAgentTurn — cron model override (telemetry vs session
 
     expect(result.status).toBe("ok");
     expect(result.runtime).toBe("claude");
-    // Without model override, defaults from normalizeModelRef("unknown", "unknown")
-    expect(cronSession.sessionEntry.model).toBe("unknown");
-    expect(cronSession.sessionEntry.modelProvider).toBe("unknown");
+    // Without model override, defaults from the configured agent runtime.
+    expect(cronSession.sessionEntry.model).toBe("default");
+    expect(cronSession.sessionEntry.modelProvider).toBe("claude");
   });
 
   it("returns error for unparseable model in payload", async () => {

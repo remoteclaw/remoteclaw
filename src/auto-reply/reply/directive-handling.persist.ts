@@ -1,3 +1,4 @@
+import { resolveAgentRuntime } from "../../agents/agent-scope.js";
 import { modelKey, parseModelRef } from "../../agents/provider-utils.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
@@ -116,12 +117,17 @@ export async function persistInlineDirectives(params: {
   };
 }
 
-export function resolveDefaultModel(_params: { cfg: RemoteClawConfig; agentId?: string }): {
+export function resolveDefaultModel(params: { cfg: RemoteClawConfig; agentId?: string }): {
   defaultProvider: string;
   defaultModel: string;
   aliasIndex: Map<string, { provider: string; model: string }>;
 } {
   // Model selection/alias infrastructure gutted in RemoteClaw — CLIs own model selection.
+  // Use the configured agent runtime as the provider identifier so that CLI session
+  // IDs are keyed by the actual runtime name (e.g. "claude") instead of "unknown".
   const aliasIndex = new Map<string, { provider: string; model: string }>();
-  return { defaultProvider: "unknown", defaultModel: "unknown", aliasIndex };
+  const runtime = params.agentId
+    ? resolveAgentRuntime(params.cfg, params.agentId)
+    : params.cfg.agents?.defaults?.runtime;
+  return { defaultProvider: runtime ?? "unknown", defaultModel: "default", aliasIndex };
 }

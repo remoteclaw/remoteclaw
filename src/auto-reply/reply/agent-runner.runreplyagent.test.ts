@@ -177,7 +177,7 @@ function createMinimalRun(params?: {
         sessionKey,
         storePath: params?.storePath,
         sessionCtx,
-        defaultModel: "anthropic/claude-opus-4-5",
+
         resolvedVerboseLevel: params?.resolvedVerboseLevel ?? "off",
         isNewSession: false,
         blockStreamingEnabled: params?.blockStreamingEnabled ?? false,
@@ -275,7 +275,6 @@ async function runReplyAgentWithBase(params: {
     sessionStore: { [params.sessionKey]: params.sessionEntry } as Record<string, SessionEntry>,
     sessionKey: params.sessionKey,
     storePath: params.storePath,
-    defaultModel: "anthropic/claude-opus-4-5",
     agentCfgContextTokens: 100_000,
     resolvedVerboseLevel: "off",
     isNewSession: false,
@@ -360,7 +359,7 @@ describe("runReplyAgent mediaUrls forwarding", () => {
       isActive: false,
       typing,
       sessionCtx,
-      defaultModel: "anthropic/claude-opus-4-5",
+
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: false,
@@ -417,7 +416,7 @@ describe("runReplyAgent mediaUrls forwarding", () => {
       isActive: false,
       typing,
       sessionCtx,
-      defaultModel: "anthropic/claude-opus-4-5",
+
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: false,

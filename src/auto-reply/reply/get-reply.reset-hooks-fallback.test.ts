@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentDir: vi.fn(() => "/tmp/agent"),
+  resolveAgentRuntime: vi.fn(() => "claude"),
   resolveAgentWorkspaceDir: vi.fn(() => "/tmp/workspace"),
   resolveSessionAgentId: vi.fn(() => "main"),
   resolveAgentSkillsFilter: vi.fn(() => undefined),
@@ -23,9 +24,6 @@ vi.mock("../../agents/timeout.js", () => ({
 vi.mock("../../agents/workspace.js", () => ({
   ensureAgentWorkspace: vi.fn(async () => "/tmp/workspace"),
 }));
-vi.mock("../../channels/model-overrides.js", () => ({
-  resolveChannelModelOverride: vi.fn(() => undefined),
-}));
 vi.mock("../../config/config.js", () => ({
   loadConfig: vi.fn(() => ({})),
 }));
@@ -37,13 +35,6 @@ vi.mock("../command-auth.js", () => ({
 }));
 vi.mock("./commands-core.js", () => ({
   emitResetCommandHooks: (...args: unknown[]) => mocks.emitResetCommandHooks(...args),
-}));
-vi.mock("./directive-handling.js", () => ({
-  resolveDefaultModel: vi.fn(() => ({
-    defaultProvider: "openai",
-    defaultModel: "gpt-4o-mini",
-    aliasIndex: new Map(),
-  })),
 }));
 vi.mock("./get-reply-directives.js", () => ({
   resolveReplyDirectives: (...args: unknown[]) => mocks.resolveReplyDirectives(...args),

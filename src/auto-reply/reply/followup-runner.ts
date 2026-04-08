@@ -26,7 +26,6 @@ export function createFollowupRunner(params: {
   sessionStore?: Record<string, SessionEntry>;
   sessionKey?: string;
   storePath?: string;
-  defaultModel: string;
   agentCfgContextTokens?: number;
 }): (queued: FollowupRun) => Promise<void> {
   const { opts, typing, typingMode, sessionStore, sessionKey } = params;

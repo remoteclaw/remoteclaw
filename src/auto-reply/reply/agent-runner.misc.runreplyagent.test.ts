@@ -147,7 +147,7 @@ describe.skip("runReplyAgent onAgentRunStart", () => {
       opts: params?.opts,
       typing,
       sessionCtx,
-      defaultModel: `${provider}/${model}`,
+
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: false,
@@ -275,7 +275,7 @@ describe.skip("runReplyAgent authProfileId fallback scoping", () => {
       sessionStore: { [sessionKey]: sessionEntry },
       sessionKey,
       storePath: undefined,
-      defaultModel: "anthropic/claude-opus-4-5",
+
       agentCfgContextTokens: 100_000,
       resolvedVerboseLevel: "off",
       isNewSession: false,
@@ -421,7 +421,7 @@ describe("runReplyAgent auto-compaction token update", () => {
       sessionStore: { [sessionKey]: sessionEntry },
       sessionKey,
       storePath,
-      defaultModel: "anthropic/claude-opus-4-5",
+
       agentCfgContextTokens: 200_000,
       resolvedVerboseLevel: "off",
       isNewSession: false,
@@ -484,7 +484,7 @@ describe("runReplyAgent auto-compaction token update", () => {
       sessionStore: { [sessionKey]: sessionEntry },
       sessionKey,
       storePath,
-      defaultModel: "anthropic/claude-opus-4-5",
+
       agentCfgContextTokens: 200_000,
       resolvedVerboseLevel: "off",
       isNewSession: false,
@@ -562,7 +562,7 @@ describe("runReplyAgent auto-compaction token update", () => {
       sessionStore: { [sessionKey]: sessionEntry },
       sessionKey,
       storePath,
-      defaultModel: "anthropic/claude-opus-4-5",
+
       agentCfgContextTokens: 200_000,
       resolvedVerboseLevel: "off",
       isNewSession: false,
@@ -650,7 +650,7 @@ describe.skip("runReplyAgent block streaming", () => {
       opts: { onBlockReply },
       typing,
       sessionCtx,
-      defaultModel: "anthropic/claude-opus-4-5",
+
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: true,
@@ -752,7 +752,7 @@ describe.skip("runReplyAgent block streaming", () => {
       opts: { onBlockReply, blockReplyTimeoutMs: 1 },
       typing,
       sessionCtx,
-      defaultModel: "anthropic/claude-opus-4-5",
+
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: true,
@@ -824,7 +824,7 @@ describe.skip("runReplyAgent claude-cli routing", () => {
       isStreaming: false,
       typing,
       sessionCtx,
-      defaultModel: "claude-cli/opus-4.5",
+
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: false,
@@ -927,7 +927,7 @@ describe.skip("runReplyAgent messaging tool suppression", () => {
       sessionCtx,
       sessionKey,
       storePath: opts.storePath,
-      defaultModel: "anthropic/claude-opus-4-5",
+
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: false,
@@ -1151,7 +1151,7 @@ describe.skip("runReplyAgent reminder commitment guard", () => {
       typing,
       sessionCtx,
       sessionKey: "main",
-      defaultModel: "anthropic/claude-opus-4-5",
+
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: false,
@@ -1252,7 +1252,7 @@ describe.skip("runReplyAgent fallback reasoning tags", () => {
       sessionCtx,
       sessionEntry: params?.sessionEntry,
       sessionKey,
-      defaultModel: "anthropic/claude-opus-4-5",
+
       agentCfgContextTokens: params?.agentCfgContextTokens,
       resolvedVerboseLevel: "off",
       isNewSession: false,
@@ -1375,7 +1375,7 @@ describe.skip("runReplyAgent response usage footer", () => {
       sessionCtx,
       sessionEntry,
       sessionKey: params.sessionKey,
-      defaultModel: "anthropic/claude-opus-4-5",
+
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: false,
@@ -1484,7 +1484,7 @@ describe.skip("runReplyAgent transient HTTP retry", () => {
       isStreaming: false,
       typing,
       sessionCtx,
-      defaultModel: "anthropic/claude-opus-4-5",
+
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: false,

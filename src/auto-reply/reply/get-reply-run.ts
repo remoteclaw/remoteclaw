@@ -35,17 +35,8 @@ import { appendUntrustedContext } from "./untrusted-context.js";
 
 type AgentDefaults = NonNullable<RemoteClawConfig["agents"]>["defaults"];
 
-function buildResetSessionNoticeText(params: {
-  provider: string;
-  model: string;
-  defaultProvider: string;
-  defaultModel: string;
-}): string {
-  const modelLabel = `${params.provider}/${params.model}`;
-  const defaultLabel = `${params.defaultProvider}/${params.defaultModel}`;
-  return modelLabel === defaultLabel
-    ? `✅ New session started · model: ${modelLabel}`
-    : `✅ New session started · model: ${modelLabel} (default: ${defaultLabel})`;
+function buildResetSessionNoticeText(params: { runtimeId: string }): string {
+  return `✅ New session started · runtime: ${params.runtimeId}`;
 }
 
 function resolveResetSessionNoticeRoute(params: {
@@ -75,10 +66,7 @@ async function sendResetSessionNotice(params: {
   cfg: RemoteClawConfig;
   accountId: string | undefined;
   threadId: string | number | undefined;
-  provider: string;
-  model: string;
-  defaultProvider: string;
-  defaultModel: string;
+  runtimeId: string;
 }): Promise<void> {
   const route = resolveResetSessionNoticeRoute({
     ctx: params.ctx,
@@ -89,12 +77,7 @@ async function sendResetSessionNotice(params: {
   }
   await routeReply({
     payload: {
-      text: buildResetSessionNoticeText({
-        provider: params.provider,
-        model: params.model,
-        defaultProvider: params.defaultProvider,
-        defaultModel: params.defaultModel,
-      }),
+      text: buildResetSessionNoticeText({ runtimeId: params.runtimeId }),
     },
     channel: route.channel,
     to: route.to,
@@ -128,8 +111,7 @@ type RunPreparedReplyParams = {
     flushOnParagraph?: boolean;
   };
   resolvedBlockStreamingBreak: "text_end" | "message_end";
-  provider: string;
-  model: string;
+  runtimeId: string;
   perMessageQueueMode?: InlineDirectives["queueMode"];
   perMessageQueueOptions?: {
     debounceMs?: number;
@@ -138,8 +120,6 @@ type RunPreparedReplyParams = {
   };
   typing: TypingController;
   opts?: GetReplyOptions;
-  defaultProvider: string;
-  defaultModel: string;
   timeoutMs: number;
   isNewSession: boolean;
   resetTriggered: boolean;
@@ -173,14 +153,11 @@ export async function runPreparedReply(
     blockStreamingEnabled,
     blockReplyChunking,
     resolvedBlockStreamingBreak,
-    provider,
-    model,
+    runtimeId,
     perMessageQueueMode,
     perMessageQueueOptions,
     typing,
     opts,
-    defaultProvider,
-    defaultModel,
     timeoutMs,
     isNewSession,
     resetTriggered,
@@ -323,10 +300,7 @@ export async function runPreparedReply(
       cfg,
       accountId: ctx.AccountId,
       threadId: ctx.MessageThreadId,
-      provider,
-      model,
-      defaultProvider,
-      defaultModel,
+      runtimeId,
     });
   }
   const sessionIdFinal = sessionId ?? crypto.randomUUID();
@@ -389,15 +363,15 @@ export async function runPreparedReply(
       sessionFile,
       workspaceDir,
       config: cfg,
-      provider,
-      model,
+      provider: runtimeId,
+      model: "default",
       verboseLevel: resolvedVerboseLevel,
       timeoutMs,
       blockReplyBreak: resolvedBlockStreamingBreak,
       ownerNumbers: command.ownerList.length > 0 ? command.ownerList : undefined,
       extraSystemPrompt: extraSystemPrompt || undefined,
       threadContext: threadContextNote,
-      ...(isReasoningTagProvider(provider) ? { enforceFinalTag: true } : {}),
+      ...(isReasoningTagProvider(runtimeId) ? { enforceFinalTag: true } : {}),
     },
   };
 
@@ -415,7 +389,6 @@ export async function runPreparedReply(
     sessionStore,
     sessionKey,
     storePath,
-    defaultModel,
     agentCfgContextTokens: agentCfg?.contextTokens,
     resolvedVerboseLevel: resolvedVerboseLevel ?? "off",
     isNewSession,

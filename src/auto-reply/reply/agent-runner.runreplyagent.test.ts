@@ -1115,8 +1115,8 @@ describe("runReplyAgent memory flush", () => {
       await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
 
       // The main execution path now goes through ChannelBridge for all providers
-      // (including CLI providers like codex-cli). Memory flush is skipped because
-      // isCliProvider("codex-cli") returns true in agent-runner-memory.ts.
+      // (including CLI providers like codex). Memory flush is skipped because
+      // isCliProvider("codex") returns true in agent-runner-memory.ts.
       state.channelBridgeHandleMock.mockResolvedValue(
         makeDeliveryResult({
           usage: { inputTokens: 1, outputTokens: 1 },
@@ -1126,7 +1126,7 @@ describe("runReplyAgent memory flush", () => {
       const baseRun = createBaseRun({
         storePath,
         sessionEntry,
-        runOverrides: { provider: "codex-cli" },
+        runOverrides: { provider: "codex" },
       });
 
       await runReplyAgentWithBase({

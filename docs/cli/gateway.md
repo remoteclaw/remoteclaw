@@ -52,7 +52,7 @@ Notes:
 - `--allow-unconfigured`: allow gateway start without `gateway.mode=local` in config.
 - `--force`: kill any existing listener on the selected port before starting.
 - `--verbose`: verbose logs.
-- `--claude-cli-logs`: only show claude-cli logs in the console (and enable its stdout/stderr).
+- `--claude-logs`: only show claude logs in the console (and enable its stdout/stderr).
 - `--ws-log <auto|full|compact>`: websocket log style (default `auto`).
 - `--compact`: alias for `--ws-log compact`.
 - `--raw-stream`: log raw model stream events to jsonl.

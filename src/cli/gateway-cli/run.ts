@@ -42,7 +42,7 @@ type GatewayRunOpts = {
   allowUnconfigured?: boolean;
   force?: boolean;
   verbose?: boolean;
-  claudeCliLogs?: boolean;
+  claudeLogs?: boolean;
   wsLog?: unknown;
   compact?: boolean;
   rawStream?: boolean;
@@ -67,7 +67,7 @@ const GATEWAY_RUN_BOOLEAN_KEYS = [
   "allowUnconfigured",
   "force",
   "verbose",
-  "claudeCliLogs",
+  "claudeLogs",
   "compact",
   "rawStream",
 ] as const;
@@ -132,9 +132,9 @@ function resolveGatewayRunOptions(opts: GatewayRunOpts, command?: Command): Gate
 async function runGatewayCommand(opts: GatewayRunOpts) {
   setConsoleTimestampPrefix(true);
   setVerbose(Boolean(opts.verbose));
-  if (opts.claudeCliLogs) {
-    setConsoleSubsystemFilter(["agent/claude-cli"]);
-    process.env.REMOTECLAW_CLAUDE_CLI_LOG_OUTPUT = "1";
+  if (opts.claudeLogs) {
+    setConsoleSubsystemFilter(["agent/claude"]);
+    process.env.REMOTECLAW_CLAUDE_LOG_OUTPUT = "1";
   }
   const wsLogRaw = (opts.compact ? "compact" : opts.wsLog) as string | undefined;
   const wsLogStyle: GatewayWsLogStyle =
@@ -399,11 +399,7 @@ export function addGatewayRunCommand(cmd: Command): Command {
     )
     .option("--force", "Kill any existing listener on the target port before starting", false)
     .option("--verbose", "Verbose logging to stdout/stderr", false)
-    .option(
-      "--claude-cli-logs",
-      "Only show claude-cli logs in the console (includes stdout/stderr)",
-      false,
-    )
+    .option("--claude-logs", "Only show claude logs in the console (includes stdout/stderr)", false)
     .option("--ws-log <style>", 'WebSocket log style ("auto"|"full"|"compact")', "auto")
     .option("--compact", 'Alias for "--ws-log compact"', false)
     .option("--raw-stream", "Log raw model stream events to jsonl", false)

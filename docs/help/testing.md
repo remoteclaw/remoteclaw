@@ -217,12 +217,12 @@ REMOTECLAW_LIVE_SETUP_TOKEN=1 REMOTECLAW_LIVE_SETUP_TOKEN_PROFILE=anthropic:setu
   - `pnpm test:live` (or `REMOTECLAW_LIVE_TEST=1` if invoking Vitest directly)
   - `REMOTECLAW_LIVE_CLI_BACKEND=1`
 - Defaults:
-  - Model: `claude-cli/claude-sonnet-4-6`
+  - Model: `claude/claude-sonnet-4-6`
   - Command: `claude`
   - Args: `["-p","--output-format","json","--dangerously-skip-permissions"]`
 - Overrides (optional):
-  - `REMOTECLAW_LIVE_CLI_BACKEND_MODEL="claude-cli/claude-opus-4-6"`
-  - `REMOTECLAW_LIVE_CLI_BACKEND_MODEL="codex-cli/gpt-5.3-codex"`
+  - `REMOTECLAW_LIVE_CLI_BACKEND_MODEL="claude/claude-opus-4-6"`
+  - `REMOTECLAW_LIVE_CLI_BACKEND_MODEL="codex/gpt-5.3-codex"`
   - `REMOTECLAW_LIVE_CLI_BACKEND_COMMAND="/full/path/to/claude"`
   - `REMOTECLAW_LIVE_CLI_BACKEND_ARGS='["-p","--output-format","json","--permission-mode","bypassPermissions"]'`
   - `REMOTECLAW_LIVE_CLI_BACKEND_CLEAR_ENV='["ANTHROPIC_API_KEY","ANTHROPIC_API_KEY_OLD"]'`
@@ -236,7 +236,7 @@ Example:
 
 ```bash
 REMOTECLAW_LIVE_CLI_BACKEND=1 \
-  REMOTECLAW_LIVE_CLI_BACKEND_MODEL="claude-cli/claude-sonnet-4-6" \
+  REMOTECLAW_LIVE_CLI_BACKEND_MODEL="claude/claude-sonnet-4-6" \
   pnpm test:live src/gateway/gateway-cli-backend.live.test.ts
 ```
 

@@ -1,16 +1,5 @@
 import { setCliSessionId } from "../../agents/cli-session.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../agents/context.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveContextTokensForModel = (..._args: unknown[]) => undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../agents/defaults.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const DEFAULT_CONTEXT_TOKENS = undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../agents/model-selection.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const isCliProvider = (..._args: unknown[]) => undefined as any;
+import { isCliProvider } from "../../agents/provider-utils.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
@@ -64,14 +53,7 @@ export async function updateSessionStoreAfterAgentRun(params: {
   const modelUsed = result.meta.agentMeta?.model ?? defaultModel;
   // @ts-expect-error — upstream feature not available in RemoteClaw fork
   const providerUsed = result.meta.agentMeta?.provider ?? defaultProvider;
-  const contextTokens =
-    resolveContextTokensForModel({
-      cfg,
-      provider: providerUsed,
-      model: modelUsed,
-      contextTokensOverride: params.contextTokensOverride,
-      fallbackContextTokens: DEFAULT_CONTEXT_TOKENS,
-    }) ?? DEFAULT_CONTEXT_TOKENS;
+  const contextTokens = params.contextTokensOverride ?? 200_000;
 
   const entry = sessionStore[sessionKey] ?? {
     sessionId,
@@ -87,7 +69,7 @@ export async function updateSessionStoreAfterAgentRun(params: {
     provider: providerUsed,
     model: modelUsed,
   });
-  if (isCliProvider(providerUsed, cfg)) {
+  if (isCliProvider(providerUsed as string, cfg)) {
     // @ts-expect-error — upstream feature not available in RemoteClaw fork
     const cliSessionId = result.meta.agentMeta?.sessionId?.trim();
     if (cliSessionId) {

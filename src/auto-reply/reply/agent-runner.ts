@@ -1,16 +1,5 @@
 import fs from "node:fs";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../agents/context.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const lookupContextTokens = (..._args: unknown[]) => undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../agents/defaults.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const DEFAULT_CONTEXT_TOKENS = undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../agents/model-selection.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const isCliProvider = (..._args: unknown[]) => undefined as any;
+import { isCliProvider } from "../../agents/provider-utils.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
 // import ... from "../../agents/pi-embedded.js";
 // oxlint-disable-next-line typescript/no-explicit-any
@@ -438,15 +427,11 @@ export async function runReplyAgent(params: {
     const modelUsed = runResult.meta?.agentMeta?.model ?? followupRun.run.model;
     const providerUsed = runResult.meta?.agentMeta?.provider ?? followupRun.run.provider;
     const verboseEnabled = resolvedVerboseLevel !== "off";
-    const cliSessionId = isCliProvider(providerUsed, cfg)
+    const cliSessionId = isCliProvider(providerUsed as string, cfg)
       ? // @ts-expect-error — upstream feature not available in RemoteClaw fork
         runResult.meta?.agentMeta?.sessionId?.trim()
       : undefined;
-    const contextTokensUsed =
-      agentCfgContextTokens ??
-      lookupContextTokens(modelUsed) ??
-      activeSessionEntry?.contextTokens ??
-      DEFAULT_CONTEXT_TOKENS;
+    const contextTokensUsed = agentCfgContextTokens ?? activeSessionEntry?.contextTokens ?? 200_000;
 
     await persistRunSessionUsage({
       storePath,

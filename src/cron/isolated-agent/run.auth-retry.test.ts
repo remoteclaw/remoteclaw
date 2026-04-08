@@ -44,6 +44,7 @@ const resolveAgentRuntimeEnvMock = vi.fn();
 vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentConfig: vi.fn().mockReturnValue(undefined),
   resolveAgentDir: vi.fn().mockReturnValue("/tmp/agent-dir"),
+  resolveAgentRuntime: vi.fn().mockReturnValue("claude"),
   resolveAgentRuntimeArgs: vi.fn().mockReturnValue(undefined),
   resolveAgentRuntimeEnv: resolveAgentRuntimeEnvMock,
   resolveAgentRuntimeOrThrow: vi.fn().mockReturnValue("claude"),

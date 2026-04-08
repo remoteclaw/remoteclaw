@@ -68,12 +68,21 @@ export function findNormalizedProviderKey(
   return Object.keys(entries).find((key) => normalizeProviderId(key) === providerKey);
 }
 
+/**
+ * Known agent runtime names. In RemoteClaw all runtimes are CLI-based, so
+ * these are always considered CLI providers regardless of cliBackends config.
+ */
+const CLI_RUNTIME_NAMES = new Set(["claude", "gemini", "codex", "opencode"]);
+
 export function isCliProvider(provider: string, cfg?: RemoteClawConfig): boolean {
   const normalized = normalizeProviderId(provider);
   if (normalized === "claude-cli") {
     return true;
   }
   if (normalized === "codex-cli") {
+    return true;
+  }
+  if (CLI_RUNTIME_NAMES.has(normalized)) {
     return true;
   }
   const backends = cfg?.agents?.defaults?.cliBackends ?? {};

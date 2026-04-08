@@ -884,7 +884,7 @@ Optional CLI backends for text-only fallback runs (no tool calls). Useful as a b
   agents: {
     defaults: {
       cliBackends: {
-        "claude-cli": {
+        claude: {
           command: "/opt/homebrew/bin/claude",
         },
         "my-cli": {

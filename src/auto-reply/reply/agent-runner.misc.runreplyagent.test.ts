@@ -178,7 +178,7 @@ describe.skip("runReplyAgent onAgentRunStart", () => {
       payloads: [{ text: "ok" }],
       meta: {
         agentMeta: {
-          provider: "claude-cli",
+          provider: "claude",
           model: "opus-4.5",
         },
       },
@@ -186,7 +186,7 @@ describe.skip("runReplyAgent onAgentRunStart", () => {
     const onAgentRunStart = vi.fn();
 
     const result = await createRun({
-      provider: "claude-cli",
+      provider: "claude",
       model: "opus-4.5",
       opts: { runId: "run-started", onAgentRunStart },
     });
@@ -776,7 +776,7 @@ describe.skip("runReplyAgent block streaming", () => {
 
 // Skipped: tests gutted functionality (Middleware Boundary Principle)
 
-describe.skip("runReplyAgent claude-cli routing", () => {
+describe.skip("runReplyAgent claude routing", () => {
   function createRun() {
     const typing = createMockTypingController();
     const sessionCtx = {
@@ -798,7 +798,7 @@ describe.skip("runReplyAgent claude-cli routing", () => {
         workspaceDir: "/tmp",
         config: {},
         skillsSnapshot: {},
-        provider: "claude-cli",
+        provider: "claude",
         model: "opus-4.5",
         thinkLevel: "low",
         verboseLevel: "off",
@@ -834,7 +834,7 @@ describe.skip("runReplyAgent claude-cli routing", () => {
     });
   }
 
-  it("uses claude-cli runner for claude-cli provider", async () => {
+  it("uses claude runner for claude provider", async () => {
     const runId = "00000000-0000-0000-0000-000000000001";
     const randomSpy = vi.spyOn(crypto, "randomUUID").mockReturnValue(runId);
     const lifecyclePhases: string[] = [];
@@ -854,7 +854,7 @@ describe.skip("runReplyAgent claude-cli routing", () => {
       payloads: [{ text: "ok" }],
       meta: {
         agentMeta: {
-          provider: "claude-cli",
+          provider: "claude",
           model: "opus-4.5",
         },
       },

@@ -790,8 +790,8 @@ describe("materializeAuthDefaults", () => {
         list: [{ id: "main", workspace: "~/ws" }],
       },
     });
-    const result = JSON.parse(materializeAuthDefaults(input, ["openai-codex:codex-cli"]));
-    expect(result.agents.defaults.auth).toBe("openai-codex:codex-cli");
+    const result = JSON.parse(materializeAuthDefaults(input, ["openai-codex:default"]));
+    expect(result.agents.defaults.auth).toBe("openai-codex:default");
   });
 
   it("sets auth for opencode runtime with anthropic profile", () => {

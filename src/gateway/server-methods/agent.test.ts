@@ -266,7 +266,7 @@ describe("gateway agent handler", () => {
   });
 
   it("preserves cliSessionIds from existing session entry", async () => {
-    const existingCliSessionIds = { "claude-cli": "abc-123-def" };
+    const existingCliSessionIds = { claude: "abc-123-def" };
     const existingClaudeCliSessionId = "abc-123-def";
 
     mockMainSessionEntry({

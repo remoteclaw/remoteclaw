@@ -228,6 +228,50 @@ describe("cron run log", () => {
     });
   });
 
+  it("parses old JSONL entries with model/provider fields without error", async () => {
+    await withRunLogDir("remoteclaw-cron-log-compat-", async (dir) => {
+      const logPath = path.join(dir, "runs", "job-1.jsonl");
+      await fs.mkdir(path.dirname(logPath), { recursive: true });
+      await fs.writeFile(
+        logPath,
+        [
+          // Old-format entry with model/provider (no runtime)
+          JSON.stringify({
+            ts: 1,
+            jobId: "job-1",
+            action: "finished",
+            status: "ok",
+            model: "claude-sonnet-4-5",
+            provider: "anthropic",
+            usage: { input_tokens: 100, output_tokens: 50 },
+          }),
+          // New-format entry with runtime
+          JSON.stringify({
+            ts: 2,
+            jobId: "job-1",
+            action: "finished",
+            status: "ok",
+            runtime: "claude",
+            usage: { input_tokens: 200, output_tokens: 100 },
+          }),
+        ].join("\n") + "\n",
+        "utf-8",
+      );
+
+      const entries = await readCronRunLogEntries(logPath, { limit: 10, jobId: "job-1" });
+      expect(entries).toHaveLength(2);
+
+      // Old entry: model/provider are silently ignored, runtime is undefined
+      expect(entries[0]?.runtime).toBeUndefined();
+      expect(entries[0]?.usage?.input_tokens).toBe(100);
+      expect(entries[0]?.status).toBe("ok");
+
+      // New entry: runtime is present
+      expect(entries[1]?.runtime).toBe("claude");
+      expect(entries[1]?.usage?.input_tokens).toBe(200);
+    });
+  });
+
   it("cleans up pending-write bookkeeping after appends complete", async () => {
     await withRunLogDir("remoteclaw-cron-log-pending-", async (dir) => {
       const logPath = path.join(dir, "runs", "job-cleanup.jsonl");

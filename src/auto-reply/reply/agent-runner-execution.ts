@@ -41,23 +41,11 @@ import type { FollowupRun } from "./queue.js";
 import { createBlockReplyDeliveryHandler } from "./reply-delivery.js";
 import type { TypingSignaler } from "./typing-mode.js";
 
-export type RuntimeFallbackAttempt = {
-  provider: string;
-  model: string;
-  error: string;
-  reason?: string;
-  status?: number;
-  code?: string;
-};
-
 export type AgentRunLoopResult =
   | {
       kind: "success";
       runId: string;
       runResult: AgentDeliveryResult;
-      fallbackProvider?: string;
-      fallbackModel?: string;
-      fallbackAttempts: RuntimeFallbackAttempt[];
       didLogHeartbeatStrip: boolean;
       /** Payload keys sent directly (not via pipeline) during tool flush. */
       directlySentBlockKeys?: Set<string>;
@@ -211,9 +199,6 @@ export async function runAgentTurnWithFallback(params: {
     });
   }
   let runResult: AgentDeliveryResult;
-  let fallbackProvider = params.followupRun.run.provider;
-  let fallbackModel = params.followupRun.run.model;
-  let fallbackAttempts: RuntimeFallbackAttempt[] = [];
   let didResetAfterCompactionFailure = false;
   let didRetryTransientHttpError = false;
 
@@ -457,10 +442,6 @@ export async function runAgentTurnWithFallback(params: {
           });
         }
       }
-      fallbackProvider = provider;
-      fallbackModel = model;
-      fallbackAttempts = [];
-
       // Surface context overflow errors returned in the result (not thrown).
       // Treat these as a session-level failure and auto-recover by starting a fresh session.
       const bridgeErrorMsg = runResult.error;
@@ -626,9 +607,6 @@ export async function runAgentTurnWithFallback(params: {
     kind: "success",
     runId,
     runResult,
-    fallbackProvider,
-    fallbackModel,
-    fallbackAttempts,
     didLogHeartbeatStrip,
     directlySentBlockKeys: directlySentBlockKeys.size > 0 ? directlySentBlockKeys : undefined,
   };

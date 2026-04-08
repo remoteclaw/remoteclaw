@@ -129,8 +129,6 @@ export async function applySessionsPatchToStore(params: {
 
   if ("model" in patch) {
     const raw = patch.model;
-    const prevProvider = next.providerOverride;
-    const prevModel = next.modelOverride;
     if (raw === null) {
       // Reset to default — clear overrides.
       delete next.providerOverride;
@@ -153,12 +151,6 @@ export async function applySessionsPatchToStore(params: {
         next.providerOverride = parsed.provider;
         next.modelOverride = parsed.model;
       }
-    }
-    // Clear stale fallback notice when model overrides change.
-    if (next.providerOverride !== prevProvider || next.modelOverride !== prevModel) {
-      delete next.fallbackNoticeSelectedModel;
-      delete next.fallbackNoticeActiveModel;
-      delete next.fallbackNoticeReason;
     }
   }
 

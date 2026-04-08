@@ -41,8 +41,6 @@ export async function updateSessionStoreAfterAgentRun(params: {
   sessionStore: Record<string, SessionEntry>;
   defaultProvider: string;
   defaultModel: string;
-  fallbackProvider?: string;
-  fallbackModel?: string;
   result: RunResult;
 }) {
   const {
@@ -53,8 +51,6 @@ export async function updateSessionStoreAfterAgentRun(params: {
     sessionStore,
     defaultProvider,
     defaultModel,
-    fallbackProvider,
-    fallbackModel,
     result,
   } = params;
 
@@ -65,9 +61,9 @@ export async function updateSessionStoreAfterAgentRun(params: {
   // @ts-expect-error — upstream feature not available in RemoteClaw fork
   const compactionsThisRun = Math.max(0, result.meta.agentMeta?.compactionCount ?? 0);
   // @ts-expect-error — upstream feature not available in RemoteClaw fork
-  const modelUsed = result.meta.agentMeta?.model ?? fallbackModel ?? defaultModel;
+  const modelUsed = result.meta.agentMeta?.model ?? defaultModel;
   // @ts-expect-error — upstream feature not available in RemoteClaw fork
-  const providerUsed = result.meta.agentMeta?.provider ?? fallbackProvider ?? defaultProvider;
+  const providerUsed = result.meta.agentMeta?.provider ?? defaultProvider;
   const contextTokens =
     resolveContextTokensForModel({
       cfg,

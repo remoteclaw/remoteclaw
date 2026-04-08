@@ -72,11 +72,8 @@ import {
   type ChatCommandDefinition,
 } from "./commands-registry.js";
 import type { CommandCategory } from "./commands-registry.types.js";
-import { resolveActiveFallbackState } from "./fallback-state.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
 // import ... from "./model-runtime.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const formatProviderModelRef = (..._args: unknown[]) => undefined as any;
 // oxlint-disable-next-line typescript/no-explicit-any
 const resolveSelectedAndActiveModel = (..._args: unknown[]) => ({
   selected: { provider: "cli", model: "default", label: "cli/default" },
@@ -621,19 +618,8 @@ export function buildStatusMessage(args: StatusArgs): string {
     (selectedAuthMode && selectedAuthMode !== "unknown" ? selectedAuthMode : undefined);
   const activeAuthMode =
     normalizeAuthMode(args.activeModelAuth) ?? resolveModelAuthMode(activeProvider, args.config);
-  const activeAuthLabelValue =
-    args.activeModelAuth ??
-    (activeAuthMode && activeAuthMode !== "unknown" ? activeAuthMode : undefined);
   const selectedModelLabel = modelRefs.selected.label || "unknown";
-  const activeModelLabel = formatProviderModelRef(activeProvider, activeModel) || "unknown";
-  const fallbackState = resolveActiveFallbackState({
-    selectedModelRef: selectedModelLabel,
-    activeModelRef: activeModelLabel,
-    state: entry,
-  });
-  const effectiveCostAuthMode = fallbackState.active
-    ? activeAuthMode
-    : (selectedAuthMode ?? activeAuthMode);
+  const effectiveCostAuthMode = selectedAuthMode ?? activeAuthMode;
   const showCost = effectiveCostAuthMode === "api-key" || effectiveCostAuthMode === "mixed";
   const costConfig = showCost
     ? resolveModelCostConfig({
@@ -696,12 +682,6 @@ export function buildStatusMessage(args: StatusArgs): string {
   })();
   const modelNote = channelModelNote ? ` · ${channelModelNote}` : "";
   const modelLine = `🧠 Model: ${selectedModelLabel}${selectedAuthLabel}${modelNote}`;
-  const showFallbackAuth = activeAuthLabelValue && activeAuthLabelValue !== selectedAuthLabelValue;
-  const fallbackLine = fallbackState.active
-    ? `↪️ Fallback: ${activeModelLabel}${
-        showFallbackAuth ? ` · 🔑 ${activeAuthLabelValue}` : ""
-      } (${fallbackState.reason ?? "selected model unavailable"})`
-    : null;
   const commit = resolveCommitHash();
   const versionLine = `🦞 RemoteClaw ${VERSION}${commit ? ` (${commit})` : ""}`;
   const usagePair = formatUsagePair(inputTokens, outputTokens);
@@ -716,7 +696,6 @@ export function buildStatusMessage(args: StatusArgs): string {
     versionLine,
     args.timeLine,
     modelLine,
-    fallbackLine,
     usageCostLine,
     cacheLine,
     `📚 ${contextLine}`,

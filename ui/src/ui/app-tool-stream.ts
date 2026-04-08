@@ -35,82 +35,6 @@ type ToolStreamHost = {
   chatThinkingStream: string | null;
 };
 
-function toTrimmedString(value: unknown): string | null {
-  if (typeof value !== "string") {
-    return null;
-  }
-  const trimmed = value.trim();
-  return trimmed ? trimmed : null;
-}
-
-function resolveModelLabel(provider: unknown, model: unknown): string | null {
-  const modelValue = toTrimmedString(model);
-  if (!modelValue) {
-    return null;
-  }
-  const providerValue = toTrimmedString(provider);
-  if (providerValue) {
-    const prefix = `${providerValue}/`;
-    if (modelValue.toLowerCase().startsWith(prefix.toLowerCase())) {
-      const trimmedModel = modelValue.slice(prefix.length).trim();
-      if (trimmedModel) {
-        return `${providerValue}/${trimmedModel}`;
-      }
-    }
-    return `${providerValue}/${modelValue}`;
-  }
-  const slashIndex = modelValue.indexOf("/");
-  if (slashIndex > 0) {
-    const p = modelValue.slice(0, slashIndex).trim();
-    const m = modelValue.slice(slashIndex + 1).trim();
-    if (p && m) {
-      return `${p}/${m}`;
-    }
-  }
-  return modelValue;
-}
-
-type FallbackAttempt = {
-  provider: string;
-  model: string;
-  reason: string;
-};
-
-function parseFallbackAttemptSummaries(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  return value
-    .map((entry) => toTrimmedString(entry))
-    .filter((entry): entry is string => Boolean(entry));
-}
-
-function parseFallbackAttempts(value: unknown): FallbackAttempt[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  const out: FallbackAttempt[] = [];
-  for (const entry of value) {
-    if (!entry || typeof entry !== "object") {
-      continue;
-    }
-    const item = entry as Record<string, unknown>;
-    const provider = toTrimmedString(item.provider);
-    const model = toTrimmedString(item.model);
-    if (!provider || !model) {
-      continue;
-    }
-    const reason =
-      toTrimmedString(item.reason)?.replace(/_/g, " ") ??
-      toTrimmedString(item.code) ??
-      (typeof item.status === "number" ? `HTTP ${item.status}` : null) ??
-      toTrimmedString(item.error) ??
-      "error";
-    out.push({ provider, model, reason });
-  }
-  return out;
-}
-
 function extractToolOutputText(value: unknown): string | null {
   if (!value || typeof value !== "object") {
     return null;
@@ -251,25 +175,12 @@ export type CompactionStatus = {
   completedAt: number | null;
 };
 
-export type FallbackStatus = {
-  phase?: "active" | "cleared";
-  selected: string;
-  active: string;
-  previous?: string;
-  reason?: string;
-  attempts: string[];
-  occurredAt: number;
-};
-
 type CompactionHost = ToolStreamHost & {
   compactionStatus?: CompactionStatus | null;
   compactionClearTimer?: number | null;
-  fallbackStatus?: FallbackStatus | null;
-  fallbackClearTimer?: number | null;
 };
 
 const COMPACTION_TOAST_DURATION_MS = 5000;
-const FALLBACK_TOAST_DURATION_MS = 8000;
 
 export function handleCompactionEvent(host: CompactionHost, payload: AgentEventPayload) {
   const data = payload.data ?? {};
@@ -328,68 +239,6 @@ function resolveAcceptedSession(
   return { accepted: true, sessionKey };
 }
 
-function handleLifecycleFallbackEvent(host: CompactionHost, payload: AgentEventPayload) {
-  const data = payload.data ?? {};
-  const phase = payload.stream === "fallback" ? "fallback" : toTrimmedString(data.phase);
-  if (payload.stream === "lifecycle" && phase !== "fallback" && phase !== "fallback_cleared") {
-    return;
-  }
-
-  const accepted = resolveAcceptedSession(host, payload, { allowSessionScopedWhenIdle: true });
-  if (!accepted.accepted) {
-    return;
-  }
-
-  const selected =
-    resolveModelLabel(data.selectedProvider, data.selectedModel) ??
-    resolveModelLabel(data.fromProvider, data.fromModel);
-  const active =
-    resolveModelLabel(data.activeProvider, data.activeModel) ??
-    resolveModelLabel(data.toProvider, data.toModel);
-  const previous =
-    resolveModelLabel(data.previousActiveProvider, data.previousActiveModel) ??
-    toTrimmedString(data.previousActiveModel);
-  if (!selected || !active) {
-    return;
-  }
-  if (phase === "fallback" && selected === active) {
-    return;
-  }
-
-  const reason = toTrimmedString(data.reasonSummary) ?? toTrimmedString(data.reason);
-  const attempts = (() => {
-    const summaries = parseFallbackAttemptSummaries(data.attemptSummaries);
-    if (summaries.length > 0) {
-      return summaries;
-    }
-    return parseFallbackAttempts(data.attempts).map((attempt) => {
-      const modelRef = resolveModelLabel(attempt.provider, attempt.model);
-      return `${modelRef ?? `${attempt.provider}/${attempt.model}`}: ${attempt.reason}`;
-    });
-  })();
-
-  if (host.fallbackClearTimer != null) {
-    window.clearTimeout(host.fallbackClearTimer);
-    host.fallbackClearTimer = null;
-  }
-  host.fallbackStatus = {
-    phase: phase === "fallback_cleared" ? "cleared" : "active",
-    selected,
-    active: phase === "fallback_cleared" ? selected : active,
-    previous:
-      phase === "fallback_cleared"
-        ? (previous ?? (active !== selected ? active : undefined))
-        : undefined,
-    reason: reason ?? undefined,
-    attempts,
-    occurredAt: Date.now(),
-  };
-  host.fallbackClearTimer = window.setTimeout(() => {
-    host.fallbackStatus = null;
-    host.fallbackClearTimer = null;
-  }, FALLBACK_TOAST_DURATION_MS);
-}
-
 function handleThinkingEvent(host: ToolStreamHost, payload: AgentEventPayload) {
   const accepted = resolveAcceptedSession(host, payload);
   if (!accepted.accepted) {
@@ -412,11 +261,6 @@ export function handleAgentEvent(host: ToolStreamHost, payload?: AgentEventPaylo
   // Handle compaction events
   if (payload.stream === "compaction") {
     handleCompactionEvent(host as CompactionHost, payload);
-    return;
-  }
-
-  if (payload.stream === "lifecycle" || payload.stream === "fallback") {
-    handleLifecycleFallbackEvent(host as CompactionHost, payload);
     return;
   }
 

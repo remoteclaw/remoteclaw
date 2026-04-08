@@ -276,9 +276,6 @@ function runAgentAttempt(params: {
         const entry = params.sessionStore[params.sessionKey];
         if (entry) {
           const updatedEntry = { ...entry };
-          if (params.providerOverride === "claude-cli") {
-            delete updatedEntry.claudeCliSessionId;
-          }
           if (updatedEntry.cliSessionIds) {
             const normalizedProvider = normalizeProviderId(params.providerOverride);
             const newCliSessionIds = { ...updatedEntry.cliSessionIds };

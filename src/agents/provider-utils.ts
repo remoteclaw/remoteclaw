@@ -76,12 +76,6 @@ const CLI_RUNTIME_NAMES = new Set(["claude", "gemini", "codex", "opencode"]);
 
 export function isCliProvider(provider: string, cfg?: RemoteClawConfig): boolean {
   const normalized = normalizeProviderId(provider);
-  if (normalized === "claude-cli") {
-    return true;
-  }
-  if (normalized === "codex-cli") {
-    return true;
-  }
   if (CLI_RUNTIME_NAMES.has(normalized)) {
     return true;
   }

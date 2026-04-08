@@ -3,16 +3,16 @@ import type { RemoteClawConfig } from "../config/config.js";
 import { isCliProvider } from "./provider-utils.js";
 
 describe("isCliProvider", () => {
-  it("recognizes legacy CLI provider names", () => {
-    expect(isCliProvider("claude-cli")).toBe(true);
-    expect(isCliProvider("codex-cli")).toBe(true);
-  });
-
   it("recognizes agent runtime names as CLI providers", () => {
     expect(isCliProvider("claude")).toBe(true);
     expect(isCliProvider("gemini")).toBe(true);
     expect(isCliProvider("codex")).toBe(true);
     expect(isCliProvider("opencode")).toBe(true);
+  });
+
+  it("does not recognize legacy -cli suffixed names", () => {
+    expect(isCliProvider("claude-cli")).toBe(false);
+    expect(isCliProvider("codex-cli")).toBe(false);
   });
 
   it("recognizes cliBackends entries", () => {

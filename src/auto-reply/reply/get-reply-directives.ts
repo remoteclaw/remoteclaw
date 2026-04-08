@@ -2,9 +2,6 @@
 // import ... from "../../agents/bash-tools.js";
 type ExecToolDefaults = Record<string, unknown>;
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../agents/model-selection.js";
-type ModelAliasIndex = Map<string, { provider: string; model: string }>;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
 // import ... from "../../agents/sandbox.js";
 // oxlint-disable-next-line typescript/no-explicit-any
 const resolveSandboxRuntimeStatus = (..._args: unknown[]) => ({ sandboxed: false });
@@ -138,12 +135,7 @@ export async function resolveReplyDirectives(params: {
   isGroup: boolean;
   triggerBodyNormalized: string;
   commandAuthorized: boolean;
-  defaultProvider: string;
-  defaultModel: string;
-  aliasIndex: ModelAliasIndex;
-  provider: string;
-  model: string;
-  hasResolvedHeartbeatModelOverride: boolean;
+  runtimeId: string;
   typing: TypingController;
   opts?: GetReplyOptions;
   skillFilter?: string[];
@@ -165,17 +157,16 @@ export async function resolveReplyDirectives(params: {
     isGroup,
     triggerBodyNormalized,
     commandAuthorized,
-    defaultProvider,
-    defaultModel,
-    provider: initialProvider,
-    model: initialModel,
-    hasResolvedHeartbeatModelOverride,
+    runtimeId,
     typing,
     opts,
     skillFilter,
   } = params;
-  let provider = initialProvider;
-  let model = initialModel;
+  // Model selection gutted in RemoteClaw — derive from runtimeId.
+  const defaultProvider = runtimeId;
+  const defaultModel = "default";
+  let provider = runtimeId;
+  let model = defaultModel;
 
   // Prefer CommandBody/RawBody (clean message without structural context) for directive parsing.
   // Keep `Body`/`BodyStripped` as the best-available prompt text (may include context).
@@ -426,7 +417,7 @@ export async function resolveReplyDirectives(params: {
     provider,
     model,
     hasModelDirective: directives.hasModelDirective,
-    hasResolvedHeartbeatModelOverride,
+    hasResolvedHeartbeatModelOverride: false,
   });
   provider = modelState.provider;
   model = modelState.model;
@@ -455,11 +446,6 @@ export async function resolveReplyDirectives(params: {
   const initialModelLabel = `${provider}/${model}`;
   const formatModelSwitchEvent = (label: string, alias?: string) =>
     alias ? `Model switched to ${alias} (${label}).` : `Model switched to ${label}.`;
-  const isModelListAlias =
-    directives.hasModelDirective &&
-    ["status", "list"].includes(directives.rawModelDirective?.trim().toLowerCase() ?? "");
-  const effectiveModelDirective = isModelListAlias ? undefined : directives.rawModelDirective;
-
   const inlineStatusRequested = hasInlineStatus && allowTextCommands && command.isAuthorizedSender;
 
   const applyResult = await applyInlineDirectiveOverrides({
@@ -481,9 +467,7 @@ export async function resolveReplyDirectives(params: {
     elevatedEnabled,
     elevatedAllowed,
     elevatedFailures,
-    defaultProvider,
-    defaultModel,
-    aliasIndex: params.aliasIndex,
+    runtimeId,
     provider,
     model,
     modelState,
@@ -492,7 +476,6 @@ export async function resolveReplyDirectives(params: {
     resolvedElevatedLevel,
     defaultActivation: () => defaultActivation,
     contextTokens,
-    effectiveModelDirective,
     typing,
   });
   if (applyResult.kind === "reply") {

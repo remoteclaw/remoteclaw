@@ -50,9 +50,7 @@ export async function applyInlineDirectiveOverrides(params: {
   command: Parameters<typeof buildStatusReply>[0]["command"];
   directives: InlineDirectives;
   messageProviderKey: string;
-  defaultProvider: string;
-  defaultModel: string;
-  aliasIndex: Parameters<typeof applyInlineDirectivesFastLane>[0]["aliasIndex"];
+  runtimeId: string;
   provider: string;
   model: string;
   modelState: Awaited<ReturnType<typeof createModelSelectionState>>;
@@ -62,7 +60,6 @@ export async function applyInlineDirectiveOverrides(params: {
     Parameters<typeof buildStatusReply>[0]["defaultGroupActivation"]
   >;
   contextTokens: number;
-  effectiveModelDirective?: string;
   /** Upstream feature: whether elevated security is enabled. */
   elevatedEnabled?: boolean;
   /** Upstream feature: elevated security allowed for this context. */
@@ -87,19 +84,20 @@ export async function applyInlineDirectiveOverrides(params: {
     allowTextCommands,
     command,
     messageProviderKey,
-    defaultProvider,
-    defaultModel,
-    aliasIndex,
+    runtimeId,
     modelState,
     initialModelLabel,
     formatModelSwitchEvent,
     defaultActivation,
     typing,
-    effectiveModelDirective,
   } = params;
   let { directives } = params;
   let { provider, model } = params;
   let { contextTokens } = params;
+  // Model selection gutted in RemoteClaw — derive from runtimeId.
+  const defaultProvider = runtimeId;
+  const defaultModel = "default";
+  const aliasIndex = new Map<string, { provider: string; model: string }>();
   const directiveModelState = {
     allowedModelKeys: modelState.allowedModelKeys,
     allowedModelCatalog: modelState.allowedModelCatalog,
@@ -219,24 +217,13 @@ export async function applyInlineDirectiveOverrides(params: {
 
   const persisted = await persistInlineDirectives({
     directives,
-    effectiveModelDirective,
     cfg,
     sessionEntry,
     sessionStore,
     sessionKey,
     storePath,
-    defaultProvider,
-    defaultModel,
-    aliasIndex,
-    allowedModelKeys: modelState.allowedModelKeys,
-    provider,
-    model,
-    initialModelLabel,
-    formatModelSwitchEvent,
     agentCfg,
   });
-  provider = persisted.provider;
-  model = persisted.model;
   contextTokens = persisted.contextTokens;
 
   const perMessageQueueMode =

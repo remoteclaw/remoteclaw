@@ -1,12 +1,11 @@
 import {
   resolveAgentDir,
+  resolveAgentRuntime,
   resolveAgentWorkspaceDir,
   resolveSessionAgentId,
 } from "../../agents/agent-scope.js";
-import { parseModelRef } from "../../agents/provider-utils.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { ensureAgentWorkspace } from "../../agents/workspace.js";
-import { resolveChannelModelOverride } from "../../channels/model-overrides.js";
 import { type RemoteClawConfig, loadConfig } from "../../config/config.js";
 import { defaultRuntime } from "../../runtime.js";
 import { resolveCommandAuthorization } from "../command-auth.js";
@@ -14,7 +13,6 @@ import type { MsgContext } from "../templating.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { emitResetCommandHooks, type ResetCommandAction } from "./commands-core.js";
-import { resolveDefaultModel } from "./directive-handling.js";
 import { resolveReplyDirectives } from "./get-reply-directives.js";
 import { handleInlineActions } from "./get-reply-inline-actions.js";
 import { runPreparedReply } from "./get-reply-run.js";
@@ -37,25 +35,9 @@ export async function getReplyFromConfig(
   });
   const agentCfg = cfg.agents?.defaults;
   const sessionCfg = cfg.session;
-  const { defaultProvider, defaultModel, aliasIndex } = resolveDefaultModel({
-    cfg,
-    agentId,
-  });
-  let provider = defaultProvider;
-  let model = defaultModel;
-  let hasResolvedHeartbeatModelOverride = false;
-  if (opts?.isHeartbeat) {
-    // Prefer the resolved per-agent heartbeat model passed from the heartbeat runner,
-    // fall back to the global defaults heartbeat model for backward compatibility.
-    const heartbeatRaw =
-      opts.heartbeatModelOverride?.trim() ?? agentCfg?.heartbeat?.model?.trim() ?? "";
-    const heartbeatRef = heartbeatRaw ? parseModelRef(heartbeatRaw, defaultProvider) : null;
-    if (heartbeatRef) {
-      provider = heartbeatRef.provider;
-      model = heartbeatRef.model;
-      hasResolvedHeartbeatModelOverride = true;
-    }
-  }
+  // Model selection/alias infrastructure gutted in RemoteClaw — CLIs own model selection.
+  // The runtime name is the single identifier that flows through to session usage.
+  const runtimeId = resolveAgentRuntime(cfg, agentId) ?? "unknown";
 
   const workspaceDirRaw = resolveAgentWorkspaceDir(cfg, agentId);
   const workspaceDir = await ensureAgentWorkspace(workspaceDirRaw);
@@ -106,32 +88,7 @@ export async function getReplyFromConfig(
   } = sessionState;
 
   // Session-reset model override removed (model catalog gutted in RemoteClaw).
-
-  const channelModelOverride = resolveChannelModelOverride({
-    cfg,
-    channel:
-      groupResolution?.channel ??
-      sessionEntry.channel ??
-      sessionEntry.origin?.provider ??
-      (typeof finalized.OriginatingChannel === "string"
-        ? finalized.OriginatingChannel
-        : undefined) ??
-      finalized.Provider,
-    groupId: groupResolution?.id ?? sessionEntry.groupId,
-    groupChannel: sessionEntry.groupChannel ?? sessionCtx.GroupChannel ?? finalized.GroupChannel,
-    groupSubject: sessionEntry.subject ?? sessionCtx.GroupSubject ?? finalized.GroupSubject,
-    parentSessionKey: sessionCtx.ParentSessionKey,
-  });
-  const hasSessionModelOverride = Boolean(
-    sessionEntry.modelOverride?.trim() || sessionEntry.providerOverride?.trim(),
-  );
-  if (!hasResolvedHeartbeatModelOverride && !hasSessionModelOverride && channelModelOverride) {
-    const resolved = parseModelRef(channelModelOverride.model, defaultProvider);
-    if (resolved) {
-      provider = resolved.provider;
-      model = resolved.model;
-    }
-  }
+  // Channel model override removed — CLI runtimes own model selection.
 
   const directiveResult = await resolveReplyDirectives({
     ctx: finalized,
@@ -150,12 +107,7 @@ export async function getReplyFromConfig(
     isGroup,
     triggerBodyNormalized,
     commandAuthorized,
-    defaultProvider,
-    defaultModel,
-    aliasIndex,
-    provider,
-    model,
-    hasResolvedHeartbeatModelOverride,
+    runtimeId,
     typing,
     opts,
   });
@@ -174,8 +126,8 @@ export async function getReplyFromConfig(
     blockStreamingEnabled,
     blockReplyChunking,
     resolvedBlockStreamingBreak,
-    provider: resolvedProvider,
-    model: resolvedModel,
+    provider,
+    model,
     modelState: _modelState,
     contextTokens,
     inlineStatusRequested,
@@ -183,8 +135,6 @@ export async function getReplyFromConfig(
     perMessageQueueMode,
     perMessageQueueOptions,
   } = directiveResult.result;
-  provider = resolvedProvider;
-  model = resolvedModel;
 
   const maybeEmitMissingResetHooks = async () => {
     if (!resetTriggered || !command.isAuthorizedSender || command.resetHookTriggered) {
@@ -264,14 +214,11 @@ export async function getReplyFromConfig(
     blockStreamingEnabled,
     blockReplyChunking,
     resolvedBlockStreamingBreak,
-    provider,
-    model,
+    runtimeId,
     perMessageQueueMode,
     perMessageQueueOptions,
     typing,
     opts,
-    defaultProvider,
-    defaultModel,
     timeoutMs,
     isNewSession,
     resetTriggered,

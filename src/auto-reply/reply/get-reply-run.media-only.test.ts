@@ -109,14 +109,11 @@ function baseParams(
     resolvedVerboseLevel: "off",
     blockStreamingEnabled: false,
     resolvedBlockStreamingBreak: "message_end",
-    provider: "anthropic",
-    model: "claude-opus-4-1",
+    runtimeId: "claude",
     typing: {
       onReplyStart: vi.fn().mockResolvedValue(undefined),
       cleanup: vi.fn(),
     } as never,
-    defaultProvider: "anthropic",
-    defaultModel: "claude-opus-4-1",
     timeoutMs: 30_000,
     isNewSession: true,
     resetTriggered: false,
@@ -194,7 +191,7 @@ describe("runPreparedReply media-only handling", () => {
     const resetNoticeCall = vi.mocked(routeReply).mock.calls[0]?.[0] as
       | { payload?: { text?: string } }
       | undefined;
-    expect(resetNoticeCall?.payload?.text).toContain("✅ New session started · model:");
+    expect(resetNoticeCall?.payload?.text).toContain("✅ New session started · runtime:");
     expect(resetNoticeCall?.payload?.text).not.toContain("🔑");
     expect(resetNoticeCall?.payload?.text).not.toContain("api-key");
     expect(resetNoticeCall?.payload?.text).not.toContain("env:");

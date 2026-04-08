@@ -114,7 +114,6 @@ export async function runReplyAgent(params: {
   sessionStore?: Record<string, SessionEntry>;
   sessionKey?: string;
   storePath?: string;
-  defaultModel: string;
   agentCfgContextTokens?: number;
   resolvedVerboseLevel: VerboseLevel;
   isNewSession: boolean;
@@ -145,7 +144,6 @@ export async function runReplyAgent(params: {
     sessionStore,
     sessionKey,
     storePath,
-    defaultModel,
     agentCfgContextTokens,
     resolvedVerboseLevel,
     isNewSession,
@@ -264,7 +262,7 @@ export async function runReplyAgent(params: {
     promptForEstimate: followupRun.prompt,
     sessionCtx,
     opts,
-    defaultModel,
+    defaultModel: "default",
     agentCfgContextTokens,
     resolvedVerboseLevel,
     sessionEntry: activeSessionEntry,
@@ -282,7 +280,6 @@ export async function runReplyAgent(params: {
     sessionStore: activeSessionStore,
     sessionKey,
     storePath,
-    defaultModel,
     agentCfgContextTokens,
   });
 
@@ -438,7 +435,7 @@ export async function runReplyAgent(params: {
 
     const usage = runResult.meta?.agentMeta?.usage;
     const promptTokens = runResult.meta?.agentMeta?.promptTokens;
-    const modelUsed = runResult.meta?.agentMeta?.model ?? defaultModel;
+    const modelUsed = runResult.meta?.agentMeta?.model ?? followupRun.run.model;
     const providerUsed = runResult.meta?.agentMeta?.provider ?? followupRun.run.provider;
     const verboseEnabled = resolvedVerboseLevel !== "off";
     const cliSessionId = isCliProvider(providerUsed, cfg)

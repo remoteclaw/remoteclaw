@@ -231,6 +231,60 @@ describe("resolveCronSession", () => {
       });
     });
 
+    it("clears cliSessionIds and claudeCliSessionId when forceNew is true", () => {
+      const result = resolveWithStoredEntry({
+        entry: {
+          sessionId: "existing-session-id",
+          updatedAt: NOW_MS - 1000,
+          systemSent: true,
+          cliSessionIds: { claude: "cli-sess-old", openai: "cli-sess-openai" },
+          claudeCliSessionId: "cli-sess-old",
+          modelOverride: "sonnet-4",
+        },
+        fresh: true,
+        forceNew: true,
+      });
+
+      expect(result.isNewSession).toBe(true);
+      expect(result.sessionEntry.cliSessionIds).toBeUndefined();
+      expect(result.sessionEntry.claudeCliSessionId).toBeUndefined();
+      // Per-session overrides must be preserved
+      expect(result.sessionEntry.modelOverride).toBe("sonnet-4");
+    });
+
+    it("clears cliSessionIds and claudeCliSessionId when session is stale", () => {
+      const result = resolveWithStoredEntry({
+        entry: {
+          sessionId: "old-session-id",
+          updatedAt: NOW_MS - 86_400_000,
+          cliSessionIds: { claude: "cli-sess-stale" },
+          claudeCliSessionId: "cli-sess-stale",
+        },
+        fresh: false,
+      });
+
+      expect(result.isNewSession).toBe(true);
+      expect(result.sessionEntry.cliSessionIds).toBeUndefined();
+      expect(result.sessionEntry.claudeCliSessionId).toBeUndefined();
+    });
+
+    it("preserves cliSessionIds when reusing fresh session", () => {
+      const result = resolveWithStoredEntry({
+        entry: {
+          sessionId: "existing-session-id",
+          updatedAt: NOW_MS - 1000,
+          systemSent: true,
+          cliSessionIds: { claude: "cli-sess-active" },
+          claudeCliSessionId: "cli-sess-active",
+        },
+        fresh: true,
+      });
+
+      expect(result.isNewSession).toBe(false);
+      expect(result.sessionEntry.cliSessionIds).toEqual({ claude: "cli-sess-active" });
+      expect(result.sessionEntry.claudeCliSessionId).toBe("cli-sess-active");
+    });
+
     it("creates new sessionId when entry exists but has no sessionId", () => {
       const result = resolveWithStoredEntry({
         entry: {

@@ -353,7 +353,8 @@ export async function runCronIsolatedAgentTurn(params: {
     }
 
     const sessionMap = createSessionMapAdapter({
-      getSessionId: () => getCliSessionId(cronSession.sessionEntry, provider),
+      getSessionId: () =>
+        cronSession.isNewSession ? undefined : getCliSessionId(cronSession.sessionEntry, provider),
     });
 
     const messageToolHints = resolveChannelMessageToolHints({

@@ -38,6 +38,13 @@ export function normalizeProviderId(provider: string): string {
   if (normalized === "bytedance" || normalized === "doubao") {
     return "volcengine";
   }
+  // Backward compatibility: *-cli config keys → bare runtime names.
+  if (normalized === "claude-cli") {
+    return "claude";
+  }
+  if (normalized === "codex-cli") {
+    return "codex";
+  }
   return normalized;
 }
 

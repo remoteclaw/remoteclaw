@@ -125,7 +125,7 @@ function resolveProviderCandidates(): UsageProviderId[] {
   const providers = [
     "anthropic",
     "github-copilot",
-    "google-gemini-cli",
+    "gemini",
     "openai-codex",
   ] satisfies UsageProviderId[];
   return providers.filter((provider) => {

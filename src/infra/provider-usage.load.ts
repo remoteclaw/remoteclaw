@@ -55,7 +55,7 @@ export async function loadProviderUsageSummary(
             return await fetchClaudeUsage(auth.token, timeoutMs, fetchFn);
           case "github-copilot":
             return await fetchCopilotUsage(auth.token, timeoutMs, fetchFn);
-          case "google-gemini-cli":
+          case "gemini":
             return await fetchGeminiUsage(auth.token, timeoutMs, fetchFn, auth.provider);
           case "openai-codex":
             return await fetchCodexUsage(auth.token, auth.accountId, timeoutMs, fetchFn);

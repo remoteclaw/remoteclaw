@@ -7,7 +7,7 @@ describe("fetchGeminiUsage", () => {
     const mockFetch = createProviderUsageFetch(async () =>
       makeResponse(429, { error: "rate_limited" }),
     );
-    const result = await fetchGeminiUsage("token", 5000, mockFetch, "google-gemini-cli");
+    const result = await fetchGeminiUsage("token", 5000, mockFetch, "gemini");
 
     expect(result.error).toBe("HTTP 429");
     expect(result.windows).toHaveLength(0);
@@ -29,7 +29,7 @@ describe("fetchGeminiUsage", () => {
       });
     });
 
-    const result = await fetchGeminiUsage("token", 5000, mockFetch, "google-gemini-cli");
+    const result = await fetchGeminiUsage("token", 5000, mockFetch, "gemini");
 
     expect(result.windows).toHaveLength(2);
     expect(result.windows[0]).toEqual({ label: "Pro", usedPercent: 70 });

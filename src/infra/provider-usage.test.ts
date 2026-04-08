@@ -362,7 +362,7 @@ describe("provider usage loading", () => {
     const summary = await loadUsageWithAuth(
       [
         { provider: "github-copilot", token: "copilot-token" },
-        { provider: "google-gemini-cli", token: "gemini-token" },
+        { provider: "gemini", token: "gemini-token" },
         { provider: "openai-codex", token: "codex-token", accountId: "acc-1" },
         { provider: "xiaomi", token: "xiaomi-token" },
       ],
@@ -371,7 +371,7 @@ describe("provider usage loading", () => {
 
     expect(summary.providers.map((provider) => provider.provider)).toEqual([
       "github-copilot",
-      "google-gemini-cli",
+      "gemini",
       "openai-codex",
       "xiaomi",
     ]);
@@ -379,8 +379,7 @@ describe("provider usage loading", () => {
       summary.providers.find((provider) => provider.provider === "github-copilot")?.windows,
     ).toEqual([{ label: "Chat", usedPercent: 20 }]);
     expect(
-      summary.providers.find((provider) => provider.provider === "google-gemini-cli")?.windows[0]
-        ?.label,
+      summary.providers.find((provider) => provider.provider === "gemini")?.windows[0]?.label,
     ).toBe("Pro");
     expect(
       summary.providers.find((provider) => provider.provider === "openai-codex")?.windows[0]?.label,

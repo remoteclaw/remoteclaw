@@ -68,7 +68,7 @@ describe("isReasoningTagProvider", () => {
       value: "Google",
       expected: true,
     },
-    { name: "returns true for google-gemini-cli", value: "google-gemini-cli", expected: true },
+    { name: "returns true for gemini", value: "gemini", expected: true },
     {
       name: "returns true for google-generative-ai",
       value: "google-generative-ai",

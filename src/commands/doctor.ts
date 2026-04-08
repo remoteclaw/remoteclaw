@@ -32,11 +32,7 @@ import { defaultRuntime } from "../runtime.js";
 import { note } from "../terminal/note.js";
 import { stylePromptTitle } from "../terminal/prompt-style.js";
 import { shortenHomePath } from "../utils.js";
-import {
-  maybeRemoveDeprecatedCliAuthProfiles,
-  maybeRepairAnthropicOAuthProfileId,
-  noteAuthProfileHealth,
-} from "./doctor-auth.js";
+import { maybeRepairAnthropicOAuthProfileId, noteAuthProfileHealth } from "./doctor-auth.js";
 import { doctorShellCompletion } from "./doctor-completion.js";
 import { loadAndMaybeMigrateDoctorConfig } from "./doctor-config-flow.js";
 import { maybeRepairGatewayDaemon } from "./doctor-gateway-daemon-flow.js";
@@ -136,7 +132,6 @@ export async function doctorCommand(
   }
 
   cfg = await maybeRepairAnthropicOAuthProfileId(cfg, prompter);
-  cfg = await maybeRemoveDeprecatedCliAuthProfiles(cfg, prompter);
   await noteAuthProfileHealth({
     cfg,
     prompter,

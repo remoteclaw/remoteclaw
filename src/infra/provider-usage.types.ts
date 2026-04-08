@@ -20,7 +20,7 @@ export type UsageSummary = {
 export type UsageProviderId =
   | "anthropic"
   | "github-copilot"
-  | "google-gemini-cli"
+  | "gemini"
   | "minimax"
   | "openai-codex"
   | "xiaomi"

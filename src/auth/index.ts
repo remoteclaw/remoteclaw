@@ -1,4 +1,3 @@
-export { CLAUDE_CLI_PROFILE_ID, CODEX_CLI_PROFILE_ID } from "./constants.js";
 export { resolveAuthProfileDisplayLabel } from "./display.js";
 export { formatAuthDoctorHint } from "./doctor.js";
 export { resolveApiKeyForProfile } from "./oauth.js";

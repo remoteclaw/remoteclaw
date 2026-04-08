@@ -4,7 +4,7 @@ import type { ChannelId, ChannelThreadingToolContext } from "../../channels/plug
 import { normalizeAnyChannelId, normalizeChannelId } from "../../channels/registry.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { isReasoningTagProvider } from "../../utils/provider-utils.js";
-import { estimateUsageCost, formatTokenCount, formatUsd } from "../../utils/usage-format.js";
+import { formatTokenCount } from "../../utils/usage-format.js";
 import type { TemplateContext } from "../templating.js";
 import type { ReplyPayload } from "../types.js";
 import { resolveOriginMessageProvider, resolveOriginMessageTo } from "./origin-routing.js";
@@ -80,16 +80,7 @@ export const formatBunFetchSocketError = (message: string) => {
   ].join("\n");
 };
 
-export const formatResponseUsageLine = (params: {
-  usage?: NormalizedUsage;
-  showCost: boolean;
-  costConfig?: {
-    input: number;
-    output: number;
-    cacheRead: number;
-    cacheWrite: number;
-  };
-}): string | null => {
+export const formatResponseUsageLine = (params: { usage?: NormalizedUsage }): string | null => {
   const usage = params.usage;
   if (!usage) {
     return null;
@@ -101,21 +92,7 @@ export const formatResponseUsageLine = (params: {
   }
   const inputLabel = typeof input === "number" ? formatTokenCount(input) : "?";
   const outputLabel = typeof output === "number" ? formatTokenCount(output) : "?";
-  const cost =
-    params.showCost && typeof input === "number" && typeof output === "number"
-      ? estimateUsageCost({
-          usage: {
-            input,
-            output,
-            cacheRead: usage.cacheRead,
-            cacheWrite: usage.cacheWrite,
-          },
-          cost: params.costConfig,
-        })
-      : undefined;
-  const costLabel = params.showCost ? formatUsd(cost) : undefined;
-  const suffix = costLabel ? ` · est ${costLabel}` : "";
-  return `Usage: ${inputLabel} in / ${outputLabel} out${suffix}`;
+  return `Usage: ${inputLabel} in / ${outputLabel} out`;
 };
 
 export const appendUsageLine = (payloads: ReplyPayload[], line: string): ReplyPayload[] => {

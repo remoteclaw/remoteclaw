@@ -8,10 +8,6 @@ const lookupContextTokens = (..._args: unknown[]) => undefined as any;
 // oxlint-disable-next-line typescript/no-explicit-any
 const DEFAULT_CONTEXT_TOKENS = undefined as any;
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../agents/model-auth.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveModelAuthMode = (..._args: unknown[]) => undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
 // import ... from "../../agents/model-selection.js";
 // oxlint-disable-next-line typescript/no-explicit-any
 const isCliProvider = (..._args: unknown[]) => undefined as any;
@@ -34,7 +30,6 @@ import { emitDiagnosticEvent, isDiagnosticsEnabled } from "../../infra/diagnosti
 import { generateSecureUuid } from "../../infra/secure-random.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { defaultRuntime } from "../../runtime.js";
-import { estimateUsageCost, resolveModelCostConfig } from "../../utils/usage-format.js";
 import type { OriginatingChannelType, TemplateContext } from "../templating.js";
 import { resolveResponseUsageMode, type VerboseLevel } from "../thinking.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
@@ -533,14 +528,6 @@ export async function runReplyAgent(params: {
       const cacheWrite = usage.cacheWrite ?? 0;
       const promptTokens = input + cacheRead + cacheWrite;
       const totalTokens = usage.total ?? promptTokens + output;
-      const costConfig = resolveModelCostConfig({
-        // @ts-expect-error — upstream feature not available in RemoteClaw fork
-        provider: providerUsed,
-        // @ts-expect-error — upstream feature not available in RemoteClaw fork
-        model: modelUsed,
-        config: cfg,
-      });
-      const costUsd = estimateUsageCost({ usage, cost: costConfig });
       emitDiagnosticEvent({
         type: "model.usage",
         sessionKey,
@@ -564,7 +551,6 @@ export async function runReplyAgent(params: {
           limit: contextTokensUsed,
           used: totalTokens,
         },
-        costUsd,
         durationMs: Date.now() - runStartedAt,
       });
     }
@@ -575,21 +561,8 @@ export async function runReplyAgent(params: {
     const responseUsageMode = resolveResponseUsageMode(responseUsageRaw);
     // @ts-expect-error — upstream feature not available in RemoteClaw fork
     if (responseUsageMode !== "off" && hasNonzeroUsage(usage)) {
-      const authMode = resolveModelAuthMode(providerUsed, cfg);
-      const showCost = authMode === "api-key";
-      const costConfig = showCost
-        ? resolveModelCostConfig({
-            // @ts-expect-error — upstream feature not available in RemoteClaw fork
-            provider: providerUsed,
-            // @ts-expect-error — upstream feature not available in RemoteClaw fork
-            model: modelUsed,
-            config: cfg,
-          })
-        : undefined;
       let formatted = formatResponseUsageLine({
         usage,
-        showCost,
-        costConfig,
       });
       if (formatted && responseUsageMode === "full" && sessionKey) {
         formatted = `${formatted} · session \`${sessionKey}\``;

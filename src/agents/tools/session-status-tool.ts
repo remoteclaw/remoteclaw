@@ -260,10 +260,6 @@ export function createSessionStatusTool(opts?: {
         const overrideUpdated =
           nextEntry.providerOverride !== prevProvider || nextEntry.modelOverride !== prevModel;
         if (overrideUpdated) {
-          // Clear stale fallback notice when the user explicitly switches models.
-          delete nextEntry.fallbackNoticeSelectedModel;
-          delete nextEntry.fallbackNoticeActiveModel;
-          delete nextEntry.fallbackNoticeReason;
           store[resolved.key] = nextEntry;
           await updateSessionStore(storePath, (nextStore) => {
             nextStore[resolved.key] = nextEntry;

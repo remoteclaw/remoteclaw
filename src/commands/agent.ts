@@ -160,9 +160,6 @@ type OverrideFieldClearedByDelete =
   | "authProfileOverride"
   | "authProfileOverrideSource"
   | "authProfileOverrideCompactionCount"
-  | "fallbackNoticeSelectedModel"
-  | "fallbackNoticeActiveModel"
-  | "fallbackNoticeReason"
   | "claudeCliSessionId";
 
 const OVERRIDE_FIELDS_CLEARED_BY_DELETE: OverrideFieldClearedByDelete[] = [
@@ -171,9 +168,6 @@ const OVERRIDE_FIELDS_CLEARED_BY_DELETE: OverrideFieldClearedByDelete[] = [
   "authProfileOverride",
   "authProfileOverrideSource",
   "authProfileOverrideCompactionCount",
-  "fallbackNoticeSelectedModel",
-  "fallbackNoticeActiveModel",
-  "fallbackNoticeReason",
   "claudeCliSessionId",
 ];
 
@@ -896,8 +890,6 @@ export async function agentCommand(
     let lifecycleEnded = false;
 
     let result: Awaited<ReturnType<typeof runEmbeddedPiAgent>>;
-    let fallbackProvider = provider;
-    let fallbackModel = model;
     try {
       const runContext = resolveAgentRunContext(opts);
       const messageChannel = resolveMessageChannel(
@@ -968,8 +960,6 @@ export async function agentCommand(
       });
       // @ts-expect-error — upstream feature not available in RemoteClaw fork
       result = fallbackResult.result;
-      fallbackProvider = fallbackResult.provider;
-      fallbackModel = fallbackResult.model;
       if (!lifecycleEnded) {
         emitAgentEvent({
           runId,
@@ -1010,8 +1000,6 @@ export async function agentCommand(
         sessionStore,
         defaultProvider: provider,
         defaultModel: model,
-        fallbackProvider,
-        fallbackModel,
         result,
       });
     }

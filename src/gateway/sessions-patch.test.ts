@@ -46,35 +46,6 @@ function makeKimiSubagentCfg(params: {
 }
 
 describe("gateway sessions patch", () => {
-  test("clears fallback notice when model patch changes", async () => {
-    const store: Record<string, SessionEntry> = {
-      "agent:main:main": {
-        sessionId: "sess",
-        updatedAt: 1,
-        providerOverride: "anthropic",
-        modelOverride: "claude-opus-4-5",
-        fallbackNoticeSelectedModel: "anthropic/claude-opus-4-5",
-        fallbackNoticeActiveModel: "openai/gpt-5.2",
-        fallbackNoticeReason: "rate-limited",
-      } as SessionEntry,
-    };
-    const res = await applySessionsPatchToStore({
-      cfg: {} as RemoteClawConfig,
-      store,
-      storeKey: "agent:main:main",
-      patch: { key: "agent:main:main", model: "openai/gpt-5.2" },
-    });
-    expect(res.ok).toBe(true);
-    if (!res.ok) {
-      return;
-    }
-    expect(res.entry.providerOverride).toBe("openai");
-    expect(res.entry.modelOverride).toBe("gpt-5.2");
-    expect(res.entry.fallbackNoticeSelectedModel).toBeUndefined();
-    expect(res.entry.fallbackNoticeActiveModel).toBeUndefined();
-    expect(res.entry.fallbackNoticeReason).toBeUndefined();
-  });
-
   test("accepts explicit allowlisted provider/model refs from sessions.patch", async () => {
     const store: Record<string, SessionEntry> = {};
     const cfg = {

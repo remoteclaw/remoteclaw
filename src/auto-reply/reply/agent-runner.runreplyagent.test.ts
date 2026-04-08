@@ -801,9 +801,6 @@ describe("runReplyAgent typing (heartbeat)", () => {
         sessionId,
         updatedAt: Date.now(),
         sessionFile: transcriptPath,
-        fallbackNoticeSelectedModel: "fireworks/minimax-m2p5",
-        fallbackNoticeActiveModel: "deepinfra/moonshotai/Kimi-K2.5",
-        fallbackNoticeReason: "rate limit",
       };
       const sessionStore = { main: sessionEntry };
 
@@ -836,15 +833,9 @@ describe("runReplyAgent typing (heartbeat)", () => {
       }
       expect(payload.text?.toLowerCase()).toContain("reset");
       expect(sessionStore.main.sessionId).not.toBe(sessionId);
-      expect(sessionStore.main.fallbackNoticeSelectedModel).toBeUndefined();
-      expect(sessionStore.main.fallbackNoticeActiveModel).toBeUndefined();
-      expect(sessionStore.main.fallbackNoticeReason).toBeUndefined();
 
       const persisted = JSON.parse(await fs.readFile(storePath, "utf-8"));
       expect(persisted.main.sessionId).toBe(sessionStore.main.sessionId);
-      expect(persisted.main.fallbackNoticeSelectedModel).toBeUndefined();
-      expect(persisted.main.fallbackNoticeActiveModel).toBeUndefined();
-      expect(persisted.main.fallbackNoticeReason).toBeUndefined();
     });
   });
 

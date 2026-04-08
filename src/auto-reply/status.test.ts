@@ -299,9 +299,6 @@ describe("buildStatusMessage", () => {
         modelOverride: "gpt-4.1-mini",
         modelProvider: "anthropic",
         model: "claude-haiku-4-5",
-        fallbackNoticeSelectedModel: "openai/gpt-4.1-mini",
-        fallbackNoticeActiveModel: "anthropic/claude-haiku-4-5",
-        fallbackNoticeReason: "rate limit",
         contextTokens: 32_000,
       },
       sessionKey: "agent:main:main",
@@ -313,63 +310,6 @@ describe("buildStatusMessage", () => {
 
     const normalized = normalizeTestText(text);
     expect(normalized).toContain("Model: openai/gpt-4.1-mini");
-    expect(normalized).toContain("Fallback: anthropic/claude-haiku-4-5");
-    expect(normalized).toContain("(rate limit)");
-    expect(normalized).not.toContain(" - Reason:");
-    expect(normalized).not.toContain("Active:");
-    expect(normalized).toContain("di_123...abc");
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("omits active fallback details when runtime drift does not match fallback state", () => {
-    const text = buildStatusMessage({
-      agent: {
-        model: "openai/gpt-4.1-mini",
-        contextTokens: 32_000,
-      },
-      sessionEntry: {
-        sessionId: "runtime-drift-only",
-        updatedAt: 0,
-        modelProvider: "anthropic",
-        model: "claude-haiku-4-5",
-        fallbackNoticeSelectedModel: "fireworks/minimax-m2p5",
-        fallbackNoticeActiveModel: "deepinfra/moonshotai/Kimi-K2.5",
-        fallbackNoticeReason: "rate limit",
-      },
-      sessionKey: "agent:main:main",
-      sessionScope: "per-sender",
-      queue: { mode: "collect", depth: 0 },
-      modelAuth: "api-key",
-      activeModelAuth: "api-key di_123…abc (deepinfra:default)",
-    });
-
-    const normalized = normalizeTestText(text);
-    expect(normalized).toContain("Model: openai/gpt-4.1-mini");
-    expect(normalized).not.toContain("Fallback:");
-    expect(normalized).not.toContain("(rate limit)");
-  });
-
-  it("omits active lines when runtime matches selected model", () => {
-    const text = buildStatusMessage({
-      agent: {
-        model: "openai/gpt-4.1-mini",
-        contextTokens: 32_000,
-      },
-      sessionEntry: {
-        sessionId: "selected-active-same",
-        updatedAt: 0,
-        modelProvider: "openai",
-        model: "gpt-4.1-mini",
-        fallbackNoticeReason: "unknown",
-      },
-      sessionKey: "agent:main:main",
-      sessionScope: "per-sender",
-      queue: { mode: "collect", depth: 0 },
-      modelAuth: "api-key",
-    });
-
-    const normalized = normalizeTestText(text);
     expect(normalized).not.toContain("Fallback:");
   });
 

@@ -81,9 +81,6 @@ function formatSupport(capabilities?: ChannelCapabilities) {
   if (capabilities.chatTypes?.length) {
     bits.push(`chatTypes=${capabilities.chatTypes.join(",")}`);
   }
-  if (capabilities.voiceOnly) {
-    bits.push("voiceOnly");
-  }
   if (capabilities.polls) {
     bits.push("polls");
   }
@@ -384,9 +381,7 @@ async function resolveChannelReports(params: {
     let slackScopes: ChannelCapabilitiesReport["slackScopes"];
     if (plugin.id === "slack" && configured && enabled) {
       const botToken = (resolvedAccount as { botToken?: string }).botToken?.trim();
-      const userToken = (
-        resolvedAccount as { config?: { userToken?: string } }
-      ).config?.userToken?.trim();
+      const userToken = (resolvedAccount as { userToken?: string }).userToken?.trim();
       const scopeReports: NonNullable<ChannelCapabilitiesReport["slackScopes"]> = [];
       if (botToken) {
         scopeReports.push({

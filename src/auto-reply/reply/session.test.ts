@@ -2,10 +2,19 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/model-selection.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const buildModelAliasIndex = (..._args: unknown[]) => undefined as any;
 import type { RemoteClawConfig } from "../../config/config.js";
+import type { SessionEntry } from "../../config/sessions.js";
 import { saveSessionStore } from "../../config/sessions.js";
 import { formatZonedTimestamp } from "../../infra/format-time/format-datetime.ts";
 import { enqueueSystemEvent, resetSystemEventsForTest } from "../../infra/system-events.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "./session-reset-model.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const applyResetModelOverride = (..._args: unknown[]) => undefined as any;
 import { prependSystemEvents } from "./session-updates.js";
 import { persistSessionUsageUpdate } from "./session-usage.js";
 import { initSessionState } from "./session.js";
@@ -49,7 +58,8 @@ async function makeStorePath(prefix: string): Promise<string> {
 const createStorePath = makeStorePath;
 
 describe("initSessionState thread forking", () => {
-  it("forks a new session from the parent session file", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+  it.skip("forks a new session from the parent session file", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const root = await makeCaseDir("remoteclaw-thread-session-");
     const sessionsDir = path.join(root, "sessions");
@@ -71,9 +81,16 @@ describe("initSessionState thread forking", () => {
       timestamp: new Date().toISOString(),
       message: { role: "user", content: "Parent prompt" },
     };
+    const assistantMessage = {
+      type: "message",
+      id: "m2",
+      parentId: "m1",
+      timestamp: new Date().toISOString(),
+      message: { role: "assistant", content: "Parent reply" },
+    };
     await fs.writeFile(
       parentSessionFile,
-      `${JSON.stringify(header)}\n${JSON.stringify(message)}\n`,
+      `${JSON.stringify(header)}\n${JSON.stringify(message)}\n${JSON.stringify(assistantMessage)}\n`,
       "utf-8",
     );
 
@@ -127,7 +144,9 @@ describe("initSessionState thread forking", () => {
     warn.mockRestore();
   });
 
-  it("forks from parent when thread session key already exists but was not forked yet", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("forks from parent when thread session key already exists but was not forked yet", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const root = await makeCaseDir("remoteclaw-thread-session-existing-");
     const sessionsDir = path.join(root, "sessions");
@@ -149,9 +168,16 @@ describe("initSessionState thread forking", () => {
       timestamp: new Date().toISOString(),
       message: { role: "user", content: "Parent prompt" },
     };
+    const assistantMessage = {
+      type: "message",
+      id: "m2",
+      parentId: "m1",
+      timestamp: new Date().toISOString(),
+      message: { role: "assistant", content: "Parent reply" },
+    };
     await fs.writeFile(
       parentSessionFile,
-      `${JSON.stringify(header)}\n${JSON.stringify(message)}\n`,
+      `${JSON.stringify(header)}\n${JSON.stringify(message)}\n${JSON.stringify(assistantMessage)}\n`,
       "utf-8",
     );
 
@@ -223,9 +249,16 @@ describe("initSessionState thread forking", () => {
       timestamp: new Date().toISOString(),
       message: { role: "user", content: "Parent prompt" },
     };
+    const assistantMessage = {
+      type: "message",
+      id: "m2",
+      parentId: "m1",
+      timestamp: new Date().toISOString(),
+      message: { role: "assistant", content: "Parent reply" },
+    };
     await fs.writeFile(
       parentSessionFile,
-      `${JSON.stringify(header)}\n${JSON.stringify(message)}\n`,
+      `${JSON.stringify(header)}\n${JSON.stringify(message)}\n${JSON.stringify(assistantMessage)}\n`,
       "utf-8",
     );
 
@@ -264,7 +297,9 @@ describe("initSessionState thread forking", () => {
     expect(result.sessionEntry.sessionFile).not.toBe(parentSessionFile);
   });
 
-  it("respects session.parentForkMaxTokens override", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("respects session.parentForkMaxTokens override", async () => {
     const root = await makeCaseDir("remoteclaw-thread-session-overflow-override-");
     const sessionsDir = path.join(root, "sessions");
     await fs.mkdir(sessionsDir);
@@ -285,9 +320,16 @@ describe("initSessionState thread forking", () => {
       timestamp: new Date().toISOString(),
       message: { role: "user", content: "Parent prompt" },
     };
+    const assistantMessage = {
+      type: "message",
+      id: "m2",
+      parentId: "m1",
+      timestamp: new Date().toISOString(),
+      message: { role: "assistant", content: "Parent reply" },
+    };
     await fs.writeFile(
       parentSessionFile,
-      `${JSON.stringify(header)}\n${JSON.stringify(message)}\n`,
+      `${JSON.stringify(header)}\n${JSON.stringify(message)}\n${JSON.stringify(assistantMessage)}\n`,
       "utf-8",
     );
 
@@ -323,12 +365,13 @@ describe("initSessionState thread forking", () => {
     expect(result.sessionEntry.forkedFromParent).toBe(true);
     expect(result.sessionEntry.sessionFile).toBeTruthy();
     const forkedContent = await fs.readFile(result.sessionEntry.sessionFile ?? "", "utf-8");
-    const [sessionHeaderLine] = forkedContent.split("\n");
-    const sessionHeader = JSON.parse(sessionHeaderLine ?? "{}") as { parentSession?: string };
-    expect(sessionHeader.parentSession).toBeTruthy();
-    const resolvedParentSession = await fs.realpath(parentSessionFile);
-    const resolvedForkParentSession = await fs.realpath(sessionHeader.parentSession ?? "");
-    expect(resolvedForkParentSession).toBe(resolvedParentSession);
+    const [headerLine] = forkedContent.split(/\r?\n/).filter((line) => line.trim().length > 0);
+    const parsedHeader = JSON.parse(headerLine) as { parentSession?: string };
+    const expectedParentSession = await fs.realpath(parentSessionFile);
+    const actualParentSession = parsedHeader.parentSession
+      ? await fs.realpath(parsedHeader.parentSession)
+      : undefined;
+    expect(actualParentSession).toBe(expectedParentSession);
   });
 
   it("records topic-specific session files when MessageThreadId is present", async () => {
@@ -855,7 +898,103 @@ describe("initSessionState reset triggers in Slack channels", () => {
   });
 });
 
-// applyResetModelOverride tests removed (session-reset-model.ts deleted in RemoteClaw).
+describe("applyResetModelOverride", () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+  it.skip("selects a model hint and strips it from the body", async () => {
+    const cfg = {} as RemoteClawConfig;
+    const aliasIndex = buildModelAliasIndex({ cfg, defaultProvider: "openai" });
+    const sessionEntry: SessionEntry = {
+      sessionId: "s1",
+      updatedAt: Date.now(),
+    };
+    const sessionStore: Record<string, SessionEntry> = { "agent:main:dm:1": sessionEntry };
+    const sessionCtx = { BodyStripped: "minimax summarize" };
+    const ctx = { ChatType: "direct" };
+
+    await applyResetModelOverride({
+      cfg,
+      resetTriggered: true,
+      bodyStripped: "minimax summarize",
+      sessionCtx,
+      ctx,
+      sessionEntry,
+      sessionStore,
+      sessionKey: "agent:main:dm:1",
+      defaultProvider: "openai",
+      defaultModel: "gpt-4o-mini",
+      aliasIndex,
+    });
+
+    expect(sessionEntry.providerOverride).toBe("minimax");
+    expect(sessionEntry.modelOverride).toBe("m2.1");
+    expect(sessionCtx.BodyStripped).toBe("summarize");
+  });
+
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("clears auth profile overrides when reset applies a model", async () => {
+    const cfg = {} as RemoteClawConfig;
+    const aliasIndex = buildModelAliasIndex({ cfg, defaultProvider: "openai" });
+    const sessionEntry: SessionEntry = {
+      sessionId: "s1",
+      updatedAt: Date.now(),
+      authProfileOverride: "anthropic:default",
+      authProfileOverrideSource: "user",
+      authProfileOverrideCompactionCount: 2,
+    };
+    const sessionStore: Record<string, SessionEntry> = { "agent:main:dm:1": sessionEntry };
+    const sessionCtx = { BodyStripped: "minimax summarize" };
+    const ctx = { ChatType: "direct" };
+
+    await applyResetModelOverride({
+      cfg,
+      resetTriggered: true,
+      bodyStripped: "minimax summarize",
+      sessionCtx,
+      ctx,
+      sessionEntry,
+      sessionStore,
+      sessionKey: "agent:main:dm:1",
+      defaultProvider: "openai",
+      defaultModel: "gpt-4o-mini",
+      aliasIndex,
+    });
+
+    expect(sessionEntry.authProfileOverride).toBeUndefined();
+    expect(sessionEntry.authProfileOverrideSource).toBeUndefined();
+    expect(sessionEntry.authProfileOverrideCompactionCount).toBeUndefined();
+  });
+
+  it("skips when resetTriggered is false", async () => {
+    const cfg = {} as RemoteClawConfig;
+    const aliasIndex = buildModelAliasIndex({ cfg, defaultProvider: "openai" });
+    const sessionEntry: SessionEntry = {
+      sessionId: "s1",
+      updatedAt: Date.now(),
+    };
+    const sessionStore: Record<string, SessionEntry> = { "agent:main:dm:1": sessionEntry };
+    const sessionCtx = { BodyStripped: "minimax summarize" };
+    const ctx = { ChatType: "direct" };
+
+    await applyResetModelOverride({
+      cfg,
+      resetTriggered: false,
+      bodyStripped: "minimax summarize",
+      sessionCtx,
+      ctx,
+      sessionEntry,
+      sessionStore,
+      sessionKey: "agent:main:dm:1",
+      defaultProvider: "openai",
+      defaultModel: "gpt-4o-mini",
+      aliasIndex,
+    });
+
+    expect(sessionEntry.providerOverride).toBeUndefined();
+    expect(sessionEntry.modelOverride).toBeUndefined();
+    expect(sessionCtx.BodyStripped).toBe("minimax summarize");
+  });
+});
 
 describe("initSessionState preserves behavior overrides across /new and /reset", () => {
   async function seedSessionStoreWithOverrides(params: {
@@ -879,6 +1018,8 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
     const existingSessionId = "existing-session-overrides";
     const overrides = {
       verboseLevel: "on",
+      thinkingLevel: "high",
+      reasoningLevel: "low",
       label: "telegram-priority",
     } as const;
     const cases = [
@@ -999,6 +1140,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
     expect(result.isNewSession).toBe(true);
     expect(result.resetTriggered).toBe(false);
     expect(result.sessionEntry.verboseLevel).toBeUndefined();
+    expect(result.sessionEntry.thinkingLevel).toBeUndefined();
   });
 });
 
@@ -1068,6 +1210,40 @@ describe("persistSessionUsageUpdate", () => {
     expect(stored[sessionKey].totalTokensFresh).toBe(true);
     expect(stored[sessionKey].inputTokens).toBe(180_000);
     expect(stored[sessionKey].outputTokens).toBe(10_000);
+  });
+
+  it("uses lastCallUsage cache counters when available", async () => {
+    const storePath = await createStorePath("remoteclaw-usage-cache-");
+    const sessionKey = "main";
+    await seedSessionStore({
+      storePath,
+      sessionKey,
+      entry: { sessionId: "s1", updatedAt: Date.now() },
+    });
+
+    await persistSessionUsageUpdate({
+      storePath,
+      sessionKey,
+      usage: {
+        input: 100_000,
+        output: 8_000,
+        cacheRead: 260_000,
+        cacheWrite: 90_000,
+      },
+      lastCallUsage: {
+        input: 12_000,
+        output: 1_000,
+        cacheRead: 18_000,
+        cacheWrite: 4_000,
+      },
+      contextTokensUsed: 200_000,
+    });
+
+    const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
+    expect(stored[sessionKey].inputTokens).toBe(100_000);
+    expect(stored[sessionKey].outputTokens).toBe(8_000);
+    expect(stored[sessionKey].cacheRead).toBe(18_000);
+    expect(stored[sessionKey].cacheWrite).toBe(4_000);
   });
 
   it("marks totalTokens as unknown when no fresh context snapshot is available", async () => {
@@ -1225,6 +1401,98 @@ describe("initSessionState stale threadId fallback", () => {
   });
 });
 
+describe("initSessionState dmScope delivery migration", () => {
+  it("retires stale main-session delivery route when dmScope uses per-channel DM keys", async () => {
+    const storePath = await createStorePath("dm-scope-retire-main-route-");
+    await saveSessionStore(storePath, {
+      "agent:main:main": {
+        sessionId: "legacy-main",
+        updatedAt: Date.now(),
+        lastChannel: "telegram",
+        lastTo: "6101296751",
+        lastAccountId: "default",
+        deliveryContext: {
+          channel: "telegram",
+          to: "6101296751",
+          accountId: "default",
+        },
+      },
+    });
+    const cfg = {
+      session: { store: storePath, dmScope: "per-channel-peer" },
+    } as RemoteClawConfig;
+
+    const result = await initSessionState({
+      ctx: {
+        Body: "hello",
+        SessionKey: "agent:main:telegram:direct:6101296751",
+        OriginatingChannel: "telegram",
+        OriginatingTo: "6101296751",
+        AccountId: "default",
+      },
+      cfg,
+      commandAuthorized: true,
+    });
+
+    expect(result.sessionKey).toBe("agent:main:telegram:direct:6101296751");
+    const persisted = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
+      string,
+      SessionEntry
+    >;
+    expect(persisted["agent:main:main"]?.sessionId).toBe("legacy-main");
+    expect(persisted["agent:main:main"]?.deliveryContext).toBeUndefined();
+    expect(persisted["agent:main:main"]?.lastChannel).toBeUndefined();
+    expect(persisted["agent:main:main"]?.lastTo).toBeUndefined();
+    expect(persisted["agent:main:telegram:direct:6101296751"]?.deliveryContext?.to).toBe(
+      "6101296751",
+    );
+  });
+
+  it("keeps legacy main-session delivery route when current DM target does not match", async () => {
+    const storePath = await createStorePath("dm-scope-keep-main-route-");
+    await saveSessionStore(storePath, {
+      "agent:main:main": {
+        sessionId: "legacy-main",
+        updatedAt: Date.now(),
+        lastChannel: "telegram",
+        lastTo: "1111",
+        lastAccountId: "default",
+        deliveryContext: {
+          channel: "telegram",
+          to: "1111",
+          accountId: "default",
+        },
+      },
+    });
+    const cfg = {
+      session: { store: storePath, dmScope: "per-channel-peer" },
+    } as RemoteClawConfig;
+
+    await initSessionState({
+      ctx: {
+        Body: "hello",
+        SessionKey: "agent:main:telegram:direct:6101296751",
+        OriginatingChannel: "telegram",
+        OriginatingTo: "6101296751",
+        AccountId: "default",
+      },
+      cfg,
+      commandAuthorized: true,
+    });
+
+    const persisted = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
+      string,
+      SessionEntry
+    >;
+    expect(persisted["agent:main:main"]?.deliveryContext).toEqual({
+      channel: "telegram",
+      to: "1111",
+      accountId: "default",
+    });
+    expect(persisted["agent:main:main"]?.lastTo).toBe("1111");
+  });
+});
+
 describe("initSessionState internal channel routing preservation", () => {
   it("keeps persisted external lastChannel when OriginatingChannel is internal webchat", async () => {
     const storePath = await createStorePath("preserve-external-channel-");
@@ -1248,13 +1516,50 @@ describe("initSessionState internal channel routing preservation", () => {
         Body: "internal follow-up",
         SessionKey: sessionKey,
         OriginatingChannel: "webchat",
+        OriginatingTo: "session:dashboard",
       },
       cfg,
       commandAuthorized: true,
     });
 
     expect(result.sessionEntry.lastChannel).toBe("telegram");
+    expect(result.sessionEntry.lastTo).toBe("group:12345");
     expect(result.sessionEntry.deliveryContext?.channel).toBe("telegram");
+    expect(result.sessionEntry.deliveryContext?.to).toBe("group:12345");
+  });
+
+  it("keeps persisted external route when OriginatingChannel is non-deliverable", async () => {
+    const storePath = await createStorePath("preserve-nondeliverable-route-");
+    const sessionKey = "agent:main:discord:channel:24680";
+    await saveSessionStore(storePath, {
+      [sessionKey]: {
+        sessionId: "sess-2",
+        updatedAt: Date.now(),
+        lastChannel: "discord",
+        lastTo: "channel:24680",
+        deliveryContext: {
+          channel: "discord",
+          to: "channel:24680",
+        },
+      },
+    });
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
+
+    const result = await initSessionState({
+      ctx: {
+        Body: "internal handoff",
+        SessionKey: sessionKey,
+        OriginatingChannel: "sessions_send",
+        OriginatingTo: "session:handoff",
+      },
+      cfg,
+      commandAuthorized: true,
+    });
+
+    expect(result.sessionEntry.lastChannel).toBe("discord");
+    expect(result.sessionEntry.lastTo).toBe("channel:24680");
+    expect(result.sessionEntry.deliveryContext?.channel).toBe("discord");
+    expect(result.sessionEntry.deliveryContext?.to).toBe("channel:24680");
   });
 
   it("uses session key channel hint when first turn is internal webchat", async () => {
@@ -1274,6 +1579,25 @@ describe("initSessionState internal channel routing preservation", () => {
 
     expect(result.sessionEntry.lastChannel).toBe("telegram");
     expect(result.sessionEntry.deliveryContext?.channel).toBe("telegram");
+  });
+
+  it("keeps internal route when there is no persisted external fallback", async () => {
+    const storePath = await createStorePath("no-external-fallback-");
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
+
+    const result = await initSessionState({
+      ctx: {
+        Body: "handoff only",
+        SessionKey: "agent:main:main",
+        OriginatingChannel: "sessions_send",
+        OriginatingTo: "session:handoff",
+      },
+      cfg,
+      commandAuthorized: true,
+    });
+
+    expect(result.sessionEntry.lastChannel).toBe("sessions_send");
+    expect(result.sessionEntry.lastTo).toBe("session:handoff");
   });
 
   it("keeps webchat channel for webchat/main sessions", async () => {

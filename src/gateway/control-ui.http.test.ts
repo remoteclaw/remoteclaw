@@ -135,7 +135,7 @@ describe("handleControlUiHttpRequest", () => {
           {
             root: { kind: "resolved", path: tmp },
             config: {
-              agents: { list: [{ id: "main", workspace: tmp }] },
+              agents: { defaults: { workspace: tmp } },
               ui: { assistant: { name: "</script><script>alert(1)//", avatar: "evil.png" } },
             },
           },
@@ -156,7 +156,7 @@ describe("handleControlUiHttpRequest", () => {
           {
             root: { kind: "resolved", path: tmp },
             config: {
-              agents: { list: [{ id: "main", workspace: tmp }] },
+              agents: { defaults: { workspace: tmp } },
               ui: { assistant: { name: "</script><script>alert(1)//", avatar: "</script>.png" } },
             },
           },
@@ -185,7 +185,7 @@ describe("handleControlUiHttpRequest", () => {
             basePath: "/remoteclaw",
             root: { kind: "resolved", path: tmp },
             config: {
-              agents: { list: [{ id: "main", workspace: tmp }] },
+              agents: { defaults: { workspace: tmp } },
               ui: { assistant: { name: "Ops", avatar: "ops.png" } },
             },
           },
@@ -324,6 +324,36 @@ describe("handleControlUiHttpRequest", () => {
           expectNotFoundResponse({ handled, res, end });
         } finally {
           await fs.rm(outsideDir, { recursive: true, force: true });
+        }
+      },
+    });
+  });
+
+  it("does not handle /api paths when basePath is empty", async () => {
+    await withControlUiRoot({
+      fn: async (tmp) => {
+        for (const apiPath of ["/api", "/api/sessions", "/api/channels/nostr"]) {
+          const { handled } = runControlUiRequest({
+            url: apiPath,
+            method: "GET",
+            rootPath: tmp,
+          });
+          expect(handled, `expected ${apiPath} to not be handled`).toBe(false);
+        }
+      },
+    });
+  });
+
+  it("does not handle /plugins paths when basePath is empty", async () => {
+    await withControlUiRoot({
+      fn: async (tmp) => {
+        for (const pluginPath of ["/plugins", "/plugins/diffs/view/abc/def"]) {
+          const { handled } = runControlUiRequest({
+            url: pluginPath,
+            method: "GET",
+            rootPath: tmp,
+          });
+          expect(handled, `expected ${pluginPath} to not be handled`).toBe(false);
         }
       },
     });

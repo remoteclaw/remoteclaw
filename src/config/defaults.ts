@@ -340,3 +340,8 @@ export function applyContextPruningDefaults(cfg: RemoteClawConfig): RemoteClawCo
 export function resetSessionDefaultsWarningForTests() {
   defaultWarnState = { warned: false };
 }
+
+// Gutted in RemoteClaw fork — stub export for upstream compat
+export function applyCompactionDefaults(cfg: unknown): unknown {
+  return cfg;
+}

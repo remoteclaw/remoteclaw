@@ -1,5 +1,5 @@
 ---
-description: "Exec tool usage, stdin modes, and TTY support"
+summary: "Exec tool usage, stdin modes, and TTY support"
 read_when:
   - Using or modifying the exec tool
   - Debugging stdin or TTY behavior
@@ -25,9 +25,12 @@ Background sessions are scoped per agent; `process` only sees sessions from the 
 - `security` (`deny | allowlist | full`): enforcement mode for `gateway`/`node`
 - `ask` (`off | on-miss | always`): approval prompts for `gateway`/`node`
 - `node` (string): node id/name for `host=node`
-  Notes:
+- `elevated` (bool): request elevated mode (gateway host); `security=full` is only forced when elevated resolves to `full`
+
+Notes:
 
 - `host` defaults to `sandbox`.
+- `elevated` is ignored when sandboxing is off (exec already runs on the host).
 - `gateway`/`node` approvals are controlled by `~/.remoteclaw/exec-approvals.json`.
 - `node` requires a paired node (companion app or headless node host).
 - If multiple nodes are available, set `exec.node` or `tools.exec.node` to select one.
@@ -37,6 +40,7 @@ Background sessions are scoped per agent; `process` only sees sessions from the 
   then falls back to Windows PowerShell 5.1.
 - Host execution (`gateway`/`node`) rejects `env.PATH` and loader overrides (`LD_*`/`DYLD_*`) to
   prevent binary hijacking or injected code.
+- RemoteClaw sets `REMOTECLAW_SHELL=exec` in the spawned command environment (including PTY and sandbox execution) so shell/profile rules can detect exec-tool context.
 - Important: sandboxing is **off by default**. If sandboxing is off and `host=sandbox` is explicitly
   configured/requested, exec now fails closed instead of silently running on the gateway host.
   Enable sandboxing or use `host=gateway` with approvals.
@@ -53,7 +57,7 @@ Background sessions are scoped per agent; `process` only sees sessions from the 
 - `tools.exec.ask` (default: `on-miss`)
 - `tools.exec.node` (default: unset)
 - `tools.exec.pathPrepend`: list of directories to prepend to `PATH` for exec runs (gateway + sandbox only).
-- `tools.exec.safeBins`: stdin-only safe binaries that can run without explicit allowlist entries.
+- `tools.exec.safeBins`: stdin-only safe binaries that can run without explicit allowlist entries. For behavior details, see [Safe bins](/tools/exec-approvals#safe-bins-stdin-only).
 - `tools.exec.safeBinTrustedDirs`: additional explicit directories trusted for `safeBins` path checks. `PATH` entries are never auto-trusted. Built-in defaults are `/bin` and `/usr/bin`.
 - `tools.exec.safeBinProfiles`: optional custom argv policy per safe bin (`minPositional`, `maxPositional`, `allowedValueFlags`, `deniedFlags`).
 
@@ -91,10 +95,28 @@ remoteclaw config set agents.list[0].tools.exec.node "node-id-or-name"
 
 Control UI: the Nodes tab includes a small “Exec node binding” panel for the same settings.
 
+## Session overrides (`/exec`)
+
+Use `/exec` to set **per-session** defaults for `host`, `security`, `ask`, and `node`.
+Send `/exec` with no arguments to show the current values.
+
+Example:
+
+```
+/exec host=gateway security=allowlist ask=on-miss node=mac-1
+```
+
+## Authorization model
+
+`/exec` is only honored for **authorized senders** (channel allowlists/pairing plus `commands.useAccessGroups`).
+It updates **session state only** and does not write config. To hard-disable exec, deny it via tool
+policy (`tools.deny: ["exec"]` or per-agent). Host approvals still apply unless you explicitly set
+`security=full` and `ask=off`.
+
 ## Exec approvals (companion app / node host)
 
 Sandboxed agents can require per-request approval before `exec` runs on the gateway or node host.
-Approvals are controlled by `~/.remoteclaw/exec-approvals.json`.
+See [Exec approvals](/tools/exec-approvals) for the policy, allowlist, and UI flow.
 
 When approvals are required, the exec tool returns immediately with
 `status: "approval-pending"` and an approval id. Once approved (or denied / timed out),
@@ -109,9 +131,8 @@ allowlisted or a safe bin. Chaining (`;`, `&&`, `||`) and redirections are rejec
 allowlist mode unless every top-level segment satisfies the allowlist (including safe bins).
 Redirections remain unsupported.
 
-`autoAllowSkills` is a separate convenience path in exec approvals that auto-allows
-executables from locally-installed workspace skills. It is not the same as manual path
-allowlist entries. For strict explicit trust, keep `autoAllowSkills` disabled.
+`autoAllowSkills` is a separate convenience path in exec approvals. It is not the same as
+manual path allowlist entries. For strict explicit trust, keep `autoAllowSkills` disabled.
 
 Use the two controls for different jobs:
 
@@ -122,6 +143,8 @@ Use the two controls for different jobs:
 
 Do not treat `safeBins` as a generic allowlist, and do not add interpreter/runtime binaries (for example `python3`, `node`, `ruby`, `bash`). If you need those, use explicit allowlist entries and keep approval prompts enabled.
 `remoteclaw security audit` warns when interpreter/runtime `safeBins` entries are missing explicit profiles, and `remoteclaw doctor --fix` can scaffold missing custom `safeBinProfiles` entries.
+
+For full policy details and examples, see [Exec approvals](/tools/exec-approvals#safe-bins-stdin-only) and [Safe bins versus allowlist](/tools/exec-approvals#safe-bins-versus-allowlist).
 
 ## Examples
 
@@ -167,7 +190,7 @@ Enable it explicitly:
 {
   tools: {
     exec: {
-      applyPatch: { enabled: true, workspaceOnly: true },
+      applyPatch: { enabled: true, workspaceOnly: true, allowModels: ["gpt-5.2"] },
     },
   },
 }
@@ -175,8 +198,7 @@ Enable it explicitly:
 
 Notes:
 
-- Only relevant when using the `codex` runtime (OpenCode/Codex CLI), which natively
-  supports `apply_patch` as a subtool.
+- Only available for OpenAI/OpenAI Codex models.
 - Tool policy still applies; `allow: ["exec"]` implicitly allows `apply_patch`.
 - Config lives under `tools.exec.applyPatch`.
 - `tools.exec.applyPatch.workspaceOnly` defaults to `true` (workspace-contained). Set it to `false` only if you intentionally want `apply_patch` to write/delete outside the workspace directory.

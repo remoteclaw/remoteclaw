@@ -66,7 +66,7 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
   agentPrompt: {
     messageToolHints: () => [
       "- Feishu targeting: omit `target` to reply to the current conversation (auto-inferred). Explicit targets: `user:open_id` or `chat:chat_id`.",
-      "- Feishu auto-detects markdown patterns in messages and renders them as Card Kit 2.0 interactive cards. Use standard markdown (headings, lists, bold, links) for rich formatting without any special tool calls.",
+      "- Feishu supports interactive cards for rich messages.",
     ],
   },
   groups: {
@@ -79,6 +79,7 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
       additionalProperties: false,
       properties: {
         enabled: { type: "boolean" },
+        defaultAccount: { type: "string" },
         appId: { type: "string" },
         appSecret: { type: "string" },
         encryptKey: { type: "string" },
@@ -101,7 +102,12 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
           items: { oneOf: [{ type: "string" }, { type: "number" }] },
         },
         requireMention: { type: "boolean" },
+        groupSessionScope: {
+          type: "string",
+          enum: ["group", "group_sender", "group_topic", "group_topic_sender"],
+        },
         topicSessionMode: { type: "string", enum: ["disabled", "enabled"] },
+        replyInThread: { type: "string", enum: ["disabled", "enabled"] },
         historyLimit: { type: "integer", minimum: 0 },
         dmHistoryLimit: { type: "integer", minimum: 0 },
         textChunkLimit: { type: "integer", minimum: 1 },

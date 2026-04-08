@@ -97,6 +97,7 @@ export function loadPluginManifest(rootDir: string): PluginManifestLoadResult {
     manifest: {
       id,
       configSchema,
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       kind,
       channels,
       providers,

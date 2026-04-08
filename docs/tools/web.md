@@ -1,5 +1,5 @@
 ---
-description: "Web search + fetch tools (Brave Search API, Perplexity direct/OpenRouter, Gemini Google Search grounding)"
+summary: "Web search + fetch tools (Brave Search API, Perplexity direct/OpenRouter, Gemini Google Search grounding)"
 read_when:
   - You want to enable web_search or web_fetch
   - You need Brave Search API key setup
@@ -46,6 +46,7 @@ If no `provider` is explicitly set, RemoteClaw auto-detects which provider to us
 1. **Brave** — `BRAVE_API_KEY` env var or `search.apiKey` config
 2. **Gemini** — `GEMINI_API_KEY` env var or `search.gemini.apiKey` config
 3. **Perplexity** — `PERPLEXITY_API_KEY` / `OPENROUTER_API_KEY` env var or `search.perplexity.apiKey` config
+4. **Grok** — `XAI_API_KEY` env var or `search.grok.apiKey` config
 
 If no keys are found, it falls back to Brave (you'll get a missing-key error prompting you to configure one).
 
@@ -193,7 +194,7 @@ For a gateway install, put it in `~/.remoteclaw/.env`.
 - Citation URLs from Gemini grounding are automatically resolved from Google's
   redirect URLs to direct URLs.
 - Redirect resolution uses the SSRF guard path (HEAD + redirect checks + http/https validation) before returning the final citation URL.
-- This redirect resolver follows the trusted-network model (private/internal networks allowed by default) to match Gateway operator trust assumptions.
+- Redirect resolution uses strict SSRF defaults, so redirects to private/internal targets are blocked.
 - The default model (`gemini-2.5-flash`) is fast and cost-effective.
   Any Gemini model that supports grounding can be used.
 

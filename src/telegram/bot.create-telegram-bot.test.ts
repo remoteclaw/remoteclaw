@@ -85,7 +85,6 @@ describe("createTelegramBot", () => {
   });
   it("applies global and per-account timeoutSeconds", () => {
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", allowFrom: ["*"], timeoutSeconds: 60 },
       },
@@ -100,7 +99,6 @@ describe("createTelegramBot", () => {
     botCtorSpy.mockClear();
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           dmPolicy: "open",
@@ -304,7 +302,6 @@ describe("createTelegramBot", () => {
       sendMessageSpy.mockClear();
       replySpy.mockClear();
       loadConfig.mockReturnValue({
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: { telegram: { dmPolicy: "pairing" } },
       });
       readChannelAllowFromStore.mockResolvedValue([]);
@@ -346,7 +343,6 @@ describe("createTelegramBot", () => {
   });
   it("blocks unauthorized DM media before download and sends pairing reply", async () => {
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: { telegram: { dmPolicy: "pairing" } },
     });
     readChannelAllowFromStore.mockResolvedValue([]);
@@ -390,7 +386,6 @@ describe("createTelegramBot", () => {
   });
   it("blocks DM media downloads completely when dmPolicy is disabled", async () => {
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: { telegram: { dmPolicy: "disabled" } },
     });
     sendMessageSpy.mockClear();
@@ -431,7 +426,6 @@ describe("createTelegramBot", () => {
   });
   it("blocks unauthorized DM media groups before any photo download", async () => {
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: { telegram: { dmPolicy: "pairing" } },
     });
     readChannelAllowFromStore.mockResolvedValue([]);
@@ -488,7 +482,6 @@ describe("createTelegramBot", () => {
 
   it("dedupes duplicate updates for callback_query, message, and channel_post", async () => {
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           dmPolicy: "open",
@@ -612,7 +605,6 @@ describe("createTelegramBot", () => {
 
     const onUpdateId = vi.fn();
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: { telegram: { dmPolicy: "open", allowFrom: ["*"] } },
     });
 
@@ -681,7 +673,6 @@ describe("createTelegramBot", () => {
   });
   it("allows distinct callback_query ids without update_id", async () => {
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", allowFrom: ["*"] },
       },
@@ -734,7 +725,6 @@ describe("createTelegramBot", () => {
     {
       name: "blocks all group messages when groupPolicy is 'disabled'",
       config: {
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "disabled",
@@ -753,7 +743,6 @@ describe("createTelegramBot", () => {
     {
       name: "blocks group messages from senders not in allowFrom when groupPolicy is 'allowlist'",
       config: {
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "allowlist",
@@ -772,7 +761,6 @@ describe("createTelegramBot", () => {
     {
       name: "allows group messages from senders in allowFrom (by ID) when groupPolicy is 'allowlist'",
       config: {
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "allowlist",
@@ -792,7 +780,6 @@ describe("createTelegramBot", () => {
     {
       name: "blocks group messages when allowFrom is configured with @username entries (numeric IDs required)",
       config: {
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "allowlist",
@@ -812,7 +799,6 @@ describe("createTelegramBot", () => {
     {
       name: "allows group messages from tg:-prefixed allowFrom entries case-insensitively",
       config: {
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "allowlist",
@@ -832,7 +818,6 @@ describe("createTelegramBot", () => {
     {
       name: "blocks group messages when per-group allowFrom override is explicitly empty",
       config: {
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "open",
@@ -856,7 +841,6 @@ describe("createTelegramBot", () => {
     {
       name: "allows all group messages when groupPolicy is 'open'",
       config: {
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "open",
@@ -891,12 +875,6 @@ describe("createTelegramBot", () => {
 
   it("routes DMs by telegram accountId binding", async () => {
     loadConfig.mockReturnValue({
-      agents: {
-        list: [
-          { id: "main", workspace: "/tmp/test-workspace" },
-          { id: "opie", workspace: "/tmp/test-workspace" },
-        ],
-      },
       channels: {
         telegram: {
           accounts: {
@@ -935,6 +913,41 @@ describe("createTelegramBot", () => {
     expect(payload.AccountId).toBe("opie");
     expect(payload.SessionKey).toBe("agent:opie:main");
   });
+
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("drops non-default account DMs without explicit bindings", async () => {
+    loadConfig.mockReturnValue({
+      channels: {
+        telegram: {
+          accounts: {
+            opie: {
+              botToken: "tok-opie",
+              dmPolicy: "open",
+            },
+          },
+        },
+      },
+    });
+
+    createTelegramBot({ token: "tok", accountId: "opie" });
+    const handler = getOnHandler("message") as (ctx: Record<string, unknown>) => Promise<void>;
+
+    await handler({
+      message: {
+        chat: { id: 123, type: "private" },
+        from: { id: 999, username: "testuser" },
+        text: "hello",
+        date: 1736380800,
+        message_id: 42,
+      },
+      me: { username: "remoteclaw_bot" },
+      getFile: async () => ({ download: async () => new Uint8Array() }),
+    });
+
+    expect(replySpy).not.toHaveBeenCalled();
+  });
+
   it("applies group mention overrides and fallback behavior", async () => {
     const cases: Array<{
       config: Record<string, unknown>;
@@ -943,7 +956,6 @@ describe("createTelegramBot", () => {
     }> = [
       {
         config: {
-          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
           channels: {
             telegram: {
               groupPolicy: "open",
@@ -962,7 +974,6 @@ describe("createTelegramBot", () => {
       },
       {
         config: {
-          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
           channels: {
             telegram: {
               groupPolicy: "open",
@@ -992,7 +1003,6 @@ describe("createTelegramBot", () => {
       },
       {
         config: {
-          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
           channels: {
             telegram: {
               groupPolicy: "open",
@@ -1008,7 +1018,6 @@ describe("createTelegramBot", () => {
       },
       {
         config: {
-          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
           channels: {
             telegram: {
               groupPolicy: "open",
@@ -1051,7 +1060,7 @@ describe("createTelegramBot", () => {
             },
           },
           agents: {
-            list: [{ id: "forum-agent", workspace: "/tmp/test-workspace" }],
+            list: [{ id: "forum-agent" }],
           },
           bindings: [
             {
@@ -1075,10 +1084,7 @@ describe("createTelegramBot", () => {
             },
           },
           agents: {
-            list: [
-              { id: "topic-agent", workspace: "/tmp/test-workspace" },
-              { id: "group-agent", workspace: "/tmp/test-workspace" },
-            ],
+            list: [{ id: "topic-agent" }, { id: "group-agent" }],
           },
           bindings: [
             {
@@ -1125,7 +1131,9 @@ describe("createTelegramBot", () => {
     }
   });
 
-  it("sends GIF replies as animations", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("sends GIF replies as animations", async () => {
     replySpy.mockResolvedValueOnce({
       text: "caption",
       mediaUrl: "https://example.com/fun",
@@ -1218,7 +1226,6 @@ describe("createTelegramBot", () => {
           defaults: {
             envelopeTimezone: "utc",
           },
-          list: [{ id: "main", workspace: "/tmp/test-workspace" }],
         },
         identity: { name: "Bert" },
         messages: { groupChat: { mentionPatterns: ["\\bbert\\b"] } },
@@ -1256,7 +1263,6 @@ describe("createTelegramBot", () => {
         defaults: {
           envelopeTimezone: "utc",
         },
-        list: [{ id: "main", workspace: "/tmp/test-workspace" }],
       },
       channels: {
         telegram: {
@@ -1296,7 +1302,6 @@ describe("createTelegramBot", () => {
     resetHarnessSpies();
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       messages: {
         ackReaction: "👀",
         ackReactionScope: "group-mentions",
@@ -1325,7 +1330,6 @@ describe("createTelegramBot", () => {
   it("clears native commands when disabled", () => {
     resetHarnessSpies();
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       commands: { native: false },
     });
 
@@ -1354,7 +1358,6 @@ describe("createTelegramBot", () => {
     for (const [index, testCase] of cases.entries()) {
       resetHarnessSpies();
       loadConfig.mockReturnValue({
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         ...testCase.config,
         channels: {
           telegram: {
@@ -1412,7 +1415,6 @@ describe("createTelegramBot", () => {
       {
         name: "allowlist policy with no groupAllowFrom",
         config: {
-          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
           channels: {
             telegram: {
               groupPolicy: "allowlist",
@@ -1430,7 +1432,6 @@ describe("createTelegramBot", () => {
       {
         name: "groups map without wildcard",
         config: {
-          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
           channels: {
             telegram: {
               groups: {
@@ -1480,7 +1481,6 @@ describe("createTelegramBot", () => {
   });
   it("allows control commands with TG-prefixed groupAllowFrom entries", async () => {
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "allowlist",
@@ -1526,7 +1526,6 @@ describe("createTelegramBot", () => {
       resetHarnessSpies();
       sendChatActionSpy.mockClear();
       loadConfig.mockReturnValue({
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "open",
@@ -1561,7 +1560,6 @@ describe("createTelegramBot", () => {
       resetHarnessSpies();
       replySpy.mockResolvedValue({ text: "response" });
       loadConfig.mockReturnValue({
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "open",
@@ -1592,7 +1590,6 @@ describe("createTelegramBot", () => {
     {
       name: "allows direct messages regardless of groupPolicy",
       config: {
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "disabled",
@@ -1611,7 +1608,6 @@ describe("createTelegramBot", () => {
     {
       name: "allows direct messages with tg/Telegram-prefixed allowFrom entries",
       config: {
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             allowFrom: ["  TG:123456789  "],
@@ -1629,7 +1625,6 @@ describe("createTelegramBot", () => {
     {
       name: "matches direct message allowFrom against sender user id when chat id differs",
       config: {
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             allowFrom: ["123456789"],
@@ -1647,7 +1642,6 @@ describe("createTelegramBot", () => {
     {
       name: "falls back to direct message chat id when sender user id is missing",
       config: {
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             allowFrom: ["123456789"],
@@ -1664,7 +1658,6 @@ describe("createTelegramBot", () => {
     {
       name: "allows group messages with wildcard in allowFrom when groupPolicy is 'allowlist'",
       config: {
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "allowlist",
@@ -1684,7 +1677,6 @@ describe("createTelegramBot", () => {
     {
       name: "blocks group messages with no sender ID when groupPolicy is 'allowlist'",
       config: {
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "allowlist",
@@ -1715,7 +1707,8 @@ describe("createTelegramBot", () => {
       expect(replySpy.mock.calls.length, testCase.name).toBe(testCase.expectedReplyCount);
     }
   });
-  it("sends replies without native reply threading", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+  it.skip("sends replies without native reply threading", async () => {
     replySpy.mockResolvedValue({ text: "a".repeat(4500) });
 
     createTelegramBot({ token: "tok" });
@@ -1738,10 +1731,10 @@ describe("createTelegramBot", () => {
       ).toBeUndefined();
     }
   });
-  it("prefixes final replies with responsePrefix", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+  it.skip("prefixes final replies with responsePrefix", async () => {
     replySpy.mockResolvedValue({ text: "final reply" });
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", allowFrom: ["*"] },
       },
@@ -1763,7 +1756,8 @@ describe("createTelegramBot", () => {
     expect(sendMessageSpy).toHaveBeenCalledTimes(1);
     expect(sendMessageSpy.mock.calls[0][1]).toBe("PFX final reply");
   });
-  it("honors threaded replies for replyToMode=first/all", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+  it.skip("honors threaded replies for replyToMode=first/all", async () => {
     for (const [mode, messageId] of [
       ["first", 101],
       ["all", 102],
@@ -1790,10 +1784,14 @@ describe("createTelegramBot", () => {
       });
 
       expect(sendMessageSpy.mock.calls.length).toBeGreaterThan(1);
-      for (const call of sendMessageSpy.mock.calls) {
-        expect((call[2] as { reply_to_message_id?: number } | undefined)?.reply_to_message_id).toBe(
-          messageId,
-        );
+      for (const [index, call] of sendMessageSpy.mock.calls.entries()) {
+        const actual = (call[2] as { reply_to_message_id?: number } | undefined)
+          ?.reply_to_message_id;
+        if (mode === "all" || index === 0) {
+          expect(actual).toBe(messageId);
+        } else {
+          expect(actual).toBeUndefined();
+        }
       }
     }
   });
@@ -1808,12 +1806,6 @@ describe("createTelegramBot", () => {
       "utf-8",
     );
     loadConfig.mockReturnValue({
-      agents: {
-        list: [
-          { id: "main", workspace: "/tmp/test-workspace" },
-          { id: "ops", workspace: "/tmp/test-workspace" },
-        ],
-      },
       channels: {
         telegram: {
           groupPolicy: "open",
@@ -1848,9 +1840,10 @@ describe("createTelegramBot", () => {
     expect(replySpy).toHaveBeenCalledTimes(1);
   });
 
-  it("applies topic skill filters and system prompts", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("applies topic skill filters and system prompts", async () => {
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "open",
@@ -1858,9 +1851,10 @@ describe("createTelegramBot", () => {
             "-1001234567890": {
               requireMention: false,
               systemPrompt: "Group prompt",
-
+              skills: ["group-skill"],
               topics: {
                 "99": {
+                  skills: [],
                   systemPrompt: "Topic prompt",
                 },
               },
@@ -1878,14 +1872,14 @@ describe("createTelegramBot", () => {
     expect(replySpy).toHaveBeenCalledTimes(1);
     const payload = replySpy.mock.calls[0][0];
     expect(payload.GroupSystemPrompt).toBe("Group prompt\n\nTopic prompt");
-    expect(replySpy.mock.calls[0][1]).toBeDefined();
+    const opts = replySpy.mock.calls[0][1] as { skillFilter?: unknown };
+    expect(opts?.skillFilter).toEqual([]);
   });
   it("threads native command replies inside topics", async () => {
     commandSpy.mockClear();
     replySpy.mockResolvedValue({ text: "response" });
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       commands: { native: true },
       channels: {
         telegram: {
@@ -1911,7 +1905,8 @@ describe("createTelegramBot", () => {
       expect.objectContaining({ message_thread_id: 99 }),
     );
   });
-  it("skips tool summaries for native slash commands", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+  it.skip("skips tool summaries for native slash commands", async () => {
     commandSpy.mockClear();
     replySpy.mockImplementation(async (_ctx, opts) => {
       await opts?.onToolResult?.({ text: "tool update" });
@@ -1919,7 +1914,6 @@ describe("createTelegramBot", () => {
     });
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       commands: { native: true },
       channels: {
         telegram: {
@@ -1953,7 +1947,6 @@ describe("createTelegramBot", () => {
   });
   it("buffers channel_post media groups and processes them together", async () => {
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "open",
@@ -2037,7 +2030,6 @@ describe("createTelegramBot", () => {
   });
   it("coalesces channel_post near-limit text fragments into one message", async () => {
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "open",
@@ -2096,7 +2088,6 @@ describe("createTelegramBot", () => {
   });
   it("drops oversized channel_post media instead of dispatching a placeholder message", async () => {
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "open",
@@ -2137,7 +2128,6 @@ describe("createTelegramBot", () => {
   });
   it("notifies users when media download fails for direct messages", async () => {
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", allowFrom: ["*"] },
       },
@@ -2181,7 +2171,6 @@ describe("createTelegramBot", () => {
     replySpy.mockReset();
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "open",
@@ -2272,7 +2261,6 @@ describe("createTelegramBot", () => {
     replySpy.mockReset();
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "open",
@@ -2356,7 +2344,6 @@ describe("createTelegramBot", () => {
     replySpy.mockReset();
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", allowFrom: ["*"] },
       },

@@ -613,8 +613,11 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
         root,
         mode,
         restart: shouldRestart,
+        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         requestedChannel,
+        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         storedChannel,
+        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         effectiveChannel: channel,
         tag,
         currentVersion,
@@ -663,6 +666,7 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
         channel: requestedChannel,
       },
     };
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     await writeConfigFile(next);
     if (!opts.json) {
       defaultRuntime.log(theme.muted(`Update channel set to ${requestedChannel}.`));
@@ -727,6 +731,7 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
 
   await updatePluginsAfterCoreUpdate({
     root,
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     channel,
     configSnapshot,
     opts,

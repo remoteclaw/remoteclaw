@@ -1,4 +1,8 @@
 import type { ChannelId } from "../channels/plugins/types.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../media-understanding/types.js";
+type MediaUnderstandingDecision = Record<string, unknown>;
+type MediaUnderstandingOutput = Record<string, unknown>;
 import type { StickerMetadata } from "../telegram/bot/types.js";
 import type { InternalMessageChannel } from "../utils/message-channel.js";
 import type { CommandArgs } from "./commands-registry.types.js";
@@ -50,6 +54,11 @@ export type MsgContext = {
   MessageSidFirst?: string;
   MessageSidLast?: string;
   ReplyToId?: string;
+  /**
+   * Root message id for thread reconstruction (used by Feishu for root_id).
+   * When a message is part of a thread, this is the id of the first message.
+   */
+  RootMessageId?: string;
   /** Provider-specific full reply-to id when ReplyToId is a shortened alias. */
   ReplyToIdFull?: string;
   ReplyToBody?: string;
@@ -85,11 +94,16 @@ export type MsgContext = {
   MediaTypes?: string[];
   /** Telegram sticker metadata (emoji, set name, file IDs, cached description). */
   Sticker?: StickerMetadata;
+  /** True when current-turn sticker media is present in MediaPaths (false for cached-description path). */
+  StickerMediaIncluded?: boolean;
   OutputDir?: string;
   OutputBase?: string;
   /** Remote host for SCP when media lives on a different machine (e.g., remoteclaw@192.168.64.3). */
   MediaRemoteHost?: string;
   Transcript?: string;
+  MediaUnderstanding?: MediaUnderstandingOutput[];
+  MediaUnderstandingDecisions?: MediaUnderstandingDecision[];
+  LinkUnderstanding?: string[];
   Prompt?: string;
   MaxChars?: number;
   ChatType?: string;
@@ -125,6 +139,8 @@ export type MsgContext = {
   MessageThreadId?: string | number;
   /** Telegram forum supergroup marker. */
   IsForum?: boolean;
+  /** Warning: DM has topics enabled but this message is not in a topic. */
+  TopicRequiredButMissing?: boolean;
   /**
    * Originating channel for reply routing.
    * When set, replies should be routed back to this provider

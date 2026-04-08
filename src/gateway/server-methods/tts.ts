@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { loadConfig } from "../../config/config.js";
 import {
   OPENAI_TTS_MODELS,

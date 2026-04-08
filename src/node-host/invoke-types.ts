@@ -33,3 +33,6 @@ export type ExecEventPayload = {
   output?: string;
   reason?: string;
 };
+
+// Gutted in RemoteClaw fork — stub types for upstream compat
+export type SkillBinsProvider = Record<string, unknown>;

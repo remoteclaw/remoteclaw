@@ -170,8 +170,8 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
   },
   agentPrompt: {
     messageToolHints: () => [
-      "- Use the `discord_send` MCP tool with a `components` parameter to include buttons, selects, or v2 containers in messages.",
-      "- Forms: pass `components.modal` (with title and fields) to `discord_send`. RemoteClaw adds a trigger button and routes submissions as new messages.",
+      "- Discord components: set `components` when sending messages to include buttons, selects, or v2 containers.",
+      "- Forms: add `components.modal` (title, fields). RemoteClaw adds a trigger button and routes submissions as new messages.",
     ],
   },
   messaging: {
@@ -343,6 +343,11 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
     defaultRuntime: {
       accountId: DEFAULT_ACCOUNT_ID,
       running: false,
+      connected: false,
+      reconnectAttempts: 0,
+      lastConnectedAt: null,
+      lastDisconnect: null,
+      lastEventAt: null,
       lastStartAt: null,
       lastStopAt: null,
       lastError: null,
@@ -394,6 +399,11 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
         lastStartAt: runtime?.lastStartAt ?? null,
         lastStopAt: runtime?.lastStopAt ?? null,
         lastError: runtime?.lastError ?? null,
+        connected: runtime?.connected ?? false,
+        reconnectAttempts: runtime?.reconnectAttempts,
+        lastConnectedAt: runtime?.lastConnectedAt ?? null,
+        lastDisconnect: runtime?.lastDisconnect ?? null,
+        lastEventAt: runtime?.lastEventAt ?? null,
         application: app ?? undefined,
         bot: bot ?? undefined,
         probe,
@@ -445,6 +455,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
         abortSignal: ctx.abortSignal,
         mediaMaxMb: account.config.mediaMaxMb,
         historyLimit: account.config.historyLimit,
+        setStatus: (patch: any) => ctx.setStatus({ accountId: account.accountId, ...patch }),
       });
     },
   },

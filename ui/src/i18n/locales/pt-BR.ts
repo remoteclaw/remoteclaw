@@ -30,6 +30,7 @@ export const pt_BR: TranslationMap = {
     sessions: "Sessões",
     usage: "Uso",
     cron: "Tarefas Cron",
+    skills: "Habilidades",
     nodes: "Nós",
     chat: "Chat",
     config: "Config",
@@ -44,6 +45,7 @@ export const pt_BR: TranslationMap = {
     sessions: "Inspecionar sessões ativas e ajustar padrões por sessão.",
     usage: "Monitorar uso e custos da API.",
     cron: "Agendar despertares e execuções recorrentes de agentes.",
+    skills: "Gerenciar disponibilidade de habilidades e injeção de chaves de API.",
     nodes: "Dispositivos pareados, capacidades e exposição de comandos.",
     chat: "Sessão de chat direta com o gateway para intervenções rápidas.",
     config: "Editar ~/.remoteclaw/remoteclaw.json com segurança.",
@@ -111,6 +113,9 @@ export const pt_BR: TranslationMap = {
     refreshTitle: "Atualizar dados do chat",
     thinkingToggle: "Alternar saída de pensamento/trabalho do assistente",
     focusToggle: "Alternar modo de foco (ocultar barra lateral + cabeçalho da página)",
+    hideCronSessions: "Ocultar sessões de cron",
+    showCronSessions: "Mostrar sessões de cron",
+    showCronSessionsHidden: "Mostrar sessões de cron ({count} ocultas)",
     onboardingDisabled: "Desativado durante a integração",
   },
   languages: {
@@ -118,5 +123,6 @@ export const pt_BR: TranslationMap = {
     zhCN: "简体中文 (Chinês Simplificado)",
     zhTW: "繁體中文 (Chinês Tradicional)",
     ptBR: "Português (Português Brasileiro)",
+    de: "Deutsch (Alemão)",
   },
 };

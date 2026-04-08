@@ -1,9 +1,9 @@
 ---
-description: "Where RemoteClaw loads environment variables and the precedence order"
+summary: "Where RemoteClaw loads environment variables and the precedence order"
 read_when:
   - You need to know which env vars are loaded, and in what order
   - You are debugging missing API keys in the Gateway
-  - You are configuring env vars for a headless deployment
+  - You are documenting provider auth or deployment environments
 title: "Environment Variables"
 ---
 
@@ -28,9 +28,9 @@ Two equivalent ways to set inline env vars (both are non-overriding):
 ```json5
 {
   env: {
-    WHATSAPP_API_KEY: "your-whatsapp-key",
+    OPENROUTER_API_KEY: "sk-or-...",
     vars: {
-      TELEGRAM_BOT_TOKEN: "your-telegram-token",
+      GROQ_API_KEY: "gsk-...",
     },
   },
 }
@@ -56,15 +56,29 @@ Env var equivalents:
 - `REMOTECLAW_LOAD_SHELL_ENV=1`
 - `REMOTECLAW_SHELL_ENV_TIMEOUT_MS=15000`
 
+## Runtime-injected env vars
+
+RemoteClaw also injects context markers into spawned child processes:
+
+- `REMOTECLAW_SHELL=exec`: set for commands run through the `exec` tool.
+- `REMOTECLAW_SHELL=acp`: set for ACP runtime backend process spawns (for example `acpx`).
+- `REMOTECLAW_SHELL=acp-client`: set for `remoteclaw acp client` when it spawns the ACP bridge process.
+- `REMOTECLAW_SHELL=tui-local`: set for local TUI `!` shell commands.
+
+These are runtime markers (not required user config). They can be used in shell/profile logic
+to apply context-specific rules.
+
 ## Env var substitution in config
 
 You can reference env vars directly in config string values using `${VAR_NAME}` syntax:
 
 ```json5
 {
-  channels: {
-    telegram: {
-      botToken: "${TELEGRAM_BOT_TOKEN}",
+  models: {
+    providers: {
+      "vercel-gateway": {
+        apiKey: "${VERCEL_GATEWAY_API_KEY}",
+      },
     },
   },
 }
@@ -117,3 +131,4 @@ When set, `REMOTECLAW_HOME` replaces the system home directory (`$HOME` / `os.ho
 
 - [Gateway configuration](/gateway/configuration)
 - [FAQ: env vars and .env loading](/help/faq#env-vars-and-env-loading)
+- [Models overview](/concepts/models)

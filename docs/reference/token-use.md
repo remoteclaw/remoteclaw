@@ -1,5 +1,5 @@
 ---
-description: "How RemoteClaw builds prompt context and reports token usage + costs"
+summary: "How RemoteClaw builds prompt context and reports token usage + costs"
 read_when:
   - Explaining token usage, costs, or context windows
   - Debugging context growth or compaction behavior
@@ -18,7 +18,7 @@ RemoteClaw assembles its own system prompt on every run. It includes:
 - Tool list + short descriptions
 - Skills list (only metadata; instructions are loaded on demand with `read`)
 - Self-update instructions
-- Workspace context files (`HEARTBEAT.md`, `MEMORY.md` when present). Agent CLIs load their own config files (e.g. `CLAUDE.md`). `memory/*.md` files are on-demand via memory tools and are not auto-injected.
+- Workspace + bootstrap files (`AGENTS.md`, `SOUL.md`, `TOOLS.md`, `IDENTITY.md`, `USER.md`, `HEARTBEAT.md`, `BOOTSTRAP.md` when new, plus `MEMORY.md` and/or `memory.md` when present). Large files are truncated by `agents.defaults.bootstrapMaxChars` (default: 20000), and total bootstrap injection is capped by `agents.defaults.bootstrapTotalMaxChars` (default: 150000). `memory/*.md` files are on-demand via memory tools and are not auto-injected.
 - Time (UTC + user timezone)
 - Reply tags + heartbeat behavior
 - Runtime metadata (host/OS/model/thinking)
@@ -36,8 +36,7 @@ Everything the model receives counts toward the context limit:
 - Compaction summaries and pruning artifacts
 - Provider wrappers or safety headers (not visible, but still counted)
 
-For images, RemoteClaw downscales transcript/tool image payloads before
-forwarding them to the CLI agent.
+For images, RemoteClaw downscales transcript/tool image payloads before provider calls.
 Use `agents.defaults.imageMaxDimensionPx` (default: `1200`) to tune this:
 
 - Lower values usually reduce vision-token usage and payload size.
@@ -50,38 +49,42 @@ For a practical breakdown (per injected file, tools, skills, and system prompt s
 Use these in chat:
 
 - `/status` → **emoji‑rich status card** with the session model, context usage,
-  last response input/output tokens, and **estimated cost** (when available).
+  last response input/output tokens, and **estimated cost** (API key only).
 - `/usage off|tokens|full` → appends a **per-response usage footer** to every reply.
   - Persists per session (stored as `responseUsage`).
-  - Cost display depends on the CLI agent's auth method; some auth flows
-    report tokens only.
+  - OAuth auth **hides cost** (tokens only).
 - `/usage cost` → shows a local cost summary from RemoteClaw session logs.
 
 Other surfaces:
 
 - **TUI/Web TUI:** `/status` + `/usage` are supported.
 - **CLI:** `remoteclaw status --usage` and `remoteclaw channels list` show
-  channel-level quota information (not per-response costs).
+  provider quota windows (not per-response costs).
 
 ## Cost estimation (when shown)
 
-Costs are estimated from your CLI agent's pricing data (when available). The CLI
-agent reports `input`, `output`, `cacheRead`, and `cacheWrite` costs in **USD
-per 1M tokens**. If pricing is missing or the CLI agent doesn't report it,
-RemoteClaw shows tokens only.
+Costs are estimated from your model pricing config:
 
-## Cache TTL and session pruning
+```
+models.providers.<provider>.models[].cost
+```
 
-Prompt caching is managed by the CLI agent's underlying provider. RemoteClaw can
-optionally run **cache-ttl pruning** on the session: it prunes conversation
-history once the cache TTL has expired, then resets the window so the CLI agent
-can re-cache a shorter context rather than the full history. This keeps cache
+These are **USD per 1M tokens** for `input`, `output`, `cacheRead`, and
+`cacheWrite`. If pricing is missing, RemoteClaw shows tokens only. OAuth tokens
+never show dollar cost.
+
+## Cache TTL and pruning impact
+
+Provider prompt caching only applies within the cache TTL window. RemoteClaw can
+optionally run **cache-ttl pruning**: it prunes the session once the cache TTL
+has expired, then resets the cache window so subsequent requests can re-use the
+freshly cached context instead of re-caching the full history. This keeps cache
 write costs lower when a session goes idle past the TTL.
 
 Configure it in [Gateway configuration](/gateway/configuration) and see the
 behavior details in [Session pruning](/concepts/session-pruning).
 
-Heartbeat can keep the cache **warm** across idle gaps. If the provider cache TTL
+Heartbeat can keep the cache **warm** across idle gaps. If your model cache TTL
 is `1h`, setting the heartbeat interval just under that (e.g., `55m`) can avoid
 re-caching the full prompt, reducing cache write costs.
 
@@ -100,30 +103,66 @@ prompt caching pricing for the latest rates and TTL multipliers:
 ```yaml
 agents:
   defaults:
+    model:
+      primary: "anthropic/claude-opus-4-6"
+    models:
+      "anthropic/claude-opus-4-6":
+        params:
+          cacheRetention: "long"
     heartbeat:
       every: "55m"
 ```
-
-Set `cacheRetention` on the CLI agent side (e.g., via agent-level params)
-to control cache write behavior.
 
 ### Example: mixed traffic with per-agent cache strategy
 
 ```yaml
 agents:
+  defaults:
+    model:
+      primary: "anthropic/claude-opus-4-6"
+    models:
+      "anthropic/claude-opus-4-6":
+        params:
+          cacheRetention: "long" # default baseline for most agents
   list:
     - id: "research"
       default: true
       heartbeat:
-        every: "55m" # keep cache warm for deep sessions
-      params:
-        cacheRetention: "long"
+        every: "55m" # keep long cache warm for deep sessions
     - id: "alerts"
       params:
         cacheRetention: "none" # avoid cache writes for bursty notifications
 ```
 
-`agents.list[].params` lets you override cache behavior per agent.
+`agents.list[].params` merges on top of the selected model's `params`, so you can
+override only `cacheRetention` and inherit other model defaults unchanged.
+
+### Example: enable Anthropic 1M context beta header
+
+Anthropic's 1M context window is currently beta-gated. RemoteClaw can inject the
+required `anthropic-beta` value when you enable `context1m` on supported Opus
+or Sonnet models.
+
+```yaml
+agents:
+  defaults:
+    models:
+      "anthropic/claude-opus-4-6":
+        params:
+          context1m: true
+```
+
+This maps to Anthropic's `context-1m-2025-08-07` beta header.
+
+This only applies when `context1m: true` is set on that model entry.
+
+Requirement: the credential must be eligible for long-context usage (API key
+billing, or subscription with Extra Usage enabled). If not, Anthropic responds
+with `HTTP 429: rate_limit_error: Extra usage is required for long context requests`.
+
+If you authenticate Anthropic with OAuth/subscription tokens (`sk-ant-oat-*`),
+RemoteClaw skips the `context-1m-*` beta header because Anthropic currently
+rejects that combination with HTTP 401.
 
 ## Tips for reducing token pressure
 
@@ -131,6 +170,6 @@ agents:
 - Trim large tool outputs in your workflows.
 - Lower `agents.defaults.imageMaxDimensionPx` for screenshot-heavy sessions.
 - Keep skill descriptions short (skill list is injected into the prompt).
-- Configure your CLI agent to use a smaller model for verbose, exploratory work.
+- Prefer smaller models for verbose, exploratory work.
 
-Keep skill descriptions short to minimize prompt overhead.
+See [Skills](/tools/skills) for the exact skill list overhead formula.

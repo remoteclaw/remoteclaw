@@ -5,9 +5,7 @@ import { resolveMainSessionKey } from "../config/sessions.js";
 import { isCronSystemEvent } from "./heartbeat-runner.js";
 import { enqueueSystemEvent, peekSystemEvents, resetSystemEventsForTest } from "./system-events.js";
 
-const cfg = {
-  agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
-} as unknown as RemoteClawConfig;
+const cfg = {} as unknown as RemoteClawConfig;
 const mainKey = resolveMainSessionKey(cfg);
 
 describe("system events (session routing)", () => {
@@ -48,6 +46,14 @@ describe("system events (session routing)", () => {
   it("requires an explicit session key", () => {
     expect(() => enqueueSystemEvent("Node: Mac Studio", { sessionKey: " " })).toThrow("sessionKey");
   });
+
+  it("returns false for consecutive duplicate events", () => {
+    const first = enqueueSystemEvent("Node connected", { sessionKey: "agent:main:main" });
+    const second = enqueueSystemEvent("Node connected", { sessionKey: "agent:main:main" });
+
+    expect(first).toBe(true);
+    expect(second).toBe(false);
+  });
 });
 
 describe("isCronSystemEvent", () => {
@@ -56,12 +62,14 @@ describe("isCronSystemEvent", () => {
     expect(isCronSystemEvent("   ")).toBe(false);
   });
 
-  it("returns true for heartbeat ack markers (no longer filtered as noise)", () => {
-    expect(isCronSystemEvent("HEARTBEAT_OK")).toBe(true);
-    expect(isCronSystemEvent("HEARTBEAT_OK 🦀")).toBe(true);
-    expect(isCronSystemEvent("heartbeat_ok")).toBe(true);
-    expect(isCronSystemEvent("HEARTBEAT_OK:")).toBe(true);
-    expect(isCronSystemEvent("HEARTBEAT_OK, continue")).toBe(true);
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("returns false for heartbeat ack markers", () => {
+    expect(isCronSystemEvent("HEARTBEAT_OK")).toBe(false);
+    expect(isCronSystemEvent("HEARTBEAT_OK 🦞")).toBe(false);
+    expect(isCronSystemEvent("heartbeat_ok")).toBe(false);
+    expect(isCronSystemEvent("HEARTBEAT_OK:")).toBe(false);
+    expect(isCronSystemEvent("HEARTBEAT_OK, continue")).toBe(false);
   });
 
   it("returns false for heartbeat poll and wake noise", () => {

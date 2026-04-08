@@ -3,9 +3,13 @@ import { captureFullEnv } from "../test-utils/env.js";
 import { SUPERVISOR_HINT_ENV_VARS } from "./supervisor-markers.js";
 
 const spawnMock = vi.hoisted(() => vi.fn());
+const triggerRemoteClawRestartMock = vi.hoisted(() => vi.fn());
 
 vi.mock("node:child_process", () => ({
   spawn: (...args: unknown[]) => spawnMock(...args),
+}));
+vi.mock("./restart.js", () => ({
+  triggerRemoteClawRestart: (...args: unknown[]) => triggerRemoteClawRestartMock(...args),
 }));
 
 import { restartGatewayProcessWithFreshPid } from "./process-respawn.js";
@@ -13,12 +17,27 @@ import { restartGatewayProcessWithFreshPid } from "./process-respawn.js";
 const originalArgv = [...process.argv];
 const originalExecArgv = [...process.execArgv];
 const envSnapshot = captureFullEnv();
+const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(process, "platform");
+
+function setPlatform(platform: string) {
+  if (!originalPlatformDescriptor) {
+    return;
+  }
+  Object.defineProperty(process, "platform", {
+    ...originalPlatformDescriptor,
+    value: platform,
+  });
+}
 
 afterEach(() => {
   envSnapshot.restore();
   process.argv = [...originalArgv];
   process.execArgv = [...originalExecArgv];
   spawnMock.mockClear();
+  triggerRemoteClawRestartMock.mockClear();
+  if (originalPlatformDescriptor) {
+    Object.defineProperty(process, "platform", originalPlatformDescriptor);
+  }
 });
 
 function clearSupervisorHints() {
@@ -39,6 +58,47 @@ describe("restartGatewayProcessWithFreshPid", () => {
     process.env.LAUNCH_JOB_LABEL = "org.remoteclaw.gateway";
     const result = restartGatewayProcessWithFreshPid();
     expect(result.mode).toBe("supervised");
+    expect(spawnMock).not.toHaveBeenCalled();
+  });
+
+  it("runs launchd kickstart helper on macOS when launchd label is set", () => {
+    setPlatform("darwin");
+    process.env.LAUNCH_JOB_LABEL = "org.remoteclaw.gateway";
+    process.env.REMOTECLAW_LAUNCHD_LABEL = "org.remoteclaw.gateway";
+    triggerRemoteClawRestartMock.mockReturnValue({ ok: true, method: "launchctl" });
+
+    const result = restartGatewayProcessWithFreshPid();
+
+    expect(result.mode).toBe("supervised");
+    expect(triggerRemoteClawRestartMock).toHaveBeenCalledOnce();
+    expect(spawnMock).not.toHaveBeenCalled();
+  });
+
+  it("returns failed when launchd kickstart helper fails", () => {
+    setPlatform("darwin");
+    process.env.LAUNCH_JOB_LABEL = "org.remoteclaw.gateway";
+    process.env.REMOTECLAW_LAUNCHD_LABEL = "org.remoteclaw.gateway";
+    triggerRemoteClawRestartMock.mockReturnValue({
+      ok: false,
+      method: "launchctl",
+      detail: "spawn failed",
+    });
+
+    const result = restartGatewayProcessWithFreshPid();
+
+    expect(result.mode).toBe("failed");
+    expect(result.detail).toContain("spawn failed");
+  });
+
+  it("does not schedule kickstart on non-darwin platforms", () => {
+    setPlatform("linux");
+    process.env.INVOCATION_ID = "abc123";
+    process.env.REMOTECLAW_LAUNCHD_LABEL = "org.remoteclaw.gateway";
+
+    const result = restartGatewayProcessWithFreshPid();
+
+    expect(result.mode).toBe("supervised");
+    expect(triggerRemoteClawRestartMock).not.toHaveBeenCalled();
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
@@ -64,9 +124,12 @@ describe("restartGatewayProcessWithFreshPid", () => {
 
   it("returns supervised when REMOTECLAW_LAUNCHD_LABEL is set (stock launchd plist)", () => {
     clearSupervisorHints();
+    setPlatform("darwin");
     process.env.REMOTECLAW_LAUNCHD_LABEL = "org.remoteclaw.gateway";
+    triggerRemoteClawRestartMock.mockReturnValue({ ok: true, method: "launchctl" });
     const result = restartGatewayProcessWithFreshPid();
     expect(result.mode).toBe("supervised");
+    expect(triggerRemoteClawRestartMock).toHaveBeenCalledOnce();
     expect(spawnMock).not.toHaveBeenCalled();
   });
 

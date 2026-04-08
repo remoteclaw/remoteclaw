@@ -1,6 +1,6 @@
 import type { RequestPermissionRequest } from "@agentclientprotocol/sdk";
 import { describe, expect, it, vi } from "vitest";
-import { resolvePermissionRequest } from "./client.js";
+import { resolveAcpClientSpawnEnv, resolvePermissionRequest } from "./client.js";
 import { extractAttachmentsFromPrompt, extractTextFromPrompt } from "./event-mapper.js";
 
 function makePermissionRequest(
@@ -11,7 +11,7 @@ function makePermissionRequest(
     sessionId: "session-1",
     toolCall: {
       toolCallId: "tool-1",
-      title: "search: foo",
+      title: "read: src/index.ts",
       status: "pending",
     },
     options: [
@@ -28,8 +28,29 @@ function makePermissionRequest(
   };
 }
 
+describe("resolveAcpClientSpawnEnv", () => {
+  it("sets REMOTECLAW_SHELL marker and preserves existing env values", () => {
+    const env = resolveAcpClientSpawnEnv({
+      PATH: "/usr/bin",
+      USER: "remoteclaw",
+    });
+
+    expect(env.REMOTECLAW_SHELL).toBe("acp-client");
+    expect(env.PATH).toBe("/usr/bin");
+    expect(env.USER).toBe("remoteclaw");
+  });
+
+  it("overrides pre-existing REMOTECLAW_SHELL to acp-client", () => {
+    const env = resolveAcpClientSpawnEnv({
+      REMOTECLAW_SHELL: "wrong",
+    });
+    expect(env.REMOTECLAW_SHELL).toBe("acp-client");
+  });
+});
+
 describe("resolvePermissionRequest", () => {
-  it("auto-approves safe tools without prompting", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+  it.skip("auto-approves safe tools without prompting", async () => {
     const prompt = vi.fn(async () => true);
     const res = await resolvePermissionRequest(makePermissionRequest(), { prompt, log: () => {} });
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "allow" } });
@@ -49,7 +70,7 @@ describe("resolvePermissionRequest", () => {
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "allow" } });
   });
 
-  it("prompts for non-search tools (write)", async () => {
+  it("prompts for non-read/search tools (write)", async () => {
     const prompt = vi.fn(async () => true);
     const res = await resolvePermissionRequest(
       makePermissionRequest({
@@ -74,16 +95,102 @@ describe("resolvePermissionRequest", () => {
     expect(prompt).not.toHaveBeenCalled();
   });
 
-  it("prompts for read tool (no longer auto-approved)", async () => {
+  it("prompts for read outside cwd scope", async () => {
     const prompt = vi.fn(async () => false);
     const res = await resolvePermissionRequest(
       makePermissionRequest({
-        toolCall: { toolCallId: "tool-r", title: "read: src/index.ts", status: "pending" },
+        toolCall: { toolCallId: "tool-r", title: "read: ~/.ssh/id_rsa", status: "pending" },
       }),
       { prompt, log: () => {} },
     );
     expect(prompt).toHaveBeenCalledTimes(1);
-    expect(prompt).toHaveBeenCalledWith("read", "read: src/index.ts");
+    expect(prompt).toHaveBeenCalledWith("read", "read: ~/.ssh/id_rsa");
+    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
+  });
+
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("auto-approves read when rawInput path resolves inside cwd", async () => {
+    const prompt = vi.fn(async () => true);
+    const res = await resolvePermissionRequest(
+      makePermissionRequest({
+        toolCall: {
+          toolCallId: "tool-read-inside-cwd",
+          title: "read: ignored-by-raw-input",
+          status: "pending",
+          rawInput: { path: "docs/security.md" },
+        },
+      }),
+      { prompt, log: () => {}, cwd: "/tmp/remoteclaw-acp-cwd" },
+    );
+    expect(prompt).not.toHaveBeenCalled();
+    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "allow" } });
+  });
+
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("auto-approves read when rawInput file URL resolves inside cwd", async () => {
+    const prompt = vi.fn(async () => true);
+    const res = await resolvePermissionRequest(
+      makePermissionRequest({
+        toolCall: {
+          toolCallId: "tool-read-inside-cwd-file-url",
+          title: "read: ignored-by-raw-input",
+          status: "pending",
+          rawInput: { path: "file:///tmp/remoteclaw-acp-cwd/docs/security.md" },
+        },
+      }),
+      { prompt, log: () => {}, cwd: "/tmp/remoteclaw-acp-cwd" },
+    );
+    expect(prompt).not.toHaveBeenCalled();
+    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "allow" } });
+  });
+
+  it("prompts for read when rawInput path escapes cwd via traversal", async () => {
+    const prompt = vi.fn(async () => false);
+    const res = await resolvePermissionRequest(
+      makePermissionRequest({
+        toolCall: {
+          toolCallId: "tool-read-escape-cwd",
+          title: "read: ignored-by-raw-input",
+          status: "pending",
+          rawInput: { path: "../.ssh/id_rsa" },
+        },
+      }),
+      { prompt, log: () => {}, cwd: "/tmp/remoteclaw-acp-cwd/workspace" },
+    );
+    expect(prompt).toHaveBeenCalledTimes(1);
+    expect(prompt).toHaveBeenCalledWith("read", "read: ignored-by-raw-input");
+    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
+  });
+
+  it("prompts for read when scoped path is missing", async () => {
+    const prompt = vi.fn(async () => false);
+    const res = await resolvePermissionRequest(
+      makePermissionRequest({
+        toolCall: {
+          toolCallId: "tool-read-no-path",
+          title: "read",
+          status: "pending",
+        },
+      }),
+      { prompt, log: () => {} },
+    );
+    expect(prompt).toHaveBeenCalledTimes(1);
+    expect(prompt).toHaveBeenCalledWith("read", "read");
+    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
+  });
+
+  it("prompts for non-core read-like tool names", async () => {
+    const prompt = vi.fn(async () => false);
+    const res = await resolvePermissionRequest(
+      makePermissionRequest({
+        toolCall: { toolCallId: "tool-fr", title: "fs_read: ~/.ssh/id_rsa", status: "pending" },
+      }),
+      { prompt, log: () => {} },
+    );
+    expect(prompt).toHaveBeenCalledTimes(1);
+    expect(prompt).toHaveBeenCalledWith("fs_read", "fs_read: ~/.ssh/id_rsa");
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
   });
 

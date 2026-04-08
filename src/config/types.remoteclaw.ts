@@ -102,6 +102,13 @@ export type RemoteClawConfig = {
   canvasHost?: CanvasHostConfig;
   talk?: TalkConfig;
   gateway?: GatewayConfig;
+  /** Model catalog configuration (upstream feature). */
+  models?: {
+    providers?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
+  /** Access control policy configuration (upstream feature). */
+  acp?: unknown;
 };
 
 export type ConfigValidationIssue = {

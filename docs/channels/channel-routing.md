@@ -1,5 +1,5 @@
 ---
-description: "Routing rules per channel (WhatsApp, Telegram, Discord, Slack) and shared context"
+summary: "Routing rules per channel (WhatsApp, Telegram, Discord, Slack) and shared context"
 read_when:
   - Changing channel routing or inbox behavior
 title: "Channel Routing"
@@ -15,6 +15,8 @@ host configuration.
 
 - **Channel**: `whatsapp`, `telegram`, `discord`, `slack`, `signal`, `imessage`, `webchat`.
 - **AccountId**: per‑channel account instance (when supported).
+- Optional channel default account: `channels.<channel>.defaultAccount` chooses
+  which account is used when an outbound path does not specify `accountId`.
 - **AgentId**: an isolated workspace + session store (“brain”).
 - **SessionKey**: the bucket key used to store context and control concurrency.
 
@@ -76,7 +78,7 @@ See: [Broadcast Groups](/channels/broadcast-groups).
 
 ## Config overview
 
-- `agents.list`: named agent definitions (workspace, runtime, etc.).
+- `agents.list`: named agent definitions (workspace, model, etc.).
 - `bindings`: map inbound channels/accounts/peers to agents.
 
 Example:

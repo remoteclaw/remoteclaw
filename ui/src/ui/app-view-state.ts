@@ -1,9 +1,16 @@
 import type { EventLogEntry } from "./app-events.ts";
 import type { CompactionStatus, FallbackStatus } from "./app-tool-stream.ts";
-import type { CronFieldErrors } from "./controllers/cron.ts";
+import type {
+  CronFieldErrors,
+  CronJobsLastStatusFilter,
+  CronJobsScheduleKindFilter,
+} from "./controllers/cron.ts";
 import type { DevicePairingList } from "./controllers/devices.ts";
 import type { ExecApprovalRequest } from "./controllers/exec-approval.ts";
 import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exec-approvals.ts";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "./controllers/skills.ts";
+type SkillMessage = Record<string, unknown>;
 import type { GatewayBrowserClient, GatewayHelloOk } from "./gateway.ts";
 import type { Tab } from "./navigation.ts";
 import type { UiSettings } from "./storage.ts";
@@ -35,6 +42,7 @@ import type {
   CostUsageSummary,
   SessionUsageTimeSeries,
   SessionsListResult,
+  SkillStatusReport,
   ToolsCatalogResult,
   StatusSummary,
 } from "./types.ts";
@@ -65,13 +73,13 @@ export type AppViewState = {
   chatAttachments: ChatAttachment[];
   chatMessages: unknown[];
   chatToolMessages: unknown[];
-  chatThinkingStream: string | null;
   chatStream: string | null;
   chatStreamStartedAt: number | null;
   chatRunId: string | null;
   compactionStatus: CompactionStatus | null;
   fallbackStatus: FallbackStatus | null;
   chatAvatarUrl: string | null;
+  chatThinkingLevel: string | null;
   chatQueue: ChatQueueItem[];
   chatManualRefreshInFlight: boolean;
   nodesLoading: boolean;
@@ -139,7 +147,7 @@ export type AppViewState = {
   toolsCatalogLoading: boolean;
   toolsCatalogError: string | null;
   toolsCatalogResult: ToolsCatalogResult | null;
-  agentsPanel: "overview" | "files" | "tools" | "channels" | "cron";
+  agentsPanel: "overview" | "files" | "tools" | "skills" | "channels" | "cron";
   agentFilesLoading: boolean;
   agentFilesError: string | null;
   agentFilesList: AgentsFilesListResult | null;
@@ -150,6 +158,10 @@ export type AppViewState = {
   agentIdentityLoading: boolean;
   agentIdentityError: string | null;
   agentIdentityById: Record<string, AgentIdentityResult>;
+  agentSkillsLoading: boolean;
+  agentSkillsError: string | null;
+  agentSkillsReport: SkillStatusReport | null;
+  agentSkillsAgentId: string | null;
   sessionsLoading: boolean;
   sessionsResult: SessionsListResult | null;
   sessionsError: string | null;
@@ -157,6 +169,7 @@ export type AppViewState = {
   sessionsFilterLimit: string;
   sessionsIncludeGlobal: boolean;
   sessionsIncludeUnknown: boolean;
+  sessionsHideCron: boolean;
   usageLoading: boolean;
   usageResult: SessionsUsageResult | null;
   usageCostSummary: CostUsageSummary | null;
@@ -201,6 +214,8 @@ export type AppViewState = {
   cronJobsLimit: number;
   cronJobsQuery: string;
   cronJobsEnabledFilter: CronJobsEnabledFilter;
+  cronJobsScheduleKindFilter: CronJobsScheduleKindFilter;
+  cronJobsLastStatusFilter: CronJobsLastStatusFilter;
   cronJobsSortBy: CronJobsSortBy;
   cronJobsSortDir: CronSortDir;
   cronStatus: CronStatus | null;
@@ -223,9 +238,17 @@ export type AppViewState = {
   cronRunsSortDir: CronSortDir;
   cronModelSuggestions: string[];
   cronBusy: boolean;
+  skillsLoading: boolean;
+  skillsReport: SkillStatusReport | null;
+  skillsError: string | null;
+  skillsFilter: string;
+  skillEdits: Record<string, string>;
+  skillMessages: Record<string, SkillMessage>;
+  skillsBusyKey: string | null;
   debugLoading: boolean;
   debugStatus: StatusSummary | null;
   debugHealth: HealthSnapshot | null;
+  debugModels: unknown[];
   debugHeartbeat: unknown;
   debugCallMethod: string;
   debugCallParams: string;
@@ -274,6 +297,11 @@ export type AppViewState = {
   handleConfigFormUpdate: (path: string, value: unknown) => void;
   handleConfigFormModeChange: (mode: "form" | "raw") => void;
   handleConfigRawChange: (raw: string) => void;
+  handleInstallSkill: (key: string) => Promise<void>;
+  handleUpdateSkill: (key: string) => Promise<void>;
+  handleToggleSkillEnabled: (key: string, enabled: boolean) => Promise<void>;
+  handleUpdateSkillEdit: (key: string, value: string) => void;
+  handleSaveSkillApiKey: (key: string, apiKey: string) => Promise<void>;
   handleCronToggle: (jobId: string, enabled: boolean) => Promise<void>;
   handleCronRun: (jobId: string) => Promise<void>;
   handleCronRemove: (jobId: string) => Promise<void>;
@@ -284,6 +312,7 @@ export type AppViewState = {
   handleSessionsPatch: (key: string, patch: unknown) => Promise<void>;
   handleLoadNodes: () => Promise<void>;
   handleLoadPresence: () => Promise<void>;
+  handleLoadSkills: () => Promise<void>;
   handleLoadDebug: () => Promise<void>;
   handleLoadLogs: () => Promise<void>;
   handleDebugCall: () => Promise<void>;

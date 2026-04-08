@@ -56,3 +56,8 @@ export async function checkGatewayHealth(params: {
 
   return { healthOk };
 }
+
+// Gutted in RemoteClaw fork — stub export for upstream compat
+export function probeGatewayMemoryStatus(..._args: unknown[]): unknown {
+  return undefined;
+}

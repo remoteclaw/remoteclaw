@@ -20,6 +20,7 @@ export function createNativeCommandTestParams(params: {
   nativeDisabledExplicit?: boolean;
   opts?: RegisterTelegramNativeCommandParams["opts"];
 }): RegisterTelegramNativeCommandParams {
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   return {
     bot: params.bot,
     cfg: params.cfg ?? { agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] } },

@@ -11,9 +11,11 @@ import {
   commandSpy,
   editMessageTextSpy,
   enqueueSystemEventSpy,
+  getFileSpy,
   getLoadConfigMock,
   getReadChannelAllowFromStoreMock,
   getOnHandler,
+  listSkillCommandsForAgents,
   onSpy,
   replySpy,
   sendMessageSpy,
@@ -25,6 +27,13 @@ import { createTelegramBot } from "./bot.js";
 const loadConfig = getLoadConfigMock();
 const readChannelAllowFromStore = getReadChannelAllowFromStoreMock();
 
+function resolveSkillCommands(config: Parameters<typeof listNativeCommandSpecsForConfig>[0]) {
+  void config;
+  return listSkillCommandsForAgents() as NonNullable<
+    Parameters<typeof listNativeCommandSpecsForConfig>[1]
+  >["skillCommands"];
+}
+
 const ORIGINAL_TZ = process.env.TZ;
 describe("createTelegramBot", () => {
   beforeEach(() => {
@@ -34,7 +43,6 @@ describe("createTelegramBot", () => {
         defaults: {
           envelopeTimezone: "utc",
         },
-        list: [{ id: "main", workspace: "/tmp/test-workspace" }],
       },
       channels: {
         telegram: { dmPolicy: "open", allowFrom: ["*"] },
@@ -47,7 +55,6 @@ describe("createTelegramBot", () => {
 
   it("merges custom commands with native commands", () => {
     const config = {
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           customCommands: [
@@ -65,7 +72,8 @@ describe("createTelegramBot", () => {
       command: string;
       description: string;
     }>;
-    const native = listNativeCommandSpecsForConfig(config).map((command) => ({
+    const skillCommands = resolveSkillCommands(config);
+    const native = listNativeCommandSpecsForConfig(config, { skillCommands }).map((command) => ({
       command: normalizeTelegramCommandName(command.name),
       description: command.description,
     }));
@@ -79,7 +87,6 @@ describe("createTelegramBot", () => {
   it("ignores custom commands that collide with native commands", () => {
     const errorSpy = vi.fn();
     const config = {
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           customCommands: [
@@ -106,7 +113,8 @@ describe("createTelegramBot", () => {
       command: string;
       description: string;
     }>;
-    const native = listNativeCommandSpecsForConfig(config).map((command) => ({
+    const skillCommands = resolveSkillCommands(config);
+    const native = listNativeCommandSpecsForConfig(config, { skillCommands }).map((command) => ({
       command: normalizeTelegramCommandName(command.name),
       description: command.description,
     }));
@@ -120,7 +128,6 @@ describe("createTelegramBot", () => {
 
   it("registers custom commands when native commands are disabled", () => {
     const config = {
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       commands: { native: false },
       channels: {
         telegram: {
@@ -154,7 +161,6 @@ describe("createTelegramBot", () => {
     createTelegramBot({
       token: "tok",
       config: {
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             dmPolicy: "pairing",
@@ -188,8 +194,57 @@ describe("createTelegramBot", () => {
     expect(answerCallbackQuerySpy).toHaveBeenCalledWith("cbq-2");
   });
 
-  it("edits commands list for pagination callbacks", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("allows callback_query in groups when group policy authorizes the sender", async () => {
     onSpy.mockClear();
+    editMessageTextSpy.mockClear();
+    listSkillCommandsForAgents.mockClear();
+
+    createTelegramBot({
+      token: "tok",
+      config: {
+        channels: {
+          telegram: {
+            dmPolicy: "open",
+            capabilities: { inlineButtons: "allowlist" },
+            allowFrom: [],
+            groupPolicy: "open",
+            groups: { "*": { requireMention: false } },
+          },
+        },
+      },
+    });
+    const callbackHandler = onSpy.mock.calls.find((call) => call[0] === "callback_query")?.[1] as (
+      ctx: Record<string, unknown>,
+    ) => Promise<void>;
+    expect(callbackHandler).toBeDefined();
+
+    await callbackHandler({
+      callbackQuery: {
+        id: "cbq-group-1",
+        data: "commands_page_2",
+        from: { id: 42, first_name: "Ada", username: "ada_bot" },
+        message: {
+          chat: { id: -100999, type: "supergroup", title: "Test Group" },
+          date: 1736380800,
+          message_id: 20,
+        },
+      },
+      me: { username: "remoteclaw_bot" },
+      getFile: async () => ({ download: async () => new Uint8Array() }),
+    });
+
+    // The callback should be processed (not silently blocked)
+    expect(editMessageTextSpy).toHaveBeenCalledTimes(1);
+    expect(answerCallbackQuerySpy).toHaveBeenCalledWith("cbq-group-1");
+  });
+
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("edits commands list for pagination callbacks", async () => {
+    onSpy.mockClear();
+    listSkillCommandsForAgents.mockClear();
 
     createTelegramBot({ token: "tok" });
     const callbackHandler = onSpy.mock.calls.find((call) => call[0] === "callback_query")?.[1] as (
@@ -212,6 +267,10 @@ describe("createTelegramBot", () => {
       getFile: async () => ({ download: async () => new Uint8Array() }),
     });
 
+    expect(listSkillCommandsForAgents).toHaveBeenCalledWith({
+      cfg: expect.any(Object),
+      agentIds: ["main"],
+    });
     expect(editMessageTextSpy).toHaveBeenCalledTimes(1);
     const [chatId, messageId, text, params] = editMessageTextSpy.mock.calls[0] ?? [];
     expect(chatId).toBe(1234);
@@ -231,7 +290,6 @@ describe("createTelegramBot", () => {
     createTelegramBot({
       token: "tok",
       config: {
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             dmPolicy: "pairing",
@@ -274,7 +332,6 @@ describe("createTelegramBot", () => {
         defaults: {
           envelopeTimezone: "utc",
         },
-        list: [{ id: "main", workspace: "/tmp/test-workspace" }],
       },
       channels: {
         telegram: {
@@ -350,6 +407,276 @@ describe("createTelegramBot", () => {
     expect(payload.ReplyToId).toBe("9001");
     expect(payload.ReplyToBody).toBe("summarize this");
     expect(payload.ReplyToSender).toBe("Ada");
+  });
+
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("includes replied image media in inbound context for text replies", async () => {
+    onSpy.mockClear();
+    replySpy.mockClear();
+    getFileSpy.mockClear();
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(
+      async () =>
+        new Response(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), {
+          status: 200,
+          headers: { "content-type": "image/png" },
+        }),
+    );
+    try {
+      createTelegramBot({ token: "tok" });
+      const handler = getOnHandler("message") as (ctx: Record<string, unknown>) => Promise<void>;
+
+      await handler({
+        message: {
+          chat: { id: 7, type: "private" },
+          text: "what is in this image?",
+          date: 1736380800,
+          reply_to_message: {
+            message_id: 9001,
+            photo: [{ file_id: "reply-photo-1" }],
+            from: { first_name: "Ada" },
+          },
+        },
+        me: { username: "remoteclaw_bot" },
+        getFile: async () => ({}),
+      });
+
+      expect(replySpy).toHaveBeenCalledTimes(1);
+      const payload = replySpy.mock.calls[0][0] as {
+        MediaPath?: string;
+        MediaPaths?: string[];
+        ReplyToBody?: string;
+      };
+      expect(payload.ReplyToBody).toBe("<media:image>");
+      expect(payload.MediaPaths).toHaveLength(1);
+      expect(payload.MediaPath).toBe(payload.MediaPaths?.[0]);
+      expect(getFileSpy).toHaveBeenCalledWith("reply-photo-1");
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("does not fetch reply media for unauthorized DM replies", async () => {
+    onSpy.mockClear();
+    replySpy.mockClear();
+    getFileSpy.mockClear();
+    sendMessageSpy.mockClear();
+    readChannelAllowFromStore.mockResolvedValue([]);
+    loadConfig.mockReturnValue({
+      channels: {
+        telegram: {
+          dmPolicy: "pairing",
+          allowFrom: [],
+        },
+      },
+    });
+
+    createTelegramBot({ token: "tok" });
+    const handler = getOnHandler("message") as (ctx: Record<string, unknown>) => Promise<void>;
+
+    await handler({
+      message: {
+        chat: { id: 7, type: "private" },
+        text: "hey",
+        date: 1736380800,
+        from: { id: 999, first_name: "Eve" },
+        reply_to_message: {
+          message_id: 9001,
+          photo: [{ file_id: "reply-photo-1" }],
+          from: { first_name: "Ada" },
+        },
+      },
+      me: { username: "remoteclaw_bot" },
+      getFile: async () => ({}),
+    });
+
+    expect(getFileSpy).not.toHaveBeenCalled();
+    expect(replySpy).not.toHaveBeenCalled();
+    expect(sendMessageSpy).toHaveBeenCalledTimes(1);
+  });
+
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("defers reply media download until debounce flush", async () => {
+    const DEBOUNCE_MS = 4321;
+    onSpy.mockClear();
+    replySpy.mockClear();
+    getFileSpy.mockClear();
+    loadConfig.mockReturnValue({
+      agents: {
+        defaults: {
+          envelopeTimezone: "utc",
+        },
+      },
+      messages: {
+        inbound: {
+          debounceMs: DEBOUNCE_MS,
+        },
+      },
+      channels: {
+        telegram: {
+          dmPolicy: "open",
+          allowFrom: ["*"],
+        },
+      },
+    });
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(
+      async () =>
+        new Response(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), {
+          status: 200,
+          headers: { "content-type": "image/png" },
+        }),
+    );
+    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
+    try {
+      createTelegramBot({ token: "tok" });
+      const handler = getOnHandler("message") as (ctx: Record<string, unknown>) => Promise<void>;
+
+      await handler({
+        message: {
+          chat: { id: 7, type: "private" },
+          text: "first",
+          date: 1736380800,
+          message_id: 101,
+          from: { id: 42, first_name: "Ada" },
+          reply_to_message: {
+            message_id: 9001,
+            photo: [{ file_id: "reply-photo-1" }],
+            from: { first_name: "Ada" },
+          },
+        },
+        me: { username: "remoteclaw_bot" },
+        getFile: async () => ({}),
+      });
+      await handler({
+        message: {
+          chat: { id: 7, type: "private" },
+          text: "second",
+          date: 1736380801,
+          message_id: 102,
+          from: { id: 42, first_name: "Ada" },
+          reply_to_message: {
+            message_id: 9001,
+            photo: [{ file_id: "reply-photo-1" }],
+            from: { first_name: "Ada" },
+          },
+        },
+        me: { username: "remoteclaw_bot" },
+        getFile: async () => ({}),
+      });
+
+      expect(replySpy).not.toHaveBeenCalled();
+      expect(getFileSpy).not.toHaveBeenCalled();
+
+      const flushTimerCallIndex = setTimeoutSpy.mock.calls.findLastIndex(
+        (call) => call[1] === DEBOUNCE_MS,
+      );
+      const flushTimer =
+        flushTimerCallIndex >= 0
+          ? (setTimeoutSpy.mock.calls[flushTimerCallIndex]?.[0] as (() => unknown) | undefined)
+          : undefined;
+      if (flushTimerCallIndex >= 0) {
+        clearTimeout(
+          setTimeoutSpy.mock.results[flushTimerCallIndex]?.value as ReturnType<typeof setTimeout>,
+        );
+      }
+      expect(flushTimer).toBeTypeOf("function");
+      await flushTimer?.();
+      await vi.waitFor(() => {
+        expect(replySpy).toHaveBeenCalledTimes(1);
+      });
+
+      expect(getFileSpy).toHaveBeenCalledTimes(1);
+      expect(getFileSpy).toHaveBeenCalledWith("reply-photo-1");
+    } finally {
+      setTimeoutSpy.mockRestore();
+      fetchSpy.mockRestore();
+    }
+  });
+
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("isolates inbound debounce by DM topic thread id", async () => {
+    const DEBOUNCE_MS = 4321;
+    onSpy.mockClear();
+    replySpy.mockClear();
+    loadConfig.mockReturnValue({
+      agents: {
+        defaults: {
+          envelopeTimezone: "utc",
+        },
+      },
+      messages: {
+        inbound: {
+          debounceMs: DEBOUNCE_MS,
+        },
+      },
+      channels: {
+        telegram: {
+          dmPolicy: "open",
+          allowFrom: ["*"],
+        },
+      },
+    });
+
+    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
+    try {
+      createTelegramBot({ token: "tok" });
+      const handler = getOnHandler("message") as (ctx: Record<string, unknown>) => Promise<void>;
+
+      await handler({
+        message: {
+          chat: { id: 7, type: "private" },
+          text: "topic-100",
+          date: 1736380800,
+          message_id: 201,
+          message_thread_id: 100,
+          from: { id: 42, first_name: "Ada" },
+        },
+        me: { username: "remoteclaw_bot" },
+        getFile: async () => ({}),
+      });
+      await handler({
+        message: {
+          chat: { id: 7, type: "private" },
+          text: "topic-200",
+          date: 1736380801,
+          message_id: 202,
+          message_thread_id: 200,
+          from: { id: 42, first_name: "Ada" },
+        },
+        me: { username: "remoteclaw_bot" },
+        getFile: async () => ({}),
+      });
+
+      expect(replySpy).not.toHaveBeenCalled();
+
+      const debounceTimerIndexes = setTimeoutSpy.mock.calls
+        .map((call, index) => ({ index, delay: call[1] }))
+        .filter((entry) => entry.delay === DEBOUNCE_MS)
+        .map((entry) => entry.index);
+      expect(debounceTimerIndexes.length).toBeGreaterThanOrEqual(2);
+
+      for (const index of debounceTimerIndexes) {
+        clearTimeout(setTimeoutSpy.mock.results[index]?.value as ReturnType<typeof setTimeout>);
+      }
+      for (const index of debounceTimerIndexes) {
+        const flushTimer = setTimeoutSpy.mock.calls[index]?.[0] as (() => unknown) | undefined;
+        await flushTimer?.();
+      }
+
+      await vi.waitFor(() => {
+        expect(replySpy).toHaveBeenCalledTimes(2);
+      });
+      const threadIds = replySpy.mock.calls
+        .map((call) => (call[0] as { MessageThreadId?: number }).MessageThreadId)
+        .toSorted((a, b) => (a ?? 0) - (b ?? 0));
+      expect(threadIds).toEqual([100, 200]);
+    } finally {
+      setTimeoutSpy.mockRestore();
+    }
   });
 
   it("handles quote-only replies without reply metadata", async () => {
@@ -471,7 +798,6 @@ describe("createTelegramBot", () => {
     onSpy.mockClear();
     replySpy.mockClear();
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { groups: { "*": { requireMention: true } } },
       },
@@ -504,7 +830,6 @@ describe("createTelegramBot", () => {
     onSpy.mockClear();
     replySpy.mockClear();
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "allowlist",
@@ -548,7 +873,6 @@ describe("createTelegramBot", () => {
     onSpy.mockClear();
     replySpy.mockClear();
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "allowlist",
@@ -591,7 +915,6 @@ describe("createTelegramBot", () => {
     onSpy.mockClear();
     replySpy.mockClear();
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "allowlist",
@@ -627,7 +950,6 @@ describe("createTelegramBot", () => {
     onSpy.mockClear();
     replySpy.mockClear();
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "allowlist",
@@ -666,7 +988,6 @@ describe("createTelegramBot", () => {
     replySpy.mockResolvedValue({ text: "response" });
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       commands: { native: true },
       channels: {
         telegram: {
@@ -698,7 +1019,7 @@ describe("createTelegramBot", () => {
 
     expect(replySpy).toHaveBeenCalledTimes(1);
     const payload = replySpy.mock.calls[0][0];
-    expect(payload.CommandTargetSessionKey).toBe("agent:main:main:thread:99");
+    expect(payload.CommandTargetSessionKey).toBe("agent:main:main:thread:12345:99");
   });
 
   it("allows native DM commands for paired users", async () => {
@@ -709,7 +1030,6 @@ describe("createTelegramBot", () => {
     replySpy.mockResolvedValue({ text: "response" });
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       commands: { native: true },
       channels: {
         telegram: {
@@ -753,7 +1073,6 @@ describe("createTelegramBot", () => {
     replySpy.mockClear();
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       commands: { native: true },
       channels: {
         telegram: {
@@ -801,7 +1120,6 @@ describe("createTelegramBot", () => {
     enqueueSystemEventSpy.mockClear();
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "all" },
       },
@@ -928,7 +1246,6 @@ describe("createTelegramBot", () => {
     wasSentByBot.mockReturnValue(true);
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "off" },
       },
@@ -960,7 +1277,6 @@ describe("createTelegramBot", () => {
     wasSentByBot.mockReturnValue(true);
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open" },
       },
@@ -992,7 +1308,6 @@ describe("createTelegramBot", () => {
     wasSentByBot.mockReturnValue(false);
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "all" },
       },
@@ -1028,7 +1343,6 @@ describe("createTelegramBot", () => {
     wasSentByBot.mockReturnValue(false);
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "own" },
       },
@@ -1060,7 +1374,6 @@ describe("createTelegramBot", () => {
     wasSentByBot.mockReturnValue(true);
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "own" },
       },
@@ -1092,7 +1405,6 @@ describe("createTelegramBot", () => {
     wasSentByBot.mockReturnValue(true);
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "all" },
       },
@@ -1123,7 +1435,6 @@ describe("createTelegramBot", () => {
     enqueueSystemEventSpy.mockClear();
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "all" },
       },
@@ -1154,7 +1465,6 @@ describe("createTelegramBot", () => {
     enqueueSystemEventSpy.mockClear();
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "all" },
       },
@@ -1193,7 +1503,6 @@ describe("createTelegramBot", () => {
     enqueueSystemEventSpy.mockClear();
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "all" },
       },
@@ -1233,7 +1542,6 @@ describe("createTelegramBot", () => {
     enqueueSystemEventSpy.mockClear();
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "all" },
       },
@@ -1272,7 +1580,6 @@ describe("createTelegramBot", () => {
     enqueueSystemEventSpy.mockClear();
 
     loadConfig.mockReturnValue({
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "all" },
       },

@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { resolveDefaultAgentId, resolveSessionAgentId } from "../../agents/agent-scope.js";
 import { listSubagentRunsForRequester } from "../../agents/subagent-registry.js";
 import {

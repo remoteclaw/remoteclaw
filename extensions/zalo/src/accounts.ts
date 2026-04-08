@@ -1,5 +1,9 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
+import {
+  DEFAULT_ACCOUNT_ID,
+  normalizeAccountId,
+  normalizeOptionalAccountId,
+} from "remoteclaw/plugin-sdk/account-id";
 import { resolveZaloToken } from "./token.js";
 import type { ResolvedZaloAccount, ZaloAccountConfig, ZaloConfig } from "./types.js";
 
@@ -23,8 +27,12 @@ export function listZaloAccountIds(cfg: RemoteClawConfig): string[] {
 
 export function resolveDefaultZaloAccountId(cfg: RemoteClawConfig): string {
   const zaloConfig = cfg.channels?.zalo as ZaloConfig | undefined;
-  if (zaloConfig?.defaultAccount?.trim()) {
-    return zaloConfig.defaultAccount.trim();
+  const preferred = normalizeOptionalAccountId(zaloConfig?.defaultAccount);
+  if (
+    preferred &&
+    listZaloAccountIds(cfg).some((accountId) => normalizeAccountId(accountId) === preferred)
+  ) {
+    return preferred;
   }
   const ids = listZaloAccountIds(cfg);
   if (ids.includes(DEFAULT_ACCOUNT_ID)) {

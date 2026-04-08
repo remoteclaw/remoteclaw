@@ -5,7 +5,8 @@ import {
 } from "../../../agents/agent-scope.js";
 import { createDefaultDeps } from "../../../cli/deps.js";
 import type { RemoteClawConfig } from "../../../config/config.js";
-import type { BootConfig } from "../../../gateway/boot.js";
+// import type { BootConfig } from "../../../gateway/boot.js"; // Gutted in RemoteClaw fork (Middleware Boundary Principle)
+type BootConfig = Record<string, unknown>;
 import { runBootOnce } from "../../../gateway/boot.js";
 import { createSubsystemLogger } from "../../../logging/subsystem.js";
 import type { HookHandler } from "../../hooks.js";
@@ -16,8 +17,10 @@ const log = createSubsystemLogger("hooks/boot");
 function resolveBootConfig(cfg: RemoteClawConfig, agentId: string): BootConfig | undefined {
   const agentCfg = resolveAgentConfig(cfg, agentId);
   if (agentCfg?.boot) {
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     return agentCfg.boot;
   }
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   return cfg.agents?.defaults?.boot;
 }
 

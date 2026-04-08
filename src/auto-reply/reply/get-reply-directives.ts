@@ -1,8 +1,25 @@
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/bash-tools.js";
+type ExecToolDefaults = Record<string, unknown>;
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/model-selection.js";
+type ModelAliasIndex = Map<string, { provider: string; model: string }>;
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/sandbox.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const resolveSandboxRuntimeStatus = (..._args: unknown[]) => ({ sandboxed: false });
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/skills.js";
+type SkillCommandSpec = Record<string, unknown>;
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { listChatCommands, shouldHandleTextCommands } from "../commands-registry.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../skill-commands.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const listSkillCommandsForWorkspace = (..._args: unknown[]) => [] as Array<{ name: string }>;
 import type { MsgContext, TemplateContext } from "../templating.js";
-import type { VerboseLevel } from "../thinking.js";
+import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../thinking.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { resolveBlockStreamingChunking } from "./block-streaming.js";
 import { buildCommandContext } from "./commands.js";
@@ -11,56 +28,56 @@ import { applyInlineDirectiveOverrides } from "./get-reply-directives-apply.js";
 import { clearInlineDirectives } from "./get-reply-directives-utils.js";
 import { defaultGroupActivation, resolveGroupRequireMention } from "./groups.js";
 import { CURRENT_MESSAGE_MARKER, stripMentions, stripStructuralPrefixes } from "./mentions.js";
-
-// Model catalog infrastructure gutted in RemoteClaw.
-// Stub `createModelSelectionState` returns defaults so the downstream pipeline
-// still receives the expected shape without loading model catalogs.
-export async function createModelSelectionState(params: {
-  cfg: RemoteClawConfig;
-  agentCfg: NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]> | undefined;
-  sessionEntry?: SessionEntry;
-  sessionStore?: Record<string, SessionEntry>;
-  sessionKey?: string;
-  parentSessionKey?: string;
-  storePath?: string;
-  defaultProvider: string;
-  defaultModel: string;
-  provider: string;
-  model: string;
-  hasModelDirective: boolean;
-  hasResolvedHeartbeatModelOverride?: boolean;
-}) {
-  return {
-    provider: params.provider,
-    model: params.model,
-    allowedModelKeys: new Set<string>(),
-    allowedModelCatalog: [] as Array<{ id: string; provider: string }>,
-    resetModelOverride: false,
-    needsModelCatalog: false,
-  };
-}
-
-function resolveContextTokens(params: {
-  agentCfg: NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]> | undefined;
-  model: string;
-}): number {
-  // Context token lookup from model catalog gutted in RemoteClaw — CLI agents manage their own context.
-  return params.agentCfg?.contextTokens ?? 200_000;
-}
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "./model-selection.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+export const createModelSelectionState = (..._args: unknown[]) => ({
+  provider: "cli" as string,
+  model: "default" as string,
+  resolveDefaultThinkingLevel: async (): Promise<ThinkLevel | undefined> => undefined,
+  resolveDefaultReasoningLevel: async (): Promise<ReasoningLevel> => "off" as ReasoningLevel,
+  contextTokens: 128000,
+  aliasIndex: new Map<string, { provider: string; model: string }>(),
+  allowedModelKeys: new Set<string>(),
+  allowedModelCatalog: [] as Array<{ id: string; provider: string }>,
+  resetModelOverride: false,
+});
+// oxlint-disable-next-line typescript/no-explicit-any
+const resolveContextTokens = (..._args: unknown[]) => 128000;
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "./reply-elevated.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const formatElevatedUnavailableMessage = (..._args: unknown[]) => undefined as any;
+// oxlint-disable-next-line typescript/no-explicit-any
+const resolveElevatedPermissions = (..._args: unknown[]) => ({
+  enabled: false,
+  allowed: false,
+  // oxlint-disable-next-line typescript/no-explicit-any
+  failures: [] as any[],
+});
 import { stripInlineStatus } from "./reply-inline.js";
 import type { TypingController } from "./typing.js";
 
 type AgentDefaults = NonNullable<RemoteClawConfig["agents"]>["defaults"];
+type ExecOverrides = Pick<ExecToolDefaults, "host" | "security" | "ask" | "node">;
 
 export type ReplyDirectiveContinuation = {
   commandSource: string;
   command: ReturnType<typeof buildCommandContext>;
   allowTextCommands: boolean;
+  skillCommands?: SkillCommandSpec[];
   directives: InlineDirectives;
   cleanedBody: string;
   messageProviderKey: string;
+  elevatedEnabled: boolean;
+  elevatedAllowed: boolean;
+  elevatedFailures: Array<{ gate: string; key: string }>;
   defaultActivation: ReturnType<typeof defaultGroupActivation>;
+  resolvedThinkLevel: ThinkLevel | undefined;
   resolvedVerboseLevel: VerboseLevel | undefined;
+  resolvedReasoningLevel: ReasoningLevel;
+  resolvedElevatedLevel: ElevatedLevel;
+  execOverrides?: ExecOverrides;
   blockStreamingEnabled: boolean;
   blockReplyChunking?: {
     minChars: number;
@@ -83,6 +100,23 @@ export type ReplyDirectiveContinuation = {
   };
 };
 
+function resolveExecOverrides(params: {
+  directives: InlineDirectives;
+  sessionEntry?: SessionEntry;
+}): ExecOverrides | undefined {
+  const host =
+    params.directives.execHost ?? (params.sessionEntry?.execHost as ExecOverrides["host"]);
+  const security =
+    params.directives.execSecurity ??
+    (params.sessionEntry?.execSecurity as ExecOverrides["security"]);
+  const ask = params.directives.execAsk ?? (params.sessionEntry?.execAsk as ExecOverrides["ask"]);
+  const node = params.directives.execNode ?? params.sessionEntry?.execNode;
+  if (!host && !security && !ask && !node) {
+    return undefined;
+  }
+  return { host, security, ask, node };
+}
+
 export type ReplyDirectiveResult =
   | { kind: "reply"; reply: ReplyPayload | ReplyPayload[] | undefined }
   | { kind: "continue"; result: ReplyDirectiveContinuation };
@@ -91,6 +125,7 @@ export async function resolveReplyDirectives(params: {
   ctx: MsgContext;
   cfg: RemoteClawConfig;
   agentId: string;
+  agentDir: string;
   workspaceDir: string;
   agentCfg: AgentDefaults;
   sessionCtx: TemplateContext;
@@ -105,19 +140,21 @@ export async function resolveReplyDirectives(params: {
   commandAuthorized: boolean;
   defaultProvider: string;
   defaultModel: string;
-  aliasIndex: Map<string, { provider: string; model: string }>;
+  aliasIndex: ModelAliasIndex;
   provider: string;
   model: string;
   hasResolvedHeartbeatModelOverride: boolean;
   typing: TypingController;
   opts?: GetReplyOptions;
+  skillFilter?: string[];
 }): Promise<ReplyDirectiveResult> {
   const {
     ctx,
     cfg,
     agentId,
     agentCfg,
-    workspaceDir: _workspaceDir,
+    agentDir,
+    workspaceDir,
     sessionCtx,
     sessionEntry,
     sessionStore,
@@ -135,6 +172,7 @@ export async function resolveReplyDirectives(params: {
     hasResolvedHeartbeatModelOverride,
     typing,
     opts,
+    skillFilter,
   } = params;
   let provider = initialProvider;
   let model = initialModel;
@@ -179,6 +217,20 @@ export async function resolveReplyDirectives(params: {
     .filter((alias): alias is string => Boolean(alias))
     .filter((alias) => !reservedCommands.has(alias.toLowerCase()));
 
+  // Only load workspace skill commands when we actually need them to filter aliases.
+  // This avoids scanning skills for messages that only use inline directives like /think:/verbose:.
+  const skillCommands =
+    allowTextCommands && rawAliases.length > 0
+      ? listSkillCommandsForWorkspace({
+          workspaceDir,
+          cfg,
+          skillFilter,
+        })
+      : [];
+  for (const command of skillCommands) {
+    reservedCommands.add(command.name.toLowerCase());
+  }
+
   const configuredAliases = rawAliases.filter(
     (alias) => !reservedCommands.has(alias.toLowerCase()),
   );
@@ -195,8 +247,30 @@ export async function resolveReplyDirectives(params: {
       hasStatusDirective: false,
     };
   }
+  if (isGroup && ctx.WasMentioned !== true && parsedDirectives.hasElevatedDirective) {
+    if (parsedDirectives.elevatedLevel !== "off") {
+      parsedDirectives = {
+        ...parsedDirectives,
+        hasElevatedDirective: false,
+        elevatedLevel: undefined,
+        rawElevatedLevel: undefined,
+      };
+    }
+  }
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  if (isGroup && ctx.WasMentioned !== true && parsedDirectives.hasExecDirective) {
+    if (parsedDirectives.execSecurity !== "deny") {
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      parsedDirectives = clearInlineDirectives(parsedDirectives);
+    }
+  }
   const hasInlineDirective =
+    parsedDirectives.hasThinkDirective ||
     parsedDirectives.hasVerboseDirective ||
+    parsedDirectives.hasReasoningDirective ||
+    parsedDirectives.hasElevatedDirective ||
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
+    parsedDirectives.hasExecDirective ||
     parsedDirectives.hasModelDirective ||
     parsedDirectives.hasQueueDirective;
   if (hasInlineDirective) {
@@ -224,7 +298,9 @@ export async function resolveReplyDirectives(params: {
     ? parsedDirectives
     : {
         ...parsedDirectives,
+        hasThinkDirective: false,
         hasVerboseDirective: false,
+        hasReasoningDirective: false,
         hasStatusDirective: false,
         hasModelDirective: false,
         hasQueueDirective: false,
@@ -269,6 +345,32 @@ export async function resolveReplyDirectives(params: {
 
   const messageProviderKey =
     sessionCtx.Provider?.trim().toLowerCase() ?? ctx.Provider?.trim().toLowerCase() ?? "";
+  const elevated = resolveElevatedPermissions({
+    cfg,
+    agentId,
+    ctx,
+    provider: messageProviderKey,
+  });
+  const elevatedEnabled = elevated.enabled;
+  const elevatedAllowed = elevated.allowed;
+  const elevatedFailures = elevated.failures;
+  if (directives.hasElevatedDirective && (!elevatedEnabled || !elevatedAllowed)) {
+    typing.cleanup();
+    const runtimeSandboxed = resolveSandboxRuntimeStatus({
+      cfg,
+      sessionKey: ctx.SessionKey,
+    }).sandboxed;
+    return {
+      kind: "reply",
+      reply: {
+        text: formatElevatedUnavailableMessage({
+          runtimeSandboxed,
+          failures: elevatedFailures,
+          sessionKey: ctx.SessionKey,
+        }),
+      },
+    };
+  }
 
   const requireMention = resolveGroupRequireMention({
     cfg,
@@ -276,10 +378,25 @@ export async function resolveReplyDirectives(params: {
     groupResolution,
   });
   const defaultActivation = defaultGroupActivation(requireMention);
+  const resolvedThinkLevel =
+    (directives.thinkLevel as ThinkLevel | undefined) ??
+    (sessionEntry?.thinkingLevel as ThinkLevel | undefined);
+
   const resolvedVerboseLevel =
     directives.verboseLevel ??
     (sessionEntry?.verboseLevel as VerboseLevel | undefined) ??
     (agentCfg?.verboseDefault as VerboseLevel | undefined);
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  let resolvedReasoningLevel: ReasoningLevel =
+    directives.reasoningLevel ??
+    (sessionEntry?.reasoningLevel as ReasoningLevel | undefined) ??
+    "off";
+  const resolvedElevatedLevel = elevatedAllowed
+    ? (directives.elevatedLevel ??
+      (sessionEntry?.elevatedLevel as ElevatedLevel | undefined) ??
+      (agentCfg?.elevatedDefault as ElevatedLevel | undefined) ??
+      "on")
+    : "off";
   const resolvedBlockStreaming =
     opts?.disableBlockStreaming === true
       ? "off"
@@ -296,7 +413,7 @@ export async function resolveReplyDirectives(params: {
     ? resolveBlockStreamingChunking(cfg, sessionCtx.Provider, sessionCtx.AccountId)
     : undefined;
 
-  const modelState = await createModelSelectionState({
+  const modelState = createModelSelectionState({
     cfg,
     agentCfg,
     sessionEntry,
@@ -313,6 +430,22 @@ export async function resolveReplyDirectives(params: {
   });
   provider = modelState.provider;
   model = modelState.model;
+  const resolvedThinkLevelWithDefault: ThinkLevel | undefined =
+    resolvedThinkLevel ??
+    (await modelState.resolveDefaultThinkingLevel()) ??
+    (agentCfg?.thinkingDefault as ThinkLevel | undefined);
+
+  // When neither directive nor session set reasoning, default to model capability
+  // (e.g. OpenRouter with reasoning: true). Skip auto-enabling when thinking is
+  // active, including model-inferred defaults, or internal thinking blocks can
+  // be emitted as visible "Reasoning:" messages.
+  const reasoningExplicitlySet =
+    directives.reasoningLevel !== undefined ||
+    (sessionEntry?.reasoningLevel !== undefined && sessionEntry?.reasoningLevel !== null);
+  const thinkingActive = resolvedThinkLevelWithDefault !== "off";
+  if (!reasoningExplicitlySet && resolvedReasoningLevel === "off" && !thinkingActive) {
+    resolvedReasoningLevel = await modelState.resolveDefaultReasoningLevel();
+  }
 
   let contextTokens = resolveContextTokens({
     agentCfg,
@@ -333,6 +466,7 @@ export async function resolveReplyDirectives(params: {
     ctx,
     cfg,
     agentId,
+    agentDir,
     agentCfg,
     sessionEntry,
     sessionStore,
@@ -344,6 +478,9 @@ export async function resolveReplyDirectives(params: {
     command,
     directives,
     messageProviderKey,
+    elevatedEnabled,
+    elevatedAllowed,
+    elevatedFailures,
     defaultProvider,
     defaultModel,
     aliasIndex: params.aliasIndex,
@@ -352,6 +489,7 @@ export async function resolveReplyDirectives(params: {
     modelState,
     initialModelLabel,
     formatModelSwitchEvent,
+    resolvedElevatedLevel,
     defaultActivation: () => defaultActivation,
     contextTokens,
     effectiveModelDirective,
@@ -365,6 +503,7 @@ export async function resolveReplyDirectives(params: {
   model = applyResult.model;
   contextTokens = applyResult.contextTokens;
   const { directiveAck, perMessageQueueMode, perMessageQueueOptions } = applyResult;
+  const execOverrides = resolveExecOverrides({ directives, sessionEntry });
 
   return {
     kind: "continue",
@@ -372,11 +511,20 @@ export async function resolveReplyDirectives(params: {
       commandSource: commandText,
       command,
       allowTextCommands,
+      skillCommands,
       directives,
       cleanedBody,
       messageProviderKey,
+      elevatedEnabled,
+      elevatedAllowed,
+      elevatedFailures,
       defaultActivation,
+      resolvedThinkLevel: resolvedThinkLevelWithDefault,
       resolvedVerboseLevel,
+      resolvedReasoningLevel,
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      resolvedElevatedLevel,
+      execOverrides,
       blockStreamingEnabled,
       blockReplyChunking,
       resolvedBlockStreamingBreak,

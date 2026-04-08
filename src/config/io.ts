@@ -17,6 +17,7 @@ import { VERSION } from "../version.js";
 import { DuplicateAgentDirError, findDuplicateAgentDirs } from "./agent-dirs.js";
 import { rotateConfigBackups } from "./backup-rotation.js";
 import {
+  applyCompactionDefaults,
   applyContextPruningDefaults,
   applyAgentDefaults,
   applyLoggingDefaults,
@@ -33,9 +34,17 @@ import {
   resolveConfigEnvVars,
 } from "./env-substitution.js";
 import { applyConfigEnvVars } from "./env-vars.js";
-import { ConfigIncludeError, resolveConfigIncludes } from "./includes.js";
+import {
+  ConfigIncludeError,
+  readConfigIncludeFileWithGuards,
+  resolveConfigIncludes,
+} from "./includes.js";
 import { findLegacyConfigIssues } from "./legacy.js";
 import { applyMergePatch } from "./merge-patch.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "./normalize-exec-safe-bin.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const normalizeExecSafeBinProfilesInConfig = (..._args: unknown[]) => undefined as any;
 import { normalizeConfigPaths } from "./normalize-paths.js";
 import { resolveConfigPath, resolveDefaultConfigCandidates, resolveStateDir } from "./paths.js";
 import { isBlockedObjectKey } from "./prototype-keys.js";
@@ -632,6 +641,13 @@ function resolveConfigIncludesForRead(
 ): unknown {
   return resolveConfigIncludes(parsed, configPath, {
     readFile: (candidate) => deps.fs.readFileSync(candidate, "utf-8"),
+    readFileWithGuards: ({ includePath, resolvedPath, rootRealDir }) =>
+      readConfigIncludeFileWithGuards({
+        includePath,
+        resolvedPath,
+        rootRealDir,
+        ioFs: deps.fs,
+      }),
     parseJson: (raw) => deps.json5.parse(raw),
   });
 }
@@ -721,15 +737,18 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       warnIfConfigFromFuture(validated.config, deps.logger);
       const cfg = applyTalkConfigNormalization(
         applyModelDefaults(
-          applyContextPruningDefaults(
-            applyAgentDefaults(
-              applySessionDefaults(applyLoggingDefaults(applyMessageDefaults(validated.config))),
+          // @ts-expect-error — upstream feature not available in RemoteClaw fork
+          applyCompactionDefaults(
+            applyContextPruningDefaults(
+              applyAgentDefaults(
+                applySessionDefaults(applyLoggingDefaults(applyMessageDefaults(validated.config))),
+              ),
             ),
           ),
         ),
       );
       normalizeConfigPaths(cfg);
-      // Exec safe-bin normalization removed (#70)
+      normalizeExecSafeBinProfilesInConfig(cfg);
 
       const duplicates = findDuplicateAgentDirs(cfg, {
         env: deps.env,
@@ -810,8 +829,11 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       const config = applyTalkApiKey(
         applyTalkConfigNormalization(
           applyModelDefaults(
-            applyContextPruningDefaults(
-              applyAgentDefaults(applySessionDefaults(applyMessageDefaults({}))),
+            // @ts-expect-error — upstream feature not available in RemoteClaw fork
+            applyCompactionDefaults(
+              applyContextPruningDefaults(
+                applyAgentDefaults(applySessionDefaults(applyMessageDefaults({}))),
+              ),
             ),
           ),
         ),
@@ -908,7 +930,9 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       }
 
       const resolvedConfigRaw = readResolution.resolvedConfigRaw;
-      const legacyIssues = findLegacyConfigIssues(resolvedConfigRaw);
+      // Detect legacy keys on resolved config, but only mark source-literal legacy
+      // entries (for auto-migration) when they are present in the parsed source.
+      const legacyIssues = findLegacyConfigIssues(resolvedConfigRaw, parsedRes.parsed);
 
       const validated = validateConfigObjectWithPlugins(resolvedConfigRaw);
       if (!validated.ok) {
@@ -941,7 +965,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
           ),
         ),
       );
-      // Exec safe-bin normalization removed (#70)
+      normalizeExecSafeBinProfilesInConfig(snapshotConfig);
       return {
         snapshot: {
           path: configPath,
@@ -1026,6 +1050,13 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       try {
         const resolvedIncludes = resolveConfigIncludes(snapshot.parsed, configPath, {
           readFile: (candidate) => deps.fs.readFileSync(candidate, "utf-8"),
+          readFileWithGuards: ({ includePath, resolvedPath, rootRealDir }) =>
+            readConfigIncludeFileWithGuards({
+              includePath,
+              resolvedPath,
+              rootRealDir,
+              ioFs: deps.fs,
+            }),
           parseJson: (raw) => deps.json5.parse(raw),
         });
         const collected = new Map<string, string>();
@@ -1274,6 +1305,8 @@ let configCache: {
   expiresAt: number;
   config: RemoteClawConfig;
 } | null = null;
+let runtimeConfigSnapshot: RemoteClawConfig | null = null;
+let runtimeConfigSourceSnapshot: RemoteClawConfig | null = null;
 
 function resolveConfigCacheMs(env: NodeJS.ProcessEnv): number {
   const raw = env.REMOTECLAW_CONFIG_CACHE_MS?.trim();
@@ -1301,7 +1334,29 @@ export function clearConfigCache(): void {
   configCache = null;
 }
 
+export function setRuntimeConfigSnapshot(
+  config: RemoteClawConfig,
+  sourceConfig?: RemoteClawConfig,
+): void {
+  runtimeConfigSnapshot = config;
+  runtimeConfigSourceSnapshot = sourceConfig ?? null;
+  clearConfigCache();
+}
+
+export function clearRuntimeConfigSnapshot(): void {
+  runtimeConfigSnapshot = null;
+  runtimeConfigSourceSnapshot = null;
+  clearConfigCache();
+}
+
+export function getRuntimeConfigSnapshot(): RemoteClawConfig | null {
+  return runtimeConfigSnapshot;
+}
+
 export function loadConfig(): RemoteClawConfig {
+  if (runtimeConfigSnapshot) {
+    return runtimeConfigSnapshot;
+  }
   const io = createConfigIO();
   const configPath = io.configPath;
   const now = Date.now();
@@ -1338,9 +1393,14 @@ export async function writeConfigFile(
   options: ConfigWriteOptions = {},
 ): Promise<void> {
   const io = createConfigIO();
+  let nextCfg = cfg;
+  if (runtimeConfigSnapshot && runtimeConfigSourceSnapshot) {
+    const runtimePatch = createMergePatch(runtimeConfigSnapshot, cfg);
+    nextCfg = coerceConfig(applyMergePatch(runtimeConfigSourceSnapshot, runtimePatch));
+  }
   const sameConfigPath =
     options.expectedConfigPath === undefined || options.expectedConfigPath === io.configPath;
-  await io.writeConfigFile(cfg, {
+  await io.writeConfigFile(nextCfg, {
     envSnapshotForRestore: sameConfigPath ? options.envSnapshotForRestore : undefined,
     unsetPaths: options.unsetPaths,
   });

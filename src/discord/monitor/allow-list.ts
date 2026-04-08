@@ -49,6 +49,8 @@ export type DiscordChannelConfigResolved = {
   autoThread?: boolean;
   matchKey?: string;
   matchSource?: ChannelMatchSource;
+  /** Upstream feature: skills configuration. */
+  skills?: unknown;
 };
 
 export function normalizeDiscordAllowList(raw: string[] | undefined, prefixes: string[]) {

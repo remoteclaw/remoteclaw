@@ -19,7 +19,12 @@ export const CLI_DEFAULT_OPERATOR_SCOPES: OperatorScope[] = [
   PAIRING_SCOPE,
 ];
 
-const NODE_ROLE_METHODS = new Set(["node.invoke.result", "node.event", "skills.bins"]);
+const NODE_ROLE_METHODS = new Set([
+  "node.invoke.result",
+  "node.event",
+  "node.canvas.capability.refresh",
+  "skills.bins",
+]);
 
 const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
   [APPROVALS_SCOPE]: [
@@ -75,9 +80,6 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "talk.config",
     "agents.files.list",
     "agents.files.get",
-    "sessions.subagents",
-    "message:readMessages",
-    "plugin:tools:list",
   ],
   [WRITE_SCOPE]: [
     "send",
@@ -96,19 +98,6 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "chat.abort",
     "browser.request",
     "push.test",
-    "sessions.spawn",
-    "message:send",
-    "message:reply",
-    "message:thread-reply",
-    "message:broadcast",
-    "message:react",
-    "message:delete",
-    "message:sendAttachment",
-    "message:sendWithEffect",
-    "message:pin",
-    "plugin:tools:invoke",
-    "hooks.tool.before",
-    "hooks.tool.after",
   ],
   [ADMIN_SCOPE]: [
     "channels.logout",

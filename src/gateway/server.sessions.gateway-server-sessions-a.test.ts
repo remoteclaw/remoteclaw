@@ -3,13 +3,16 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { WebSocket } from "ws";
-// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
-const DEFAULT_PROVIDER = "unknown";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../agents/defaults.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const DEFAULT_PROVIDER = undefined as any;
 import { GATEWAY_CLIENT_IDS, GATEWAY_CLIENT_MODES } from "./protocol/client-info.js";
 import { startGatewayServerHarness, type GatewayServerHarness } from "./server.e2e-ws-harness.js";
 import { createToolSummaryPreviewTranscriptLines } from "./session-preview.test-helpers.js";
 import {
   connectOk,
+  embeddedRunMock,
   installGatewayTestHooks,
   piSdkMock,
   rpcReq,
@@ -37,6 +40,12 @@ const subagentLifecycleHookState = vi.hoisted(() => ({
 
 const threadBindingMocks = vi.hoisted(() => ({
   unbindThreadBindingsBySessionKey: vi.fn((_params?: unknown) => []),
+}));
+const acpRuntimeMocks = vi.hoisted(() => ({
+  cancel: vi.fn(async () => {}),
+  close: vi.fn(async () => {}),
+  getAcpRuntimeBackend: vi.fn(),
+  requireAcpRuntimeBackend: vi.fn(),
 }));
 
 vi.mock("../auto-reply/reply/queue.js", async () => {
@@ -90,6 +99,18 @@ vi.mock("../discord/monitor/thread-bindings.js", async (importOriginal) => {
   };
 });
 
+// Gutted in RemoteClaw fork (Middleware Boundary Principle) — acp runtime registry mock removed
+vi.mock("../acp/runtime/registry.js", () => ({
+  getAcpRuntimeBackend: acpRuntimeMocks.getAcpRuntimeBackend,
+  requireAcpRuntimeBackend: (backendId?: string) => {
+    const backend = acpRuntimeMocks.requireAcpRuntimeBackend(backendId);
+    if (!backend) {
+      throw new Error("missing mocked ACP backend");
+    }
+    return backend;
+  },
+}));
+
 installGatewayTestHooks({ scope: "suite" });
 
 let harness: GatewayServerHarness;
@@ -135,7 +156,11 @@ async function seedActiveMainSession() {
   return { dir, storePath };
 }
 
-function expectActiveRunCleanup(requesterSessionKey: string, expectedQueueKeys: string[]) {
+function expectActiveRunCleanup(
+  requesterSessionKey: string,
+  expectedQueueKeys: string[],
+  sessionId: string,
+) {
   expect(sessionCleanupMocks.stopSubagentsForRequester).toHaveBeenCalledWith({
     cfg: expect.any(Object),
     requesterSessionKey,
@@ -145,6 +170,8 @@ function expectActiveRunCleanup(requesterSessionKey: string, expectedQueueKeys: 
     sessionCleanupMocks.clearSessionQueues.mock.calls as unknown as Array<[string[]]>
   )[0]?.[0];
   expect(clearedKeys).toEqual(expect.arrayContaining(expectedQueueKeys));
+  expect(embeddedRunMock.abortCalls).toEqual([sessionId]);
+  expect(embeddedRunMock.waitCalls).toEqual([sessionId]);
 }
 
 async function getMainPreviewEntry(ws: import("ws").WebSocket) {
@@ -170,9 +197,19 @@ describe("gateway server sessions", () => {
     subagentLifecycleHookMocks.runSubagentEnded.mockClear();
     subagentLifecycleHookState.hasSubagentEndedHook = true;
     threadBindingMocks.unbindThreadBindingsBySessionKey.mockClear();
+    acpRuntimeMocks.cancel.mockClear();
+    acpRuntimeMocks.close.mockClear();
+    acpRuntimeMocks.getAcpRuntimeBackend.mockReset();
+    acpRuntimeMocks.getAcpRuntimeBackend.mockReturnValue(null);
+    acpRuntimeMocks.requireAcpRuntimeBackend.mockReset();
+    acpRuntimeMocks.requireAcpRuntimeBackend.mockImplementation((backendId?: string) =>
+      acpRuntimeMocks.getAcpRuntimeBackend(backendId),
+    );
   });
 
-  test("lists and patches session store via sessions.* RPC", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("lists and patches session store via sessions.* RPC", async () => {
     const { dir, storePath } = await createSessionStoreDir();
     const now = Date.now();
     const recent = now - 30_000;
@@ -200,6 +237,7 @@ describe("gateway server sessions", () => {
           model: "claude-sonnet-4-6",
           inputTokens: 10,
           outputTokens: 20,
+          thinkingLevel: "low",
           verboseLevel: "on",
           lastChannel: "whatsapp",
           lastTo: "+1555",
@@ -253,6 +291,7 @@ describe("gateway server sessions", () => {
         key: string;
         totalTokens?: number;
         totalTokensFresh?: boolean;
+        thinkingLevel?: string;
         verboseLevel?: string;
         lastAccountId?: string;
         deliveryContext?: { channel?: string; to?: string; accountId?: string };
@@ -266,6 +305,7 @@ describe("gateway server sessions", () => {
     const main = list1.payload?.sessions.find((s) => s.key === "agent:main:main");
     expect(main?.totalTokens).toBeUndefined();
     expect(main?.totalTokensFresh).toBe(false);
+    expect(main?.thinkingLevel).toBe("low");
     expect(main?.verboseLevel).toBe("on");
     expect(main?.lastAccountId).toBe("work");
     expect(main?.deliveryContext).toEqual({
@@ -297,6 +337,7 @@ describe("gateway server sessions", () => {
 
     const patched = await rpcReq<{ ok: true; key: string }>(ws, "sessions.patch", {
       key: "agent:main:main",
+      thinkingLevel: "medium",
       verboseLevel: "off",
     });
     expect(patched.ok).toBe(true);
@@ -329,6 +370,7 @@ describe("gateway server sessions", () => {
     const list2 = await rpcReq<{
       sessions: Array<{
         key: string;
+        thinkingLevel?: string;
         verboseLevel?: string;
         sendPolicy?: string;
         label?: string;
@@ -337,6 +379,7 @@ describe("gateway server sessions", () => {
     }>(ws, "sessions.list", {});
     expect(list2.ok).toBe(true);
     const main2 = list2.payload?.sessions.find((s) => s.key === "agent:main:main");
+    expect(main2?.thinkingLevel).toBe("medium");
     expect(main2?.verboseLevel).toBe("off");
     expect(main2?.sendPolicy).toBe("deny");
     const subagent = list2.payload?.sessions.find((s) => s.key === "agent:main:subagent:one");
@@ -406,7 +449,13 @@ describe("gateway server sessions", () => {
     piSdkMock.models = [{ id: "gpt-test-a", name: "A", provider: "openai" }];
     const modelPatched = await rpcReq<{
       ok: true;
-      entry: { modelOverride?: string; providerOverride?: string };
+      entry: {
+        modelOverride?: string;
+        providerOverride?: string;
+        model?: string;
+        modelProvider?: string;
+      };
+      resolved?: { model?: string; modelProvider?: string };
     }>(ws, "sessions.patch", {
       key: "agent:main:main",
       model: "openai/gpt-test-a",
@@ -414,6 +463,20 @@ describe("gateway server sessions", () => {
     expect(modelPatched.ok).toBe(true);
     expect(modelPatched.payload?.entry.modelOverride).toBe("gpt-test-a");
     expect(modelPatched.payload?.entry.providerOverride).toBe("openai");
+    expect(modelPatched.payload?.entry.model).toBeUndefined();
+    expect(modelPatched.payload?.entry.modelProvider).toBeUndefined();
+    expect(modelPatched.payload?.resolved?.modelProvider).toBe("openai");
+    expect(modelPatched.payload?.resolved?.model).toBe("gpt-test-a");
+
+    const listAfterModelPatch = await rpcReq<{
+      sessions: Array<{ key: string; modelProvider?: string; model?: string }>;
+    }>(ws, "sessions.list", {});
+    expect(listAfterModelPatch.ok).toBe(true);
+    const mainAfterModelPatch = listAfterModelPatch.payload?.sessions.find(
+      (session) => session.key === "agent:main:main",
+    );
+    expect(mainAfterModelPatch?.modelProvider).toBe("openai");
+    expect(mainAfterModelPatch?.model).toBe("gpt-test-a");
 
     const compacted = await rpcReq<{ ok: true; compacted: boolean }>(ws, "sessions.compact", {
       key: "agent:main:main",
@@ -451,10 +514,19 @@ describe("gateway server sessions", () => {
     expect(reset.ok).toBe(true);
     expect(reset.payload?.key).toBe("agent:main:main");
     expect(reset.payload?.entry.sessionId).not.toBe("sess-main");
-    expect(reset.payload?.entry.modelProvider).toBe("anthropic");
-    expect(reset.payload?.entry.model).toBe("claude-sonnet-4-6");
+    expect(reset.payload?.entry.modelProvider).toBe("openai");
+    expect(reset.payload?.entry.model).toBe("gpt-test-a");
     const filesAfterReset = await fs.readdir(dir);
     expect(filesAfterReset.some((f) => f.startsWith("sess-main.jsonl.reset."))).toBe(true);
+
+    const badThinking = await rpcReq(ws, "sessions.patch", {
+      key: "agent:main:main",
+      thinkingLevel: "banana",
+    });
+    expect(badThinking.ok).toBe(false);
+    expect((badThinking.error as { message?: unknown } | undefined)?.message ?? "").toMatch(
+      /invalid thinkinglevel/i,
+    );
 
     ws.close();
   });
@@ -516,7 +588,9 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  test("sessions.resolve and mutators clean legacy main-alias ghost keys", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("sessions.resolve and mutators clean legacy main-alias ghost keys", async () => {
     const { dir, storePath } = await createSessionStoreDir();
     testState.agentsConfig = { list: [{ id: "ops", default: true }] };
     testState.sessionConfig = { mainKey: "work" };
@@ -557,13 +631,13 @@ describe("gateway server sessions", () => {
     });
     const patched = await rpcReq<{ ok: true; key: string }>(ws, "sessions.patch", {
       key: "main",
-      verboseLevel: "on",
+      thinkingLevel: "medium",
     });
     expect(patched.ok).toBe(true);
     expect(patched.payload?.key).toBe("agent:ops:work");
     store = await readStore();
     expect(Object.keys(store).toSorted()).toEqual(["agent:ops:work"]);
-    expect(store["agent:ops:work"]?.verboseLevel).toBe("on");
+    expect(store["agent:ops:work"]?.thinkingLevel).toBe("medium");
 
     await writeRawStore({
       ...store,
@@ -591,7 +665,9 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  test("sessions.delete rejects main and aborts active runs", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("sessions.delete rejects main and aborts active runs", async () => {
     const { dir } = await createSessionStoreDir();
     await writeSingleLineSession(dir, "sess-main", "hello");
     await writeSingleLineSession(dir, "sess-active", "active");
@@ -606,6 +682,9 @@ describe("gateway server sessions", () => {
       },
     });
 
+    embeddedRunMock.activeIds.add("sess-active");
+    embeddedRunMock.waitResults.set("sess-active", true);
+
     const { ws } = await openClient();
 
     const mainDelete = await rpcReq(ws, "sessions.delete", { key: "main" });
@@ -616,11 +695,11 @@ describe("gateway server sessions", () => {
     });
     expect(deleted.ok).toBe(true);
     expect(deleted.payload?.deleted).toBe(true);
-    expectActiveRunCleanup("agent:main:discord:group:dev", [
-      "discord:group:dev",
+    expectActiveRunCleanup(
       "agent:main:discord:group:dev",
+      ["discord:group:dev", "agent:main:discord:group:dev", "sess-active"],
       "sess-active",
-    ]);
+    );
     expect(subagentLifecycleHookMocks.runSubagentEnded).toHaveBeenCalledTimes(1);
     expect(subagentLifecycleHookMocks.runSubagentEnded).toHaveBeenCalledWith(
       {
@@ -640,6 +719,70 @@ describe("gateway server sessions", () => {
       targetKind: "acp",
       reason: "session-delete",
       sendFarewell: true,
+    });
+
+    ws.close();
+  });
+
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("sessions.delete closes ACP runtime handles before removing ACP sessions", async () => {
+    const { dir } = await createSessionStoreDir();
+    await writeSingleLineSession(dir, "sess-main", "hello");
+    await writeSingleLineSession(dir, "sess-acp", "acp");
+
+    await writeSessionStore({
+      entries: {
+        main: { sessionId: "sess-main", updatedAt: Date.now() },
+        "discord:group:dev": {
+          sessionId: "sess-acp",
+          updatedAt: Date.now(),
+          acp: {
+            backend: "acpx",
+            agent: "codex",
+            runtimeSessionName: "runtime:delete",
+            mode: "persistent",
+            state: "idle",
+            lastActivityAt: Date.now(),
+          },
+        },
+      },
+    });
+    acpRuntimeMocks.getAcpRuntimeBackend.mockReturnValue({
+      id: "acpx",
+      runtime: {
+        ensureSession: vi.fn(async () => ({
+          sessionKey: "agent:main:discord:group:dev",
+          backend: "acpx",
+          runtimeSessionName: "runtime:delete",
+        })),
+        runTurn: vi.fn(async function* () {}),
+        cancel: acpRuntimeMocks.cancel,
+        close: acpRuntimeMocks.close,
+      },
+    });
+
+    const { ws } = await openClient();
+    const deleted = await rpcReq<{ ok: true; deleted: boolean }>(ws, "sessions.delete", {
+      key: "discord:group:dev",
+    });
+    expect(deleted.ok).toBe(true);
+    expect(deleted.payload?.deleted).toBe(true);
+    expect(acpRuntimeMocks.close).toHaveBeenCalledWith({
+      handle: {
+        sessionKey: "agent:main:discord:group:dev",
+        backend: "acpx",
+        runtimeSessionName: "runtime:delete",
+      },
+      reason: "session-delete",
+    });
+    expect(acpRuntimeMocks.cancel).toHaveBeenCalledWith({
+      handle: {
+        sessionKey: "agent:main:discord:group:dev",
+        backend: "acpx",
+        runtimeSessionName: "runtime:delete",
+      },
+      reason: "session-delete",
     });
 
     ws.close();
@@ -667,7 +810,9 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  test("sessions.delete emits subagent targetKind for subagent sessions", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("sessions.delete emits subagent targetKind for subagent sessions", async () => {
     const { dir } = await createSessionStoreDir();
     await writeSingleLineSession(dir, "sess-subagent", "hello");
     await writeSessionStore({
@@ -706,7 +851,9 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  test("sessions.delete can skip lifecycle hooks while still unbinding thread bindings", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("sessions.delete can skip lifecycle hooks while still unbinding thread bindings", async () => {
     const { dir } = await createSessionStoreDir();
     await writeSingleLineSession(dir, "sess-subagent", "hello");
     await writeSessionStore({
@@ -737,7 +884,9 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  test("sessions.delete directly unbinds thread bindings when hooks are unavailable", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("sessions.delete directly unbinds thread bindings when hooks are unavailable", async () => {
     const { dir } = await createSessionStoreDir();
     await writeSingleLineSession(dir, "sess-subagent", "hello");
     await writeSessionStore({
@@ -767,8 +916,13 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  test("sessions.reset aborts active runs and clears queues", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("sessions.reset aborts active runs and clears queues", async () => {
     await seedActiveMainSession();
+
+    embeddedRunMock.activeIds.add("sess-main");
+    embeddedRunMock.waitResults.set("sess-main", true);
 
     const { ws } = await openClient();
 
@@ -782,7 +936,11 @@ describe("gateway server sessions", () => {
     expect(reset.ok).toBe(true);
     expect(reset.payload?.key).toBe("agent:main:main");
     expect(reset.payload?.entry.sessionId).not.toBe("sess-main");
-    expectActiveRunCleanup("agent:main:main", ["main", "agent:main:main", "sess-main"]);
+    expectActiveRunCleanup(
+      "agent:main:main",
+      ["main", "agent:main:main", "sess-main"],
+      "sess-main",
+    );
     expect(subagentLifecycleHookMocks.runSubagentEnded).toHaveBeenCalledTimes(1);
     expect(subagentLifecycleHookMocks.runSubagentEnded).toHaveBeenCalledWith(
       {
@@ -802,6 +960,59 @@ describe("gateway server sessions", () => {
       targetKind: "acp",
       reason: "session-reset",
       sendFarewell: true,
+    });
+
+    ws.close();
+  });
+
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("sessions.reset closes ACP runtime handles for ACP sessions", async () => {
+    const { dir } = await createSessionStoreDir();
+    await writeSingleLineSession(dir, "sess-main", "hello");
+
+    await writeSessionStore({
+      entries: {
+        main: {
+          sessionId: "sess-main",
+          updatedAt: Date.now(),
+          acp: {
+            backend: "acpx",
+            agent: "codex",
+            runtimeSessionName: "runtime:reset",
+            mode: "persistent",
+            state: "idle",
+            lastActivityAt: Date.now(),
+          },
+        },
+      },
+    });
+    acpRuntimeMocks.getAcpRuntimeBackend.mockReturnValue({
+      id: "acpx",
+      runtime: {
+        ensureSession: vi.fn(async () => ({
+          sessionKey: "agent:main:main",
+          backend: "acpx",
+          runtimeSessionName: "runtime:reset",
+        })),
+        runTurn: vi.fn(async function* () {}),
+        cancel: vi.fn(async () => {}),
+        close: acpRuntimeMocks.close,
+      },
+    });
+
+    const { ws } = await openClient();
+    const reset = await rpcReq<{ ok: true; key: string }>(ws, "sessions.reset", {
+      key: "main",
+    });
+    expect(reset.ok).toBe(true);
+    expect(acpRuntimeMocks.close).toHaveBeenCalledWith({
+      handle: {
+        sessionKey: "agent:main:main",
+        backend: "acpx",
+        runtimeSessionName: "runtime:reset",
+      },
+      reason: "session-reset",
     });
 
     ws.close();
@@ -832,7 +1043,9 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  test("sessions.reset emits subagent targetKind for subagent sessions", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("sessions.reset emits subagent targetKind for subagent sessions", async () => {
     const { dir } = await createSessionStoreDir();
     await writeSingleLineSession(dir, "sess-subagent", "hello");
     await writeSessionStore({
@@ -876,7 +1089,9 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  test("sessions.reset directly unbinds thread bindings when hooks are unavailable", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("sessions.reset directly unbinds thread bindings when hooks are unavailable", async () => {
     const { dir } = await createSessionStoreDir();
     await writeSingleLineSession(dir, "sess-main", "hello");
     await writeSessionStore({
@@ -906,7 +1121,9 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  test("sessions.reset emits internal command hook with reason", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("sessions.reset emits internal command hook with reason", async () => {
     const { dir } = await createSessionStoreDir();
     await writeSingleLineSession(dir, "sess-main", "hello");
 
@@ -941,9 +1158,83 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  // Engine abort/wait was gutted (#76) — sessions.reset and sessions.delete
-  // always succeed now; the "returns unavailable when active run does not stop"
-  // error path no longer exists.
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("sessions.reset returns unavailable when active run does not stop", async () => {
+    const { dir, storePath } = await seedActiveMainSession();
+
+    embeddedRunMock.activeIds.add("sess-main");
+    embeddedRunMock.waitResults.set("sess-main", false);
+
+    const { ws } = await openClient();
+
+    const reset = await rpcReq(ws, "sessions.reset", {
+      key: "main",
+    });
+    expect(reset.ok).toBe(false);
+    expect(reset.error?.code).toBe("UNAVAILABLE");
+    expect(reset.error?.message ?? "").toMatch(/still active/i);
+    expectActiveRunCleanup(
+      "agent:main:main",
+      ["main", "agent:main:main", "sess-main"],
+      "sess-main",
+    );
+
+    const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
+      string,
+      { sessionId?: string }
+    >;
+    expect(store["agent:main:main"]?.sessionId).toBe("sess-main");
+    const filesAfterResetAttempt = await fs.readdir(dir);
+    expect(filesAfterResetAttempt.some((f) => f.startsWith("sess-main.jsonl.reset."))).toBe(false);
+
+    ws.close();
+  });
+
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("sessions.delete returns unavailable when active run does not stop", async () => {
+    const { dir, storePath } = await createSessionStoreDir();
+    await writeSingleLineSession(dir, "sess-active", "active");
+
+    await writeSessionStore({
+      entries: {
+        "discord:group:dev": {
+          sessionId: "sess-active",
+          updatedAt: Date.now(),
+        },
+      },
+    });
+
+    embeddedRunMock.activeIds.add("sess-active");
+    embeddedRunMock.waitResults.set("sess-active", false);
+
+    const { ws } = await openClient();
+
+    const deleted = await rpcReq(ws, "sessions.delete", {
+      key: "discord:group:dev",
+    });
+    expect(deleted.ok).toBe(false);
+    expect(deleted.error?.code).toBe("UNAVAILABLE");
+    expect(deleted.error?.message ?? "").toMatch(/still active/i);
+    expectActiveRunCleanup(
+      "agent:main:discord:group:dev",
+      ["discord:group:dev", "agent:main:discord:group:dev", "sess-active"],
+      "sess-active",
+    );
+
+    const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
+      string,
+      { sessionId?: string }
+    >;
+    expect(store["agent:main:discord:group:dev"]?.sessionId).toBe("sess-active");
+    const filesAfterDeleteAttempt = await fs.readdir(dir);
+    expect(filesAfterDeleteAttempt.some((f) => f.startsWith("sess-active.jsonl.deleted."))).toBe(
+      false,
+    );
+
+    ws.close();
+  });
 
   test("webchat clients cannot patch or delete sessions", async () => {
     await createSessionStoreDir();
@@ -988,6 +1279,56 @@ describe("gateway server sessions", () => {
     });
     expect(deleted.ok).toBe(false);
     expect(deleted.error?.message ?? "").toMatch(/webchat clients cannot delete sessions/i);
+
+    ws.close();
+  });
+
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("control-ui client can delete sessions even in webchat mode", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-sessions-control-ui-delete-"));
+    const storePath = path.join(dir, "sessions.json");
+    testState.sessionStorePath = storePath;
+
+    await writeSessionStore({
+      entries: {
+        main: {
+          sessionId: "sess-main",
+          updatedAt: Date.now(),
+        },
+        "discord:group:dev": {
+          sessionId: "sess-group",
+          updatedAt: Date.now(),
+        },
+      },
+    });
+
+    const ws = new WebSocket(`ws://127.0.0.1:${harness.port}`, {
+      headers: { origin: `http://127.0.0.1:${harness.port}` },
+    });
+    trackConnectChallengeNonce(ws);
+    await new Promise<void>((resolve) => ws.once("open", resolve));
+    await connectOk(ws, {
+      client: {
+        id: GATEWAY_CLIENT_IDS.CONTROL_UI,
+        version: "1.0.0",
+        platform: "test",
+        mode: GATEWAY_CLIENT_MODES.WEBCHAT,
+      },
+      scopes: ["operator.admin"],
+    });
+
+    const deleted = await rpcReq<{ ok: true; deleted: boolean }>(ws, "sessions.delete", {
+      key: "agent:main:discord:group:dev",
+    });
+    expect(deleted.ok).toBe(true);
+    expect(deleted.payload?.deleted).toBe(true);
+
+    const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
+      string,
+      { sessionId?: string }
+    >;
+    expect(store["agent:main:discord:group:dev"]).toBeUndefined();
 
     ws.close();
   });

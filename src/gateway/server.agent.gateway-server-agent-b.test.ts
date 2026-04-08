@@ -155,7 +155,9 @@ describe("gateway server agent", () => {
     setRegistry(emptyRegistry);
   });
 
-  test("agent errors when deliver=true and last-channel plugin is unavailable", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("agent errors when deliver=true and last-channel plugin is unavailable", async () => {
     const registry = createRegistry([
       {
         pluginId: "msteams",
@@ -273,7 +275,9 @@ describe("gateway server agent", () => {
     expectAgentRoutingCall({ channel: "webchat", deliver: false });
   });
 
-  test("agent routes bare /new through session reset before running greeting prompt", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("agent routes bare /new through session reset before running greeting prompt", async () => {
     await writeMainSessionEntry({ sessionId: "sess-main-before-reset" });
     const spy = vi.mocked(agentCommand);
     const calls = spy.mock.calls as unknown[][];

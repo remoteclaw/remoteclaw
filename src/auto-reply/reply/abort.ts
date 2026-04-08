@@ -1,5 +1,15 @@
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../acp/control-plane/manager.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const getAcpSessionManager = (..._args: unknown[]) => ({
+  resolveSession: (..._a: unknown[]) => ({ key: null, sessionEntry: null, kind: "none" as const }),
+  cancelSession: (..._a: unknown[]) => Promise.resolve(),
+});
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
-import { killSessionRun } from "../../agents/session-run-registry.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../../agents/pi-embedded.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const abortEmbeddedPiRun = (..._args: unknown[]) => undefined as any;
 import {
   listSubagentRunsForRequester,
   markSubagentRunTerminated,
@@ -236,15 +246,17 @@ export function stopSubagentsForRequester(params: {
         store = loadSessionStore(storePath);
         storeCache.set(storePath, store);
       }
+      const entry = store[childKey];
+      const sessionId = entry?.sessionId;
+      const aborted = sessionId ? abortEmbeddedPiRun(sessionId) : false;
       const markedTerminated =
         markSubagentRunTerminated({
           runId: run.runId,
           childSessionKey: childKey,
           reason: "killed",
         }) > 0;
-      killSessionRun(childKey);
 
-      if (markedTerminated || cleared.followupCleared > 0 || cleared.laneCleared > 0) {
+      if (markedTerminated || aborted || cleared.followupCleared > 0 || cleared.laneCleared > 0) {
         stopped += 1;
       }
     }
@@ -299,8 +311,28 @@ export async function tryFastAbortFromMessage(params: {
     const storePath = resolveStorePath(cfg.session?.store, { agentId });
     const store = loadSessionStore(storePath);
     const { entry, key } = resolveSessionEntryForKey(store, targetKey);
+    const resolvedTargetKey = key ?? targetKey;
+    const acpManager = getAcpSessionManager();
+    const acpResolution = acpManager.resolveSession({
+      cfg,
+      sessionKey: resolvedTargetKey,
+    });
+    if (acpResolution.kind !== "none") {
+      try {
+        await acpManager.cancelSession({
+          cfg,
+          sessionKey: resolvedTargetKey,
+          reason: "fast-abort",
+        });
+      } catch (error) {
+        logVerbose(
+          `abort: ACP cancel failed for ${resolvedTargetKey}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
     const sessionId = entry?.sessionId;
-    const cleared = clearSessionQueues([key ?? targetKey, sessionId]);
+    const aborted = sessionId ? abortEmbeddedPiRun(sessionId) : false;
+    const cleared = clearSessionQueues([resolvedTargetKey, sessionId]);
     if (cleared.followupCleared > 0 || cleared.laneCleared > 0) {
       logVerbose(
         `abort: cleared followups=${cleared.followupCleared} lane=${cleared.laneCleared} keys=${cleared.keys.join(",")}`,
@@ -308,7 +340,7 @@ export async function tryFastAbortFromMessage(params: {
     }
     const abortCutoff = shouldPersistAbortCutoff({
       commandSessionKey: ctx.SessionKey,
-      targetSessionKey: key ?? targetKey,
+      targetSessionKey: resolvedTargetKey,
     })
       ? resolveAbortCutoffFromContext(ctx)
       : undefined;
@@ -330,18 +362,12 @@ export async function tryFastAbortFromMessage(params: {
     } else if (abortKey) {
       setAbortMemory(abortKey, true);
     }
-    if (requesterSessionKey) {
-      killSessionRun(requesterSessionKey);
-    }
     const { stopped } = stopSubagentsForRequester({ cfg, requesterSessionKey });
-    return { handled: true, aborted: false, stoppedSubagents: stopped };
+    return { handled: true, aborted, stoppedSubagents: stopped };
   }
 
   if (abortKey) {
     setAbortMemory(abortKey, true);
-  }
-  if (requesterSessionKey) {
-    killSessionRun(requesterSessionKey);
   }
   const { stopped } = stopSubagentsForRequester({ cfg, requesterSessionKey });
   return { handled: true, aborted: false, stoppedSubagents: stopped };

@@ -64,20 +64,21 @@ describe("runHeartbeatOnce – heartbeat model override", () => {
   async function runDefaultsHeartbeat(params: {
     model?: string;
     suppressToolErrorWarnings?: boolean;
+    lightContext?: boolean;
   }) {
     return withHeartbeatFixture(async ({ tmpDir, storePath, seedSession }) => {
       const cfg: RemoteClawConfig = {
         agents: {
           defaults: {
+            workspace: tmpDir,
             heartbeat: {
               every: "5m",
               target: "whatsapp",
               model: params.model,
               suppressToolErrorWarnings: params.suppressToolErrorWarnings,
-              prompt: "Check status",
+              lightContext: params.lightContext,
             },
           },
-          list: [{ id: "main", workspace: tmpDir }],
         },
         channels: { whatsapp: { allowFrom: ["*"] } },
         session: { store: storePath },
@@ -122,6 +123,16 @@ describe("runHeartbeatOnce – heartbeat model override", () => {
     );
   });
 
+  it("passes bootstrapContextMode when heartbeat lightContext is enabled", async () => {
+    const replyOpts = await runDefaultsHeartbeat({ lightContext: true });
+    expect(replyOpts).toEqual(
+      expect.objectContaining({
+        isHeartbeat: true,
+        bootstrapContextMode: "lightweight",
+      }),
+    );
+  });
+
   it("passes per-agent heartbeat model override (merged with defaults)", async () => {
     await withHeartbeatFixture(async ({ tmpDir, storePath, seedSession }) => {
       const cfg: RemoteClawConfig = {
@@ -130,11 +141,10 @@ describe("runHeartbeatOnce – heartbeat model override", () => {
             heartbeat: {
               every: "30m",
               model: "openai/gpt-4o-mini",
-              prompt: "Check status",
             },
           },
           list: [
-            { id: "main", default: true, workspace: tmpDir },
+            { id: "main", default: true },
             {
               id: "ops",
               workspace: tmpDir,
@@ -142,7 +152,6 @@ describe("runHeartbeatOnce – heartbeat model override", () => {
                 every: "5m",
                 target: "whatsapp",
                 model: "ollama/llama3.2:1b",
-                prompt: "Check status",
               },
             },
           ],

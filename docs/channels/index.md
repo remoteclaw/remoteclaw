@@ -1,5 +1,5 @@
 ---
-description: "Messaging platforms RemoteClaw can connect to"
+summary: "Messaging platforms RemoteClaw can connect to"
 read_when:
   - You want to choose a chat channel for RemoteClaw
   - You need a quick overview of supported messaging platforms
@@ -43,5 +43,5 @@ Text is supported everywhere; media and reactions vary by channel.
   stores more state on disk.
 - Group behavior varies by channel; see [Groups](/channels/groups).
 - DM pairing and allowlists are enforced for safety; see [Security](/gateway/security).
-- Telegram internals: [grammY notes](/channels/grammy).
 - Troubleshooting: [Channel troubleshooting](/channels/troubleshooting).
+- Model providers are documented separately; see [Model Providers](/providers/models).

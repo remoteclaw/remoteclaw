@@ -294,16 +294,32 @@ vi.mock("../config/config.js", async () => {
       };
     }
     const configPath = resolveConfigPath();
+    // Ensure workspace is always set so gateway startup doesn't fail
+    const gatewayTestWorkspaceSnapshot = path.join(os.tmpdir(), "remoteclaw-gateway-test");
+    const ensureWorkspace = (cfg: Record<string, unknown>) => {
+      const agents = (cfg.agents ?? {}) as Record<string, unknown>;
+      const list = Array.isArray(agents.list) ? agents.list : [{ id: "main" }];
+      return {
+        ...cfg,
+        agents: {
+          ...agents,
+          list: (list as Array<Record<string, unknown>>).map((a) =>
+            a.workspace ? a : { workspace: gatewayTestWorkspaceSnapshot, ...a },
+          ),
+        },
+      };
+    };
     try {
       await fs.access(configPath);
     } catch {
+      const fallbackConfig = ensureWorkspace({});
       return {
         path: configPath,
         exists: false,
         raw: null,
         parsed: {},
         valid: true,
-        config: {},
+        config: fallbackConfig,
         hash: hashConfigRaw(null),
         issues: [],
         legacyIssues: [],
@@ -318,7 +334,7 @@ vi.mock("../config/config.js", async () => {
         raw,
         parsed,
         valid: true,
-        config: parsed,
+        config: ensureWorkspace(parsed),
         hash: hashConfigRaw(raw),
         issues: [],
         legacyIssues: [],

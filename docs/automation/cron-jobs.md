@@ -1,5 +1,5 @@
 ---
-description: "Cron jobs + wakeups for the Gateway scheduler"
+summary: "Cron jobs + wakeups for the Gateway scheduler"
 read_when:
   - Scheduling background jobs or wakeups
   - Wiring automation that should run with or alongside heartbeats
@@ -220,10 +220,20 @@ Behavior details:
 
 ### Model and thinking overrides
 
-Isolated jobs (`agentTurn`) can pass a model and thinking level to the CLI agent:
+Isolated jobs (`agentTurn`) can override the model and thinking level:
 
-- `model`: Model alias (e.g., `opus`). Passed through to the CLI agent runtime.
-- `thinking`: Thinking level (`off`, `minimal`, `low`, `medium`, `high`, `xhigh`). Passed through to the CLI agent runtime.
+- `model`: Provider/model string (e.g., `anthropic/claude-sonnet-4-20250514`) or alias (e.g., `opus`)
+- `thinking`: Thinking level (`off`, `minimal`, `low`, `medium`, `high`, `xhigh`; GPT-5.2 + Codex models only)
+
+Note: You can set `model` on main-session jobs too, but it changes the shared main
+session model. We recommend model overrides only for isolated jobs to avoid
+unexpected context shifts.
+
+Resolution priority:
+
+1. Job payload override (highest)
+2. Hook-specific defaults (e.g., `hooks.gmail.model`)
+3. Agent config default
 
 ### Delivery (channel + target)
 
@@ -343,6 +353,38 @@ Notes:
 - Isolated cron run sessions in `sessions.json` are pruned by `cron.sessionRetention` (default `24h`; set `false` to disable).
 - Override store path: `cron.store` in config.
 
+## Retry policy
+
+When a job fails, RemoteClaw classifies errors as **transient** (retryable) or **permanent** (disable immediately).
+
+### Transient errors (retried)
+
+- Rate limit (429, too many requests, resource exhausted)
+- Network errors (timeout, ECONNRESET, fetch failed, socket)
+- Server errors (5xx)
+- Cloudflare-related errors
+
+### Permanent errors (no retry)
+
+- Auth failures (invalid API key, unauthorized)
+- Config or validation errors
+- Other non-transient errors
+
+### Default behavior (no config)
+
+**One-shot jobs (`schedule.kind: "at"`):**
+
+- On transient error: retry up to 3 times with exponential backoff (30s → 1m → 5m).
+- On permanent error: disable immediately.
+- On success or skip: disable (or delete if `deleteAfterRun: true`).
+
+**Recurring jobs (`cron` / `every`):**
+
+- On any error: apply exponential backoff (30s → 1m → 5m → 15m → 60m) before the next scheduled run.
+- Job stays enabled; backoff resets after the next successful run.
+
+Configure `cron.retry` to override these defaults (see [Configuration](/automation/cron-jobs#configuration)).
+
 ## Configuration
 
 ```json5
@@ -351,6 +393,12 @@ Notes:
     enabled: true, // default true
     store: "~/.remoteclaw/cron/jobs.json",
     maxConcurrentRuns: 1, // default 1
+    // Optional: override retry policy for one-shot jobs
+    retry: {
+      maxAttempts: 3,
+      backoffMs: [60000, 120000, 300000],
+      retryOn: ["rate_limit", "network", "server_error"],
+    },
     webhook: "https://example.invalid/legacy", // deprecated fallback for stored notify:true jobs
     webhookToken: "replace-with-dedicated-webhook-token", // optional bearer token for webhook mode
     sessionRetention: "24h", // duration string or false
@@ -607,7 +655,7 @@ remoteclaw system event --mode now --text "Next heartbeat: check battery."
 - RemoteClaw applies exponential retry backoff for recurring jobs after consecutive errors:
   30s, 1m, 5m, 15m, then 60m between retries.
 - Backoff resets automatically after the next successful run.
-- One-shot (`at`) jobs disable after a terminal run (`ok`, `error`, or `skipped`) and do not retry.
+- One-shot (`at`) jobs retry transient errors (rate limit, network, server_error) up to 3 times with backoff; permanent errors disable immediately. See [Retry policy](/automation/cron-jobs#retry-policy).
 
 ### Telegram delivers to the wrong place
 

@@ -48,6 +48,7 @@ function resolveEditableFiles(cfg: RemoteClawConfig, agentId: string): string[] 
   if (agentEntry?.editableFiles) {
     return agentEntry.editableFiles;
   }
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   return cfg.agents?.defaults?.editableFiles ?? [];
 }
 

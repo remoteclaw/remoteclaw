@@ -1,4 +1,4 @@
-export type UpdateChannel = "stable" | "beta" | "next";
+export type UpdateChannel = "stable" | "beta" | "next" | "dev";
 export type UpdateChannelSource = "config" | "default";
 
 export const DEFAULT_PACKAGE_CHANNEL: UpdateChannel = "next";
@@ -28,7 +28,10 @@ export function channelToNpmTag(channel: UpdateChannel): string {
   return "latest";
 }
 
-export function resolveEffectiveUpdateChannel(params: { configChannel?: UpdateChannel | null }): {
+export function resolveEffectiveUpdateChannel(params: {
+  configChannel?: UpdateChannel | null;
+  installKind?: string;
+}): {
   channel: UpdateChannel;
   source: UpdateChannelSource;
 } {
@@ -65,4 +68,13 @@ export function resolveUpdateChannelDisplay(params: { configChannel?: UpdateChan
       source: channelInfo.source,
     }),
   };
+}
+
+// Gutted in RemoteClaw fork — stub exports for upstream compat
+export const DEV_BRANCH = "dev";
+export function isBetaTag(_tag: string): boolean {
+  return false;
+}
+export function isStableTag(_tag: string): boolean {
+  return false;
 }

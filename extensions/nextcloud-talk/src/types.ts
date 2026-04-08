@@ -11,7 +11,8 @@ export type NextcloudTalkRoomConfig = {
   requireMention?: boolean;
   /** Optional tool policy overrides for this room. */
   tools?: { allow?: string[]; deny?: string[] };
-
+  /** If specified, only load these skills for this room. Omit = all skills; empty = no skills. */
+  skills?: string[];
   /** If false, disable the bot for this room. */
   enabled?: boolean;
   /** Optional allowlist for room senders (user ids). */
@@ -78,6 +79,8 @@ export type NextcloudTalkAccountConfig = {
 export type NextcloudTalkConfig = {
   /** Optional per-account Nextcloud Talk configuration (multi-account). */
   accounts?: Record<string, NextcloudTalkAccountConfig>;
+  /** Optional default account id when multiple accounts are configured. */
+  defaultAccount?: string;
 } & NextcloudTalkAccountConfig;
 
 export type CoreConfig = {

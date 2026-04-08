@@ -27,6 +27,21 @@ export type InlineDirectives = {
   rawCap?: string;
   rawDrop?: string;
   hasQueueOptions: boolean;
+  /** Upstream feature: thinking level directive. */
+  thinkLevel?: string;
+  hasThinkDirective?: boolean;
+  /** Upstream feature: reasoning level directive. */
+  reasoningLevel?: string;
+  hasReasoningDirective?: boolean;
+  /** Upstream feature: elevated security level directive. */
+  elevatedLevel?: string;
+  rawElevatedLevel?: string;
+  hasElevatedDirective?: boolean;
+  /** Upstream feature: exec directives. */
+  execAsk?: boolean;
+  execHost?: string;
+  execNode?: string;
+  execSecurity?: string;
 };
 
 export function parseInlineDirectives(

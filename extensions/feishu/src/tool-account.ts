@@ -39,6 +39,7 @@ export function createFeishuToolClient(params: {
 export function resolveAnyEnabledFeishuToolsConfig(
   accounts: ResolvedFeishuAccount[],
 ): Required<FeishuToolsConfig> {
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   const merged: Required<FeishuToolsConfig> = {
     doc: false,
     wiki: false,

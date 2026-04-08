@@ -8,6 +8,8 @@ import {
   getVerboseFlag,
   hasHelpOrVersion,
   hasFlag,
+  isRootHelpInvocation,
+  isRootVersionInvocation,
   shouldMigrateState,
   shouldMigrateStateFromPath,
 } from "./argv.js";
@@ -61,6 +63,81 @@ describe("argv helpers", () => {
     },
   ])("detects help/version flags: $name", ({ argv, expected }) => {
     expect(hasHelpOrVersion(argv)).toBe(expected);
+  });
+
+  it.each([
+    {
+      name: "root --version",
+      argv: ["node", "remoteclaw", "--version"],
+      expected: true,
+    },
+    {
+      name: "root -V",
+      argv: ["node", "remoteclaw", "-V"],
+      expected: true,
+    },
+    {
+      name: "root -v alias with profile",
+      argv: ["node", "remoteclaw", "--profile", "work", "-v"],
+      expected: true,
+    },
+    {
+      name: "subcommand version flag",
+      argv: ["node", "remoteclaw", "status", "--version"],
+      expected: false,
+    },
+    {
+      name: "unknown root flag with version",
+      argv: ["node", "remoteclaw", "--unknown", "--version"],
+      expected: false,
+    },
+  ])("detects root-only version invocations: $name", ({ argv, expected }) => {
+    expect(isRootVersionInvocation(argv)).toBe(expected);
+  });
+
+  it.each([
+    {
+      name: "root --help",
+      argv: ["node", "remoteclaw", "--help"],
+      expected: true,
+    },
+    {
+      name: "root -h",
+      argv: ["node", "remoteclaw", "-h"],
+      expected: true,
+    },
+    {
+      name: "root --help with profile",
+      argv: ["node", "remoteclaw", "--profile", "work", "--help"],
+      expected: true,
+    },
+    {
+      name: "subcommand --help",
+      argv: ["node", "remoteclaw", "status", "--help"],
+      expected: false,
+    },
+    {
+      name: "help before subcommand token",
+      argv: ["node", "remoteclaw", "--help", "status"],
+      expected: false,
+    },
+    {
+      name: "help after -- terminator",
+      argv: ["node", "remoteclaw", "nodes", "run", "--", "git", "--help"],
+      expected: false,
+    },
+    {
+      name: "unknown root flag before help",
+      argv: ["node", "remoteclaw", "--unknown", "--help"],
+      expected: false,
+    },
+    {
+      name: "unknown root flag after help",
+      argv: ["node", "remoteclaw", "--help", "--unknown"],
+      expected: false,
+    },
+  ])("detects root-only help invocations: $name", ({ argv, expected }) => {
+    expect(isRootHelpInvocation(argv)).toBe(expected);
   });
 
   it.each([

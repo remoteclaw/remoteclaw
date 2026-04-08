@@ -171,3 +171,8 @@ export function resolveEffectiveEnableState(params: {
   }
   return base;
 }
+
+// Gutted in RemoteClaw fork — stub export for upstream compat
+export function resolveMemorySlotDecision(..._args: unknown[]): unknown {
+  return { enabled: true, selected: false, reason: undefined };
+}

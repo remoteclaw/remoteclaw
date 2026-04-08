@@ -574,13 +574,17 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
         registerHook(record, events, handler, opts, params.config),
       registerHttpHandler: (handler) => registerHttpHandler(record, handler),
       registerHttpRoute: (params) => registerHttpRoute(record, params),
+      // oxlint-disable-next-line typescript/no-explicit-any
+      registerProvider: (_provider: any) => {}, // Gutted in RemoteClaw fork
       registerChannel: (registration) => registerChannel(record, registration),
       registerGatewayMethod: (method, handler) => registerGatewayMethod(record, method, handler),
       registerCli: (registrar, opts) => registerCli(record, registrar, opts),
       registerService: (service) => registerService(record, service),
       registerCommand: (command) => registerCommand(record, command),
-      registerSttProvider: (provider) => registerSttProvider(record, provider),
-      registerTtsProvider: (provider) => registerTtsProvider(record, provider),
+      // oxlint-disable-next-line typescript/no-explicit-any
+      registerSttProvider: (provider: any) => registerSttProvider(record, provider),
+      // oxlint-disable-next-line typescript/no-explicit-any
+      registerTtsProvider: (provider: any) => registerTtsProvider(record, provider),
       resolvePath: (input: string) => resolveUserPath(input),
       on: (hookName, handler, opts) => {
         if (DEAD_HOOKS.has(hookName as string)) {

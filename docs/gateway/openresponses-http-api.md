@@ -1,5 +1,5 @@
 ---
-description: "Expose an OpenResponses-compatible /v1/responses HTTP endpoint from the Gateway"
+summary: "Expose an OpenResponses-compatible /v1/responses HTTP endpoint from the Gateway"
 read_when:
   - Integrating clients that speak the OpenResponses API
   - You want item-based inputs, client tool calls, or SSE events
@@ -29,6 +29,18 @@ Notes:
 - When `gateway.auth.mode="token"`, use `gateway.auth.token` (or `REMOTECLAW_GATEWAY_TOKEN`).
 - When `gateway.auth.mode="password"`, use `gateway.auth.password` (or `REMOTECLAW_GATEWAY_PASSWORD`).
 - If `gateway.auth.rateLimit` is configured and too many auth failures occur, the endpoint returns `429` with `Retry-After`.
+
+## Security boundary (important)
+
+Treat this endpoint as a **full operator-access** surface for the gateway instance.
+
+- HTTP bearer auth here is not a narrow per-user scope model.
+- A valid Gateway token/password for this endpoint should be treated like an owner/operator credential.
+- Requests run through the same control-plane agent path as trusted operator actions.
+- If the target agent policy allows sensitive tools, this endpoint can use them.
+- Keep this endpoint on loopback/tailnet/private ingress only; do not expose it directly to the public internet.
+
+See [Security](/gateway/security) and [Remote access](/gateway/remote).
 
 ## Choosing an agent
 
@@ -93,7 +105,7 @@ The request follows the OpenResponses API with item-based input. Current support
 - `tools`: client tool definitions (function tools).
 - `tool_choice`: filter or require client tools.
 - `stream`: enables SSE streaming.
-- `max_output_tokens`: best-effort output limit (CLI runtime dependent).
+- `max_output_tokens`: best-effort output limit (provider dependent).
 - `user`: stable session routing.
 
 Accepted but **currently ignored**:
@@ -287,7 +299,7 @@ Event types currently emitted:
 
 ## Usage
 
-`usage` is populated when the CLI agent reports token counts.
+`usage` is populated when the underlying provider reports token counts.
 
 ## Errors
 

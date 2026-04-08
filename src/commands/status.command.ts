@@ -1,12 +1,19 @@
 import { formatCliCommand } from "../cli/command-format.js";
 import { withProgress } from "../cli/progress.js";
-import { resolveGatewayPort } from "../config/config.js";
+import { loadConfig, resolveGatewayPort } from "../config/config.js";
 import { buildGatewayConnectionDetails, callGateway } from "../gateway/call.js";
 import { info } from "../globals.js";
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import type { HeartbeatEventPayload } from "../infra/heartbeat-events.js";
 import { formatUsageReportLines, loadProviderUsageSummary } from "../infra/provider-usage.js";
 import { normalizeUpdateChannel, resolveUpdateChannelDisplay } from "../infra/update-channels.js";
+import { formatGitInstallLabel } from "../infra/update-check.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../memory/status-format.js";
+const resolveMemoryCacheSummary = (..._args: unknown[]) => undefined as unknown;
+const resolveMemoryFtsState = (..._args: unknown[]) => undefined as unknown;
+const resolveMemoryVectorState = (..._args: unknown[]) => undefined as unknown;
+type Tone = Record<string, unknown>;
 import type { RuntimeEnv } from "../runtime.js";
 import { runSecurityAudit } from "../security/audit.js";
 import { renderTable } from "../terminal/table.js";
@@ -73,10 +80,33 @@ export async function statusCommand(
     return;
   }
 
-  const scan = await scanStatus(
-    { json: opts.json, timeoutMs: opts.timeoutMs, all: opts.all },
-    runtime,
-  );
+  const [scan, securityAudit] = opts.json
+    ? await Promise.all([
+        scanStatus({ json: opts.json, timeoutMs: opts.timeoutMs, all: opts.all }, runtime),
+        runSecurityAudit({
+          config: loadConfig(),
+          deep: false,
+          includeFilesystem: true,
+          includeChannelSecurity: true,
+        }),
+      ])
+    : [
+        await scanStatus({ json: opts.json, timeoutMs: opts.timeoutMs, all: opts.all }, runtime),
+        await withProgress(
+          {
+            label: "Running security audit…",
+            indeterminate: true,
+            enabled: true,
+          },
+          async () =>
+            await runSecurityAudit({
+              config: loadConfig(),
+              deep: false,
+              includeFilesystem: true,
+              includeChannelSecurity: true,
+            }),
+        ),
+      ];
   const {
     cfg,
     osSummary,
@@ -94,22 +124,9 @@ export async function statusCommand(
     agentStatus,
     channels,
     summary,
+    memory,
+    memoryPlugin,
   } = scan;
-
-  const securityAudit = await withProgress(
-    {
-      label: "Running security audit…",
-      indeterminate: true,
-      enabled: opts.json !== true,
-    },
-    async () =>
-      await runSecurityAudit({
-        config: cfg,
-        deep: false,
-        includeFilesystem: true,
-        includeChannelSecurity: true,
-      }),
-  );
 
   const usage = opts.usage
     ? await withProgress(
@@ -148,6 +165,10 @@ export async function statusCommand(
   const configChannel = normalizeUpdateChannel(cfg.update?.channel);
   const channelInfo = resolveUpdateChannelDisplay({
     configChannel,
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
+    installKind: update.installKind,
+    gitTag: update.git?.tag ?? null,
+    gitBranch: update.git?.branch ?? null,
   });
 
   if (opts.json) {
@@ -163,6 +184,8 @@ export async function statusCommand(
           update,
           updateChannel: channelInfo.channel,
           updateChannelSource: channelInfo.source,
+          memory,
+          memoryPlugin,
           gateway: {
             mode: gatewayMode,
             url: gatewayConnection.url,
@@ -249,10 +272,16 @@ export async function statusCommand(
   });
 
   const agentsValue = (() => {
+    const pending =
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      agentStatus.bootstrapPendingCount > 0
+        ? // @ts-expect-error — upstream feature not available in RemoteClaw fork
+          `${agentStatus.bootstrapPendingCount} bootstrap file${agentStatus.bootstrapPendingCount === 1 ? "" : "s"} present`
+        : "no bootstrap files";
     const def = agentStatus.agents.find((a) => a.id === agentStatus.defaultId);
     const defActive = def?.lastActiveAgeMs != null ? formatTimeAgo(def.lastActiveAgeMs) : "unknown";
     const defSuffix = def ? ` · default ${def.id} active ${defActive}` : "";
-    return `${agentStatus.agents.length} · sessions ${agentStatus.totalSessions}${defSuffix}`;
+    return `${agentStatus.agents.length} · ${pending} · sessions ${agentStatus.totalSessions}${defSuffix}`;
   })();
 
   const [daemon, nodeDaemon] = await Promise.all([
@@ -316,9 +345,64 @@ export async function statusCommand(
       ? `${summary.sessions.paths.length} stores`
       : (summary.sessions.paths[0] ?? "unknown");
 
+  const memoryValue = (() => {
+    if (!memoryPlugin.enabled) {
+      const suffix = memoryPlugin.reason ? ` (${memoryPlugin.reason})` : "";
+      return muted(`disabled${suffix}`);
+    }
+    if (!memory) {
+      const slot = memoryPlugin.slot ? `plugin ${memoryPlugin.slot}` : "plugin";
+      // Custom (non-built-in) memory plugins can't be probed — show enabled, not unavailable
+      if (memoryPlugin.slot && memoryPlugin.slot !== "memory-core") {
+        return `enabled (${slot})`;
+      }
+      return muted(`enabled (${slot}) · unavailable`);
+    }
+    const parts: string[] = [];
+    const dirtySuffix = memory.dirty ? ` · ${warn("dirty")}` : "";
+    // oxlint-disable-next-line
+    parts.push(`${memory.files} files · ${memory.chunks} chunks${dirtySuffix}`);
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
+    if (memory.sources?.length) {
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      parts.push(`sources ${memory.sources.join(", ")}`);
+    }
+    if (memoryPlugin.slot) {
+      parts.push(`plugin ${memoryPlugin.slot}`);
+    }
+    const colorByTone = (tone: Tone, text: string) =>
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      tone === "ok" ? ok(text) : tone === "warn" ? warn(text) : muted(text);
+    const vector = memory.vector;
+    if (vector) {
+      const state = resolveMemoryVectorState(vector);
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      const label = state.state === "disabled" ? "vector off" : `vector ${state.state}`;
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      parts.push(colorByTone(state.tone, label));
+    }
+    const fts = memory.fts;
+    if (fts) {
+      const state = resolveMemoryFtsState(fts);
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      const label = state.state === "disabled" ? "fts off" : `fts ${state.state}`;
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      parts.push(colorByTone(state.tone, label));
+    }
+    const cache = memory.cache;
+    if (cache) {
+      const summary = resolveMemoryCacheSummary(cache);
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      parts.push(colorByTone(summary.tone, summary.text));
+    }
+    return parts.join(" · ");
+  })();
+
   const updateAvailability = resolveUpdateAvailability(update);
   const updateLine = formatUpdateOneLiner(update).replace(/^Update:\s*/i, "");
   const channelLabel = channelInfo.label;
+  const gitLabel = formatGitInstallLabel(update);
+
   const overviewRows = [
     { Item: "Dashboard", Value: dashboard },
     { Item: "OS", Value: `${osSummary.label} · node ${process.versions.node}` },
@@ -332,6 +416,7 @@ export async function statusCommand(
             : warn(`${tailscaleMode} · magicdns unknown`),
     },
     { Item: "Channel", Value: channelLabel },
+    ...(gitLabel ? [{ Item: "Git", Value: gitLabel }] : []),
     {
       Item: "Update",
       Value: updateAvailability.available ? warn(`available · ${updateLine}`) : updateLine,
@@ -340,6 +425,7 @@ export async function statusCommand(
     { Item: "Gateway service", Value: daemonValue },
     { Item: "Node service", Value: nodeDaemonValue },
     { Item: "Agents", Value: agentsValue },
+    { Item: "Memory", Value: memoryValue },
     { Item: "Probes", Value: probesValue },
     { Item: "Events", Value: eventsValue },
     { Item: "Heartbeat", Value: heartbeatValue },
@@ -588,8 +674,8 @@ export async function statusCommand(
   }
 
   runtime.log("");
-  runtime.log("FAQ: https://docs.remoteclaw.org/faq");
-  runtime.log("Troubleshooting: https://docs.remoteclaw.org/troubleshooting");
+  runtime.log("FAQ: https://docs.remoteclaw.ai/faq");
+  runtime.log("Troubleshooting: https://docs.remoteclaw.ai/troubleshooting");
   runtime.log("");
   const updateHint = formatUpdateAvailableHint(update);
   if (updateHint) {

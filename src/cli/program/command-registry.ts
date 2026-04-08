@@ -41,19 +41,6 @@ const coreEntries: CoreCliEntry[] = [
   {
     commands: [
       {
-        name: "import",
-        description: "Import an existing RemoteClaw installation into RemoteClaw",
-        hasSubcommands: false,
-      },
-    ],
-    register: async ({ program }) => {
-      const mod = await import("./register.import.js");
-      mod.registerImportCommand(program);
-    },
-  },
-  {
-    commands: [
-      {
         name: "setup",
         description: "Initialize local config and agent workspace",
         hasSubcommands: false,
@@ -68,7 +55,7 @@ const coreEntries: CoreCliEntry[] = [
     commands: [
       {
         name: "onboard",
-        description: "Interactive onboarding wizard for gateway and workspace",
+        description: "Interactive onboarding wizard for gateway, workspace, and skills",
         hasSubcommands: false,
       },
     ],
@@ -96,7 +83,7 @@ const coreEntries: CoreCliEntry[] = [
       {
         name: "config",
         description:
-          "Non-interactive config helpers (get/set/unset). Default: starts setup wizard.",
+          "Non-interactive config helpers (get/set/unset/file). Default: starts setup wizard.",
         hasSubcommands: true,
       },
     ],
@@ -144,6 +131,21 @@ const coreEntries: CoreCliEntry[] = [
     register: async ({ program, ctx }) => {
       const mod = await import("./register.message.js");
       mod.registerMessageCommands(program, ctx);
+    },
+  },
+  {
+    commands: [
+      {
+        name: "memory",
+        description: "Search and reindex memory files",
+        hasSubcommands: true,
+      },
+    ],
+    register: async ({ program }) => {
+      //       const mod = await import("../memory-cli.js");
+      // Gutted in RemoteClaw fork (Middleware Boundary Principle)
+      // @ts-expect-error — gutted in RemoteClaw fork
+      mod.registerMemoryCli(program);
     },
   },
   {

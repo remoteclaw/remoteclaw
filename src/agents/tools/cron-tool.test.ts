@@ -402,6 +402,28 @@ describe("cron tool", () => {
     expect(call.params?.payload?.text).toBe("wake up");
   });
 
+  it("recovers flat message shorthand as agentTurn payload", async () => {
+    callGatewayMock.mockResolvedValueOnce({ ok: true });
+
+    const tool = createCronTool();
+    await tool.execute("call-msg-shorthand", {
+      action: "add",
+      schedule: { kind: "at", at: new Date(456).toISOString() },
+      message: "do stuff",
+    });
+
+    expect(callGatewayMock).toHaveBeenCalledTimes(1);
+    const call = callGatewayMock.mock.calls[0]?.[0] as {
+      method?: string;
+      params?: { payload?: { kind?: string; message?: string }; sessionTarget?: string };
+    };
+    expect(call.method).toBe("cron.add");
+    // normalizeCronJobCreate infers agentTurn from message and isolated from agentTurn
+    expect(call.params?.payload?.kind).toBe("agentTurn");
+    expect(call.params?.payload?.message).toBe("do stuff");
+    expect(call.params?.sessionTarget).toBe("isolated");
+  });
+
   it("does not recover flat params when no meaningful job field is present", async () => {
     const tool = createCronTool();
     await expect(
@@ -489,5 +511,51 @@ describe("cron tool", () => {
       }),
     ).rejects.toThrow('delivery.mode="webhook" requires delivery.to to be a valid http(s) URL');
     expect(callGatewayMock).toHaveBeenCalledTimes(0);
+  });
+
+  it("recovers flat patch params for update action", async () => {
+    callGatewayMock.mockResolvedValueOnce({ ok: true });
+
+    const tool = createCronTool();
+    await tool.execute("call-update-flat", {
+      action: "update",
+      jobId: "job-1",
+      name: "new-name",
+      enabled: false,
+    });
+
+    expect(callGatewayMock).toHaveBeenCalledTimes(1);
+    const call = callGatewayMock.mock.calls[0]?.[0] as {
+      method?: string;
+      params?: { id?: string; patch?: { name?: string; enabled?: boolean } };
+    };
+    expect(call.method).toBe("cron.update");
+    expect(call.params?.id).toBe("job-1");
+    expect(call.params?.patch?.name).toBe("new-name");
+    expect(call.params?.patch?.enabled).toBe(false);
+  });
+
+  it("recovers additional flat patch params for update action", async () => {
+    callGatewayMock.mockResolvedValueOnce({ ok: true });
+
+    const tool = createCronTool();
+    await tool.execute("call-update-flat-extra", {
+      action: "update",
+      id: "job-2",
+      sessionTarget: "main",
+      failureAlert: { after: 3, cooldownMs: 60_000 },
+    });
+
+    const call = callGatewayMock.mock.calls[0]?.[0] as {
+      method?: string;
+      params?: {
+        id?: string;
+        patch?: { sessionTarget?: string; failureAlert?: { after?: number; cooldownMs?: number } };
+      };
+    };
+    expect(call.method).toBe("cron.update");
+    expect(call.params?.id).toBe("job-2");
+    expect(call.params?.patch?.sessionTarget).toBe("main");
+    expect(call.params?.patch?.failureAlert).toEqual({ after: 3, cooldownMs: 60_000 });
   });
 });

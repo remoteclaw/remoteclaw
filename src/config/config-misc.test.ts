@@ -1,3 +1,5 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   getConfigValueAtPath,
@@ -5,17 +7,18 @@ import {
   setConfigValueAtPath,
   unsetConfigValueAtPath,
 } from "./config-paths.js";
-import { validateConfigObject } from "./config.js";
+import { readConfigFileSnapshot, validateConfigObject } from "./config.js";
+import { buildWebSearchProviderConfig, withTempHome } from "./test-helpers.js";
 import { RemoteClawSchema } from "./zod-schema.js";
 
 describe("$schema key in config (#14998)", () => {
   it("accepts config with $schema string", () => {
     const result = RemoteClawSchema.safeParse({
-      $schema: "https://remoteclaw.org/config.json",
+      $schema: "https://remoteclaw.ai/config.json",
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.$schema).toBe("https://remoteclaw.org/config.json");
+      expect(result.data.$schema).toBe("https://remoteclaw.ai/config.json");
     }
   });
 
@@ -37,13 +40,30 @@ describe("ui.seamColor", () => {
   });
 
   it("rejects non-hex colors", () => {
-    const res = validateConfigObject({ ui: { seamColor: "crab" } });
+    const res = validateConfigObject({ ui: { seamColor: "lobster" } });
     expect(res.ok).toBe(false);
   });
 
   it("rejects invalid hex length", () => {
     const res = validateConfigObject({ ui: { seamColor: "#FF4500FF" } });
     expect(res.ok).toBe(false);
+  });
+});
+
+describe("web search provider config", () => {
+  it("accepts kimi provider and config", () => {
+    const res = validateConfigObject(
+      buildWebSearchProviderConfig({
+        provider: "kimi",
+        providerConfig: {
+          apiKey: "test-key",
+          baseUrl: "https://api.moonshot.ai/v1",
+          model: "moonshot-v1-128k",
+        },
+      }),
+    );
+
+    expect(res.ok).toBe(true);
   });
 });
 
@@ -173,6 +193,19 @@ describe("cron webhook schema", () => {
 
     expect(res.success).toBe(false);
   });
+
+  it("accepts cron.retry config", () => {
+    const res = RemoteClawSchema.safeParse({
+      cron: {
+        retry: {
+          maxAttempts: 5,
+          backoffMs: [60000, 120000, 300000],
+          retryOn: ["rate_limit", "network"],
+        },
+      },
+    });
+    expect(res.success).toBe(true);
+  });
 });
 
 describe("broadcast", () => {
@@ -204,7 +237,37 @@ describe("broadcast", () => {
   });
 });
 
-// "model compat config schema" test removed: models.providers schema was gutted.
+describe("model compat config schema", () => {
+  it("accepts full openai-completions compat fields", () => {
+    const res = validateConfigObject({
+      models: {
+        providers: {
+          local: {
+            baseUrl: "http://127.0.0.1:1234/v1",
+            api: "openai-completions",
+            models: [
+              {
+                id: "qwen3-32b",
+                name: "Qwen3 32B",
+                compat: {
+                  supportsUsageInStreaming: true,
+                  supportsStrictMode: false,
+                  thinkingFormat: "qwen",
+                  requiresToolResultName: true,
+                  requiresAssistantAfterToolResult: false,
+                  requiresThinkingAsText: false,
+                  requiresMistralToolIds: false,
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    expect(res.ok).toBe(true);
+  });
+});
 
 describe("config paths", () => {
   it("rejects empty and blocked paths", () => {
@@ -237,5 +300,72 @@ describe("config strict validation", () => {
       customUnknownField: { nested: "value" },
     });
     expect(res.ok).toBe(false);
+  });
+
+  it("flags legacy config entries without auto-migrating", async () => {
+    await withTempHome(async (home) => {
+      const configDir = path.join(home, ".remoteclaw");
+      await fs.mkdir(configDir, { recursive: true });
+      await fs.writeFile(
+        path.join(configDir, "remoteclaw.json"),
+        JSON.stringify({
+          agents: { list: [{ id: "pi" }] },
+          routing: { allowFrom: ["+15555550123"] },
+        }),
+        "utf-8",
+      );
+
+      const snap = await readConfigFileSnapshot();
+
+      expect(snap.valid).toBe(false);
+      expect(snap.legacyIssues).not.toHaveLength(0);
+    });
+  });
+
+  it("does not mark resolved-only gateway.bind aliases as auto-migratable legacy", async () => {
+    await withTempHome(async (home) => {
+      const configDir = path.join(home, ".remoteclaw");
+      await fs.mkdir(configDir, { recursive: true });
+      await fs.writeFile(
+        path.join(configDir, "remoteclaw.json"),
+        JSON.stringify({
+          gateway: { bind: "${REMOTECLAW_BIND}" },
+        }),
+        "utf-8",
+      );
+
+      const prev = process.env.REMOTECLAW_BIND;
+      process.env.REMOTECLAW_BIND = "0.0.0.0";
+      try {
+        const snap = await readConfigFileSnapshot();
+        expect(snap.valid).toBe(false);
+        expect(snap.legacyIssues).toHaveLength(0);
+        expect(snap.issues.some((issue) => issue.path === "gateway.bind")).toBe(true);
+      } finally {
+        if (prev === undefined) {
+          delete process.env.REMOTECLAW_BIND;
+        } else {
+          process.env.REMOTECLAW_BIND = prev;
+        }
+      }
+    });
+  });
+
+  it("still marks literal gateway.bind host aliases as legacy", async () => {
+    await withTempHome(async (home) => {
+      const configDir = path.join(home, ".remoteclaw");
+      await fs.mkdir(configDir, { recursive: true });
+      await fs.writeFile(
+        path.join(configDir, "remoteclaw.json"),
+        JSON.stringify({
+          gateway: { bind: "0.0.0.0" },
+        }),
+        "utf-8",
+      );
+
+      const snap = await readConfigFileSnapshot();
+      expect(snap.valid).toBe(false);
+      expect(snap.legacyIssues.some((issue) => issue.path === "gateway.bind")).toBe(true);
+    });
   });
 });

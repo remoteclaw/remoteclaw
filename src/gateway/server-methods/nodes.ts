@@ -14,6 +14,11 @@ import {
   sendApnsAlert,
   sendApnsBackgroundWake,
 } from "../../infra/push-apns.js";
+import {
+  buildCanvasScopedHostUrl,
+  CANVAS_CAPABILITY_TTL_MS,
+  mintCanvasCapabilityToken,
+} from "../canvas-capability.js";
 import { isNodeCommandAllowed, resolveNodeCommandAllowlist } from "../node-command-policy.js";
 import { sanitizeNodeInvokeParamsForForwarding } from "../node-invoke-sanitize.js";
 import {
@@ -558,6 +563,51 @@ export const nodeHandlers: GatewayRequestHandlers = {
       );
     });
   },
+  "node.canvas.capability.refresh": async ({ params, respond, client }) => {
+    if (!validateNodeListParams(params)) {
+      respondInvalidParams({
+        respond,
+        method: "node.canvas.capability.refresh",
+        validator: validateNodeListParams,
+      });
+      return;
+    }
+    const baseCanvasHostUrl = client?.canvasHostUrl?.trim() ?? "";
+    if (!baseCanvasHostUrl) {
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.UNAVAILABLE, "canvas host unavailable for this node session"),
+      );
+      return;
+    }
+
+    const canvasCapability = mintCanvasCapabilityToken();
+    const canvasCapabilityExpiresAtMs = Date.now() + CANVAS_CAPABILITY_TTL_MS;
+    const scopedCanvasHostUrl = buildCanvasScopedHostUrl(baseCanvasHostUrl, canvasCapability);
+    if (!scopedCanvasHostUrl) {
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.UNAVAILABLE, "failed to mint scoped canvas host URL"),
+      );
+      return;
+    }
+
+    if (client) {
+      client.canvasCapability = canvasCapability;
+      client.canvasCapabilityExpiresAtMs = canvasCapabilityExpiresAtMs;
+    }
+    respond(
+      true,
+      {
+        canvasCapability,
+        canvasCapabilityExpiresAtMs,
+        canvasHostUrl: scopedCanvasHostUrl,
+      },
+      undefined,
+    );
+  },
   "node.invoke": async ({ params, respond, context, client, req }) => {
     if (!validateNodeInvokeParams(params)) {
       respondInvalidParams({
@@ -702,6 +752,8 @@ export const nodeHandlers: GatewayRequestHandlers = {
         command,
         rawParams: p.params,
         client,
+        // @ts-expect-error — upstream feature not available in RemoteClaw fork
+        execApprovalManager: context.execApprovalManager,
       });
       if (!forwardedParams.ok) {
         respond(
@@ -774,6 +826,7 @@ export const nodeHandlers: GatewayRequestHandlers = {
         agentRunSeq: context.agentRunSeq,
         getHealthCache: context.getHealthCache,
         refreshHealthSnapshot: context.refreshHealthSnapshot,
+        loadGatewayModelCatalog: context.loadGatewayModelCatalog,
         logGateway: { warn: context.logGateway.warn },
       };
       await handleNodeEvent(nodeContext, nodeId, {

@@ -1,5 +1,5 @@
 ---
-description: "RemoteClaw on Raspberry Pi (budget self-hosted setup)"
+summary: "RemoteClaw on Raspberry Pi (budget self-hosted setup)"
 read_when:
   - Setting up RemoteClaw on a Raspberry Pi
   - Running RemoteClaw on ARM devices
@@ -112,7 +112,7 @@ sudo sysctl -p
 ### Option A: Standard Install (Recommended)
 
 ```bash
-curl -fsSL https://remoteclaw.org/install.sh | bash
+curl -fsSL https://remoteclaw.ai/install.sh | bash
 ```
 
 ### Option B: Hackable Install (For tinkering)
@@ -136,8 +136,9 @@ remoteclaw onboard --install-daemon
 Follow the wizard:
 
 1. **Gateway mode:** Local
-2. **Channels:** Telegram is easiest to start with
-3. **Daemon:** Yes (systemd)
+2. **Auth:** API keys recommended (OAuth can be finicky on headless Pi)
+3. **Channels:** Telegram is easiest to start with
+4. **Daemon:** Yes (systemd)
 
 ## 8) Verify Installation
 
@@ -191,6 +192,57 @@ lsblk
 
 See [Pi USB boot guide](https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#usb-mass-storage-boot) for setup.
 
+### Speed up CLI startup (module compile cache)
+
+On lower-power Pi hosts, enable Node's module compile cache so repeated CLI runs are faster:
+
+```bash
+grep -q 'NODE_COMPILE_CACHE=/var/tmp/remoteclaw-compile-cache' ~/.bashrc || cat >> ~/.bashrc <<'EOF'
+export NODE_COMPILE_CACHE=/var/tmp/remoteclaw-compile-cache
+mkdir -p /var/tmp/remoteclaw-compile-cache
+export REMOTECLAW_NO_RESPAWN=1
+EOF
+source ~/.bashrc
+```
+
+Notes:
+
+- `NODE_COMPILE_CACHE` speeds up subsequent runs (`status`, `health`, `--help`).
+- `/var/tmp` survives reboots better than `/tmp`.
+- `REMOTECLAW_NO_RESPAWN=1` avoids extra startup cost from CLI self-respawn.
+- First run warms the cache; later runs benefit most.
+
+### systemd startup tuning (optional)
+
+If this Pi is mostly running RemoteClaw, add a service drop-in to reduce restart
+jitter and keep startup env stable:
+
+```bash
+sudo systemctl edit remoteclaw
+```
+
+```ini
+[Service]
+Environment=REMOTECLAW_NO_RESPAWN=1
+Environment=NODE_COMPILE_CACHE=/var/tmp/remoteclaw-compile-cache
+Restart=always
+RestartSec=2
+TimeoutStartSec=90
+```
+
+Then apply:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart remoteclaw
+```
+
+If possible, keep RemoteClaw state/cache on SSD-backed storage to avoid SD-card
+random-I/O bottlenecks during cold starts.
+
+How `Restart=` policies help automated recovery:
+[systemd can automate service recovery](https://www.redhat.com/en/blog/systemd-automate-recovery).
+
 ### Reduce Memory Usage
 
 ```bash
@@ -230,7 +282,7 @@ Most RemoteClaw features work on ARM64, but some external binaries may need ARM 
 | gog (Gmail CLI)    | ⚠️           | Check for ARM release               |
 | Chromium (browser) | ✅           | `sudo apt install chromium-browser` |
 
-If a tool fails, check if its binary has an ARM build. Many Go/Rust tools do; some don't.
+If a skill fails, check if its binary has an ARM build. Many Go/Rust tools do; some don't.
 
 ### 32-bit vs 64-bit
 
@@ -243,19 +295,24 @@ uname -m
 
 ---
 
-## Recommended Setup
+## Recommended Model Setup
 
-Since the Pi is just the Gateway (the CLI agent handles model interaction in the cloud), configure your CLI agent's credentials:
+Since the Pi is just the Gateway (models run in the cloud), use API-based models:
 
-```bash
-# For Claude CLI
-export ANTHROPIC_API_KEY=sk-ant-...
-
-# For Gemini CLI
-export GOOGLE_API_KEY=...
+```json
+{
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "anthropic/claude-sonnet-4-20250514",
+        "fallbacks": ["openai/gpt-4o-mini"]
+      }
+    }
+  }
+}
 ```
 
-**Don't try to run local LLMs on a Pi** — even small models are too slow. Use a cloud-backed CLI agent runtime.
+**Don't try to run local LLMs on a Pi** — even small models are too slow. Let Claude/GPT do the heavy lifting.
 
 ---
 
@@ -308,7 +365,7 @@ sudo systemctl restart remoteclaw
 
 ### ARM Binary Issues
 
-If a tool fails with "exec format error":
+If a skill fails with "exec format error":
 
 1. Check if the binary has an ARM64 build
 2. Try building from source

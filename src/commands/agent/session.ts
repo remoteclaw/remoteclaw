@@ -25,6 +25,8 @@ export type SessionResolution = {
   storePath: string;
   isNewSession: boolean;
   persistedVerbose?: VerboseLevel;
+  /** Upstream feature: persisted thinking level for the session. */
+  persistedThinking?: string;
 };
 
 type SessionKeyResolution = {

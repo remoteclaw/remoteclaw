@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { parseByteSize } from "../cli/parse-bytes.js";
 import { parseDurationMs } from "../cli/parse-duration.js";
+import { ElevatedAllowFromSchema } from "./zod-schema.agent-runtime.js";
 import { createAllowDenyChannelRulesSchema } from "./zod-schema.allowdeny.js";
 import {
   GroupChatSchema,
@@ -63,7 +64,8 @@ export const SessionSchema = z
     threadBindings: z
       .object({
         enabled: z.boolean().optional(),
-        ttlHours: z.number().nonnegative().optional(),
+        idleHours: z.number().nonnegative().optional(),
+        maxAgeHours: z.number().nonnegative().optional(),
       })
       .strict()
       .optional(),
@@ -150,7 +152,9 @@ export const MessagesSchema = z
     queue: QueueSchema,
     inbound: InboundDebounceSchema,
     ackReaction: z.string().optional(),
-    ackReactionScope: z.enum(["group-mentions", "group-all", "direct", "all"]).optional(),
+    ackReactionScope: z
+      .enum(["group-mentions", "group-all", "direct", "all", "off", "none"])
+      .optional(),
     removeAckAfterReply: z.boolean().optional(),
     statusReactions: z
       .object({
@@ -190,8 +194,10 @@ export const MessagesSchema = z
 export const CommandsSchema = z
   .object({
     native: NativeCommandsSettingSchema.optional().default("auto"),
-
+    nativeSkills: NativeCommandsSettingSchema.optional().default("auto"),
     text: z.boolean().optional(),
+    bash: z.boolean().optional(),
+    bashForegroundMs: z.number().int().min(0).max(30_000).optional(),
     config: z.boolean().optional(),
     debug: z.boolean().optional(),
     restart: z.boolean().optional().default(true),
@@ -199,8 +205,10 @@ export const CommandsSchema = z
     ownerAllowFrom: z.array(z.union([z.string(), z.number()])).optional(),
     ownerDisplay: z.enum(["raw", "hash"]).optional().default("raw"),
     ownerDisplaySecret: z.string().optional().register(sensitive),
-    allowFrom: z.record(z.string(), z.array(z.union([z.string(), z.number()]))).optional(),
+    allowFrom: ElevatedAllowFromSchema.optional(),
   })
   .strict()
   .optional()
-  .default(() => ({ native: "auto", restart: true, ownerDisplay: "raw" }) as const);
+  .default(
+    () => ({ native: "auto", nativeSkills: "auto", restart: true, ownerDisplay: "raw" }) as const,
+  );

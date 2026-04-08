@@ -38,6 +38,7 @@ export async function applyInlineDirectiveOverrides(params: {
   ctx: MsgContext;
   cfg: RemoteClawConfig;
   agentId: string;
+  agentDir?: string;
   agentCfg: AgentDefaults;
   sessionEntry: SessionEntry;
   sessionStore: Record<string, SessionEntry>;
@@ -62,6 +63,14 @@ export async function applyInlineDirectiveOverrides(params: {
   >;
   contextTokens: number;
   effectiveModelDirective?: string;
+  /** Upstream feature: whether elevated security is enabled. */
+  elevatedEnabled?: boolean;
+  /** Upstream feature: elevated security allowed for this context. */
+  elevatedAllowed?: boolean;
+  /** Upstream feature: elevated security failure reasons. */
+  elevatedFailures?: string[];
+  /** Upstream feature: resolved elevated security level. */
+  resolvedElevatedLevel?: string;
   typing: TypingController;
 }): Promise<ApplyDirectiveResult> {
   const {
@@ -134,6 +143,7 @@ export async function applyInlineDirectiveOverrides(params: {
       typing.cleanup();
       return { kind: "reply", reply: undefined };
     }
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     const { currentVerboseLevel } = await resolveCurrentDirectiveLevels({
       sessionEntry,
       agentCfg,

@@ -1,21 +1,24 @@
 import type { ChannelId } from "../channels/plugins/types.js";
-import type { AgentSandboxConfig } from "./types.agents-shared.js";
+import type { AgentModelConfig, AgentSandboxConfig } from "./types.agents-shared.js";
 import type {
   BlockStreamingChunkConfig,
   BlockStreamingCoalesceConfig,
   HumanDelayConfig,
   TypingMode,
 } from "./types.base.js";
+import type { MemorySearchConfig } from "./types.tools.js";
 
-/**
- * Per-model entry in the `agents.defaults.models` map.
- * Kept as a named type for legacy config compat; model management
- * infrastructure has been removed — CLIs own model selection.
- */
 export type AgentModelEntryConfig = {
   alias?: string;
+  /** Provider-specific API parameters (e.g., GLM-4.7 thinking mode). */
   params?: Record<string, unknown>;
+  /** Enable streaming for this model (default: true, false for Ollama to avoid SDK issue #1205). */
   streaming?: boolean;
+};
+
+export type AgentModelListConfig = {
+  primary?: string;
+  fallbacks?: string[];
 };
 
 export type AgentContextPruningConfig = {
@@ -41,15 +44,106 @@ export type AgentContextPruningConfig = {
   };
 };
 
+export type CliBackendConfig = {
+  /** CLI command to execute (absolute path or on PATH). */
+  command: string;
+  /** Base args applied to every invocation. */
+  args?: string[];
+  /** Output parsing mode (default: json). */
+  output?: "json" | "text" | "jsonl";
+  /** Output parsing mode when resuming a CLI session. */
+  resumeOutput?: "json" | "text" | "jsonl";
+  /** Prompt input mode (default: arg). */
+  input?: "arg" | "stdin";
+  /** Max prompt length for arg mode (if exceeded, stdin is used). */
+  maxPromptArgChars?: number;
+  /** Extra env vars injected for this CLI. */
+  env?: Record<string, string>;
+  /** Env vars to remove before launching this CLI. */
+  clearEnv?: string[];
+  /** Flag used to pass model id (e.g. --model). */
+  modelArg?: string;
+  /** Model aliases mapping (config model id → CLI model id). */
+  modelAliases?: Record<string, string>;
+  /** Flag used to pass session id (e.g. --session-id). */
+  sessionArg?: string;
+  /** Extra args used when resuming a session (use {sessionId} placeholder). */
+  sessionArgs?: string[];
+  /** Alternate args to use when resuming a session (use {sessionId} placeholder). */
+  resumeArgs?: string[];
+  /** When to pass session ids. */
+  sessionMode?: "always" | "existing" | "none";
+  /** JSON fields to read session id from (in order). */
+  sessionIdFields?: string[];
+  /** Flag used to pass system prompt. */
+  systemPromptArg?: string;
+  /** System prompt behavior (append vs replace). */
+  systemPromptMode?: "append" | "replace";
+  /** When to send system prompt. */
+  systemPromptWhen?: "first" | "always" | "never";
+  /** Flag used to pass image paths. */
+  imageArg?: string;
+  /** How to pass multiple images. */
+  imageMode?: "repeat" | "list";
+  /** Serialize runs for this CLI. */
+  serialize?: boolean;
+  /** Runtime reliability tuning for this backend's process lifecycle. */
+  reliability?: {
+    /** No-output watchdog tuning (fresh vs resumed runs). */
+    watchdog?: {
+      /** Fresh/new sessions (non-resume). */
+      fresh?: {
+        /** Fixed watchdog timeout in ms (overrides ratio when set). */
+        noOutputTimeoutMs?: number;
+        /** Fraction of overall timeout used when fixed timeout is not set. */
+        noOutputTimeoutRatio?: number;
+        /** Lower bound for computed watchdog timeout. */
+        minMs?: number;
+        /** Upper bound for computed watchdog timeout. */
+        maxMs?: number;
+      };
+      /** Resume sessions. */
+      resume?: {
+        /** Fixed watchdog timeout in ms (overrides ratio when set). */
+        noOutputTimeoutMs?: number;
+        /** Fraction of overall timeout used when fixed timeout is not set. */
+        noOutputTimeoutRatio?: number;
+        /** Lower bound for computed watchdog timeout. */
+        minMs?: number;
+        /** Upper bound for computed watchdog timeout. */
+        maxMs?: number;
+      };
+    };
+  };
+};
+
 export type AgentDefaultsConfig = {
-  /** Legacy image-model override (kept for config compat). */
-  imageModel?: unknown;
-  /** Legacy per-model settings map (kept for config compat). */
+  /** Auth profile override (false = disable auth, string = profile id). */
+  auth?: false | string | string[];
+  /** CLI runtime backend id (e.g. claude, gemini, codex, opencode). */
+  runtime?: "claude" | "gemini" | "codex" | "opencode";
+  /** Extra arguments passed to the CLI runtime. */
+  runtimeArgs?: string[];
+  /** Extra environment variables for the CLI runtime. */
+  runtimeEnv?: Record<string, string>;
+  /** Boot prompt (first-run system prompt injection). */
+  boot?: string;
+  /** Primary model and fallbacks (provider/model). Accepts string or {primary,fallbacks}. */
+  model?: AgentModelConfig;
+  /** Optional image-capable model and fallbacks (provider/model). Accepts string or {primary,fallbacks}. */
+  imageModel?: AgentModelConfig;
+  /** Model catalog with optional aliases (full provider/model keys). */
   models?: Record<string, AgentModelEntryConfig>;
   /** Agent working directory (preferred). Used as the default cwd for agent runs. */
   workspace?: string;
   /** Optional repository root for system prompt runtime line (overrides auto-detect). */
   repoRoot?: string;
+  /** Skip bootstrap (BOOTSTRAP.md creation, etc.) for pre-configured deployments. */
+  skipBootstrap?: boolean;
+  /** Max chars for injected bootstrap files before truncation (default: 20000). */
+  bootstrapMaxChars?: number;
+  /** Max total chars across all injected bootstrap files (default: 150000). */
+  bootstrapTotalMaxChars?: number;
   /** Optional IANA timezone for the user (used in system prompt; defaults to host timezone). */
   userTimezone?: string;
   /** Time format in system prompt: auto (OS preference), 12-hour, or 24-hour. */
@@ -68,12 +162,30 @@ export type AgentDefaultsConfig = {
   envelopeElapsed?: "on" | "off";
   /** Optional context window cap (used for runtime estimates + status %). */
   contextTokens?: number;
-  /** Legacy CLI-backends config (kept for config compat). */
-  cliBackends?: unknown;
+  /** Optional CLI backends for text-only fallback (claude-cli, etc.). */
+  cliBackends?: Record<string, CliBackendConfig>;
   /** Opt-in: prune old tool results from the LLM context to reduce token usage. */
   contextPruning?: AgentContextPruningConfig;
+  /** Compaction tuning and pre-compaction memory flush behavior. */
+  compaction?: AgentCompactionConfig;
+  /** Embedded Pi runner hardening and compatibility controls. */
+  embeddedPi?: {
+    /**
+     * How embedded Pi should trust workspace-local `.pi/config/settings.json`.
+     * - sanitize (default): apply project settings except shellPath/shellCommandPrefix
+     * - ignore: ignore project settings entirely
+     * - trusted: trust project settings as-is
+     */
+    projectSettingsPolicy?: "trusted" | "sanitize" | "ignore";
+  };
+  /** Vector memory search configuration (per-agent overrides supported). */
+  memorySearch?: MemorySearchConfig;
+  /** Default thinking level when no /think directive is present. */
+  thinkingDefault?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "adaptive";
   /** Default verbose level when no /verbose directive is present. */
   verboseDefault?: "off" | "on" | "full";
+  /** Default elevated level when no /elevated directive is present. */
+  elevatedDefault?: "off" | "on" | "ask" | "full";
   /** Default block streaming level when no override is present. */
   blockStreamingDefault?: "off" | "on";
   /**
@@ -127,19 +239,26 @@ export type AgentDefaultsConfig = {
     to?: string;
     /** Optional account id for multi-account channels. */
     accountId?: string;
-    /** Override the heartbeat prompt body (default: "Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats."). */
+    /** Override the heartbeat prompt body (default: "Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats. If nothing needs attention, reply HEARTBEAT_OK."). */
     prompt?: string;
-    /** Path to a file containing the heartbeat prompt (relative to workspace, read at runtime). prompt takes precedence if both set. */
-    file?: string;
+    /** Max chars allowed after HEARTBEAT_OK before delivery (default: 30). */
+    ackMaxChars?: number;
     /** Suppress tool error warning payloads during heartbeat runs. */
     suppressToolErrorWarnings?: boolean;
-  };
-  /** Boot prompt configuration (runs on gateway startup). */
-  boot?: {
-    /** Inline boot prompt text. Takes precedence over `file` if both are set. */
-    prompt?: string;
-    /** Path to a boot prompt file (relative to workspace directory). */
+    /** Optional heartbeat prompt file path (upstream feature). */
     file?: string;
+    /**
+     * If true, run heartbeat turns with lightweight bootstrap context.
+     * Lightweight mode keeps only HEARTBEAT.md from workspace bootstrap files.
+     */
+    lightContext?: boolean;
+    /**
+     * When enabled, deliver the model's reasoning payload for heartbeat runs (when available)
+     * as a separate message prefixed with `Reasoning:` (same as `/reasoning on`).
+     *
+     * Default: false (only the final heartbeat payload is delivered).
+     */
+    includeReasoning?: boolean;
   };
   /** Max concurrent agent runs across all conversations. Default: 1 (sequential). */
   maxConcurrent?: number;
@@ -153,26 +272,53 @@ export type AgentDefaultsConfig = {
     maxChildrenPerAgent?: number;
     /** Auto-archive sub-agent sessions after N minutes (default: 60). */
     archiveAfterMinutes?: number;
+    /** Default model selection for spawned sub-agents (string or {primary,fallbacks}). */
+    model?: AgentModelConfig;
+    /** Default thinking level for spawned sub-agents (e.g. "off", "low", "medium", "high"). */
+    thinking?: string;
     /** Default run timeout in seconds for spawned sub-agents (0 = no timeout). */
     runTimeoutSeconds?: number;
     /** Gateway timeout in ms for sub-agent announce delivery calls (default: 60000). */
     announceTimeoutMs?: number;
   };
-  /** Glob patterns for files exposed via agents.files.list/get/set (default: []). */
-  editableFiles?: string[];
   /** Optional sandbox settings for non-main sessions. */
   sandbox?: AgentSandboxConfig;
-  /** Selected agent runtime (claude, gemini, codex, opencode). */
-  runtime?: "claude" | "gemini" | "codex" | "opencode";
-  /** Extra CLI arguments appended to every runtime invocation. */
-  runtimeArgs?: string[];
-  /** Extra environment variables injected into every runtime invocation. */
-  runtimeEnv?: Record<string, string>;
+};
+
+export type AgentCompactionMode = "default" | "safeguard";
+export type AgentCompactionIdentifierPolicy = "strict" | "off" | "custom";
+
+export type AgentCompactionConfig = {
+  /** Compaction summarization mode. */
+  mode?: AgentCompactionMode;
+  /** Pi reserve tokens target before floor enforcement. */
+  reserveTokens?: number;
+  /** Pi keepRecentTokens budget used for cut-point selection. */
+  keepRecentTokens?: number;
+  /** Minimum reserve tokens enforced for Pi compaction (0 disables the floor). */
+  reserveTokensFloor?: number;
+  /** Max share of context window for history during safeguard pruning (0.1–0.9, default 0.5). */
+  maxHistoryShare?: number;
+  /** Identifier-preservation instruction policy for compaction summaries. */
+  identifierPolicy?: AgentCompactionIdentifierPolicy;
+  /** Custom identifier-preservation instructions used when identifierPolicy is "custom". */
+  identifierInstructions?: string;
+  /** Pre-compaction memory flush (agentic turn). Default: enabled. */
+  memoryFlush?: AgentCompactionMemoryFlushConfig;
+};
+
+export type AgentCompactionMemoryFlushConfig = {
+  /** Enable the pre-compaction memory flush (default: true). */
+  enabled?: boolean;
+  /** Run the memory flush when context is within this many tokens of the compaction threshold. */
+  softThresholdTokens?: number;
   /**
-   * Default auth profile(s) for all agents. Per-agent `auth` overrides this.
-   * - `false` — skip auth profile injection (default)
-   * - `"provider:profile"` — single profile
-   * - `["provider:key1", "provider:key2"]` — round-robin rotation
+   * Force a memory flush when transcript size reaches this threshold
+   * (bytes, or byte-size string like "2mb"). Set to 0 to disable.
    */
-  auth?: false | string | string[];
+  forceFlushTranscriptBytes?: number | string;
+  /** User prompt used for the memory flush turn (NO_REPLY is enforced if missing). */
+  prompt?: string;
+  /** System prompt appended for the memory flush turn. */
+  systemPrompt?: string;
 };

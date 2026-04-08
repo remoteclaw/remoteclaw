@@ -116,7 +116,9 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
     envSnapshot.restore();
   });
 
-  it("writes gateway token auth into config", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("writes gateway token auth into config", async () => {
     await withStateDir("state-noninteractive-", async (stateDir) => {
       const token = "tok_test_123";
       const workspace = path.join(stateDir, "remoteclaw");
@@ -126,7 +128,9 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
           nonInteractive: true,
           mode: "local",
           workspace,
-
+          authChoice: "skip",
+          // @ts-expect-error — upstream feature not available in RemoteClaw fork
+          skipSkills: true,
           skipHealth: true,
           installDaemon: false,
           gatewayBind: "loopback",
@@ -139,10 +143,53 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
       const configPath = resolveStateConfigPath(process.env, stateDir);
       const cfg = await readJsonFile<{
         gateway?: { auth?: { mode?: string; token?: string } };
+        agents?: { defaults?: { workspace?: string } };
       }>(configPath);
 
+      expect(cfg?.agents?.defaults?.workspace).toBe(workspace);
       expect(cfg?.gateway?.auth?.mode).toBe("token");
       expect(cfg?.gateway?.auth?.token).toBe(token);
+    });
+  }, 60_000);
+
+  it("uses REMOTECLAW_GATEWAY_TOKEN when --gateway-token is omitted", async () => {
+    await withStateDir("state-env-token-", async (stateDir) => {
+      const envToken = "tok_env_fallback_123";
+      const workspace = path.join(stateDir, "remoteclaw");
+      const prevToken = process.env.REMOTECLAW_GATEWAY_TOKEN;
+      process.env.REMOTECLAW_GATEWAY_TOKEN = envToken;
+
+      try {
+        await runNonInteractiveOnboarding(
+          {
+            nonInteractive: true,
+            mode: "local",
+            workspace,
+            authChoice: "skip",
+            // @ts-expect-error — upstream feature not available in RemoteClaw fork
+            skipSkills: true,
+            skipHealth: true,
+            installDaemon: false,
+            gatewayBind: "loopback",
+            gatewayAuth: "token",
+          },
+          runtime,
+        );
+
+        const configPath = resolveStateConfigPath(process.env, stateDir);
+        const cfg = await readJsonFile<{
+          gateway?: { auth?: { mode?: string; token?: string } };
+        }>(configPath);
+
+        expect(cfg?.gateway?.auth?.mode).toBe("token");
+        expect(cfg?.gateway?.auth?.token).toBe(envToken);
+      } finally {
+        if (prevToken === undefined) {
+          delete process.env.REMOTECLAW_GATEWAY_TOKEN;
+        } else {
+          process.env.REMOTECLAW_GATEWAY_TOKEN = prevToken;
+        }
+      }
     });
   }, 60_000);
 
@@ -156,6 +203,7 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
           mode: "remote",
           remoteUrl: `ws://127.0.0.1:${port}`,
           remoteToken: token,
+          authChoice: "skip",
           json: true,
         },
         runtime,
@@ -195,7 +243,9 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
           nonInteractive: true,
           mode: "local",
           workspace,
-
+          authChoice: "skip",
+          // @ts-expect-error — upstream feature not available in RemoteClaw fork
+          skipSkills: true,
           skipHealth: true,
           installDaemon: false,
           gatewayPort: port,

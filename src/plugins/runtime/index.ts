@@ -1,8 +1,10 @@
 import { createRequire } from "node:module";
 import { resolveEffectiveMessagesConfig, resolveHumanDelayConfig } from "../../agents/identity.js";
 // Memory tools gutted in RemoteClaw fork (Middleware Boundary Principle)
-const createMemoryGetTool = (..._args: unknown[]) => undefined as unknown;
-const createMemorySearchTool = (..._args: unknown[]) => undefined as unknown;
+// oxlint-disable-next-line typescript/no-explicit-any
+const createMemoryGetTool = (..._args: unknown[]) => undefined as any;
+// oxlint-disable-next-line typescript/no-explicit-any
+const createMemorySearchTool = (..._args: unknown[]) => undefined as any;
 import { handleSlackAction } from "../../agents/tools/slack-actions.js";
 import {
   chunkByNewline,
@@ -46,7 +48,8 @@ import { telegramMessageActions } from "../../channels/plugins/actions/telegram.
 import { createWhatsAppLoginTool } from "../../channels/plugins/agent-tools/whatsapp-login.js";
 import { recordInboundSession } from "../../channels/session.js";
 // Memory CLI gutted in RemoteClaw fork (Middleware Boundary Principle)
-const registerMemoryCli = (..._args: unknown[]) => undefined as unknown;
+// oxlint-disable-next-line typescript/no-explicit-any
+const registerMemoryCli = (..._args: unknown[]) => undefined as any;
 import { loadConfig, writeConfigFile } from "../../config/config.js";
 import {
   resolveChannelGroupPolicy,

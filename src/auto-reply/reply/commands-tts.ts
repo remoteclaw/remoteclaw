@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { logVerbose } from "../../globals.js";
 import {
   getLastTtsAttempt,

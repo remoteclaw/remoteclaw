@@ -236,7 +236,6 @@ function isPathLikeExecutableToken(value: string): boolean {
 function hardenApprovedExecutionPaths(params: {
   approvedByAsk: boolean;
   argv: string[];
-  shellCommand: string | null;
   cwd: string | undefined;
 }): { ok: true; argv: string[]; cwd: string | undefined } | { ok: false; message: string } {
   if (!params.approvedByAsk) {
@@ -286,7 +285,7 @@ function hardenApprovedExecutionPaths(params: {
     hardenedCwd = cwdReal;
   }
 
-  if (params.shellCommand !== null || params.argv.length === 0) {
+  if (params.argv.length === 0) {
     return { ok: true, argv: params.argv, cwd: hardenedCwd };
   }
 
@@ -604,7 +603,6 @@ async function evaluateSystemRunPolicyPhase(
   const hardenedPaths = hardenApprovedExecutionPaths({
     approvedByAsk: policy.approvedByAsk,
     argv: parsed.argv,
-    shellCommand: parsed.shellCommand,
     cwd: parsed.cwd,
   });
   if (!hardenedPaths.ok) {
@@ -789,4 +787,9 @@ export async function handleSystemRunInvoke(opts: HandleSystemRunInvokeOptions):
     return;
   }
   await executeSystemRunPhase(opts, policyPhase);
+}
+
+// Gutted in RemoteClaw fork — stub export for upstream compat
+export function buildSystemRunApprovalPlan(..._args: unknown[]): unknown {
+  return undefined;
 }

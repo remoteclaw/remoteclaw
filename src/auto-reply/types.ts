@@ -1,4 +1,6 @@
-import type { ImageContent } from "../types/agent-types.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "@mariozechner/pi-ai";
+type ImageContent = Record<string, unknown>;
 import type { TypingController } from "./reply/typing.js";
 
 export type BlockReplyContext = {
@@ -10,6 +12,7 @@ export type BlockReplyContext = {
 export type ModelSelectedContext = {
   provider: string;
   model: string;
+  thinkLevel: string | undefined;
 };
 
 export type TypingPolicy =
@@ -39,6 +42,8 @@ export type GetReplyOptions = {
   suppressTyping?: boolean;
   /** Resolved heartbeat model override (provider/model string from merged per-agent config). */
   heartbeatModelOverride?: string;
+  /** Controls bootstrap workspace context injection (default: full). */
+  bootstrapContextMode?: "full" | "lightweight";
   /** If true, suppress tool error warning payloads for this run. */
   suppressToolErrorWarnings?: boolean;
   onPartialReply?: (payload: ReplyPayload) => Promise<void> | void;
@@ -52,21 +57,17 @@ export type GetReplyOptions = {
   /** Called when a tool phase starts/updates, before summary payloads are emitted. */
   onToolStart?: (payload: { name?: string; phase?: string }) => Promise<void> | void;
   /** Called when the actual model is selected (including after fallback).
-   * Use this to get model/provider for responsePrefix template interpolation. */
+   * Use this to get model/provider/thinkLevel for responsePrefix template interpolation. */
   onModelSelected?: (ctx: ModelSelectedContext) => void;
   disableBlockStreaming?: boolean;
   /** Timeout for block reply delivery (ms). */
   blockReplyTimeoutMs?: number;
+  /** If provided, only load these skills for this session (empty = no skills). */
+  skillFilter?: string[];
   /** Mutable ref to track if a reply was sent (for Slack "first" threading mode). */
   hasRepliedRef?: { value: boolean };
   /** Override agent timeout in seconds (0 = no timeout). Threads through to resolveAgentTimeoutMs. */
   timeoutOverrideSeconds?: number;
-};
-
-/** Structured heartbeat report attached to a reply payload by the agent runner. */
-export type ReplyHeartbeatReport = {
-  anythingDone: boolean;
-  summary?: string | null;
 };
 
 export type ReplyPayload = {
@@ -85,6 +86,4 @@ export type ReplyPayload = {
   isReasoning?: boolean;
   /** Channel-specific payload data (per-channel envelope). */
   channelData?: Record<string, unknown>;
-  /** Heartbeat report from the heartbeat_report MCP tool (set by agent runner on heartbeat runs). */
-  heartbeatReport?: ReplyHeartbeatReport;
 };

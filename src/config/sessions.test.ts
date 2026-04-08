@@ -8,6 +8,7 @@ import {
   deriveSessionKey,
   loadSessionStore,
   resolveSessionFilePath,
+  resolveSessionFilePathOptions,
   resolveSessionKey,
   resolveSessionTranscriptPath,
   resolveSessionTranscriptsDir,
@@ -170,8 +171,13 @@ describe("sessions", () => {
             sessionId: "sess-1",
             updatedAt: 123,
             systemSent: true,
+            thinkingLevel: "low",
             responseUsage: "on",
             queueDebounceMs: 1234,
+            reasoningLevel: "on",
+            elevatedLevel: "on",
+            authProfileOverride: "auth-1",
+            compactionCount: 2,
           },
         },
         null,
@@ -200,6 +206,10 @@ describe("sessions", () => {
     });
     expect(store[mainSessionKey]?.responseUsage).toBe("on");
     expect(store[mainSessionKey]?.queueDebounceMs).toBe(1234);
+    expect(store[mainSessionKey]?.reasoningLevel).toBe("on");
+    expect(store[mainSessionKey]?.elevatedLevel).toBe("on");
+    expect(store[mainSessionKey]?.authProfileOverride).toBe("auth-1");
+    expect(store[mainSessionKey]?.compactionCount).toBe(2);
   });
 
   it("updateLastRoute prefers explicit deliveryContext", async () => {
@@ -314,6 +324,7 @@ describe("sessions", () => {
         [sessionKey]: {
           sessionId: "sess-1",
           updatedAt: 100,
+          reasoningLevel: "on",
         },
       },
     });
@@ -326,6 +337,7 @@ describe("sessions", () => {
 
     const store = loadSessionStore(storePath);
     expect(store[sessionKey]?.updatedAt).toBeGreaterThanOrEqual(200);
+    expect(store[sessionKey]?.reasoningLevel).toBe("on");
   });
 
   it("updateSessionStoreEntry returns null when session key does not exist", async () => {
@@ -333,7 +345,7 @@ describe("sessions", () => {
       prefix: "updateSessionStoreEntry-missing",
       entries: {},
     });
-    const update = async () => ({ verboseLevel: "full" as const });
+    const update = async () => ({ thinkingLevel: "high" as const });
     const result = await updateSessionStoreEntry({
       storePath,
       sessionKey: "agent:main:missing",
@@ -350,7 +362,7 @@ describe("sessions", () => {
         [sessionKey]: {
           sessionId: "sess-1",
           updatedAt: 123,
-          verboseLevel: "on",
+          thinkingLevel: "low",
         },
       },
     });
@@ -360,10 +372,10 @@ describe("sessions", () => {
       sessionKey,
       update: async () => null,
     });
-    expect(result).toEqual(expect.objectContaining({ sessionId: "sess-1", verboseLevel: "on" }));
+    expect(result).toEqual(expect.objectContaining({ sessionId: "sess-1", thinkingLevel: "low" }));
 
     const store = loadSessionStore(storePath);
-    expect(store[sessionKey]?.verboseLevel).toBe("on");
+    expect(store[sessionKey]?.thinkingLevel).toBe("low");
   });
 
   it("updateSessionStore preserves concurrent additions", async () => {
@@ -456,6 +468,38 @@ describe("sessions", () => {
     expect(store["agent:main:old"]).toBeUndefined();
     expect(store["agent:main:keep"]?.sessionId).toBe("sess-keep");
     expect(store["agent:main:new"]?.sessionId).toBe("sess-new");
+  });
+
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("loadSessionStore auto-migrates legacy provider keys to channel keys", async () => {
+    const mainSessionKey = "agent:main:main";
+    const dir = await createCaseDir("loadSessionStore");
+    const storePath = path.join(dir, "sessions.json");
+    await fs.writeFile(
+      storePath,
+      JSON.stringify(
+        {
+          [mainSessionKey]: {
+            sessionId: "sess-legacy",
+            updatedAt: 123,
+            provider: "slack",
+            lastProvider: "telegram",
+            lastTo: "user:U123",
+          },
+        },
+        null,
+        2,
+      ),
+      "utf-8",
+    );
+
+    const store = loadSessionStore(storePath) as unknown as Record<string, Record<string, unknown>>;
+    const entry = store[mainSessionKey] ?? {};
+    expect(entry.channel).toBe("slack");
+    expect(entry.provider).toBeUndefined();
+    expect(entry.lastChannel).toBe("telegram");
+    expect(entry.lastProvider).toBeUndefined();
   });
 
   it("derives session transcripts dir from REMOTECLAW_STATE_DIR", () => {
@@ -557,6 +601,31 @@ describe("sessions", () => {
     });
   });
 
+  it("resolveSessionFilePathOptions keeps explicit agentId alongside absolute store path", () => {
+    const storePath = "/tmp/remoteclaw/agents/main/sessions/sessions.json";
+    const resolved = resolveSessionFilePathOptions({
+      agentId: "bot2",
+      storePath,
+    });
+    expect(resolved?.agentId).toBe("bot2");
+    expect(resolved?.sessionsDir).toBe(path.dirname(path.resolve(storePath)));
+  });
+
+  it("resolves sibling agent absolute sessionFile using alternate agentId from options", () => {
+    const stateDir = path.resolve("/home/user/.remoteclaw");
+    withStateDir(stateDir, () => {
+      const mainStorePath = path.join(stateDir, "agents", "main", "sessions", "sessions.json");
+      const bot2Session = path.join(stateDir, "agents", "bot2", "sessions", "sess-1.jsonl");
+      const opts = resolveSessionFilePathOptions({
+        agentId: "bot2",
+        storePath: mainStorePath,
+      });
+
+      const sessionFile = resolveSessionFilePath("sess-1", { sessionFile: bot2Session }, opts);
+      expect(sessionFile).toBe(bot2Session);
+    });
+  });
+
   it("falls back to derived transcript path when sessionFile is outside agent sessions directories", () => {
     withStateDir(path.resolve("/home/user/.remoteclaw"), () => {
       const sessionFile = resolveSessionFilePath(
@@ -584,7 +653,7 @@ describe("sessions", () => {
         [mainSessionKey]: {
           sessionId: "sess-1",
           updatedAt: 123,
-          verboseLevel: "on",
+          thinkingLevel: "low",
         },
       },
     });
@@ -615,7 +684,7 @@ describe("sessions", () => {
       sessionKey: mainSessionKey,
       update: async () => {
         await firstStarted.promise;
-        return { verboseLevel: "full" };
+        return { thinkingLevel: "high" };
       },
     });
 
@@ -625,7 +694,7 @@ describe("sessions", () => {
 
     const store = loadSessionStore(storePath);
     expect(store[mainSessionKey]?.modelOverride).toBe("anthropic/claude-opus-4-5");
-    expect(store[mainSessionKey]?.verboseLevel).toBe("full");
+    expect(store[mainSessionKey]?.thinkingLevel).toBe("high");
     await expect(fs.stat(`${storePath}.lock`)).rejects.toThrow();
   });
 
@@ -637,13 +706,13 @@ describe("sessions", () => {
         [mainSessionKey]: {
           sessionId: "sess-1",
           updatedAt: 123,
-          verboseLevel: "on",
+          thinkingLevel: "low",
         },
       },
     });
 
     // Prime the in-process cache with the original entry.
-    expect(loadSessionStore(storePath)[mainSessionKey]?.verboseLevel).toBe("on");
+    expect(loadSessionStore(storePath)[mainSessionKey]?.thinkingLevel).toBe("low");
     const originalStat = await fs.stat(storePath);
 
     // Simulate an external writer that updates the store but preserves mtime.
@@ -662,11 +731,11 @@ describe("sessions", () => {
     await updateSessionStoreEntry({
       storePath,
       sessionKey: mainSessionKey,
-      update: async () => ({ verboseLevel: "full" }),
+      update: async () => ({ thinkingLevel: "high" }),
     });
 
     const store = loadSessionStore(storePath);
     expect(store[mainSessionKey]?.providerOverride).toBe("anthropic");
-    expect(store[mainSessionKey]?.verboseLevel).toBe("full");
+    expect(store[mainSessionKey]?.thinkingLevel).toBe("high");
   });
 });

@@ -133,7 +133,9 @@ describe("gateway server voicewake", () => {
     },
   );
 
-  test("pushes voicewake.changed to nodes on connect and on updates", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  test.skip("pushes voicewake.changed to nodes on connect and on updates", async () => {
     await withTempHome(async () => {
       const nodeWs = new WebSocket(`ws://127.0.0.1:${port}`);
       trackConnectChallengeNonce(nodeWs);

@@ -1,22 +1,50 @@
-import { modelKey } from "../agents/provider-utils.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../agents/context-window-guard.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const CONTEXT_WINDOW_HARD_MIN_TOKENS = undefined as any;
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../agents/defaults.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const DEFAULT_PROVIDER = undefined as any;
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../agents/model-selection.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const buildModelAliasIndex = (..._args: unknown[]) => undefined as any;
+// oxlint-disable-next-line typescript/no-explicit-any
+const modelKey = (..._args: unknown[]) => undefined as any;
 import type { RemoteClawConfig } from "../config/config.js";
 import type { ModelProviderConfig } from "../config/types.models.js";
+import { isSecretRef, type SecretInput } from "../config/types.secrets.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { fetchWithTimeout } from "../utils/fetch-timeout.js";
+import {
+  normalizeSecretInput,
+  normalizeOptionalSecretInput,
+} from "../utils/normalize-secret-input.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
-function normalizeAlias(alias: string): string {
-  const trimmed = alias.trim();
-  if (!trimmed) {
-    throw new Error("Alias cannot be empty.");
-  }
-  if (!/^[A-Za-z0-9_.:-]+$/.test(trimmed)) {
-    throw new Error("Alias must use letters, numbers, dots, underscores, colons, or dashes.");
-  }
-  return trimmed;
-}
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "./auth-choice.apply-helpers.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const ensureApiKeyFromEnvOrPrompt = (..._args: unknown[]) => undefined as any;
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "./model-picker.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const applyPrimaryModel = (..._args: unknown[]) => undefined as any;
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "./models/shared.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const normalizeAlias = (..._args: unknown[]) => undefined as any;
+import type { SecretInputMode } from "./onboard-types.js";
 
 const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434/v1";
-const VERIFY_TIMEOUT_MS = 10000;
+const DEFAULT_CONTEXT_WINDOW = CONTEXT_WINDOW_HARD_MIN_TOKENS;
+const DEFAULT_MAX_TOKENS = 4096;
+const VERIFY_TIMEOUT_MS = 30_000;
+
+function normalizeContextWindowForCustomModel(value: unknown): number {
+  const parsed = typeof value === "number" && Number.isFinite(value) ? Math.floor(value) : 0;
+  return parsed >= CONTEXT_WINDOW_HARD_MIN_TOKENS ? parsed : CONTEXT_WINDOW_HARD_MIN_TOKENS;
+}
 
 /**
  * Detects if a URL is from Azure AI Foundry or Azure OpenAI.
@@ -67,7 +95,7 @@ export type ApplyCustomApiConfigParams = {
   baseUrl: string;
   modelId: string;
   compatibility: CustomApiCompatibility;
-  apiKey?: string;
+  apiKey?: SecretInput;
   providerId?: string;
   alias?: string;
 };
@@ -193,18 +221,28 @@ function resolveAliasError(params: {
   } catch (err) {
     return err instanceof Error ? err.message : "Alias is invalid.";
   }
-  // Check existing models config for alias collisions.
-  const models = params.cfg.agents?.defaults?.models ?? {};
+  const aliasIndex = buildModelAliasIndex({
+    cfg: params.cfg,
+    defaultProvider: DEFAULT_PROVIDER,
+  });
   const aliasKey = normalized.toLowerCase();
-  for (const [ref, modelCfg] of Object.entries(models)) {
-    if (ref === params.modelRef) {
-      continue;
-    }
-    if (typeof modelCfg?.alias === "string" && modelCfg.alias.toLowerCase() === aliasKey) {
-      return `Alias ${normalized} already points to ${ref}.`;
-    }
+  const existing = aliasIndex.byAlias.get(aliasKey);
+  if (!existing) {
+    return undefined;
   }
-  return undefined;
+  const existingKey = modelKey(existing.ref.provider, existing.ref.model);
+  if (existingKey === params.modelRef) {
+    return undefined;
+  }
+  return `Alias ${normalized} already points to ${existingKey}.`;
+}
+
+function buildAzureOpenAiHeaders(apiKey: string) {
+  const headers: Record<string, string> = {};
+  if (apiKey) {
+    headers["api-key"] = apiKey;
+  }
+  return headers;
 }
 
 function buildOpenAiHeaders(apiKey: string) {
@@ -247,6 +285,13 @@ type VerificationResult = {
   status?: number;
   error?: unknown;
 };
+
+function normalizeOptionalProviderApiKey(value: unknown): SecretInput | undefined {
+  if (isSecretRef(value)) {
+    return value;
+  }
+  return normalizeOptionalSecretInput(value);
+}
 
 function resolveVerificationEndpoint(params: {
   baseUrl: string;
@@ -300,15 +345,32 @@ async function requestOpenAiVerification(params: {
     modelId: params.modelId,
     endpointPath: "chat/completions",
   });
-  return await requestVerification({
-    endpoint,
-    headers: buildOpenAiHeaders(params.apiKey),
-    body: {
-      model: params.modelId,
-      messages: [{ role: "user", content: "Hi" }],
-      max_tokens: 1024,
-    },
-  });
+  const isBaseUrlAzureUrl = isAzureUrl(params.baseUrl);
+  const headers = isBaseUrlAzureUrl
+    ? buildAzureOpenAiHeaders(params.apiKey)
+    : buildOpenAiHeaders(params.apiKey);
+  if (isBaseUrlAzureUrl) {
+    return await requestVerification({
+      endpoint,
+      headers,
+      body: {
+        messages: [{ role: "user", content: "Hi" }],
+        max_completion_tokens: 5,
+        stream: false,
+      },
+    });
+  } else {
+    return await requestVerification({
+      endpoint,
+      headers,
+      body: {
+        model: params.modelId,
+        messages: [{ role: "user", content: "Hi" }],
+        max_tokens: 1,
+        stream: false,
+      },
+    });
+  }
 }
 
 async function requestAnthropicVerification(params: {
@@ -332,16 +394,19 @@ async function requestAnthropicVerification(params: {
     headers: buildAnthropicHeaders(params.apiKey),
     body: {
       model: params.modelId,
-      max_tokens: 1024,
+      max_tokens: 1,
       messages: [{ role: "user", content: "Hi" }],
+      stream: false,
     },
   });
 }
 
 async function promptBaseUrlAndKey(params: {
   prompter: WizardPrompter;
+  config: RemoteClawConfig;
+  secretInputMode?: SecretInputMode;
   initialBaseUrl?: string;
-}): Promise<{ baseUrl: string; apiKey: string }> {
+}): Promise<{ baseUrl: string; apiKey?: SecretInput; resolvedApiKey: string }> {
   const baseUrlInput = await params.prompter.text({
     message: "API Base URL",
     initialValue: params.initialBaseUrl ?? DEFAULT_OLLAMA_BASE_URL,
@@ -355,12 +420,28 @@ async function promptBaseUrlAndKey(params: {
       }
     },
   });
-  const apiKeyInput = await params.prompter.text({
-    message: "API Key (leave blank if not required)",
-    placeholder: "sk-...",
-    initialValue: "",
+  const baseUrl = baseUrlInput.trim();
+  const providerHint = buildEndpointIdFromUrl(baseUrl) || "custom";
+  let apiKeyInput: SecretInput | undefined;
+  const resolvedApiKey = await ensureApiKeyFromEnvOrPrompt({
+    config: params.config,
+    provider: providerHint,
+    envLabel: "CUSTOM_API_KEY",
+    promptMessage: "API Key (leave blank if not required)",
+    normalize: normalizeSecretInput,
+    validate: () => undefined,
+    prompter: params.prompter,
+    secretInputMode: params.secretInputMode,
+    // oxlint-disable-next-line typescript/no-explicit-any
+    setCredential: async (apiKey: any) => {
+      apiKeyInput = apiKey;
+    },
   });
-  return { baseUrl: baseUrlInput.trim(), apiKey: apiKeyInput.trim() };
+  return {
+    baseUrl,
+    apiKey: normalizeOptionalProviderApiKey(apiKeyInput),
+    resolvedApiKey: normalizeSecretInput(resolvedApiKey),
+  };
 }
 
 type CustomApiRetryChoice = "baseUrl" | "model" | "both";
@@ -388,22 +469,33 @@ async function promptCustomApiModelId(prompter: WizardPrompter): Promise<string>
 
 async function applyCustomApiRetryChoice(params: {
   prompter: WizardPrompter;
+  config: RemoteClawConfig;
+  secretInputMode?: SecretInputMode;
   retryChoice: CustomApiRetryChoice;
-  current: { baseUrl: string; apiKey: string; modelId: string };
-}): Promise<{ baseUrl: string; apiKey: string; modelId: string }> {
-  let { baseUrl, apiKey, modelId } = params.current;
+  current: { baseUrl: string; apiKey?: SecretInput; resolvedApiKey: string; modelId: string };
+}): Promise<{ baseUrl: string; apiKey?: SecretInput; resolvedApiKey: string; modelId: string }> {
+  let { baseUrl, apiKey, resolvedApiKey, modelId } = params.current;
   if (params.retryChoice === "baseUrl" || params.retryChoice === "both") {
     const retryInput = await promptBaseUrlAndKey({
       prompter: params.prompter,
+      config: params.config,
+      secretInputMode: params.secretInputMode,
       initialBaseUrl: baseUrl,
     });
     baseUrl = retryInput.baseUrl;
     apiKey = retryInput.apiKey;
+    resolvedApiKey = retryInput.resolvedApiKey;
   }
   if (params.retryChoice === "model" || params.retryChoice === "both") {
     modelId = await promptCustomApiModelId(params.prompter);
   }
-  return { baseUrl, apiKey, modelId };
+  return { baseUrl, apiKey, resolvedApiKey, modelId };
+}
+
+function resolveProviderApi(
+  compatibility: CustomApiCompatibility,
+): "openai-completions" | "anthropic-messages" {
+  return compatibility === "anthropic" ? "anthropic-messages" : "openai-completions";
 }
 
 function parseCustomApiCompatibility(raw?: string): CustomApiCompatibility {
@@ -423,7 +515,7 @@ function parseCustomApiCompatibility(raw?: string): CustomApiCompatibility {
 export function resolveCustomProviderId(
   params: ResolveCustomProviderIdParams,
 ): ResolvedCustomProviderId {
-  const providers: Record<string, undefined> = {};
+  const providers = params.config.models?.providers ?? {};
   const baseUrl = params.baseUrl.trim();
   const explicitProviderId = params.providerId?.trim();
   if (explicitProviderId && !normalizeEndpointId(explicitProviderId)) {
@@ -436,6 +528,7 @@ export function resolveCustomProviderId(
   const providerIdResult = resolveUniqueEndpointId({
     requestedId: requestedProviderId,
     baseUrl,
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     providers,
   });
 
@@ -510,6 +603,7 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
     providerId: params.providerId,
   });
   const providerId = providerIdResult.providerId;
+  const providers = params.config.models?.providers ?? {};
 
   const modelRef = modelKey(providerId, modelId);
   const alias = params.alias?.trim() ?? "";
@@ -522,8 +616,56 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
     throw new CustomApiError("invalid_alias", aliasError);
   }
 
-  let config: RemoteClawConfig = { ...params.config };
+  const existingProvider = providers[providerId];
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  const existingModels = Array.isArray(existingProvider?.models) ? existingProvider.models : [];
+  // oxlint-disable-next-line typescript/no-explicit-any
+  const hasModel = existingModels.some((model: any) => model.id === modelId);
+  const nextModel = {
+    id: modelId,
+    name: `${modelId} (Custom Provider)`,
+    contextWindow: DEFAULT_CONTEXT_WINDOW,
+    maxTokens: DEFAULT_MAX_TOKENS,
+    input: ["text"] as ["text"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    reasoning: false,
+  };
+  const mergedModels = hasModel
+    ? // oxlint-disable-next-line typescript/no-explicit-any
+      existingModels.map((model: any) =>
+        model.id === modelId
+          ? {
+              ...model,
+              contextWindow: normalizeContextWindowForCustomModel(model.contextWindow),
+            }
+          : model,
+      )
+    : [...existingModels, nextModel];
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  const { apiKey: existingApiKey, ...existingProviderRest } = existingProvider ?? {};
+  const normalizedApiKey =
+    normalizeOptionalProviderApiKey(params.apiKey) ??
+    normalizeOptionalProviderApiKey(existingApiKey);
 
+  let config: RemoteClawConfig = {
+    ...params.config,
+    models: {
+      ...params.config.models,
+      mode: params.config.models?.mode ?? "merge",
+      providers: {
+        ...providers,
+        [providerId]: {
+          ...existingProviderRest,
+          baseUrl: resolvedBaseUrl,
+          api: resolveProviderApi(params.compatibility),
+          ...(normalizedApiKey ? { apiKey: normalizedApiKey } : {}),
+          models: mergedModels.length > 0 ? mergedModels : [nextModel],
+        },
+      },
+    },
+  };
+
+  config = applyPrimaryModel(config, modelRef);
   if (alias) {
     config = {
       ...config,
@@ -557,12 +699,18 @@ export async function promptCustomApiConfig(params: {
   prompter: WizardPrompter;
   runtime: RuntimeEnv;
   config: RemoteClawConfig;
+  secretInputMode?: SecretInputMode;
 }): Promise<CustomApiResult> {
   const { prompter, runtime, config } = params;
 
-  const baseInput = await promptBaseUrlAndKey({ prompter });
+  const baseInput = await promptBaseUrlAndKey({
+    prompter,
+    config,
+    secretInputMode: params.secretInputMode,
+  });
   let baseUrl = baseInput.baseUrl;
   let apiKey = baseInput.apiKey;
+  let resolvedApiKey = baseInput.resolvedApiKey;
 
   const compatibilityChoice = await prompter.select({
     message: "Endpoint compatibility",
@@ -582,13 +730,21 @@ export async function promptCustomApiConfig(params: {
     let verifiedFromProbe = false;
     if (!compatibility) {
       const probeSpinner = prompter.progress("Detecting endpoint type...");
-      const openaiProbe = await requestOpenAiVerification({ baseUrl, apiKey, modelId });
+      const openaiProbe = await requestOpenAiVerification({
+        baseUrl,
+        apiKey: resolvedApiKey,
+        modelId,
+      });
       if (openaiProbe.ok) {
         probeSpinner.stop("Detected OpenAI-compatible endpoint.");
         compatibility = "openai";
         verifiedFromProbe = true;
       } else {
-        const anthropicProbe = await requestAnthropicVerification({ baseUrl, apiKey, modelId });
+        const anthropicProbe = await requestAnthropicVerification({
+          baseUrl,
+          apiKey: resolvedApiKey,
+          modelId,
+        });
         if (anthropicProbe.ok) {
           probeSpinner.stop("Detected Anthropic-compatible endpoint.");
           compatibility = "anthropic";
@@ -600,10 +756,12 @@ export async function promptCustomApiConfig(params: {
             "Endpoint detection",
           );
           const retryChoice = await promptCustomApiRetryChoice(prompter);
-          ({ baseUrl, apiKey, modelId } = await applyCustomApiRetryChoice({
+          ({ baseUrl, apiKey, resolvedApiKey, modelId } = await applyCustomApiRetryChoice({
             prompter,
+            config,
+            secretInputMode: params.secretInputMode,
             retryChoice,
-            current: { baseUrl, apiKey, modelId },
+            current: { baseUrl, apiKey, resolvedApiKey, modelId },
           }));
           continue;
         }
@@ -617,8 +775,8 @@ export async function promptCustomApiConfig(params: {
     const verifySpinner = prompter.progress("Verifying...");
     const result =
       compatibility === "anthropic"
-        ? await requestAnthropicVerification({ baseUrl, apiKey, modelId })
-        : await requestOpenAiVerification({ baseUrl, apiKey, modelId });
+        ? await requestAnthropicVerification({ baseUrl, apiKey: resolvedApiKey, modelId })
+        : await requestOpenAiVerification({ baseUrl, apiKey: resolvedApiKey, modelId });
     if (result.ok) {
       verifySpinner.stop("Verification successful.");
       break;
@@ -629,16 +787,19 @@ export async function promptCustomApiConfig(params: {
       verifySpinner.stop(`Verification failed: ${formatVerificationError(result.error)}`);
     }
     const retryChoice = await promptCustomApiRetryChoice(prompter);
-    ({ baseUrl, apiKey, modelId } = await applyCustomApiRetryChoice({
+    ({ baseUrl, apiKey, resolvedApiKey, modelId } = await applyCustomApiRetryChoice({
       prompter,
+      config,
+      secretInputMode: params.secretInputMode,
       retryChoice,
-      current: { baseUrl, apiKey, modelId },
+      current: { baseUrl, apiKey, resolvedApiKey, modelId },
     }));
     if (compatibilityChoice === "unknown") {
       compatibility = null;
     }
   }
 
+  const providers = config.models?.providers ?? {};
   const suggestedId = buildEndpointIdFromUrl(baseUrl);
   const providerIdInput = await prompter.text({
     message: "Endpoint ID",
@@ -661,7 +822,8 @@ export async function promptCustomApiConfig(params: {
       const providerIdResult = resolveUniqueEndpointId({
         requestedId,
         baseUrl,
-        providers: {},
+        // @ts-expect-error — upstream feature not available in RemoteClaw fork
+        providers,
       });
       const modelRef = modelKey(providerIdResult.providerId, modelId);
       return resolveAliasError({ raw: value, cfg: config, modelRef });

@@ -422,7 +422,9 @@ export type GatewaySessionRow = {
   sessionId?: string;
   systemSent?: boolean;
   abortedLastRun?: boolean;
+  thinkingLevel?: string;
   verboseLevel?: string;
+  reasoningLevel?: string;
   elevatedLevel?: string;
   inputTokens?: number;
   outputTokens?: number;
@@ -447,7 +449,9 @@ export type SessionsPatchResult = {
   entry: {
     sessionId: string;
     updatedAt?: number;
+    thinkingLevel?: string;
     verboseLevel?: string;
+    reasoningLevel?: string;
     elevatedLevel?: string;
   };
 };
@@ -487,6 +491,13 @@ export type CronDelivery = {
   bestEffort?: boolean;
 };
 
+export type CronFailureAlert = {
+  after?: number;
+  channel?: string;
+  to?: string;
+  cooldownMs?: number;
+};
+
 export type CronJobState = {
   nextRunAtMs?: number;
   runningAtMs?: number;
@@ -494,6 +505,7 @@ export type CronJobState = {
   lastStatus?: "ok" | "error" | "skipped";
   lastError?: string;
   lastDurationMs?: number;
+  lastFailureAlertAtMs?: number;
 };
 
 export type CronJob = {
@@ -510,6 +522,7 @@ export type CronJob = {
   wakeMode: CronWakeMode;
   payload: CronPayload;
   delivery?: CronDelivery;
+  failureAlert?: CronFailureAlert | false;
   state?: CronJobState;
 };
 
@@ -569,6 +582,55 @@ export type CronRunsResult = {
   limit?: number;
   hasMore?: boolean;
   nextOffset?: number | null;
+};
+
+export type SkillsStatusConfigCheck = {
+  path: string;
+  satisfied: boolean;
+};
+
+export type SkillInstallOption = {
+  id: string;
+  kind: "brew" | "node" | "go" | "uv";
+  label: string;
+  bins: string[];
+};
+
+export type SkillStatusEntry = {
+  name: string;
+  description: string;
+  source: string;
+  filePath: string;
+  baseDir: string;
+  skillKey: string;
+  bundled?: boolean;
+  primaryEnv?: string;
+  emoji?: string;
+  homepage?: string;
+  always: boolean;
+  disabled: boolean;
+  blockedByAllowlist: boolean;
+  eligible: boolean;
+  requirements: {
+    bins: string[];
+    env: string[];
+    config: string[];
+    os: string[];
+  };
+  missing: {
+    bins: string[];
+    env: string[];
+    config: string[];
+    os: string[];
+  };
+  configChecks: SkillsStatusConfigCheck[];
+  install: SkillInstallOption[];
+};
+
+export type SkillStatusReport = {
+  workspaceDir: string;
+  managedSkillsDir: string;
+  skills: SkillStatusEntry[];
 };
 
 export type StatusSummary = Record<string, unknown>;

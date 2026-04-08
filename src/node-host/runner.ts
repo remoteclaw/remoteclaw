@@ -68,7 +68,6 @@ export async function runNodeHost(opts: NodeHostRunOptions): Promise<void> {
   const scheme = gateway.tls ? "wss" : "ws";
   const url = `${scheme}://${host}:${port}`;
   const pathEnv = ensureNodePathEnv();
-  // eslint-disable-next-line no-console
   console.log(`node host PATH: ${pathEnv}`);
 
   const client = new GatewayClient({
@@ -107,11 +106,9 @@ export async function runNodeHost(opts: NodeHostRunOptions): Promise<void> {
     },
     onConnectError: (err) => {
       // keep retrying (handled by GatewayClient)
-      // eslint-disable-next-line no-console
       console.error(`node host gateway connect failed: ${err.message}`);
     },
     onClose: (code, reason) => {
-      // eslint-disable-next-line no-console
       console.error(`node host gateway closed (${code}): ${reason}`);
     },
   });

@@ -1,5 +1,6 @@
 import { PassThrough } from "node:stream";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { LAUNCH_AGENT_THROTTLE_INTERVAL_SECONDS } from "./launchd-plist.js";
 import {
   installLaunchAgent,
   isLaunchAgentListed,
@@ -199,7 +200,7 @@ describe("launchd install", () => {
     expect(plist).toContain("<true/>");
     expect(plist).not.toContain("<key>SuccessfulExit</key>");
     expect(plist).toContain("<key>ThrottleInterval</key>");
-    expect(plist).toContain("<integer>60</integer>");
+    expect(plist).toContain(`<integer>${LAUNCH_AGENT_THROTTLE_INTERVAL_SECONDS}</integer>`);
   });
 
   it("restarts LaunchAgent with bootout-bootstrap-kickstart order", async () => {
@@ -265,7 +266,9 @@ describe("launchd install", () => {
     }
   });
 
-  it("shows actionable guidance when launchctl gui domain does not support bootstrap", async () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("shows actionable guidance when launchctl gui domain does not support bootstrap", async () => {
     state.bootstrapError = "Bootstrap failed: 125: Domain does not support specified action";
     const env = createDefaultLaunchdEnv();
     let message = "";
@@ -280,7 +283,7 @@ describe("launchd install", () => {
     }
     expect(message).toContain("logged-in macOS GUI session");
     expect(message).toContain("wrong user (including sudo)");
-    expect(message).toContain("https://docs.remoteclaw.org/gateway");
+    expect(message).toContain("https://docs.remoteclaw.ai/gateway");
   });
 
   it("surfaces generic bootstrap failures without GUI-specific guidance", async () => {

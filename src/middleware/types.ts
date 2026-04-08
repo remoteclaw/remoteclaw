@@ -217,6 +217,23 @@ export type AgentDeliveryResult = {
   mcp: McpSideEffects;
   /** Top-level error message, if the run failed. */
   error?: string | undefined;
+  /** Delivery metadata (duration, abort state, stop reason). */
+  meta?: {
+    durationMs?: number;
+    aborted?: boolean;
+    stopReason?: string;
+    autoCompactionCompleted?: boolean;
+    /** Agent-specific metadata from the run (model, provider, token usage, etc.). */
+    agentMeta?: Record<string, unknown>;
+  };
+  /** Messaging tool send targets from the delivery. */
+  messagingToolSentTargets?: unknown[];
+  /** Messaging tool sent text from the delivery. */
+  messagingToolSentTexts?: string[];
+  /** Messaging tool sent media URLs from the delivery. */
+  messagingToolSentMediaUrls?: string[];
+  /** Successful cron additions from the delivery. */
+  successfulCronAdds?: unknown[];
 };
 
 // ── Channel Message ─────────────────────────────────────────────────────

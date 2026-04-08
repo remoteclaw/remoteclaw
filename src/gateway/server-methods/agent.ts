@@ -1,8 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { listAgentIds } from "../../agents/agent-scope.js";
-import { registerSessionRun, unregisterSessionRun } from "../../agents/session-run-registry.js";
+import type { AgentInternalEvent } from "../../agents/internal-events.js";
 import { BARE_SESSION_RESET_PROMPT } from "../../auto-reply/reply/session-reset-prompt.js";
-import { CHANNEL_IDS, type ChatChannelId } from "../../channels/registry.js";
 import { agentCommand } from "../../commands/agent.js";
 import { loadConfig } from "../../config/config.js";
 import {
@@ -18,10 +17,7 @@ import {
   resolveAgentDeliveryPlan,
   resolveAgentOutboundTarget,
 } from "../../infra/outbound/agent-delivery.js";
-import {
-  listConfiguredMessageChannels,
-  resolveMessageChannelSelection,
-} from "../../infra/outbound/channel-selection.js";
+import { resolveMessageChannelSelection } from "../../infra/outbound/channel-selection.js";
 import { classifySessionKeyShape, normalizeAgentId } from "../../routing/session-key.js";
 import { defaultRuntime } from "../../runtime.js";
 import { normalizeInputProvenance, type InputProvenance } from "../../sessions/input-provenance.js";
@@ -36,6 +32,7 @@ import {
 import { resolveAssistantIdentity } from "../assistant-identity.js";
 import { parseMessageWithAttachments } from "../chat-attachments.js";
 import { resolveAssistantAvatarUrl } from "../control-ui-shared.js";
+import { ADMIN_SCOPE } from "../method-scopes.js";
 import { GATEWAY_CLIENT_CAPS, hasGatewayClientCap } from "../protocol/client-info.js";
 import {
   ErrorCodes,
@@ -59,6 +56,11 @@ import { sessionsHandlers } from "./sessions.js";
 import type { GatewayRequestHandlerOptions, GatewayRequestHandlers } from "./types.js";
 
 const RESET_COMMAND_RE = /^\/(new|reset)(?:\s+([\s\S]*))?$/i;
+
+function resolveSenderIsOwnerFromClient(client: GatewayRequestHandlerOptions["client"]): boolean {
+  const scopes = Array.isArray(client?.connect?.scopes) ? client.connect.scopes : [];
+  return scopes.includes(ADMIN_SCOPE);
+}
 
 function isGatewayErrorShape(value: unknown): value is { code: string; message: string } {
   if (!value || typeof value !== "object") {
@@ -196,6 +198,7 @@ export const agentHandlers: GatewayRequestHandlers = {
       groupSpace?: string;
       lane?: string;
       extraSystemPrompt?: string;
+      internalEvents?: AgentInternalEvent[];
       idempotencyKey: string;
       timeout?: number;
       bestEffortDeliver?: boolean;
@@ -203,6 +206,7 @@ export const agentHandlers: GatewayRequestHandlers = {
       spawnedBy?: string;
       inputProvenance?: InputProvenance;
     };
+    const senderIsOwner = resolveSenderIsOwnerFromClient(client);
     const cfg = loadConfig();
     const idem = request.idempotencyKey;
     const groupIdRaw = typeof request.groupId === "string" ? request.groupId.trim() : "";
@@ -394,9 +398,12 @@ export const agentHandlers: GatewayRequestHandlers = {
       const nextEntryPatch: SessionEntry = {
         sessionId,
         updatedAt: now,
+        thinkingLevel: entry?.thinkingLevel,
         verboseLevel: entry?.verboseLevel,
+        reasoningLevel: entry?.reasoningLevel,
         systemSent: entry?.systemSent,
         sendPolicy: entry?.sendPolicy,
+        skillsSnapshot: entry?.skillsSnapshot,
         deliveryContext: deliveryFields.deliveryContext,
         lastChannel: deliveryFields.lastChannel ?? entry?.lastChannel,
         lastTo: deliveryFields.lastTo ?? entry?.lastTo,
@@ -522,26 +529,6 @@ export const agentHandlers: GatewayRequestHandlers = {
     let resolvedTo = deliveryPlan.resolvedTo;
     let effectivePlan = deliveryPlan;
 
-    // A plugin channel may be registered but have no configured accounts,
-    // making it unusable for delivery.  Fall back to the
-    // INTERNAL_MESSAGE_CHANNEL path so the existing channel-selection
-    // logic can surface a proper error.  Built-in channels (in
-    // CHANNEL_IDS) are always considered available.
-    if (
-      wantsDelivery &&
-      resolvedChannel !== INTERNAL_MESSAGE_CHANNEL &&
-      isDeliverableMessageChannel(resolvedChannel) &&
-      !CHANNEL_IDS.includes(resolvedChannel as ChatChannelId)
-    ) {
-      const cfgResolved = cfgForAgent ?? cfg;
-      const configured = await listConfiguredMessageChannels(cfgResolved);
-      if (!configured.includes(resolvedChannel)) {
-        resolvedChannel = INTERNAL_MESSAGE_CHANNEL;
-        resolvedTo = undefined;
-        resolvedAccountId = undefined;
-      }
-    }
-
     if (wantsDelivery && resolvedChannel === INTERNAL_MESSAGE_CHANNEL) {
       const cfgResolved = cfgForAgent ?? cfg;
       try {
@@ -613,15 +600,6 @@ export const agentHandlers: GatewayRequestHandlers = {
 
     const resolvedThreadId = explicitThreadId ?? deliveryPlan.resolvedThreadId;
 
-    // Track active session run for concurrency visibility
-    if (resolvedSessionKey) {
-      registerSessionRun(resolvedSessionKey, {
-        startedAt: Date.now(),
-        sessionKey: resolvedSessionKey,
-        agentId: agentId ?? "main",
-      });
-    }
-
     void agentCommand(
       {
         message,
@@ -653,7 +631,9 @@ export const agentHandlers: GatewayRequestHandlers = {
         runId,
         lane: request.lane,
         extraSystemPrompt: request.extraSystemPrompt,
+        internalEvents: request.internalEvents,
         inputProvenance,
+        senderIsOwner,
       },
       defaultRuntime,
       context.deps,
@@ -691,11 +671,6 @@ export const agentHandlers: GatewayRequestHandlers = {
           runId,
           error: formatForLog(err),
         });
-      })
-      .finally(() => {
-        if (resolvedSessionKey) {
-          unregisterSessionRun(resolvedSessionKey);
-        }
       });
   },
   "agent.identity.get": ({ params, respond }) => {

@@ -29,6 +29,20 @@ class RemoteClawProtocolConstantsTest {
     assertEquals("location", RemoteClawCapability.Location.rawValue)
     assertEquals("sms", RemoteClawCapability.Sms.rawValue)
     assertEquals("device", RemoteClawCapability.Device.rawValue)
+    assertEquals("notifications", RemoteClawCapability.Notifications.rawValue)
+    assertEquals("system", RemoteClawCapability.System.rawValue)
+    assertEquals("appUpdate", RemoteClawCapability.AppUpdate.rawValue)
+    assertEquals("photos", RemoteClawCapability.Photos.rawValue)
+    assertEquals("contacts", RemoteClawCapability.Contacts.rawValue)
+    assertEquals("calendar", RemoteClawCapability.Calendar.rawValue)
+    assertEquals("motion", RemoteClawCapability.Motion.rawValue)
+  }
+
+  @Test
+  fun cameraCommandsUseStableStrings() {
+    assertEquals("camera.list", RemoteClawCameraCommand.List.rawValue)
+    assertEquals("camera.snap", RemoteClawCameraCommand.Snap.rawValue)
+    assertEquals("camera.clip", RemoteClawCameraCommand.Clip.rawValue)
   }
 
   @Test
@@ -39,11 +53,42 @@ class RemoteClawProtocolConstantsTest {
   @Test
   fun notificationsCommandsUseStableStrings() {
     assertEquals("notifications.list", RemoteClawNotificationsCommand.List.rawValue)
+    assertEquals("notifications.actions", RemoteClawNotificationsCommand.Actions.rawValue)
   }
 
   @Test
   fun deviceCommandsUseStableStrings() {
     assertEquals("device.status", RemoteClawDeviceCommand.Status.rawValue)
     assertEquals("device.info", RemoteClawDeviceCommand.Info.rawValue)
+    assertEquals("device.permissions", RemoteClawDeviceCommand.Permissions.rawValue)
+    assertEquals("device.health", RemoteClawDeviceCommand.Health.rawValue)
+  }
+
+  @Test
+  fun systemCommandsUseStableStrings() {
+    assertEquals("system.notify", RemoteClawSystemCommand.Notify.rawValue)
+  }
+
+  @Test
+  fun photosCommandsUseStableStrings() {
+    assertEquals("photos.latest", RemoteClawPhotosCommand.Latest.rawValue)
+  }
+
+  @Test
+  fun contactsCommandsUseStableStrings() {
+    assertEquals("contacts.search", RemoteClawContactsCommand.Search.rawValue)
+    assertEquals("contacts.add", RemoteClawContactsCommand.Add.rawValue)
+  }
+
+  @Test
+  fun calendarCommandsUseStableStrings() {
+    assertEquals("calendar.events", RemoteClawCalendarCommand.Events.rawValue)
+    assertEquals("calendar.add", RemoteClawCalendarCommand.Add.rawValue)
+  }
+
+  @Test
+  fun motionCommandsUseStableStrings() {
+    assertEquals("motion.activity", RemoteClawMotionCommand.Activity.rawValue)
+    assertEquals("motion.pedometer", RemoteClawMotionCommand.Pedometer.rawValue)
   }
 }

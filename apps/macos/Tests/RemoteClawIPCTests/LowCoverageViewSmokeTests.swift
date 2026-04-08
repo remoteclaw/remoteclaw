@@ -2,7 +2,6 @@ import AppKit
 import RemoteClawProtocol
 import SwiftUI
 import Testing
-
 @testable import RemoteClaw
 
 @Suite(.serialized)

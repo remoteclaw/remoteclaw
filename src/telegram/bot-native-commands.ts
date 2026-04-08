@@ -11,6 +11,10 @@ import {
 } from "../auto-reply/commands-registry.js";
 import { finalizeInboundContext } from "../auto-reply/reply/inbound-context.js";
 import { dispatchReplyWithBufferedBlockDispatcher } from "../auto-reply/reply/provider-dispatcher.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "../auto-reply/skill-commands.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const listSkillCommandsForAgents = (..._args: unknown[]) => undefined as any;
 import { resolveCommandAuthorizedFromAuthorizers } from "../channels/command-gating.js";
 import { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 import type { RemoteClawConfig } from "../config/config.js";
@@ -25,6 +29,7 @@ import {
 import type {
   ReplyToMode,
   TelegramAccountConfig,
+  TelegramDirectConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
 } from "../config/types.js";
@@ -41,6 +46,7 @@ import { resolveThreadSessionKeys } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import { isSenderAllowed, normalizeDmAllowFromWithStore } from "./bot-access.js";
+import type { TelegramMediaRef } from "./bot-message-context.js";
 import {
   buildCappedTelegramMenuCommands,
   buildPluginTelegramMenuCommands,
@@ -100,12 +106,13 @@ export type RegisterTelegramHandlerParams = {
   shouldSkipUpdate: (ctx: TelegramUpdateKeyContext) => boolean;
   processMessage: (
     ctx: TelegramContext,
-    allMedia: Array<{ path: string; contentType?: string }>,
+    allMedia: TelegramMediaRef[],
     storeAllowFrom: string[],
     options?: {
       messageIdOverride?: string;
       forceWasMentioned?: boolean;
     },
+    replyMedia?: TelegramMediaRef[],
   ) => Promise<void>;
   logger: ReturnType<typeof getChildLogger>;
 };
@@ -122,6 +129,7 @@ type RegisterTelegramNativeCommandsParams = {
   textLimit: number;
   useAccessGroups: boolean;
   nativeEnabled: boolean;
+  nativeSkillsEnabled: boolean;
   nativeDisabledExplicit: boolean;
   resolveGroupPolicy: (chatId: string | number) => ChannelGroupPolicy;
   resolveTelegramGroupConfig: (
@@ -168,6 +176,8 @@ async function resolveTelegramCommandAuth(params: {
   const groupAllowContext = await resolveTelegramGroupAllowFromContext({
     chatId,
     accountId,
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
+    isGroup,
     isForum,
     messageThreadId,
     groupAllowFrom,
@@ -175,12 +185,27 @@ async function resolveTelegramCommandAuth(params: {
   });
   const {
     resolvedThreadId,
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
+    dmThreadId,
     storeAllowFrom,
     groupConfig,
     topicConfig,
+    groupAllowOverride,
     effectiveGroupAllow,
     hasGroupAllowOverride,
   } = groupAllowContext;
+  // Use direct config dmPolicy override if available for DMs
+  const effectiveDmPolicy =
+    !isGroup && groupConfig && "dmPolicy" in groupConfig
+      ? (groupConfig.dmPolicy ?? telegramCfg.dmPolicy ?? "pairing")
+      : (telegramCfg.dmPolicy ?? "pairing");
+  const requireTopic = (groupConfig as TelegramDirectConfig | undefined)?.requireTopic;
+  if (!isGroup && requireTopic === true && dmThreadId == null) {
+    logVerbose(`Blocked telegram command in DM ${chatId}: requireTopic=true but no topic present`);
+    return null;
+  }
+  // For DMs, prefer per-DM/topic allowFrom (groupAllowOverride) over account-level allowFrom
+  const dmAllowFrom = groupAllowOverride ?? allowFrom;
   const senderId = msg.from?.id ? String(msg.from.id) : "";
   const senderUsername = msg.from?.username ?? "";
 
@@ -250,9 +275,10 @@ async function resolveTelegramCommandAuth(params: {
   }
 
   const dmAllow = normalizeDmAllowFromWithStore({
-    allowFrom: allowFrom,
+    allowFrom: dmAllowFrom,
     storeAllowFrom: isGroup ? [] : storeAllowFrom,
-    dmPolicy: telegramCfg.dmPolicy ?? "pairing",
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
+    dmPolicy: effectiveDmPolicy,
   });
   const senderAllowed = isSenderAllowed({
     allow: dmAllow,
@@ -293,20 +319,34 @@ export const registerTelegramNativeCommands = ({
   textLimit,
   useAccessGroups,
   nativeEnabled,
+  nativeSkillsEnabled,
   nativeDisabledExplicit,
   resolveGroupPolicy,
   resolveTelegramGroupConfig,
   shouldSkipUpdate,
   opts,
 }: RegisterTelegramNativeCommandsParams) => {
+  const boundRoute =
+    nativeEnabled && nativeSkillsEnabled
+      ? resolveAgentRoute({ cfg, channel: "telegram", accountId })
+      : null;
+  const boundAgentIds = boundRoute ? [boundRoute.agentId] : null;
+  const skillCommands =
+    nativeEnabled && nativeSkillsEnabled
+      ? listSkillCommandsForAgents(boundAgentIds ? { cfg, agentIds: boundAgentIds } : { cfg })
+      : [];
   const nativeCommands = nativeEnabled
     ? listNativeCommandSpecsForConfig(cfg, {
+        skillCommands,
         provider: "telegram",
       })
     : [];
   const reservedCommands = new Set(
     listNativeCommandSpecs().map((command) => normalizeTelegramCommandName(command.name)),
   );
+  for (const command of skillCommands) {
+    reservedCommands.add(command.name.toLowerCase());
+  }
   const customResolution = resolveTelegramCustomCommands({
     commands: telegramCfg.customCommands,
     reservedCommands,
@@ -533,11 +573,11 @@ export const registerTelegramNativeCommands = ({
             dmThreadId != null
               ? resolveThreadSessionKeys({
                   baseSessionKey,
-                  threadId: String(dmThreadId),
+                  threadId: `${chatId}:${dmThreadId}`,
                 })
               : null;
           const sessionKey = threadKeys?.sessionKey ?? baseSessionKey;
-          const { groupSystemPrompt } = resolveTelegramGroupPromptSettings({
+          const { skillFilter, groupSystemPrompt } = resolveTelegramGroupPromptSettings({
             groupConfig,
             topicConfig,
           });
@@ -557,7 +597,7 @@ export const registerTelegramNativeCommands = ({
             ChatType: isGroup ? "group" : "direct",
             ConversationLabel: conversationLabel,
             GroupSubject: isGroup ? (msg.chat.title ?? undefined) : undefined,
-            GroupSystemPrompt: isGroup ? groupSystemPrompt : undefined,
+            GroupSystemPrompt: isGroup || (!isGroup && groupConfig) ? groupSystemPrompt : undefined,
             SenderName: buildSenderName(msg),
             SenderId: senderId || undefined,
             SenderUsername: senderUsername || undefined,
@@ -632,6 +672,7 @@ export const registerTelegramNativeCommands = ({
               },
             },
             replyOptions: {
+              skillFilter,
               disableBlockStreaming,
               onModelSelected,
             },

@@ -12,6 +12,7 @@ import {
   applyTestPluginDefaults,
   normalizePluginsConfig,
   resolveEffectiveEnableState,
+  resolveMemorySlotDecision,
   type NormalizedPluginsConfig,
 } from "./config-state.js";
 import { discoverRemoteClawPlugins } from "./discovery.js";
@@ -157,6 +158,7 @@ function createPluginRecord(params: {
   enabled: boolean;
   configSchema: boolean;
 }): PluginRecord {
+  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   return {
     id: params.id,
     name: params.name ?? params.id,
@@ -171,8 +173,6 @@ function createPluginRecord(params: {
     hookNames: [],
     channelIds: [],
     providerIds: [],
-    sttProviderIds: [],
-    ttsProviderIds: [],
     gatewayMethods: [],
     cliCommands: [],
     services: [],
@@ -366,6 +366,11 @@ function warnAboutUntrackedLoadedPlugins(params: {
   }
 }
 
+function activatePluginRegistry(registry: PluginRegistry, cacheKey: string): void {
+  setActivePluginRegistry(registry, cacheKey);
+  initializeGlobalHookRunner(registry);
+}
+
 export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRegistry {
   // Test env: default-disable plugins unless explicitly configured.
   // This keeps unit/gateway suites fast and avoids loading heavyweight plugin deps by accident.
@@ -381,7 +386,7 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
   if (cacheEnabled) {
     const cached = registryCache.get(cacheKey);
     if (cached) {
-      setActivePluginRegistry(cached, cacheKey);
+      activatePluginRegistry(cached, cacheKey);
       return cached;
     }
   }
@@ -453,6 +458,10 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
   );
 
   const seenIds = new Map<string, PluginRecord["origin"]>();
+  const memorySlot = normalized.slots.memory;
+  let selectedMemoryPluginId: string | null = null;
+  let memorySlotMatched = false;
+
   for (const candidate of discovery.candidates) {
     const manifestRecord = manifestByRoot.get(candidate.rootDir);
     if (!manifestRecord) {
@@ -582,8 +591,8 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
     record.name = definition?.name ?? record.name;
     record.description = definition?.description ?? record.description;
     record.version = definition?.version ?? record.version;
-    const manifestKind = record.kind;
-    const exportKind = definition?.kind;
+    const manifestKind = record.kind as string | undefined;
+    const exportKind = definition?.kind as string | undefined;
     if (manifestKind && exportKind && exportKind !== manifestKind) {
       registry.diagnostics.push({
         level: "warn",
@@ -593,6 +602,33 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
       });
     }
     record.kind = definition?.kind ?? record.kind;
+
+    if (record.kind === "memory" && memorySlot === record.id) {
+      memorySlotMatched = true;
+    }
+
+    const memoryDecision = resolveMemorySlotDecision({
+      id: record.id,
+      kind: record.kind,
+      slot: memorySlot,
+      selectedId: selectedMemoryPluginId,
+    });
+
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
+    if (!memoryDecision.enabled) {
+      record.enabled = false;
+      record.status = "disabled";
+      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+      record.error = memoryDecision.reason;
+      registry.plugins.push(record);
+      seenIds.set(pluginId, candidate.origin);
+      continue;
+    }
+
+    // @ts-expect-error — upstream feature not available in RemoteClaw fork
+    if (memoryDecision.selected && record.kind === "memory") {
+      selectedMemoryPluginId = record.id;
+    }
 
     const validatedConfig = validatePluginConfig({
       schema: manifestRecord.configSchema,
@@ -668,6 +704,14 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
     }
   }
 
+  if (typeof memorySlot === "string" && !memorySlotMatched) {
+    registry.diagnostics.push({
+      level: "warn",
+      // oxlint-disable-next-line
+      message: `memory slot plugin not found or not marked as memory: ${memorySlot}`,
+    });
+  }
+
   warnAboutUntrackedLoadedPlugins({
     registry,
     provenance,
@@ -677,8 +721,7 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
   if (cacheEnabled) {
     registryCache.set(cacheKey, registry);
   }
-  setActivePluginRegistry(registry, cacheKey);
-  initializeGlobalHookRunner(registry);
+  activatePluginRegistry(registry, cacheKey);
   return registry;
 }
 

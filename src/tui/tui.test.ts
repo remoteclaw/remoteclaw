@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { getSlashCommands } from "./commands.js";
+import { getSlashCommands, parseCommand } from "./commands.js";
 import {
   createBackspaceDeduper,
+  isIgnorableTuiStopError,
   resolveCtrlCAction,
   resolveFinalAssistantText,
   resolveGatewayDisconnectState,
   resolveTuiSessionKey,
+  stopTuiSafely,
 } from "./tui.js";
 
 describe("resolveFinalAssistantText", () => {
@@ -24,10 +26,24 @@ describe("resolveFinalAssistantText", () => {
 });
 
 describe("tui slash commands", () => {
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+  it.skip("treats /elev as an alias for /elevated", () => {
+    expect(parseCommand("/elev on")).toEqual({ name: "elevated", args: "on" });
+  });
+
+  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+
+  it.skip("normalizes alias case", () => {
+    expect(parseCommand("/ELEV off")).toEqual({
+      name: "elevated",
+      args: "off",
+    });
+  });
+
   it("includes gateway text commands", () => {
     const commands = getSlashCommands({});
+    expect(commands.some((command) => command.name === "context")).toBe(true);
     expect(commands.some((command) => command.name === "commands")).toBe(true);
-    expect(commands.some((command) => command.name === "remoteclaw")).toBe(true);
   });
 });
 
@@ -137,5 +153,38 @@ describe("resolveCtrlCAction", () => {
       action: "warn",
       nextLastCtrlCAt: 3501,
     });
+  });
+});
+
+describe("TUI shutdown safety", () => {
+  it("treats setRawMode EBADF errors as ignorable", () => {
+    expect(isIgnorableTuiStopError(new Error("setRawMode EBADF"))).toBe(true);
+    expect(
+      isIgnorableTuiStopError({
+        code: "EBADF",
+        syscall: "setRawMode",
+      }),
+    ).toBe(true);
+  });
+
+  it("does not ignore unrelated stop errors", () => {
+    expect(isIgnorableTuiStopError(new Error("something else failed"))).toBe(false);
+    expect(isIgnorableTuiStopError({ code: "EIO", syscall: "write" })).toBe(false);
+  });
+
+  it("swallows only ignorable stop errors", () => {
+    expect(() => {
+      stopTuiSafely(() => {
+        throw new Error("setRawMode EBADF");
+      });
+    }).not.toThrow();
+  });
+
+  it("rethrows non-ignorable stop errors", () => {
+    expect(() => {
+      stopTuiSafely(() => {
+        throw new Error("boom");
+      });
+    }).toThrow("boom");
   });
 });

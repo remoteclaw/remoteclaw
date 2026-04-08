@@ -6,6 +6,12 @@ function makeItem(shortVersion: string, sparkleVersion: string): string {
 }
 
 describe("collectAppcastSparkleVersionErrors", () => {
+  it("accepts empty feed with no items", () => {
+    const xml = `<rss><channel><title>RemoteClaw</title></channel></rss>`;
+
+    expect(collectAppcastSparkleVersionErrors(xml)).toEqual([]);
+  });
+
   it("accepts legacy 9-digit calver builds before lane-floor cutover", () => {
     const xml = `<rss><channel>${makeItem("2026.2.26", "202602260")}</channel></rss>`;
 

@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { getCliSessionId } from "../../agents/cli-session.js";
 import { buildSessionKey } from "../../middleware/channel-bridge.js";
 import type { ChannelMessage } from "../../middleware/types.js";
 
 // ---------- mocks ----------
 
 const channelBridgeHandleMock = vi.fn();
+let capturedSessionMap: import("../../middleware/session-map.js").SessionMap | undefined;
 
 vi.mock("../../middleware/channel-bridge.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../middleware/channel-bridge.js")>();
@@ -14,9 +16,12 @@ vi.mock("../../middleware/channel-bridge.js", async (importOriginal) => {
       readonly provider: string;
       readonly workspaceDir?: string;
 
-      constructor(opts: { provider: string; workspaceDir?: string }) {
+      constructor(opts: { provider: string; workspaceDir?: string; sessionMap?: unknown }) {
         this.provider = opts.provider;
         this.workspaceDir = opts.workspaceDir;
+        capturedSessionMap = opts.sessionMap as
+          | import("../../middleware/session-map.js").SessionMap
+          | undefined;
       }
 
       handle(message: ChannelMessage, callbacks?: unknown, abortSignal?: AbortSignal) {
@@ -257,6 +262,7 @@ describe("runCronIsolatedAgentTurn — ChannelBridge wiring", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    capturedSessionMap = undefined;
     previousFastTestEnv = process.env.REMOTECLAW_TEST_FAST;
     delete process.env.REMOTECLAW_TEST_FAST;
     resolveCronSessionMock.mockReturnValue(makeFreshSession());
@@ -391,6 +397,37 @@ describe("runCronIsolatedAgentTurn — ChannelBridge wiring", () => {
     // Partial success: has payloads despite error, so should not re-throw
     expect(channelBridgeHandleMock).toHaveBeenCalledOnce();
     expect(result.status).toBe("ok");
+  });
+
+  it("returns undefined from session map when isNewSession is true", async () => {
+    resolveCronSessionMock.mockReturnValue(makeFreshSession());
+
+    await runCronIsolatedAgentTurn(makeParams());
+
+    expect(capturedSessionMap).toBeDefined();
+    const sessionId = await capturedSessionMap!.get({ channelId: "", userId: "" });
+    expect(sessionId).toBeUndefined();
+    expect(getCliSessionId).not.toHaveBeenCalled();
+  });
+
+  it("returns CLI session ID from session map when isNewSession is false", async () => {
+    resolveCronSessionMock.mockReturnValue({
+      ...makeFreshSession(),
+      isNewSession: false,
+      sessionEntry: {
+        sessionId: "existing-session-id",
+        updatedAt: 0,
+        systemSent: true,
+        cliSessionIds: { claude: "cli-session-123" },
+      },
+    });
+
+    await runCronIsolatedAgentTurn(makeParams());
+
+    expect(capturedSessionMap).toBeDefined();
+    const sessionId = await capturedSessionMap!.get({ channelId: "", userId: "" });
+    expect(sessionId).toBe("cli-session-123");
+    expect(getCliSessionId).toHaveBeenCalled();
   });
 
   it("maps token usage from AgentDeliveryResult to telemetry", async () => {

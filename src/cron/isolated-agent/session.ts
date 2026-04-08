@@ -77,6 +77,8 @@ export function resolveCronSession(params: {
       lastAccountId: undefined,
       lastThreadId: undefined,
       deliveryContext: undefined,
+      cliSessionIds: undefined,
+      claudeCliSessionId: undefined,
     }),
   };
   return { storePath, store, sessionEntry, systemSent, isNewSession };

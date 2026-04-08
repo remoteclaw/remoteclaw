@@ -668,12 +668,12 @@ describe.skip("agentCommand", () => {
     });
   });
 
-  it("clears stale Claude CLI legacy session IDs before retrying after session expiration", async () => {
+  it("clears stale CLI session IDs before retrying after session expiration", async () => {
     // @ts-ignore — gutted in RemoteClaw fork (skipped test block)
     vi.mocked(modelSelectionModule.isCliProvider).mockImplementation(
       // @ts-ignore — gutted in RemoteClaw fork (skipped test block)
       (provider: unknown) =>
-        typeof provider === "string" && provider.trim().toLowerCase() === "claude-cli",
+        typeof provider === "string" && provider.trim().toLowerCase() === "claude",
     );
     try {
       await withTempHome(async (home) => {
@@ -683,21 +683,20 @@ describe.skip("agentCommand", () => {
           [sessionKey]: {
             sessionId: "session-cli-123",
             updatedAt: Date.now(),
-            providerOverride: "claude-cli",
+            providerOverride: "claude",
             modelOverride: "opus",
-            cliSessionIds: { "claude-cli": "stale-cli-session" },
-            claudeCliSessionId: "stale-legacy-session",
+            cliSessionIds: { claude: "stale-cli-session" },
           },
         });
         mockConfig(home, store, {
-          model: { primary: "claude-cli/opus", fallbacks: [] },
-          models: { "claude-cli/opus": {} },
+          model: { primary: "claude/opus", fallbacks: [] },
+          models: { "claude/opus": {} },
         });
         runCliAgentSpy
           .mockRejectedValueOnce(
             new FailoverError("session expired", {
               reason: "session_expired",
-              provider: "claude-cli",
+              provider: "claude",
               model: "opus",
               status: 410,
             }),
@@ -720,11 +719,10 @@ describe.skip("agentCommand", () => {
 
         const saved = JSON.parse(fs.readFileSync(store, "utf-8")) as Record<
           string,
-          { cliSessionIds?: Record<string, string>; claudeCliSessionId?: string }
+          { cliSessionIds?: Record<string, string> }
         >;
         const entry = saved[sessionKey];
-        expect(entry?.cliSessionIds?.["claude-cli"]).toBeUndefined();
-        expect(entry?.claudeCliSessionId).toBeUndefined();
+        expect(entry?.cliSessionIds?.["claude"]).toBeUndefined();
       });
     } finally {
       // @ts-ignore — gutted in RemoteClaw fork (skipped test block)

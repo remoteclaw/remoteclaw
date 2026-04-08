@@ -44,24 +44,6 @@ describe("getCliSessionId", () => {
     const entry = makeEntry({ cliSessionIds: { claude: "   " } });
     expect(getCliSessionId(entry, "claude")).toBeUndefined();
   });
-
-  it("falls back to legacy claudeCliSessionId for claude-cli provider", () => {
-    const entry = makeEntry({ claudeCliSessionId: "legacy-sess" });
-    expect(getCliSessionId(entry, "claude-cli")).toBe("legacy-sess");
-  });
-
-  it("prefers cliSessionIds map over legacy field", () => {
-    const entry = makeEntry({
-      cliSessionIds: { "claude-cli": "map-sess" },
-      claudeCliSessionId: "legacy-sess",
-    });
-    expect(getCliSessionId(entry, "claude-cli")).toBe("map-sess");
-  });
-
-  it("does not fall back to legacy field for non-claude-cli providers", () => {
-    const entry = makeEntry({ claudeCliSessionId: "legacy-sess" });
-    expect(getCliSessionId(entry, "claude")).toBeUndefined();
-  });
 });
 
 describe("setCliSessionId", () => {
@@ -114,19 +96,6 @@ describe("setCliSessionId", () => {
     const entry = makeEntry();
     setCliSessionId(entry, "claude", "  trimmed-sess  ");
     expect(entry.cliSessionIds?.["claude"]).toBe("trimmed-sess");
-  });
-
-  it("also sets legacy claudeCliSessionId for claude-cli provider", () => {
-    const entry = makeEntry();
-    setCliSessionId(entry, "claude-cli", "dual-sess");
-    expect(entry.cliSessionIds?.["claude-cli"]).toBe("dual-sess");
-    expect(entry.claudeCliSessionId).toBe("dual-sess");
-  });
-
-  it("does not set legacy field for non-claude-cli providers", () => {
-    const entry = makeEntry();
-    setCliSessionId(entry, "claude", "sess-123");
-    expect(entry.claudeCliSessionId).toBeUndefined();
   });
 });
 

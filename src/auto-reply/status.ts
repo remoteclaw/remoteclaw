@@ -12,10 +12,6 @@ const DEFAULT_MODEL = "default";
 // oxlint-disable-next-line typescript/no-explicit-any
 const DEFAULT_PROVIDER = "cli";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/model-auth.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveModelAuthMode = (..._args: unknown[]) => undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
 // import ... from "../agents/model-selection.js";
 // oxlint-disable-next-line typescript/no-explicit-any
 const buildModelAliasIndex = (..._args: unknown[]) => undefined as any;
@@ -59,12 +55,7 @@ import {
   resolveTtsConfig,
   resolveTtsPrefsPath,
 } from "../tts/tts.js";
-import {
-  estimateUsageCost,
-  formatTokenCount as formatTokenCountShared,
-  formatUsd,
-  resolveModelCostConfig,
-} from "../utils/usage-format.js";
+import { formatTokenCount as formatTokenCountShared } from "../utils/usage-format.js";
 import { VERSION } from "../version.js";
 import {
   listChatCommands,
@@ -611,35 +602,11 @@ export function buildStatusMessage(args: StatusArgs): string {
   ];
   const activationLine = activationParts.filter(Boolean).join(" · ");
 
-  const selectedAuthMode =
-    normalizeAuthMode(args.modelAuth) ?? resolveModelAuthMode(selectedProvider, args.config);
+  const selectedAuthMode = normalizeAuthMode(args.modelAuth);
   const selectedAuthLabelValue =
     args.modelAuth ??
     (selectedAuthMode && selectedAuthMode !== "unknown" ? selectedAuthMode : undefined);
-  const activeAuthMode =
-    normalizeAuthMode(args.activeModelAuth) ?? resolveModelAuthMode(activeProvider, args.config);
   const selectedModelLabel = modelRefs.selected.label || "unknown";
-  const effectiveCostAuthMode = selectedAuthMode ?? activeAuthMode;
-  const showCost = effectiveCostAuthMode === "api-key" || effectiveCostAuthMode === "mixed";
-  const costConfig = showCost
-    ? resolveModelCostConfig({
-        provider: activeProvider,
-        model: activeModel,
-        config: args.config,
-      })
-    : undefined;
-  const hasUsage = typeof inputTokens === "number" || typeof outputTokens === "number";
-  const cost =
-    showCost && hasUsage
-      ? estimateUsageCost({
-          usage: {
-            input: inputTokens ?? undefined,
-            output: outputTokens ?? undefined,
-          },
-          cost: costConfig,
-        })
-      : undefined;
-  const costLabel = showCost && hasUsage ? formatUsd(cost) : undefined;
 
   const selectedAuthLabel = selectedAuthLabelValue ? ` · 🔑 ${selectedAuthLabelValue}` : "";
   const channelModelNote = (() => {
@@ -686,9 +653,6 @@ export function buildStatusMessage(args: StatusArgs): string {
   const versionLine = `🦞 RemoteClaw ${VERSION}${commit ? ` (${commit})` : ""}`;
   const usagePair = formatUsagePair(inputTokens, outputTokens);
   const cacheLine = formatCacheLine(inputTokens, cacheRead, cacheWrite);
-  const costLine = costLabel ? `💵 Cost: ${costLabel}` : null;
-  const usageCostLine =
-    usagePair && costLine ? `${usagePair} · ${costLine}` : (usagePair ?? costLine);
   const mediaLine = formatMediaUnderstandingLine(args.mediaDecisions);
   const voiceLine = formatVoiceModeLine(args.config, args.sessionEntry);
 
@@ -696,7 +660,7 @@ export function buildStatusMessage(args: StatusArgs): string {
     versionLine,
     args.timeLine,
     modelLine,
-    usageCostLine,
+    usagePair,
     cacheLine,
     `📚 ${contextLine}`,
     mediaLine,

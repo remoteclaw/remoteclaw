@@ -332,8 +332,7 @@ export async function runCronIsolatedAgentTurn(params: {
   await persistSessionEntry();
 
   let runResult: AgentDeliveryResult;
-  const fallbackProvider = provider;
-  const fallbackModel = model;
+  const resolvedRuntime = resolveAgentRuntimeOrThrow(params.cfg, agentId);
   const runStartedAt = Date.now();
   let runEndedAt = runStartedAt;
   try {
@@ -417,8 +416,8 @@ export async function runCronIsolatedAgentTurn(params: {
           cacheWrite: runUsage.cacheWriteTokens,
         }
       : undefined;
-    const modelUsed = fallbackModel ?? model;
-    const providerUsed = fallbackProvider ?? provider;
+    const modelUsed = model;
+    const providerUsed = provider;
     const contextTokens = agentCfg?.contextTokens ?? 200_000;
 
     cronSession.sessionEntry.modelProvider = providerUsed;
@@ -446,8 +445,7 @@ export async function runCronIsolatedAgentTurn(params: {
       cronSession.sessionEntry.cacheWrite = usage.cacheWrite ?? 0;
 
       telemetry = {
-        model: modelUsed,
-        provider: providerUsed,
+        runtime: resolvedRuntime,
         usage: {
           input_tokens: input,
           output_tokens: output,
@@ -456,8 +454,7 @@ export async function runCronIsolatedAgentTurn(params: {
       };
     } else {
       telemetry = {
-        model: modelUsed,
-        provider: providerUsed,
+        runtime: resolvedRuntime,
       };
     }
     await persistSessionEntry();

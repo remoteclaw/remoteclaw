@@ -191,8 +191,7 @@ describe("cron run log", () => {
         jobId: "job-1",
         action: "finished",
         status: "ok",
-        model: "gpt-5.2",
-        provider: "openai",
+        runtime: "claude",
         usage: {
           input_tokens: 10,
           output_tokens: 5,
@@ -209,16 +208,14 @@ describe("cron run log", () => {
           jobId: "job-1",
           action: "finished",
           status: "ok",
-          model: " ",
-          provider: "",
+          runtime: " ",
           usage: { input_tokens: "oops" },
         })}\n`,
         "utf-8",
       );
 
       const entries = await readCronRunLogEntries(logPath, { limit: 10, jobId: "job-1" });
-      expect(entries[0]?.model).toBe("gpt-5.2");
-      expect(entries[0]?.provider).toBe("openai");
+      expect(entries[0]?.runtime).toBe("claude");
       expect(entries[0]?.usage).toEqual({
         input_tokens: 10,
         output_tokens: 5,
@@ -226,8 +223,7 @@ describe("cron run log", () => {
         cache_read_tokens: 2,
         cache_write_tokens: 1,
       });
-      expect(entries[1]?.model).toBeUndefined();
-      expect(entries[1]?.provider).toBeUndefined();
+      expect(entries[1]?.runtime).toBeUndefined();
       expect(entries[1]?.usage?.input_tokens).toBeUndefined();
     });
   });

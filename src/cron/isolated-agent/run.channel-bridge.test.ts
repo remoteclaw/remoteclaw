@@ -408,9 +408,6 @@ describe("runCronIsolatedAgentTurn — ChannelBridge wiring", () => {
     const result = await runCronIsolatedAgentTurn(makeParams());
 
     expect(result.status).toBe("ok");
-    // Model management gutted — cron runs default to "unknown" unless
-    // an explicit model override is provided in the job payload.
-    expect(result.model).toBe("unknown");
-    expect(result.provider).toBe("unknown");
+    expect(result.runtime).toBe("claude");
   });
 });

@@ -1648,8 +1648,7 @@ function renderRun(entry: CronRunLogEntry, basePath: string) {
         <div class="list-sub cron-run-entry__summary">${entry.summary ?? entry.error ?? t("cron.runEntry.noSummary")}</div>
         <div class="chip-row" style="margin-top: 6px;">
           <span class="chip">${delivery}</span>
-          ${entry.model ? html`<span class="chip">${entry.model}</span>` : nothing}
-          ${entry.provider ? html`<span class="chip">${entry.provider}</span>` : nothing}
+          ${entry.runtime ? html`<span class="chip">${entry.runtime}</span>` : nothing}
           ${usageSummary ? html`<span class="chip">${usageSummary}</span>` : nothing}
         </div>
       </div>

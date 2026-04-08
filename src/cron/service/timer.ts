@@ -695,8 +695,7 @@ export async function runMissedJobs(
         delivered: result.delivered,
         sessionId: result.sessionId,
         sessionKey: result.sessionKey,
-        model: result.model,
-        provider: result.provider,
+        runtime: result.runtime,
         usage: result.usage,
         startedAt,
         endedAt: state.deps.nowMs(),
@@ -911,8 +910,7 @@ export async function executeJobCore(
     deliveryAttempted: res.deliveryAttempted,
     sessionId: res.sessionId,
     sessionKey: res.sessionKey,
-    model: res.model,
-    provider: res.provider,
+    runtime: res.runtime,
     usage: res.usage,
   };
 }
@@ -987,8 +985,7 @@ function emitJobFinished(
     runAtMs,
     durationMs: job.state.lastDurationMs,
     nextRunAtMs: job.state.nextRunAtMs,
-    model: result.model,
-    provider: result.provider,
+    runtime: result.runtime,
     usage: result.usage,
   });
 }

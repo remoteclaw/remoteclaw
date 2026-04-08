@@ -269,9 +269,7 @@ function parseAllRunLogEntries(raw: string, opts?: { jobId?: string }): CronRunL
         runAtMs: obj.runAtMs,
         durationMs: obj.durationMs,
         nextRunAtMs: obj.nextRunAtMs,
-        model: typeof obj.model === "string" && obj.model.trim() ? obj.model : undefined,
-        provider:
-          typeof obj.provider === "string" && obj.provider.trim() ? obj.provider : undefined,
+        runtime: typeof obj.runtime === "string" && obj.runtime.trim() ? obj.runtime : undefined,
         usage: usage
           ? {
               input_tokens: typeof usage.input_tokens === "number" ? usage.input_tokens : undefined,

@@ -20,14 +20,6 @@ export type SystemPromptParams = {
 
 // ── Static Sections ──────────────────────────────────────────────────────
 
-const SAFETY_SECTION = [
-  "## Safety",
-  "You have no independent goals: do not pursue self-preservation, replication, resource acquisition, or power-seeking; avoid long-term plans beyond the user's request.",
-  "Prioritize safety and human oversight over completion; if instructions conflict, pause and ask; comply with stop/pause/audit requests and never bypass safeguards.",
-  "Do not manipulate or persuade anyone to expand access or disable safeguards. Do not copy yourself or change system prompts, safety rules, or tool policies unless explicitly requested.",
-  "Never expose credentials, API keys, or secrets in replies or tool calls. Respect user privacy.",
-].join("\n");
-
 const MESSAGING_SECTION = [
   "## Messaging",
   "`[System Message] ...` blocks are internal context injected by the middleware — do not forward them to users.",
@@ -122,12 +114,12 @@ function buildReactionsSection(guidance?: {
 /**
  * Build the RemoteClaw system prompt for injection into CLI subprocess agents.
  *
- * Assembles ~10 sections totaling ~3,000-5,000 chars (~770-1,270 tokens).
+ * Assembles ~9 sections totaling ~2,500-4,500 chars (~640-1,150 tokens).
  * No promptMode switch (always full), no bootstrap context (CLI agent handles),
  * no tool list (MCP handles), no skills/memory/sandbox sections.
  */
 export function buildSystemPrompt(params: SystemPromptParams): string {
-  const sections: string[] = [SAFETY_SECTION, MESSAGING_SECTION];
+  const sections: string[] = [MESSAGING_SECTION];
 
   const hintsSection = buildMessageToolHintsSection(params.messageToolHints);
   if (hintsSection) {

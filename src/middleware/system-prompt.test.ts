@@ -15,7 +15,6 @@ describe("buildSystemPrompt", () => {
       const result = buildSystemPrompt(
         makeParams({ userName: "Alice", timezone: "UTC", agentId: "agent-1" }),
       );
-      expect(result).toContain("## Safety");
       expect(result).toContain("## Messaging");
       expect(result).toContain("## Reply Tags");
       expect(result).toContain("## Silent Replies");
@@ -142,13 +141,6 @@ describe("buildSystemPrompt", () => {
   });
 
   describe("content correctness", () => {
-    it("safety section is always present and contains safety keywords", () => {
-      const result = buildSystemPrompt(makeParams());
-      expect(result).toContain("## Safety");
-      expect(result).toContain("safety");
-      expect(result).toContain("privacy");
-    });
-
     it("reply tags section contains [[reply_to_current]] syntax", () => {
       const result = buildSystemPrompt(makeParams());
       expect(result).toContain("[[reply_to_current]]");
@@ -183,8 +175,7 @@ describe("buildSystemPrompt", () => {
 
     it("sections are separated by double newlines", () => {
       const result = buildSystemPrompt(makeParams());
-      expect(result).toMatch(/^## Safety/);
-      expect(result).toContain("\n\n## Messaging");
+      expect(result).toMatch(/^## Messaging/);
       expect(result).toContain("\n\n## Reply Tags");
       expect(result).toContain("\n\n## Silent Replies");
       expect(result).toContain("\n\n## Runtime");

@@ -34,17 +34,6 @@ describe("buildSystemPrompt", () => {
       expect(result).toContain("Use rich text formatting for LINE messages.");
     });
 
-    it("includes authorized senders section when senders are provided", () => {
-      const result = buildSystemPrompt(
-        makeParams({
-          authorizedSenders: ["+15551234567", "+15559876543"],
-        }),
-      );
-      expect(result).toContain("## Authorized Senders");
-      expect(result).toContain("+15551234567");
-      expect(result).toContain("+15559876543");
-    });
-
     it("includes reactions section when reactionGuidance is provided", () => {
       const result = buildSystemPrompt(
         makeParams({
@@ -91,15 +80,6 @@ describe("buildSystemPrompt", () => {
       expect(result).toContain("/opt/my-project");
     });
 
-    it("authorized senders lists all provided sender IDs", () => {
-      const result = buildSystemPrompt(
-        makeParams({
-          authorizedSenders: ["user1", "user2", "user3"],
-        }),
-      );
-      expect(result).toContain("user1, user2, user3");
-    });
-
     it("reactions section uses minimal guidance when level is minimal", () => {
       const result = buildSystemPrompt(
         makeParams({
@@ -132,21 +112,6 @@ describe("buildSystemPrompt", () => {
       expect(result).not.toContain("## Message Formatting");
     });
 
-    it("omits authorized senders section when authorizedSenders is undefined", () => {
-      const result = buildSystemPrompt(makeParams());
-      expect(result).not.toContain("## Authorized Senders");
-    });
-
-    it("omits authorized senders section when authorizedSenders is empty", () => {
-      const result = buildSystemPrompt(makeParams({ authorizedSenders: [] }));
-      expect(result).not.toContain("## Authorized Senders");
-    });
-
-    it("omits authorized senders section when all senders are empty strings", () => {
-      const result = buildSystemPrompt(makeParams({ authorizedSenders: ["", ""] }));
-      expect(result).not.toContain("## Authorized Senders");
-    });
-
     it("omits reactions section when reactionGuidance is undefined", () => {
       const result = buildSystemPrompt(makeParams());
       expect(result).not.toContain("## Reactions");
@@ -171,7 +136,6 @@ describe("buildSystemPrompt", () => {
           userName: "Alice",
           timezone: "Asia/Tokyo",
           agentId: "agent-1",
-          authorizedSenders: ["+15551234567", "+15559876543"],
           messageToolHints: lineHints,
           reactionGuidance: { level: "extensive", channel: "line" },
         }),
@@ -204,7 +168,6 @@ describe("buildSystemPrompt", () => {
           userName: "Alice",
           timezone: "UTC",
           agentId: "agent-1",
-          authorizedSenders: ["+15551234567"],
           messageToolHints: ["some hint"],
           reactionGuidance: { level: "minimal", channel: "telegram" },
         }),

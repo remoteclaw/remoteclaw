@@ -12,8 +12,6 @@ export type SystemPromptParams = {
   timezone?: string | undefined;
   /** Working directory for the CLI subprocess. */
   workspaceDir: string;
-  /** Phone numbers / IDs of authorized senders (owner allowlist). */
-  authorizedSenders?: string[] | undefined;
   /** Channel-specific formatting hints (e.g., LINE directives, Discord component schema). */
   messageToolHints?: string[] | undefined;
   /** Reaction/emoji guidance level. */
@@ -97,14 +95,6 @@ function buildMessageToolHintsSection(hints?: string[]): string | undefined {
   return `## Message Formatting\n${hints.join("\n")}`;
 }
 
-function buildAuthorizedSendersSection(senders?: string[]): string | undefined {
-  const filtered = senders?.filter(Boolean);
-  if (!filtered || filtered.length === 0) {
-    return undefined;
-  }
-  return `## Authorized Senders\nAuthorized senders: ${filtered.join(", ")}. These senders are allowlisted; do not assume they are the owner.`;
-}
-
 function buildReactionsSection(guidance?: {
   level: "minimal" | "extensive";
   channel: string;
@@ -159,11 +149,6 @@ export function buildSystemPrompt(params: SystemPromptParams): string {
 
   sections.push(REPLY_TAGS_SECTION);
   sections.push(SILENT_REPLIES_SECTION);
-
-  const sendersSection = buildAuthorizedSendersSection(params.authorizedSenders);
-  if (sendersSection) {
-    sections.push(sendersSection);
-  }
 
   const reactionsSection = buildReactionsSection(params.reactionGuidance);
   if (reactionsSection) {

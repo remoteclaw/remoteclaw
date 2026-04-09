@@ -709,17 +709,6 @@ describe("ChannelBridge", () => {
       expect(params.timezone).toBe("America/New_York");
     });
 
-    it("passes authorizedSenders from ChannelMessage to buildSystemPrompt", async () => {
-      mockRuntimeInstance = mockRuntime([makeDone()]);
-
-      const bridge = createBridge();
-      await bridge.handle(makeMessage({ authorizedSenders: ["+15551234567", "+15559876543"] }));
-
-      expect(mockBuildSystemPrompt).toHaveBeenCalledOnce();
-      const params = mockBuildSystemPrompt.mock.calls[0][0] as Record<string, unknown>;
-      expect(params.authorizedSenders).toEqual(["+15551234567", "+15559876543"]);
-    });
-
     it("passes reactionGuidance from ChannelMessage to buildSystemPrompt", async () => {
       mockRuntimeInstance = mockRuntime([makeDone()]);
 
@@ -733,7 +722,7 @@ describe("ChannelBridge", () => {
       expect(params.reactionGuidance).toEqual({ level: "minimal", channel: "telegram" });
     });
 
-    it("passes all 8 params when ChannelMessage is fully populated", async () => {
+    it("passes all 7 params when ChannelMessage is fully populated", async () => {
       mockRuntimeInstance = mockRuntime([makeDone()]);
 
       const bridge = createBridge();
@@ -744,7 +733,6 @@ describe("ChannelBridge", () => {
           userName: "Bob",
           agentId: "agent-7",
           timezone: "Europe/Berlin",
-          authorizedSenders: ["+1234"],
           reactionGuidance: { level: "extensive", channel: "discord" },
         }),
       );
@@ -757,7 +745,6 @@ describe("ChannelBridge", () => {
       expect(params.userName).toBe("Bob");
       expect(params.agentId).toBe("agent-7");
       expect(params.timezone).toBe("Europe/Berlin");
-      expect(params.authorizedSenders).toEqual(["+1234"]);
       expect(params.reactionGuidance).toEqual({ level: "extensive", channel: "discord" });
     });
 
@@ -772,7 +759,6 @@ describe("ChannelBridge", () => {
       expect(params.userName).toBeUndefined();
       expect(params.agentId).toBeUndefined();
       expect(params.timezone).toBeUndefined();
-      expect(params.authorizedSenders).toBeUndefined();
       expect(params.reactionGuidance).toBeUndefined();
     });
   });

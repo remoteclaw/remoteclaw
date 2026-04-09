@@ -141,7 +141,6 @@ export class ChannelBridge {
       channelName: message.provider,
       messageToolHints: message.messageToolHints,
       userName: message.userName,
-      agentId: message.agentId,
       timezone: message.timezone,
     });
 

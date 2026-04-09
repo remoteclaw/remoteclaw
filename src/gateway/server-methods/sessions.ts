@@ -1,20 +1,9 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../acp/control-plane/manager.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const getAcpSessionManager = (..._args: unknown[]) => undefined as any;
+import { getAcpSessionManager } from "../../acp/control-plane/manager.js";
 import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../agents/bootstrap-cache.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const clearBootstrapSnapshot = (..._args: unknown[]) => undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../agents/pi-embedded.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const abortEmbeddedPiRun = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const waitForEmbeddedPiRunEnd = (..._args: unknown[]) => undefined as any;
+import { clearBootstrapSnapshot } from "../../agents/bootstrap-cache.js";
+import { abortEmbeddedPiRun, waitForEmbeddedPiRunEnd } from "../../agents/pi-embedded.js";
 import { stopSubagentsForRequester } from "../../auto-reply/reply/abort.js";
 import { clearSessionQueues } from "../../auto-reply/reply/queue.js";
 import { loadConfig } from "../../config/config.js";
@@ -295,6 +284,32 @@ async function closeAcpRuntimeForSession(params: {
   return undefined;
 }
 
+async function cleanupSessionBeforeMutation(params: {
+  cfg: ReturnType<typeof loadConfig>;
+  key: string;
+  target: ReturnType<typeof resolveGatewaySessionStoreTarget>;
+  entry: SessionEntry | undefined;
+  legacyKey?: string;
+  canonicalKey?: string;
+  reason: "session-reset" | "session-delete";
+}) {
+  const cleanupError = await ensureSessionRuntimeCleanup({
+    cfg: params.cfg,
+    key: params.key,
+    target: params.target,
+    sessionId: params.entry?.sessionId,
+  });
+  if (cleanupError) {
+    return cleanupError;
+  }
+  return await closeAcpRuntimeForSession({
+    cfg: params.cfg,
+    sessionKey: params.legacyKey ?? params.canonicalKey ?? params.target.canonicalKey ?? params.key,
+    entry: params.entry,
+    reason: params.reason,
+  });
+}
+
 export const sessionsHandlers: GatewayRequestHandlers = {
   "sessions.list": ({ params, respond }) => {
     if (!assertValidParams(params, validateSessionsListParams, "sessions.list", respond)) {
@@ -408,7 +423,6 @@ export const sessionsHandlers: GatewayRequestHandlers = {
         store,
         storeKey: primaryKey,
         patch: p,
-        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         loadGatewayModelCatalog: context.loadGatewayModelCatalog,
       });
     });
@@ -457,20 +471,17 @@ export const sessionsHandlers: GatewayRequestHandlers = {
       },
     );
     await triggerInternalHook(hookEvent);
-    const sessionId = entry?.sessionId;
-    const cleanupError = await ensureSessionRuntimeCleanup({ cfg, key, target, sessionId });
-    if (cleanupError) {
-      respond(false, undefined, cleanupError);
-      return;
-    }
-    const acpCleanupError = await closeAcpRuntimeForSession({
+    const mutationCleanupError = await cleanupSessionBeforeMutation({
       cfg,
-      sessionKey: legacyKey ?? canonicalKey ?? target.canonicalKey ?? key,
+      key,
+      target,
       entry,
+      legacyKey,
+      canonicalKey,
       reason: "session-reset",
     });
-    if (acpCleanupError) {
-      respond(false, undefined, acpCleanupError);
+    if (mutationCleanupError) {
+      respond(false, undefined, mutationCleanupError);
       return;
     }
     let oldSessionId: string | undefined;
@@ -554,22 +565,20 @@ export const sessionsHandlers: GatewayRequestHandlers = {
     const deleteTranscript = typeof p.deleteTranscript === "boolean" ? p.deleteTranscript : true;
 
     const { entry, legacyKey, canonicalKey } = loadSessionEntry(key);
-    const sessionId = entry?.sessionId;
-    const cleanupError = await ensureSessionRuntimeCleanup({ cfg, key, target, sessionId });
-    if (cleanupError) {
-      respond(false, undefined, cleanupError);
-      return;
-    }
-    const acpCleanupError = await closeAcpRuntimeForSession({
+    const mutationCleanupError = await cleanupSessionBeforeMutation({
       cfg,
-      sessionKey: legacyKey ?? canonicalKey ?? target.canonicalKey ?? key,
+      key,
+      target,
       entry,
+      legacyKey,
+      canonicalKey,
       reason: "session-delete",
     });
-    if (acpCleanupError) {
-      respond(false, undefined, acpCleanupError);
+    if (mutationCleanupError) {
+      respond(false, undefined, mutationCleanupError);
       return;
     }
+    const sessionId = entry?.sessionId;
     const deleted = await updateSessionStore(storePath, (store) => {
       const { primaryKey } = migrateAndPruneSessionStoreKey({ cfg, key, store });
       const hadEntry = Boolean(store[primaryKey]);
@@ -701,20 +710,5 @@ export const sessionsHandlers: GatewayRequestHandlers = {
       },
       undefined,
     );
-  },
-
-  // Gutted in RemoteClaw fork — stub handlers for test compatibility
-  "sessions.spawn": async ({ respond }) => {
-    respond(false, {
-      error: { code: "not_implemented", message: "sessions.spawn is not available in RemoteClaw" },
-    });
-  },
-  "sessions.subagents": ({ respond }) => {
-    respond(false, {
-      error: {
-        code: "not_implemented",
-        message: "sessions.subagents is not available in RemoteClaw",
-      },
-    });
   },
 };

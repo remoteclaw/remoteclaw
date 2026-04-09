@@ -32,6 +32,7 @@ vi.mock("../infra/outbound/channel-selection.js", () => ({
 
 vi.mock("../globals.js", () => ({
   setVerbose: mocks.setVerbose,
+  shouldLogVerbose: vi.fn(() => false),
 }));
 
 describe("channel-auth", () => {

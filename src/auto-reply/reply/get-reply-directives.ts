@@ -135,7 +135,13 @@ export async function resolveReplyDirectives(params: {
   isGroup: boolean;
   triggerBodyNormalized: string;
   commandAuthorized: boolean;
-  runtimeId: string;
+  runtimeId?: string;
+  defaultProvider?: string;
+  defaultModel?: string;
+  aliasIndex?: unknown;
+  provider?: string;
+  model?: string;
+  hasResolvedHeartbeatModelOverride?: boolean;
   typing: TypingController;
   opts?: GetReplyOptions;
   skillFilter?: string[];
@@ -157,15 +163,15 @@ export async function resolveReplyDirectives(params: {
     isGroup,
     triggerBodyNormalized,
     commandAuthorized,
-    runtimeId,
+    runtimeId: _runtimeId,
     typing,
     opts,
     skillFilter,
   } = params;
-  // Model selection gutted in RemoteClaw — derive from runtimeId.
-  const defaultProvider = runtimeId;
-  const defaultModel = "default";
-  let provider = runtimeId;
+  // Model selection: use new upstream params if available, fall back to runtimeId for back-compat.
+  const defaultProvider = params.defaultProvider ?? params.runtimeId ?? "anthropic";
+  const defaultModel = params.defaultModel ?? "default";
+  let provider = params.provider ?? params.runtimeId ?? defaultProvider;
   let model = defaultModel;
 
   // Prefer CommandBody/RawBody (clean message without structural context) for directive parsing.
@@ -467,7 +473,7 @@ export async function resolveReplyDirectives(params: {
     elevatedEnabled,
     elevatedAllowed,
     elevatedFailures,
-    runtimeId,
+    runtimeId: params.runtimeId ?? defaultProvider,
     provider,
     model,
     modelState,

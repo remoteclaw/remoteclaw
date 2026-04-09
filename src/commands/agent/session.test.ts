@@ -20,6 +20,7 @@ vi.mock("../../config/sessions.js", async () => {
 
 vi.mock("../../agents/agent-scope.js", () => ({
   listAgentIds: mocks.listAgentIds,
+  resolveAgentRuntime: () => "claude",
 }));
 
 const { resolveSessionKeyForRequest } = await import("./session.js");

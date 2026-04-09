@@ -1,33 +1,26 @@
 import { isIP } from "node:net";
 import path from "node:path";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/sandbox.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveSandboxConfigForAgent = (..._args: unknown[]) => ({ mode: "off" as const });
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/sandbox/docker.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const execDockerRaw = (..._args: unknown[]) => undefined as any;
+const resolveSandboxConfigForAgent = (..._args: unknown[]) =>
+  ({ mode: undefined }) as Record<string, unknown>;
+const execDockerRaw = (..._args: unknown[]) =>
+  Promise.resolve({ code: 1, stdout: Buffer.from(""), stderr: Buffer.from("") });
 import { resolveBrowserConfig, resolveProfile } from "../browser/config.js";
 import { resolveBrowserControlAuth } from "../browser/control-auth.js";
 import { listChannelPlugins } from "../channels/plugins/index.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { RemoteClawConfig } from "../config/config.js";
+import type { ConfigFileSnapshot, RemoteClawConfig } from "../config/config.js";
 import { resolveConfigPath, resolveStateDir } from "../config/paths.js";
+import { hasConfiguredSecretInput } from "../config/types.secrets.js";
 import { resolveGatewayAuth } from "../gateway/auth.js";
 import { buildGatewayConnectionDetails } from "../gateway/call.js";
 import { resolveGatewayProbeAuth } from "../gateway/probe-auth.js";
 import { probeGateway } from "../gateway/probe.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../infra/exec-safe-bin-runtime-policy.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const listInterpreterLikeSafeBins = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveMergedSafeBinProfileFixtures = (..._args: unknown[]) => undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../infra/exec-safe-bin-trust.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const normalizeTrustedSafeBinDirs = (dirs: string[]) => dirs;
+const listInterpreterLikeSafeBins = (..._args: unknown[]) => [] as string[];
+const resolveMergedSafeBinProfileFixtures = (..._args: unknown[]) =>
+  ({}) as Record<string, unknown>;
+const normalizeTrustedSafeBinDirs = (..._args: unknown[]) => [] as string[];
 import { collectChannelSecurityFindings } from "./audit-channel.js";
 import {
   collectAttackSurfaceSummaryFindings,
@@ -36,7 +29,7 @@ import {
   collectGatewayHttpSessionKeyOverrideFindings,
   collectHooksHardeningFindings,
   collectIncludeFilePermFindings,
-  collectPluginsCodeSafetyFindings,
+  collectInstalledSkillsCodeSafetyFindings,
   collectLikelyMultiUserSetupFindings,
   collectSandboxBrowserHashLabelFindings,
   collectMinimalProfileOverrideFindings,
@@ -48,8 +41,10 @@ import {
   collectSandboxDockerNoopFindings,
   collectPluginsTrustFindings,
   collectSecretsInConfigFindings,
+  collectPluginsCodeSafetyFindings,
   collectStateDeepFilesystemFindings,
   collectSyncedFolderFindings,
+  collectWorkspaceSkillSymlinkEscapeFindings,
   readConfigSnapshotForAudit,
 } from "./audit-extra.js";
 import {
@@ -113,6 +108,28 @@ export type SecurityAuditOptions = {
   execIcacls?: ExecFn;
   /** Dependency injection for tests (Docker label checks). */
   execDockerRawFn?: typeof execDockerRaw;
+  /** Optional preloaded config snapshot to skip audit-time config file reads. */
+  configSnapshot?: ConfigFileSnapshot | null;
+  /** Optional cache for code-safety summaries across repeated deep audits. */
+  codeSafetySummaryCache?: Map<string, Promise<unknown>>;
+};
+
+type AuditExecutionContext = {
+  cfg: RemoteClawConfig;
+  env: NodeJS.ProcessEnv;
+  platform: NodeJS.Platform;
+  includeFilesystem: boolean;
+  includeChannelSecurity: boolean;
+  deep: boolean;
+  deepTimeoutMs: number;
+  stateDir: string;
+  configPath: string;
+  execIcacls?: ExecFn;
+  execDockerRawFn?: typeof execDockerRaw;
+  probeGatewayFn?: typeof probeGateway;
+  plugins?: ReturnType<typeof listChannelPlugins>;
+  configSnapshot: ConfigFileSnapshot | null;
+  codeSafetySummaryCache: Map<string, Promise<unknown>>;
 };
 
 function countBySeverity(findings: SecurityAuditFinding[]): SecurityAuditSummary {
@@ -159,7 +176,7 @@ function isFeishuDocToolEnabled(cfg: RemoteClawConfig): boolean {
   const baseTools = asRecord(feishu.tools);
   const baseDocEnabled = baseTools?.doc !== false;
   const baseAppId = hasNonEmptyString(feishu.appId);
-  const baseAppSecret = hasNonEmptyString(feishu.appSecret);
+  const baseAppSecret = hasConfiguredSecretInput(feishu.appSecret, cfg.secrets?.defaults);
   const baseConfigured = baseAppId && baseAppSecret;
 
   const accounts = asRecord(feishu.accounts);
@@ -180,7 +197,7 @@ function isFeishuDocToolEnabled(cfg: RemoteClawConfig): boolean {
     }
     const accountConfigured =
       (hasNonEmptyString(account.appId) || baseAppId) &&
-      (hasNonEmptyString(account.appSecret) || baseAppSecret);
+      (hasConfiguredSecretInput(account.appSecret, cfg.secrets?.defaults) || baseAppSecret);
     if (accountConfigured) {
       return true;
     }
@@ -340,8 +357,44 @@ function collectGatewayConfigFindings(
     : [];
   const hasToken = typeof auth.token === "string" && auth.token.trim().length > 0;
   const hasPassword = typeof auth.password === "string" && auth.password.trim().length > 0;
+  const envTokenConfigured =
+    hasNonEmptyString(env.REMOTECLAW_GATEWAY_TOKEN) ||
+    hasNonEmptyString(env.CLAWDBOT_GATEWAY_TOKEN);
+  const envPasswordConfigured =
+    hasNonEmptyString(env.REMOTECLAW_GATEWAY_PASSWORD) ||
+    hasNonEmptyString(env.CLAWDBOT_GATEWAY_PASSWORD);
+  const tokenConfiguredFromConfig = hasConfiguredSecretInput(
+    cfg.gateway?.auth?.token,
+    cfg.secrets?.defaults,
+  );
+  const passwordConfiguredFromConfig = hasConfiguredSecretInput(
+    cfg.gateway?.auth?.password,
+    cfg.secrets?.defaults,
+  );
+  const remoteTokenConfigured = hasConfiguredSecretInput(
+    cfg.gateway?.remote?.token,
+    cfg.secrets?.defaults,
+  );
+  const explicitAuthMode = cfg.gateway?.auth?.mode;
+  const tokenCanWin =
+    hasToken || envTokenConfigured || tokenConfiguredFromConfig || remoteTokenConfigured;
+  const passwordCanWin =
+    explicitAuthMode === "password" ||
+    (explicitAuthMode !== "token" &&
+      explicitAuthMode !== "none" &&
+      explicitAuthMode !== "trusted-proxy" &&
+      !tokenCanWin);
+  const tokenConfigured = tokenCanWin;
+  const passwordConfigured =
+    hasPassword || (passwordCanWin && (envPasswordConfigured || passwordConfiguredFromConfig));
   const hasSharedSecret =
-    (auth.mode === "token" && hasToken) || (auth.mode === "password" && hasPassword);
+    explicitAuthMode === "token"
+      ? tokenConfigured
+      : explicitAuthMode === "password"
+        ? passwordConfigured
+        : explicitAuthMode === "none" || explicitAuthMode === "trusted-proxy"
+          ? false
+          : tokenConfigured || passwordConfigured;
   const hasTailscaleAuth = auth.allowTailscale && tailscaleMode === "serve";
   const hasGatewayAuth = hasSharedSecret || hasTailscaleAuth;
   const allowRealIpFallback = cfg.gateway?.allowRealIpFallback === true;
@@ -689,7 +742,25 @@ function collectBrowserControlFindings(
   }
 
   const browserAuth = resolveBrowserControlAuth(cfg, env);
-  if (!browserAuth.token && !browserAuth.password) {
+  const explicitAuthMode = cfg.gateway?.auth?.mode;
+  const tokenConfigured =
+    Boolean(browserAuth.token) ||
+    hasNonEmptyString(env.REMOTECLAW_GATEWAY_TOKEN) ||
+    hasNonEmptyString(env.CLAWDBOT_GATEWAY_TOKEN) ||
+    hasConfiguredSecretInput(cfg.gateway?.auth?.token, cfg.secrets?.defaults);
+  const passwordCanWin =
+    explicitAuthMode === "password" ||
+    (explicitAuthMode !== "token" &&
+      explicitAuthMode !== "none" &&
+      explicitAuthMode !== "trusted-proxy" &&
+      !tokenConfigured);
+  const passwordConfigured =
+    Boolean(browserAuth.password) ||
+    (passwordCanWin &&
+      (hasNonEmptyString(env.REMOTECLAW_GATEWAY_PASSWORD) ||
+        hasNonEmptyString(env.CLAWDBOT_GATEWAY_PASSWORD) ||
+        hasConfiguredSecretInput(cfg.gateway?.auth?.password, cfg.secrets?.defaults)));
+  if (!tokenConfigured && !passwordConfigured) {
     findings.push({
       checkId: "browser.control_no_auth",
       severity: "critical",
@@ -745,9 +816,7 @@ function collectLoggingFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] {
 
 function collectElevatedFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   const enabled = cfg.tools?.elevated?.enabled;
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   const allowFrom = cfg.tools?.elevated?.allowFrom ?? {};
   const anyAllowFromKeys = Object.keys(allowFrom).length > 0;
 
@@ -759,7 +828,6 @@ function collectElevatedFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] 
   }
 
   for (const [provider, list] of Object.entries(allowFrom)) {
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     const normalized = normalizeAllowFromList(list);
     if (normalized.includes("*")) {
       findings.push({
@@ -912,10 +980,7 @@ function collectExecRuntimeFindings(cfg: RemoteClawConfig): SecurityAuditFinding
   const globalSafeBins = normalizeConfiguredSafeBins(globalExec?.safeBins);
   if (globalSafeBins.length > 0) {
     const merged = resolveMergedSafeBinProfileFixtures({ global: globalExec }) ?? {};
-    const interpreters = listInterpreterLikeSafeBins(globalSafeBins).filter(
-      // oxlint-disable-next-line typescript/no-explicit-any
-      (bin: any) => !merged[bin],
-    );
+    const interpreters = listInterpreterLikeSafeBins(globalSafeBins).filter((bin) => !merged[bin]);
     if (interpreters.length > 0) {
       interpreterHits.push(`- tools.exec.safeBins: ${interpreters.join(", ")}`);
     }
@@ -935,10 +1000,7 @@ function collectExecRuntimeFindings(cfg: RemoteClawConfig): SecurityAuditFinding
         global: globalExec,
         local: agentExec,
       }) ?? {};
-    const interpreters = listInterpreterLikeSafeBins(agentSafeBins).filter(
-      // oxlint-disable-next-line typescript/no-explicit-any
-      (bin: any) => !merged[bin],
-    );
+    const interpreters = listInterpreterLikeSafeBins(agentSafeBins).filter((bin) => !merged[bin]);
     if (interpreters.length === 0) {
       continue;
     }
@@ -1018,14 +1080,46 @@ async function maybeProbeGateway(params: {
   };
 }
 
-export async function runSecurityAudit(opts: SecurityAuditOptions): Promise<SecurityAuditReport> {
-  const findings: SecurityAuditFinding[] = [];
+async function createAuditExecutionContext(
+  opts: SecurityAuditOptions,
+): Promise<AuditExecutionContext> {
   const cfg = opts.config;
   const env = opts.env ?? process.env;
   const platform = opts.platform ?? process.platform;
-  const execIcacls = opts.execIcacls;
+  const includeFilesystem = opts.includeFilesystem !== false;
+  const includeChannelSecurity = opts.includeChannelSecurity !== false;
+  const deep = opts.deep === true;
+  const deepTimeoutMs = Math.max(250, opts.deepTimeoutMs ?? 5000);
   const stateDir = opts.stateDir ?? resolveStateDir(env);
   const configPath = opts.configPath ?? resolveConfigPath(env, stateDir);
+  const configSnapshot = includeFilesystem
+    ? opts.configSnapshot !== undefined
+      ? opts.configSnapshot
+      : await readConfigSnapshotForAudit({ env, configPath }).catch(() => null)
+    : null;
+  return {
+    cfg,
+    env,
+    platform,
+    includeFilesystem,
+    includeChannelSecurity,
+    deep,
+    deepTimeoutMs,
+    stateDir,
+    configPath,
+    execIcacls: opts.execIcacls,
+    execDockerRawFn: opts.execDockerRawFn,
+    probeGatewayFn: opts.probeGatewayFn,
+    plugins: opts.plugins,
+    configSnapshot,
+    codeSafetySummaryCache: opts.codeSafetySummaryCache ?? new Map<string, Promise<unknown>>(),
+  };
+}
+
+export async function runSecurityAudit(opts: SecurityAuditOptions): Promise<SecurityAuditReport> {
+  const findings: SecurityAuditFinding[] = [];
+  const context = await createAuditExecutionContext(opts);
+  const { cfg, env, platform, stateDir, configPath } = context;
 
   findings.push(...collectAttackSurfaceSummaryFindings(cfg));
   findings.push(...collectSyncedFolderFindings({ stateDir, configPath }));
@@ -1049,57 +1143,72 @@ export async function runSecurityAudit(opts: SecurityAuditOptions): Promise<Secu
   findings.push(...collectExposureMatrixFindings(cfg));
   findings.push(...collectLikelyMultiUserSetupFindings(cfg));
 
-  const configSnapshot =
-    opts.includeFilesystem !== false
-      ? await readConfigSnapshotForAudit({ env, configPath }).catch(() => null)
-      : null;
-
-  if (opts.includeFilesystem !== false) {
+  if (context.includeFilesystem) {
     findings.push(
       ...(await collectFilesystemFindings({
         stateDir,
         configPath,
         env,
         platform,
-        execIcacls,
+        execIcacls: context.execIcacls,
       })),
     );
-    if (configSnapshot) {
+    if (context.configSnapshot) {
       findings.push(
-        ...(await collectIncludeFilePermFindings({ configSnapshot, env, platform, execIcacls })),
+        ...(await collectIncludeFilePermFindings({
+          configSnapshot: context.configSnapshot,
+          env,
+          platform,
+          execIcacls: context.execIcacls,
+        })),
       );
     }
     findings.push(
-      ...(await collectStateDeepFilesystemFindings({ cfg, env, stateDir, platform, execIcacls })),
+      ...(await collectStateDeepFilesystemFindings({
+        cfg,
+        env,
+        stateDir,
+        platform,
+        execIcacls: context.execIcacls,
+      })),
     );
+    findings.push(...(await collectWorkspaceSkillSymlinkEscapeFindings({ cfg })));
     findings.push(
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
-      // oxlint-disable-next-line
       ...(await collectSandboxBrowserHashLabelFindings({
-        execDockerRawFn: opts.execDockerRawFn,
+        execDockerRawFn: context.execDockerRawFn,
       })),
     );
     findings.push(...(await collectPluginsTrustFindings({ cfg, stateDir })));
-    if (opts.deep === true) {
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
-      findings.push(...(await collectPluginsCodeSafetyFindings({ cfg, stateDir })));
+    if (context.deep) {
+      findings.push(
+        ...(await collectPluginsCodeSafetyFindings({
+          stateDir,
+          summaryCache: context.codeSafetySummaryCache,
+        })),
+      );
+      findings.push(
+        ...(await collectInstalledSkillsCodeSafetyFindings({
+          cfg,
+          stateDir,
+          summaryCache: context.codeSafetySummaryCache,
+        })),
+      );
     }
   }
 
-  if (opts.includeChannelSecurity !== false) {
-    const plugins = opts.plugins ?? listChannelPlugins();
+  if (context.includeChannelSecurity) {
+    const plugins = context.plugins ?? listChannelPlugins();
     findings.push(...(await collectChannelSecurityFindings({ cfg, plugins })));
   }
 
-  const deep =
-    opts.deep === true
-      ? await maybeProbeGateway({
-          cfg,
-          env,
-          timeoutMs: Math.max(250, opts.deepTimeoutMs ?? 5000),
-          probe: opts.probeGatewayFn ?? probeGateway,
-        })
-      : undefined;
+  const deep = context.deep
+    ? await maybeProbeGateway({
+        cfg,
+        env,
+        timeoutMs: context.deepTimeoutMs,
+        probe: context.probeGatewayFn ?? probeGateway,
+      })
+    : undefined;
 
   if (deep?.gateway?.attempted && !deep.gateway.ok) {
     findings.push({

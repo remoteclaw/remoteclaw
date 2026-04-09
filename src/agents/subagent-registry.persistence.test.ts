@@ -115,6 +115,16 @@ describe("subagent registry persistence", () => {
     return registryPath;
   };
 
+  const readPersistedRun = async <T>(
+    registryPath: string,
+    runId: string,
+  ): Promise<T | undefined> => {
+    const parsed = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
+      runs?: Record<string, unknown>;
+    };
+    return parsed.runs?.[runId] as T | undefined;
+  };
+
   const createPersistedEndedRun = (params: {
     runId: string;
     childSessionKey: string;
@@ -269,6 +279,42 @@ describe("subagent registry persistence", () => {
     expect(match).toBeFalsy();
   });
 
+  // Gutted in RemoteClaw fork — v1→v2 migration was removed from
+  // loadSubagentRegistryFromDisk; it now returns empty Map for version!=2.
+  it.skip("maps legacy announce fields into cleanup state", async () => {
+    const persisted = {
+      version: 1,
+      runs: {
+        "run-legacy": {
+          runId: "run-legacy",
+          childSessionKey: "agent:main:subagent:legacy",
+          requesterSessionKey: "agent:main:main",
+          requesterDisplayKey: "main",
+          task: "legacy announce",
+          cleanup: "keep",
+          createdAt: 1,
+          startedAt: 1,
+          endedAt: 2,
+          announceCompletedAt: 9,
+          announceHandled: true,
+          requesterChannel: "whatsapp",
+          requesterAccountId: "legacy-account",
+        },
+      },
+    };
+    const registryPath = await writePersistedRegistry(persisted);
+
+    const runs = loadSubagentRegistryFromDisk();
+    const entry = runs.get("run-legacy");
+    expect(entry?.cleanupHandled).toBe(true);
+    expect(entry?.cleanupCompletedAt).toBe(9);
+    expect(entry?.requesterOrigin?.channel).toBe("whatsapp");
+    expect(entry?.requesterOrigin?.accountId).toBe("legacy-account");
+
+    const after = JSON.parse(await fs.readFile(registryPath, "utf8")) as { version?: number };
+    expect(after.version).toBe(2);
+  });
+
   it("retries cleanup announce after a failed announce", async () => {
     const persisted = createPersistedEndedRun({
       runId: "run-3",
@@ -282,11 +328,12 @@ describe("subagent registry persistence", () => {
     await restartRegistryAndFlush();
 
     expect(announceSpy).toHaveBeenCalledTimes(1);
-    const afterFirst = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
-      runs: Record<string, { cleanupHandled?: boolean; cleanupCompletedAt?: number }>;
-    };
-    expect(afterFirst.runs["run-3"].cleanupHandled).toBe(false);
-    expect(afterFirst.runs["run-3"].cleanupCompletedAt).toBeUndefined();
+    const afterFirst = await readPersistedRun<{
+      cleanupHandled?: boolean;
+      cleanupCompletedAt?: number;
+    }>(registryPath, "run-3");
+    expect(afterFirst?.cleanupHandled).toBe(false);
+    expect(afterFirst?.cleanupCompletedAt).toBeUndefined();
 
     announceSpy.mockResolvedValueOnce(true);
     await restartRegistryAndFlush();
@@ -311,10 +358,8 @@ describe("subagent registry persistence", () => {
     await restartRegistryAndFlush();
 
     expect(announceSpy).toHaveBeenCalledTimes(1);
-    const afterFirst = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
-      runs: Record<string, { cleanupHandled?: boolean }>;
-    };
-    expect(afterFirst.runs["run-4"]?.cleanupHandled).toBe(false);
+    const afterFirst = await readPersistedRun<{ cleanupHandled?: boolean }>(registryPath, "run-4");
+    expect(afterFirst?.cleanupHandled).toBe(false);
 
     announceSpy.mockResolvedValueOnce(true);
     await restartRegistryAndFlush();

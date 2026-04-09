@@ -17,6 +17,7 @@ vi.mock("@line/bot-sdk", () => ({
 
 vi.mock("../globals.js", () => ({
   logVerbose: () => {},
+  shouldLogVerbose: vi.fn(() => false),
 }));
 
 import { downloadLineMedia } from "./download.js";

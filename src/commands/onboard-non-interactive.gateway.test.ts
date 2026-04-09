@@ -9,7 +9,7 @@ const gatewayClientCalls: Array<{
   url?: string;
   token?: string;
   password?: string;
-  onHelloOk?: () => void;
+  onHelloOk?: (hello?: unknown) => void;
   onClose?: (code: number, reason: string) => void;
 }> = [];
 const ensureWorkspaceAndSessionsMock = vi.fn(async (..._args: unknown[]) => {});
@@ -20,13 +20,13 @@ vi.mock("../gateway/client.js", () => ({
       url?: string;
       token?: string;
       password?: string;
-      onHelloOk?: () => void;
+      onHelloOk?: (hello?: unknown) => void;
     };
     constructor(params: {
       url?: string;
       token?: string;
       password?: string;
-      onHelloOk?: () => void;
+      onHelloOk?: (hello?: unknown) => void;
     }) {
       this.params = params;
       gatewayClientCalls.push(params);
@@ -35,7 +35,7 @@ vi.mock("../gateway/client.js", () => ({
       return { ok: true };
     }
     start() {
-      queueMicrotask(() => this.params.onHelloOk?.());
+      queueMicrotask(() => this.params.onHelloOk?.({ features: { methods: [] } }));
     }
     stop() {}
   },
@@ -116,9 +116,7 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
     envSnapshot.restore();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("writes gateway token auth into config", async () => {
+  it("writes gateway token auth into config", async () => {
     await withStateDir("state-noninteractive-", async (stateDir) => {
       const token = "tok_test_123";
       const workspace = path.join(stateDir, "remoteclaw");
@@ -129,7 +127,6 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
           mode: "local",
           workspace,
           authChoice: "skip",
-          // @ts-expect-error — upstream feature not available in RemoteClaw fork
           skipSkills: true,
           skipHealth: true,
           installDaemon: false,
@@ -144,9 +141,11 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
       const cfg = await readJsonFile<{
         gateway?: { auth?: { mode?: string; token?: string } };
         agents?: { defaults?: { workspace?: string } };
+        tools?: { profile?: string };
       }>(configPath);
 
       expect(cfg?.agents?.defaults?.workspace).toBe(workspace);
+      expect(cfg?.tools?.profile).toBe("messaging");
       expect(cfg?.gateway?.auth?.mode).toBe("token");
       expect(cfg?.gateway?.auth?.token).toBe(token);
     });
@@ -166,7 +165,6 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
             mode: "local",
             workspace,
             authChoice: "skip",
-            // @ts-expect-error — upstream feature not available in RemoteClaw fork
             skipSkills: true,
             skipHealth: true,
             installDaemon: false,
@@ -244,7 +242,6 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
           mode: "local",
           workspace,
           authChoice: "skip",
-          // @ts-expect-error — upstream feature not available in RemoteClaw fork
           skipSkills: true,
           skipHealth: true,
           installDaemon: false,

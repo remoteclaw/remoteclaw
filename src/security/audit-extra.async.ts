@@ -6,19 +6,35 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
-import { isToolAllowedByPolicies } from "../agents/tool-policy-resolution.js";
-// Sandbox infrastructure removed (#68)
-const resolveSandboxConfigForAgent = (_cfg: unknown, _agentId?: string) => ({
-  mode: "off" as const,
+// Gutted in RemoteClaw fork (Middleware Boundary Principle) — sandbox/skills/policy subsystems
+const isToolAllowedByPolicies = (..._args: unknown[]) => true;
+const resolveSandboxConfigForAgent = (..._args: unknown[]) => ({
+  mode: undefined as "all" | "non-main" | "off" | undefined,
 });
-const resolveToolPolicyForAgent = (_cfg: unknown, _agentId?: string) =>
-  undefined as ToolPolicy | undefined;
-type ToolPolicy = { allow?: string[]; deny?: string[] };
+const resolveSandboxToolPolicyForAgent = (..._args: unknown[]) => ({}) as Record<string, unknown>;
+const SANDBOX_BROWSER_SECURITY_HASH_EPOCH = 0;
+type ExecDockerRawResult = { code: number; stdout: Buffer; stderr: Buffer };
+const execDockerRaw = (..._args: unknown[]) =>
+  Promise.resolve({
+    code: 1,
+    stdout: Buffer.from(""),
+    stderr: Buffer.from(""),
+  } as ExecDockerRawResult);
+type SandboxToolPolicy = Record<string, unknown>;
+const loadWorkspaceSkillEntries = (..._args: unknown[]) =>
+  [] as Array<{ skill: { source: string; baseDir: string; name: string } }>;
 import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+const listAgentWorkspaceDirs = (..._args: unknown[]) => [] as string[];
+import { formatCliCommand } from "../cli/command-format.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+const MANIFEST_KEY = "remoteclaw" as const;
+import { resolveNativeSkillsEnabled } from "../config/commands.js";
 import type { RemoteClawConfig, ConfigFileSnapshot } from "../config/config.js";
 import { createConfigIO } from "../config/config.js";
 import { collectIncludePathsRecursive } from "../config/includes-scan.js";
 import { resolveOAuthDir } from "../config/paths.js";
+import { hasConfiguredSecretInput } from "../config/types.secrets.js";
 import type { AgentToolsConfig } from "../config/types.tools.js";
 import { normalizePluginsConfig } from "../plugins/config-state.js";
 import { normalizeAgentId } from "../routing/session-key.js";
@@ -28,25 +44,31 @@ import {
   inspectPathPermissions,
   safeStat,
 } from "./audit-fs.js";
-// Sandbox infrastructure removed (#68)
-function normalizeToolPolicy(config?: {
-  allow?: string[];
-  deny?: string[];
-}): ToolPolicy | undefined {
-  if (!config) {
-    return undefined;
-  }
-  const allow = Array.isArray(config.allow) ? config.allow : undefined;
-  const deny = Array.isArray(config.deny) ? config.deny : undefined;
-  if (!allow && !deny) {
-    return undefined;
-  }
-  return { allow, deny };
-}
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+const pickSandboxToolPolicy = (..._args: unknown[]) => ({}) as Record<string, unknown>;
 import { extensionUsesSkippedScannerPath, isPathInside } from "./scan-paths.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle) — skill scanner
+type SkillScanFinding = {
+  file: string;
+  ruleId: string;
+  message: string;
+  line: number;
+  severity?: string;
+};
+const skillScanner = {
+  scanSkillDirectory: (..._args: unknown[]) => Promise.resolve([] as SkillScanFinding[]),
+  collectSkillScanFindings: (..._args: unknown[]) => Promise.resolve([] as SkillScanFinding[]),
+  scanDirectoryWithSummary: (..._args: unknown[]) =>
+    Promise.resolve({
+      findings: [] as SkillScanFinding[],
+      skippedCount: 0,
+      scannedCount: 0,
+      scannedFiles: 0,
+      critical: 0,
+      warn: 0,
+    }),
+};
 import type { ExecFn } from "./windows-acl.js";
-
-const MANIFEST_KEY = "remoteclaw" as const;
 
 export type SecurityAuditFinding = {
   checkId: string;
@@ -55,6 +77,15 @@ export type SecurityAuditFinding = {
   detail: string;
   remediation?: string;
 };
+
+type ExecDockerRawFn = (
+  args: string[],
+  opts?: { allowFailure?: boolean; input?: Buffer | string; signal?: AbortSignal },
+) => Promise<ExecDockerRawResult>;
+
+type CodeSafetySummaryCache = Map<string, Promise<unknown>>;
+const MAX_WORKSPACE_SKILL_SCAN_FILES_PER_WORKSPACE = 2_000;
+const MAX_WORKSPACE_SKILL_ESCAPE_DETAIL_ROWS = 12;
 
 // --------------------------------------------------------------------------
 // Helpers
@@ -94,6 +125,20 @@ async function readPluginManifestExtensions(pluginPath: string): Promise<string[
   return extensions.map((entry) => (typeof entry === "string" ? entry.trim() : "")).filter(Boolean);
 }
 
+function formatCodeSafetyDetails(findings: SkillScanFinding[], rootDir: string): string {
+  return findings
+    .map((finding) => {
+      const relPath = path.relative(rootDir, finding.file);
+      const filePath =
+        relPath && relPath !== "." && !relPath.startsWith("..")
+          ? relPath
+          : path.basename(finding.file);
+      const normalizedPath = filePath.replaceAll("\\", "/");
+      return `  - [${finding.ruleId}] ${finding.message} (${normalizedPath}:${finding.line})`;
+    })
+    .join("\n");
+}
+
 async function listInstalledPluginDirs(params: {
   stateDir: string;
   onReadError?: (error: unknown) => void;
@@ -119,16 +164,16 @@ function resolveToolPolicies(params: {
   agentTools?: AgentToolsConfig;
   sandboxMode?: "off" | "non-main" | "all";
   agentId?: string | null;
-}): Array<ToolPolicy | undefined> {
+}): Array<SandboxToolPolicy | undefined> {
   const profile = params.agentTools?.profile ?? params.cfg.tools?.profile;
   const profilePolicy = resolveToolProfilePolicy(profile);
-  const policies: Array<ToolPolicy | undefined> = [
+  const policies: Array<SandboxToolPolicy | undefined> = [
     profilePolicy,
-    normalizeToolPolicy(params.cfg.tools ?? undefined),
-    normalizeToolPolicy(params.agentTools),
+    pickSandboxToolPolicy(params.cfg.tools ?? undefined),
+    pickSandboxToolPolicy(params.agentTools),
   ];
   if (params.sandboxMode === "all") {
-    policies.push(resolveToolPolicyForAgent(params.cfg, params.agentId ?? undefined));
+    policies.push(resolveSandboxToolPolicyForAgent(params.cfg, params.agentId ?? undefined));
   }
   return policies;
 }
@@ -236,9 +281,277 @@ async function readInstalledPackageVersion(dir: string): Promise<string | undefi
   }
 }
 
+function buildCodeSafetySummaryCacheKey(params: {
+  dirPath: string;
+  includeFiles?: string[];
+}): string {
+  const includeFiles = (params.includeFiles ?? []).map((entry) => entry.trim()).filter(Boolean);
+  const includeKey = includeFiles.length > 0 ? includeFiles.toSorted().join("\u0000") : "";
+  return `${params.dirPath}\u0000${includeKey}`;
+}
+
+async function getCodeSafetySummary(params: {
+  dirPath: string;
+  includeFiles?: string[];
+  summaryCache?: CodeSafetySummaryCache;
+}): Promise<Awaited<ReturnType<typeof skillScanner.scanDirectoryWithSummary>>> {
+  const cacheKey = buildCodeSafetySummaryCacheKey({
+    dirPath: params.dirPath,
+    includeFiles: params.includeFiles,
+  });
+  const cache = params.summaryCache;
+  if (cache) {
+    const hit = cache.get(cacheKey);
+    if (hit) {
+      return (await hit) as Awaited<ReturnType<typeof skillScanner.scanDirectoryWithSummary>>;
+    }
+    const pending = skillScanner.scanDirectoryWithSummary(params.dirPath, {
+      includeFiles: params.includeFiles,
+    });
+    cache.set(cacheKey, pending);
+    return await pending;
+  }
+  return await skillScanner.scanDirectoryWithSummary(params.dirPath, {
+    includeFiles: params.includeFiles,
+  });
+}
+
+async function listWorkspaceSkillMarkdownFiles(workspaceDir: string): Promise<string[]> {
+  const skillsRoot = path.join(workspaceDir, "skills");
+  const rootStat = await safeStat(skillsRoot);
+  if (!rootStat.ok || !rootStat.isDir) {
+    return [];
+  }
+
+  const skillFiles: string[] = [];
+  const queue: string[] = [skillsRoot];
+  const visitedDirs = new Set<string>();
+
+  while (queue.length > 0 && skillFiles.length < MAX_WORKSPACE_SKILL_SCAN_FILES_PER_WORKSPACE) {
+    const dir = queue.shift()!;
+    const dirRealPath = await fs.realpath(dir).catch(() => path.resolve(dir));
+    if (visitedDirs.has(dirRealPath)) {
+      continue;
+    }
+    visitedDirs.add(dirRealPath);
+
+    const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      if (entry.name.startsWith(".") || entry.name === "node_modules") {
+        continue;
+      }
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        queue.push(fullPath);
+        continue;
+      }
+      if (entry.isSymbolicLink()) {
+        const stat = await fs.stat(fullPath).catch(() => null);
+        if (!stat) {
+          continue;
+        }
+        if (stat.isDirectory()) {
+          queue.push(fullPath);
+          continue;
+        }
+        if (stat.isFile() && entry.name === "SKILL.md") {
+          skillFiles.push(fullPath);
+        }
+        continue;
+      }
+      if (entry.isFile() && entry.name === "SKILL.md") {
+        skillFiles.push(fullPath);
+      }
+    }
+  }
+
+  return skillFiles;
+}
+
 // --------------------------------------------------------------------------
 // Exported collectors
 // --------------------------------------------------------------------------
+
+function normalizeDockerLabelValue(raw: string | undefined): string | null {
+  const trimmed = raw?.trim() ?? "";
+  if (!trimmed || trimmed === "<no value>") {
+    return null;
+  }
+  return trimmed;
+}
+
+async function listSandboxBrowserContainers(
+  execDockerRawFn: ExecDockerRawFn,
+): Promise<string[] | null> {
+  try {
+    const result = await execDockerRawFn(
+      ["ps", "-a", "--filter", "label=remoteclaw.sandboxBrowser=1", "--format", "{{.Names}}"],
+      { allowFailure: true },
+    );
+    if (result.code !== 0) {
+      return null;
+    }
+    return result.stdout
+      .toString("utf8")
+      .split(/\r?\n/)
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  } catch {
+    return null;
+  }
+}
+
+async function readSandboxBrowserHashLabels(params: {
+  containerName: string;
+  execDockerRawFn: ExecDockerRawFn;
+}): Promise<{ configHash: string | null; epoch: string | null } | null> {
+  try {
+    const result = await params.execDockerRawFn(
+      [
+        "inspect",
+        "-f",
+        '{{ index .Config.Labels "remoteclaw.configHash" }}\t{{ index .Config.Labels "remoteclaw.browserConfigEpoch" }}',
+        params.containerName,
+      ],
+      { allowFailure: true },
+    );
+    if (result.code !== 0) {
+      return null;
+    }
+    const [hashRaw, epochRaw] = result.stdout.toString("utf8").split("\t");
+    return {
+      configHash: normalizeDockerLabelValue(hashRaw),
+      epoch: normalizeDockerLabelValue(epochRaw),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function parsePublishedHostFromDockerPortLine(line: string): string | null {
+  const trimmed = line.trim();
+  const rhs = trimmed.includes("->") ? (trimmed.split("->").at(-1)?.trim() ?? "") : trimmed;
+  if (!rhs) {
+    return null;
+  }
+  const bracketHost = rhs.match(/^\[([^\]]+)\]:\d+$/);
+  if (bracketHost?.[1]) {
+    return bracketHost[1];
+  }
+  const hostPort = rhs.match(/^([^:]+):\d+$/);
+  if (hostPort?.[1]) {
+    return hostPort[1];
+  }
+  return null;
+}
+
+function isLoopbackPublishHost(host: string): boolean {
+  const normalized = host.trim().toLowerCase();
+  return normalized === "127.0.0.1" || normalized === "::1" || normalized === "localhost";
+}
+
+async function readSandboxBrowserPortMappings(params: {
+  containerName: string;
+  execDockerRawFn: ExecDockerRawFn;
+}): Promise<string[] | null> {
+  try {
+    const result = await params.execDockerRawFn(["port", params.containerName], {
+      allowFailure: true,
+    });
+    if (result.code !== 0) {
+      return null;
+    }
+    return result.stdout
+      .toString("utf8")
+      .split(/\r?\n/)
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  } catch {
+    return null;
+  }
+}
+
+export async function collectSandboxBrowserHashLabelFindings(params?: {
+  execDockerRawFn?: ExecDockerRawFn;
+}): Promise<SecurityAuditFinding[]> {
+  const findings: SecurityAuditFinding[] = [];
+  const execFn = params?.execDockerRawFn ?? execDockerRaw;
+  const containers = await listSandboxBrowserContainers(execFn);
+  if (!containers || containers.length === 0) {
+    return findings;
+  }
+
+  const missingHash: string[] = [];
+  const staleEpoch: string[] = [];
+  const nonLoopbackPublished: string[] = [];
+
+  for (const containerName of containers) {
+    const labels = await readSandboxBrowserHashLabels({ containerName, execDockerRawFn: execFn });
+    if (!labels) {
+      continue;
+    }
+    if (!labels.configHash) {
+      missingHash.push(containerName);
+    }
+    if ((labels.epoch as unknown) !== SANDBOX_BROWSER_SECURITY_HASH_EPOCH) {
+      staleEpoch.push(containerName);
+    }
+    const portMappings = await readSandboxBrowserPortMappings({
+      containerName,
+      execDockerRawFn: execFn,
+    });
+    if (!portMappings?.length) {
+      continue;
+    }
+    const exposedMappings = portMappings.filter((line) => {
+      const host = parsePublishedHostFromDockerPortLine(line);
+      return Boolean(host && !isLoopbackPublishHost(host));
+    });
+    if (exposedMappings.length > 0) {
+      nonLoopbackPublished.push(`${containerName} (${exposedMappings.join("; ")})`);
+    }
+  }
+
+  if (missingHash.length > 0) {
+    findings.push({
+      checkId: "sandbox.browser_container.hash_label_missing",
+      severity: "warn",
+      title: "Sandbox browser container missing config hash label",
+      detail:
+        `Containers: ${missingHash.join(", ")}. ` +
+        "These browser containers predate hash-based drift checks and may miss security remediations until recreated.",
+      remediation: `${formatCliCommand("remoteclaw sandbox recreate --browser --all")} (add --force to skip prompt).`,
+    });
+  }
+
+  if (staleEpoch.length > 0) {
+    findings.push({
+      checkId: "sandbox.browser_container.hash_epoch_stale",
+      severity: "warn",
+      title: "Sandbox browser container hash epoch is stale",
+      detail:
+        `Containers: ${staleEpoch.join(", ")}. ` +
+        `Expected remoteclaw.browserConfigEpoch=${SANDBOX_BROWSER_SECURITY_HASH_EPOCH}.`,
+      remediation: `${formatCliCommand("remoteclaw sandbox recreate --browser --all")} (add --force to skip prompt).`,
+    });
+  }
+
+  if (nonLoopbackPublished.length > 0) {
+    findings.push({
+      checkId: "sandbox.browser_container.non_loopback_publish",
+      severity: "critical",
+      title: "Sandbox browser container publishes ports on non-loopback interfaces",
+      detail:
+        `Containers: ${nonLoopbackPublished.join(", ")}. ` +
+        "Sandbox browser observer/control ports should stay loopback-only to avoid unintended remote access.",
+      remediation:
+        `${formatCliCommand("remoteclaw sandbox recreate --browser --all")} (add --force to skip prompt), ` +
+        "then verify published ports are bound to 127.0.0.1.",
+    });
+  }
+
+  return findings;
+}
 
 export async function collectPluginsTrustFindings(params: {
   cfg: RemoteClawConfig;
@@ -252,11 +565,85 @@ export async function collectPluginsTrustFindings(params: {
     const allow = params.cfg.plugins?.allow;
     const allowConfigured = Array.isArray(allow) && allow.length > 0;
     if (!allowConfigured) {
+      const hasString = (value: unknown) => typeof value === "string" && value.trim().length > 0;
+      const hasSecretInput = (value: unknown) =>
+        hasConfiguredSecretInput(value, params.cfg.secrets?.defaults);
+      const hasAccountStringKey = (account: unknown, key: string) =>
+        Boolean(
+          account &&
+          typeof account === "object" &&
+          hasString((account as Record<string, unknown>)[key]),
+        );
+      const hasAccountSecretInputKey = (account: unknown, key: string) =>
+        Boolean(
+          account &&
+          typeof account === "object" &&
+          hasSecretInput((account as Record<string, unknown>)[key]),
+        );
+
+      const discordConfigured =
+        hasSecretInput(params.cfg.channels?.discord?.token) ||
+        Boolean(
+          params.cfg.channels?.discord?.accounts &&
+          Object.values(params.cfg.channels.discord.accounts).some((a) =>
+            hasAccountSecretInputKey(a, "token"),
+          ),
+        ) ||
+        hasString(process.env.DISCORD_BOT_TOKEN);
+
+      const telegramConfigured =
+        hasSecretInput(params.cfg.channels?.telegram?.botToken) ||
+        hasString(params.cfg.channels?.telegram?.tokenFile) ||
+        Boolean(
+          params.cfg.channels?.telegram?.accounts &&
+          Object.values(params.cfg.channels.telegram.accounts).some(
+            (a) => hasAccountSecretInputKey(a, "botToken") || hasAccountStringKey(a, "tokenFile"),
+          ),
+        ) ||
+        hasString(process.env.TELEGRAM_BOT_TOKEN);
+
+      const slackConfigured =
+        hasSecretInput(params.cfg.channels?.slack?.botToken) ||
+        hasSecretInput(params.cfg.channels?.slack?.appToken) ||
+        Boolean(
+          params.cfg.channels?.slack?.accounts &&
+          Object.values(params.cfg.channels.slack.accounts).some(
+            (a) =>
+              hasAccountSecretInputKey(a, "botToken") || hasAccountSecretInputKey(a, "appToken"),
+          ),
+        ) ||
+        hasString(process.env.SLACK_BOT_TOKEN) ||
+        hasString(process.env.SLACK_APP_TOKEN);
+
+      const skillCommandsLikelyExposed =
+        (discordConfigured &&
+          resolveNativeSkillsEnabled({
+            providerId: "discord",
+            providerSetting: params.cfg.channels?.discord?.commands?.nativeSkills,
+            globalSetting: params.cfg.commands?.nativeSkills,
+          })) ||
+        (telegramConfigured &&
+          resolveNativeSkillsEnabled({
+            providerId: "telegram",
+            providerSetting: params.cfg.channels?.telegram?.commands?.nativeSkills,
+            globalSetting: params.cfg.commands?.nativeSkills,
+          })) ||
+        (slackConfigured &&
+          resolveNativeSkillsEnabled({
+            providerId: "slack",
+            providerSetting: params.cfg.channels?.slack?.commands?.nativeSkills,
+            globalSetting: params.cfg.commands?.nativeSkills,
+          }));
+
       findings.push({
         checkId: "plugins.extensions_no_allowlist",
-        severity: "warn",
+        severity: skillCommandsLikelyExposed ? "critical" : "warn",
         title: "Extensions exist but plugins.allow is not set",
-        detail: `Found ${pluginDirs.length} extension(s) under ${extensionsDir}. Without plugins.allow, any discovered plugin id may load (depending on config and plugin behavior).`,
+        detail:
+          `Found ${pluginDirs.length} extension(s) under ${extensionsDir}. Without plugins.allow, any discovered plugin id may load (depending on config and plugin behavior).` +
+          (skillCommandsLikelyExposed
+            ? "\nNative skill commands are enabled on at least one configured chat surface; treat unpinned/unallowlisted extensions as high risk."
+            : ""),
         remediation: "Set plugins.allow to an explicit list of plugin ids you trust.",
       });
     }
@@ -459,6 +846,78 @@ export async function collectPluginsTrustFindings(params: {
       });
     }
   }
+
+  return findings;
+}
+
+export async function collectWorkspaceSkillSymlinkEscapeFindings(params: {
+  cfg: RemoteClawConfig;
+}): Promise<SecurityAuditFinding[]> {
+  const findings: SecurityAuditFinding[] = [];
+  const workspaceDirs = listAgentWorkspaceDirs(params.cfg);
+  if (workspaceDirs.length === 0) {
+    return findings;
+  }
+
+  const escapedSkillFiles: Array<{
+    workspaceDir: string;
+    skillFilePath: string;
+    skillRealPath: string;
+  }> = [];
+  const seenSkillPaths = new Set<string>();
+
+  for (const workspaceDir of workspaceDirs) {
+    const workspacePath = path.resolve(workspaceDir);
+    const workspaceRealPath = await fs.realpath(workspacePath).catch(() => workspacePath);
+    const skillFilePaths = await listWorkspaceSkillMarkdownFiles(workspacePath);
+
+    for (const skillFilePath of skillFilePaths) {
+      const canonicalSkillPath = path.resolve(skillFilePath);
+      if (seenSkillPaths.has(canonicalSkillPath)) {
+        continue;
+      }
+      seenSkillPaths.add(canonicalSkillPath);
+
+      const skillRealPath = await fs.realpath(canonicalSkillPath).catch(() => null);
+      if (!skillRealPath) {
+        continue;
+      }
+      if (isPathInside(workspaceRealPath, skillRealPath)) {
+        continue;
+      }
+      escapedSkillFiles.push({
+        workspaceDir: workspacePath,
+        skillFilePath: canonicalSkillPath,
+        skillRealPath,
+      });
+    }
+  }
+
+  if (escapedSkillFiles.length === 0) {
+    return findings;
+  }
+
+  findings.push({
+    checkId: "skills.workspace.symlink_escape",
+    severity: "warn",
+    title: "Workspace skill files resolve outside the workspace root",
+    detail:
+      "Detected workspace `skills/**/SKILL.md` paths whose realpath escapes their workspace root:\n" +
+      escapedSkillFiles
+        .slice(0, MAX_WORKSPACE_SKILL_ESCAPE_DETAIL_ROWS)
+        .map(
+          (entry) =>
+            `- workspace=${entry.workspaceDir}\n` +
+            `  skill=${entry.skillFilePath}\n` +
+            `  realpath=${entry.skillRealPath}`,
+        )
+        .join("\n") +
+      (escapedSkillFiles.length > MAX_WORKSPACE_SKILL_ESCAPE_DETAIL_ROWS
+        ? `\n- +${escapedSkillFiles.length - MAX_WORKSPACE_SKILL_ESCAPE_DETAIL_ROWS} more`
+        : ""),
+    remediation:
+      "Keep workspace skills inside the workspace root (replace symlinked escapes with real in-workspace files), or move trusted shared skills to managed/bundled skill locations.",
+  });
 
   return findings;
 }
@@ -709,6 +1168,7 @@ export async function readConfigSnapshotForAudit(params: {
 
 export async function collectPluginsCodeSafetyFindings(params: {
   stateDir: string;
+  summaryCache?: CodeSafetySummaryCache;
 }): Promise<SecurityAuditFinding[]> {
   const findings: SecurityAuditFinding[] = [];
   const { extensionsDir, pluginDirs } = await listInstalledPluginDirs({
@@ -758,6 +1218,125 @@ export async function collectPluginsCodeSafetyFindings(params: {
         remediation:
           "Update the plugin manifest so all remoteclaw.extensions entries stay inside the plugin directory.",
       });
+    }
+
+    const summary = await getCodeSafetySummary({
+      dirPath: pluginPath,
+      includeFiles: forcedScanEntries,
+      summaryCache: params.summaryCache,
+    }).catch((err) => {
+      findings.push({
+        checkId: "plugins.code_safety.scan_failed",
+        severity: "warn",
+        title: `Plugin "${pluginName}" code scan failed`,
+        detail: `Static code scan could not complete: ${String(err)}`,
+        remediation:
+          "Check file permissions and plugin layout, then rerun `remoteclaw security audit --deep`.",
+      });
+      return null;
+    });
+    if (!summary) {
+      continue;
+    }
+
+    if (summary.critical > 0) {
+      const criticalFindings = summary.findings.filter((f) => f.severity === "critical");
+      const details = formatCodeSafetyDetails(criticalFindings, pluginPath);
+
+      findings.push({
+        checkId: "plugins.code_safety",
+        severity: "critical",
+        title: `Plugin "${pluginName}" contains dangerous code patterns`,
+        detail: `Found ${summary.critical} critical issue(s) in ${summary.scannedFiles} scanned file(s):\n${details}`,
+        remediation:
+          "Review the plugin source code carefully before use. If untrusted, remove the plugin from your RemoteClaw extensions state directory.",
+      });
+    } else if (summary.warn > 0) {
+      const warnFindings = summary.findings.filter((f) => f.severity === "warn");
+      const details = formatCodeSafetyDetails(warnFindings, pluginPath);
+
+      findings.push({
+        checkId: "plugins.code_safety",
+        severity: "warn",
+        title: `Plugin "${pluginName}" contains suspicious code patterns`,
+        detail: `Found ${summary.warn} warning(s) in ${summary.scannedFiles} scanned file(s):\n${details}`,
+        remediation: `Review the flagged code to ensure it is intentional and safe.`,
+      });
+    }
+  }
+
+  return findings;
+}
+
+export async function collectInstalledSkillsCodeSafetyFindings(params: {
+  cfg: RemoteClawConfig;
+  stateDir: string;
+  summaryCache?: CodeSafetySummaryCache;
+}): Promise<SecurityAuditFinding[]> {
+  const findings: SecurityAuditFinding[] = [];
+  const pluginExtensionsDir = path.join(params.stateDir, "extensions");
+  const scannedSkillDirs = new Set<string>();
+  const workspaceDirs = listAgentWorkspaceDirs(params.cfg);
+
+  for (const workspaceDir of workspaceDirs) {
+    const entries = loadWorkspaceSkillEntries(workspaceDir, { config: params.cfg });
+    for (const entry of entries) {
+      if (entry.skill.source === "remoteclaw-bundled") {
+        continue;
+      }
+
+      const skillDir = path.resolve(entry.skill.baseDir);
+      if (isPathInside(pluginExtensionsDir, skillDir)) {
+        // Plugin code is already covered by plugins.code_safety checks.
+        continue;
+      }
+      if (scannedSkillDirs.has(skillDir)) {
+        continue;
+      }
+      scannedSkillDirs.add(skillDir);
+
+      const skillName = entry.skill.name;
+      const summary = await getCodeSafetySummary({
+        dirPath: skillDir,
+        summaryCache: params.summaryCache,
+      }).catch((err) => {
+        findings.push({
+          checkId: "skills.code_safety.scan_failed",
+          severity: "warn",
+          title: `Skill "${skillName}" code scan failed`,
+          detail: `Static code scan could not complete for ${skillDir}: ${String(err)}`,
+          remediation:
+            "Check file permissions and skill layout, then rerun `remoteclaw security audit --deep`.",
+        });
+        return null;
+      });
+      if (!summary) {
+        continue;
+      }
+
+      if (summary.critical > 0) {
+        const criticalFindings = summary.findings.filter(
+          (finding) => finding.severity === "critical",
+        );
+        const details = formatCodeSafetyDetails(criticalFindings, skillDir);
+        findings.push({
+          checkId: "skills.code_safety",
+          severity: "critical",
+          title: `Skill "${skillName}" contains dangerous code patterns`,
+          detail: `Found ${summary.critical} critical issue(s) in ${summary.scannedFiles} scanned file(s) under ${skillDir}:\n${details}`,
+          remediation: `Review the skill source code before use. If untrusted, remove "${skillDir}".`,
+        });
+      } else if (summary.warn > 0) {
+        const warnFindings = summary.findings.filter((finding) => finding.severity === "warn");
+        const details = formatCodeSafetyDetails(warnFindings, skillDir);
+        findings.push({
+          checkId: "skills.code_safety",
+          severity: "warn",
+          title: `Skill "${skillName}" contains suspicious code patterns`,
+          detail: `Found ${summary.warn} warning(s) in ${summary.scannedFiles} scanned file(s) under ${skillDir}:\n${details}`,
+          remediation: "Review flagged lines to ensure the behavior is intentional and safe.",
+        });
+      }
     }
   }
 

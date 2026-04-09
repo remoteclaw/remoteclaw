@@ -457,3 +457,6 @@ export function resolveControlUiLinks(params: {
     wsUrl: `ws://${host}:${port}${wsPath}`,
   };
 }
+
+// Re-export for upstream compatibility
+export const DEFAULT_WORKSPACE = "workspace";

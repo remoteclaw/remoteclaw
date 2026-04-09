@@ -1,34 +1,29 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { GatewayClient } from "../gateway/client.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../infra/exec-approvals.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const ensureExecApprovals = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const mergeExecApprovalsSocketDefaults = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const normalizeExecApprovals = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const readExecApprovalsSnapshot = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const saveExecApprovals = (..._args: unknown[]) => undefined as any;
-type ExecAsk = Record<string, unknown>;
-type ExecApprovalsFile = Record<string, unknown>;
-type ExecApprovalsResolved = Record<string, unknown>;
-type ExecSecurity = Record<string, unknown>;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../infra/exec-host.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const requestExecHostViaSocket = (..._args: unknown[]) => undefined as any;
-type ExecHostRequest = Record<string, unknown>;
-type ExecHostResponse = Record<string, unknown>;
+import {
+  ensureExecApprovals,
+  mergeExecApprovalsSocketDefaults,
+  normalizeExecApprovals,
+  readExecApprovalsSnapshot,
+  saveExecApprovals,
+  type ExecAsk,
+  type ExecApprovalsFile,
+  type ExecApprovalsResolved,
+  type ExecSecurity,
+} from "../infra/exec-approvals.js";
+import {
+  requestExecHostViaSocket,
+  type ExecHostRequest,
+  type ExecHostResponse,
+} from "../infra/exec-host.js";
 import { sanitizeHostExecEnv } from "../infra/host-env-security.js";
 import { runBrowserProxyCommand } from "./invoke-browser.js";
 import { buildSystemRunApprovalPlan, handleSystemRunInvoke } from "./invoke-system-run.js";
 import type {
   ExecEventPayload,
+  ExecFinishedEventParams,
   RunResult,
   SkillBinsProvider,
   SystemRunParams,
@@ -37,6 +32,16 @@ import type {
 const OUTPUT_CAP = 200_000;
 const OUTPUT_EVENT_TAIL = 20_000;
 const DEFAULT_NODE_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
+const WINDOWS_CODEPAGE_ENCODING_MAP: Record<number, string> = {
+  65001: "utf-8",
+  54936: "gb18030",
+  936: "gbk",
+  950: "big5",
+  932: "shift_jis",
+  949: "euc-kr",
+  1252: "windows-1252",
+};
+let cachedWindowsConsoleEncoding: string | null | undefined;
 
 const execHostEnforced = process.env.REMOTECLAW_NODE_EXEC_HOST?.trim().toLowerCase() === "app";
 const execHostFallbackAllowed =
@@ -71,7 +76,6 @@ export type NodeInvokeRequestPayload = {
 export type { SkillBinsProvider } from "./invoke-types.js";
 
 function resolveExecSecurity(value?: string): ExecSecurity {
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   return value === "deny" || value === "allowlist" || value === "full" ? value : "allowlist";
 }
 
@@ -85,7 +89,6 @@ function isCmdExeInvocation(argv: string[]): boolean {
 }
 
 function resolveExecAsk(value?: string): ExecAsk {
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   return value === "off" || value === "on-miss" || value === "always" ? value : "on-miss";
 }
 
@@ -100,9 +103,67 @@ function truncateOutput(raw: string, maxChars: number): { text: string; truncate
   return { text: `... (truncated) ${raw.slice(raw.length - maxChars)}`, truncated: true };
 }
 
+export function parseWindowsCodePage(raw: string): number | null {
+  if (!raw) {
+    return null;
+  }
+  const match = raw.match(/\b(\d{3,5})\b/);
+  if (!match?.[1]) {
+    return null;
+  }
+  const codePage = Number.parseInt(match[1], 10);
+  if (!Number.isFinite(codePage) || codePage <= 0) {
+    return null;
+  }
+  return codePage;
+}
+
+function resolveWindowsConsoleEncoding(): string | null {
+  if (process.platform !== "win32") {
+    return null;
+  }
+  if (cachedWindowsConsoleEncoding !== undefined) {
+    return cachedWindowsConsoleEncoding;
+  }
+  try {
+    const result = spawnSync("cmd.exe", ["/d", "/s", "/c", "chcp"], {
+      windowsHide: true,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const raw = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
+    const codePage = parseWindowsCodePage(raw);
+    cachedWindowsConsoleEncoding =
+      codePage !== null ? (WINDOWS_CODEPAGE_ENCODING_MAP[codePage] ?? null) : null;
+  } catch {
+    cachedWindowsConsoleEncoding = null;
+  }
+  return cachedWindowsConsoleEncoding;
+}
+
+export function decodeCapturedOutputBuffer(params: {
+  buffer: Buffer;
+  platform?: NodeJS.Platform;
+  windowsEncoding?: string | null;
+}): string {
+  const utf8 = params.buffer.toString("utf8");
+  const platform = params.platform ?? process.platform;
+  if (platform !== "win32") {
+    return utf8;
+  }
+  const encoding = params.windowsEncoding ?? resolveWindowsConsoleEncoding();
+  if (!encoding || encoding.toLowerCase() === "utf-8") {
+    return utf8;
+  }
+  try {
+    return new TextDecoder(encoding).decode(params.buffer);
+  } catch {
+    return utf8;
+  }
+}
+
 function redactExecApprovals(file: ExecApprovalsFile): ExecApprovalsFile {
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
-  const socketPath = file.socket?.path?.trim();
+  const socketPath = (file as { socket?: { path?: string } }).socket?.path?.trim();
   return {
     ...file,
     socket: socketPath ? { path: socketPath } : undefined,
@@ -135,12 +196,13 @@ async function runCommand(
   timeoutMs: number | undefined,
 ): Promise<RunResult> {
   return await new Promise((resolve) => {
-    let stdout = "";
-    let stderr = "";
+    const stdoutChunks: Buffer[] = [];
+    const stderrChunks: Buffer[] = [];
     let outputLen = 0;
     let truncated = false;
     let timedOut = false;
     let settled = false;
+    const windowsEncoding = resolveWindowsConsoleEncoding();
 
     const child = spawn(argv[0], argv.slice(1), {
       cwd,
@@ -156,12 +218,11 @@ async function runCommand(
       }
       const remaining = OUTPUT_CAP - outputLen;
       const slice = chunk.length > remaining ? chunk.subarray(0, remaining) : chunk;
-      const str = slice.toString("utf8");
       outputLen += slice.length;
       if (target === "stdout") {
-        stdout += str;
+        stdoutChunks.push(slice);
       } else {
-        stderr += str;
+        stderrChunks.push(slice);
       }
       if (chunk.length > remaining) {
         truncated = true;
@@ -191,6 +252,14 @@ async function runCommand(
       if (timer) {
         clearTimeout(timer);
       }
+      const stdout = decodeCapturedOutputBuffer({
+        buffer: Buffer.concat(stdoutChunks),
+        windowsEncoding,
+      });
+      const stderr = decodeCapturedOutputBuffer({
+        buffer: Buffer.concat(stderrChunks),
+        windowsEncoding,
+      });
       resolve({
         exitCode,
         timedOut,
@@ -266,20 +335,11 @@ function buildExecEventPayload(payload: ExecEventPayload): ExecEventPayload {
   return { ...payload, output: text };
 }
 
-async function sendExecFinishedEvent(params: {
-  client: GatewayClient;
-  sessionKey: string;
-  runId: string;
-  cmdText: string;
-  result: {
-    stdout?: string;
-    stderr?: string;
-    error?: string | null;
-    exitCode?: number | null;
-    timedOut?: boolean;
-    success?: boolean;
-  };
-}) {
+async function sendExecFinishedEvent(
+  params: ExecFinishedEventParams & {
+    client: GatewayClient;
+  },
+) {
   const combined = [params.result.stdout, params.result.stderr, params.result.error]
     .filter(Boolean)
     .join("\n");
@@ -356,7 +416,7 @@ async function sendInvalidRequestResult(
 export async function handleInvoke(
   frame: NodeInvokeRequestPayload,
   client: GatewayClient,
-  skillBins?: SkillBinsProvider,
+  skillBins: SkillBinsProvider,
 ) {
   const command = String(frame.command ?? "");
   if (command === "system.execApprovals.get") {
@@ -389,7 +449,7 @@ export async function handleInvoke(
       requireExecApprovalsBaseHash(params, snapshot);
       const normalized = normalizeExecApprovals(params.file);
       const next = mergeExecApprovalsSocketDefaults({ normalized, current: snapshot.file });
-      saveExecApprovals(next);
+      await saveExecApprovals(next);
       const nextSnapshot = readExecApprovalsSnapshot();
       const payload: ExecApprovalsSnapshot = {
         path: nextSnapshot.path,
@@ -439,16 +499,12 @@ export async function handleInvoke(
         sessionKey?: unknown;
       }>(frame.paramsJSON);
       const prepared = buildSystemRunApprovalPlan(params);
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       if (!prepared.ok) {
-        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         await sendErrorResult(client, frame, "INVALID_REQUEST", prepared.message);
         return;
       }
       await sendJsonPayloadResult(client, frame, {
-        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         cmdText: prepared.cmdText,
-        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         plan: prepared.plan,
       });
     } catch (err) {
@@ -481,25 +537,33 @@ export async function handleInvoke(
     skillBins,
     execHostEnforced,
     execHostFallbackAllowed,
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     resolveExecSecurity,
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     resolveExecAsk,
     isCmdExeInvocation,
     sanitizeEnv,
     runCommand,
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     runViaMacAppExecHost,
     sendNodeEvent,
     buildExecEventPayload,
-    sendInvokeResult: async (result) => {
-      await sendInvokeResult(client, frame, result);
+    sendInvokeResult: async (result: unknown) => {
+      await sendInvokeResult(client, frame, result as Parameters<typeof sendInvokeResult>[2]);
     },
-    sendExecFinishedEvent: async ({ sessionKey, runId, cmdText, result }) => {
-      await sendExecFinishedEvent({ client, sessionKey, runId, cmdText, result });
+    sendExecFinishedEvent: async ({
+      sessionKey,
+      runId,
+      cmdText,
+      result,
+    }: Record<string, unknown>) => {
+      await sendExecFinishedEvent({
+        client,
+        sessionKey,
+        runId,
+        cmdText,
+        result,
+      } as unknown as Parameters<typeof sendExecFinishedEvent>[0]);
     },
     preferMacAppExecHost,
-  });
+  } as unknown as Parameters<typeof handleSystemRunInvoke>[0]);
 }
 
 function decodeParams<T>(raw?: string | null): T {

@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { withEnvAsync } from "../test-utils/env.js";
 import { pathExists } from "../utils.js";
+import { resolveStableNodePath } from "./stable-node-path.js";
 import { runGatewayUpdate } from "./update-runner.js";
 
 type CommandResponse = { stdout?: string; stderr?: string; code?: number | null };
@@ -49,7 +50,7 @@ describe("runGatewayUpdate", () => {
     // Shared fixtureRoot cleaned up in afterAll.
   });
 
-  function createStableTagRunner(params: {
+  async function createStableTagRunner(params: {
     stableTag: string;
     uiIndexPath: string;
     onDoctor?: () => Promise<void>;
@@ -57,7 +58,8 @@ describe("runGatewayUpdate", () => {
   }) {
     const calls: string[] = [];
     let uiBuildCount = 0;
-    const doctorKey = `${process.execPath} ${path.join(tempDir, "remoteclaw.mjs")} doctor --non-interactive --fix`;
+    const doctorNodePath = await resolveStableNodePath(process.execPath);
+    const doctorKey = `${doctorNodePath} ${path.join(tempDir, "remoteclaw.mjs")} doctor --non-interactive --fix`;
 
     const runCommand = async (argv: string[]) => {
       const key = argv.join(" ");
@@ -182,6 +184,39 @@ describe("runGatewayUpdate", () => {
     );
   }
 
+  function createGlobalNpmUpdateRunner(params: {
+    pkgRoot: string;
+    nodeModules: string;
+    onBaseInstall?: () => Promise<CommandResult>;
+    onOmitOptionalInstall?: () => Promise<CommandResult>;
+  }) {
+    const baseInstallKey = "npm i -g remoteclaw@latest --no-fund --no-audit --loglevel=error";
+    const omitOptionalInstallKey =
+      "npm i -g remoteclaw@latest --omit=optional --no-fund --no-audit --loglevel=error";
+
+    return async (argv: string[]): Promise<CommandResult> => {
+      const key = argv.join(" ");
+      if (key === `git -C ${params.pkgRoot} rev-parse --show-toplevel`) {
+        return { stdout: "", stderr: "not a git repository", code: 128 };
+      }
+      if (key === "npm root -g") {
+        return { stdout: params.nodeModules, stderr: "", code: 0 };
+      }
+      if (key === "pnpm root -g") {
+        return { stdout: "", stderr: "", code: 1 };
+      }
+      if (key === baseInstallKey) {
+        return (await params.onBaseInstall?.()) ?? { stdout: "ok", stderr: "", code: 0 };
+      }
+      if (key === omitOptionalInstallKey) {
+        return (
+          (await params.onOmitOptionalInstall?.()) ?? { stdout: "", stderr: "not found", code: 1 }
+        );
+      }
+      return { stdout: "", stderr: "", code: 0 };
+    };
+  }
+
   it("skips git update when worktree is dirty", async () => {
     await setupGitCheckout();
     const { runner, calls } = createRunner({
@@ -216,8 +251,7 @@ describe("runGatewayUpdate", () => {
     expect(calls.some((call) => call.includes("rebase --abort"))).toBe(true);
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — isStableTag/isBetaTag always return false
   it.skip("returns error and stops early when deps install fails", async () => {
     await setupGitCheckout({ packageManager: "pnpm@8.0.0" });
     const stableTag = "v1.0.1-1";
@@ -234,8 +268,7 @@ describe("runGatewayUpdate", () => {
     expect(calls.some((call) => call === "pnpm ui:build")).toBe(false);
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — isStableTag/isBetaTag always return false
   it.skip("returns error and stops early when build fails", async () => {
     await setupGitCheckout({ packageManager: "pnpm@8.0.0" });
     const stableTag = "v1.0.1-1";
@@ -253,19 +286,19 @@ describe("runGatewayUpdate", () => {
     expect(calls.some((call) => call === "pnpm ui:build")).toBe(false);
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — isStableTag/isBetaTag always return false
   it.skip("uses stable tag when beta tag is older than release", async () => {
     await setupGitCheckout({ packageManager: "pnpm@8.0.0" });
     await setupUiIndex();
     const stableTag = "v1.0.1-1";
     const betaTag = "v1.0.0-beta.2";
+    const doctorNodePath = await resolveStableNodePath(process.execPath);
     const { runner, calls } = createRunner({
       ...buildStableTagResponses(stableTag, { additionalTags: [betaTag] }),
       "pnpm install": { stdout: "" },
       "pnpm build": { stdout: "" },
       "pnpm ui:build": { stdout: "" },
-      [`${process.execPath} ${path.join(tempDir, "remoteclaw.mjs")} doctor --non-interactive --fix`]:
+      [`${doctorNodePath} ${path.join(tempDir, "remoteclaw.mjs")} doctor --non-interactive --fix`]:
         {
           stdout: "",
         },
@@ -361,15 +394,11 @@ describe("runGatewayUpdate", () => {
     return { calls, runCommand };
   };
 
-  // Skipped: macOS tmpdir symlink causes path mismatch in detectGlobalInstallManagerForRoot
-  it.skip("updates global npm installs when detected", async () => {
-    const { result } = await runNpmGlobalUpdateCase({
-      expectedInstallCommand: "npm i -g remoteclaw@latest --no-fund --no-audit --loglevel=error",
-    });
-    expect(result.status).toBe("ok");
-  });
-
   it.each([
+    {
+      title: "updates global npm installs when detected",
+      expectedInstallCommand: "npm i -g remoteclaw@latest --no-fund --no-audit --loglevel=error",
+    },
     {
       title: "uses update channel for global npm installs when tag is omitted",
       expectedInstallCommand: "npm i -g remoteclaw@beta --no-fund --no-audit --loglevel=error",
@@ -394,9 +423,7 @@ describe("runGatewayUpdate", () => {
     expect(calls.some((call) => call === expectedInstallCommand)).toBe(true);
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("cleans stale npm rename dirs before global update", async () => {
+  it("cleans stale npm rename dirs before global update", async () => {
     const nodeModules = path.join(tempDir, "node_modules");
     const pkgRoot = path.join(nodeModules, "remoteclaw");
     const staleDir = path.join(nodeModules, ".remoteclaw-stale");
@@ -404,23 +431,14 @@ describe("runGatewayUpdate", () => {
     await seedGlobalPackageRoot(pkgRoot);
 
     let stalePresentAtInstall = true;
-    const runCommand = async (argv: string[]) => {
-      const key = argv.join(" ");
-      if (key === `git -C ${pkgRoot} rev-parse --show-toplevel`) {
-        return { stdout: "", stderr: "not a git repository", code: 128 };
-      }
-      if (key === "npm root -g") {
-        return { stdout: nodeModules, stderr: "", code: 0 };
-      }
-      if (key === "pnpm root -g") {
-        return { stdout: "", stderr: "", code: 1 };
-      }
-      if (key === "npm i -g remoteclaw@latest --no-fund --no-audit --loglevel=error") {
+    const runCommand = createGlobalNpmUpdateRunner({
+      nodeModules,
+      pkgRoot,
+      onBaseInstall: async () => {
         stalePresentAtInstall = await pathExists(staleDir);
         return { stdout: "ok", stderr: "", code: 0 };
-      }
-      return { stdout: "", stderr: "", code: 0 };
-    };
+      },
+    });
 
     const result = await runWithCommand(runCommand, { cwd: pkgRoot });
 
@@ -429,41 +447,28 @@ describe("runGatewayUpdate", () => {
     expect(await pathExists(staleDir)).toBe(false);
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("retries global npm update with --omit=optional when initial install fails", async () => {
+  it("retries global npm update with --omit=optional when initial install fails", async () => {
     const nodeModules = path.join(tempDir, "node_modules");
     const pkgRoot = path.join(nodeModules, "remoteclaw");
     await seedGlobalPackageRoot(pkgRoot);
 
     let firstAttempt = true;
-    const runCommand = async (argv: string[]) => {
-      const key = argv.join(" ");
-      if (key === `git -C ${pkgRoot} rev-parse --show-toplevel`) {
-        return { stdout: "", stderr: "not a git repository", code: 128 };
-      }
-      if (key === "npm root -g") {
-        return { stdout: nodeModules, stderr: "", code: 0 };
-      }
-      if (key === "pnpm root -g") {
-        return { stdout: "", stderr: "", code: 1 };
-      }
-      if (key === "npm i -g remoteclaw@latest --no-fund --no-audit --loglevel=error") {
+    const runCommand = createGlobalNpmUpdateRunner({
+      nodeModules,
+      pkgRoot,
+      onBaseInstall: async () => {
         firstAttempt = false;
         return { stdout: "", stderr: "node-gyp failed", code: 1 };
-      }
-      if (
-        key === "npm i -g remoteclaw@latest --omit=optional --no-fund --no-audit --loglevel=error"
-      ) {
+      },
+      onOmitOptionalInstall: async () => {
         await fs.writeFile(
           path.join(pkgRoot, "package.json"),
           JSON.stringify({ name: "remoteclaw", version: "2.0.0" }),
           "utf-8",
         );
         return { stdout: "ok", stderr: "", code: 0 };
-      }
-      return { stdout: "", stderr: "", code: 0 };
-    };
+      },
+    });
 
     const result = await runWithCommand(runCommand, { cwd: pkgRoot });
 
@@ -476,9 +481,7 @@ describe("runGatewayUpdate", () => {
     ]);
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("updates global bun installs when detected", async () => {
+  it("updates global bun installs when detected", async () => {
     const bunInstall = path.join(tempDir, "bun-install");
     await withEnvAsync({ BUN_INSTALL: bunInstall }, async () => {
       const bunGlobalRoot = path.join(bunInstall, "install", "global", "node_modules");
@@ -523,8 +526,7 @@ describe("runGatewayUpdate", () => {
     expect(calls.some((call) => call.includes("status --porcelain"))).toBe(false);
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — isStableTag/isBetaTag always return false
   it.skip("fails with a clear reason when remoteclaw.mjs is missing", async () => {
     await setupGitCheckout({ packageManager: "pnpm@8.0.0" });
     await fs.rm(path.join(tempDir, "remoteclaw.mjs"), { force: true });
@@ -544,14 +546,13 @@ describe("runGatewayUpdate", () => {
     expect(result.steps.at(-1)?.name).toBe("remoteclaw doctor entry");
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — isStableTag/isBetaTag always return false
   it.skip("repairs UI assets when doctor run removes control-ui files", async () => {
     await setupGitCheckout({ packageManager: "pnpm@8.0.0" });
     const uiIndexPath = await setupUiIndex();
 
     const stableTag = "v1.0.1-1";
-    const { runCommand, calls, doctorKey, getUiBuildCount } = createStableTagRunner({
+    const { runCommand, calls, doctorKey, getUiBuildCount } = await createStableTagRunner({
       stableTag,
       uiIndexPath,
       onUiBuild: async (count) => {
@@ -569,14 +570,13 @@ describe("runGatewayUpdate", () => {
     expect(calls).toContain(doctorKey);
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — isStableTag/isBetaTag always return false
   it.skip("fails when UI assets are still missing after post-doctor repair", async () => {
     await setupGitCheckout({ packageManager: "pnpm@8.0.0" });
     const uiIndexPath = await setupUiIndex();
 
     const stableTag = "v1.0.1-1";
-    const { runCommand } = createStableTagRunner({
+    const { runCommand } = await createStableTagRunner({
       stableTag,
       uiIndexPath,
       onUiBuild: async (count) => {

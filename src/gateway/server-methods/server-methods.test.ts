@@ -6,34 +6,15 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { emitAgentEvent } from "../../infra/agent-events.js";
 import { formatZonedTimestamp } from "../../infra/format-time/format-datetime.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../infra/system-run-approval-binding.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const buildSystemRunApprovalBinding = (..._args: unknown[]) => undefined as any;
+import { buildSystemRunApprovalBinding } from "../../infra/system-run-approval-binding.js";
 import { resetLogger, setLoggerOverride } from "../../logging.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../exec-approval-manager.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-class ExecApprovalManager {
-  approve() {}
-  deny() {}
-  expire() {}
-  list() {
-    return [];
-  }
-}
-// import { validateExecApprovalRequestParams } from "../protocol/index.js"; // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// oxlint-disable-next-line typescript/no-explicit-any
-const validateExecApprovalRequestParams = (..._args: unknown[]) => undefined as any;
+import { ExecApprovalManager } from "../exec-approval-manager.js";
+import { validateExecApprovalRequestParams } from "../protocol/index.js";
 import { waitForAgentJob } from "./agent-job.js";
 import { injectTimestamp, timestampOptsFromConfig } from "./agent-timestamp.js";
 import { normalizeRpcAttachmentsToChatAttachments } from "./attachment-normalize.js";
 import { sanitizeChatSendMessageInput } from "./chat.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./exec-approval.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const createExecApprovalHandlers = (..._args: unknown[]) =>
-  ({}) as Record<string, (...a: unknown[]) => unknown>;
+import { createExecApprovalHandlers } from "./exec-approval.js";
 import { logsHandlers } from "./logs.js";
 
 vi.mock("../../commands/status.js", () => ({
@@ -41,18 +22,36 @@ vi.mock("../../commands/status.js", () => ({
 }));
 
 describe("waitForAgentJob", () => {
-  it("maps lifecycle end events with aborted=true to timeout", async () => {
-    const runId = `run-timeout-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  async function runLifecycleScenario(params: {
+    runIdPrefix: string;
+    startedAt: number;
+    endedAt: number;
+    aborted?: boolean;
+  }) {
+    const runId = `${params.runIdPrefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const waitPromise = waitForAgentJob({ runId, timeoutMs: 1_000 });
 
-    emitAgentEvent({ runId, stream: "lifecycle", data: { phase: "start", startedAt: 100 } });
     emitAgentEvent({
       runId,
       stream: "lifecycle",
-      data: { phase: "end", endedAt: 200, aborted: true },
+      data: { phase: "start", startedAt: params.startedAt },
+    });
+    emitAgentEvent({
+      runId,
+      stream: "lifecycle",
+      data: { phase: "end", endedAt: params.endedAt, aborted: params.aborted },
     });
 
-    const snapshot = await waitPromise;
+    return waitPromise;
+  }
+
+  it("maps lifecycle end events with aborted=true to timeout", async () => {
+    const snapshot = await runLifecycleScenario({
+      runIdPrefix: "run-timeout",
+      startedAt: 100,
+      endedAt: 200,
+      aborted: true,
+    });
     expect(snapshot).not.toBeNull();
     expect(snapshot?.status).toBe("timeout");
     expect(snapshot?.startedAt).toBe(100);
@@ -60,13 +59,11 @@ describe("waitForAgentJob", () => {
   });
 
   it("keeps non-aborted lifecycle end events as ok", async () => {
-    const runId = `run-ok-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const waitPromise = waitForAgentJob({ runId, timeoutMs: 1_000 });
-
-    emitAgentEvent({ runId, stream: "lifecycle", data: { phase: "start", startedAt: 300 } });
-    emitAgentEvent({ runId, stream: "lifecycle", data: { phase: "end", endedAt: 400 } });
-
-    const snapshot = await waitPromise;
+    const snapshot = await runLifecycleScenario({
+      runIdPrefix: "run-ok",
+      startedAt: 300,
+      endedAt: 400,
+    });
     expect(snapshot).not.toBeNull();
     expect(snapshot?.status).toBe("ok");
     expect(snapshot?.startedAt).toBe(300);
@@ -243,32 +240,28 @@ describe("sanitizeChatSendMessageInput", () => {
   });
 });
 
-// Skipped: guardrail assumes SessionManager (gutted in fork — uses direct fs.appendFileSync)
-describe.skip("gateway chat transcript writes (guardrail)", () => {
-  it("routes transcript writes through helper and SessionManager parentId append", () => {
+describe("gateway chat transcript writes (guardrail)", () => {
+  it("routes transcript writes through helper", () => {
     const chatTs = fileURLToPath(new URL("./chat.ts", import.meta.url));
     const chatSrc = fs.readFileSync(chatTs, "utf-8");
-    const helperTs = fileURLToPath(new URL("./chat-transcript-inject.ts", import.meta.url));
-    const helperSrc = fs.readFileSync(helperTs, "utf-8");
 
     expect(chatSrc.includes("fs.appendFileSync(transcriptPath")).toBe(false);
     expect(chatSrc).toContain("appendInjectedAssistantMessageToTranscript(");
-
-    expect(helperSrc.includes("fs.appendFileSync(params.transcriptPath")).toBe(false);
-    expect(helperSrc).toContain("SessionManager.open(params.transcriptPath)");
-    expect(helperSrc).toContain("appendMessage(messageBody)");
   });
 });
 
-// Skipped: tests gutted exec approval system (Middleware Boundary Principle)
+// Gutted in RemoteClaw fork — exec approval handlers are stubbed out
 describe.skip("exec approval handlers", () => {
   const execApprovalNoop = () => false;
-  // oxlint-disable-next-line typescript/no-explicit-any
-  type ExecApprovalHandlers = Record<string, (...args: any[]) => any>;
-  // oxlint-disable-next-line typescript/no-explicit-any
-  type ExecApprovalRequestArgs = { params: any; respond: any; context: any };
-  // oxlint-disable-next-line typescript/no-explicit-any
-  type ExecApprovalResolveArgs = { params: any; respond: any; context: any };
+  type ExecApprovalHandlers = ReturnType<typeof createExecApprovalHandlers>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  type ExecApprovalRequestArgs = Parameters<
+    Extract<ExecApprovalHandlers["exec.approval.request"], (...args: unknown[]) => unknown>
+  >[0];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  type ExecApprovalResolveArgs = Parameters<
+    Extract<ExecApprovalHandlers["exec.approval.resolve"], (...args: unknown[]) => unknown>
+  >[0];
 
   const defaultExecApprovalRequestParams = {
     command: "echo ok",
@@ -326,7 +319,7 @@ describe.skip("exec approval handlers", () => {
         typeof (requestParams as { command?: unknown }).command === "string"
           ? ((requestParams as { command: string }).command ?? null)
           : null;
-      requestParams.systemRunPlan = {
+      (requestParams as Record<string, unknown>).systemRunPlan = {
         argv: commandArgv,
         cwd: cwdValue,
         rawCommand: commandText,
@@ -340,8 +333,7 @@ describe.skip("exec approval handlers", () => {
             : null,
       };
     }
-    // oxlint-disable-next-line typescript/no-explicit-any
-    return (params.handlers as any)["exec.approval.request"]?.({
+    return (params.handlers["exec.approval.request"] as (...args: unknown[]) => unknown)({
       params: requestParams,
       respond: params.respond as unknown as ExecApprovalRequestArgs["respond"],
       context: toExecApprovalRequestContext({
@@ -360,8 +352,7 @@ describe.skip("exec approval handlers", () => {
     respond: ReturnType<typeof vi.fn>;
     context: { broadcast: (event: string, payload: unknown) => void };
   }) {
-    // oxlint-disable-next-line typescript/no-explicit-any
-    return (params.handlers as any)["exec.approval.resolve"]?.({
+    return (params.handlers["exec.approval.resolve"] as (...args: unknown[]) => unknown)({
       params: { id: params.id, decision: "allow-once" } as ExecApprovalResolveArgs["params"],
       respond: params.respond as unknown as ExecApprovalResolveArgs["respond"],
       context: toExecApprovalResolveContext(params.context),
@@ -385,47 +376,43 @@ describe.skip("exec approval handlers", () => {
     return { handlers, broadcasts, respond, context };
   }
 
+  function createForwardingExecApprovalFixture() {
+    const manager = new ExecApprovalManager();
+    const forwarder = {
+      handleRequested: vi.fn(async () => false),
+      handleResolved: vi.fn(async () => {}),
+      stop: vi.fn(),
+    };
+    const handlers = createExecApprovalHandlers(manager, { forwarder });
+    const respond = vi.fn();
+    const context = {
+      broadcast: (_event: string, _payload: unknown) => {},
+      hasExecApprovalClients: () => false,
+    };
+    return { manager, handlers, forwarder, respond, context };
+  }
+
+  async function drainApprovalRequestTicks() {
+    for (let idx = 0; idx < 20; idx += 1) {
+      await Promise.resolve();
+    }
+  }
+
   describe("ExecApprovalRequestParams validation", () => {
-    it("accepts request with resolvedPath omitted", () => {
-      const params = {
-        command: "echo hi",
-        cwd: "/tmp",
-        nodeId: "node-1",
-        host: "node",
-      };
-      expect(validateExecApprovalRequestParams(params)).toBe(true);
-    });
+    const baseParams = {
+      command: "echo hi",
+      cwd: "/tmp",
+      nodeId: "node-1",
+      host: "node",
+    };
 
-    it("accepts request with resolvedPath as string", () => {
-      const params = {
-        command: "echo hi",
-        cwd: "/tmp",
-        nodeId: "node-1",
-        host: "node",
-        resolvedPath: "/usr/bin/echo",
-      };
-      expect(validateExecApprovalRequestParams(params)).toBe(true);
-    });
-
-    it("accepts request with resolvedPath as undefined", () => {
-      const params = {
-        command: "echo hi",
-        cwd: "/tmp",
-        nodeId: "node-1",
-        host: "node",
-        resolvedPath: undefined,
-      };
-      expect(validateExecApprovalRequestParams(params)).toBe(true);
-    });
-
-    it("accepts request with resolvedPath as null", () => {
-      const params = {
-        command: "echo hi",
-        cwd: "/tmp",
-        nodeId: "node-1",
-        host: "node",
-        resolvedPath: null,
-      };
+    it.each([
+      { label: "omitted", extra: {} },
+      { label: "string", extra: { resolvedPath: "/usr/bin/echo" } },
+      { label: "undefined", extra: { resolvedPath: undefined } },
+      { label: "null", extra: { resolvedPath: null } },
+    ])("accepts request with resolvedPath $label", ({ extra }) => {
+      const params = { ...baseParams, ...extra };
       expect(validateExecApprovalRequestParams(params)).toBe(true);
     });
   });
@@ -515,6 +502,7 @@ describe.skip("exec approval handlers", () => {
       respond,
       context,
       params: {
+        timeoutMs: 10,
         commandArgv: ["echo", "ok"],
         env: {
           Z_VAR: "z",
@@ -542,6 +530,7 @@ describe.skip("exec approval handlers", () => {
       respond,
       context,
       params: {
+        timeoutMs: 10,
         command: "echo stale",
         commandArgv: ["echo", "stale"],
         cwd: "/tmp/link/sub",
@@ -644,18 +633,7 @@ describe.skip("exec approval handlers", () => {
   it("forwards turn-source metadata to exec approval forwarding", async () => {
     vi.useFakeTimers();
     try {
-      const manager = new ExecApprovalManager();
-      const forwarder = {
-        handleRequested: vi.fn(async () => false),
-        handleResolved: vi.fn(async () => {}),
-        stop: vi.fn(),
-      };
-      const handlers = createExecApprovalHandlers(manager, { forwarder });
-      const respond = vi.fn();
-      const context = {
-        broadcast: (_event: string, _payload: unknown) => {},
-        hasExecApprovalClients: () => false,
-      };
+      const { handlers, forwarder, respond, context } = createForwardingExecApprovalFixture();
 
       const requestPromise = requestExecApproval({
         handlers,
@@ -669,9 +647,7 @@ describe.skip("exec approval handlers", () => {
           turnSourceThreadId: "1739201675.123",
         },
       });
-      for (let idx = 0; idx < 20; idx += 1) {
-        await Promise.resolve();
-      }
+      await drainApprovalRequestTicks();
       expect(forwarder.handleRequested).toHaveBeenCalledTimes(1);
       expect(forwarder.handleRequested).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -694,18 +670,8 @@ describe.skip("exec approval handlers", () => {
   it("expires immediately when no approver clients and no forwarding targets", async () => {
     vi.useFakeTimers();
     try {
-      const manager = new ExecApprovalManager();
-      const forwarder = {
-        handleRequested: vi.fn(async () => false),
-        handleResolved: vi.fn(async () => {}),
-        stop: vi.fn(),
-      };
-      const handlers = createExecApprovalHandlers(manager, { forwarder });
-      const respond = vi.fn();
-      const context = {
-        broadcast: (_event: string, _payload: unknown) => {},
-        hasExecApprovalClients: () => false,
-      };
+      const { manager, handlers, forwarder, respond, context } =
+        createForwardingExecApprovalFixture();
       const expireSpy = vi.spyOn(manager, "expire");
 
       const requestPromise = requestExecApproval({
@@ -714,9 +680,7 @@ describe.skip("exec approval handlers", () => {
         context,
         params: { timeoutMs: 60_000 },
       });
-      for (let idx = 0; idx < 20; idx += 1) {
-        await Promise.resolve();
-      }
+      await drainApprovalRequestTicks();
       expect(forwarder.handleRequested).toHaveBeenCalledTimes(1);
       expect(expireSpy).toHaveBeenCalledTimes(1);
       await vi.runOnlyPendingTimersAsync();

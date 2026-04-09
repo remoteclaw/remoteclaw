@@ -12,21 +12,21 @@ describe("readFields", () => {
     await expect(readFields({ fields })).resolves.toEqual(expected);
   });
 
-  it("rejects missing type", async () => {
-    await expect(readFields({ fields: '[{"ref":"7","value":"world"}]' })).rejects.toThrow(
-      "fields[0] must include ref and type",
-    );
+  it("accepts field without type", async () => {
+    await expect(readFields({ fields: '[{"ref":"7","value":"world"}]' })).resolves.toEqual([
+      { ref: "7", type: undefined, value: "world" },
+    ]);
   });
 
-  it("rejects blank type", async () => {
+  it("accepts blank type as undefined", async () => {
     await expect(
       readFields({ fields: '[{"ref":"8","type":"   ","value":"blank"}]' }),
-    ).rejects.toThrow("fields[0] must include ref and type");
+    ).resolves.toEqual([{ ref: "8", type: undefined, value: "blank" }]);
   });
 
   it("requires ref", async () => {
     await expect(readFields({ fields: '[{"type":"textbox","value":"world"}]' })).rejects.toThrow(
-      "fields[0] must include ref and type",
+      "fields[0] must include ref",
     );
   });
 });

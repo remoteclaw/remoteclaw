@@ -1,5 +1,5 @@
 ---
-description: "CLI reference for `remoteclaw plugins` (list, install, uninstall, enable/disable, doctor)"
+summary: "CLI reference for `remoteclaw plugins` (list, install, uninstall, enable/disable, doctor)"
 read_when:
   - You want to install or manage in-process Gateway plugins
   - You want to debug plugin load failures
@@ -29,8 +29,8 @@ remoteclaw plugins update <id>
 remoteclaw plugins update --all
 ```
 
-Bundled plugins ship with RemoteClaw. Use `plugins enable` / `plugins disable` to
-toggle them.
+Bundled plugins ship with RemoteClaw but start disabled. Use `plugins enable` to
+activate them.
 
 All plugins must ship a `remoteclaw.plugin.json` file with an inline JSON Schema
 (`configSchema`, even if empty). Missing/invalid manifests or schemas prevent
@@ -47,6 +47,10 @@ Security note: treat plugin installs like running code. Prefer pinned versions.
 
 Npm specs are **registry-only** (package name + optional version/tag). Git/URL/file
 specs are rejected. Dependency installs run with `--ignore-scripts` for safety.
+
+If a bare install spec matches a bundled plugin id (for example `diffs`), RemoteClaw
+installs the bundled plugin directly. To install an npm package with the same
+name, use an explicit scoped spec (for example `@scope/diffs`).
 
 Supported archives: `.zip`, `.tgz`, `.tar.gz`, `.tar`.
 
@@ -69,7 +73,7 @@ remoteclaw plugins uninstall <id> --keep-files
 
 `uninstall` removes plugin records from `plugins.entries`, `plugins.installs`,
 the plugin allowlist, and linked `plugins.load.paths` entries when applicable.
-For plugins that use exclusive slots, the slot resets to its default.
+For active memory plugins, the memory slot resets to `memory-core`.
 
 By default, uninstall also removes the plugin install directory under the active
 state dir extensions root (`$REMOTECLAW_STATE_DIR/extensions/<id>`). Use

@@ -24,13 +24,15 @@ vi.mock("../../agents/model-fallback.js", () => ({
   }) => runWithModelFallbackMock(params),
 }));
 
-// Gutted in RemoteClaw fork (Middleware Boundary Principle) — pi-embedded mock removed
 vi.mock("../../agents/pi-embedded.js", () => ({
+  abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
   queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
   runEmbeddedPiAgent: (params: unknown) => runEmbeddedPiAgentMock(params),
+  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
+  isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
+  isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
 }));
 
-// Gutted in RemoteClaw fork (Middleware Boundary Principle) — cli-runner mock removed
 vi.mock("../../agents/cli-runner.js", () => ({
   runCliAgent: (params: unknown) => runCliAgentMock(params),
 }));
@@ -57,6 +59,15 @@ vi.mock("./queue.js", async () => {
   };
 });
 
+const loadCronStoreMock = vi.fn();
+vi.mock("../../cron/store.js", async () => {
+  const actual = await vi.importActual<typeof import("../../cron/store.js")>("../../cron/store.js");
+  return {
+    ...actual,
+    loadCronStore: (...args: unknown[]) => loadCronStoreMock(...args),
+  };
+});
+
 import { runReplyAgent } from "./agent-runner.js";
 
 type RunWithModelFallbackParams = {
@@ -70,6 +81,9 @@ beforeEach(() => {
   runCliAgentMock.mockClear();
   runWithModelFallbackMock.mockClear();
   runtimeErrorMock.mockClear();
+  loadCronStoreMock.mockClear();
+  // Default: no cron jobs in store.
+  loadCronStoreMock.mockResolvedValue({ version: 1, jobs: [] });
   resetSystemEventsForTest();
 
   // Default: no provider switch; execute the chosen provider+model.
@@ -87,8 +101,11 @@ afterEach(() => {
   resetSystemEventsForTest();
 });
 
-// Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+// Gutted in RemoteClaw fork: all tests in this file exercise the embedded Pi agent
+// path (via runEmbeddedPiAgent / runCliAgent mocks) that the fork replaced with
+// ChannelBridge middleware. The mocks are never called because agent-runner-execution.ts
+// routes through ChannelBridge.resolveAgentRuntimeOrThrow, bypassing pi-embedded.js
+// and cli-runner.js entirely.
 describe.skip("runReplyAgent onAgentRunStart", () => {
   function createRun(params?: {
     provider?: string;
@@ -147,7 +164,7 @@ describe.skip("runReplyAgent onAgentRunStart", () => {
       opts: params?.opts,
       typing,
       sessionCtx,
-
+      defaultModel: `${provider}/${model}`,
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: false,
@@ -178,7 +195,7 @@ describe.skip("runReplyAgent onAgentRunStart", () => {
       payloads: [{ text: "ok" }],
       meta: {
         agentMeta: {
-          provider: "claude",
+          provider: "claude-cli",
           model: "opus-4.5",
         },
       },
@@ -186,7 +203,7 @@ describe.skip("runReplyAgent onAgentRunStart", () => {
     const onAgentRunStart = vi.fn();
 
     const result = await createRun({
-      provider: "claude",
+      provider: "claude-cli",
       model: "opus-4.5",
       opts: { runId: "run-started", onAgentRunStart },
     });
@@ -197,8 +214,7 @@ describe.skip("runReplyAgent onAgentRunStart", () => {
   });
 });
 
-// Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+// Gutted in RemoteClaw fork: see top-level skip comment
 describe.skip("runReplyAgent authProfileId fallback scoping", () => {
   it("drops authProfileId when provider changes during fallback", async () => {
     runWithModelFallbackMock.mockImplementationOnce(
@@ -275,7 +291,7 @@ describe.skip("runReplyAgent authProfileId fallback scoping", () => {
       sessionStore: { [sessionKey]: sessionEntry },
       sessionKey,
       storePath: undefined,
-
+      defaultModel: "anthropic/claude-opus-4-5",
       agentCfgContextTokens: 100_000,
       resolvedVerboseLevel: "off",
       isNewSession: false,
@@ -298,7 +314,8 @@ describe.skip("runReplyAgent authProfileId fallback scoping", () => {
   });
 });
 
-describe("runReplyAgent auto-compaction token update", () => {
+// Gutted in RemoteClaw fork: see top-level skip comment
+describe.skip("runReplyAgent auto-compaction token update", () => {
   type EmbeddedRunParams = {
     prompt?: string;
     extraSystemPrompt?: string;
@@ -363,9 +380,7 @@ describe("runReplyAgent auto-compaction token update", () => {
     return { typing, sessionCtx, resolvedQueue, followupRun };
   }
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("updates totalTokens after auto-compaction using lastCallUsage", async () => {
+  it("updates totalTokens after auto-compaction using lastCallUsage", async () => {
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-compact-tokens-"));
     const storePath = path.join(tmp, "sessions.json");
     const sessionKey = "main";
@@ -421,7 +436,7 @@ describe("runReplyAgent auto-compaction token update", () => {
       sessionStore: { [sessionKey]: sessionEntry },
       sessionKey,
       storePath,
-
+      defaultModel: "anthropic/claude-opus-4-5",
       agentCfgContextTokens: 200_000,
       resolvedVerboseLevel: "off",
       isNewSession: false,
@@ -439,9 +454,7 @@ describe("runReplyAgent auto-compaction token update", () => {
     expect(stored[sessionKey].compactionCount).toBe(1);
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("updates totalTokens from lastCallUsage even without compaction", async () => {
+  it("updates totalTokens from lastCallUsage even without compaction", async () => {
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-usage-last-"));
     const storePath = path.join(tmp, "sessions.json");
     const sessionKey = "main";
@@ -484,7 +497,7 @@ describe("runReplyAgent auto-compaction token update", () => {
       sessionStore: { [sessionKey]: sessionEntry },
       sessionKey,
       storePath,
-
+      defaultModel: "anthropic/claude-opus-4-5",
       agentCfgContextTokens: 200_000,
       resolvedVerboseLevel: "off",
       isNewSession: false,
@@ -562,7 +575,7 @@ describe("runReplyAgent auto-compaction token update", () => {
       sessionStore: { [sessionKey]: sessionEntry },
       sessionKey,
       storePath,
-
+      defaultModel: "anthropic/claude-opus-4-5",
       agentCfgContextTokens: 200_000,
       resolvedVerboseLevel: "off",
       isNewSession: false,
@@ -578,8 +591,7 @@ describe("runReplyAgent auto-compaction token update", () => {
   });
 });
 
-// Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+// Gutted in RemoteClaw fork: see top-level skip comment
 describe.skip("runReplyAgent block streaming", () => {
   it("coalesces duplicate text_end block replies", async () => {
     const onBlockReply = vi.fn();
@@ -650,7 +662,7 @@ describe.skip("runReplyAgent block streaming", () => {
       opts: { onBlockReply },
       typing,
       sessionCtx,
-
+      defaultModel: "anthropic/claude-opus-4-5",
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: true,
@@ -752,7 +764,7 @@ describe.skip("runReplyAgent block streaming", () => {
       opts: { onBlockReply, blockReplyTimeoutMs: 1 },
       typing,
       sessionCtx,
-
+      defaultModel: "anthropic/claude-opus-4-5",
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: true,
@@ -774,9 +786,8 @@ describe.skip("runReplyAgent block streaming", () => {
   });
 });
 
-// Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-describe.skip("runReplyAgent claude routing", () => {
+// Gutted in RemoteClaw fork: see top-level skip comment
+describe.skip("runReplyAgent claude-cli routing", () => {
   function createRun() {
     const typing = createMockTypingController();
     const sessionCtx = {
@@ -798,7 +809,7 @@ describe.skip("runReplyAgent claude routing", () => {
         workspaceDir: "/tmp",
         config: {},
         skillsSnapshot: {},
-        provider: "claude",
+        provider: "claude-cli",
         model: "opus-4.5",
         thinkLevel: "low",
         verboseLevel: "off",
@@ -824,7 +835,7 @@ describe.skip("runReplyAgent claude routing", () => {
       isStreaming: false,
       typing,
       sessionCtx,
-
+      defaultModel: "claude-cli/opus-4.5",
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: false,
@@ -834,7 +845,7 @@ describe.skip("runReplyAgent claude routing", () => {
     });
   }
 
-  it("uses claude runner for claude provider", async () => {
+  it("uses claude-cli runner for claude-cli provider", async () => {
     const runId = "00000000-0000-0000-0000-000000000001";
     const randomSpy = vi.spyOn(crypto, "randomUUID").mockReturnValue(runId);
     const lifecyclePhases: string[] = [];
@@ -854,7 +865,7 @@ describe.skip("runReplyAgent claude routing", () => {
       payloads: [{ text: "ok" }],
       meta: {
         agentMeta: {
-          provider: "claude",
+          provider: "claude-cli",
           model: "opus-4.5",
         },
       },
@@ -871,8 +882,7 @@ describe.skip("runReplyAgent claude routing", () => {
   });
 });
 
-// Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+// Gutted in RemoteClaw fork: see top-level skip comment
 describe.skip("runReplyAgent messaging tool suppression", () => {
   function createRun(
     messageProvider = "slack",
@@ -927,7 +937,7 @@ describe.skip("runReplyAgent messaging tool suppression", () => {
       sessionCtx,
       sessionKey,
       storePath: opts.storePath,
-
+      defaultModel: "anthropic/claude-opus-4-5",
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: false,
@@ -1099,10 +1109,9 @@ describe.skip("runReplyAgent messaging tool suppression", () => {
   });
 });
 
-// Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+// Gutted in RemoteClaw fork: see top-level skip comment
 describe.skip("runReplyAgent reminder commitment guard", () => {
-  function createRun() {
+  function createRun(params?: { sessionKey?: string; omitSessionKey?: boolean }) {
     const typing = createMockTypingController();
     const sessionCtx = {
       Provider: "telegram",
@@ -1150,8 +1159,8 @@ describe.skip("runReplyAgent reminder commitment guard", () => {
       isStreaming: false,
       typing,
       sessionCtx,
-      sessionKey: "main",
-
+      ...(params?.omitSessionKey ? {} : { sessionKey: params?.sessionKey ?? "main" }),
+      defaultModel: "anthropic/claude-opus-4-5",
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: false,
@@ -1186,10 +1195,132 @@ describe.skip("runReplyAgent reminder commitment guard", () => {
       text: "I'll remind you tomorrow morning.",
     });
   });
+
+  it("suppresses guard note when session already has an active cron job", async () => {
+    loadCronStoreMock.mockResolvedValueOnce({
+      version: 1,
+      jobs: [
+        {
+          id: "existing-job",
+          name: "monitor-task",
+          enabled: true,
+          sessionKey: "main",
+          createdAtMs: Date.now() - 60_000,
+          updatedAtMs: Date.now() - 60_000,
+        },
+      ],
+    });
+
+    runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "I'll ping you when it's done." }],
+      meta: {},
+      successfulCronAdds: 0,
+    });
+
+    const result = await createRun();
+    expect(result).toMatchObject({
+      text: "I'll ping you when it's done.",
+    });
+  });
+
+  it("still appends guard note when cron jobs exist but not for the current session", async () => {
+    loadCronStoreMock.mockResolvedValueOnce({
+      version: 1,
+      jobs: [
+        {
+          id: "unrelated-job",
+          name: "daily-news",
+          enabled: true,
+          sessionKey: "other-session",
+          createdAtMs: Date.now() - 60_000,
+          updatedAtMs: Date.now() - 60_000,
+        },
+      ],
+    });
+
+    runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "I'll remind you tomorrow morning." }],
+      meta: {},
+      successfulCronAdds: 0,
+    });
+
+    const result = await createRun();
+    expect(result).toMatchObject({
+      text: "I'll remind you tomorrow morning.\n\nNote: I did not schedule a reminder in this turn, so this will not trigger automatically.",
+    });
+  });
+
+  it("still appends guard note when cron jobs for session exist but are disabled", async () => {
+    loadCronStoreMock.mockResolvedValueOnce({
+      version: 1,
+      jobs: [
+        {
+          id: "disabled-job",
+          name: "old-monitor",
+          enabled: false,
+          sessionKey: "main",
+          createdAtMs: Date.now() - 60_000,
+          updatedAtMs: Date.now() - 60_000,
+        },
+      ],
+    });
+
+    runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "I'll check back in an hour." }],
+      meta: {},
+      successfulCronAdds: 0,
+    });
+
+    const result = await createRun();
+    expect(result).toMatchObject({
+      text: "I'll check back in an hour.\n\nNote: I did not schedule a reminder in this turn, so this will not trigger automatically.",
+    });
+  });
+
+  it("still appends guard note when sessionKey is missing", async () => {
+    loadCronStoreMock.mockResolvedValueOnce({
+      version: 1,
+      jobs: [
+        {
+          id: "existing-job",
+          name: "monitor-task",
+          enabled: true,
+          sessionKey: "main",
+          createdAtMs: Date.now() - 60_000,
+          updatedAtMs: Date.now() - 60_000,
+        },
+      ],
+    });
+
+    runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "I'll ping you later." }],
+      meta: {},
+      successfulCronAdds: 0,
+    });
+
+    const result = await createRun({ omitSessionKey: true });
+    expect(result).toMatchObject({
+      text: "I'll ping you later.\n\nNote: I did not schedule a reminder in this turn, so this will not trigger automatically.",
+    });
+  });
+
+  it("still appends guard note when cron store read fails", async () => {
+    loadCronStoreMock.mockRejectedValueOnce(new Error("store read failed"));
+
+    runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      payloads: [{ text: "I'll remind you after lunch." }],
+      meta: {},
+      successfulCronAdds: 0,
+    });
+
+    const result = await createRun({ sessionKey: "main" });
+    expect(result).toMatchObject({
+      text: "I'll remind you after lunch.\n\nNote: I did not schedule a reminder in this turn, so this will not trigger automatically.",
+    });
+  });
 });
 
-// Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+// Gutted in RemoteClaw fork: see top-level skip comment
 describe.skip("runReplyAgent fallback reasoning tags", () => {
   type EmbeddedPiAgentParams = {
     enforceFinalTag?: boolean;
@@ -1252,7 +1383,7 @@ describe.skip("runReplyAgent fallback reasoning tags", () => {
       sessionCtx,
       sessionEntry: params?.sessionEntry,
       sessionKey,
-
+      defaultModel: "anthropic/claude-opus-4-5",
       agentCfgContextTokens: params?.agentCfgContextTokens,
       resolvedVerboseLevel: "off",
       isNewSession: false,
@@ -1314,8 +1445,7 @@ describe.skip("runReplyAgent fallback reasoning tags", () => {
   });
 });
 
-// Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+// Gutted in RemoteClaw fork: see top-level skip comment
 describe.skip("runReplyAgent response usage footer", () => {
   function createRun(params: { responseUsage: "tokens" | "full"; sessionKey: string }) {
     const typing = createMockTypingController();
@@ -1375,7 +1505,7 @@ describe.skip("runReplyAgent response usage footer", () => {
       sessionCtx,
       sessionEntry,
       sessionKey: params.sessionKey,
-
+      defaultModel: "anthropic/claude-opus-4-5",
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: false,
@@ -1424,8 +1554,7 @@ describe.skip("runReplyAgent response usage footer", () => {
   });
 });
 
-// Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+// Gutted in RemoteClaw fork: see top-level skip comment
 describe.skip("runReplyAgent transient HTTP retry", () => {
   it("retries once after transient 521 HTML failure and then succeeds", async () => {
     vi.useFakeTimers();
@@ -1484,7 +1613,7 @@ describe.skip("runReplyAgent transient HTTP retry", () => {
       isStreaming: false,
       typing,
       sessionCtx,
-
+      defaultModel: "anthropic/claude-opus-4-5",
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: false,

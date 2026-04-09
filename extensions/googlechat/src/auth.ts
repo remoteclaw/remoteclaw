@@ -94,6 +94,7 @@ export async function verifyGoogleChatRequest(params: {
   bearer?: string | null;
   audienceType?: GoogleChatAudienceType | null;
   audience?: string | null;
+  expectedAddOnPrincipal?: string | null;
 }): Promise<{ ok: boolean; reason?: string }> {
   const bearer = params.bearer?.trim();
   if (!bearer) {

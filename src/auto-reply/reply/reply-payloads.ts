@@ -1,5 +1,7 @@
-import { isMessagingToolDuplicate } from "../../agents/agent-helpers.js";
-import type { MessagingToolSend } from "../../agents/agent-messaging.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+const isMessagingToolDuplicate = (..._args: unknown[]) => false;
+type MessagingToolSend = Record<string, unknown>;
+import { normalizeChannelId } from "../../channels/plugins/index.js";
 import type { ReplyToMode } from "../../config/types.js";
 import { normalizeTargetForProvider } from "../../infra/outbound/target-normalization.js";
 import { normalizeOptionalAccountId } from "../../routing/account-id.js";
@@ -144,13 +146,30 @@ export function filterMessagingToolMediaDuplicates(params: {
   });
 }
 
+const PROVIDER_ALIAS_MAP: Record<string, string> = {
+  lark: "feishu",
+};
+
+function normalizeProviderForComparison(value?: string): string | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const lowered = trimmed.toLowerCase();
+  const normalizedChannel = normalizeChannelId(trimmed);
+  if (normalizedChannel) {
+    return normalizedChannel;
+  }
+  return PROVIDER_ALIAS_MAP[lowered] ?? lowered;
+}
+
 export function shouldSuppressMessagingToolReplies(params: {
   messageProvider?: string;
   messagingToolSentTargets?: MessagingToolSend[];
   originatingTo?: string;
   accountId?: string;
 }): boolean {
-  const provider = params.messageProvider?.trim().toLowerCase();
+  const provider = normalizeProviderForComparison(params.messageProvider);
   if (!provider) {
     return false;
   }
@@ -164,17 +183,24 @@ export function shouldSuppressMessagingToolReplies(params: {
     return false;
   }
   return sentTargets.some((target) => {
-    if (!target?.provider) {
+    const t = target as Record<string, unknown>;
+    const targetProvider = normalizeProviderForComparison(t?.provider as string | undefined);
+    if (!targetProvider) {
       return false;
     }
-    if (target.provider.trim().toLowerCase() !== provider) {
+    const isGenericMessageProvider = targetProvider === "message";
+    if (!isGenericMessageProvider && targetProvider !== provider) {
       return false;
     }
-    const targetKey = normalizeTargetForProvider(provider, target.to);
+    const targetNormalizationProvider = isGenericMessageProvider ? provider : targetProvider;
+    const targetKey = normalizeTargetForProvider(
+      targetNormalizationProvider,
+      (t.to ?? undefined) as string | undefined,
+    );
     if (!targetKey) {
       return false;
     }
-    const targetAccount = normalizeOptionalAccountId(target.accountId);
+    const targetAccount = normalizeOptionalAccountId(t.accountId as string | undefined);
     if (originAccount && targetAccount && originAccount !== targetAccount) {
       return false;
     }

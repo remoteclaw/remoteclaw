@@ -3,38 +3,29 @@ import path from "node:path";
 import { beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
 import "../cron/isolated-agent.mocks.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/cli-runner.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/failover-error.js";
-class FailoverError extends Error {
-  constructor(..._args: unknown[]) {
-    super();
-  }
-}
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/model-catalog.js";
-const loadModelCatalog = vi.fn();
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/model-selection.js";
-const modelSelectionModule = { isCliProvider: vi.fn(() => false) };
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/pi-embedded.js";
-const runEmbeddedPiAgent = vi.fn();
+import * as cliRunnerModule from "../agents/cli-runner.js";
+import { FailoverError } from "../agents/failover-error.js";
+import { loadModelCatalog } from "../agents/model-catalog.js";
+import * as modelSelectionModule from "../agents/model-selection.js";
+import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import * as configModule from "../config/config.js";
 import * as sessionsModule from "../config/sessions.js";
 import { emitAgentEvent, onAgentEvent } from "../infra/agent-events.js";
+import type { AgentDeliveryResult, AgentRunResult, McpSideEffects } from "../middleware/types.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../test-utils/channel-plugins.js";
-import { agentCommand } from "./agent.js";
+import { agentCommand, agentCommandFromIngress } from "./agent.js";
 import * as agentDeliveryModule from "./agent/delivery.js";
 
-// Gutted in RemoteClaw fork (Middleware Boundary Principle) — auth-profiles mock removed
-vi.mock("../agents/auth-profiles.js", () => ({
-  ensureAuthProfileStore: vi.fn(() => ({ version: 1, profiles: {} })),
-}));
+vi.mock("../agents/auth-profiles.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../agents/auth-profiles.js")>();
+  return {
+    ...actual,
+    ensureAuthProfileStore: vi.fn(() => ({ version: 1, profiles: {} })),
+  };
+});
 
 vi.mock("../agents/workspace.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../agents/workspace.js")>();
@@ -52,6 +43,8 @@ vi.mock("../agents/skills/refresh.js", () => ({
   getSkillsSnapshotVersion: vi.fn(() => 0),
 }));
 
+vi.mock("../agents/model-fallback.js", () => import("../test-utils/model-fallback.mock.js"));
+
 const runtime: RuntimeEnv = {
   log: vi.fn(),
   error: vi.fn(),
@@ -61,8 +54,6 @@ const runtime: RuntimeEnv = {
 };
 
 const configSpy = vi.spyOn(configModule, "loadConfig");
-// Gutted in RemoteClaw fork (Middleware Boundary Principle) — cli-runner is mocked
-const cliRunnerModule = { runCliAgent: vi.fn() };
 const runCliAgentSpy = vi.spyOn(cliRunnerModule, "runCliAgent");
 const deliverAgentCommandResultSpy = vi.spyOn(agentDeliveryModule, "deliverAgentCommandResult");
 
@@ -102,7 +93,21 @@ async function runWithDefaultAgentConfig(params: {
   const store = path.join(params.home, "sessions.json");
   mockConfig(params.home, store, undefined, undefined, params.agentsList);
   await agentCommand(params.args, runtime);
-  return vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
+  return getLastEmbeddedCall();
+}
+
+async function runEmbeddedWithTempConfig(params: {
+  args: Parameters<typeof agentCommand>[0];
+  agentOverrides?: Partial<NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]>>;
+  telegramOverrides?: Partial<NonNullable<NonNullable<RemoteClawConfig["channels"]>["telegram"]>>;
+  agentsList?: Array<{ id: string; default?: boolean }>;
+}) {
+  return withTempHome(async (home) => {
+    const store = path.join(home, "sessions.json");
+    mockConfig(home, store, params.agentOverrides, params.telegramOverrides, params.agentsList);
+    await agentCommand(params.args, runtime);
+    return getLastEmbeddedCall();
+  });
 }
 
 function writeSessionStoreSeed(
@@ -113,61 +118,166 @@ function writeSessionStoreSeed(
   fs.writeFileSync(storePath, JSON.stringify(sessions, null, 2));
 }
 
+function createDefaultAgentResult(params?: {
+  payloads?: Array<Record<string, unknown>>;
+  durationMs?: number;
+}) {
+  const durationMs = params?.durationMs ?? 5;
+  return {
+    payloads: params?.payloads ?? [{ text: "ok" }],
+    run: { durationMs } as unknown as AgentRunResult,
+    mcp: {} as unknown as McpSideEffects,
+    meta: {
+      durationMs,
+      agentMeta: { sessionId: "s", provider: "p", model: "m" },
+    },
+  } as unknown as AgentDeliveryResult;
+}
+
+function getLastEmbeddedCall(): Record<string, unknown> | undefined {
+  return vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0] as
+    | Record<string, unknown>
+    | undefined;
+}
+
+/** Type-safe accessor for the last embedded call args (alternative to inline vi.mocked access). */
+function _getEmbeddedCallAt(index: number): Record<string, unknown> | undefined {
+  return vi.mocked(runEmbeddedPiAgent).mock.calls[index]?.[0] as
+    | Record<string, unknown>
+    | undefined;
+}
+
+function expectLastRunProviderModel(provider: string, model: string): void {
+  const callArgs = getLastEmbeddedCall();
+  expect(callArgs?.provider).toBe(provider);
+  expect(callArgs?.model).toBe(model);
+}
+
+function readSessionStore<T>(storePath: string): Record<string, T> {
+  return JSON.parse(fs.readFileSync(storePath, "utf-8")) as Record<string, T>;
+}
+
+async function withCrossAgentResumeFixture(
+  run: (params: {
+    home: string;
+    storePattern: string;
+    sessionId: string;
+    sessionKey: string;
+  }) => Promise<void>,
+): Promise<void> {
+  await withTempHome(async (home) => {
+    const storePattern = path.join(home, "sessions", "{agentId}", "sessions.json");
+    const execStore = path.join(home, "sessions", "exec", "sessions.json");
+    const sessionId = "session-exec-hook";
+    const sessionKey = "agent:exec:hook:gmail:thread-1";
+    writeSessionStoreSeed(execStore, {
+      [sessionKey]: {
+        sessionId,
+        updatedAt: Date.now(),
+        systemSent: true,
+      },
+    });
+    mockConfig(home, storePattern, undefined, undefined, [
+      { id: "dev" },
+      { id: "exec", default: true },
+    ]);
+    await agentCommand({ message: "resume me", sessionId }, runtime);
+    await run({ home, storePattern, sessionId, sessionKey });
+  });
+}
+
+async function expectPersistedSessionFile(params: {
+  seedKey: string;
+  sessionId: string;
+  expectedPathFragment: string;
+}) {
+  await withTempHome(async (home) => {
+    const store = path.join(home, "sessions.json");
+    writeSessionStoreSeed(store, {
+      [params.seedKey]: {
+        sessionId: params.sessionId,
+        updatedAt: Date.now(),
+      },
+    });
+    mockConfig(home, store);
+    await agentCommand({ message: "hi", sessionKey: params.seedKey }, runtime);
+    const saved = readSessionStore<{ sessionId?: string; sessionFile?: string }>(store);
+    const entry = saved[params.seedKey];
+    expect(entry?.sessionId).toBe(params.sessionId);
+    expect(entry?.sessionFile).toContain(params.expectedPathFragment);
+    expect(getLastEmbeddedCall()?.sessionFile).toBe(entry?.sessionFile);
+  });
+}
+
+async function runAgentWithSessionKey(sessionKey: string): Promise<void> {
+  await agentCommand({ message: "hi", sessionKey }, runtime);
+}
+
+async function expectDefaultThinkLevel(params: {
+  agentOverrides?: Partial<NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]>>;
+  catalogEntry: Record<string, unknown>;
+  expected: string;
+}) {
+  await withTempHome(async (home) => {
+    const store = path.join(home, "sessions.json");
+    mockConfig(home, store, params.agentOverrides);
+    vi.mocked(loadModelCatalog).mockResolvedValueOnce([params.catalogEntry as never]);
+    await agentCommand({ message: "hi", to: "+1555" }, runtime);
+    expect(getLastEmbeddedCall()?.thinkLevel).toBe(params.expected);
+  });
+}
+
 function createTelegramOutboundPlugin() {
+  const sendWithTelegram = async (
+    ctx: {
+      deps?: {
+        sendTelegram?: (
+          to: string,
+          text: string,
+          opts: Record<string, unknown>,
+        ) => Promise<{
+          messageId: string;
+          chatId: string;
+        }>;
+      };
+      to: string;
+      text: string;
+      accountId?: string | null;
+      mediaUrl?: string;
+    },
+    mediaUrl?: string,
+  ) => {
+    const sendTelegram = ctx.deps?.sendTelegram;
+    if (!sendTelegram) {
+      throw new Error("sendTelegram dependency missing");
+    }
+    const result = await sendTelegram(ctx.to, ctx.text, {
+      accountId: ctx.accountId ?? undefined,
+      ...(mediaUrl ? { mediaUrl } : {}),
+      verbose: false,
+    });
+    return { channel: "telegram", messageId: result.messageId, chatId: result.chatId };
+  };
+
   return createOutboundTestPlugin({
     id: "telegram",
     outbound: {
       deliveryMode: "direct",
-      sendText: async (ctx) => {
-        const sendTelegram = ctx.deps?.sendTelegram;
-        if (!sendTelegram) {
-          throw new Error("sendTelegram dependency missing");
-        }
-        const result = await sendTelegram(ctx.to, ctx.text, {
-          accountId: ctx.accountId ?? undefined,
-          verbose: false,
-        });
-        return { channel: "telegram", messageId: result.messageId, chatId: result.chatId };
-      },
-      sendMedia: async (ctx) => {
-        const sendTelegram = ctx.deps?.sendTelegram;
-        if (!sendTelegram) {
-          throw new Error("sendTelegram dependency missing");
-        }
-        const result = await sendTelegram(ctx.to, ctx.text, {
-          accountId: ctx.accountId ?? undefined,
-          mediaUrl: ctx.mediaUrl,
-          verbose: false,
-        });
-        return { channel: "telegram", messageId: result.messageId, chatId: result.chatId };
-      },
+      sendText: async (ctx) => sendWithTelegram(ctx),
+      sendMedia: async (ctx) => sendWithTelegram(ctx, ctx.mediaUrl),
     },
   });
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
-  runCliAgentSpy.mockResolvedValue({
-    payloads: [{ text: "ok" }],
-    meta: {
-      durationMs: 5,
-      agentMeta: { sessionId: "s", provider: "p", model: "m" },
-    },
-  } as never);
-  vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
-    payloads: [{ text: "ok" }],
-    meta: {
-      durationMs: 5,
-      agentMeta: { sessionId: "s", provider: "p", model: "m" },
-    },
-  });
+  runCliAgentSpy.mockResolvedValue(createDefaultAgentResult() as never);
+  vi.mocked(runEmbeddedPiAgent).mockResolvedValue(createDefaultAgentResult());
   vi.mocked(loadModelCatalog).mockResolvedValue([]);
-  // @ts-ignore — gutted in RemoteClaw fork (skipped test block)
   vi.mocked(modelSelectionModule.isCliProvider).mockImplementation(() => false);
 });
 
-// Skipped: tests gutted model catalog / Pi-embedded execution pipeline (Middleware Boundary Principle)
-describe.skip("agentCommand", () => {
+describe("agentCommand", () => {
   it("creates a session entry when deriving from --to", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
@@ -199,37 +309,46 @@ describe.skip("agentCommand", () => {
       expect(entry.thinkingLevel).toBe("high");
       expect(entry.verboseLevel).toBe("on");
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
+      const callArgs = getLastEmbeddedCall();
       expect(callArgs?.thinkLevel).toBe("high");
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
       expect(callArgs?.verboseLevel).toBe("on");
     });
   });
 
-  it("defaults senderIsOwner to true for local agent runs", async () => {
+  it.each([
+    {
+      name: "defaults senderIsOwner to true for local agent runs",
+      args: { message: "hi", to: "+1555" },
+      expected: true,
+    },
+    {
+      name: "honors explicit senderIsOwner override",
+      args: { message: "hi", to: "+1555", senderIsOwner: false },
+      expected: false,
+    },
+  ])("$name", async ({ args, expected }) => {
+    const callArgs = await runEmbeddedWithTempConfig({ args });
+    expect(callArgs?.senderIsOwner).toBe(expected);
+  });
+
+  it("requires explicit senderIsOwner for ingress runs", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store);
-
-      await agentCommand({ message: "hi", to: "+1555" }, runtime);
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.senderIsOwner).toBe(true);
+      await expect(
+        // Runtime guard for non-TS callers; TS callsites are statically typed.
+        agentCommandFromIngress({ message: "hi", to: "+1555" } as never, runtime),
+      ).rejects.toThrow("senderIsOwner must be explicitly set for ingress agent runs.");
     });
   });
 
-  it("honors explicit senderIsOwner override", async () => {
+  it("honors explicit senderIsOwner for ingress runs", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store);
-
-      await agentCommand({ message: "hi", to: "+1555", senderIsOwner: false }, runtime);
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.senderIsOwner).toBe(false);
+      await agentCommandFromIngress({ message: "hi", to: "+1555", senderIsOwner: false }, runtime);
+      const ingressCall = getLastEmbeddedCall();
+      expect(ingressCall?.senderIsOwner).toBe(false);
     });
   });
 
@@ -247,63 +366,27 @@ describe.skip("agentCommand", () => {
 
       await agentCommand({ message: "resume me", sessionId: "session-123" }, runtime);
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
+      const callArgs = getLastEmbeddedCall();
       expect(callArgs?.sessionId).toBe("session-123");
     });
   });
 
   it("uses the resumed session agent scope when sessionId resolves to another agent store", async () => {
-    await withTempHome(async (home) => {
-      const storePattern = path.join(home, "sessions", "{agentId}", "sessions.json");
-      const execStore = path.join(home, "sessions", "exec", "sessions.json");
-      writeSessionStoreSeed(execStore, {
-        "agent:exec:hook:gmail:thread-1": {
-          sessionId: "session-exec-hook",
-          updatedAt: Date.now(),
-          systemSent: true,
-        },
-      });
-      mockConfig(home, storePattern, undefined, undefined, [
-        { id: "dev" },
-        { id: "exec", default: true },
-      ]);
-
-      await agentCommand({ message: "resume me", sessionId: "session-exec-hook" }, runtime);
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.sessionKey).toBe("agent:exec:hook:gmail:thread-1");
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
+    await withCrossAgentResumeFixture(async ({ sessionKey }) => {
+      const callArgs = getLastEmbeddedCall();
+      expect(callArgs?.sessionKey).toBe(sessionKey);
       expect(callArgs?.agentId).toBe("exec");
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
       expect(callArgs?.agentDir).toContain(`${path.sep}agents${path.sep}exec${path.sep}agent`);
     });
   });
 
   it("forwards resolved outbound session context when resuming by sessionId", async () => {
-    await withTempHome(async (home) => {
-      const storePattern = path.join(home, "sessions", "{agentId}", "sessions.json");
-      const execStore = path.join(home, "sessions", "exec", "sessions.json");
-      writeSessionStoreSeed(execStore, {
-        "agent:exec:hook:gmail:thread-1": {
-          sessionId: "session-exec-hook",
-          updatedAt: Date.now(),
-          systemSent: true,
-        },
-      });
-      mockConfig(home, storePattern, undefined, undefined, [
-        { id: "dev" },
-        { id: "exec", default: true },
-      ]);
-
-      await agentCommand({ message: "resume me", sessionId: "session-exec-hook" }, runtime);
-
+    await withCrossAgentResumeFixture(async ({ sessionKey }) => {
       const deliverCall = deliverAgentCommandResultSpy.mock.calls.at(-1)?.[0];
       expect(deliverCall?.opts.sessionKey).toBeUndefined();
       expect(deliverCall?.outboundSession).toEqual(
         expect.objectContaining({
-          key: "agent:exec:hook:gmail:thread-1",
+          key: sessionKey,
           agentId: "exec",
         }),
       );
@@ -357,10 +440,7 @@ describe.skip("agentCommand", () => {
           }
         ).onAgentEvent?.({ stream: "assistant", data });
         emitAgentEvent({ runId, stream: "assistant", data });
-        return {
-          payloads: [{ text: "hello" }],
-          meta: { agentMeta: { provider: "p", model: "m" } },
-        } as never;
+        return createDefaultAgentResult({ payloads: [{ text: "hello" }] });
       });
 
       await agentCommand({ message: "hi", to: "+1555" }, runtime);
@@ -371,7 +451,8 @@ describe.skip("agentCommand", () => {
     });
   });
 
-  it("uses provider/model from agents.defaults.model.primary", async () => {
+  // Gutted in RemoteClaw fork — normalizeModelRef/resolveDefaultModelForAgent are stubs
+  it.skip("uses provider/model from agents.defaults.model.primary", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store, {
@@ -384,15 +465,12 @@ describe.skip("agentCommand", () => {
 
       await agentCommand({ message: "hi", to: "+1555" }, runtime);
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.provider).toBe("openai");
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.model).toBe("gpt-4.1-mini");
+      expectLastRunProviderModel("openai", "gpt-4.1-mini");
     });
   });
 
-  it("uses default fallback list for session model overrides", async () => {
+  // Gutted in RemoteClaw fork — model fallback/resolution stubs return empty values
+  it.skip("uses default fallback list for session model overrides", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       writeSessionStoreSeed(store, {
@@ -425,6 +503,8 @@ describe.skip("agentCommand", () => {
         .mockRejectedValueOnce(Object.assign(new Error("rate limited"), { status: 429 }))
         .mockResolvedValueOnce({
           payloads: [{ text: "ok" }],
+          run: {} as unknown as AgentRunResult,
+          mcp: {} as unknown as McpSideEffects,
           meta: {
             durationMs: 5,
             agentMeta: { sessionId: "session-subagent", provider: "openai", model: "gpt-5.2" },
@@ -439,10 +519,10 @@ describe.skip("agentCommand", () => {
         runtime,
       );
 
-      const attempts = vi
-        .mocked(runEmbeddedPiAgent)
-        // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-        .mock.calls.map((call) => ({ provider: call[0]?.provider, model: call[0]?.model }));
+      const attempts = vi.mocked(runEmbeddedPiAgent).mock.calls.map((call) => ({
+        provider: ((call[0] ?? {}) as Record<string, unknown>)?.provider,
+        model: ((call[0] ?? {}) as Record<string, unknown>)?.model,
+      }));
       expect(attempts).toEqual([
         { provider: "anthropic", model: "claude-opus-4-5" },
         { provider: "openai", model: "gpt-5.2" },
@@ -450,7 +530,8 @@ describe.skip("agentCommand", () => {
     });
   });
 
-  it("keeps stored session model override when models allowlist is empty", async () => {
+  // Gutted in RemoteClaw fork — normalizeModelRef/buildAllowedModelSet are stubs
+  it.skip("keeps stored session model override when models allowlist is empty", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       writeSessionStoreSeed(store, {
@@ -471,18 +552,10 @@ describe.skip("agentCommand", () => {
         { id: "claude-opus-4-5", name: "Opus", provider: "anthropic" },
       ]);
 
-      await agentCommand(
-        {
-          message: "hi",
-          sessionKey: "agent:main:subagent:allow-any",
-        },
-        runtime,
-      );
+      await runAgentWithSessionKey("agent:main:subagent:allow-any");
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
+      const callArgs = getLastEmbeddedCall();
       expect(callArgs?.provider).toBe("openai");
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
       expect(callArgs?.model).toBe("gpt-custom-foo");
 
       const saved = JSON.parse(fs.readFileSync(store, "utf-8")) as Record<
@@ -494,7 +567,8 @@ describe.skip("agentCommand", () => {
     });
   });
 
-  it("persists cleared model and auth override fields when stored override falls back to default", async () => {
+  // Gutted in RemoteClaw fork — normalizeModelRef/resolveDefaultModelForAgent are stubs
+  it.skip("persists cleared model and auth override fields when stored override falls back to default", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       writeSessionStoreSeed(store, {
@@ -506,6 +580,9 @@ describe.skip("agentCommand", () => {
           authProfileOverride: "profile-legacy",
           authProfileOverrideSource: "user",
           authProfileOverrideCompactionCount: 2,
+          fallbackNoticeSelectedModel: "anthropic/claude-opus-4-5",
+          fallbackNoticeActiveModel: "openai/gpt-4.1-mini",
+          fallbackNoticeReason: "fallback",
         },
       });
 
@@ -521,19 +598,9 @@ describe.skip("agentCommand", () => {
         { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", provider: "openai" },
       ]);
 
-      await agentCommand(
-        {
-          message: "hi",
-          sessionKey: "agent:main:subagent:clear-overrides",
-        },
-        runtime,
-      );
+      await runAgentWithSessionKey("agent:main:subagent:clear-overrides");
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.provider).toBe("openai");
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.model).toBe("gpt-4.1-mini");
+      expectLastRunProviderModel("openai", "gpt-4.1-mini");
 
       const saved = JSON.parse(fs.readFileSync(store, "utf-8")) as Record<
         string,
@@ -543,6 +610,9 @@ describe.skip("agentCommand", () => {
           authProfileOverride?: string;
           authProfileOverrideSource?: string;
           authProfileOverrideCompactionCount?: number;
+          fallbackNoticeSelectedModel?: string;
+          fallbackNoticeActiveModel?: string;
+          fallbackNoticeReason?: string;
         }
       >;
       const entry = saved["agent:main:subagent:clear-overrides"];
@@ -551,6 +621,9 @@ describe.skip("agentCommand", () => {
       expect(entry?.authProfileOverride).toBeUndefined();
       expect(entry?.authProfileOverrideSource).toBeUndefined();
       expect(entry?.authProfileOverrideCompactionCount).toBeUndefined();
+      expect(entry?.fallbackNoticeSelectedModel).toBeUndefined();
+      expect(entry?.fallbackNoticeActiveModel).toBeUndefined();
+      expect(entry?.fallbackNoticeReason).toBeUndefined();
     });
   });
 
@@ -574,8 +647,7 @@ describe.skip("agentCommand", () => {
         runtime,
       );
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
+      const callArgs = getLastEmbeddedCall();
       expect(callArgs?.sessionKey).toBe("agent:main:subagent:abc");
 
       const saved = JSON.parse(fs.readFileSync(store, "utf-8")) as Record<
@@ -587,70 +659,18 @@ describe.skip("agentCommand", () => {
   });
 
   it("persists resolved sessionFile for existing session keys", async () => {
-    await withTempHome(async (home) => {
-      const store = path.join(home, "sessions.json");
-      writeSessionStoreSeed(store, {
-        "agent:main:subagent:abc": {
-          sessionId: "sess-main",
-          updatedAt: Date.now(),
-        },
-      });
-      mockConfig(home, store);
-
-      await agentCommand(
-        {
-          message: "hi",
-          sessionKey: "agent:main:subagent:abc",
-        },
-        runtime,
-      );
-
-      const saved = JSON.parse(fs.readFileSync(store, "utf-8")) as Record<
-        string,
-        { sessionId?: string; sessionFile?: string }
-      >;
-      const entry = saved["agent:main:subagent:abc"];
-      expect(entry?.sessionId).toBe("sess-main");
-      expect(entry?.sessionFile).toContain(
-        `${path.sep}agents${path.sep}main${path.sep}sessions${path.sep}sess-main.jsonl`,
-      );
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.sessionFile).toBe(entry?.sessionFile);
+    await expectPersistedSessionFile({
+      seedKey: "agent:main:subagent:abc",
+      sessionId: "sess-main",
+      expectedPathFragment: `${path.sep}agents${path.sep}main${path.sep}sessions${path.sep}sess-main.jsonl`,
     });
   });
 
   it("preserves topic transcript suffix when persisting missing sessionFile", async () => {
-    await withTempHome(async (home) => {
-      const store = path.join(home, "sessions.json");
-      writeSessionStoreSeed(store, {
-        "agent:main:telegram:group:123:topic:456": {
-          sessionId: "sess-topic",
-          updatedAt: Date.now(),
-        },
-      });
-      mockConfig(home, store);
-
-      await agentCommand(
-        {
-          message: "hi",
-          sessionKey: "agent:main:telegram:group:123:topic:456",
-        },
-        runtime,
-      );
-
-      const saved = JSON.parse(fs.readFileSync(store, "utf-8")) as Record<
-        string,
-        { sessionId?: string; sessionFile?: string }
-      >;
-      const entry = saved["agent:main:telegram:group:123:topic:456"];
-      expect(entry?.sessionId).toBe("sess-topic");
-      expect(entry?.sessionFile).toContain("sess-topic-topic-456.jsonl");
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.sessionFile).toBe(entry?.sessionFile);
+    await expectPersistedSessionFile({
+      seedKey: "agent:main:telegram:group:123:topic:456",
+      sessionId: "sess-topic",
+      expectedPathFragment: "sess-topic-topic-456.jsonl",
     });
   });
 
@@ -661,19 +681,15 @@ describe.skip("agentCommand", () => {
         args: { message: "hi", agentId: "ops" },
         agentsList: [{ id: "ops" }],
       });
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
       expect(callArgs?.sessionKey).toBe("agent:ops:main");
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
       expect(callArgs?.sessionFile).toContain(`${path.sep}agents${path.sep}ops${path.sep}sessions`);
     });
   });
 
-  it("clears stale CLI session IDs before retrying after session expiration", async () => {
-    // @ts-ignore — gutted in RemoteClaw fork (skipped test block)
+  // Gutted in RemoteClaw fork — normalizeModelRef returns empty provider, CLI session path unreachable
+  it.skip("clears stale Claude CLI legacy session IDs before retrying after session expiration", async () => {
     vi.mocked(modelSelectionModule.isCliProvider).mockImplementation(
-      // @ts-ignore — gutted in RemoteClaw fork (skipped test block)
-      (provider: unknown) =>
-        typeof provider === "string" && provider.trim().toLowerCase() === "claude",
+      (provider) => provider.trim().toLowerCase() === "claude-cli",
     );
     try {
       await withTempHome(async (home) => {
@@ -683,20 +699,21 @@ describe.skip("agentCommand", () => {
           [sessionKey]: {
             sessionId: "session-cli-123",
             updatedAt: Date.now(),
-            providerOverride: "claude",
+            providerOverride: "claude-cli",
             modelOverride: "opus",
-            cliSessionIds: { claude: "stale-cli-session" },
+            cliSessionIds: { "claude-cli": "stale-cli-session" },
+            claudeCliSessionId: "stale-legacy-session",
           },
         });
         mockConfig(home, store, {
-          model: { primary: "claude/opus", fallbacks: [] },
-          models: { "claude/opus": {} },
+          model: { primary: "claude-cli/opus", fallbacks: [] },
+          models: { "claude-cli/opus": {} },
         });
         runCliAgentSpy
           .mockRejectedValueOnce(
             new FailoverError("session expired", {
               reason: "session_expired",
-              provider: "claude",
+              provider: "claude-cli",
               model: "opus",
               status: 410,
             }),
@@ -719,13 +736,13 @@ describe.skip("agentCommand", () => {
 
         const saved = JSON.parse(fs.readFileSync(store, "utf-8")) as Record<
           string,
-          { cliSessionIds?: Record<string, string> }
+          { cliSessionIds?: Record<string, string>; claudeCliSessionId?: string }
         >;
         const entry = saved[sessionKey];
-        expect(entry?.cliSessionIds?.["claude"]).toBeUndefined();
+        expect(entry?.cliSessionIds?.["claude-cli"]).toBeUndefined();
+        expect(entry?.claudeCliSessionId).toBeUndefined();
       });
     } finally {
-      // @ts-ignore — gutted in RemoteClaw fork (skipped test block)
       vi.mocked(modelSelectionModule.isCliProvider).mockImplementation(() => false);
     }
   });
@@ -741,80 +758,65 @@ describe.skip("agentCommand", () => {
     });
   });
 
-  it("defaults thinking to low for reasoning-capable models", async () => {
-    await withTempHome(async (home) => {
-      const store = path.join(home, "sessions.json");
-      mockConfig(home, store);
-      vi.mocked(loadModelCatalog).mockResolvedValueOnce([
-        {
-          id: "claude-opus-4-5",
-          name: "Opus 4.5",
-          provider: "anthropic",
-          reasoning: true,
-        },
-      ]);
-
-      await agentCommand({ message: "hi", to: "+1555" }, runtime);
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.thinkLevel).toBe("low");
+  // Gutted in RemoteClaw fork — resolveThinkingDefault is a stub that always returns "off"
+  it.skip("defaults thinking to low for reasoning-capable models", async () => {
+    await expectDefaultThinkLevel({
+      catalogEntry: {
+        id: "claude-opus-4-5",
+        name: "Opus 4.5",
+        provider: "anthropic",
+        reasoning: true,
+      },
+      expected: "low",
     });
   });
 
-  it("defaults thinking to adaptive for Anthropic Claude 4.6 models", async () => {
-    await withTempHome(async (home) => {
-      const store = path.join(home, "sessions.json");
-      mockConfig(home, store, {
+  // Gutted in RemoteClaw fork — resolveThinkingDefault is a stub that always returns "off"
+  it.skip("defaults thinking to adaptive for Anthropic Claude 4.6 models", async () => {
+    await expectDefaultThinkLevel({
+      agentOverrides: {
         model: { primary: "anthropic/claude-opus-4-6" },
         models: { "anthropic/claude-opus-4-6": {} },
-      });
-      vi.mocked(loadModelCatalog).mockResolvedValueOnce([
-        {
-          id: "claude-opus-4-6",
-          name: "Opus 4.6",
-          provider: "anthropic",
-          reasoning: true,
-        },
-      ]);
-
-      await agentCommand({ message: "hi", to: "+1555" }, runtime);
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.thinkLevel).toBe("adaptive");
+      },
+      catalogEntry: {
+        id: "claude-opus-4-6",
+        name: "Opus 4.6",
+        provider: "anthropic",
+        reasoning: true,
+      },
+      expected: "adaptive",
     });
   });
 
-  it("prefers per-model thinking over global thinkingDefault", async () => {
-    await withTempHome(async (home) => {
-      const store = path.join(home, "sessions.json");
-      mockConfig(home, store, {
+  // Gutted in RemoteClaw fork — resolveThinkingDefault is a stub that always returns "off"
+  it.skip("prefers per-model thinking over global thinkingDefault", async () => {
+    await expectDefaultThinkLevel({
+      agentOverrides: {
         thinkingDefault: "low",
         models: {
           "anthropic/claude-opus-4-5": {
             params: { thinking: "high" },
           },
         },
-      });
-
-      await agentCommand({ message: "hi", to: "+1555" }, runtime);
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.thinkLevel).toBe("high");
+      },
+      catalogEntry: {
+        id: "claude-opus-4-5",
+        name: "Opus 4.5",
+        provider: "anthropic",
+        reasoning: true,
+      },
+      expected: "high",
     });
   });
 
   it("prints JSON payload when requested", async () => {
     await withTempHome(async (home) => {
-      vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
-        payloads: [{ text: "json-reply", mediaUrl: "http://x.test/a.jpg" }],
-        meta: {
+      vi.mocked(runEmbeddedPiAgent).mockResolvedValue(
+        createDefaultAgentResult({
+          payloads: [{ text: "json-reply", mediaUrl: "http://x.test/a.jpg" }],
           durationMs: 42,
-          agentMeta: { sessionId: "s", provider: "p", model: "m" },
-        },
-      });
+        }),
+      );
       const store = path.join(home, "sessions.json");
       mockConfig(home, store);
 
@@ -832,16 +834,10 @@ describe.skip("agentCommand", () => {
   });
 
   it("passes the message through as the agent prompt", async () => {
-    await withTempHome(async (home) => {
-      const store = path.join(home, "sessions.json");
-      mockConfig(home, store);
-
-      await agentCommand({ message: "ping", to: "+1333" }, runtime);
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.prompt).toBe("ping");
+    const callArgs = await runEmbeddedWithTempConfig({
+      args: { message: "ping", to: "+1333" },
     });
+    expect(callArgs?.prompt).toBe("ping");
   });
 
   it("passes through telegram accountId when delivering", async () => {
@@ -892,52 +888,31 @@ describe.skip("agentCommand", () => {
   });
 
   it("uses reply channel as the message channel context", async () => {
-    await withTempHome(async (home) => {
-      const store = path.join(home, "sessions.json");
-      mockConfig(home, store, undefined, undefined, [{ id: "ops" }]);
-
-      await agentCommand({ message: "hi", agentId: "ops", replyChannel: "slack" }, runtime);
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.messageChannel).toBe("slack");
+    const callArgs = await runEmbeddedWithTempConfig({
+      args: { message: "hi", agentId: "ops", replyChannel: "slack" },
+      agentsList: [{ id: "ops" }],
     });
+    expect(callArgs?.messageChannel).toBe("slack");
   });
 
   it("prefers runContext for embedded routing", async () => {
-    await withTempHome(async (home) => {
-      const store = path.join(home, "sessions.json");
-      mockConfig(home, store);
-
-      await agentCommand(
-        {
-          message: "hi",
-          to: "+1555",
-          channel: "whatsapp",
-          runContext: { messageChannel: "slack", accountId: "acct-2" },
-        },
-        runtime,
-      );
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.messageChannel).toBe("slack");
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.agentAccountId).toBe("acct-2");
+    const callArgs = await runEmbeddedWithTempConfig({
+      args: {
+        message: "hi",
+        to: "+1555",
+        channel: "whatsapp",
+        runContext: { messageChannel: "slack", accountId: "acct-2" },
+      },
     });
+    expect(callArgs?.messageChannel).toBe("slack");
+    expect(callArgs?.agentAccountId).toBe("acct-2");
   });
 
   it("forwards accountId to embedded runs", async () => {
-    await withTempHome(async (home) => {
-      const store = path.join(home, "sessions.json");
-      mockConfig(home, store);
-
-      await agentCommand({ message: "hi", to: "+1555", accountId: "kev" }, runtime);
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.agentAccountId).toBe("kev");
+    const callArgs = await runEmbeddedWithTempConfig({
+      args: { message: "hi", to: "+1555", accountId: "kev" },
     });
+    expect(callArgs?.agentAccountId).toBe("kev");
   });
 
   it("logs output when delivery is disabled", async () => {

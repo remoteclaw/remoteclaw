@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { WebSocket } from "ws";
 import { getChannelPlugin } from "../channels/plugins/index.js";
 import type { ChannelOutboundAdapter } from "../channels/plugins/types.js";
+import { clearConfigCache } from "../config/config.js";
 import { resolveCanvasHostUrl } from "../infra/canvas-host-url.js";
 import { GatewayLockError } from "../infra/gateway-lock.js";
 import { getActivePluginRegistry, setActivePluginRegistry } from "../plugins/runtime.js";
@@ -19,6 +20,7 @@ import {
   installGatewayTestHooks,
   occupyPort,
   onceMessage,
+  piSdkMock,
   rpcReq,
   startConnectedServerWithClient,
   startGatewayServer,
@@ -80,7 +82,106 @@ const whatsappRegistry = createRegistry([
 ]);
 const emptyRegistry = createRegistry([]);
 
-describe("gateway server voicewake", () => {
+type ModelCatalogRpcEntry = {
+  id: string;
+  name: string;
+  provider: string;
+  contextWindow?: number;
+};
+
+type PiCatalogFixtureEntry = {
+  id: string;
+  provider: string;
+  name?: string;
+  contextWindow?: number;
+};
+
+const buildPiCatalogFixture = (): PiCatalogFixtureEntry[] => [
+  { id: "gpt-test-z", provider: "openai", contextWindow: 0 },
+  {
+    id: "gpt-test-a",
+    name: "A-Model",
+    provider: "openai",
+    contextWindow: 8000,
+  },
+  {
+    id: "claude-test-b",
+    name: "B-Model",
+    provider: "anthropic",
+    contextWindow: 1000,
+  },
+  {
+    id: "claude-test-a",
+    name: "A-Model",
+    provider: "anthropic",
+    contextWindow: 200_000,
+  },
+];
+
+const expectedSortedCatalog = (): ModelCatalogRpcEntry[] => [
+  {
+    id: "claude-test-a",
+    name: "A-Model",
+    provider: "anthropic",
+    contextWindow: 200_000,
+  },
+  {
+    id: "claude-test-b",
+    name: "B-Model",
+    provider: "anthropic",
+    contextWindow: 1000,
+  },
+  {
+    id: "gpt-test-a",
+    name: "A-Model",
+    provider: "openai",
+    contextWindow: 8000,
+  },
+  {
+    id: "gpt-test-z",
+    name: "gpt-test-z",
+    provider: "openai",
+  },
+];
+
+describe("gateway server models + voicewake", () => {
+  const listModels = async () => rpcReq<{ models: ModelCatalogRpcEntry[] }>(ws, "models.list");
+
+  const seedPiCatalog = () => {
+    piSdkMock.enabled = true;
+    piSdkMock.models = buildPiCatalogFixture();
+  };
+
+  const withModelsConfig = async <T>(config: unknown, run: () => Promise<T>): Promise<T> => {
+    const configPath = process.env.REMOTECLAW_CONFIG_PATH;
+    if (!configPath) {
+      throw new Error("Missing REMOTECLAW_CONFIG_PATH");
+    }
+    let previousConfig: string | undefined;
+    try {
+      previousConfig = await fs.readFile(configPath, "utf-8");
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException | undefined)?.code;
+      if (code !== "ENOENT") {
+        throw err;
+      }
+    }
+
+    try {
+      await fs.mkdir(path.dirname(configPath), { recursive: true });
+      await fs.writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
+      clearConfigCache();
+      return await run();
+    } finally {
+      if (previousConfig === undefined) {
+        await fs.rm(configPath, { force: true });
+      } else {
+        await fs.writeFile(configPath, previousConfig, "utf-8");
+      }
+      clearConfigCache();
+    }
+  };
+
   const withTempHome = async <T>(fn: (homeDir: string) => Promise<T>): Promise<T> => {
     const tempHome = await createTempHomeEnv("remoteclaw-home-");
     try {
@@ -88,6 +189,29 @@ describe("gateway server voicewake", () => {
     } finally {
       await tempHome.restore();
     }
+  };
+
+  const expectAllowlistedModels = async (options: {
+    primary: string;
+    models: Record<string, object>;
+    expected: ModelCatalogRpcEntry[];
+  }): Promise<void> => {
+    await withModelsConfig(
+      {
+        agents: {
+          defaults: {
+            model: { primary: options.primary },
+            models: options.models,
+          },
+        },
+      },
+      async () => {
+        seedPiCatalog();
+        const res = await listModels();
+        expect(res.ok).toBe(true);
+        expect(res.payload?.models).toEqual(options.expected);
+      },
+    );
   };
 
   test(
@@ -133,9 +257,7 @@ describe("gateway server voicewake", () => {
     },
   );
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  test.skip("pushes voicewake.changed to nodes on connect and on updates", async () => {
+  test("pushes voicewake.changed to nodes on connect and on updates", async () => {
     await withTempHome(async () => {
       const nodeWs = new WebSocket(`ws://127.0.0.1:${port}`);
       trackConnectChallengeNonce(nodeWs);
@@ -180,6 +302,70 @@ describe("gateway server voicewake", () => {
 
       nodeWs.close();
     });
+  });
+
+  // Upstream v2026.3.2 — models.list handler not registered in fork server methods
+  test.skip("models.list returns model catalog", async () => {
+    seedPiCatalog();
+
+    const res1 = await listModels();
+    const res2 = await listModels();
+
+    expect(res1.ok).toBe(true);
+    expect(res2.ok).toBe(true);
+
+    const models = res1.payload?.models ?? [];
+    expect(models).toEqual(expectedSortedCatalog());
+
+    expect(piSdkMock.discoverCalls).toBe(1);
+  });
+
+  test.skip("models.list filters to allowlisted configured models by default", async () => {
+    await expectAllowlistedModels({
+      primary: "openai/gpt-test-z",
+      models: {
+        "openai/gpt-test-z": {},
+        "anthropic/claude-test-a": {},
+      },
+      expected: [
+        {
+          id: "claude-test-a",
+          name: "A-Model",
+          provider: "anthropic",
+          contextWindow: 200_000,
+        },
+        {
+          id: "gpt-test-z",
+          name: "gpt-test-z",
+          provider: "openai",
+        },
+      ],
+    });
+  });
+
+  test.skip("models.list includes synthetic entries for allowlist models absent from catalog", async () => {
+    await expectAllowlistedModels({
+      primary: "openai/not-in-catalog",
+      models: {
+        "openai/not-in-catalog": {},
+      },
+      expected: [
+        {
+          id: "not-in-catalog",
+          name: "not-in-catalog",
+          provider: "openai",
+        },
+      ],
+    });
+  });
+
+  test.skip("models.list rejects unknown params", async () => {
+    piSdkMock.enabled = true;
+    piSdkMock.models = [{ id: "gpt-test-a", name: "A", provider: "openai" }];
+
+    const res = await rpcReq(ws, "models.list", { extra: true });
+    expect(res.ok).toBe(false);
+    expect(res.error?.message ?? "").toMatch(/invalid models\.list params/i);
   });
 });
 

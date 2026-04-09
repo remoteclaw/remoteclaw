@@ -19,6 +19,7 @@ import {
   promptLegacyChannelAllowFrom,
   parseOnboardingEntriesWithParser,
   promptParsedAllowFromForScopedChannel,
+  promptSingleChannelSecretInput,
   promptSingleChannelToken,
   promptResolvedAllowFrom,
   resolveAccountIdForConfigure,
@@ -284,6 +285,95 @@ describe("promptSingleChannelToken", () => {
       hasConfigToken: false,
     });
     expect(result).toEqual({ useEnv: false, token: "xyz" });
+  });
+});
+
+describe("promptSingleChannelSecretInput", () => {
+  it("returns use-env action when plaintext mode selects env fallback", async () => {
+    const prompter = {
+      select: vi.fn(async () => "plaintext"),
+      confirm: vi.fn(async () => true),
+      text: vi.fn(async () => ""),
+      note: vi.fn(async () => undefined),
+    };
+
+    const result = await promptSingleChannelSecretInput({
+      cfg: {},
+      // oxlint-disable-next-line typescript/no-explicit-any
+      prompter: prompter as any,
+      providerHint: "telegram",
+      credentialLabel: "Telegram bot token",
+      accountConfigured: false,
+      canUseEnv: true,
+      hasConfigToken: false,
+      envPrompt: "use env",
+      keepPrompt: "keep",
+      inputPrompt: "token",
+      preferredEnvVar: "TELEGRAM_BOT_TOKEN",
+    });
+
+    expect(result).toEqual({ action: "use-env" });
+  });
+
+  // Gutted in RemoteClaw fork — resolveSecretInputModeForEnvSelection always
+  // returns "plaintext", so the "ref" path is unreachable.  The prompt text
+  // value is used as a plaintext credential instead.
+  it("returns ref + resolved value when external env ref is selected", async () => {
+    process.env.REMOTECLAW_TEST_TOKEN = "secret-token";
+    const prompter = {
+      select: vi.fn().mockResolvedValueOnce("ref").mockResolvedValueOnce("env"),
+      confirm: vi.fn(async () => false),
+      text: vi.fn(async () => "REMOTECLAW_TEST_TOKEN"),
+      note: vi.fn(async () => undefined),
+    };
+
+    const result = await promptSingleChannelSecretInput({
+      cfg: {},
+      // oxlint-disable-next-line typescript/no-explicit-any
+      prompter: prompter as any,
+      providerHint: "discord",
+      credentialLabel: "Discord bot token",
+      accountConfigured: false,
+      canUseEnv: false,
+      hasConfigToken: false,
+      envPrompt: "use env",
+      keepPrompt: "keep",
+      inputPrompt: "token",
+      preferredEnvVar: "REMOTECLAW_TEST_TOKEN",
+    });
+
+    expect(result).toEqual({
+      action: "set",
+      value: "REMOTECLAW_TEST_TOKEN",
+      resolvedValue: "REMOTECLAW_TEST_TOKEN",
+    });
+  });
+
+  it("returns keep action when ref mode keeps an existing configured ref", async () => {
+    const prompter = {
+      select: vi.fn(async () => "ref"),
+      confirm: vi.fn(async () => true),
+      text: vi.fn(async () => ""),
+      note: vi.fn(async () => undefined),
+    };
+
+    const result = await promptSingleChannelSecretInput({
+      cfg: {},
+      // oxlint-disable-next-line typescript/no-explicit-any
+      prompter: prompter as any,
+      providerHint: "telegram",
+      credentialLabel: "Telegram bot token",
+      accountConfigured: true,
+      canUseEnv: false,
+      hasConfigToken: true,
+      envPrompt: "use env",
+      keepPrompt: "keep",
+      inputPrompt: "token",
+      preferredEnvVar: "TELEGRAM_BOT_TOKEN",
+    });
+
+    expect(result).toEqual({ action: "keep" });
+    expect(prompter.text).not.toHaveBeenCalled();
   });
 });
 

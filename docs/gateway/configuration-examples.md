@@ -1,5 +1,5 @@
 ---
-description: "Schema-accurate configuration examples for common RemoteClaw setups"
+summary: "Schema-accurate configuration examples for common RemoteClaw setups"
 read_when:
   - Learning how to configure RemoteClaw
   - Looking for configuration examples
@@ -31,10 +31,11 @@ Save to `~/.remoteclaw/remoteclaw.json` and you can DM the bot from that number.
   identity: {
     name: "Clawd",
     theme: "helpful assistant",
-    emoji: "🦀",
+    emoji: "🦞",
   },
   agent: {
     workspace: "~/.remoteclaw/workspace",
+    model: { primary: "anthropic/claude-sonnet-4-5" },
   },
   channels: {
     whatsapp: {
@@ -60,6 +61,25 @@ Save to `~/.remoteclaw/remoteclaw.json` and you can DM the bot from that number.
     shellEnv: {
       enabled: true,
       timeoutMs: 15000,
+    },
+  },
+
+  // Auth profile metadata (secrets live in auth-profiles.json)
+  auth: {
+    profiles: {
+      "anthropic:me@example.com": {
+        provider: "anthropic",
+        mode: "oauth",
+        email: "me@example.com",
+      },
+      "anthropic:work": { provider: "anthropic", mode: "api_key" },
+      "openai:default": { provider: "openai", mode: "api_key" },
+      "openai-codex:default": { provider: "openai-codex", mode: "oauth" },
+    },
+    order: {
+      anthropic: ["anthropic:me@example.com", "anthropic:work"],
+      openai: ["openai:default"],
+      "openai-codex": ["openai-codex:default"],
     },
   },
 
@@ -116,12 +136,17 @@ Save to `~/.remoteclaw/remoteclaw.json` and you can DM the bot from that number.
       audio: {
         enabled: true,
         maxBytes: 20971520,
-        models: [{ type: "cli", command: "whisper", args: ["--model", "base", "{{MediaPath}}"] }],
+        models: [
+          { provider: "openai", model: "gpt-4o-mini-transcribe" },
+          // Optional CLI fallback (Whisper binary):
+          // { type: "cli", command: "whisper", args: ["--model", "base", "{{MediaPath}}"] }
+        ],
         timeoutSeconds: 120,
       },
       video: {
         enabled: true,
         maxBytes: 52428800,
+        models: [{ provider: "google", model: "gemini-3-flash-preview" }],
       },
     },
   },
@@ -212,7 +237,21 @@ Save to `~/.remoteclaw/remoteclaw.json` and you can DM the bot from that number.
     defaults: {
       workspace: "~/.remoteclaw/workspace",
       userTimezone: "America/Chicago",
+      model: {
+        primary: "anthropic/claude-sonnet-4-5",
+        fallbacks: ["anthropic/claude-opus-4-6", "openai/gpt-5.2"],
+      },
+      imageModel: {
+        primary: "openrouter/anthropic/claude-sonnet-4-5",
+      },
+      models: {
+        "anthropic/claude-opus-4-6": { alias: "opus" },
+        "anthropic/claude-sonnet-4-5": { alias: "sonnet" },
+        "openai/gpt-5.2": { alias: "gpt" },
+      },
+      thinkingDefault: "low",
       verboseDefault: "off",
+      elevatedDefault: "on",
       blockStreamingDefault: "off",
       blockStreamingBreak: "text_end",
       blockStreamingChunk: {
@@ -232,10 +271,20 @@ Save to `~/.remoteclaw/remoteclaw.json` and you can DM the bot from that number.
       maxConcurrent: 3,
       heartbeat: {
         every: "30m",
+        model: "anthropic/claude-sonnet-4-5",
         target: "last",
         directPolicy: "allow", // allow (default) | block
         to: "+15555550123",
         prompt: "HEARTBEAT",
+        ackMaxChars: 300,
+      },
+      memorySearch: {
+        provider: "gemini",
+        model: "gemini-embedding-001",
+        remote: {
+          apiKey: "${GEMINI_API_KEY}",
+        },
+        extraPaths: ["../team-docs", "/srv/shared-notes"],
       },
       sandbox: {
         mode: "non-main",
@@ -257,12 +306,50 @@ Save to `~/.remoteclaw/remoteclaw.json` and you can DM the bot from that number.
   },
 
   tools: {
-    allow: ["exec", "process", "read", "write", "edit"],
+    allow: ["exec", "process", "read", "write", "edit", "apply_patch"],
     deny: ["browser", "canvas"],
     exec: {
       backgroundMs: 10000,
       timeoutSec: 1800,
       cleanupMs: 1800000,
+    },
+    elevated: {
+      enabled: true,
+      allowFrom: {
+        whatsapp: ["+15555550123"],
+        telegram: ["123456789"],
+        discord: ["123456789012345678"],
+        slack: ["U123"],
+        signal: ["+15555550123"],
+        imessage: ["user@example.com"],
+        webchat: ["session:demo"],
+      },
+    },
+  },
+
+  // Custom model providers
+  models: {
+    mode: "merge",
+    providers: {
+      "custom-proxy": {
+        baseUrl: "http://localhost:4000/v1",
+        apiKey: "LITELLM_KEY",
+        api: "openai-responses",
+        authHeader: true,
+        headers: { "X-Proxy-Region": "us-west" },
+        models: [
+          {
+            id: "llama-3.1-8b",
+            name: "Llama 3.1 8B",
+            api: "openai-responses",
+            reasoning: false,
+            input: ["text"],
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+            contextWindow: 128000,
+            maxTokens: 32000,
+          },
+        ],
+      },
     },
   },
 
@@ -338,10 +425,20 @@ Save to `~/.remoteclaw/remoteclaw.json` and you can DM the bot from that number.
   },
 
   skills: {
+    allowBundled: ["gemini", "peekaboo"],
     load: {
       extraDirs: ["~/Projects/agent-scripts/skills"],
     },
+    install: {
+      preferBrew: true,
+      nodeManager: "npm",
+    },
     entries: {
+      "nano-banana-pro": {
+        enabled: true,
+        apiKey: "GEMINI_KEY_HERE",
+        env: { GEMINI_API_KEY: "GEMINI_KEY_HERE" },
+      },
       peekaboo: { enabled: true },
     },
   },
@@ -400,6 +497,81 @@ If more than one person can DM your bot (multiple entries in `allowFrom`, pairin
 For Discord/Slack/Google Chat/MS Teams/Mattermost/IRC, sender authorization is ID-first by default.
 Only enable direct mutable name/email/nick matching with each channel's `dangerouslyAllowNameMatching: true` if you explicitly accept that risk.
 
+### OAuth with API key failover
+
+```json5
+{
+  auth: {
+    profiles: {
+      "anthropic:subscription": {
+        provider: "anthropic",
+        mode: "oauth",
+        email: "me@example.com",
+      },
+      "anthropic:api": {
+        provider: "anthropic",
+        mode: "api_key",
+      },
+    },
+    order: {
+      anthropic: ["anthropic:subscription", "anthropic:api"],
+    },
+  },
+  agent: {
+    workspace: "~/.remoteclaw/workspace",
+    model: {
+      primary: "anthropic/claude-sonnet-4-5",
+      fallbacks: ["anthropic/claude-opus-4-6"],
+    },
+  },
+}
+```
+
+### Anthropic setup-token + API key, MiniMax fallback
+
+<Warning>
+Anthropic setup-token usage outside Claude Code has been restricted for some
+users in the past. Treat this as user-choice risk and verify current Anthropic
+terms before depending on subscription auth.
+</Warning>
+
+```json5
+{
+  auth: {
+    profiles: {
+      "anthropic:subscription": {
+        provider: "anthropic",
+        mode: "oauth",
+        email: "user@example.com",
+      },
+      "anthropic:api": {
+        provider: "anthropic",
+        mode: "api_key",
+      },
+    },
+    order: {
+      anthropic: ["anthropic:subscription", "anthropic:api"],
+    },
+  },
+  models: {
+    providers: {
+      minimax: {
+        baseUrl: "https://api.minimax.io/anthropic",
+        api: "anthropic-messages",
+        apiKey: "${MINIMAX_API_KEY}",
+      },
+    },
+  },
+  agent: {
+    workspace: "~/.remoteclaw/workspace",
+    model: {
+      primary: "anthropic/claude-opus-4-6",
+      fallbacks: ["minimax/MiniMax-M2.5"],
+    },
+  },
+}
+```
+
 ### Work bot (restricted access)
 
 ```json5
@@ -410,6 +582,7 @@ Only enable direct mutable name/email/nick matching with each channel's `dangero
   },
   agent: {
     workspace: "~/work-remoteclaw",
+    elevated: { enabled: false },
   },
   channels: {
     slack: {
@@ -418,6 +591,38 @@ Only enable direct mutable name/email/nick matching with each channel's `dangero
       channels: {
         "#engineering": { allow: true, requireMention: true },
         "#general": { allow: true, requireMention: true },
+      },
+    },
+  },
+}
+```
+
+### Local models only
+
+```json5
+{
+  agent: {
+    workspace: "~/.remoteclaw/workspace",
+    model: { primary: "lmstudio/minimax-m2.5-gs32" },
+  },
+  models: {
+    mode: "merge",
+    providers: {
+      lmstudio: {
+        baseUrl: "http://127.0.0.1:1234/v1",
+        apiKey: "lmstudio",
+        api: "openai-responses",
+        models: [
+          {
+            id: "minimax-m2.5-gs32",
+            name: "MiniMax M2.5 GS32",
+            reasoning: false,
+            input: ["text"],
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+            contextWindow: 196608,
+            maxTokens: 8192,
+          },
+        ],
       },
     },
   },

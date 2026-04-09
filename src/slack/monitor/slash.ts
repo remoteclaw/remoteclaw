@@ -385,11 +385,11 @@ export async function registerSlackMonitorSlashCommands(params: {
           channelId: command.channel_id,
           channelName: channelInfo?.name,
           channels: ctx.channelsConfig,
+          channelKeys: ctx.channelsConfigKeys,
           defaultRequireMention: ctx.defaultRequireMention,
         });
         if (ctx.useAccessGroups) {
-          const channelAllowlistConfigured =
-            Boolean(ctx.channelsConfig) && Object.keys(ctx.channelsConfig ?? {}).length > 0;
+          const channelAllowlistConfigured = (ctx.channelsConfigKeys?.length ?? 0) > 0;
           const channelAllowed = channelConfig?.allowed !== false;
           if (
             !isSlackChannelAllowedByPolicy({
@@ -510,11 +510,11 @@ export async function registerSlackMonitorSlashCommands(params: {
       const [
         { resolveConversationLabel },
         { createReplyPrefixOptions },
-        { recordSessionMetaFromInbound, resolveStorePath },
+        { recordInboundSessionMetaSafe },
       ] = await Promise.all([
         import("../../channels/conversation-label.js"),
         import("../../channels/reply-prefix.js"),
-        import("../../config/sessions.js"),
+        import("../../channels/session-meta.js"),
       ]);
 
       const route = resolveAgentRoute({
@@ -578,18 +578,14 @@ export async function registerSlackMonitorSlashCommands(params: {
         OriginatingTo: `user:${command.user_id}`,
       });
 
-      const storePath = resolveStorePath(cfg.session?.store, {
+      await recordInboundSessionMetaSafe({
+        cfg,
         agentId: route.agentId,
+        sessionKey: ctxPayload.SessionKey ?? route.sessionKey,
+        ctx: ctxPayload,
+        onError: (err) =>
+          runtime.error?.(danger(`slack slash: failed updating session meta: ${String(err)}`)),
       });
-      try {
-        await recordSessionMetaFromInbound({
-          storePath,
-          sessionKey: ctxPayload.SessionKey ?? route.sessionKey,
-          ctx: ctxPayload,
-        });
-      } catch (err) {
-        runtime.error?.(danger(`slack slash: failed updating session meta: ${String(err)}`));
-      }
 
       const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
         cfg,
@@ -630,7 +626,6 @@ export async function registerSlackMonitorSlashCommands(params: {
           },
         },
         replyOptions: {
-          // @ts-expect-error — upstream feature not available in RemoteClaw fork
           skillFilter: channelConfig?.skills,
           onModelSelected,
         },
@@ -662,13 +657,9 @@ export async function registerSlackMonitorSlashCommands(params: {
   let nativeCommands: Array<{ name: string }> = [];
   if (nativeEnabled) {
     reg = await getCommandsRegistry();
-    // oxlint-disable-next-line typescript/no-explicit-any
-    const skillCommands = nativeSkillsEnabled ? ([] as any[]) : [];
-    //       ? (await import("../../auto-reply/skill-commands.js")).listSkillCommandsForAgents({ cfg })
-    //       : [];
-    // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-    // oxlint-disable-next-line typescript/no-explicit-any
-    const cfg = {} as any;
+    const skillCommands = nativeSkillsEnabled
+      ? (await import("../../auto-reply/skill-commands.js")).listSkillCommandsForAgents({ cfg })
+      : [];
     nativeCommands = reg.listNativeCommandSpecsForConfig(cfg, { skillCommands, provider: "slack" });
   }
 

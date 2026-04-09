@@ -13,12 +13,13 @@ export type AgentLocalStatus = {
   lastActiveAgeMs: number | null;
 };
 
-export async function getAgentLocalStatuses(): Promise<{
+export async function getAgentLocalStatuses(cfgOverride?: unknown): Promise<{
   defaultId: string;
   agents: AgentLocalStatus[];
   totalSessions: number;
+  bootstrapPendingCount: number;
 }> {
-  const cfg = loadConfig();
+  const cfg = (cfgOverride ?? loadConfig()) as ReturnType<typeof loadConfig>;
   const agentList = listAgentsForGateway(cfg);
   const now = Date.now();
 
@@ -65,5 +66,6 @@ export async function getAgentLocalStatuses(): Promise<{
     defaultId: agentList.defaultId,
     agents: statuses,
     totalSessions,
+    bootstrapPendingCount: 0,
   };
 }

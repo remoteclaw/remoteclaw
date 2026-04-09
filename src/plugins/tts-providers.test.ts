@@ -34,9 +34,12 @@ function makeRecord(overrides?: Partial<PluginRecord>): PluginRecord {
     hookCount: 0,
     configSchema: false,
     ...overrides,
-  };
+  } as PluginRecord;
 }
 
+// Note: registerTtsProvider is aliased to registerProvider in the registry,
+// so TTS providers are stored in registry.providers (not registry.ttsProviders).
+// The record tracks TTS provider IDs separately via record.providerIds.
 describe("registerTtsProvider", () => {
   it("registers a plugin TTS provider", () => {
     const { registry, registerTtsProvider } = createPluginRegistry(makeRegistryParams());
@@ -47,14 +50,14 @@ describe("registerTtsProvider", () => {
       synthesize: async () => ({ audioBuffer: Buffer.from("audio"), format: "mp3" }),
     };
 
-    registerTtsProvider(record, provider);
+    registerTtsProvider(record, provider as unknown as Parameters<typeof registerTtsProvider>[1]);
 
-    expect(registry.ttsProviders).toHaveLength(1);
-    expect(registry.ttsProviders[0]).toMatchObject({
+    expect(registry.providers).toHaveLength(1);
+    expect(registry.providers[0]).toMatchObject({
       pluginId: "test-plugin",
       provider,
     });
-    expect(record.ttsProviderIds).toEqual(["my-custom-tts"]);
+    expect(record.providerIds).toEqual(["my-custom-tts"]);
   });
 
   it("rejects provider with empty id", () => {
@@ -66,9 +69,9 @@ describe("registerTtsProvider", () => {
       synthesize: async () => ({ audioBuffer: Buffer.from(""), format: "mp3" }),
     };
 
-    registerTtsProvider(record, provider);
+    registerTtsProvider(record, provider as unknown as Parameters<typeof registerTtsProvider>[1]);
 
-    expect(registry.ttsProviders).toHaveLength(0);
+    expect(registry.providers).toHaveLength(0);
     expect(registry.diagnostics).toHaveLength(1);
     expect(registry.diagnostics[0]).toMatchObject({
       level: "error",
@@ -91,10 +94,10 @@ describe("registerTtsProvider", () => {
       synthesize: async () => ({ audioBuffer: Buffer.from("two"), format: "mp3" }),
     };
 
-    registerTtsProvider(record, provider1);
-    registerTtsProvider(record, provider2);
+    registerTtsProvider(record, provider1 as unknown as Parameters<typeof registerTtsProvider>[1]);
+    registerTtsProvider(record, provider2 as unknown as Parameters<typeof registerTtsProvider>[1]);
 
-    expect(registry.ttsProviders).toHaveLength(1);
+    expect(registry.providers).toHaveLength(1);
     expect(registry.diagnostics).toHaveLength(1);
     expect(registry.diagnostics[0]).toMatchObject({
       level: "error",
@@ -112,10 +115,10 @@ describe("registerTtsProvider", () => {
       synthesize: async () => ({ audioBuffer: Buffer.from("via api"), format: "opus" }),
     };
 
-    api.registerTtsProvider(provider);
+    api.registerTtsProvider(provider as unknown as Parameters<typeof api.registerTtsProvider>[0]);
 
-    expect(registry.ttsProviders).toHaveLength(1);
-    expect(registry.ttsProviders[0].provider.id).toBe("api-tts");
-    expect(record.ttsProviderIds).toEqual(["api-tts"]);
+    expect(registry.providers).toHaveLength(1);
+    expect(registry.providers[0].provider.id).toBe("api-tts");
+    expect(record.providerIds).toEqual(["api-tts"]);
   });
 });

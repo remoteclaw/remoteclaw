@@ -1,15 +1,8 @@
 import path from "node:path";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/pi-embedded-runner/runs.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const getActiveEmbeddedRunCount = (..._args: unknown[]) => undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/skills/refresh.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const registerSkillsChangeListener =
-  (..._args: unknown[]) =>
-  () => {};
+const getActiveEmbeddedRunCount = (..._args: unknown[]) => 0;
+const registerSkillsChangeListener = (_cb: (_e: { reason: string }) => void) => () => {};
 import { initSubagentRegistry } from "../agents/subagent-registry.js";
 import { getTotalPendingReplies } from "../auto-reply/reply/dispatcher-registry.js";
 import type { CanvasHostServer } from "../canvas-host/server.js";
@@ -26,6 +19,7 @@ import {
   readConfigFileSnapshot,
   writeConfigFile,
 } from "../config/config.js";
+import { formatConfigIssueLines } from "../config/issue-format.js";
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
 import { resolveMainSessionKey } from "../config/sessions.js";
 import { clearAgentRunContext, onAgentEvent } from "../infra/agent-events.js";
@@ -37,45 +31,54 @@ import {
 import { isDiagnosticsEnabled } from "../infra/diagnostic-events.js";
 import { logAcceptedEnvOption } from "../infra/env.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../infra/exec-approval-forwarder.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const createExecApprovalForwarder = (..._args: unknown[]) => undefined as any;
+const createExecApprovalForwarder = (..._args: unknown[]) => undefined as unknown;
 import { onHeartbeatEvent } from "../infra/heartbeat-events.js";
 import { startHeartbeatRunner, type HeartbeatRunner } from "../infra/heartbeat-runner.js";
 import { getMachineDisplayName } from "../infra/machine-name.js";
 import { ensureRemoteClawCliOnPath } from "../infra/path-env.js";
 import { setGatewaySigusr1RestartPolicy, setPreRestartDeferralCheck } from "../infra/restart.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../infra/skills-remote.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const primeRemoteSkillsCache = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const refreshRemoteBinsForConnectedNodes = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const setSkillsRemoteRegistry = (..._args: unknown[]) => undefined as any;
+const primeRemoteSkillsCache = (..._args: unknown[]) => undefined as unknown;
+const refreshRemoteBinsForConnectedNodes = (..._args: unknown[]) => undefined as unknown;
+const setSkillsRemoteRegistry = (..._args: unknown[]) => undefined as unknown;
 import { enqueueSystemEvent } from "../infra/system-events.js";
 import { scheduleGatewayUpdateCheck } from "../infra/update-startup.js";
 import { startDiagnosticHeartbeat, stopDiagnosticHeartbeat } from "../logging/diagnostic.js";
 import { createSubsystemLogger, runtimeForLogger } from "../logging/subsystem.js";
 import { getGlobalHookRunner, runGlobalGatewayStopSafely } from "../plugins/hook-runner-global.js";
 import { createEmptyPluginRegistry } from "../plugins/registry.js";
+import { createPluginRuntime } from "../plugins/runtime/index.js";
 import type { PluginServicesHandle } from "../plugins/services.js";
 import { getTotalQueueSize } from "../process/command-queue.js";
 import type { RuntimeEnv } from "../runtime.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../secrets/runtime.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const activateSecretsRuntimeSnapshot = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const clearSecretsRuntimeSnapshot = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const getActiveSecretsRuntimeSnapshot = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const prepareSecretsRuntimeSnapshot = (opts: { config: RemoteClawConfig }) =>
-  Promise.resolve({
-    warnings: [] as Array<{ code: string; message: string }>,
-    config: opts.config,
-  });
+// Gutted in RemoteClaw fork (Middleware Boundary Principle) — secrets subsystem
+type CommandSecretAssignment = Record<string, unknown>;
+const GATEWAY_AUTH_SURFACE_PATHS = [] as string[];
+const evaluateGatewayAuthSurfaceStates = (..._args: unknown[]) =>
+  ({}) as Record<
+    string,
+    { active: boolean; configured: boolean; hasSecretRef?: boolean; reason?: string }
+  >;
+const activateSecretsRuntimeSnapshot = (..._args: unknown[]) => undefined as unknown;
+const clearSecretsRuntimeSnapshot = (..._args: unknown[]) => undefined as unknown;
+type SecretsRuntimeSnapshot = {
+  sourceConfig: RemoteClawConfig;
+  config: RemoteClawConfig;
+  warnings: Array<{ code: string; path: string; message: string }>;
+};
+const getActiveSecretsRuntimeSnapshot = (..._args: unknown[]) =>
+  undefined as SecretsRuntimeSnapshot | undefined;
+const prepareSecretsRuntimeSnapshot = (params: { config: RemoteClawConfig }) =>
+  ({
+    sourceConfig: params.config,
+    config: params.config,
+    warnings: [] as Array<{ code: string; path: string; message: string }>,
+  }) as SecretsRuntimeSnapshot;
+const resolveCommandSecretsFromActiveRuntimeSnapshot = (..._args: unknown[]) => ({
+  assignments: [] as CommandSecretAssignment[],
+  diagnostics: [] as string[],
+  inactiveRefPaths: [] as string[],
+});
 import { runOnboardingWizard } from "../wizard/onboarding.js";
 import { createAuthRateLimiter, type AuthRateLimiter } from "./auth-rate-limit.js";
 import { startChannelHealthMonitor } from "./channel-health-monitor.js";
@@ -86,16 +89,9 @@ import {
   type GatewayUpdateAvailableEventPayload,
 } from "./events.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./exec-approval-manager.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-class ExecApprovalManager {
-  [key: string]: unknown;
-  approve() {}
-  deny() {}
-  list() {
-    return [];
-  }
-}
+const ExecApprovalManager = class {} as unknown as new (
+  ...args: unknown[]
+) => Record<string, unknown>;
 import { NodeRegistry } from "./node-registry.js";
 import type { startBrowserControlServerIfEnabled } from "./server-browser.js";
 import { createChannelManager } from "./server-channels.js";
@@ -108,18 +104,14 @@ import { startGatewayMaintenanceTimers } from "./server-maintenance.js";
 import { GATEWAY_EVENTS, listGatewayMethods } from "./server-methods-list.js";
 import { coreGatewayHandlers } from "./server-methods.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./server-methods/exec-approval.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const createExecApprovalHandlers = (..._args: unknown[]) => ({});
+import type { GatewayRequestHandlers } from "./server-methods/types.js";
+const createExecApprovalHandlers = (..._args: unknown[]) => ({}) as GatewayRequestHandlers;
 import { safeParseJson } from "./server-methods/nodes.helpers.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./server-methods/secrets.js";
-const createSecretsHandlers = (..._args: unknown[]) => ({});
+const createSecretsHandlers = (..._args: unknown[]) => ({}) as GatewayRequestHandlers;
 import { hasConnectedMobileNode } from "./server-mobile-nodes.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./server-model-catalog.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const loadGatewayModelCatalog = (..._args: unknown[]) => undefined as any;
+const loadGatewayModelCatalog = async (): Promise<Record<string, unknown>[]> => [];
 import { createNodeSubscriptionManager } from "./server-node-subscriptions.js";
 import { loadGatewayPlugins } from "./server-plugins.js";
 import { createGatewayReloadHandlers } from "./server-reload-handlers.js";
@@ -141,14 +133,15 @@ import {
 import { loadGatewayTlsRuntime } from "./server/tls.js";
 import { ensureGatewayStartupAuth } from "./startup-auth.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./startup-control-ui-origins.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const maybeSeedControlUiAllowedOriginsAtStartup = async (opts: any) =>
-  opts.config as RemoteClawConfig;
-// export { __resetModelCatalogCacheForTest } from "./server-model-catalog.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// oxlint-disable-next-line typescript/no-explicit-any
-const __resetModelCatalogCacheForTest = (..._args: unknown[]) => undefined as any;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const maybeSeedControlUiAllowedOriginsAtStartup = async (params: {
+  config: RemoteClawConfig;
+  [key: string]: unknown;
+}) => params.config;
+
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+export const __resetModelCatalogCacheForTest = (..._args: unknown[]) => undefined as unknown;
 
 ensureRemoteClawCliOnPath();
 
@@ -181,6 +174,35 @@ function createGatewayAuthRateLimiters(rateLimitConfig: AuthRateLimitConfig | un
     exemptLoopback: false,
   });
   return { rateLimiter, browserRateLimiter };
+}
+
+function logGatewayAuthSurfaceDiagnostics(prepared: {
+  sourceConfig: RemoteClawConfig;
+  warnings: Array<{ code: string; path: string; message: string }>;
+}): void {
+  const states = evaluateGatewayAuthSurfaceStates({
+    config: prepared.sourceConfig,
+    defaults: prepared.sourceConfig.secrets?.defaults,
+    env: process.env,
+  });
+  const inactiveWarnings = new Map<string, string>();
+  for (const warning of prepared.warnings) {
+    if (warning.code !== "SECRETS_REF_IGNORED_INACTIVE_SURFACE") {
+      continue;
+    }
+    inactiveWarnings.set(warning.path, warning.message);
+  }
+  for (const path of GATEWAY_AUTH_SURFACE_PATHS) {
+    const state = states[path];
+    if (!state.hasSecretRef) {
+      continue;
+    }
+    const stateLabel = state.active ? "active" : "inactive";
+    const inactiveDetails =
+      !state.active && inactiveWarnings.get(path) ? inactiveWarnings.get(path) : undefined;
+    const details = inactiveDetails ?? state.reason;
+    logSecrets.info(`[SECRETS_GATEWAY_AUTH_SURFACE] ${path} is ${stateLabel}. ${details}`);
+  }
 }
 
 export type GatewayServer = {
@@ -283,9 +305,7 @@ export async function startGatewayServer(
   if (configSnapshot.exists && !configSnapshot.valid) {
     const issues =
       configSnapshot.issues.length > 0
-        ? configSnapshot.issues
-            .map((issue) => `${issue.path || "<root>"}: ${issue.message}`)
-            .join("\n")
+        ? formatConfigIssueLines(configSnapshot.issues, "", { normalizeRoot: true }).join("\n")
         : "Unknown validation issue.";
     throw new Error(
       `Invalid config at ${configSnapshot.path}.\n${issues}\nRun "${formatCliCommand("remoteclaw doctor")}" to repair, then retry.`,
@@ -332,9 +352,10 @@ export async function startGatewayServer(
   ) =>
     await runWithSecretsActivationLock(async () => {
       try {
-        const prepared = await prepareSecretsRuntimeSnapshot({ config });
+        const prepared = prepareSecretsRuntimeSnapshot({ config });
         if (params.activate) {
           activateSecretsRuntimeSnapshot(prepared);
+          logGatewayAuthSurfaceDiagnostics(prepared);
         }
         for (const warning of prepared.warnings) {
           logSecrets.warn(`[${warning.code}] ${warning.message}`);
@@ -378,9 +399,7 @@ export async function startGatewayServer(
     if (!freshSnapshot.valid) {
       const issues =
         freshSnapshot.issues.length > 0
-          ? freshSnapshot.issues
-              .map((issue) => `${issue.path || "<root>"}: ${issue.message}`)
-              .join("\n")
+          ? formatConfigIssueLines(freshSnapshot.issues, "", { normalizeRoot: true }).join("\n")
           : "Unknown validation issue.";
       throw new Error(`Invalid config at ${freshSnapshot.path}.\n${issues}`);
     }
@@ -603,6 +622,7 @@ export async function startGatewayServer(
     loadConfig,
     channelLogs,
     channelRuntimeEnvs,
+    channelRuntime: createPluginRuntime().channel,
   });
   const { getRuntimeSnapshot, startChannels, startChannel, stopChannel, markChannelLoggedOut } =
     channelManager;
@@ -635,8 +655,7 @@ export async function startGatewayServer(
   const skillsRefreshDelayMs = 30_000;
   const skillsChangeUnsub = minimalTestGateway
     ? () => {}
-    : // oxlint-disable-next-line typescript/no-explicit-any
-      registerSkillsChangeListener((event: any) => {
+    : registerSkillsChangeListener((event) => {
         if (event.reason === "remote-node") {
           return;
         }
@@ -703,7 +722,7 @@ export async function startGatewayServer(
 
   const healthCheckMinutes = cfgAtStart.gateway?.channelHealthCheckMinutes;
   const healthCheckDisabled = healthCheckMinutes === 0;
-  const channelHealthMonitor = healthCheckDisabled
+  let channelHealthMonitor = healthCheckDisabled
     ? null
     : startChannelHealthMonitor({
         channelManager,
@@ -744,6 +763,23 @@ export async function startGatewayServer(
         activate: true,
       });
       return { warningCount: prepared.warnings.length };
+    },
+    resolveSecrets: async ({
+      commandName,
+      targetIds,
+    }: {
+      commandName: string;
+      targetIds: string[];
+    }) => {
+      const { assignments, diagnostics, inactiveRefPaths } =
+        resolveCommandSecretsFromActiveRuntimeSnapshot({
+          commandName,
+          targetIds: new Set(targetIds),
+        });
+      if (assignments.length === 0) {
+        return { assignments: [] as CommandSecretAssignment[], diagnostics, inactiveRefPaths };
+      }
+      return { assignments, diagnostics, inactiveRefPaths };
     },
   });
 
@@ -888,6 +924,7 @@ export async function startGatewayServer(
             heartbeatRunner,
             cronState,
             browserControl,
+            channelHealthMonitor,
           }),
           setState: (nextState) => {
             hooksConfig = nextState.hooksConfig;
@@ -896,6 +933,7 @@ export async function startGatewayServer(
             cron = cronState.cron;
             cronStorePath = cronState.storePath;
             browserControl = nextState.browserControl;
+            channelHealthMonitor = nextState.channelHealthMonitor;
           },
           startChannel,
           stopChannel,
@@ -904,6 +942,8 @@ export async function startGatewayServer(
           logChannels,
           logCron,
           logReload,
+          createHealthMonitor: (checkIntervalMs: number) =>
+            startChannelHealthMonitor({ channelManager, checkIntervalMs }),
         });
 
         return startGatewayConfigReloader({

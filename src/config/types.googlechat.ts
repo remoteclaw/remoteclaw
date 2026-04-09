@@ -70,6 +70,8 @@ export type GoogleChatAccountConfig = {
   serviceAccountRef?: SecretRef;
   /** Service account JSON file path. */
   serviceAccountFile?: string;
+  /** App principal email for add-on authentication. */
+  appPrincipal?: string;
   /** Webhook audience type (app-url or project-number). */
   audienceType?: "app-url" | "project-number";
   /** Audience value (app URL or project number). */

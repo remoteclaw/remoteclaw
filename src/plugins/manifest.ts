@@ -1,12 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
+import { MANIFEST_KEY } from "../compat/legacy-names.js";
 import { openBoundaryFileSync } from "../infra/boundary-file-read.js";
 import { isRecord } from "../utils.js";
 import type { PluginConfigUiHint, PluginKind } from "./types.js";
 
-const MANIFEST_KEY = "remoteclaw" as const;
-
 export const PLUGIN_MANIFEST_FILENAME = "remoteclaw.plugin.json";
+export const PLUGIN_MANIFEST_FILENAMES = [PLUGIN_MANIFEST_FILENAME] as const;
 
 export type PluginManifest = {
   id: string;
@@ -14,8 +14,7 @@ export type PluginManifest = {
   kind?: PluginKind;
   channels?: string[];
   providers?: string[];
-  stt?: string[];
-  tts?: string[];
+  skills?: string[];
   name?: string;
   description?: string;
   version?: string;
@@ -34,15 +33,25 @@ function normalizeStringList(value: unknown): string[] {
 }
 
 export function resolvePluginManifestPath(rootDir: string): string {
+  for (const filename of PLUGIN_MANIFEST_FILENAMES) {
+    const candidate = path.join(rootDir, filename);
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
   return path.join(rootDir, PLUGIN_MANIFEST_FILENAME);
 }
 
-export function loadPluginManifest(rootDir: string): PluginManifestLoadResult {
+export function loadPluginManifest(
+  rootDir: string,
+  rejectHardlinks = true,
+): PluginManifestLoadResult {
   const manifestPath = resolvePluginManifestPath(rootDir);
   const opened = openBoundaryFileSync({
     absolutePath: manifestPath,
     rootPath: rootDir,
     boundaryLabel: "plugin root",
+    rejectHardlinks,
   });
   if (!opened.ok) {
     if (opened.reason === "path") {
@@ -78,14 +87,13 @@ export function loadPluginManifest(rootDir: string): PluginManifestLoadResult {
     return { ok: false, error: "plugin manifest requires configSchema", manifestPath };
   }
 
-  const kind = typeof raw.kind === "string" ? raw.kind : undefined;
+  const kind = typeof raw.kind === "string" ? (raw.kind as PluginKind) : undefined;
   const name = typeof raw.name === "string" ? raw.name.trim() : undefined;
   const description = typeof raw.description === "string" ? raw.description.trim() : undefined;
   const version = typeof raw.version === "string" ? raw.version.trim() : undefined;
   const channels = normalizeStringList(raw.channels);
   const providers = normalizeStringList(raw.providers);
-  const stt = normalizeStringList(raw.stt);
-  const tts = normalizeStringList(raw.tts);
+  const skills = normalizeStringList(raw.skills);
 
   let uiHints: Record<string, PluginConfigUiHint> | undefined;
   if (isRecord(raw.uiHints)) {
@@ -97,12 +105,10 @@ export function loadPluginManifest(rootDir: string): PluginManifestLoadResult {
     manifest: {
       id,
       configSchema,
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       kind,
       channels,
       providers,
-      stt,
-      tts,
+      skills,
       name,
       description,
       version,
@@ -146,6 +152,18 @@ export type RemoteClawPackageManifest = {
   install?: PluginPackageInstall;
 };
 
+export const DEFAULT_PLUGIN_ENTRY_CANDIDATES = [
+  "index.ts",
+  "index.js",
+  "index.mjs",
+  "index.cjs",
+] as const;
+
+export type PackageExtensionResolution =
+  | { status: "ok"; entries: string[] }
+  | { status: "missing"; entries: [] }
+  | { status: "empty"; entries: [] };
+
 export type ManifestKey = typeof MANIFEST_KEY;
 
 export type PackageManifest = {
@@ -161,4 +179,20 @@ export function getPackageManifestMetadata(
     return undefined;
   }
   return manifest[MANIFEST_KEY];
+}
+
+export function resolvePackageExtensionEntries(
+  manifest: PackageManifest | undefined,
+): PackageExtensionResolution {
+  const raw = getPackageManifestMetadata(manifest)?.extensions;
+  if (!Array.isArray(raw)) {
+    return { status: "missing", entries: [] };
+  }
+  const entries = raw
+    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+    .filter(Boolean);
+  if (entries.length === 0) {
+    return { status: "empty", entries: [] };
+  }
+  return { status: "ok", entries };
 }

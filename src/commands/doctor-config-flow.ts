@@ -9,33 +9,22 @@ import {
 import { fetchTelegramChatId } from "../channels/telegram/api.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import {
-  RemoteClawSchema,
-  CONFIG_PATH,
-  migrateLegacyConfig,
-  readConfigFileSnapshot,
-} from "../config/config.js";
+import { CONFIG_PATH, migrateLegacyConfig, readConfigFileSnapshot } from "../config/config.js";
 import { collectProviderDangerousNameMatchingScopes } from "../config/dangerous-name-matching.js";
+import { formatConfigIssueLines } from "../config/issue-format.js";
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
 import { parseToolsBySenderTypedKey } from "../config/types.tools.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../infra/exec-command-resolution.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveCommandResolutionFromArgv = (..._args: unknown[]) => undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../infra/exec-safe-bin-runtime-policy.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const listInterpreterLikeSafeBins = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveMergedSafeBinProfileFixtures = (..._args: unknown[]) => undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../infra/exec-safe-bin-trust.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const getTrustedSafeBinDirs = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const isTrustedSafeBinPath = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const normalizeTrustedSafeBinDirs = (..._args: unknown[]) => undefined as any;
+import { RemoteClawSchema } from "../config/zod-schema.js";
+import { resolveCommandResolutionFromArgv } from "../infra/exec-command-resolution.js";
+import {
+  listInterpreterLikeSafeBins,
+  resolveMergedSafeBinProfileFixtures,
+} from "../infra/exec-safe-bin-runtime-policy.js";
+import {
+  getTrustedSafeBinDirs,
+  isTrustedSafeBinPath,
+  normalizeTrustedSafeBinDirs,
+} from "../infra/exec-safe-bin-trust.js";
 import { readChannelAllowFromStore } from "../pairing/pairing-store.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
 import {
@@ -1767,13 +1756,13 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
   }
   const warnings = snapshot.warnings ?? [];
   if (warnings.length > 0) {
-    const lines = warnings.map((issue) => `- ${issue.path}: ${issue.message}`).join("\n");
+    const lines = formatConfigIssueLines(warnings, "-").join("\n");
     note(lines, "Config warnings");
   }
 
   if (snapshot.legacyIssues.length > 0) {
     note(
-      snapshot.legacyIssues.map((issue) => `- ${issue.path}: ${issue.message}`).join("\n"),
+      formatConfigIssueLines(snapshot.legacyIssues, "-").join("\n"),
       "Compatibility config keys detected",
     );
     const { config: migrated, changes } = migrateLegacyConfig(snapshot.parsed);

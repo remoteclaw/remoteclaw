@@ -16,6 +16,7 @@ vi.mock("../../config/sessions.js", async (importOriginal) => {
 
 vi.mock("../../globals.js", () => ({
   logVerbose: vi.fn(),
+  shouldLogVerbose: vi.fn(() => false),
 }));
 
 const { persistSessionUsageUpdate } = await import("./session-usage.js");

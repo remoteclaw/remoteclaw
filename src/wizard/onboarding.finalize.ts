@@ -1,3 +1,6 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+import { DEFAULT_BOOTSTRAP_FILENAME } from "../agents/workspace.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import {
   buildGatewayInstallPlan,
@@ -25,7 +28,9 @@ import { ensureControlUiAssetsBuilt } from "../infra/control-ui-assets.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { restoreTerminalState } from "../terminal/restore.js";
 import { runTui } from "../tui/tui.js";
+import { resolveUserPath } from "../utils.js";
 import { setupOnboardingShellCompletion } from "./onboarding.completion.js";
+import { resolveOnboardingSecretInputString } from "./onboarding.secret-input.js";
 import type { GatewayWizardSettings, WizardFlow } from "./onboarding.types.js";
 import type { WizardPrompter } from "./prompts.js";
 
@@ -211,8 +216,8 @@ export async function finalizeOnboardingWizard(
       await prompter.note(
         [
           "Docs:",
-          "https://docs.remoteclaw.org/gateway/health",
-          "https://docs.remoteclaw.org/gateway/troubleshooting",
+          "https://docs.remoteclaw.ai/gateway/health",
+          "https://docs.remoteclaw.ai/gateway/troubleshooting",
         ].join("\n"),
         "Health check help",
       );
@@ -250,14 +255,44 @@ export async function finalizeOnboardingWizard(
     settings.authMode === "token" && settings.gatewayToken
       ? `${links.httpUrl}#token=${encodeURIComponent(settings.gatewayToken)}`
       : links.httpUrl;
+  let resolvedGatewayPassword = "";
+  if (settings.authMode === "password") {
+    try {
+      resolvedGatewayPassword =
+        (await resolveOnboardingSecretInputString({
+          config: nextConfig,
+          value: nextConfig.gateway?.auth?.password,
+          path: "gateway.auth.password",
+          env: process.env,
+        })) ?? "";
+    } catch (error) {
+      await prompter.note(
+        [
+          "Could not resolve gateway.auth.password SecretRef for onboarding auth.",
+          error instanceof Error ? error.message : String(error),
+        ].join("\n"),
+        "Gateway auth",
+      );
+    }
+  }
+
   const gatewayProbe = await probeGatewayReachable({
     url: links.wsUrl,
     token: settings.authMode === "token" ? settings.gatewayToken : undefined,
-    password: settings.authMode === "password" ? nextConfig.gateway?.auth?.password : "",
+    password: settings.authMode === "password" ? resolvedGatewayPassword : "",
   });
   const gatewayStatusLine = gatewayProbe.ok
     ? "Gateway: reachable"
     : `Gateway: not detected${gatewayProbe.detail ? ` (${gatewayProbe.detail})` : ""}`;
+  const bootstrapPath = path.join(
+    resolveUserPath(options.workspaceDir),
+    DEFAULT_BOOTSTRAP_FILENAME,
+  );
+  const hasBootstrap = await fs
+    .access(bootstrapPath)
+    .then(() => true)
+    .catch(() => false);
+
   await prompter.note(
     [
       `Web UI: ${links.httpUrl}`,
@@ -266,7 +301,7 @@ export async function finalizeOnboardingWizard(
         : undefined,
       `Gateway WS: ${links.wsUrl}`,
       gatewayStatusLine,
-      "Docs: https://docs.remoteclaw.org/web/control-ui",
+      "Docs: https://docs.remoteclaw.ai/web/control-ui",
     ]
       .filter(Boolean)
       .join("\n"),
@@ -280,6 +315,18 @@ export async function finalizeOnboardingWizard(
   let launchedTui = false;
 
   if (!opts.skipUi && gatewayProbe.ok) {
+    if (hasBootstrap) {
+      await prompter.note(
+        [
+          "This is the defining action that makes your agent you.",
+          "Please take your time.",
+          "The more you tell it, the better the experience will be.",
+          'We will send: "Wake up, my friend!"',
+        ].join("\n"),
+        "Start TUI (best option!)",
+      );
+    }
+
     await prompter.note(
       [
         "Gateway token: shared auth for the Gateway + Control UI.",
@@ -308,10 +355,10 @@ export async function finalizeOnboardingWizard(
       await runTui({
         url: links.wsUrl,
         token: settings.authMode === "token" ? settings.gatewayToken : undefined,
-        password: settings.authMode === "password" ? nextConfig.gateway?.auth?.password : "",
+        password: settings.authMode === "password" ? resolvedGatewayPassword : "",
         // Safety: onboarding TUI should not auto-deliver to lastProvider/lastTo.
         deliver: false,
-        message: undefined,
+        message: hasBootstrap ? "Wake up, my friend!" : undefined,
       });
       launchedTui = true;
     } else if (hatchChoice === "web") {
@@ -357,13 +404,13 @@ export async function finalizeOnboardingWizard(
   await prompter.note(
     [
       "Back up your agent workspace.",
-      "Docs: https://docs.remoteclaw.org/concepts/agent-workspace",
+      "Docs: https://docs.remoteclaw.ai/concepts/agent-workspace",
     ].join("\n"),
     "Workspace backup",
   );
 
   await prompter.note(
-    "Running agents on your computer is risky — harden your setup: https://docs.remoteclaw.org/security",
+    "Running agents on your computer is risky — harden your setup: https://docs.remoteclaw.ai/security",
     "Security",
   );
 
@@ -407,8 +454,36 @@ export async function finalizeOnboardingWizard(
     );
   }
 
+  const webSearchKey = (nextConfig.tools?.web?.search?.apiKey ?? "").trim();
+  const webSearchEnv = (process.env.BRAVE_API_KEY ?? "").trim();
+  const hasWebSearchKey = Boolean(webSearchKey || webSearchEnv);
   await prompter.note(
-    'What now: https://remoteclaw.org/showcase ("What People Are Building").',
+    hasWebSearchKey
+      ? [
+          "Web search is enabled, so your agent can look things up online when needed.",
+          "",
+          webSearchKey
+            ? "API key: stored in config (tools.web.search.apiKey)."
+            : "API key: provided via BRAVE_API_KEY env var (Gateway environment).",
+          "Docs: https://docs.remoteclaw.ai/tools/web",
+        ].join("\n")
+      : [
+          "If you want your agent to be able to search the web, you’ll need an API key.",
+          "",
+          "RemoteClaw uses Brave Search for the `web_search` tool. Without a Brave Search API key, web search won’t work.",
+          "",
+          "Set it up interactively:",
+          `- Run: ${formatCliCommand("remoteclaw configure --section web")}`,
+          "- Enable web_search and paste your Brave Search API key",
+          "",
+          "Alternative: set BRAVE_API_KEY in the Gateway environment (no config changes).",
+          "Docs: https://docs.remoteclaw.ai/tools/web",
+        ].join("\n"),
+    "Web search (optional)",
+  );
+
+  await prompter.note(
+    'What now: https://remoteclaw.ai/showcase ("What People Are Building").',
     "What now",
   );
 

@@ -1,5 +1,5 @@
 ---
-description: "Google Chat app support status, capabilities, and configuration"
+summary: "Google Chat app support status, capabilities, and configuration"
 read_when:
   - Working on Google Chat channel features
 title: "Google Chat"
@@ -28,7 +28,7 @@ Status: ready for DMs + spaces via Google Chat API webhooks (HTTP only).
 5. Create a Google Chat app in the [Google Cloud Console Chat Configuration](https://console.cloud.google.com/apis/api/chat.googleapis.com/hangouts-chat):
    - Fill in the **Application info**:
      - **App name**: (e.g. `RemoteClaw`)
-     - **Avatar URL**: (e.g. `https://remoteclaw.org/logo.png`)
+     - **Avatar URL**: (e.g. `https://remoteclaw.ai/logo.png`)
      - **Description**: (e.g. `Personal AI Assistant`)
    - Enable **Interactive features**.
    - Under **Functionality**, check **Join spaces and group conversations**.
@@ -139,6 +139,8 @@ Configure your tunnel's ingress rules to only route the webhook path:
 ## How it works
 
 1. Google Chat sends webhook POSTs to the gateway. Each request includes an `Authorization: Bearer <token>` header.
+   - RemoteClaw verifies bearer auth before reading/parsing full webhook bodies when the header is present.
+   - Google Workspace Add-on requests that carry `authorizationEventObject.systemIdToken` in the body are supported via a stricter pre-auth body budget.
 2. RemoteClaw verifies the token against the configured `audienceType` + `audience`:
    - `audienceType: "app-url"` → audience is your HTTPS webhook URL.
    - `audienceType: "project-number"` → audience is the Cloud project number.

@@ -293,7 +293,6 @@ describe("discord guild/channel resolution", () => {
         help: {
           allow: true,
           requireMention: true,
-          // @ts-expect-error — upstream feature not available in RemoteClaw fork
           skills: ["search"],
           enabled: false,
           users: ["123"],

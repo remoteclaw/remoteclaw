@@ -52,5 +52,6 @@ export async function getAgentLocalStatuses(cfg: RemoteClawConfig) {
     defaultId: agentList.defaultId,
     agents,
     totalSessions,
+    bootstrapPendingCount: 0,
   };
 }

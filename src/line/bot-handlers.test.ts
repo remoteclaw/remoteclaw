@@ -6,6 +6,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("../globals.js", () => ({
   danger: (text: string) => text,
   logVerbose: () => {},
+  shouldLogVerbose: vi.fn(() => false),
 }));
 
 vi.mock("../pairing/pairing-labels.js", () => ({

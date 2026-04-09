@@ -17,10 +17,8 @@ const log = createSubsystemLogger("hooks/boot");
 function resolveBootConfig(cfg: RemoteClawConfig, agentId: string): BootConfig | undefined {
   const agentCfg = resolveAgentConfig(cfg, agentId);
   if (agentCfg?.boot) {
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     return agentCfg.boot;
   }
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   return cfg.agents?.defaults?.boot;
 }
 

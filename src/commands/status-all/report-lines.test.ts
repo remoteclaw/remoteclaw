@@ -57,6 +57,7 @@ describe("buildStatusAllReportLines", () => {
         },
         tailscaleHttpsUrl: null,
 
+        skillStatus: null,
         channelsStatus: null,
         channelIssues: [],
         gatewayReachable: false,
@@ -67,6 +68,6 @@ describe("buildStatusAllReportLines", () => {
     const output = lines.join("\n");
     expect(output).toContain("Agent");
     expect(output).toContain("Sessions");
-    expect(output).not.toContain("Bootstrap");
+    expect(output).toContain("Bootstrap");
   });
 });

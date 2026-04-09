@@ -27,7 +27,7 @@ import {
   resolveModelPrimary,
 } from "./agents-utils.ts";
 
-export type AgentsPanel = "overview" | "files" | "tools" | "channels" | "cron";
+export type AgentsPanel = "overview" | "files" | "tools" | "channels" | "cron" | "skills";
 
 export type AgentsProps = {
   loading: boolean;
@@ -57,9 +57,14 @@ export type AgentsProps = {
   agentIdentityLoading: boolean;
   agentIdentityError: string | null;
   agentIdentityById: Record<string, AgentIdentityResult>;
+  agentSkillsLoading: boolean;
+  agentSkillsReport: unknown;
+  agentSkillsError: string | null;
+  agentSkillsAgentId: string | null;
   toolsCatalogLoading: boolean;
   toolsCatalogError: string | null;
   toolsCatalogResult: ToolsCatalogResult | null;
+  skillsFilter: string;
   onRefresh: () => void;
   onSelectAgent: (agentId: string) => void;
   onSelectPanel: (panel: AgentsPanel) => void;
@@ -76,6 +81,11 @@ export type AgentsProps = {
   onModelFallbacksChange: (agentId: string, fallbacks: string[]) => void;
   onChannelsRefresh: () => void;
   onCronRefresh: () => void;
+  onSkillsFilterChange: (next: string) => void;
+  onSkillsRefresh: () => void;
+  onAgentSkillToggle: (agentId: string, skillName: string, enabled: boolean) => void;
+  onAgentSkillsClear: (agentId: string) => void;
+  onAgentSkillsDisableAll: (agentId: string) => void;
 };
 
 export type AgentContext = {

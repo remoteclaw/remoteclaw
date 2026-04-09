@@ -6,7 +6,7 @@ import {
   normalizeTelegramAllowFromEntry,
 } from "../channels/telegram/allow-from.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import { resolveNativeCommandsEnabled } from "../config/commands.js";
+import { resolveNativeCommandsEnabled, resolveNativeSkillsEnabled } from "../config/commands.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { isDangerousNameMatchingEnabled } from "../config/dangerous-name-matching.js";
 import { readChannelAllowFromStore } from "../pairing/pairing-store.js";
@@ -36,6 +36,24 @@ function addDiscordNameBasedEntries(params: {
       continue;
     }
     params.target.add(`${params.source}:${text}`);
+  }
+}
+
+function collectInvalidTelegramAllowFromEntries(params: {
+  entries: unknown;
+  target: Set<string>;
+}): void {
+  if (!Array.isArray(params.entries)) {
+    return;
+  }
+  for (const entry of params.entries) {
+    const normalized = normalizeTelegramAllowFromEntry(entry);
+    if (!normalized || normalized === "*") {
+      continue;
+    }
+    if (!isNumericTelegramUserId(normalized)) {
+      params.target.add(normalized);
+    }
   }
 }
 
@@ -310,7 +328,14 @@ export async function collectChannelSecurityFindings(params: {
           ),
           globalSetting: params.cfg.commands?.native,
         });
-        const slashEnabled = nativeEnabled;
+        const nativeSkillsEnabled = resolveNativeSkillsEnabled({
+          providerId: "discord",
+          providerSetting: coerceNativeSetting(
+            (discordCfg.commands as { nativeSkills?: unknown } | undefined)?.nativeSkills,
+          ),
+          globalSetting: params.cfg.commands?.nativeSkills,
+        });
+        const slashEnabled = nativeEnabled || nativeSkillsEnabled;
         if (slashEnabled) {
           const defaultGroupPolicy = params.cfg.channels?.defaults?.groupPolicy;
           const groupPolicy =
@@ -389,8 +414,16 @@ export async function collectChannelSecurityFindings(params: {
           ),
           globalSetting: params.cfg.commands?.native,
         });
+        const nativeSkillsEnabled = resolveNativeSkillsEnabled({
+          providerId: "slack",
+          providerSetting: coerceNativeSetting(
+            (slackCfg.commands as { nativeSkills?: unknown } | undefined)?.nativeSkills,
+          ),
+          globalSetting: params.cfg.commands?.nativeSkills,
+        });
         const slashCommandEnabled =
           nativeEnabled ||
+          nativeSkillsEnabled ||
           (slackCfg.slashCommand as { enabled?: unknown } | undefined)?.enabled === true;
         if (slashCommandEnabled) {
           const useAccessGroups = params.cfg.commands?.useAccessGroups !== false;
@@ -516,38 +549,23 @@ export async function collectChannelSecurityFindings(params: {
       ).catch(() => []);
       const storeHasWildcard = storeAllowFrom.some((v) => String(v).trim() === "*");
       const invalidTelegramAllowFromEntries = new Set<string>();
-      for (const entry of storeAllowFrom) {
-        const normalized = normalizeTelegramAllowFromEntry(entry);
-        if (!normalized || normalized === "*") {
-          continue;
-        }
-        if (!isNumericTelegramUserId(normalized)) {
-          invalidTelegramAllowFromEntries.add(normalized);
-        }
-      }
+      collectInvalidTelegramAllowFromEntries({
+        entries: storeAllowFrom,
+        target: invalidTelegramAllowFromEntries,
+      });
       const groupAllowFrom = Array.isArray(telegramCfg.groupAllowFrom)
         ? telegramCfg.groupAllowFrom
         : [];
       const groupAllowFromHasWildcard = groupAllowFrom.some((v) => String(v).trim() === "*");
-      for (const entry of groupAllowFrom) {
-        const normalized = normalizeTelegramAllowFromEntry(entry);
-        if (!normalized || normalized === "*") {
-          continue;
-        }
-        if (!isNumericTelegramUserId(normalized)) {
-          invalidTelegramAllowFromEntries.add(normalized);
-        }
-      }
+      collectInvalidTelegramAllowFromEntries({
+        entries: groupAllowFrom,
+        target: invalidTelegramAllowFromEntries,
+      });
       const dmAllowFrom = Array.isArray(telegramCfg.allowFrom) ? telegramCfg.allowFrom : [];
-      for (const entry of dmAllowFrom) {
-        const normalized = normalizeTelegramAllowFromEntry(entry);
-        if (!normalized || normalized === "*") {
-          continue;
-        }
-        if (!isNumericTelegramUserId(normalized)) {
-          invalidTelegramAllowFromEntries.add(normalized);
-        }
-      }
+      collectInvalidTelegramAllowFromEntries({
+        entries: dmAllowFrom,
+        target: invalidTelegramAllowFromEntries,
+      });
       const anyGroupOverride = Boolean(
         groups &&
         Object.values(groups).some((value) => {
@@ -557,15 +575,10 @@ export async function collectChannelSecurityFindings(params: {
           const group = value as Record<string, unknown>;
           const allowFrom = Array.isArray(group.allowFrom) ? group.allowFrom : [];
           if (allowFrom.length > 0) {
-            for (const entry of allowFrom) {
-              const normalized = normalizeTelegramAllowFromEntry(entry);
-              if (!normalized || normalized === "*") {
-                continue;
-              }
-              if (!isNumericTelegramUserId(normalized)) {
-                invalidTelegramAllowFromEntries.add(normalized);
-              }
-            }
+            collectInvalidTelegramAllowFromEntries({
+              entries: allowFrom,
+              target: invalidTelegramAllowFromEntries,
+            });
             return true;
           }
           const topics = group.topics;
@@ -578,15 +591,10 @@ export async function collectChannelSecurityFindings(params: {
             }
             const topic = topicValue as Record<string, unknown>;
             const topicAllow = Array.isArray(topic.allowFrom) ? topic.allowFrom : [];
-            for (const entry of topicAllow) {
-              const normalized = normalizeTelegramAllowFromEntry(entry);
-              if (!normalized || normalized === "*") {
-                continue;
-              }
-              if (!isNumericTelegramUserId(normalized)) {
-                invalidTelegramAllowFromEntries.add(normalized);
-              }
-            }
+            collectInvalidTelegramAllowFromEntries({
+              entries: topicAllow,
+              target: invalidTelegramAllowFromEntries,
+            });
             return topicAllow.length > 0;
           });
         }),
@@ -627,12 +635,21 @@ export async function collectChannelSecurityFindings(params: {
       }
 
       if (!hasAnySenderAllowlist) {
+        const providerSetting = (telegramCfg.commands as { nativeSkills?: unknown } | undefined)
+          // oxlint-disable-next-line typescript/no-explicit-any
+          ?.nativeSkills as any;
+        const skillsEnabled = resolveNativeSkillsEnabled({
+          providerId: "telegram",
+          providerSetting,
+          globalSetting: params.cfg.commands?.nativeSkills,
+        });
         findings.push({
           checkId: "channels.telegram.groups.allowFrom.missing",
           severity: "critical",
           title: "Telegram group commands have no sender allowlist",
           detail:
-            "Telegram group access is enabled but no sender allowlist is configured; this allows any group member to invoke /… commands.",
+            `Telegram group access is enabled but no sender allowlist is configured; this allows any group member to invoke /… commands` +
+            (skillsEnabled ? " (including skill commands)." : "."),
           remediation:
             "Approve yourself via pairing (recommended), or set channels.telegram.groupAllowFrom (or per-group groups.<id>.allowFrom).",
         });

@@ -29,14 +29,12 @@ export {
 
 // Async collectors
 export {
+  collectSandboxBrowserHashLabelFindings,
   collectIncludeFilePermFindings,
+  collectInstalledSkillsCodeSafetyFindings,
   collectPluginsCodeSafetyFindings,
   collectPluginsTrustFindings,
   collectStateDeepFilesystemFindings,
+  collectWorkspaceSkillSymlinkEscapeFindings,
   readConfigSnapshotForAudit,
 } from "./audit-extra.async.js";
-
-// Gutted in RemoteClaw fork — stub export for upstream compat
-export function collectSandboxBrowserHashLabelFindings(..._args: unknown[]): unknown[] {
-  return [];
-}

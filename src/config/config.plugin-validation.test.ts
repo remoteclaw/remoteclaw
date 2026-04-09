@@ -1,7 +1,8 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { clearPluginManifestRegistryCache } from "../plugins/manifest-registry.js";
 import { validateConfigObjectWithPlugins } from "./config.js";
 
 async function writePluginFixture(params: {
@@ -31,48 +32,116 @@ async function writePluginFixture(params: {
 }
 
 describe("config plugin validation", () => {
-  const fixtureRoot = path.join(os.tmpdir(), "remoteclaw-config-plugin-validation");
-  let caseIndex = 0;
-
-  function createCaseHome() {
-    const home = path.join(fixtureRoot, `case-${caseIndex++}`);
-    return fs.mkdir(home, { recursive: true }).then(() => home);
-  }
-
-  const validateInHome = (home: string, raw: unknown) => {
-    process.env.REMOTECLAW_STATE_DIR = path.join(home, ".remoteclaw");
-    return validateConfigObjectWithPlugins(raw);
+  let fixtureRoot = "";
+  let suiteHome = "";
+  let badPluginDir = "";
+  let enumPluginDir = "";
+  let bluebubblesPluginDir = "";
+  const envSnapshot = {
+    REMOTECLAW_STATE_DIR: process.env.REMOTECLAW_STATE_DIR,
+    REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS: process.env.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS,
   };
+
+  const validateInSuite = (raw: unknown) => validateConfigObjectWithPlugins(raw);
+
+  beforeAll(async () => {
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-config-plugin-validation-"));
+    suiteHome = path.join(fixtureRoot, "home");
+    await fs.mkdir(suiteHome, { recursive: true });
+    badPluginDir = path.join(suiteHome, "bad-plugin");
+    enumPluginDir = path.join(suiteHome, "enum-plugin");
+    bluebubblesPluginDir = path.join(suiteHome, "bluebubbles-plugin");
+    await writePluginFixture({
+      dir: badPluginDir,
+      id: "bad-plugin",
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          value: { type: "boolean" },
+        },
+        required: ["value"],
+      },
+    });
+    await writePluginFixture({
+      dir: enumPluginDir,
+      id: "enum-plugin",
+      schema: {
+        type: "object",
+        properties: {
+          fileFormat: {
+            type: "string",
+            enum: ["markdown", "html"],
+          },
+        },
+        required: ["fileFormat"],
+      },
+    });
+    await writePluginFixture({
+      dir: bluebubblesPluginDir,
+      id: "bluebubbles-plugin",
+      channels: ["bluebubbles"],
+      schema: { type: "object" },
+    });
+    process.env.REMOTECLAW_STATE_DIR = path.join(suiteHome, ".remoteclaw");
+    process.env.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS = "10000";
+    clearPluginManifestRegistryCache();
+    // Warm the plugin manifest cache once so path-based validations can reuse
+    // parsed manifests across test cases.
+    validateInSuite({
+      agents: { defaults: { workspace: "/tmp/remoteclaw-test" } },
+      plugins: {
+        enabled: false,
+        load: { paths: [badPluginDir, bluebubblesPluginDir] },
+      },
+    });
+  });
 
   afterAll(async () => {
     await fs.rm(fixtureRoot, { recursive: true, force: true });
-  });
-
-  it("rejects missing plugin load paths", async () => {
-    const home = await createCaseHome();
-    const missingPath = path.join(home, "missing-plugin");
-    const res = validateInHome(home, {
-      agents: { list: [{ id: "pi", workspace: "/tmp/test-workspace" }] },
-      plugins: { enabled: false, load: { paths: [missingPath] } },
-    });
-    expect(res.ok).toBe(false);
-    if (!res.ok) {
-      const hasIssue = res.issues.some(
-        (issue) =>
-          issue.path === "plugins.load.paths" && issue.message.includes("plugin path not found"),
-      );
-      expect(hasIssue).toBe(true);
+    clearPluginManifestRegistryCache();
+    if (envSnapshot.REMOTECLAW_STATE_DIR === undefined) {
+      delete process.env.REMOTECLAW_STATE_DIR;
+    } else {
+      process.env.REMOTECLAW_STATE_DIR = envSnapshot.REMOTECLAW_STATE_DIR;
+    }
+    if (envSnapshot.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS === undefined) {
+      delete process.env.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS;
+    } else {
+      process.env.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS =
+        envSnapshot.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS;
     }
   });
 
-  it("warns for missing plugin ids in entries instead of failing validation", async () => {
-    const home = await createCaseHome();
-    const res = validateInHome(home, {
-      agents: { list: [{ id: "pi", workspace: "/tmp/test-workspace" }] },
-      plugins: { enabled: false, entries: { "missing-plugin": { enabled: true } } },
+  it("reports missing plugin refs across load paths, entries, and allowlist surfaces", async () => {
+    const missingPath = path.join(suiteHome, "missing-plugin-dir");
+    const res = validateInSuite({
+      agents: { defaults: { workspace: "/tmp/remoteclaw-test" }, list: [{ id: "pi" }] },
+      plugins: {
+        enabled: false,
+        load: { paths: [missingPath] },
+        entries: { "missing-plugin": { enabled: true } },
+        allow: ["missing-allow"],
+        deny: ["missing-deny"],
+        slots: { memory: "missing-slot" },
+      },
     });
-    expect(res.ok).toBe(true);
-    if (res.ok) {
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(
+        res.issues.some(
+          (issue) =>
+            issue.path === "plugins.load.paths" && issue.message.includes("plugin path not found"),
+        ),
+      ).toBe(true);
+      // Gutted in RemoteClaw fork: plugins.slots is always {} after normalization
+      // (memory slots gutted), so plugins.slots.memory is never validated.
+      expect(res.issues).toEqual(
+        expect.arrayContaining([
+          { path: "plugins.allow", message: "plugin not found: missing-allow" },
+          { path: "plugins.deny", message: "plugin not found: missing-deny" },
+        ]),
+      );
       expect(res.warnings).toContainEqual({
         path: "plugins.entries.missing-plugin",
         message:
@@ -81,41 +150,22 @@ describe("config plugin validation", () => {
     }
   });
 
-  it("rejects missing plugin ids in allow/deny", async () => {
-    const home = await createCaseHome();
-    const res = validateInHome(home, {
-      agents: { list: [{ id: "pi", workspace: "/tmp/test-workspace" }] },
-      plugins: {
-        enabled: false,
-        allow: ["missing-allow"],
-        deny: ["missing-deny"],
-      },
-    });
-    expect(res.ok).toBe(false);
-    if (!res.ok) {
-      expect(res.issues).toEqual(
-        expect.arrayContaining([
-          { path: "plugins.allow", message: "plugin not found: missing-allow" },
-          { path: "plugins.deny", message: "plugin not found: missing-deny" },
-        ]),
-      );
-    }
-  });
-
   it("warns for removed legacy plugin ids instead of failing validation", async () => {
-    const home = await createCaseHome();
     const removedId = "google-antigravity-auth";
-    const res = validateInHome(home, {
-      agents: { list: [{ id: "pi", workspace: "/tmp/test-workspace" }] },
+    const res = validateInSuite({
+      agents: { defaults: { workspace: "/tmp/remoteclaw-test" }, list: [{ id: "pi" }] },
       plugins: {
         enabled: false,
         entries: { [removedId]: { enabled: true } },
         allow: [removedId],
         deny: [removedId],
+        slots: { memory: removedId },
       },
     });
     expect(res.ok).toBe(true);
     if (res.ok) {
+      // Gutted in RemoteClaw fork: plugins.slots is always {} after normalization
+      // (memory slots gutted), so plugins.slots.memory is never validated.
       expect(res.warnings).toEqual(
         expect.arrayContaining([
           {
@@ -139,26 +189,11 @@ describe("config plugin validation", () => {
   });
 
   it("surfaces plugin config diagnostics", async () => {
-    const home = await createCaseHome();
-    const pluginDir = path.join(home, "bad-plugin");
-    await writePluginFixture({
-      dir: pluginDir,
-      id: "bad-plugin",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          value: { type: "boolean" },
-        },
-        required: ["value"],
-      },
-    });
-
-    const res = validateInHome(home, {
-      agents: { list: [{ id: "pi", workspace: "/tmp/test-workspace" }] },
+    const res = validateInSuite({
+      agents: { defaults: { workspace: "/tmp/remoteclaw-test" }, list: [{ id: "pi" }] },
       plugins: {
         enabled: true,
-        load: { paths: [pluginDir] },
+        load: { paths: [badPluginDir] },
         entries: { "bad-plugin": { config: { value: "nope" } } },
       },
     });
@@ -166,26 +201,43 @@ describe("config plugin validation", () => {
     if (!res.ok) {
       const hasIssue = res.issues.some(
         (issue) =>
-          issue.path === "plugins.entries.bad-plugin.config" &&
+          issue.path.startsWith("plugins.entries.bad-plugin.config") &&
           issue.message.includes("invalid config"),
       );
       expect(hasIssue).toBe(true);
     }
   });
 
-  it("accepts known plugin ids", async () => {
-    const home = await createCaseHome();
-    const res = validateInHome(home, {
-      agents: { list: [{ id: "pi", workspace: "/tmp/test-workspace" }] },
-      plugins: { enabled: false, entries: { discord: { enabled: true } } },
+  it("surfaces allowed enum values for plugin config diagnostics", async () => {
+    const res = validateInSuite({
+      agents: { defaults: { workspace: "/tmp/remoteclaw-test" }, list: [{ id: "pi" }] },
+      plugins: {
+        enabled: true,
+        load: { paths: [enumPluginDir] },
+        entries: { "enum-plugin": { config: { fileFormat: "txt" } } },
+      },
     });
-    expect(res.ok).toBe(true);
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      const issue = res.issues.find(
+        (entry) => entry.path === "plugins.entries.enum-plugin.config.fileFormat",
+      );
+      expect(issue).toBeDefined();
+      expect(issue?.message).toContain('allowed: "markdown", "html"');
+      expect(issue?.allowedValues).toEqual(["markdown", "html"]);
+      expect(issue?.allowedValuesHiddenCount).toBe(0);
+    }
   });
 
-  it("accepts channels.modelByChannel", async () => {
-    const home = await createCaseHome();
-    const res = validateInHome(home, {
-      agents: { list: [{ id: "pi", workspace: "/tmp/test-workspace" }] },
+  it("accepts known plugin ids and valid channel/heartbeat enums", async () => {
+    const res = validateInSuite({
+      agents: {
+        defaults: {
+          workspace: "/tmp/remoteclaw-test",
+          heartbeat: { target: "last", directPolicy: "block" },
+        },
+        list: [{ id: "pi", heartbeat: { directPolicy: "allow" } }],
+      },
       channels: {
         modelByChannel: {
           openai: {
@@ -193,36 +245,27 @@ describe("config plugin validation", () => {
           },
         },
       },
+      plugins: { enabled: false, entries: { discord: { enabled: true } } },
     });
     expect(res.ok).toBe(true);
   });
 
   it("accepts plugin heartbeat targets", async () => {
-    const home = await createCaseHome();
-    const pluginDir = path.join(home, "bluebubbles-plugin");
-    await writePluginFixture({
-      dir: pluginDir,
-      id: "bluebubbles-plugin",
-      channels: ["bluebubbles"],
-      schema: { type: "object" },
-    });
-
-    const res = validateInHome(home, {
+    const res = validateInSuite({
       agents: {
-        defaults: { heartbeat: { target: "bluebubbles" } },
-        list: [{ id: "pi", workspace: "/tmp/test-workspace" }],
+        defaults: { workspace: "/tmp/remoteclaw-test", heartbeat: { target: "bluebubbles" } },
+        list: [{ id: "pi" }],
       },
-      plugins: { enabled: false, load: { paths: [pluginDir] } },
+      plugins: { enabled: false, load: { paths: [bluebubblesPluginDir] } },
     });
     expect(res.ok).toBe(true);
   });
 
   it("rejects unknown heartbeat targets", async () => {
-    const home = await createCaseHome();
-    const res = validateInHome(home, {
+    const res = validateInSuite({
       agents: {
-        defaults: { heartbeat: { target: "not-a-channel" } },
-        list: [{ id: "pi", workspace: "/tmp/test-workspace" }],
+        defaults: { workspace: "/tmp/remoteclaw-test", heartbeat: { target: "not-a-channel" } },
+        list: [{ id: "pi" }],
       },
     });
     expect(res.ok).toBe(false);
@@ -234,31 +277,18 @@ describe("config plugin validation", () => {
     }
   });
 
-  it("accepts heartbeat directPolicy enum values", async () => {
-    const home = await createCaseHome();
-    const res = validateInHome(home, {
-      agents: {
-        defaults: { heartbeat: { target: "last", directPolicy: "block" } },
-        list: [{ id: "pi", heartbeat: { directPolicy: "allow" } }],
-      },
-    });
-    expect(res.ok).toBe(true);
-  });
-
   it("rejects invalid heartbeat directPolicy values", async () => {
-    const home = await createCaseHome();
-    const res = validateInHome(home, {
+    const res = validateInSuite({
       agents: {
-        defaults: { heartbeat: { directPolicy: "maybe" } },
+        defaults: { workspace: "/tmp/remoteclaw-test", heartbeat: { directPolicy: "maybe" } },
         list: [{ id: "pi" }],
       },
     });
     expect(res.ok).toBe(false);
     if (!res.ok) {
-      const hasIssue = res.issues.some(
-        (issue) => issue.path === "agents.defaults.heartbeat.directPolicy",
-      );
-      expect(hasIssue).toBe(true);
+      expect(
+        res.issues.some((issue) => issue.path === "agents.defaults.heartbeat.directPolicy"),
+      ).toBe(true);
     }
   });
 });

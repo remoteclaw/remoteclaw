@@ -46,7 +46,8 @@ describe("Kilo Gateway provider config", () => {
     });
   });
 
-  describe("applyKilocodeProviderConfig", () => {
+  // Gutted in RemoteClaw fork — applyKilocodeProviderConfig returns cfg unchanged
+  describe.skip("applyKilocodeProviderConfig", () => {
     it("sets Kilo Gateway alias in agent default models", () => {
       const result = applyKilocodeProviderConfig(emptyCfg);
       const agentModel = result.agents?.defaults?.models?.[KILOCODE_DEFAULT_MODEL_REF];
@@ -82,7 +83,8 @@ describe("Kilo Gateway provider config", () => {
     });
   });
 
-  describe("applyKilocodeConfig", () => {
+  // Gutted in RemoteClaw fork — applyKilocodeConfig delegates to gutted applyKilocodeProviderConfig
+  describe.skip("applyKilocodeConfig", () => {
     it("does not set a default model", () => {
       const result = applyKilocodeConfig(emptyCfg);
       expect(result.agents?.defaults?.models?.[KILOCODE_DEFAULT_MODEL_REF]).toBeDefined();

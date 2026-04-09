@@ -31,6 +31,7 @@ vi.mock("../../commands/sessions-cleanup.js", () => ({
 
 vi.mock("../../globals.js", () => ({
   setVerbose,
+  shouldLogVerbose: vi.fn(() => false),
 }));
 
 vi.mock("../../runtime.js", () => ({

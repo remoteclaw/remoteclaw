@@ -1,12 +1,32 @@
-// Gutted in RemoteClaw fork (Middleware Boundary Principle) — memory subsystem removed
-export type MemorySearchConfig = Record<string, unknown>;
+import type { ChatType } from "../channels/chat-type.js";
+import type { SafeBinProfileFixture } from "../infra/exec-safe-bin-policy.js";
+import type { AgentElevatedAllowFromConfig, SessionSendPolicyAction } from "./types.base.js";
 
-// Stub type: exec-safe-bin-policy infrastructure was gutted.
-type SafeBinProfileFixture = {
-  minPositional?: number;
-  maxPositional?: number;
-  allowedValueFlags?: readonly string[];
-  deniedFlags?: readonly string[];
+export type MediaUnderstandingScopeMatch = {
+  channel?: string;
+  chatType?: ChatType;
+  keyPrefix?: string;
+};
+
+export type MediaUnderstandingScopeRule = {
+  action: SessionSendPolicyAction;
+  match?: MediaUnderstandingScopeMatch;
+};
+
+export type MediaUnderstandingScopeConfig = {
+  default?: SessionSendPolicyAction;
+  rules?: MediaUnderstandingScopeRule[];
+};
+
+export type MediaUnderstandingCapability = "image" | "audio" | "video";
+
+export type MediaUnderstandingAttachmentsConfig = {
+  /** Select the first matching attachment or process multiple. */
+  mode?: "first" | "all";
+  /** Max number of attachments to process (default: 1). */
+  maxAttachments?: number;
+  /** Attachment ordering preference. */
+  prefer?: "first" | "last" | "path" | "url";
 };
 
 type MediaProviderRequestConfig = {
@@ -29,6 +49,8 @@ export type MediaUnderstandingModelConfig = MediaProviderRequestConfig & {
   provider?: string;
   /** Model id for provider-based understanding. */
   model?: string;
+  /** Optional capability tags for shared model lists. */
+  capabilities?: MediaUnderstandingCapability[];
   /** Use a CLI command instead of provider API. */
   type?: "provider" | "cli";
   /** CLI binary (required when type=cli). */
@@ -54,6 +76,8 @@ export type MediaUnderstandingModelConfig = MediaProviderRequestConfig & {
 export type MediaUnderstandingConfig = MediaProviderRequestConfig & {
   /** Enable media understanding when models are configured. */
   enabled?: boolean;
+  /** Optional scope gating for understanding. */
+  scope?: MediaUnderstandingScopeConfig;
   /** Default max bytes to send. */
   maxBytes?: number;
   /** Default max output characters. */
@@ -64,15 +88,81 @@ export type MediaUnderstandingConfig = MediaProviderRequestConfig & {
   timeoutSeconds?: number;
   /** Default language hint (audio). */
   language?: string;
+  /** Attachment selection policy. */
+  attachments?: MediaUnderstandingAttachmentsConfig;
   /** Ordered model list (fallbacks in order). */
   models?: MediaUnderstandingModelConfig[];
+  /**
+   * Echo the audio transcript back to the originating chat before agent processing.
+   * Lets users verify what was heard. Default: false.
+   */
+  echoTranscript?: boolean;
+  /**
+   * Format string for the echoed transcript. Use `{transcript}` as placeholder.
+   * Default: '📝 "{transcript}"'
+   */
+  echoFormat?: string;
+};
+
+export type LinkModelConfig = {
+  /** Use a CLI command for link processing. */
+  type?: "cli";
+  /** CLI binary (required when type=cli). */
+  command: string;
+  /** CLI args (template-enabled). */
+  args?: string[];
+  /** Optional timeout override (seconds) for this model entry. */
+  timeoutSeconds?: number;
+};
+
+export type LinkToolsConfig = {
+  /** Enable link understanding when models are configured. */
+  enabled?: boolean;
+  /** Optional scope gating for understanding. */
+  scope?: MediaUnderstandingScopeConfig;
+  /** Max number of links to process per message. */
+  maxLinks?: number;
+  /** Default timeout (seconds). */
+  timeoutSeconds?: number;
+  /** Ordered model list (fallbacks in order). */
+  models?: LinkModelConfig[];
 };
 
 export type MediaToolsConfig = {
+  /** Shared model list applied across image/audio/video. */
+  models?: MediaUnderstandingModelConfig[];
+  /** Max concurrent media understanding runs. */
+  concurrency?: number;
+  image?: MediaUnderstandingConfig;
   audio?: MediaUnderstandingConfig;
+  video?: MediaUnderstandingConfig;
 };
 
 export type ToolProfileId = "minimal" | "coding" | "messaging" | "full";
+
+export type ToolLoopDetectionDetectorConfig = {
+  /** Enable warning/blocking for repeated identical calls to the same tool/params. */
+  genericRepeat?: boolean;
+  /** Enable warning/blocking for known no-progress polling loops. */
+  knownPollNoProgress?: boolean;
+  /** Enable warning/blocking for no-progress ping-pong alternating patterns. */
+  pingPong?: boolean;
+};
+
+export type ToolLoopDetectionConfig = {
+  /** Enable tool-loop protection (default: false). */
+  enabled?: boolean;
+  /** Maximum tool call history entries retained for loop detection (default: 30). */
+  historySize?: number;
+  /** Warning threshold before a warning-only loop classification (default: 10). */
+  warningThreshold?: number;
+  /** Critical threshold for blocking repetitive loops (default: 20). */
+  criticalThreshold?: number;
+  /** Global no-progress breaker threshold (default: 30). */
+  globalCircuitBreakerThreshold?: number;
+  /** Detector toggles. */
+  detectors?: ToolLoopDetectionDetectorConfig;
+};
 
 export type SessionsToolsVisibility = "self" | "tree" | "agent" | "all";
 
@@ -81,7 +171,7 @@ export type ToolPolicyConfig = {
   /**
    * Additional allowlist entries merged into the effective allowlist.
    *
-   * Intended for additive configuration (e.g., "also allow crab") without forcing
+   * Intended for additive configuration (e.g., "also allow lobster") without forcing
    * users to replace/duplicate an existing allowlist or profile.
    */
   alsoAllow?: string[];
@@ -166,11 +256,26 @@ export type ExecToolConfig = {
    * Default false to reduce context noise.
    */
   notifyOnExitEmptySuccess?: boolean;
+  /** apply_patch subtool configuration (experimental). */
+  applyPatch?: {
+    /** Enable apply_patch for OpenAI models (default: false). */
+    enabled?: boolean;
+    /**
+     * Restrict apply_patch paths to the workspace directory.
+     * Default: true (safer; does not affect read/write/edit).
+     */
+    workspaceOnly?: boolean;
+    /**
+     * Optional allowlist of model ids that can use apply_patch.
+     * Accepts either raw ids (e.g. "gpt-5.2") or full ids (e.g. "openai/gpt-5.2").
+     */
+    allowModels?: string[];
+  };
 };
 
 export type FsToolsConfig = {
   /**
-   * Restrict filesystem tools to the agent workspace directory.
+   * Restrict filesystem tools (read/write/edit/apply_patch) to the agent workspace directory.
    * Default: false (unrestricted, matches legacy behavior).
    */
   workspaceOnly?: boolean;
@@ -185,15 +290,140 @@ export type AgentToolsConfig = {
   deny?: string[];
   /** Optional tool policy overrides keyed by provider id or "provider/model". */
   byProvider?: Record<string, ToolPolicyConfig>;
+  /** Per-agent elevated exec gate (can only further restrict global tools.elevated). */
+  elevated?: {
+    /** Enable or disable elevated mode for this agent (default: true). */
+    enabled?: boolean;
+    /** Approved senders for /elevated (per-provider allowlists). */
+    allowFrom?: AgentElevatedAllowFromConfig;
+  };
   /** Exec tool defaults for this agent. */
   exec?: ExecToolConfig;
   /** Filesystem tool path guards. */
   fs?: FsToolsConfig;
+  /** Runtime loop detection for repetitive/ stuck tool-call patterns. */
+  loopDetection?: ToolLoopDetectionConfig;
   sandbox?: {
     tools?: {
       allow?: string[];
       deny?: string[];
     };
+  };
+};
+
+export type MemorySearchConfig = {
+  /** Enable vector memory search (default: true). */
+  enabled?: boolean;
+  /** Sources to index and search (default: ["memory"]). */
+  sources?: Array<"memory" | "sessions">;
+  /** Extra paths to include in memory search (directories or .md files). */
+  extraPaths?: string[];
+  /** Experimental memory search settings. */
+  experimental?: {
+    /** Enable session transcript indexing (experimental, default: false). */
+    sessionMemory?: boolean;
+  };
+  /** Embedding provider mode. */
+  provider?: "openai" | "gemini" | "local" | "voyage" | "mistral" | "ollama";
+  remote?: {
+    baseUrl?: string;
+    apiKey?: string;
+    headers?: Record<string, string>;
+    batch?: {
+      /** Enable batch API for embedding indexing (OpenAI/Gemini; default: true). */
+      enabled?: boolean;
+      /** Wait for batch completion (default: true). */
+      wait?: boolean;
+      /** Max concurrent batch jobs (default: 2). */
+      concurrency?: number;
+      /** Poll interval in ms (default: 5000). */
+      pollIntervalMs?: number;
+      /** Timeout in minutes (default: 60). */
+      timeoutMinutes?: number;
+    };
+  };
+  /** Fallback behavior when embeddings fail. */
+  fallback?: "openai" | "gemini" | "local" | "voyage" | "mistral" | "ollama" | "none";
+  /** Embedding model id (remote) or alias (local). */
+  model?: string;
+  /** Local embedding settings (node-llama-cpp). */
+  local?: {
+    /** GGUF model path or hf: URI. */
+    modelPath?: string;
+    /** Optional cache directory for local models. */
+    modelCacheDir?: string;
+  };
+  /** Index storage configuration. */
+  store?: {
+    driver?: "sqlite";
+    path?: string;
+    vector?: {
+      /** Enable sqlite-vec extension for vector search (default: true). */
+      enabled?: boolean;
+      /** Optional override path to sqlite-vec extension (.dylib/.so/.dll). */
+      extensionPath?: string;
+    };
+    cache?: {
+      /** Enable embedding cache (default: true). */
+      enabled?: boolean;
+      /** Optional max cache entries per provider/model. */
+      maxEntries?: number;
+    };
+  };
+  /** Chunking configuration. */
+  chunking?: {
+    tokens?: number;
+    overlap?: number;
+  };
+  /** Sync behavior. */
+  sync?: {
+    onSessionStart?: boolean;
+    onSearch?: boolean;
+    watch?: boolean;
+    watchDebounceMs?: number;
+    intervalMinutes?: number;
+    sessions?: {
+      /** Minimum appended bytes before session transcripts are reindexed. */
+      deltaBytes?: number;
+      /** Minimum appended JSONL lines before session transcripts are reindexed. */
+      deltaMessages?: number;
+    };
+  };
+  /** Query behavior. */
+  query?: {
+    maxResults?: number;
+    minScore?: number;
+    hybrid?: {
+      /** Enable hybrid BM25 + vector search (default: true). */
+      enabled?: boolean;
+      /** Weight for vector similarity when merging results (0-1). */
+      vectorWeight?: number;
+      /** Weight for BM25 text relevance when merging results (0-1). */
+      textWeight?: number;
+      /** Multiplier for candidate pool size (default: 4). */
+      candidateMultiplier?: number;
+      /** Optional MMR re-ranking for result diversity. */
+      mmr?: {
+        /** Enable MMR re-ranking (default: false). */
+        enabled?: boolean;
+        /** Lambda: 0 = max diversity, 1 = max relevance (default: 0.7). */
+        lambda?: number;
+      };
+      /** Optional temporal decay to boost recency in hybrid scoring. */
+      temporalDecay?: {
+        /** Enable temporal decay (default: false). */
+        enabled?: boolean;
+        /** Half-life in days for exponential decay (default: 30). */
+        halfLifeDays?: number;
+      };
+    };
+  };
+  /** Index cache behavior. */
+  cache?: {
+    /** Cache chunk embeddings in SQLite (default: true). */
+    enabled?: boolean;
+    /** Optional cap on cached embeddings (best-effort). */
+    maxEntries?: number;
   };
 };
 
@@ -206,7 +436,90 @@ export type ToolsConfig = {
   deny?: string[];
   /** Optional tool policy overrides keyed by provider id or "provider/model". */
   byProvider?: Record<string, ToolPolicyConfig>;
+  web?: {
+    search?: {
+      /** Enable web search tool (default: true when API key is present). */
+      enabled?: boolean;
+      /** Search provider ("brave", "perplexity", "grok", "gemini", or "kimi"). */
+      provider?: "brave" | "perplexity" | "grok" | "gemini" | "kimi";
+      /** Brave Search API key (optional; defaults to BRAVE_API_KEY env var). */
+      apiKey?: string;
+      /** Default search results count (1-10). */
+      maxResults?: number;
+      /** Timeout in seconds for search requests. */
+      timeoutSeconds?: number;
+      /** Cache TTL in minutes for search results. */
+      cacheTtlMinutes?: number;
+      /** Perplexity-specific configuration (used when provider="perplexity"). */
+      perplexity?: {
+        /** API key for Perplexity or OpenRouter (defaults to PERPLEXITY_API_KEY or OPENROUTER_API_KEY env var). */
+        apiKey?: string;
+        /** Base URL for API requests (defaults to OpenRouter: https://openrouter.ai/api/v1). */
+        baseUrl?: string;
+        /** Model to use (defaults to "perplexity/sonar-pro"). */
+        model?: string;
+      };
+      /** Grok-specific configuration (used when provider="grok"). */
+      grok?: {
+        /** API key for xAI (defaults to XAI_API_KEY env var). */
+        apiKey?: string;
+        /** Model to use (defaults to "grok-4-1-fast"). */
+        model?: string;
+        /** Include inline citations in response text as markdown links (default: false). */
+        inlineCitations?: boolean;
+      };
+      /** Gemini-specific configuration (used when provider="gemini"). */
+      gemini?: {
+        /** Gemini API key (defaults to GEMINI_API_KEY env var). */
+        apiKey?: string;
+        /** Model to use for grounded search (defaults to "gemini-2.5-flash"). */
+        model?: string;
+      };
+      /** Kimi-specific configuration (used when provider="kimi"). */
+      kimi?: {
+        /** Moonshot/Kimi API key (defaults to KIMI_API_KEY or MOONSHOT_API_KEY env var). */
+        apiKey?: string;
+        /** Base URL for API requests (defaults to "https://api.moonshot.ai/v1"). */
+        baseUrl?: string;
+        /** Model to use (defaults to "moonshot-v1-128k"). */
+        model?: string;
+      };
+    };
+    fetch?: {
+      /** Enable web fetch tool (default: true). */
+      enabled?: boolean;
+      /** Max characters to return from fetched content. */
+      maxChars?: number;
+      /** Hard cap for maxChars (tool or config), defaults to 50000. */
+      maxCharsCap?: number;
+      /** Timeout in seconds for fetch requests. */
+      timeoutSeconds?: number;
+      /** Cache TTL in minutes for fetched content. */
+      cacheTtlMinutes?: number;
+      /** Maximum number of redirects to follow (default: 3). */
+      maxRedirects?: number;
+      /** Override User-Agent header for fetch requests. */
+      userAgent?: string;
+      /** Use Readability to extract main content (default: true). */
+      readability?: boolean;
+      firecrawl?: {
+        /** Enable Firecrawl fallback (default: true when apiKey is set). */
+        enabled?: boolean;
+        /** Firecrawl API key (optional; defaults to FIRECRAWL_API_KEY env var). */
+        apiKey?: string;
+        /** Firecrawl base URL (default: https://api.firecrawl.dev). */
+        baseUrl?: string;
+        /** Whether to keep only main content (default: true). */
+        onlyMainContent?: boolean;
+        /** Max age (ms) for cached Firecrawl content. */
+        maxAgeMs?: number;
+        /** Timeout in seconds for Firecrawl requests. */
+        timeoutSeconds?: number;
+      };
+    };
+  };
   media?: MediaToolsConfig;
+  links?: LinkToolsConfig;
   /** Message tool configuration. */
   message?: {
     /**
@@ -255,10 +568,19 @@ export type ToolsConfig = {
      */
     visibility?: SessionsToolsVisibility;
   };
+  /** Elevated exec permissions for the host machine. */
+  elevated?: {
+    /** Enable or disable elevated mode (default: true). */
+    enabled?: boolean;
+    /** Approved senders for /elevated (per-provider allowlists). */
+    allowFrom?: AgentElevatedAllowFromConfig;
+  };
   /** Exec tool defaults. */
   exec?: ExecToolConfig;
   /** Filesystem tool path guards. */
   fs?: FsToolsConfig;
+  /** Runtime loop detection for repetitive/ stuck tool-call patterns. */
+  loopDetection?: ToolLoopDetectionConfig;
   /** Sub-agent tool policy defaults (deny wins). */
   subagents?: {
     /** Default model selection for spawned sub-agents (string or {primary,fallbacks}). */
@@ -277,6 +599,4 @@ export type ToolsConfig = {
       deny?: string[];
     };
   };
-  /** Elevated tool configuration (upstream feature). */
-  elevated?: unknown;
 };

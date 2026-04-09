@@ -5,6 +5,7 @@ import {
   describeReplyTarget,
   expandTextLinks,
   normalizeForwardedContext,
+  resolveTelegramReplyId,
   resolveTelegramForumThreadId,
 } from "./helpers.js";
 
@@ -50,6 +51,20 @@ describe("buildTypingThreadParams", () => {
     { input: 1, expected: { message_thread_id: 1 } },
   ])("builds typing params", ({ input, expected }) => {
     expect(buildTypingThreadParams(input)).toEqual(expected);
+  });
+});
+
+describe("resolveTelegramReplyId", () => {
+  it("parses numeric string to number", () => {
+    expect(resolveTelegramReplyId("123456789")).toBe(123456789);
+  });
+
+  it("returns undefined for empty string", () => {
+    expect(resolveTelegramReplyId("")).toBeUndefined();
+  });
+
+  it("returns undefined for undefined", () => {
+    expect(resolveTelegramReplyId(undefined)).toBeUndefined();
   });
 });
 

@@ -1,5 +1,5 @@
 ---
-description: "Audit what can spend money, which keys are used, and how to view usage"
+summary: "Audit what can spend money, which keys are used, and how to view usage"
 read_when:
   - You want to understand which features may call paid APIs
   - You need to audit keys, costs, and usage visibility
@@ -12,18 +12,22 @@ title: "API Usage and Costs"
 This doc lists **features that can invoke API keys** and where their costs show up. It focuses on
 RemoteClaw features that can generate provider usage or paid API calls.
 
-## Where costs show up
+## Where costs show up (chat + CLI)
 
 **Per-session cost snapshot**
 
-- `/status` shows session info reported by the CLI agent (tokens, context usage).
-- Cost visibility depends on the CLI agent's own reporting — RemoteClaw surfaces what the agent
-  exposes but does not independently track model costs.
+- `/status` shows the current session model, context usage, and last response tokens.
+- If the model uses **API-key auth**, `/status` also shows **estimated cost** for the last reply.
 
 **Per-message cost footer**
 
-- `/usage full` appends a usage footer to every reply.
-- `/usage tokens` shows tokens only.
+- `/usage full` appends a usage footer to every reply, including **estimated cost** (API-key only).
+- `/usage tokens` shows tokens only; OAuth flows hide dollar cost.
+
+**CLI usage windows (provider quotas)**
+
+- `remoteclaw status --usage` and `remoteclaw channels list` show provider **usage windows**
+  (quota snapshots, not per-message costs).
 
 See [Token use & costs](/reference/token-use) for details and examples.
 
@@ -33,29 +37,45 @@ RemoteClaw can pick up credentials from:
 
 - **Auth profiles** (per-agent, stored in `auth-profiles.json`).
 - **Environment variables** (e.g. `OPENAI_API_KEY`, `BRAVE_API_KEY`, `FIRECRAWL_API_KEY`).
-- **Config** (`tools.web.search.*`, `tools.web.fetch.firecrawl.*`,
-  `talk.apiKey`).
+- **Config** (`models.providers.*.apiKey`, `tools.web.search.*`, `tools.web.fetch.firecrawl.*`,
+  `memorySearch.*`, `talk.apiKey`).
 - **Skills** (`skills.entries.<name>.apiKey`) which may export keys to the skill process env.
 
 ## Features that can spend keys
 
-### 1) CLI agent model responses
+### 1) Core model responses (chat + tools)
 
-The cost of model responses (chat, tool calls) is the CLI agent's concern. RemoteClaw delegates
-model interaction to the spawned CLI agent (claude, gemini, codex, opencode), and usage shows up
-in the CLI agent's own usage reporting, not in RemoteClaw.
+Every reply or tool call uses the **current model provider** (OpenAI, Anthropic, etc). This is the
+primary source of usage and cost.
+
+See [Models](/providers/models) for pricing config and [Token use & costs](/reference/token-use) for display.
 
 ### 2) Media understanding (audio/image/video)
 
-Inbound media may be preprocessed (transcribed, summarized) by RemoteClaw before forwarding to
-the CLI agent. This preprocessing can use paid APIs:
+Inbound media can be summarized/transcribed before the reply runs. This uses model/provider APIs.
 
-- Audio: OpenAI / Groq / Deepgram (auto-enabled when keys exist).
-- Image/Video: may use provider APIs for transcription or summarization.
+- Audio: OpenAI / Groq / Deepgram (now **auto-enabled** when keys exist).
+- Image: OpenAI / Anthropic / Google.
+- Video: Google.
 
 See [Media understanding](/nodes/media-understanding).
 
-### 3) Web search tool (Brave / Perplexity via OpenRouter)
+### 3) Memory embeddings + semantic search
+
+Semantic memory search uses **embedding APIs** when configured for remote providers:
+
+- `memorySearch.provider = "openai"` → OpenAI embeddings
+- `memorySearch.provider = "gemini"` → Gemini embeddings
+- `memorySearch.provider = "voyage"` → Voyage embeddings
+- `memorySearch.provider = "mistral"` → Mistral embeddings
+- `memorySearch.provider = "ollama"` → Ollama embeddings (local/self-hosted; typically no hosted API billing)
+- Optional fallback to a remote provider if local embeddings fail
+
+You can keep it local with `memorySearch.provider = "local"` (no API usage).
+
+See [Memory](/concepts/memory).
+
+### 4) Web search tool (Brave / Perplexity via OpenRouter)
 
 `web_search` uses API keys and may incur usage charges:
 
@@ -70,7 +90,7 @@ See [Media understanding](/nodes/media-understanding).
 
 See [Web tools](/tools/web).
 
-### 4) Web fetch tool (Firecrawl)
+### 5) Web fetch tool (Firecrawl)
 
 `web_fetch` can call **Firecrawl** when an API key is present:
 
@@ -80,14 +100,31 @@ If Firecrawl isn’t configured, the tool falls back to direct fetch + readabili
 
 See [Web tools](/tools/web).
 
-### 5) Compaction safeguard summarization
+### 6) Provider usage snapshots (status/health)
 
-The compaction safeguard can summarize session history by delegating to the CLI agent subprocess.
-The cost of this summarization is part of the CLI agent's usage.
+Some status commands call **provider usage endpoints** to display quota windows or auth health.
+These are typically low-volume calls but still hit provider APIs:
+
+- `remoteclaw status --usage`
+- `remoteclaw models status --json`
+
+See [Models CLI](/cli/models).
+
+### 7) Compaction safeguard summarization
+
+The compaction safeguard can summarize session history using the **current model**, which
+invokes provider APIs when it runs.
 
 See [Session management + compaction](/reference/session-management-compaction).
 
-### 6) Talk (speech)
+### 8) Model scan / probe
+
+`remoteclaw models scan` can probe OpenRouter models and uses `OPENROUTER_API_KEY` when
+probing is enabled.
+
+See [Models CLI](/cli/models).
+
+### 9) Talk (speech)
 
 Talk mode can invoke **ElevenLabs** when configured:
 
@@ -95,9 +132,9 @@ Talk mode can invoke **ElevenLabs** when configured:
 
 See [Talk mode](/nodes/talk).
 
-### 7) Skills (third-party APIs)
+### 10) Skills (third-party APIs)
 
 Skills can store `apiKey` in `skills.entries.<name>.apiKey`. If a skill uses that key for external
 APIs, it can incur costs according to the skill’s provider.
 
-Skills can store API keys in `skills.entries.<name>.apiKey`.
+See [Skills](/tools/skills).

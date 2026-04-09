@@ -14,10 +14,7 @@ import {
   sessionStorePath,
   withTempHome,
 } from "./reply.directive.directive-behavior.e2e-harness.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./reply.directive.directive-behavior.model-directive-test-utils.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const runModelDirectiveText = (..._args: unknown[]) => undefined as any;
+import { runModelDirectiveText } from "./reply.directive.directive-behavior.model-directive-test-utils.js";
 import { getReplyFromConfig } from "./reply.js";
 
 function makeDefaultModelConfig(home: string) {
@@ -112,7 +109,11 @@ async function runReasoningDefaultCase(params: {
   expect(call?.reasoningLevel).toBe(params.expectedReasoningLevel);
 }
 
-// Skipped: tests gutted model catalog and Pi-embedded directive pipeline (Middleware Boundary Principle)
+// Gutted in RemoteClaw fork: all tests exercise directive behavior that depends on the
+// embedded Pi agent path (runEmbeddedPiAgent mock) and Pi-era model catalog integration.
+// The fork replaced the execution engine with ChannelBridge middleware; directive commands
+// like /think, /model, and /reasoning either route through the gutted path or return
+// stub responses that don't match upstream expectations.
 describe.skip("directive behavior", () => {
   installDirectiveBehaviorE2EHooks();
 
@@ -187,7 +188,7 @@ describe.skip("directive behavior", () => {
             primary: "anthropic/claude-opus-4-5",
             fallbacks: ["openai/gpt-4.1-mini"],
           },
-          imageModel: { primary: "minimax/MiniMax-M2.1" },
+          imageModel: { primary: "minimax/MiniMax-M2.5" },
           models: undefined,
         },
       });
@@ -210,7 +211,7 @@ describe.skip("directive behavior", () => {
           models: {
             "anthropic/claude-opus-4-5": {},
             "openai/gpt-4.1-mini": {},
-            "minimax/MiniMax-M2.1": { alias: "minimax" },
+            "minimax/MiniMax-M2.5": { alias: "minimax" },
           },
         },
         extra: {
@@ -220,14 +221,14 @@ describe.skip("directive behavior", () => {
               minimax: {
                 baseUrl: "https://api.minimax.io/anthropic",
                 api: "anthropic-messages",
-                models: [{ id: "MiniMax-M2.1", name: "MiniMax M2.1" }],
+                models: [{ id: "MiniMax-M2.5", name: "MiniMax M2.5" }],
               },
             },
           },
         },
       });
       expect(configOnlyProviderText).toContain("Models (minimax");
-      expect(configOnlyProviderText).toContain("minimax/MiniMax-M2.1");
+      expect(configOnlyProviderText).toContain("minimax/MiniMax-M2.5");
 
       const missingAuthText = await runModelDirectiveText(home, "/model list", {
         defaults: {

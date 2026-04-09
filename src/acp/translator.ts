@@ -35,7 +35,7 @@ import {
   formatToolTitle,
   inferToolKind,
 } from "./event-mapper.js";
-import { readBool, readNumber } from "./meta.js";
+import { readBool, readNumber, readString } from "./meta.js";
 import { parseSessionMeta, resetSessionIfNeeded, resolveSessionKey } from "./session-mapper.js";
 import { defaultAcpSessionStore, type AcpSessionStore } from "./session.js";
 import { ACP_AGENT_INFO, type AcpServerOptions } from "./types.js";
@@ -150,17 +150,9 @@ export class AcpGatewayAgent implements Agent {
 
     const sessionId = randomUUID();
     const meta = parseSessionMeta(params._meta);
-    const sessionKey = await resolveSessionKey({
+    const sessionKey = await this.resolveSessionKeyFromMeta({
       meta,
       fallbackKey: `acp:${sessionId}`,
-      gateway: this.gateway,
-      opts: this.opts,
-    });
-    await resetSessionIfNeeded({
-      meta,
-      sessionKey,
-      gateway: this.gateway,
-      opts: this.opts,
     });
 
     const session = this.sessionStore.createSession({
@@ -182,17 +174,9 @@ export class AcpGatewayAgent implements Agent {
     }
 
     const meta = parseSessionMeta(params._meta);
-    const sessionKey = await resolveSessionKey({
+    const sessionKey = await this.resolveSessionKeyFromMeta({
       meta,
       fallbackKey: params.sessionId,
-      gateway: this.gateway,
-      opts: this.opts,
-    });
-    await resetSessionIfNeeded({
-      meta,
-      sessionKey,
-      gateway: this.gateway,
-      opts: this.opts,
     });
 
     const session = this.sessionStore.createSession({
@@ -240,6 +224,7 @@ export class AcpGatewayAgent implements Agent {
     try {
       await this.gateway.request("sessions.patch", {
         key: session.sessionKey,
+        thinkingLevel: params.modeId,
       });
       this.log(`setSessionMode: ${session.sessionId} -> ${params.modeId}`);
     } catch (err) {
@@ -293,6 +278,7 @@ export class AcpGatewayAgent implements Agent {
             message,
             attachments: attachments.length > 0 ? attachments : undefined,
             idempotencyKey: runId,
+            thinking: readString(params._meta, ["thinking", "thinkingLevel"]),
             deliver: readBool(params._meta, ["deliver"]),
             timeoutMs: readNumber(params._meta, ["timeoutMs"]),
           },
@@ -324,6 +310,25 @@ export class AcpGatewayAgent implements Agent {
       this.pendingPrompts.delete(params.sessionId);
       pending.resolve({ stopReason: "cancelled" });
     }
+  }
+
+  private async resolveSessionKeyFromMeta(params: {
+    meta: ReturnType<typeof parseSessionMeta>;
+    fallbackKey: string;
+  }): Promise<string> {
+    const sessionKey = await resolveSessionKey({
+      meta: params.meta,
+      fallbackKey: params.fallbackKey,
+      gateway: this.gateway,
+      opts: this.opts,
+    });
+    await resetSessionIfNeeded({
+      meta: params.meta,
+      sessionKey,
+      gateway: this.gateway,
+      opts: this.opts,
+    });
+    return sessionKey;
   }
 
   private async handleAgentEvent(evt: EventFrame): Promise<void> {

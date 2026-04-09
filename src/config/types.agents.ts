@@ -19,9 +19,13 @@ export type AgentConfig = {
   boot?: AgentDefaultsConfig["boot"];
   identity?: IdentityConfig;
   groupChat?: GroupChatConfig;
+  /** Model configuration for this agent. */
+  model?: { primary?: string; fallback?: string };
   subagents?: {
     /** Allow spawning sub-agents under other agent ids. Use "*" to allow any. */
     allowAgents?: string[];
+    /** Model override for sub-agents. */
+    model?: string;
   };
   /** Optional per-agent sandbox overrides. */
   sandbox?: AgentSandboxConfig;
@@ -30,6 +34,8 @@ export type AgentConfig = {
   /** Glob patterns for files exposed via agents.files.list/get/set. Per-agent overrides defaults. */
   editableFiles?: string[];
   tools?: AgentToolsConfig;
+  /** Optional per-agent skills allowlist or configuration. */
+  skills?: string[] | Record<string, unknown>;
   /**
    * Auth profile(s) for credential injection.
    * - `false` — skip auth profile injection (rely on CLI-native auth / runtimeEnv / process.env)

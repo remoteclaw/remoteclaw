@@ -1,5 +1,5 @@
 ---
-description: "RemoteClaw plugins/extensions: discovery, config, and safety"
+summary: "RemoteClaw plugins/extensions: discovery, config, and safety"
 read_when:
   - Adding or modifying plugins/extensions
   - Documenting plugin install or load rules
@@ -42,13 +42,18 @@ Looking for third-party listings? See [Community plugins](/plugins/community).
 ## Available plugins (official)
 
 - Microsoft Teams is plugin-only as of 2026.1.15; install `@remoteclaw/msteams` if you use Teams.
+- Memory (Core) — bundled memory search plugin (enabled by default via `plugins.slots.memory`)
+- Memory (LanceDB) — bundled long-term memory plugin (auto-recall/capture; set `plugins.slots.memory = "memory-lancedb"`)
 - [Voice Call](/plugins/voice-call) — `@remoteclaw/voice-call`
 - [Zalo Personal](/plugins/zalouser) — `@remoteclaw/zalouser`
 - [Matrix](/channels/matrix) — `@remoteclaw/matrix`
 - [Nostr](/channels/nostr) — `@remoteclaw/nostr`
 - [Zalo](/channels/zalo) — `@remoteclaw/zalo`
 - [Microsoft Teams](/channels/msteams) — `@remoteclaw/msteams`
-- Gemini CLI OAuth (CLI authentication) — bundled as `google-gemini-cli-auth` (disabled by default)
+- Google Antigravity OAuth (provider auth) — bundled as `google-antigravity-auth` (disabled by default)
+- Gemini CLI OAuth (provider auth) — bundled as `google-gemini-cli-auth` (disabled by default)
+- Qwen OAuth (provider auth) — bundled as `qwen-portal-auth` (disabled by default)
+- Copilot Proxy (provider auth) — local VS Code Copilot Proxy bridge; distinct from built-in `github-copilot` device login (bundled, disabled by default)
 
 RemoteClaw plugins are **TypeScript modules** loaded at runtime via jiti. **Config
 validation does not execute plugin code**; it uses the plugin manifest and JSON
@@ -62,6 +67,7 @@ Plugins can register:
 - CLI commands
 - Background services
 - Optional config validation
+- **Skills** (by listing `skills` directories in the plugin manifest)
 - **Auto-reply commands** (execute without invoking the AI agent)
 
 Plugins run **in‑process** with the Gateway, so treat them as trusted code.
@@ -83,6 +89,22 @@ Notes:
 - Uses core `messages.tts` configuration (OpenAI or ElevenLabs).
 - Returns PCM audio buffer + sample rate. Plugins must resample/encode for providers.
 - Edge TTS is not supported for telephony.
+
+For STT/transcription, plugins can call:
+
+```ts
+const { text } = await api.runtime.stt.transcribeAudioFile({
+  filePath: "/tmp/inbound-audio.ogg",
+  cfg: api.config,
+  // Optional when MIME cannot be inferred reliably:
+  mime: "audio/ogg",
+});
+```
+
+Notes:
+
+- Uses core media-understanding audio configuration (`tools.media.audio`) and provider fallback order.
+- Returns `{ text: undefined }` when no transcription output is produced (for example skipped/unsupported input).
 
 ## Discovery & precedence
 
@@ -249,13 +271,13 @@ Some plugin categories are **exclusive** (only one active at a time). Use
 {
   plugins: {
     slots: {
-      "<category>": "<plugin-id>", // or "none" to disable the slot
+      memory: "memory-core", // or "none" to disable memory plugins
     },
   },
 }
 ```
 
-If multiple plugins declare the same `kind`, only the selected one loads. Others
+If multiple plugins declare `kind: "memory"`, only the selected one loads. Others
 are disabled with diagnostics.
 
 ## Control UI (schema + labels)
@@ -351,6 +373,57 @@ Notes:
 - Plugin-managed hooks show up in `remoteclaw hooks list` with `plugin:<id>`.
 - You cannot enable/disable plugin-managed hooks via `remoteclaw hooks`; enable/disable the plugin instead.
 
+## Provider plugins (model auth)
+
+Plugins can register **model provider auth** flows so users can run OAuth or
+API-key setup inside RemoteClaw (no external scripts needed).
+
+Register a provider via `api.registerProvider(...)`. Each provider exposes one
+or more auth methods (OAuth, API key, device code, etc.). These methods power:
+
+- `remoteclaw models auth login --provider <id> [--method <id>]`
+
+Example:
+
+```ts
+api.registerProvider({
+  id: "acme",
+  label: "AcmeAI",
+  auth: [
+    {
+      id: "oauth",
+      label: "OAuth",
+      kind: "oauth",
+      run: async (ctx) => {
+        // Run OAuth flow and return auth profiles.
+        return {
+          profiles: [
+            {
+              profileId: "acme:default",
+              credential: {
+                type: "oauth",
+                provider: "acme",
+                access: "...",
+                refresh: "...",
+                expires: Date.now() + 3600 * 1000,
+              },
+            },
+          ],
+          defaultModel: "acme/opus-1",
+        };
+      },
+    },
+  ],
+});
+```
+
+Notes:
+
+- `run` receives a `ProviderAuthContext` with `prompter`, `runtime`,
+  `openUrl`, and `oauth.createVpsAwareHandlers` helpers.
+- Return `configPatch` when you need to add default models or provider config.
+- Return `defaultModel` so `--set-default` can update agent defaults.
+
 ### Register a messaging channel
 
 Plugins can register **channel plugins** that behave like built‑in channels
@@ -420,7 +493,8 @@ Context details:
 
 ### Write a new messaging channel (step‑by‑step)
 
-Use this when you want a **new chat surface** (a "messaging channel").
+Use this when you want a **new chat surface** (a "messaging channel"), not a model provider.
+Model provider docs live under `/providers/*`.
 
 1. Pick an id + config shape
 
@@ -608,6 +682,12 @@ export default function (api) {
 - Gateway methods: `pluginId.action` (example: `voicecall.status`)
 - Tools: `snake_case` (example: `voice_call`)
 - CLI commands: kebab or camel, but avoid clashing with core commands
+
+## Skills
+
+Plugins can ship a skill in the repo (`skills/<name>/SKILL.md`).
+Enable it with `plugins.entries.<id>.enabled` (or other config gates) and ensure
+it’s present in your workspace/managed skills locations.
 
 ## Distribution (npm)
 

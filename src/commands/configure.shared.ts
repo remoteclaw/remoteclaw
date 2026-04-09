@@ -10,9 +10,11 @@ import { stylePromptHint, stylePromptMessage, stylePromptTitle } from "../termin
 export const CONFIGURE_WIZARD_SECTIONS = [
   "workspace",
   "model",
+  "web",
   "gateway",
   "daemon",
   "channels",
+  "skills",
   "health",
 ] as const;
 

@@ -15,7 +15,7 @@ import {
 } from "../infra/shell-env.js";
 import { VERSION } from "../version.js";
 import { DuplicateAgentDirError, findDuplicateAgentDirs } from "./agent-dirs.js";
-import { rotateConfigBackups } from "./backup-rotation.js";
+import { maintainConfigBackups } from "./backup-rotation.js";
 import {
   applyCompactionDefaults,
   applyContextPruningDefaults,
@@ -41,10 +41,7 @@ import {
 } from "./includes.js";
 import { findLegacyConfigIssues } from "./legacy.js";
 import { applyMergePatch } from "./merge-patch.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./normalize-exec-safe-bin.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const normalizeExecSafeBinProfilesInConfig = (..._args: unknown[]) => undefined as any;
+import { normalizeExecSafeBinProfilesInConfig } from "./normalize-exec-safe-bin.js";
 import { normalizeConfigPaths } from "./normalize-paths.js";
 import { resolveConfigPath, resolveDefaultConfigCandidates, resolveStateDir } from "./paths.js";
 import { isBlockedObjectKey } from "./prototype-keys.js";
@@ -723,7 +720,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
           loggedInvalidConfigs.add(configPath);
           deps.logger.error(`Invalid config at ${configPath}:\\n${details}`);
         }
-        const error = new Error("Invalid config");
+        const error = new Error(`Invalid config at ${configPath}:\n${details}`);
         (error as { code?: string; details?: string }).code = "INVALID_CONFIG";
         (error as { code?: string; details?: string }).details = details;
         throw error;
@@ -737,7 +734,6 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       warnIfConfigFromFuture(validated.config, deps.logger);
       const cfg = applyTalkConfigNormalization(
         applyModelDefaults(
-          // @ts-expect-error — upstream feature not available in RemoteClaw fork
           applyCompactionDefaults(
             applyContextPruningDefaults(
               applyAgentDefaults(
@@ -829,7 +825,6 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       const config = applyTalkApiKey(
         applyTalkConfigNormalization(
           applyModelDefaults(
-            // @ts-expect-error — upstream feature not available in RemoteClaw fork
             applyCompactionDefaults(
               applyContextPruningDefaults(
                 applyAgentDefaults(applySessionDefaults(applyMessageDefaults({}))),
@@ -1246,10 +1241,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       });
 
       if (deps.fs.existsSync(configPath)) {
-        await rotateConfigBackups(configPath, deps.fs.promises);
-        await deps.fs.promises.copyFile(configPath, `${configPath}.bak`).catch(() => {
-          // best-effort
-        });
+        await maintainConfigBackups(configPath, deps.fs.promises);
       }
 
       try {

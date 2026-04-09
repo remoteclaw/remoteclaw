@@ -3,10 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { WebSocket } from "ws";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/defaults.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const DEFAULT_PROVIDER = undefined as any;
+import { DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { GATEWAY_CLIENT_IDS, GATEWAY_CLIENT_MODES } from "./protocol/client-info.js";
 import { startGatewayServerHarness, type GatewayServerHarness } from "./server.e2e-ws-harness.js";
 import { createToolSummaryPreviewTranscriptLines } from "./session-preview.test-helpers.js";
@@ -99,28 +96,30 @@ vi.mock("../discord/monitor/thread-bindings.js", async (importOriginal) => {
   };
 });
 
-// Gutted in RemoteClaw fork (Middleware Boundary Principle) — acp runtime registry mock removed
-vi.mock("../acp/runtime/registry.js", () => ({
-  getAcpRuntimeBackend: acpRuntimeMocks.getAcpRuntimeBackend,
-  requireAcpRuntimeBackend: (backendId?: string) => {
-    const backend = acpRuntimeMocks.requireAcpRuntimeBackend(backendId);
-    if (!backend) {
-      throw new Error("missing mocked ACP backend");
-    }
-    return backend;
-  },
-}));
+vi.mock("../acp/runtime/registry.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../acp/runtime/registry.js")>();
+  return {
+    ...actual,
+    getAcpRuntimeBackend: acpRuntimeMocks.getAcpRuntimeBackend,
+    requireAcpRuntimeBackend: (backendId?: string) => {
+      const backend = acpRuntimeMocks.requireAcpRuntimeBackend(backendId);
+      if (!backend) {
+        throw new Error("missing mocked ACP backend");
+      }
+      return backend;
+    },
+  };
+});
 
 installGatewayTestHooks({ scope: "suite" });
 
 let harness: GatewayServerHarness;
 let sharedSessionStoreDir: string;
-let sharedSessionStorePath: string;
+let sessionStoreCaseSeq = 0;
 
 beforeAll(async () => {
   harness = await startGatewayServerHarness();
   sharedSessionStoreDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-sessions-"));
-  sharedSessionStorePath = path.join(sharedSessionStoreDir, "sessions.json");
 });
 
 afterAll(async () => {
@@ -131,10 +130,11 @@ afterAll(async () => {
 const openClient = async (opts?: Parameters<typeof connectOk>[1]) => await harness.openClient(opts);
 
 async function createSessionStoreDir() {
-  await fs.rm(sharedSessionStoreDir, { recursive: true, force: true });
-  await fs.mkdir(sharedSessionStoreDir, { recursive: true });
-  testState.sessionStorePath = sharedSessionStorePath;
-  return { dir: sharedSessionStoreDir, storePath: sharedSessionStorePath };
+  const dir = path.join(sharedSessionStoreDir, `case-${sessionStoreCaseSeq++}`);
+  await fs.mkdir(dir, { recursive: true });
+  const storePath = path.join(dir, "sessions.json");
+  testState.sessionStorePath = storePath;
+  return { dir, storePath };
 }
 
 async function writeSingleLineSession(dir: string, sessionId: string, content: string) {
@@ -207,8 +207,7 @@ describe("gateway server sessions", () => {
     );
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Upstream v2026.3.2 — provider inference and session patch logic changed
   test.skip("lists and patches session store via sessions.* RPC", async () => {
     const { dir, storePath } = await createSessionStoreDir();
     const now = Date.now();
@@ -588,8 +587,6 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
   test.skip("sessions.resolve and mutators clean legacy main-alias ghost keys", async () => {
     const { dir, storePath } = await createSessionStoreDir();
     testState.agentsConfig = { list: [{ id: "ops", default: true }] };
@@ -665,8 +662,7 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Upstream v2026.3.2 — session delete/reset queue/abort logic changed
   test.skip("sessions.delete rejects main and aborts active runs", async () => {
     const { dir } = await createSessionStoreDir();
     await writeSingleLineSession(dir, "sess-main", "hello");
@@ -723,8 +719,6 @@ describe("gateway server sessions", () => {
 
     ws.close();
   });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
 
   test.skip("sessions.delete closes ACP runtime handles before removing ACP sessions", async () => {
     const { dir } = await createSessionStoreDir();
@@ -810,9 +804,7 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  test.skip("sessions.delete emits subagent targetKind for subagent sessions", async () => {
+  test("sessions.delete emits subagent targetKind for subagent sessions", async () => {
     const { dir } = await createSessionStoreDir();
     await writeSingleLineSession(dir, "sess-subagent", "hello");
     await writeSessionStore({
@@ -851,9 +843,7 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  test.skip("sessions.delete can skip lifecycle hooks while still unbinding thread bindings", async () => {
+  test("sessions.delete can skip lifecycle hooks while still unbinding thread bindings", async () => {
     const { dir } = await createSessionStoreDir();
     await writeSingleLineSession(dir, "sess-subagent", "hello");
     await writeSessionStore({
@@ -884,9 +874,7 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  test.skip("sessions.delete directly unbinds thread bindings when hooks are unavailable", async () => {
+  test("sessions.delete directly unbinds thread bindings when hooks are unavailable", async () => {
     const { dir } = await createSessionStoreDir();
     await writeSingleLineSession(dir, "sess-subagent", "hello");
     await writeSessionStore({
@@ -915,8 +903,6 @@ describe("gateway server sessions", () => {
 
     ws.close();
   });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
 
   test.skip("sessions.reset aborts active runs and clears queues", async () => {
     await seedActiveMainSession();
@@ -964,8 +950,6 @@ describe("gateway server sessions", () => {
 
     ws.close();
   });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
 
   test.skip("sessions.reset closes ACP runtime handles for ACP sessions", async () => {
     const { dir } = await createSessionStoreDir();
@@ -1043,9 +1027,7 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  test.skip("sessions.reset emits subagent targetKind for subagent sessions", async () => {
+  test("sessions.reset emits subagent targetKind for subagent sessions", async () => {
     const { dir } = await createSessionStoreDir();
     await writeSingleLineSession(dir, "sess-subagent", "hello");
     await writeSessionStore({
@@ -1089,9 +1071,7 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  test.skip("sessions.reset directly unbinds thread bindings when hooks are unavailable", async () => {
+  test("sessions.reset directly unbinds thread bindings when hooks are unavailable", async () => {
     const { dir } = await createSessionStoreDir();
     await writeSingleLineSession(dir, "sess-main", "hello");
     await writeSessionStore({
@@ -1121,9 +1101,7 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  test.skip("sessions.reset emits internal command hook with reason", async () => {
+  test("sessions.reset emits internal command hook with reason", async () => {
     const { dir } = await createSessionStoreDir();
     await writeSingleLineSession(dir, "sess-main", "hello");
 
@@ -1158,8 +1136,6 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
   test.skip("sessions.reset returns unavailable when active run does not stop", async () => {
     const { dir, storePath } = await seedActiveMainSession();
 
@@ -1190,8 +1166,6 @@ describe("gateway server sessions", () => {
 
     ws.close();
   });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
 
   test.skip("sessions.delete returns unavailable when active run does not stop", async () => {
     const { dir, storePath } = await createSessionStoreDir();
@@ -1283,9 +1257,7 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  test.skip("control-ui client can delete sessions even in webchat mode", async () => {
+  test("control-ui client can delete sessions even in webchat mode", async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-sessions-control-ui-delete-"));
     const storePath = path.join(dir, "sessions.json");
     testState.sessionStorePath = storePath;

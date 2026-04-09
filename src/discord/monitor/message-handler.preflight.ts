@@ -30,13 +30,12 @@ import { DEFAULT_ACCOUNT_ID, resolveAgentIdFromSessionKey } from "../../routing/
 import { fetchPluralKitMessageInfo } from "../pluralkit.js";
 import { sendMessageDiscord } from "../send.js";
 import {
-  allowListMatches,
   isDiscordGroupAllowedByPolicy,
-  normalizeDiscordAllowList,
   normalizeDiscordSlug,
   resolveDiscordChannelConfigWithFallback,
   resolveDiscordGuildEntry,
   resolveDiscordMemberAccessState,
+  resolveDiscordOwnerAccess,
   resolveDiscordShouldRequireMention,
   resolveGroupDmAllow,
 } from "./allow-list.js";
@@ -56,6 +55,7 @@ import {
   resolveDiscordMessageChannelId,
   resolveDiscordMessageText,
 } from "./message-utils.js";
+import { resolveDiscordPreflightAudioMentionContext } from "./preflight-audio.js";
 import { resolveDiscordSenderIdentity, resolveDiscordWebhookId } from "./sender-identity.js";
 import { resolveDiscordSystemEvent } from "./system-events.js";
 import { isRecentlyUnboundThreadWebhookMessage } from "./thread-bindings.js";
@@ -401,8 +401,7 @@ export async function preflightDiscordMessage(
   const channelMatchMeta = formatAllowlistMatchMeta(channelConfig);
   if (shouldLogVerbose()) {
     const channelConfigSummary = channelConfig
-      ? // @ts-expect-error — upstream feature not available in RemoteClaw fork
-        `allowed=${channelConfig.allowed} enabled=${channelConfig.enabled ?? "unset"} requireMention=${channelConfig.requireMention ?? "unset"} matchKey=${channelConfig.matchKey ?? "none"} matchSource=${channelConfig.matchSource ?? "none"} users=${channelConfig.users?.length ?? 0} roles=${channelConfig.roles?.length ?? 0} skills=${channelConfig.skills?.length ?? 0}`
+      ? `allowed=${channelConfig.allowed} enabled=${channelConfig.enabled ?? "unset"} requireMention=${channelConfig.requireMention ?? "unset"} matchKey=${channelConfig.matchKey ?? "none"} matchSource=${channelConfig.matchSource ?? "none"} users=${channelConfig.users?.length ?? 0} roles=${channelConfig.roles?.length ?? 0} skills=${channelConfig.skills?.length ?? 0}`
       : "none";
     logDebug(
       `[discord-preflight] channelConfig=${channelConfigSummary} channelMatchMeta=${channelMatchMeta} channelId=${messageChannelId}`,
@@ -499,56 +498,22 @@ export async function preflightDiscordMessage(
     isBoundThreadSession,
   });
 
-  // Preflight audio transcription for mention detection in guilds
-  // This allows voice notes to be checked for mentions before being dropped
-  let preflightTranscript: string | undefined;
-  const hasAudioAttachment = message.attachments?.some((att: { contentType?: string }) =>
-    att.contentType?.startsWith("audio/"),
-  );
-  const needsPreflightTranscription =
-    !isDirectMessage &&
-    shouldRequireMention &&
-    hasAudioAttachment &&
-    !baseText &&
-    mentionRegexes.length > 0;
+  // Preflight audio transcription for mention detection in guilds.
+  // This allows voice notes to be checked for mentions before being dropped.
+  const { hasTypedText, transcript: preflightTranscript } =
+    await resolveDiscordPreflightAudioMentionContext({
+      message,
+      isDirectMessage,
+      shouldRequireMention,
+      mentionRegexes,
+      cfg: params.cfg,
+    });
 
-  if (needsPreflightTranscription) {
-    try {
-      //       const { transcribeFirstAudio } = await import("../../media-understanding/audio-preflight.js");
-      // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-      // oxlint-disable-next-line typescript/no-explicit-any
-      const transcribeFirstAudio = (..._args: unknown[]) => undefined as any;
-      const audioPaths =
-        message.attachments
-          ?.filter((att: { contentType?: string; url: string }) =>
-            att.contentType?.startsWith("audio/"),
-          )
-          .map((att: { url: string }) => att.url) ?? [];
-      if (audioPaths.length > 0) {
-        const tempCtx = {
-          MediaUrls: audioPaths,
-          MediaTypes: message.attachments
-            ?.filter((att: { contentType?: string; url: string }) =>
-              att.contentType?.startsWith("audio/"),
-            )
-            .map((att: { contentType?: string }) => att.contentType)
-            .filter(Boolean) as string[],
-        };
-        preflightTranscript = await transcribeFirstAudio({
-          ctx: tempCtx,
-          cfg: params.cfg,
-          agentDir: undefined,
-        });
-      }
-    } catch (err) {
-      logVerbose(`discord: audio preflight transcription failed: ${String(err)}`);
-    }
-  }
-
+  const mentionText = hasTypedText ? baseText : "";
   const wasMentioned =
     !isDirectMessage &&
     matchesMentionWithExplicit({
-      text: baseText,
+      text: mentionText,
       mentionRegexes,
       explicit: {
         hasAnyMention,
@@ -583,22 +548,15 @@ export async function preflightDiscordMessage(
   });
 
   if (!isDirectMessage) {
-    const ownerAllowList = normalizeDiscordAllowList(params.allowFrom, [
-      "discord:",
-      "user:",
-      "pk:",
-    ]);
-    const ownerOk = ownerAllowList
-      ? allowListMatches(
-          ownerAllowList,
-          {
-            id: sender.id,
-            name: sender.name,
-            tag: sender.tag,
-          },
-          { allowNameMatching },
-        )
-      : false;
+    const { ownerAllowList, ownerAllowed: ownerOk } = resolveDiscordOwnerAccess({
+      allowFrom: params.allowFrom,
+      sender: {
+        id: sender.id,
+        name: sender.name,
+        tag: sender.tag,
+      },
+      allowNameMatching,
+    });
     const commandGate = resolveControlCommandGate({
       useAccessGroups,
       authorizers: [

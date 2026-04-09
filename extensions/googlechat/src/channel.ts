@@ -561,7 +561,8 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
         abortSignal: ctx.abortSignal,
         webhookPath: account.config.webhookPath,
         webhookUrl: account.config.webhookUrl,
-        statusSink: (patch) => ctx.setStatus({ accountId: account.accountId, ...patch }),
+        statusSink: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) =>
+          ctx.setStatus({ accountId: account.accountId, ...patch }),
       });
       // Keep the promise pending until abort (webhook mode is passive).
       await new Promise<void>((resolve) => {

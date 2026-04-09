@@ -121,7 +121,7 @@ function validatePluginConfig(params: {
   if (result.ok) {
     return { ok: true, value: params.value as Record<string, unknown> | undefined };
   }
-  return { ok: false, errors: result.errors };
+  return { ok: false, errors: result.errors.map((error) => error.text) };
 }
 
 function resolvePluginModuleExport(moduleExport: unknown): {
@@ -158,7 +158,6 @@ function createPluginRecord(params: {
   enabled: boolean;
   configSchema: boolean;
 }): PluginRecord {
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   return {
     id: params.id,
     name: params.name ?? params.id,
@@ -173,10 +172,13 @@ function createPluginRecord(params: {
     hookNames: [],
     channelIds: [],
     providerIds: [],
+    sttProviderIds: [],
+    ttsProviderIds: [],
     gatewayMethods: [],
     cliCommands: [],
     services: [],
     commands: [],
+    httpRoutes: 0,
     httpHandlers: 0,
     hookCount: 0,
     configSchema: params.configSchema,
@@ -508,6 +510,18 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
     record.kind = manifestRecord.kind;
     record.configUiHints = manifestRecord.configUiHints;
     record.configJsonSchema = manifestRecord.configSchema;
+    const pushPluginLoadError = (message: string) => {
+      record.status = "error";
+      record.error = message;
+      registry.plugins.push(record);
+      seenIds.set(pluginId, candidate.origin);
+      registry.diagnostics.push({
+        level: "error",
+        pluginId: record.id,
+        source: record.source,
+        message: record.error,
+      });
+    };
 
     if (!enableState.enabled) {
       record.status = "disabled";
@@ -518,16 +532,7 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
     }
 
     if (!manifestRecord.configSchema) {
-      record.status = "error";
-      record.error = "missing config schema";
-      registry.plugins.push(record);
-      seenIds.set(pluginId, candidate.origin);
-      registry.diagnostics.push({
-        level: "error",
-        pluginId: record.id,
-        source: record.source,
-        message: record.error,
-      });
+      pushPluginLoadError("missing config schema");
       continue;
     }
 
@@ -536,22 +541,11 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
       absolutePath: candidate.source,
       rootPath: pluginRoot,
       boundaryLabel: "plugin root",
-      // Discovery stores rootDir as realpath but source may still be a lexical alias
-      // (e.g. /var/... vs /private/var/... on macOS). Canonical boundary checks
-      // still enforce containment; skip lexical pre-check to avoid false escapes.
+      rejectHardlinks: candidate.origin !== "bundled",
       skipLexicalRootCheck: true,
     });
     if (!opened.ok) {
-      record.status = "error";
-      record.error = "plugin entry path escapes plugin root or fails alias checks";
-      registry.plugins.push(record);
-      seenIds.set(pluginId, candidate.origin);
-      registry.diagnostics.push({
-        level: "error",
-        pluginId: record.id,
-        source: record.source,
-        message: record.error,
-      });
+      pushPluginLoadError("plugin entry path escapes plugin root or fails alias checks");
       continue;
     }
     const safeSource = opened.path;
@@ -614,18 +608,15 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
       selectedId: selectedMemoryPluginId,
     });
 
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     if (!memoryDecision.enabled) {
       record.enabled = false;
       record.status = "disabled";
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       record.error = memoryDecision.reason;
       registry.plugins.push(record);
       seenIds.set(pluginId, candidate.origin);
       continue;
     }
 
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     if (memoryDecision.selected && record.kind === "memory") {
       selectedMemoryPluginId = record.id;
     }
@@ -638,16 +629,7 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
 
     if (!validatedConfig.ok) {
       logger.error(`[plugins] ${record.id} invalid config: ${validatedConfig.errors?.join(", ")}`);
-      record.status = "error";
-      record.error = `invalid config: ${validatedConfig.errors?.join(", ")}`;
-      registry.plugins.push(record);
-      seenIds.set(pluginId, candidate.origin);
-      registry.diagnostics.push({
-        level: "error",
-        pluginId: record.id,
-        source: record.source,
-        message: record.error,
-      });
+      pushPluginLoadError(`invalid config: ${validatedConfig.errors?.join(", ")}`);
       continue;
     }
 
@@ -659,16 +641,7 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
 
     if (typeof register !== "function") {
       logger.error(`[plugins] ${record.id} missing register/activate export`);
-      record.status = "error";
-      record.error = "plugin export missing register/activate";
-      registry.plugins.push(record);
-      seenIds.set(pluginId, candidate.origin);
-      registry.diagnostics.push({
-        level: "error",
-        pluginId: record.id,
-        source: record.source,
-        message: record.error,
-      });
+      pushPluginLoadError("plugin export missing register/activate");
       continue;
     }
 
@@ -707,8 +680,7 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
   if (typeof memorySlot === "string" && !memorySlotMatched) {
     registry.diagnostics.push({
       level: "warn",
-      // oxlint-disable-next-line
-      message: `memory slot plugin not found or not marked as memory: ${memorySlot}`,
+      message: `memory slot plugin not found or not marked as memory: ${String(memorySlot)}`,
     });
   }
 

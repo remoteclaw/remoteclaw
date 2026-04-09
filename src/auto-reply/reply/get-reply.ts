@@ -1,30 +1,76 @@
 import {
   resolveAgentDir,
-  resolveAgentRuntime,
   resolveAgentWorkspaceDir,
   resolveSessionAgentId,
+  resolveAgentSkillsFilter,
 } from "../../agents/agent-scope.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+const resolveModelRefFromString = (..._args: unknown[]) =>
+  null as { ref: { provider: string; model: string } } | null;
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { ensureAgentWorkspace } from "../../agents/workspace.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+const DEFAULT_AGENT_WORKSPACE_DIR = ".remoteclaw";
+import { resolveChannelModelOverride } from "../../channels/model-overrides.js";
 import { type RemoteClawConfig, loadConfig } from "../../config/config.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+const applyLinkUnderstanding = async (..._args: unknown[]) => undefined as unknown;
+const applyMediaUnderstanding = async (..._args: unknown[]) => undefined as unknown;
 import { defaultRuntime } from "../../runtime.js";
 import { resolveCommandAuthorization } from "../command-auth.js";
 import type { MsgContext } from "../templating.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { emitResetCommandHooks, type ResetCommandAction } from "./commands-core.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+const resolveDefaultModel = (..._args: unknown[]) => ({
+  defaultProvider: "anthropic" as string,
+  defaultModel: "claude-sonnet-4-1" as string,
+  aliasIndex: {} as Record<string, unknown>,
+});
 import { resolveReplyDirectives } from "./get-reply-directives.js";
 import { handleInlineActions } from "./get-reply-inline-actions.js";
 import { runPreparedReply } from "./get-reply-run.js";
 import { finalizeInboundContext } from "./inbound-context.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+const emitPreAgentMessageHooks = async (..._args: unknown[]) => {};
+const applyResetModelOverride = (..._args: unknown[]) => undefined as unknown;
 import { initSessionState } from "./session.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+const stageSandboxMedia = async (..._args: unknown[]) => {};
 import { createTypingController } from "./typing.js";
+
+function mergeSkillFilters(channelFilter?: string[], agentFilter?: string[]): string[] | undefined {
+  const normalize = (list?: string[]) => {
+    if (!Array.isArray(list)) {
+      return undefined;
+    }
+    return list.map((entry) => String(entry).trim()).filter(Boolean);
+  };
+  const channel = normalize(channelFilter);
+  const agent = normalize(agentFilter);
+  if (!channel && !agent) {
+    return undefined;
+  }
+  if (!channel) {
+    return agent;
+  }
+  if (!agent) {
+    return channel;
+  }
+  if (channel.length === 0 || agent.length === 0) {
+    return [];
+  }
+  const agentSet = new Set(agent);
+  return channel.filter((name) => agentSet.has(name));
+}
 
 export async function getReplyFromConfig(
   ctx: MsgContext,
   opts?: GetReplyOptions,
   configOverride?: RemoteClawConfig,
 ): Promise<ReplyPayload | ReplyPayload[] | undefined> {
+  const isFastTestEnv = process.env.REMOTECLAW_TEST_FAST === "1";
   const cfg = configOverride ?? loadConfig();
   const targetSessionKey =
     ctx.CommandSource === "native" ? ctx.CommandTargetSessionKey?.trim() : undefined;
@@ -33,14 +79,46 @@ export async function getReplyFromConfig(
     sessionKey: agentSessionKey,
     config: cfg,
   });
+  const mergedSkillFilter = mergeSkillFilters(
+    opts?.skillFilter,
+    resolveAgentSkillsFilter(cfg, agentId) as string[] | undefined,
+  );
+  const resolvedOpts =
+    mergedSkillFilter !== undefined ? { ...opts, skillFilter: mergedSkillFilter } : opts;
   const agentCfg = cfg.agents?.defaults;
   const sessionCfg = cfg.session;
-  // Model selection/alias infrastructure gutted in RemoteClaw — CLIs own model selection.
-  // The runtime name is the single identifier that flows through to session usage.
-  const runtimeId = resolveAgentRuntime(cfg, agentId) ?? "unknown";
+  const { defaultProvider, defaultModel, aliasIndex } = resolveDefaultModel({
+    cfg,
+    agentId,
+  });
+  let provider = defaultProvider;
+  let model = defaultModel;
+  let hasResolvedHeartbeatModelOverride = false;
+  if (opts?.isHeartbeat) {
+    // Prefer the resolved per-agent heartbeat model passed from the heartbeat runner,
+    // fall back to the global defaults heartbeat model for backward compatibility.
+    const heartbeatRaw =
+      opts.heartbeatModelOverride?.trim() ?? agentCfg?.heartbeat?.model?.trim() ?? "";
+    const heartbeatRef = heartbeatRaw
+      ? resolveModelRefFromString({
+          raw: heartbeatRaw,
+          defaultProvider,
+          aliasIndex,
+        })
+      : null;
+    if (heartbeatRef) {
+      provider = heartbeatRef.ref.provider;
+      model = heartbeatRef.ref.model;
+      hasResolvedHeartbeatModelOverride = true;
+    }
+  }
 
-  const workspaceDirRaw = resolveAgentWorkspaceDir(cfg, agentId);
-  const workspaceDir = await ensureAgentWorkspace(workspaceDirRaw);
+  const workspaceDirRaw = resolveAgentWorkspaceDir(cfg, agentId) ?? DEFAULT_AGENT_WORKSPACE_DIR;
+  const workspace = await ensureAgentWorkspace({
+    dir: workspaceDirRaw,
+    ensureBootstrapFiles: !agentCfg?.skipBootstrap && !isFastTestEnv,
+  });
+  const workspaceDir = workspace.dir;
   const agentDir = resolveAgentDir(cfg, agentId);
   const timeoutMs = resolveAgentTimeoutMs({ cfg, overrideSeconds: opts?.timeoutOverrideSeconds });
   const configuredTypingSeconds =
@@ -57,6 +135,24 @@ export async function getReplyFromConfig(
   opts?.onTypingController?.(typing);
 
   const finalized = finalizeInboundContext(ctx);
+
+  if (!isFastTestEnv) {
+    await applyMediaUnderstanding({
+      ctx: finalized,
+      cfg,
+      agentDir,
+      activeModel: { provider, model },
+    });
+    await applyLinkUnderstanding({
+      ctx: finalized,
+      cfg,
+    });
+  }
+  void emitPreAgentMessageHooks({
+    ctx: finalized,
+    cfg,
+    isFastTestEnv,
+  });
 
   const commandAuthorized = finalized.CommandAuthorized;
   resolveCommandAuthorization({
@@ -85,16 +181,59 @@ export async function getReplyFromConfig(
     groupResolution,
     isGroup,
     triggerBodyNormalized,
+    bodyStripped,
   } = sessionState;
 
-  // Session-reset model override removed (model catalog gutted in RemoteClaw).
-  // Channel model override removed — CLI runtimes own model selection.
+  await applyResetModelOverride({
+    cfg,
+    resetTriggered,
+    bodyStripped,
+    sessionCtx,
+    ctx: finalized,
+    sessionEntry,
+    sessionStore,
+    sessionKey,
+    storePath,
+    defaultProvider,
+    defaultModel,
+    aliasIndex,
+  });
+
+  const channelModelOverride = resolveChannelModelOverride({
+    cfg,
+    channel:
+      groupResolution?.channel ??
+      sessionEntry.channel ??
+      sessionEntry.origin?.provider ??
+      (typeof finalized.OriginatingChannel === "string"
+        ? finalized.OriginatingChannel
+        : undefined) ??
+      finalized.Provider,
+    groupId: groupResolution?.id ?? sessionEntry.groupId,
+    groupChannel: sessionEntry.groupChannel ?? sessionCtx.GroupChannel ?? finalized.GroupChannel,
+    groupSubject: sessionEntry.subject ?? sessionCtx.GroupSubject ?? finalized.GroupSubject,
+    parentSessionKey: sessionCtx.ParentSessionKey,
+  });
+  const hasSessionModelOverride = Boolean(
+    sessionEntry.modelOverride?.trim() || sessionEntry.providerOverride?.trim(),
+  );
+  if (!hasResolvedHeartbeatModelOverride && !hasSessionModelOverride && channelModelOverride) {
+    const resolved = resolveModelRefFromString({
+      raw: channelModelOverride.model,
+      defaultProvider,
+      aliasIndex,
+    });
+    if (resolved) {
+      provider = resolved.ref.provider;
+      model = resolved.ref.model;
+    }
+  }
 
   const directiveResult = await resolveReplyDirectives({
     ctx: finalized,
     cfg,
     agentId,
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
+    agentDir,
     workspaceDir,
     agentCfg,
     sessionCtx,
@@ -107,9 +246,15 @@ export async function getReplyFromConfig(
     isGroup,
     triggerBodyNormalized,
     commandAuthorized,
-    runtimeId,
+    defaultProvider,
+    defaultModel,
+    aliasIndex,
+    provider,
+    model,
+    hasResolvedHeartbeatModelOverride,
     typing,
-    opts,
+    opts: resolvedOpts,
+    skillFilter: mergedSkillFilter,
   });
   if (directiveResult.kind === "reply") {
     return directiveResult.reply;
@@ -119,22 +264,32 @@ export async function getReplyFromConfig(
     commandSource,
     command,
     allowTextCommands,
+    skillCommands,
     directives,
     cleanedBody,
+    elevatedEnabled,
+    elevatedAllowed,
+    elevatedFailures,
     defaultActivation,
+    resolvedThinkLevel,
     resolvedVerboseLevel,
+    resolvedReasoningLevel,
+    resolvedElevatedLevel,
+    execOverrides,
     blockStreamingEnabled,
     blockReplyChunking,
     resolvedBlockStreamingBreak,
-    provider,
-    model,
-    modelState: _modelState,
+    provider: resolvedProvider,
+    model: resolvedModel,
+    modelState,
     contextTokens,
     inlineStatusRequested,
     directiveAck,
     perMessageQueueMode,
     perMessageQueueOptions,
   } = directiveResult.result;
+  provider = resolvedProvider;
+  model = resolvedModel;
 
   const maybeEmitMissingResetHooks = async () => {
     if (!resetTriggered || !command.isAuthorizedSender || command.resetHookTriggered) {
@@ -153,7 +308,6 @@ export async function getReplyFromConfig(
       sessionKey,
       sessionEntry,
       previousSessionEntry,
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       workspaceDir,
     });
   };
@@ -170,23 +324,31 @@ export async function getReplyFromConfig(
     sessionKey,
     storePath,
     sessionScope,
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     workspaceDir,
     isGroup,
-    opts,
+    opts: resolvedOpts,
     typing,
     allowTextCommands,
     inlineStatusRequested,
     command,
+    skillCommands,
     directives,
     cleanedBody,
+    elevatedEnabled,
+    elevatedAllowed,
+    elevatedFailures,
     defaultActivation: () => defaultActivation,
+    resolvedThinkLevel,
     resolvedVerboseLevel,
+    resolvedReasoningLevel,
+    resolvedElevatedLevel,
+    resolveDefaultThinkingLevel: modelState.resolveDefaultThinkingLevel,
     provider,
     model,
     contextTokens,
     directiveAck,
     abortedLastRun,
+    skillFilter: mergedSkillFilter,
   });
   if (inlineActionResult.kind === "reply") {
     await maybeEmitMissingResetHooks();
@@ -195,6 +357,14 @@ export async function getReplyFromConfig(
   await maybeEmitMissingResetHooks();
   directives = inlineActionResult.directives;
   abortedLastRun = inlineActionResult.abortedLastRun ?? abortedLastRun;
+
+  await stageSandboxMedia({
+    ctx,
+    sessionCtx,
+    cfg,
+    sessionKey,
+    workspaceDir,
+  });
 
   return runPreparedReply({
     ctx,
@@ -210,15 +380,25 @@ export async function getReplyFromConfig(
     allowTextCommands,
     directives,
     defaultActivation,
+    resolvedThinkLevel,
     resolvedVerboseLevel,
+    resolvedReasoningLevel,
+    resolvedElevatedLevel,
+    execOverrides,
+    elevatedEnabled,
+    elevatedAllowed,
     blockStreamingEnabled,
     blockReplyChunking,
     resolvedBlockStreamingBreak,
-    runtimeId,
+    modelState,
+    provider,
+    model,
     perMessageQueueMode,
     perMessageQueueOptions,
     typing,
-    opts,
+    opts: resolvedOpts,
+    defaultProvider,
+    defaultModel,
     timeoutMs,
     isNewSession,
     resetTriggered,
@@ -228,7 +408,6 @@ export async function getReplyFromConfig(
     sessionKey,
     sessionId,
     storePath,
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     workspaceDir,
     abortedLastRun,
   });

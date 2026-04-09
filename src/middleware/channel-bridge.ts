@@ -197,15 +197,13 @@ export class ChannelBridge {
             // oxlint-disable-next-line
             `[channel-bridge] hook overrode workspaceDir: ${this.#workspaceDir} -> ${spawnResult.workspaceDir}`,
           );
-          // @ts-expect-error — upstream feature not available in RemoteClaw fork
           workspaceDir = spawnResult.workspaceDir;
         }
         if (spawnResult?.env) {
           logDebug(
             `[channel-bridge] hook injected env keys: ${Object.keys(spawnResult.env).join(", ")}`,
           );
-          // @ts-expect-error — upstream feature not available in RemoteClaw fork
-          hookEnv = spawnResult.env;
+          hookEnv = spawnResult.env as Record<string, string>;
         }
       }
 

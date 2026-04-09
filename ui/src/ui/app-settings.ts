@@ -8,6 +8,7 @@ import {
 import { scheduleChatScroll, scheduleLogsScroll } from "./app-scroll.ts";
 import type { RemoteClawApp } from "./app.ts";
 import { loadAgentIdentities, loadAgentIdentity } from "./controllers/agent-identity.ts";
+import { loadAgentSkills } from "./controllers/agent-skills.ts";
 import { loadAgents, loadToolsCatalog } from "./controllers/agents.ts";
 import { loadChannels } from "./controllers/channels.ts";
 import { loadConfig, loadConfigSchema } from "./controllers/config.ts";
@@ -24,6 +25,7 @@ import { loadLogs } from "./controllers/logs.ts";
 import { loadNodes } from "./controllers/nodes.ts";
 import { loadPresence } from "./controllers/presence.ts";
 import { loadSessions } from "./controllers/sessions.ts";
+import { loadSkills } from "./controllers/skills.ts";
 import {
   inferBasePathFromPathname,
   normalizeBasePath,
@@ -53,7 +55,7 @@ type SettingsHost = {
   basePath: string;
   agentsList?: AgentsListResult | null;
   agentsSelectedId?: string | null;
-  agentsPanel?: "overview" | "files" | "tools" | "channels" | "cron";
+  agentsPanel?: "overview" | "files" | "tools" | "skills" | "channels" | "cron";
   themeMedia: MediaQueryList | null;
   themeMediaHandler: ((event: MediaQueryListEvent) => void) | null;
   pendingGatewayUrl?: string | null;
@@ -147,24 +149,7 @@ export function applySettingsFromUrl(host: SettingsHost) {
 }
 
 export function setTab(host: SettingsHost, next: Tab) {
-  if (host.tab !== next) {
-    host.tab = next;
-  }
-  if (next === "chat") {
-    host.chatHasAutoScrolled = false;
-  }
-  if (next === "logs") {
-    startLogsPolling(host as unknown as Parameters<typeof startLogsPolling>[0]);
-  } else {
-    stopLogsPolling(host as unknown as Parameters<typeof stopLogsPolling>[0]);
-  }
-  if (next === "debug") {
-    startDebugPolling(host as unknown as Parameters<typeof startDebugPolling>[0]);
-  } else {
-    stopDebugPolling(host as unknown as Parameters<typeof stopDebugPolling>[0]);
-  }
-  void refreshActiveTab(host);
-  syncUrlWithTab(host, next, false);
+  applyTabSelection(host, next, { refreshPolicy: "always", syncUrl: true });
 }
 
 export function setTheme(host: SettingsHost, next: ThemeMode, context?: ThemeTransitionContext) {
@@ -197,6 +182,9 @@ export async function refreshActiveTab(host: SettingsHost) {
   if (host.tab === "cron") {
     await loadCron(host);
   }
+  if (host.tab === "skills") {
+    await loadSkills(host as unknown as Parameters<typeof loadSkills>[0]);
+  }
   if (host.tab === "agents") {
     await loadAgents(host as unknown as RemoteClawApp);
     await loadToolsCatalog(host as unknown as RemoteClawApp);
@@ -209,6 +197,9 @@ export async function refreshActiveTab(host: SettingsHost) {
       host.agentsSelectedId ?? host.agentsList?.defaultId ?? host.agentsList?.agents?.[0]?.id;
     if (agentId) {
       void loadAgentIdentity(host as unknown as RemoteClawApp, agentId);
+      if (host.agentsPanel === "skills") {
+        void loadAgentSkills(host as unknown as RemoteClawApp, agentId);
+      }
       if (host.agentsPanel === "channels") {
         void loadChannels(host as unknown as RemoteClawApp, false);
       }
@@ -341,6 +332,14 @@ export function onPopState(host: SettingsHost) {
 }
 
 export function setTabFromRoute(host: SettingsHost, next: Tab) {
+  applyTabSelection(host, next, { refreshPolicy: "connected" });
+}
+
+function applyTabSelection(
+  host: SettingsHost,
+  next: Tab,
+  options: { refreshPolicy: "always" | "connected"; syncUrl?: boolean },
+) {
   if (host.tab !== next) {
     host.tab = next;
   }
@@ -357,8 +356,13 @@ export function setTabFromRoute(host: SettingsHost, next: Tab) {
   } else {
     stopDebugPolling(host as unknown as Parameters<typeof stopDebugPolling>[0]);
   }
-  if (host.connected) {
+
+  if (options.refreshPolicy === "always" || host.connected) {
     void refreshActiveTab(host);
+  }
+
+  if (options.syncUrl) {
+    syncUrlWithTab(host, next, false);
   }
 }
 

@@ -23,8 +23,11 @@ Interactive onboarding wizard (local or remote Gateway setup).
 remoteclaw onboard
 remoteclaw onboard --flow quickstart
 remoteclaw onboard --flow manual
-remoteclaw onboard --mode remote --remote-url ws://gateway-host:18789
+remoteclaw onboard --mode remote --remote-url wss://gateway-host:18789
 ```
+
+For plaintext private-network `ws://` targets (trusted networks only), set
+`REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS=1` in the onboarding process environment.
 
 Non-interactive custom provider:
 

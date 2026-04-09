@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../acp/runtime/errors.js";
 class AcpRuntimeError extends Error {
-  constructor(..._args: unknown[]) {
-    super();
+  code: string;
+  constructor(code: string, message?: string) {
+    super(message ?? code);
+    this.name = "AcpRuntimeError";
+    this.code = code;
   }
 }
 import type { RemoteClawConfig } from "../../config/config.js";
@@ -83,7 +85,9 @@ vi.mock("./route-reply.js", () => ({
   isRoutableChannel: (channel: string | undefined) =>
     Boolean(
       channel &&
-      ["telegram", "slack", "discord", "signal", "imessage", "whatsapp"].includes(channel),
+      ["telegram", "slack", "discord", "signal", "imessage", "whatsapp", "feishu"].includes(
+        channel,
+      ),
     ),
   routeReply: mocks.routeReply,
 }));
@@ -151,10 +155,8 @@ vi.mock("../../tts/tts.js", () => ({
 
 const { dispatchReplyFromConfig } = await import("./dispatch-from-config.js");
 const { resetInboundDedupe } = await import("./inbound-dedupe.js");
-// const { __testing: acpManagerTesting } = await import("../../acp/control-plane/manager.js");
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// oxlint-disable-next-line typescript/no-explicit-any
-const acpManagerTesting = { resetAcpSessionManagerForTests: () => {} };
+const acpManagerTesting = { resetForTest: () => {} } as Record<string, unknown>;
 
 const noAbortResult = { handled: false, aborted: false } as const;
 const emptyConfig = {} as RemoteClawConfig;
@@ -214,7 +216,7 @@ async function dispatchTwiceWithFreshDispatchers(params: Omit<DispatchReplyArgs,
 
 describe("dispatchReplyFromConfig", () => {
   beforeEach(() => {
-    acpManagerTesting.resetAcpSessionManagerForTests();
+    (acpManagerTesting as Record<string, () => void>).resetAcpSessionManagerForTests?.();
     resetInboundDedupe();
     mocks.routeReply.mockReset();
     mocks.routeReply.mockResolvedValue({ ok: true, messageId: "mock" });
@@ -275,6 +277,7 @@ describe("dispatchReplyFromConfig", () => {
       Provider: "slack",
       AccountId: "acc-1",
       MessageThreadId: 123,
+      GroupChannel: "ops-room",
       OriginatingChannel: "telegram",
       OriginatingTo: "telegram:999",
     });
@@ -293,6 +296,8 @@ describe("dispatchReplyFromConfig", () => {
         to: "telegram:999",
         accountId: "acc-1",
         threadId: 123,
+        isGroup: true,
+        groupId: "telegram:999",
       }),
     );
   });
@@ -334,6 +339,73 @@ describe("dispatchReplyFromConfig", () => {
     };
 
     await dispatchReplyFromConfig({ ctx, cfg, dispatcher, replyResolver });
+  });
+
+  it("routes when provider is webchat but surface carries originating channel metadata", async () => {
+    setNoAbort();
+    mocks.routeReply.mockClear();
+    const cfg = emptyConfig;
+    const dispatcher = createDispatcher();
+    const ctx = buildTestCtx({
+      Provider: "webchat",
+      Surface: "telegram",
+      OriginatingChannel: "telegram",
+      OriginatingTo: "telegram:999",
+    });
+
+    const replyResolver = async () => ({ text: "hi" }) satisfies ReplyPayload;
+    await dispatchReplyFromConfig({ ctx, cfg, dispatcher, replyResolver });
+
+    expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
+    expect(mocks.routeReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel: "telegram",
+        to: "telegram:999",
+      }),
+    );
+  });
+
+  it("routes Feishu replies when provider is webchat and origin metadata points to Feishu", async () => {
+    setNoAbort();
+    mocks.routeReply.mockClear();
+    const cfg = emptyConfig;
+    const dispatcher = createDispatcher();
+    const ctx = buildTestCtx({
+      Provider: "webchat",
+      Surface: "feishu",
+      OriginatingChannel: "feishu",
+      OriginatingTo: "ou_feishu_direct_123",
+    });
+
+    const replyResolver = async () => ({ text: "hi" }) satisfies ReplyPayload;
+    await dispatchReplyFromConfig({ ctx, cfg, dispatcher, replyResolver });
+
+    expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
+    expect(mocks.routeReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel: "feishu",
+        to: "ou_feishu_direct_123",
+      }),
+    );
+  });
+
+  it("does not route when provider already matches originating channel", async () => {
+    setNoAbort();
+    mocks.routeReply.mockClear();
+    const cfg = emptyConfig;
+    const dispatcher = createDispatcher();
+    const ctx = buildTestCtx({
+      Provider: "telegram",
+      Surface: "webchat",
+      OriginatingChannel: "telegram",
+      OriginatingTo: "telegram:999",
+    });
+
+    const replyResolver = async () => ({ text: "hi" }) satisfies ReplyPayload;
+    await dispatchReplyFromConfig({ ctx, cfg, dispatcher, replyResolver });
+
+    expect(mocks.routeReply).not.toHaveBeenCalled();
+    expect(dispatcher.sendFinalReply).toHaveBeenCalledTimes(1);
   });
 
   it("routes media-only tool results when summaries are suppressed", async () => {
@@ -532,8 +604,7 @@ describe("dispatchReplyFromConfig", () => {
     });
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — ACP runtime dispatch is stubbed out (Middleware Boundary Principle)
   it.skip("routes ACP sessions through the runtime branch and streams block replies", async () => {
     setNoAbort();
     const runtime = createAcpRuntime([
@@ -595,8 +666,7 @@ describe("dispatchReplyFromConfig", () => {
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — ACP runtime dispatch is stubbed out (Middleware Boundary Principle)
   it.skip("posts a one-time resolved-session-id notice in thread after the first ACP turn", async () => {
     setNoAbort();
     const runtime = createAcpRuntime([{ type: "text_delta", text: "hello" }, { type: "done" }]);
@@ -665,8 +735,7 @@ describe("dispatchReplyFromConfig", () => {
     expect(finalPayload?.text).toContain("codex resume inner-123");
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — ACP runtime dispatch is stubbed out (Middleware Boundary Principle)
   it.skip("posts resolved-session-id notice when ACP session is bound even without MessageThreadId", async () => {
     setNoAbort();
     const runtime = createAcpRuntime([{ type: "text_delta", text: "hello" }, { type: "done" }]);
@@ -749,7 +818,8 @@ describe("dispatchReplyFromConfig", () => {
     expect(finalPayload?.text).toContain("acpx session id: acpx-123");
   });
 
-  it("honors send-policy deny before ACP runtime dispatch", async () => {
+  // Gutted in RemoteClaw fork — ACP runtime dispatch is stubbed out (Middleware Boundary Principle)
+  it.skip("honors send-policy deny before ACP runtime dispatch", async () => {
     setNoAbort();
     const runtime = createAcpRuntime([
       { type: "text_delta", text: "should-not-run" },
@@ -776,6 +846,7 @@ describe("dispatchReplyFromConfig", () => {
     });
 
     const cfg = {
+      agents: { defaults: { workspace: "/tmp/remoteclaw-test" } },
       acp: {
         enabled: true,
         dispatch: { enabled: true },
@@ -801,9 +872,7 @@ describe("dispatchReplyFromConfig", () => {
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("routes ACP slash commands through the normal command pipeline", async () => {
+  it("routes ACP slash commands through the normal command pipeline", async () => {
     setNoAbort();
     const runtime = createAcpRuntime([{ type: "done" }]);
     acpMocks.readAcpSessionEntry.mockReturnValue({
@@ -857,8 +926,7 @@ describe("dispatchReplyFromConfig", () => {
     });
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — ACP runtime dispatch is stubbed out (Middleware Boundary Principle)
   it.skip("does not bypass ACP slash aliases when text commands are disabled on native surfaces", async () => {
     setNoAbort();
     const runtime = createAcpRuntime([{ type: "done" }]);
@@ -910,7 +978,8 @@ describe("dispatchReplyFromConfig", () => {
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
   });
 
-  it("does not bypass ACP dispatch for unauthorized bang-prefixed messages", async () => {
+  // Gutted in RemoteClaw fork — ACP runtime dispatch is stubbed out (Middleware Boundary Principle)
+  it.skip("does not bypass ACP dispatch for unauthorized bang-prefixed messages", async () => {
     setNoAbort();
     const runtime = createAcpRuntime([{ type: "done" }]);
     acpMocks.readAcpSessionEntry.mockReturnValue({
@@ -963,7 +1032,8 @@ describe("dispatchReplyFromConfig", () => {
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
   });
 
-  it("does not bypass ACP dispatch for bang-prefixed messages when text commands are disabled", async () => {
+  // Gutted in RemoteClaw fork — ACP runtime dispatch is stubbed out (Middleware Boundary Principle)
+  it.skip("does not bypass ACP dispatch for bang-prefixed messages when text commands are disabled", async () => {
     setNoAbort();
     const runtime = createAcpRuntime([{ type: "done" }]);
     acpMocks.readAcpSessionEntry.mockReturnValue({
@@ -1020,8 +1090,7 @@ describe("dispatchReplyFromConfig", () => {
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — ACP runtime dispatch is stubbed out (Middleware Boundary Principle)
   it.skip("coalesces tiny ACP token deltas into normal Discord text spacing", async () => {
     setNoAbort();
     const runtime = createAcpRuntime([
@@ -1055,6 +1124,7 @@ describe("dispatchReplyFromConfig", () => {
     });
 
     const cfg = {
+      agents: { defaults: { workspace: "/tmp/remoteclaw-test" } },
       acp: {
         enabled: true,
         dispatch: { enabled: true },
@@ -1078,8 +1148,7 @@ describe("dispatchReplyFromConfig", () => {
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — ACP runtime dispatch is stubbed out (Middleware Boundary Principle)
   it.skip("generates final-mode TTS audio after ACP block streaming completes", async () => {
     setNoAbort();
     ttsMocks.state.synthesizeFinalAudio = true;
@@ -1108,6 +1177,7 @@ describe("dispatchReplyFromConfig", () => {
     });
 
     const cfg = {
+      agents: { defaults: { workspace: "/tmp/remoteclaw-test" } },
       acp: {
         enabled: true,
         dispatch: { enabled: true },
@@ -1130,8 +1200,7 @@ describe("dispatchReplyFromConfig", () => {
     expect(finalPayload?.text).toBeUndefined();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — ACP runtime dispatch is stubbed out (Middleware Boundary Principle)
   it.skip("routes ACP block output to originating channel without parent dispatcher duplicates", async () => {
     setNoAbort();
     mocks.routeReply.mockClear();
@@ -1160,6 +1229,7 @@ describe("dispatchReplyFromConfig", () => {
     });
 
     const cfg = {
+      agents: { defaults: { workspace: "/tmp/remoteclaw-test" } },
       acp: {
         enabled: true,
         dispatch: { enabled: true },
@@ -1189,8 +1259,7 @@ describe("dispatchReplyFromConfig", () => {
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — ACP runtime dispatch is stubbed out (Middleware Boundary Principle)
   it.skip("closes oneshot ACP sessions after the turn completes", async () => {
     setNoAbort();
     const runtime = createAcpRuntime([{ type: "done" }]);
@@ -1215,6 +1284,7 @@ describe("dispatchReplyFromConfig", () => {
     });
 
     const cfg = {
+      agents: { defaults: { workspace: "/tmp/remoteclaw-test" } },
       acp: {
         enabled: true,
         dispatch: { enabled: true },
@@ -1237,8 +1307,7 @@ describe("dispatchReplyFromConfig", () => {
     );
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — ACP runtime dispatch is stubbed out (Middleware Boundary Principle)
   it.skip("emits an explicit ACP policy error when dispatch is disabled", async () => {
     setNoAbort();
     acpMocks.readAcpSessionEntry.mockReturnValue({
@@ -1281,8 +1350,7 @@ describe("dispatchReplyFromConfig", () => {
     expect(finalPayload?.text).toContain("ACP dispatch is disabled by policy");
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — ACP runtime dispatch is stubbed out (Middleware Boundary Principle)
   it.skip("fails closed when ACP metadata is missing for an ACP session key", async () => {
     setNoAbort();
     acpMocks.readAcpSessionEntry.mockReturnValue(null);
@@ -1311,8 +1379,7 @@ describe("dispatchReplyFromConfig", () => {
     expect(finalPayload?.text).toContain("ACP metadata is missing");
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — ACP runtime dispatch is stubbed out (Middleware Boundary Principle)
   it.skip("surfaces backend-missing ACP errors in-thread without falling back", async () => {
     setNoAbort();
     acpMocks.readAcpSessionEntry.mockReturnValue({

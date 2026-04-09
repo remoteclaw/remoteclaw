@@ -724,10 +724,8 @@ export async function runTui(opts: TuiOptions) {
         : sessionInfo.model
       : "unknown";
     const tokens = formatTokens(sessionInfo.totalTokens ?? null, sessionInfo.contextTokens ?? null);
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     const think = sessionInfo.thinkingLevel ?? "off";
     const verbose = sessionInfo.verboseLevel ?? "off";
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     const reasoning = sessionInfo.reasoningLevel ?? "off";
     const reasoningLabel =
       reasoning === "on" ? "reasoning" : reasoning === "stream" ? "reasoning:stream" : null;

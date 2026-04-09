@@ -109,11 +109,28 @@ export type RemoteClawConfig = {
   };
   /** Access control policy configuration (upstream feature). */
   acp?: unknown;
+  /** Secrets configuration (upstream feature). */
+  secrets?: {
+    providers?: Record<string, unknown>;
+    defaults?: {
+      env?: string;
+      file?: string;
+      exec?: string;
+    };
+    resolution?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
+  /** CLI configuration (upstream feature). */
+  cli?: unknown;
+  /** Skills configuration (upstream feature). */
+  skills?: unknown;
 };
 
 export type ConfigValidationIssue = {
   path: string;
   message: string;
+  allowedValues?: string[];
+  allowedValuesHiddenCount?: number;
 };
 
 export type LegacyConfigIssue = {

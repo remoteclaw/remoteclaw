@@ -1,5 +1,5 @@
 ---
-description: "Streaming + chunking behavior (block replies, channel preview streaming, mode mapping)"
+summary: "Streaming + chunking behavior (block replies, channel preview streaming, mode mapping)"
 read_when:
   - Explaining how streaming or chunking works on channels
   - Changing block streaming or channel chunking behavior
@@ -32,7 +32,7 @@ Model output
 
 Legend:
 
-- `text_delta/events`: CLI agent output events (may be sparse if the CLI agent does not stream output).
+- `text_delta/events`: model stream events (may be sparse for non-streaming models).
 - `chunker`: `EmbeddedBlockChunker` applying min/max bounds + break preference.
 - `channel send`: actual outbound messages (block replies).
 
@@ -138,7 +138,7 @@ Legacy key migration:
 
 Telegram:
 
-- Uses Bot API `sendMessage` + `editMessageText`.
+- Uses Bot API `sendMessageDraft` in DMs when available, and `sendMessage` + `editMessageText` for group/topic preview updates.
 - Preview streaming is skipped when Telegram block streaming is explicitly enabled (to avoid double-streaming).
 - `/reasoning stream` can write reasoning to preview.
 

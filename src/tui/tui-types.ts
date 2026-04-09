@@ -28,6 +28,8 @@ export type ResponseUsageMode = "on" | "off" | "tokens" | "full";
 
 export type SessionInfo = {
   verboseLevel?: string;
+  thinkingLevel?: string;
+  reasoningLevel?: string;
   model?: string;
   modelProvider?: string;
   contextTokens?: number | null;

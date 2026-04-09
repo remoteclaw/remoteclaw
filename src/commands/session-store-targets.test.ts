@@ -12,6 +12,7 @@ vi.mock("../config/sessions.js", () => ({
 vi.mock("../agents/agent-scope.js", () => ({
   resolveDefaultAgentId: resolveDefaultAgentIdMock,
   listAgentIds: listAgentIdsMock,
+  resolveAgentRuntime: () => "claude",
 }));
 
 describe("resolveSessionStoreTargets", () => {

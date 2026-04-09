@@ -83,7 +83,7 @@ const coreEntries: CoreCliEntry[] = [
       {
         name: "config",
         description:
-          "Non-interactive config helpers (get/set/unset/file). Default: starts setup wizard.",
+          "Non-interactive config helpers (get/set/unset/file/validate). Default: starts setup wizard.",
         hasSubcommands: true,
       },
     ],
@@ -142,9 +142,7 @@ const coreEntries: CoreCliEntry[] = [
       },
     ],
     register: async ({ program }) => {
-      //       const mod = await import("../memory-cli.js");
-      // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-      // @ts-expect-error — gutted in RemoteClaw fork
+      const mod = await import("../memory-cli.js");
       mod.registerMemoryCli(program);
     },
   },

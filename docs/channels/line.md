@@ -1,5 +1,5 @@
 ---
-description: "LINE Messaging API plugin setup, config, and usage"
+summary: "LINE Messaging API plugin setup, config, and usage"
 read_when:
   - You want to connect RemoteClaw to LINE
   - You need LINE webhook + credential setup
@@ -47,6 +47,10 @@ https://gateway-host/line/webhook
 The gateway responds to LINE’s webhook verification (GET) and inbound events (POST).
 If you need a custom path, set `channels.line.webhookPath` or
 `channels.line.accounts.<id>.webhookPath` and update the URL accordingly.
+
+Security note:
+
+- LINE signature verification is body-dependent (HMAC over the raw body), so RemoteClaw applies strict pre-auth body limits and timeout before verification.
 
 ## Configure
 

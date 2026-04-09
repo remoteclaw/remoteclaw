@@ -104,6 +104,10 @@ export function collectAppcastSparkleVersionErrors(xml: string): string[] {
   const calverItems: Array<{ title: string; sparkleBuild: number; floors: SparkleBuildFloors }> =
     [];
 
+  if (itemMatches.length === 0) {
+    errors.push("appcast.xml contains no <item> entries.");
+  }
+
   for (const [, item] of itemMatches) {
     const title = extractTag(item, "title") ?? "unknown";
     const shortVersion = extractTag(item, "sparkle:shortVersionString");
@@ -165,9 +169,71 @@ function checkAppcastSparkleVersions() {
   }
 }
 
+// Critical functions that channel extension plugins import from remoteclaw/plugin-sdk.
+// If any are missing from the compiled output, plugins crash at runtime (#27569).
+const requiredPluginSdkExports = [
+  "isDangerousNameMatchingEnabled",
+  "createAccountListHelpers",
+  "buildAgentMediaPayload",
+  "createReplyPrefixOptions",
+  "createTypingCallbacks",
+  "logInboundDrop",
+  "logTypingFailure",
+  "buildPendingHistoryContextFromMap",
+  "clearHistoryEntriesIfEnabled",
+  "recordPendingHistoryEntryIfEnabled",
+  "resolveControlCommandGate",
+  "resolveDmGroupAccessWithLists",
+  "resolveAllowlistProviderRuntimeGroupPolicy",
+  "resolveDefaultGroupPolicy",
+  "resolveChannelMediaMaxBytes",
+  "warnMissingProviderGroupPolicyFallbackOnce",
+  "emptyPluginConfigSchema",
+  "normalizePluginHttpPath",
+  "registerPluginHttpRoute",
+  "DEFAULT_ACCOUNT_ID",
+  "DEFAULT_GROUP_HISTORY_LIMIT",
+];
+
+function checkPluginSdkExports() {
+  const distPath = resolve("dist", "plugin-sdk", "index.js");
+  let content: string;
+  try {
+    content = readFileSync(distPath, "utf8");
+  } catch {
+    console.error("release-check: dist/plugin-sdk/index.js not found (build missing?).");
+    process.exit(1);
+    return;
+  }
+
+  const exportMatch = content.match(/export\s*\{([^}]+)\}\s*;?\s*$/);
+  if (!exportMatch) {
+    console.error("release-check: could not find export statement in dist/plugin-sdk/index.js.");
+    process.exit(1);
+    return;
+  }
+
+  const exportedNames = new Set(
+    exportMatch[1].split(",").map((s) => {
+      const parts = s.trim().split(/\s+as\s+/);
+      return (parts[parts.length - 1] || "").trim();
+    }),
+  );
+
+  const missingExports = requiredPluginSdkExports.filter((name) => !exportedNames.has(name));
+  if (missingExports.length > 0) {
+    console.error("release-check: missing critical plugin-sdk exports (#27569):");
+    for (const name of missingExports) {
+      console.error(`  - ${name}`);
+    }
+    process.exit(1);
+  }
+}
+
 function main() {
   checkPluginVersions();
   checkAppcastSparkleVersions();
+  checkPluginSdkExports();
 
   const results = runPackDry();
   const files = results.flatMap((entry) => entry.files ?? []);

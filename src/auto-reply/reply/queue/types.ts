@@ -66,6 +66,14 @@ export type FollowupRun = {
     extraSystemPrompt?: string;
     threadContext?: string;
     enforceFinalTag?: boolean;
+    skillsSnapshot?: unknown;
+    authProfileId?: string;
+    authProfileIdSource?: string;
+    thinkLevel?: unknown;
+    reasoningLevel?: unknown;
+    elevatedLevel?: unknown;
+    execOverrides?: unknown;
+    bashElevated?: unknown;
   };
 };
 

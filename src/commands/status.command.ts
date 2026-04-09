@@ -8,12 +8,12 @@ import type { HeartbeatEventPayload } from "../infra/heartbeat-events.js";
 import { formatUsageReportLines, loadProviderUsageSummary } from "../infra/provider-usage.js";
 import { normalizeUpdateChannel, resolveUpdateChannelDisplay } from "../infra/update-channels.js";
 import { formatGitInstallLabel } from "../infra/update-check.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../memory/status-format.js";
-const resolveMemoryCacheSummary = (..._args: unknown[]) => undefined as unknown;
-const resolveMemoryFtsState = (..._args: unknown[]) => undefined as unknown;
-const resolveMemoryVectorState = (..._args: unknown[]) => undefined as unknown;
-type Tone = Record<string, unknown>;
+import {
+  resolveMemoryCacheSummary,
+  resolveMemoryFtsState,
+  resolveMemoryVectorState,
+  type Tone,
+} from "../memory/status-format.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { runSecurityAudit } from "../security/audit.js";
 import { renderTable } from "../terminal/table.js";
@@ -21,6 +21,7 @@ import { theme } from "../terminal/theme.js";
 import { formatHealthChannelLines, type HealthSummary } from "./health.js";
 import { resolveControlUiLinks } from "./onboard-helpers.js";
 import { statusAllCommand } from "./status-all.js";
+import { groupChannelIssuesByChannel } from "./status-all/channel-issues.js";
 import { formatGatewayAuthUsed } from "./status-all/format.js";
 import { getDaemonStatusSummary, getNodeDaemonStatusSummary } from "./status.daemon.js";
 import {
@@ -165,7 +166,6 @@ export async function statusCommand(
   const configChannel = normalizeUpdateChannel(cfg.update?.channel);
   const channelInfo = resolveUpdateChannelDisplay({
     configChannel,
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     installKind: update.installKind,
     gitTag: update.git?.tag ?? null,
     gitBranch: update.git?.branch ?? null,
@@ -273,10 +273,8 @@ export async function statusCommand(
 
   const agentsValue = (() => {
     const pending =
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
-      agentStatus.bootstrapPendingCount > 0
-        ? // @ts-expect-error — upstream feature not available in RemoteClaw fork
-          `${agentStatus.bootstrapPendingCount} bootstrap file${agentStatus.bootstrapPendingCount === 1 ? "" : "s"} present`
+      (agentStatus.bootstrapPendingCount ?? 0) > 0
+        ? `${agentStatus.bootstrapPendingCount} bootstrap file${agentStatus.bootstrapPendingCount === 1 ? "" : "s"} present`
         : "no bootstrap files";
     const def = agentStatus.agents.find((a) => a.id === agentStatus.defaultId);
     const defActive = def?.lastActiveAgeMs != null ? formatTimeAgo(def.lastActiveAgeMs) : "unknown";
@@ -360,39 +358,30 @@ export async function statusCommand(
     }
     const parts: string[] = [];
     const dirtySuffix = memory.dirty ? ` · ${warn("dirty")}` : "";
-    // oxlint-disable-next-line
     parts.push(`${memory.files} files · ${memory.chunks} chunks${dirtySuffix}`);
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     if (memory.sources?.length) {
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       parts.push(`sources ${memory.sources.join(", ")}`);
     }
     if (memoryPlugin.slot) {
       parts.push(`plugin ${memoryPlugin.slot}`);
     }
     const colorByTone = (tone: Tone, text: string) =>
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       tone === "ok" ? ok(text) : tone === "warn" ? warn(text) : muted(text);
     const vector = memory.vector;
     if (vector) {
       const state = resolveMemoryVectorState(vector);
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       const label = state.state === "disabled" ? "vector off" : `vector ${state.state}`;
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       parts.push(colorByTone(state.tone, label));
     }
     const fts = memory.fts;
     if (fts) {
       const state = resolveMemoryFtsState(fts);
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       const label = state.state === "disabled" ? "fts off" : `fts ${state.state}`;
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       parts.push(colorByTone(state.tone, label));
     }
     const cache = memory.cache;
     if (cache) {
       const summary = resolveMemoryCacheSummary(cache);
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       parts.push(colorByTone(summary.tone, summary.text));
     }
     return parts.join(" · ");
@@ -514,19 +503,7 @@ export async function statusCommand(
 
   runtime.log("");
   runtime.log(theme.heading("Channels"));
-  const channelIssuesByChannel = (() => {
-    const map = new Map<string, typeof channelIssues>();
-    for (const issue of channelIssues) {
-      const key = issue.channel;
-      const list = map.get(key);
-      if (list) {
-        list.push(issue);
-      } else {
-        map.set(key, [issue]);
-      }
-    }
-    return map;
-  })();
+  const channelIssuesByChannel = groupChannelIssuesByChannel(channelIssues);
   runtime.log(
     renderTable({
       width: tableWidth,

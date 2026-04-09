@@ -8,6 +8,7 @@ vi.mock("../../../commands/message.js", () => ({
 vi.mock("../../../globals.js", () => ({
   danger: (s: string) => s,
   setVerbose: vi.fn(),
+  shouldLogVerbose: vi.fn(() => false),
 }));
 
 vi.mock("../../plugin-registry.js", () => ({

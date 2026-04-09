@@ -6,10 +6,12 @@ function makeItem(shortVersion: string, sparkleVersion: string): string {
 }
 
 describe("collectAppcastSparkleVersionErrors", () => {
-  it("accepts empty feed with no items", () => {
+  it("rejects empty feed with no items", () => {
     const xml = `<rss><channel><title>RemoteClaw</title></channel></rss>`;
 
-    expect(collectAppcastSparkleVersionErrors(xml)).toEqual([]);
+    expect(collectAppcastSparkleVersionErrors(xml)).toEqual([
+      "appcast.xml contains no <item> entries.",
+    ]);
   });
 
   it("accepts legacy 9-digit calver builds before lane-floor cutover", () => {

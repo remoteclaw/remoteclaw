@@ -1,5 +1,5 @@
 ---
-description: "CLI reference for `remoteclaw node` (headless node host)"
+summary: "CLI reference for `remoteclaw node` (headless node host)"
 read_when:
   - Running the headless node host
   - Pairing a non-macOS node for system.run
@@ -92,12 +92,12 @@ Service commands accept `--json` for machine-readable output.
 
 ## Pairing
 
-The first connection creates a pending node pair request on the Gateway.
+The first connection creates a pending device pairing request (`role: node`) on the Gateway.
 Approve it via:
 
 ```bash
-remoteclaw nodes pending
-remoteclaw nodes approve <requestId>
+remoteclaw devices list
+remoteclaw devices approve <requestId>
 ```
 
 The node host stores its node id, token, display name, and gateway connection info in
@@ -108,4 +108,5 @@ The node host stores its node id, token, display name, and gateway connection in
 `system.run` is gated by local exec approvals:
 
 - `~/.remoteclaw/exec-approvals.json`
+- [Exec approvals](/tools/exec-approvals)
 - `remoteclaw approvals --node <id|name|ip>` (edit from the Gateway)

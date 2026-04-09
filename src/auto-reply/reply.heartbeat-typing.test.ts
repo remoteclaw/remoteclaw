@@ -1,25 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
+import { runEmbeddedPiAgentMock } from "./reply.directive.directive-behavior.e2e-mocks.js";
 import { createTempHomeHarness, makeReplyConfig } from "./reply.test-harness.js";
-
-const runAgentMock = vi.fn();
 
 vi.mock(
   "../agents/model-fallback.js",
   async () => await import("../test-utils/model-fallback.mock.js"),
 );
-
-vi.mock("../middleware/channel-bridge.js", () => ({
-  ChannelBridge: class MockChannelBridge {
-    async handle() {
-      return {
-        payloads: [{ text: "ok" }],
-        run: { text: "ok", durationMs: 10 },
-        mcp: { sentTexts: [], sentMediaUrls: [], sentTargets: [], cronAdds: 0 },
-      };
-    }
-  },
-}));
 
 const webMocks = vi.hoisted(() => ({
   webAuthExists: vi.fn().mockResolvedValue(true),
@@ -33,7 +20,7 @@ import { getReplyFromConfig } from "./reply.js";
 
 const { withTempHome } = createTempHomeHarness({
   prefix: "remoteclaw-typing-",
-  beforeEachCase: () => runAgentMock.mockClear(),
+  beforeEachCase: () => runEmbeddedPiAgentMock.mockClear(),
 });
 
 afterEach(() => {
@@ -44,7 +31,7 @@ describe("getReplyFromConfig typing (heartbeat)", () => {
   async function runReplyFlow(isHeartbeat: boolean): Promise<ReturnType<typeof vi.fn>> {
     const onReplyStart = vi.fn();
     await withTempHome(async (home) => {
-      runAgentMock.mockResolvedValueOnce({
+      runEmbeddedPiAgentMock.mockResolvedValueOnce({
         payloads: [{ text: "ok" }],
         meta: {},
       });

@@ -1,24 +1,13 @@
 import fs from "node:fs";
 import { intro as clackIntro, outro as clackOutro } from "@clack/prompts";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/defaults.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const DEFAULT_MODEL = undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const DEFAULT_PROVIDER = undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/model-catalog.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const loadModelCatalog = (..._args: unknown[]) => undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/model-selection.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const getModelRefStatus = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveConfiguredModelRef = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveHooksGmailModel = (..._args: unknown[]) => undefined as any;
+import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
+import { loadModelCatalog } from "../agents/model-catalog.js";
+import {
+  getModelRefStatus,
+  resolveConfiguredModelRef,
+  resolveHooksGmailModel,
+} from "../agents/model-selection.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { CONFIG_PATH, readConfigFileSnapshot, writeConfigFile } from "../config/config.js";
@@ -32,7 +21,11 @@ import { defaultRuntime } from "../runtime.js";
 import { note } from "../terminal/note.js";
 import { stylePromptTitle } from "../terminal/prompt-style.js";
 import { shortenHomePath } from "../utils.js";
-import { maybeRepairAnthropicOAuthProfileId, noteAuthProfileHealth } from "./doctor-auth.js";
+import {
+  maybeRemoveDeprecatedCliAuthProfiles,
+  maybeRepairAnthropicOAuthProfileId,
+  noteAuthProfileHealth,
+} from "./doctor-auth.js";
 import { doctorShellCompletion } from "./doctor-completion.js";
 import { loadAndMaybeMigrateDoctorConfig } from "./doctor-config-flow.js";
 import { maybeRepairGatewayDaemon } from "./doctor-gateway-daemon-flow.js";
@@ -42,10 +35,7 @@ import {
   maybeScanExtraGatewayServices,
 } from "./doctor-gateway-services.js";
 import { noteSourceInstallIssues } from "./doctor-install.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./doctor-memory-search.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const noteMemorySearchHealth = (..._args: unknown[]) => undefined as any;
+import { noteMemorySearchHealth } from "./doctor-memory-search.js";
 import {
   noteMacLaunchAgentOverrides,
   noteMacLaunchctlGatewayEnvOverrides,
@@ -53,12 +43,7 @@ import {
   noteStartupOptimizationHints,
 } from "./doctor-platform-notes.js";
 import { createDoctorPrompter, type DoctorOptions } from "./doctor-prompter.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./doctor-sandbox.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const maybeRepairSandboxImages = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const noteSandboxScopeWarnings = (..._args: unknown[]) => undefined as any;
+import { maybeRepairSandboxImages, noteSandboxScopeWarnings } from "./doctor-sandbox.js";
 import { noteSecurityWarnings } from "./doctor-security.js";
 import { noteSessionLockHealth } from "./doctor-session-locks.js";
 import { noteStateIntegrity, noteWorkspaceBackupTip } from "./doctor-state-integrity.js";
@@ -70,6 +55,7 @@ import { maybeRepairUiProtocolFreshness } from "./doctor-ui.js";
 import { maybeOfferUpdateBeforeDoctor } from "./doctor-update.js";
 import { noteWorkspaceStatus } from "./doctor-workspace-status.js";
 import { MEMORY_SYSTEM_PROMPT, shouldSuggestMemorySystem } from "./doctor-workspace.js";
+import { noteOpenAIOAuthTlsPrerequisites } from "./oauth-tls-preflight.js";
 import { applyWizardMetadata, printWizardHeader, randomToken } from "./onboard-helpers.js";
 import { ensureSystemdUserLingerInteractive } from "./systemd-linger.js";
 
@@ -132,6 +118,7 @@ export async function doctorCommand(
   }
 
   cfg = await maybeRepairAnthropicOAuthProfileId(cfg, prompter);
+  cfg = await maybeRemoveDeprecatedCliAuthProfiles(cfg, prompter);
   await noteAuthProfileHealth({
     cfg,
     prompter,
@@ -214,6 +201,10 @@ export async function doctorCommand(
   await noteMacLaunchctlGatewayEnvOverrides(cfg);
 
   await noteSecurityWarnings(cfg);
+  await noteOpenAIOAuthTlsPrerequisites({
+    cfg,
+    deep: options.deep === true,
+  });
 
   if (cfg.hooks?.gmail?.model?.trim()) {
     const hooksModelRef = resolveHooksGmailModel({
@@ -228,7 +219,7 @@ export async function doctorCommand(
         defaultProvider: DEFAULT_PROVIDER,
         defaultModel: DEFAULT_MODEL,
       });
-      const catalog = await loadModelCatalog({ config: cfg });
+      const catalog = loadModelCatalog({ config: cfg });
       const status = getModelRefStatus({
         cfg,
         catalog,
@@ -239,12 +230,12 @@ export async function doctorCommand(
       const warnings: string[] = [];
       if (!status.allowed) {
         warnings.push(
-          `- hooks.gmail.model "${status.key}" not in agents.defaults.models allowlist (will use primary instead)`,
+          `- hooks.gmail.model "${String(status.key)}" not in agents.defaults.models allowlist (will use primary instead)`,
         );
       }
       if (!status.inCatalog) {
         warnings.push(
-          `- hooks.gmail.model "${status.key}" not in the model catalog (may fail at runtime)`,
+          `- hooks.gmail.model "${String(status.key)}" not in the model catalog (may fail at runtime)`,
         );
       }
       if (warnings.length > 0) {
@@ -324,8 +315,7 @@ export async function doctorCommand(
   if (options.workspaceSuggestions !== false) {
     const workspaceDir = resolveAgentWorkspaceDir(cfg, resolveDefaultAgentId(cfg));
     noteWorkspaceBackupTip(workspaceDir);
-    // oxlint-disable-next-line
-    if (await shouldSuggestMemorySystem(workspaceDir)) {
+    if (shouldSuggestMemorySystem(workspaceDir)) {
       note(MEMORY_SYSTEM_PROMPT, "Workspace");
     }
   }

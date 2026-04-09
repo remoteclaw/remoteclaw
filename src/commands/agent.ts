@@ -1,19 +1,6 @@
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../acp/control-plane/manager.js";
-const getAcpSessionManager = (..._args: unknown[]): AcpManagerStub | undefined => undefined;
-type AcpManagerStub = {
-  startSession: (..._args: unknown[]) => Promise<void>;
-  endSession: (..._args: unknown[]) => Promise<void>;
-  checkPolicy: (..._args: unknown[]) => Promise<{ allowed: boolean; reason?: string }>;
-  [key: string]: unknown;
-};
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../acp/policy.js";
-const resolveAcpAgentPolicyError = (..._args: unknown[]): string | undefined => undefined;
-const resolveAcpDispatchPolicyError = (..._args: unknown[]): string | undefined => undefined;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../acp/runtime/errors.js";
-const toAcpRuntimeError = (..._args: unknown[]): Error | undefined => undefined;
+import { getAcpSessionManager } from "../acp/control-plane/manager.js";
+import { resolveAcpAgentPolicyError, resolveAcpDispatchPolicyError } from "../acp/policy.js";
+import { toAcpRuntimeError } from "../acp/runtime/errors.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 
 const log = createSubsystemLogger("commands/agent");
@@ -25,78 +12,29 @@ import {
   resolveAgentSkillsFilter,
   resolveAgentWorkspaceDir,
 } from "../agents/agent-scope.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/auth-profiles.js";
-const ensureAuthProfileStore = (..._args: unknown[]): void => {};
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/auth-profiles/session-override.js";
-const clearSessionAuthProfileOverride = (..._args: unknown[]): void => {};
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/cli-runner.js";
-type CliAgentRunResult = {
-  payloads: Array<{ text: string }>;
-  meta?: Record<string, unknown>;
-  [key: string]: unknown;
-};
-const runCliAgent = (..._args: unknown[]): Promise<CliAgentRunResult> =>
-  Promise.resolve({ payloads: [], meta: {} });
+import { ensureAuthProfileStore } from "../agents/auth-profiles.js";
+import { clearSessionAuthProfileOverride } from "../agents/auth-profiles/session-override.js";
+import { runCliAgent } from "../agents/cli-runner.js";
 import { getCliSessionId, setCliSessionId } from "../agents/cli-session.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/defaults.js";
-const DEFAULT_MODEL = "default" as string;
-const DEFAULT_PROVIDER = "default" as string;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/failover-error.js";
-class FailoverError extends Error {
-  reason?: string;
-  constructor(..._args: unknown[]) {
-    super();
-  }
-}
+import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
+import { FailoverError } from "../agents/failover-error.js";
 import { formatAgentInternalEventsForPrompt } from "../agents/internal-events.js";
 import { AGENT_LANE_SUBAGENT } from "../agents/lanes.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/model-catalog.js";
-type ModelCatalog = { models: Array<{ provider: string; model: string }>; [key: string]: unknown };
-const loadModelCatalog = (..._args: unknown[]): ModelCatalog => ({ models: [] });
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/model-fallback.js";
-const runWithModelFallback = async (..._args: unknown[]): Promise<CliAgentRunResult> => ({
-  payloads: [],
-  meta: {},
-});
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/model-selection.js";
-type AllowedModelSet = { allowedKeys: Set<string>; allowedCatalog: unknown[]; allowAny: boolean };
-const buildAllowedModelSet = (..._args: unknown[]): AllowedModelSet => ({
-  allowedKeys: new Set(),
-  allowedCatalog: [],
-  allowAny: false,
-});
-const isCliProvider = (..._args: unknown[]): boolean => false;
-const modelKey = (..._args: unknown[]): string => "";
-const normalizeModelRef = (..._args: unknown[]): { provider?: string; model?: string } | null =>
-  null;
-const normalizeProviderId = (..._args: unknown[]): string => "";
-const resolveConfiguredModelRef = (
-  ..._args: unknown[]
-): { provider?: string; model?: string } | undefined => undefined;
-const resolveDefaultModelForAgent = (..._args: unknown[]): { provider: string; model: string } => ({
-  provider: DEFAULT_PROVIDER,
-  model: DEFAULT_MODEL,
-});
-const resolveThinkingDefault = (..._args: unknown[]): string | undefined => undefined;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/pi-embedded.js";
-const runEmbeddedPiAgent = (..._args: unknown[]): Promise<CliAgentRunResult> =>
-  Promise.resolve({ payloads: [], meta: {} });
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/skills.js";
-const buildWorkspaceSkillSnapshot = (..._args: unknown[]): Record<string, unknown> | undefined =>
-  undefined;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/skills/refresh.js";
-const getSkillsSnapshotVersion = (..._args: unknown[]): string | undefined => undefined;
+import { loadModelCatalog } from "../agents/model-catalog.js";
+import { runWithModelFallback } from "../agents/model-fallback.js";
+import {
+  buildAllowedModelSet,
+  isCliProvider,
+  modelKey,
+  normalizeModelRef,
+  normalizeProviderId,
+  resolveConfiguredModelRef,
+  resolveDefaultModelForAgent,
+  resolveThinkingDefault,
+} from "../agents/model-selection.js";
+import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
+import { buildWorkspaceSkillSnapshot } from "../agents/skills.js";
+import { getSkillsSnapshotVersion } from "../agents/skills/refresh.js";
 import { resolveAgentTimeoutMs } from "../agents/timeout.js";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
 import {
@@ -109,6 +47,8 @@ import {
   type VerboseLevel,
 } from "../auto-reply/thinking.js";
 import { formatCliCommand } from "../cli/command-format.js";
+import { resolveCommandSecretRefsViaGateway } from "../cli/command-secret-gateway.js";
+import { getAgentRuntimeCommandSecretTargetIds } from "../cli/command-secret-targets.js";
 import { type CliDeps, createDefaultDeps } from "../cli/deps.js";
 import { loadConfig } from "../config/config.js";
 import {
@@ -128,24 +68,19 @@ import {
   registerAgentRunContext,
 } from "../infra/agent-events.js";
 import { buildOutboundSessionContext } from "../infra/outbound/session-context.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../infra/skills-remote.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const getRemoteSkillEligibility = (..._args: unknown[]) => undefined as any;
+import { getRemoteSkillEligibility } from "../infra/skills-remote.js";
+import type { AgentDeliveryResult } from "../middleware/types.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { applyVerboseOverride } from "../sessions/level-overrides.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../sessions/model-overrides.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const applyModelOverrideToSessionEntry = (..._args: unknown[]) => undefined as any;
+import { applyModelOverrideToSessionEntry } from "../sessions/model-overrides.js";
 import { resolveSendPolicy } from "../sessions/send-policy.js";
 import { resolveMessageChannel } from "../utils/message-channel.js";
 import { deliverAgentCommandResult } from "./agent/delivery.js";
 import { resolveAgentRunContext } from "./agent/run-context.js";
 import { updateSessionStoreAfterAgentRun } from "./agent/session-store.js";
 import { resolveSession } from "./agent/session.js";
-import type { AgentCommandOpts } from "./agent/types.js";
+import type { AgentCommandIngressOpts, AgentCommandOpts } from "./agent/types.js";
 
 type PersistSessionEntryParams = {
   sessionStore: Record<string, SessionEntry>;
@@ -160,6 +95,9 @@ type OverrideFieldClearedByDelete =
   | "authProfileOverride"
   | "authProfileOverrideSource"
   | "authProfileOverrideCompactionCount"
+  | "fallbackNoticeSelectedModel"
+  | "fallbackNoticeActiveModel"
+  | "fallbackNoticeReason"
   | "claudeCliSessionId";
 
 const OVERRIDE_FIELDS_CLEARED_BY_DELETE: OverrideFieldClearedByDelete[] = [
@@ -168,6 +106,9 @@ const OVERRIDE_FIELDS_CLEARED_BY_DELETE: OverrideFieldClearedByDelete[] = [
   "authProfileOverride",
   "authProfileOverrideSource",
   "authProfileOverrideCompactionCount",
+  "fallbackNoticeSelectedModel",
+  "fallbackNoticeActiveModel",
+  "fallbackNoticeReason",
   "claudeCliSessionId",
 ];
 
@@ -222,7 +163,7 @@ function runAgentAttempt(params: {
   resolvedThinkLevel: ThinkLevel;
   timeoutMs: number;
   runId: string;
-  opts: AgentCommandOpts;
+  opts: AgentCommandOpts & { senderIsOwner: boolean };
   runContext: ReturnType<typeof resolveAgentRunContext>;
   spawnedBy: string | undefined;
   messageChannel: ReturnType<typeof resolveMessageChannel>;
@@ -234,31 +175,32 @@ function runAgentAttempt(params: {
   sessionStore?: Record<string, SessionEntry>;
   storePath?: string;
 }) {
-  const senderIsOwner = params.opts.senderIsOwner ?? true;
   const effectivePrompt = resolveFallbackRetryPrompt({
     body: params.body,
     isFallbackRetry: params.isFallbackRetry,
   });
   if (isCliProvider(params.providerOverride, params.cfg)) {
     const cliSessionId = getCliSessionId(params.sessionEntry, params.providerOverride);
-    return runCliAgent({
-      sessionId: params.sessionId,
-      sessionKey: params.sessionKey,
-      agentId: params.sessionAgentId,
-      sessionFile: params.sessionFile,
-      workspaceDir: params.workspaceDir,
-      config: params.cfg,
-      prompt: effectivePrompt,
-      provider: params.providerOverride,
-      model: params.modelOverride,
-      thinkLevel: params.resolvedThinkLevel,
-      timeoutMs: params.timeoutMs,
-      runId: params.runId,
-      extraSystemPrompt: params.opts.extraSystemPrompt,
-      cliSessionId,
-      images: params.isFallbackRetry ? undefined : params.opts.images,
-      streamParams: params.opts.streamParams,
-    }).catch(async (err) => {
+    const runCliWithSession = (nextCliSessionId: string | undefined) =>
+      runCliAgent({
+        sessionId: params.sessionId,
+        sessionKey: params.sessionKey,
+        agentId: params.sessionAgentId,
+        sessionFile: params.sessionFile,
+        workspaceDir: params.workspaceDir,
+        config: params.cfg,
+        prompt: effectivePrompt,
+        provider: params.providerOverride,
+        model: params.modelOverride,
+        thinkLevel: params.resolvedThinkLevel,
+        timeoutMs: params.timeoutMs,
+        runId: params.runId,
+        extraSystemPrompt: params.opts.extraSystemPrompt,
+        cliSessionId: nextCliSessionId,
+        images: params.isFallbackRetry ? undefined : params.opts.images,
+        streamParams: params.opts.streamParams,
+      });
+    return runCliWithSession(cliSessionId).catch(async (err: unknown) => {
       // Handle CLI session expired error
       if (
         err instanceof FailoverError &&
@@ -276,6 +218,9 @@ function runAgentAttempt(params: {
         const entry = params.sessionStore[params.sessionKey];
         if (entry) {
           const updatedEntry = { ...entry };
+          if (params.providerOverride === "claude-cli") {
+            delete updatedEntry.claudeCliSessionId;
+          }
           if (updatedEntry.cliSessionIds) {
             const normalizedProvider = normalizeProviderId(params.providerOverride);
             const newCliSessionIds = { ...updatedEntry.cliSessionIds };
@@ -296,28 +241,10 @@ function runAgentAttempt(params: {
         }
 
         // Retry with no session ID (will create a new session)
-        return runCliAgent({
-          sessionId: params.sessionId,
-          sessionKey: params.sessionKey,
-          agentId: params.sessionAgentId,
-          sessionFile: params.sessionFile,
-          workspaceDir: params.workspaceDir,
-          config: params.cfg,
-          prompt: effectivePrompt,
-          provider: params.providerOverride,
-          model: params.modelOverride,
-          thinkLevel: params.resolvedThinkLevel,
-          timeoutMs: params.timeoutMs,
-          runId: params.runId,
-          extraSystemPrompt: params.opts.extraSystemPrompt,
-          cliSessionId: undefined, // No session ID to force new session
-          images: params.isFallbackRetry ? undefined : params.opts.images,
-          streamParams: params.opts.streamParams,
-        }).then(async (result) => {
+        return runCliWithSession(undefined).then(async (result) => {
           // Update session store with new CLI session ID if available
           if (
-            // @ts-expect-error — upstream feature not available in RemoteClaw fork
-            result.meta.agentMeta?.sessionId &&
+            result.meta?.agentMeta?.sessionId &&
             params.sessionKey &&
             params.sessionStore &&
             params.storePath
@@ -328,8 +255,7 @@ function runAgentAttempt(params: {
               setCliSessionId(
                 updatedEntry,
                 params.providerOverride,
-                // @ts-expect-error — upstream feature not available in RemoteClaw fork
-                result.meta.agentMeta.sessionId,
+                result.meta.agentMeta.sessionId as string,
               );
               updatedEntry.updatedAt = Date.now();
 
@@ -356,6 +282,7 @@ function runAgentAttempt(params: {
     sessionId: params.sessionId,
     sessionKey: params.sessionKey,
     agentId: params.sessionAgentId,
+    trigger: "user",
     messageChannel: params.messageChannel,
     agentAccountId: params.runContext.accountId,
     messageTo: params.opts.replyTo ?? params.opts.to,
@@ -368,7 +295,7 @@ function runAgentAttempt(params: {
     currentThreadTs: params.runContext.currentThreadTs,
     replyToMode: params.runContext.replyToMode,
     hasRepliedRef: params.runContext.hasRepliedRef,
-    senderIsOwner,
+    senderIsOwner: params.opts.senderIsOwner,
     sessionFile: params.sessionFile,
     workspaceDir: params.workspaceDir,
     config: params.cfg,
@@ -394,8 +321,8 @@ function runAgentAttempt(params: {
   });
 }
 
-export async function agentCommand(
-  opts: AgentCommandOpts,
+async function agentCommandInternal(
+  opts: AgentCommandOpts & { senderIsOwner: boolean },
   runtime: RuntimeEnv = defaultRuntime,
   deps: CliDeps = createDefaultDeps(),
 ) {
@@ -408,7 +335,15 @@ export async function agentCommand(
     throw new Error("Pass --to <E.164>, --session-id, or --agent to choose a session");
   }
 
-  const cfg = loadConfig();
+  const loadedRaw = loadConfig();
+  const { resolvedConfig: cfg, diagnostics } = await resolveCommandSecretRefsViaGateway({
+    config: loadedRaw,
+    commandName: "agent",
+    targetIds: getAgentRuntimeCommandSecretTargetIds(),
+  });
+  for (const entry of diagnostics) {
+    runtime.log(`[secrets] ${entry}`);
+  }
   const agentIdOverrideRaw = opts.agentId?.trim();
   const agentIdOverride = agentIdOverrideRaw ? normalizeAgentId(agentIdOverrideRaw) : undefined;
   if (agentIdOverride) {
@@ -433,7 +368,6 @@ export async function agentCommand(
     defaultProvider: DEFAULT_PROVIDER,
     defaultModel: DEFAULT_MODEL,
   });
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   const thinkingLevelsHint = formatThinkingLevels(configuredModel.provider, configuredModel.model);
 
   const thinkOverride = normalizeThinkLevel(opts.thinking);
@@ -509,8 +443,7 @@ export async function agentCommand(
   const runId = opts.runId?.trim() || sessionId;
   const acpManager = getAcpSessionManager();
   const acpResolution = sessionKey
-    ? // @ts-expect-error — upstream feature not available in RemoteClaw fork
-      acpManager.resolveSession({
+    ? acpManager.resolveSession({
         cfg,
         sessionKey,
       })
@@ -556,14 +489,13 @@ export async function agentCommand(
           throw dispatchPolicyError;
         }
         const acpAgent = normalizeAgentId(
-          acpResolution.meta.agent || resolveAgentIdFromSessionKey(sessionKey),
+          (acpResolution.meta?.agent as string) || resolveAgentIdFromSessionKey(sessionKey),
         );
         const agentPolicyError = resolveAcpAgentPolicyError(cfg, acpAgent);
         if (agentPolicyError) {
           throw agentPolicyError;
         }
 
-        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         await acpManager.runTurn({
           cfg,
           sessionKey,
@@ -571,8 +503,12 @@ export async function agentCommand(
           mode: "prompt",
           requestId: runId,
           signal: opts.abortSignal,
-          // oxlint-disable-next-line typescript/no-explicit-any
-          onEvent: (event: any) => {
+          onEvent: (event: {
+            type: string;
+            stopReason?: string;
+            text?: string;
+            stream?: string;
+          }) => {
             if (event.type === "done") {
               stopReason = event.stopReason;
               return;
@@ -608,7 +544,6 @@ export async function agentCommand(
           stream: "lifecycle",
           data: {
             phase: "error",
-            // @ts-expect-error — upstream feature not available in RemoteClaw fork
             error: acpError.message,
             endedAt: Date.now(),
           },
@@ -635,12 +570,14 @@ export async function agentCommand(
         : [];
       const result = {
         payloads,
+        run: {} as AgentDeliveryResult["run"],
+        mcp: {} as AgentDeliveryResult["mcp"],
         meta: {
           durationMs: Date.now() - startedAt,
           aborted: opts.abortSignal?.aborted === true,
           stopReason,
         },
-      };
+      } satisfies AgentDeliveryResult;
 
       return await deliverAgentCommandResult({
         cfg,
@@ -649,13 +586,13 @@ export async function agentCommand(
         opts,
         outboundSession,
         sessionEntry,
-        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         result,
         payloads,
       });
     }
 
-    let resolvedThinkLevel = thinkOnce ?? thinkOverride ?? persistedThinking;
+    let resolvedThinkLevel =
+      thinkOnce ?? thinkOverride ?? (persistedThinking as ThinkLevel | undefined);
     const resolvedVerboseLevel =
       verboseOverride ?? persistedVerbose ?? (agentCfg?.verboseDefault as VerboseLevel | undefined);
 
@@ -720,7 +657,6 @@ export async function agentCommand(
       cfg,
       agentId: sessionAgentId,
     });
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     const { provider: defaultProvider, model: defaultModel } = normalizeModelRef(
       configuredDefaultRef.provider,
       configuredDefaultRef.model,
@@ -733,14 +669,12 @@ export async function agentCommand(
     );
     const needsModelCatalog = hasAllowlist || hasStoredOverride;
     let allowedModelKeys = new Set<string>();
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     let allowedModelCatalog: Awaited<ReturnType<typeof loadModelCatalog>> = [];
     let modelCatalog: Awaited<ReturnType<typeof loadModelCatalog>> | null = null;
     let allowAnyModel = false;
 
     if (needsModelCatalog) {
-      // oxlint-disable-next-line
-      modelCatalog = await loadModelCatalog({ config: cfg });
+      modelCatalog = loadModelCatalog({ config: cfg });
       const allowed = buildAllowedModelSet({
         cfg,
         catalog: modelCatalog,
@@ -748,7 +682,6 @@ export async function agentCommand(
         defaultModel,
       });
       allowedModelKeys = allowed.allowedKeys;
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       allowedModelCatalog = allowed.allowedCatalog;
       allowAnyModel = allowed.allowAny ?? false;
     }
@@ -759,10 +692,8 @@ export async function agentCommand(
       const overrideModel = sessionEntry.modelOverride?.trim();
       if (overrideModel) {
         const normalizedOverride = normalizeModelRef(overrideProvider, overrideModel);
-        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         const key = modelKey(normalizedOverride.provider, normalizedOverride.model);
         if (
-          // @ts-expect-error — upstream feature not available in RemoteClaw fork
           !isCliProvider(normalizedOverride.provider, cfg) &&
           !allowAnyModel &&
           !allowedModelKeys.has(key)
@@ -788,17 +719,13 @@ export async function agentCommand(
     if (storedModelOverride) {
       const candidateProvider = storedProviderOverride || defaultProvider;
       const normalizedStored = normalizeModelRef(candidateProvider, storedModelOverride);
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       const key = modelKey(normalizedStored.provider, normalizedStored.model);
       if (
-        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         isCliProvider(normalizedStored.provider, cfg) ||
         allowAnyModel ||
         allowedModelKeys.has(key)
       ) {
-        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         provider = normalizedStored.provider;
-        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         model = normalizedStored.model;
       }
     }
@@ -807,11 +734,9 @@ export async function agentCommand(
       if (authProfileId) {
         const entry = sessionEntry;
         const store = ensureAuthProfileStore();
-        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         const profile = store.profiles[authProfileId];
         if (!profile || profile.provider !== provider) {
           if (sessionStore && sessionKey) {
-            // oxlint-disable-next-line
             await clearSessionAuthProfileOverride({
               sessionEntry: entry,
               sessionStore,
@@ -826,8 +751,7 @@ export async function agentCommand(
     if (!resolvedThinkLevel) {
       let catalogForThinking = modelCatalog ?? allowedModelCatalog;
       if (!catalogForThinking || catalogForThinking.length === 0) {
-        // oxlint-disable-next-line
-        modelCatalog = await loadModelCatalog({ config: cfg });
+        modelCatalog = loadModelCatalog({ config: cfg });
         catalogForThinking = modelCatalog;
       }
       resolvedThinkLevel = resolveThinkingDefault({
@@ -887,6 +811,8 @@ export async function agentCommand(
     let lifecycleEnded = false;
 
     let result: Awaited<ReturnType<typeof runEmbeddedPiAgent>>;
+    let fallbackProvider = provider;
+    let fallbackModel = model;
     try {
       const runContext = resolveAgentRunContext(opts);
       const messageChannel = resolveMessageChannel(
@@ -911,8 +837,7 @@ export async function agentCommand(
         model,
         agentDir,
         fallbacksOverride: effectiveFallbacksOverride,
-        // oxlint-disable-next-line typescript/no-explicit-any
-        run: (providerOverride: any, modelOverride: any) => {
+        run: (providerOverride: string, modelOverride: string) => {
           const isFallbackRetry = fallbackAttemptIndex > 0;
           fallbackAttemptIndex += 1;
           return runAgentAttempt({
@@ -927,7 +852,6 @@ export async function agentCommand(
             workspaceDir,
             body,
             isFallbackRetry,
-            // @ts-expect-error — upstream feature not available in RemoteClaw fork
             resolvedThinkLevel,
             timeoutMs,
             runId,
@@ -935,7 +859,6 @@ export async function agentCommand(
             runContext,
             spawnedBy,
             messageChannel,
-            // @ts-expect-error — upstream feature not available in RemoteClaw fork
             skillsSnapshot,
             resolvedVerboseLevel,
             agentDir,
@@ -955,8 +878,9 @@ export async function agentCommand(
           });
         },
       });
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       result = fallbackResult.result;
+      fallbackProvider = fallbackResult.provider ?? provider;
+      fallbackModel = fallbackResult.model ?? model;
       if (!lifecycleEnded) {
         emitAgentEvent({
           runId,
@@ -965,8 +889,7 @@ export async function agentCommand(
             phase: "end",
             startedAt,
             endedAt: Date.now(),
-            // @ts-expect-error — upstream feature not available in RemoteClaw fork
-            aborted: result.meta.aborted ?? false,
+            aborted: result.meta?.aborted ?? false,
           },
         });
       }
@@ -995,8 +918,8 @@ export async function agentCommand(
         sessionKey,
         storePath,
         sessionStore,
-        defaultProvider: provider,
-        defaultModel: model,
+        defaultProvider: fallbackProvider ?? provider,
+        defaultModel: fallbackModel ?? model,
         result,
       });
     }
@@ -1009,11 +932,43 @@ export async function agentCommand(
       opts,
       outboundSession,
       sessionEntry,
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       result,
       payloads,
     });
   } finally {
     clearAgentRunContext(runId);
   }
+}
+
+export async function agentCommand(
+  opts: AgentCommandOpts,
+  runtime: RuntimeEnv = defaultRuntime,
+  deps: CliDeps = createDefaultDeps(),
+) {
+  return await agentCommandInternal(
+    {
+      ...opts,
+      senderIsOwner: opts.senderIsOwner ?? true,
+    },
+    runtime,
+    deps,
+  );
+}
+
+export async function agentCommandFromIngress(
+  opts: AgentCommandIngressOpts,
+  runtime: RuntimeEnv = defaultRuntime,
+  deps: CliDeps = createDefaultDeps(),
+) {
+  if (typeof opts.senderIsOwner !== "boolean") {
+    throw new Error("senderIsOwner must be explicitly set for ingress agent runs.");
+  }
+  return await agentCommandInternal(
+    {
+      ...opts,
+      senderIsOwner: opts.senderIsOwner,
+    },
+    runtime,
+    deps,
+  );
 }

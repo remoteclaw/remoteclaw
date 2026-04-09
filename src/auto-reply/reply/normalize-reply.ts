@@ -1,7 +1,8 @@
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
 // import ... from "../../agents/pi-embedded-helpers.js";
 // oxlint-disable-next-line typescript/no-explicit-any
-const sanitizeUserFacingText = (..._args: unknown[]) => undefined as any;
+// oxlint-disable-next-line typescript/no-explicit-any
+const sanitizeUserFacingText = (text: string, ..._args: unknown[]) => text as any;
 import { stripHeartbeatToken } from "../heartbeat.js";
 import {
   HEARTBEAT_TOKEN,

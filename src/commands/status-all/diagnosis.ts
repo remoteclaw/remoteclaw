@@ -1,4 +1,5 @@
 import type { ProgressReporter } from "../../cli/progress.js";
+import { formatConfigIssueLine } from "../../config/issue-format.js";
 import { resolveGatewayLogPaths } from "../../daemon/launchd.js";
 import { formatPortDiagnostics } from "../../infra/ports.js";
 import {
@@ -26,6 +27,11 @@ type TailscaleStatusLike = {
   error: string | null;
 };
 
+type SkillStatusLike = {
+  workspaceDir: string;
+  skills: Array<{ eligible: boolean; missing: Record<string, unknown[]> }>;
+};
+
 type ChannelIssueLike = {
   channel: string;
   accountId: string;
@@ -51,6 +57,7 @@ export async function appendStatusAllDiagnosis(params: {
   tailscaleMode: string;
   tailscale: TailscaleStatusLike;
   tailscaleHttpsUrl: string | null;
+  skillStatus: SkillStatusLike | null;
   channelsStatus: unknown;
   channelIssues: ChannelIssueLike[];
   gatewayReachable: boolean;
@@ -82,7 +89,7 @@ export async function appendStatusAllDiagnosis(params: {
         issues.findIndex((x) => x.path === issue.path && x.message === issue.message) === index,
     );
     for (const issue of uniqueIssues.slice(0, 12)) {
-      lines.push(`  - ${issue.path}: ${issue.message}`);
+      lines.push(`  ${formatConfigIssueLine(issue, "-")}`);
     }
     if (uniqueIssues.length > 12) {
       lines.push(`  ${muted(`… +${uniqueIssues.length - 12} more`)}`);
@@ -144,6 +151,17 @@ export async function appendStatusAllDiagnosis(params: {
     if (params.tailscaleHttpsUrl) {
       lines.push(`  ${muted(`https: ${params.tailscaleHttpsUrl}`)}`);
     }
+  }
+
+  if (params.skillStatus) {
+    const eligible = params.skillStatus.skills.filter((s) => s.eligible).length;
+    const missing = params.skillStatus.skills.filter(
+      (s) => s.eligible && Object.values(s.missing).some((arr) => arr.length),
+    ).length;
+    emitCheck(
+      `Skills: ${eligible} eligible · ${missing} missing · ${params.skillStatus.workspaceDir}`,
+      missing === 0 ? "ok" : "warn",
+    );
   }
 
   params.progress.setLabel("Reading logs…");
@@ -225,6 +243,6 @@ export async function appendStatusAllDiagnosis(params: {
 
   lines.push("");
   lines.push(muted("Pasteable debug report. Auth tokens redacted."));
-  lines.push("Troubleshooting: https://docs.remoteclaw.org/troubleshooting");
+  lines.push("Troubleshooting: https://docs.remoteclaw.ai/troubleshooting");
   lines.push("");
 }

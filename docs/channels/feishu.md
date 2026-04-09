@@ -83,6 +83,8 @@ Lark (global) tenants should use [https://open.larksuite.com/app](https://open.l
 2. Fill in the app name + description
 3. Choose an app icon
 
+<!-- Image removed: docs/images/ excluded from fork -->
+
 ### 3. Copy credentials
 
 From **Credentials & Basic Info**, copy:
@@ -91,6 +93,8 @@ From **Credentials & Basic Info**, copy:
 - **App Secret**
 
 ❗ **Important:** keep the App Secret private.
+
+<!-- Image removed: docs/images/ excluded from fork -->
 
 ### 4. Configure permissions
 
@@ -124,12 +128,16 @@ On **Permissions**, click **Batch import** and paste:
 }
 ```
 
+<!-- Image removed: docs/images/ excluded from fork -->
+
 ### 5. Enable bot capability
 
 In **App Capability** > **Bot**:
 
 1. Enable bot capability
 2. Set the bot name
+
+<!-- Image removed: docs/images/ excluded from fork -->
 
 ### 6. Configure event subscription
 
@@ -144,6 +152,8 @@ In **Event Subscription**:
 2. Add the event: `im.message.receive_v1`
 
 ⚠️ If the gateway is not running, the long-connection setup may fail to save.
+
+<!-- Image removed: docs/images/ excluded from fork -->
 
 ### 7. Publish the app
 
@@ -186,6 +196,17 @@ Edit `~/.remoteclaw/remoteclaw.json`:
 ```
 
 If you use `connectionMode: "webhook"`, set `verificationToken`. The Feishu webhook server binds to `127.0.0.1` by default; set `webhookHost` only if you intentionally need a different bind address.
+
+#### Verification Token (webhook mode)
+
+When using webhook mode, set `channels.feishu.verificationToken` in your config. To get the value:
+
+1. In Feishu Open Platform, open your app
+2. Go to **Development** → **Events & Callbacks** (开发配置 → 事件与回调)
+3. Open the **Encryption** tab (加密策略)
+4. Copy **Verification Token**
+
+<!-- Image removed: docs/images/ excluded from fork -->
 
 ### Configure via environment variables
 
@@ -349,9 +370,9 @@ After approval, you can chat normally.
 }
 ```
 
-### Allow specific users to run control commands in a group (e.g. /reset, /new)
+### Restrict which senders can message in a group (sender allowlist)
 
-In addition to allowing the group itself, control commands are gated by the **sender** open_id.
+In addition to allowing the group itself, **all messages** in that group are gated by the sender open_id: only users listed in `groups.<chat_id>.allowFrom` have their messages processed; messages from other members are ignored (this is full sender-level gating, not only for control commands like /reset or /new).
 
 ```json5
 {

@@ -1,6 +1,5 @@
 import { z } from "zod";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle) — byte-size module removed
-const isValidNonNegativeByteSizeString = (_v: unknown): boolean => true;
+import { isValidNonNegativeByteSizeString } from "./byte-size.js";
 import {
   HeartbeatSchema,
   AgentSandboxSchema,
@@ -19,6 +18,9 @@ export const AgentDefaultsSchema = z
   .object({
     model: AgentModelSchema.optional(),
     imageModel: AgentModelSchema.optional(),
+    pdfModel: AgentModelSchema.optional(),
+    pdfMaxBytesMb: z.number().positive().optional(),
+    pdfMaxPages: z.number().int().positive().optional(),
     models: z
       .record(
         z.string(),
@@ -175,12 +177,10 @@ export const AgentDefaultsSchema = z
       .strict()
       .optional(),
     sandbox: AgentSandboxSchema,
-    auth: z.union([z.literal(false), z.string(), z.array(z.string())]).optional(),
-    runtime: z
-      .union([z.literal("claude"), z.literal("gemini"), z.literal("codex"), z.literal("opencode")])
-      .optional(),
+    runtime: z.enum(["claude", "gemini", "codex", "opencode"]).optional(),
     runtimeArgs: z.array(z.string()).optional(),
     runtimeEnv: z.record(z.string(), z.string()).optional(),
+    auth: z.union([z.literal(false), z.string(), z.array(z.string())]).optional(),
   })
   .strict()
   .optional();

@@ -33,11 +33,7 @@ import {
   serializeCommandArgs,
 } from "../../auto-reply/commands-registry.js";
 import { finalizeInboundContext } from "../../auto-reply/reply/inbound-context.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../auto-reply/reply/model-selection.js";
-const resolveStoredModelOverride = (
-  ..._args: unknown[]
-): { model?: string; provider?: string } | undefined => undefined;
+import { resolveStoredModelOverride } from "../../auto-reply/reply/model-selection.js";
 import { dispatchReplyWithDispatcher } from "../../auto-reply/reply/provider-dispatcher.js";
 import type { ReplyPayload } from "../../auto-reply/types.js";
 import { resolveCommandAuthorizedFromAuthorizers } from "../../channels/command-gating.js";
@@ -58,70 +54,32 @@ import { withTimeout } from "../../utils/with-timeout.js";
 import { loadWebMedia } from "../../web/media.js";
 import { chunkDiscordTextWithMode } from "../chunk.js";
 import {
-  allowListMatches,
   isDiscordGroupAllowedByPolicy,
-  normalizeDiscordAllowList,
   normalizeDiscordSlug,
   resolveDiscordChannelConfigWithFallback,
   resolveDiscordGuildEntry,
   resolveDiscordMemberAccessState,
+  resolveDiscordOwnerAccess,
   resolveDiscordOwnerAllowFrom,
 } from "./allow-list.js";
 import { resolveDiscordDmCommandAccess } from "./dm-command-auth.js";
 import { handleDiscordDmCommandDecision } from "./dm-command-decision.js";
 import { resolveDiscordChannelInfo } from "./message-utils.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./model-picker-preferences.js";
-const readDiscordModelPickerRecentModels = (..._args: unknown[]): string[] => [];
-const recordDiscordModelPickerRecentModel = (..._args: unknown[]) => undefined as unknown;
-type DiscordModelPickerPreferenceScope = Record<string, unknown>;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./model-picker.js";
-const DISCORD_MODEL_PICKER_CUSTOM_ID_KEY = "model_picker" as string;
-const loadDiscordModelPickerData = (..._args: unknown[]): DiscordModelPickerData =>
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
-  ({
-    providers: [],
-    byProvider: new Map(),
-    quickModels: [],
-    currentModel: "",
-  }) as DiscordModelPickerData;
-const parseDiscordModelPickerData = (
-  ..._args: unknown[]
-): DiscordModelPickerInteractionData | null => null;
-const renderDiscordModelPickerModelsView = (..._args: unknown[]): DiscordModelPickerViewResult =>
-  ({ components: [], content: "" }) as DiscordModelPickerViewResult;
-const renderDiscordModelPickerProvidersView = (..._args: unknown[]): DiscordModelPickerViewResult =>
-  ({ components: [], content: "" }) as DiscordModelPickerViewResult;
-const renderDiscordModelPickerRecentsView = (..._args: unknown[]): DiscordModelPickerViewResult =>
-  ({ components: [], content: "" }) as DiscordModelPickerViewResult;
-const toDiscordModelPickerMessagePayload = (..._args: unknown[]): ReplyPayload =>
-  ({ text: "" }) as ReplyPayload;
-type DiscordModelPickerCommandContext = "model" | "models";
-/** Stub types for gutted model picker infrastructure. */
-type DiscordModelPickerData = {
-  providers: string[];
-  byProvider: Map<string, string[]>;
-  quickModels: Set<string>;
-  currentModel: string;
-  resolvedDefault?: { provider?: string; model?: string };
-};
-type DiscordModelPickerInteractionData = {
-  action: string;
-  provider?: string;
-  model?: string;
-  modelIndex?: number;
-  userId?: string;
-  page?: number;
-  providerPage?: number;
-  view?: string;
-  recentSlot?: number;
-  command?: string;
-};
-type DiscordModelPickerViewResult = {
-  components: unknown[];
-  content: string;
-};
+import {
+  readDiscordModelPickerRecentModels,
+  recordDiscordModelPickerRecentModel,
+  type DiscordModelPickerPreferenceScope,
+} from "./model-picker-preferences.js";
+import {
+  DISCORD_MODEL_PICKER_CUSTOM_ID_KEY,
+  loadDiscordModelPickerData,
+  parseDiscordModelPickerData,
+  renderDiscordModelPickerModelsView,
+  renderDiscordModelPickerProvidersView,
+  renderDiscordModelPickerRecentsView,
+  toDiscordModelPickerMessagePayload,
+  type DiscordModelPickerCommandContext,
+} from "./model-picker.js";
 import { resolveDiscordSenderIdentity } from "./sender-identity.js";
 import type { ThreadBindingManager } from "./thread-bindings.js";
 import { resolveDiscordThreadParentInfo } from "./threading.js";
@@ -463,9 +421,7 @@ function resolveDiscordModelPickerCurrentModel(params: {
   data: Awaited<ReturnType<typeof loadDiscordModelPickerData>>;
 }): string {
   const fallback = buildDiscordModelPickerCurrentModel(
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     params.data.resolvedDefault.provider,
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     params.data.resolvedDefault.model,
   );
   try {
@@ -478,11 +434,10 @@ function resolveDiscordModelPickerCurrentModel(params: {
       sessionEntry,
       sessionStore,
       sessionKey: params.route.sessionKey,
-    });
+    }) as { model?: string; provider?: string } | undefined;
     if (!override?.model) {
       return fallback;
     }
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     const provider = (override.provider || params.data.resolvedDefault.provider).trim();
     if (!provider) {
       return fallback;
@@ -502,8 +457,7 @@ async function replyWithDiscordModelPickerProviders(params: {
   threadBindings: ThreadBindingManager;
   preferFollowUp: boolean;
 }) {
-  // oxlint-disable-next-line
-  const data = await loadDiscordModelPickerData(params.cfg);
+  const data = loadDiscordModelPickerData(params.cfg);
   const route = await resolveDiscordModelPickerRoute({
     interaction: params.interaction,
     cfg: params.cfg,
@@ -515,7 +469,6 @@ async function replyWithDiscordModelPickerProviders(params: {
     route,
     data,
   });
-  // oxlint-disable-next-line
   const quickModels = await readDiscordModelPickerRecentModels({
     scope: resolveDiscordModelPickerPreferenceScope({
       interaction: params.interaction,
@@ -530,7 +483,6 @@ async function replyWithDiscordModelPickerProviders(params: {
     command: params.command,
     userId: params.userId,
     data,
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     provider: splitDiscordModelRef(currentModel ?? "")?.provider ?? data.resolvedDefault.provider,
     page: 1,
     providerPage: 1,
@@ -666,8 +618,7 @@ async function handleDiscordModelPickerInteraction(
     return;
   }
 
-  // oxlint-disable-next-line
-  const pickerData = await loadDiscordModelPickerData(ctx.cfg);
+  const pickerData = loadDiscordModelPickerData(ctx.cfg);
   const route = await resolveDiscordModelPickerRoute({
     interaction,
     cfg: ctx.cfg,
@@ -682,11 +633,9 @@ async function handleDiscordModelPickerInteraction(
   const allowedModelRefs = buildDiscordModelPickerAllowedModelRefs(pickerData);
   const preferenceScope = resolveDiscordModelPickerPreferenceScope({
     interaction,
-    accountId: ctx.accountId,
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
-    userId: parsed.userId,
+    accountId: ctx.accountId ?? "",
+    userId: parsed.userId ?? "",
   });
-  // oxlint-disable-next-line
   const quickModels = await readDiscordModelPickerRecentModels({
     scope: preferenceScope,
     allowedModelRefs,
@@ -706,7 +655,6 @@ async function handleDiscordModelPickerInteraction(
     });
 
     await safeDiscordInteractionCall("model picker update", () =>
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       interaction.update(toDiscordModelPickerMessagePayload(rendered)),
     );
     return;
@@ -722,7 +670,6 @@ async function handleDiscordModelPickerInteraction(
     });
 
     await safeDiscordInteractionCall("model picker update", () =>
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       interaction.update(toDiscordModelPickerMessagePayload(rendered)),
     );
     return;
@@ -732,7 +679,6 @@ async function handleDiscordModelPickerInteraction(
     const provider =
       parsed.provider ??
       splitDiscordModelRef(currentModelRef ?? "")?.provider ??
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       pickerData.resolvedDefault.provider;
 
     const rendered = renderDiscordModelPickerModelsView({
@@ -747,7 +693,6 @@ async function handleDiscordModelPickerInteraction(
     });
 
     await safeDiscordInteractionCall("model picker update", () =>
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       interaction.update(toDiscordModelPickerMessagePayload(rendered)),
     );
     return;
@@ -776,7 +721,6 @@ async function handleDiscordModelPickerInteraction(
     });
 
     await safeDiscordInteractionCall("model picker update", () =>
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       interaction.update(toDiscordModelPickerMessagePayload(rendered)),
     );
     return;
@@ -823,7 +767,6 @@ async function handleDiscordModelPickerInteraction(
     });
 
     await safeDiscordInteractionCall("model picker update", () =>
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       interaction.update(toDiscordModelPickerMessagePayload(rendered)),
     );
     return;
@@ -833,13 +776,11 @@ async function handleDiscordModelPickerInteraction(
     let modelRef: string | null = null;
 
     if (parsed.action === "reset") {
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       modelRef = `${pickerData.resolvedDefault.provider}/${pickerData.resolvedDefault.model}`;
     } else if (parsed.action === "quick") {
       const slot = parsed.recentSlot ?? 0;
       modelRef = slot >= 1 ? (quickModels[slot - 1] ?? null) : null;
     } else if (parsed.view === "recents") {
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       const defaultModelRef = `${pickerData.resolvedDefault.provider}/${pickerData.resolvedDefault.model}`;
       const dedupedRecents = quickModels.filter((ref) => ref !== defaultModelRef);
       const slot = parsed.recentSlot ?? 0;
@@ -860,7 +801,6 @@ async function handleDiscordModelPickerInteraction(
     const parsedModelRef = modelRef ? splitDiscordModelRef(modelRef) : null;
     if (
       !parsedModelRef ||
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       !pickerData.byProvider.get(parsedModelRef.provider)?.has(parsedModelRef.model)
     ) {
       await safeDiscordInteractionCall("model picker update", () =>
@@ -951,7 +891,6 @@ async function handleDiscordModelPickerInteraction(
     }
 
     if (persisted) {
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       await recordDiscordModelPickerRecentModel({
         scope: preferenceScope,
         modelRef: resolvedModelRef,
@@ -1330,22 +1269,15 @@ async function dispatchDiscordCommandInteraction(params: {
     ? interaction.rawData.member.roles.map((roleId: string) => String(roleId))
     : [];
   const allowNameMatching = isDangerousNameMatchingEnabled(discordConfig);
-  const ownerAllowList = normalizeDiscordAllowList(
-    discordConfig?.allowFrom ?? discordConfig?.dm?.allowFrom ?? [],
-    ["discord:", "user:", "pk:"],
-  );
-  const ownerOk =
-    ownerAllowList && user
-      ? allowListMatches(
-          ownerAllowList,
-          {
-            id: sender.id,
-            name: sender.name,
-            tag: sender.tag,
-          },
-          { allowNameMatching },
-        )
-      : false;
+  const { ownerAllowList, ownerAllowed: ownerOk } = resolveDiscordOwnerAccess({
+    allowFrom: discordConfig?.allowFrom ?? discordConfig?.dm?.allowFrom ?? [],
+    sender: {
+      id: sender.id,
+      name: sender.name,
+      tag: sender.tag,
+    },
+    allowNameMatching,
+  });
   const guildInfo = resolveDiscordGuildEntry({
     guild: interaction.guild ?? undefined,
     guildEntries: discordConfig?.guilds,
@@ -1675,7 +1607,6 @@ async function dispatchDiscordCommandInteraction(params: {
       },
     },
     replyOptions: {
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       skillFilter: channelConfig?.skills,
       disableBlockStreaming:
         typeof discordConfig?.blockStreaming === "boolean"

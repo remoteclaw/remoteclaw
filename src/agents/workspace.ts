@@ -1,5 +1,9 @@
 import fs from "node:fs/promises";
 
+// Stub — removed during fork workspace cleanup; re-exported for upstream compat
+export type WorkspaceBootstrapFile = { filename: string; content: string };
+export const DEFAULT_BOOTSTRAP_FILENAME = "AGENTS.md";
+
 export async function ensureAgentWorkspace(
   dirOrParams: string | { dir: string; ensureBootstrapFiles?: boolean },
 ): Promise<{ dir: string }> {

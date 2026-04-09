@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+// import { HEARTBEAT_PROMPT } from "../auto-reply/heartbeat.js";
 import * as replyModule from "../auto-reply/reply.js";
 import { whatsappOutbound } from "../channels/plugins/outbound/whatsapp.js";
 import type { RemoteClawConfig } from "../config/config.js";
@@ -166,52 +167,21 @@ describe("resolveHeartbeatIntervalMs", () => {
 });
 
 describe("resolveHeartbeatPrompt", () => {
-  it("returns empty when unconfigured, trimmed prompt when set", async () => {
-    expect(
-      resolveHeartbeatPrompt({
-        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
-      } as RemoteClawConfig),
-    ).toBe("");
-    expect(
-      resolveHeartbeatPrompt({
-        agents: {
-          defaults: { heartbeat: { prompt: "  ping  " } },
-          list: [{ id: "main", workspace: "/tmp/test-workspace" }],
-        },
-      } as RemoteClawConfig),
-    ).toBe("ping");
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("reads file relative to workspace when file is set", async () => {
-    const dir = await createCaseDir("hb-prompt-file");
-    await fs.writeFile(path.join(dir, "heartbeat-tasks.md"), "- Check status\n", "utf-8");
-
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: {
-          heartbeat: { file: "heartbeat-tasks.md" },
-        },
-        list: [{ id: "main", workspace: dir }],
+  it("uses default or trimmed override prompts", () => {
+    const cases = [
+      // HEARTBEAT_PROMPT is undefined in the fork (WI-179); resolveHeartbeatPrompt
+      // returns "" for unconfigured prompts after upstream refactored the function.
+      { cfg: {} as RemoteClawConfig, expected: "" },
+      {
+        cfg: {
+          agents: { defaults: { heartbeat: { prompt: "  ping  " } } },
+        } as RemoteClawConfig,
+        expected: "ping",
       },
-    };
-    expect(resolveHeartbeatPrompt(cfg)).toBe("- Check status");
-  });
-
-  it("prompt takes precedence over file", async () => {
-    const dir = await createCaseDir("hb-prompt-precedence");
-    await fs.writeFile(path.join(dir, "hb.md"), "File content", "utf-8");
-
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: {
-          heartbeat: { prompt: "Config prompt", file: "hb.md" },
-        },
-        list: [{ id: "main", workspace: dir }],
-      },
-    };
-    expect(resolveHeartbeatPrompt(cfg)).toBe("Config prompt");
+    ] as const;
+    for (const testCase of cases) {
+      expect(resolveHeartbeatPrompt(testCase.cfg)).toBe(testCase.expected);
+    }
   });
 });
 
@@ -557,9 +527,9 @@ describe("runHeartbeatOnce", () => {
       const cfg: RemoteClawConfig = {
         agents: {
           defaults: {
-            heartbeat: { every: "5m", target: "whatsapp", prompt: "Check health" },
+            workspace: tmpDir,
+            heartbeat: { every: "5m", target: "whatsapp" },
           },
-          list: [{ id: "main", workspace: tmpDir }],
         },
         channels: { whatsapp: { allowFrom: ["*"] } },
         session: { store: storePath },
@@ -597,43 +567,6 @@ describe("runHeartbeatOnce", () => {
       );
     } finally {
       replySpy.mockRestore();
-    }
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("skips when neither prompt nor file is configured", async () => {
-    const tmpDir = await createCaseDir("hb-no-prompt");
-    const storePath = path.join(tmpDir, "sessions.json");
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: {
-          heartbeat: { every: "5m", target: "whatsapp" },
-        },
-        list: [{ id: "main", workspace: tmpDir }],
-      },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-      session: { store: storePath },
-    };
-    const sessionKey = resolveMainSessionKey(cfg);
-    await fs.writeFile(
-      storePath,
-      JSON.stringify({
-        [sessionKey]: {
-          sessionId: "sid",
-          updatedAt: Date.now(),
-          lastChannel: "whatsapp",
-          lastTo: "120363401234567890@g.us",
-        },
-      }),
-    );
-    const res = await runHeartbeatOnce({
-      cfg,
-      deps: createHeartbeatDeps(vi.fn().mockResolvedValue({ messageId: "m1", toJid: "jid" })),
-    });
-    expect(res.status).toBe("skipped");
-    if (res.status === "skipped") {
-      expect(res.reason).toBe("no-prompt");
     }
   });
 
@@ -827,13 +760,12 @@ describe("runHeartbeatOnce", () => {
         const cfg: RemoteClawConfig = {
           agents: {
             defaults: {
+              workspace: tmpDir,
               heartbeat: {
                 every: "5m",
                 target: "last",
-                prompt: "Check health",
               },
             },
-            list: [{ id: "main", workspace: tmpDir }],
           },
           channels: { whatsapp: { allowFrom: ["*"] } },
           session: { store: storePath },
@@ -908,9 +840,9 @@ describe("runHeartbeatOnce", () => {
       const cfg: RemoteClawConfig = {
         agents: {
           defaults: {
-            heartbeat: { every: "5m", target: "whatsapp", prompt: "Check health" },
+            workspace: tmpDir,
+            heartbeat: { every: "5m", target: "whatsapp" },
           },
-          list: [{ id: "main", workspace: tmpDir }],
         },
         channels: { whatsapp: { allowFrom: ["*"] } },
         session: { store: storePath },
@@ -947,6 +879,87 @@ describe("runHeartbeatOnce", () => {
     }
   });
 
+  it("handles reasoning payload delivery variants", async () => {
+    const replySpy = vi.spyOn(replyModule, "getReplyFromConfig");
+    try {
+      const cases = typedCases<{
+        name: string;
+        caseDir: string;
+        replies: Array<{ text: string }>;
+        expectedTexts: string[];
+      }>([
+        {
+          name: "reasoning + final payload",
+          caseDir: "hb-reasoning",
+          replies: [{ text: "Reasoning:\n_Because it helps_" }, { text: "Final alert" }],
+          expectedTexts: ["Reasoning:\n_Because it helps_", "Final alert"],
+        },
+        {
+          name: "reasoning + HEARTBEAT_OK",
+          caseDir: "hb-reasoning-heartbeat-ok",
+          replies: [{ text: "Reasoning:\n_Because it helps_" }, { text: "HEARTBEAT_OK" }],
+          expectedTexts: ["Reasoning:\n_Because it helps_"],
+        },
+      ]);
+
+      for (const testCase of cases) {
+        const tmpDir = await createCaseDir(testCase.caseDir);
+        const storePath = path.join(tmpDir, "sessions.json");
+        const cfg: RemoteClawConfig = {
+          agents: {
+            defaults: {
+              workspace: tmpDir,
+              heartbeat: {
+                every: "5m",
+                target: "whatsapp",
+                includeReasoning: true,
+              },
+            },
+          },
+          channels: { whatsapp: { allowFrom: ["*"] } },
+          session: { store: storePath },
+        };
+        const sessionKey = resolveMainSessionKey(cfg);
+
+        await fs.writeFile(
+          storePath,
+          JSON.stringify({
+            [sessionKey]: {
+              sessionId: "sid",
+              updatedAt: Date.now(),
+              lastChannel: "whatsapp",
+              lastProvider: "whatsapp",
+              lastTo: "120363401234567890@g.us",
+            },
+          }),
+        );
+
+        replySpy.mockClear();
+        replySpy.mockResolvedValue(testCase.replies);
+        const sendWhatsApp = vi
+          .fn<NonNullable<HeartbeatDeps["sendWhatsApp"]>>()
+          .mockResolvedValue({ messageId: "m1", toJid: "jid" });
+
+        await runHeartbeatOnce({
+          cfg,
+          deps: createHeartbeatDeps(sendWhatsApp),
+        });
+
+        expect(sendWhatsApp, testCase.name).toHaveBeenCalledTimes(testCase.expectedTexts.length);
+        for (const [index, text] of testCase.expectedTexts.entries()) {
+          expect(sendWhatsApp, testCase.name).toHaveBeenNthCalledWith(
+            index + 1,
+            "120363401234567890@g.us",
+            text,
+            expect.any(Object),
+          );
+        }
+      }
+    } finally {
+      replySpy.mockRestore();
+    }
+  });
+
   it("loads the default agent session from templated stores", async () => {
     const tmpDir = await createCaseDir("remoteclaw-hb");
     const storeTemplate = path.join(tmpDir, "agents", "{agentId}", "sessions.json");
@@ -954,10 +967,8 @@ describe("runHeartbeatOnce", () => {
     try {
       const cfg: RemoteClawConfig = {
         agents: {
-          defaults: {
-            heartbeat: { every: "5m", target: "whatsapp", prompt: "Check health" },
-          },
-          list: [{ id: "work", default: true, workspace: tmpDir }],
+          defaults: { workspace: tmpDir, heartbeat: { every: "5m", target: "whatsapp" } },
+          list: [{ id: "work", default: true }],
         },
         channels: { whatsapp: { allowFrom: ["*"] } },
         session: { store: storeTemplate },
@@ -1002,27 +1013,42 @@ describe("runHeartbeatOnce", () => {
     }
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
+  type HeartbeatFileState = "empty" | "actionable" | "missing" | "read-error";
 
-  it.skip("reads heartbeat prompt from file when configured", async () => {
-    const tmpDir = await createCaseDir("hb-file-prompt");
+  async function runHeartbeatFileScenario(params: {
+    fileState: HeartbeatFileState;
+    reason?: "interval" | "wake";
+    queueCronEvent?: boolean;
+    replyText?: string;
+  }) {
+    const tmpDir = await createCaseDir("remoteclaw-hb");
     const storePath = path.join(tmpDir, "sessions.json");
-    await fs.writeFile(
-      path.join(tmpDir, "heartbeat-tasks.md"),
-      "- Check server logs\n- Review PRs\n",
-      "utf-8",
-    );
+    const workspaceDir = path.join(tmpDir, "workspace");
+    await fs.mkdir(workspaceDir, { recursive: true });
+
+    if (params.fileState === "empty") {
+      await fs.writeFile(
+        path.join(workspaceDir, "HEARTBEAT.md"),
+        "# HEARTBEAT.md\n\n## Tasks\n\n",
+        "utf-8",
+      );
+    } else if (params.fileState === "actionable") {
+      await fs.writeFile(
+        path.join(workspaceDir, "HEARTBEAT.md"),
+        "# HEARTBEAT.md\n\n- Check server logs\n- Review pending PRs\n",
+        "utf-8",
+      );
+    } else if (params.fileState === "read-error") {
+      // readFile on a directory triggers EISDIR.
+      await fs.mkdir(path.join(workspaceDir, "HEARTBEAT.md"), { recursive: true });
+    }
 
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: {
-          heartbeat: {
-            every: "5m",
-            target: "whatsapp",
-            file: "heartbeat-tasks.md",
-          },
+          workspace: workspaceDir,
+          heartbeat: { every: "5m", target: "whatsapp" },
         },
-        list: [{ id: "main", workspace: tmpDir }],
       },
       channels: { whatsapp: { allowFrom: ["*"] } },
       session: { store: storePath },
@@ -1039,61 +1065,128 @@ describe("runHeartbeatOnce", () => {
         },
       }),
     );
+    if (params.queueCronEvent) {
+      enqueueSystemEvent("Cron: QMD maintenance completed", {
+        sessionKey,
+        contextKey: "cron:qmd-maintenance",
+      });
+    }
 
     const replySpy = vi.spyOn(replyModule, "getReplyFromConfig");
-    replySpy.mockResolvedValue({ text: "Checked logs and PRs" });
+    replySpy.mockResolvedValue({ text: params.replyText ?? "Checked logs and PRs" });
     const sendWhatsApp = vi
       .fn<NonNullable<HeartbeatDeps["sendWhatsApp"]>>()
       .mockResolvedValue({ messageId: "m1", toJid: "jid" });
-    try {
-      const res = await runHeartbeatOnce({
-        cfg,
-        deps: createHeartbeatDeps(sendWhatsApp),
-      });
-      expect(res.status).toBe("ran");
-      expect(replySpy).toHaveBeenCalledTimes(1);
-      const calledCtx = replySpy.mock.calls[0]?.[0] as { Body?: string };
-      expect(calledCtx.Body).toContain("- Check server logs");
-      expect(sendWhatsApp).toHaveBeenCalledTimes(1);
-    } finally {
-      replySpy.mockRestore();
-    }
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("skips when file is configured but missing", async () => {
-    const tmpDir = await createCaseDir("hb-file-missing");
-    const storePath = path.join(tmpDir, "sessions.json");
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: {
-          heartbeat: { every: "5m", target: "whatsapp", file: "nonexistent.md" },
-        },
-        list: [{ id: "main", workspace: tmpDir }],
-      },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-      session: { store: storePath },
-    };
-    const sessionKey = resolveMainSessionKey(cfg);
-    await fs.writeFile(
-      storePath,
-      JSON.stringify({
-        [sessionKey]: {
-          sessionId: "sid",
-          updatedAt: Date.now(),
-          lastChannel: "whatsapp",
-          lastTo: "120363401234567890@g.us",
-        },
-      }),
-    );
     const res = await runHeartbeatOnce({
       cfg,
-      deps: createHeartbeatDeps(vi.fn().mockResolvedValue({ messageId: "m1", toJid: "jid" })),
+      reason: params.reason,
+      deps: createHeartbeatDeps(sendWhatsApp),
     });
-    expect(res.status).toBe("skipped");
-    if (res.status === "skipped") {
-      expect(res.reason).toBe("no-prompt");
+    return { res, replySpy, sendWhatsApp };
+  }
+
+  it("applies HEARTBEAT.md gating rules across file states and triggers", async () => {
+    const cases: Array<{
+      name: string;
+      fileState: HeartbeatFileState;
+      reason?: "interval" | "wake";
+      queueCronEvent?: boolean;
+      expectedStatus: "ran" | "skipped";
+      expectedSkipReason?: "empty-heartbeat-file";
+      expectedSendCalls: number;
+      expectedReplyCalls: number;
+      expectCronContext?: boolean;
+      replyText?: string;
+    }> = [
+      {
+        // isHeartbeatContentEffectivelyEmpty is gutted in RemoteClaw fork (always
+        // returns false), so empty files are treated as actionable.
+        name: "empty file + interval runs (empty check gutted in fork)",
+        fileState: "empty",
+        expectedStatus: "ran",
+        expectedSendCalls: 1,
+        expectedReplyCalls: 1,
+      },
+      {
+        name: "empty file + wake runs",
+        fileState: "empty",
+        reason: "wake",
+        expectedStatus: "ran",
+        expectedSendCalls: 1,
+        expectedReplyCalls: 1,
+        replyText: "wake event processed",
+      },
+      {
+        name: "empty file + queued cron interval runs",
+        fileState: "empty",
+        reason: "interval",
+        queueCronEvent: true,
+        expectedStatus: "ran",
+        expectedSendCalls: 1,
+        expectedReplyCalls: 1,
+        expectCronContext: true,
+        replyText: "Relay this cron update now",
+      },
+      {
+        name: "actionable file runs",
+        fileState: "actionable",
+        expectedStatus: "ran",
+        expectedSendCalls: 1,
+        expectedReplyCalls: 1,
+      },
+      {
+        name: "missing file runs",
+        fileState: "missing",
+        expectedStatus: "ran",
+        expectedSendCalls: 1,
+        expectedReplyCalls: 1,
+      },
+      {
+        name: "read error runs",
+        fileState: "read-error",
+        expectedStatus: "ran",
+        expectedSendCalls: 1,
+        expectedReplyCalls: 1,
+      },
+      {
+        name: "missing file + wake runs",
+        fileState: "missing",
+        reason: "wake",
+        expectedStatus: "ran",
+        expectedSendCalls: 1,
+        expectedReplyCalls: 1,
+        replyText: "wake event processed",
+      },
+      {
+        name: "missing file + queued cron interval runs",
+        fileState: "missing",
+        reason: "interval",
+        queueCronEvent: true,
+        expectedStatus: "ran",
+        expectedSendCalls: 1,
+        expectedReplyCalls: 1,
+        expectCronContext: true,
+        replyText: "Relay this cron update now",
+      },
+    ];
+
+    for (const testCase of cases) {
+      const { res, replySpy, sendWhatsApp } = await runHeartbeatFileScenario(testCase);
+      try {
+        expect(res.status, testCase.name).toBe(testCase.expectedStatus);
+        if (res.status === "skipped") {
+          expect(res.reason, testCase.name).toBe(testCase.expectedSkipReason);
+        }
+        expect(replySpy, testCase.name).toHaveBeenCalledTimes(testCase.expectedReplyCalls);
+        expect(sendWhatsApp, testCase.name).toHaveBeenCalledTimes(testCase.expectedSendCalls);
+        if (testCase.expectCronContext) {
+          const calledCtx = replySpy.mock.calls[0]?.[0] as { Provider?: string; Body?: string };
+          expect(calledCtx.Provider, testCase.name).toBe("cron-event");
+          expect(calledCtx.Body, testCase.name).toContain("scheduled reminder has been triggered");
+        }
+      } finally {
+        replySpy.mockRestore();
+      }
     }
   });
 
@@ -1103,9 +1196,9 @@ describe("runHeartbeatOnce", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: {
+          workspace: tmpDir,
           heartbeat: { every: "5m", target: "none" },
         },
-        list: [{ id: "main", workspace: tmpDir }],
       },
       channels: { whatsapp: { allowFrom: ["*"] } },
       session: { store: storePath },
@@ -1156,9 +1249,9 @@ describe("runHeartbeatOnce", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: {
+          workspace: tmpDir,
           heartbeat: { every: "5m", target: "none" },
         },
-        list: [{ id: "main", workspace: tmpDir }],
       },
       channels: { whatsapp: { allowFrom: ["*"] } },
       session: { store: storePath },

@@ -17,10 +17,10 @@ export function createNativeCommandTestParams(params: {
   textLimit?: number;
   useAccessGroups?: boolean;
   nativeEnabled?: boolean;
+  nativeSkillsEnabled?: boolean;
   nativeDisabledExplicit?: boolean;
   opts?: RegisterTelegramNativeCommandParams["opts"];
 }): RegisterTelegramNativeCommandParams {
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   return {
     bot: params.bot,
     cfg: params.cfg ?? { agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] } },
@@ -33,6 +33,7 @@ export function createNativeCommandTestParams(params: {
     textLimit: params.textLimit ?? 4096,
     useAccessGroups: params.useAccessGroups ?? false,
     nativeEnabled: params.nativeEnabled ?? true,
+    nativeSkillsEnabled: params.nativeSkillsEnabled ?? false,
     nativeDisabledExplicit: params.nativeDisabledExplicit ?? false,
     resolveGroupPolicy: () => ({ allowlistEnabled: false, allowed: true }),
     resolveTelegramGroupConfig: () => ({

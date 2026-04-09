@@ -2,16 +2,24 @@ import fs from "node:fs";
 import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { resolvePreferredRemoteClawTmpDir } from "../../../../src/infra/tmp-remoteclaw-dir.js";
+
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// // import ... from "../config.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-type ResolvedAcpxPluginConfig = Record<string, unknown>;
-// @ts-expect-error — upstream feature not available in RemoteClaw fork
-import { ACPX_PINNED_VERSION } from "../config.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../runtime.js";
-type AcpxRuntime = any;
-const AcpxRuntime = undefined as any;
+// acpx config and runtime modules are not yet ported to the fork.
+type ResolvedAcpxPluginConfig = {
+  command: string;
+  allowPluginLocalInstall: boolean;
+  installCommand: string;
+  cwd: string;
+  permissionMode: string;
+  nonInteractivePermissions: string;
+  strictWindowsCmdWrapper: boolean;
+  queueOwnerTtlSeconds: number;
+};
+const ACPX_PINNED_VERSION = "0.0.0";
+class AcpxRuntime {
+  constructor(_config: ResolvedAcpxPluginConfig, _opts?: Record<string, unknown>) {}
+}
+
 export const NOOP_LOGGER = {
   info: (_message: string) => {},
   warn: (_message: string) => {},
@@ -20,6 +28,8 @@ export const NOOP_LOGGER = {
 };
 
 const tempDirs: string[] = [];
+let sharedMockCliScriptPath: Promise<string> | null = null;
+let logFileSequence = 0;
 
 const MOCK_CLI_SCRIPT = String.raw`#!/usr/bin/env node
 const fs = require("node:fs");
@@ -269,14 +279,9 @@ export async function createMockRuntimeFixture(params?: {
   logPath: string;
   config: ResolvedAcpxPluginConfig;
 }> {
-  const dir = await mkdtemp(
-    path.join(resolvePreferredRemoteClawTmpDir(), "remoteclaw-acpx-runtime-test-"),
-  );
-  tempDirs.push(dir);
-  const scriptPath = path.join(dir, "mock-acpx.cjs");
-  const logPath = path.join(dir, "calls.log");
-  await writeFile(scriptPath, MOCK_CLI_SCRIPT, "utf8");
-  await chmod(scriptPath, 0o755);
+  const scriptPath = await ensureMockCliScriptPath();
+  const dir = path.dirname(scriptPath);
+  const logPath = path.join(dir, `calls-${logFileSequence++}.log`);
   process.env.MOCK_ACPX_LOG = logPath;
 
   const config: ResolvedAcpxPluginConfig = {
@@ -300,6 +305,23 @@ export async function createMockRuntimeFixture(params?: {
   };
 }
 
+async function ensureMockCliScriptPath(): Promise<string> {
+  if (sharedMockCliScriptPath) {
+    return await sharedMockCliScriptPath;
+  }
+  sharedMockCliScriptPath = (async () => {
+    const dir = await mkdtemp(
+      path.join(resolvePreferredRemoteClawTmpDir(), "remoteclaw-acpx-runtime-test-"),
+    );
+    tempDirs.push(dir);
+    const scriptPath = path.join(dir, "mock-acpx.cjs");
+    await writeFile(scriptPath, MOCK_CLI_SCRIPT, "utf8");
+    await chmod(scriptPath, 0o755);
+    return scriptPath;
+  })();
+  return await sharedMockCliScriptPath;
+}
+
 export async function readMockRuntimeLogEntries(
   logPath: string,
 ): Promise<Array<Record<string, unknown>>> {
@@ -316,6 +338,8 @@ export async function readMockRuntimeLogEntries(
 
 export async function cleanupMockRuntimeFixtures(): Promise<void> {
   delete process.env.MOCK_ACPX_LOG;
+  sharedMockCliScriptPath = null;
+  logFileSequence = 0;
   while (tempDirs.length > 0) {
     const dir = tempDirs.pop();
     if (!dir) {

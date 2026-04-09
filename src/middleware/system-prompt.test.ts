@@ -15,7 +15,6 @@ describe("buildSystemPrompt", () => {
       const result = buildSystemPrompt(
         makeParams({ userName: "Alice", timezone: "UTC", agentId: "agent-1" }),
       );
-      expect(result).toContain("RemoteClaw");
       expect(result).toContain("## Safety");
       expect(result).toContain("## Messaging");
       expect(result).toContain("## Reply Tags");
@@ -56,16 +55,14 @@ describe("buildSystemPrompt", () => {
   });
 
   describe("dynamic content", () => {
-    it("identity section includes channel name and user name", () => {
-      const result = buildSystemPrompt(makeParams({ channelName: "discord", userName: "Bob" }));
-      expect(result).toContain("Bob");
-      expect(result).toContain("discord");
+    it("runtime section includes user name when provided", () => {
+      const result = buildSystemPrompt(makeParams({ userName: "Bob" }));
+      expect(result).toContain("user=Bob");
     });
 
-    it("identity section handles missing user name gracefully", () => {
-      const result = buildSystemPrompt(makeParams({ channelName: "whatsapp" }));
-      expect(result).toContain("responding to a message on whatsapp");
-      expect(result).not.toContain("undefined");
+    it("runtime section omits user name when not provided", () => {
+      const result = buildSystemPrompt(makeParams());
+      expect(result).not.toContain("user=");
     });
 
     it("runtime section includes timezone and agent ID", () => {
@@ -217,7 +214,7 @@ describe("buildSystemPrompt", () => {
 
     it("sections are separated by double newlines", () => {
       const result = buildSystemPrompt(makeParams());
-      expect(result).toContain("\n\n## Safety");
+      expect(result).toMatch(/^## Safety/);
       expect(result).toContain("\n\n## Messaging");
       expect(result).toContain("\n\n## Reply Tags");
       expect(result).toContain("\n\n## Silent Replies");

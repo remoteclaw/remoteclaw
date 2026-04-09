@@ -61,16 +61,11 @@ const SILENT_REPLIES_SECTION = [
 
 // ── Dynamic Section Builders ─────────────────────────────────────────────
 
-function buildIdentitySection(channelName: string, userName?: string): string {
-  const intro =
-    "You are running inside RemoteClaw, a middleware that connects AI agents to messaging channels.";
-  return userName
-    ? `${intro}\nYou are responding to a message from ${userName} on ${channelName}.`
-    : `${intro}\nYou are responding to a message on ${channelName}.`;
-}
-
 function buildRuntimeSection(params: SystemPromptParams): string {
   const parts = [`channel=${params.channelName}`];
+  if (params.userName) {
+    parts.push(`user=${params.userName}`);
+  }
   if (params.timezone) {
     parts.push(`timezone=${params.timezone}`);
   }
@@ -146,11 +141,7 @@ function buildReactionsSection(guidance?: {
  * no tool list (MCP handles), no skills/memory/sandbox sections.
  */
 export function buildSystemPrompt(params: SystemPromptParams): string {
-  const sections: string[] = [
-    buildIdentitySection(params.channelName, params.userName),
-    SAFETY_SECTION,
-    MESSAGING_SECTION,
-  ];
+  const sections: string[] = [SAFETY_SECTION, MESSAGING_SECTION];
 
   const hintsSection = buildMessageToolHintsSection(params.messageToolHints);
   if (hintsSection) {

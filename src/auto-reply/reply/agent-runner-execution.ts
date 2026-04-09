@@ -102,29 +102,6 @@ function resolveGatewayTokenFromConfig(cfg: FollowupRun["run"]["config"]): strin
   return resolveGatewayCredentialsFromConfig({ cfg, env: process.env }).token ?? "";
 }
 
-/**
- * Resolve reaction guidance for the system prompt from channel config.
- *
- * Reads the channel's `reactionLevel` from config and returns guidance
- * only when the level enables agent-controlled reactions ("minimal" or "extensive").
- */
-function resolveChannelReactionGuidance(
-  cfg: FollowupRun["run"]["config"],
-  channel: string | undefined,
-): { level: "minimal" | "extensive"; channel: string } | undefined {
-  if (!cfg || !channel) {
-    return undefined;
-  }
-  const channelConfig = (cfg.channels as Record<string, Record<string, unknown>> | undefined)?.[
-    channel
-  ];
-  const level = channelConfig?.reactionLevel;
-  if (level === "minimal" || level === "extensive") {
-    return { level, channel };
-  }
-  return undefined;
-}
-
 /** Build a ChannelMessage from the auto-reply's template context. */
 function buildChannelMessage(params: {
   commandBody: string;
@@ -137,7 +114,6 @@ function buildChannelMessage(params: {
   agentId?: string;
   timezone?: string;
   authorizedSenders?: string[];
-  reactionGuidance?: { level: "minimal" | "extensive"; channel: string };
 }): ChannelMessage {
   return {
     id: params.sessionCtx.MessageSidFull ?? params.sessionCtx.MessageSid ?? crypto.randomUUID(),
@@ -156,7 +132,6 @@ function buildChannelMessage(params: {
     agentId: params.agentId || undefined,
     timezone: params.timezone || undefined,
     authorizedSenders: params.authorizedSenders?.length ? params.authorizedSenders : undefined,
-    reactionGuidance: params.reactionGuidance,
   };
 }
 
@@ -292,7 +267,6 @@ export async function runAgentTurnWithFallback(params: {
           accountId: params.sessionCtx.AccountId?.trim(),
         });
 
-        const channel = params.sessionCtx.Provider?.trim();
         const message = buildChannelMessage({
           commandBody: params.commandBody,
           sessionCtx: params.sessionCtx,
@@ -304,7 +278,6 @@ export async function runAgentTurnWithFallback(params: {
           agentId: params.followupRun.run.agentId,
           timezone: resolveUserTimezone(cfg?.agents?.defaults?.userTimezone),
           authorizedSenders: params.followupRun.run.ownerNumbers,
-          reactionGuidance: resolveChannelReactionGuidance(cfg, channel),
         });
 
         // Build BridgeCallbacks that wrap the existing typing/normalization logic.

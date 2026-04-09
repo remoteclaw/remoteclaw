@@ -143,7 +143,6 @@ export class ChannelBridge {
       userName: message.userName,
       agentId: message.agentId,
       timezone: message.timezone,
-      reactionGuidance: message.reactionGuidance,
     });
 
     // 3. MCP config: temp dir for side effects file

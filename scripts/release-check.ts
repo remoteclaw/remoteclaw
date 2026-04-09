@@ -105,7 +105,8 @@ export function collectAppcastSparkleVersionErrors(xml: string): string[] {
     [];
 
   if (itemMatches.length === 0) {
-    errors.push("appcast.xml contains no <item> entries.");
+    // Empty appcast is valid — RemoteClaw has no native app releases yet.
+    return errors;
   }
 
   for (const [, item] of itemMatches) {

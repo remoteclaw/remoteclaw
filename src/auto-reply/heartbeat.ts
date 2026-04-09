@@ -4,6 +4,9 @@ import { HEARTBEAT_TOKEN } from "./tokens.js";
 /** Non-configurable suffix appended by the middleware to every heartbeat prompt. */
 export const HEARTBEAT_TOOL_SUFFIX = " Report the result using the heartbeat_report tool.";
 
+// Stub — removed during fork workspace cleanup (WI-179); re-exported for upstream compat
+export const HEARTBEAT_PROMPT = undefined as string | undefined;
+
 export const DEFAULT_HEARTBEAT_EVERY = "30m";
 export const DEFAULT_HEARTBEAT_ACK_MAX_CHARS = 300;
 

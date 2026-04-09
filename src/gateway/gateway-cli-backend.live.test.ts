@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { parseModelRef } from "../agents/provider-utils.js";
+import { parseModelRef } from "../agents/model-selection.js";
 import { loadConfig } from "../config/config.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 import { getFreePortBlockWithPermissionFallback } from "../test-utils/ports.js";
@@ -20,7 +20,7 @@ const CLI_IMAGE = isTruthyEnvValue(process.env.REMOTECLAW_LIVE_CLI_BACKEND_IMAGE
 const CLI_RESUME = isTruthyEnvValue(process.env.REMOTECLAW_LIVE_CLI_BACKEND_RESUME_PROBE);
 const describeLive = LIVE && CLI_LIVE ? describe : describe.skip;
 
-const DEFAULT_MODEL = "claude/claude-sonnet-4-6";
+const DEFAULT_MODEL = "claude-cli/claude-sonnet-4-6";
 const DEFAULT_CLAUDE_ARGS = ["-p", "--output-format", "json", "--dangerously-skip-permissions"];
 const DEFAULT_CODEX_ARGS = [
   "exec",
@@ -122,32 +122,39 @@ async function getFreeGatewayPort(): Promise<number> {
 
 async function connectClient(params: { url: string; token: string }) {
   return await new Promise<GatewayClient>((resolve, reject) => {
-    let settled = false;
-    const stop = (err?: Error, client?: GatewayClient) => {
-      if (settled) {
+    let done = false;
+    const finish = (result: { client?: GatewayClient; error?: Error }) => {
+      if (done) {
         return;
       }
-      settled = true;
-      clearTimeout(timer);
-      if (err) {
-        reject(err);
-      } else {
-        resolve(client as GatewayClient);
+      done = true;
+      clearTimeout(connectTimeout);
+      if (result.error) {
+        reject(result.error);
+        return;
       }
+      resolve(result.client as GatewayClient);
     };
+
+    const failWithClose = (code: number, reason: string) =>
+      finish({ error: new Error(`gateway closed during connect (${code}): ${reason}`) });
+
     const client = new GatewayClient({
       url: params.url,
       token: params.token,
       clientName: GATEWAY_CLIENT_NAMES.TEST,
       clientVersion: "dev",
       mode: "test",
-      onHelloOk: () => stop(undefined, client),
-      onConnectError: (err) => stop(err),
-      onClose: (code, reason) =>
-        stop(new Error(`gateway closed during connect (${code}): ${reason}`)),
+      onHelloOk: () => finish({ client }),
+      onConnectError: (error) => finish({ error }),
+      onClose: failWithClose,
     });
-    const timer = setTimeout(() => stop(new Error("gateway connect timeout")), 10_000);
-    timer.unref();
+
+    const connectTimeout = setTimeout(
+      () => finish({ error: new Error("gateway connect timeout") }),
+      10_000,
+    );
+    connectTimeout.unref();
     client.start();
   });
 }
@@ -176,7 +183,7 @@ describeLive("gateway live (cli backend)", () => {
     process.env.REMOTECLAW_GATEWAY_TOKEN = token;
 
     const rawModel = process.env.REMOTECLAW_LIVE_CLI_BACKEND_MODEL ?? DEFAULT_MODEL;
-    const parsed = parseModelRef(rawModel, "claude");
+    const parsed = parseModelRef(rawModel, "claude-cli");
     if (!parsed) {
       throw new Error(
         `REMOTECLAW_LIVE_CLI_BACKEND_MODEL must resolve to a CLI backend model. Got: ${rawModel}`,
@@ -186,9 +193,9 @@ describeLive("gateway live (cli backend)", () => {
     const modelKey = `${providerId}/${parsed.model}`;
 
     const providerDefaults =
-      providerId === "claude"
+      providerId === "claude-cli"
         ? { command: "claude", args: DEFAULT_CLAUDE_ARGS }
-        : providerId === "codex"
+        : providerId === "codex-cli"
           ? { command: "codex", args: DEFAULT_CODEX_ARGS }
           : null;
 
@@ -210,7 +217,7 @@ describeLive("gateway live (cli backend)", () => {
       parseJsonStringArray(
         "REMOTECLAW_LIVE_CLI_BACKEND_CLEAR_ENV",
         process.env.REMOTECLAW_LIVE_CLI_BACKEND_CLEAR_ENV,
-      ) ?? (providerId === "claude" ? DEFAULT_CLEAR_ENV : []);
+      ) ?? (providerId === "claude-cli" ? DEFAULT_CLEAR_ENV : []);
     const cliImageArg = process.env.REMOTECLAW_LIVE_CLI_BACKEND_IMAGE_ARG?.trim() || undefined;
     const cliImageMode = parseImageMode(process.env.REMOTECLAW_LIVE_CLI_BACKEND_IMAGE_MODE);
 
@@ -223,7 +230,7 @@ describeLive("gateway live (cli backend)", () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-live-cli-"));
     const disableMcpConfig = process.env.REMOTECLAW_LIVE_CLI_BACKEND_DISABLE_MCP_CONFIG !== "0";
     let cliArgs = baseCliArgs;
-    if (providerId === "claude" && disableMcpConfig) {
+    if (providerId === "claude-cli" && disableMcpConfig) {
       const mcpConfigPath = path.join(tempDir, "claude-mcp.json");
       await fs.writeFile(mcpConfigPath, `${JSON.stringify({ mcpServers: {} }, null, 2)}\n`);
       cliArgs = withMcpConfigOverrides(baseCliArgs, mcpConfigPath);
@@ -231,16 +238,10 @@ describeLive("gateway live (cli backend)", () => {
 
     const cfg = loadConfig();
     const existingBackends = cfg.agents?.defaults?.cliBackends ?? {};
-    const workspaceDir = path.join(tempDir, "workspace");
-    await fs.mkdir(workspaceDir, { recursive: true });
     const nextCfg = {
       ...cfg,
       agents: {
         ...cfg.agents,
-        list: [
-          { id: "main", workspace: workspaceDir },
-          { id: "dev", workspace: workspaceDir },
-        ],
         defaults: {
           ...cfg.agents?.defaults,
           model: { primary: modelKey },
@@ -282,7 +283,7 @@ describeLive("gateway live (cli backend)", () => {
       const runId = randomUUID();
       const nonce = randomBytes(3).toString("hex").toUpperCase();
       const message =
-        providerId === "codex"
+        providerId === "codex-cli"
           ? `Please include the token CLI-BACKEND-${nonce} in your reply.`
           : `Reply with exactly: CLI backend OK ${nonce}.`;
       const payload = await client.request(
@@ -299,7 +300,7 @@ describeLive("gateway live (cli backend)", () => {
         throw new Error(`agent status=${String(payload?.status)}`);
       }
       const text = extractPayloadText(payload?.result);
-      if (providerId === "codex") {
+      if (providerId === "codex-cli") {
         expect(text).toContain(`CLI-BACKEND-${nonce}`);
       } else {
         expect(text).toContain(`CLI backend OK ${nonce}.`);
@@ -309,7 +310,7 @@ describeLive("gateway live (cli backend)", () => {
         const runIdResume = randomUUID();
         const resumeNonce = randomBytes(3).toString("hex").toUpperCase();
         const resumeMessage =
-          providerId === "codex"
+          providerId === "codex-cli"
             ? `Please include the token CLI-RESUME-${resumeNonce} in your reply.`
             : `Reply with exactly: CLI backend RESUME OK ${resumeNonce}.`;
         const resumePayload = await client.request(
@@ -326,7 +327,7 @@ describeLive("gateway live (cli backend)", () => {
           throw new Error(`resume status=${String(resumePayload?.status)}`);
         }
         const resumeText = extractPayloadText(resumePayload?.result);
-        if (providerId === "codex") {
+        if (providerId === "codex-cli") {
           expect(resumeText).toContain(`CLI-RESUME-${resumeNonce}`);
         } else {
           expect(resumeText).toContain(`CLI backend RESUME OK ${resumeNonce}.`);

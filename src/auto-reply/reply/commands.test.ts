@@ -563,7 +563,9 @@ describe("extractMessageText", () => {
       },
       {
         message: { role: "assistant", content: "Here [Tool Call: foo (ID: 1)] ok" },
-        expectedText: "Here ok",
+        // Gutted in RemoteClaw fork: stripDowngradedToolCallText is a no-op,
+        // so tool call markers are preserved in assistant text.
+        expectedText: "Here [Tool Call: foo (ID: 1)] ok",
       },
     ] as const;
 

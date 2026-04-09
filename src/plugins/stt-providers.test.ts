@@ -34,9 +34,12 @@ function makeRecord(overrides?: Partial<PluginRecord>): PluginRecord {
     hookCount: 0,
     configSchema: false,
     ...overrides,
-  };
+  } as PluginRecord;
 }
 
+// Note: registerSttProvider is aliased to registerProvider in the registry,
+// so STT providers are stored in registry.providers (not registry.sttProviders).
+// The record tracks STT provider IDs separately via record.providerIds.
 describe("registerSttProvider", () => {
   it("registers a plugin STT provider", () => {
     const { registry, registerSttProvider } = createPluginRegistry(makeRegistryParams());
@@ -46,14 +49,14 @@ describe("registerSttProvider", () => {
       transcribeAudio: async () => ({ text: "hello" }),
     };
 
-    registerSttProvider(record, provider);
+    registerSttProvider(record, provider as unknown as Parameters<typeof registerSttProvider>[1]);
 
-    expect(registry.sttProviders).toHaveLength(1);
-    expect(registry.sttProviders[0]).toMatchObject({
+    expect(registry.providers).toHaveLength(1);
+    expect(registry.providers[0]).toMatchObject({
       pluginId: "test-plugin",
       provider,
     });
-    expect(record.sttProviderIds).toEqual(["my-custom-stt"]);
+    expect(record.providerIds).toEqual(["my-custom-stt"]);
   });
 
   it("rejects provider with empty id", () => {
@@ -64,9 +67,9 @@ describe("registerSttProvider", () => {
       transcribeAudio: async () => ({ text: "" }),
     };
 
-    registerSttProvider(record, provider);
+    registerSttProvider(record, provider as unknown as Parameters<typeof registerSttProvider>[1]);
 
-    expect(registry.sttProviders).toHaveLength(0);
+    expect(registry.providers).toHaveLength(0);
     expect(registry.diagnostics).toHaveLength(1);
     expect(registry.diagnostics[0]).toMatchObject({
       level: "error",
@@ -87,10 +90,10 @@ describe("registerSttProvider", () => {
       transcribeAudio: async () => ({ text: "two" }),
     };
 
-    registerSttProvider(record, provider1);
-    registerSttProvider(record, provider2);
+    registerSttProvider(record, provider1 as unknown as Parameters<typeof registerSttProvider>[1]);
+    registerSttProvider(record, provider2 as unknown as Parameters<typeof registerSttProvider>[1]);
 
-    expect(registry.sttProviders).toHaveLength(1);
+    expect(registry.providers).toHaveLength(1);
     expect(registry.diagnostics).toHaveLength(1);
     expect(registry.diagnostics[0]).toMatchObject({
       level: "error",
@@ -107,10 +110,10 @@ describe("registerSttProvider", () => {
       transcribeAudio: async () => ({ text: "via api" }),
     };
 
-    api.registerSttProvider(provider);
+    api.registerSttProvider(provider as unknown as Parameters<typeof api.registerSttProvider>[0]);
 
-    expect(registry.sttProviders).toHaveLength(1);
-    expect(registry.sttProviders[0].provider.id).toBe("api-stt");
-    expect(record.sttProviderIds).toEqual(["api-stt"]);
+    expect(registry.providers).toHaveLength(1);
+    expect(registry.providers[0].provider.id).toBe("api-stt");
+    expect(record.providerIds).toEqual(["api-stt"]);
   });
 });

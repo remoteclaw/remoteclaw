@@ -105,7 +105,6 @@ export const twitchOutbound: ChannelOutboundAdapter = {
    *   accountId: "default",
    * });
    */
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   sendText: async (params: ChannelOutboundContext): Promise<OutboundDeliveryResult> => {
     const { cfg, to, text, accountId } = params;
     const signal = (params as { signal?: AbortSignal }).signal;
@@ -167,7 +166,6 @@ export const twitchOutbound: ChannelOutboundAdapter = {
    *   accountId: "default",
    * });
    */
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   sendMedia: async (params: ChannelOutboundContext): Promise<OutboundDeliveryResult> => {
     const { text, mediaUrl } = params;
     const signal = (params as { signal?: AbortSignal }).signal;

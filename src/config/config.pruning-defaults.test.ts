@@ -66,7 +66,9 @@ describe("config pruning defaults", () => {
     });
   });
 
-  it("adds default cacheRetention for Anthropic Claude models in models map", async () => {
+  // Gutted in RemoteClaw fork: parseModelRef always returns { provider: "", model: "" },
+  // so isAnthropicCacheRetentionTarget never matches and cacheRetention is never set.
+  it.skip("adds default cacheRetention for Anthropic Claude models in models map", async () => {
     await withTempHome(async (home) => {
       await writeConfigForTest(home, {
         auth: {
@@ -91,7 +93,8 @@ describe("config pruning defaults", () => {
     });
   });
 
-  it("adds default cacheRetention for Anthropic Claude models on Bedrock in models map", async () => {
+  // Gutted in RemoteClaw fork: parseModelRef always returns { provider: "", model: "" }
+  it.skip("adds default cacheRetention for Anthropic Claude models on Bedrock in models map", async () => {
     await withTempHome(async (home) => {
       await writeConfigForTest(home, {
         auth: {
@@ -117,7 +120,8 @@ describe("config pruning defaults", () => {
     });
   });
 
-  it("does not add default cacheRetention for non-Anthropic Bedrock models", async () => {
+  // Gutted in RemoteClaw fork: parseModelRef always returns { provider: "", model: "" }
+  it.skip("does not add default cacheRetention for non-Anthropic Bedrock models", async () => {
     await withTempHome(async (home) => {
       await writeConfigForTest(home, {
         auth: {

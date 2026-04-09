@@ -1,7 +1,9 @@
 import type { CronConfig, CronRetryOn } from "../../config/types.cron.js";
+import { isCronSystemEvent } from "../../infra/heartbeat-events-filter.js";
 import type { HeartbeatRunResult } from "../../infra/heartbeat-wake.js";
 import { DEFAULT_AGENT_ID } from "../../routing/session-key.js";
 import { resolveCronDeliveryPlan } from "../delivery.js";
+import { shouldEnqueueCronMainSummary } from "../heartbeat-policy.js";
 import { sweepCronRunSessions } from "../session-reaper.js";
 import type {
   CronDeliveryStatus,
@@ -15,6 +17,7 @@ import {
   computeJobNextRunAtMs,
   nextWakeAtMs,
   recomputeNextRunsForMaintenance,
+  recordScheduleComputeError,
   resolveJobPayloadTextForMain,
 } from "./jobs.js";
 import { locked } from "./locked.js";
@@ -202,7 +205,14 @@ function clampNonNegativeInt(value: unknown, fallback: number): number {
 function _resolveFailureAlert(
   state: CronServiceState,
   job: CronJob,
-): { after: number; cooldownMs: number; channel: CronMessageChannel; to?: string } | null {
+): {
+  after: number;
+  cooldownMs: number;
+  channel: CronMessageChannel;
+  to?: string;
+  mode?: "announce" | "webhook";
+  accountId?: string;
+} | null {
   const globalConfig = state.deps.cronConfig?.failureAlert;
   const jobConfig = job.failureAlert === false ? undefined : job.failureAlert;
 
@@ -212,6 +222,9 @@ function _resolveFailureAlert(
   if (!jobConfig && globalConfig?.enabled !== true) {
     return null;
   }
+
+  const mode = jobConfig?.mode ?? globalConfig?.mode;
+  const explicitTo = normalizeTo(jobConfig?.to);
 
   return {
     after: clampPositiveInt(jobConfig?.after ?? globalConfig?.after, DEFAULT_FAILURE_ALERT_AFTER),
@@ -223,7 +236,9 @@ function _resolveFailureAlert(
       normalizeCronMessageChannel(jobConfig?.channel) ??
       normalizeCronMessageChannel(job.delivery?.channel) ??
       "last",
-    to: normalizeTo(jobConfig?.to) ?? normalizeTo(job.delivery?.to),
+    to: mode === "webhook" ? explicitTo : (explicitTo ?? normalizeTo(job.delivery?.to)),
+    mode,
+    accountId: jobConfig?.accountId ?? globalConfig?.accountId,
   };
 }
 
@@ -235,6 +250,8 @@ function _emitFailureAlert(
     consecutiveErrors: number;
     channel: CronMessageChannel;
     to?: string;
+    mode?: "announce" | "webhook";
+    accountId?: string;
   },
 ) {
   const safeJobName = params.job.name || params.job.id;
@@ -251,6 +268,8 @@ function _emitFailureAlert(
         text,
         channel: params.channel,
         to: params.to,
+        mode: params.mode,
+        accountId: params.accountId,
       })
       .catch((err) => {
         state.deps.log.warn(
@@ -327,7 +346,15 @@ export function applyJobResult(
     } else if (result.status === "error" && job.enabled) {
       // Apply exponential backoff for errored jobs to prevent retry storms.
       const backoff = errorBackoffMs(job.state.consecutiveErrors ?? 1);
-      const normalNext = computeJobNextRunAtMs(job, result.endedAt);
+      let normalNext: number | undefined;
+      try {
+        normalNext = computeJobNextRunAtMs(job, result.endedAt);
+      } catch (err) {
+        // If the schedule expression/timezone throws (croner edge cases),
+        // record the schedule error (auto-disables after repeated failures)
+        // and fall back to backoff-only schedule so the state update is not lost.
+        recordScheduleComputeError({ state, job, err });
+      }
       const backoffNext = result.endedAt + backoff;
       // Use whichever is later: the natural next run or the backoff delay.
       job.state.nextRunAtMs =
@@ -342,7 +369,15 @@ export function applyJobResult(
         "cron: applying error backoff",
       );
     } else if (job.enabled) {
-      const naturalNext = computeJobNextRunAtMs(job, result.endedAt);
+      let naturalNext: number | undefined;
+      try {
+        naturalNext = computeJobNextRunAtMs(job, result.endedAt);
+      } catch (err) {
+        // If the schedule expression/timezone throws (croner edge cases),
+        // record the schedule error (auto-disables after repeated failures)
+        // so a persistent throw doesn't cause a MIN_REFIRE_GAP_MS hot loop.
+        recordScheduleComputeError({ state, job, err });
+      }
       if (job.schedule.kind === "cron") {
         // Safety net: ensure the next fire is at least MIN_REFIRE_GAP_MS
         // after the current run ended.  Prevents spin-loops when the
@@ -370,6 +405,10 @@ function applyOutcomeToStoredJob(state: CronServiceState, result: TimedCronRunOu
   const jobs = store.jobs;
   const job = jobs.find((entry) => entry.id === result.jobId);
   if (!job) {
+    state.deps.log.warn(
+      { jobId: result.jobId },
+      "cron: applyOutcomeToStoredJob — job not found after forceReload, result discarded",
+    );
     return;
   }
 
@@ -557,7 +596,11 @@ export async function onTimer(state: CronServiceState) {
         await persist(state);
       });
     }
+  } finally {
     // Piggyback session reaper on timer tick (self-throttled to every 5 min).
+    // Placed in `finally` so the reaper runs even when a long-running job keeps
+    // `state.running` true across multiple timer ticks — the early return at the
+    // top of onTimer would otherwise skip the reaper indefinitely.
     const storePaths = new Set<string>();
     if (state.deps.resolveSessionStorePath) {
       const defaultAgentId = state.deps.defaultAgentId ?? DEFAULT_AGENT_ID;
@@ -589,7 +632,7 @@ export async function onTimer(state: CronServiceState) {
         }
       }
     }
-  } finally {
+
     state.running = false;
     armTimer(state);
   }
@@ -874,16 +917,23 @@ export async function executeJobCore(
   // ran. If delivery was attempted but final ack is uncertain, suppress the
   // main summary to avoid duplicate user-facing sends.
   // See: https://github.com/remoteclaw/remoteclaw/issues/15692
+  //
+  // Also suppress heartbeat-only summaries (e.g. "HEARTBEAT_OK") — these
+  // are internal ack tokens that should never leak into user conversations.
+  // See: https://github.com/remoteclaw/remoteclaw/issues/32013
   const summaryText = res.summary?.trim();
   const deliveryPlan = resolveCronDeliveryPlan(job);
   const suppressMainSummary =
     res.status === "error" && res.errorKind === "delivery-target" && deliveryPlan.requested;
   if (
-    summaryText &&
-    deliveryPlan.requested &&
-    !res.delivered &&
-    res.deliveryAttempted !== true &&
-    !suppressMainSummary
+    shouldEnqueueCronMainSummary({
+      summaryText,
+      deliveryRequested: deliveryPlan.requested,
+      delivered: res.delivered,
+      deliveryAttempted: res.deliveryAttempted,
+      suppressMainSummary,
+      isCronSystemEvent,
+    })
   ) {
     const prefix = "Cron";
     const label =

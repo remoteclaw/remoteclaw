@@ -6,6 +6,7 @@ import { loadConfig } from "../config/config.js";
 import type { GatewayClient } from "../gateway/client.js";
 import { sameFileIdentity } from "../infra/file-identity.js";
 import { sanitizeSystemRunEnvOverrides } from "../infra/host-env-security.js";
+import { logWarn } from "../logger.js";
 
 // Stub types and functions: exec-approvals, exec-host, exec-safe-bin, system-run-command,
 // and exec-policy infrastructure was gutted.
@@ -133,7 +134,12 @@ function resolveExecApprovalDecision(value?: unknown): string | undefined {
 export function formatSystemRunAllowlistMissMessage(_opts?: Record<string, unknown>): string {
   return "SYSTEM_RUN_DENIED: allowlist miss";
 }
-import type { ExecEventPayload, RunResult, SystemRunParams } from "./invoke-types.js";
+import type {
+  ExecEventPayload,
+  ExecFinishedEventParams,
+  RunResult,
+  SystemRunParams,
+} from "./invoke-types.js";
 
 type SystemRunInvokeResult = {
   ok: boolean;
@@ -191,16 +197,19 @@ type SystemRunPolicyPhase = SystemRunParsePhase & {
   segments: ExecCommandSegment[];
   plannedAllowlistArgv: string[] | undefined;
   isWindows: boolean;
+  approvedCwdSnapshot: ApprovedCwdSnapshot | undefined;
 };
 
 const safeBinTrustedDirWarningCache = new Set<string>();
+const APPROVAL_CWD_DRIFT_DENIED_MESSAGE =
+  "SYSTEM_RUN_DENIED: approval cwd changed before execution";
 
 function warnWritableTrustedDirOnce(message: string): void {
   if (safeBinTrustedDirWarningCache.has(message)) {
     return;
   }
   safeBinTrustedDirWarningCache.add(message);
-  console.warn(message);
+  logWarn(message);
 }
 
 function normalizeDeniedReason(reason: string | null | undefined): SystemRunDeniedReason {
@@ -233,13 +242,38 @@ function isPathLikeExecutableToken(value: string): boolean {
   return false;
 }
 
+type ApprovedCwdSnapshot = {
+  requestedCwd: string;
+  dev: number;
+  ino: number;
+};
+
+function revalidateApprovedCwdSnapshot(params: { snapshot: ApprovedCwdSnapshot }): boolean {
+  try {
+    const stat = fs.statSync(params.snapshot.requestedCwd);
+    return (
+      stat.isDirectory() && stat.dev === params.snapshot.dev && stat.ino === params.snapshot.ino
+    );
+  } catch {
+    return false;
+  }
+}
+
 function hardenApprovedExecutionPaths(params: {
   approvedByAsk: boolean;
   argv: string[];
+  shellCommand: string | null;
   cwd: string | undefined;
-}): { ok: true; argv: string[]; cwd: string | undefined } | { ok: false; message: string } {
+}):
+  | {
+      ok: true;
+      argv: string[];
+      cwd: string | undefined;
+      approvedCwdSnapshot: ApprovedCwdSnapshot | undefined;
+    }
+  | { ok: false; message: string } {
   if (!params.approvedByAsk) {
-    return { ok: true, argv: params.argv, cwd: params.cwd };
+    return { ok: true, argv: params.argv, cwd: params.cwd, approvedCwdSnapshot: undefined };
   }
 
   let hardenedCwd = params.cwd;
@@ -285,14 +319,25 @@ function hardenApprovedExecutionPaths(params: {
     hardenedCwd = cwdReal;
   }
 
+  const approvedCwdSnapshot: ApprovedCwdSnapshot | undefined = hardenedCwd
+    ? (() => {
+        try {
+          const stat = fs.statSync(hardenedCwd);
+          return { requestedCwd: hardenedCwd, dev: stat.dev, ino: stat.ino };
+        } catch {
+          return undefined;
+        }
+      })()
+    : undefined;
+
   if (params.argv.length === 0) {
-    return { ok: true, argv: params.argv, cwd: hardenedCwd };
+    return { ok: true, argv: params.argv, cwd: hardenedCwd, approvedCwdSnapshot };
   }
 
   const argv = [...params.argv];
   const rawExecutable = argv[0] ?? "";
   if (!isPathLikeExecutableToken(rawExecutable)) {
-    return { ok: true, argv, cwd: hardenedCwd };
+    return { ok: true, argv, cwd: hardenedCwd, approvedCwdSnapshot };
   }
 
   const base = hardenedCwd ?? process.cwd();
@@ -307,7 +352,7 @@ function hardenApprovedExecutionPaths(params: {
       message: "SYSTEM_RUN_DENIED: approval requires a stable executable path",
     };
   }
-  return { ok: true, argv, cwd: hardenedCwd };
+  return { ok: true, argv, cwd: hardenedCwd, approvedCwdSnapshot };
 }
 
 export type HandleSystemRunInvokeOptions = {
@@ -332,19 +377,7 @@ export type HandleSystemRunInvokeOptions = {
   sendNodeEvent: (client: GatewayClient, event: string, payload: unknown) => Promise<void>;
   buildExecEventPayload: (payload: ExecEventPayload) => ExecEventPayload;
   sendInvokeResult: (result: SystemRunInvokeResult) => Promise<void>;
-  sendExecFinishedEvent: (params: {
-    sessionKey: string;
-    runId: string;
-    cmdText: string;
-    result: {
-      stdout?: string;
-      stderr?: string;
-      error?: string | null;
-      exitCode?: number | null;
-      timedOut?: boolean;
-      success?: boolean;
-    };
-  }) => Promise<void>;
+  sendExecFinishedEvent: (params: ExecFinishedEventParams) => Promise<void>;
   preferMacAppExecHost: boolean;
 };
 
@@ -603,12 +636,21 @@ async function evaluateSystemRunPolicyPhase(
   const hardenedPaths = hardenApprovedExecutionPaths({
     approvedByAsk: policy.approvedByAsk,
     argv: parsed.argv,
+    shellCommand: parsed.shellCommand,
     cwd: parsed.cwd,
   });
   if (!hardenedPaths.ok) {
     await sendSystemRunDenied(opts, parsed.execution, {
       reason: "approval-required",
       message: hardenedPaths.message,
+    });
+    return null;
+  }
+  const approvedCwdSnapshot = policy.approvedByAsk ? hardenedPaths.approvedCwdSnapshot : undefined;
+  if (policy.approvedByAsk && hardenedPaths.cwd && !approvedCwdSnapshot) {
+    await sendSystemRunDenied(opts, parsed.execution, {
+      reason: "approval-required",
+      message: APPROVAL_CWD_DRIFT_DENIED_MESSAGE,
     });
     return null;
   }
@@ -648,6 +690,7 @@ async function evaluateSystemRunPolicyPhase(
     segments,
     plannedAllowlistArgv: plannedAllowlistArgv ?? undefined,
     isWindows,
+    approvedCwdSnapshot,
   };
 }
 
@@ -655,6 +698,18 @@ async function executeSystemRunPhase(
   opts: HandleSystemRunInvokeOptions,
   phase: SystemRunPolicyPhase,
 ): Promise<void> {
+  if (
+    phase.approvedCwdSnapshot &&
+    !revalidateApprovedCwdSnapshot({ snapshot: phase.approvedCwdSnapshot })
+  ) {
+    logWarn(`security: system.run approval cwd drift blocked (runId=${phase.runId})`);
+    await sendSystemRunDenied(opts, phase.execution, {
+      reason: "approval-required",
+      message: APPROVAL_CWD_DRIFT_DENIED_MESSAGE,
+    });
+    return;
+  }
+
   const useMacAppExec = opts.preferMacAppExecHost;
   if (useMacAppExec) {
     const execRequest: ExecHostRequest = {
@@ -790,6 +845,8 @@ export async function handleSystemRunInvoke(opts: HandleSystemRunInvokeOptions):
 }
 
 // Gutted in RemoteClaw fork — stub export for upstream compat
-export function buildSystemRunApprovalPlan(..._args: unknown[]): unknown {
-  return undefined;
+export function buildSystemRunApprovalPlan(
+  ..._args: unknown[]
+): { ok: true; plan: Record<string, unknown>; cmdText: string } | { ok: false; message: string } {
+  return { ok: true, plan: {}, cmdText: "" };
 }

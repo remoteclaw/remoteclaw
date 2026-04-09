@@ -11,6 +11,7 @@ vi.mock("../../agents/agent-scope.js", () => ({
   resolveDefaultAgentId: vi.fn(() => "main"),
   resolveAgentWorkspaceDir: vi.fn(() => "/tmp/workspace-main"),
   resolveAgentDir: vi.fn(() => "/tmp/agents/main/agent"),
+  resolveAgentRuntime: vi.fn(() => "claude"),
 }));
 
 const pluginToolMetaState = new Map<string, { pluginId: string; optional: boolean }>();

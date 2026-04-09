@@ -75,16 +75,41 @@ describe("channel plugin registry", () => {
     const pluginIds = listChannelPlugins().map((plugin) => plugin.id);
     expect(pluginIds).toEqual(["telegram", "slack", "signal"]);
   });
+
+  it("refreshes cached channel lookups when the same registry instance is re-activated", () => {
+    const registry = createTestRegistry([
+      {
+        pluginId: "slack",
+        plugin: createPlugin("slack"),
+        source: "test",
+      },
+    ]);
+    setActivePluginRegistry(registry, "registry-test");
+    expect(listChannelPlugins().map((plugin) => plugin.id)).toEqual(["slack"]);
+
+    registry.channels = [
+      {
+        pluginId: "telegram",
+        plugin: createPlugin("telegram"),
+        source: "test",
+      },
+    ] as typeof registry.channels;
+    setActivePluginRegistry(registry, "registry-test");
+
+    expect(listChannelPlugins().map((plugin) => plugin.id)).toEqual(["telegram"]);
+  });
 });
 
 describe("channel plugin catalog", () => {
-  it("includes Microsoft Teams", () => {
+  // Gutted in RemoteClaw fork — msteams is now an external plugin discovered dynamically
+  it.skip("includes Microsoft Teams", () => {
     const entry = getChannelPluginCatalogEntry("msteams");
     expect(entry?.install.npmSpec).toBe("@remoteclaw/msteams");
     expect(entry?.meta.aliases).toContain("teams");
   });
 
-  it("lists plugin catalog entries", () => {
+  // Gutted in RemoteClaw fork — catalog entries depend on plugin discovery at runtime
+  it.skip("lists plugin catalog entries", () => {
     const ids = listChannelPluginCatalogEntries().map((entry) => entry.id);
     expect(ids).toContain("msteams");
   });

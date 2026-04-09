@@ -39,6 +39,30 @@ function createStuckPastDueJob(params: { id: string; nowMs: number; pastDueMs: n
 }
 
 describe("CronService - armTimer tight loop prevention", () => {
+  function extractTimeoutDelays(timeoutSpy: ReturnType<typeof vi.spyOn>) {
+    const calls = timeoutSpy.mock.calls as Array<[unknown, unknown, ...unknown[]]>;
+    return calls
+      .map(([, delay]: [unknown, unknown, ...unknown[]]) => delay)
+      .filter((d: unknown): d is number => typeof d === "number");
+  }
+
+  function createTimerState(params: {
+    storePath: string;
+    now: number;
+    runIsolatedAgentJob?: () => Promise<{ status: "ok" }>;
+  }) {
+    return createCronServiceState({
+      storePath: params.storePath,
+      cronEnabled: true,
+      log: noopLogger,
+      nowMs: () => params.now,
+      enqueueSystemEvent: vi.fn(),
+      requestHeartbeatNow: vi.fn(),
+      runIsolatedAgentJob:
+        params.runIsolatedAgentJob ?? vi.fn().mockResolvedValue({ status: "ok" }),
+    });
+  }
+
   beforeEach(() => {
     noopLogger.debug.mockClear();
     noopLogger.info.mockClear();
@@ -50,21 +74,15 @@ describe("CronService - armTimer tight loop prevention", () => {
     vi.clearAllMocks();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — armTimer minimum refire gap not implemented
   it.skip("enforces a minimum delay when the next wake time is in the past", () => {
     const timeoutSpy = vi.spyOn(globalThis, "setTimeout");
     const now = Date.parse("2026-02-28T12:32:00.000Z");
     const pastDueMs = 17 * 60 * 1000; // 17 minutes past due
 
-    const state = createCronServiceState({
+    const state = createTimerState({
       storePath: "/tmp/test-cron/jobs.json",
-      cronEnabled: true,
-      log: noopLogger,
-      nowMs: () => now,
-      enqueueSystemEvent: vi.fn(),
-      requestHeartbeatNow: vi.fn(),
-      runIsolatedAgentJob: vi.fn().mockResolvedValue({ status: "ok" }),
+      now,
     });
     state.store = {
       version: 1,
@@ -74,9 +92,7 @@ describe("CronService - armTimer tight loop prevention", () => {
     armTimer(state);
 
     expect(state.timer).not.toBeNull();
-    const delays = timeoutSpy.mock.calls
-      .map(([, delay]) => delay)
-      .filter((d): d is number => typeof d === "number");
+    const delays = extractTimeoutDelays(timeoutSpy);
 
     // Before the fix, delay would be 0 (tight loop).
     // After the fix, delay must be >= MIN_REFIRE_GAP_MS (2000 ms).
@@ -92,14 +108,9 @@ describe("CronService - armTimer tight loop prevention", () => {
     const timeoutSpy = vi.spyOn(globalThis, "setTimeout");
     const now = Date.parse("2026-02-28T12:32:00.000Z");
 
-    const state = createCronServiceState({
+    const state = createTimerState({
       storePath: "/tmp/test-cron/jobs.json",
-      cronEnabled: true,
-      log: noopLogger,
-      nowMs: () => now,
-      enqueueSystemEvent: vi.fn(),
-      requestHeartbeatNow: vi.fn(),
-      runIsolatedAgentJob: vi.fn().mockResolvedValue({ status: "ok" }),
+      now,
     });
     state.store = {
       version: 1,
@@ -123,9 +134,7 @@ describe("CronService - armTimer tight loop prevention", () => {
 
     armTimer(state);
 
-    const delays = timeoutSpy.mock.calls
-      .map(([, delay]) => delay)
-      .filter((d): d is number => typeof d === "number");
+    const delays = extractTimeoutDelays(timeoutSpy);
 
     // The natural delay (10 s) should be used, not the floor.
     expect(delays).toContain(10_000);
@@ -133,8 +142,7 @@ describe("CronService - armTimer tight loop prevention", () => {
     timeoutSpy.mockRestore();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
+  // Gutted in RemoteClaw fork — armTimer minimum refire gap not implemented
   it.skip("breaks the onTimer→armTimer hot-loop with stuck runningAtMs", async () => {
     const timeoutSpy = vi.spyOn(globalThis, "setTimeout");
     const store = await makeStorePath();
@@ -155,14 +163,9 @@ describe("CronService - armTimer tight loop prevention", () => {
       "utf-8",
     );
 
-    const state = createCronServiceState({
+    const state = createTimerState({
       storePath: store.storePath,
-      cronEnabled: true,
-      log: noopLogger,
-      nowMs: () => now,
-      enqueueSystemEvent: vi.fn(),
-      requestHeartbeatNow: vi.fn(),
-      runIsolatedAgentJob: vi.fn().mockResolvedValue({ status: "ok" }),
+      now,
     });
 
     // Simulate the onTimer path: it will find no runnable jobs (blocked by
@@ -174,9 +177,7 @@ describe("CronService - armTimer tight loop prevention", () => {
 
     // The re-armed timer must NOT use delay=0. It should use at least
     // MIN_REFIRE_GAP_MS to prevent the hot-loop.
-    const allDelays = timeoutSpy.mock.calls
-      .map(([, delay]) => delay)
-      .filter((d): d is number => typeof d === "number");
+    const allDelays = extractTimeoutDelays(timeoutSpy);
 
     // The last setTimeout call is from the finally→armTimer path.
     const lastDelay = allDelays[allDelays.length - 1];

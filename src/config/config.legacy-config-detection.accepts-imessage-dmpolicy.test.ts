@@ -117,7 +117,9 @@ describe("legacy config detection", () => {
   ])("defaults: %s", (_name, config, readValue, expectedValue) => {
     expectValidConfigValue({ config, readValue, expectedValue });
   });
-  it("rejects unsafe executable config values", async () => {
+  // Gutted in RemoteClaw fork: isSafeExecutableValue always returns true
+  // (exec-safety.ts is a no-op stub), so unsafe CLI paths are accepted.
+  it.skip("rejects unsafe executable config values", async () => {
     const res = validateConfigObject({
       channels: { imessage: { cliPath: "imsg; rm -rf /" } },
       audio: { transcription: { command: ["whisper", "--model", "base"] } },

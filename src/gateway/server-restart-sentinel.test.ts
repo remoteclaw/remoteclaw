@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../agents/agent-scope.js", () => ({
   resolveSessionAgentId: mocks.resolveSessionAgentId,
+  resolveAgentRuntime: () => "claude",
 }));
 
 vi.mock("../infra/restart-sentinel.js", () => ({

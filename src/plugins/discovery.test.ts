@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { MANIFEST_KEY } from "../compat/legacy-names.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { discoverRemoteClawPlugins } from "./discovery.js";
 
@@ -23,6 +24,36 @@ async function withStateDir<T>(stateDir: string, fn: () => Promise<T>) {
       REMOTECLAW_BUNDLED_PLUGINS_DIR: "/nonexistent/bundled/plugins",
     },
     fn,
+  );
+}
+
+async function discoverWithStateDir(
+  stateDir: string,
+  params: Parameters<typeof discoverRemoteClawPlugins>[0],
+) {
+  return await withStateDir(stateDir, async () => {
+    return discoverRemoteClawPlugins(params);
+  });
+}
+
+function writePluginPackageManifest(params: {
+  packageDir: string;
+  packageName: string;
+  extensions: string[];
+}) {
+  fs.writeFileSync(
+    path.join(params.packageDir, "package.json"),
+    JSON.stringify({
+      name: params.packageName,
+      [MANIFEST_KEY]: { extensions: params.extensions },
+    }),
+    "utf-8",
+  );
+}
+
+function expectEscapesPackageDiagnostic(diagnostics: Array<{ message: string }>) {
+  expect(diagnostics.some((entry) => entry.message.includes("escapes package directory"))).toBe(
+    true,
   );
 }
 
@@ -95,14 +126,11 @@ describe("discoverRemoteClawPlugins", () => {
     const globalExt = path.join(stateDir, "extensions", "pack");
     fs.mkdirSync(path.join(globalExt, "src"), { recursive: true });
 
-    fs.writeFileSync(
-      path.join(globalExt, "package.json"),
-      JSON.stringify({
-        name: "pack",
-        remoteclaw: { extensions: ["./src/one.ts", "./src/two.ts"] },
-      }),
-      "utf-8",
-    );
+    writePluginPackageManifest({
+      packageDir: globalExt,
+      packageName: "pack",
+      extensions: ["./src/one.ts", "./src/two.ts"],
+    });
     fs.writeFileSync(
       path.join(globalExt, "src", "one.ts"),
       "export default function () {}",
@@ -128,14 +156,11 @@ describe("discoverRemoteClawPlugins", () => {
     const globalExt = path.join(stateDir, "extensions", "voice-call-pack");
     fs.mkdirSync(path.join(globalExt, "src"), { recursive: true });
 
-    fs.writeFileSync(
-      path.join(globalExt, "package.json"),
-      JSON.stringify({
-        name: "@remoteclaw/voice-call",
-        remoteclaw: { extensions: ["./src/index.ts"] },
-      }),
-      "utf-8",
-    );
+    writePluginPackageManifest({
+      packageDir: globalExt,
+      packageName: "@remoteclaw/voice-call",
+      extensions: ["./src/index.ts"],
+    });
     fs.writeFileSync(
       path.join(globalExt, "src", "index.ts"),
       "export default function () {}",
@@ -155,14 +180,11 @@ describe("discoverRemoteClawPlugins", () => {
     const packDir = path.join(stateDir, "packs", "demo-plugin-dir");
     fs.mkdirSync(packDir, { recursive: true });
 
-    fs.writeFileSync(
-      path.join(packDir, "package.json"),
-      JSON.stringify({
-        name: "@remoteclaw/demo-plugin-dir",
-        remoteclaw: { extensions: ["./index.js"] },
-      }),
-      "utf-8",
-    );
+    writePluginPackageManifest({
+      packageDir: packDir,
+      packageName: "@remoteclaw/demo-plugin-dir",
+      extensions: ["./index.js"],
+    });
     fs.writeFileSync(path.join(packDir, "index.js"), "module.exports = {}", "utf-8");
 
     const { candidates } = await withStateDir(stateDir, async () => {
@@ -172,31 +194,23 @@ describe("discoverRemoteClawPlugins", () => {
     const ids = candidates.map((c) => c.idHint);
     expect(ids).toContain("demo-plugin-dir");
   });
-
   it("blocks extension entries that escape package directory", async () => {
     const stateDir = makeTempDir();
     const globalExt = path.join(stateDir, "extensions", "escape-pack");
     const outside = path.join(stateDir, "outside.js");
     fs.mkdirSync(globalExt, { recursive: true });
 
-    fs.writeFileSync(
-      path.join(globalExt, "package.json"),
-      JSON.stringify({
-        name: "@remoteclaw/escape-pack",
-        remoteclaw: { extensions: ["../../outside.js"] },
-      }),
-      "utf-8",
-    );
+    writePluginPackageManifest({
+      packageDir: globalExt,
+      packageName: "@remoteclaw/escape-pack",
+      extensions: ["../../outside.js"],
+    });
     fs.writeFileSync(outside, "export default function () {}", "utf-8");
 
-    const result = await withStateDir(stateDir, async () => {
-      return discoverRemoteClawPlugins({});
-    });
+    const result = await discoverWithStateDir(stateDir, {});
 
     expect(result.candidates).toHaveLength(0);
-    expect(
-      result.diagnostics.some((diag) => diag.message.includes("escapes package directory")),
-    ).toBe(true);
+    expectEscapesPackageDiagnostic(result.diagnostics);
   });
 
   it("rejects package extension entries that escape via symlink", async () => {
@@ -213,23 +227,16 @@ describe("discoverRemoteClawPlugins", () => {
       return;
     }
 
-    fs.writeFileSync(
-      path.join(globalExt, "package.json"),
-      JSON.stringify({
-        name: "@remoteclaw/pack",
-        remoteclaw: { extensions: ["./linked/escape.ts"] },
-      }),
-      "utf-8",
-    );
-
-    const { candidates, diagnostics } = await withStateDir(stateDir, async () => {
-      return discoverRemoteClawPlugins({});
+    writePluginPackageManifest({
+      packageDir: globalExt,
+      packageName: "@remoteclaw/pack",
+      extensions: ["./linked/escape.ts"],
     });
 
+    const { candidates, diagnostics } = await discoverWithStateDir(stateDir, {});
+
     expect(candidates.some((candidate) => candidate.idHint === "pack")).toBe(false);
-    expect(diagnostics.some((entry) => entry.message.includes("escapes package directory"))).toBe(
-      true,
-    );
+    expectEscapesPackageDiagnostic(diagnostics);
   });
 
   it("rejects package extension entries that are hardlinked aliases", async () => {
@@ -253,23 +260,18 @@ describe("discoverRemoteClawPlugins", () => {
       throw err;
     }
 
-    fs.writeFileSync(
-      path.join(globalExt, "package.json"),
-      JSON.stringify({
-        name: "@remoteclaw/pack",
-        remoteclaw: { extensions: ["./escape.ts"] },
-      }),
-      "utf-8",
-    );
+    writePluginPackageManifest({
+      packageDir: globalExt,
+      packageName: "@remoteclaw/pack",
+      extensions: ["./escape.ts"],
+    });
 
     const { candidates, diagnostics } = await withStateDir(stateDir, async () => {
       return discoverRemoteClawPlugins({});
     });
 
     expect(candidates.some((candidate) => candidate.idHint === "pack")).toBe(false);
-    expect(diagnostics.some((entry) => entry.message.includes("escapes package directory"))).toBe(
-      true,
-    );
+    expectEscapesPackageDiagnostic(diagnostics);
   });
 
   it("ignores package manifests that are hardlinked aliases", async () => {

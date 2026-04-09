@@ -66,7 +66,7 @@ describe("registerTelegramNativeCommands", () => {
       telegramCfg: {} as TelegramAccountConfig,
     });
 
-  it("truncates Telegram command registration to 100 commands", () => {
+  it("truncates Telegram command registration to 100 commands", async () => {
     const cfg: RemoteClawConfig = {
       agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       commands: { native: false },
@@ -92,6 +92,10 @@ describe("registerTelegramNativeCommands", () => {
       nativeEnabled: false,
     });
 
+    // syncTelegramMenuCommands is async (hash-cached) — wait for the setMyCommands call
+    await vi.waitFor(() => {
+      expect(setMyCommands).toHaveBeenCalled();
+    });
     const registeredCommands = setMyCommands.mock.calls[0]?.[0] as Array<{
       command: string;
       description: string;

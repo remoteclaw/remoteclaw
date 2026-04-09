@@ -11,16 +11,13 @@ import {
 } from "../auto-reply/commands-registry.js";
 import { finalizeInboundContext } from "../auto-reply/reply/inbound-context.js";
 import { dispatchReplyWithBufferedBlockDispatcher } from "../auto-reply/reply/provider-dispatcher.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../auto-reply/skill-commands.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const listSkillCommandsForAgents = (..._args: unknown[]) => undefined as any;
+import { listSkillCommandsForAgents } from "../auto-reply/skill-commands.js";
 import { resolveCommandAuthorizedFromAuthorizers } from "../channels/command-gating.js";
 import { createReplyPrefixOptions } from "../channels/reply-prefix.js";
+import { recordInboundSessionMetaSafe } from "../channels/session-meta.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { ChannelGroupPolicy } from "../config/group-policy.js";
 import { resolveMarkdownTableMode } from "../config/markdown-tables.js";
-import { recordSessionMetaFromInbound, resolveStorePath } from "../config/sessions.js";
 import {
   normalizeTelegramCommandName,
   resolveTelegramCustomCommands,
@@ -176,8 +173,6 @@ async function resolveTelegramCommandAuth(params: {
   const groupAllowContext = await resolveTelegramGroupAllowFromContext({
     chatId,
     accountId,
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
-    isGroup,
     isForum,
     messageThreadId,
     groupAllowFrom,
@@ -185,8 +180,6 @@ async function resolveTelegramCommandAuth(params: {
   });
   const {
     resolvedThreadId,
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
-    dmThreadId,
     storeAllowFrom,
     groupConfig,
     topicConfig,
@@ -194,10 +187,17 @@ async function resolveTelegramCommandAuth(params: {
     effectiveGroupAllow,
     hasGroupAllowOverride,
   } = groupAllowContext;
+  const dmThreadId = (groupAllowContext as Record<string, unknown>).dmThreadId as
+    | number
+    | undefined;
   // Use direct config dmPolicy override if available for DMs
   const effectiveDmPolicy =
     !isGroup && groupConfig && "dmPolicy" in groupConfig
-      ? (groupConfig.dmPolicy ?? telegramCfg.dmPolicy ?? "pairing")
+      ? String(
+          (groupConfig as Record<string, string | undefined>).dmPolicy ??
+            telegramCfg.dmPolicy ??
+            "pairing",
+        )
       : (telegramCfg.dmPolicy ?? "pairing");
   const requireTopic = (groupConfig as TelegramDirectConfig | undefined)?.requireTopic;
   if (!isGroup && requireTopic === true && dmThreadId == null) {
@@ -277,7 +277,6 @@ async function resolveTelegramCommandAuth(params: {
   const dmAllow = normalizeDmAllowFromWithStore({
     allowFrom: dmAllowFrom,
     storeAllowFrom: isGroup ? [] : storeAllowFrom,
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     dmPolicy: effectiveDmPolicy,
   });
   const senderAllowed = isSenderAllowed({
@@ -330,10 +329,14 @@ export const registerTelegramNativeCommands = ({
     nativeEnabled && nativeSkillsEnabled
       ? resolveAgentRoute({ cfg, channel: "telegram", accountId })
       : null;
-  const boundAgentIds = boundRoute ? [boundRoute.agentId] : null;
+  if (nativeEnabled && nativeSkillsEnabled && !boundRoute) {
+    runtime.log?.(
+      "nativeSkillsEnabled is true but no agent route is bound for this Telegram account; skill commands will not appear in the native menu.",
+    );
+  }
   const skillCommands =
-    nativeEnabled && nativeSkillsEnabled
-      ? listSkillCommandsForAgents(boundAgentIds ? { cfg, agentIds: boundAgentIds } : { cfg })
+    nativeEnabled && nativeSkillsEnabled && boundRoute
+      ? listSkillCommandsForAgents({ cfg, agentIds: [boundRoute.agentId] })
       : [];
   const nativeCommands = nativeEnabled
     ? listNativeCommandSpecsForConfig(cfg, {
@@ -403,7 +406,13 @@ export const registerTelegramNativeCommands = ({
   }
   // Telegram only limits the setMyCommands payload (menu entries).
   // Keep hidden commands callable by registering handlers for the full catalog.
-  syncTelegramMenuCommands({ bot, runtime, commandsToRegister });
+  syncTelegramMenuCommands({
+    bot,
+    runtime,
+    commandsToRegister,
+    accountId,
+    botIdentity: opts.token,
+  });
 
   const resolveCommandRuntimeContext = (params: {
     msg: NonNullable<TelegramNativeCommandContext["message"]>;
@@ -618,18 +627,16 @@ export const registerTelegramNativeCommands = ({
             OriginatingTo: `telegram:${chatId}`,
           });
 
-          const storePath = resolveStorePath(cfg.session?.store, {
+          await recordInboundSessionMetaSafe({
+            cfg,
             agentId: route.agentId,
+            sessionKey: ctxPayload.SessionKey ?? route.sessionKey,
+            ctx: ctxPayload,
+            onError: (err) =>
+              runtime.error?.(
+                danger(`telegram slash: failed updating session meta: ${String(err)}`),
+              ),
           });
-          try {
-            await recordSessionMetaFromInbound({
-              storePath,
-              sessionKey: ctxPayload.SessionKey ?? route.sessionKey,
-              ctx: ctxPayload,
-            });
-          } catch (err) {
-            runtime.error?.(danger(`telegram slash: failed updating session meta: ${String(err)}`));
-          }
 
           const disableBlockStreaming =
             typeof telegramCfg.blockStreaming === "boolean"

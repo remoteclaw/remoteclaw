@@ -1,11 +1,18 @@
 import crypto from "node:crypto";
-import { isSessionRunActive } from "../../agents/session-run-registry.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+const resolveSessionAuthProfileOverride = (..._args: unknown[]) => undefined as unknown;
+type ExecToolDefaults = Record<string, unknown>;
+const abortEmbeddedPiRun = (..._args: unknown[]) => false;
+const isEmbeddedPiRunActive = (..._args: unknown[]) => false;
+const isEmbeddedPiRunStreaming = (..._args: unknown[]) => false;
+const resolveEmbeddedSessionLane = (key: string) => `session:${key.trim() || "main"}`;
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
   resolveGroupSessionKey,
   resolveSessionFilePath,
   resolveSessionFilePathOptions,
   type SessionEntry,
+  updateSessionStore,
 } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { clearCommandLane, getQueueSize } from "../../process/command-queue.js";
@@ -14,7 +21,15 @@ import { isReasoningTagProvider } from "../../utils/provider-utils.js";
 import { hasControlCommand } from "../command-detection.js";
 import { buildInboundMediaNote } from "../media-note.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
-import type { VerboseLevel } from "../thinking.js";
+import {
+  type ElevatedLevel,
+  formatXHighModelHint,
+  normalizeThinkLevel,
+  type ReasoningLevel,
+  supportsXHighThinking,
+  type ThinkLevel,
+  type VerboseLevel,
+} from "../thinking.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { runReplyAgent } from "./agent-runner.js";
@@ -23,20 +38,34 @@ import type { buildCommandContext } from "./commands.js";
 import type { InlineDirectives } from "./directive-handling.js";
 import { buildGroupChatContext, buildGroupIntro } from "./groups.js";
 import { buildInboundMetaSystemPrompt, buildInboundUserContextPrefix } from "./inbound-meta.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+type _createModelSelectionState = (..._args: unknown[]) => Promise<{
+  resolveDefaultThinkingLevel: (..._args: unknown[]) => unknown;
+}>;
 import { resolveOriginMessageProvider } from "./origin-routing.js";
-import { resolveQueueSettings } from "./queue.js";
+import { resolveQueueSettings, type FollowupRun } from "./queue.js";
 import { routeReply } from "./route-reply.js";
 import { BARE_SESSION_RESET_PROMPT } from "./session-reset-prompt.js";
-import { prependSystemEvents } from "./session-updates.js";
+import { buildQueuedSystemPrompt, ensureSkillSnapshot } from "./session-updates.js";
 import { resolveTypingMode } from "./typing-mode.js";
 import { resolveRunTypingPolicy } from "./typing-policy.js";
 import type { TypingController } from "./typing.js";
 import { appendUntrustedContext } from "./untrusted-context.js";
 
 type AgentDefaults = NonNullable<RemoteClawConfig["agents"]>["defaults"];
+type ExecOverrides = Pick<ExecToolDefaults, "host" | "security" | "ask" | "node">;
 
-function buildResetSessionNoticeText(params: { runtimeId: string }): string {
-  return `✅ New session started · runtime: ${params.runtimeId}`;
+function buildResetSessionNoticeText(params: {
+  provider: string;
+  model: string;
+  defaultProvider: string;
+  defaultModel: string;
+}): string {
+  const modelLabel = `${params.provider}/${params.model}`;
+  const defaultLabel = `${params.defaultProvider}/${params.defaultModel}`;
+  return modelLabel === defaultLabel
+    ? `✅ New session started · model: ${modelLabel}`
+    : `✅ New session started · model: ${modelLabel} (default: ${defaultLabel})`;
 }
 
 function resolveResetSessionNoticeRoute(params: {
@@ -66,7 +95,10 @@ async function sendResetSessionNotice(params: {
   cfg: RemoteClawConfig;
   accountId: string | undefined;
   threadId: string | number | undefined;
-  runtimeId: string;
+  provider: string;
+  model: string;
+  defaultProvider: string;
+  defaultModel: string;
 }): Promise<void> {
   const route = resolveResetSessionNoticeRoute({
     ctx: params.ctx,
@@ -77,7 +109,12 @@ async function sendResetSessionNotice(params: {
   }
   await routeReply({
     payload: {
-      text: buildResetSessionNoticeText({ runtimeId: params.runtimeId }),
+      text: buildResetSessionNoticeText({
+        provider: params.provider,
+        model: params.model,
+        defaultProvider: params.defaultProvider,
+        defaultModel: params.defaultModel,
+      }),
     },
     channel: route.channel,
     to: route.to,
@@ -102,7 +139,13 @@ type RunPreparedReplyParams = {
   allowTextCommands: boolean;
   directives: InlineDirectives;
   defaultActivation: Parameters<typeof buildGroupIntro>[0]["defaultActivation"];
+  resolvedThinkLevel: ThinkLevel | undefined;
   resolvedVerboseLevel: VerboseLevel | undefined;
+  resolvedReasoningLevel: ReasoningLevel;
+  resolvedElevatedLevel: ElevatedLevel;
+  execOverrides?: ExecOverrides;
+  elevatedEnabled: boolean;
+  elevatedAllowed: boolean;
   blockStreamingEnabled: boolean;
   blockReplyChunking?: {
     minChars: number;
@@ -111,7 +154,12 @@ type RunPreparedReplyParams = {
     flushOnParagraph?: boolean;
   };
   resolvedBlockStreamingBreak: "text_end" | "message_end";
-  runtimeId: string;
+  modelState: {
+    resolveDefaultThinkingLevel: (..._args: unknown[]) => unknown;
+    [key: string]: unknown;
+  };
+  provider: string;
+  model: string;
   perMessageQueueMode?: InlineDirectives["queueMode"];
   perMessageQueueOptions?: {
     debounceMs?: number;
@@ -120,6 +168,8 @@ type RunPreparedReplyParams = {
   };
   typing: TypingController;
   opts?: GetReplyOptions;
+  defaultProvider: string;
+  defaultModel: string;
   timeoutMs: number;
   isNewSession: boolean;
   resetTriggered: boolean;
@@ -148,16 +198,22 @@ export async function runPreparedReply(
     command,
     commandSource,
     allowTextCommands,
-    directives: _directives,
+    directives,
     defaultActivation,
+    elevatedEnabled,
+    elevatedAllowed,
     blockStreamingEnabled,
     blockReplyChunking,
     resolvedBlockStreamingBreak,
-    runtimeId,
+    modelState,
+    provider,
+    model,
     perMessageQueueMode,
     perMessageQueueOptions,
     typing,
     opts,
+    defaultProvider,
+    defaultModel,
     timeoutMs,
     isNewSession,
     resetTriggered,
@@ -168,8 +224,16 @@ export async function runPreparedReply(
     workspaceDir,
     sessionStore,
   } = params;
-  let { sessionEntry, resolvedVerboseLevel, abortedLastRun } = params;
-  const currentSystemSent = systemSent;
+  let {
+    sessionEntry,
+    resolvedThinkLevel,
+    resolvedVerboseLevel,
+    resolvedReasoningLevel,
+    resolvedElevatedLevel,
+    execOverrides,
+    abortedLastRun,
+  } = params;
+  let currentSystemSent = systemSent;
 
   const isFirstTurnInSession = isNewSession || !currentSystemSent;
   const isGroupChat = sessionCtx.ChatType === "group";
@@ -208,9 +272,12 @@ export async function runPreparedReply(
   const inboundMetaPrompt = buildInboundMetaSystemPrompt(
     isNewSession ? sessionCtx : { ...sessionCtx, ThreadStarterBody: undefined },
   );
-  const extraSystemPrompt = [inboundMetaPrompt, groupChatContext, groupIntro, groupSystemPrompt]
-    .filter(Boolean)
-    .join("\n\n");
+  const extraSystemPromptParts = [
+    inboundMetaPrompt,
+    groupChatContext,
+    groupIntro,
+    groupSystemPrompt,
+  ].filter(Boolean);
   const baseBody = sessionCtx.BodyStripped ?? sessionCtx.Body ?? "";
   // Use CommandBody/RawBody for bare reset detection (clean message without structural context).
   const rawBodyTrimmed = (ctx.CommandBody ?? ctx.RawBody ?? ctx.Body ?? "").trim();
@@ -255,7 +322,7 @@ export async function runPreparedReply(
     };
   }
   // When the user sends media without text, provide a minimal body so the agent
-  // run proceeds and the image/document is injected by the agent runtime.
+  // run proceeds and the image/document is injected by the embedded runner.
   const effectiveBaseBody = baseBodyTrimmed
     ? baseBodyForPrompt
     : "[User sent media without caption]";
@@ -270,13 +337,15 @@ export async function runPreparedReply(
   });
   const isGroupSession = sessionEntry?.chatType === "group" || sessionEntry?.chatType === "channel";
   const isMainSession = !isGroupSession && sessionKey === normalizeMainKey(sessionCfg?.mainKey);
-  prefixedBodyBase = await prependSystemEvents({
+  const queuedSystemPrompt = await buildQueuedSystemPrompt({
     cfg,
     sessionKey,
     isMainSession,
     isNewSession,
-    prefixedBodyBase,
   });
+  if (queuedSystemPrompt) {
+    extraSystemPromptParts.push(queuedSystemPrompt);
+  }
   prefixedBodyBase = appendUntrustedContext(prefixedBodyBase, sessionCtx.UntrustedContext);
   const threadStarterBody = ctx.ThreadStarterBody?.trim();
   const threadHistoryBody = ctx.ThreadHistoryBody?.trim();
@@ -285,13 +354,59 @@ export async function runPreparedReply(
     : threadStarterBody
       ? `[Thread starter - for context]\n${threadStarterBody}`
       : undefined;
+  const skillResult = await ensureSkillSnapshot({
+    sessionEntry,
+    sessionStore,
+    sessionKey,
+    storePath,
+    sessionId,
+    isFirstTurnInSession,
+    workspaceDir,
+    cfg,
+    skillFilter: opts?.skillFilter,
+  });
+  sessionEntry = skillResult.sessionEntry ?? sessionEntry;
+  currentSystemSent = skillResult.systemSent;
+  const skillsSnapshot = skillResult.skillsSnapshot;
+  const prefixedBody = [threadContextNote, prefixedBodyBase].filter(Boolean).join("\n\n");
   const mediaNote = buildInboundMediaNote(ctx);
   const mediaReplyHint = mediaNote
     ? "To send an image back, prefer the message tool (media/path/filePath). If you must inline, use MEDIA:https://example.com/image.jpg (spaces ok, quote if needed) or a safe relative path like MEDIA:./image.jpg. Avoid absolute paths (MEDIA:/...) and ~ paths — they are blocked for security. Keep caption in the text body."
     : undefined;
-  const prefixedCommandBody = mediaNote
-    ? [mediaNote, mediaReplyHint, prefixedBodyBase ?? ""].filter(Boolean).join("\n").trim()
-    : prefixedBodyBase;
+  let prefixedCommandBody = mediaNote
+    ? [mediaNote, mediaReplyHint, prefixedBody ?? ""].filter(Boolean).join("\n").trim()
+    : prefixedBody;
+  if (!resolvedThinkLevel && prefixedCommandBody) {
+    const parts = prefixedCommandBody.split(/\s+/);
+    const maybeLevel = normalizeThinkLevel(parts[0]);
+    if (maybeLevel && (maybeLevel !== "xhigh" || supportsXHighThinking(provider, model))) {
+      resolvedThinkLevel = maybeLevel;
+      prefixedCommandBody = parts.slice(1).join(" ").trim();
+    }
+  }
+  if (!resolvedThinkLevel) {
+    resolvedThinkLevel = (await modelState.resolveDefaultThinkingLevel()) as ThinkLevel | undefined;
+  }
+  if (resolvedThinkLevel === "xhigh" && !supportsXHighThinking(provider, model)) {
+    const explicitThink = directives.hasThinkDirective && directives.thinkLevel !== undefined;
+    if (explicitThink) {
+      typing.cleanup();
+      return {
+        text: `Thinking level "xhigh" is only supported for ${formatXHighModelHint()}. Use /think high or switch to one of those models.`,
+      };
+    }
+    resolvedThinkLevel = "high";
+    if (sessionEntry && sessionStore && sessionKey && sessionEntry.thinkingLevel === "xhigh") {
+      sessionEntry.thinkingLevel = "high";
+      sessionEntry.updatedAt = Date.now();
+      sessionStore[sessionKey] = sessionEntry;
+      if (storePath) {
+        await updateSessionStore(storePath, (store) => {
+          store[sessionKey] = sessionEntry;
+        });
+      }
+    }
+  }
   if (resetTriggered && command.isAuthorizedSender) {
     await sendResetSessionNotice({
       ctx,
@@ -300,7 +415,10 @@ export async function runPreparedReply(
       cfg,
       accountId: ctx.AccountId,
       threadId: ctx.MessageThreadId,
-      runtimeId,
+      provider,
+      model,
+      defaultProvider,
+      defaultModel,
     });
   }
   const sessionIdFinal = sessionId ?? crypto.randomUUID();
@@ -309,9 +427,10 @@ export async function runPreparedReply(
     sessionEntry,
     resolveSessionFilePathOptions({ agentId, storePath }),
   );
+  const queueBodyBase = [threadContextNote, effectiveBaseBody].filter(Boolean).join("\n\n");
   const queuedBody = mediaNote
-    ? [mediaNote, mediaReplyHint, effectiveBaseBody].filter(Boolean).join("\n").trim()
-    : effectiveBaseBody;
+    ? [mediaNote, mediaReplyHint, queueBodyBase].filter(Boolean).join("\n").trim()
+    : queueBodyBase;
   const resolvedQueue = resolveQueueSettings({
     cfg,
     channel: sessionCtx.Provider,
@@ -319,19 +438,33 @@ export async function runPreparedReply(
     inlineMode: perMessageQueueMode,
     inlineOptions: perMessageQueueOptions,
   });
-  const sessionLaneKey = "default";
+  const sessionLaneKey = resolveEmbeddedSessionLane(sessionKey ?? sessionIdFinal);
   const laneSize = getQueueSize(sessionLaneKey);
   if (resolvedQueue.mode === "interrupt" && laneSize > 0) {
     const cleared = clearCommandLane(sessionLaneKey);
-    logVerbose(`Interrupting ${sessionLaneKey} (cleared ${cleared})`);
+    const aborted = abortEmbeddedPiRun(sessionIdFinal);
+    logVerbose(`Interrupting ${sessionLaneKey} (cleared ${cleared}, aborted=${aborted})`);
   }
   const queueKey = sessionKey ?? sessionIdFinal;
-  const isActive = isSessionRunActive(queueKey);
+  const isActive = isEmbeddedPiRunActive(sessionIdFinal);
+  const isStreaming = isEmbeddedPiRunStreaming(sessionIdFinal);
+  const shouldSteer = resolvedQueue.mode === "steer" || resolvedQueue.mode === "steer-backlog";
   const shouldFollowup =
     resolvedQueue.mode === "followup" ||
     resolvedQueue.mode === "collect" ||
     resolvedQueue.mode === "steer-backlog";
-  const followupRun = {
+  const authProfileId = (await resolveSessionAuthProfileOverride({
+    cfg,
+    provider,
+    agentDir,
+    sessionEntry,
+    sessionStore,
+    sessionKey,
+    storePath,
+    isNewSession,
+  })) as string | undefined;
+  const authProfileIdSource = sessionEntry?.authProfileOverrideSource;
+  const followupRun: FollowupRun = {
     prompt: queuedBody,
     messageId: sessionCtx.MessageSidFull ?? sessionCtx.MessageSid,
     summaryLine: baseBodyTrimmedRaw,
@@ -349,7 +482,10 @@ export async function runPreparedReply(
       sessionKey,
       messageProvider: resolveOriginMessageProvider({
         originatingChannel: ctx.OriginatingChannel ?? sessionCtx.OriginatingChannel,
-        provider: ctx.Surface ?? ctx.Provider ?? sessionCtx.Provider,
+        // Prefer Provider over Surface for fallback channel identity.
+        // Surface can carry relayed metadata (for example "webchat") while Provider
+        // still reflects the active channel that should own tool routing.
+        provider: ctx.Provider ?? ctx.Surface ?? sessionCtx.Provider,
       }),
       agentAccountId: sessionCtx.AccountId,
       groupId: resolveGroupSessionKey(sessionCtx)?.id ?? undefined,
@@ -363,32 +499,45 @@ export async function runPreparedReply(
       sessionFile,
       workspaceDir,
       config: cfg,
-      provider: runtimeId,
-      model: "default",
+      skillsSnapshot,
+      provider,
+      model,
+      authProfileId,
+      authProfileIdSource,
+      thinkLevel: resolvedThinkLevel,
       verboseLevel: resolvedVerboseLevel,
+      reasoningLevel: resolvedReasoningLevel,
+      elevatedLevel: resolvedElevatedLevel,
+      execOverrides,
+      bashElevated: {
+        enabled: elevatedEnabled,
+        allowed: elevatedAllowed,
+        defaultLevel: resolvedElevatedLevel ?? "off",
+      },
       timeoutMs,
       blockReplyBreak: resolvedBlockStreamingBreak,
       ownerNumbers: command.ownerList.length > 0 ? command.ownerList : undefined,
-      extraSystemPrompt: extraSystemPrompt || undefined,
-      threadContext: threadContextNote,
-      ...(isReasoningTagProvider(runtimeId) ? { enforceFinalTag: true } : {}),
+      extraSystemPrompt: extraSystemPromptParts.join("\n\n") || undefined,
+      ...(isReasoningTagProvider(provider) ? { enforceFinalTag: true } : {}),
     },
   };
 
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   return runReplyAgent({
     commandBody: prefixedCommandBody,
     followupRun,
     queueKey,
     resolvedQueue,
+    shouldSteer,
     shouldFollowup,
     isActive,
+    isStreaming,
     opts,
     typing,
     sessionEntry,
     sessionStore,
     sessionKey,
     storePath,
+    defaultModel,
     agentCfgContextTokens: agentCfg?.contextTokens,
     resolvedVerboseLevel: resolvedVerboseLevel ?? "off",
     isNewSession,

@@ -16,6 +16,7 @@ vi.mock("../../../agents/agent-scope.js", () => ({
   listAgentIds,
   resolveAgentConfig,
   resolveAgentWorkspaceDir,
+  resolveAgentRuntime: () => "claude",
 }));
 vi.mock("../../../logging/subsystem.js", () => ({
   createSubsystemLogger: () => ({

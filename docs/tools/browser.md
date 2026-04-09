@@ -1,5 +1,5 @@
 ---
-description: "Integrated browser control service + action commands"
+summary: "Integrated browser control service + action commands"
 read_when:
   - Adding agent-controlled browser automation
   - Debugging why remoteclaw is interfering with your own Chrome
@@ -97,7 +97,7 @@ Notes:
 - `browser.ssrfPolicy.allowPrivateNetwork` remains supported as a legacy alias for compatibility.
 - `attachOnly: true` means “never launch a local browser; only attach if it is already running.”
 - `color` + per-profile `color` tint the browser UI so you can see which profile is active.
-- Default profile is `chrome` (extension relay). Use `defaultProfile: "remoteclaw"` for the managed browser.
+- Default profile is `remoteclaw` (RemoteClaw-managed standalone browser). Use `defaultProfile: "chrome"` to opt into the Chrome extension relay.
 - Auto-detect order: system default browser if Chromium-based; otherwise Chrome → Brave → Edge → Chromium → Chrome Canary.
 - Local `remoteclaw` profiles auto-assign `cdpPort`/`cdpUrl` — set those only for remote CDP.
 

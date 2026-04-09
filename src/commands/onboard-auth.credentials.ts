@@ -7,6 +7,7 @@ export { KILOCODE_DEFAULT_MODEL_REF };
 export async function writeOAuthCredentials(
   provider: string,
   creds: OAuthCredentials,
+  ..._rest: unknown[]
 ): Promise<string> {
   const email =
     typeof creds.email === "string" && creds.email.trim() ? creds.email.trim() : "default";

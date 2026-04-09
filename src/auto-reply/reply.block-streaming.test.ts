@@ -120,7 +120,7 @@ function createReplyConfig(home: string, streamMode?: "block"): RemoteClawConfig
     },
     channels: { telegram: { allowFrom: ["*"], streamMode } },
     session: { store: path.join(home, "sessions.json") },
-  };
+  } as RemoteClawConfig;
 }
 
 async function runTelegramReply(params: {

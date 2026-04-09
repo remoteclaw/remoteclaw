@@ -1,24 +1,130 @@
-import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { captureEnv } from "../test-utils/env.js";
 import { startGatewayServer } from "./server.js";
+import { extractPayloadText } from "./test-helpers.agent-results.js";
 import {
   connectDeviceAuthReq,
   connectGatewayClient,
   getFreeGatewayPort,
+  startGatewayWithClient,
 } from "./test-helpers.e2e.js";
+import { installOpenAiResponsesMock } from "./test-helpers.openai-mock.js";
+import { buildOpenAiResponsesProviderConfig } from "./test-openai-responses-model.js";
 
 let writeConfigFile: typeof import("../config/config.js").writeConfigFile;
 let resolveConfigPath: typeof import("../config/config.js").resolveConfigPath;
 const GATEWAY_E2E_TIMEOUT_MS = 30_000;
+let gatewayTestSeq = 0;
+
+function nextGatewayId(prefix: string): string {
+  return `${prefix}-${process.pid}-${process.env.VITEST_POOL_ID ?? "0"}-${gatewayTestSeq++}`;
+}
 
 describe("gateway e2e", () => {
   beforeAll(async () => {
     ({ writeConfigFile, resolveConfigPath } = await import("../config/config.js"));
   });
+
+  // Gutted in RemoteClaw fork — OpenAI responses model and mock are stubbed out
+  it.skip(
+    "runs a mock OpenAI tool call end-to-end via gateway agent loop",
+    { timeout: GATEWAY_E2E_TIMEOUT_MS },
+    async () => {
+      const envSnapshot = captureEnv([
+        "HOME",
+        "REMOTECLAW_CONFIG_PATH",
+        "REMOTECLAW_GATEWAY_TOKEN",
+        "REMOTECLAW_SKIP_CHANNELS",
+        "REMOTECLAW_SKIP_GMAIL_WATCHER",
+        "REMOTECLAW_SKIP_CRON",
+        "REMOTECLAW_SKIP_CANVAS_HOST",
+        "REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER",
+      ]);
+
+      const { baseUrl: openaiBaseUrl, restore } = installOpenAiResponsesMock();
+
+      const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-gw-mock-home-"));
+      process.env.HOME = tempHome;
+      process.env.REMOTECLAW_SKIP_CHANNELS = "1";
+      process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = "1";
+      process.env.REMOTECLAW_SKIP_CRON = "1";
+      process.env.REMOTECLAW_SKIP_CANVAS_HOST = "1";
+      process.env.REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER = "1";
+
+      const token = nextGatewayId("test-token");
+      process.env.REMOTECLAW_GATEWAY_TOKEN = token;
+
+      const workspaceDir = path.join(tempHome, "remoteclaw");
+      await fs.mkdir(workspaceDir, { recursive: true });
+
+      const nonceA = nextGatewayId("nonce-a");
+      const nonceB = nextGatewayId("nonce-b");
+      const toolProbePath = path.join(workspaceDir, `.remoteclaw-tool-probe.${nonceA}.txt`);
+      await fs.writeFile(toolProbePath, `nonceA=${nonceA}\nnonceB=${nonceB}\n`);
+
+      const configDir = path.join(tempHome, ".remoteclaw");
+      await fs.mkdir(configDir, { recursive: true });
+      const configPath = path.join(configDir, "remoteclaw.json");
+
+      const cfg = {
+        agents: { defaults: { workspace: workspaceDir } },
+        models: {
+          mode: "replace",
+          providers: {
+            openai: buildOpenAiResponsesProviderConfig(openaiBaseUrl),
+          },
+        },
+        gateway: { auth: { token } },
+      };
+
+      const { server, client } = await startGatewayWithClient({
+        cfg,
+        configPath,
+        token,
+        clientDisplayName: "vitest-mock-openai",
+      });
+
+      try {
+        const sessionKey = "agent:dev:mock-openai";
+
+        await client.request("sessions.patch", {
+          key: sessionKey,
+          model: "openai/gpt-5.2",
+        });
+
+        const runId = nextGatewayId("run");
+        const payload = await client.request<{
+          status?: unknown;
+          result?: unknown;
+        }>(
+          "agent",
+          {
+            sessionKey,
+            idempotencyKey: `idem-${runId}`,
+            message:
+              `Call the read tool on "${toolProbePath}". ` +
+              `Then reply with exactly: ${nonceA} ${nonceB}. No extra text.`,
+            deliver: false,
+          },
+          { expectFinal: true },
+        );
+
+        expect(payload?.status).toBe("ok");
+        const text = extractPayloadText(payload?.result);
+        expect(text).toContain(nonceA);
+        expect(text).toContain(nonceB);
+      } finally {
+        client.stop();
+        await server.close({ reason: "mock openai test complete" });
+        await fs.rm(tempHome, { recursive: true, force: true });
+        restore();
+        envSnapshot.restore();
+      }
+    },
+  );
 
   it(
     "runs wizard over ws and writes auth token config",
@@ -48,11 +154,17 @@ describe("gateway e2e", () => {
       delete process.env.REMOTECLAW_STATE_DIR;
       delete process.env.REMOTECLAW_CONFIG_PATH;
 
-      // Provide a workspace config so resolveAgentWorkspaceDir doesn't throw
-      const tempWorkspace = path.join(tempHome, "workspace");
-      await writeConfigFile({ agents: { list: [{ id: "main", workspace: tempWorkspace }] } });
+      const wizardConfigDir = path.join(tempHome, ".remoteclaw");
+      await fs.mkdir(wizardConfigDir, { recursive: true });
+      const wizardWorkspaceDir = path.join(tempHome, "remoteclaw");
+      await fs.mkdir(wizardWorkspaceDir, { recursive: true });
+      await fs.writeFile(
+        path.join(wizardConfigDir, "remoteclaw.json"),
+        JSON.stringify({ agents: { defaults: { workspace: wizardWorkspaceDir } } }),
+        "utf-8",
+      );
 
-      const wizardToken = `wiz-${randomUUID()}`;
+      const wizardToken = nextGatewayId("wiz-token");
       const port = await getFreeGatewayPort();
       const server = await startGatewayServer(port, {
         bind: "loopback",
@@ -63,7 +175,7 @@ describe("gateway e2e", () => {
           await prompter.note("write token");
           const token = await prompter.text({ message: "token" });
           await writeConfigFile({
-            agents: { list: [{ id: "main", workspace: tempWorkspace }] },
+            agents: { defaults: { workspace: wizardWorkspaceDir } },
             gateway: { auth: { mode: "token", token: String(token) } },
           });
           await prompter.outro("ok");

@@ -1,8 +1,7 @@
 import path from "node:path";
 import { z } from "zod";
-import { isSafeExecutableValue } from "../infra/safe-executable-value.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle) — secrets subsystem removed
-const isValidFileSecretRefId = (_v: unknown): boolean => true;
+import { isSafeExecutableValue } from "../infra/exec-safety.js";
+import { isValidFileSecretRefId } from "../secrets/ref-contract.js";
 import { MODEL_APIS } from "./types.models.js";
 import { createAllowDenyChannelRulesSchema } from "./zod-schema.allowdeny.js";
 import { sensitive } from "./zod-schema.sensitive.js";
@@ -379,7 +378,7 @@ export const TtsConfigSchema = z
       .optional(),
     elevenlabs: z
       .object({
-        apiKey: z.string().optional().register(sensitive),
+        apiKey: SecretInputSchema.optional().register(sensitive),
         baseUrl: z.string().optional(),
         voiceId: z.string().optional(),
         modelId: z.string().optional(),
@@ -401,7 +400,7 @@ export const TtsConfigSchema = z
       .optional(),
     openai: z
       .object({
-        apiKey: z.string().optional().register(sensitive),
+        apiKey: SecretInputSchema.optional().register(sensitive),
         model: z.string().optional(),
         voice: z.string().optional(),
       })
@@ -681,6 +680,8 @@ export const ToolsMediaUnderstandingSchema = z
     ...MediaUnderstandingRuntimeFields,
     attachments: MediaUnderstandingAttachmentsSchema,
     models: z.array(MediaUnderstandingModelSchema).optional(),
+    echoTranscript: z.boolean().optional(),
+    echoFormat: z.string().optional(),
   })
   .strict()
   .optional();

@@ -709,7 +709,6 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
       dispatcher,
       replyOptions: {
         ...replyOptions,
-        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         skillFilter: channelConfig?.skills,
         disableBlockStreaming:
           disableBlockStreamingForDraft ??

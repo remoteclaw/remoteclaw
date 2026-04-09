@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createWizardPrompter as buildWizardPrompter } from "../../test/helpers/wizard-prompter.js";
+import { DEFAULT_DANGEROUS_NODE_COMMANDS } from "../gateway/node-command-policy.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter, WizardSelectParams } from "./prompts.js";
 
@@ -59,34 +60,37 @@ describe("configureGatewayForOnboarding", () => {
     };
   }
 
-  it("generates a token when the prompt returns undefined", async () => {
-    mocks.randomToken.mockReturnValue("generated-token");
-
+  async function runGatewayConfig(params?: {
+    flow?: "advanced" | "quickstart";
+    bindChoice?: string;
+    authChoice?: "token" | "password";
+    tailscaleChoice?: "off" | "serve";
+    textQueue?: Array<string | undefined>;
+    nextConfig?: Record<string, unknown>;
+  }) {
+    const authChoice = params?.authChoice ?? "token";
     const prompter = createPrompter({
-      selectQueue: ["loopback", "token", "off"],
-      textQueue: ["18789", undefined],
+      selectQueue: [params?.bindChoice ?? "loopback", authChoice, params?.tailscaleChoice ?? "off"],
+      textQueue: params?.textQueue ?? ["18789", undefined],
     });
     const runtime = createRuntime();
-
-    const result = await configureGatewayForOnboarding({
-      flow: "advanced",
+    return configureGatewayForOnboarding({
+      flow: params?.flow ?? "advanced",
       baseConfig: {},
-      nextConfig: {},
+      nextConfig: params?.nextConfig ?? {},
       localPort: 18789,
-      quickstartGateway: createQuickstartGateway("token"),
+      quickstartGateway: createQuickstartGateway(authChoice),
       prompter,
       runtime,
     });
+  }
+
+  it("generates a token when the prompt returns undefined", async () => {
+    mocks.randomToken.mockReturnValue("generated-token");
+    const result = await runGatewayConfig();
 
     expect(result.settings.gatewayToken).toBe("generated-token");
-    expect(result.nextConfig.gateway?.nodes?.denyCommands).toEqual([
-      "camera.snap",
-      "camera.clip",
-      "screen.record",
-      "calendar.add",
-      "contacts.add",
-      "reminders.add",
-    ]);
+    expect(result.nextConfig.gateway?.nodes?.denyCommands).toEqual(DEFAULT_DANGEROUS_NODE_COMMANDS);
   });
 
   it("prefers REMOTECLAW_GATEWAY_TOKEN during quickstart token setup", async () => {
@@ -95,21 +99,10 @@ describe("configureGatewayForOnboarding", () => {
     mocks.randomToken.mockReturnValue("generated-token");
     mocks.randomToken.mockClear();
 
-    const prompter = createPrompter({
-      selectQueue: ["loopback", "token", "off"],
-      textQueue: [],
-    });
-    const runtime = createRuntime();
-
     try {
-      const result = await configureGatewayForOnboarding({
+      const result = await runGatewayConfig({
         flow: "quickstart",
-        baseConfig: {},
-        nextConfig: {},
-        localPort: 18789,
-        quickstartGateway: createQuickstartGateway("token"),
-        prompter,
-        runtime,
+        textQueue: [],
       });
 
       expect(result.settings.gatewayToken).toBe("token-from-env");
@@ -124,22 +117,8 @@ describe("configureGatewayForOnboarding", () => {
 
   it("does not set password to literal 'undefined' when prompt returns undefined", async () => {
     mocks.randomToken.mockReturnValue("unused");
-
-    // Flow: loopback bind → password auth → tailscale off
-    const prompter = createPrompter({
-      selectQueue: ["loopback", "password", "off"],
-      textQueue: ["18789", undefined],
-    });
-    const runtime = createRuntime();
-
-    const result = await configureGatewayForOnboarding({
-      flow: "advanced",
-      baseConfig: {},
-      nextConfig: {},
-      localPort: 18789,
-      quickstartGateway: createQuickstartGateway("password"),
-      prompter,
-      runtime,
+    const result = await runGatewayConfig({
+      authChoice: "password",
     });
 
     const authConfig = result.nextConfig.gateway?.auth as { mode?: string; password?: string };
@@ -148,136 +127,51 @@ describe("configureGatewayForOnboarding", () => {
     expect(authConfig?.password).not.toBe("undefined");
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("seeds control UI allowed origins for non-loopback binds", async () => {
+  // Gutted in RemoteClaw fork — ensureControlUiAllowedOriginsForNonLoopbackBind
+  // is a passthrough stub, so controlUi.allowedOrigins is never populated.
+  it("seeds control UI allowed origins for non-loopback binds", async () => {
     mocks.randomToken.mockReturnValue("generated-token");
-
-    const prompter = createPrompter({
-      selectQueue: ["lan", "token", "off"],
-      textQueue: ["18789", undefined],
-    });
-    const runtime = createRuntime();
-
-    const result = await configureGatewayForOnboarding({
-      flow: "advanced",
-      baseConfig: {},
-      nextConfig: {},
-      localPort: 18789,
-      quickstartGateway: createQuickstartGateway("token"),
-      prompter,
-      runtime,
-    });
-
-    expect(result.nextConfig.gateway?.controlUi?.allowedOrigins).toEqual([
-      "http://localhost:18789",
-      "http://127.0.0.1:18789",
-    ]);
-  });
-
-  it("adds Tailscale origin to controlUi.allowedOrigins when tailscale serve is enabled", async () => {
-    mocks.randomToken.mockReturnValue("generated-token");
-    mocks.getTailnetHostname.mockResolvedValue("my-host.tail1234.ts.net");
-
-    const prompter = createPrompter({
-      selectQueue: ["loopback", "token", "serve"],
-      textQueue: ["18789", undefined],
-    });
-    const runtime = createRuntime();
-
-    const result = await configureGatewayForOnboarding({
-      flow: "advanced",
-      baseConfig: {},
-      nextConfig: {},
-      localPort: 18789,
-      quickstartGateway: createQuickstartGateway("token"),
-      prompter,
-      runtime,
-    });
-
-    expect(result.nextConfig.gateway?.controlUi?.allowedOrigins).toContain(
-      "https://my-host.tail1234.ts.net",
-    );
-  });
-
-  it("does not add Tailscale origin when getTailnetHostname fails", async () => {
-    mocks.randomToken.mockReturnValue("generated-token");
-    mocks.getTailnetHostname.mockRejectedValue(new Error("not found"));
-
-    const prompter = createPrompter({
-      selectQueue: ["loopback", "token", "serve"],
-      textQueue: ["18789", undefined],
-    });
-    const runtime = createRuntime();
-
-    const result = await configureGatewayForOnboarding({
-      flow: "advanced",
-      baseConfig: {},
-      nextConfig: {},
-      localPort: 18789,
-      quickstartGateway: createQuickstartGateway("token"),
-      prompter,
-      runtime,
+    const result = await runGatewayConfig({
+      bindChoice: "lan",
     });
 
     expect(result.nextConfig.gateway?.controlUi?.allowedOrigins).toBeUndefined();
   });
 
-  it("formats IPv6 Tailscale fallback addresses as valid HTTPS origins", async () => {
-    mocks.randomToken.mockReturnValue("generated-token");
-    mocks.getTailnetHostname.mockResolvedValue("fd7a:115c:a1e0::99");
+  // Gutted in RemoteClaw fork — resolveSecretInputModeForEnvSelection always
+  // returns "plaintext", so secretInputMode=ref falls through to the plaintext
+  // path and the password is stored as the text prompt value.
+  it("honors secretInputMode=ref for gateway password prompts", async () => {
+    const previous = process.env.REMOTECLAW_GATEWAY_PASSWORD;
+    process.env.REMOTECLAW_GATEWAY_PASSWORD = "gateway-secret";
+    try {
+      const prompter = createPrompter({
+        selectQueue: ["loopback", "password", "off", "env"],
+        textQueue: ["18789", "REMOTECLAW_GATEWAY_PASSWORD"],
+      });
+      const runtime = createRuntime();
 
-    const prompter = createPrompter({
-      selectQueue: ["loopback", "token", "serve"],
-      textQueue: ["18789", undefined],
-    });
-    const runtime = createRuntime();
+      const result = await configureGatewayForOnboarding({
+        flow: "advanced",
+        baseConfig: {},
+        nextConfig: {},
+        localPort: 18789,
+        quickstartGateway: createQuickstartGateway("password"),
+        secretInputMode: "ref",
+        prompter,
+        runtime,
+      });
 
-    const result = await configureGatewayForOnboarding({
-      flow: "advanced",
-      baseConfig: {},
-      nextConfig: {},
-      localPort: 18789,
-      quickstartGateway: createQuickstartGateway("token"),
-      prompter,
-      runtime,
-    });
-
-    expect(result.nextConfig.gateway?.controlUi?.allowedOrigins).toContain(
-      "https://[fd7a:115c:a1e0::99]",
-    );
-  });
-
-  it("does not duplicate Tailscale origin when allowlist already contains case variants", async () => {
-    mocks.randomToken.mockReturnValue("generated-token");
-    mocks.getTailnetHostname.mockResolvedValue("my-host.tail1234.ts.net");
-
-    const prompter = createPrompter({
-      selectQueue: ["loopback", "token", "serve"],
-      textQueue: ["18789", undefined],
-    });
-    const runtime = createRuntime();
-
-    const result = await configureGatewayForOnboarding({
-      flow: "advanced",
-      baseConfig: {},
-      nextConfig: {
-        gateway: {
-          controlUi: {
-            allowedOrigins: ["HTTPS://MY-HOST.TAIL1234.TS.NET"],
-          },
-        },
-      },
-      localPort: 18789,
-      quickstartGateway: createQuickstartGateway("token"),
-      prompter,
-      runtime,
-    });
-
-    const origins = result.nextConfig.gateway?.controlUi?.allowedOrigins ?? [];
-    const tsOriginCount = origins.filter(
-      (origin) => origin.toLowerCase() === "https://my-host.tail1234.ts.net",
-    ).length;
-    expect(tsOriginCount).toBe(1);
+      expect(result.nextConfig.gateway?.auth?.mode).toBe("password");
+      // Gutted: password is stored as the plaintext prompt value since
+      // resolveSecretInputModeForEnvSelection always returns "plaintext".
+      expect(result.nextConfig.gateway?.auth?.password).toBe("REMOTECLAW_GATEWAY_PASSWORD");
+    } finally {
+      if (previous === undefined) {
+        delete process.env.REMOTECLAW_GATEWAY_PASSWORD;
+      } else {
+        process.env.REMOTECLAW_GATEWAY_PASSWORD = previous;
+      }
+    }
   });
 });

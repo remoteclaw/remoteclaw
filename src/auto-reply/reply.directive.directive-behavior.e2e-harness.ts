@@ -1,6 +1,7 @@
 import path from "node:path";
 import { afterEach, beforeEach, expect, vi } from "vitest";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { loadSessionStore } from "../config/sessions.js";
 import { runAgent } from "./reply.directive.directive-behavior.e2e-mocks.js";
 
@@ -71,7 +72,7 @@ export function makeWhatsAppDirectiveConfig(
   home: string,
   defaults: Record<string, unknown>,
   extra: Record<string, unknown> = {},
-) {
+): RemoteClawConfig {
   return {
     agents: {
       defaults: {
@@ -83,7 +84,7 @@ export function makeWhatsAppDirectiveConfig(
     channels: { whatsapp: { allowFrom: ["*"] } },
     session: { store: sessionStorePath(home) },
     ...extra,
-  };
+  } as RemoteClawConfig;
 }
 
 export const AUTHORIZED_WHATSAPP_COMMAND = {

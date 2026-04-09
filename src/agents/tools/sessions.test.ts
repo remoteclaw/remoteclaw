@@ -35,6 +35,10 @@ import { createSessionsSendTool } from "./sessions-send-tool.js";
 
 let resolveAnnounceTarget: (typeof import("./sessions-announce-target.js"))["resolveAnnounceTarget"];
 let setActivePluginRegistry: (typeof import("../../plugins/runtime.js"))["setActivePluginRegistry"];
+const MAIN_AGENT_SESSION_KEY = "agent:main:main";
+const MAIN_AGENT_CHANNEL = "whatsapp";
+
+type SessionsListResult = Awaited<ReturnType<ReturnType<typeof createSessionsListTool>["execute"]>>;
 
 const installRegistry = async () => {
   setActivePluginRegistry(
@@ -82,7 +86,55 @@ const installRegistry = async () => {
   );
 };
 
-describe("sanitizeTextContent", () => {
+function createMainSessionsListTool() {
+  return createSessionsListTool({ agentSessionKey: MAIN_AGENT_SESSION_KEY });
+}
+
+async function executeMainSessionsList() {
+  return createMainSessionsListTool().execute("call1", {});
+}
+
+function createMainSessionsSendTool() {
+  return createSessionsSendTool({
+    agentSessionKey: MAIN_AGENT_SESSION_KEY,
+    agentChannel: MAIN_AGENT_CHANNEL,
+  });
+}
+
+function getFirstListedSession(result: SessionsListResult) {
+  const details = result.details as
+    | { sessions?: Array<{ key?: string; transcriptPath?: string }> }
+    | undefined;
+  return details?.sessions?.[0];
+}
+
+function expectWorkerTranscriptPath(
+  result: SessionsListResult,
+  params: { containsPath: string; sessionId: string },
+) {
+  const session = getFirstListedSession(result);
+  expect(session).toMatchObject({ key: "agent:worker:main" });
+  const transcriptPath = String(session?.transcriptPath ?? "");
+  expect(path.normalize(transcriptPath)).toContain(path.normalize(params.containsPath));
+  expect(transcriptPath).toMatch(new RegExp(`${params.sessionId}\\.jsonl$`));
+}
+
+async function withStubbedStateDir<T>(
+  name: string,
+  run: (stateDir: string) => Promise<T>,
+): Promise<T> {
+  const stateDir = path.join(os.tmpdir(), name);
+  vi.stubEnv("REMOTECLAW_STATE_DIR", stateDir);
+  try {
+    return await run(stateDir);
+  } finally {
+    vi.unstubAllEnvs();
+  }
+}
+
+// Gutted in RemoteClaw fork — stripMinimaxToolCallXml, stripDowngradedToolCallText,
+// and stripThinkingTagsFromText are identity-function stubs in sessions-helpers.ts.
+describe.skip("sanitizeTextContent — gutted in RemoteClaw fork", () => {
   it("strips minimax tool call XML and downgraded markers", () => {
     const input =
       'Hello <invoke name="tool">payload</invoke></minimax:tool_call> ' +
@@ -114,7 +166,8 @@ beforeEach(() => {
 });
 
 describe("extractAssistantText", () => {
-  it("sanitizes blocks without injecting newlines", () => {
+  // Gutted in RemoteClaw fork — stripThinkingTagsFromText is an identity stub
+  it.skip("sanitizes blocks without injecting newlines — gutted text sanitization", () => {
     const message = {
       role: "assistant",
       content: [
@@ -125,7 +178,9 @@ describe("extractAssistantText", () => {
     expect(extractAssistantText(message)).toBe("Hi there");
   });
 
-  it("rewrites error-ish assistant text only when the transcript marks it as an error", () => {
+  // Gutted in RemoteClaw fork — sanitizeUserFacingText is an identity stub,
+  // so error context rewriting (e.g. "500 Internal Server Error" -> "HTTP 500: ...") is not wired
+  it.skip("rewrites error-ish assistant text only when the transcript marks it as an error", () => {
     const message = {
       role: "assistant",
       stopReason: "error",
@@ -209,11 +264,11 @@ describe("sessions_list gating", () => {
   });
 
   it("filters out other agents when tools.agentToAgent.enabled is false", async () => {
-    const tool = createSessionsListTool({ agentSessionKey: "agent:main:main" });
+    const tool = createMainSessionsListTool();
     const result = await tool.execute("call1", {});
     expect(result.details).toMatchObject({
       count: 1,
-      sessions: [{ key: "agent:main:main" }],
+      sessions: [{ key: MAIN_AGENT_SESSION_KEY }],
     });
   });
 });
@@ -231,10 +286,7 @@ describe("sessions_list transcriptPath resolution", () => {
   });
 
   it("resolves cross-agent transcript paths from agent defaults when gateway store path is relative", async () => {
-    const stateDir = path.join(os.tmpdir(), "remoteclaw-state-relative");
-    vi.stubEnv("REMOTECLAW_STATE_DIR", stateDir);
-
-    try {
+    await withStubbedStateDir("remoteclaw-state-relative", async () => {
       callGatewayMock.mockResolvedValueOnce({
         path: "agents/main/sessions/sessions.json",
         sessions: [
@@ -246,27 +298,16 @@ describe("sessions_list transcriptPath resolution", () => {
         ],
       });
 
-      const tool = createSessionsListTool({ agentSessionKey: "agent:main:main" });
-      const result = await tool.execute("call1", {});
-
-      const details = result.details as
-        | { sessions?: Array<{ key?: string; transcriptPath?: string }> }
-        | undefined;
-      const session = details?.sessions?.[0];
-      expect(session).toMatchObject({ key: "agent:worker:main" });
-      const transcriptPath = String(session?.transcriptPath ?? "");
-      expect(path.normalize(transcriptPath)).toContain(path.join("agents", "worker", "sessions"));
-      expect(transcriptPath).toMatch(/sess-worker\.jsonl$/);
-    } finally {
-      vi.unstubAllEnvs();
-    }
+      const result = await executeMainSessionsList();
+      expectWorkerTranscriptPath(result, {
+        containsPath: path.join("agents", "worker", "sessions"),
+        sessionId: "sess-worker",
+      });
+    });
   });
 
   it("resolves transcriptPath even when sessions.list does not return a store path", async () => {
-    const stateDir = path.join(os.tmpdir(), "remoteclaw-state-no-path");
-    vi.stubEnv("REMOTECLAW_STATE_DIR", stateDir);
-
-    try {
+    await withStubbedStateDir("remoteclaw-state-no-path", async () => {
       callGatewayMock.mockResolvedValueOnce({
         sessions: [
           {
@@ -277,27 +318,16 @@ describe("sessions_list transcriptPath resolution", () => {
         ],
       });
 
-      const tool = createSessionsListTool({ agentSessionKey: "agent:main:main" });
-      const result = await tool.execute("call1", {});
-
-      const details = result.details as
-        | { sessions?: Array<{ key?: string; transcriptPath?: string }> }
-        | undefined;
-      const session = details?.sessions?.[0];
-      expect(session).toMatchObject({ key: "agent:worker:main" });
-      const transcriptPath = String(session?.transcriptPath ?? "");
-      expect(path.normalize(transcriptPath)).toContain(path.join("agents", "worker", "sessions"));
-      expect(transcriptPath).toMatch(/sess-worker-no-path\.jsonl$/);
-    } finally {
-      vi.unstubAllEnvs();
-    }
+      const result = await executeMainSessionsList();
+      expectWorkerTranscriptPath(result, {
+        containsPath: path.join("agents", "worker", "sessions"),
+        sessionId: "sess-worker-no-path",
+      });
+    });
   });
 
   it("falls back to agent defaults when gateway path is non-string", async () => {
-    const stateDir = path.join(os.tmpdir(), "remoteclaw-state-non-string-path");
-    vi.stubEnv("REMOTECLAW_STATE_DIR", stateDir);
-
-    try {
+    await withStubbedStateDir("remoteclaw-state-non-string-path", async () => {
       callGatewayMock.mockResolvedValueOnce({
         path: { raw: "agents/main/sessions/sessions.json" },
         sessions: [
@@ -309,27 +339,16 @@ describe("sessions_list transcriptPath resolution", () => {
         ],
       });
 
-      const tool = createSessionsListTool({ agentSessionKey: "agent:main:main" });
-      const result = await tool.execute("call1", {});
-
-      const details = result.details as
-        | { sessions?: Array<{ key?: string; transcriptPath?: string }> }
-        | undefined;
-      const session = details?.sessions?.[0];
-      expect(session).toMatchObject({ key: "agent:worker:main" });
-      const transcriptPath = String(session?.transcriptPath ?? "");
-      expect(path.normalize(transcriptPath)).toContain(path.join("agents", "worker", "sessions"));
-      expect(transcriptPath).toMatch(/sess-worker-shape\.jsonl$/);
-    } finally {
-      vi.unstubAllEnvs();
-    }
+      const result = await executeMainSessionsList();
+      expectWorkerTranscriptPath(result, {
+        containsPath: path.join("agents", "worker", "sessions"),
+        sessionId: "sess-worker-shape",
+      });
+    });
   });
 
   it("falls back to agent defaults when gateway path is '(multiple)'", async () => {
-    const stateDir = path.join(os.tmpdir(), "remoteclaw-state-multiple");
-    vi.stubEnv("REMOTECLAW_STATE_DIR", stateDir);
-
-    try {
+    await withStubbedStateDir("remoteclaw-state-multiple", async (stateDir) => {
       callGatewayMock.mockResolvedValueOnce({
         path: "(multiple)",
         sessions: [
@@ -341,22 +360,12 @@ describe("sessions_list transcriptPath resolution", () => {
         ],
       });
 
-      const tool = createSessionsListTool({ agentSessionKey: "agent:main:main" });
-      const result = await tool.execute("call1", {});
-
-      const details = result.details as
-        | { sessions?: Array<{ key?: string; transcriptPath?: string }> }
-        | undefined;
-      const session = details?.sessions?.[0];
-      expect(session).toMatchObject({ key: "agent:worker:main" });
-      const transcriptPath = String(session?.transcriptPath ?? "");
-      expect(path.normalize(transcriptPath)).toContain(
-        path.join(stateDir, "agents", "worker", "sessions"),
-      );
-      expect(transcriptPath).toMatch(/sess-worker-multiple\.jsonl$/);
-    } finally {
-      vi.unstubAllEnvs();
-    }
+      const result = await executeMainSessionsList();
+      expectWorkerTranscriptPath(result, {
+        containsPath: path.join(stateDir, "agents", "worker", "sessions"),
+        sessionId: "sess-worker-multiple",
+      });
+    });
   });
 
   it("resolves absolute {agentId} template paths per session agent", async () => {
@@ -373,18 +382,12 @@ describe("sessions_list transcriptPath resolution", () => {
       ],
     });
 
-    const tool = createSessionsListTool({ agentSessionKey: "agent:main:main" });
-    const result = await tool.execute("call1", {});
-
-    const details = result.details as
-      | { sessions?: Array<{ key?: string; transcriptPath?: string }> }
-      | undefined;
-    const session = details?.sessions?.[0];
-    expect(session).toMatchObject({ key: "agent:worker:main" });
-    const transcriptPath = String(session?.transcriptPath ?? "");
+    const result = await executeMainSessionsList();
     const expectedSessionsDir = path.dirname(templateStorePath.replace("{agentId}", "worker"));
-    expect(path.normalize(transcriptPath)).toContain(path.normalize(expectedSessionsDir));
-    expect(transcriptPath).toMatch(/sess-worker-template\.jsonl$/);
+    expectWorkerTranscriptPath(result, {
+      containsPath: expectedSessionsDir,
+      sessionId: "sess-worker-template",
+    });
   });
 });
 
@@ -394,10 +397,7 @@ describe("sessions_send gating", () => {
   });
 
   it("returns an error when neither sessionKey nor label is provided", async () => {
-    const tool = createSessionsSendTool({
-      agentSessionKey: "agent:main:main",
-      agentChannel: "whatsapp",
-    });
+    const tool = createMainSessionsSendTool();
 
     const result = await tool.execute("call-missing-target", {
       message: "hi",
@@ -413,10 +413,7 @@ describe("sessions_send gating", () => {
 
   it("returns an error when label resolution fails", async () => {
     callGatewayMock.mockRejectedValueOnce(new Error("No session found with label: nope"));
-    const tool = createSessionsSendTool({
-      agentSessionKey: "agent:main:main",
-      agentChannel: "whatsapp",
-    });
+    const tool = createMainSessionsSendTool();
 
     const result = await tool.execute("call-missing-label", {
       label: "nope",
@@ -435,10 +432,7 @@ describe("sessions_send gating", () => {
   });
 
   it("blocks cross-agent sends when tools.agentToAgent.enabled is false", async () => {
-    const tool = createSessionsSendTool({
-      agentSessionKey: "agent:main:main",
-      agentChannel: "whatsapp",
-    });
+    const tool = createMainSessionsSendTool();
 
     const result = await tool.execute("call1", {
       sessionKey: "agent:other:main",

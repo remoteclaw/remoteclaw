@@ -1,8 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/context-window-guard.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const CONTEXT_WINDOW_HARD_MIN_TOKENS = undefined as any;
+import { CONTEXT_WINDOW_HARD_MIN_TOKENS } from "../agents/context-window-guard.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { defaultRuntime } from "../runtime.js";
 import {
   applyCustomApiConfig,
@@ -76,12 +74,49 @@ function expectOpenAiCompatResult(params: {
 }) {
   expect(params.prompter.text).toHaveBeenCalledTimes(params.textCalls);
   expect(params.prompter.select).toHaveBeenCalledTimes(params.selectCalls);
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
-  expect(params.result.config.models?.providers?.custom?.api).toBe("openai-completions");
+  expect((params.result.config.models?.providers?.custom as Record<string, unknown>)?.api).toBe(
+    "openai-completions",
+  );
 }
 
-// Skipped: tests gutted functionality (Middleware Boundary Principle)
+function buildCustomProviderConfig(contextWindow?: number) {
+  if (contextWindow === undefined) {
+    return {} as RemoteClawConfig;
+  }
+  return {
+    models: {
+      providers: {
+        custom: {
+          api: "openai-completions" as const,
+          baseUrl: "https://llm.example.com/v1",
+          models: [
+            {
+              id: "foo-large",
+              name: "foo-large",
+              contextWindow,
+              maxTokens: contextWindow > CONTEXT_WINDOW_HARD_MIN_TOKENS ? 4096 : 1024,
+              input: ["text"],
+              cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+              reasoning: false,
+            },
+          ],
+        },
+      },
+    },
+  } as RemoteClawConfig;
+}
 
+function applyCustomModelConfigWithContextWindow(contextWindow?: number) {
+  return applyCustomApiConfig({
+    config: buildCustomProviderConfig(contextWindow),
+    baseUrl: "https://llm.example.com/v1",
+    modelId: "foo-large",
+    compatibility: "openai",
+    providerId: "custom",
+  });
+}
+
+// Gutted in RemoteClaw fork — ensureApiKeyFromEnvOrPrompt and normalizeAlias return undefined
 describe.skip("promptCustomApiConfig", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -282,8 +317,7 @@ describe.skip("promptCustomApiConfig", () => {
 
     const result = await runPromptCustomApi(prompter);
 
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
-    expect(result.config.models?.providers?.custom?.apiKey).toEqual({
+    expect((result.config.models?.providers?.custom as Record<string, unknown>)?.apiKey).toEqual({
       source: "env",
       provider: "default",
       id: "CUSTOM_PROVIDER_API_KEY",
@@ -325,8 +359,7 @@ describe.skip("promptCustomApiConfig", () => {
       expect.stringContaining("Could not validate provider reference"),
       "Reference check failed",
     );
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
-    expect(result.config.models?.providers?.custom?.apiKey).toEqual({
+    expect((result.config.models?.providers?.custom as Record<string, unknown>)?.apiKey).toEqual({
       source: "env",
       provider: "default",
       id: "CUSTOM_PROVIDER_API_KEY",
@@ -334,98 +367,33 @@ describe.skip("promptCustomApiConfig", () => {
   });
 });
 
-// Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-describe.skip("applyCustomApiConfig", () => {
-  it("uses hard-min context window for newly added custom models", () => {
-    const result = applyCustomApiConfig({
-      config: {},
-      baseUrl: "https://llm.example.com/v1",
-      modelId: "foo-large",
-      compatibility: "openai",
-      providerId: "custom",
-    });
-
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
-    const model = result.config.models?.providers?.custom?.models?.find(
-      // oxlint-disable-next-line typescript/no-explicit-any
-      (entry: any) => entry.id === "foo-large",
-    );
-    expect(model?.contextWindow).toBe(CONTEXT_WINDOW_HARD_MIN_TOKENS);
-  });
-
-  it("upgrades existing custom model context window when below hard minimum", () => {
-    const result = applyCustomApiConfig({
-      config: {
-        models: {
-          providers: {
-            custom: {
-              api: "openai-completions",
-              baseUrl: "https://llm.example.com/v1",
-              models: [
-                {
-                  id: "foo-large",
-                  name: "foo-large",
-                  contextWindow: 4096,
-                  maxTokens: 1024,
-                  input: ["text"],
-                  cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-                  reasoning: false,
-                },
-              ],
-            },
-          },
-        },
-      },
-      baseUrl: "https://llm.example.com/v1",
-      modelId: "foo-large",
-      compatibility: "openai",
-      providerId: "custom",
-    });
-
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
-    const model = result.config.models?.providers?.custom?.models?.find(
-      // oxlint-disable-next-line typescript/no-explicit-any
-      (entry: any) => entry.id === "foo-large",
-    );
-    expect(model?.contextWindow).toBe(CONTEXT_WINDOW_HARD_MIN_TOKENS);
-  });
-
-  it("preserves existing custom model context window when already above minimum", () => {
-    const result = applyCustomApiConfig({
-      config: {
-        models: {
-          providers: {
-            custom: {
-              api: "openai-completions",
-              baseUrl: "https://llm.example.com/v1",
-              models: [
-                {
-                  id: "foo-large",
-                  name: "foo-large",
-                  contextWindow: 131072,
-                  maxTokens: 4096,
-                  input: ["text"],
-                  cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-                  reasoning: false,
-                },
-              ],
-            },
-          },
-        },
-      },
-      baseUrl: "https://llm.example.com/v1",
-      modelId: "foo-large",
-      compatibility: "openai",
-      providerId: "custom",
-    });
-
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
-    const model = result.config.models?.providers?.custom?.models?.find(
-      // oxlint-disable-next-line typescript/no-explicit-any
-      (entry: any) => entry.id === "foo-large",
-    );
-    expect(model?.contextWindow).toBe(131072);
+describe("applyCustomApiConfig", () => {
+  // Gutted in RemoteClaw fork — applyPrimaryModel is stubbed to return undefined,
+  // so applyCustomApiConfig returns { config: undefined }
+  it.skip.each([
+    {
+      name: "uses hard-min context window for newly added custom models",
+      existingContextWindow: undefined,
+      expectedContextWindow: CONTEXT_WINDOW_HARD_MIN_TOKENS,
+    },
+    {
+      name: "upgrades existing custom model context window when below hard minimum",
+      existingContextWindow: 4096,
+      expectedContextWindow: CONTEXT_WINDOW_HARD_MIN_TOKENS,
+    },
+    {
+      name: "preserves existing custom model context window when already above minimum",
+      existingContextWindow: 131072,
+      expectedContextWindow: 131072,
+    },
+  ])("$name", ({ existingContextWindow, expectedContextWindow }) => {
+    const result = applyCustomModelConfigWithContextWindow(existingContextWindow);
+    const model = (
+      (result.config.models?.providers?.custom as Record<string, unknown>)?.models as
+        | Record<string, unknown>[]
+        | undefined
+    )?.find((entry: Record<string, unknown>) => entry.id === "foo-large");
+    expect(model?.contextWindow).toBe(expectedContextWindow);
   });
 
   it.each([

@@ -1,15 +1,14 @@
-import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import JSZip from "jszip";
 import * as tar from "tar";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { MANIFEST_KEY } from "../compat/legacy-names.js";
+import * as skillScanner from "../security/skill-scanner.js";
 import { expectSingleNpmPackIgnoreScriptsCall } from "../test-utils/exec-assertions.js";
 import {
   expectInstallUsesIgnoreScripts,
   expectIntegrityDriftRejected,
-  expectUnsupportedNpmSpec,
   mockNpmPackMetadataResult,
 } from "../test-utils/npm-spec-install-test-helpers.js";
 
@@ -17,17 +16,71 @@ vi.mock("../process/exec.js", () => ({
   runCommandWithTimeout: vi.fn(),
 }));
 
-const tempDirs: string[] = [];
 let installPluginFromArchive: typeof import("./install.js").installPluginFromArchive;
 let installPluginFromDir: typeof import("./install.js").installPluginFromDir;
 let installPluginFromNpmSpec: typeof import("./install.js").installPluginFromNpmSpec;
+let installPluginFromPath: typeof import("./install.js").installPluginFromPath;
+let PLUGIN_INSTALL_ERROR_CODE: typeof import("./install.js").PLUGIN_INSTALL_ERROR_CODE;
 let runCommandWithTimeout: typeof import("../process/exec.js").runCommandWithTimeout;
+let suiteTempRoot = "";
+let suiteFixtureRoot = "";
+let tempDirCounter = 0;
+const pluginFixturesDir = path.resolve(process.cwd(), "test", "fixtures", "plugins-install");
+const archiveFixturePathCache = new Map<string, string>();
+const dynamicArchiveTemplatePathCache = new Map<string, string>();
+let installPluginFromDirTemplateDir = "";
+let manifestInstallTemplateDir = "";
+const DYNAMIC_ARCHIVE_TEMPLATE_PRESETS = [
+  {
+    outName: "traversal.tgz",
+    withDistIndex: true,
+    packageJson: {
+      name: "@evil/..",
+      version: "0.0.1",
+      [MANIFEST_KEY]: { extensions: ["./dist/index.js"] },
+    } as Record<string, unknown>,
+  },
+  {
+    outName: "reserved.tgz",
+    withDistIndex: true,
+    packageJson: {
+      name: "@evil/.",
+      version: "0.0.1",
+      [MANIFEST_KEY]: { extensions: ["./dist/index.js"] },
+    } as Record<string, unknown>,
+  },
+  {
+    outName: "bad.tgz",
+    withDistIndex: false,
+    packageJson: {
+      name: "@remoteclaw/nope",
+      version: "0.0.1",
+    } as Record<string, unknown>,
+  },
+];
+
+function ensureSuiteTempRoot() {
+  if (suiteTempRoot) {
+    return suiteTempRoot;
+  }
+  suiteTempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-plugin-install-"));
+  return suiteTempRoot;
+}
 
 function makeTempDir() {
-  const dir = path.join(os.tmpdir(), `remoteclaw-plugin-install-${randomUUID()}`);
-  fs.mkdirSync(dir, { recursive: true });
-  tempDirs.push(dir);
+  const dir = path.join(ensureSuiteTempRoot(), `case-${String(tempDirCounter)}`);
+  tempDirCounter += 1;
+  fs.mkdirSync(dir);
   return dir;
+}
+
+function ensureSuiteFixtureRoot() {
+  if (suiteFixtureRoot) {
+    return suiteFixtureRoot;
+  }
+  suiteFixtureRoot = path.join(ensureSuiteTempRoot(), "_fixtures");
+  fs.mkdirSync(suiteFixtureRoot, { recursive: true });
+  return suiteFixtureRoot;
 }
 
 async function packToArchive({
@@ -52,98 +105,51 @@ async function packToArchive({
   return dest;
 }
 
-function writePluginPackage(params: {
-  pkgDir: string;
-  name: string;
-  version: string;
-  extensions: string[];
-}) {
-  fs.mkdirSync(path.join(params.pkgDir, "dist"), { recursive: true });
-  fs.writeFileSync(
-    path.join(params.pkgDir, "package.json"),
-    JSON.stringify(
-      {
-        name: params.name,
-        version: params.version,
-        remoteclaw: { extensions: params.extensions },
-      },
-      null,
-      2,
-    ),
-    "utf-8",
-  );
-  fs.writeFileSync(path.join(params.pkgDir, "dist", "index.js"), "export {};", "utf-8");
+function readVoiceCallArchiveBuffer(version: string): Buffer {
+  return fs.readFileSync(path.join(pluginFixturesDir, `voice-call-${version}.tgz`));
 }
 
-async function createVoiceCallArchive(params: {
-  workDir: string;
+function getArchiveFixturePath(params: {
+  cacheKey: string;
   outName: string;
-  version: string;
-}) {
-  const pkgDir = path.join(params.workDir, "package");
-  writePluginPackage({
-    pkgDir,
-    name: "@remoteclaw/voice-call",
-    version: params.version,
-    extensions: ["./dist/index.js"],
-  });
-  const archivePath = await packToArchive({
-    pkgDir,
-    outDir: params.workDir,
-    outName: params.outName,
-  });
-  return { pkgDir, archivePath };
-}
-
-async function createVoiceCallArchiveBuffer(version: string): Promise<Buffer> {
-  const workDir = makeTempDir();
-  const { archivePath } = await createVoiceCallArchive({
-    workDir,
-    outName: `plugin-${version}.tgz`,
-    version,
-  });
-  return fs.readFileSync(archivePath);
-}
-
-function writeArchiveBuffer(params: { outName: string; buffer: Buffer }): string {
-  const workDir = makeTempDir();
-  const archivePath = path.join(workDir, params.outName);
+  buffer: Buffer;
+}): string {
+  const hit = archiveFixturePathCache.get(params.cacheKey);
+  if (hit) {
+    return hit;
+  }
+  const archivePath = path.join(ensureSuiteFixtureRoot(), params.outName);
   fs.writeFileSync(archivePath, params.buffer);
+  archiveFixturePathCache.set(params.cacheKey, archivePath);
   return archivePath;
 }
 
-async function createZipperArchiveBuffer(): Promise<Buffer> {
-  const zip = new JSZip();
-  zip.file(
-    "package/package.json",
-    JSON.stringify({
-      name: "@remoteclaw/zipper",
-      version: "0.0.1",
-      remoteclaw: { extensions: ["./dist/index.js"] },
-    }),
-  );
-  zip.file("package/dist/index.js", "export {};");
-  return zip.generateAsync({ type: "nodebuffer" });
+function readZipperArchiveBuffer(): Buffer {
+  return fs.readFileSync(path.join(pluginFixturesDir, "zipper-0.0.1.zip"));
 }
 
-const VOICE_CALL_ARCHIVE_V1_BUFFER_PROMISE = createVoiceCallArchiveBuffer("0.0.1");
-const VOICE_CALL_ARCHIVE_V2_BUFFER_PROMISE = createVoiceCallArchiveBuffer("0.0.2");
-const ZIPPER_ARCHIVE_BUFFER_PROMISE = createZipperArchiveBuffer();
+const VOICE_CALL_ARCHIVE_V1_BUFFER = readVoiceCallArchiveBuffer("0.0.1");
+const VOICE_CALL_ARCHIVE_V2_BUFFER = readVoiceCallArchiveBuffer("0.0.2");
+const ZIPPER_ARCHIVE_BUFFER = readZipperArchiveBuffer();
 
-async function getVoiceCallArchiveBuffer(version: string): Promise<Buffer> {
+function getVoiceCallArchiveBuffer(version: string): Buffer {
   if (version === "0.0.1") {
-    return VOICE_CALL_ARCHIVE_V1_BUFFER_PROMISE;
+    return VOICE_CALL_ARCHIVE_V1_BUFFER;
   }
   if (version === "0.0.2") {
-    return VOICE_CALL_ARCHIVE_V2_BUFFER_PROMISE;
+    return VOICE_CALL_ARCHIVE_V2_BUFFER;
   }
-  return createVoiceCallArchiveBuffer(version);
+  return readVoiceCallArchiveBuffer(version);
 }
 
 async function setupVoiceCallArchiveInstall(params: { outName: string; version: string }) {
   const stateDir = makeTempDir();
-  const archiveBuffer = await getVoiceCallArchiveBuffer(params.version);
-  const archivePath = writeArchiveBuffer({ outName: params.outName, buffer: archiveBuffer });
+  const archiveBuffer = getVoiceCallArchiveBuffer(params.version);
+  const archivePath = getArchiveFixturePath({
+    cacheKey: `voice-call:${params.version}`,
+    outName: params.outName,
+    buffer: archiveBuffer,
+  });
   return {
     stateDir,
     archivePath,
@@ -157,6 +163,19 @@ function expectPluginFiles(result: { targetDir: string }, stateDir: string, plug
   expect(fs.existsSync(path.join(result.targetDir, "dist", "index.js"))).toBe(true);
 }
 
+function expectSuccessfulArchiveInstall(params: {
+  result: Awaited<ReturnType<typeof installPluginFromArchive>>;
+  stateDir: string;
+  pluginId: string;
+}) {
+  expect(params.result.ok).toBe(true);
+  if (!params.result.ok) {
+    return;
+  }
+  expect(params.result.pluginId).toBe(params.pluginId);
+  expectPluginFiles(params.result, params.stateDir, params.pluginId);
+}
+
 function setupPluginInstallDirs() {
   const tmpDir = makeTempDir();
   const pluginDir = path.join(tmpDir, "plugin-src");
@@ -167,22 +186,49 @@ function setupPluginInstallDirs() {
 }
 
 function setupInstallPluginFromDirFixture(params?: { devDependencies?: Record<string, string> }) {
-  const workDir = makeTempDir();
-  const stateDir = makeTempDir();
-  const pluginDir = path.join(workDir, "plugin");
-  fs.mkdirSync(path.join(pluginDir, "dist"), { recursive: true });
+  const caseDir = makeTempDir();
+  const stateDir = path.join(caseDir, "state");
+  const pluginDir = path.join(caseDir, "plugin");
+  fs.mkdirSync(stateDir, { recursive: true });
+  fs.cpSync(installPluginFromDirTemplateDir, pluginDir, { recursive: true });
+  if (params?.devDependencies) {
+    const packageJsonPath = path.join(pluginDir, "package.json");
+    const manifest = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8")) as {
+      devDependencies?: Record<string, string>;
+    };
+    manifest.devDependencies = params.devDependencies;
+    fs.writeFileSync(packageJsonPath, JSON.stringify(manifest), "utf-8");
+  }
+  return { pluginDir, extensionsDir: path.join(stateDir, "extensions") };
+}
+
+async function installFromDirWithWarnings(params: { pluginDir: string; extensionsDir: string }) {
+  const warnings: string[] = [];
+  const result = await installPluginFromDir({
+    dirPath: params.pluginDir,
+    extensionsDir: params.extensionsDir,
+    logger: {
+      info: () => {},
+      warn: (msg: string) => warnings.push(msg),
+    },
+  });
+  return { result, warnings };
+}
+
+function setupManifestInstallFixture(params: { manifestId: string }) {
+  const caseDir = makeTempDir();
+  const stateDir = path.join(caseDir, "state");
+  const pluginDir = path.join(caseDir, "plugin-src");
+  fs.mkdirSync(stateDir, { recursive: true });
+  fs.cpSync(manifestInstallTemplateDir, pluginDir, { recursive: true });
   fs.writeFileSync(
-    path.join(pluginDir, "package.json"),
+    path.join(pluginDir, "remoteclaw.plugin.json"),
     JSON.stringify({
-      name: "@remoteclaw/test-plugin",
-      version: "0.0.1",
-      remoteclaw: { extensions: ["./dist/index.js"] },
-      dependencies: { "left-pad": "1.3.0" },
-      ...(params?.devDependencies ? { devDependencies: params.devDependencies } : {}),
+      id: params.manifestId,
+      configSchema: { type: "object", properties: {} },
     }),
     "utf-8",
   );
-  fs.writeFileSync(path.join(pluginDir, "dist", "index.js"), "export {};", "utf-8");
   return { pluginDir, extensionsDir: path.join(stateDir, "extensions") };
 }
 
@@ -194,7 +240,7 @@ async function expectArchiveInstallReservedSegmentRejection(params: {
     packageJson: {
       name: params.packageName,
       version: "0.0.1",
-      remoteclaw: { extensions: ["./dist/index.js"] },
+      [MANIFEST_KEY]: { extensions: ["./dist/index.js"] },
     },
     outName: params.outName,
     withDistIndex: true,
@@ -213,19 +259,10 @@ async function installArchivePackageAndReturnResult(params: {
   withDistIndex?: boolean;
 }) {
   const stateDir = makeTempDir();
-  const workDir = makeTempDir();
-  const pkgDir = path.join(workDir, "package");
-  fs.mkdirSync(pkgDir, { recursive: true });
-  if (params.withDistIndex) {
-    fs.mkdirSync(path.join(pkgDir, "dist"), { recursive: true });
-    fs.writeFileSync(path.join(pkgDir, "dist", "index.js"), "export {};", "utf-8");
-  }
-  fs.writeFileSync(path.join(pkgDir, "package.json"), JSON.stringify(params.packageJson), "utf-8");
-
-  const archivePath = await packToArchive({
-    pkgDir,
-    outDir: workDir,
+  const archivePath = await ensureDynamicArchiveTemplate({
     outName: params.outName,
+    packageJson: params.packageJson,
+    withDistIndex: params.withDistIndex === true,
   });
 
   const extensionsDir = path.join(stateDir, "extensions");
@@ -236,20 +273,121 @@ async function installArchivePackageAndReturnResult(params: {
   return result;
 }
 
+function buildDynamicArchiveTemplateKey(params: {
+  packageJson: Record<string, unknown>;
+  withDistIndex: boolean;
+}): string {
+  return JSON.stringify({
+    packageJson: params.packageJson,
+    withDistIndex: params.withDistIndex,
+  });
+}
+
+async function ensureDynamicArchiveTemplate(params: {
+  packageJson: Record<string, unknown>;
+  outName: string;
+  withDistIndex: boolean;
+}): Promise<string> {
+  const templateKey = buildDynamicArchiveTemplateKey({
+    packageJson: params.packageJson,
+    withDistIndex: params.withDistIndex,
+  });
+  const cachedPath = dynamicArchiveTemplatePathCache.get(templateKey);
+  if (cachedPath) {
+    return cachedPath;
+  }
+  const templateDir = makeTempDir();
+  const pkgDir = path.join(templateDir, "package");
+  fs.mkdirSync(pkgDir, { recursive: true });
+  if (params.withDistIndex) {
+    fs.mkdirSync(path.join(pkgDir, "dist"), { recursive: true });
+    fs.writeFileSync(path.join(pkgDir, "dist", "index.js"), "export {};", "utf-8");
+  }
+  fs.writeFileSync(path.join(pkgDir, "package.json"), JSON.stringify(params.packageJson), "utf-8");
+  const archivePath = await packToArchive({
+    pkgDir,
+    outDir: ensureSuiteFixtureRoot(),
+    outName: params.outName,
+  });
+  dynamicArchiveTemplatePathCache.set(templateKey, archivePath);
+  return archivePath;
+}
+
 afterAll(() => {
-  for (const dir of tempDirs.splice(0)) {
-    try {
-      fs.rmSync(dir, { recursive: true, force: true });
-    } catch {
-      // ignore cleanup failures
-    }
+  if (!suiteTempRoot) {
+    return;
+  }
+  try {
+    fs.rmSync(suiteTempRoot, { recursive: true, force: true });
+  } finally {
+    suiteTempRoot = "";
+    tempDirCounter = 0;
   }
 });
 
 beforeAll(async () => {
-  ({ installPluginFromArchive, installPluginFromDir, installPluginFromNpmSpec } =
-    await import("./install.js"));
+  ({
+    installPluginFromArchive,
+    installPluginFromDir,
+    installPluginFromNpmSpec,
+    installPluginFromPath,
+    PLUGIN_INSTALL_ERROR_CODE,
+  } = await import("./install.js"));
   ({ runCommandWithTimeout } = await import("../process/exec.js"));
+
+  installPluginFromDirTemplateDir = path.join(
+    ensureSuiteFixtureRoot(),
+    "install-from-dir-template",
+  );
+  fs.mkdirSync(path.join(installPluginFromDirTemplateDir, "dist"), { recursive: true });
+  fs.writeFileSync(
+    path.join(installPluginFromDirTemplateDir, "package.json"),
+    JSON.stringify({
+      name: "@remoteclaw/test-plugin",
+      version: "0.0.1",
+      [MANIFEST_KEY]: { extensions: ["./dist/index.js"] },
+      dependencies: { "left-pad": "1.3.0" },
+    }),
+    "utf-8",
+  );
+  fs.writeFileSync(
+    path.join(installPluginFromDirTemplateDir, "dist", "index.js"),
+    "export {};",
+    "utf-8",
+  );
+
+  manifestInstallTemplateDir = path.join(ensureSuiteFixtureRoot(), "manifest-install-template");
+  fs.mkdirSync(path.join(manifestInstallTemplateDir, "dist"), { recursive: true });
+  fs.writeFileSync(
+    path.join(manifestInstallTemplateDir, "package.json"),
+    JSON.stringify({
+      name: "@remoteclaw/cognee-remoteclaw",
+      version: "0.0.1",
+      [MANIFEST_KEY]: { extensions: ["./dist/index.js"] },
+    }),
+    "utf-8",
+  );
+  fs.writeFileSync(
+    path.join(manifestInstallTemplateDir, "dist", "index.js"),
+    "export {};",
+    "utf-8",
+  );
+  fs.writeFileSync(
+    path.join(manifestInstallTemplateDir, "remoteclaw.plugin.json"),
+    JSON.stringify({
+      id: "manifest-template",
+      configSchema: { type: "object", properties: {} },
+    }),
+    "utf-8",
+  );
+
+  for (const preset of DYNAMIC_ARCHIVE_TEMPLATE_PRESETS) {
+    await ensureDynamicArchiveTemplate({
+      packageJson: preset.packageJson,
+      outName: preset.outName,
+      withDistIndex: preset.withDistIndex,
+    });
+  }
 });
 
 beforeEach(() => {
@@ -267,12 +405,7 @@ describe("installPluginFromArchive", () => {
       archivePath,
       extensionsDir,
     });
-    expect(result.ok).toBe(true);
-    if (!result.ok) {
-      return;
-    }
-    expect(result.pluginId).toBe("voice-call");
-    expectPluginFiles(result, stateDir, "voice-call");
+    expectSuccessfulArchiveInstall({ result, stateDir, pluginId: "voice-call" });
   });
 
   it("rejects installing when plugin already exists", async () => {
@@ -300,9 +433,10 @@ describe("installPluginFromArchive", () => {
 
   it("installs from a zip archive", async () => {
     const stateDir = makeTempDir();
-    const archivePath = writeArchiveBuffer({
-      outName: "plugin.zip",
-      buffer: await ZIPPER_ARCHIVE_BUFFER_PROMISE,
+    const archivePath = getArchiveFixturePath({
+      cacheKey: "zipper:0.0.1",
+      outName: "zipper-0.0.1.zip",
+      buffer: ZIPPER_ARCHIVE_BUFFER,
     });
 
     const extensionsDir = path.join(stateDir, "extensions");
@@ -310,24 +444,20 @@ describe("installPluginFromArchive", () => {
       archivePath,
       extensionsDir,
     });
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) {
-      return;
-    }
-    expect(result.pluginId).toBe("zipper");
-    expectPluginFiles(result, stateDir, "zipper");
+    expectSuccessfulArchiveInstall({ result, stateDir, pluginId: "zipper" });
   });
 
   it("allows updates when mode is update", async () => {
     const stateDir = makeTempDir();
-    const archiveV1 = writeArchiveBuffer({
-      outName: "plugin-v1.tgz",
-      buffer: await VOICE_CALL_ARCHIVE_V1_BUFFER_PROMISE,
+    const archiveV1 = getArchiveFixturePath({
+      cacheKey: "voice-call:0.0.1",
+      outName: "voice-call-0.0.1.tgz",
+      buffer: VOICE_CALL_ARCHIVE_V1_BUFFER,
     });
-    const archiveV2 = writeArchiveBuffer({
-      outName: "plugin-v2.tgz",
-      buffer: await VOICE_CALL_ARCHIVE_V2_BUFFER_PROMISE,
+    const archiveV2 = getArchiveFixturePath({
+      cacheKey: "voice-call:0.0.2",
+      outName: "voice-call-0.0.2.tgz",
+      buffer: VOICE_CALL_ARCHIVE_V2_BUFFER,
     });
 
     const extensionsDir = path.join(stateDir, "extensions");
@@ -376,10 +506,90 @@ describe("installPluginFromArchive", () => {
       return;
     }
     expect(result.error).toContain("remoteclaw.extensions");
+    expect(result.code).toBe(PLUGIN_INSTALL_ERROR_CODE.MISSING_REMOTECLAW_EXTENSIONS);
+  });
+
+  it("rejects legacy plugin package shape when remoteclaw.extensions is missing", async () => {
+    const { pluginDir, extensionsDir } = setupPluginInstallDirs();
+    fs.writeFileSync(
+      path.join(pluginDir, "package.json"),
+      JSON.stringify({
+        name: "@remoteclaw/legacy-entry-fallback",
+        version: "0.0.1",
+      }),
+      "utf-8",
+    );
+    fs.writeFileSync(
+      path.join(pluginDir, "remoteclaw.plugin.json"),
+      JSON.stringify({
+        id: "legacy-entry-fallback",
+        configSchema: { type: "object", properties: {} },
+      }),
+      "utf-8",
+    );
+    fs.writeFileSync(path.join(pluginDir, "index.ts"), "export {};\n", "utf-8");
+
+    const result = await installPluginFromDir({
+      dirPath: pluginDir,
+      extensionsDir,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("package.json missing remoteclaw.extensions");
+      expect(result.error).toContain("update the plugin package");
+      expect(result.code).toBe(PLUGIN_INSTALL_ERROR_CODE.MISSING_REMOTECLAW_EXTENSIONS);
+      return;
+    }
+    expect.unreachable("expected install to fail without remoteclaw.extensions");
+  });
+
+  // Gutted in RemoteClaw fork — skill scanner is stubbed (always returns safe),
+  // so dangerous code pattern warnings are never produced
+  it.skip("warns when plugin contains dangerous code patterns", () => {});
+
+  // Gutted in RemoteClaw fork — skill scanner is stubbed (always returns safe),
+  // so hidden directory scan warnings are never produced
+  it.skip("scans extension entry files in hidden directories", () => {});
+
+  it("continues install when scanner throws", async () => {
+    const scanSpy = vi
+      .spyOn(skillScanner, "scanDirectoryWithSummary")
+      .mockRejectedValueOnce(new Error("scanner exploded"));
+
+    const { pluginDir, extensionsDir } = setupPluginInstallDirs();
+
+    fs.writeFileSync(
+      path.join(pluginDir, "package.json"),
+      JSON.stringify({
+        name: "scan-fail-plugin",
+        version: "1.0.0",
+        [MANIFEST_KEY]: { extensions: ["index.js"] },
+      }),
+    );
+    fs.writeFileSync(path.join(pluginDir, "index.js"), "export {};");
+
+    const { result, warnings } = await installFromDirWithWarnings({ pluginDir, extensionsDir });
+
+    expect(result.ok).toBe(true);
+    expect(warnings.some((w) => w.includes("code safety scan failed"))).toBe(true);
+    scanSpy.mockRestore();
   });
 });
 
 describe("installPluginFromDir", () => {
+  function expectInstalledAsMemoryCognee(
+    result: Awaited<ReturnType<typeof installPluginFromDir>>,
+    extensionsDir: string,
+  ) {
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+    expect(result.pluginId).toBe("memory-cognee");
+    expect(result.targetDir).toBe(path.join(extensionsDir, "memory-cognee"));
+  }
+
   it("uses --ignore-scripts for dependency install", async () => {
     const { pluginDir, extensionsDir } = setupInstallPluginFromDirFixture();
 
@@ -431,26 +641,9 @@ describe("installPluginFromDir", () => {
   });
 
   it("uses remoteclaw.plugin.json id as install key when it differs from package name", async () => {
-    const { pluginDir, extensionsDir } = setupPluginInstallDirs();
-    fs.mkdirSync(path.join(pluginDir, "dist"), { recursive: true });
-    fs.writeFileSync(
-      path.join(pluginDir, "package.json"),
-      JSON.stringify({
-        name: "@remoteclaw/cognee-remoteclaw",
-        version: "0.0.1",
-        remoteclaw: { extensions: ["./dist/index.js"] },
-      }),
-      "utf-8",
-    );
-    fs.writeFileSync(path.join(pluginDir, "dist", "index.js"), "export {};", "utf-8");
-    fs.writeFileSync(
-      path.join(pluginDir, "remoteclaw.plugin.json"),
-      JSON.stringify({
-        id: "memory-cognee",
-        configSchema: { type: "object", properties: {} },
-      }),
-      "utf-8",
-    );
+    const { pluginDir, extensionsDir } = setupManifestInstallFixture({
+      manifestId: "memory-cognee",
+    });
 
     const infoMessages: string[] = [];
     const res = await installPluginFromDir({
@@ -459,12 +652,7 @@ describe("installPluginFromDir", () => {
       logger: { info: (msg: string) => infoMessages.push(msg), warn: () => {} },
     });
 
-    expect(res.ok).toBe(true);
-    if (!res.ok) {
-      return;
-    }
-    expect(res.pluginId).toBe("memory-cognee");
-    expect(res.targetDir).toBe(path.join(extensionsDir, "memory-cognee"));
+    expectInstalledAsMemoryCognee(res, extensionsDir);
     expect(
       infoMessages.some((msg) =>
         msg.includes(
@@ -475,26 +663,9 @@ describe("installPluginFromDir", () => {
   });
 
   it("normalizes scoped manifest ids to unscoped install keys", async () => {
-    const { pluginDir, extensionsDir } = setupPluginInstallDirs();
-    fs.mkdirSync(path.join(pluginDir, "dist"), { recursive: true });
-    fs.writeFileSync(
-      path.join(pluginDir, "package.json"),
-      JSON.stringify({
-        name: "@remoteclaw/cognee-remoteclaw",
-        version: "0.0.1",
-        remoteclaw: { extensions: ["./dist/index.js"] },
-      }),
-      "utf-8",
-    );
-    fs.writeFileSync(path.join(pluginDir, "dist", "index.js"), "export {};", "utf-8");
-    fs.writeFileSync(
-      path.join(pluginDir, "remoteclaw.plugin.json"),
-      JSON.stringify({
-        id: "@team/memory-cognee",
-        configSchema: { type: "object", properties: {} },
-      }),
-      "utf-8",
-    );
+    const { pluginDir, extensionsDir } = setupManifestInstallFixture({
+      manifestId: "@team/memory-cognee",
+    });
 
     const res = await installPluginFromDir({
       dirPath: pluginDir,
@@ -503,12 +674,38 @@ describe("installPluginFromDir", () => {
       logger: { info: () => {}, warn: () => {} },
     });
 
-    expect(res.ok).toBe(true);
-    if (!res.ok) {
+    expectInstalledAsMemoryCognee(res, extensionsDir);
+  });
+});
+
+describe("installPluginFromPath", () => {
+  it("blocks hardlink alias overwrites when installing a plain file plugin", async () => {
+    const baseDir = makeTempDir();
+    const extensionsDir = path.join(baseDir, "extensions");
+    const outsideDir = path.join(baseDir, "outside");
+    fs.mkdirSync(extensionsDir, { recursive: true });
+    fs.mkdirSync(outsideDir, { recursive: true });
+
+    const sourcePath = path.join(baseDir, "payload.js");
+    fs.writeFileSync(sourcePath, "console.log('SAFE');\n", "utf-8");
+    const victimPath = path.join(outsideDir, "victim.js");
+    fs.writeFileSync(victimPath, "ORIGINAL", "utf-8");
+
+    const targetPath = path.join(extensionsDir, "payload.js");
+    fs.linkSync(victimPath, targetPath);
+
+    const result = await installPluginFromPath({
+      path: sourcePath,
+      extensionsDir,
+      mode: "update",
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
       return;
     }
-    expect(res.pluginId).toBe("memory-cognee");
-    expect(res.targetDir).toBe(path.join(extensionsDir, "memory-cognee"));
+    expect(result.error.toLowerCase()).toMatch(/hardlink|path alias escape/);
+    expect(fs.readFileSync(victimPath, "utf-8")).toBe("ORIGINAL");
   });
 });
 
@@ -520,7 +717,7 @@ describe("installPluginFromNpmSpec", () => {
     fs.mkdirSync(extensionsDir, { recursive: true });
 
     const run = vi.mocked(runCommandWithTimeout);
-    const voiceCallArchiveBuffer = await VOICE_CALL_ARCHIVE_V1_BUFFER_PROMISE;
+    const voiceCallArchiveBuffer = VOICE_CALL_ARCHIVE_V1_BUFFER;
 
     let packTmpDir = "";
     const packedName = "voice-call-0.0.1.tgz";
@@ -571,7 +768,12 @@ describe("installPluginFromNpmSpec", () => {
   });
 
   it("rejects non-registry npm specs", async () => {
-    await expectUnsupportedNpmSpec((spec) => installPluginFromNpmSpec({ spec }));
+    const result = await installPluginFromNpmSpec({ spec: "github:evil/evil" });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("unsupported npm spec");
+      expect(result.code).toBe(PLUGIN_INSTALL_ERROR_CODE.INVALID_NPM_SPEC);
+    }
   });
 
   it("aborts when integrity drift callback rejects the fetched artifact", async () => {
@@ -597,5 +799,26 @@ describe("installPluginFromNpmSpec", () => {
       expectedIntegrity: "sha512-old",
       actualIntegrity: "sha512-new",
     });
+  });
+
+  it("classifies npm package-not-found errors with a stable error code", async () => {
+    const run = vi.mocked(runCommandWithTimeout);
+    run.mockResolvedValue({
+      code: 1,
+      stdout: "",
+      stderr: "npm ERR! code E404\nnpm ERR! 404 Not Found - GET https://registry.npmjs.org/nope",
+      signal: null,
+      killed: false,
+      termination: "exit",
+    });
+
+    const result = await installPluginFromNpmSpec({
+      spec: "@remoteclaw/not-found",
+      logger: { info: () => {}, warn: () => {} },
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe(PLUGIN_INSTALL_ERROR_CODE.NPM_PACKAGE_NOT_FOUND);
+    }
   });
 });

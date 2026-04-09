@@ -1,9 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import {
-  validateVoiceCredentials,
-  type GatewayRequestHandlerOptions,
-  type RemoteClawPluginApi,
-} from "remoteclaw/plugin-sdk";
+import type { GatewayRequestHandlerOptions, RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
 import { registerVoiceCallCli } from "./src/cli.js";
 import {
   VoiceCallConfigSchema,
@@ -13,6 +9,7 @@ import {
 } from "./src/config.js";
 import type { CoreConfig } from "./src/core-bridge.js";
 import { createVoiceCallRuntime, type VoiceCallRuntime } from "./src/runtime.js";
+import type { TelephonyTtsRuntime } from "./src/telephony-tts.js";
 
 const voiceCallConfigSchema = {
   parse(value: unknown): VoiceCallConfig {
@@ -181,16 +178,34 @@ const voiceCallPlugin = {
         runtimePromise = createVoiceCallRuntime({
           config,
           coreConfig: api.config as CoreConfig,
-          ttsRuntime: api.runtime.tts,
+          ttsRuntime: api.runtime.tts as unknown as TelephonyTtsRuntime,
           logger: api.logger,
         });
       }
-      runtime = await runtimePromise;
+      try {
+        runtime = await runtimePromise;
+      } catch (err) {
+        // Reset so the next call can retry instead of caching the
+        // rejected promise forever (which also leaves the port orphaned
+        // if the server started before the failure).  See: #32387
+        runtimePromise = null;
+        throw err;
+      }
       return runtime;
     };
 
     const sendError = (respond: (ok: boolean, payload?: unknown) => void, err: unknown) => {
       respond(false, { error: err instanceof Error ? err.message : String(err) });
+    };
+
+    const resolveCallMessageRequest = async (params: GatewayRequestHandlerOptions["params"]) => {
+      const callId = typeof params?.callId === "string" ? params.callId.trim() : "";
+      const message = typeof params?.message === "string" ? params.message.trim() : "";
+      if (!callId || !message) {
+        return { error: "callId and message required" } as const;
+      }
+      const rt = await ensureRuntime();
+      return { rt, callId, message } as const;
     };
 
     api.registerGatewayMethod(
@@ -232,14 +247,12 @@ const voiceCallPlugin = {
       "voicecall.continue",
       async ({ params, respond }: GatewayRequestHandlerOptions) => {
         try {
-          const callId = typeof params?.callId === "string" ? params.callId.trim() : "";
-          const message = typeof params?.message === "string" ? params.message.trim() : "";
-          if (!callId || !message) {
-            respond(false, { error: "callId and message required" });
+          const request = await resolveCallMessageRequest(params);
+          if ("error" in request) {
+            respond(false, { error: request.error });
             return;
           }
-          const rt = await ensureRuntime();
-          const result = await rt.manager.continueCall(callId, message);
+          const result = await request.rt.manager.continueCall(request.callId, request.message);
           if (!result.success) {
             respond(false, { error: result.error || "continue failed" });
             return;
@@ -255,14 +268,12 @@ const voiceCallPlugin = {
       "voicecall.speak",
       async ({ params, respond }: GatewayRequestHandlerOptions) => {
         try {
-          const callId = typeof params?.callId === "string" ? params.callId.trim() : "";
-          const message = typeof params?.message === "string" ? params.message.trim() : "";
-          if (!callId || !message) {
-            respond(false, { error: "callId and message required" });
+          const request = await resolveCallMessageRequest(params);
+          if ("error" in request) {
+            respond(false, { error: request.error });
             return;
           }
-          const rt = await ensureRuntime();
-          const result = await rt.manager.speak(callId, message);
+          const result = await request.rt.manager.speak(request.callId, request.message);
           if (!result.success) {
             respond(false, { error: result.error || "speak failed" });
             return;
@@ -487,19 +498,6 @@ const voiceCallPlugin = {
         if (!config.enabled) {
           return;
         }
-
-        const credentials = await validateVoiceCredentials(api.config);
-        if (!credentials.stt.available) {
-          api.logger.warn(
-            "[voice-call] No STT credentials found. Voice calls require a speech-to-text provider (openai, groq, deepgram, google, or mistral).",
-          );
-        }
-        if (!credentials.tts.available) {
-          api.logger.warn(
-            "[voice-call] No TTS credentials found. Voice calls require a text-to-speech provider (openai, elevenlabs, or edge).",
-          );
-        }
-
         try {
           await ensureRuntime();
         } catch (err) {

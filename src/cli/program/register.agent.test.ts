@@ -34,6 +34,7 @@ vi.mock("../../commands/agents.js", () => ({
 
 vi.mock("../../globals.js", () => ({
   setVerbose: setVerboseMock,
+  shouldLogVerbose: vi.fn(() => false),
 }));
 
 vi.mock("../deps.js", () => ({

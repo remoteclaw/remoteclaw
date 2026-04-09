@@ -1,17 +1,11 @@
 import type { Bot } from "grammy";
 import { resolveAgentDir } from "../agents/agent-scope.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/model-catalog.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const findModelInCatalog = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const loadModelCatalog = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const modelSupportsVision = (..._args: unknown[]) => undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/model-selection.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveDefaultModelForAgent = (..._args: unknown[]) => undefined as any;
+import {
+  findModelInCatalog,
+  loadModelCatalog,
+  modelSupportsVision,
+} from "../agents/model-catalog.js";
+import { resolveDefaultModelForAgent } from "../agents/model-selection.js";
 import { resolveChunkMode } from "../auto-reply/chunk.js";
 import { clearHistoryEntriesIfEnabled } from "../auto-reply/reply/history.js";
 import { dispatchReplyWithBufferedBlockDispatcher } from "../auto-reply/reply/provider-dispatcher.js";
@@ -40,28 +34,10 @@ import {
   type DraftLaneState,
   type LaneName,
 } from "./lane-delivery.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./reasoning-lane-coordinator.js";
-type TelegramReasoningStepState = {
-  noteReasoningHint: () => void;
-  noteReasoningDelivered: () => void;
-  takeBufferedFinalAnswer: () => { payload?: unknown; text?: string } | null;
-  resetForNextStep: () => void;
-  shouldBufferFinalAnswer: () => boolean;
-  bufferFinalAnswer: (params: { payload?: unknown; text?: string }) => void;
-};
-const createTelegramReasoningStepState = (..._args: unknown[]): TelegramReasoningStepState => ({
-  noteReasoningHint: () => {},
-  noteReasoningDelivered: () => {},
-  takeBufferedFinalAnswer: () => null,
-  resetForNextStep: () => {},
-  shouldBufferFinalAnswer: () => false,
-  bufferFinalAnswer: () => {},
-});
-const splitTelegramReasoningText = (
-  ..._args: unknown[]
-  // oxlint-disable-next-line typescript/no-explicit-any
-): any => ({ reasoningText: null, answerText: _args[0] ?? null });
+import {
+  createTelegramReasoningStepState,
+  splitTelegramReasoningText,
+} from "./reasoning-lane-coordinator.js";
 import { editMessageTelegram } from "./send.js";
 import { cacheSticker, describeStickerImage } from "./sticker-cache.js";
 
@@ -72,7 +48,7 @@ const DRAFT_MIN_INITIAL_CHARS = 30;
 
 async function resolveStickerVisionSupport(cfg: RemoteClawConfig, agentId: string) {
   try {
-    const catalog = await loadModelCatalog({ config: cfg });
+    const catalog = loadModelCatalog({ config: cfg });
     const defaultModel = resolveDefaultModelForAgent({ cfg, agentId });
     const entry = findModelInCatalog(catalog, defaultModel.provider, defaultModel.model);
     if (!entry) {
@@ -173,8 +149,6 @@ export const dispatchTelegramMessage = async ({
     historyLimit,
     groupHistories,
     route,
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
-    skillFilter,
     sendTyping,
     sendRecordVoice,
     ackReactionPromise,
@@ -182,6 +156,7 @@ export const dispatchTelegramMessage = async ({
     removeAckAfterReply,
     statusReactionController,
   } = context;
+  const skillFilter = (context as Record<string, unknown>).skillFilter as string | undefined;
 
   const draftMaxChars = Math.min(textLimit, 4096);
   const tableMode = resolveMarkdownTableMode({
@@ -215,12 +190,15 @@ export const dispatchTelegramMessage = async ({
   const archivedAnswerPreviews: ArchivedPreview[] = [];
   const archivedReasoningPreviewIds: number[] = [];
   const createDraftLane = (laneName: LaneName, enabled: boolean): DraftLaneState => {
+    const useMessagePreviewTransportForDmReasoning =
+      laneName === "reasoning" && threadSpec?.scope === "dm" && canStreamAnswerDraft;
     const stream = enabled
       ? createTelegramDraftStream({
           api: bot.api,
           chatId,
           maxChars: draftMaxChars,
           thread: threadSpec,
+          previewTransport: useMessagePreviewTransportForDmReasoning ? "message" : "auto",
           replyToMessageId: draftReplyToMessageId,
           minInitialChars: draftMinInitialChars,
           renderText: renderDraftPreview,
@@ -256,7 +234,14 @@ export const dispatchTelegramMessage = async ({
   const answerLane = lanes.answer;
   const reasoningLane = lanes.reasoning;
   let splitReasoningOnNextStream = false;
-  const reasoningStepState = createTelegramReasoningStepState();
+  const reasoningStepState = createTelegramReasoningStepState() as {
+    noteReasoningHint: () => void;
+    noteReasoningDelivered: () => void;
+    takeBufferedFinalAnswer: () => { payload: ReplyPayload; text: string } | undefined;
+    resetForNextStep: () => void;
+    shouldBufferFinalAnswer: () => boolean;
+    bufferFinalAnswer: (data: { payload: ReplyPayload; text: string }) => void;
+  };
   type SplitLaneSegment = { lane: LaneName; text: string };
   type SplitLaneSegmentsResult = {
     segments: SplitLaneSegment[];
@@ -503,18 +488,14 @@ export const dispatchTelegramMessage = async ({
             if (!buffered) {
               return;
             }
-            // oxlint-disable-next-line typescript/no-explicit-any
-            const bufferedPayload = buffered.payload as any;
             const bufferedButtons = (
-              bufferedPayload?.channelData?.telegram as
+              buffered.payload.channelData?.telegram as
                 | { buttons?: TelegramInlineButtons }
                 | undefined
             )?.buttons;
             await deliverLaneText({
               laneName: "answer",
-              // @ts-expect-error — upstream feature not available in RemoteClaw fork
               text: buffered.text,
-              // @ts-expect-error — upstream feature not available in RemoteClaw fork
               payload: buffered.payload,
               infoKind: "final",
               previewButtons: bufferedButtons,
@@ -600,7 +581,7 @@ export const dispatchTelegramMessage = async ({
         },
       },
       replyOptions: {
-        skillFilter,
+        skillFilter: skillFilter ? [skillFilter] : undefined,
         disableBlockStreaming,
         onPartialReply:
           answerLane.stream || reasoningLane.stream

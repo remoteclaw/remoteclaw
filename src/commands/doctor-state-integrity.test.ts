@@ -65,6 +65,20 @@ async function runStateIntegrity(cfg: RemoteClawConfig) {
   return confirmSkipInNonInteractive;
 }
 
+function writeSessionStore(
+  cfg: RemoteClawConfig,
+  sessions: Record<string, { sessionId: string; updatedAt: number }>,
+) {
+  setupSessionState(cfg, process.env, process.env.HOME ?? "");
+  const storePath = resolveStorePath(cfg.session?.store, { agentId: "main" });
+  fs.writeFileSync(storePath, JSON.stringify(sessions, null, 2));
+}
+
+async function runStateIntegrityText(cfg: RemoteClawConfig): Promise<string> {
+  await noteStateIntegrity(cfg, { confirmSkipInNonInteractive: vi.fn(async () => false) });
+  return stateIntegrityText();
+}
+
 describe("doctor state integrity oauth dir checks", () => {
   let envSnapshot: EnvSnapshot;
   let tempHome = "";
@@ -146,25 +160,13 @@ describe("doctor state integrity oauth dir checks", () => {
 
   it("prints remoteclaw-only verification hints when recent sessions are missing transcripts", async () => {
     const cfg: RemoteClawConfig = {};
-    setupSessionState(cfg, process.env, process.env.HOME ?? "");
-    const storePath = resolveStorePath(cfg.session?.store, { agentId: "main" });
-    fs.writeFileSync(
-      storePath,
-      JSON.stringify(
-        {
-          "agent:main:main": {
-            sessionId: "missing-transcript",
-            updatedAt: Date.now(),
-          },
-        },
-        null,
-        2,
-      ),
-    );
-
-    await noteStateIntegrity(cfg, { confirmSkipInNonInteractive: vi.fn(async () => false) });
-
-    const text = stateIntegrityText();
+    writeSessionStore(cfg, {
+      "agent:main:main": {
+        sessionId: "missing-transcript",
+        updatedAt: Date.now(),
+      },
+    });
+    const text = await runStateIntegrityText(cfg);
     expect(text).toContain("recent sessions are missing transcripts");
     expect(text).toMatch(/remoteclaw sessions --store ".*sessions\.json"/);
     expect(text).toMatch(/remoteclaw sessions cleanup --store ".*sessions\.json" --dry-run/);
@@ -177,25 +179,13 @@ describe("doctor state integrity oauth dir checks", () => {
 
   it("ignores slash-routing sessions for recent missing transcript warnings", async () => {
     const cfg: RemoteClawConfig = {};
-    setupSessionState(cfg, process.env, process.env.HOME ?? "");
-    const storePath = resolveStorePath(cfg.session?.store, { agentId: "main" });
-    fs.writeFileSync(
-      storePath,
-      JSON.stringify(
-        {
-          "agent:main:telegram:slash:6790081233": {
-            sessionId: "missing-slash-transcript",
-            updatedAt: Date.now(),
-          },
-        },
-        null,
-        2,
-      ),
-    );
-
-    await noteStateIntegrity(cfg, { confirmSkipInNonInteractive: vi.fn(async () => false) });
-
-    const text = stateIntegrityText();
+    writeSessionStore(cfg, {
+      "agent:main:telegram:slash:6790081233": {
+        sessionId: "missing-slash-transcript",
+        updatedAt: Date.now(),
+      },
+    });
+    const text = await runStateIntegrityText(cfg);
     expect(text).not.toContain("recent sessions are missing transcripts");
   });
 });

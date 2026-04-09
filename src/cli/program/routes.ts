@@ -1,5 +1,12 @@
+import { isValueToken } from "../../infra/cli-root-options.js";
 import { defaultRuntime } from "../../runtime.js";
-import { getFlagValue, getPositiveIntFlagValue, getVerboseFlag, hasFlag } from "../argv.js";
+import {
+  getCommandPositionalsWithRootOptions,
+  getFlagValue,
+  getPositiveIntFlagValue,
+  getVerboseFlag,
+  hasFlag,
+} from "../argv.js";
 
 export type RouteSpec = {
   match: (path: string[]) => boolean;
@@ -93,29 +100,11 @@ const routeMemoryStatus: RouteSpec = {
     const deep = hasFlag(argv, "--deep");
     const index = hasFlag(argv, "--index");
     const verbose = hasFlag(argv, "--verbose");
-    //     const { runMemoryStatus } = await import("../memory-cli.js");
-    // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-    // oxlint-disable-next-line typescript/no-explicit-any
-    const runMemoryStatus = (..._args: unknown[]) => undefined as any;
+    const { runMemoryStatus } = await import("../memory-cli.js");
     await runMemoryStatus({ agent, json, deep, index, verbose });
     return true;
   },
 };
-
-function getCommandPositionals(argv: string[]): string[] {
-  const out: string[] = [];
-  const args = argv.slice(2);
-  for (const arg of args) {
-    if (!arg || arg === "--") {
-      break;
-    }
-    if (arg.startsWith("-")) {
-      continue;
-    }
-    out.push(arg);
-  }
-  return out;
-}
 
 function getFlagValues(argv: string[], name: string): string[] | null {
   const values: string[] = [];
@@ -127,7 +116,7 @@ function getFlagValues(argv: string[], name: string): string[] | null {
     }
     if (arg === name) {
       const next = args[i + 1];
-      if (!next || next === "--" || next.startsWith("-")) {
+      if (!isValueToken(next)) {
         return null;
       }
       values.push(next);
@@ -148,8 +137,14 @@ function getFlagValues(argv: string[], name: string): string[] | null {
 const routeConfigGet: RouteSpec = {
   match: (path) => path[0] === "config" && path[1] === "get",
   run: async (argv) => {
-    const positionals = getCommandPositionals(argv);
-    const pathArg = positionals[2];
+    const positionals = getCommandPositionalsWithRootOptions(argv, {
+      commandPath: ["config", "get"],
+      booleanFlags: ["--json"],
+    });
+    if (!positionals || positionals.length !== 1) {
+      return false;
+    }
+    const pathArg = positionals[0];
     if (!pathArg) {
       return false;
     }
@@ -163,15 +158,17 @@ const routeConfigGet: RouteSpec = {
 const routeConfigUnset: RouteSpec = {
   match: (path) => path[0] === "config" && path[1] === "unset",
   run: async (argv) => {
-    const positionals = getCommandPositionals(argv);
-    const pathArg = positionals[2];
+    const positionals = getCommandPositionalsWithRootOptions(argv, {
+      commandPath: ["config", "unset"],
+    });
+    if (!positionals || positionals.length !== 1) {
+      return false;
+    }
+    const pathArg = positionals[0];
     if (!pathArg) {
       return false;
     }
-    //     const { runConfigUnset } = await import("../config-cli.js");
-    // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-    // oxlint-disable-next-line typescript/no-explicit-any
-    const runConfigUnset = (..._args: unknown[]) => undefined as any;
+    const { runConfigUnset } = await import("../config-cli.js");
     await runConfigUnset({ path: pathArg });
     return true;
   },

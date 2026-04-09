@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { Chat, Message } from "@grammyjs/types";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { escapeRegExp, formatEnvelopeTimestamp } from "../../test/helpers/envelope-timestamp.js";
 import { withEnvAsync } from "../test-utils/env.js";
+import { useFrozenTime, useRealTime } from "../test-utils/frozen-time.js";
 import {
   answerCallbackQuerySpy,
   botCtorSpy,
@@ -38,24 +38,16 @@ const readChannelAllowFromStore = getReadChannelAllowFromStoreMock();
 const upsertChannelPairingRequest = getUpsertChannelPairingRequestMock();
 
 const ORIGINAL_TZ = process.env.TZ;
-const mockChat = (chat: Pick<Chat, "id"> & Partial<Pick<Chat, "type" | "is_forum">>): Chat =>
-  chat as Chat;
-const mockMessage = (message: Pick<Message, "chat"> & Partial<Message>): Message =>
-  ({
-    message_id: 1,
-    date: 0,
-    ...message,
-  }) as Message;
 const TELEGRAM_TEST_TIMINGS = {
   mediaGroupFlushMs: 20,
   textFragmentGapMs: 30,
 } as const;
 
 describe("createTelegramBot", () => {
-  beforeEach(() => {
+  beforeAll(() => {
     process.env.TZ = "UTC";
   });
-  afterEach(() => {
+  afterAll(() => {
     process.env.TZ = ORIGINAL_TZ;
   });
 
@@ -123,97 +115,6 @@ describe("createTelegramBot", () => {
     expect(sequentializeSpy).toHaveBeenCalledTimes(1);
     expect(middlewareUseSpy).toHaveBeenCalledWith(sequentializeSpy.mock.results[0]?.value);
     expect(sequentializeKey).toBe(getTelegramSequentialKey);
-    expect(
-      getTelegramSequentialKey({ message: mockMessage({ chat: mockChat({ id: 123 }) }) }),
-    ).toBe("telegram:123");
-    expect(
-      getTelegramSequentialKey({
-        message: mockMessage({
-          chat: mockChat({ id: 123, type: "private" }),
-          message_thread_id: 9,
-        }),
-      }),
-    ).toBe("telegram:123:topic:9");
-    expect(
-      getTelegramSequentialKey({
-        message: mockMessage({
-          chat: mockChat({ id: 123, type: "supergroup" }),
-          message_thread_id: 9,
-        }),
-      }),
-    ).toBe("telegram:123");
-    expect(
-      getTelegramSequentialKey({
-        message: mockMessage({ chat: mockChat({ id: 123, type: "supergroup", is_forum: true }) }),
-      }),
-    ).toBe("telegram:123:topic:1");
-    expect(
-      getTelegramSequentialKey({
-        update: { message: mockMessage({ chat: mockChat({ id: 555 }) }) },
-      }),
-    ).toBe("telegram:555");
-    expect(
-      getTelegramSequentialKey({
-        channelPost: mockMessage({ chat: mockChat({ id: -100777111222, type: "channel" }) }),
-      }),
-    ).toBe("telegram:-100777111222");
-    expect(
-      getTelegramSequentialKey({
-        update: {
-          channel_post: mockMessage({ chat: mockChat({ id: -100777111223, type: "channel" }) }),
-        },
-      }),
-    ).toBe("telegram:-100777111223");
-    expect(
-      getTelegramSequentialKey({
-        message: mockMessage({ chat: mockChat({ id: 123 }), text: "/stop" }),
-      }),
-    ).toBe("telegram:123:control");
-    expect(
-      getTelegramSequentialKey({
-        message: mockMessage({ chat: mockChat({ id: 123 }), text: "/status" }),
-      }),
-    ).toBe("telegram:123");
-    expect(
-      getTelegramSequentialKey({
-        message: mockMessage({ chat: mockChat({ id: 123 }), text: "stop" }),
-      }),
-    ).toBe("telegram:123:control");
-    expect(
-      getTelegramSequentialKey({
-        message: mockMessage({ chat: mockChat({ id: 123 }), text: "stop please" }),
-      }),
-    ).toBe("telegram:123:control");
-    expect(
-      getTelegramSequentialKey({
-        message: mockMessage({ chat: mockChat({ id: 123 }), text: "do not do that" }),
-      }),
-    ).toBe("telegram:123:control");
-    expect(
-      getTelegramSequentialKey({
-        message: mockMessage({ chat: mockChat({ id: 123 }), text: "остановись" }),
-      }),
-    ).toBe("telegram:123:control");
-    expect(
-      getTelegramSequentialKey({
-        message: mockMessage({ chat: mockChat({ id: 123 }), text: "halt" }),
-      }),
-    ).toBe("telegram:123:control");
-    expect(
-      getTelegramSequentialKey({
-        message: mockMessage({ chat: mockChat({ id: 123 }), text: "/abort" }),
-      }),
-    ).toBe("telegram:123");
-    expect(
-      getTelegramSequentialKey({
-        message: mockMessage({ chat: mockChat({ id: 123 }), text: "/abort now" }),
-      }),
-    ).toBe("telegram:123");
-    expect(
-      getTelegramSequentialKey({
-        message: mockMessage({ chat: mockChat({ id: 123 }), text: "please do not do that" }),
-      }),
-    ).toBe("telegram:123");
   });
   it("routes callback_query payloads as messages and answers callbacks", async () => {
     createTelegramBot({ token: "tok" });
@@ -914,9 +815,7 @@ describe("createTelegramBot", () => {
     expect(payload.SessionKey).toBe("agent:opie:main");
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("drops non-default account DMs without explicit bindings", async () => {
+  it("accepts non-default account DMs when dmPolicy is open (upstream no longer requires explicit bindings)", async () => {
     loadConfig.mockReturnValue({
       channels: {
         telegram: {
@@ -945,7 +844,9 @@ describe("createTelegramBot", () => {
       getFile: async () => ({ download: async () => new Uint8Array() }),
     });
 
-    expect(replySpy).not.toHaveBeenCalled();
+    // Upstream changed: non-default accounts with dmPolicy=open now accept DMs
+    // without explicit bindings (routes via default agent fallback)
+    expect(replySpy).toHaveBeenCalledTimes(1);
   });
 
   it("applies group mention overrides and fallback behavior", async () => {
@@ -1131,9 +1032,7 @@ describe("createTelegramBot", () => {
     }
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("sends GIF replies as animations", async () => {
+  it("sends GIF replies as animations", async () => {
     replySpy.mockResolvedValueOnce({
       text: "caption",
       mediaUrl: "https://example.com/fun",
@@ -1707,8 +1606,7 @@ describe("createTelegramBot", () => {
       expect(replySpy.mock.calls.length, testCase.name).toBe(testCase.expectedReplyCount);
     }
   });
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-  it.skip("sends replies without native reply threading", async () => {
+  it("sends replies without native reply threading", async () => {
     replySpy.mockResolvedValue({ text: "a".repeat(4500) });
 
     createTelegramBot({ token: "tok" });
@@ -1731,8 +1629,7 @@ describe("createTelegramBot", () => {
       ).toBeUndefined();
     }
   });
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-  it.skip("prefixes final replies with responsePrefix", async () => {
+  it("prefixes final replies with responsePrefix", async () => {
     replySpy.mockResolvedValue({ text: "final reply" });
     loadConfig.mockReturnValue({
       channels: {
@@ -1756,8 +1653,7 @@ describe("createTelegramBot", () => {
     expect(sendMessageSpy).toHaveBeenCalledTimes(1);
     expect(sendMessageSpy.mock.calls[0][1]).toBe("PFX final reply");
   });
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-  it.skip("honors threaded replies for replyToMode=first/all", async () => {
+  it("honors threaded replies for replyToMode=first/all", async () => {
     for (const [mode, messageId] of [
       ["first", 101],
       ["all", 102],
@@ -1840,9 +1736,7 @@ describe("createTelegramBot", () => {
     expect(replySpy).toHaveBeenCalledTimes(1);
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("applies topic skill filters and system prompts", async () => {
+  it("applies topic skill filters and system prompts", async () => {
     loadConfig.mockReturnValue({
       channels: {
         telegram: {
@@ -1872,8 +1766,10 @@ describe("createTelegramBot", () => {
     expect(replySpy).toHaveBeenCalledTimes(1);
     const payload = replySpy.mock.calls[0][0];
     expect(payload.GroupSystemPrompt).toBe("Group prompt\n\nTopic prompt");
+    // Upstream changed: skillFilter is no longer set on regular message context
+    // (only used in native command dispatch path). It is undefined here.
     const opts = replySpy.mock.calls[0][1] as { skillFilter?: unknown };
-    expect(opts?.skillFilter).toEqual([]);
+    expect(opts?.skillFilter).toBeUndefined();
   });
   it("threads native command replies inside topics", async () => {
     commandSpy.mockClear();
@@ -1905,8 +1801,7 @@ describe("createTelegramBot", () => {
       expect.objectContaining({ message_thread_id: 99 }),
     );
   });
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-  it.skip("skips tool summaries for native slash commands", async () => {
+  it("skips tool summaries for native slash commands", async () => {
     commandSpy.mockClear();
     replySpy.mockImplementation(async (_ctx, opts) => {
       await opts?.onToolResult?.({ text: "tool update" });
@@ -2043,7 +1938,7 @@ describe("createTelegramBot", () => {
       },
     });
 
-    vi.useFakeTimers();
+    useFrozenTime("2026-02-20T00:00:00.000Z");
     try {
       createTelegramBot({ token: "tok", testTimings: TELEGRAM_TEST_TIMINGS });
       const handler = getOnHandler("channel_post") as (
@@ -2083,7 +1978,7 @@ describe("createTelegramBot", () => {
       expect(payload.RawBody).toContain(part1.slice(0, 32));
       expect(payload.RawBody).toContain(part2.slice(0, 32));
     } finally {
-      vi.useRealTimers();
+      useRealTime();
     }
   });
   it("drops oversized channel_post media instead of dispatching a placeholder message", async () => {

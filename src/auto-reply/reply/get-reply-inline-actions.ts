@@ -46,13 +46,22 @@ export async function handleInlineActions(params: {
   command: Parameters<typeof handleCommands>[0]["command"];
   directives: InlineDirectives;
   cleanedBody: string;
+  skillCommands?: unknown[];
   defaultActivation: Parameters<typeof buildStatusReply>[0]["defaultGroupActivation"];
+  resolvedThinkLevel?: unknown;
   resolvedVerboseLevel: VerboseLevel | undefined;
+  resolvedReasoningLevel?: unknown;
+  resolvedElevatedLevel?: unknown;
+  resolveDefaultThinkingLevel?: unknown;
+  elevatedEnabled?: boolean;
+  elevatedAllowed?: boolean;
+  elevatedFailures?: unknown[];
   provider: string;
   model: string;
   contextTokens: number;
   directiveAck?: ReplyPayload;
   abortedLastRun: boolean;
+  skillFilter?: string[];
 }): Promise<InlineActionResult> {
   const {
     ctx,

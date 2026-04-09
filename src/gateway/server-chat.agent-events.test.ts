@@ -220,6 +220,52 @@ describe("agent event handler", () => {
     nowSpy?.mockRestore();
   });
 
+  it("suppresses NO_REPLY lead fragments and does not leak NO in final chat message", () => {
+    const { broadcast, nodeSendToSession, chatRunState, handler, nowSpy } = createHarness({
+      now: 2_100,
+    });
+    chatRunState.registry.add("run-3", { sessionKey: "session-3", clientRunId: "client-3" });
+
+    for (const text of ["NO", "NO_", "NO_RE", "NO_REPLY"]) {
+      handler({
+        runId: "run-3",
+        seq: 1,
+        stream: "assistant",
+        ts: Date.now(),
+        data: { text },
+      });
+    }
+    emitLifecycleEnd(handler, "run-3");
+
+    const payload = expectSingleFinalChatPayload(broadcast) as { message?: unknown };
+    expect(payload.message).toBeUndefined();
+    expect(sessionChatCalls(nodeSendToSession)).toHaveLength(1);
+    nowSpy?.mockRestore();
+  });
+
+  it("keeps final short replies like 'No' even when lead-fragment deltas are suppressed", () => {
+    const { broadcast, nodeSendToSession, chatRunState, handler, nowSpy } = createHarness({
+      now: 2_200,
+    });
+    chatRunState.registry.add("run-4", { sessionKey: "session-4", clientRunId: "client-4" });
+
+    handler({
+      runId: "run-4",
+      seq: 1,
+      stream: "assistant",
+      ts: Date.now(),
+      data: { text: "No" },
+    });
+    emitLifecycleEnd(handler, "run-4");
+
+    const payload = expectSingleFinalChatPayload(broadcast) as {
+      message?: { content?: Array<{ text?: string }> };
+    };
+    expect(payload.message?.content?.[0]?.text).toBe("No");
+    expect(sessionChatCalls(nodeSendToSession)).toHaveLength(1);
+    nowSpy?.mockRestore();
+  });
+
   it("cleans up agent run sequence tracking when lifecycle completes", () => {
     const { agentRunSeq, chatRunState, handler, nowSpy } = createHarness({ now: 2_500 });
     chatRunState.registry.add("run-cleanup", {
@@ -440,84 +486,45 @@ describe("agent event handler", () => {
     resetAgentRunContextForTest();
   });
 
-  it("broadcasts thinking events to WS clients when verbose is on", () => {
-    const { broadcast, nodeSendToSession, handler } = createHarness({
-      resolveSessionKeyForRun: () => "session-1",
+  it("suppresses heartbeat ack-like chat output when showOk is false", () => {
+    const { broadcast, nodeSendToSession, chatRunState, handler } = createHarness({
+      now: 2_000,
     });
-
-    registerAgentRunContext("run-thinking", { sessionKey: "session-1", verboseLevel: "on" });
+    chatRunState.registry.add("run-heartbeat", {
+      sessionKey: "session-heartbeat",
+      clientRunId: "client-heartbeat",
+    });
+    registerAgentRunContext("run-heartbeat", {
+      sessionKey: "session-heartbeat",
+      isHeartbeat: true,
+      verboseLevel: "off",
+    });
 
     handler({
-      runId: "run-thinking",
+      runId: "run-heartbeat",
       seq: 1,
-      stream: "thinking",
+      stream: "assistant",
       ts: Date.now(),
-      data: { text: "Let me think about this..." },
+      data: {
+        text: "HEARTBEAT_OK Read HEARTBEAT.md if it exists (workspace context). Follow it strictly.",
+      },
     });
 
-    // Thinking events should be broadcast to WS clients
-    const agentCalls = broadcast.mock.calls.filter(([event]) => event === "agent");
-    expect(agentCalls).toHaveLength(1);
-    const payload = agentCalls[0]?.[1] as { stream?: string; data?: Record<string, unknown> };
-    expect(payload.stream).toBe("thinking");
-    expect(payload.data?.text).toBe("Let me think about this...");
+    expect(chatBroadcastCalls(broadcast)).toHaveLength(0);
+    expect(sessionChatCalls(nodeSendToSession)).toHaveLength(0);
 
-    // Thinking events should NOT be sent to node/channel subscribers
-    const nodeCalls = nodeSendToSession.mock.calls.filter(([, event]) => event === "agent");
-    expect(nodeCalls).toHaveLength(0);
-    resetAgentRunContextForTest();
+    emitLifecycleEnd(handler, "run-heartbeat");
+
+    const finalPayload = expectSingleFinalChatPayload(broadcast) as { message?: unknown };
+    expect(finalPayload.message).toBeUndefined();
+    expect(sessionChatCalls(nodeSendToSession)).toHaveLength(1);
   });
 
-  it("suppresses thinking events when verbose is off", () => {
-    const { broadcast, nodeSendToSession, handler } = createHarness({
-      resolveSessionKeyForRun: () => "session-1",
+  it("keeps heartbeat alert text in final chat output when remainder exceeds ackMaxChars", () => {
+    vi.mocked(loadConfig).mockReturnValue({
+      agents: { defaults: { heartbeat: { ackMaxChars: 10 } } },
     });
 
-    registerAgentRunContext("run-thinking-off", { sessionKey: "session-1", verboseLevel: "off" });
-
-    handler({
-      runId: "run-thinking-off",
-      seq: 1,
-      stream: "thinking",
-      ts: Date.now(),
-      data: { text: "Secret thoughts..." },
-    });
-
-    // Should NOT broadcast to WS clients when verbose is off
-    const agentCalls = broadcast.mock.calls.filter(([event]) => event === "agent");
-    expect(agentCalls).toHaveLength(0);
-
-    // Should NOT be sent to node/channel subscribers
-    const nodeCalls = nodeSendToSession.mock.calls.filter(([, event]) => event === "agent");
-    expect(nodeCalls).toHaveLength(0);
-    resetAgentRunContextForTest();
-  });
-
-  it("broadcasts thinking events when verbose is full", () => {
-    const { broadcast, nodeSendToSession, handler } = createHarness({
-      resolveSessionKeyForRun: () => "session-1",
-    });
-
-    registerAgentRunContext("run-thinking-full", { sessionKey: "session-1", verboseLevel: "full" });
-
-    handler({
-      runId: "run-thinking-full",
-      seq: 1,
-      stream: "thinking",
-      ts: Date.now(),
-      data: { text: "Deep thinking..." },
-    });
-
-    const agentCalls = broadcast.mock.calls.filter(([event]) => event === "agent");
-    expect(agentCalls).toHaveLength(1);
-
-    // Even at full verbose, thinking events should NOT go to node/channel
-    const nodeCalls = nodeSendToSession.mock.calls.filter(([, event]) => event === "agent");
-    expect(nodeCalls).toHaveLength(0);
-    resetAgentRunContextForTest();
-  });
-
-  it("passes heartbeat text through to chat output without filtering", () => {
     const { broadcast, chatRunState, handler } = createHarness({ now: 3_000 });
     chatRunState.registry.add("run-heartbeat-alert", {
       sessionKey: "session-heartbeat-alert",
@@ -535,20 +542,13 @@ describe("agent event handler", () => {
       stream: "assistant",
       ts: Date.now(),
       data: {
-        text: "Disk usage crossed 95 percent on /data and needs cleanup now.",
+        text: "HEARTBEAT_OK Disk usage crossed 95 percent on /data and needs cleanup now.",
       },
     });
 
     emitLifecycleEnd(handler, "run-heartbeat-alert");
 
-    // Both delta and final are broadcast (heartbeat filtering moved to agent runner)
-    const chatCalls = chatBroadcastCalls(broadcast);
-    expect(chatCalls.length).toBeGreaterThanOrEqual(1);
-    const finalCalls = chatCalls.filter(
-      (call) => (call[1] as { state?: string })?.state === "final",
-    );
-    expect(finalCalls).toHaveLength(1);
-    const payload = finalCalls[0]?.[1] as {
+    const payload = expectSingleFinalChatPayload(broadcast) as {
       message?: { content?: Array<{ text?: string }> };
     };
     expect(payload.message?.content?.[0]?.text).toBe(

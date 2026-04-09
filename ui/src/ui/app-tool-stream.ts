@@ -175,6 +175,16 @@ export type CompactionStatus = {
   completedAt: number | null;
 };
 
+export type FallbackStatus = {
+  phase?: "active" | "cleared";
+  selected: string;
+  active: string;
+  previous?: string;
+  reason?: string;
+  attempts: string[];
+  occurredAt: number;
+};
+
 type CompactionHost = ToolStreamHost & {
   compactionStatus?: CompactionStatus | null;
   compactionClearTimer?: number | null;

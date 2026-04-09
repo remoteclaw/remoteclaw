@@ -8,8 +8,11 @@ import path from "node:path";
 import { GatewayClient } from "../../src/gateway/client.js";
 import { connectGatewayClient } from "../../src/gateway/test-helpers.e2e.js";
 import { loadOrCreateDeviceIdentity } from "../../src/infra/device-identity.js";
+import { extractFirstTextBlock } from "../../src/shared/chat-message-content.js";
 import { sleep } from "../../src/utils.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../../src/utils/message-channel.js";
+
+export { extractFirstTextBlock };
 
 type NodeListPayload = {
   nodes?: Array<{ nodeId?: string; connected?: boolean; paired?: boolean }>;
@@ -107,10 +110,7 @@ export async function spawnGatewayInstance(name: string): Promise<GatewayInstanc
   await fs.mkdir(configDir, { recursive: true });
   const configPath = path.join(configDir, "remoteclaw.json");
   const stateDir = path.join(configDir, "state");
-  const workspaceDir = path.join(homeDir, "workspace");
-  await fs.mkdir(workspaceDir, { recursive: true });
   const config = {
-    agents: { list: [{ id: "main", workspace: workspaceDir }] },
     gateway: {
       port,
       auth: { mode: "token", token: gatewayToken },
@@ -359,22 +359,6 @@ export async function waitForNodeStatus(
     client.stop();
   }
   throw new Error(`timeout waiting for node status for ${nodeId}`);
-}
-
-export function extractFirstTextBlock(message: unknown): string | undefined {
-  if (!message || typeof message !== "object") {
-    return undefined;
-  }
-  const content = (message as { content?: unknown }).content;
-  if (!Array.isArray(content) || content.length === 0) {
-    return undefined;
-  }
-  const first = content[0];
-  if (!first || typeof first !== "object") {
-    return undefined;
-  }
-  const text = (first as { text?: unknown }).text;
-  return typeof text === "string" ? text : undefined;
 }
 
 export async function waitForChatFinalEvent(params: {

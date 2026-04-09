@@ -1,12 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "@mariozechner/pi-agent-core";
-type AgentMessage = Record<string, unknown>;
 import type { Command } from "commander";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/auth-profiles/types.js";
-type AuthProfileCredential = Record<string, unknown>;
-type OAuthCredential = Record<string, unknown>;
+import type { AgentMessage } from "../agents/agent-types.js";
+import type { AuthProfileCredential, OAuthCredential } from "../agents/auth-profiles/types.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
 import type { ReplyPayload } from "../auto-reply/types.js";
 import type { ChannelDock } from "../channels/dock.js";
@@ -66,6 +61,8 @@ export type RemoteClawPluginToolContext = {
   agentDir?: string;
   agentId?: string;
   sessionKey?: string;
+  /** Ephemeral session UUID — regenerated on /new and /reset. Use for per-conversation isolation. */
+  sessionId?: string;
   messageChannel?: string;
   agentAccountId?: string;
   /** Trusted sender id from inbound context (runtime-provided, not tool args). */
@@ -199,15 +196,21 @@ export type RemoteClawPluginCommandDefinition = {
   handler: PluginCommandHandler;
 };
 
-export type RemoteClawPluginHttpHandler = (
-  req: IncomingMessage,
-  res: ServerResponse,
-) => Promise<boolean> | boolean;
+export type RemoteClawPluginHttpRouteAuth = "gateway" | "plugin";
+export type RemoteClawPluginHttpRouteMatch = "exact" | "prefix";
 
 export type RemoteClawPluginHttpRouteHandler = (
   req: IncomingMessage,
   res: ServerResponse,
-) => Promise<void> | void;
+) => Promise<boolean | void> | boolean | void;
+
+export type RemoteClawPluginHttpRouteParams = {
+  path: string;
+  handler: RemoteClawPluginHttpRouteHandler;
+  auth: RemoteClawPluginHttpRouteAuth;
+  match?: RemoteClawPluginHttpRouteMatch;
+  replaceExisting?: boolean;
+};
 
 export type RemoteClawPluginCliContext = {
   program: Command;
@@ -272,23 +275,20 @@ export type RemoteClawPluginApi = {
     handler: InternalHookHandler,
     opts?: RemoteClawPluginHookOptions,
   ) => void;
-  registerHttpHandler: (handler: RemoteClawPluginHttpHandler) => void;
-  registerHttpRoute: (params: { path: string; handler: RemoteClawPluginHttpRouteHandler }) => void;
+  registerHttpRoute: (params: RemoteClawPluginHttpRouteParams) => void;
   registerChannel: (registration: RemoteClawPluginChannelRegistration | ChannelPlugin) => void;
   registerGatewayMethod: (method: string, handler: GatewayRequestHandler) => void;
   registerCli: (registrar: RemoteClawPluginCliRegistrar, opts?: { commands?: string[] }) => void;
   registerService: (service: RemoteClawPluginService) => void;
   registerProvider: (provider: ProviderPlugin) => void;
+  registerSttProvider: (provider: ProviderPlugin) => void;
+  registerTtsProvider: (provider: ProviderPlugin) => void;
   /**
    * Register a custom command that bypasses the LLM agent.
    * Plugin commands are processed before built-in commands and before agent invocation.
    * Use this for simple state-toggling or status commands that don't need AI reasoning.
    */
   registerCommand: (command: RemoteClawPluginCommandDefinition) => void;
-  /** Register a speech-to-text provider (upstream feature). */
-  registerSttProvider: (provider: unknown) => void;
-  /** Register a text-to-speech provider (upstream feature). */
-  registerTtsProvider: (provider: unknown) => void;
   resolvePath: (input: string) => string;
   /** Register a lifecycle hook handler */
   on: <K extends PluginHookName>(
@@ -346,6 +346,10 @@ export type PluginHookAgentContext = {
   sessionId?: string;
   workspaceDir?: string;
   messageProvider?: string;
+  /** What initiated this agent run: "user", "heartbeat", "cron", or "memory". */
+  trigger?: string;
+  /** Channel identifier (e.g. "telegram", "discord", "whatsapp"). */
+  channelId?: string;
 };
 
 // before_model_resolve hook
@@ -490,13 +494,23 @@ export type PluginHookMessageSentEvent = {
 export type PluginHookToolContext = {
   agentId?: string;
   sessionKey?: string;
+  /** Ephemeral session UUID — regenerated on /new and /reset. */
+  sessionId?: string;
+  /** Stable run identifier for this agent invocation. */
+  runId?: string;
   toolName: string;
+  /** Provider-specific tool call ID when available. */
+  toolCallId?: string;
 };
 
 // before_tool_call hook
 export type PluginHookBeforeToolCallEvent = {
   toolName: string;
   params: Record<string, unknown>;
+  /** Stable run identifier for this agent invocation. */
+  runId?: string;
+  /** Provider-specific tool call ID when available. */
+  toolCallId?: string;
 };
 
 export type PluginHookBeforeToolCallResult = {
@@ -509,6 +523,10 @@ export type PluginHookBeforeToolCallResult = {
 export type PluginHookAfterToolCallEvent = {
   toolName: string;
   params: Record<string, unknown>;
+  /** Stable run identifier for this agent invocation. */
+  runId?: string;
+  /** Provider-specific tool call ID when available. */
+  toolCallId?: string;
   result?: unknown;
   error?: string;
   durationMs?: number;
@@ -554,17 +572,20 @@ export type PluginHookBeforeMessageWriteResult = {
 export type PluginHookSessionContext = {
   agentId?: string;
   sessionId: string;
+  sessionKey?: string;
 };
 
 // session_start hook
 export type PluginHookSessionStartEvent = {
   sessionId: string;
+  sessionKey?: string;
   resumedFrom?: string;
 };
 
 // session_end hook
 export type PluginHookSessionEndEvent = {
   sessionId: string;
+  sessionKey?: string;
   messageCount: number;
   durationMs?: number;
 };
@@ -578,8 +599,7 @@ export type PluginHookSubagentContext = {
 
 export type PluginHookSubagentTargetKind = "subagent" | "acp";
 
-// subagent_spawning hook
-export type PluginHookSubagentSpawningEvent = {
+type PluginHookSubagentSpawnBase = {
   childSessionKey: string;
   agentId: string;
   label?: string;
@@ -592,6 +612,9 @@ export type PluginHookSubagentSpawningEvent = {
   };
   threadRequested: boolean;
 };
+
+// subagent_spawning hook
+export type PluginHookSubagentSpawningEvent = PluginHookSubagentSpawnBase;
 
 export type PluginHookSubagentSpawningResult =
   | {
@@ -628,19 +651,8 @@ export type PluginHookSubagentDeliveryTargetResult = {
 };
 
 // subagent_spawned hook
-export type PluginHookSubagentSpawnedEvent = {
+export type PluginHookSubagentSpawnedEvent = PluginHookSubagentSpawnBase & {
   runId: string;
-  childSessionKey: string;
-  agentId: string;
-  label?: string;
-  mode: "run" | "session";
-  requester?: {
-    channel?: string;
-    accountId?: string;
-    to?: string;
-    threadId?: string | number;
-  };
-  threadRequested: boolean;
 };
 
 // subagent_ended hook
@@ -669,6 +681,30 @@ export type PluginHookGatewayStartEvent = {
 // gateway_stop hook
 export type PluginHookGatewayStopEvent = {
   reason?: string;
+};
+
+// before_runtime_spawn hook
+export type PluginHookBeforeRuntimeSpawnEvent = {
+  workspaceDir?: string;
+  env?: Record<string, string | undefined>;
+  args?: string[];
+};
+
+export type PluginHookBeforeRuntimeSpawnResult = {
+  workspaceDir?: string;
+  env?: Record<string, string | undefined>;
+};
+
+// after_runtime_exit hook
+export type PluginHookAfterRuntimeExitEvent = {
+  runtimeName?: string;
+  sessionId?: string;
+  exitCode?: number | null;
+  signal?: string | null;
+  durationMs?: number;
+  stdout?: string;
+  stderr?: string;
+  mcpSideEffects?: Record<string, unknown>;
 };
 
 // Hook handler types mapped by hook name
@@ -769,15 +805,13 @@ export type PluginHookHandlerMap = {
     event: PluginHookGatewayStopEvent,
     ctx: PluginHookGatewayContext,
   ) => Promise<void> | void;
-  /** Upstream feature: before runtime spawn hook. */
   before_runtime_spawn: (
-    event: PluginHookBeforeRuntimeSpawnResult,
+    event: PluginHookBeforeRuntimeSpawnEvent,
     ctx: PluginHookAgentContext,
   ) =>
     | Promise<PluginHookBeforeRuntimeSpawnResult | void>
     | PluginHookBeforeRuntimeSpawnResult
     | void;
-  /** Upstream feature: after runtime exit hook. */
   after_runtime_exit: (
     event: PluginHookAfterRuntimeExitEvent,
     ctx: PluginHookAgentContext,
@@ -791,7 +825,3 @@ export type PluginHookRegistration<K extends PluginHookName = PluginHookName> = 
   priority?: number;
   source: string;
 };
-
-// Gutted in RemoteClaw fork — stub types for upstream compat
-export type PluginHookAfterRuntimeExitEvent = Record<string, unknown>;
-export type PluginHookBeforeRuntimeSpawnResult = Record<string, unknown>;

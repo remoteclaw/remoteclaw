@@ -140,6 +140,8 @@ export type OnboardOptions = {
   daemonRuntime?: GatewayDaemonRuntime;
   skipChannels?: boolean;
   skipHealth?: boolean;
+  skipProviders?: boolean;
+  skipSkills?: boolean;
   skipUi?: boolean;
   remoteUrl?: string;
   remoteToken?: string;

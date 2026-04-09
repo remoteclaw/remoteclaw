@@ -2,6 +2,7 @@ import { listAgentIds, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { resolveStorePath } from "../config/sessions.js";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { normalizeAgentId } from "../routing/session-key.js";
+import type { RuntimeEnv } from "../runtime.js";
 
 export type SessionStoreSelectionOptions = {
   store?: string;
@@ -77,4 +78,18 @@ export function resolveSessionStoreTargets(
       storePath: resolveStorePath(cfg.session?.store, { agentId: defaultAgentId }),
     },
   ];
+}
+
+export function resolveSessionStoreTargetsOrExit(params: {
+  cfg: RemoteClawConfig;
+  opts: SessionStoreSelectionOptions;
+  runtime: RuntimeEnv;
+}): SessionStoreTarget[] | null {
+  try {
+    return resolveSessionStoreTargets(params.cfg, params.opts);
+  } catch (error) {
+    params.runtime.error(error instanceof Error ? error.message : String(error));
+    params.runtime.exit(1);
+    return null;
+  }
 }

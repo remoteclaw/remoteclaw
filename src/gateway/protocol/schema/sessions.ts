@@ -71,6 +71,13 @@ export const SessionsPatchParamsSchema = Type.Object(
     groupActivation: Type.Optional(
       Type.Union([Type.Literal("mention"), Type.Literal("always"), Type.Null()]),
     ),
+    thinkingLevel: Type.Optional(Type.Union([NonEmptyString, Type.Null()])),
+    reasoningLevel: Type.Optional(Type.Union([NonEmptyString, Type.Null()])),
+    elevatedLevel: Type.Optional(Type.Union([NonEmptyString, Type.Null()])),
+    execHost: Type.Optional(Type.Union([NonEmptyString, Type.Null()])),
+    execSecurity: Type.Optional(Type.Union([NonEmptyString, Type.Null()])),
+    execAsk: Type.Optional(Type.Union([NonEmptyString, Type.Null()])),
+    execNode: Type.Optional(Type.Union([NonEmptyString, Type.Null()])),
   },
   { additionalProperties: false },
 );

@@ -16,6 +16,7 @@ COPY patches ./patches
 COPY ui ./ui
 COPY extensions/memory-core ./extensions/memory-core
 COPY vendor/a2ui/renderers/lit ./vendor/a2ui/renderers/lit
+COPY apps/shared/RemoteClawKit/Sources/RemoteClawKit/Resources ./apps/shared/RemoteClawKit/Sources/RemoteClawKit/Resources
 COPY apps/shared/RemoteClawKit/Tools/CanvasA2UI ./apps/shared/RemoteClawKit/Tools/CanvasA2UI
 
 RUN pnpm install --frozen-lockfile

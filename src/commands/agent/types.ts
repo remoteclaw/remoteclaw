@@ -1,10 +1,5 @@
 import type { AgentInternalEvent } from "../../agents/internal-events.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../agents/pi-embedded-runner/run/params.js";
-export type ClientToolDefinition = {
-  function?: { name?: string; description?: string; parameters?: Record<string, unknown> };
-  [key: string]: unknown;
-};
+import type { ClientToolDefinition } from "../../agents/pi-embedded-runner/run/params.js";
 import type { ChannelOutboundTargetMode } from "../../channels/plugins/types.js";
 import type { InputProvenance } from "../../sessions/input-provenance.js";
 
@@ -85,4 +80,9 @@ export type AgentCommandOpts = {
   inputProvenance?: InputProvenance;
   /** Per-call stream param overrides (best-effort). */
   streamParams?: AgentStreamParams;
+};
+
+export type AgentCommandIngressOpts = Omit<AgentCommandOpts, "senderIsOwner"> & {
+  /** Ingress callsites must always pass explicit owner authorization state. */
+  senderIsOwner: boolean;
 };

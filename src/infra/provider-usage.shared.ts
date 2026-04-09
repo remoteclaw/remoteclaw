@@ -7,6 +7,7 @@ export const PROVIDER_LABELS: Record<UsageProviderId, string> = {
   anthropic: "Claude",
   "github-copilot": "Copilot",
   gemini: "Gemini",
+  "google-gemini-cli": "Gemini CLI",
   minimax: "MiniMax",
   "openai-codex": "Codex",
   xiaomi: "Xiaomi",

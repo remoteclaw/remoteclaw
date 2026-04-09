@@ -1,7 +1,20 @@
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
 // Model fallback is not used — CLI agents manage their own models.
+import type { AgentDeliveryResult } from "../middleware/types.js";
 
-// oxlint-disable-next-line typescript/no-explicit-any
-export async function runWithModelFallback(..._args: unknown[]): Promise<any> {
-  return undefined;
+export type ModelFallbackResult = {
+  result: AgentDeliveryResult;
+  provider?: string;
+  model?: string;
+};
+
+export async function runWithModelFallback(..._args: unknown[]): Promise<ModelFallbackResult> {
+  return {
+    result: {
+      payloads: [],
+      run: {} as AgentDeliveryResult["run"],
+      mcp: {} as AgentDeliveryResult["mcp"],
+      meta: {},
+    },
+  };
 }

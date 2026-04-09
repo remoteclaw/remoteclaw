@@ -70,8 +70,8 @@ describe("config identity defaults", () => {
               id: "main",
               identity: {
                 name: "Samantha Sloth",
-                theme: "space crab",
-                emoji: "🦀",
+                theme: "space lobster",
+                emoji: "🦞",
               },
               groupChat: { mentionPatterns: ["@remoteclaw"] },
             },
@@ -92,7 +92,7 @@ describe("config identity defaults", () => {
       const cfg = await writeAndLoadConfig(home, {
         messages: {
           messagePrefix: "[remoteclaw]",
-          responsePrefix: "🦀",
+          responsePrefix: "🦞",
         },
         channels: {
           whatsapp: { allowFrom: ["+15555550123"], textChunkLimit: 4444 },
@@ -116,6 +116,43 @@ describe("config identity defaults", () => {
 
       const legacy = (cfg.messages as unknown as Record<string, unknown>).textChunkLimit;
       expect(legacy).toBeUndefined();
+    });
+  });
+
+  it("accepts blank model provider apiKey values", async () => {
+    await withTempHome("remoteclaw-config-identity-", async (home) => {
+      const cfg = await writeAndLoadConfig(home, {
+        models: {
+          mode: "merge",
+          providers: {
+            minimax: {
+              baseUrl: "https://api.minimax.io/anthropic",
+              apiKey: "",
+              api: "anthropic-messages",
+              models: [
+                {
+                  id: "MiniMax-M2.5",
+                  name: "MiniMax M2.5",
+                  reasoning: false,
+                  input: ["text"],
+                  cost: {
+                    input: 0,
+                    output: 0,
+                    cacheRead: 0,
+                    cacheWrite: 0,
+                  },
+                  contextWindow: 200000,
+                  maxTokens: 8192,
+                },
+              ],
+            },
+          },
+        },
+      });
+
+      expect((cfg.models?.providers?.minimax as Record<string, unknown>)?.baseUrl).toBe(
+        "https://api.minimax.io/anthropic",
+      );
     });
   });
 

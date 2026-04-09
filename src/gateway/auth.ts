@@ -73,6 +73,8 @@ export type AuthorizeGatewayConnectParams = {
   rateLimitScope?: string;
   /** Trust X-Real-IP only when explicitly enabled. */
   allowRealIpFallback?: boolean;
+  /** Browser origin policy for CORS enforcement. */
+  browserOriginPolicy?: { origin?: string; allowed?: boolean };
 };
 
 type TailscaleUser = {

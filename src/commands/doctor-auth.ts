@@ -74,3 +74,12 @@ export async function noteAuthProfileHealth(params: {
     "Model auth",
   );
 }
+
+// Gutted in RemoteClaw fork (Middleware Boundary Principle) - upstream function stub
+export async function maybeRemoveDeprecatedCliAuthProfiles(
+  cfg: RemoteClawConfig,
+  ..._args: unknown[]
+): Promise<RemoteClawConfig> {
+  // No-op in RemoteClaw fork
+  return cfg;
+}

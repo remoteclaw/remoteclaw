@@ -226,11 +226,11 @@
   </head>
   <body>
     <canvas id="remoteclaw-canvas"></canvas>
-    <div id="remoteclaw-status">
-      <div class="card">
+    <div id="remoteclaw-status" role="status" aria-live="polite">
+      <section class="card">
         <div class="title" id="remoteclaw-status-title">Ready</div>
         <div class="subtitle" id="remoteclaw-status-subtitle">Waiting for agent</div>
-      </div>
+      </section>
     </div>
     <remoteclaw-a2ui-host></remoteclaw-a2ui-host>
     <script src="a2ui.bundle.js"></script>

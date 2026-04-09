@@ -40,8 +40,12 @@ describe("buildReplyPayloads media filter integration", () => {
       messagingToolSentMediaUrls: ["file:///tmp/photo.jpg"],
     });
 
-    // Text filter removes the payload entirely (text matched), so nothing remains.
-    expect(replyPayloads).toHaveLength(0);
+    // Gutted in RemoteClaw fork: isMessagingToolDuplicate is a no-op (always false),
+    // so the text filter does not remove the payload. The media filter still strips
+    // the mediaUrl, leaving one payload with text only and no media.
+    expect(replyPayloads).toHaveLength(1);
+    expect(replyPayloads[0].text).toBe("hello world!");
+    expect(replyPayloads[0].mediaUrl).toBeUndefined();
   });
 
   it("does not dedupe text for cross-target messaging sends", () => {
@@ -81,6 +85,34 @@ describe("buildReplyPayloads media filter integration", () => {
       originatingTo: "268300329",
       messagingToolSentTexts: ["different message"],
       messagingToolSentTargets: [{ tool: "telegram", provider: "telegram", to: "268300329" }],
+    });
+
+    expect(replyPayloads).toHaveLength(0);
+  });
+
+  it("suppresses same-target replies when message tool target provider is generic", () => {
+    const { replyPayloads } = buildReplyPayloads({
+      ...baseParams,
+      payloads: [{ text: "hello world!" }],
+      messageProvider: "heartbeat",
+      originatingChannel: "feishu",
+      originatingTo: "ou_abc123",
+      messagingToolSentTexts: ["different message"],
+      messagingToolSentTargets: [{ tool: "message", provider: "message", to: "ou_abc123" }],
+    });
+
+    expect(replyPayloads).toHaveLength(0);
+  });
+
+  it("suppresses same-target replies when target provider is channel alias", () => {
+    const { replyPayloads } = buildReplyPayloads({
+      ...baseParams,
+      payloads: [{ text: "hello world!" }],
+      messageProvider: "heartbeat",
+      originatingChannel: "feishu",
+      originatingTo: "ou_abc123",
+      messagingToolSentTexts: ["different message"],
+      messagingToolSentTargets: [{ tool: "message", provider: "lark", to: "ou_abc123" }],
     });
 
     expect(replyPayloads).toHaveLength(0);

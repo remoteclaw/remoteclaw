@@ -65,6 +65,7 @@ vi.mock("../infra/channel-activity.js", () => ({
 
 vi.mock("../globals.js", () => ({
   logVerbose: logVerboseMock,
+  shouldLogVerbose: vi.fn(() => false),
 }));
 
 let sendModule: typeof import("./send.js");

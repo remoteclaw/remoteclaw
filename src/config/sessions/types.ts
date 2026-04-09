@@ -1,4 +1,6 @@
 import crypto from "node:crypto";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+type Skill = Record<string, unknown>;
 import type { ChatType } from "../../channels/chat-type.js";
 import type { ChannelId } from "../../channels/plugins/types.js";
 import type { DeliveryContext } from "../../utils/delivery-context.js";
@@ -92,11 +94,21 @@ export type SessionEntry = {
   /** Epoch ms cutoff paired with abortCutoffMessageSid when available. */
   abortCutoffTimestamp?: number;
   chatType?: SessionChatType;
+  thinkingLevel?: string;
   verboseLevel?: string;
+  reasoningLevel?: string;
+  elevatedLevel?: string;
   ttsAuto?: TtsAutoMode;
+  execHost?: string;
+  execSecurity?: string;
+  execAsk?: string;
+  execNode?: string;
   responseUsage?: "on" | "off" | "tokens" | "full";
   providerOverride?: string;
   modelOverride?: string;
+  authProfileOverride?: string;
+  authProfileOverrideSource?: "auto" | "user";
+  authProfileOverrideCompactionCount?: number;
   groupActivation?: "mention" | "always";
   groupActivationNeedsSystemIntro?: boolean;
   sendPolicy?: "allow" | "deny";
@@ -124,7 +136,17 @@ export type SessionEntry = {
   cacheWrite?: number;
   modelProvider?: string;
   model?: string;
+  /**
+   * Last selected/runtime model pair for which a fallback notice was emitted.
+   * Used to avoid repeating the same fallback notice every turn.
+   */
+  fallbackNoticeSelectedModel?: string;
+  fallbackNoticeActiveModel?: string;
+  fallbackNoticeReason?: string;
   contextTokens?: number;
+  compactionCount?: number;
+  memoryFlushAt?: number;
+  memoryFlushCompactionCount?: number;
   cliSessionIds?: Record<string, string>;
   claudeCliSessionId?: string;
   label?: string;
@@ -140,36 +162,9 @@ export type SessionEntry = {
   lastTo?: string;
   lastAccountId?: string;
   lastThreadId?: string | number;
+  skillsSnapshot?: SessionSkillSnapshot;
   systemPromptReport?: SessionSystemPromptReport;
   acp?: SessionAcpMeta;
-  /** Upstream thinking/reasoning level selection. */
-  thinkingLevel?: string;
-  /** Upstream reasoning level (alias for thinking-level UIs). */
-  reasoningLevel?: string;
-  /** Elevated security level override. */
-  elevatedLevel?: string;
-  /** Auth profile override ID. */
-  authProfileOverride?: string;
-  /** Number of compactions when the auth profile override was set. */
-  authProfileOverrideCompactionCount?: number;
-  /** Source of the auth profile override. */
-  authProfileOverrideSource?: string;
-  /** Compaction counter (how many times context was compacted). */
-  compactionCount?: number;
-  /** Exec mode: ask for user confirmation before running tools. */
-  execAsk?: boolean;
-  /** Exec mode: host-level execution control. */
-  execHost?: string;
-  /** Exec mode: node execution control. */
-  execNode?: string;
-  /** Exec mode: security level for exec. */
-  execSecurity?: string;
-  /** Timestamp when memory was last flushed. */
-  memoryFlushAt?: number;
-  /** Compaction count when memory was last flushed. */
-  memoryFlushCompactionCount?: number;
-  /** Snapshot of agent skills captured at session creation. */
-  skillsSnapshot?: unknown;
 };
 
 function normalizeRuntimeField(value: string | undefined): string | undefined {
@@ -217,12 +212,45 @@ export function normalizeSessionRuntimeModelFields(entry: SessionEntry): Session
   return next;
 }
 
-export function mergeSessionEntry(
+export function setSessionRuntimeModel(
+  entry: SessionEntry,
+  runtime: { provider: string; model: string },
+): boolean {
+  const provider = runtime.provider.trim();
+  const model = runtime.model.trim();
+  if (!provider || !model) {
+    return false;
+  }
+  entry.modelProvider = provider;
+  entry.model = model;
+  return true;
+}
+
+export type SessionEntryMergePolicy = "touch-activity" | "preserve-activity";
+
+type MergeSessionEntryOptions = {
+  policy?: SessionEntryMergePolicy;
+  now?: number;
+};
+
+function resolveMergedUpdatedAt(
   existing: SessionEntry | undefined,
   patch: Partial<SessionEntry>,
+  options?: MergeSessionEntryOptions,
+): number {
+  if (options?.policy === "preserve-activity" && existing) {
+    return existing.updatedAt ?? patch.updatedAt ?? options.now ?? Date.now();
+  }
+  return Math.max(existing?.updatedAt ?? 0, patch.updatedAt ?? 0, options?.now ?? Date.now());
+}
+
+export function mergeSessionEntryWithPolicy(
+  existing: SessionEntry | undefined,
+  patch: Partial<SessionEntry>,
+  options?: MergeSessionEntryOptions,
 ): SessionEntry {
   const sessionId = patch.sessionId ?? existing?.sessionId ?? crypto.randomUUID();
-  const updatedAt = Math.max(existing?.updatedAt ?? 0, patch.updatedAt ?? 0, Date.now());
+  const updatedAt = resolveMergedUpdatedAt(existing, patch, options);
   if (!existing) {
     return normalizeSessionRuntimeModelFields({ ...patch, sessionId, updatedAt });
   }
@@ -238,6 +266,22 @@ export function mergeSessionEntry(
     }
   }
   return normalizeSessionRuntimeModelFields(next);
+}
+
+export function mergeSessionEntry(
+  existing: SessionEntry | undefined,
+  patch: Partial<SessionEntry>,
+): SessionEntry {
+  return mergeSessionEntryWithPolicy(existing, patch);
+}
+
+export function mergeSessionEntryPreserveActivity(
+  existing: SessionEntry | undefined,
+  patch: Partial<SessionEntry>,
+): SessionEntry {
+  return mergeSessionEntryWithPolicy(existing, patch, {
+    policy: "preserve-activity",
+  });
 }
 
 export function resolveFreshSessionTotalTokens(
@@ -266,6 +310,15 @@ export type GroupKeyResolution = {
   chatType?: SessionChatType;
 };
 
+export type SessionSkillSnapshot = {
+  prompt: string;
+  skills: Array<{ name: string; primaryEnv?: string; requiredEnv?: string[] }>;
+  /** Normalized agent-level filter used to build this snapshot; undefined means unrestricted. */
+  skillFilter?: string[];
+  resolvedSkills?: Skill[];
+  version?: number;
+};
+
 export type SessionSystemPromptReport = {
   source: "run" | "estimate";
   generatedAt: number;
@@ -274,6 +327,8 @@ export type SessionSystemPromptReport = {
   provider?: string;
   model?: string;
   workspaceDir?: string;
+  bootstrapMaxChars?: number;
+  bootstrapTotalMaxChars?: number;
   sandbox?: {
     mode?: string;
     sandboxed?: boolean;
@@ -291,6 +346,10 @@ export type SessionSystemPromptReport = {
     injectedChars: number;
     truncated: boolean;
   }>;
+  skills: {
+    promptChars: number;
+    entries: Array<{ name: string; blockChars: number }>;
+  };
   tools: {
     listChars: number;
     schemaChars: number;

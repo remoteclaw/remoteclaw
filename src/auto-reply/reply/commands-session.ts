@@ -18,36 +18,18 @@ import { parseActivationCommand } from "../group-activation.js";
 import { parseSendPolicyCommand } from "../send-policy.js";
 import { normalizeUsageDisplay, resolveResponseUsageMode } from "../thinking.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./commands-session-abort.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const handleAbortTrigger = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const handleStopCommand = (..._args: unknown[]) => undefined as any;
+const handleAbortTrigger = async (..._args: unknown[]) =>
+  null as import("./commands-types.js").CommandHandlerResult | null;
+const handleStopCommand = async (..._args: unknown[]) =>
+  null as import("./commands-types.js").CommandHandlerResult | null;
 import { persistSessionEntry } from "./commands-session-store.js";
 import type { CommandHandler } from "./commands-types.js";
+import { isDiscordSurface, resolveDiscordAccountId } from "./discord-context.js";
 
 const SESSION_COMMAND_PREFIX = "/session";
 const SESSION_DURATION_OFF_VALUES = new Set(["off", "disable", "disabled", "none", "0"]);
 const SESSION_ACTION_IDLE = "idle";
 const SESSION_ACTION_MAX_AGE = "max-age";
-
-function isDiscordSurface(params: Parameters<CommandHandler>[0]): boolean {
-  const channel =
-    params.ctx.OriginatingChannel ??
-    params.command.channel ??
-    params.ctx.Surface ??
-    params.ctx.Provider;
-  return (
-    String(channel ?? "")
-      .trim()
-      .toLowerCase() === "discord"
-  );
-}
-
-function resolveDiscordAccountId(params: Parameters<CommandHandler>[0]): string {
-  const accountId = typeof params.ctx.AccountId === "string" ? params.ctx.AccountId.trim() : "";
-  return accountId || "default";
-}
 
 function resolveSessionCommandUsage() {
   return "Usage: /session idle <duration|off> | /session max-age <duration|off> (example: /session idle 24h)";

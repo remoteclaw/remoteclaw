@@ -1,7 +1,7 @@
 export type UpdateChannel = "stable" | "beta" | "next" | "dev";
 export type UpdateChannelSource = "config" | "default";
 
-export const DEFAULT_PACKAGE_CHANNEL: UpdateChannel = "next";
+export const DEFAULT_PACKAGE_CHANNEL: UpdateChannel = "stable";
 
 export function normalizeUpdateChannel(value?: string | null): UpdateChannel | null {
   if (!value) {
@@ -52,7 +52,10 @@ export function formatUpdateChannelLabel(params: {
   return `${params.channel} (default)`;
 }
 
-export function resolveUpdateChannelDisplay(params: { configChannel?: UpdateChannel | null }): {
+export function resolveUpdateChannelDisplay(params: {
+  configChannel?: UpdateChannel | null;
+  [key: string]: unknown;
+}): {
   channel: UpdateChannel;
   source: UpdateChannelSource;
   label: string;
@@ -72,6 +75,7 @@ export function resolveUpdateChannelDisplay(params: { configChannel?: UpdateChan
 
 // Gutted in RemoteClaw fork — stub exports for upstream compat
 export const DEV_BRANCH = "dev";
+export const DEFAULT_GIT_CHANNEL: UpdateChannel = "dev";
 export function isBetaTag(_tag: string): boolean {
   return false;
 }

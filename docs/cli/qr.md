@@ -1,5 +1,5 @@
 ---
-description: "CLI reference for `remoteclaw qr` (generate iOS pairing QR + setup code)"
+summary: "CLI reference for `remoteclaw qr` (generate iOS pairing QR + setup code)"
 read_when:
   - You want to pair the iOS app with a gateway quickly
   - You need setup-code output for remote/manual sharing
@@ -34,6 +34,9 @@ remoteclaw qr --url wss://gateway.example/ws --token '<token>'
 ## Notes
 
 - `--token` and `--password` are mutually exclusive.
+- With `--remote`, if effectively active remote credentials are configured as SecretRefs and you do not pass `--token` or `--password`, the command resolves them from the active gateway snapshot. If gateway is unavailable, the command fails fast.
+- Without `--remote`, local `gateway.auth.password` SecretRefs are resolved when password auth can win (explicit `gateway.auth.mode="password"` or inferred password mode with no winning token from auth/env), and no CLI auth override is passed.
+- Gateway version skew note: this command path requires a gateway that supports `secrets.resolve`; older gateways return an unknown-method error.
 - After scanning, approve device pairing with:
   - `remoteclaw devices list`
   - `remoteclaw devices approve <requestId>`

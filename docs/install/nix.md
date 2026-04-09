@@ -1,5 +1,5 @@
 ---
-description: "Install RemoteClaw declaratively with Nix"
+summary: "Install RemoteClaw declaratively with Nix"
 read_when:
   - You want reproducible, rollback-able installs
   - You're already using Nix/NixOS/Home Manager
@@ -23,7 +23,7 @@ What I need you to do:
 1. Check if Determinate Nix is installed (if not, install it)
 2. Create a local flake at ~/code/remoteclaw-local using templates/agent-first/flake.nix
 3. Help me create a Telegram bot (@BotFather) and get my chat ID (@userinfobot)
-4. Set up secrets (bot token, Anthropic key) - plain files at ~/.secrets/ is fine
+4. Set up secrets (bot token, model provider API key) - plain files at ~/.secrets/ is fine
 5. Fill in the template placeholders and run home-manager switch
 6. Verify: launchd running, bot responds to messages
 
@@ -94,4 +94,5 @@ packaging and Nix builds (which do not rely on a full Xcode toolchain).
 ## Related
 
 - [nix-remoteclaw](https://github.com/remoteclaw/nix-remoteclaw) — full setup guide
+- [Wizard](/start/wizard) — non-Nix CLI setup
 - [Docker](/install/docker) — containerized setup

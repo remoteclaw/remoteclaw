@@ -23,16 +23,16 @@ export {
   resolveInternalSessionKey,
   resolveMainSessionAlias,
   resolveSessionReference,
+  resolveVisibleSessionReference,
   shouldResolveSessionIdInput,
   shouldVerifyRequesterSpawnedSessionVisibility,
 } from "./sessions-resolution.js";
 import { extractTextFromChatContent } from "../../shared/chat-content.js";
-import { sanitizeUserFacingText } from "../agent-helpers.js";
-import {
-  stripDowngradedToolCallText,
-  stripMinimaxToolCallXml,
-  stripThinkingTagsFromText,
-} from "../agent-utils.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+const sanitizeUserFacingText = (text: string, _opts?: unknown): string => text;
+const stripDowngradedToolCallText = (text: string): string => text;
+const stripMinimaxToolCallXml = (text: string): string => text;
+const stripThinkingTagsFromText = (text: string): string => text;
 
 export type SessionKind = "main" | "group" | "cron" | "hook" | "node" | "other";
 
@@ -54,6 +54,7 @@ export type SessionListRow = {
   model?: string;
   contextTokens?: number | null;
   totalTokens?: number | null;
+  thinkingLevel?: string;
   verboseLevel?: string;
   systemSent?: boolean;
   abortedLastRun?: boolean;

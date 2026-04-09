@@ -13,6 +13,7 @@ export type SlackChannelConfigResolved = {
   requireMention: boolean;
   allowBots?: boolean;
   users?: Array<string | number>;
+  skills?: string[];
   systemPrompt?: string;
   matchKey?: string;
   matchSource?: ChannelMatchSource;
@@ -24,6 +25,7 @@ export type SlackChannelConfigEntry = {
   requireMention?: boolean;
   allowBots?: boolean;
   users?: Array<string | number>;
+  skills?: string[];
   systemPrompt?: string;
 };
 
@@ -87,11 +89,12 @@ export function resolveSlackChannelConfig(params: {
   channelId: string;
   channelName?: string;
   channels?: SlackChannelConfigEntries;
+  channelKeys?: string[];
   defaultRequireMention?: boolean;
 }): SlackChannelConfigResolved | null {
-  const { channelId, channelName, channels, defaultRequireMention } = params;
+  const { channelId, channelName, channels, channelKeys, defaultRequireMention } = params;
   const entries = channels ?? {};
-  const keys = Object.keys(entries);
+  const keys = channelKeys ?? Object.keys(entries);
   const normalizedName = channelName ? normalizeSlackSlug(channelName) : "";
   const directName = channelName ? channelName.trim() : "";
   // Slack always delivers channel IDs in uppercase (e.g. C0ABC12345) but
@@ -132,12 +135,14 @@ export function resolveSlackChannelConfig(params: {
     requireMentionDefault;
   const allowBots = firstDefined(resolved.allowBots, fallback?.allowBots);
   const users = firstDefined(resolved.users, fallback?.users);
+  const skills = firstDefined(resolved.skills, fallback?.skills);
   const systemPrompt = firstDefined(resolved.systemPrompt, fallback?.systemPrompt);
   const result: SlackChannelConfigResolved = {
     allowed,
     requireMention,
     allowBots,
     users,
+    skills,
     systemPrompt,
   };
   return applyChannelMatchMeta(result, match);

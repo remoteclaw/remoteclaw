@@ -42,8 +42,8 @@ describe("update-channels", () => {
   });
 
   describe("DEFAULT_PACKAGE_CHANNEL", () => {
-    it("defaults to next (pre-1.0)", () => {
-      expect(DEFAULT_PACKAGE_CHANNEL).toBe("next");
+    it("defaults to stable", () => {
+      expect(DEFAULT_PACKAGE_CHANNEL).toBe("stable");
     });
   });
 
@@ -56,7 +56,7 @@ describe("update-channels", () => {
 
     it("falls back to default when no config", () => {
       const result = resolveEffectiveUpdateChannel({});
-      expect(result.channel).toBe("next");
+      expect(result.channel).toBe("stable");
       expect(result.source).toBe("default");
     });
   });

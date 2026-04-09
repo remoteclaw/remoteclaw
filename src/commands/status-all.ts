@@ -1,4 +1,7 @@
+import { buildWorkspaceSkillStatus } from "../agents/skills-status.js";
 import { formatCliCommand } from "../cli/command-format.js";
+import { resolveCommandSecretRefsViaGateway } from "../cli/command-secret-gateway.js";
+import { getStatusCommandSecretTargetIds } from "../cli/command-secret-targets.js";
 import { withProgress } from "../cli/progress.js";
 import { loadConfig, readConfigFileSnapshot, resolveGatewayPort } from "../config/config.js";
 import { readLastGatewayErrorLine } from "../daemon/diagnostics.js";
@@ -14,9 +17,10 @@ import { resolveOsSummary } from "../infra/os-summary.js";
 import { inspectPortUsage } from "../infra/ports.js";
 import { resolveRemoteClawPackageRoot } from "../infra/remoteclaw-root.js";
 import { readRestartSentinel } from "../infra/restart-sentinel.js";
+import { getRemoteSkillEligibility } from "../infra/skills-remote.js";
 import { readTailscaleStatusJson } from "../infra/tailscale.js";
 import { normalizeUpdateChannel, resolveUpdateChannelDisplay } from "../infra/update-channels.js";
-import { checkUpdateStatus } from "../infra/update-check.js";
+import { checkUpdateStatus, formatGitInstallLabel } from "../infra/update-check.js";
 import { runExec } from "../process/exec.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { VERSION } from "../version.js";
@@ -34,7 +38,12 @@ export async function statusAllCommand(
 ): Promise<void> {
   await withProgress({ label: "Scanning status --all…", total: 11 }, async (progress) => {
     progress.setLabel("Loading config…");
-    const cfg = loadConfig();
+    const loadedRaw = loadConfig();
+    const { resolvedConfig: cfg } = await resolveCommandSecretRefsViaGateway({
+      config: loadedRaw,
+      commandName: "status --all",
+      targetIds: getStatusCommandSecretTargetIds(),
+    });
     const osSummary = resolveOsSummary();
     const snap = await readConfigFileSnapshot().catch(() => null);
     progress.tick();
@@ -85,14 +94,18 @@ export async function statusAllCommand(
     const update = await checkUpdateStatus({
       root,
       timeoutMs: 6500,
-      fetchGit: false,
+      fetchGit: true,
       includeRegistry: true,
     });
     const configChannel = normalizeUpdateChannel(cfg.update?.channel);
     const channelInfo = resolveUpdateChannelDisplay({
       configChannel,
+      installKind: update.installKind,
+      gitTag: update.git?.tag ?? null,
+      gitBranch: update.git?.branch ?? null,
     });
     const channelLabel = channelInfo.label;
+    const gitLabel = formatGitInstallLabel(update);
     progress.tick();
 
     progress.setLabel("Probing gateway…");
@@ -198,6 +211,24 @@ export async function statusAllCommand(
     const portUsage = await inspectPortUsage(port).catch(() => null);
     progress.tick();
 
+    const defaultWorkspace =
+      agentStatus.agents.find((a) => a.id === agentStatus.defaultId)?.workspaceDir ??
+      agentStatus.agents[0]?.workspaceDir ??
+      null;
+    const skillStatus =
+      defaultWorkspace != null
+        ? (() => {
+            try {
+              return buildWorkspaceSkillStatus(defaultWorkspace, {
+                config: cfg,
+                eligibility: { remote: getRemoteSkillEligibility() },
+              });
+            } catch {
+              return null;
+            }
+          })()
+        : null;
+
     const controlUiEnabled = cfg.gateway?.controlUi?.enabled ?? true;
     const dashboard = controlUiEnabled
       ? resolveControlUiLinks({
@@ -255,6 +286,7 @@ export async function statusAllCommand(
               : `${tailscaleMode} · ${tailscale.backendState ?? "unknown"} · magicdns unknown`,
       },
       { Item: "Channel", Value: channelLabel },
+      ...(gitLabel ? [{ Item: "Git", Value: gitLabel }] : []),
       { Item: "Update", Value: updateLine },
       {
         Item: "Gateway",
@@ -282,7 +314,7 @@ export async function statusAllCommand(
         : { Item: "Node service", Value: "unknown" },
       {
         Item: "Agents",
-        Value: `${agentStatus.agents.length} total · ${aliveAgents} active · ${agentStatus.totalSessions} sessions`,
+        Value: `${agentStatus.agents.length} total · ${agentStatus.bootstrapPendingCount} bootstrapping · ${aliveAgents} active · ${agentStatus.totalSessions} sessions`,
       },
     ];
 
@@ -306,7 +338,10 @@ export async function statusAllCommand(
         tailscaleMode,
         tailscale,
         tailscaleHttpsUrl,
-
+        skillStatus: skillStatus as unknown as {
+          workspaceDir: string;
+          skills: Array<{ eligible: boolean; missing: Record<string, unknown[]> }>;
+        },
         channelsStatus,
         channelIssues,
         gatewayReachable,

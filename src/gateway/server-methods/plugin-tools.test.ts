@@ -7,6 +7,7 @@ vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentDir: () => "/mock/agent",
   resolveAgentWorkspaceDir: () => "/mock/workspace",
   resolveDefaultAgentId: () => "default",
+  resolveAgentRuntime: () => "claude",
 }));
 
 vi.mock("../../config/config.js", () => ({

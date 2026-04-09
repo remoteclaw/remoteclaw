@@ -6,6 +6,7 @@ import type { loadConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { VERSION } from "../version.js";
+import { writeJsonAtomic } from "./json-files.js";
 import { resolveRemoteClawPackageRoot } from "./remoteclaw-root.js";
 import { normalizeUpdateChannel, DEFAULT_PACKAGE_CHANNEL } from "./update-channels.js";
 import { compareSemverStrings, resolveNpmChannelTag, checkUpdateStatus } from "./update-check.js";
@@ -104,7 +105,7 @@ function resolveCheckIntervalMs(cfg: ReturnType<typeof loadConfig>): number {
   if (!auto.enabled) {
     return UPDATE_CHECK_INTERVAL_MS;
   }
-  if (channel === "beta" || channel === "next") {
+  if (channel === "beta") {
     return Math.max(ONE_HOUR_MS / 4, Math.floor(auto.betaCheckIntervalHours * ONE_HOUR_MS));
   }
   if (channel === "stable") {
@@ -124,8 +125,7 @@ async function readState(statePath: string): Promise<UpdateCheckState> {
 }
 
 async function writeState(statePath: string, state: UpdateCheckState): Promise<void> {
-  await fs.mkdir(path.dirname(statePath), { recursive: true });
-  await fs.writeFile(statePath, JSON.stringify(state, null, 2), "utf-8");
+  await writeJsonAtomic(statePath, state);
 }
 
 function sameUpdateAvailable(a: UpdateAvailable | null, b: UpdateAvailable | null): boolean {
@@ -229,7 +229,7 @@ function resolveStableAutoApplyAtMs(params: {
 }
 
 async function runAutoUpdateCommand(params: {
-  channel: "stable" | "beta" | "next";
+  channel: "stable" | "beta";
   timeoutMs: number;
   root?: string;
 }): Promise<AutoUpdateRunResult> {
@@ -304,7 +304,7 @@ export async function runGatewayUpdateCheck(params: {
   allowInTests?: boolean;
   onUpdateAvailableChange?: (updateAvailable: UpdateAvailable | null) => void;
   runAutoUpdate?: (params: {
-    channel: "stable" | "beta" | "next";
+    channel: "stable" | "beta";
     timeoutMs: number;
     root?: string;
   }) => Promise<AutoUpdateRunResult>;
@@ -406,10 +406,10 @@ export async function runGatewayUpdateCheck(params: {
       nextState.lastNotifiedTag = tag;
     }
 
-    if (auto.enabled && (channel === "stable" || channel === "beta" || channel === "next")) {
+    if (auto.enabled && (channel === "stable" || channel === "beta")) {
       const runAuto = params.runAutoUpdate ?? runAutoUpdateCommand;
       const attemptIntervalMs =
-        channel === "beta" || channel === "next"
+        channel === "beta"
           ? Math.max(ONE_HOUR_MS / 4, Math.floor(auto.betaCheckIntervalHours * ONE_HOUR_MS))
           : ONE_HOUR_MS;
       const lastAttemptAt = state.autoLastAttemptAt ? Date.parse(state.autoLastAttemptAt) : null;
@@ -419,7 +419,7 @@ export async function runGatewayUpdateCheck(params: {
         Number.isFinite(lastAttemptAt) &&
         now - lastAttemptAt < attemptIntervalMs;
 
-      let dueNow = channel === "beta" || channel === "next";
+      let dueNow = channel === "beta";
       let applyAfterMs: number | null = null;
       if (channel === "stable") {
         applyAfterMs = resolveStableAutoApplyAtMs({

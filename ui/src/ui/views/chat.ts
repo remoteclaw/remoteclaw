@@ -29,8 +29,10 @@ export type ChatProps = {
   sending: boolean;
   canAbort?: boolean;
   compactionStatus?: CompactionIndicatorStatus | null;
+  fallbackStatus?: unknown;
   messages: unknown[];
   toolMessages: unknown[];
+  thinkingLevel?: string | null;
   thinkingStream: string | null;
   stream: string | null;
   streamStartedAt: number | null;

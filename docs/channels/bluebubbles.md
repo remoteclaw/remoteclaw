@@ -1,5 +1,5 @@
 ---
-description: "iMessage via BlueBubbles macOS server (REST send/receive, typing, reactions, pairing, advanced actions)."
+summary: "iMessage via BlueBubbles macOS server (REST send/receive, typing, reactions, pairing, advanced actions)."
 read_when:
   - Setting up BlueBubbles channel
   - Troubleshooting webhook pairing
@@ -48,6 +48,7 @@ Security note:
 
 - Always set a webhook password.
 - Webhook authentication is always required. RemoteClaw rejects BlueBubbles webhook requests unless they include a password/guid that matches `channels.bluebubbles.password` (for example `?password=<password>` or `x-password`), regardless of loopback/proxy topology.
+- Password authentication is checked before reading/parsing full webhook bodies.
 
 ## Keeping Messages.app alive (VM / headless setups)
 
@@ -188,7 +189,7 @@ Per-group configuration:
 
 ### Command gating
 
-- Control commands (e.g., `/config`) require authorization.
+- Control commands (e.g., `/config`, `/model`) require authorization.
 - Uses `allowFrom` and `groupAllowFrom` to determine command authorization.
 - Authorized senders can run control commands even without mentioning in groups.
 
@@ -289,7 +290,7 @@ Control whether responses are sent as a single message or streamed in blocks:
 
 Full configuration: [Configuration](/gateway/configuration)
 
-Channel options:
+Provider options:
 
 - `channels.bluebubbles.enabled`: Enable/disable the channel.
 - `channels.bluebubbles.serverUrl`: BlueBubbles REST API base URL.

@@ -3,7 +3,10 @@ import { AgentDefaultsSchema } from "./zod-schema.agent-defaults.js";
 import { AgentEntrySchema } from "./zod-schema.agent-runtime.js";
 
 describe("auth field schema validation", () => {
-  describe("AgentEntrySchema", () => {
+  // Gutted in RemoteClaw fork: AgentEntrySchema no longer has an auth field
+  // (auth was removed from per-agent config upstream; only AgentDefaultsSchema has it).
+  // The schema uses .strict() so any auth value is rejected as an unrecognized key.
+  describe.skip("AgentEntrySchema", () => {
     it("accepts auth: false", () => {
       const result = AgentEntrySchema.safeParse({ id: "main", auth: false });
       expect(result.success).toBe(true);
@@ -25,7 +28,7 @@ describe("auth field schema validation", () => {
     it("accepts omitted auth (undefined)", () => {
       const result = AgentEntrySchema.safeParse({ id: "main" });
       expect(result.success).toBe(true);
-      expect(result.data?.auth).toBeUndefined();
+      expect(((result.data ?? {}) as Record<string, unknown>)?.auth).toBeUndefined();
     });
 
     it("rejects auth: true", () => {

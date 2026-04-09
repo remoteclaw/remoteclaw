@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createConfigIO } from "./io.js";
 
 async function withTempHome(run: (home: string) => Promise<void>): Promise<void> {
@@ -75,6 +75,107 @@ describe("config io paths", () => {
       const io = createIoForHome(home, { CLAWDBOT_CONFIG_PATH: customPath } as NodeJS.ProcessEnv);
       expect(io.configPath).toBe(customPath);
       expect(io.loadConfig().gateway?.port).toBe(20003);
+    });
+  });
+
+  // Gutted in RemoteClaw fork: normalizeExecSafeBinProfilesInConfig is a no-op,
+  // so safe-bin profiles are not trimmed/lowercased/deduplicated at load time.
+  it("normalizes safe-bin config entries at config load time", async () => {
+    await withTempHome(async (home) => {
+      const configDir = path.join(home, ".remoteclaw");
+      await fs.mkdir(configDir, { recursive: true });
+      const configPath = path.join(configDir, "remoteclaw.json");
+      await fs.writeFile(
+        configPath,
+        JSON.stringify(
+          {
+            tools: {
+              exec: {
+                safeBinTrustedDirs: [" /custom/bin ", "", "/custom/bin", "/agent/bin"],
+                safeBinProfiles: {
+                  " MyFilter ": {
+                    allowedValueFlags: ["--limit", " --limit ", ""],
+                  },
+                },
+              },
+            },
+            agents: {
+              list: [
+                {
+                  id: "ops",
+                  tools: {
+                    exec: {
+                      safeBinTrustedDirs: [" /ops/bin ", "/ops/bin"],
+                      safeBinProfiles: {
+                        " Custom ": {
+                          deniedFlags: ["-f", " -f ", ""],
+                        },
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          null,
+          2,
+        ),
+        "utf-8",
+      );
+      const io = createIoForHome(home);
+      expect(io.configPath).toBe(configPath);
+      const cfg = io.loadConfig();
+      // In RemoteClaw fork, normalizeExecSafeBinProfilesInConfig is a no-op,
+      // so raw values pass through unchanged.
+      expect(cfg.tools?.exec?.safeBinProfiles).toEqual({
+        " MyFilter ": {
+          allowedValueFlags: ["--limit", " --limit ", ""],
+        },
+      });
+      expect(cfg.tools?.exec?.safeBinTrustedDirs).toEqual([
+        " /custom/bin ",
+        "",
+        "/custom/bin",
+        "/agent/bin",
+      ]);
+      expect(cfg.agents?.list?.[0]?.tools?.exec?.safeBinProfiles).toEqual({
+        " Custom ": {
+          deniedFlags: ["-f", " -f ", ""],
+        },
+      });
+      expect(cfg.agents?.list?.[0]?.tools?.exec?.safeBinTrustedDirs).toEqual([
+        " /ops/bin ",
+        "/ops/bin",
+      ]);
+    });
+  });
+
+  it("logs invalid config path details and returns empty config", async () => {
+    await withTempHome(async (home) => {
+      const configDir = path.join(home, ".remoteclaw");
+      await fs.mkdir(configDir, { recursive: true });
+      const configPath = path.join(configDir, "remoteclaw.json");
+      await fs.writeFile(
+        configPath,
+        JSON.stringify({ gateway: { port: "not-a-number" } }, null, 2),
+      );
+
+      const logger = {
+        warn: vi.fn(),
+        error: vi.fn(),
+      };
+
+      const io = createConfigIO({
+        env: {} as NodeJS.ProcessEnv,
+        homedir: () => home,
+        logger,
+      });
+
+      expect(io.loadConfig()).toEqual({});
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining(`Invalid config at ${configPath}:\\n`),
+      );
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("- gateway.port:"));
     });
   });
 });

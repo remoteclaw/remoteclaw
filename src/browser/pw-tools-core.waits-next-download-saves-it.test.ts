@@ -13,6 +13,13 @@ const tmpDirMocks = vi.hoisted(() => ({
   resolvePreferredRemoteClawTmpDir: vi.fn(() => "/tmp/remoteclaw"),
 }));
 vi.mock("../infra/tmp-remoteclaw-dir.js", () => tmpDirMocks);
+vi.mock("./output-atomic.js", () => ({
+  writeViaSiblingTempPath: vi.fn(
+    async (params: { targetPath: string; writeTemp: (p: string) => Promise<void> }) => {
+      await params.writeTemp(params.targetPath);
+    },
+  ),
+}));
 const mod = await import("./pw-tools-core.js");
 
 describe("pw-tools-core", () => {

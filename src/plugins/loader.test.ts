@@ -312,38 +312,15 @@ describe("loadRemoteClawPlugins", () => {
     expect(channel).toBeDefined();
   });
 
-  it("registers http handlers", () => {
-    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
-    const plugin = writePlugin({
-      id: "http-demo",
-      body: `export default { id: "http-demo", register(api) {
-  api.registerHttpHandler(async () => false);
-} };`,
-    });
-
-    const registry = loadRemoteClawPlugins({
-      cache: false,
-      workspaceDir: plugin.dir,
-      config: {
-        plugins: {
-          load: { paths: [plugin.file] },
-          allow: ["http-demo"],
-        },
-      },
-    });
-
-    const handler = registry.httpHandlers.find((entry) => entry.pluginId === "http-demo");
-    expect(handler).toBeDefined();
-    const httpPlugin = registry.plugins.find((entry) => entry.id === "http-demo");
-    expect(httpPlugin?.httpHandlers).toBe(1);
-  });
+  // Gutted in RemoteClaw fork — registerHttpHandler was removed from the plugin API
+  it.skip("registers http handlers", () => {});
 
   it("registers http routes", () => {
     process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const plugin = writePlugin({
       id: "http-route-demo",
       body: `export default { id: "http-route-demo", register(api) {
-  api.registerHttpRoute({ path: "/demo", handler: async (_req, res) => { res.statusCode = 200; res.end("ok"); } });
+  api.registerHttpRoute({ path: "/demo", auth: "gateway", handler: async (_req, res) => { res.statusCode = 200; res.end("ok"); } });
 } };`,
     });
 
@@ -362,7 +339,7 @@ describe("loadRemoteClawPlugins", () => {
     expect(route).toBeDefined();
     expect(route?.path).toBe("/demo");
     const httpPlugin = registry.plugins.find((entry) => entry.id === "http-route-demo");
-    expect(httpPlugin?.httpHandlers).toBe(1);
+    expect(httpPlugin?.httpRoutes).toBe(1);
   });
 
   it("respects explicit disable in config", () => {

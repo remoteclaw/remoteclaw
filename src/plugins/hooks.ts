@@ -12,6 +12,7 @@ import type {
   PluginHookAgentEndEvent,
   PluginHookAfterRuntimeExitEvent,
   PluginHookBeforeResetEvent,
+  PluginHookBeforeRuntimeSpawnEvent,
   PluginHookBeforeRuntimeSpawnResult,
   PluginHookBeforeToolCallEvent,
   PluginHookBeforeToolCallResult,
@@ -42,13 +43,9 @@ import type {
 
 // Re-export types for consumers
 export type {
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   PluginHookAgentContext,
   PluginHookAgentEndEvent,
   PluginHookAfterRuntimeExitEvent,
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
-  PluginHookBeforeResetEvent,
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   PluginHookBeforeResetEvent,
   PluginHookBeforeRuntimeSpawnResult,
   PluginHookMessageContext,
@@ -62,12 +59,7 @@ export type {
   PluginHookAfterToolCallEvent,
   PluginHookBeforeMessageWriteEvent,
   PluginHookBeforeMessageWriteResult,
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
-  PluginHookAgentContext,
   PluginHookSessionContext,
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
-  PluginHookSessionEndEvent,
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   PluginHookSessionEndEvent,
   PluginHookSessionStartEvent,
   PluginHookSubagentContext,
@@ -512,7 +504,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
    * Runs sequentially (modifiable).
    */
   async function runBeforeRuntimeSpawn(
-    event: PluginHookBeforeResetEvent,
+    event: PluginHookBeforeRuntimeSpawnEvent,
     ctx: PluginHookAgentContext,
   ): Promise<PluginHookBeforeRuntimeSpawnResult | undefined> {
     return runModifyingHook<"before_runtime_spawn", PluginHookBeforeRuntimeSpawnResult>(

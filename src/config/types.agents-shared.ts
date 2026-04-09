@@ -19,11 +19,14 @@ type SandboxDockerSettings = {
   binds?: string[];
   memory?: string;
   cpus?: number;
+  seccompProfile?: string;
+  apparmorProfile?: string;
 };
 type SandboxBrowserSettings = {
   enabled?: boolean;
   image?: string;
   ports?: Array<string | number>;
+  network?: string;
 };
 type SandboxPruneSettings = {
   enabled?: boolean;

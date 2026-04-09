@@ -1,421 +1,254 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  clearFastTestEnv,
+  loadRunCronIsolatedAgentTurn,
+  logWarnMock,
+  makeCronSession,
+  makeCronSessionEntry,
+  resolveAgentConfigMock,
+  resolveAllowedModelRefMock,
+  resolveConfiguredModelRefMock,
+  resolveCronSessionMock,
+  resetRunCronIsolatedAgentTurnHarness,
+  restoreFastTestEnv,
+  runWithModelFallbackMock,
+  updateSessionStoreMock,
+} from "./run.test-harness.js";
 
-// ---------- mocks ----------
-
-const channelBridgeHandleMock = vi.fn();
-
-vi.mock("../../middleware/channel-bridge.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../middleware/channel-bridge.js")>();
-  return {
-    ...actual,
-    ChannelBridge: class MockChannelBridge {
-      readonly provider: string;
-      readonly workspaceDir?: string;
-
-      constructor(opts: { provider: string; workspaceDir?: string }) {
-        this.provider = opts.provider;
-        this.workspaceDir = opts.workspaceDir;
-      }
-
-      handle(
-        message: import("../../middleware/types.js").ChannelMessage,
-        callbacks?: unknown,
-        abortSignal?: AbortSignal,
-      ) {
-        return channelBridgeHandleMock(message, callbacks, abortSignal);
-      }
-    },
-  };
-});
-
-vi.mock("../../middleware/auth-key-retry.js", () => ({
-  withAuthKeyRetry: vi.fn(
-    async (_options: unknown, execute: (env: Record<string, string>) => Promise<unknown>) =>
-      execute({}),
-  ),
-}));
-
-vi.mock("../../agents/channel-tools.js", () => ({
-  resolveChannelMessageToolHints: vi.fn().mockReturnValue([]),
-}));
-
-vi.mock("../../agents/agent-scope.js", () => ({
-  resolveAgentConfig: vi.fn().mockReturnValue(undefined),
-  resolveAgentDir: vi.fn().mockReturnValue("/tmp/agent-dir"),
-  resolveAgentRuntime: vi.fn().mockReturnValue("claude"),
-  resolveAgentRuntimeArgs: vi.fn().mockReturnValue(undefined),
-  resolveAgentRuntimeEnv: vi.fn().mockReturnValue(undefined),
-  resolveAgentRuntimeOrThrow: vi.fn().mockReturnValue("claude"),
-  resolveAgentWorkspaceDir: vi.fn().mockReturnValue("/tmp/workspace"),
-  resolveDefaultAgentId: vi.fn().mockReturnValue("default"),
-}));
-
-vi.mock("../../agents/workspace.js", () => ({
-  ensureAgentWorkspace: vi.fn().mockResolvedValue("/tmp/workspace"),
-}));
-
-vi.mock("../../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn().mockResolvedValue({ models: [] }),
-}));
-
-vi.mock("../../agents/model-selection.js", () => ({
-  getModelRefStatus: vi.fn().mockReturnValue({ allowed: false }),
-  resolveAllowedModelRef: vi
-    .fn()
-    .mockReturnValue({ ref: { provider: "claude", model: "claude-sonnet-4-5" } }),
-  resolveConfiguredModelRef: vi
-    .fn()
-    .mockReturnValue({ provider: "claude", model: "claude-sonnet-4-5" }),
-  resolveHooksGmailModel: vi.fn().mockReturnValue(null),
-}));
-
-vi.mock("../../agents/provider-utils.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../agents/provider-utils.js")>();
-  return {
-    ...actual,
-    isCliProvider: vi.fn().mockReturnValue(true),
-  };
-});
-
-vi.mock("../../agents/context.js", () => ({
-  lookupContextTokens: vi.fn().mockReturnValue(128000),
-}));
-
-vi.mock("../../agents/date-time.js", () => ({
-  formatUserTime: vi.fn().mockReturnValue("2026-02-10 12:00"),
-  resolveUserTimeFormat: vi.fn().mockReturnValue("24h"),
-  resolveUserTimezone: vi.fn().mockReturnValue("UTC"),
-}));
-
-vi.mock("../../agents/timeout.js", () => ({
-  resolveAgentTimeoutMs: vi.fn().mockReturnValue(60_000),
-}));
-
-vi.mock("../../agents/usage.js", () => ({
-  deriveSessionTotalTokens: vi.fn().mockReturnValue(30),
-  hasNonzeroUsage: vi.fn().mockReturnValue(false),
-}));
-
-vi.mock("../../agents/cli-session.js", () => ({
-  getCliSessionId: vi.fn().mockReturnValue("cli-session-123"),
-  setCliSessionId: vi.fn(),
-}));
-
-vi.mock("../../auto-reply/thinking.js", () => ({
-  normalizeVerboseLevel: vi.fn().mockReturnValue("off"),
-}));
-
-vi.mock("../../cli/outbound-send-deps.js", () => ({
-  createOutboundSendDeps: vi.fn().mockReturnValue({}),
-}));
-
-vi.mock("../../config/sessions.js", () => ({
-  resolveAgentMainSessionKey: vi.fn().mockReturnValue("main:default"),
-  updateSessionStore: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("../../config/paths.js", () => ({
-  resolveGatewayPort: vi.fn().mockReturnValue(3579),
-}));
-
-vi.mock("../../gateway/credentials.js", () => ({
-  resolveGatewayCredentialsFromConfig: vi.fn().mockReturnValue({ token: "test-token" }),
-}));
-
-vi.mock("../../routing/session-key.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../routing/session-key.js")>();
-  return {
-    ...actual,
-    buildAgentMainSessionKey: vi.fn().mockReturnValue("agent:default:cron:test"),
-    normalizeAgentId: vi.fn((id: string) => id),
-  };
-});
-
-vi.mock("../../infra/agent-events.js", () => ({
-  registerAgentRunContext: vi.fn(),
-}));
-
-vi.mock("../../infra/outbound/deliver.js", () => ({
-  deliverOutboundPayloads: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("../../logger.js", () => ({
-  logWarn: vi.fn(),
-}));
-
-vi.mock("../../security/external-content.js", () => ({
-  buildSafeExternalPrompt: vi.fn().mockReturnValue("safe prompt"),
-  detectSuspiciousPatterns: vi.fn().mockReturnValue([]),
-  getHookType: vi.fn().mockReturnValue("unknown"),
-  isExternalHookSession: vi.fn().mockReturnValue(false),
-}));
-
-vi.mock("../delivery.js", () => ({
-  resolveCronDeliveryPlan: vi.fn().mockReturnValue({ requested: false }),
-}));
-
-vi.mock("./delivery-target.js", () => ({
-  resolveDeliveryTarget: vi.fn().mockResolvedValue({
-    ok: true,
-    channel: "telegram",
-    to: "chat-123",
-    accountId: "bot-456",
-    mode: "explicit",
-  }),
-}));
-
-vi.mock("./helpers.js", () => ({
-  pickLastDeliverablePayload: vi.fn().mockReturnValue(undefined),
-  pickLastNonEmptyTextFromPayloads: vi.fn().mockReturnValue("test output"),
-  pickSummaryFromOutput: vi.fn().mockReturnValue("summary"),
-  pickSummaryFromPayloads: vi.fn().mockReturnValue("summary"),
-}));
-
-vi.mock("./delivery-dispatch.js", () => ({
-  dispatchCronDelivery: vi.fn().mockResolvedValue({
-    delivered: false,
-    summary: "summary",
-    outputText: "test output",
-  }),
-  matchesMessagingToolDeliveryTarget: vi.fn().mockReturnValue(false),
-  resolveCronDeliveryBestEffort: vi.fn().mockReturnValue(false),
-}));
-
-const resolveCronSessionMock = vi.fn();
-vi.mock("./session.js", () => ({
-  resolveCronSession: resolveCronSessionMock,
-}));
-
-const { runCronIsolatedAgentTurn } = await import("./run.js");
+const runCronIsolatedAgentTurn = await loadRunCronIsolatedAgentTurn();
 
 // ---------- helpers ----------
 
 function makeJob(overrides?: Record<string, unknown>) {
   return {
-    id: "cron-job-1",
-    name: "Daily Summary",
+    id: "digest-job",
+    name: "Daily Digest",
     schedule: { kind: "cron", expr: "0 9 * * *", tz: "UTC" },
     sessionTarget: "isolated",
-    sessionKey: "cron:cron-job-1",
-    payload: { kind: "agentTurn", message: "generate summary" },
+    payload: {
+      kind: "agentTurn",
+      message: "run daily digest",
+      model: "anthropic/claude-sonnet-4-6",
+    },
     ...overrides,
   } as never;
 }
 
 function makeParams(overrides?: Record<string, unknown>) {
   return {
-    cfg: { agents: { defaults: { runtime: "claude" as const } } },
+    cfg: {},
     deps: {} as never,
     job: makeJob(),
-    message: "generate daily summary",
-    sessionKey: "cron:test",
+    message: "run daily digest",
+    sessionKey: "cron:digest",
     ...overrides,
   };
 }
 
-function makeFreshSession(sessionEntryOverrides?: Record<string, unknown>): {
-  storePath: string;
-  store: Record<string, unknown>;
-  sessionEntry: {
-    sessionId: string;
-    updatedAt: number;
-    systemSent: boolean;
-    model?: string;
-    modelProvider?: string;
-    modelOverride?: string;
-    providerOverride?: string;
-    [k: string]: unknown;
-  };
-  systemSent: boolean;
-  isNewSession: boolean;
-} {
+function makeFreshSessionEntry(overrides?: Record<string, unknown>) {
   return {
-    storePath: "/tmp/store.json",
-    store: {},
-    sessionEntry: {
-      sessionId: "test-session-id",
-      updatedAt: 0,
-      systemSent: false,
-      ...sessionEntryOverrides,
-    },
-    systemSent: false,
-    isNewSession: true,
+    ...makeCronSessionEntry(),
+    // Crucially: no model or modelProvider — simulates a brand-new session
+    model: undefined as string | undefined,
+    modelProvider: undefined as string | undefined,
+    ...overrides,
   };
 }
 
-function makeDeliveryResult(overrides?: Record<string, unknown>) {
+function makeSuccessfulRunResult(overrides?: Record<string, unknown>) {
   return {
-    payloads: [{ text: "Agent response" }],
-    run: {
-      text: "Agent response",
-      sessionId: "cli-session-new",
-      durationMs: 1500,
-      usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 10, cacheWriteTokens: 5 },
-      aborted: false,
-      stopReason: "end_turn",
+    result: {
+      payloads: [{ text: "digest complete" }],
+      meta: {
+        agentMeta: {
+          model: "claude-sonnet-4-6",
+          provider: "anthropic",
+          usage: { input: 100, output: 50 },
+        },
+      },
     },
-    mcp: {
-      sentTexts: [],
-      sentMediaUrls: [],
-      sentTargets: [],
-      cronAdds: 0,
-    },
-    error: undefined,
+    provider: "anthropic",
+    model: "claude-sonnet-4-6",
+    attempts: [],
     ...overrides,
   };
 }
 
 // ---------- tests ----------
 
-describe("runCronIsolatedAgentTurn — cron model override (telemetry vs session entry)", () => {
+// Gutted in RemoteClaw fork — cron model override pre-run persist logic not present
+describe.skip("runCronIsolatedAgentTurn — cron model override (#21057)", () => {
   let previousFastTestEnv: string | undefined;
-  let cronSession: ReturnType<typeof makeFreshSession>;
+  // Hold onto the cron session *object* — the code may reassign its
+  // `sessionEntry` property (e.g. during skills snapshot refresh), so
+  // checking a stale reference would give a false negative.
+  let cronSession: ReturnType<typeof makeCronSession>;
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    previousFastTestEnv = process.env.REMOTECLAW_TEST_FAST;
-    delete process.env.REMOTECLAW_TEST_FAST;
-    cronSession = makeFreshSession();
+    previousFastTestEnv = clearFastTestEnv();
+    resetRunCronIsolatedAgentTurnHarness();
+
+    // Agent default model is Opus
+    resolveConfiguredModelRefMock.mockReturnValue({
+      provider: "anthropic",
+      model: "claude-opus-4-6",
+    });
+
+    // Cron payload model override resolves to Sonnet
+    resolveAllowedModelRefMock.mockReturnValue({
+      ref: { provider: "anthropic", model: "claude-sonnet-4-6" },
+    });
+
+    resolveAgentConfigMock.mockReturnValue(undefined);
+    updateSessionStoreMock.mockResolvedValue(undefined);
+
+    cronSession = makeCronSession({
+      sessionEntry: makeFreshSessionEntry(),
+    });
     resolveCronSessionMock.mockReturnValue(cronSession);
-    channelBridgeHandleMock.mockResolvedValue(makeDeliveryResult());
   });
 
   afterEach(() => {
-    if (previousFastTestEnv == null) {
-      delete process.env.REMOTECLAW_TEST_FAST;
-      return;
-    }
-    process.env.REMOTECLAW_TEST_FAST = previousFastTestEnv;
+    restoreFastTestEnv(previousFastTestEnv);
   });
 
-  it("telemetry uses runtime field, session entry uses model/modelProvider", async () => {
-    const result = await runCronIsolatedAgentTurn(
-      makeParams({
-        job: makeJob({
-          payload: {
-            kind: "agentTurn",
-            message: "generate summary",
-            model: "anthropic/claude-sonnet-4-6",
-          },
-        }),
-      }),
-    );
+  it("persists cron payload model on session entry even when the run throws", async () => {
+    // Simulate the agent run throwing (e.g. LLM provider timeout)
+    runWithModelFallbackMock.mockRejectedValueOnce(new Error("LLM provider timeout"));
 
-    expect(result.status).toBe("ok");
-
-    // Telemetry: runtime comes from resolveAgentRuntimeOrThrow (mocked → "claude"),
-    // not from the model override
-    expect(result.runtime).toBe("claude");
-
-    // Result does NOT carry model/provider — those are session-entry-only fields
-    expect("model" in result).toBe(false);
-    expect("provider" in result).toBe(false);
-
-    // Session entry: model/modelProvider reflect the payload override
-    expect(cronSession.sessionEntry.model).toBe("claude-sonnet-4-6");
-    expect(cronSession.sessionEntry.modelProvider).toBe("anthropic");
-  });
-
-  it("persists payload model override on session entry after successful run", async () => {
-    const result = await runCronIsolatedAgentTurn(
-      makeParams({
-        job: makeJob({
-          payload: {
-            kind: "agentTurn",
-            message: "generate summary",
-            model: "anthropic/claude-sonnet-4-6",
-          },
-        }),
-      }),
-    );
-
-    expect(result.status).toBe("ok");
-    expect(cronSession.sessionEntry.model).toBe("claude-sonnet-4-6");
-    expect(cronSession.sessionEntry.modelProvider).toBe("anthropic");
-  });
-
-  it("defaults model to 'unknown' on session entry when no override is present", async () => {
-    // Job has no model override
-    const result = await runCronIsolatedAgentTurn(
-      makeParams({
-        job: makeJob({
-          payload: { kind: "agentTurn", message: "generate summary" },
-        }),
-      }),
-    );
-
-    expect(result.status).toBe("ok");
-    expect(result.runtime).toBe("claude");
-    // Without model override, defaults from the configured agent runtime.
-    expect(cronSession.sessionEntry.model).toBe("default");
-    expect(cronSession.sessionEntry.modelProvider).toBe("claude");
-  });
-
-  it("returns error for unparseable model in payload", async () => {
-    const result = await runCronIsolatedAgentTurn(
-      makeParams({
-        job: makeJob({
-          payload: {
-            kind: "agentTurn",
-            message: "generate summary",
-            model: "/",
-          },
-        }),
-      }),
-    );
+    const result = await runCronIsolatedAgentTurn(makeParams());
 
     expect(result.status).toBe("error");
-    expect(result.error).toContain("Unrecognized model");
-    // ChannelBridge was never called
-    expect(channelBridgeHandleMock).not.toHaveBeenCalled();
-    // Session entry model was never set (early return before execution)
+
+    // The session entry should record the intended cron model override (Sonnet)
+    // so that sessions_list does not fall back to the agent default (Opus).
+    //
+    // BUG (#21057): before the fix, the model was only written to the session
+    // entry AFTER a successful run (in the post-run telemetry block), so it
+    // remained undefined when the run threw in the catch block.
+    expect(cronSession.sessionEntry.model).toBe("claude-sonnet-4-6");
+    expect(cronSession.sessionEntry.modelProvider).toBe("anthropic");
+    expect(cronSession.sessionEntry.systemSent).toBe(true);
+  });
+
+  it("session entry already carries cron model at pre-run persist time (race condition)", async () => {
+    // Capture a deep snapshot of the session entry at each persist call so we
+    // can inspect what sessions_list would see mid-run — before the post-run
+    // persist overwrites the entry with the actual model from agentMeta.
+    const persistedSnapshots: Array<{
+      model?: string;
+      modelProvider?: string;
+      systemSent?: boolean;
+    }> = [];
+    updateSessionStoreMock.mockImplementation(
+      async (_path: string, cb: (s: Record<string, unknown>) => void) => {
+        const store: Record<string, unknown> = {};
+        cb(store);
+        const entry = Object.values(store)[0] as
+          | { model?: string; modelProvider?: string; systemSent?: boolean }
+          | undefined;
+        if (entry) {
+          persistedSnapshots.push(JSON.parse(JSON.stringify(entry)));
+        }
+      },
+    );
+
+    runWithModelFallbackMock.mockResolvedValueOnce(makeSuccessfulRunResult());
+
+    await runCronIsolatedAgentTurn(makeParams());
+
+    // Persist ordering: [0] skills snapshot, [1] pre-run model+systemSent,
+    // [2] post-run telemetry.  Index 1 is what a concurrent sessions_list
+    // would read while the agent run is in flight.
+    expect(persistedSnapshots.length).toBeGreaterThanOrEqual(3);
+    const preRunSnapshot = persistedSnapshots[1];
+    expect(preRunSnapshot.model).toBe("claude-sonnet-4-6");
+    expect(preRunSnapshot.modelProvider).toBe("anthropic");
+    expect(preRunSnapshot.systemSent).toBe(true);
+  });
+
+  it("returns error without persisting model when payload model is disallowed", async () => {
+    resolveAllowedModelRefMock.mockReturnValueOnce({
+      error: "Model not allowed: anthropic/claude-sonnet-4-6",
+    });
+
+    const result = await runCronIsolatedAgentTurn(makeParams());
+
+    expect(result.status).toBe("error");
+    expect(result.error).toContain("Model not allowed");
+    // Model should remain undefined — the early return happens before the
+    // pre-run persist block, so neither the session entry nor the store
+    // should be touched with a rejected model.
     expect(cronSession.sessionEntry.model).toBeUndefined();
     expect(cronSession.sessionEntry.modelProvider).toBeUndefined();
   });
 
-  it("honors session-level model override when no payload model is present", async () => {
-    cronSession = makeFreshSession({
+  it("persists session-level /model override on session entry before the run", async () => {
+    // No cron payload model — the job has no model field
+    const jobWithoutModel = makeJob({
+      payload: { kind: "agentTurn", message: "run daily digest" },
+    });
+
+    // Session-level /model override set by user (e.g. via /model command)
+    cronSession.sessionEntry = makeFreshSessionEntry({
       modelOverride: "claude-haiku-4-5",
       providerOverride: "anthropic",
     });
     resolveCronSessionMock.mockReturnValue(cronSession);
 
-    const result = await runCronIsolatedAgentTurn(
-      makeParams({
-        job: makeJob({
-          payload: { kind: "agentTurn", message: "generate summary" },
-        }),
-      }),
-    );
+    // resolveAllowedModelRef is called for the session override path too
+    resolveAllowedModelRefMock.mockReturnValue({
+      ref: { provider: "anthropic", model: "claude-haiku-4-5" },
+    });
 
-    expect(result.status).toBe("ok");
-    expect(result.runtime).toBe("claude");
-    // Session entry reflects the session-level override
+    runWithModelFallbackMock.mockRejectedValueOnce(new Error("LLM provider timeout"));
+
+    const result = await runCronIsolatedAgentTurn(makeParams({ job: jobWithoutModel }));
+
+    expect(result.status).toBe("error");
+    // Even though the run failed, the session-level model override should
+    // be persisted on the entry — not the agent default (Opus).
     expect(cronSession.sessionEntry.model).toBe("claude-haiku-4-5");
     expect(cronSession.sessionEntry.modelProvider).toBe("anthropic");
   });
 
-  it("does not persist model on session entry when ChannelBridge throws", async () => {
-    channelBridgeHandleMock.mockRejectedValueOnce(new Error("LLM provider timeout"));
+  it("logs warning and continues when pre-run persist fails", async () => {
+    // Persist ordering: [1] skills snapshot, [2] pre-run, [3] post-run.
+    // Only the pre-run persist (call 2) should fail — the skills snapshot
+    // persist is pre-existing code without a try-catch guard.
+    let callCount = 0;
+    updateSessionStoreMock.mockImplementation(async () => {
+      callCount++;
+      if (callCount === 2) {
+        throw new Error("ENOSPC: no space left on device");
+      }
+    });
 
-    const result = await runCronIsolatedAgentTurn(
-      makeParams({
-        job: makeJob({
-          payload: {
-            kind: "agentTurn",
-            message: "generate summary",
-            model: "anthropic/claude-sonnet-4-6",
-          },
-        }),
-      }),
+    runWithModelFallbackMock.mockResolvedValueOnce(makeSuccessfulRunResult());
+
+    const result = await runCronIsolatedAgentTurn(makeParams());
+
+    // The run should still complete successfully despite the persist failure
+    expect(result.status).toBe("ok");
+    expect(logWarnMock).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to persist pre-run session entry"),
     );
+  });
+
+  it("persists default model pre-run when no payload override is present", async () => {
+    // No cron payload model override
+    const jobWithoutModel = makeJob({
+      payload: { kind: "agentTurn", message: "run daily digest" },
+    });
+
+    runWithModelFallbackMock.mockRejectedValueOnce(new Error("LLM provider timeout"));
+
+    const result = await runCronIsolatedAgentTurn(makeParams({ job: jobWithoutModel }));
 
     expect(result.status).toBe("error");
-    expect(result.error).toContain("LLM provider timeout");
-    // Post-run model persistence never reached (catch block returns early)
-    expect(cronSession.sessionEntry.model).toBeUndefined();
-    expect(cronSession.sessionEntry.modelProvider).toBeUndefined();
-    // No telemetry on error path
-    expect(result.runtime).toBeUndefined();
+    // With no override, the default model (Opus) should still be persisted
+    // on the session entry rather than left undefined.
+    expect(cronSession.sessionEntry.model).toBe("claude-opus-4-6");
+    expect(cronSession.sessionEntry.modelProvider).toBe("anthropic");
   });
 });

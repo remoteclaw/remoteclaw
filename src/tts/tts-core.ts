@@ -130,7 +130,7 @@ export function parseTtsDirectives(
               break;
             }
             if (rawValue.trim()) {
-              overrides.provider = rawValue.trim();
+              overrides.provider = rawValue.trim() as typeof overrides.provider;
             } else {
               warnings.push(`empty provider value`);
             }
@@ -545,6 +545,6 @@ export async function edgeTTS(params: {
 }
 
 // Gutted in RemoteClaw fork — stub export for upstream compat
-export function summarizeText(..._args: unknown[]): string {
-  return "";
+export function summarizeText(..._args: unknown[]): { summary: string } {
+  return { summary: "" };
 }

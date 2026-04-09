@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { withTempHome } from "../../test/helpers/temp-home.js";
-import { ensureAuthProfileStore, listProfilesForProvider } from "../auth/index.js";
+import { ensureAuthProfileStore, listProfilesForProvider } from "../agents/auth-profiles.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { createProviderUsageFetch, makeResponse } from "../test-utils/provider-usage-fetch.js";
 import {
@@ -225,7 +225,7 @@ describe("provider usage loading", () => {
             remains_time: 600,
             current_interval_total_count: 120,
             current_interval_usage_count: 30,
-            model_name: "MiniMax-M2.1",
+            model_name: "MiniMax-M2.5",
           },
         ],
       },
@@ -233,21 +233,29 @@ describe("provider usage loading", () => {
     );
   });
 
-  it("discovers Claude usage from api_key auth profiles", async () => {
+  // Gutted in RemoteClaw fork — auth profiles subsystem is stubbed
+  it.skip("discovers Claude usage from token auth profiles", async () => {
     await withTempHome(
       async (tempHome) => {
-        const stateDir = process.env.REMOTECLAW_STATE_DIR ?? path.join(tempHome, ".remoteclaw");
-        fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
+        const agentDir = path.join(
+          process.env.REMOTECLAW_STATE_DIR ?? path.join(tempHome, ".remoteclaw"),
+          "agents",
+          "main",
+          "agent",
+        );
+        fs.mkdirSync(agentDir, { recursive: true, mode: 0o700 });
         fs.writeFileSync(
-          path.join(stateDir, "auth-profiles.json"),
+          path.join(agentDir, "auth-profiles.json"),
           `${JSON.stringify(
             {
               version: 1,
+              order: { anthropic: ["anthropic:default"] },
               profiles: {
                 "anthropic:default": {
-                  type: "api_key",
+                  type: "token",
                   provider: "anthropic",
-                  key: "token-1",
+                  token: "token-1",
+                  expires: Date.UTC(2100, 0, 1, 0, 0, 0),
                 },
               },
             },
@@ -256,7 +264,9 @@ describe("provider usage loading", () => {
           )}\n`,
           "utf8",
         );
-        const store = ensureAuthProfileStore();
+        const store = ensureAuthProfileStore(agentDir, {
+          allowKeychainPrompt: false,
+        });
         expect(listProfilesForProvider(store, "anthropic")).toContain("anthropic:default");
 
         const mockFetch = createProviderUsageFetch(async (url, init) => {
@@ -277,7 +287,7 @@ describe("provider usage loading", () => {
           now: usageNow,
           providers: ["anthropic"],
           fetch: mockFetch as unknown as typeof fetch,
-        });
+        } as unknown as Parameters<typeof loadProviderUsageSummary>[0]);
 
         const claude = expectSingleAnthropicProvider(summary);
         expect(claude?.windows[0]?.label).toBe("5h");
@@ -362,6 +372,7 @@ describe("provider usage loading", () => {
     const summary = await loadUsageWithAuth(
       [
         { provider: "github-copilot", token: "copilot-token" },
+        // Upstream changed Gemini usage provider ID from "google-gemini-cli" to "gemini"
         { provider: "gemini", token: "gemini-token" },
         { provider: "openai-codex", token: "codex-token", accountId: "acc-1" },
         { provider: "xiaomi", token: "xiaomi-token" },

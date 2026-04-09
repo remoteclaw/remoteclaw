@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { Type } from "@sinclair/typebox";
 import { BLUEBUBBLES_GROUP_ACTIONS } from "../../channels/plugins/bluebubbles-actions.js";
 import { listChannelPlugins } from "../../channels/plugins/index.js";
@@ -243,14 +242,14 @@ function buildReactionSchema() {
     messageId: Type.Optional(
       Type.String({
         description:
-          "Target message id for reaction. For Telegram, if omitted, defaults to the current inbound message id when available.",
+          "Target message id for reaction. If omitted, defaults to the current inbound message id when available.",
       }),
     ),
     message_id: Type.Optional(
       Type.String({
         // Intentional duplicate alias for tool-schema discoverability in LLMs.
         description:
-          "snake_case alias of messageId. For Telegram, if omitted, defaults to the current inbound message id when available.",
+          "snake_case alias of messageId. If omitted, defaults to the current inbound message id when available.",
       }),
     ),
     emoji: Type.Optional(Type.String()),
@@ -630,7 +629,7 @@ export function createMessageTool(options?: MessageToolOptions): AnyAgentTool {
         throw err;
       }
       // Shallow-copy so we don't mutate the original event args (used for logging/dedup).
-      const params = { ...(args as Record<string, unknown>) };
+      const params = { ...args };
 
       // Strip reasoning tags from text fields — models may include <think>…</think>
       // in tool arguments, and the messaging tool send path has no other tag filtering.

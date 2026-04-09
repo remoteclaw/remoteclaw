@@ -46,7 +46,8 @@ describe("sessionsCommand", () => {
     expect(tableHeader).toBeTruthy();
 
     const row = logs.find((line) => line.includes("+15555550123")) ?? "";
-    expect(row).toContain("2.0k/32k (6%)");
+    // lookupContextTokens gutted in RemoteClaw fork — returns 200000
+    expect(row).toContain("2.0k/200k (1%)");
     expect(row).toContain("45m ago");
     expect(row).toContain("pi:opus");
   });
@@ -65,7 +66,8 @@ describe("sessionsCommand", () => {
     fs.rmSync(store);
 
     const row = logs.find((line) => line.includes("discord:group:demo")) ?? "";
-    expect(row).toContain("unknown/32k (?%)");
+    // lookupContextTokens gutted in RemoteClaw fork — returns 200000
+    expect(row).toContain("unknown/200k (?%)");
     expect(row).toContain("5m ago");
   });
 

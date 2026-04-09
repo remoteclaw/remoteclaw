@@ -1,5 +1,5 @@
 ---
-description: "Hooks: event-driven automation for commands and lifecycle events"
+summary: "Hooks: event-driven automation for commands and lifecycle events"
 read_when:
   - You want event-driven automation for /new, /reset, /stop, and agent lifecycle events
   - You want to build, install, or debug hooks
@@ -41,10 +41,12 @@ The hooks system allows you to:
 
 ### Bundled Hooks
 
-RemoteClaw ships with two bundled hooks that are automatically discovered:
+RemoteClaw ships with four bundled hooks that are automatically discovered:
 
+- **💾 session-memory**: Saves session context to your agent workspace (default `~/.remoteclaw/workspace/memory/`) when you issue `/new`
+- **📎 bootstrap-extra-files**: Injects additional workspace bootstrap files from configured glob/path patterns during `agent:bootstrap`
 - **📝 command-logger**: Logs all command events to `~/.remoteclaw/logs/commands.log`
-- **🚀 boot**: Runs the configured boot prompt when the gateway starts (requires internal hooks enabled)
+- **🚀 boot-md**: Runs `BOOT.md` when the gateway starts (requires internal hooks enabled)
 
 List available hooks:
 
@@ -55,7 +57,7 @@ remoteclaw hooks list
 Enable a hook:
 
 ```bash
-remoteclaw hooks enable command-logger
+remoteclaw hooks enable session-memory
 ```
 
 Check hook status:
@@ -67,7 +69,7 @@ remoteclaw hooks check
 Get detailed information:
 
 ```bash
-remoteclaw hooks info command-logger
+remoteclaw hooks info session-memory
 ```
 
 ### Onboarding
@@ -134,7 +136,7 @@ The `HOOK.md` file contains metadata in YAML frontmatter plus Markdown documenta
 ---
 name: my-hook
 description: "Short description of what this hook does"
-homepage: https://docs.remoteclaw.org/automation/hooks#my-hook
+homepage: https://docs.remoteclaw.ai/automation/hooks#my-hook
 metadata:
   { "remoteclaw": { "emoji": "🔗", "events": ["command:new"], "requires": { "bins": ["node"] } } }
 ---
@@ -218,6 +220,7 @@ Each event includes:
     commandSource?: string,    // e.g., 'whatsapp', 'telegram'
     senderId?: string,
     workspaceDir?: string,
+    bootstrapFiles?: WorkspaceBootstrapFile[],
     cfg?: RemoteClawConfig,
     // Message events (see Message Events section for full details):
     from?: string,             // message:received
@@ -240,6 +243,10 @@ Triggered when agent commands are issued:
 - **`command:reset`**: When `/reset` command is issued
 - **`command:stop`**: When `/stop` command is issued
 
+### Agent Events
+
+- **`agent:bootstrap`**: Before workspace bootstrap files are injected (hooks may mutate `context.bootstrapFiles`)
+
 ### Gateway Events
 
 Triggered when the gateway starts:
@@ -251,7 +258,9 @@ Triggered when the gateway starts:
 Triggered when messages are received or sent:
 
 - **`message`**: All message events (general listener)
-- **`message:received`**: When an inbound message is received from any channel
+- **`message:received`**: When an inbound message is received from any channel. Fires early in processing before media understanding. Content may contain raw placeholders like `<media:audio>` for media attachments that haven't been processed yet.
+- **`message:transcribed`**: When a message has been fully processed, including audio transcription and link understanding. At this point, `transcript` contains the full transcript text for audio messages. Use this hook when you need access to transcribed audio content.
+- **`message:preprocessed`**: Fires for every message after all media + link understanding completes, giving hooks access to the fully enriched body (transcripts, image descriptions, link summaries) before the agent sees it.
 - **`message:sent`**: When an outbound message is successfully sent
 
 #### Message Event Context
@@ -290,6 +299,30 @@ Message events include rich context about the message:
   accountId?: string,     // Provider account ID
   conversationId?: string, // Chat/conversation ID
   messageId?: string,     // Message ID returned by the provider
+  isGroup?: boolean,      // Whether this outbound message belongs to a group/channel context
+  groupId?: string,       // Group/channel identifier for correlation with message:received
+}
+
+// message:transcribed context
+{
+  body?: string,          // Raw inbound body before enrichment
+  bodyForAgent?: string,  // Enriched body visible to the agent
+  transcript: string,     // Audio transcript text
+  channelId: string,      // Channel (e.g., "telegram", "whatsapp")
+  conversationId?: string,
+  messageId?: string,
+}
+
+// message:preprocessed context
+{
+  body?: string,          // Raw inbound body
+  bodyForAgent?: string,  // Final enriched body after media/link understanding
+  transcript?: string,    // Transcript when audio was present
+  channelId: string,      // Channel (e.g., "telegram", "whatsapp")
+  conversationId?: string,
+  messageId?: string,
+  isGroup?: boolean,
+  groupId?: string,
 }
 ```
 
@@ -394,8 +427,8 @@ remoteclaw hooks enable my-hook
     "internal": {
       "enabled": true,
       "entries": {
-        "command-logger": { "enabled": true },
-        "boot": { "enabled": true }
+        "session-memory": { "enabled": true },
+        "command-logger": { "enabled": false }
       }
     }
   }
@@ -488,10 +521,10 @@ remoteclaw hooks list --json
 
 ```bash
 # Show detailed info about a hook
-remoteclaw hooks info command-logger
+remoteclaw hooks info session-memory
 
 # JSON output
-remoteclaw hooks info command-logger --json
+remoteclaw hooks info session-memory --json
 ```
 
 ### Check Eligibility
@@ -508,23 +541,93 @@ remoteclaw hooks check --json
 
 ```bash
 # Enable a hook
-remoteclaw hooks enable command-logger
+remoteclaw hooks enable session-memory
 
 # Disable a hook
-remoteclaw hooks disable boot
+remoteclaw hooks disable command-logger
 ```
 
 ## Bundled hook reference
 
-### ~~session-memory~~ (removed)
+### session-memory
 
-The session-memory hook has been removed. Session context saving is no longer
-handled via hooks.
+Saves session context to memory when you issue `/new`.
 
-### ~~bootstrap-extra-files~~ (removed)
+**Events**: `command:new`
 
-The bootstrap-extra-files hook has been removed. Workspace template injection
-has been removed — agents bring their own configuration.
+**Requirements**: `workspace.dir` must be configured
+
+**Output**: `<workspace>/memory/YYYY-MM-DD-slug.md` (defaults to `~/.remoteclaw/workspace`)
+
+**What it does**:
+
+1. Uses the pre-reset session entry to locate the correct transcript
+2. Extracts the last 15 lines of conversation
+3. Uses LLM to generate a descriptive filename slug
+4. Saves session metadata to a dated memory file
+
+**Example output**:
+
+```markdown
+# Session: 2026-01-16 14:30:00 UTC
+
+- **Session Key**: agent:main:main
+- **Session ID**: abc123def456
+- **Source**: telegram
+```
+
+**Filename examples**:
+
+- `2026-01-16-vendor-pitch.md`
+- `2026-01-16-api-design.md`
+- `2026-01-16-1430.md` (fallback timestamp if slug generation fails)
+
+**Enable**:
+
+```bash
+remoteclaw hooks enable session-memory
+```
+
+### bootstrap-extra-files
+
+Injects additional bootstrap files (for example monorepo-local `AGENTS.md` / `TOOLS.md`) during `agent:bootstrap`.
+
+**Events**: `agent:bootstrap`
+
+**Requirements**: `workspace.dir` must be configured
+
+**Output**: No files written; bootstrap context is modified in-memory only.
+
+**Config**:
+
+```json
+{
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "bootstrap-extra-files": {
+          "enabled": true,
+          "paths": ["packages/*/AGENTS.md", "packages/*/TOOLS.md"]
+        }
+      }
+    }
+  }
+}
+```
+
+**Notes**:
+
+- Paths are resolved relative to workspace.
+- Files must stay inside workspace (realpath-checked).
+- Only recognized bootstrap basenames are loaded.
+- Subagent allowlist is preserved (`AGENTS.md` and `TOOLS.md` only).
+
+**Enable**:
+
+```bash
+remoteclaw hooks enable bootstrap-extra-files
+```
 
 ### command-logger
 
@@ -568,29 +671,25 @@ grep '"action":"new"' ~/.remoteclaw/logs/commands.log | jq .
 remoteclaw hooks enable command-logger
 ```
 
-### boot
+### boot-md
 
-Runs the configured boot prompt when the gateway starts (after channels start).
+Runs `BOOT.md` when the gateway starts (after channels start).
 Internal hooks must be enabled for this to run.
 
 **Events**: `gateway:startup`
 
+**Requirements**: `workspace.dir` must be configured
+
 **What it does**:
 
-1. Resolves the boot prompt from config (`agents.defaults.boot` or per-agent `agents.list[].boot`)
-2. Runs the prompt via the agent runner
+1. Reads `BOOT.md` from your workspace
+2. Runs the instructions via the agent runner
 3. Sends any requested outbound messages via the message tool
-
-Boot prompt is configured via:
-
-- `boot.prompt`: inline prompt text (takes precedence)
-- `boot.file`: path to a prompt file (relative to agent workspace directory)
-- Neither set: boot is skipped for that agent
 
 **Enable**:
 
 ```bash
-remoteclaw hooks enable boot
+remoteclaw hooks enable boot-md
 ```
 
 ## Best Practices
@@ -663,8 +762,10 @@ metadata: { "remoteclaw": { "events": ["command"] } } # General - more overhead
 The gateway logs hook loading at startup:
 
 ```
+Registered hook: session-memory -> command:new
+Registered hook: bootstrap-extra-files -> agent:bootstrap
 Registered hook: command-logger -> command
-Registered hook: boot -> gateway:startup
+Registered hook: boot-md -> gateway:startup
 ```
 
 ### Check Discovery

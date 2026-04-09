@@ -1,6 +1,7 @@
 import type { ProgressReporter } from "../../cli/progress.js";
 import { renderTable } from "../../terminal/table.js";
 import { isRich, theme } from "../../terminal/theme.js";
+import { groupChannelIssuesByChannel } from "./channel-issues.js";
 import { appendStatusAllDiagnosis } from "./diagnosis.js";
 import { formatTimeAgo } from "./format.js";
 
@@ -30,6 +31,7 @@ type AgentStatusLike = {
   agents: Array<{
     id: string;
     name?: string | null;
+    bootstrapPending?: boolean | null;
     sessionsCount: number;
     lastActiveAgeMs?: number | null;
     sessionsPath: string;
@@ -80,19 +82,7 @@ export async function buildStatusAllReportLines(params: {
             : theme.accentDim("SETUP"),
     Detail: row.detail,
   }));
-  const channelIssuesByChannel = (() => {
-    const map = new Map<string, ChannelIssueLike[]>();
-    for (const issue of params.channelIssues) {
-      const key = issue.channel;
-      const list = map.get(key);
-      if (list) {
-        list.push(issue);
-      } else {
-        map.set(key, [issue]);
-      }
-    }
-    return map;
-  })();
+  const channelIssuesByChannel = groupChannelIssuesByChannel(params.channelIssues);
   const channelRowsWithIssues = channelRows.map((row) => {
     const issues = channelIssuesByChannel.get(row.channelId) ?? [];
     if (issues.length === 0) {
@@ -120,6 +110,12 @@ export async function buildStatusAllReportLines(params: {
 
   const agentRows = params.agentStatus.agents.map((a) => ({
     Agent: a.name?.trim() ? `${a.id} (${a.name.trim()})` : a.id,
+    BootstrapFile:
+      a.bootstrapPending === true
+        ? warn("PRESENT")
+        : a.bootstrapPending === false
+          ? ok("ABSENT")
+          : "unknown",
     Sessions: String(a.sessionsCount),
     Active: a.lastActiveAgeMs != null ? formatTimeAgo(a.lastActiveAgeMs) : "unknown",
     Store: a.sessionsPath,
@@ -129,6 +125,7 @@ export async function buildStatusAllReportLines(params: {
     width: tableWidth,
     columns: [
       { key: "Agent", header: "Agent", minWidth: 12 },
+      { key: "BootstrapFile", header: "Bootstrap file", minWidth: 14 },
       { key: "Sessions", header: "Sessions", align: "right", minWidth: 8 },
       { key: "Active", header: "Active", minWidth: 10 },
       { key: "Store", header: "Store", flex: true, minWidth: 34 },

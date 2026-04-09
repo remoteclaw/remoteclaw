@@ -118,20 +118,30 @@ export type CliBackendConfig = {
 };
 
 export type AgentDefaultsConfig = {
-  /** Auth profile override (false = disable auth, string = profile id). */
+  /**
+   * Default auth profile injection policy for all agents.
+   * - `false` — skip auth profile injection
+   * - string — single profile id
+   * - string[] — ordered profile ids
+   * - `undefined` — no default (each agent inherits nothing)
+   */
   auth?: false | string | string[];
-  /** CLI runtime backend id (e.g. claude, gemini, codex, opencode). */
+  /** Default agent runtime (claude, gemini, codex, opencode). */
   runtime?: "claude" | "gemini" | "codex" | "opencode";
-  /** Extra arguments passed to the CLI runtime. */
+  /** Default extra CLI arguments appended to runtime invocation. */
   runtimeArgs?: string[];
-  /** Extra environment variables for the CLI runtime. */
+  /** Default extra environment variables injected into runtime invocation. */
   runtimeEnv?: Record<string, string>;
-  /** Boot prompt (first-run system prompt injection). */
-  boot?: string;
   /** Primary model and fallbacks (provider/model). Accepts string or {primary,fallbacks}. */
   model?: AgentModelConfig;
   /** Optional image-capable model and fallbacks (provider/model). Accepts string or {primary,fallbacks}. */
   imageModel?: AgentModelConfig;
+  /** Optional PDF-capable model and fallbacks (provider/model). Accepts string or {primary,fallbacks}. */
+  pdfModel?: AgentModelConfig;
+  /** Maximum PDF file size in megabytes (default: 10). */
+  pdfMaxBytesMb?: number;
+  /** Maximum number of PDF pages to process (default: 20). */
+  pdfMaxPages?: number;
   /** Model catalog with optional aliases (full provider/model keys). */
   models?: Record<string, AgentModelEntryConfig>;
   /** Agent working directory (preferred). Used as the default cwd for agent runs. */
@@ -162,7 +172,7 @@ export type AgentDefaultsConfig = {
   envelopeElapsed?: "on" | "off";
   /** Optional context window cap (used for runtime estimates + status %). */
   contextTokens?: number;
-  /** Optional CLI backends for text-only fallback (claude, codex, etc.). */
+  /** Optional CLI backends for text-only fallback (claude-cli, etc.). */
   cliBackends?: Record<string, CliBackendConfig>;
   /** Opt-in: prune old tool results from the LLM context to reduce token usage. */
   contextPruning?: AgentContextPruningConfig;
@@ -245,8 +255,6 @@ export type AgentDefaultsConfig = {
     ackMaxChars?: number;
     /** Suppress tool error warning payloads during heartbeat runs. */
     suppressToolErrorWarnings?: boolean;
-    /** Optional heartbeat prompt file path (upstream feature). */
-    file?: string;
     /**
      * If true, run heartbeat turns with lightweight bootstrap context.
      * Lightweight mode keeps only HEARTBEAT.md from workspace bootstrap files.
@@ -283,6 +291,11 @@ export type AgentDefaultsConfig = {
   };
   /** Optional sandbox settings for non-main sessions. */
   sandbox?: AgentSandboxConfig;
+  /** Optional boot prompt configuration. */
+  boot?: {
+    /** Boot prompt text injected into the first system turn. */
+    prompt?: string;
+  };
 };
 
 export type AgentCompactionMode = "default" | "safeguard";

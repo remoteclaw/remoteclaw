@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/zalo",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "description": "RemoteClaw Zalo channel plugin",
   "type": "module",
   "dependencies": {

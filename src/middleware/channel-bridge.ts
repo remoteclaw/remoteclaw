@@ -144,7 +144,6 @@ export class ChannelBridge {
       userName: message.userName,
       agentId: message.agentId,
       timezone: message.timezone,
-      authorizedSenders: message.authorizedSenders,
       reactionGuidance: message.reactionGuidance,
     });
 

@@ -276,8 +276,6 @@ export type ChannelMessage = {
   timezone?: string | undefined;
   /** Phone numbers / IDs of authorized senders (owner allowlist). */
   authorizedSenders?: string[] | undefined;
-  /** Reaction/emoji guidance level for the system prompt. */
-  reactionGuidance?: { level: "minimal" | "extensive"; channel: string } | undefined;
 };
 
 // ── Bridge Callbacks ────────────────────────────────────────────────────

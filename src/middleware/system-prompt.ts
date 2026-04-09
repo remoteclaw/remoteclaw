@@ -12,8 +12,6 @@ export type SystemPromptParams = {
   timezone?: string | undefined;
   /** Channel-specific formatting hints (e.g., LINE directives, Discord component schema). */
   messageToolHints?: string[] | undefined;
-  /** Reaction/emoji guidance level. */
-  reactionGuidance?: { level: "minimal" | "extensive"; channel: string } | undefined;
 };
 
 // ── Static Sections ──────────────────────────────────────────────────────
@@ -68,37 +66,6 @@ function buildMessageToolHintsSection(hints?: string[]): string | undefined {
   return `## Message Formatting\n${hints.join("\n")}`;
 }
 
-function buildReactionsSection(guidance?: {
-  level: "minimal" | "extensive";
-  channel: string;
-}): string | undefined {
-  if (!guidance) {
-    return undefined;
-  }
-  const { level, channel } = guidance;
-  if (level === "minimal") {
-    return [
-      "## Reactions",
-      `Reactions are enabled for ${channel} in MINIMAL mode.`,
-      "React ONLY when truly relevant:",
-      "- Acknowledge important user requests or confirmations",
-      "- Express genuine sentiment (humor, appreciation) sparingly",
-      "- Avoid reacting to routine messages or your own replies",
-      "Guideline: at most 1 reaction per 5-10 exchanges.",
-    ].join("\n");
-  }
-  return [
-    "## Reactions",
-    `Reactions are enabled for ${channel} in EXTENSIVE mode.`,
-    "Feel free to react liberally:",
-    "- Acknowledge messages with appropriate emojis",
-    "- Express sentiment and personality through reactions",
-    "- React to interesting content, humor, or notable events",
-    "- Use reactions to confirm understanding or agreement",
-    "Guideline: react whenever it feels natural.",
-  ].join("\n");
-}
-
 // ── Assembly ─────────────────────────────────────────────────────────────
 
 /**
@@ -118,11 +85,6 @@ export function buildSystemPrompt(params: SystemPromptParams): string {
 
   sections.push(REPLY_TAGS_SECTION);
   sections.push(SILENT_REPLIES_SECTION);
-
-  const reactionsSection = buildReactionsSection(params.reactionGuidance);
-  if (reactionsSection) {
-    sections.push(reactionsSection);
-  }
 
   sections.push(buildRuntimeSection(params));
 

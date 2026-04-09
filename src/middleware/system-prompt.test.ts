@@ -29,15 +29,6 @@ describe("buildSystemPrompt", () => {
       expect(result).toContain("## Message Formatting");
       expect(result).toContain("Use rich text formatting for LINE messages.");
     });
-
-    it("includes reactions section when reactionGuidance is provided", () => {
-      const result = buildSystemPrompt(
-        makeParams({
-          reactionGuidance: { level: "minimal", channel: "telegram" },
-        }),
-      );
-      expect(result).toContain("## Reactions");
-    });
   });
 
   describe("dynamic content", () => {
@@ -68,26 +59,6 @@ describe("buildSystemPrompt", () => {
       expect(result).not.toContain("agent=");
       expect(result).toContain("channel=telegram");
     });
-
-    it("reactions section uses minimal guidance when level is minimal", () => {
-      const result = buildSystemPrompt(
-        makeParams({
-          reactionGuidance: { level: "minimal", channel: "telegram" },
-        }),
-      );
-      expect(result).toContain("MINIMAL mode");
-      expect(result).toContain("React ONLY when truly relevant");
-    });
-
-    it("reactions section uses extensive guidance when level is extensive", () => {
-      const result = buildSystemPrompt(
-        makeParams({
-          reactionGuidance: { level: "extensive", channel: "discord" },
-        }),
-      );
-      expect(result).toContain("EXTENSIVE mode");
-      expect(result).toContain("Feel free to react liberally");
-    });
   });
 
   describe("conditional omission", () => {
@@ -99,11 +70,6 @@ describe("buildSystemPrompt", () => {
     it("omits messageToolHints section when messageToolHints is empty", () => {
       const result = buildSystemPrompt(makeParams({ messageToolHints: [] }));
       expect(result).not.toContain("## Message Formatting");
-    });
-
-    it("omits reactions section when reactionGuidance is undefined", () => {
-      const result = buildSystemPrompt(makeParams());
-      expect(result).not.toContain("## Reactions");
     });
   });
 
@@ -126,7 +92,6 @@ describe("buildSystemPrompt", () => {
           timezone: "Asia/Tokyo",
           agentId: "agent-1",
           messageToolHints: lineHints,
-          reactionGuidance: { level: "extensive", channel: "line" },
         }),
       );
       expect(result.length).toBeLessThan(6000);
@@ -157,7 +122,6 @@ describe("buildSystemPrompt", () => {
           timezone: "UTC",
           agentId: "agent-1",
           messageToolHints: ["some hint"],
-          reactionGuidance: { level: "minimal", channel: "telegram" },
         }),
       );
       expect(result).not.toContain("OpenClaw");

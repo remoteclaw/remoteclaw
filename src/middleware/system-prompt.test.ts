@@ -154,6 +154,12 @@ describe("buildSystemPrompt", () => {
       expect(result).toContain("[[reply_to_current]]");
     });
 
+    it("messaging section documents [System Message] marker protocol", () => {
+      const result = buildSystemPrompt(makeParams());
+      expect(result).toContain("[System Message]");
+      expect(result).toContain("do not forward them to users");
+    });
+
     it("silent replies section contains NO_REPLY token", () => {
       const result = buildSystemPrompt(makeParams());
       expect(result).toContain("NO_REPLY");

@@ -687,7 +687,7 @@ describe("ChannelBridge", () => {
       expect(params.userName).toBe("Alice");
     });
 
-    it("passes agentId from ChannelMessage to buildSystemPrompt", async () => {
+    it("does not pass agentId to buildSystemPrompt", async () => {
       mockRuntimeInstance = mockRuntime([makeDone()]);
 
       const bridge = createBridge();
@@ -695,7 +695,7 @@ describe("ChannelBridge", () => {
 
       expect(mockBuildSystemPrompt).toHaveBeenCalledOnce();
       const params = mockBuildSystemPrompt.mock.calls[0][0] as Record<string, unknown>;
-      expect(params.agentId).toBe("agent-42");
+      expect(params.agentId).toBeUndefined();
     });
 
     it("passes timezone from ChannelMessage to buildSystemPrompt", async () => {
@@ -718,7 +718,6 @@ describe("ChannelBridge", () => {
           provider: "discord",
           messageToolHints: ["Use discord components."],
           userName: "Bob",
-          agentId: "agent-7",
           timezone: "Europe/Berlin",
         }),
       );
@@ -728,7 +727,7 @@ describe("ChannelBridge", () => {
       expect(params.channelName).toBe("discord");
       expect(params.messageToolHints).toEqual(["Use discord components."]);
       expect(params.userName).toBe("Bob");
-      expect(params.agentId).toBe("agent-7");
+      expect(params.agentId).toBeUndefined();
       expect(params.timezone).toBe("Europe/Berlin");
     });
 
@@ -741,7 +740,6 @@ describe("ChannelBridge", () => {
       expect(mockBuildSystemPrompt).toHaveBeenCalledOnce();
       const params = mockBuildSystemPrompt.mock.calls[0][0] as Record<string, unknown>;
       expect(params.userName).toBeUndefined();
-      expect(params.agentId).toBeUndefined();
       expect(params.timezone).toBeUndefined();
     });
   });

@@ -6,8 +6,6 @@ export type SystemPromptParams = {
   channelName: string;
   /** Display name of the user sending the message. */
   userName?: string | undefined;
-  /** Agent identifier within RemoteClaw. */
-  agentId?: string | undefined;
   /** IANA timezone string (e.g., "America/New_York"). */
   timezone?: string | undefined;
   /** Channel-specific formatting hints (e.g., LINE directives, Discord component schema). */
@@ -50,9 +48,6 @@ function buildRuntimeSection(params: SystemPromptParams): string {
   }
   if (params.timezone) {
     parts.push(`timezone=${params.timezone}`);
-  }
-  if (params.agentId) {
-    parts.push(`agent=${params.agentId}`);
   }
   return `## Runtime\nRuntime: ${parts.join(" | ")}`;
 }

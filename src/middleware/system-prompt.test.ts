@@ -11,9 +11,7 @@ function makeParams(overrides?: Partial<SystemPromptParams>): SystemPromptParams
 describe("buildSystemPrompt", () => {
   describe("section inclusion", () => {
     it("includes all required sections in output", () => {
-      const result = buildSystemPrompt(
-        makeParams({ userName: "Alice", timezone: "UTC", agentId: "agent-1" }),
-      );
+      const result = buildSystemPrompt(makeParams({ userName: "Alice", timezone: "UTC" }));
       expect(result).toContain("## Messaging");
       expect(result).toContain("## Reply Tags");
       expect(result).toContain("## Silent Replies");
@@ -42,22 +40,20 @@ describe("buildSystemPrompt", () => {
       expect(result).not.toContain("user=");
     });
 
-    it("runtime section includes timezone and agent ID", () => {
-      const result = buildSystemPrompt(
-        makeParams({
-          timezone: "America/New_York",
-          agentId: "agent-42",
-        }),
-      );
+    it("runtime section includes timezone when provided", () => {
+      const result = buildSystemPrompt(makeParams({ timezone: "America/New_York" }));
       expect(result).toContain("timezone=America/New_York");
-      expect(result).toContain("agent=agent-42");
     });
 
-    it("runtime section omits timezone and agent ID when not provided", () => {
+    it("runtime section omits timezone when not provided", () => {
       const result = buildSystemPrompt(makeParams());
       expect(result).not.toContain("timezone=");
-      expect(result).not.toContain("agent=");
       expect(result).toContain("channel=telegram");
+    });
+
+    it("runtime section does not include agent ID", () => {
+      const result = buildSystemPrompt(makeParams());
+      expect(result).not.toContain("agent=");
     });
   });
 
@@ -75,9 +71,7 @@ describe("buildSystemPrompt", () => {
 
   describe("size budget", () => {
     it("base prompt (no hints, no optional sections) is under 4,000 chars", () => {
-      const result = buildSystemPrompt(
-        makeParams({ userName: "Alice", timezone: "UTC", agentId: "agent-1" }),
-      );
+      const result = buildSystemPrompt(makeParams({ userName: "Alice", timezone: "UTC" }));
       expect(result.length).toBeLessThan(4000);
     });
 
@@ -90,7 +84,6 @@ describe("buildSystemPrompt", () => {
         makeParams({
           userName: "Alice",
           timezone: "Asia/Tokyo",
-          agentId: "agent-1",
           messageToolHints: lineHints,
         }),
       );
@@ -120,7 +113,6 @@ describe("buildSystemPrompt", () => {
         makeParams({
           userName: "Alice",
           timezone: "UTC",
-          agentId: "agent-1",
           messageToolHints: ["some hint"],
         }),
       );

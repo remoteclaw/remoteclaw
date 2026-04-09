@@ -1,26 +1,11 @@
-import {
-  listAgentIds,
-  resolveAgentConfig,
-  resolveAgentWorkspaceDir,
-} from "../../../agents/agent-scope.js";
+import { listAgentIds, resolveAgentWorkspaceDir } from "../../../agents/agent-scope.js";
 import { createDefaultDeps } from "../../../cli/deps.js";
-import type { RemoteClawConfig } from "../../../config/config.js";
-// import type { BootConfig } from "../../../gateway/boot.js"; // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-type BootConfig = Record<string, unknown>;
 import { runBootOnce } from "../../../gateway/boot.js";
 import { createSubsystemLogger } from "../../../logging/subsystem.js";
 import type { HookHandler } from "../../hooks.js";
 import { isGatewayStartupEvent } from "../../internal-hooks.js";
 
 const log = createSubsystemLogger("hooks/boot");
-
-function resolveBootConfig(cfg: RemoteClawConfig, agentId: string): BootConfig | undefined {
-  const agentCfg = resolveAgentConfig(cfg, agentId);
-  if (agentCfg?.boot) {
-    return agentCfg.boot;
-  }
-  return cfg.agents?.defaults?.boot;
-}
 
 const runBootChecklist: HookHandler = async (event) => {
   if (!isGatewayStartupEvent(event)) {
@@ -37,8 +22,7 @@ const runBootChecklist: HookHandler = async (event) => {
 
   for (const agentId of agentIds) {
     const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
-    const boot = resolveBootConfig(cfg, agentId);
-    const result = await runBootOnce({ cfg, deps, boot, workspaceDir, agentId });
+    const result = await runBootOnce({ cfg, deps, workspaceDir, agentId });
     if (result.status === "failed") {
       log.warn("boot failed for agent startup run", {
         agentId,

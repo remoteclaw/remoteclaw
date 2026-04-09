@@ -24,18 +24,26 @@ vi.mock("../../agents/model-fallback.js", () => ({
   }) => runWithModelFallbackMock(params),
 }));
 
-vi.mock("../../agents/pi-embedded.js", () => ({
-  abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
-  queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: (params: unknown) => runEmbeddedPiAgentMock(params),
-  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
-  isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
-  isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
-}));
+vi.mock("../../agents/pi-embedded.js", async () => {
+  const actual = await vi.importActual<typeof import("../../agents/pi-embedded.js")>(
+    "../../agents/pi-embedded.js",
+  );
+  return {
+    ...actual,
+    queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
+    runEmbeddedPiAgent: (params: unknown) => runEmbeddedPiAgentMock(params),
+  };
+});
 
-vi.mock("../../agents/cli-runner.js", () => ({
-  runCliAgent: (params: unknown) => runCliAgentMock(params),
-}));
+vi.mock("../../agents/cli-runner.js", async () => {
+  const actual = await vi.importActual<typeof import("../../agents/cli-runner.js")>(
+    "../../agents/cli-runner.js",
+  );
+  return {
+    ...actual,
+    runCliAgent: (params: unknown) => runCliAgentMock(params),
+  };
+});
 
 vi.mock("../../runtime.js", async () => {
   const actual = await vi.importActual<typeof import("../../runtime.js")>("../../runtime.js");
@@ -101,12 +109,7 @@ afterEach(() => {
   resetSystemEventsForTest();
 });
 
-// Gutted in RemoteClaw fork: all tests in this file exercise the embedded Pi agent
-// path (via runEmbeddedPiAgent / runCliAgent mocks) that the fork replaced with
-// ChannelBridge middleware. The mocks are never called because agent-runner-execution.ts
-// routes through ChannelBridge.resolveAgentRuntimeOrThrow, bypassing pi-embedded.js
-// and cli-runner.js entirely.
-describe.skip("runReplyAgent onAgentRunStart", () => {
+describe("runReplyAgent onAgentRunStart", () => {
   function createRun(params?: {
     provider?: string;
     model?: string;
@@ -214,8 +217,7 @@ describe.skip("runReplyAgent onAgentRunStart", () => {
   });
 });
 
-// Gutted in RemoteClaw fork: see top-level skip comment
-describe.skip("runReplyAgent authProfileId fallback scoping", () => {
+describe("runReplyAgent authProfileId fallback scoping", () => {
   it("drops authProfileId when provider changes during fallback", async () => {
     runWithModelFallbackMock.mockImplementationOnce(
       async ({ run }: RunWithModelFallbackParams) => ({
@@ -314,8 +316,7 @@ describe.skip("runReplyAgent authProfileId fallback scoping", () => {
   });
 });
 
-// Gutted in RemoteClaw fork: see top-level skip comment
-describe.skip("runReplyAgent auto-compaction token update", () => {
+describe("runReplyAgent auto-compaction token update", () => {
   type EmbeddedRunParams = {
     prompt?: string;
     extraSystemPrompt?: string;
@@ -591,8 +592,7 @@ describe.skip("runReplyAgent auto-compaction token update", () => {
   });
 });
 
-// Gutted in RemoteClaw fork: see top-level skip comment
-describe.skip("runReplyAgent block streaming", () => {
+describe("runReplyAgent block streaming", () => {
   it("coalesces duplicate text_end block replies", async () => {
     const onBlockReply = vi.fn();
     runEmbeddedPiAgentMock.mockImplementationOnce(async (params) => {
@@ -786,8 +786,7 @@ describe.skip("runReplyAgent block streaming", () => {
   });
 });
 
-// Gutted in RemoteClaw fork: see top-level skip comment
-describe.skip("runReplyAgent claude-cli routing", () => {
+describe("runReplyAgent claude-cli routing", () => {
   function createRun() {
     const typing = createMockTypingController();
     const sessionCtx = {
@@ -882,8 +881,7 @@ describe.skip("runReplyAgent claude-cli routing", () => {
   });
 });
 
-// Gutted in RemoteClaw fork: see top-level skip comment
-describe.skip("runReplyAgent messaging tool suppression", () => {
+describe("runReplyAgent messaging tool suppression", () => {
   function createRun(
     messageProvider = "slack",
     opts: { storePath?: string; sessionKey?: string } = {},
@@ -1109,8 +1107,7 @@ describe.skip("runReplyAgent messaging tool suppression", () => {
   });
 });
 
-// Gutted in RemoteClaw fork: see top-level skip comment
-describe.skip("runReplyAgent reminder commitment guard", () => {
+describe("runReplyAgent reminder commitment guard", () => {
   function createRun(params?: { sessionKey?: string; omitSessionKey?: boolean }) {
     const typing = createMockTypingController();
     const sessionCtx = {
@@ -1320,8 +1317,7 @@ describe.skip("runReplyAgent reminder commitment guard", () => {
   });
 });
 
-// Gutted in RemoteClaw fork: see top-level skip comment
-describe.skip("runReplyAgent fallback reasoning tags", () => {
+describe("runReplyAgent fallback reasoning tags", () => {
   type EmbeddedPiAgentParams = {
     enforceFinalTag?: boolean;
     prompt?: string;
@@ -1445,8 +1441,7 @@ describe.skip("runReplyAgent fallback reasoning tags", () => {
   });
 });
 
-// Gutted in RemoteClaw fork: see top-level skip comment
-describe.skip("runReplyAgent response usage footer", () => {
+describe("runReplyAgent response usage footer", () => {
   function createRun(params: { responseUsage: "tokens" | "full"; sessionKey: string }) {
     const typing = createMockTypingController();
     const sessionCtx = {
@@ -1554,8 +1549,7 @@ describe.skip("runReplyAgent response usage footer", () => {
   });
 });
 
-// Gutted in RemoteClaw fork: see top-level skip comment
-describe.skip("runReplyAgent transient HTTP retry", () => {
+describe("runReplyAgent transient HTTP retry", () => {
   it("retries once after transient 521 HTML failure and then succeeds", async () => {
     vi.useFakeTimers();
     runEmbeddedPiAgentMock

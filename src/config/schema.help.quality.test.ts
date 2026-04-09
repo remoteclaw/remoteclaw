@@ -423,7 +423,7 @@ const ENUM_EXPECTATIONS: Record<string, string[]> = {
   "logging.consoleStyle": ['"pretty"', '"compact"', '"json"'],
   "logging.redactSensitive": ['"off"', '"tools"'],
   "cli.banner.taglineMode": ['"random"', '"default"', '"off"'],
-  "update.channel": ['"stable"', '"beta"', '"dev"'],
+  "update.channel": ['"stable"', '"beta"', '"next"', '"dev"'],
   "agents.defaults.compaction.mode": ['"default"', '"safeguard"'],
   "agents.defaults.compaction.identifierPolicy": ['"strict"', '"off"', '"custom"'],
 };

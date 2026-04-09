@@ -5,6 +5,7 @@ import {
   resolveAgentRuntimeArgs,
   resolveAgentRuntimeEnv,
 } from "../agents/agent-scope.js";
+import { normalizeUpdateChannel } from "../infra/update-channels.js";
 import { validateConfigObject } from "./config.js";
 
 describe("config schema regressions", () => {
@@ -233,6 +234,42 @@ describe("config schema regressions", () => {
     });
 
     expect(res.ok).toBe(true);
+  });
+
+  it('accepts update.channel "next"', () => {
+    const res = validateConfigObject({
+      update: {
+        channel: "next",
+      },
+    });
+
+    expect(res.ok).toBe(true);
+  });
+
+  it('accepts update.channel "dev" (backward compat)', () => {
+    const res = validateConfigObject({
+      update: {
+        channel: "dev",
+      },
+    });
+
+    expect(res.ok).toBe(true);
+  });
+
+  it('round-trip: normalizeUpdateChannel("dev") → "next" → validateConfigObject', () => {
+    const normalized = normalizeUpdateChannel("dev");
+    expect(normalized).toBe("next");
+
+    const res = validateConfigObject({
+      update: {
+        channel: normalized!,
+      },
+    });
+
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.config.update?.channel).toBe("next");
+    }
   });
 
   it("round-trip: full config through Zod parse then resolver functions", () => {

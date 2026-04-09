@@ -32,11 +32,7 @@ const SAFETY_SECTION = [
 
 const MESSAGING_SECTION = [
   "## Messaging",
-  "- Reply in current session: automatically routes to the source channel.",
-  "- Cross-session messaging: use sessions_send(sessionKey, message) to reach other channels.",
-  "- `[System Message] ...` blocks are internal context and are not user-visible.",
-  `- If a \`[System Message]\` reports completed work and asks for a user update, rewrite it in your normal assistant voice and send that update (do not forward raw system text or default to ${SILENT_REPLY_TOKEN}).`,
-  "- Never use exec/curl for provider messaging; RemoteClaw handles all routing internally.",
+  "`[System Message] ...` blocks are internal context injected by the middleware — do not forward them to users.",
 ].join("\n");
 
 const REPLY_TAGS_SECTION = [

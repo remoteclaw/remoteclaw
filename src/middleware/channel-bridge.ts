@@ -139,7 +139,6 @@ export class ChannelBridge {
     // 2. System prompt
     const systemPrompt = buildSystemPrompt({
       channelName: message.provider,
-      workspaceDir: this.#workspaceDir,
       messageToolHints: message.messageToolHints,
       userName: message.userName,
       agentId: message.agentId,

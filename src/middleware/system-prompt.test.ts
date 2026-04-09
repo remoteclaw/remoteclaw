@@ -4,7 +4,6 @@ import { type SystemPromptParams, buildSystemPrompt } from "./system-prompt.js";
 function makeParams(overrides?: Partial<SystemPromptParams>): SystemPromptParams {
   return {
     channelName: "telegram",
-    workspaceDir: "/home/user/workspace",
     ...overrides,
   };
 }
@@ -19,7 +18,6 @@ describe("buildSystemPrompt", () => {
       expect(result).toContain("## Reply Tags");
       expect(result).toContain("## Silent Replies");
       expect(result).toContain("## Runtime");
-      expect(result).toContain("## Workspace");
     });
 
     it("includes messageToolHints section when hints are provided", () => {
@@ -69,11 +67,6 @@ describe("buildSystemPrompt", () => {
       expect(result).not.toContain("timezone=");
       expect(result).not.toContain("agent=");
       expect(result).toContain("channel=telegram");
-    });
-
-    it("workspace section includes working directory path", () => {
-      const result = buildSystemPrompt(makeParams({ workspaceDir: "/opt/my-project" }));
-      expect(result).toContain("/opt/my-project");
     });
 
     it("reactions section uses minimal guidance when level is minimal", () => {
@@ -179,7 +172,6 @@ describe("buildSystemPrompt", () => {
       expect(result).toContain("\n\n## Reply Tags");
       expect(result).toContain("\n\n## Silent Replies");
       expect(result).toContain("\n\n## Runtime");
-      expect(result).toContain("\n\n## Workspace");
     });
   });
 });

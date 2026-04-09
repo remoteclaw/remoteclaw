@@ -740,7 +740,6 @@ describe("ChannelBridge", () => {
       expect(mockBuildSystemPrompt).toHaveBeenCalledOnce();
       const params = mockBuildSystemPrompt.mock.calls[0][0] as Record<string, unknown>;
       expect(params.channelName).toBe("discord");
-      expect(params.workspaceDir).toBe("/workspace");
       expect(params.messageToolHints).toEqual(["Use discord components."]);
       expect(params.userName).toBe("Bob");
       expect(params.agentId).toBe("agent-7");

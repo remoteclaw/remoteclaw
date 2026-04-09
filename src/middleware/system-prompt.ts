@@ -10,8 +10,6 @@ export type SystemPromptParams = {
   agentId?: string | undefined;
   /** IANA timezone string (e.g., "America/New_York"). */
   timezone?: string | undefined;
-  /** Working directory for the CLI subprocess. */
-  workspaceDir: string;
   /** Channel-specific formatting hints (e.g., LINE directives, Discord component schema). */
   messageToolHints?: string[] | undefined;
   /** Reaction/emoji guidance level. */
@@ -59,14 +57,6 @@ function buildRuntimeSection(params: SystemPromptParams): string {
     parts.push(`agent=${params.agentId}`);
   }
   return `## Runtime\nRuntime: ${parts.join(" | ")}`;
-}
-
-function buildWorkspaceSection(workspaceDir: string): string {
-  return [
-    "## Workspace",
-    `Your working directory is: ${workspaceDir}`,
-    "Treat this directory as the single global workspace for file operations unless explicitly instructed otherwise.",
-  ].join("\n");
 }
 
 // ── Conditional Section Builders ─────────────────────────────────────────
@@ -135,7 +125,6 @@ export function buildSystemPrompt(params: SystemPromptParams): string {
   }
 
   sections.push(buildRuntimeSection(params));
-  sections.push(buildWorkspaceSection(params.workspaceDir));
 
   return sections.join("\n\n");
 }

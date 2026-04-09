@@ -6,6 +6,7 @@ const runBootOnce = vi.fn();
 const listAgentIds = vi.fn();
 const resolveAgentConfig = vi.fn();
 const resolveAgentWorkspaceDir = vi.fn();
+const mockDeps = { mock: "deps" };
 const logWarn = vi.fn();
 const logDebug = vi.fn();
 const MAIN_WORKSPACE_DIR = path.join(path.sep, "ws", "main");
@@ -17,6 +18,9 @@ vi.mock("../../../agents/agent-scope.js", () => ({
   resolveAgentConfig,
   resolveAgentWorkspaceDir,
   resolveAgentRuntime: () => "claude",
+}));
+vi.mock("../../../cli/deps.js", () => ({
+  createDefaultDeps: () => mockDeps,
 }));
 vi.mock("../../../logging/subsystem.js", () => ({
   createSubsystemLogger: () => ({
@@ -89,22 +93,18 @@ describe("boot handler", () => {
 
     expect(listAgentIds).toHaveBeenCalledWith(cfg);
     expect(runBootOnce).toHaveBeenCalledTimes(2);
-    expect(runBootOnce).toHaveBeenCalledWith(
-      expect.objectContaining({
-        cfg,
-        boot: { prompt: "Default boot" },
-        workspaceDir: MAIN_WORKSPACE_DIR,
-        agentId: "main",
-      }),
-    );
-    expect(runBootOnce).toHaveBeenCalledWith(
-      expect.objectContaining({
-        cfg,
-        boot: { prompt: "Default boot" },
-        workspaceDir: OPS_WORKSPACE_DIR,
-        agentId: "ops",
-      }),
-    );
+    expect(runBootOnce).toHaveBeenCalledWith({
+      cfg,
+      deps: mockDeps,
+      workspaceDir: MAIN_WORKSPACE_DIR,
+      agentId: "main",
+    });
+    expect(runBootOnce).toHaveBeenCalledWith({
+      cfg,
+      deps: mockDeps,
+      workspaceDir: OPS_WORKSPACE_DIR,
+      agentId: "ops",
+    });
   });
 
   it("uses per-agent boot config when available", async () => {
@@ -125,18 +125,18 @@ describe("boot handler", () => {
 
     await runBootChecklist(makeEvent({ context: { cfg } }));
 
-    expect(runBootOnce).toHaveBeenCalledWith(
-      expect.objectContaining({
-        boot: { prompt: "Default boot" },
-        agentId: "main",
-      }),
-    );
-    expect(runBootOnce).toHaveBeenCalledWith(
-      expect.objectContaining({
-        boot: { prompt: "Ops-specific boot" },
-        agentId: "ops",
-      }),
-    );
+    expect(runBootOnce).toHaveBeenCalledWith({
+      cfg,
+      deps: mockDeps,
+      workspaceDir: MAIN_WORKSPACE_DIR,
+      agentId: "main",
+    });
+    expect(runBootOnce).toHaveBeenCalledWith({
+      cfg,
+      deps: mockDeps,
+      workspaceDir: OPS_WORKSPACE_DIR,
+      agentId: "ops",
+    });
   });
 
   it("runs boot for single default agent when no agents configured", async () => {

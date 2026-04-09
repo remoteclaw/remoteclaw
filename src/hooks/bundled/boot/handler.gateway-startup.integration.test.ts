@@ -50,25 +50,17 @@ describe("boot startup hook integration", () => {
     const opsWorkspaceDir = resolveAgentWorkspaceDir(cfg, "ops");
 
     expect(runBootOnce).toHaveBeenCalledTimes(2);
-    expect(runBootOnce).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({
-        cfg,
-        deps,
-        boot: bootConfig,
-        workspaceDir: mainWorkspaceDir,
-        agentId: "main",
-      }),
-    );
-    expect(runBootOnce).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        cfg,
-        deps,
-        boot: bootConfig,
-        workspaceDir: opsWorkspaceDir,
-        agentId: "ops",
-      }),
-    );
+    expect(runBootOnce).toHaveBeenNthCalledWith(1, {
+      cfg,
+      deps,
+      workspaceDir: mainWorkspaceDir,
+      agentId: "main",
+    });
+    expect(runBootOnce).toHaveBeenNthCalledWith(2, {
+      cfg,
+      deps,
+      workspaceDir: opsWorkspaceDir,
+      agentId: "ops",
+    });
   });
 });

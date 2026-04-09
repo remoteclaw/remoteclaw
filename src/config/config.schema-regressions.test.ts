@@ -1,4 +1,10 @@
 import { describe, expect, it } from "vitest";
+import {
+  resolveAgentAuth,
+  resolveAgentRuntime,
+  resolveAgentRuntimeArgs,
+  resolveAgentRuntimeEnv,
+} from "../agents/agent-scope.js";
 import { validateConfigObject } from "./config.js";
 
 describe("config schema regressions", () => {
@@ -183,5 +189,96 @@ describe("config schema regressions", () => {
     });
 
     expect(res.ok).toBe(false);
+  });
+
+  it("accepts per-agent auth/runtime/runtimeArgs/runtimeEnv fields", () => {
+    const res = validateConfigObject({
+      agents: {
+        list: [
+          {
+            id: "main",
+            workspace: "~/remoteclaw",
+            auth: "anthropic:custom",
+            runtime: "gemini",
+            runtimeArgs: ["--model", "pro"],
+            runtimeEnv: { API_KEY: "sk-test" },
+          },
+        ],
+      },
+    });
+
+    expect(res.ok).toBe(true);
+  });
+
+  it("accepts per-agent fork-specific fields alongside defaults", () => {
+    const res = validateConfigObject({
+      agents: {
+        defaults: {
+          auth: "anthropic:default",
+          runtime: "claude",
+          runtimeArgs: ["--verbose"],
+          runtimeEnv: { SHARED: "yes" },
+        },
+        list: [
+          {
+            id: "main",
+            workspace: "~/remoteclaw",
+            auth: false,
+            runtime: "codex",
+            runtimeArgs: [],
+            runtimeEnv: { API_KEY: "sk-agent" },
+          },
+        ],
+      },
+    });
+
+    expect(res.ok).toBe(true);
+  });
+
+  it("round-trip: full config through Zod parse then resolver functions", () => {
+    const raw = {
+      agents: {
+        defaults: {
+          auth: "anthropic:default",
+          runtime: "claude" as const,
+          runtimeArgs: ["--verbose"],
+          runtimeEnv: { SHARED: "yes" },
+        },
+        list: [
+          {
+            id: "main",
+            workspace: "~/remoteclaw",
+            auth: "anthropic:custom",
+            runtime: "gemini" as const,
+            runtimeArgs: ["--model", "pro"],
+            runtimeEnv: { API_KEY: "sk-test" },
+          },
+          {
+            id: "secondary",
+            workspace: "~/remoteclaw-secondary",
+          },
+        ],
+      },
+    };
+
+    const res = validateConfigObject(raw);
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+
+    const cfg = res.config;
+
+    // Agent "main" — per-agent fields override defaults
+    expect(resolveAgentAuth(cfg, "main")).toBe("anthropic:custom");
+    expect(resolveAgentRuntime(cfg, "main")).toBe("gemini");
+    expect(resolveAgentRuntimeArgs(cfg, "main")).toEqual(["--model", "pro"]);
+    expect(resolveAgentRuntimeEnv(cfg, "main")).toEqual({ API_KEY: "sk-test" });
+
+    // Agent "secondary" — inherits from defaults
+    expect(resolveAgentAuth(cfg, "secondary")).toBe("anthropic:default");
+    expect(resolveAgentRuntime(cfg, "secondary")).toBe("claude");
+    expect(resolveAgentRuntimeArgs(cfg, "secondary")).toEqual(["--verbose"]);
+    expect(resolveAgentRuntimeEnv(cfg, "secondary")).toEqual({ SHARED: "yes" });
   });
 });

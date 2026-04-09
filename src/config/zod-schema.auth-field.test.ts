@@ -3,10 +3,7 @@ import { AgentDefaultsSchema } from "./zod-schema.agent-defaults.js";
 import { AgentEntrySchema } from "./zod-schema.agent-runtime.js";
 
 describe("auth field schema validation", () => {
-  // Gutted in RemoteClaw fork: AgentEntrySchema no longer has an auth field
-  // (auth was removed from per-agent config upstream; only AgentDefaultsSchema has it).
-  // The schema uses .strict() so any auth value is rejected as an unrecognized key.
-  describe.skip("AgentEntrySchema", () => {
+  describe("AgentEntrySchema", () => {
     it("accepts auth: false", () => {
       const result = AgentEntrySchema.safeParse({ id: "main", auth: false });
       expect(result.success).toBe(true);

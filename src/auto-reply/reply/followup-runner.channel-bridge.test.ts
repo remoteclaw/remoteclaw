@@ -247,7 +247,7 @@ describe("followup-runner — ChannelBridge wiring", () => {
     await runner(makeQueued() as never);
 
     expect(bridgeHandleMock).toHaveBeenCalledOnce();
-    const message = bridgeHandleMock.mock.calls[0][0] as ChannelMessage;
+    const message = bridgeHandleMock.mock.calls[0][0];
     expect(message.id).toBe("msg-001");
     expect(message.text).toBe("followup prompt");
     expect(message.from).toBe("acct-7");
@@ -306,7 +306,7 @@ describe("followup-runner — ChannelBridge wiring", () => {
 
     await runner(makeQueued({ messageId: undefined }) as never);
 
-    const message = bridgeHandleMock.mock.calls[0][0] as ChannelMessage;
+    const message = bridgeHandleMock.mock.calls[0][0];
     // crypto.randomUUID() produces a UUID v4 pattern
     expect(message.id).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,

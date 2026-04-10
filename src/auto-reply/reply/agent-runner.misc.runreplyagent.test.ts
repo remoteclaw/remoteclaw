@@ -21,6 +21,17 @@ const channelBridgeHandleMock = vi.fn();
 const runWithModelFallbackMock = vi.fn();
 const runtimeErrorMock = vi.fn();
 
+type BridgeConstructorOpts = {
+  provider: string;
+  sessionMap: unknown;
+  gatewayUrl: string;
+  gatewayToken: string;
+  workspaceDir?: string;
+  runtimeArgs?: string[];
+  runtimeEnv?: Record<string, string>;
+};
+const bridgeConstructorCalls: BridgeConstructorOpts[] = [];
+
 vi.mock("../../agents/model-fallback.js", () => ({
   runWithModelFallback: (params: {
     provider: string;
@@ -31,6 +42,9 @@ vi.mock("../../agents/model-fallback.js", () => ({
 
 vi.mock("../../middleware/channel-bridge.js", () => ({
   ChannelBridge: class MockChannelBridge {
+    constructor(opts: BridgeConstructorOpts) {
+      bridgeConstructorCalls.push(opts);
+    }
     handle(message: ChannelMessage, callbacks?: BridgeCallbacks, abortSignal?: AbortSignal) {
       return channelBridgeHandleMock(message, callbacks, abortSignal);
     }
@@ -124,6 +138,7 @@ beforeEach(() => {
   channelBridgeHandleMock.mockClear();
   runWithModelFallbackMock.mockClear();
   runtimeErrorMock.mockClear();
+  bridgeConstructorCalls.length = 0;
 
   // Default: no provider switch; execute the chosen provider+model.
   runWithModelFallbackMock.mockImplementation(
@@ -876,6 +891,173 @@ describe("runReplyAgent messaging tool suppression", () => {
     const store = loadSessionStore(storePath, { skipCache: true });
     expect(store[sessionKey]?.inputTokens).toBe(111);
     expect(store[sessionKey]?.outputTokens).toBe(22);
+  });
+});
+
+describe("runReplyAgent ChannelBridge constructor args", () => {
+  function createRun(overrides?: {
+    runtime?: string;
+    runtimeArgs?: string[];
+    workspaceDir?: string;
+    agentId?: string;
+  }) {
+    const typing = createMockTypingController();
+    const sessionCtx = {
+      Provider: "webchat",
+      OriginatingTo: "session:1",
+      AccountId: "primary",
+      MessageSid: "msg",
+    } as unknown as TemplateContext;
+    const resolvedQueue = { mode: "interrupt" } as unknown as QueueSettings;
+    const agentId = overrides?.agentId ?? "main";
+    const config: Record<string, unknown> = {
+      agents: {
+        defaults: {
+          runtime: overrides?.runtime ?? "claude",
+          ...(overrides?.runtimeArgs ? { runtimeArgs: overrides.runtimeArgs } : {}),
+        },
+      },
+    };
+    const followupRun = {
+      prompt: "hello",
+      summaryLine: "hello",
+      enqueuedAt: Date.now(),
+      run: {
+        agentId,
+        sessionId: "session",
+        sessionKey: "main",
+        messageProvider: "webchat",
+        sessionFile: "/tmp/session.jsonl",
+        workspaceDir: overrides?.workspaceDir ?? "/tmp/workspace",
+        config,
+        provider: "anthropic",
+        model: "claude",
+
+        verboseLevel: "off",
+        timeoutMs: 1_000,
+        blockReplyBreak: "message_end",
+      },
+    } as unknown as FollowupRun;
+
+    return runReplyAgent({
+      commandBody: "hello",
+      followupRun,
+      queueKey: "main",
+      resolvedQueue,
+      shouldSteer: false,
+      shouldFollowup: false,
+      isActive: false,
+      isStreaming: false,
+      typing,
+      sessionCtx,
+      defaultModel: "anthropic/claude-opus-4-5",
+      resolvedVerboseLevel: "off",
+      isNewSession: false,
+      blockStreamingEnabled: false,
+      resolvedBlockStreamingBreak: "message_end",
+      shouldInjectGroupIntro: false,
+      typingMode: "instant",
+    });
+  }
+
+  it("passes provider from resolveAgentRuntimeOrThrow", async () => {
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
+    );
+
+    await createRun({ runtime: "claude" });
+
+    expect(bridgeConstructorCalls).toHaveLength(1);
+    expect(bridgeConstructorCalls[0].provider).toBe("claude");
+  });
+
+  it("passes workspaceDir from followupRun", async () => {
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
+    );
+
+    await createRun({ workspaceDir: "/custom/workspace" });
+
+    expect(bridgeConstructorCalls).toHaveLength(1);
+    expect(bridgeConstructorCalls[0].workspaceDir).toBe("/custom/workspace");
+  });
+
+  it("passes runtimeArgs from resolveAgentRuntimeArgs", async () => {
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
+    );
+
+    await createRun({ runtimeArgs: ["--verbose", "--max-tokens=1000"] });
+
+    expect(bridgeConstructorCalls).toHaveLength(1);
+    expect(bridgeConstructorCalls[0].runtimeArgs).toEqual(["--verbose", "--max-tokens=1000"]);
+  });
+
+  it("passes undefined runtimeArgs when config omits them", async () => {
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
+    );
+
+    await createRun();
+
+    expect(bridgeConstructorCalls).toHaveLength(1);
+    expect(bridgeConstructorCalls[0].runtimeArgs).toBeUndefined();
+  });
+
+  it("passes runtimeEnv from auth-key-retry callback", async () => {
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
+    );
+
+    await createRun();
+
+    expect(bridgeConstructorCalls).toHaveLength(1);
+    // runtimeEnv is the merged env from withAuthKeyRetry — without auth
+    // profiles configured it will be the base runtime env (empty or minimal).
+    expect(bridgeConstructorCalls[0].runtimeEnv).toBeDefined();
+    expect(typeof bridgeConstructorCalls[0].runtimeEnv).toBe("object");
+  });
+
+  it("passes a functional sessionMap", async () => {
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
+    );
+
+    await createRun();
+
+    expect(bridgeConstructorCalls).toHaveLength(1);
+    expect(bridgeConstructorCalls[0].sessionMap).toBeDefined();
+    // sessionMap should have get and delete methods
+    const sessionMap = bridgeConstructorCalls[0].sessionMap as {
+      get: () => unknown;
+      delete: () => unknown;
+    };
+    expect(typeof sessionMap.get).toBe("function");
+    expect(typeof sessionMap.delete).toBe("function");
+  });
+
+  it("passes gatewayUrl derived from config port", async () => {
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
+    );
+
+    await createRun();
+
+    expect(bridgeConstructorCalls).toHaveLength(1);
+    // resolveGatewayPort is mocked to return 9999
+    expect(bridgeConstructorCalls[0].gatewayUrl).toBe("ws://127.0.0.1:9999");
+  });
+
+  it("passes gatewayToken from credentials config", async () => {
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
+    );
+
+    await createRun();
+
+    expect(bridgeConstructorCalls).toHaveLength(1);
+    // resolveGatewayCredentialsFromConfig is mocked to return { token: "test-token" }
+    expect(bridgeConstructorCalls[0].gatewayToken).toBe("test-token");
   });
 });
 

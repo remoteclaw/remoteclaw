@@ -28,6 +28,7 @@ type BridgeConstructorOpts = {
   gatewayUrl: string;
   gatewayToken: string;
   workspaceDir?: string;
+  runtimeArgs?: string[];
   runtimeEnv?: Record<string, string>;
 };
 
@@ -115,7 +116,7 @@ vi.mock("../agents/workspace.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../agents/workspace.js")>();
   return {
     ...actual,
-    ensureAgentWorkspace: vi.fn(async (dir: string) => dir),
+    ensureAgentWorkspace: vi.fn(async (dir: string) => ({ dir })),
   };
 });
 
@@ -758,6 +759,66 @@ describe("agentCommand", () => {
 
       const lastBridgeOpts = bridgeConstructorCalls.at(-1);
       expect(lastBridgeOpts?.runtimeEnv).toEqual(injectedEnv);
+    });
+  });
+
+  it("passes workspaceDir from ensureAgentWorkspace to ChannelBridge", async () => {
+    await withTempHome(async (home) => {
+      const store = path.join(home, "sessions.json");
+      mockConfig(home, store);
+
+      await agentCommand({ message: "hi", to: "+1555" }, runtime);
+
+      const lastBridgeOpts = bridgeConstructorCalls.at(-1);
+      expect(lastBridgeOpts?.workspaceDir).toBe(path.join(home, "remoteclaw"));
+    });
+  });
+
+  it("passes runtimeArgs from config to ChannelBridge", async () => {
+    await withTempHome(async (home) => {
+      const store = path.join(home, "sessions.json");
+      mockConfig(home, store, { runtimeArgs: ["--verbose", "--model", "sonnet"] });
+
+      await agentCommand({ message: "hi", to: "+1555" }, runtime);
+
+      const lastBridgeOpts = bridgeConstructorCalls.at(-1);
+      expect(lastBridgeOpts?.runtimeArgs).toEqual(["--verbose", "--model", "sonnet"]);
+    });
+  });
+
+  it("passes sessionMap to ChannelBridge", async () => {
+    await withTempHome(async (home) => {
+      const store = path.join(home, "sessions.json");
+      mockConfig(home, store);
+
+      await agentCommand({ message: "hi", to: "+1555" }, runtime);
+
+      const lastBridgeOpts = bridgeConstructorCalls.at(-1);
+      expect(lastBridgeOpts?.sessionMap).toBeDefined();
+    });
+  });
+
+  it("passes gateway ws:// URL to ChannelBridge", async () => {
+    await withTempHome(async (home) => {
+      const store = path.join(home, "sessions.json");
+      mockConfig(home, store);
+
+      await agentCommand({ message: "hi", to: "+1555" }, runtime);
+
+      const lastBridgeOpts = bridgeConstructorCalls.at(-1);
+      expect(lastBridgeOpts?.gatewayUrl).toMatch(/^ws:\/\//);
+    });
+  });
+
+  it("passes gatewayToken to ChannelBridge", async () => {
+    await withTempHome(async (home) => {
+      const store = path.join(home, "sessions.json");
+      mockConfig(home, store);
+
+      await agentCommand({ message: "hi", to: "+1555" }, runtime);
+
+      const lastBridgeOpts = bridgeConstructorCalls.at(-1);
+      expect(lastBridgeOpts?.gatewayToken).toBeDefined();
     });
   });
 

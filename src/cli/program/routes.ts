@@ -1,5 +1,11 @@
 import { defaultRuntime } from "../../runtime.js";
-import { getFlagValue, getPositiveIntFlagValue, getVerboseFlag, hasFlag } from "../argv.js";
+import {
+  getCommandPositionalsWithRootOptions,
+  getFlagValue,
+  getPositiveIntFlagValue,
+  getVerboseFlag,
+  hasFlag,
+} from "../argv.js";
 
 export type RouteSpec = {
   match: (path: string[]) => boolean;
@@ -78,26 +84,17 @@ const routeAgentsList: RouteSpec = {
   },
 };
 
-function getCommandPositionals(argv: string[]): string[] {
-  const out: string[] = [];
-  const args = argv.slice(2);
-  for (const arg of args) {
-    if (!arg || arg === "--") {
-      break;
-    }
-    if (arg.startsWith("-")) {
-      continue;
-    }
-    out.push(arg);
-  }
-  return out;
-}
-
 const routeConfigGet: RouteSpec = {
   match: (path) => path[0] === "config" && path[1] === "get",
   run: async (argv) => {
-    const positionals = getCommandPositionals(argv);
-    const pathArg = positionals[2];
+    const positionals = getCommandPositionalsWithRootOptions(argv, {
+      commandPath: ["config", "get"],
+      booleanFlags: ["--json"],
+    });
+    if (!positionals || positionals.length !== 1) {
+      return false;
+    }
+    const pathArg = positionals[0];
     if (!pathArg) {
       return false;
     }
@@ -111,8 +108,13 @@ const routeConfigGet: RouteSpec = {
 const routeConfigUnset: RouteSpec = {
   match: (path) => path[0] === "config" && path[1] === "unset",
   run: async (argv) => {
-    const positionals = getCommandPositionals(argv);
-    const pathArg = positionals[2];
+    const positionals = getCommandPositionalsWithRootOptions(argv, {
+      commandPath: ["config", "unset"],
+    });
+    if (!positionals || positionals.length !== 1) {
+      return false;
+    }
+    const pathArg = positionals[0];
     if (!pathArg) {
       return false;
     }

@@ -989,7 +989,6 @@ export function renderApp(state: AppViewState) {
                 loading: state.debugLoading,
                 status: state.debugStatus,
                 health: state.debugHealth,
-                models: state.debugModels,
                 heartbeat: state.debugHeartbeat,
                 eventLog: state.eventLog,
                 callMethod: state.debugCallMethod,

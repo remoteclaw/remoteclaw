@@ -232,7 +232,6 @@ export type AppViewState = {
   debugLoading: boolean;
   debugStatus: StatusSummary | null;
   debugHealth: HealthSnapshot | null;
-  debugModels: unknown[];
   debugHeartbeat: unknown;
   debugCallMethod: string;
   debugCallParams: string;
@@ -281,11 +280,6 @@ export type AppViewState = {
   handleConfigFormUpdate: (path: string, value: unknown) => void;
   handleConfigFormModeChange: (mode: "form" | "raw") => void;
   handleConfigRawChange: (raw: string) => void;
-  handleInstallSkill: (key: string) => Promise<void>;
-  handleUpdateSkill: (key: string) => Promise<void>;
-  handleToggleSkillEnabled: (key: string, enabled: boolean) => Promise<void>;
-  handleUpdateSkillEdit: (key: string, value: string) => void;
-  handleSaveSkillApiKey: (key: string, apiKey: string) => Promise<void>;
   handleCronToggle: (jobId: string, enabled: boolean) => Promise<void>;
   handleCronRun: (jobId: string) => Promise<void>;
   handleCronRemove: (jobId: string) => Promise<void>;
@@ -296,7 +290,6 @@ export type AppViewState = {
   handleSessionsPatch: (key: string, patch: unknown) => Promise<void>;
   handleLoadNodes: () => Promise<void>;
   handleLoadPresence: () => Promise<void>;
-  handleLoadSkills: () => Promise<void>;
   handleLoadDebug: () => Promise<void>;
   handleLoadLogs: () => Promise<void>;
   handleDebugCall: () => Promise<void>;

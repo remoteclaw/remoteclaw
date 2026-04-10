@@ -34,9 +34,6 @@ vi.mock("../../config/config.js", () => ({
 vi.mock("../../link-understanding/apply.js", () => ({
   applyLinkUnderstanding: vi.fn(async () => undefined),
 }));
-vi.mock("../../media-understanding/apply.js", () => ({
-  applyMediaUnderstanding: vi.fn(async () => undefined),
-}));
 vi.mock("../../runtime.js", () => ({
   defaultRuntime: { log: vi.fn() },
 }));

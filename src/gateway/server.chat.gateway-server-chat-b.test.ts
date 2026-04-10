@@ -284,9 +284,7 @@ describe("gateway server chat", () => {
         JSON.stringify({
           message: {
             role: "assistant",
-            content: [
-              { type: "text", text: "Hello [[rc:reply]] world [[audio_as_voice]]" },
-            ],
+            content: [{ type: "text", text: "Hello [[rc:reply]] world [[audio_as_voice]]" }],
             timestamp: Date.now(),
           },
         }),

@@ -1,10 +1,17 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveAgentConfig, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import {
+  resolveAgentConfig,
+  resolveAgentWorkspaceDir,
+  resolveDefaultAgentId,
+} from "../agents/agent-scope.js";
 import { appendCronStyleCurrentTimeLine } from "../agents/current-time.js";
 import { resolveEffectiveMessagesConfig } from "../agents/identity.js";
 import { resolveHeartbeatReplyPayload } from "../auto-reply/heartbeat-reply-payload.js";
-import { DEFAULT_HEARTBEAT_EVERY } from "../auto-reply/heartbeat.js";
+import {
+  DEFAULT_HEARTBEAT_EVERY,
+  resolveHeartbeatPrompt as resolveHeartbeatPromptFromConfig,
+} from "../auto-reply/heartbeat.js";
 import { getReplyFromConfig } from "../auto-reply/reply.js";
 import type { ReplyPayload } from "../auto-reply/types.js";
 import { getChannelPlugin } from "../channels/plugins/index.js";
@@ -143,7 +150,7 @@ export function resolveHeartbeatSummaryForAgent(
       enabled: false,
       every: "disabled",
       everyMs: null,
-      prompt: defaults?.prompt?.trim() || "",
+      prompt: defaults?.prompt?.trim() || (defaults?.file ? `[file: ${defaults.file}]` : ""),
       target: defaults?.target ?? DEFAULT_HEARTBEAT_TARGET,
       model: defaults?.model,
     };
@@ -153,7 +160,8 @@ export function resolveHeartbeatSummaryForAgent(
   const every = merged?.every ?? defaults?.every ?? overrides?.every ?? DEFAULT_HEARTBEAT_EVERY;
   const everyMs = resolveHeartbeatIntervalMs(cfg, undefined, merged);
   const rawPrompt = merged?.prompt ?? defaults?.prompt ?? overrides?.prompt;
-  const prompt = rawPrompt?.trim() || "";
+  const rawFile = merged?.file ?? defaults?.file ?? overrides?.file;
+  const prompt = rawPrompt?.trim() || (rawFile ? `[file: ${rawFile}]` : "");
   const target =
     merged?.target ?? defaults?.target ?? overrides?.target ?? DEFAULT_HEARTBEAT_TARGET;
   const model = merged?.model ?? defaults?.model ?? overrides?.model;
@@ -215,11 +223,14 @@ export function resolveHeartbeatIntervalMs(
 export async function resolveHeartbeatPrompt(
   cfg: RemoteClawConfig,
   heartbeat?: HeartbeatConfig,
-  _agentId?: string,
+  agentId?: string,
 ): Promise<string> {
   const defaults = cfg.agents?.defaults?.heartbeat;
   const prompt = heartbeat?.prompt ?? defaults?.prompt;
-  return prompt?.trim() || "";
+  const file = heartbeat?.file ?? defaults?.file;
+  const resolvedAgentId = agentId ?? resolveDefaultAgentId(cfg);
+  const workspaceDir = resolveAgentWorkspaceDir(cfg, resolvedAgentId);
+  return resolveHeartbeatPromptFromConfig({ prompt, file, workspaceDir });
 }
 
 function resolveHeartbeatSession(

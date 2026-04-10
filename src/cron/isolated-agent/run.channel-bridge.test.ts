@@ -7,6 +7,12 @@ import type { ChannelMessage } from "../../middleware/types.js";
 
 const channelBridgeHandleMock = vi.fn();
 let capturedSessionMap: import("../../middleware/session-map.js").SessionMap | undefined;
+let capturedProvider: string | undefined;
+let capturedWorkspaceDir: string | undefined;
+let capturedRuntimeArgs: string[] | undefined;
+let capturedRuntimeEnv: Record<string, string> | undefined;
+let capturedGatewayUrl: string | undefined;
+let capturedGatewayToken: string | undefined;
 
 vi.mock("../../middleware/channel-bridge.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../middleware/channel-bridge.js")>();
@@ -16,9 +22,23 @@ vi.mock("../../middleware/channel-bridge.js", async (importOriginal) => {
       readonly provider: string;
       readonly workspaceDir?: string;
 
-      constructor(opts: { provider: string; workspaceDir?: string; sessionMap?: unknown }) {
+      constructor(opts: {
+        provider: string;
+        workspaceDir?: string;
+        sessionMap?: unknown;
+        runtimeArgs?: string[];
+        runtimeEnv?: Record<string, string>;
+        gatewayUrl?: string;
+        gatewayToken?: string;
+      }) {
         this.provider = opts.provider;
         this.workspaceDir = opts.workspaceDir;
+        capturedProvider = opts.provider;
+        capturedWorkspaceDir = opts.workspaceDir;
+        capturedRuntimeArgs = opts.runtimeArgs;
+        capturedRuntimeEnv = opts.runtimeEnv;
+        capturedGatewayUrl = opts.gatewayUrl;
+        capturedGatewayToken = opts.gatewayToken;
         capturedSessionMap = opts.sessionMap as
           | import("../../middleware/session-map.js").SessionMap
           | undefined;
@@ -263,6 +283,12 @@ describe("runCronIsolatedAgentTurn — ChannelBridge wiring", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     capturedSessionMap = undefined;
+    capturedProvider = undefined;
+    capturedWorkspaceDir = undefined;
+    capturedRuntimeArgs = undefined;
+    capturedRuntimeEnv = undefined;
+    capturedGatewayUrl = undefined;
+    capturedGatewayToken = undefined;
     previousFastTestEnv = process.env.REMOTECLAW_TEST_FAST;
     delete process.env.REMOTECLAW_TEST_FAST;
     resolveCronSessionMock.mockReturnValue(makeFreshSession());
@@ -447,5 +473,48 @@ describe("runCronIsolatedAgentTurn — ChannelBridge wiring", () => {
 
     expect(result.status).toBe("ok");
     expect(result.runtime).toBe("claude");
+  });
+
+  describe("ChannelBridge constructor arguments", () => {
+    it("passes provider from resolveAgentRuntimeOrThrow", async () => {
+      await runCronIsolatedAgentTurn(makeParams());
+
+      expect(capturedProvider).toBe("claude");
+    });
+
+    it("passes workspaceDir from resolved agent workspace", async () => {
+      await runCronIsolatedAgentTurn(makeParams());
+
+      // ensureAgentWorkspace mock returns "/tmp/workspace"
+      expect(capturedWorkspaceDir).toBe("/tmp/workspace");
+    });
+
+    it("passes runtimeArgs from resolveAgentRuntimeArgs", async () => {
+      await runCronIsolatedAgentTurn(makeParams());
+
+      // resolveAgentRuntimeArgs mock returns undefined
+      expect(capturedRuntimeArgs).toBeUndefined();
+    });
+
+    it("passes runtimeEnv from withAuthKeyRetry callback", async () => {
+      await runCronIsolatedAgentTurn(makeParams());
+
+      // withAuthKeyRetry mock calls execute with {}
+      expect(capturedRuntimeEnv).toEqual({});
+    });
+
+    it("passes gatewayUrl resolved from config port", async () => {
+      await runCronIsolatedAgentTurn(makeParams());
+
+      // resolveGatewayPort mock returns 3579
+      expect(capturedGatewayUrl).toBe("ws://127.0.0.1:3579");
+    });
+
+    it("passes gatewayToken resolved from gateway credentials", async () => {
+      await runCronIsolatedAgentTurn(makeParams());
+
+      // resolveGatewayCredentialsFromConfig mock returns { token: "test-token" }
+      expect(capturedGatewayToken).toBe("test-token");
+    });
   });
 });

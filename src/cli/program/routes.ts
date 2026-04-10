@@ -9,13 +9,13 @@ import {
 
 export type RouteSpec = {
   match: (path: string[]) => boolean;
-  loadPlugins?: boolean;
+  loadPlugins?: boolean | ((argv: string[]) => boolean);
   run: (argv: string[]) => Promise<boolean>;
 };
 
 const routeHealth: RouteSpec = {
   match: (path) => path[0] === "health",
-  loadPlugins: true,
+  loadPlugins: (argv) => !hasFlag(argv, "--json"),
   run: async (argv) => {
     const json = hasFlag(argv, "--json");
     const verbose = getVerboseFlag(argv, { includeDebug: true });

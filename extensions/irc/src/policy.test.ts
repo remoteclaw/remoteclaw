@@ -1,4 +1,3 @@
-import { resolveDefaultGroupPolicy } from "remoteclaw/plugin-sdk";
 import { describe, expect, it } from "vitest";
 import {
   resolveIrcGroupAccessGate,
@@ -115,42 +114,5 @@ describe("irc policy", () => {
       commandAuthorized: true,
     });
     expect(gate.shouldSkip).toBe(false);
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("keeps case-insensitive group matching aligned with shared channel policy resolution", () => {
-    const groups = {
-      "#Ops": { requireMention: false },
-      "#Hidden": { enabled: false },
-      "*": { requireMention: true },
-    };
-
-    const inboundDirect = resolveIrcGroupMatch({ groups, target: "#ops" });
-    const sharedDirect = resolveDefaultGroupPolicy({
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
-      cfg: { channels: { irc: { groups } } },
-      channel: "irc",
-      groupId: "#ops",
-      groupIdCaseInsensitive: true,
-    });
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
-    expect(sharedDirect.allowed).toBe(inboundDirect.allowed);
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
-    expect(sharedDirect.groupConfig?.requireMention).toBe(
-      inboundDirect.groupConfig?.requireMention,
-    );
-
-    const inboundDisabled = resolveIrcGroupMatch({ groups, target: "#hidden" });
-    const sharedDisabled = resolveDefaultGroupPolicy({
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
-      cfg: { channels: { irc: { groups } } },
-      channel: "irc",
-      groupId: "#hidden",
-      groupIdCaseInsensitive: true,
-    });
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
-    expect(sharedDisabled.allowed).toBe(inboundDisabled.allowed);
-    expect(inboundDisabled.groupConfig?.enabled).toBe(false);
   });
 });

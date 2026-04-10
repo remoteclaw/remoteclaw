@@ -76,7 +76,7 @@ export type ReplyPayload = {
   mediaUrls?: string[];
   replyToId?: string;
   replyToTag?: boolean;
-  /** True when [[reply_to_current]] was present but not yet mapped to a message id. */
+  /** True when [[rc:reply]] was present but not yet mapped to a message id. */
   replyToCurrent?: boolean;
   /** Send audio as voice message (bubble) instead of audio file. Defaults to false. */
   audioAsVoice?: boolean;

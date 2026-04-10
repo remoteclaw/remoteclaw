@@ -177,7 +177,7 @@ describe("agent event handler", () => {
   it("strips inline directives from assistant chat events", () => {
     const { broadcast, nodeSendToSession, nowSpy } = emitRun1AssistantText(
       createHarness({ now: 1_000 }),
-      "Hello [[reply_to_current]] world [[audio_as_voice]]",
+      "Hello [[rc:reply]] world [[audio_as_voice]]",
     );
     const chatCalls = chatBroadcastCalls(broadcast);
     expect(chatCalls).toHaveLength(1);

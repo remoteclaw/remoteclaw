@@ -728,10 +728,10 @@ describe("createReplyReferencePlanner", () => {
 });
 
 describe("createStreamingDirectiveAccumulator", () => {
-  it("stashes reply_to_current until a renderable chunk arrives", () => {
+  it("stashes rc:reply until a renderable chunk arrives", () => {
     const accumulator = createStreamingDirectiveAccumulator();
 
-    expect(accumulator.consume("[[reply_to_current]]")).toBeNull();
+    expect(accumulator.consume("[[rc:reply]]")).toBeNull();
 
     const result = accumulator.consume("Hello");
     expect(result?.text).toBe("Hello");
@@ -741,9 +741,9 @@ describe("createStreamingDirectiveAccumulator", () => {
 
   it("handles reply tags split across chunks", () => {
     const accumulator = createStreamingDirectiveAccumulator();
-    expect(accumulator.consume("[[reply_to_")).toBeNull();
+    expect(accumulator.consume("[[rc:re")).toBeNull();
 
-    const result = accumulator.consume("current]] Yo");
+    const result = accumulator.consume("ply]] Yo");
     expect(result?.text).toBe("Yo");
     expect(result?.replyToCurrent).toBe(true);
   });
@@ -751,7 +751,7 @@ describe("createStreamingDirectiveAccumulator", () => {
   it("propagates explicit reply ids across current and subsequent chunks", () => {
     const accumulator = createStreamingDirectiveAccumulator();
 
-    expect(accumulator.consume("[[reply_to: abc-123]]")).toBeNull();
+    expect(accumulator.consume("[[rc:reply: abc-123]]")).toBeNull();
 
     const first = accumulator.consume("Hi");
     expect(first?.text).toBe("Hi");
@@ -766,7 +766,7 @@ describe("createStreamingDirectiveAccumulator", () => {
   it("clears sticky reply context on reset", () => {
     const accumulator = createStreamingDirectiveAccumulator();
 
-    expect(accumulator.consume("[[reply_to_current]]")).toBeNull();
+    expect(accumulator.consume("[[rc:reply]]")).toBeNull();
     expect(accumulator.consume("first")?.replyToCurrent).toBe(true);
 
     accumulator.reset();

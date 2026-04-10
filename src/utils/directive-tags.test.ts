@@ -6,14 +6,14 @@ import {
 
 describe("stripInlineDirectiveTagsForDisplay", () => {
   test("removes reply and audio directives", () => {
-    const input = "hello [[reply_to_current]] world [[reply_to:abc-123]] [[audio_as_voice]]";
+    const input = "hello [[rc:reply]] world [[rc:reply:abc-123]] [[audio_as_voice]]";
     const result = stripInlineDirectiveTagsForDisplay(input);
     expect(result.changed).toBe(true);
     expect(result.text).toBe("hello  world  ");
   });
 
   test("supports whitespace variants", () => {
-    const input = "[[ reply_to : 123 ]]ok[[ audio_as_voice ]]";
+    const input = "[[ rc:reply : 123 ]]ok[[ audio_as_voice ]]";
     const result = stripInlineDirectiveTagsForDisplay(input);
     expect(result.changed).toBe(true);
     expect(result.text).toBe("ok");
@@ -31,7 +31,7 @@ describe("stripInlineDirectiveTagsFromMessageForDisplay", () => {
   test("strips inline directives from text content blocks", () => {
     const input = {
       role: "assistant",
-      content: [{ type: "text", text: "hello [[reply_to_current]] world [[audio_as_voice]]" }],
+      content: [{ type: "text", text: "hello [[rc:reply]] world [[audio_as_voice]]" }],
     };
     const result = stripInlineDirectiveTagsFromMessageForDisplay(input);
     expect(result).toBeDefined();
@@ -41,7 +41,7 @@ describe("stripInlineDirectiveTagsFromMessageForDisplay", () => {
   test("preserves empty-string text when directives are entire content", () => {
     const input = {
       role: "assistant",
-      content: [{ type: "text", text: "[[reply_to_current]]" }],
+      content: [{ type: "text", text: "[[rc:reply]]" }],
     };
     const result = stripInlineDirectiveTagsFromMessageForDisplay(input);
     expect(result).toBeDefined();

@@ -34,7 +34,7 @@ export type IMessageSendResult = {
   messageId: string;
 };
 
-const LEADING_REPLY_TAG_RE = /^\s*\[\[\s*reply_to\s*:\s*([^\]\n]+)\s*\]\]\s*/i;
+const LEADING_REPLY_TAG_RE = /^\s*\[\[\s*rc:reply\s*:\s*([^\]\n]+)\s*\]\]\s*/i;
 const MAX_REPLY_TO_ID_LENGTH = 256;
 
 function stripUnsafeReplyTagChars(value: string): string {
@@ -69,7 +69,7 @@ function prependReplyTagIfNeeded(message: string, replyToId?: string): string {
   if (!resolvedReplyToId) {
     return message;
   }
-  const replyTag = `[[reply_to:${resolvedReplyToId}]]`;
+  const replyTag = `[[rc:reply:${resolvedReplyToId}]]`;
   const existingLeadingTag = message.match(LEADING_REPLY_TAG_RE);
   if (existingLeadingTag) {
     const remainder = message.slice(existingLeadingTag[0].length).trimStart();

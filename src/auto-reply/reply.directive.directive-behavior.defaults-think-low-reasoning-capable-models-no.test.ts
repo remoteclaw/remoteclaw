@@ -405,16 +405,16 @@ describe.skip("directive behavior", () => {
       expect(call?.reasoningLevel).toBe("off");
     });
   });
-  it("handles reply_to_current tags and explicit reply_to precedence", async () => {
+  it("handles rc:reply tags and explicit rc:reply precedence", async () => {
     await withTempHome(async (home) => {
-      for (const replyTag of ["[[reply_to_current]]", "[[ reply_to_current ]]"]) {
+      for (const replyTag of ["[[rc:reply]]", "[[ rc:reply ]]"]) {
         const payload = await runReplyToCurrentCase(home, `hello ${replyTag}`);
         expect(payload?.text).toBe("hello");
         expect(payload?.replyToId).toBe("msg-123");
       }
 
       vi.mocked(runEmbeddedPiAgent).mockResolvedValue(
-        makeEmbeddedTextResult("hi [[reply_to_current]] [[reply_to:abc-456]]"),
+        makeEmbeddedTextResult("hi [[rc:reply]] [[rc:reply:abc-456]]"),
       );
 
       const res = await getReplyFromConfig(

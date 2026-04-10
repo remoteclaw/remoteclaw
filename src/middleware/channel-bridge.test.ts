@@ -1071,6 +1071,18 @@ describe("ChannelBridge", () => {
       expect(params.workingDirectory).toBe(".");
     });
 
+    it("passes workingDirectory as a string, not an object", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge({ workspaceDir: "/some/path" });
+      await bridge.handle(makeMessage());
+
+      const params = executeFn.mock.calls[0][0];
+      expect(typeof params.workingDirectory).toBe("string");
+      expect(params.workingDirectory).toBe("/some/path");
+    });
+
     it("uses default MCP server path when not specified", async () => {
       const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
       mockRuntimeInstance = { execute: executeFn };

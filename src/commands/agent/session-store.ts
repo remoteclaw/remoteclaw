@@ -1,25 +1,10 @@
 import { setCliSessionId } from "../../agents/cli-session.js";
+// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
 import { isCliProvider } from "../../agents/provider-utils.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import {
-  mergeSessionEntry,
-  setSessionRuntimeModel,
-  type SessionEntry,
-  updateSessionStore,
-} from "../../config/sessions.js";
-
-// Gutted in RemoteClaw fork (Middleware Boundary Principle) — pi-embedded removed
-type RunResult = {
-  meta?: {
-    agentMeta?: Record<string, unknown>;
-    durationMs?: number;
-    aborted?: boolean;
-    stopReason?: string;
-    autoCompactionCompleted?: boolean;
-  };
-  [key: string]: unknown;
-};
+import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
+import type { AgentDeliveryResult } from "../../middleware/types.js";
 
 export async function updateSessionStoreAfterAgentRun(params: {
   cfg: RemoteClawConfig;
@@ -30,7 +15,9 @@ export async function updateSessionStoreAfterAgentRun(params: {
   sessionStore: Record<string, SessionEntry>;
   defaultProvider: string;
   defaultModel: string;
-  result: RunResult;
+  fallbackProvider?: string;
+  fallbackModel?: string;
+  result: AgentDeliveryResult;
 }) {
   const {
     cfg,
@@ -40,19 +27,24 @@ export async function updateSessionStoreAfterAgentRun(params: {
     sessionStore,
     defaultProvider,
     defaultModel,
+    fallbackProvider,
+    fallbackModel,
     result,
   } = params;
 
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
-  const usage = result.meta.agentMeta?.usage;
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
-  const promptTokens = result.meta.agentMeta?.promptTokens;
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
-  const compactionsThisRun = Math.max(0, result.meta.agentMeta?.compactionCount ?? 0);
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
-  const modelUsed = result.meta.agentMeta?.model ?? defaultModel;
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
-  const providerUsed = result.meta.agentMeta?.provider ?? defaultProvider;
+  const runUsage = result.run.usage;
+  // Map AgentUsage (inputTokens/outputTokens) to NormalizedUsage shape (input/output)
+  // used by the usage helper functions.
+  const usage = runUsage
+    ? {
+        input: runUsage.inputTokens,
+        output: runUsage.outputTokens,
+        cacheRead: runUsage.cacheReadTokens,
+        cacheWrite: runUsage.cacheWriteTokens,
+      }
+    : undefined;
+  const modelUsed = fallbackModel ?? defaultModel;
+  const providerUsed = fallbackProvider ?? defaultProvider;
   const contextTokens = params.contextTokensOverride ?? 200_000;
 
   const entry = sessionStore[sessionKey] ?? {
@@ -65,49 +57,32 @@ export async function updateSessionStoreAfterAgentRun(params: {
     updatedAt: Date.now(),
     contextTokens,
   };
-  setSessionRuntimeModel(next, {
-    provider: providerUsed,
-    model: modelUsed,
-  });
-  if (isCliProvider(providerUsed as string, cfg)) {
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
-    const cliSessionId = result.meta.agentMeta?.sessionId?.trim();
+  next.modelProvider = providerUsed;
+  next.model = modelUsed;
+  if (isCliProvider(providerUsed, cfg)) {
+    const cliSessionId = result.run.sessionId?.trim();
     if (cliSessionId) {
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       setCliSessionId(next, providerUsed, cliSessionId);
     }
   }
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
-  next.abortedLastRun = result.meta.aborted ?? false;
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
+  next.abortedLastRun = result.run.aborted ?? false;
   if (hasNonzeroUsage(usage)) {
     const input = usage.input ?? 0;
     const output = usage.output ?? 0;
-    const totalTokens = deriveSessionTotalTokens({
-      usage,
-      contextTokens,
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
-      promptTokens,
-    });
+    const totalTokens =
+      deriveSessionTotalTokens({
+        usage,
+        contextTokens,
+      }) ?? input;
     next.inputTokens = input;
     next.outputTokens = output;
-    if (typeof totalTokens === "number" && Number.isFinite(totalTokens) && totalTokens > 0) {
-      next.totalTokens = totalTokens;
-      next.totalTokensFresh = true;
-    } else {
-      next.totalTokens = undefined;
-      next.totalTokensFresh = false;
-    }
+    next.totalTokens = totalTokens;
+    next.totalTokensFresh = true;
     next.cacheRead = usage.cacheRead ?? 0;
     next.cacheWrite = usage.cacheWrite ?? 0;
   }
-  if (compactionsThisRun > 0) {
-    next.compactionCount = (entry.compactionCount ?? 0) + compactionsThisRun;
-  }
-  const persisted = await updateSessionStore(storePath, (store) => {
-    const merged = mergeSessionEntry(store[sessionKey], next);
-    store[sessionKey] = merged;
-    return merged;
+  sessionStore[sessionKey] = next;
+  await updateSessionStore(storePath, (store) => {
+    store[sessionKey] = next;
   });
-  sessionStore[sessionKey] = persisted;
 }

@@ -589,7 +589,7 @@ export function registerMemoryCli(program: Command) {
           ["remoteclaw memory index --force", "Force a full reindex."],
           ['remoteclaw memory search --query "deployment notes"', "Search indexed memory entries."],
           ["remoteclaw memory status --json", "Output machine-readable JSON."],
-        ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/memory", "docs.remoteclaw.ai/cli/memory")}\n`,
+        ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/memory", "docs.remoteclaw.org/cli/memory")}\n`,
     );
 
   memory

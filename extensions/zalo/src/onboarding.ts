@@ -121,7 +121,7 @@ async function noteZaloTokenHelp(prompter: WizardPrompter): Promise<void> {
       "2) Create a bot and get the token",
       "3) Token looks like 12345689:abc-xyz",
       "Tip: you can also set ZALO_BOT_TOKEN in your env.",
-      "Docs: https://docs.remoteclaw.ai/channels/zalo",
+      "Docs: https://docs.remoteclaw.org/channels/zalo",
     ].join("\n"),
     "Zalo bot token",
   );

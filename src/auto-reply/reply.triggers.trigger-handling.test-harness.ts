@@ -3,6 +3,7 @@ import os from "node:os";
 import { join } from "node:path";
 import { afterAll, afterEach, beforeAll, expect, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
+import type { AgentDeliveryResult, BridgeCallbacks, ChannelMessage } from "../middleware/types.js";
 
 // Avoid exporting vitest mock types (TS2742 under pnpm + d.ts emit).
 // oxlint-disable-next-line typescript/no-explicit-any
@@ -10,56 +11,73 @@ type AnyMock = any;
 // oxlint-disable-next-line typescript/no-explicit-any
 type AnyMocks = Record<string, any>;
 
-const piEmbeddedMocks = vi.hoisted(() => ({
-  abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
-  compactEmbeddedPiSession: vi.fn(),
-  runEmbeddedPiAgent: vi.fn(),
-  queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
-  isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
+const bridgeMocks = vi.hoisted(() => ({
+  runAgent: vi.fn(),
 }));
 
-export function getAbortEmbeddedPiRunMock(): AnyMock {
-  return piEmbeddedMocks.abortEmbeddedPiRun;
-}
-
-export function getCompactEmbeddedPiSessionMock(): AnyMock {
-  return piEmbeddedMocks.compactEmbeddedPiSession;
-}
-
-export function getRunEmbeddedPiAgentMock(): AnyMock {
-  return piEmbeddedMocks.runEmbeddedPiAgent;
-}
-
-// Alias for upstream compat — "runAgent" is the canonical name in newer upstream
 export function getRunAgentMock(): AnyMock {
-  return piEmbeddedMocks.runEmbeddedPiAgent;
+  return bridgeMocks.runAgent;
 }
 
-export function mockRunAgentOk(text = "done"): void {
-  piEmbeddedMocks.runEmbeddedPiAgent.mockResolvedValue({
-    payloads: [{ text }],
-    meta: {
-      durationMs: 5,
-      agentMeta: { sessionId: "s", provider: "p", model: "m" },
-    },
-  });
-}
+/**
+ * ChannelBridge mock that delegates to runAgent, bridging the
+ * ChannelBridge interface to the agent interface so that existing
+ * test assertions about runAgent calls continue to work.
+ */
+vi.mock("../middleware/channel-bridge.js", () => ({
+  ChannelBridge: class MockChannelBridge {
+    #provider: string;
+    constructor(opts: { provider: string }) {
+      this.#provider = opts.provider;
+    }
+    async handle(
+      message: ChannelMessage,
+      callbacks?: BridgeCallbacks,
+    ): Promise<AgentDeliveryResult> {
+      const embeddedParams = {
+        prompt: message.text,
+        extraSystemPrompt: message.extraContext,
+        provider: this.#provider,
+        onBlockReply: callbacks?.onBlockReply,
+        onPartialReply: callbacks?.onPartialReply,
+        onToolResult: callbacks?.onToolResult,
+      };
+      const result = await bridgeMocks.runAgent(embeddedParams);
+      return {
+        payloads: result?.payloads ?? [],
+        run: {
+          text: "",
+          sessionId: result?.meta?.agentMeta?.sessionId,
+          durationMs: result?.meta?.durationMs ?? 0,
+          usage: result?.meta?.agentMeta?.usage
+            ? {
+                inputTokens: result.meta.agentMeta.usage.input ?? 0,
+                outputTokens: result.meta.agentMeta.usage.output ?? 0,
+              }
+            : undefined,
+          aborted: result?.meta?.aborted ?? false,
+        },
+        mcp: {
+          sentTexts: result?.messagingToolSentTexts ?? [],
+          sentMediaUrls: result?.messagingToolSentMediaUrls ?? [],
+          sentTargets: result?.messagingToolSentTargets ?? [],
+          cronAdds: result?.successfulCronAdds ?? 0,
+        },
+      };
+    }
+  },
+}));
 
-export function getQueueEmbeddedPiMessageMock(): AnyMock {
-  return piEmbeddedMocks.queueEmbeddedPiMessage;
-}
+vi.mock("../config/paths.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../config/paths.js")>();
+  return {
+    ...actual,
+    resolveGatewayPort: () => 9999,
+  };
+});
 
-vi.mock("../agents/pi-embedded.js", () => ({
-  abortEmbeddedPiRun: (...args: unknown[]) => piEmbeddedMocks.abortEmbeddedPiRun(...args),
-  compactEmbeddedPiSession: (...args: unknown[]) =>
-    piEmbeddedMocks.compactEmbeddedPiSession(...args),
-  runEmbeddedPiAgent: (...args: unknown[]) => piEmbeddedMocks.runEmbeddedPiAgent(...args),
-  queueEmbeddedPiMessage: (...args: unknown[]) => piEmbeddedMocks.queueEmbeddedPiMessage(...args),
-  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
-  isEmbeddedPiRunActive: (...args: unknown[]) => piEmbeddedMocks.isEmbeddedPiRunActive(...args),
-  isEmbeddedPiRunStreaming: (...args: unknown[]) =>
-    piEmbeddedMocks.isEmbeddedPiRunStreaming(...args),
+vi.mock("../gateway/credentials.js", () => ({
+  resolveGatewayCredentialsFromConfig: () => ({ token: "test-token" }),
 }));
 
 const providerUsageMocks = vi.hoisted(() => ({
@@ -95,7 +113,7 @@ const modelCatalogMocks = vi.hoisted(() => ({
     { provider: "openai", id: "gpt-4.1-mini", name: "GPT-4.1 mini" },
     { provider: "openai", id: "gpt-5.2", name: "GPT-5.2" },
     { provider: "openai-codex", id: "gpt-5.2", name: "GPT-5.2 (Codex)" },
-    { provider: "minimax", id: "MiniMax-M2.5", name: "MiniMax M2.5" },
+    { provider: "minimax", id: "MiniMax-M2.1", name: "MiniMax M2.1" },
   ]),
   resetModelCatalogCacheForTest: vi.fn(),
 }));
@@ -198,9 +216,7 @@ export async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise
 
   try {
     // Avoid cross-test leakage if a test doesn't touch these mocks.
-    piEmbeddedMocks.runEmbeddedPiAgent.mockClear();
-    piEmbeddedMocks.abortEmbeddedPiRun.mockClear();
-    piEmbeddedMocks.compactEmbeddedPiSession.mockClear();
+    bridgeMocks.runAgent.mockClear();
     return await fn(home);
   } finally {
     restoreTempHomeEnv(snapshot);
@@ -211,13 +227,14 @@ export function makeCfg(home: string): RemoteClawConfig {
   return {
     agents: {
       defaults: {
+        runtime: "claude",
         model: { primary: "anthropic/claude-opus-4-5" },
-        workspace: join(home, "remoteclaw"),
         // Test harness: avoid 1s coalescer idle sleeps that dominate trigger suites.
         blockStreamingCoalesce: { idleMs: 1 },
         // Trigger tests assert routing/authorization behavior, not delivery pacing.
         humanDelay: { mode: "off" },
       },
+      list: [{ id: "main", workspace: join(home, "remoteclaw") }],
     },
     channels: {
       whatsapp: {
@@ -256,66 +273,6 @@ export function requireSessionStorePath(cfg: { session?: { store?: string } }): 
   return storePath;
 }
 
-export async function readSessionStore(cfg: {
-  session?: { store?: string };
-}): Promise<Record<string, { elevatedLevel?: string }>> {
-  const storeRaw = await fs.readFile(requireSessionStorePath(cfg), "utf-8");
-  return JSON.parse(storeRaw) as Record<string, { elevatedLevel?: string }>;
-}
-
-export function makeWhatsAppElevatedCfg(
-  home: string,
-  opts?: { elevatedEnabled?: boolean; requireMentionInGroups?: boolean },
-): RemoteClawConfig {
-  const cfg = makeCfg(home);
-  cfg.channels ??= {};
-  cfg.channels.whatsapp = {
-    ...cfg.channels.whatsapp,
-    allowFrom: ["+1000"],
-  };
-  if (opts?.requireMentionInGroups !== undefined) {
-    cfg.channels.whatsapp.groups = { "*": { requireMention: opts.requireMentionInGroups } };
-  }
-
-  cfg.tools = {
-    ...cfg.tools,
-    elevated: {
-      allowFrom: { whatsapp: ["+1000"] },
-      ...(opts?.elevatedEnabled === false ? { enabled: false } : {}),
-    },
-  };
-  return cfg;
-}
-
-export async function runDirectElevatedToggleAndLoadStore(params: {
-  cfg: RemoteClawConfig;
-  getReplyFromConfig: typeof import("./reply.js").getReplyFromConfig;
-  body?: string;
-}): Promise<{
-  text: string | undefined;
-  store: Record<string, { elevatedLevel?: string }>;
-}> {
-  const res = await params.getReplyFromConfig(
-    {
-      Body: params.body ?? "/elevated on",
-      From: "+1000",
-      To: "+2000",
-      Provider: "whatsapp",
-      SenderE164: "+1000",
-      CommandAuthorized: true,
-    },
-    {},
-    params.cfg,
-  );
-  const text = Array.isArray(res) ? res[0]?.text : res?.text;
-  const storePath = params.cfg.session?.store;
-  if (!storePath) {
-    throw new Error("session.store is required in test config");
-  }
-  const store = await readSessionStore(params.cfg);
-  return { text, store };
-}
-
 export async function expectInlineCommandHandledAndStripped(params: {
   home: string;
   getReplyFromConfig: typeof import("./reply.js").getReplyFromConfig;
@@ -324,8 +281,8 @@ export async function expectInlineCommandHandledAndStripped(params: {
   blockReplyContains: string;
   requestOverrides?: Record<string, unknown>;
 }) {
-  const runEmbeddedPiAgentMock = mockRunEmbeddedPiAgentOk();
-  runEmbeddedPiAgentMock.mockClear();
+  const runAgentMock = mockRunAgentOk();
+  runAgentMock.mockClear();
   const { blockReplies, handlers } = createBlockReplyCollector();
   const res = await params.getReplyFromConfig(
     {
@@ -342,8 +299,8 @@ export async function expectInlineCommandHandledAndStripped(params: {
   const text = Array.isArray(res) ? res[0]?.text : res?.text;
   expect(blockReplies.length).toBe(1);
   expect(blockReplies[0]?.text).toContain(params.blockReplyContains);
-  expect(runEmbeddedPiAgentMock).toHaveBeenCalled();
-  const prompt = runEmbeddedPiAgentMock.mock.calls.at(-1)?.[0]?.prompt ?? "";
+  expect(runAgentMock).toHaveBeenCalled();
+  const prompt = runAgentMock.mock.calls.at(-1)?.[0]?.prompt ?? "";
   expect(prompt).not.toContain(params.stripToken);
   expect(text).toBe("ok");
 }
@@ -353,9 +310,9 @@ export async function runGreetingPromptForBareNewOrReset(params: {
   body: "/new" | "/reset";
   getReplyFromConfig: typeof import("./reply.js").getReplyFromConfig;
 }) {
-  const runEmbeddedPiAgentMock = getRunEmbeddedPiAgentMock();
-  runEmbeddedPiAgentMock.mockClear();
-  runEmbeddedPiAgentMock.mockResolvedValue({
+  const runAgentMock = getRunAgentMock();
+  runAgentMock.mockClear();
+  runAgentMock.mockResolvedValue({
     payloads: [{ text: "hello" }],
     meta: {
       durationMs: 1,
@@ -375,8 +332,8 @@ export async function runGreetingPromptForBareNewOrReset(params: {
   );
   const text = Array.isArray(res) ? res[0]?.text : res?.text;
   expect(text).toBe("hello");
-  expect(runEmbeddedPiAgentMock).toHaveBeenCalledOnce();
-  const prompt = runEmbeddedPiAgentMock.mock.calls.at(-1)?.[0]?.prompt ?? "";
+  expect(runAgentMock).toHaveBeenCalledOnce();
+  const prompt = runAgentMock.mock.calls.at(-1)?.[0]?.prompt ?? "";
   expect(prompt).toContain("A new session was started via /new or /reset");
   expect(prompt).toContain("Execute your Session Startup sequence now");
 }
@@ -387,16 +344,16 @@ export function installTriggerHandlingE2eTestHooks() {
   });
 }
 
-export function mockRunEmbeddedPiAgentOk(text = "ok"): AnyMock {
-  const runEmbeddedPiAgentMock = getRunEmbeddedPiAgentMock();
-  runEmbeddedPiAgentMock.mockResolvedValue({
+export function mockRunAgentOk(text = "ok"): AnyMock {
+  const runAgentMock = getRunAgentMock();
+  runAgentMock.mockResolvedValue({
     payloads: [{ text }],
     meta: {
       durationMs: 1,
       agentMeta: { sessionId: "s", provider: "p", model: "m" },
     },
   });
-  return runEmbeddedPiAgentMock;
+  return runAgentMock;
 }
 
 export function createBlockReplyCollector() {

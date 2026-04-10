@@ -127,8 +127,6 @@ vi.mock("../config/sessions.js", () => ({
   recordSessionMetaFromInbound: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("./pi-embedded.js", () => embeddedRunMock);
-
 vi.mock("./subagent-registry.js", () => subagentRegistryMock);
 vi.mock("../plugins/hook-runner-global.js", () => ({
   getGlobalHookRunner: () => hookRunnerMock,

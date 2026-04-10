@@ -3,7 +3,6 @@ import type { RemoteClawConfig } from "../config/config.js";
 import {
   applyOnboardingLocalWorkspaceConfig,
   ONBOARDING_DEFAULT_DM_SCOPE,
-  ONBOARDING_DEFAULT_TOOLS_PROFILE,
 } from "./onboard-config.js";
 
 describe("applyOnboardingLocalWorkspaceConfig", () => {
@@ -13,8 +12,12 @@ describe("applyOnboardingLocalWorkspaceConfig", () => {
 
     expect(result.session?.dmScope).toBe(ONBOARDING_DEFAULT_DM_SCOPE);
     expect(result.gateway?.mode).toBe("local");
-    expect(result.agents?.defaults?.workspace).toBe("/tmp/workspace");
-    expect(result.tools?.profile).toBe(ONBOARDING_DEFAULT_TOOLS_PROFILE);
+    // Workspace is set per-agent in the agents.list, not in agents.defaults
+    const agentList = result.agents?.list;
+    expect(Array.isArray(agentList)).toBe(true);
+    expect(agentList).toEqual(
+      expect.arrayContaining([expect.objectContaining({ workspace: "/tmp/workspace" })]),
+    );
   });
 
   it("preserves existing dmScope when already configured", () => {
@@ -39,14 +42,12 @@ describe("applyOnboardingLocalWorkspaceConfig", () => {
     expect(result.session?.dmScope).toBe("per-account-channel-peer");
   });
 
-  it("preserves an explicit tools.profile when already configured", () => {
+  it("preserves other config sections when applying onboarding", () => {
     const baseConfig: RemoteClawConfig = {
-      tools: {
-        profile: "full",
-      },
+      gateway: { mode: "local" },
     };
     const result = applyOnboardingLocalWorkspaceConfig(baseConfig, "/tmp/workspace");
 
-    expect(result.tools?.profile).toBe("full");
+    expect(result.gateway?.mode).toBe("local");
   });
 });

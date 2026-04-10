@@ -291,10 +291,14 @@ export type AgentDefaultsConfig = {
   };
   /** Optional sandbox settings for non-main sessions. */
   sandbox?: AgentSandboxConfig;
+  /** Glob patterns for files exposed via agents.files.list/get/set (default: []). */
+  editableFiles?: string[];
   /** Optional boot prompt configuration. */
   boot?: {
-    /** Boot prompt text injected into the first system turn. */
+    /** Boot prompt text injected into the first system turn. Takes precedence over `file` if both set. */
     prompt?: string;
+    /** Path to a boot prompt file (relative to workspace directory). */
+    file?: string;
   };
 };
 

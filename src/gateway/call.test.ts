@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { RemoteClawConfig } from "../config/config.js";
 import { captureEnv } from "../test-utils/env.js";
 import {
   loadConfigMock as loadConfig,
@@ -12,16 +11,14 @@ let lastClientOptions: {
   url?: string;
   token?: string;
   password?: string;
-  tlsFingerprint?: string;
   scopes?: string[];
-  onHelloOk?: (hello: { features?: { methods?: string[] } }) => void | Promise<void>;
+  onHelloOk?: () => void | Promise<void>;
   onClose?: (code: number, reason: string) => void;
 } | null = null;
 type StartMode = "hello" | "close" | "silent";
 let startMode: StartMode = "hello";
 let closeCode = 1006;
 let closeReason = "";
-let helloMethods: string[] | undefined = ["health", "secrets.resolve"];
 
 vi.mock("./client.js", () => ({
   describeGatewayCloseCode: (code: number) => {
@@ -39,7 +36,7 @@ vi.mock("./client.js", () => ({
       token?: string;
       password?: string;
       scopes?: string[];
-      onHelloOk?: (hello: { features?: { methods?: string[] } }) => void | Promise<void>;
+      onHelloOk?: () => void | Promise<void>;
       onClose?: (code: number, reason: string) => void;
     }) {
       lastClientOptions = opts;
@@ -49,11 +46,7 @@ vi.mock("./client.js", () => ({
     }
     start() {
       if (startMode === "hello") {
-        void lastClientOptions?.onHelloOk?.({
-          features: {
-            methods: helloMethods,
-          },
-        });
+        void lastClientOptions?.onHelloOk?.();
       } else if (startMode === "close") {
         lastClientOptions?.onClose?.(closeCode, closeReason);
       }
@@ -74,7 +67,6 @@ function resetGatewayCallMocks() {
   startMode = "hello";
   closeCode = 1006;
   closeReason = "";
-  helloMethods = ["health", "secrets.resolve"];
 }
 
 function setGatewayNetworkDefaults(port = 18789) {
@@ -98,20 +90,8 @@ function makeRemotePasswordGatewayConfig(remotePassword: string, localPassword =
 }
 
 describe("callGateway url resolution", () => {
-  const envSnapshot = captureEnv([
-    "REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS",
-    "REMOTECLAW_GATEWAY_URL",
-    "REMOTECLAW_GATEWAY_TOKEN",
-    "CLAWDBOT_GATEWAY_TOKEN",
-  ]);
-
   beforeEach(() => {
-    envSnapshot.restore();
     resetGatewayCallMocks();
-  });
-
-  afterEach(() => {
-    envSnapshot.restore();
   });
 
   it.each([
@@ -195,97 +175,6 @@ describe("callGateway url resolution", () => {
 
     expect(lastClientOptions?.url).toBe("wss://override.example/ws");
     expect(lastClientOptions?.token).toBe("explicit-token");
-  });
-
-  it("uses REMOTECLAW_GATEWAY_URL env override in remote mode when remote URL is missing", async () => {
-    loadConfig.mockReturnValue({
-      gateway: { mode: "remote", bind: "loopback", remote: {} },
-    });
-    resolveGatewayPort.mockReturnValue(18789);
-    pickPrimaryTailnetIPv4.mockReturnValue(undefined);
-    process.env.REMOTECLAW_GATEWAY_URL = "wss://gateway-in-container.internal:9443/ws";
-    process.env.REMOTECLAW_GATEWAY_TOKEN = "env-token";
-
-    await callGateway({
-      method: "health",
-    });
-
-    expect(lastClientOptions?.url).toBe("wss://gateway-in-container.internal:9443/ws");
-    expect(lastClientOptions?.token).toBe("env-token");
-    expect(lastClientOptions?.password).toBeUndefined();
-  });
-
-  it("uses env URL override credentials without resolving local password SecretRefs", async () => {
-    loadConfig.mockReturnValue({
-      gateway: {
-        mode: "local",
-        auth: {
-          mode: "password",
-          password: { source: "env", provider: "default", id: "MISSING_LOCAL_PASSWORD" },
-        },
-      },
-      secrets: {
-        providers: {
-          default: { source: "env" },
-        },
-      },
-    } as unknown as RemoteClawConfig);
-    resolveGatewayPort.mockReturnValue(18789);
-    pickPrimaryTailnetIPv4.mockReturnValue(undefined);
-    process.env.REMOTECLAW_GATEWAY_URL = "wss://gateway-in-container.internal:9443/ws";
-    process.env.REMOTECLAW_GATEWAY_TOKEN = "env-token";
-
-    await callGateway({
-      method: "health",
-    });
-
-    expect(lastClientOptions?.url).toBe("wss://gateway-in-container.internal:9443/ws");
-    expect(lastClientOptions?.token).toBe("env-token");
-    expect(lastClientOptions?.password).toBeUndefined();
-  });
-
-  it("uses remote tlsFingerprint with env URL override", async () => {
-    loadConfig.mockReturnValue({
-      gateway: {
-        mode: "remote",
-        remote: {
-          url: "wss://remote.example:9443/ws",
-          tlsFingerprint: "remote-fingerprint",
-        },
-      },
-    });
-    setGatewayNetworkDefaults(18789);
-    pickPrimaryTailnetIPv4.mockReturnValue(undefined);
-    process.env.REMOTECLAW_GATEWAY_URL = "wss://gateway-in-container.internal:9443/ws";
-    process.env.REMOTECLAW_GATEWAY_TOKEN = "env-token";
-
-    await callGateway({
-      method: "health",
-    });
-
-    expect(lastClientOptions?.tlsFingerprint).toBe("remote-fingerprint");
-  });
-
-  it("does not apply remote tlsFingerprint for CLI url override", async () => {
-    loadConfig.mockReturnValue({
-      gateway: {
-        mode: "remote",
-        remote: {
-          url: "wss://remote.example:9443/ws",
-          tlsFingerprint: "remote-fingerprint",
-        },
-      },
-    });
-    setGatewayNetworkDefaults(18789);
-    pickPrimaryTailnetIPv4.mockReturnValue(undefined);
-
-    await callGateway({
-      method: "health",
-      url: "wss://override.example:9443/ws",
-      token: "explicit-token",
-    });
-
-    expect(lastClientOptions?.tlsFingerprint).toBeUndefined();
   });
 
   it.each([
@@ -404,28 +293,6 @@ describe("buildGatewayConnectionDetails", () => {
     expect(details.remoteFallbackNote).toBeUndefined();
   });
 
-  it("uses env REMOTECLAW_GATEWAY_URL when set", () => {
-    loadConfig.mockReturnValue({ gateway: { mode: "local", bind: "loopback" } });
-    resolveGatewayPort.mockReturnValue(18800);
-    pickPrimaryTailnetIPv4.mockReturnValue(undefined);
-    const prevUrl = process.env.REMOTECLAW_GATEWAY_URL;
-    try {
-      process.env.REMOTECLAW_GATEWAY_URL = "wss://browser-gateway.local:9443/ws";
-
-      const details = buildGatewayConnectionDetails();
-
-      expect(details.url).toBe("wss://browser-gateway.local:9443/ws");
-      expect(details.urlSource).toBe("env REMOTECLAW_GATEWAY_URL");
-      expect(details.bindDetail).toBeUndefined();
-    } finally {
-      if (prevUrl === undefined) {
-        delete process.env.REMOTECLAW_GATEWAY_URL;
-      } else {
-        process.env.REMOTECLAW_GATEWAY_URL = prevUrl;
-      }
-    }
-  });
-
   it("throws for insecure ws:// remote URLs (CWE-319)", () => {
     loadConfig.mockReturnValue({
       gateway: {
@@ -449,23 +316,6 @@ describe("buildGatewayConnectionDetails", () => {
     expect((thrown as Error).message).toContain("wss://");
     expect((thrown as Error).message).toContain("Tailscale Serve/Funnel");
     expect((thrown as Error).message).toContain("remoteclaw doctor --fix");
-  });
-
-  it("allows ws:// private remote URLs only when REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS=1", () => {
-    process.env.REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS = "1";
-    loadConfig.mockReturnValue({
-      gateway: {
-        mode: "remote",
-        bind: "loopback",
-        remote: { url: "ws://10.0.0.8:18789" },
-      },
-    });
-    resolveGatewayPort.mockReturnValue(18789);
-
-    const details = buildGatewayConnectionDetails();
-
-    expect(details.url).toBe("ws://10.0.0.8:18789");
-    expect(details.urlSource).toBe("config gateway.remote.url");
   });
 
   it("allows ws:// for loopback addresses in local mode", () => {
@@ -554,29 +404,13 @@ describe("callGateway error details", () => {
       }),
     ).rejects.toThrow("gateway remote mode misconfigured");
   });
-
-  it("fails before request when a required gateway method is missing", async () => {
-    setLocalLoopbackGatewayConfig();
-    helloMethods = ["health"];
-    await expect(
-      callGateway({
-        method: "secrets.resolve",
-        requiredMethods: ["secrets.resolve"],
-      }),
-    ).rejects.toThrow(/does not support required method "secrets\.resolve"/i);
-  });
 });
 
 describe("callGateway url override auth requirements", () => {
   let envSnapshot: ReturnType<typeof captureEnv>;
 
   beforeEach(() => {
-    envSnapshot = captureEnv([
-      "REMOTECLAW_GATEWAY_TOKEN",
-      "REMOTECLAW_GATEWAY_PASSWORD",
-      "REMOTECLAW_GATEWAY_URL",
-      "CLAWDBOT_GATEWAY_URL",
-    ]);
+    envSnapshot = captureEnv(["REMOTECLAW_GATEWAY_TOKEN", "REMOTECLAW_GATEWAY_PASSWORD"]);
     resetGatewayCallMocks();
     setGatewayNetworkDefaults(18789);
   });
@@ -598,18 +432,6 @@ describe("callGateway url override auth requirements", () => {
     await expect(
       callGateway({ method: "health", url: "wss://override.example/ws" }),
     ).rejects.toThrow("explicit credentials");
-  });
-
-  it("throws when env URL override is set without env credentials", async () => {
-    process.env.REMOTECLAW_GATEWAY_URL = "wss://override.example/ws";
-    loadConfig.mockReturnValue({
-      gateway: {
-        mode: "local",
-        auth: { token: "local-token", password: "local-password" },
-      },
-    });
-
-    await expect(callGateway({ method: "health" })).rejects.toThrow("explicit credentials");
   });
 });
 
@@ -635,19 +457,10 @@ describe("callGateway password resolution", () => {
   ] as const;
 
   beforeEach(() => {
-    envSnapshot = captureEnv([
-      "REMOTECLAW_GATEWAY_PASSWORD",
-      "REMOTECLAW_GATEWAY_TOKEN",
-      "LOCAL_REF_PASSWORD",
-      "REMOTE_REF_TOKEN",
-      "REMOTE_REF_PASSWORD",
-    ]);
+    envSnapshot = captureEnv(["REMOTECLAW_GATEWAY_PASSWORD", "REMOTECLAW_GATEWAY_TOKEN"]);
     resetGatewayCallMocks();
     delete process.env.REMOTECLAW_GATEWAY_PASSWORD;
     delete process.env.REMOTECLAW_GATEWAY_TOKEN;
-    delete process.env.LOCAL_REF_PASSWORD;
-    delete process.env.REMOTE_REF_TOKEN;
-    delete process.env.REMOTE_REF_PASSWORD;
     setGatewayNetworkDefaults(18789);
   });
 
@@ -702,309 +515,6 @@ describe("callGateway password resolution", () => {
 
     expect(lastClientOptions?.password).toBe(expectedPassword);
   });
-
-  // Gutted in RemoteClaw fork — secret resolution is stubbed out
-  it.skip("resolves gateway.auth.password SecretInput refs for gateway calls", async () => {
-    process.env.LOCAL_REF_PASSWORD = "resolved-local-ref-password";
-    loadConfig.mockReturnValue({
-      gateway: {
-        mode: "local",
-        bind: "loopback",
-        auth: {
-          mode: "password",
-          password: { source: "env", provider: "default", id: "LOCAL_REF_PASSWORD" },
-        },
-      },
-      secrets: {
-        providers: {
-          default: { source: "env" },
-        },
-      },
-    } as unknown as RemoteClawConfig);
-
-    await callGateway({ method: "health" });
-
-    expect(lastClientOptions?.password).toBe("resolved-local-ref-password");
-  });
-
-  it("does not resolve local password ref when env password takes precedence", async () => {
-    process.env.REMOTECLAW_GATEWAY_PASSWORD = "from-env";
-    loadConfig.mockReturnValue({
-      gateway: {
-        mode: "local",
-        bind: "loopback",
-        auth: {
-          mode: "password",
-          password: { source: "env", provider: "default", id: "MISSING_LOCAL_REF_PASSWORD" },
-        },
-      },
-      secrets: {
-        providers: {
-          default: { source: "env" },
-        },
-      },
-    } as unknown as RemoteClawConfig);
-
-    await callGateway({ method: "health" });
-
-    expect(lastClientOptions?.password).toBe("from-env");
-  });
-
-  it("does not resolve local password ref when token auth can win", async () => {
-    loadConfig.mockReturnValue({
-      gateway: {
-        mode: "local",
-        bind: "loopback",
-        auth: {
-          mode: "token",
-          token: "token-auth",
-          password: { source: "env", provider: "default", id: "MISSING_LOCAL_REF_PASSWORD" },
-        },
-      },
-      secrets: {
-        providers: {
-          default: { source: "env" },
-        },
-      },
-    } as unknown as RemoteClawConfig);
-
-    await callGateway({ method: "health" });
-
-    expect(lastClientOptions?.token).toBe("token-auth");
-  });
-
-  it.each(["none", "trusted-proxy"] as const)(
-    "ignores unresolved local password ref when auth mode is %s",
-    async (mode) => {
-      loadConfig.mockReturnValue({
-        gateway: {
-          mode: "local",
-          bind: "loopback",
-          auth: {
-            mode,
-            password: { source: "env", provider: "default", id: "MISSING_LOCAL_REF_PASSWORD" },
-          },
-        },
-        secrets: {
-          providers: {
-            default: { source: "env" },
-          },
-        },
-      } as unknown as RemoteClawConfig);
-
-      await callGateway({ method: "health" });
-
-      expect(lastClientOptions?.token).toBeUndefined();
-      expect(lastClientOptions?.password).toBeUndefined();
-    },
-  );
-
-  it("does not resolve local password ref when remote password is already configured", async () => {
-    loadConfig.mockReturnValue({
-      gateway: {
-        mode: "remote",
-        bind: "loopback",
-        auth: {
-          mode: "password",
-          password: { source: "env", provider: "default", id: "MISSING_LOCAL_REF_PASSWORD" },
-        },
-        remote: {
-          url: "wss://remote.example:18789",
-          password: "remote-secret",
-        },
-      },
-      secrets: {
-        providers: {
-          default: { source: "env" },
-        },
-      },
-    } as unknown as RemoteClawConfig);
-
-    await callGateway({ method: "health" });
-
-    expect(lastClientOptions?.password).toBe("remote-secret");
-  });
-
-  // Gutted in RemoteClaw fork — secret resolution is stubbed out
-  it.skip("resolves gateway.remote.token SecretInput refs when remote token is required", async () => {
-    process.env.REMOTE_REF_TOKEN = "resolved-remote-ref-token";
-    loadConfig.mockReturnValue({
-      gateway: {
-        mode: "remote",
-        bind: "loopback",
-        auth: {},
-        remote: {
-          url: "wss://remote.example:18789",
-          token: { source: "env", provider: "default", id: "REMOTE_REF_TOKEN" },
-        },
-      },
-      secrets: {
-        providers: {
-          default: { source: "env" },
-        },
-      },
-    } as unknown as RemoteClawConfig);
-
-    await callGateway({ method: "health" });
-
-    expect(lastClientOptions?.token).toBe("resolved-remote-ref-token");
-  });
-
-  // Gutted in RemoteClaw fork — secret resolution is stubbed out
-  it.skip("resolves gateway.remote.password SecretInput refs when remote password is required", async () => {
-    process.env.REMOTE_REF_PASSWORD = "resolved-remote-ref-password";
-    loadConfig.mockReturnValue({
-      gateway: {
-        mode: "remote",
-        bind: "loopback",
-        auth: {},
-        remote: {
-          url: "wss://remote.example:18789",
-          password: { source: "env", provider: "default", id: "REMOTE_REF_PASSWORD" },
-        },
-      },
-      secrets: {
-        providers: {
-          default: { source: "env" },
-        },
-      },
-    } as unknown as RemoteClawConfig);
-
-    await callGateway({ method: "health" });
-
-    expect(lastClientOptions?.password).toBe("resolved-remote-ref-password");
-  });
-
-  it("does not resolve remote token ref when remote password already wins", async () => {
-    loadConfig.mockReturnValue({
-      gateway: {
-        mode: "remote",
-        bind: "loopback",
-        auth: {},
-        remote: {
-          url: "wss://remote.example:18789",
-          token: { source: "env", provider: "default", id: "MISSING_REMOTE_TOKEN" },
-          password: "remote-password",
-        },
-      },
-      secrets: {
-        providers: {
-          default: { source: "env" },
-        },
-      },
-    } as unknown as RemoteClawConfig);
-
-    await callGateway({ method: "health" });
-
-    expect(lastClientOptions?.token).toBeUndefined();
-    expect(lastClientOptions?.password).toBe("remote-password");
-  });
-
-  // Gutted in RemoteClaw fork — secret resolution is stubbed out
-  it.skip("resolves remote token ref before unresolved remote password ref can block auth", async () => {
-    process.env.REMOTE_REF_TOKEN = "resolved-remote-ref-token";
-    loadConfig.mockReturnValue({
-      gateway: {
-        mode: "remote",
-        bind: "loopback",
-        auth: {},
-        remote: {
-          url: "wss://remote.example:18789",
-          token: { source: "env", provider: "default", id: "REMOTE_REF_TOKEN" },
-          password: { source: "env", provider: "default", id: "MISSING_REMOTE_PASSWORD" },
-        },
-      },
-      secrets: {
-        providers: {
-          default: { source: "env" },
-        },
-      },
-    } as unknown as RemoteClawConfig);
-
-    await callGateway({ method: "health" });
-
-    expect(lastClientOptions?.token).toBe("resolved-remote-ref-token");
-    expect(lastClientOptions?.password).toBeUndefined();
-  });
-
-  it("does not resolve remote password ref when remote token already wins", async () => {
-    loadConfig.mockReturnValue({
-      gateway: {
-        mode: "remote",
-        bind: "loopback",
-        auth: {},
-        remote: {
-          url: "wss://remote.example:18789",
-          token: "remote-token",
-          password: { source: "env", provider: "default", id: "MISSING_REMOTE_PASSWORD" },
-        },
-      },
-      secrets: {
-        providers: {
-          default: { source: "env" },
-        },
-      },
-    } as unknown as RemoteClawConfig);
-
-    await callGateway({ method: "health" });
-
-    expect(lastClientOptions?.token).toBe("remote-token");
-    expect(lastClientOptions?.password).toBeUndefined();
-  });
-
-  // Gutted in RemoteClaw fork — secret resolution is stubbed out
-  it.skip("resolves remote token refs on local-mode calls when fallback token can win", async () => {
-    process.env.LOCAL_FALLBACK_REMOTE_TOKEN = "resolved-local-fallback-remote-token";
-    loadConfig.mockReturnValue({
-      gateway: {
-        mode: "local",
-        bind: "loopback",
-        auth: {},
-        remote: {
-          token: { source: "env", provider: "default", id: "LOCAL_FALLBACK_REMOTE_TOKEN" },
-          password: { source: "env", provider: "default", id: "MISSING_REMOTE_PASSWORD" },
-        },
-      },
-      secrets: {
-        providers: {
-          default: { source: "env" },
-        },
-      },
-    } as unknown as RemoteClawConfig);
-
-    await callGateway({ method: "health" });
-
-    expect(lastClientOptions?.token).toBe("resolved-local-fallback-remote-token");
-    expect(lastClientOptions?.password).toBeUndefined();
-  });
-
-  it.each(["none", "trusted-proxy"] as const)(
-    "does not resolve remote refs on non-remote gateway calls when auth mode is %s",
-    async (mode) => {
-      loadConfig.mockReturnValue({
-        gateway: {
-          mode: "local",
-          bind: "loopback",
-          auth: { mode },
-          remote: {
-            url: "wss://remote.example:18789",
-            token: { source: "env", provider: "default", id: "MISSING_REMOTE_TOKEN" },
-            password: { source: "env", provider: "default", id: "MISSING_REMOTE_PASSWORD" },
-          },
-        },
-        secrets: {
-          providers: {
-            default: { source: "env" },
-          },
-        },
-      } as unknown as RemoteClawConfig);
-
-      await callGateway({ method: "health" });
-
-      expect(lastClientOptions?.token).toBeUndefined();
-      expect(lastClientOptions?.password).toBeUndefined();
-    },
-  );
 
   it.each(explicitAuthCases)("uses explicit $label when url override is set", async (testCase) => {
     process.env[testCase.envKey] = testCase.envValue;

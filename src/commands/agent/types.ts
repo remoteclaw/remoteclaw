@@ -1,6 +1,18 @@
-import type { AgentInternalEvent } from "../../agents/internal-events.js";
-import type { ClientToolDefinition } from "../../agents/pi-embedded-runner/run/params.js";
 import type { ChannelOutboundTargetMode } from "../../channels/plugins/types.js";
+
+/**
+ * OpenAI-compatible function-calling tool definition.
+ * OpenAI-compatible function-calling tool definition, inlined after engine
+ * removal (#74).
+ */
+export type ClientToolDefinition = {
+  type: string;
+  function: {
+    name: string;
+    description?: string;
+    parameters?: Record<string, unknown>;
+  };
+};
 import type { InputProvenance } from "../../sessions/input-provenance.js";
 
 /** Image content block for Claude API multimodal messages. */
@@ -58,10 +70,8 @@ export type AgentCommandOpts = {
   channel?: string; // delivery channel (whatsapp|telegram|...)
   /** Account ID for multi-account channel routing (e.g., WhatsApp account). */
   accountId?: string;
-  /** Context for embedded run routing (channel/account/thread). */
+  /** Context for session run routing (channel/account/thread). */
   runContext?: AgentRunContext;
-  /** Whether this caller is authorized for owner-only tools (defaults true for local CLI calls). */
-  senderIsOwner?: boolean;
   /** Group id for channel-level tool policy resolution. */
   groupId?: string | null;
   /** Group channel label for channel-level tool policy resolution. */
@@ -76,13 +86,16 @@ export type AgentCommandOpts = {
   lane?: string;
   runId?: string;
   extraSystemPrompt?: string;
-  internalEvents?: AgentInternalEvent[];
+  /** Whether this caller is authorized for owner-only tools (defaults true for local CLI calls). */
+  senderIsOwner?: boolean;
+  /** Internal events to replay (gateway session restore). */
+  internalEvents?: unknown[];
   inputProvenance?: InputProvenance;
   /** Per-call stream param overrides (best-effort). */
   streamParams?: AgentStreamParams;
 };
 
-export type AgentCommandIngressOpts = Omit<AgentCommandOpts, "senderIsOwner"> & {
-  /** Ingress callsites must always pass explicit owner authorization state. */
+/** Ingress variant of AgentCommandOpts that requires senderIsOwner. */
+export type AgentCommandIngressOpts = AgentCommandOpts & {
   senderIsOwner: boolean;
 };

@@ -99,10 +99,10 @@ describe("executeZalouserTool", () => {
     const linkResult = await executeZalouserTool("tool-1", {
       action: "link",
       threadId: "t-2",
-      url: "https://remoteclaw.ai",
+      url: "https://remoteclaw.org",
       message: "read this",
     });
-    expect(mockSendLink).toHaveBeenCalledWith("t-2", "https://remoteclaw.ai", {
+    expect(mockSendLink).toHaveBeenCalledWith("t-2", "https://remoteclaw.org", {
       profile: undefined,
       caption: "read this",
       isGroup: undefined,

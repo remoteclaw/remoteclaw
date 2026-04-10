@@ -7,7 +7,9 @@ import { renderChatControls, renderTab, renderThemeToggle } from "./app-render.h
 import type { AppViewState } from "./app-view-state.ts";
 import { loadAgentFileContent, loadAgentFiles, saveAgentFile } from "./controllers/agent-files.ts";
 import { loadAgentIdentities, loadAgentIdentity } from "./controllers/agent-identity.ts";
-import { loadAgentSkills } from "./controllers/agent-skills.ts";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "./controllers/agent-skills.ts";
+const loadAgentSkills = (..._args: unknown[]) => undefined as unknown;
 import { loadAgents, loadToolsCatalog } from "./controllers/agents.ts";
 import { loadChannels } from "./controllers/channels.ts";
 import { loadChatHistory } from "./controllers/chat.ts";
@@ -56,17 +58,17 @@ import { loadLogs } from "./controllers/logs.ts";
 import { loadNodes } from "./controllers/nodes.ts";
 import { loadPresence } from "./controllers/presence.ts";
 import { deleteSessionAndRefresh, loadSessions, patchSession } from "./controllers/sessions.ts";
-import {
-  installSkill,
-  loadSkills,
-  saveSkillApiKey,
-  updateSkillEdit,
-  updateSkillEnabled,
-} from "./controllers/skills.ts";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "./controllers/skills.ts";
+const installSkill = (..._args: unknown[]) => undefined as unknown;
+const loadSkills = (..._args: unknown[]) => undefined as unknown;
+const saveSkillApiKey = (..._args: unknown[]) => undefined as unknown;
+const updateSkillEdit = (..._args: unknown[]) => undefined as unknown;
+const updateSkillEnabled = (..._args: unknown[]) => undefined as unknown;
 import { buildExternalLinkRel, EXTERNAL_LINK_TARGET } from "./external-link.ts";
 import { icons } from "./icons.ts";
 import { normalizeBasePath, TAB_GROUPS, subtitleForTab, titleForTab } from "./navigation.ts";
-import { resolveConfiguredCronModelSuggestions, sortLocaleStrings } from "./views/agents-utils.ts";
+import { resolveConfiguredCronModelSuggestions } from "./views/agents-utils.ts";
 import { renderAgents } from "./views/agents.ts";
 import { renderChannels } from "./views/channels.ts";
 import { renderChat } from "./views/chat.ts";
@@ -80,8 +82,9 @@ import { renderLogs } from "./views/logs.ts";
 import { renderNodes } from "./views/nodes.ts";
 import { renderOverview } from "./views/overview.ts";
 import { renderSessions } from "./views/sessions.ts";
-import { renderSkills, type SkillsProps } from "./views/skills.ts";
-
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// import ... from "./views/skills.ts";
+const renderSkills = (..._args: unknown[]) => undefined as unknown;
 const AVATAR_DATA_RE = /^data:/i;
 const AVATAR_HTTP_RE = /^https?:\/\//i;
 const CRON_THINKING_SUGGESTIONS = ["off", "minimal", "low", "medium", "high"];
@@ -166,7 +169,7 @@ export function renderApp(state: AppViewState) {
     state.agentsList?.defaultId ??
     state.agentsList?.agents?.[0]?.id ??
     null;
-  const cronAgentSuggestions = sortLocaleStrings(
+  const cronAgentSuggestions = Array.from(
     new Set(
       [
         ...(state.agentsList?.agents?.map((entry) => entry.id.trim()) ?? []),
@@ -175,8 +178,8 @@ export function renderApp(state: AppViewState) {
           .filter(Boolean),
       ].filter(Boolean),
     ),
-  );
-  const cronModelSuggestions = sortLocaleStrings(
+  ).toSorted((a, b) => a.localeCompare(b));
+  const cronModelSuggestions = Array.from(
     new Set(
       [
         ...state.cronModelSuggestions,
@@ -191,7 +194,7 @@ export function renderApp(state: AppViewState) {
           .filter(Boolean),
       ].filter(Boolean),
     ),
-  );
+  ).toSorted((a, b) => a.localeCompare(b));
   const visibleCronJobs = getVisibleCronJobs(state);
   const selectedDeliveryChannel =
     state.cronForm.deliveryChannel && state.cronForm.deliveryChannel.trim()
@@ -214,7 +217,6 @@ export function renderApp(state: AppViewState) {
     ...jobToSuggestions,
     ...accountToSuggestions,
   ]);
-  const accountSuggestions = uniquePreserveOrder(accountToSuggestions);
   const deliveryToSuggestions =
     state.cronForm.deliveryMode === "webhook"
       ? rawDeliveryToSuggestions.filter((value) => isHttpUrl(value))
@@ -294,7 +296,7 @@ export function renderApp(state: AppViewState) {
           <div class="nav-group__items">
             <a
               class="nav-item nav-item--external"
-              href="https://docs.remoteclaw.ai"
+              href="https://docs.remoteclaw.org"
               target=${EXTERNAL_LINK_TARGET}
               rel=${buildExternalLinkRel()}
               title="${t("common.docs")} (opens in new tab)"
@@ -483,7 +485,6 @@ export function renderApp(state: AppViewState) {
                 thinkingSuggestions: CRON_THINKING_SUGGESTIONS,
                 timezoneSuggestions: CRON_TIMEZONE_SUGGESTIONS,
                 deliveryToSuggestions,
-                accountSuggestions,
                 onFormChange: (patch) => {
                   state.cronForm = normalizeCronFormState({ ...state.cronForm, ...patch });
                   state.cronFieldErrors = validateCronForm(state.cronForm);
@@ -494,7 +495,7 @@ export function renderApp(state: AppViewState) {
                 onClone: (job) => startCronClone(state, job),
                 onCancelEdit: () => cancelCronEdit(state),
                 onToggle: (job, enabled) => toggleCronJob(state, job, enabled),
-                onRun: (job, mode) => runCronJob(state, job, mode ?? "force"),
+                onRun: (job) => runCronJob(state, job),
                 onRemove: (job) => removeCronJob(state, job),
                 onLoadRuns: async (jobId) => {
                   updateCronRunsFilter(state, { cronRunsScope: "job" });
@@ -724,13 +725,15 @@ export function renderApp(state: AppViewState) {
                 onConfigSave: () => saveConfig(state),
                 onChannelsRefresh: () => loadChannels(state, false),
                 onCronRefresh: () => state.loadCron(),
-                onSkillsFilterChange: (next: string) => (state.skillsFilter = next),
+                // oxlint-disable-next-line typescript/no-explicit-any
+                onSkillsFilterChange: (next: any) => (state.skillsFilter = next),
                 onSkillsRefresh: () => {
                   if (resolvedAgentId) {
                     void loadAgentSkills(state, resolvedAgentId);
                   }
                 },
-                onAgentSkillToggle: (agentId: string, skillName: string, enabled: boolean) => {
+                // oxlint-disable-next-line typescript/no-explicit-any
+                onAgentSkillToggle: (agentId: any, skillName: any, enabled: any) => {
                   if (!configValue) {
                     return;
                   }
@@ -768,7 +771,8 @@ export function renderApp(state: AppViewState) {
                   }
                   updateConfigFormValue(state, ["agents", "list", index, "skills"], [...next]);
                 },
-                onAgentSkillsClear: (agentId: string) => {
+                // oxlint-disable-next-line typescript/no-explicit-any
+                onAgentSkillsClear: (agentId: any) => {
                   if (!configValue) {
                     return;
                   }
@@ -788,7 +792,8 @@ export function renderApp(state: AppViewState) {
                   }
                   removeConfigFormValue(state, ["agents", "list", index, "skills"]);
                 },
-                onAgentSkillsDisableAll: (agentId: string) => {
+                // oxlint-disable-next-line typescript/no-explicit-any
+                onAgentSkillsDisableAll: (agentId: any) => {
                   if (!configValue) {
                     return;
                   }
@@ -898,6 +903,7 @@ export function renderApp(state: AppViewState) {
         }
 
         ${
+          // @ts-expect-error — upstream feature not available in RemoteClaw fork
           state.tab === "skills"
             ? renderSkills({
                 loading: state.skillsLoading,
@@ -907,29 +913,19 @@ export function renderApp(state: AppViewState) {
                 edits: state.skillEdits,
                 messages: state.skillMessages,
                 busyKey: state.skillsBusyKey,
-                onFilterChange: (next: string) => (state.skillsFilter = next),
-                onRefresh: () =>
-                  loadSkills(state as unknown as Parameters<typeof loadSkills>[0], {
-                    clearMessages: true,
-                  }),
-                onToggle: (key: string, enabled: boolean) =>
-                  updateSkillEnabled(
-                    state as unknown as Parameters<typeof loadSkills>[0],
-                    key,
-                    enabled,
-                  ),
-                onEdit: (key: string, value: string) =>
-                  updateSkillEdit(state as unknown as Parameters<typeof loadSkills>[0], key, value),
-                onSaveKey: (key: string) =>
-                  saveSkillApiKey(state as unknown as Parameters<typeof loadSkills>[0], key),
-                onInstall: (skillKey: string, name: string, installId: string) =>
-                  installSkill(
-                    state as unknown as Parameters<typeof loadSkills>[0],
-                    skillKey,
-                    name,
-                    installId,
-                  ),
-              } as unknown as SkillsProps)
+                // oxlint-disable-next-line typescript/no-explicit-any
+                onFilterChange: (next: any) => (state.skillsFilter = next),
+                onRefresh: () => loadSkills(state, { clearMessages: true }),
+                // oxlint-disable-next-line typescript/no-explicit-any
+                onToggle: (key: any, enabled: any) => updateSkillEnabled(state, key, enabled),
+                // oxlint-disable-next-line typescript/no-explicit-any
+                onEdit: (key: any, value: any) => updateSkillEdit(state, key, value),
+                // oxlint-disable-next-line typescript/no-explicit-any
+                onSaveKey: (key: any) => saveSkillApiKey(state, key),
+                // oxlint-disable-next-line typescript/no-explicit-any
+                onInstall: (skillKey: any, name: any, installId: any) =>
+                  installSkill(state, skillKey, name, installId),
+              })
             : nothing
         }
 
@@ -1040,8 +1036,6 @@ export function renderApp(state: AppViewState) {
                 loading: state.chatLoading,
                 sending: state.chatSending,
                 compactionStatus: state.compactionStatus,
-                fallbackStatus: state.fallbackStatus,
-                thinkingStream: state.chatThinkingStream,
                 assistantAvatarUrl: chatAvatarUrl,
                 messages: state.chatMessages,
                 toolMessages: state.chatToolMessages,

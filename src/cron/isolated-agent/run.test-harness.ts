@@ -88,10 +88,6 @@ vi.mock("../../agents/model-fallback.js", () => ({
   runWithModelFallback: runWithModelFallbackMock,
 }));
 
-vi.mock("../../agents/pi-embedded.js", () => ({
-  runEmbeddedPiAgent: runEmbeddedPiAgentMock,
-}));
-
 vi.mock("../../agents/context.js", () => ({
   lookupContextTokens: vi.fn().mockReturnValue(128000),
 }));

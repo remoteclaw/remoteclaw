@@ -1,5 +1,7 @@
+import { CLAUDE_CLI_PROFILE_ID, CODEX_CLI_PROFILE_ID } from "../agents/auth-profiles.js";
 import { buildAuthHealthSummary } from "../auth/auth-health.js";
 import { ensureAuthProfileStore } from "../auth/index.js";
+import { updateAuthProfileStoreWithLock } from "../auth/store.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { note } from "../terminal/note.js";
@@ -11,6 +13,106 @@ export async function maybeRepairAnthropicOAuthProfileId(
 ): Promise<RemoteClawConfig> {
   // OAuth profile repair removed — only API keys are supported now.
   return _cfg;
+}
+
+function pruneAuthProfiles(
+  cfg: RemoteClawConfig,
+  profileIds: Set<string>,
+): { next: RemoteClawConfig; changed: boolean } {
+  const profiles = cfg.auth?.profiles;
+  const nextProfiles = profiles ? { ...profiles } : undefined;
+  let changed = false;
+
+  if (nextProfiles) {
+    for (const id of profileIds) {
+      if (id in nextProfiles) {
+        delete nextProfiles[id];
+        changed = true;
+      }
+    }
+  }
+
+  if (!changed) {
+    return { next: cfg, changed: false };
+  }
+
+  const nextAuth = nextProfiles
+    ? {
+        ...cfg.auth,
+        profiles: Object.keys(nextProfiles).length > 0 ? nextProfiles : undefined,
+      }
+    : undefined;
+
+  return {
+    next: {
+      ...cfg,
+      auth: nextAuth,
+    },
+    changed: true,
+  };
+}
+
+export async function maybeRemoveDeprecatedCliAuthProfiles(
+  cfg: RemoteClawConfig,
+  prompter: DoctorPrompter,
+): Promise<RemoteClawConfig> {
+  const store = ensureAuthProfileStore();
+  const deprecated = new Set<string>();
+  if (store.profiles[CLAUDE_CLI_PROFILE_ID] || cfg.auth?.profiles?.[CLAUDE_CLI_PROFILE_ID]) {
+    deprecated.add(CLAUDE_CLI_PROFILE_ID);
+  }
+  if (store.profiles[CODEX_CLI_PROFILE_ID] || cfg.auth?.profiles?.[CODEX_CLI_PROFILE_ID]) {
+    deprecated.add(CODEX_CLI_PROFILE_ID);
+  }
+
+  if (deprecated.size === 0) {
+    return cfg;
+  }
+
+  const lines = ["Deprecated external CLI auth profiles detected (no longer supported):"];
+  if (deprecated.has(CLAUDE_CLI_PROFILE_ID)) {
+    lines.push(
+      `- ${CLAUDE_CLI_PROFILE_ID} (Anthropic): use ${formatCliCommand("remoteclaw configure")}`,
+    );
+  }
+  if (deprecated.has(CODEX_CLI_PROFILE_ID)) {
+    lines.push(
+      `- ${CODEX_CLI_PROFILE_ID} (OpenAI Codex): use ${formatCliCommand("remoteclaw configure")}`,
+    );
+  }
+  note(lines.join("\n"), "Auth profiles");
+
+  const shouldRemove = await prompter.confirmRepair({
+    message: "Remove deprecated CLI auth profiles now?",
+    initialValue: true,
+  });
+  if (!shouldRemove) {
+    return cfg;
+  }
+
+  await updateAuthProfileStoreWithLock({
+    updater: (nextStore) => {
+      let mutated = false;
+      for (const id of deprecated) {
+        if (nextStore.profiles[id]) {
+          delete nextStore.profiles[id];
+          mutated = true;
+        }
+      }
+      return mutated;
+    },
+  });
+
+  const pruned = pruneAuthProfiles(cfg, deprecated);
+  if (pruned.changed) {
+    note(
+      Array.from(deprecated.values())
+        .map((id) => `- removed ${id} from config`)
+        .join("\n"),
+      "Doctor changes",
+    );
+  }
+  return pruned.next;
 }
 
 type AuthIssue = {
@@ -34,7 +136,13 @@ export function resolveUnusableProfileHint(params: {
   return "Wait for cooldown or switch provider.";
 }
 
-function formatAuthIssueHint(_issue: AuthIssue): string {
+function formatAuthIssueHint(issue: AuthIssue): string | null {
+  if (issue.provider === "anthropic" && issue.profileId === CLAUDE_CLI_PROFILE_ID) {
+    return `Deprecated profile. Use ${formatCliCommand("remoteclaw configure")}.`;
+  }
+  if (issue.provider === "openai-codex" && issue.profileId === CODEX_CLI_PROFILE_ID) {
+    return `Deprecated profile. Use ${formatCliCommand("remoteclaw configure")}.`;
+  }
   return `Re-auth via \`${formatCliCommand("remoteclaw configure")}\` or \`${formatCliCommand("remoteclaw onboard")}\`.`;
 }
 
@@ -73,13 +181,4 @@ export async function noteAuthProfileHealth(params: {
       .join("\n"),
     "Model auth",
   );
-}
-
-// Gutted in RemoteClaw fork (Middleware Boundary Principle) - upstream function stub
-export async function maybeRemoveDeprecatedCliAuthProfiles(
-  cfg: RemoteClawConfig,
-  ..._args: unknown[]
-): Promise<RemoteClawConfig> {
-  // No-op in RemoteClaw fork
-  return cfg;
 }

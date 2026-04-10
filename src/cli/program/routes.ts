@@ -1,24 +1,15 @@
-import { isValueToken } from "../../infra/cli-root-options.js";
 import { defaultRuntime } from "../../runtime.js";
-import {
-  getCommandPositionalsWithRootOptions,
-  getFlagValue,
-  getPositiveIntFlagValue,
-  getVerboseFlag,
-  hasFlag,
-} from "../argv.js";
+import { getFlagValue, getPositiveIntFlagValue, getVerboseFlag, hasFlag } from "../argv.js";
 
 export type RouteSpec = {
   match: (path: string[]) => boolean;
-  loadPlugins?: boolean | ((argv: string[]) => boolean);
+  loadPlugins?: boolean;
   run: (argv: string[]) => Promise<boolean>;
 };
 
 const routeHealth: RouteSpec = {
   match: (path) => path[0] === "health",
-  // `health --json` only relays gateway RPC output and does not need local plugin metadata.
-  // Keep plugin preload for text output where channel diagnostics/logSelfId are rendered.
-  loadPlugins: (argv) => !hasFlag(argv, "--json"),
+  loadPlugins: true,
   run: async (argv) => {
     const json = hasFlag(argv, "--json");
     const verbose = getVerboseFlag(argv, { includeDebug: true });
@@ -34,8 +25,6 @@ const routeHealth: RouteSpec = {
 
 const routeStatus: RouteSpec = {
   match: (path) => path[0] === "status",
-  // Status runs security audit with channel checks in both text and JSON output,
-  // so plugin registry must be ready for consistent findings.
   loadPlugins: true,
   run: async (argv) => {
     const json = hasFlag(argv, "--json");
@@ -89,62 +78,26 @@ const routeAgentsList: RouteSpec = {
   },
 };
 
-const routeMemoryStatus: RouteSpec = {
-  match: (path) => path[0] === "memory" && path[1] === "status",
-  run: async (argv) => {
-    const agent = getFlagValue(argv, "--agent");
-    if (agent === null) {
-      return false;
-    }
-    const json = hasFlag(argv, "--json");
-    const deep = hasFlag(argv, "--deep");
-    const index = hasFlag(argv, "--index");
-    const verbose = hasFlag(argv, "--verbose");
-    const { runMemoryStatus } = await import("../memory-cli.js");
-    await runMemoryStatus({ agent, json, deep, index, verbose });
-    return true;
-  },
-};
-
-function getFlagValues(argv: string[], name: string): string[] | null {
-  const values: string[] = [];
+function getCommandPositionals(argv: string[]): string[] {
+  const out: string[] = [];
   const args = argv.slice(2);
-  for (let i = 0; i < args.length; i += 1) {
-    const arg = args[i];
+  for (const arg of args) {
     if (!arg || arg === "--") {
       break;
     }
-    if (arg === name) {
-      const next = args[i + 1];
-      if (!isValueToken(next)) {
-        return null;
-      }
-      values.push(next);
-      i += 1;
+    if (arg.startsWith("-")) {
       continue;
     }
-    if (arg.startsWith(`${name}=`)) {
-      const value = arg.slice(name.length + 1).trim();
-      if (!value) {
-        return null;
-      }
-      values.push(value);
-    }
+    out.push(arg);
   }
-  return values;
+  return out;
 }
 
 const routeConfigGet: RouteSpec = {
   match: (path) => path[0] === "config" && path[1] === "get",
   run: async (argv) => {
-    const positionals = getCommandPositionalsWithRootOptions(argv, {
-      commandPath: ["config", "get"],
-      booleanFlags: ["--json"],
-    });
-    if (!positionals || positionals.length !== 1) {
-      return false;
-    }
-    const pathArg = positionals[0];
+    const positionals = getCommandPositionals(argv);
+    const pathArg = positionals[2];
     if (!pathArg) {
       return false;
     }
@@ -158,13 +111,8 @@ const routeConfigGet: RouteSpec = {
 const routeConfigUnset: RouteSpec = {
   match: (path) => path[0] === "config" && path[1] === "unset",
   run: async (argv) => {
-    const positionals = getCommandPositionalsWithRootOptions(argv, {
-      commandPath: ["config", "unset"],
-    });
-    if (!positionals || positionals.length !== 1) {
-      return false;
-    }
-    const pathArg = positionals[0];
+    const positionals = getCommandPositionals(argv);
+    const pathArg = positionals[2];
     if (!pathArg) {
       return false;
     }
@@ -174,90 +122,13 @@ const routeConfigUnset: RouteSpec = {
   },
 };
 
-const routeModelsList: RouteSpec = {
-  match: (path) => path[0] === "models" && path[1] === "list",
-  run: async (argv) => {
-    const provider = getFlagValue(argv, "--provider");
-    if (provider === null) {
-      return false;
-    }
-    const all = hasFlag(argv, "--all");
-    const local = hasFlag(argv, "--local");
-    const json = hasFlag(argv, "--json");
-    const plain = hasFlag(argv, "--plain");
-    const { modelsListCommand } = await import("../../commands/models.js");
-    await modelsListCommand({ all, local, provider, json, plain }, defaultRuntime);
-    return true;
-  },
-};
-
-const routeModelsStatus: RouteSpec = {
-  match: (path) => path[0] === "models" && path[1] === "status",
-  run: async (argv) => {
-    const probeProvider = getFlagValue(argv, "--probe-provider");
-    if (probeProvider === null) {
-      return false;
-    }
-    const probeTimeout = getFlagValue(argv, "--probe-timeout");
-    if (probeTimeout === null) {
-      return false;
-    }
-    const probeConcurrency = getFlagValue(argv, "--probe-concurrency");
-    if (probeConcurrency === null) {
-      return false;
-    }
-    const probeMaxTokens = getFlagValue(argv, "--probe-max-tokens");
-    if (probeMaxTokens === null) {
-      return false;
-    }
-    const agent = getFlagValue(argv, "--agent");
-    if (agent === null) {
-      return false;
-    }
-    const probeProfileValues = getFlagValues(argv, "--probe-profile");
-    if (probeProfileValues === null) {
-      return false;
-    }
-    const probeProfile =
-      probeProfileValues.length === 0
-        ? undefined
-        : probeProfileValues.length === 1
-          ? probeProfileValues[0]
-          : probeProfileValues;
-    const json = hasFlag(argv, "--json");
-    const plain = hasFlag(argv, "--plain");
-    const check = hasFlag(argv, "--check");
-    const probe = hasFlag(argv, "--probe");
-    const { modelsStatusCommand } = await import("../../commands/models.js");
-    await modelsStatusCommand(
-      {
-        json,
-        plain,
-        check,
-        probe,
-        probeProvider,
-        probeProfile,
-        probeTimeout,
-        probeConcurrency,
-        probeMaxTokens,
-        agent,
-      },
-      defaultRuntime,
-    );
-    return true;
-  },
-};
-
 const routes: RouteSpec[] = [
   routeHealth,
   routeStatus,
   routeSessions,
   routeAgentsList,
-  routeMemoryStatus,
   routeConfigGet,
   routeConfigUnset,
-  routeModelsList,
-  routeModelsStatus,
 ];
 
 export function findRoutedCommand(path: string[]): RouteSpec | null {

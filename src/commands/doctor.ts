@@ -1,13 +1,6 @@
 import fs from "node:fs";
 import { intro as clackIntro, outro as clackOutro } from "@clack/prompts";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
-import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
-import { loadModelCatalog } from "../agents/model-catalog.js";
-import {
-  getModelRefStatus,
-  resolveConfiguredModelRef,
-  resolveHooksGmailModel,
-} from "../agents/model-selection.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { CONFIG_PATH, readConfigFileSnapshot, writeConfigFile } from "../config/config.js";
@@ -29,21 +22,18 @@ import {
 import { doctorShellCompletion } from "./doctor-completion.js";
 import { loadAndMaybeMigrateDoctorConfig } from "./doctor-config-flow.js";
 import { maybeRepairGatewayDaemon } from "./doctor-gateway-daemon-flow.js";
-import { checkGatewayHealth, probeGatewayMemoryStatus } from "./doctor-gateway-health.js";
+import { checkGatewayHealth } from "./doctor-gateway-health.js";
 import {
   maybeRepairGatewayServiceConfig,
   maybeScanExtraGatewayServices,
 } from "./doctor-gateway-services.js";
 import { noteSourceInstallIssues } from "./doctor-install.js";
-import { noteMemorySearchHealth } from "./doctor-memory-search.js";
 import {
   noteMacLaunchAgentOverrides,
   noteMacLaunchctlGatewayEnvOverrides,
   noteDeprecatedLegacyEnvVars,
-  noteStartupOptimizationHints,
 } from "./doctor-platform-notes.js";
 import { createDoctorPrompter, type DoctorOptions } from "./doctor-prompter.js";
-import { maybeRepairSandboxImages, noteSandboxScopeWarnings } from "./doctor-sandbox.js";
 import { noteSecurityWarnings } from "./doctor-security.js";
 import { noteSessionLockHealth } from "./doctor-session-locks.js";
 import { noteStateIntegrity, noteWorkspaceBackupTip } from "./doctor-state-integrity.js";
@@ -53,9 +43,8 @@ import {
 } from "./doctor-state-migrations.js";
 import { maybeRepairUiProtocolFreshness } from "./doctor-ui.js";
 import { maybeOfferUpdateBeforeDoctor } from "./doctor-update.js";
+import { noteVoiceChannelHealth } from "./doctor-voice.js";
 import { noteWorkspaceStatus } from "./doctor-workspace-status.js";
-import { MEMORY_SYSTEM_PROMPT, shouldSuggestMemorySystem } from "./doctor-workspace.js";
-import { noteOpenAIOAuthTlsPrerequisites } from "./oauth-tls-preflight.js";
 import { applyWizardMetadata, printWizardHeader, randomToken } from "./onboard-helpers.js";
 import { ensureSystemdUserLingerInteractive } from "./systemd-linger.js";
 
@@ -94,7 +83,6 @@ export async function doctorCommand(
   await maybeRepairUiProtocolFreshness(runtime, prompter);
   noteSourceInstallIssues(root);
   noteDeprecatedLegacyEnvVars();
-  noteStartupOptimizationHints();
 
   const configResult = await loadAndMaybeMigrateDoctorConfig({
     options,
@@ -124,6 +112,7 @@ export async function doctorCommand(
     prompter,
     allowKeychainPrompt: options.nonInteractive !== true && Boolean(process.stdin.isTTY),
   });
+  await noteVoiceChannelHealth(cfg);
   const gatewayDetails = buildGatewayConnectionDetails({ config: cfg });
   if (gatewayDetails.remoteFallbackNote) {
     note(gatewayDetails.remoteFallbackNote, "Gateway");
@@ -192,57 +181,12 @@ export async function doctorCommand(
   await noteStateIntegrity(cfg, prompter, configResult.path ?? CONFIG_PATH);
   await noteSessionLockHealth({ shouldRepair: prompter.shouldRepair });
 
-  cfg = await maybeRepairSandboxImages(cfg, runtime, prompter);
-  noteSandboxScopeWarnings(cfg);
-
   await maybeScanExtraGatewayServices(options, runtime, prompter);
   await maybeRepairGatewayServiceConfig(cfg, resolveMode(cfg), runtime, prompter);
   await noteMacLaunchAgentOverrides();
   await noteMacLaunchctlGatewayEnvOverrides(cfg);
 
   await noteSecurityWarnings(cfg);
-  await noteOpenAIOAuthTlsPrerequisites({
-    cfg,
-    deep: options.deep === true,
-  });
-
-  if (cfg.hooks?.gmail?.model?.trim()) {
-    const hooksModelRef = resolveHooksGmailModel({
-      cfg,
-      defaultProvider: DEFAULT_PROVIDER,
-    });
-    if (!hooksModelRef) {
-      note(`- hooks.gmail.model "${cfg.hooks.gmail.model}" could not be resolved`, "Hooks");
-    } else {
-      const { provider: defaultProvider, model: defaultModel } = resolveConfiguredModelRef({
-        cfg,
-        defaultProvider: DEFAULT_PROVIDER,
-        defaultModel: DEFAULT_MODEL,
-      });
-      const catalog = loadModelCatalog({ config: cfg });
-      const status = getModelRefStatus({
-        cfg,
-        catalog,
-        ref: hooksModelRef,
-        defaultProvider,
-        defaultModel,
-      });
-      const warnings: string[] = [];
-      if (!status.allowed) {
-        warnings.push(
-          `- hooks.gmail.model "${String(status.key)}" not in agents.defaults.models allowlist (will use primary instead)`,
-        );
-      }
-      if (!status.inCatalog) {
-        warnings.push(
-          `- hooks.gmail.model "${String(status.key)}" not in the model catalog (may fail at runtime)`,
-        );
-      }
-      if (warnings.length > 0) {
-        note(warnings.join("\n"), "Hooks");
-      }
-    }
-  }
 
   if (
     options.nonInteractive !== true &&
@@ -282,13 +226,6 @@ export async function doctorCommand(
     cfg,
     timeoutMs: options.nonInteractive === true ? 3000 : 10_000,
   });
-  const gatewayMemoryProbe = healthOk
-    ? await probeGatewayMemoryStatus({
-        cfg,
-        timeoutMs: options.nonInteractive === true ? 3000 : 10_000,
-      })
-    : { checked: false, ready: false };
-  await noteMemorySearchHealth(cfg, { gatewayMemoryProbe });
   await maybeRepairGatewayDaemon({
     cfg,
     runtime,
@@ -315,9 +252,6 @@ export async function doctorCommand(
   if (options.workspaceSuggestions !== false) {
     const workspaceDir = resolveAgentWorkspaceDir(cfg, resolveDefaultAgentId(cfg));
     noteWorkspaceBackupTip(workspaceDir);
-    if (shouldSuggestMemorySystem(workspaceDir)) {
-      note(MEMORY_SYSTEM_PROMPT, "Workspace");
-    }
   }
 
   const finalSnapshot = await readConfigFileSnapshot();

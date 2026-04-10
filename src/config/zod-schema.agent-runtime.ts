@@ -92,6 +92,14 @@ export const HeartbeatSchema = z
   })
   .optional();
 
+export const BootSchema = z
+  .object({
+    prompt: z.string().optional(),
+    file: z.string().optional(),
+  })
+  .strict()
+  .optional();
+
 export const SandboxDockerSchema = z
   .object({
     image: z.string().optional(),
@@ -689,6 +697,7 @@ export const AgentEntrySchema = z
     memorySearch: MemorySearchSchema,
     humanDelay: HumanDelaySchema.optional(),
     heartbeat: HeartbeatSchema,
+    boot: BootSchema,
     identity: IdentitySchema,
     groupChat: GroupChatSchema,
     subagents: z
@@ -709,6 +718,7 @@ export const AgentEntrySchema = z
       })
       .strict()
       .optional(),
+    editableFiles: z.array(z.string()).optional(),
     sandbox: AgentSandboxSchema,
     tools: AgentToolsSchema,
     auth: z.union([z.literal(false), z.string(), z.array(z.string())]).optional(),

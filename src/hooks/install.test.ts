@@ -92,13 +92,13 @@ function writeHookPackManifest(params: {
   hooks: string[];
   dependencies?: Record<string, string>;
 }) {
-  // MANIFEST_KEY is "openclaw" (PROJECT_NAME from compat/legacy-names.ts)
+  // MANIFEST_KEY is "remoteclaw" (PROJECT_NAME from compat/legacy-names.ts)
   fs.writeFileSync(
     path.join(params.pkgDir, "package.json"),
     JSON.stringify({
       name: "@remoteclaw/test-hooks",
       version: "0.0.1",
-      openclaw: { hooks: params.hooks },
+      remoteclaw: { hooks: params.hooks },
       ...(params.dependencies ? { dependencies: params.dependencies } : {}),
     }),
     "utf-8",

@@ -2,29 +2,17 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../agents/pi-embedded.js";
-const abortEmbeddedPiRun = vi.fn();
-const compactEmbeddedPiSession = vi.fn();
 import {
   addSubagentRunForTests,
   listSubagentRunsForRequester,
   resetSubagentRegistryForTests,
 } from "../../agents/subagent-registry.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { updateSessionStore, type SessionEntry } from "../../config/sessions.js";
+import { updateSessionStore } from "../../config/sessions.js";
 import * as internalHooks from "../../hooks/internal-hooks.js";
 import { clearPluginCommands, registerPluginCommand } from "../../plugins/commands.js";
 import { typedCases } from "../../test-utils/typed-cases.js";
 import type { MsgContext } from "../templating.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./bash-command.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const resetBashChatCommandForTests = (..._args: unknown[]) => undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./commands-compact.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const handleCompactCommand = (..._args: unknown[]) => undefined as any;
 import { buildCommandsPaginationKeyboard } from "./commands-info.js";
 import { extractMessageText } from "./commands-subagents.js";
 import { buildCommandTestParams } from "./commands.test-harness.js";
@@ -83,29 +71,8 @@ vi.mock("../../agents/model-catalog.js", () => ({
   ]),
 }));
 
-vi.mock("../../agents/pi-embedded.js", () => {
-  const resolveEmbeddedSessionLane = (key: string) => {
-    const cleaned = key.trim() || "main";
-    return cleaned.startsWith("session:") ? cleaned : `session:${cleaned}`;
-  };
-  return {
-    abortEmbeddedPiRun: vi.fn(),
-    compactEmbeddedPiSession: vi.fn(),
-    isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
-    isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
-    queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-    resolveEmbeddedSessionLane,
-    runEmbeddedPiAgent: vi.fn(),
-    waitForEmbeddedPiRunEnd: vi.fn().mockResolvedValue(undefined),
-  };
-});
-
 vi.mock("../../infra/system-events.js", () => ({
   enqueueSystemEvent: vi.fn(),
-}));
-
-vi.mock("./session-updates.js", () => ({
-  incrementCompactionCount: vi.fn(),
 }));
 
 const callGatewayMock = vi.fn();
@@ -115,20 +82,6 @@ vi.mock("../../gateway/call.js", () => ({
 
 import type { HandleCommandsParams } from "./commands-types.js";
 import { buildCommandContext, handleCommands } from "./commands.js";
-
-// Avoid expensive workspace scans during /context tests.
-vi.mock("./commands-context-report.js", () => ({
-  buildContextReply: async (params: { command: { commandBodyNormalized: string } }) => {
-    const normalized = params.command.commandBodyNormalized;
-    if (normalized === "/context list") {
-      return { text: "Injected workspace files:\n- AGENTS.md" };
-    }
-    if (normalized === "/context detail") {
-      return { text: "Context breakdown (detailed)\nTop tools (schema size):" };
-    }
-    return { text: "/context\n- /context list\nInline shortcut" };
-  },
-}));
 
 let testWorkspaceDir = os.tmpdir();
 
@@ -149,10 +102,8 @@ function buildParams(
   return buildCommandTestParams(commandBody, cfg, ctxOverrides, { workspaceDir: testWorkspaceDir });
 }
 
-// Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-describe.skip("handleCommands gating", () => {
-  it("blocks gated commands when disabled or not elevated-allowlisted", async () => {
+describe("handleCommands gating", () => {
+  it("blocks gated commands when disabled or not allowlisted", async () => {
     const cases = typedCases<{
       name: string;
       commandBody: string;
@@ -160,33 +111,6 @@ describe.skip("handleCommands gating", () => {
       applyParams?: (params: ReturnType<typeof buildParams>) => void;
       expectedText: string;
     }>([
-      {
-        name: "disabled bash command",
-        commandBody: "/bash echo hi",
-        makeCfg: () =>
-          ({
-            commands: { bash: false, text: true },
-            whatsapp: { allowFrom: ["*"] },
-          }) as RemoteClawConfig,
-        expectedText: "bash is disabled",
-      },
-      {
-        name: "missing elevated allowlist",
-        commandBody: "/bash echo hi",
-        makeCfg: () =>
-          ({
-            commands: { bash: true, text: true },
-            whatsapp: { allowFrom: ["*"] },
-          }) as RemoteClawConfig,
-        applyParams: (params: ReturnType<typeof buildParams>) => {
-          params.elevated = {
-            enabled: true,
-            allowed: false,
-            failures: [{ gate: "allowFrom", key: "tools.elevated.allowFrom.whatsapp" }],
-          };
-        },
-        expectedText: "elevated is not available",
-      },
       {
         name: "disabled config command",
         commandBody: "/config show",
@@ -206,22 +130,6 @@ describe.skip("handleCommands gating", () => {
             channels: { whatsapp: { allowFrom: ["*"] } },
           }) as RemoteClawConfig,
         expectedText: "/debug is disabled",
-      },
-      {
-        name: "inherited bash flag does not enable command",
-        commandBody: "/bash echo hi",
-        makeCfg: () => {
-          const inheritedCommands = Object.create({
-            bash: true,
-            config: true,
-            debug: true,
-          }) as Record<string, unknown>;
-          return {
-            commands: inheritedCommands as never,
-            channels: { whatsapp: { allowFrom: ["*"] } },
-          } as RemoteClawConfig;
-        },
-        expectedText: "bash is disabled",
       },
       {
         name: "inherited config flag does not enable command",
@@ -258,234 +166,12 @@ describe.skip("handleCommands gating", () => {
     ]);
 
     for (const testCase of cases) {
-      resetBashChatCommandForTests();
       const params = buildParams(testCase.commandBody, testCase.makeCfg());
       testCase.applyParams?.(params);
       const result = await handleCommands(params);
       expect(result.shouldContinue, testCase.name).toBe(false);
       expect(result.reply?.text, testCase.name).toContain(testCase.expectedText);
     }
-  });
-});
-
-// Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-describe.skip("/approve command", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("rejects invalid usage", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-    } as RemoteClawConfig;
-    const params = buildParams("/approve", cfg);
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Usage: /approve");
-  });
-
-  it("submits approval", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-    } as RemoteClawConfig;
-    const params = buildParams("/approve abc allow-once", cfg, { SenderId: "123" });
-
-    callGatewayMock.mockResolvedValue({ ok: true });
-
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Exec approval allow-once submitted");
-    expect(callGatewayMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        method: "exec.approval.resolve",
-        params: { id: "abc", decision: "allow-once" },
-      }),
-    );
-  });
-
-  it("rejects gateway clients without approvals scope", async () => {
-    const cfg = {
-      commands: { text: true },
-    } as RemoteClawConfig;
-    const params = buildParams("/approve abc allow-once", cfg, {
-      Provider: "webchat",
-      Surface: "webchat",
-      GatewayClientScopes: ["operator.write"],
-    });
-
-    callGatewayMock.mockResolvedValue({ ok: true });
-
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("requires operator.approvals");
-    expect(callGatewayMock).not.toHaveBeenCalled();
-  });
-
-  it("allows gateway clients with approvals or admin scopes", async () => {
-    const cfg = {
-      commands: { text: true },
-    } as RemoteClawConfig;
-    const scopeCases = [["operator.approvals"], ["operator.admin"]];
-    for (const scopes of scopeCases) {
-      callGatewayMock.mockResolvedValue({ ok: true });
-      const params = buildParams("/approve abc allow-once", cfg, {
-        Provider: "webchat",
-        Surface: "webchat",
-        GatewayClientScopes: scopes,
-      });
-
-      const result = await handleCommands(params);
-      expect(result.shouldContinue).toBe(false);
-      expect(result.reply?.text).toContain("Exec approval allow-once submitted");
-      expect(callGatewayMock).toHaveBeenLastCalledWith(
-        expect.objectContaining({
-          method: "exec.approval.resolve",
-          params: { id: "abc", decision: "allow-once" },
-        }),
-      );
-    }
-  });
-});
-
-// Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-describe.skip("/compact command", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("returns null when command is not /compact", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-    } as RemoteClawConfig;
-    const params = buildParams("/status", cfg);
-
-    const result = await handleCompactCommand(
-      {
-        ...params,
-      },
-      true,
-    );
-
-    expect(result).toBeNull();
-    expect(vi.mocked(compactEmbeddedPiSession)).not.toHaveBeenCalled();
-  });
-
-  it("rejects unauthorized /compact commands", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-    } as RemoteClawConfig;
-    const params = buildParams("/compact", cfg);
-
-    const result = await handleCompactCommand(
-      {
-        ...params,
-        command: {
-          ...params.command,
-          isAuthorizedSender: false,
-          senderId: "unauthorized",
-        },
-      },
-      true,
-    );
-
-    expect(result).toEqual({ shouldContinue: false });
-    expect(vi.mocked(compactEmbeddedPiSession)).not.toHaveBeenCalled();
-  });
-
-  it("routes manual compaction with explicit trigger and context metadata", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-      session: { store: "/tmp/remoteclaw-session-store.json" },
-    } as RemoteClawConfig;
-    const params = buildParams("/compact: focus on decisions", cfg, {
-      From: "+15550001",
-      To: "+15550002",
-    });
-    const agentDir = "/tmp/remoteclaw-agent-compact";
-    vi.mocked(compactEmbeddedPiSession).mockResolvedValueOnce({
-      ok: true,
-      compacted: false,
-    });
-
-    const result = await handleCompactCommand(
-      {
-        ...params,
-        agentDir,
-        sessionEntry: {
-          sessionId: "session-1",
-          updatedAt: Date.now(),
-          groupId: "group-1",
-          groupChannel: "#general",
-          space: "workspace-1",
-          spawnedBy: "agent:main:parent",
-          totalTokens: 12345,
-        },
-      },
-      true,
-    );
-
-    expect(result?.shouldContinue).toBe(false);
-    expect(vi.mocked(compactEmbeddedPiSession)).toHaveBeenCalledOnce();
-    expect(vi.mocked(compactEmbeddedPiSession)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sessionId: "session-1",
-        sessionKey: "agent:main:main",
-        trigger: "manual",
-        customInstructions: "focus on decisions",
-        messageChannel: "whatsapp",
-        groupId: "group-1",
-        groupChannel: "#general",
-        groupSpace: "workspace-1",
-        spawnedBy: "agent:main:parent",
-        agentDir,
-      }),
-    );
-  });
-});
-
-// Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-describe.skip("abort trigger command", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("rejects unauthorized natural-language abort triggers", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-    } as RemoteClawConfig;
-    const params = buildParams("stop", cfg);
-    const sessionEntry: SessionEntry = {
-      sessionId: "session-1",
-      updatedAt: Date.now(),
-      abortedLastRun: false,
-    };
-    const sessionStore: Record<string, SessionEntry> = {
-      [params.sessionKey]: sessionEntry,
-    };
-
-    const result = await handleCommands({
-      ...params,
-      sessionEntry,
-      sessionStore,
-      command: {
-        ...params.command,
-        isAuthorizedSender: false,
-        senderId: "unauthorized",
-      },
-    });
-
-    expect(result).toEqual({ shouldContinue: false });
-    expect(sessionStore[params.sessionKey]?.abortedLastRun).toBe(false);
-    expect(vi.mocked(abortEmbeddedPiRun)).not.toHaveBeenCalled();
   });
 });
 
@@ -563,9 +249,7 @@ describe("extractMessageText", () => {
       },
       {
         message: { role: "assistant", content: "Here [Tool Call: foo (ID: 1)] ok" },
-        // Gutted in RemoteClaw fork: stripDowngradedToolCallText is a no-op,
-        // so tool call markers are preserved in assistant text.
-        expectedText: "Here [Tool Call: foo (ID: 1)] ok",
+        expectedText: "Here ok",
       },
     ] as const;
 
@@ -586,24 +270,6 @@ describe("handleCommands /config configWrites gating", () => {
     const result = await handleCommands(params);
     expect(result.shouldContinue).toBe(false);
     expect(result.reply?.text).toContain("Config writes are disabled");
-  });
-});
-
-// Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-describe.skip("handleCommands bash alias", () => {
-  it("routes !poll and !stop through the /bash handler", async () => {
-    const cfg = {
-      commands: { bash: true, text: true },
-      whatsapp: { allowFrom: ["*"] },
-    } as RemoteClawConfig;
-    for (const aliasCommand of ["!poll", "!stop"]) {
-      resetBashChatCommandForTests();
-      const params = buildParams(aliasCommand, cfg);
-      const result = await handleCommands(params);
-      expect(result.shouldContinue).toBe(false);
-      expect(result.reply?.text).toContain("No active bash job");
-    }
   });
 });
 
@@ -635,14 +301,10 @@ function buildPolicyParams(
     cfg,
     command,
     directives: parseInlineDirectives(commandBody),
-    elevated: { enabled: true, allowed: true, failures: [] },
     sessionKey: "agent:main:main",
     workspaceDir: "/tmp",
     defaultGroupActivation: () => "mention",
     resolvedVerboseLevel: "off",
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
-    resolvedReasoningLevel: "off",
-    resolveDefaultThinkingLevel: async () => undefined,
     provider: "telegram",
     model: "test-model",
     contextTokens: 0,
@@ -787,130 +449,6 @@ describe("handleCommands /allowlist", () => {
   });
 });
 
-// Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-describe.skip("/models command", () => {
-  const cfg = {
-    commands: { text: true },
-    agents: { defaults: { model: { primary: "anthropic/claude-opus-4-5" } } },
-  } as unknown as RemoteClawConfig;
-
-  it.each(["discord", "whatsapp"])("lists providers on %s (text)", async (surface) => {
-    const params = buildPolicyParams("/models", cfg, { Provider: surface, Surface: surface });
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Providers:");
-    expect(result.reply?.text).toContain("anthropic");
-    expect(result.reply?.text).toContain("Use: /models <provider>");
-  });
-
-  it("rejects unauthorized /models commands", async () => {
-    const params = buildPolicyParams("/models", cfg, { Provider: "discord", Surface: "discord" });
-    const result = await handleCommands({
-      ...params,
-      command: {
-        ...params.command,
-        isAuthorizedSender: false,
-        senderId: "unauthorized",
-      },
-    });
-    expect(result).toEqual({ shouldContinue: false });
-  });
-
-  it("lists providers on telegram (buttons)", async () => {
-    const params = buildPolicyParams("/models", cfg, { Provider: "telegram", Surface: "telegram" });
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toBe("Select a provider:");
-    const buttons = (result.reply?.channelData as { telegram?: { buttons?: unknown[][] } })
-      ?.telegram?.buttons;
-    expect(buttons).toBeDefined();
-    expect(buttons?.length).toBeGreaterThan(0);
-  });
-
-  it("handles provider model pagination, all mode, and unknown providers", async () => {
-    const cases = [
-      {
-        name: "lists provider models with pagination hints",
-        command: "/models anthropic",
-        includes: [
-          "Models (anthropic",
-          "page 1/",
-          "anthropic/claude-opus-4-5",
-          "Switch: /model <provider/model>",
-          "All: /models anthropic all",
-        ],
-        excludes: [],
-      },
-      {
-        name: "ignores page argument when all flag is present",
-        command: "/models anthropic 3 all",
-        includes: ["Models (anthropic", "page 1/1", "anthropic/claude-opus-4-5"],
-        excludes: ["Page out of range"],
-      },
-      {
-        name: "errors on out-of-range pages",
-        command: "/models anthropic 4",
-        includes: ["Page out of range", "valid: 1-"],
-        excludes: [],
-      },
-      {
-        name: "handles unknown providers",
-        command: "/models not-a-provider",
-        includes: ["Unknown provider", "Available providers"],
-        excludes: [],
-      },
-    ] as const;
-
-    for (const testCase of cases) {
-      // Use discord surface for deterministic text-based output assertions.
-      const result = await handleCommands(
-        buildPolicyParams(testCase.command, cfg, {
-          Provider: "discord",
-          Surface: "discord",
-        }),
-      );
-      expect(result.shouldContinue, testCase.name).toBe(false);
-      for (const expected of testCase.includes) {
-        expect(result.reply?.text, `${testCase.name}: ${expected}`).toContain(expected);
-      }
-      for (const blocked of testCase.excludes ?? []) {
-        expect(result.reply?.text, `${testCase.name}: !${blocked}`).not.toContain(blocked);
-      }
-    }
-  });
-
-  it("lists configured models outside the curated catalog", async () => {
-    const customCfg = {
-      commands: { text: true },
-      agents: {
-        defaults: {
-          model: {
-            primary: "localai/ultra-chat",
-            fallbacks: ["anthropic/claude-opus-4-5"],
-          },
-          imageModel: "visionpro/studio-v1",
-        },
-      },
-    } as unknown as RemoteClawConfig;
-
-    // Use discord surface for text-based output tests
-    const providerList = await handleCommands(
-      buildPolicyParams("/models", customCfg, { Surface: "discord" }),
-    );
-    expect(providerList.reply?.text).toContain("localai");
-    expect(providerList.reply?.text).toContain("visionpro");
-
-    const result = await handleCommands(
-      buildPolicyParams("/models localai", customCfg, { Surface: "discord" }),
-    );
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Models (localai");
-    expect(result.reply?.text).toContain("localai/ultra-chat");
-    expect(result.reply?.text).not.toContain("Unknown provider");
-  });
-});
-
 describe("handleCommands plugin commands", () => {
   it("dispatches registered plugin commands", async () => {
     clearPluginCommands();
@@ -998,39 +536,6 @@ describe("handleCommands hooks", () => {
       }),
     );
     spy.mockRestore();
-  });
-});
-
-// Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-describe.skip("handleCommands context", () => {
-  it("returns expected details for /context commands", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-    } as RemoteClawConfig;
-    const cases = [
-      {
-        commandBody: "/context",
-        expectedText: ["/context list", "Inline shortcut"],
-      },
-      {
-        commandBody: "/context list",
-        expectedText: ["Injected workspace files:", "AGENTS.md"],
-      },
-      {
-        commandBody: "/context detail",
-        expectedText: ["Context breakdown (detailed)", "Top tools (schema size):"],
-      },
-    ] as const;
-    for (const testCase of cases) {
-      const params = buildParams(testCase.commandBody, cfg);
-      const result = await handleCommands(params);
-      expect(result.shouldContinue).toBe(false);
-      for (const expectedText of testCase.expectedText) {
-        expect(result.reply?.text).toContain(expectedText);
-      }
-    }
   });
 });
 

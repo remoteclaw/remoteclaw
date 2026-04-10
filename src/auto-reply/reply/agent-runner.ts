@@ -64,7 +64,8 @@ import {
   signalTypingIfNeeded,
 } from "./agent-runner-helpers.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const runMemoryFlushIfNeeded = async (..._args: unknown[]) => {};
+// Returns the session entry unchanged (real impl may compact and update it).
+const runMemoryFlushIfNeeded = async (params: Record<string, unknown>) => params.sessionEntry;
 import { buildReplyPayloads } from "./agent-runner-payloads.js";
 import {
   appendUnscheduledReminderNote,

@@ -1,6 +1,11 @@
 import { sanitizeUserFacingText } from "../../agents/agent-helpers.js";
 import { stripHeartbeatToken } from "../heartbeat.js";
-import { HEARTBEAT_TOKEN, isSilentReplyText, SILENT_REPLY_TOKEN } from "../tokens.js";
+import {
+  HEARTBEAT_TOKEN,
+  isSilentReplyText,
+  SILENT_REPLY_TOKEN,
+  stripSilentToken,
+} from "../tokens.js";
 import type { ReplyPayload } from "../types.js";
 import { hasLineDirectives, parseLineDirectives } from "./line-directives.js";
 import {
@@ -42,6 +47,9 @@ export function normalizeReplyPayload(
       return null;
     }
     text = "";
+  } else if (text) {
+    // Strip trailing silent token from mixed content (e.g. "😄 NO_REPLY" → "😄")
+    text = stripSilentToken(text, silentToken);
   }
   if (text && !trimmed) {
     // Keep empty text when media exists so media-only replies still send.

@@ -351,7 +351,7 @@ describe("abort detection", () => {
 
     expect(result.handled).toBe(true);
     expect(getFollowupQueueDepth(sessionKey)).toBe(0);
-    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith("default");
+    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith("session:telegram:123");
   });
 
   it("persists abort cutoff metadata on /stop when command and target session match", async () => {
@@ -444,7 +444,7 @@ describe("abort detection", () => {
     });
 
     expect(result.stoppedSubagents).toBe(1);
-    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith("default");
+    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith("session:telegram:parent");
   });
 
   it("cascade stop kills depth-2 children when stopping depth-1 agent", async () => {
@@ -499,7 +499,7 @@ describe("abort detection", () => {
 
     // Should stop both depth-1 and depth-2 agents (cascade)
     expect(result.stoppedSubagents).toBe(2);
-    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith("default");
+    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith("session:telegram:parent");
   });
 
   it("cascade stop traverses ended depth-1 parents to stop active depth-2 children", async () => {
@@ -557,7 +557,7 @@ describe("abort detection", () => {
 
     // Should skip killing the ended depth-1 run itself, but still kill depth-2.
     expect(result.stoppedSubagents).toBe(1);
-    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith("default");
+    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith("session:telegram:parent");
     expect(subagentRegistryMocks.markSubagentRunTerminated).toHaveBeenCalledWith(
       expect.objectContaining({ runId: "run-2", childSessionKey: depth2Key }),
     );

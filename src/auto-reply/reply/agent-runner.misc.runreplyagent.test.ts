@@ -112,12 +112,28 @@ function makeDeliveryResult(overrides?: {
     cacheReadTokens?: number;
     cacheWriteTokens?: number;
   };
+  model?: string;
   aborted?: boolean;
   errorSubtype?: string;
   stopReason?: string;
   mcp?: Partial<McpSideEffects>;
   error?: string;
 }): AgentDeliveryResult {
+  const mcp = { ...EMPTY_MCP, ...overrides?.mcp };
+  const usage = overrides?.usage;
+  const agentMeta: Record<string, unknown> = {};
+  if (usage) {
+    agentMeta.usage = {
+      input: usage.inputTokens,
+      output: usage.outputTokens,
+      cacheRead: usage.cacheReadTokens,
+      cacheWrite: usage.cacheWriteTokens,
+    };
+  }
+  if (overrides?.model) {
+    agentMeta.model = overrides.model;
+  }
+  const hasMeta = Object.keys(agentMeta).length > 0;
   return {
     payloads: overrides?.payloads ?? [{ text: "final" }],
     run: {
@@ -129,8 +145,14 @@ function makeDeliveryResult(overrides?: {
       errorSubtype: overrides?.errorSubtype,
       stopReason: overrides?.stopReason,
     },
-    mcp: { ...EMPTY_MCP, ...overrides?.mcp },
+    mcp,
     error: overrides?.error,
+    meta: hasMeta ? { agentMeta } : undefined,
+    messagingToolSentTargets: mcp.sentTargets.length > 0 ? mcp.sentTargets : undefined,
+    messagingToolSentTexts: mcp.sentTexts.length > 0 ? mcp.sentTexts : undefined,
+    messagingToolSentMediaUrls: mcp.sentMediaUrls.length > 0 ? mcp.sentMediaUrls : undefined,
+    successfulCronAdds:
+      mcp.cronAdds > 0 ? Array.from({ length: mcp.cronAdds }, () => ({})) : undefined,
   };
 }
 
@@ -814,6 +836,7 @@ describe("runReplyAgent messaging tool suppression", () => {
       makeDeliveryResult({
         payloads: [{ text: "hello world!" }],
         usage: { inputTokens: 10, outputTokens: 5 },
+        model: "claude",
         mcp: {
           sentTexts: ["different message"],
           sentTargets: [{ tool: "slack", provider: "slack", to: "channel:C1" }],
@@ -845,6 +868,7 @@ describe("runReplyAgent messaging tool suppression", () => {
       makeDeliveryResult({
         payloads: [{ text: "hello world!" }],
         usage: { inputTokens: 10, outputTokens: 5 },
+        model: "claude",
         mcp: {
           sentTexts: ["different message"],
           sentTargets: [{ tool: "slack", provider: "slack", to: "channel:C1" }],
@@ -1318,7 +1342,7 @@ describe("runReplyAgent response usage footer", () => {
     const res = await createRun({ responseUsage: "full", sessionKey });
     const payload = Array.isArray(res) ? res[0] : res;
     expect(String(payload?.text ?? "")).toContain("Usage:");
-    expect(String(payload?.text ?? "")).toContain(`· session ${sessionKey}`);
+    expect(String(payload?.text ?? "")).toContain(`· session \`${sessionKey}\``);
   });
 
   it("does not append session key when responseUsage=tokens", async () => {

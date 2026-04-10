@@ -140,12 +140,10 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
       const configPath = resolveStateConfigPath(process.env, stateDir);
       const cfg = await readJsonFile<{
         gateway?: { auth?: { mode?: string; token?: string } };
-        agents?: { defaults?: { workspace?: string } };
-        tools?: { profile?: string };
+        agents?: { list?: Array<{ id?: string; workspace?: string }> };
       }>(configPath);
 
-      expect(cfg?.agents?.defaults?.workspace).toBe(workspace);
-      expect(cfg?.tools?.profile).toBe("messaging");
+      expect(cfg?.agents?.list?.[0]?.workspace).toBe(workspace);
       expect(cfg?.gateway?.auth?.mode).toBe("token");
       expect(cfg?.gateway?.auth?.token).toBe(token);
     });

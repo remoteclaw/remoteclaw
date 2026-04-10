@@ -88,6 +88,10 @@ function rejectWebchatSessionMutation(params: {
   if (!params.client?.connect || !params.isWebchatConnect(params.client.connect)) {
     return false;
   }
+  // Control-UI clients can manage sessions even in webchat mode.
+  if (params.client.connect.client?.id === "remoteclaw-control-ui") {
+    return false;
+  }
   params.respond(
     false,
     undefined,

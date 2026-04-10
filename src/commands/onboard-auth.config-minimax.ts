@@ -1,6 +1,5 @@
 import type { RemoteClawConfig } from "../config/config.js";
 import { toAgentModelListLike } from "../config/model-input.js";
-import type { ModelDefinitionConfig, ModelProviderConfig } from "../config/types.models.js";
 import {
   applyAgentDefaultModelPrimary,
   applyOnboardAuthAgentModelsAndProviders,
@@ -70,17 +69,11 @@ export function applyMinimaxHostedProviderConfig(
     maxTokens: DEFAULT_MINIMAX_MAX_TOKENS,
   });
   const existingProvider = providers.minimax;
-  const existingModels = Array.isArray(
-    ((existingProvider ?? {}) as Record<string, unknown>)?.models,
-  )
-    ? (((existingProvider ?? {}) as Record<string, unknown>).models as Record<string, unknown>[])
-    : [];
-  const hasHostedModel = existingModels.some(
-    (model: Record<string, unknown>) => model.id === MINIMAX_HOSTED_MODEL_ID,
-  );
+  const existingModels = Array.isArray(existingProvider?.models) ? existingProvider.models : [];
+  const hasHostedModel = existingModels.some((model) => model.id === MINIMAX_HOSTED_MODEL_ID);
   const mergedModels = hasHostedModel ? existingModels : [...existingModels, hostedModel];
   providers.minimax = {
-    ...((existingProvider ?? {}) as Record<string, unknown>),
+    ...existingProvider,
     baseUrl: params?.baseUrl?.trim() || DEFAULT_MINIMAX_BASE_URL,
     apiKey: "minimax",
     api: "openai-completions",
@@ -171,14 +164,11 @@ function applyMinimaxApiProviderConfigWithBaseUrl(
   cfg: RemoteClawConfig,
   params: MinimaxApiProviderConfigParams,
 ): RemoteClawConfig {
-  const providers = { ...cfg.models?.providers } as Record<string, ModelProviderConfig>;
+  const providers = { ...cfg.models?.providers };
   const existingProvider = providers[params.providerId];
-  const existingModels = (((existingProvider ?? {}) as Record<string, unknown>)?.models ??
-    []) as Record<string, unknown>[];
+  const existingModels = Array.isArray(existingProvider?.models) ? existingProvider.models : [];
   const apiModel = buildMinimaxApiModelDefinition(params.modelId);
-  const hasApiModel = existingModels.some(
-    (model: Record<string, unknown>) => model.id === params.modelId,
-  );
+  const hasApiModel = existingModels.some((model) => model.id === params.modelId);
   const mergedModels = hasApiModel ? existingModels : [...existingModels, apiModel];
   const { apiKey: existingApiKey, ...existingProviderRest } = existingProvider ?? {
     baseUrl: params.baseUrl,
@@ -192,7 +182,7 @@ function applyMinimaxApiProviderConfigWithBaseUrl(
     api: "anthropic-messages",
     authHeader: true,
     ...(normalizedApiKey?.trim() ? { apiKey: normalizedApiKey } : {}),
-    models: (mergedModels.length > 0 ? mergedModels : [apiModel]) as ModelDefinitionConfig[],
+    models: mergedModels.length > 0 ? mergedModels : [apiModel],
   };
 
   const models = { ...cfg.agents?.defaults?.models };

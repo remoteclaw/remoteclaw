@@ -528,7 +528,6 @@ export function resolveCustomProviderId(
   const providerIdResult = resolveUniqueEndpointId({
     requestedId: requestedProviderId,
     baseUrl,
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     providers,
   });
 
@@ -617,7 +616,6 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
   }
 
   const existingProvider = providers[providerId];
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   const existingModels = Array.isArray(existingProvider?.models) ? existingProvider.models : [];
   // oxlint-disable-next-line typescript/no-explicit-any
   const hasModel = existingModels.some((model: any) => model.id === modelId);
@@ -641,7 +639,6 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
           : model,
       )
     : [...existingModels, nextModel];
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   const { apiKey: existingApiKey, ...existingProviderRest } = existingProvider ?? {};
   const normalizedApiKey =
     normalizeOptionalProviderApiKey(params.apiKey) ??
@@ -822,7 +819,6 @@ export async function promptCustomApiConfig(params: {
       const providerIdResult = resolveUniqueEndpointId({
         requestedId,
         baseUrl,
-        // @ts-expect-error — upstream feature not available in RemoteClaw fork
         providers,
       });
       const modelRef = modelKey(providerIdResult.providerId, modelId);

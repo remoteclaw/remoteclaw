@@ -278,8 +278,7 @@ export async function ensureWorkspaceAndSessions(
   options?: { agentId?: string },
 ) {
   const ws = await ensureAgentWorkspace(workspaceDir);
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
-  runtime.log(`Workspace OK: ${shortenHomePath(ws)}`);
+  runtime.log(`Workspace OK: ${shortenHomePath(ws.dir)}`);
   const sessionsDir = resolveSessionTranscriptsDirForAgent(options?.agentId);
   await fs.mkdir(sessionsDir, { recursive: true });
   runtime.log(`Sessions OK: ${shortenHomePath(sessionsDir)}`);

@@ -46,8 +46,6 @@ import {
   resolveHookDeliver,
 } from "./hooks.js";
 import { sendGatewayAuthFailure, setDefaultSecurityHeaders } from "./http-common.js";
-import { handleOpenAiHttpRequest } from "./openai-http.js";
-import { handleOpenResponsesHttpRequest } from "./openresponses-http.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
 const authorizeCanvasRequest = (..._args: unknown[]) =>
   Promise.resolve({ ok: true, browserOriginPolicy: undefined });
@@ -447,9 +445,6 @@ export function createGatewayHttpServer(opts: {
   controlUiEnabled: boolean;
   controlUiBasePath: string;
   controlUiRoot?: ControlUiRootState;
-  openAiChatCompletionsEnabled: boolean;
-  openResponsesEnabled: boolean;
-  openResponsesConfig?: import("../config/types.gateway.js").GatewayHttpResponsesConfig;
   strictTransportSecurityHeader?: string;
   handleHooksRequest: HooksRequestHandler;
   handlePluginRequest?: PluginHttpRequestHandler;
@@ -465,9 +460,6 @@ export function createGatewayHttpServer(opts: {
     controlUiEnabled,
     controlUiBasePath,
     controlUiRoot,
-    openAiChatCompletionsEnabled,
-    openResponsesEnabled,
-    openResponsesConfig,
     strictTransportSecurityHeader,
     handleHooksRequest,
     handlePluginRequest,
@@ -529,31 +521,6 @@ export function createGatewayHttpServer(opts: {
           run: () => handleSlackHttpRequest(req, res),
         },
       ];
-      if (openResponsesEnabled) {
-        requestStages.push({
-          name: "openresponses",
-          run: () =>
-            handleOpenResponsesHttpRequest(req, res, {
-              auth: resolvedAuth,
-              config: openResponsesConfig,
-              trustedProxies,
-              allowRealIpFallback,
-              rateLimiter,
-            }),
-        });
-      }
-      if (openAiChatCompletionsEnabled) {
-        requestStages.push({
-          name: "openai",
-          run: () =>
-            handleOpenAiHttpRequest(req, res, {
-              auth: resolvedAuth,
-              trustedProxies,
-              allowRealIpFallback,
-              rateLimiter,
-            }),
-        });
-      }
       if (canvasHost) {
         requestStages.push({
           name: "canvas-auth",

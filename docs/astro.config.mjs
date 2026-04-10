@@ -456,7 +456,6 @@ export default defineConfig({
                   items: [
                     { slug: "gateway/protocol" },
                     { slug: "gateway/bridge-protocol" },
-                    { slug: "gateway/openai-http-api" },
                     { slug: "gateway/tools-invoke-http-api" },
                     { slug: "gateway/cli-backends" },
                     { slug: "gateway/local-models" },

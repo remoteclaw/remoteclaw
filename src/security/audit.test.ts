@@ -2382,11 +2382,10 @@ description: test skill
           gateway: {
             bind: "loopback",
             auth: { mode: "none" },
-            http: { endpoints: { chatCompletions: { enabled: true } } },
           },
         },
         expectedSeverity: "warn",
-        detailIncludes: ["/tools/invoke", "/v1/chat/completions"],
+        detailIncludes: ["/tools/invoke"],
       },
       {
         name: "remote no-auth",
@@ -2394,7 +2393,6 @@ description: test skill
           gateway: {
             bind: "lan",
             auth: { mode: "none" },
-            http: { endpoints: { responses: { enabled: true } } },
           },
         },
         expectedSeverity: "critical",
@@ -2420,12 +2418,6 @@ description: test skill
       gateway: {
         bind: "loopback",
         auth: { mode: "token", token: "secret" },
-        http: {
-          endpoints: {
-            chatCompletions: { enabled: true },
-            responses: { enabled: true },
-          },
-        },
       },
     };
 
@@ -2433,21 +2425,14 @@ description: test skill
     expectNoFinding(res, "gateway.http.no_auth");
   });
 
-  it("reports HTTP API session-key override surfaces when enabled", async () => {
+  it("does not report HTTP API session-key override (endpoints removed)", async () => {
     const cfg: RemoteClawConfig = {
-      gateway: {
-        http: {
-          endpoints: {
-            chatCompletions: { enabled: true },
-            responses: { enabled: true },
-          },
-        },
-      },
+      gateway: {},
     };
 
     const res = await audit(cfg);
 
-    expectFinding(res, "gateway.http.session_key_override_enabled", "info");
+    expectNoFinding(res, "gateway.http.session_key_override_enabled");
   });
 
   it("warns when state/config look like a synced folder", async () => {

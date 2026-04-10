@@ -145,8 +145,6 @@ async function withCanvasGatewayHarness(params: {
     clients,
     controlUiEnabled: false,
     controlUiBasePath: "/__control__",
-    openAiChatCompletionsEnabled: false,
-    openResponsesEnabled: false,
     handleHooksRequest: async () => false,
     resolvedAuth: params.resolvedAuth,
     rateLimiter: params.rateLimiter,

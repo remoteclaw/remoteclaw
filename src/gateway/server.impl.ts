@@ -229,16 +229,6 @@ export type GatewayServerOptions = {
    */
   controlUiEnabled?: boolean;
   /**
-   * If false, do not serve `POST /v1/chat/completions`.
-   * Default: config `gateway.http.endpoints.chatCompletions.enabled` (or false when absent).
-   */
-  openAiChatCompletionsEnabled?: boolean;
-  /**
-   * If false, do not serve `POST /v1/responses` (OpenResponses API).
-   * Default: config `gateway.http.endpoints.responses.enabled` (or false when absent).
-   */
-  openResponsesEnabled?: boolean;
-  /**
    * Override gateway auth configuration (merges with config).
    */
   auth?: import("../config/config.js").GatewayAuthConfig;
@@ -480,17 +470,12 @@ export async function startGatewayServer(
     bind: opts.bind,
     host: opts.host,
     controlUiEnabled: opts.controlUiEnabled,
-    openAiChatCompletionsEnabled: opts.openAiChatCompletionsEnabled,
-    openResponsesEnabled: opts.openResponsesEnabled,
     auth: opts.auth,
     tailscale: opts.tailscale,
   });
   const {
     bindHost,
     controlUiEnabled,
-    openAiChatCompletionsEnabled,
-    openResponsesEnabled,
-    openResponsesConfig,
     strictTransportSecurityHeader,
     controlUiBasePath,
     controlUiRoot: controlUiRootOverride,
@@ -572,9 +557,6 @@ export async function startGatewayServer(
     controlUiEnabled,
     controlUiBasePath,
     controlUiRoot: controlUiRootState,
-    openAiChatCompletionsEnabled,
-    openResponsesEnabled,
-    openResponsesConfig,
     strictTransportSecurityHeader,
     resolvedAuth,
     rateLimiter: authRateLimiter,

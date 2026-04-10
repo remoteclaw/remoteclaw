@@ -12,7 +12,7 @@ export async function resolveCurrentDirectiveLevels(params: {
     verboseDefault?: unknown;
     elevatedDefault?: unknown;
   };
-  resolveDefaultThinkingLevel: () => Promise<ThinkLevel | undefined>;
+  resolveDefaultThinkingLevel?: () => Promise<ThinkLevel | undefined>;
 }): Promise<{
   currentThinkLevel: ThinkLevel | undefined;
   currentVerboseLevel: VerboseLevel | undefined;

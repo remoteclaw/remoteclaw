@@ -254,10 +254,8 @@ export async function resolveReplyDirectives(params: {
       };
     }
   }
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   if (isGroup && ctx.WasMentioned !== true && parsedDirectives.hasExecDirective) {
     if (parsedDirectives.execSecurity !== "deny") {
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       parsedDirectives = clearInlineDirectives(parsedDirectives);
     }
   }
@@ -266,7 +264,6 @@ export async function resolveReplyDirectives(params: {
     parsedDirectives.hasVerboseDirective ||
     parsedDirectives.hasReasoningDirective ||
     parsedDirectives.hasElevatedDirective ||
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     parsedDirectives.hasExecDirective ||
     parsedDirectives.hasModelDirective ||
     parsedDirectives.hasQueueDirective;
@@ -383,7 +380,6 @@ export async function resolveReplyDirectives(params: {
     directives.verboseLevel ??
     (sessionEntry?.verboseLevel as VerboseLevel | undefined) ??
     (agentCfg?.verboseDefault as VerboseLevel | undefined);
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   let resolvedReasoningLevel: ReasoningLevel =
     directives.reasoningLevel ??
     (sessionEntry?.reasoningLevel as ReasoningLevel | undefined) ??
@@ -511,7 +507,6 @@ export async function resolveReplyDirectives(params: {
       resolvedThinkLevel: resolvedThinkLevelWithDefault,
       resolvedVerboseLevel,
       resolvedReasoningLevel,
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       resolvedElevatedLevel,
       execOverrides,
       blockStreamingEnabled,

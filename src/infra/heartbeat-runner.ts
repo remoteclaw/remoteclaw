@@ -388,7 +388,6 @@ async function captureTranscriptState(params: {
 }
 
 function normalizeHeartbeatReply(payload: ReplyPayload, responsePrefix: string | undefined) {
-  // @ts-expect-error — heartbeatReport flows at runtime via McpSideEffects, not on ReplyPayload
   const report = payload.heartbeatReport;
   const rawText = typeof payload.text === "string" ? payload.text.trim() : "";
   const hasMedia = Boolean(payload.mediaUrl || (payload.mediaUrls?.length ?? 0) > 0);
@@ -672,7 +671,6 @@ export async function runHeartbeatOnce(opts: {
       (!replyPayload.text &&
         !replyPayload.mediaUrl &&
         !replyPayload.mediaUrls?.length &&
-        // @ts-expect-error — heartbeatReport flows at runtime via McpSideEffects, not on ReplyPayload
         !replyPayload.heartbeatReport)
     ) {
       await restoreHeartbeatUpdatedAt({

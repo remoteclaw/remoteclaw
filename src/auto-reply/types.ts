@@ -1,6 +1,7 @@
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
 // import ... from "@mariozechner/pi-ai";
 type ImageContent = Record<string, unknown>;
+import type { McpHeartbeatReport } from "../middleware/types.js";
 import type { TypingController } from "./reply/typing.js";
 
 export type BlockReplyContext = {
@@ -86,4 +87,6 @@ export type ReplyPayload = {
   isReasoning?: boolean;
   /** Channel-specific payload data (per-channel envelope). */
   channelData?: Record<string, unknown>;
+  /** Structured heartbeat report from the heartbeat_report MCP tool. */
+  heartbeatReport?: McpHeartbeatReport | undefined;
 };

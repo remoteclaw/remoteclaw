@@ -205,7 +205,6 @@ export async function runWebHeartbeatOnce(opts: {
     }
 
     const hasMedia = Boolean(replyPayload.mediaUrl || (replyPayload.mediaUrls?.length ?? 0) > 0);
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     const report = replyPayload.heartbeatReport;
     // When heartbeat_report says nothing done, skip delivery (restore session timestamp).
     if (report && !report.anythingDone && !hasMedia) {

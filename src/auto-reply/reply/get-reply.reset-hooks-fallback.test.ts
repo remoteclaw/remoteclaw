@@ -124,7 +124,6 @@ function createContinueDirectivesResult(resetHookTriggered: boolean) {
         resetHookTriggered,
       },
       allowTextCommands: true,
-      skillCommands: [],
       directives: {},
       cleanedBody: "/new",
       elevatedEnabled: false,

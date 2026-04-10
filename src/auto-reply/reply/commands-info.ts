@@ -47,7 +47,7 @@ export const handleCommandsListCommand: CommandHandler = async (params, allowTex
   const surface = params.ctx.Surface;
 
   if (surface === "telegram") {
-    const result = buildCommandsMessagePaginated(params.cfg, undefined, {
+    const result = buildCommandsMessagePaginated(params.cfg, {
       page: 1,
       surface,
     });
@@ -78,7 +78,7 @@ export const handleCommandsListCommand: CommandHandler = async (params, allowTex
 
   return {
     shouldContinue: false,
-    reply: { text: buildCommandsMessage(params.cfg, undefined, { surface }) },
+    reply: { text: buildCommandsMessage(params.cfg, { surface }) },
   };
 };
 

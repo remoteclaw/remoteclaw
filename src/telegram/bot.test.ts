@@ -15,7 +15,6 @@ import {
   getLoadConfigMock,
   getReadChannelAllowFromStoreMock,
   getOnHandler,
-  listSkillCommandsForAgents,
   onSpy,
   replySpy,
   sendMessageSpy,
@@ -26,13 +25,6 @@ import { createTelegramBot } from "./bot.js";
 
 const loadConfig = getLoadConfigMock();
 const readChannelAllowFromStore = getReadChannelAllowFromStoreMock();
-
-function resolveSkillCommands(config: Parameters<typeof listNativeCommandSpecsForConfig>[0]) {
-  void config;
-  return listSkillCommandsForAgents() as NonNullable<
-    Parameters<typeof listNativeCommandSpecsForConfig>[1]
-  >["skillCommands"];
-}
 
 const ORIGINAL_TZ = process.env.TZ;
 describe("createTelegramBot", () => {
@@ -79,8 +71,7 @@ describe("createTelegramBot", () => {
       command: string;
       description: string;
     }>;
-    const skillCommands = resolveSkillCommands(config);
-    const native = listNativeCommandSpecsForConfig(config, { skillCommands }).map((command) => ({
+    const native = listNativeCommandSpecsForConfig(config).map((command) => ({
       command: normalizeTelegramCommandName(command.name),
       description: command.description,
     }));
@@ -124,8 +115,7 @@ describe("createTelegramBot", () => {
       command: string;
       description: string;
     }>;
-    const skillCommands = resolveSkillCommands(config);
-    const native = listNativeCommandSpecsForConfig(config, { skillCommands }).map((command) => ({
+    const native = listNativeCommandSpecsForConfig(config).map((command) => ({
       command: normalizeTelegramCommandName(command.name),
       description: command.description,
     }));
@@ -207,126 +197,6 @@ describe("createTelegramBot", () => {
 
     expect(replySpy).not.toHaveBeenCalled();
     expect(answerCallbackQuerySpy).toHaveBeenCalledWith("cbq-2");
-  });
-
-  // Gutted in RemoteClaw fork — skill commands pagination depends on listSkillCommandsForAgents stub
-  it.skip("allows callback_query in groups when group policy authorizes the sender", async () => {
-    onSpy.mockClear();
-    editMessageTextSpy.mockClear();
-    listSkillCommandsForAgents.mockClear();
-
-    createTelegramBot({
-      token: "tok",
-      config: {
-        channels: {
-          telegram: {
-            dmPolicy: "open",
-            capabilities: { inlineButtons: "allowlist" },
-            allowFrom: [],
-            groupPolicy: "open",
-            groups: { "*": { requireMention: false } },
-          },
-        },
-      },
-    });
-    const callbackHandler = onSpy.mock.calls.find((call) => call[0] === "callback_query")?.[1] as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
-    expect(callbackHandler).toBeDefined();
-
-    await callbackHandler({
-      callbackQuery: {
-        id: "cbq-group-1",
-        data: "commands_page_2",
-        from: { id: 42, first_name: "Ada", username: "ada_bot" },
-        message: {
-          chat: { id: -100999, type: "supergroup", title: "Test Group" },
-          date: 1736380800,
-          message_id: 20,
-        },
-      },
-      me: { username: "remoteclaw_bot" },
-      getFile: async () => ({ download: async () => new Uint8Array() }),
-    });
-
-    // The callback should be processed (not silently blocked)
-    expect(editMessageTextSpy).toHaveBeenCalledTimes(1);
-    expect(answerCallbackQuerySpy).toHaveBeenCalledWith("cbq-group-1");
-  });
-
-  // Gutted in RemoteClaw fork — skill commands pagination depends on listSkillCommandsForAgents stub
-  it.skip("edits commands list for pagination callbacks", async () => {
-    onSpy.mockClear();
-    listSkillCommandsForAgents.mockClear();
-
-    createTelegramBot({ token: "tok" });
-    const callbackHandler = onSpy.mock.calls.find((call) => call[0] === "callback_query")?.[1] as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
-    expect(callbackHandler).toBeDefined();
-
-    await callbackHandler({
-      callbackQuery: {
-        id: "cbq-3",
-        data: "commands_page_2:main",
-        from: { id: 9, first_name: "Ada", username: "ada_bot" },
-        message: {
-          chat: { id: 1234, type: "private" },
-          date: 1736380800,
-          message_id: 12,
-        },
-      },
-      me: { username: "remoteclaw_bot" },
-      getFile: async () => ({ download: async () => new Uint8Array() }),
-    });
-
-    expect(listSkillCommandsForAgents).toHaveBeenCalledWith({
-      cfg: expect.any(Object),
-      agentIds: ["main"],
-    });
-    expect(editMessageTextSpy).toHaveBeenCalledTimes(1);
-    const [chatId, messageId, text, params] = editMessageTextSpy.mock.calls[0] ?? [];
-    expect(chatId).toBe(1234);
-    expect(messageId).toBe(12);
-    expect(String(text)).toContain("ℹ️ Commands");
-    expect(params).toEqual(
-      expect.objectContaining({
-        reply_markup: expect.any(Object),
-      }),
-    );
-  });
-
-  // Gutted in RemoteClaw fork — skill commands pagination depends on listSkillCommandsForAgents stub
-  it.skip("falls back to default agent for pagination callbacks without agent suffix", async () => {
-    onSpy.mockClear();
-    listSkillCommandsForAgents.mockClear();
-
-    createTelegramBot({ token: "tok" });
-    const callbackHandler = onSpy.mock.calls.find((call) => call[0] === "callback_query")?.[1] as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
-    expect(callbackHandler).toBeDefined();
-
-    await callbackHandler({
-      callbackQuery: {
-        id: "cbq-no-suffix",
-        data: "commands_page_2",
-        from: { id: 9, first_name: "Ada", username: "ada_bot" },
-        message: {
-          chat: { id: 1234, type: "private" },
-          date: 1736380800,
-          message_id: 14,
-        },
-      },
-      me: { username: "remoteclaw_bot" },
-      getFile: async () => ({ download: async () => new Uint8Array() }),
-    });
-
-    expect(listSkillCommandsForAgents).toHaveBeenCalledWith({
-      cfg: expect.any(Object),
-      agentIds: ["main"],
-    });
-    expect(editMessageTextSpy).toHaveBeenCalledTimes(1);
   });
 
   it("blocks pagination callbacks when allowlist rejects sender", async () => {

@@ -5,16 +5,9 @@ type ExecToolDefaults = Record<string, unknown>;
 // import ... from "../../agents/sandbox.js";
 // oxlint-disable-next-line typescript/no-explicit-any
 const resolveSandboxRuntimeStatus = (..._args: unknown[]) => ({ sandboxed: false });
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../agents/skills.js";
-type SkillCommandSpec = Record<string, unknown>;
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { listChatCommands, shouldHandleTextCommands } from "../commands-registry.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../skill-commands.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const listSkillCommandsForWorkspace = (..._args: unknown[]) => [] as Array<{ name: string }>;
 import type { MsgContext, TemplateContext } from "../templating.js";
 import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../thinking.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
@@ -62,7 +55,6 @@ export type ReplyDirectiveContinuation = {
   commandSource: string;
   command: ReturnType<typeof buildCommandContext>;
   allowTextCommands: boolean;
-  skillCommands?: SkillCommandSpec[];
   directives: InlineDirectives;
   cleanedBody: string;
   messageProviderKey: string;
@@ -152,7 +144,7 @@ export async function resolveReplyDirectives(params: {
     agentId,
     agentCfg,
     agentDir,
-    workspaceDir,
+    workspaceDir: _workspaceDir,
     sessionCtx,
     sessionEntry,
     sessionStore,
@@ -166,7 +158,7 @@ export async function resolveReplyDirectives(params: {
     runtimeId: _runtimeId,
     typing,
     opts,
-    skillFilter,
+    skillFilter: _skillFilter,
   } = params;
   // Model selection: use new upstream params if available, fall back to runtimeId for back-compat.
   const defaultProvider = params.defaultProvider ?? params.runtimeId ?? "anthropic";
@@ -213,20 +205,6 @@ export async function resolveReplyDirectives(params: {
     .map((entry) => entry.alias?.trim())
     .filter((alias): alias is string => Boolean(alias))
     .filter((alias) => !reservedCommands.has(alias.toLowerCase()));
-
-  // Only load workspace skill commands when we actually need them to filter aliases.
-  // This avoids scanning skills for messages that only use inline directives like /think:/verbose:.
-  const skillCommands =
-    allowTextCommands && rawAliases.length > 0
-      ? listSkillCommandsForWorkspace({
-          workspaceDir,
-          cfg,
-          skillFilter,
-        })
-      : [];
-  for (const command of skillCommands) {
-    reservedCommands.add(command.name.toLowerCase());
-  }
 
   const configuredAliases = rawAliases.filter(
     (alias) => !reservedCommands.has(alias.toLowerCase()),
@@ -496,7 +474,6 @@ export async function resolveReplyDirectives(params: {
       commandSource: commandText,
       command,
       allowTextCommands,
-      skillCommands,
       directives,
       cleanedBody,
       messageProviderKey,

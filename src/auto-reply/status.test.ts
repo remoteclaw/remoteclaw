@@ -535,22 +535,6 @@ describe("buildCommandsMessage", () => {
     expect(text).not.toContain("/config");
     expect(text).not.toContain("/debug");
   });
-
-  it("includes skill commands when provided", () => {
-    const text = buildCommandsMessage(
-      {
-        commands: { config: false, debug: false },
-      } as unknown as RemoteClawConfig,
-      [
-        {
-          name: "demo_skill",
-          skillName: "demo-skill",
-          description: "Demo skill",
-        },
-      ],
-    );
-    expect(text).toContain("/demo_skill - Demo skill");
-  });
 });
 
 describe("buildHelpMessage", () => {
@@ -571,7 +555,6 @@ describe("buildCommandsMessagePaginated", () => {
       {
         commands: { config: false, debug: false },
       } as unknown as RemoteClawConfig,
-      undefined,
       { surface: "telegram", page: 1 },
     );
     expect(result.text).toContain("ℹ️ Commands (1/");
@@ -587,7 +570,6 @@ describe("buildCommandsMessagePaginated", () => {
       {
         commands: { config: false, debug: false },
       } as unknown as RemoteClawConfig,
-      undefined,
       { surface: "telegram", page: 99 },
     );
     expect(result.text).toContain("Plugins");

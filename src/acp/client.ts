@@ -410,12 +410,24 @@ export async function createAcpClient(opts: AcpClientOptions = {}): Promise<AcpC
   const entryPath = resolveSelfEntryPath();
   const serverCommand = opts.serverCommand ?? (entryPath ? process.execPath : "remoteclaw");
   const effectiveArgs = opts.serverCommand || !entryPath ? serverArgs : [entryPath, ...serverArgs];
+  const spawnEnv = resolveAcpClientSpawnEnv();
+  const spawnInvocation = resolveAcpClientSpawnInvocation(
+    { serverCommand, serverArgs: effectiveArgs },
+    {
+      platform: process.platform,
+      env: spawnEnv,
+      execPath: process.execPath,
+    },
+  );
 
-  log(`spawning: ${serverCommand} ${effectiveArgs.join(" ")}`);
+  log(`spawning: ${spawnInvocation.command} ${spawnInvocation.args.join(" ")}`);
 
-  const agent = spawn(serverCommand, effectiveArgs, {
+  const agent = spawn(spawnInvocation.command, spawnInvocation.args, {
     stdio: ["pipe", "pipe", "inherit"],
     cwd,
+    env: spawnEnv,
+    shell: spawnInvocation.shell,
+    windowsHide: spawnInvocation.windowsHide,
   });
 
   if (!agent.stdin || !agent.stdout) {

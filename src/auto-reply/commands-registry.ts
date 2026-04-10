@@ -78,22 +78,10 @@ function getTextAliasMap(): Map<string, TextAliasSpec> {
   return map;
 }
 
-function buildSkillCommandDefinitions(skillCommands?: SkillCommandSpec[]): ChatCommandDefinition[] {
-  if (!skillCommands || skillCommands.length === 0) {
-    return [];
-  }
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
-  return skillCommands.map((spec) => ({
-    // oxlint-disable-next-line
-    key: `skill:${spec.skillName}`,
-    nativeName: spec.name,
-    description: spec.description,
-    // oxlint-disable-next-line
-    textAliases: [`/${spec.name}`],
-    acceptsArgs: true,
-    argsParsing: "none",
-    scope: "both",
-  }));
+function buildSkillCommandDefinitions(
+  _skillCommands?: SkillCommandSpec[],
+): ChatCommandDefinition[] {
+  return [];
 }
 
 export function listChatCommands(params?: {

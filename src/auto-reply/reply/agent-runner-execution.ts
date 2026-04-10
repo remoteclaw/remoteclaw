@@ -233,10 +233,10 @@ export async function runAgentTurnWithFallback(params: {
 
       // Notify that model selection is complete.
       // This allows responsePrefix template interpolation with the actual model.
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
       params.opts?.onModelSelected?.({
         provider,
         model,
+        thinkLevel: undefined,
       });
 
       const startedAt = Date.now();

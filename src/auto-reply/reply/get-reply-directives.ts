@@ -115,7 +115,6 @@ export async function resolveReplyDirectives(params: {
   cfg: RemoteClawConfig;
   agentId: string;
   agentDir: string;
-  workspaceDir: string;
   agentCfg: AgentDefaults;
   sessionCtx: TemplateContext;
   sessionEntry: SessionEntry;
@@ -136,7 +135,6 @@ export async function resolveReplyDirectives(params: {
   hasResolvedHeartbeatModelOverride?: boolean;
   typing: TypingController;
   opts?: GetReplyOptions;
-  skillFilter?: string[];
 }): Promise<ReplyDirectiveResult> {
   const {
     ctx,
@@ -144,7 +142,6 @@ export async function resolveReplyDirectives(params: {
     agentId,
     agentCfg,
     agentDir,
-    workspaceDir: _workspaceDir,
     sessionCtx,
     sessionEntry,
     sessionStore,
@@ -158,7 +155,6 @@ export async function resolveReplyDirectives(params: {
     runtimeId: _runtimeId,
     typing,
     opts,
-    skillFilter: _skillFilter,
   } = params;
   // Model selection: use new upstream params if available, fall back to runtimeId for back-compat.
   const defaultProvider = params.defaultProvider ?? params.runtimeId ?? "anthropic";

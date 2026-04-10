@@ -89,7 +89,6 @@ describe.skip("registerTelegramNativeCommands skill allowlist integration", () =
         cfg,
         accountId: "bot-a",
         telegramCfg: {} as TelegramAccountConfig,
-        nativeSkillsEnabled: true,
       }),
     });
 

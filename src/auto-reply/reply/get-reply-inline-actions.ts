@@ -60,7 +60,6 @@ export async function handleInlineActions(params: {
   contextTokens: number;
   directiveAck?: ReplyPayload;
   abortedLastRun: boolean;
-  skillFilter?: string[];
 }): Promise<InlineActionResult> {
   const {
     ctx,

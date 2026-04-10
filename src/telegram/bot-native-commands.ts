@@ -124,7 +124,6 @@ type RegisterTelegramNativeCommandsParams = {
   textLimit: number;
   useAccessGroups: boolean;
   nativeEnabled: boolean;
-  nativeSkillsEnabled: boolean;
   nativeDisabledExplicit: boolean;
   resolveGroupPolicy: (chatId: string | number) => ChannelGroupPolicy;
   resolveTelegramGroupConfig: (
@@ -316,7 +315,6 @@ export const registerTelegramNativeCommands = ({
   textLimit,
   useAccessGroups,
   nativeEnabled,
-  nativeSkillsEnabled: _nativeSkillsEnabled,
   nativeDisabledExplicit,
   resolveGroupPolicy,
   resolveTelegramGroupConfig,

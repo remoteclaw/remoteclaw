@@ -2,7 +2,6 @@ import {
   resolveAgentDir,
   resolveAgentWorkspaceDir,
   resolveSessionAgentId,
-  resolveAgentSkillsFilter,
 } from "../../agents/agent-scope.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
 const resolveModelRefFromString = (..._args: unknown[]) =>
@@ -40,31 +39,6 @@ import { initSessionState } from "./session.js";
 const stageSandboxMedia = async (..._args: unknown[]) => {};
 import { createTypingController } from "./typing.js";
 
-function mergeSkillFilters(channelFilter?: string[], agentFilter?: string[]): string[] | undefined {
-  const normalize = (list?: string[]) => {
-    if (!Array.isArray(list)) {
-      return undefined;
-    }
-    return list.map((entry) => String(entry).trim()).filter(Boolean);
-  };
-  const channel = normalize(channelFilter);
-  const agent = normalize(agentFilter);
-  if (!channel && !agent) {
-    return undefined;
-  }
-  if (!channel) {
-    return agent;
-  }
-  if (!agent) {
-    return channel;
-  }
-  if (channel.length === 0 || agent.length === 0) {
-    return [];
-  }
-  const agentSet = new Set(agent);
-  return channel.filter((name) => agentSet.has(name));
-}
-
 export async function getReplyFromConfig(
   ctx: MsgContext,
   opts?: GetReplyOptions,
@@ -79,12 +53,6 @@ export async function getReplyFromConfig(
     sessionKey: agentSessionKey,
     config: cfg,
   });
-  const mergedSkillFilter = mergeSkillFilters(
-    opts?.skillFilter,
-    resolveAgentSkillsFilter(cfg, agentId) as string[] | undefined,
-  );
-  const resolvedOpts =
-    mergedSkillFilter !== undefined ? { ...opts, skillFilter: mergedSkillFilter } : opts;
   const agentCfg = cfg.agents?.defaults;
   const sessionCfg = cfg.session;
   const { defaultProvider, defaultModel, aliasIndex } = resolveDefaultModel({
@@ -234,7 +202,6 @@ export async function getReplyFromConfig(
     cfg,
     agentId,
     agentDir,
-    workspaceDir,
     agentCfg,
     sessionCtx,
     sessionEntry,
@@ -253,8 +220,7 @@ export async function getReplyFromConfig(
     model,
     hasResolvedHeartbeatModelOverride,
     typing,
-    opts: resolvedOpts,
-    skillFilter: mergedSkillFilter,
+    opts,
   });
   if (directiveResult.kind === "reply") {
     return directiveResult.reply;
@@ -325,7 +291,7 @@ export async function getReplyFromConfig(
     sessionScope,
     workspaceDir,
     isGroup,
-    opts: resolvedOpts,
+    opts,
     typing,
     allowTextCommands,
     inlineStatusRequested,
@@ -346,7 +312,6 @@ export async function getReplyFromConfig(
     contextTokens,
     directiveAck,
     abortedLastRun,
-    skillFilter: mergedSkillFilter,
   });
   if (inlineActionResult.kind === "reply") {
     await maybeEmitMissingResetHooks();
@@ -394,7 +359,7 @@ export async function getReplyFromConfig(
     perMessageQueueMode,
     perMessageQueueOptions,
     typing,
-    opts: resolvedOpts,
+    opts,
     defaultProvider,
     defaultModel,
     timeoutMs,

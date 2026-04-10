@@ -25,6 +25,7 @@ const createMainAgentSummary = (sessions = defaultSessions) => ({
     everyMs: 60_000,
     prompt: "hi",
     target: "last",
+    ackMaxChars: 300,
   },
   sessions,
 });

@@ -1,8 +1,4 @@
 import type { ChannelId } from "../channels/plugins/types.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../media-understanding/types.js";
-type MediaUnderstandingDecision = Record<string, unknown>;
-type MediaUnderstandingOutput = Record<string, unknown>;
 import type { StickerMetadata } from "../telegram/bot/types.js";
 import type { InternalMessageChannel } from "../utils/message-channel.js";
 import type { CommandArgs } from "./commands-registry.types.js";
@@ -101,8 +97,6 @@ export type MsgContext = {
   /** Remote host for SCP when media lives on a different machine (e.g., remoteclaw@192.168.64.3). */
   MediaRemoteHost?: string;
   Transcript?: string;
-  MediaUnderstanding?: MediaUnderstandingOutput[];
-  MediaUnderstandingDecisions?: MediaUnderstandingDecision[];
   LinkUnderstanding?: string[];
   Prompt?: string;
   MaxChars?: number;

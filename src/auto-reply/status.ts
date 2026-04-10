@@ -42,9 +42,6 @@ import {
 } from "../config/sessions.js";
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import { resolveCommitHash } from "../infra/git-commit.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../media-understanding/types.js";
-type MediaUnderstandingDecision = Record<string, unknown>;
 import { listPluginCommands } from "../plugins/commands.js";
 import { resolveAgentIdFromSessionKey } from "../routing/session-key.js";
 import {
@@ -107,7 +104,6 @@ type StatusArgs = {
   usageLine?: string;
   timeLine?: string;
   queue?: QueueStatus;
-  mediaDecisions?: ReadonlyArray<MediaUnderstandingDecision>;
   subagentsLine?: string;
   includeTranscriptUsage?: boolean;
   now?: number;
@@ -364,62 +360,6 @@ const formatCacheLine = (
   return `🗄️ Cache: ${hitRate}% hit · ${cachedLabel} cached, ${newLabel} new`;
 };
 
-const formatMediaUnderstandingLine = (decisions?: ReadonlyArray<MediaUnderstandingDecision>) => {
-  if (!decisions || decisions.length === 0) {
-    return null;
-  }
-  const parts = decisions
-    .map((decision) => {
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
-      const count = decision.attachments.length;
-      const countLabel = count > 1 ? ` x${count}` : "";
-      if (decision.outcome === "success") {
-        // @ts-expect-error — upstream feature not available in RemoteClaw fork
-        // oxlint-disable-next-line typescript/no-explicit-any
-        const chosen = decision.attachments.find((entry: any) => entry.chosen)?.chosen;
-        const provider = chosen?.provider?.trim();
-        const model = chosen?.model?.trim();
-        const modelLabel = provider ? (model ? `${provider}/${model}` : provider) : null;
-        // oxlint-disable-next-line
-        return `${decision.capability}${countLabel} ok${modelLabel ? ` (${modelLabel})` : ""}`;
-      }
-      if (decision.outcome === "no-attachment") {
-        // oxlint-disable-next-line
-        return `${decision.capability} none`;
-      }
-      if (decision.outcome === "disabled") {
-        // oxlint-disable-next-line
-        return `${decision.capability} off`;
-      }
-      if (decision.outcome === "scope-deny") {
-        // oxlint-disable-next-line
-        return `${decision.capability} denied`;
-      }
-      if (decision.outcome === "skipped") {
-        // @ts-expect-error — upstream feature not available in RemoteClaw fork
-        const reason = decision.attachments
-          // oxlint-disable-next-line typescript/no-explicit-any
-          .flatMap((entry: any) =>
-            // oxlint-disable-next-line typescript/no-explicit-any
-            entry.attempts.map((attempt: any) => attempt.reason).filter(Boolean),
-          )
-          .find(Boolean);
-        const shortReason = reason ? reason.split(":")[0]?.trim() : undefined;
-        // oxlint-disable-next-line
-        return `${decision.capability} skipped${shortReason ? ` (${shortReason})` : ""}`;
-      }
-      return null;
-    })
-    .filter((part): part is string => part != null);
-  if (parts.length === 0) {
-    return null;
-  }
-  if (parts.every((part) => part.endsWith(" none"))) {
-    return null;
-  }
-  return `📎 Media: ${parts.join(" · ")}`;
-};
-
 const formatVoiceModeLine = (
   config?: RemoteClawConfig,
   sessionEntry?: SessionEntry,
@@ -653,7 +593,6 @@ export function buildStatusMessage(args: StatusArgs): string {
   const versionLine = `🦞 RemoteClaw ${VERSION}${commit ? ` (${commit})` : ""}`;
   const usagePair = formatUsagePair(inputTokens, outputTokens);
   const cacheLine = formatCacheLine(inputTokens, cacheRead, cacheWrite);
-  const mediaLine = formatMediaUnderstandingLine(args.mediaDecisions);
   const voiceLine = formatVoiceModeLine(args.config, args.sessionEntry);
 
   return [
@@ -663,7 +602,6 @@ export function buildStatusMessage(args: StatusArgs): string {
     usagePair,
     cacheLine,
     `📚 ${contextLine}`,
-    mediaLine,
     args.usageLine,
     `🧵 ${sessionLine}`,
     args.subagentsLine,

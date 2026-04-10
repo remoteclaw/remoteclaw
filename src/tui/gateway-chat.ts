@@ -51,9 +51,7 @@ export type GatewaySessionList = {
   sessions: Array<
     Pick<
       SessionInfo,
-      | "thinkingLevel"
       | "verboseLevel"
-      | "reasoningLevel"
       | "model"
       | "contextTokens"
       | "inputTokens"
@@ -90,14 +88,6 @@ export type GatewayAgentsList = {
     id: string;
     name?: string;
   }>;
-};
-
-export type GatewayModelChoice = {
-  id: string;
-  name: string;
-  provider: string;
-  contextWindow?: number;
-  reasoning?: boolean;
 };
 
 export class GatewayChatClient {
@@ -227,11 +217,6 @@ export class GatewayChatClient {
   async getStatus() {
     return await this.client.request("status");
   }
-
-  async listModels(): Promise<GatewayModelChoice[]> {
-    const res = await this.client.request<{ models?: GatewayModelChoice[] }>("models.list");
-    return Array.isArray(res?.models) ? res.models : [];
-  }
 }
 
 export function resolveGatewayConnection(opts: GatewayConnectionOptions) {
@@ -245,8 +230,7 @@ export function resolveGatewayConnection(opts: GatewayConnectionOptions) {
   const explicitAuth = resolveExplicitGatewayAuth({ token: opts.token, password: opts.password });
   ensureExplicitGatewayAuth({
     urlOverride,
-    urlOverrideSource: "cli",
-    explicitAuth,
+    auth: explicitAuth,
     errorHint: "Fix: pass --token or --password when using --url.",
   });
   const url = buildGatewayConnectionDetails({

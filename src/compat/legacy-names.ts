@@ -1,4 +1,4 @@
-export const PROJECT_NAME = "openclaw" as const;
+export const PROJECT_NAME = "remoteclaw" as const;
 
 export const LEGACY_PROJECT_NAMES = [] as const;
 

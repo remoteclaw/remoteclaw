@@ -217,7 +217,8 @@ describe("runGatewayUpdate", () => {
     };
   }
 
-  it("skips git update when worktree is dirty", async () => {
+  // Gutted in RemoteClaw fork — updater uses npm-based detection, no git worktree checks
+  it.skip("skips git update when worktree is dirty", async () => {
     await setupGitCheckout();
     const { runner, calls } = createRunner({
       ...buildGitWorktreeProbeResponses({ status: " M README.md" }),
@@ -230,7 +231,8 @@ describe("runGatewayUpdate", () => {
     expect(calls.some((call) => call.includes("rebase"))).toBe(false);
   });
 
-  it("aborts rebase on failure", async () => {
+  // Gutted in RemoteClaw fork — updater uses npm-based detection, no git rebase
+  it.skip("aborts rebase on failure", async () => {
     await setupGitCheckout();
     const { runner, calls } = createRunner({
       ...buildGitWorktreeProbeResponses(),
@@ -311,15 +313,13 @@ describe("runGatewayUpdate", () => {
     expect(calls).not.toContain(`git -C ${tempDir} checkout --detach ${betaTag}`);
   });
 
-  it("skips update when no git root", async () => {
+  it("skips update when no package manager detected", async () => {
     await fs.writeFile(
       path.join(tempDir, "package.json"),
-      JSON.stringify({ name: "remoteclaw", packageManager: "pnpm@8.0.0" }),
+      JSON.stringify({ name: "remoteclaw", version: "1.0.0" }),
       "utf-8",
     );
-    await fs.writeFile(path.join(tempDir, "pnpm-lock.yaml"), "", "utf-8");
     const { runner, calls } = createRunner({
-      [`git -C ${tempDir} rev-parse --show-toplevel`]: { code: 1 },
       "npm root -g": { code: 1 },
       "pnpm root -g": { code: 1 },
     });
@@ -327,7 +327,7 @@ describe("runGatewayUpdate", () => {
     const result = await runWithRunner(runner);
 
     expect(result.status).toBe("skipped");
-    expect(result.reason).toBe("not-git-install");
+    expect(result.reason).toBe("no-package-manager");
     expect(calls.some((call) => call.startsWith("pnpm add -g"))).toBe(false);
     expect(calls.some((call) => call.startsWith("npm i -g"))).toBe(false);
   });
@@ -447,7 +447,8 @@ describe("runGatewayUpdate", () => {
     expect(await pathExists(staleDir)).toBe(false);
   });
 
-  it("retries global npm update with --omit=optional when initial install fails", async () => {
+  // Gutted in RemoteClaw fork — npm updater has no --omit=optional retry logic
+  it.skip("retries global npm update with --omit=optional when initial install fails", async () => {
     const nodeModules = path.join(tempDir, "node_modules");
     const pkgRoot = path.join(nodeModules, "remoteclaw");
     await seedGlobalPackageRoot(pkgRoot);
@@ -510,20 +511,16 @@ describe("runGatewayUpdate", () => {
     });
   });
 
-  it("rejects git roots that are not a remoteclaw checkout", async () => {
-    await fs.mkdir(path.join(tempDir, ".git"));
+  it("returns error when directory has no remoteclaw package", async () => {
     const cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(tempDir);
-    const { runner, calls } = createRunner({
-      [`git -C ${tempDir} rev-parse --show-toplevel`]: { stdout: tempDir },
-    });
+    const { runner } = createRunner({});
 
     const result = await runWithRunner(runner);
 
     cwdSpy.mockRestore();
 
     expect(result.status).toBe("error");
-    expect(result.reason).toBe("not-remoteclaw-root");
-    expect(calls.some((call) => call.includes("status --porcelain"))).toBe(false);
+    expect(result.reason).toContain("no root");
   });
 
   // Gutted in RemoteClaw fork — isStableTag/isBetaTag always return false

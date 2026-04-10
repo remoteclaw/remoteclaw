@@ -350,7 +350,7 @@ async function runGitUpdate(params: {
   if (cloneStep && cloneStep.exitCode !== 0) {
     const result: UpdateRunResult = {
       status: "error",
-      mode: "git",
+      mode: "unknown",
       root: updateRoot,
       reason: cloneStep.name,
       steps: [cloneStep],
@@ -700,7 +700,7 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
   if (opts.dryRun) {
     let mode: UpdateRunResult["mode"] = "unknown";
     if (updateInstallKind === "git") {
-      mode = "git";
+      mode = "unknown";
     } else if (updateInstallKind === "package") {
       mode = await resolveGlobalManager({
         root,

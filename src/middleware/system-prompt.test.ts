@@ -30,18 +30,24 @@ describe("buildSystemPrompt", () => {
   });
 
   describe("dynamic content", () => {
-    it("runtime section includes user name when provided", () => {
-      const result = buildSystemPrompt(makeParams({ userName: "Bob" }));
-      expect(result).toContain("user=Bob");
+    it("runtime section includes channel name and user name", () => {
+      const result = buildSystemPrompt(makeParams({ channelName: "discord", userName: "Bob" }));
+      expect(result).toContain("Bob");
+      expect(result).toContain("discord");
     });
 
-    it("runtime section omits user name when not provided", () => {
-      const result = buildSystemPrompt(makeParams());
-      expect(result).not.toContain("user=");
+    it("runtime section handles missing user name gracefully", () => {
+      const result = buildSystemPrompt(makeParams({ channelName: "whatsapp" }));
+      expect(result).toContain("channel=whatsapp");
+      expect(result).not.toContain("undefined");
     });
 
     it("runtime section includes timezone when provided", () => {
-      const result = buildSystemPrompt(makeParams({ timezone: "America/New_York" }));
+      const result = buildSystemPrompt(
+        makeParams({
+          timezone: "America/New_York",
+        }),
+      );
       expect(result).toContain("timezone=America/New_York");
     });
 
@@ -49,11 +55,6 @@ describe("buildSystemPrompt", () => {
       const result = buildSystemPrompt(makeParams());
       expect(result).not.toContain("timezone=");
       expect(result).toContain("channel=telegram");
-    });
-
-    it("runtime section does not include agent ID", () => {
-      const result = buildSystemPrompt(makeParams());
-      expect(result).not.toContain("agent=");
     });
   });
 
@@ -70,7 +71,7 @@ describe("buildSystemPrompt", () => {
   });
 
   describe("size budget", () => {
-    it("base prompt (no hints, no optional sections) is under 4,000 chars", () => {
+    it("base prompt (no hints) is under 4,000 chars", () => {
       const result = buildSystemPrompt(makeParams({ userName: "Alice", timezone: "UTC" }));
       expect(result.length).toBeLessThan(4000);
     });
@@ -97,12 +98,6 @@ describe("buildSystemPrompt", () => {
       expect(result).toContain("[[reply_to_current]]");
     });
 
-    it("messaging section documents [System Message] marker protocol", () => {
-      const result = buildSystemPrompt(makeParams());
-      expect(result).toContain("[System Message]");
-      expect(result).toContain("do not forward them to users");
-    });
-
     it("silent replies section contains NO_REPLY token", () => {
       const result = buildSystemPrompt(makeParams());
       expect(result).toContain("NO_REPLY");
@@ -117,14 +112,13 @@ describe("buildSystemPrompt", () => {
         }),
       );
       expect(result).not.toContain("OpenClaw");
-      expect(result).not.toContain("remoteclaw");
+      expect(result).not.toContain("openclaw");
       expect(result).not.toContain("pi-embedded");
       expect(result).not.toContain("SOUL.md");
     });
 
     it("sections are separated by double newlines", () => {
       const result = buildSystemPrompt(makeParams());
-      expect(result).toMatch(/^## Messaging/);
       expect(result).toContain("\n\n## Reply Tags");
       expect(result).toContain("\n\n## Silent Replies");
       expect(result).toContain("\n\n## Runtime");

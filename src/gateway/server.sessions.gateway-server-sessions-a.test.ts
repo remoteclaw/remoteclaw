@@ -9,7 +9,6 @@ import { startGatewayServerHarness, type GatewayServerHarness } from "./server.e
 import { createToolSummaryPreviewTranscriptLines } from "./session-preview.test-helpers.js";
 import {
   connectOk,
-  embeddedRunMock,
   installGatewayTestHooks,
   piSdkMock,
   rpcReq,
@@ -159,7 +158,7 @@ async function seedActiveMainSession() {
 function expectActiveRunCleanup(
   requesterSessionKey: string,
   expectedQueueKeys: string[],
-  sessionId: string,
+  _sessionId: string,
 ) {
   expect(sessionCleanupMocks.stopSubagentsForRequester).toHaveBeenCalledWith({
     cfg: expect.any(Object),
@@ -170,8 +169,7 @@ function expectActiveRunCleanup(
     sessionCleanupMocks.clearSessionQueues.mock.calls as unknown as Array<[string[]]>
   )[0]?.[0];
   expect(clearedKeys).toEqual(expect.arrayContaining(expectedQueueKeys));
-  expect(embeddedRunMock.abortCalls).toEqual([sessionId]);
-  expect(embeddedRunMock.waitCalls).toEqual([sessionId]);
+  // embeddedRunMock was gutted with Pi-embedded; abort/wait tracking no longer applies
 }
 
 async function getMainPreviewEntry(ws: import("ws").WebSocket) {
@@ -678,8 +676,7 @@ describe("gateway server sessions", () => {
       },
     });
 
-    embeddedRunMock.activeIds.add("sess-active");
-    embeddedRunMock.waitResults.set("sess-active", true);
+    // embeddedRunMock was gutted with Pi-embedded; active session tracking no longer applies
 
     const { ws } = await openClient();
 
@@ -907,8 +904,7 @@ describe("gateway server sessions", () => {
   test.skip("sessions.reset aborts active runs and clears queues", async () => {
     await seedActiveMainSession();
 
-    embeddedRunMock.activeIds.add("sess-main");
-    embeddedRunMock.waitResults.set("sess-main", true);
+    // embeddedRunMock was gutted with Pi-embedded; active session tracking no longer applies
 
     const { ws } = await openClient();
 
@@ -1139,8 +1135,7 @@ describe("gateway server sessions", () => {
   test.skip("sessions.reset returns unavailable when active run does not stop", async () => {
     const { dir, storePath } = await seedActiveMainSession();
 
-    embeddedRunMock.activeIds.add("sess-main");
-    embeddedRunMock.waitResults.set("sess-main", false);
+    // embeddedRunMock was gutted with Pi-embedded; active session tracking no longer applies
 
     const { ws } = await openClient();
 
@@ -1180,8 +1175,7 @@ describe("gateway server sessions", () => {
       },
     });
 
-    embeddedRunMock.activeIds.add("sess-active");
-    embeddedRunMock.waitResults.set("sess-active", false);
+    // embeddedRunMock was gutted with Pi-embedded; active session tracking no longer applies
 
     const { ws } = await openClient();
 

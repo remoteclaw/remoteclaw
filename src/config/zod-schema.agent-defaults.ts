@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { isValidNonNegativeByteSizeString } from "./byte-size.js";
 import {
+  BootSchema,
   HeartbeatSchema,
   AgentSandboxSchema,
   AgentModelSchema,
@@ -146,6 +147,7 @@ export const AgentDefaultsSchema = z
     typingIntervalSeconds: z.number().int().positive().optional(),
     typingMode: TypingModeSchema.optional(),
     heartbeat: HeartbeatSchema,
+    boot: BootSchema,
     maxConcurrent: z.number().int().positive().optional(),
     subagents: z
       .object({
@@ -176,6 +178,7 @@ export const AgentDefaultsSchema = z
       })
       .strict()
       .optional(),
+    editableFiles: z.array(z.string()).optional(),
     sandbox: AgentSandboxSchema,
     runtime: z.enum(["claude", "gemini", "codex", "opencode"]).optional(),
     runtimeArgs: z.array(z.string()).optional(),

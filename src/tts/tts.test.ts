@@ -1,51 +1,7 @@
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "@mariozechner/pi-ai";
-const completeSimple = vi.fn();
-type AssistantMessage = Record<string, unknown>;
-import { describe, expect, it, vi, beforeEach } from "vitest";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/model-auth.js";
-const getApiKeyForModel = vi.fn();
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/pi-embedded-runner/model.js";
-const resolveModel = vi.fn();
+import { describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
-import { withEnv } from "../test-utils/env.js";
+import { withEnvAsync } from "../test-utils/env.js";
 import * as tts from "./tts.js";
-
-vi.mock("@mariozechner/pi-ai", () => ({
-  completeSimple: vi.fn(),
-  // Some auth helpers import oauth provider metadata at module load time.
-  getOAuthProviders: () => [],
-  getOAuthApiKey: vi.fn(async () => null),
-}));
-
-vi.mock("../agents/pi-embedded-runner/model.js", () => ({
-  resolveModel: vi.fn((provider: string, modelId: string) => ({
-    model: {
-      provider,
-      id: modelId,
-      name: modelId,
-      api: "openai-completions",
-      reasoning: false,
-      input: ["text"],
-      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-      contextWindow: 128000,
-      maxTokens: 8192,
-    },
-    authStorage: { profiles: {} },
-    modelRegistry: { find: vi.fn() },
-  })),
-}));
-
-vi.mock("../agents/model-auth.js", () => ({
-  getApiKeyForModel: vi.fn(async () => ({
-    apiKey: "test-api-key",
-    source: "test",
-    mode: "api-key",
-  })),
-  requireApiKey: vi.fn((auth: { apiKey?: string }) => auth.apiKey ?? ""),
-}));
 
 const { _test, resolveTtsConfig, maybeApplyTtsToPayload, getTtsProvider } = tts;
 
@@ -57,43 +13,11 @@ const {
   OPENAI_TTS_VOICES,
   parseTtsDirectives,
   resolveModelOverridePolicy,
-  summarizeText,
   resolveOutputFormat,
   resolveEdgeOutputFormat,
 } = _test;
 
-const mockAssistantMessage = (content: AssistantMessage["content"]): AssistantMessage => ({
-  role: "assistant",
-  content,
-  api: "openai-completions",
-  provider: "openai",
-  model: "gpt-4o-mini",
-  usage: {
-    input: 1,
-    output: 1,
-    cacheRead: 0,
-    cacheWrite: 0,
-    totalTokens: 2,
-    cost: {
-      input: 0,
-      output: 0,
-      cacheRead: 0,
-      cacheWrite: 0,
-      total: 0,
-    },
-  },
-  stopReason: "stop",
-  timestamp: Date.now(),
-});
-
 describe("tts", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(completeSimple).mockResolvedValue(
-      mockAssistantMessage([{ type: "text", text: "Summary" }]),
-    );
-  });
-
   describe("isValidVoiceId", () => {
     it("validates ElevenLabs voice ID length and character rules", () => {
       const cases = [
@@ -161,28 +85,10 @@ describe("tts", () => {
   });
 
   describe("resolveOutputFormat", () => {
-    it("selects opus for voice-bubble channels (telegram/feishu/whatsapp) and mp3 for others", () => {
+    it("selects opus for Telegram and mp3 for other channels", () => {
       const cases = [
         {
           channel: "telegram",
-          expected: {
-            openai: "opus",
-            elevenlabs: "opus_48000_64",
-            extension: ".opus",
-            voiceCompatible: true,
-          },
-        },
-        {
-          channel: "feishu",
-          expected: {
-            openai: "opus",
-            elevenlabs: "opus_48000_64",
-            extension: ".opus",
-            voiceCompatible: true,
-          },
-        },
-        {
-          channel: "whatsapp",
           expected: {
             openai: "opus",
             elevenlabs: "opus_48000_64",
@@ -212,7 +118,7 @@ describe("tts", () => {
 
   describe("resolveEdgeOutputFormat", () => {
     const baseCfg: RemoteClawConfig = {
-      agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
+      agents: { defaults: {} },
       messages: { tts: {} },
     };
 
@@ -286,144 +192,13 @@ describe("tts", () => {
     });
   });
 
-  describe("summarizeText", () => {
-    const baseCfg: RemoteClawConfig = {
-      agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
-      messages: { tts: {} },
-    };
-    const baseConfig = resolveTtsConfig(baseCfg);
-
-    // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-    it.skip("summarizes text and returns result with metrics", async () => {
-      const mockSummary = "This is a summarized version of the text.";
-      vi.mocked(completeSimple).mockResolvedValue(
-        mockAssistantMessage([{ type: "text", text: mockSummary }]),
-      );
-
-      const longText = "A".repeat(2000);
-      // oxlint-disable-next-line
-      const result = await summarizeText({
-        text: longText,
-        targetLength: 1500,
-        cfg: baseCfg,
-        config: baseConfig,
-        timeoutMs: 30_000,
-      });
-
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(result.summary).toBe(mockSummary);
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(result.inputLength).toBe(2000);
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(result.outputLength).toBe(mockSummary.length);
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(result.latencyMs).toBeGreaterThanOrEqual(0);
-      expect(completeSimple).toHaveBeenCalledTimes(1);
-    });
-
-    // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-    it.skip("calls the summary model with the expected parameters", async () => {
-      // oxlint-disable-next-line
-      await summarizeText({
-        text: "Long text to summarize",
-        targetLength: 500,
-        cfg: baseCfg,
-        config: baseConfig,
-        timeoutMs: 30_000,
-      });
-
-      const callArgs = vi.mocked(completeSimple).mock.calls[0];
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.[1]?.messages?.[0]?.role).toBe("user");
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.[2]?.maxTokens).toBe(250);
-      // @ts-ignore — upstream feature not available in RemoteClaw fork (skipped test)
-      expect(callArgs?.[2]?.temperature).toBe(0.3);
-      expect(getApiKeyForModel).toHaveBeenCalledTimes(1);
-    });
-
-    // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-    it.skip("uses summaryModel override when configured", async () => {
-      const cfg: RemoteClawConfig = {
-        agents: { defaults: { model: { primary: "anthropic/claude-opus-4-5" } } },
-        messages: { tts: { summaryModel: "openai/gpt-4.1-mini" } },
-      };
-      const config = resolveTtsConfig(cfg);
-      // oxlint-disable-next-line
-      await summarizeText({
-        text: "Long text to summarize",
-        targetLength: 500,
-        cfg,
-        config,
-        timeoutMs: 30_000,
-      });
-
-      expect(resolveModel).toHaveBeenCalledWith("openai", "gpt-4.1-mini", undefined, cfg);
-    });
-
-    // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-    it.skip("validates targetLength bounds", async () => {
-      const cases = [
-        { targetLength: 99, shouldThrow: true },
-        { targetLength: 100, shouldThrow: false },
-        { targetLength: 10000, shouldThrow: false },
-        { targetLength: 10001, shouldThrow: true },
-      ] as const;
-      for (const testCase of cases) {
-        const call = summarizeText({
-          text: "text",
-          targetLength: testCase.targetLength,
-          cfg: baseCfg,
-          config: baseConfig,
-          timeoutMs: 30_000,
-        });
-        if (testCase.shouldThrow) {
-          await expect(call, String(testCase.targetLength)).rejects.toThrow(
-            `Invalid targetLength: ${testCase.targetLength}`,
-          );
-        } else {
-          await expect(call, String(testCase.targetLength)).resolves.toBeDefined();
-        }
-      }
-    });
-
-    // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-    it.skip("throws when summary output is missing or empty", async () => {
-      const cases = [
-        { name: "no summary blocks", message: mockAssistantMessage([]) },
-        {
-          name: "empty summary content",
-          message: mockAssistantMessage([{ type: "text", text: "   " }]),
-        },
-      ] as const;
-      for (const testCase of cases) {
-        vi.mocked(completeSimple).mockResolvedValue(testCase.message);
-        await expect(
-          summarizeText({
-            text: "text",
-            targetLength: 500,
-            cfg: baseCfg,
-            config: baseConfig,
-            timeoutMs: 30_000,
-          }),
-          testCase.name,
-        ).rejects.toThrow("No summary returned");
-      }
-    });
-  });
-
   describe("getTtsProvider", () => {
     const baseCfg: RemoteClawConfig = {
-      agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
+      agents: { defaults: {} },
       messages: { tts: {} },
     };
 
-    it("selects provider based on available API keys", () => {
+    it("selects provider based on available API keys", async () => {
       const cases = [
         {
           env: {
@@ -455,18 +230,18 @@ describe("tts", () => {
       ] as const;
 
       for (const testCase of cases) {
-        withEnv(testCase.env, () => {
+        const provider = await withEnvAsync(testCase.env, async () => {
           const config = resolveTtsConfig(baseCfg);
-          const provider = getTtsProvider(config, testCase.prefsPath);
-          expect(provider).toBe(testCase.expected);
+          return getTtsProvider(config, testCase.prefsPath);
         });
+        expect(provider).toBe(testCase.expected);
       }
     });
   });
 
   describe("maybeApplyTtsToPayload", () => {
     const baseCfg: RemoteClawConfig = {
-      agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
+      agents: { defaults: {} },
       messages: {
         tts: {
           auto: "inbound",

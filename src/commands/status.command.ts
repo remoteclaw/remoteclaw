@@ -1,19 +1,12 @@
 import { formatCliCommand } from "../cli/command-format.js";
 import { withProgress } from "../cli/progress.js";
-import { loadConfig, resolveGatewayPort } from "../config/config.js";
+import { resolveGatewayPort } from "../config/config.js";
 import { buildGatewayConnectionDetails, callGateway } from "../gateway/call.js";
 import { info } from "../globals.js";
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import type { HeartbeatEventPayload } from "../infra/heartbeat-events.js";
 import { formatUsageReportLines, loadProviderUsageSummary } from "../infra/provider-usage.js";
 import { normalizeUpdateChannel, resolveUpdateChannelDisplay } from "../infra/update-channels.js";
-import { formatGitInstallLabel } from "../infra/update-check.js";
-import {
-  resolveMemoryCacheSummary,
-  resolveMemoryFtsState,
-  resolveMemoryVectorState,
-  type Tone,
-} from "../memory/status-format.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { runSecurityAudit } from "../security/audit.js";
 import { renderTable } from "../terminal/table.js";
@@ -21,7 +14,6 @@ import { theme } from "../terminal/theme.js";
 import { formatHealthChannelLines, type HealthSummary } from "./health.js";
 import { resolveControlUiLinks } from "./onboard-helpers.js";
 import { statusAllCommand } from "./status-all.js";
-import { groupChannelIssuesByChannel } from "./status-all/channel-issues.js";
 import { formatGatewayAuthUsed } from "./status-all/format.js";
 import { getDaemonStatusSummary, getNodeDaemonStatusSummary } from "./status.daemon.js";
 import {
@@ -81,33 +73,10 @@ export async function statusCommand(
     return;
   }
 
-  const [scan, securityAudit] = opts.json
-    ? await Promise.all([
-        scanStatus({ json: opts.json, timeoutMs: opts.timeoutMs, all: opts.all }, runtime),
-        runSecurityAudit({
-          config: loadConfig(),
-          deep: false,
-          includeFilesystem: true,
-          includeChannelSecurity: true,
-        }),
-      ])
-    : [
-        await scanStatus({ json: opts.json, timeoutMs: opts.timeoutMs, all: opts.all }, runtime),
-        await withProgress(
-          {
-            label: "Running security audit…",
-            indeterminate: true,
-            enabled: true,
-          },
-          async () =>
-            await runSecurityAudit({
-              config: loadConfig(),
-              deep: false,
-              includeFilesystem: true,
-              includeChannelSecurity: true,
-            }),
-        ),
-      ];
+  const scan = await scanStatus(
+    { json: opts.json, timeoutMs: opts.timeoutMs, all: opts.all },
+    runtime,
+  );
   const {
     cfg,
     osSummary,
@@ -125,9 +94,22 @@ export async function statusCommand(
     agentStatus,
     channels,
     summary,
-    memory,
-    memoryPlugin,
   } = scan;
+
+  const securityAudit = await withProgress(
+    {
+      label: "Running security audit…",
+      indeterminate: true,
+      enabled: opts.json !== true,
+    },
+    async () =>
+      await runSecurityAudit({
+        config: cfg,
+        deep: false,
+        includeFilesystem: true,
+        includeChannelSecurity: true,
+      }),
+  );
 
   const usage = opts.usage
     ? await withProgress(
@@ -166,9 +148,6 @@ export async function statusCommand(
   const configChannel = normalizeUpdateChannel(cfg.update?.channel);
   const channelInfo = resolveUpdateChannelDisplay({
     configChannel,
-    installKind: update.installKind,
-    gitTag: update.git?.tag ?? null,
-    gitBranch: update.git?.branch ?? null,
   });
 
   if (opts.json) {
@@ -184,8 +163,6 @@ export async function statusCommand(
           update,
           updateChannel: channelInfo.channel,
           updateChannelSource: channelInfo.source,
-          memory,
-          memoryPlugin,
           gateway: {
             mode: gatewayMode,
             url: gatewayConnection.url,
@@ -272,14 +249,10 @@ export async function statusCommand(
   });
 
   const agentsValue = (() => {
-    const pending =
-      (agentStatus.bootstrapPendingCount ?? 0) > 0
-        ? `${agentStatus.bootstrapPendingCount} bootstrap file${agentStatus.bootstrapPendingCount === 1 ? "" : "s"} present`
-        : "no bootstrap files";
     const def = agentStatus.agents.find((a) => a.id === agentStatus.defaultId);
     const defActive = def?.lastActiveAgeMs != null ? formatTimeAgo(def.lastActiveAgeMs) : "unknown";
     const defSuffix = def ? ` · default ${def.id} active ${defActive}` : "";
-    return `${agentStatus.agents.length} · ${pending} · sessions ${agentStatus.totalSessions}${defSuffix}`;
+    return `${agentStatus.agents.length} · sessions ${agentStatus.totalSessions}${defSuffix}`;
   })();
 
   const [daemon, nodeDaemon] = await Promise.all([
@@ -343,55 +316,9 @@ export async function statusCommand(
       ? `${summary.sessions.paths.length} stores`
       : (summary.sessions.paths[0] ?? "unknown");
 
-  const memoryValue = (() => {
-    if (!memoryPlugin.enabled) {
-      const suffix = memoryPlugin.reason ? ` (${memoryPlugin.reason})` : "";
-      return muted(`disabled${suffix}`);
-    }
-    if (!memory) {
-      const slot = memoryPlugin.slot ? `plugin ${memoryPlugin.slot}` : "plugin";
-      // Custom (non-built-in) memory plugins can't be probed — show enabled, not unavailable
-      if (memoryPlugin.slot && memoryPlugin.slot !== "memory-core") {
-        return `enabled (${slot})`;
-      }
-      return muted(`enabled (${slot}) · unavailable`);
-    }
-    const parts: string[] = [];
-    const dirtySuffix = memory.dirty ? ` · ${warn("dirty")}` : "";
-    parts.push(`${memory.files} files · ${memory.chunks} chunks${dirtySuffix}`);
-    if (memory.sources?.length) {
-      parts.push(`sources ${memory.sources.join(", ")}`);
-    }
-    if (memoryPlugin.slot) {
-      parts.push(`plugin ${memoryPlugin.slot}`);
-    }
-    const colorByTone = (tone: Tone, text: string) =>
-      tone === "ok" ? ok(text) : tone === "warn" ? warn(text) : muted(text);
-    const vector = memory.vector;
-    if (vector) {
-      const state = resolveMemoryVectorState(vector);
-      const label = state.state === "disabled" ? "vector off" : `vector ${state.state}`;
-      parts.push(colorByTone(state.tone, label));
-    }
-    const fts = memory.fts;
-    if (fts) {
-      const state = resolveMemoryFtsState(fts);
-      const label = state.state === "disabled" ? "fts off" : `fts ${state.state}`;
-      parts.push(colorByTone(state.tone, label));
-    }
-    const cache = memory.cache;
-    if (cache) {
-      const summary = resolveMemoryCacheSummary(cache);
-      parts.push(colorByTone(summary.tone, summary.text));
-    }
-    return parts.join(" · ");
-  })();
-
   const updateAvailability = resolveUpdateAvailability(update);
   const updateLine = formatUpdateOneLiner(update).replace(/^Update:\s*/i, "");
   const channelLabel = channelInfo.label;
-  const gitLabel = formatGitInstallLabel(update);
-
   const overviewRows = [
     { Item: "Dashboard", Value: dashboard },
     { Item: "OS", Value: `${osSummary.label} · node ${process.versions.node}` },
@@ -405,7 +332,6 @@ export async function statusCommand(
             : warn(`${tailscaleMode} · magicdns unknown`),
     },
     { Item: "Channel", Value: channelLabel },
-    ...(gitLabel ? [{ Item: "Git", Value: gitLabel }] : []),
     {
       Item: "Update",
       Value: updateAvailability.available ? warn(`available · ${updateLine}`) : updateLine,
@@ -414,7 +340,6 @@ export async function statusCommand(
     { Item: "Gateway service", Value: daemonValue },
     { Item: "Node service", Value: nodeDaemonValue },
     { Item: "Agents", Value: agentsValue },
-    { Item: "Memory", Value: memoryValue },
     { Item: "Probes", Value: probesValue },
     { Item: "Events", Value: eventsValue },
     { Item: "Heartbeat", Value: heartbeatValue },
@@ -503,7 +428,19 @@ export async function statusCommand(
 
   runtime.log("");
   runtime.log(theme.heading("Channels"));
-  const channelIssuesByChannel = groupChannelIssuesByChannel(channelIssues);
+  const channelIssuesByChannel = (() => {
+    const map = new Map<string, typeof channelIssues>();
+    for (const issue of channelIssues) {
+      const key = issue.channel;
+      const list = map.get(key);
+      if (list) {
+        list.push(issue);
+      } else {
+        map.set(key, [issue]);
+      }
+    }
+    return map;
+  })();
   runtime.log(
     renderTable({
       width: tableWidth,
@@ -651,8 +588,8 @@ export async function statusCommand(
   }
 
   runtime.log("");
-  runtime.log("FAQ: https://docs.remoteclaw.ai/faq");
-  runtime.log("Troubleshooting: https://docs.remoteclaw.ai/troubleshooting");
+  runtime.log("FAQ: https://docs.remoteclaw.org/faq");
+  runtime.log("Troubleshooting: https://docs.remoteclaw.org/troubleshooting");
   runtime.log("");
   const updateHint = formatUpdateAvailableHint(update);
   if (updateHint) {

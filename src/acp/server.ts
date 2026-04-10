@@ -3,11 +3,9 @@ import { Readable, Writable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { AgentSideConnection, ndJsonStream } from "@agentclientprotocol/sdk";
 import { loadConfig } from "../config/config.js";
-import {
-  buildGatewayConnectionDetails,
-  resolveGatewayCredentialsWithSecretInputs,
-} from "../gateway/call.js";
+import { buildGatewayConnectionDetails } from "../gateway/call.js";
 import { GatewayClient } from "../gateway/client.js";
+import { resolveGatewayCredentialsFromConfig } from "../gateway/credentials.js";
 import { isMainModule } from "../infra/is-main.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import { readSecretFromFile } from "./secret-file.js";
@@ -20,13 +18,13 @@ export async function serveAcpGateway(opts: AcpServerOptions = {}): Promise<void
     config: cfg,
     url: opts.gatewayUrl,
   });
-  const creds = await resolveGatewayCredentialsWithSecretInputs({
-    config: cfg,
+  const creds = resolveGatewayCredentialsFromConfig({
+    cfg,
+    env: process.env,
     explicitAuth: {
       token: opts.gatewayToken,
       password: opts.gatewayPassword,
     },
-    env: process.env,
   });
 
   let agent: AcpGatewayAgent | null = null;

@@ -8,11 +8,9 @@
 
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-type ClientToolDefinition = Record<string, unknown>;
 import { createDefaultDeps } from "../cli/deps.js";
 import { agentCommandFromIngress } from "../commands/agent.js";
-import type { ImageContent } from "../commands/agent/types.js";
+import type { ClientToolDefinition, ImageContent } from "../commands/agent/types.js";
 import type { GatewayHttpResponsesConfig } from "../config/types.gateway.js";
 import { emitAgentEvent, onAgentEvent } from "../infra/agent-events.js";
 import { logWarn } from "../logger.js";

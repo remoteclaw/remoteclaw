@@ -78,12 +78,12 @@ describe("zalouser send helpers", () => {
   it("delegates link helper to JS transport", async () => {
     mockSendLink.mockResolvedValueOnce({ ok: false, error: "boom" });
 
-    const result = await sendLinkZalouser("thread-3", "https://remoteclaw.ai", {
+    const result = await sendLinkZalouser("thread-3", "https://remoteclaw.org", {
       profile: "p3",
       isGroup: true,
     });
 
-    expect(mockSendLink).toHaveBeenCalledWith("thread-3", "https://remoteclaw.ai", {
+    expect(mockSendLink).toHaveBeenCalledWith("thread-3", "https://remoteclaw.org", {
       profile: "p3",
       isGroup: true,
     });

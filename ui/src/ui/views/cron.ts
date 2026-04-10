@@ -61,7 +61,7 @@ export type CronProps = {
   thinkingSuggestions: string[];
   timezoneSuggestions: string[];
   deliveryToSuggestions: string[];
-  accountSuggestions: string[];
+  accountSuggestions?: string[];
   onFormChange: (patch: Partial<CronFormState>) => void;
   onRefresh: () => void;
   onAdd: () => void;
@@ -1383,7 +1383,7 @@ export function renderCron(props: CronProps) {
     ${renderSuggestionList("cron-thinking-suggestions", props.thinkingSuggestions)}
     ${renderSuggestionList("cron-tz-suggestions", props.timezoneSuggestions)}
     ${renderSuggestionList("cron-delivery-to-suggestions", props.deliveryToSuggestions)}
-    ${renderSuggestionList("cron-delivery-account-suggestions", props.accountSuggestions)}
+    ${renderSuggestionList("cron-delivery-account-suggestions", props.accountSuggestions ?? [])}
   `;
 }
 

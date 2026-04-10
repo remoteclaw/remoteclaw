@@ -33,7 +33,7 @@ export type ChatProps = {
   messages: unknown[];
   toolMessages: unknown[];
   thinkingLevel?: string | null;
-  thinkingStream: string | null;
+  thinkingStream?: string | null;
   stream: string | null;
   streamStartedAt: number | null;
   assistantAvatarUrl?: string | null;

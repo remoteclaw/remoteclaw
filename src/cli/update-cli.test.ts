@@ -208,7 +208,7 @@ describe("update-cli", () => {
   const makeOkUpdateResult = (overrides: Partial<UpdateRunResult> = {}): UpdateRunResult =>
     ({
       status: "ok",
-      mode: "git",
+      mode: "unknown",
       steps: [],
       durationMs: 100,
       ...overrides,
@@ -382,7 +382,7 @@ describe("update-cli", () => {
   it.each([
     {
       name: "defaults to dev channel for git installs when unset",
-      mode: "git" as const,
+      mode: "unknown" as const,
       options: {},
       prepare: async () => {},
       expectedChannel: "dev" as const,
@@ -401,7 +401,7 @@ describe("update-cli", () => {
     },
     {
       name: "uses stored beta channel when configured",
-      mode: "git" as const,
+      mode: "unknown" as const,
       options: {},
       prepare: async () => {
         vi.mocked(readConfigFileSnapshot).mockResolvedValue({
@@ -485,7 +485,7 @@ describe("update-cli", () => {
   it("updateCommand exits with error on failure", async () => {
     const mockResult: UpdateRunResult = {
       status: "error",
-      mode: "git",
+      mode: "unknown",
       reason: "rebase-failed",
       steps: [],
       durationMs: 100,
@@ -502,7 +502,7 @@ describe("update-cli", () => {
   it("updateCommand refreshes gateway service env when service is already installed", async () => {
     const mockResult: UpdateRunResult = {
       status: "ok",
-      mode: "git",
+      mode: "unknown",
       steps: [],
       durationMs: 100,
     };
@@ -713,7 +713,7 @@ describe("update-cli", () => {
       confirm.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
       vi.mocked(runGatewayUpdate).mockResolvedValue({
         status: "ok",
-        mode: "git",
+        mode: "unknown",
         steps: [],
         durationMs: 100,
       });

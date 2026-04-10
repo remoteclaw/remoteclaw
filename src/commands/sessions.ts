@@ -1,5 +1,4 @@
-import { lookupContextTokens } from "../agents/context.js";
-import { DEFAULT_CONTEXT_TOKENS } from "../agents/defaults.js";
+// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
 import { loadConfig } from "../config/config.js";
 import { loadSessionStore, resolveFreshSessionTotalTokens } from "../config/sessions.js";
 import { classifySessionKey } from "../gateway/session-utils.js";
@@ -7,7 +6,7 @@ import { info } from "../globals.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { isRich, theme } from "../terminal/theme.js";
-import { resolveSessionStoreTargetsOrExit } from "./session-store-targets.js";
+import { resolveSessionStoreTargets } from "./session-store-targets.js";
 import {
   formatSessionAgeCell,
   formatSessionFlagsCell,
@@ -91,20 +90,17 @@ export async function sessionsCommand(
   const aggregateAgents = opts.allAgents === true;
   const cfg = loadConfig();
   const displayDefaults = resolveSessionDisplayDefaults(cfg);
-  const configContextTokens =
-    cfg.agents?.defaults?.contextTokens ??
-    lookupContextTokens(displayDefaults.model) ??
-    DEFAULT_CONTEXT_TOKENS;
-  const targets = resolveSessionStoreTargetsOrExit({
-    cfg,
-    opts: {
+  const configContextTokens = cfg.agents?.defaults?.contextTokens ?? 200_000;
+  let targets: ReturnType<typeof resolveSessionStoreTargets>;
+  try {
+    targets = resolveSessionStoreTargets(cfg, {
       store: opts.store,
       agent: opts.agent,
       allAgents: opts.allAgents,
-    },
-    runtime,
-  });
-  if (!targets) {
+    });
+  } catch (error) {
+    runtime.error(error instanceof Error ? error.message : String(error));
+    runtime.exit(1);
     return;
   }
 
@@ -162,8 +158,7 @@ export async function sessionsCommand(
               totalTokens: resolveFreshSessionTotalTokens(r) ?? null,
               totalTokensFresh:
                 typeof r.totalTokens === "number" ? r.totalTokensFresh !== false : false,
-              contextTokens:
-                r.contextTokens ?? lookupContextTokens(model) ?? configContextTokens ?? null,
+              contextTokens: r.contextTokens ?? configContextTokens ?? null,
               model,
             };
           }),
@@ -207,7 +202,7 @@ export async function sessionsCommand(
 
   for (const row of rows) {
     const model = resolveSessionDisplayModel(cfg, row, displayDefaults);
-    const contextTokens = row.contextTokens ?? lookupContextTokens(model) ?? configContextTokens;
+    const contextTokens = row.contextTokens ?? configContextTokens;
     const total = resolveFreshSessionTotalTokens(row);
 
     const line = [

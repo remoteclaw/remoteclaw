@@ -45,7 +45,6 @@ const createHealthSummary = (params: {
     channelLabels: params.channelLabels,
     heartbeatSeconds: 60,
     defaultAgentId: "main",
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     agents: [createMainAgentSummary(sessions)],
     sessions,
   };

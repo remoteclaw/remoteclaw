@@ -368,7 +368,7 @@ export function registerPluginsCli(program: Command) {
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/plugins", "docs.remoteclaw.ai/cli/plugins")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/plugins", "docs.remoteclaw.org/cli/plugins")}\n`,
     );
 
   plugins
@@ -818,7 +818,7 @@ export function registerPluginsCli(program: Command) {
           lines.push(`- ${target}${diag.message}`);
         }
       }
-      const docs = formatDocsLink("/plugin", "docs.remoteclaw.ai/plugin");
+      const docs = formatDocsLink("/plugin", "docs.remoteclaw.org/plugin");
       lines.push("");
       lines.push(`${theme.muted("Docs:")} ${docs}`);
       defaultRuntime.log(lines.join("\n"));

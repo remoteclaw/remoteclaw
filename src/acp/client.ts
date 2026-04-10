@@ -1,6 +1,5 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
-import { homedir } from "node:os";
 import path from "node:path";
 import * as readline from "node:readline";
 import { Readable, Writable } from "node:stream";
@@ -16,22 +15,16 @@ import {
 import { isKnownCoreToolId } from "../agents/tool-catalog.js";
 import { ensureRemoteClawCliOnPath } from "../infra/path-env.js";
 import {
-  materializeWindowsSpawnProgram,
   resolveWindowsSpawnProgram,
+  materializeWindowsSpawnProgram,
 } from "../plugin-sdk/windows-spawn.js";
 import { DANGEROUS_ACP_TOOLS } from "../security/dangerous-tools.js";
 
-const SAFE_AUTO_APPROVE_TOOL_IDS = new Set(["read", "search", "web_search", "memory_search"]);
+const SAFE_AUTO_APPROVE_TOOL_IDS = new Set(["search"]);
 const TRUSTED_SAFE_TOOL_ALIASES = new Set(["search"]);
-const READ_TOOL_PATH_KEYS = ["path", "file_path", "filePath"];
 const TOOL_NAME_MAX_LENGTH = 128;
 const TOOL_NAME_PATTERN = /^[a-z0-9._-]+$/;
-const TOOL_KIND_BY_ID = new Map<string, string>([
-  ["read", "read"],
-  ["search", "search"],
-  ["web_search", "search"],
-  ["memory_search", "search"],
-]);
+const TOOL_KIND_BY_ID = new Map<string, string>([["search", "search"]]);
 
 type PermissionOption = RequestPermissionRequest["options"][number];
 
@@ -103,105 +96,12 @@ function resolveToolNameForPermission(params: RequestPermissionRequest): string 
   return normalizeToolName(fromMeta ?? fromRawInput ?? fromTitle ?? "");
 }
 
-function extractPathFromToolTitle(
-  toolTitle: string | undefined,
-  toolName: string | undefined,
-): string | undefined {
-  if (!toolTitle) {
-    return undefined;
-  }
-  const separator = toolTitle.indexOf(":");
-  if (separator < 0) {
-    return undefined;
-  }
-  const tail = toolTitle.slice(separator + 1).trim();
-  if (!tail) {
-    return undefined;
-  }
-  const keyedMatch = tail.match(/(?:^|,\s*)(?:path|file_path|filePath)\s*:\s*([^,]+)/);
-  if (keyedMatch?.[1]) {
-    return keyedMatch[1].trim();
-  }
-  if (toolName === "read") {
-    return tail;
-  }
-  return undefined;
-}
-
-function resolveToolPathCandidate(
-  params: RequestPermissionRequest,
-  toolName: string | undefined,
-  toolTitle: string | undefined,
-): string | undefined {
-  const rawInput = asRecord(params.toolCall?.rawInput);
-  const fromRawInput = readFirstStringValue(rawInput, READ_TOOL_PATH_KEYS);
-  const fromTitle = extractPathFromToolTitle(toolTitle, toolName);
-  return fromRawInput ?? fromTitle;
-}
-
-function resolveAbsoluteScopedPath(value: string, cwd: string): string | undefined {
-  let candidate = value.trim();
-  if (!candidate) {
-    return undefined;
-  }
-  if (candidate.startsWith("file://")) {
-    try {
-      const parsed = new URL(candidate);
-      candidate = decodeURIComponent(parsed.pathname || "");
-    } catch {
-      return undefined;
-    }
-  }
-  if (candidate === "~") {
-    candidate = homedir();
-  } else if (candidate.startsWith("~/")) {
-    candidate = path.join(homedir(), candidate.slice(2));
-  }
-  const absolute = path.isAbsolute(candidate)
-    ? path.normalize(candidate)
-    : path.resolve(cwd, candidate);
-  return absolute;
-}
-
-function isPathWithinRoot(candidatePath: string, root: string): boolean {
-  const relative = path.relative(root, candidatePath);
-  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
-}
-
-function isReadToolCallScopedToCwd(
-  params: RequestPermissionRequest,
-  toolName: string | undefined,
-  toolTitle: string | undefined,
-  cwd: string,
-): boolean {
-  if (toolName !== "read") {
-    return false;
-  }
-  const rawPath = resolveToolPathCandidate(params, toolName, toolTitle);
-  if (!rawPath) {
-    return false;
-  }
-  const absolutePath = resolveAbsoluteScopedPath(rawPath, cwd);
-  if (!absolutePath) {
-    return false;
-  }
-  return isPathWithinRoot(absolutePath, path.resolve(cwd));
-}
-
-function shouldAutoApproveToolCall(
-  params: RequestPermissionRequest,
-  toolName: string | undefined,
-  toolTitle: string | undefined,
-  cwd: string,
-): boolean {
+function shouldAutoApproveToolCall(toolName: string | undefined): boolean {
   const isTrustedToolId =
     typeof toolName === "string" &&
     (isKnownCoreToolId(toolName) || TRUSTED_SAFE_TOOL_ALIASES.has(toolName));
   if (!toolName || !isTrustedToolId || !SAFE_AUTO_APPROVE_TOOL_IDS.has(toolName)) {
     return false;
-  }
-  if (toolName === "read") {
-    return isReadToolCallScopedToCwd(params, toolName, toolTitle, cwd);
   }
   return true;
 }
@@ -273,7 +173,6 @@ export async function resolvePermissionRequest(
 ): Promise<RequestPermissionResponse> {
   const log = deps.log ?? ((line: string) => console.error(line));
   const prompt = deps.prompt ?? promptUserPermission;
-  const cwd = deps.cwd ?? process.cwd();
   const options = params.options ?? [];
   const toolTitle = params.toolCall?.title ?? "tool";
   const toolName = resolveToolNameForPermission(params);
@@ -286,7 +185,7 @@ export async function resolvePermissionRequest(
 
   const allowOption = pickOption(options, ["allow_once", "allow_always"]);
   const rejectOption = pickOption(options, ["reject_once", "reject_always"]);
-  const autoApproveAllowed = shouldAutoApproveToolCall(params, toolName, toolTitle, cwd);
+  const autoApproveAllowed = shouldAutoApproveToolCall(toolName);
   const promptRequired = !toolName || !autoApproveAllowed || DANGEROUS_ACP_TOOLS.has(toolName);
 
   if (!promptRequired) {
@@ -344,45 +243,6 @@ function buildServerArgs(opts: AcpClientOptions): string[] {
     args.push("--verbose");
   }
   return args;
-}
-
-export function resolveAcpClientSpawnEnv(
-  baseEnv: NodeJS.ProcessEnv = process.env,
-): NodeJS.ProcessEnv {
-  return { ...baseEnv, REMOTECLAW_SHELL: "acp-client" };
-}
-
-type AcpSpawnRuntime = {
-  platform: NodeJS.Platform;
-  env: NodeJS.ProcessEnv;
-  execPath: string;
-};
-
-const DEFAULT_ACP_SPAWN_RUNTIME: AcpSpawnRuntime = {
-  platform: process.platform,
-  env: process.env,
-  execPath: process.execPath,
-};
-
-export function resolveAcpClientSpawnInvocation(
-  params: { serverCommand: string; serverArgs: string[] },
-  runtime: AcpSpawnRuntime = DEFAULT_ACP_SPAWN_RUNTIME,
-): { command: string; args: string[]; shell?: boolean; windowsHide?: boolean } {
-  const program = resolveWindowsSpawnProgram({
-    command: params.serverCommand,
-    platform: runtime.platform,
-    env: runtime.env,
-    execPath: runtime.execPath,
-    packageName: "remoteclaw",
-    allowShellFallback: true,
-  });
-  const resolved = materializeWindowsSpawnProgram(program, params.serverArgs);
-  return {
-    command: resolved.command,
-    args: resolved.argv,
-    shell: resolved.shell,
-    windowsHide: resolved.windowsHide,
-  };
 }
 
 function resolveSelfEntryPath(): string | null {
@@ -450,24 +310,12 @@ export async function createAcpClient(opts: AcpClientOptions = {}): Promise<AcpC
   const entryPath = resolveSelfEntryPath();
   const serverCommand = opts.serverCommand ?? (entryPath ? process.execPath : "remoteclaw");
   const effectiveArgs = opts.serverCommand || !entryPath ? serverArgs : [entryPath, ...serverArgs];
-  const spawnEnv = resolveAcpClientSpawnEnv();
-  const spawnInvocation = resolveAcpClientSpawnInvocation(
-    { serverCommand, serverArgs: effectiveArgs },
-    {
-      platform: process.platform,
-      env: spawnEnv,
-      execPath: process.execPath,
-    },
-  );
 
-  log(`spawning: ${spawnInvocation.command} ${spawnInvocation.args.join(" ")}`);
+  log(`spawning: ${serverCommand} ${effectiveArgs.join(" ")}`);
 
-  const agent = spawn(spawnInvocation.command, spawnInvocation.args, {
+  const agent = spawn(serverCommand, effectiveArgs, {
     stdio: ["pipe", "pipe", "inherit"],
     cwd,
-    env: spawnEnv,
-    shell: spawnInvocation.shell,
-    windowsHide: spawnInvocation.windowsHide,
   });
 
   if (!agent.stdin || !agent.stdout) {
@@ -559,4 +407,43 @@ export async function runAcpClientInteractive(opts: AcpClientOptions = {}): Prom
     rl.close();
     process.exit(code ?? 0);
   });
+}
+
+export function resolveAcpClientSpawnEnv(
+  baseEnv: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
+  return { ...baseEnv, REMOTECLAW_SHELL: "acp-client" };
+}
+
+type AcpSpawnRuntime = {
+  platform: NodeJS.Platform;
+  env: NodeJS.ProcessEnv;
+  execPath: string;
+};
+
+const DEFAULT_ACP_SPAWN_RUNTIME: AcpSpawnRuntime = {
+  platform: process.platform,
+  env: process.env,
+  execPath: process.execPath,
+};
+
+export function resolveAcpClientSpawnInvocation(
+  params: { serverCommand: string; serverArgs: string[] },
+  runtime: AcpSpawnRuntime = DEFAULT_ACP_SPAWN_RUNTIME,
+): { command: string; args: string[]; shell?: boolean; windowsHide?: boolean } {
+  const program = resolveWindowsSpawnProgram({
+    command: params.serverCommand,
+    platform: runtime.platform,
+    env: runtime.env,
+    execPath: runtime.execPath,
+    packageName: "remoteclaw",
+    allowShellFallback: true,
+  });
+  const resolved = materializeWindowsSpawnProgram(program, params.serverArgs);
+  return {
+    command: resolved.command,
+    args: resolved.argv,
+    shell: resolved.shell,
+    windowsHide: resolved.windowsHide,
+  };
 }

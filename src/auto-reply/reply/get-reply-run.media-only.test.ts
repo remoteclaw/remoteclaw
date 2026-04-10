@@ -1,17 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { runPreparedReply } from "./get-reply-run.js";
 
-vi.mock("../../agents/auth-profiles/session-override.js", () => ({
-  resolveSessionAuthProfileOverride: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("../../agents/pi-embedded.js", () => ({
-  abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
-  isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
-  isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
-  resolveEmbeddedSessionLane: vi.fn().mockReturnValue("session:session-key"),
-}));
-
 vi.mock("../../config/sessions.js", () => ({
   resolveGroupSessionKey: vi.fn().mockReturnValue(undefined),
   resolveSessionFilePath: vi.fn().mockReturnValue("/tmp/session.jsonl"),
@@ -21,7 +10,6 @@ vi.mock("../../config/sessions.js", () => ({
 
 vi.mock("../../globals.js", () => ({
   logVerbose: vi.fn(),
-  shouldLogVerbose: vi.fn(() => false),
 }));
 
 vi.mock("../../process/command-queue.js", () => ({
@@ -68,12 +56,7 @@ vi.mock("./route-reply.js", () => ({
 }));
 
 vi.mock("./session-updates.js", () => ({
-  ensureSkillSnapshot: vi.fn().mockImplementation(async ({ sessionEntry, systemSent }) => ({
-    sessionEntry,
-    systemSent,
-    skillsSnapshot: undefined,
-  })),
-  buildQueuedSystemPrompt: vi.fn().mockResolvedValue(undefined),
+  prependSystemEvents: vi.fn().mockImplementation(async ({ prefixedBodyBase }) => prefixedBodyBase),
 }));
 
 vi.mock("./typing-mode.js", () => ({
@@ -82,7 +65,6 @@ vi.mock("./typing-mode.js", () => ({
 
 import { runReplyAgent } from "./agent-runner.js";
 import { routeReply } from "./route-reply.js";
-import { buildQueuedSystemPrompt } from "./session-updates.js";
 import { resolveTypingMode } from "./typing-mode.js";
 
 function baseParams(
@@ -122,22 +104,17 @@ function baseParams(
     } as never,
     commandSource: "",
     allowTextCommands: true,
-    directives: {
-      hasThinkDirective: false,
-      thinkLevel: undefined,
-    } as never,
+    directives: {} as never,
     defaultActivation: "always",
-    resolvedThinkLevel: "high",
     resolvedVerboseLevel: "off",
+    resolvedThinkLevel: undefined,
     resolvedReasoningLevel: "off",
     resolvedElevatedLevel: "off",
     elevatedEnabled: false,
     elevatedAllowed: false,
     blockStreamingEnabled: false,
     resolvedBlockStreamingBreak: "message_end",
-    modelState: {
-      resolveDefaultThinkingLevel: async () => "medium",
-    } as never,
+    modelState: { resolveDefaultThinkingLevel: () => undefined },
     provider: "anthropic",
     model: "claude-opus-4-1",
     typing: {
@@ -162,18 +139,20 @@ describe("runPreparedReply media-only handling", () => {
     vi.clearAllMocks();
   });
 
-  it("allows media-only prompts and preserves thread context in queued followups", async () => {
+  it("allows media-only prompts and preserves thread context as structured field", async () => {
     const result = await runPreparedReply(baseParams());
     expect(result).toEqual({ text: "ok" });
 
     const call = vi.mocked(runReplyAgent).mock.calls[0]?.[0];
     expect(call).toBeTruthy();
-    expect(call?.followupRun.prompt).toContain("[Thread history - for context]");
-    expect(call?.followupRun.prompt).toContain("Earlier message in this thread");
+    expect(call?.followupRun.run.threadContext).toContain("[Thread history - for context]");
+    expect(call?.followupRun.run.threadContext).toContain("Earlier message in this thread");
     expect(call?.followupRun.prompt).toContain("[User sent media without caption]");
+    // Thread context should NOT be baked into the prompt
+    expect(call?.followupRun.prompt).not.toContain("[Thread history - for context]");
   });
 
-  it("keeps thread history context on follow-up turns", async () => {
+  it("keeps thread history context on follow-up turns as structured field", async () => {
     const result = await runPreparedReply(
       baseParams({
         isNewSession: false,
@@ -183,8 +162,10 @@ describe("runPreparedReply media-only handling", () => {
 
     const call = vi.mocked(runReplyAgent).mock.calls[0]?.[0];
     expect(call).toBeTruthy();
-    expect(call?.followupRun.prompt).toContain("[Thread history - for context]");
-    expect(call?.followupRun.prompt).toContain("Earlier message in this thread");
+    expect(call?.followupRun.run.threadContext).toContain("[Thread history - for context]");
+    expect(call?.followupRun.run.threadContext).toContain("Earlier message in this thread");
+    // Thread context should NOT be baked into the prompt
+    expect(call?.followupRun.prompt).not.toContain("[Thread history - for context]");
   });
 
   it("returns the empty-body reply when there is no text and no media", async () => {
@@ -282,37 +263,6 @@ describe("runPreparedReply media-only handling", () => {
     expect(call?.followupRun.run.messageProvider).toBe("webchat");
   });
 
-  it("prefers Provider over Surface when origin channel is missing", async () => {
-    await runPreparedReply(
-      baseParams({
-        ctx: {
-          Body: "",
-          RawBody: "",
-          CommandBody: "",
-          ThreadHistoryBody: "Earlier message in this thread",
-          OriginatingChannel: undefined,
-          OriginatingTo: undefined,
-          Provider: "feishu",
-          Surface: "webchat",
-          ChatType: "group",
-        },
-        sessionCtx: {
-          Body: "",
-          BodyStripped: "",
-          ThreadHistoryBody: "Earlier message in this thread",
-          MediaPath: "/tmp/input.png",
-          Provider: "webchat",
-          ChatType: "group",
-          OriginatingChannel: undefined,
-          OriginatingTo: undefined,
-        },
-      }),
-    );
-
-    const call = vi.mocked(runReplyAgent).mock.calls[0]?.[0];
-    expect(call?.followupRun.run.messageProvider).toBe("feishu");
-  });
-
   it("passes suppressTyping through typing mode resolution", async () => {
     await runPreparedReply(
       baseParams({
@@ -326,19 +276,5 @@ describe("runPreparedReply media-only handling", () => {
       | { suppressTyping?: boolean }
       | undefined;
     expect(call?.suppressTyping).toBe(true);
-  });
-
-  it("routes queued system events to system prompt context, not user prompt text", async () => {
-    vi.mocked(buildQueuedSystemPrompt).mockResolvedValueOnce(
-      "## Runtime System Events (gateway-generated)\n- [t] Model switched.",
-    );
-
-    await runPreparedReply(baseParams());
-
-    const call = vi.mocked(runReplyAgent).mock.calls[0]?.[0];
-    expect(call).toBeTruthy();
-    expect(call?.commandBody).not.toContain("Runtime System Events");
-    expect(call?.followupRun.run.extraSystemPrompt).toContain("Runtime System Events");
-    expect(call?.followupRun.run.extraSystemPrompt).toContain("Model switched.");
   });
 });

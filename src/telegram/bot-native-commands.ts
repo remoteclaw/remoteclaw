@@ -109,7 +109,6 @@ export type RegisterTelegramHandlerParams = {
       messageIdOverride?: string;
       forceWasMentioned?: boolean;
     },
-    replyMedia?: TelegramMediaRef[],
   ) => Promise<void>;
   logger: ReturnType<typeof getChildLogger>;
 };

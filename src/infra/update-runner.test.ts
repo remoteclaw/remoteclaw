@@ -125,7 +125,7 @@ describe("runGatewayUpdate", () => {
     const result = await runWithRunner(runner);
 
     expect(result.status).toBe("skipped");
-    expect(result.reason).toBe("no-package-manager");
+    expect(result.reason).toBe("not-git-install");
     expect(calls.some((call) => call.startsWith("pnpm add -g"))).toBe(false);
     expect(calls.some((call) => call.startsWith("npm i -g"))).toBe(false);
   });

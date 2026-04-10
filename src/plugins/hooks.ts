@@ -28,6 +28,7 @@ import type {
   PluginHookRegistration,
   PluginHookSessionContext,
   PluginHookSessionEndEvent,
+  PluginHookSessionResumedEvent,
   PluginHookSessionStartEvent,
   PluginHookSubagentContext,
   PluginHookSubagentDeliveryTargetEvent,
@@ -61,6 +62,7 @@ export type {
   PluginHookBeforeMessageWriteResult,
   PluginHookSessionContext,
   PluginHookSessionEndEvent,
+  PluginHookSessionResumedEvent,
   PluginHookSessionStartEvent,
   PluginHookSubagentContext,
   PluginHookSubagentDeliveryTargetEvent,
@@ -536,10 +538,9 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
    * Runs in parallel (fire-and-forget).
    */
   async function runSessionResumed(
-    event: PluginHookSessionEndEvent,
+    event: PluginHookSessionResumedEvent,
     ctx: PluginHookAgentContext,
   ): Promise<void> {
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     return runVoidHook("session_resumed", event, ctx);
   }
 

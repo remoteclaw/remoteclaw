@@ -22,7 +22,6 @@ export function registerNodesCli(program: Command) {
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
           ["remoteclaw nodes status", "List known nodes with live status."],
           ["remoteclaw nodes pairing pending", "Show pending node pairing requests."],
-          ['remoteclaw nodes run --node <id> --raw "uname -a"', "Run a shell command on a node."],
           ["remoteclaw nodes camera snap --node <id>", "Capture a photo from a node camera."],
         ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/nodes", "docs.remoteclaw.org/cli/nodes")}\n`,
     );

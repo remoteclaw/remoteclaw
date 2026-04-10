@@ -7,9 +7,6 @@ import { renderChatControls, renderTab, renderThemeToggle } from "./app-render.h
 import type { AppViewState } from "./app-view-state.ts";
 import { loadAgentFileContent, loadAgentFiles, saveAgentFile } from "./controllers/agent-files.ts";
 import { loadAgentIdentities, loadAgentIdentity } from "./controllers/agent-identity.ts";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./controllers/agent-skills.ts";
-const loadAgentSkills = (..._args: unknown[]) => undefined as unknown;
 import { loadAgents, loadToolsCatalog } from "./controllers/agents.ts";
 import { loadChannels } from "./controllers/channels.ts";
 import { loadChatHistory } from "./controllers/chat.ts";
@@ -58,13 +55,6 @@ import { loadLogs } from "./controllers/logs.ts";
 import { loadNodes } from "./controllers/nodes.ts";
 import { loadPresence } from "./controllers/presence.ts";
 import { deleteSessionAndRefresh, loadSessions, patchSession } from "./controllers/sessions.ts";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./controllers/skills.ts";
-const installSkill = (..._args: unknown[]) => undefined as unknown;
-const loadSkills = (..._args: unknown[]) => undefined as unknown;
-const saveSkillApiKey = (..._args: unknown[]) => undefined as unknown;
-const updateSkillEdit = (..._args: unknown[]) => undefined as unknown;
-const updateSkillEnabled = (..._args: unknown[]) => undefined as unknown;
 import { buildExternalLinkRel, EXTERNAL_LINK_TARGET } from "./external-link.ts";
 import { icons } from "./icons.ts";
 import { normalizeBasePath, TAB_GROUPS, subtitleForTab, titleForTab } from "./navigation.ts";
@@ -82,9 +72,6 @@ import { renderLogs } from "./views/logs.ts";
 import { renderNodes } from "./views/nodes.ts";
 import { renderOverview } from "./views/overview.ts";
 import { renderSessions } from "./views/sessions.ts";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./views/skills.ts";
-const renderSkills = (..._args: unknown[]) => undefined as unknown;
 const AVATAR_DATA_RE = /^data:/i;
 const AVATAR_HTTP_RE = /^https?:\/\//i;
 const CRON_THINKING_SUGGESTIONS = ["off", "minimal", "low", "medium", "high"];
@@ -567,14 +554,9 @@ export function renderApp(state: AppViewState) {
                 agentIdentityLoading: state.agentIdentityLoading,
                 agentIdentityError: state.agentIdentityError,
                 agentIdentityById: state.agentIdentityById,
-                agentSkillsLoading: state.agentSkillsLoading,
-                agentSkillsReport: state.agentSkillsReport,
-                agentSkillsError: state.agentSkillsError,
-                agentSkillsAgentId: state.agentSkillsAgentId,
                 toolsCatalogLoading: state.toolsCatalogLoading,
                 toolsCatalogError: state.toolsCatalogError,
                 toolsCatalogResult: state.toolsCatalogResult,
-                skillsFilter: state.skillsFilter,
                 onRefresh: async () => {
                   await loadAgents(state);
                   const nextSelected =
@@ -599,18 +581,12 @@ export function renderApp(state: AppViewState) {
                   state.agentFileActive = null;
                   state.agentFileContents = {};
                   state.agentFileDrafts = {};
-                  state.agentSkillsReport = null;
-                  state.agentSkillsError = null;
-                  state.agentSkillsAgentId = null;
                   void loadAgentIdentity(state, agentId);
                   if (state.agentsPanel === "tools") {
                     void loadToolsCatalog(state, agentId);
                   }
                   if (state.agentsPanel === "files") {
                     void loadAgentFiles(state, agentId);
-                  }
-                  if (state.agentsPanel === "skills") {
-                    void loadAgentSkills(state, agentId);
                   }
                 },
                 onSelectPanel: (panel) => {
@@ -627,11 +603,6 @@ export function renderApp(state: AppViewState) {
                   }
                   if (panel === "tools") {
                     void loadToolsCatalog(state, resolvedAgentId);
-                  }
-                  if (panel === "skills") {
-                    if (resolvedAgentId) {
-                      void loadAgentSkills(state, resolvedAgentId);
-                    }
                   }
                   if (panel === "channels") {
                     void loadChannels(state, false);
@@ -725,94 +696,6 @@ export function renderApp(state: AppViewState) {
                 onConfigSave: () => saveConfig(state),
                 onChannelsRefresh: () => loadChannels(state, false),
                 onCronRefresh: () => state.loadCron(),
-                // oxlint-disable-next-line typescript/no-explicit-any
-                onSkillsFilterChange: (next: any) => (state.skillsFilter = next),
-                onSkillsRefresh: () => {
-                  if (resolvedAgentId) {
-                    void loadAgentSkills(state, resolvedAgentId);
-                  }
-                },
-                // oxlint-disable-next-line typescript/no-explicit-any
-                onAgentSkillToggle: (agentId: any, skillName: any, enabled: any) => {
-                  if (!configValue) {
-                    return;
-                  }
-                  const list = (configValue as { agents?: { list?: unknown[] } }).agents?.list;
-                  if (!Array.isArray(list)) {
-                    return;
-                  }
-                  const index = list.findIndex(
-                    (entry) =>
-                      entry &&
-                      typeof entry === "object" &&
-                      "id" in entry &&
-                      (entry as { id?: string }).id === agentId,
-                  );
-                  if (index < 0) {
-                    return;
-                  }
-                  const entry = list[index] as { skills?: unknown };
-                  const normalizedSkill = skillName.trim();
-                  if (!normalizedSkill) {
-                    return;
-                  }
-                  const allSkills =
-                    state.agentSkillsReport?.skills?.map((skill) => skill.name).filter(Boolean) ??
-                    [];
-                  const existing = Array.isArray(entry.skills)
-                    ? entry.skills.map((name) => String(name).trim()).filter(Boolean)
-                    : undefined;
-                  const base = existing ?? allSkills;
-                  const next = new Set(base);
-                  if (enabled) {
-                    next.add(normalizedSkill);
-                  } else {
-                    next.delete(normalizedSkill);
-                  }
-                  updateConfigFormValue(state, ["agents", "list", index, "skills"], [...next]);
-                },
-                // oxlint-disable-next-line typescript/no-explicit-any
-                onAgentSkillsClear: (agentId: any) => {
-                  if (!configValue) {
-                    return;
-                  }
-                  const list = (configValue as { agents?: { list?: unknown[] } }).agents?.list;
-                  if (!Array.isArray(list)) {
-                    return;
-                  }
-                  const index = list.findIndex(
-                    (entry) =>
-                      entry &&
-                      typeof entry === "object" &&
-                      "id" in entry &&
-                      (entry as { id?: string }).id === agentId,
-                  );
-                  if (index < 0) {
-                    return;
-                  }
-                  removeConfigFormValue(state, ["agents", "list", index, "skills"]);
-                },
-                // oxlint-disable-next-line typescript/no-explicit-any
-                onAgentSkillsDisableAll: (agentId: any) => {
-                  if (!configValue) {
-                    return;
-                  }
-                  const list = (configValue as { agents?: { list?: unknown[] } }).agents?.list;
-                  if (!Array.isArray(list)) {
-                    return;
-                  }
-                  const index = list.findIndex(
-                    (entry) =>
-                      entry &&
-                      typeof entry === "object" &&
-                      "id" in entry &&
-                      (entry as { id?: string }).id === agentId,
-                  );
-                  if (index < 0) {
-                    return;
-                  }
-                  updateConfigFormValue(state, ["agents", "list", index, "skills"], []);
-                },
                 onModelChange: (agentId, modelId) => {
                   if (!configValue) {
                     return;
@@ -898,33 +781,6 @@ export function renderApp(state: AppViewState) {
                     : { fallbacks: normalized };
                   updateConfigFormValue(state, basePath, next);
                 },
-              })
-            : nothing
-        }
-
-        ${
-          // @ts-expect-error — upstream feature not available in RemoteClaw fork
-          state.tab === "skills"
-            ? renderSkills({
-                loading: state.skillsLoading,
-                report: state.skillsReport,
-                error: state.skillsError,
-                filter: state.skillsFilter,
-                edits: state.skillEdits,
-                messages: state.skillMessages,
-                busyKey: state.skillsBusyKey,
-                // oxlint-disable-next-line typescript/no-explicit-any
-                onFilterChange: (next: any) => (state.skillsFilter = next),
-                onRefresh: () => loadSkills(state, { clearMessages: true }),
-                // oxlint-disable-next-line typescript/no-explicit-any
-                onToggle: (key: any, enabled: any) => updateSkillEnabled(state, key, enabled),
-                // oxlint-disable-next-line typescript/no-explicit-any
-                onEdit: (key: any, value: any) => updateSkillEdit(state, key, value),
-                // oxlint-disable-next-line typescript/no-explicit-any
-                onSaveKey: (key: any) => saveSkillApiKey(state, key),
-                // oxlint-disable-next-line typescript/no-explicit-any
-                onInstall: (skillKey: any, name: any, installId: any) =>
-                  installSkill(state, skillKey, name, installId),
               })
             : nothing
         }

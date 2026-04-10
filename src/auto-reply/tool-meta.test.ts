@@ -45,16 +45,6 @@ describe("tool meta formatting", () => {
     expect(out).toContain("`~/dir/a.txt`");
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("keeps exec flags outside markdown and moves them to the front", () => {
-    vi.stubEnv("HOME", home);
-    const out = formatToolAggregate("exec", [`cd ${home}/dir && gemini 2>&1 · pty`], {
-      markdown: true,
-    });
-    expect(out).toBe("🧩 Exec: pty · `cd ~/dir && gemini 2>&1`");
-  });
-
   it("formats prefixes with default labels", () => {
     vi.stubEnv("HOME", home);
     expect(formatToolPrefix(undefined, undefined)).toBe("🧩 Tool");

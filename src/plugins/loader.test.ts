@@ -312,9 +312,6 @@ describe("loadRemoteClawPlugins", () => {
     expect(channel).toBeDefined();
   });
 
-  // Gutted in RemoteClaw fork — registerHttpHandler was removed from the plugin API
-  it.skip("registers http handlers", () => {});
-
   it("registers http routes", () => {
     process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const plugin = writePlugin({

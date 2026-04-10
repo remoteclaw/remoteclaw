@@ -18,7 +18,7 @@ import {
   createOutboundTestPlugin,
   createTestRegistry,
 } from "../../test-utils/channel-plugins.js";
-import { getChannelPluginCatalogEntry, listChannelPluginCatalogEntries } from "./catalog.js";
+import { listChannelPluginCatalogEntries } from "./catalog.js";
 import { resolveChannelConfigWrites } from "./config-writes.js";
 import {
   listDiscordDirectoryGroupsFromConfig,
@@ -101,19 +101,6 @@ describe("channel plugin registry", () => {
 });
 
 describe("channel plugin catalog", () => {
-  // Gutted in RemoteClaw fork — msteams is now an external plugin discovered dynamically
-  it.skip("includes Microsoft Teams", () => {
-    const entry = getChannelPluginCatalogEntry("msteams");
-    expect(entry?.install.npmSpec).toBe("@remoteclaw/msteams");
-    expect(entry?.meta.aliases).toContain("teams");
-  });
-
-  // Gutted in RemoteClaw fork — catalog entries depend on plugin discovery at runtime
-  it.skip("lists plugin catalog entries", () => {
-    const ids = listChannelPluginCatalogEntries().map((entry) => entry.id);
-    expect(ids).toContain("msteams");
-  });
-
   it("includes external catalog entries", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-catalog-"));
     const catalogPath = path.join(dir, "catalog.json");

@@ -83,37 +83,6 @@ describe("runHeartbeatOnce heartbeat_report handling", () => {
     });
   }
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("skips delivery when heartbeat_report says anythingDone=false", async () => {
-    await withTempHeartbeatSandbox(async ({ tmpDir, storePath, replySpy }) => {
-      const cfg = createWhatsAppHeartbeatConfig({
-        tmpDir,
-        storePath,
-      });
-
-      await seedMainSessionStore(storePath, cfg, {
-        lastChannel: "whatsapp",
-        lastProvider: "whatsapp",
-        lastTo: WHATSAPP_GROUP,
-      });
-
-      replySpy.mockResolvedValue({
-        text: "All clear",
-        heartbeatReport: { anythingDone: false, summary: "All clear" },
-      });
-      const sendWhatsApp = createMessageSendSpy();
-
-      await runHeartbeatOnce({
-        cfg,
-        deps: makeWhatsAppDeps({ sendWhatsApp }),
-      });
-
-      // Should not deliver alert — anythingDone is false
-      expect(sendWhatsApp).not.toHaveBeenCalled();
-    });
-  });
-
   it("delivers when heartbeat_report says anythingDone=true", async () => {
     await withTempHeartbeatSandbox(async ({ tmpDir, storePath, replySpy }) => {
       const cfg = createWhatsAppHeartbeatConfig({

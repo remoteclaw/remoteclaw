@@ -286,30 +286,6 @@ describe("monitorSignalProvider tool results", () => {
     ).resolves.toBeUndefined();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("skips tool summaries with responsePrefix", async () => {
-    replyMock.mockResolvedValue({ text: "final reply" });
-
-    await receiveSignalPayloads({
-      payloads: [
-        {
-          envelope: {
-            sourceNumber: "+15550001111",
-            sourceName: "Ada",
-            timestamp: 1,
-            dataMessage: {
-              message: "hello",
-            },
-          },
-        },
-      ],
-    });
-
-    expect(sendMock).toHaveBeenCalledTimes(1);
-    expect(sendMock.mock.calls[0][1]).toBe("PFX final reply");
-  });
-
   it("replies with pairing code when dmPolicy is pairing and no allowFrom is set", async () => {
     setSignalToolResultTestConfig(
       createSignalConfig({ autoStart: false, dmPolicy: "pairing", allowFrom: [] }),
@@ -437,35 +413,6 @@ describe("monitorSignalProvider tool results", () => {
 
     const events = getDirectSignalEventsFor("+15550001111");
     expect(events.some((text) => text.includes("Signal reaction added"))).toBe(true);
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("processes messages when reaction metadata is present", async () => {
-    replyMock.mockResolvedValue({ text: "pong" });
-
-    await receiveSignalPayloads({
-      payloads: [
-        {
-          envelope: {
-            sourceNumber: "+15550001111",
-            sourceName: "Ada",
-            timestamp: 1,
-            reactionMessage: {
-              emoji: "👍",
-              targetAuthor: "+15550002222",
-              targetSentTimestamp: 2,
-            },
-            dataMessage: {
-              message: "ping",
-            },
-          },
-        },
-      ],
-    });
-
-    expect(sendMock).toHaveBeenCalledTimes(1);
-    expect(updateLastRouteMock).toHaveBeenCalled();
   });
 
   it("does not resend pairing code when a request is already pending", async () => {

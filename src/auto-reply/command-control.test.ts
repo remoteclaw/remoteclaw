@@ -4,7 +4,6 @@ import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../test-utils/channel-plugins.js";
 import { resolveCommandAuthorization } from "./command-auth.js";
 import { hasControlCommand, hasInlineCommandTokens } from "./command-detection.js";
-import { listChatCommands } from "./commands-registry.js";
 import { parseActivationCommand } from "./group-activation.js";
 import { parseSendPolicyCommand } from "./send-policy.js";
 import type { MsgContext } from "./templating.js";
@@ -491,30 +490,6 @@ describe("control command parsing", () => {
     expect(parseActivationCommand("activation mention")).toEqual({
       hasCommand: false,
     });
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("treats bare commands as non-control", () => {
-    expect(hasControlCommand("send")).toBe(false);
-    expect(hasControlCommand("help")).toBe(false);
-    expect(hasControlCommand("/commands")).toBe(true);
-    expect(hasControlCommand("/commands:")).toBe(true);
-    expect(hasControlCommand("commands")).toBe(false);
-    expect(hasControlCommand("/status")).toBe(true);
-    expect(hasControlCommand("/status:")).toBe(true);
-    expect(hasControlCommand("status")).toBe(false);
-    expect(hasControlCommand("usage")).toBe(false);
-
-    for (const command of listChatCommands()) {
-      for (const alias of command.textAliases) {
-        expect(hasControlCommand(alias)).toBe(true);
-        expect(hasControlCommand(`${alias}:`)).toBe(true);
-      }
-    }
-    expect(hasControlCommand("/remoteclaw")).toBe(true);
-    expect(hasControlCommand("/remoteclaw:")).toBe(true);
-    expect(hasControlCommand("remoteclaw")).toBe(false);
   });
 
   it("respects disabled config/debug commands", () => {

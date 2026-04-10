@@ -522,46 +522,6 @@ describe("CronService", () => {
     await stopCronAndCleanup(cron, store);
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("passes agentId + sessionKey to runHeartbeatOnce for main-session wakeMode now jobs", async () => {
-    const runHeartbeatOnce = vi.fn(async () => ({ status: "ran" as const, durationMs: 1 }));
-
-    const { store, cron, enqueueSystemEvent, requestHeartbeatNow } =
-      await createWakeModeNowMainHarness({
-        runHeartbeatOnce,
-        // Perf: avoid advancing fake timers by 2+ minutes for the busy-heartbeat fallback.
-        wakeNowHeartbeatBusyMaxWaitMs: 1,
-        wakeNowHeartbeatBusyRetryDelayMs: 2,
-      });
-
-    const sessionKey = "agent:ops:discord:channel:alerts";
-    const job = await addWakeModeNowMainSystemEventJob(cron, {
-      name: "wakeMode now with agent",
-      agentId: "ops",
-      sessionKey,
-    });
-
-    await cron.run(job.id, "force");
-
-    expect(runHeartbeatOnce).toHaveBeenCalledTimes(1);
-    expect(runHeartbeatOnce).toHaveBeenCalledWith(
-      expect.objectContaining({
-        reason: `cron:${job.id}`,
-        agentId: "ops",
-        sessionKey,
-      }),
-    );
-    expect(requestHeartbeatNow).not.toHaveBeenCalled();
-    expect(enqueueSystemEvent).toHaveBeenCalledWith(
-      "hello",
-      expect.objectContaining({ agentId: "ops", sessionKey }),
-    );
-
-    cron.stop();
-    await store.cleanup();
-  });
-
   it("wakeMode now falls back to queued heartbeat when main lane stays busy", async () => {
     const runHeartbeatOnce = vi.fn(async () => ({
       status: "skipped" as const,

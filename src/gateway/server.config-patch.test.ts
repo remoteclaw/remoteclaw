@@ -117,45 +117,4 @@ describe("gateway server sessions", () => {
     expect(workSessions.ok).toBe(true);
     expect(workSessions.payload?.sessions.map((s) => s.key)).toEqual(["agent:work:main"]);
   });
-
-  // Upstream v2026.3.2 — thinkingLevel not wired in fork session patch
-  it.skip("resolves and patches main alias to default agent main key", async () => {
-    const dir = await resetTempDir("main-alias");
-    const storePath = path.join(dir, "sessions.json");
-    testState.sessionStorePath = storePath;
-    testState.agentsConfig = { list: [{ id: "ops", default: true }] };
-    testState.sessionConfig = { mainKey: "work" };
-
-    await writeSessionStore({
-      storePath,
-      agentId: "ops",
-      mainKey: "work",
-      entries: {
-        main: {
-          sessionId: "sess-ops-main",
-          updatedAt: Date.now(),
-        },
-      },
-    });
-
-    const resolved = await rpcReq<{ ok: true; key: string }>(requireWs(), "sessions.resolve", {
-      key: "main",
-    });
-    expect(resolved.ok).toBe(true);
-    expect(resolved.payload?.key).toBe("agent:ops:work");
-
-    const patched = await rpcReq<{ ok: true; key: string }>(requireWs(), "sessions.patch", {
-      key: "main",
-      thinkingLevel: "medium",
-    });
-    expect(patched.ok).toBe(true);
-    expect(patched.payload?.key).toBe("agent:ops:work");
-
-    const stored = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
-      string,
-      { thinkingLevel?: string }
-    >;
-    expect(stored["agent:ops:work"]?.thinkingLevel).toBe("medium");
-    expect(stored.main).toBeUndefined();
-  });
 });

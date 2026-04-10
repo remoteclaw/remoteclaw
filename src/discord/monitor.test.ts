@@ -284,47 +284,6 @@ describe("discord guild/channel resolution", () => {
     expect(resolved?.requireMention).toBe(false);
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("resolves channel config by slug", () => {
-    const guildInfo: DiscordGuildEntryResolved = {
-      channels: {
-        general: { allow: true },
-        help: {
-          allow: true,
-          requireMention: true,
-          skills: ["search"],
-          enabled: false,
-          users: ["123"],
-          systemPrompt: "Use short answers.",
-          autoThread: true,
-        },
-      },
-    };
-    const channel = resolveDiscordChannelConfig({
-      guildInfo,
-      channelId: "456",
-      channelName: "General",
-      channelSlug: "general",
-    });
-    expect(channel?.allowed).toBe(true);
-    expect(channel?.requireMention).toBeUndefined();
-
-    const help = resolveDiscordChannelConfig({
-      guildInfo,
-      channelId: "789",
-      channelName: "Help",
-      channelSlug: "help",
-    });
-    expect(help?.allowed).toBe(true);
-    expect(help?.requireMention).toBe(true);
-    expect(help?.skills).toEqual(["search"]);
-    expect(help?.enabled).toBe(false);
-    expect(help?.users).toEqual(["123"]);
-    expect(help?.systemPrompt).toBe("Use short answers.");
-    expect(help?.autoThread).toBe(true);
-  });
-
   it("denies channel when config present but no match", () => {
     const guildInfo: DiscordGuildEntryResolved = {
       channels: {

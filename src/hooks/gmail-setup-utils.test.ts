@@ -9,7 +9,7 @@ import {
   resolvePythonExecutablePath,
 } from "./gmail-setup-utils.js";
 
-const itUnix = process.platform === "win32" ? it.skip : it;
+const itUnix = it.skipIf(process.platform === "win32");
 const runCommandWithTimeoutMock = vi.fn();
 
 vi.mock("../process/exec.js", () => ({

@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  coerceToFailoverError,
   describeFailoverError,
-  isTimeoutError,
   resolveFailoverReasonFromError,
   resolveFailoverStatus,
 } from "./failover-error.js";
@@ -22,84 +20,9 @@ describe("failover-error", () => {
     expect(resolveFailoverReasonFromError({ status: 529 })).toBe("rate_limit");
   });
 
-  // Gutted in RemoteClaw fork — classifyFailoverReason is a no-op stub,
-  // so message-based format/timeout/auth_permanent inference is not wired.
-  it.skip("infers format errors from error messages", () => {
-    expect(
-      resolveFailoverReasonFromError({
-        message: "invalid request format: messages.1.content.1.tool_use.id",
-      }),
-    ).toBe("format");
-  });
-
   it("infers timeout from common node error codes", () => {
     expect(resolveFailoverReasonFromError({ code: "ETIMEDOUT" })).toBe("timeout");
     expect(resolveFailoverReasonFromError({ code: "ECONNRESET" })).toBe("timeout");
-  });
-
-  // Gutted in RemoteClaw fork — isTimeoutErrorMessage is a no-op stub
-  it.skip("infers timeout from abort/error stop-reason messages", () => {
-    expect(resolveFailoverReasonFromError({ message: "Unhandled stop reason: abort" })).toBe(
-      "timeout",
-    );
-    expect(resolveFailoverReasonFromError({ message: "Unhandled stop reason: error" })).toBe(
-      "timeout",
-    );
-    expect(resolveFailoverReasonFromError({ message: "stop reason: abort" })).toBe("timeout");
-    expect(resolveFailoverReasonFromError({ message: "stop reason: error" })).toBe("timeout");
-    expect(resolveFailoverReasonFromError({ message: "reason: abort" })).toBe("timeout");
-    expect(resolveFailoverReasonFromError({ message: "reason: error" })).toBe("timeout");
-  });
-
-  // Gutted in RemoteClaw fork — isTimeoutErrorMessage / classifyFailoverReason are no-op stubs
-  it.skip("infers timeout from connection/network error messages", () => {
-    expect(resolveFailoverReasonFromError({ message: "Connection error." })).toBe("timeout");
-    expect(resolveFailoverReasonFromError({ message: "fetch failed" })).toBe("timeout");
-    expect(resolveFailoverReasonFromError({ message: "Network error: ECONNREFUSED" })).toBe(
-      "timeout",
-    );
-    expect(
-      resolveFailoverReasonFromError({
-        message: "dial tcp: lookup api.example.com: no such host (ENOTFOUND)",
-      }),
-    ).toBe("timeout");
-    expect(resolveFailoverReasonFromError({ message: "temporary dns failure EAI_AGAIN" })).toBe(
-      "timeout",
-    );
-  });
-
-  // Gutted in RemoteClaw fork — isTimeoutErrorMessage is a no-op stub,
-  // so hasTimeoutHint(reason) returns false for message-based checks
-  it.skip("treats AbortError reason=abort as timeout", () => {
-    const err = Object.assign(new Error("aborted"), {
-      name: "AbortError",
-      reason: "reason: abort",
-    });
-    expect(isTimeoutError(err)).toBe(true);
-  });
-
-  // Gutted in RemoteClaw fork — classifyFailoverReason is a no-op stub,
-  // so string-only errors without status codes cannot be classified
-  it.skip("coerces failover-worthy errors into FailoverError with metadata", () => {
-    const err = coerceToFailoverError("credit balance too low", {
-      provider: "anthropic",
-      model: "claude-opus-4-5",
-    });
-    expect(err?.name).toBe("FailoverError");
-    expect(err?.reason).toBe("billing");
-    expect(err?.status).toBe(402);
-    expect(err?.provider).toBe("anthropic");
-    expect(err?.model).toBe("claude-opus-4-5");
-  });
-
-  // Gutted in RemoteClaw fork — classifyFailoverReason is a no-op stub
-  it.skip("coerces format errors with a 400 status", () => {
-    const err = coerceToFailoverError("invalid request format", {
-      provider: "google",
-      model: "cloud-code-assist",
-    });
-    expect(err?.reason).toBe("format");
-    expect(err?.status).toBe(400);
   });
 
   it("401/403 with generic message still returns auth (backward compat)", () => {
@@ -107,61 +30,8 @@ describe("failover-error", () => {
     expect(resolveFailoverReasonFromError({ status: 403, message: "Forbidden" })).toBe("auth");
   });
 
-  // Gutted in RemoteClaw fork — isAuthPermanentErrorMessage is a no-op stub
-  it.skip("401 with permanent auth message returns auth_permanent", () => {
-    expect(resolveFailoverReasonFromError({ status: 401, message: "invalid_api_key" })).toBe(
-      "auth_permanent",
-    );
-  });
-
-  // Gutted in RemoteClaw fork — isAuthPermanentErrorMessage is a no-op stub
-  it.skip("403 with revoked key message returns auth_permanent", () => {
-    expect(resolveFailoverReasonFromError({ status: 403, message: "api key revoked" })).toBe(
-      "auth_permanent",
-    );
-  });
-
   it("resolveFailoverStatus maps auth_permanent to 403", () => {
     expect(resolveFailoverStatus("auth_permanent")).toBe(403);
-  });
-
-  // Gutted in RemoteClaw fork — isAuthPermanentErrorMessage is a no-op stub
-  it.skip("coerces permanent auth error with correct reason", () => {
-    const err = coerceToFailoverError(
-      { status: 401, message: "invalid_api_key" },
-      { provider: "anthropic", model: "claude-opus-4-6" },
-    );
-    expect(err?.reason).toBe("auth_permanent");
-    expect(err?.provider).toBe("anthropic");
-  });
-
-  // Gutted in RemoteClaw fork — isAuthPermanentErrorMessage is a no-op stub
-  it.skip("403 permission_error returns auth_permanent", () => {
-    expect(
-      resolveFailoverReasonFromError({
-        status: 403,
-        message:
-          "permission_error: OAuth authentication is currently not allowed for this organization.",
-      }),
-    ).toBe("auth_permanent");
-  });
-
-  // Gutted in RemoteClaw fork — classifyFailoverReason is a no-op stub
-  it.skip("permission_error in error message string classifies as auth_permanent", () => {
-    const err = coerceToFailoverError(
-      "HTTP 403 permission_error: OAuth authentication is currently not allowed for this organization.",
-      { provider: "anthropic", model: "claude-opus-4-6" },
-    );
-    expect(err?.reason).toBe("auth_permanent");
-  });
-
-  // Gutted in RemoteClaw fork — classifyFailoverReason is a no-op stub
-  it.skip("'not allowed for this organization' classifies as auth_permanent", () => {
-    const err = coerceToFailoverError(
-      "OAuth authentication is currently not allowed for this organization",
-      { provider: "anthropic", model: "claude-opus-4-6" },
-    );
-    expect(err?.reason).toBe("auth_permanent");
   });
 
   it("describes non-Error values consistently", () => {

@@ -4,7 +4,6 @@ import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { WebSocket } from "ws";
 import { whatsappPlugin } from "../../extensions/whatsapp/src/channel.js";
-import { BARE_SESSION_RESET_PROMPT } from "../auto-reply/reply/session-reset-prompt.js";
 import type { ChannelPlugin } from "../channels/plugins/types.js";
 import { emitAgentEvent, registerAgentRunContext } from "../infra/agent-events.js";
 import { setRegistry } from "./server.agent.gateway-server-agent.mocks.js";
@@ -155,35 +154,6 @@ describe("gateway server agent", () => {
     setRegistry(emptyRegistry);
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  test.skip("agent errors when deliver=true and last-channel plugin is unavailable", async () => {
-    const registry = createRegistry([
-      {
-        pluginId: "msteams",
-        source: "test",
-        plugin: createMSTeamsPlugin(),
-      },
-    ]);
-    setRegistry(registry);
-    await writeMainSessionEntry({
-      sessionId: "sess-teams",
-      lastChannel: "msteams",
-      lastTo: "conversation:teams-123",
-    });
-    const res = await rpcReq(ws, "agent", {
-      message: "hi",
-      sessionKey: "main",
-      channel: "last",
-      deliver: true,
-      idempotencyKey: "idem-agent-last-msteams",
-    });
-    expect(res.ok).toBe(false);
-    expect(res.error?.code).toBe("INVALID_REQUEST");
-    expect(res.error?.message).toContain("Channel is required");
-    expect(vi.mocked(agentCommand)).not.toHaveBeenCalled();
-  });
-
   test("agent accepts channel aliases (imsg/teams)", async () => {
     const registry = createRegistry([
       {
@@ -273,29 +243,6 @@ describe("gateway server agent", () => {
     expect(res.ok).toBe(true);
 
     expectAgentRoutingCall({ channel: "webchat", deliver: false });
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  test.skip("agent routes bare /new through session reset before running greeting prompt", async () => {
-    await writeMainSessionEntry({ sessionId: "sess-main-before-reset" });
-    const spy = vi.mocked(agentCommand);
-    const calls = spy.mock.calls as unknown[][];
-    const callsBefore = calls.length;
-    const res = await rpcReq(ws, "agent", {
-      message: "/new",
-      sessionKey: "main",
-      idempotencyKey: "idem-agent-new",
-    });
-    expect(res.ok).toBe(true);
-
-    await vi.waitFor(() => expect(calls.length).toBeGreaterThan(callsBefore));
-    const call = (calls.at(-1)?.[0] ?? {}) as Record<string, unknown>;
-    expect(call.message).toBe(BARE_SESSION_RESET_PROMPT);
-    expect(call.message).toBeTypeOf("string");
-    expect(call.message).toContain("Execute your Session Startup sequence now");
-    expect(typeof call.sessionId).toBe("string");
-    expect(call.sessionId).not.toBe("sess-main-before-reset");
   });
 
   test("agent ack response then final response", { timeout: 8000 }, async () => {

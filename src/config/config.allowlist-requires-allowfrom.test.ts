@@ -2,32 +2,6 @@ import { describe, expect, it } from "vitest";
 import { validateConfigObject } from "./config.js";
 
 describe('dmPolicy="allowlist" requires non-empty effective allowFrom', () => {
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-  it.skip('accepts telegram dmPolicy="allowlist" without allowFrom (uses pairing store)', () => {
-    const res = validateConfigObject({
-      channels: { telegram: { dmPolicy: "allowlist", botToken: "fake" } },
-    });
-    expect(res.ok).toBe(true);
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip('accepts signal dmPolicy="allowlist" without allowFrom (uses pairing store)', () => {
-    const res = validateConfigObject({
-      channels: { signal: { dmPolicy: "allowlist" } },
-    });
-    expect(res.ok).toBe(true);
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip('accepts discord dmPolicy="allowlist" without allowFrom (uses pairing store)', () => {
-    const res = validateConfigObject({
-      channels: { discord: { dmPolicy: "allowlist" } },
-    });
-    expect(res.ok).toBe(true);
-  });
-
   it('rejects whatsapp dmPolicy="allowlist" without allowFrom', () => {
     const res = validateConfigObject({
       channels: { whatsapp: { dmPolicy: "allowlist" } },
@@ -55,15 +29,6 @@ describe('account dmPolicy="allowlist" uses inherited allowFrom', () => {
           accounts: { bot1: { dmPolicy: "allowlist", botToken: "fake" } },
         },
       },
-    });
-    expect(res.ok).toBe(true);
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("accepts telegram account allowlist when neither account nor parent has allowFrom (uses pairing store)", () => {
-    const res = validateConfigObject({
-      channels: { telegram: { accounts: { bot1: { dmPolicy: "allowlist", botToken: "fake" } } } },
     });
     expect(res.ok).toBe(true);
   });

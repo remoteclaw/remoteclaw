@@ -1,12 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveApiKeyForProvider, resolveEnvApiKey } from "../auth/provider-auth.js";
-import type { RemoteClawConfig } from "../config/config.js";
 import { captureEnv } from "../test-utils/env.js";
-import {
-  applyKilocodeProviderConfig,
-  applyKilocodeConfig,
-  KILOCODE_BASE_URL,
-} from "./onboard-auth.config-core.js";
+import { KILOCODE_BASE_URL } from "./onboard-auth.config-core.js";
 import { KILOCODE_DEFAULT_MODEL_REF } from "./onboard-auth.credentials.js";
 import {
   buildKilocodeModelDefinition,
@@ -15,8 +10,6 @@ import {
   KILOCODE_DEFAULT_MAX_TOKENS,
   KILOCODE_DEFAULT_COST,
 } from "./onboard-auth.models.js";
-
-const emptyCfg: RemoteClawConfig = {};
 
 describe("Kilo Gateway provider config", () => {
   describe("constants", () => {
@@ -43,57 +36,6 @@ describe("Kilo Gateway provider config", () => {
       expect(model.contextWindow).toBe(KILOCODE_DEFAULT_CONTEXT_WINDOW);
       expect(model.maxTokens).toBe(KILOCODE_DEFAULT_MAX_TOKENS);
       expect(model.cost).toEqual(KILOCODE_DEFAULT_COST);
-    });
-  });
-
-  // Gutted in RemoteClaw fork — applyKilocodeProviderConfig returns cfg unchanged
-  describe.skip("applyKilocodeProviderConfig", () => {
-    it("sets Kilo Gateway alias in agent default models", () => {
-      const result = applyKilocodeProviderConfig(emptyCfg);
-      const agentModel = result.agents?.defaults?.models?.[KILOCODE_DEFAULT_MODEL_REF];
-      expect(agentModel).toBeDefined();
-      expect(agentModel?.alias).toBe("Kilo Gateway");
-    });
-
-    it("preserves existing alias if already set", () => {
-      const cfg: RemoteClawConfig = {
-        agents: {
-          defaults: {
-            models: {
-              [KILOCODE_DEFAULT_MODEL_REF]: { alias: "My Custom Alias" },
-            },
-          },
-        },
-      };
-      const result = applyKilocodeProviderConfig(cfg);
-      const agentModel = result.agents?.defaults?.models?.[KILOCODE_DEFAULT_MODEL_REF];
-      expect(agentModel?.alias).toBe("My Custom Alias");
-    });
-
-    it("does not change other default fields", () => {
-      const cfg: RemoteClawConfig = {
-        agents: {
-          defaults: {
-            runtime: "claude",
-          },
-        },
-      };
-      const result = applyKilocodeProviderConfig(cfg);
-      expect(result.agents?.defaults?.runtime).toBe("claude");
-    });
-  });
-
-  // Gutted in RemoteClaw fork — applyKilocodeConfig delegates to gutted applyKilocodeProviderConfig
-  describe.skip("applyKilocodeConfig", () => {
-    it("does not set a default model", () => {
-      const result = applyKilocodeConfig(emptyCfg);
-      expect(result.agents?.defaults?.models?.[KILOCODE_DEFAULT_MODEL_REF]).toBeDefined();
-    });
-
-    it("also applies provider config", () => {
-      const result = applyKilocodeConfig(emptyCfg);
-      const agentModel = result.agents?.defaults?.models?.[KILOCODE_DEFAULT_MODEL_REF];
-      expect(agentModel).toBeDefined();
     });
   });
 

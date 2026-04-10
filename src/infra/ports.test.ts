@@ -17,7 +17,7 @@ import {
   PortInUseError,
 } from "./ports.js";
 
-const describeUnix = process.platform === "win32" ? describe.skip : describe;
+const describeUnix = describe.skipIf(process.platform === "win32");
 
 describe("ports helpers", () => {
   it("ensurePortAvailable rejects when port busy", async () => {

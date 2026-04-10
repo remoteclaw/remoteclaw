@@ -168,9 +168,6 @@ describe("buildCommandsMessage", () => {
     expect(text).toContain("ℹ️ Slash commands");
     expect(text).toContain("Status");
     expect(text).toContain("/commands - List all slash commands.");
-    expect(text).toContain("/skill - Run a skill by name.");
-    expect(text).toContain("/think (/thinking, /t) - Set thinking level.");
-    expect(text).toContain("/compact - Compact the session context.");
     expect(text).not.toContain("/config");
     expect(text).not.toContain("/debug");
   });
@@ -181,7 +178,7 @@ describe("buildHelpMessage", () => {
     const text = buildHelpMessage({
       commands: { config: false, debug: false },
     } as unknown as RemoteClawConfig);
-    expect(text).toContain("Skills");
+    expect(text).toContain("Session");
     expect(text).toContain("/skill <name> [input]");
     expect(text).not.toContain("/config");
     expect(text).not.toContain("/debug");

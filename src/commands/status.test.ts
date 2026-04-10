@@ -206,36 +206,6 @@ const mocks = vi.hoisted(() => ({
   }),
 }));
 
-vi.mock("../memory/manager.js", () => ({
-  MemoryIndexManager: {
-    get: vi.fn(async ({ agentId }: { agentId: string }) => ({
-      probeVectorAvailability: vi.fn(async () => true),
-      status: () => ({
-        files: 2,
-        chunks: 3,
-        dirty: false,
-        workspaceDir: "/tmp/remoteclaw",
-        dbPath: "/tmp/memory.sqlite",
-        provider: "openai",
-        model: "text-embedding-3-small",
-        requestedProvider: "openai",
-        sources: ["memory"],
-        sourceCounts: [{ source: "memory", files: 2, chunks: 3 }],
-        cache: { enabled: true, entries: 10, maxEntries: 500 },
-        fts: { enabled: true, available: true },
-        vector: {
-          enabled: true,
-          available: true,
-          extensionPath: "/opt/vec0.dylib",
-          dims: 1024,
-        },
-      }),
-      close: vi.fn(async () => {}),
-      __agentId: agentId,
-    })),
-  },
-}));
-
 vi.mock("../config/sessions.js", () => ({
   loadSessionStore: mocks.loadSessionStore,
   resolveMainSessionKey: mocks.resolveMainSessionKey,
@@ -393,21 +363,22 @@ describe("statusCommand", () => {
     await statusCommand({ json: true }, runtime as never);
     const payload = JSON.parse(String(runtimeLogMock.mock.calls[0]?.[0]));
     expect(payload.linkChannel.linked).toBe(true);
-    // Gutted in RemoteClaw fork — memory subsystem removed, payload.memory is null
-    expect(payload.memory).toBeNull();
+    // Gutted in RemoteClaw fork — memory subsystem removed, payload.memory is undefined
+    expect(payload.memory).toBeUndefined();
     expect(payload.sessions.count).toBe(1);
     expect(payload.sessions.paths).toContain("/tmp/sessions.json");
     // Gutted in RemoteClaw fork — model defaults may be empty
     expect(payload.sessions.defaults).toBeDefined();
-    // resolveContextTokensForModel gutted to return 200000
+    // resolveContextTokensForModel gutted to return 200000 as config default
     expect(payload.sessions.defaults.contextTokens).toBe(200000);
-    // 5000/200000 * 100 = 2.5 → Math.round = 3
-    expect(payload.sessions.recent[0].percentUsed).toBe(3);
+    // Session entry has contextTokens: 10_000, totalTokens: 5_000
+    // 5000/10000 * 100 = 50
+    expect(payload.sessions.recent[0].percentUsed).toBe(50);
     expect(payload.sessions.recent[0].cacheRead).toBe(2_000);
     expect(payload.sessions.recent[0].cacheWrite).toBe(1_000);
     expect(payload.sessions.recent[0].totalTokensFresh).toBe(true);
-    // 200000 - 5000 = 195000
-    expect(payload.sessions.recent[0].remainingTokens).toBe(195000);
+    // 10000 - 5000 = 5000
+    expect(payload.sessions.recent[0].remainingTokens).toBe(5000);
     expect(payload.sessions.recent[0].flags).toContain("verbose:on");
     expect(payload.securityAudit.summary.critical).toBe(1);
     expect(payload.securityAudit.summary.warn).toBe(1);
@@ -452,8 +423,8 @@ describe("statusCommand", () => {
       // "bootstrap files",
       "Sessions",
       "+1000",
-      // resolveContextTokensForModel gutted to 200k: 5000/200000 = 3%
-      "3%",
+      // Session entry contextTokens: 10_000, totalTokens: 5_000 → 50%
+      "50%",
       // 3000 cache out of 5000 total = 60% cached (not 40%)
       // The cache display may differ due to context token changes
       "cached",

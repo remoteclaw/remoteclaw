@@ -330,6 +330,7 @@ export type PluginHookName =
   | "before_message_write"
   | "session_start"
   | "session_end"
+  | "session_resumed"
   | "subagent_spawning"
   | "subagent_delivery_target"
   | "subagent_spawned"
@@ -350,6 +351,8 @@ export type PluginHookAgentContext = {
   trigger?: string;
   /** Channel identifier (e.g. "telegram", "discord", "whatsapp"). */
   channelId?: string;
+  /** CLI runtime provider name (e.g. "claude", "gemini", "codex", "opencode"). */
+  runtimeName?: string;
 };
 
 // before_model_resolve hook
@@ -418,10 +421,12 @@ export type PluginHookLlmOutputEvent = {
 
 // agent_end hook
 export type PluginHookAgentEndEvent = {
-  messages: unknown[];
+  messages?: unknown[];
   success: boolean;
   error?: string;
   durationMs?: number;
+  runId?: string;
+  sessionId?: string;
 };
 
 // Compaction hooks
@@ -590,6 +595,15 @@ export type PluginHookSessionEndEvent = {
   durationMs?: number;
 };
 
+// session_resumed hook
+export type PluginHookSessionResumedEvent = {
+  sessionId: string;
+  runtimeName?: string;
+  channelId?: string;
+  userId?: string;
+  resumeMethod?: string;
+};
+
 // Subagent context
 export type PluginHookSubagentContext = {
   runId?: string;
@@ -688,6 +702,10 @@ export type PluginHookBeforeRuntimeSpawnEvent = {
   workspaceDir?: string;
   env?: Record<string, string | undefined>;
   args?: string[];
+  runtimeName?: string;
+  sessionId?: string;
+  command?: string;
+  channelId?: string;
 };
 
 export type PluginHookBeforeRuntimeSpawnResult = {
@@ -777,6 +795,10 @@ export type PluginHookHandlerMap = {
   session_end: (
     event: PluginHookSessionEndEvent,
     ctx: PluginHookSessionContext,
+  ) => Promise<void> | void;
+  session_resumed: (
+    event: PluginHookSessionResumedEvent,
+    ctx: PluginHookAgentContext,
   ) => Promise<void> | void;
   subagent_spawning: (
     event: PluginHookSubagentSpawningEvent,

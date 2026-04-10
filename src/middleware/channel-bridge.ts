@@ -117,12 +117,10 @@ export class ChannelBridge {
     const hookRunner = getGlobalHookRunner();
 
     // Hook: session_resumed — fires when reusing an existing session
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     if (existingSessionId && hookRunner?.hasHooks("session_resumed")) {
       await hookRunner.runSessionResumed(
         {
           sessionId: existingSessionId,
-          // @ts-expect-error — upstream feature not available in RemoteClaw fork
           runtimeName: this.#provider,
           channelId: message.channelId,
           userId: message.from,
@@ -173,7 +171,6 @@ export class ChannelBridge {
       if (hookRunner?.hasHooks("before_runtime_spawn")) {
         const spawnResult = await hookRunner.runBeforeRuntimeSpawn(
           {
-            // @ts-expect-error — upstream feature not available in RemoteClaw fork
             runtimeName: this.#provider,
             sessionId: existingSessionId,
             command: "node",
@@ -324,7 +321,6 @@ export class ChannelBridge {
         if (hookRunner.hasHooks("agent_end")) {
           void hookRunner.runAgentEnd(
             {
-              // @ts-expect-error — upstream feature not available in RemoteClaw fork
               runId,
               sessionId: finalResult.sessionId,
               success: !finalResult.errorSubtype && !lastError,

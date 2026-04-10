@@ -386,8 +386,7 @@ export async function runCronIsolatedAgentTurn(params: {
           sessionMap,
           gatewayUrl: resolveGatewayUrlFromConfig(cfgWithAgentDefaults),
           gatewayToken: resolveGatewayTokenFromConfig(cfgWithAgentDefaults),
-          // @ts-expect-error — upstream feature not available in RemoteClaw fork
-          workspaceDir,
+          workspaceDir: workspaceDir.dir,
           runtimeArgs: resolveAgentRuntimeArgs(params.cfg, agentId),
           runtimeEnv,
         });

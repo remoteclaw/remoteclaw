@@ -7,6 +7,7 @@ import {
   resolveTalkApiKey,
 } from "./talk.js";
 import type { RemoteClawConfig } from "./types.js";
+import { hasConfiguredSecretInput } from "./types.secrets.js";
 
 type WarnState = { warned: boolean };
 
@@ -127,10 +128,9 @@ export function applyTalkApiKey(config: RemoteClawConfig): RemoteClawConfig {
     return normalized;
   }
 
-  const existingProviderApiKey =
-    typeof active.config?.apiKey === "string" ? active.config.apiKey.trim() : "";
-  const existingLegacyApiKey = typeof talk?.apiKey === "string" ? talk.apiKey.trim() : "";
-  if (existingProviderApiKey || existingLegacyApiKey) {
+  const existingProviderApiKeyConfigured = hasConfiguredSecretInput(active.config?.apiKey);
+  const existingLegacyApiKeyConfigured = hasConfiguredSecretInput(talk?.apiKey);
+  if (existingProviderApiKeyConfigured || existingLegacyApiKeyConfigured) {
     return normalized;
   }
 

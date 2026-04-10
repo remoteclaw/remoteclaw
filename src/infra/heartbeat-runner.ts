@@ -7,12 +7,18 @@ import {
 } from "../agents/agent-scope.js";
 import { appendCronStyleCurrentTimeLine } from "../agents/current-time.js";
 import { resolveEffectiveMessagesConfig } from "../agents/identity.js";
+// oxlint-disable-next-line typescript/no-explicit-any
+const DEFAULT_HEARTBEAT_FILENAME = "HEARTBEAT.md";
 import { resolveHeartbeatReplyPayload } from "../auto-reply/heartbeat-reply-payload.js";
 import {
+  DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
   DEFAULT_HEARTBEAT_EVERY,
+  isHeartbeatContentEffectivelyEmpty,
   resolveHeartbeatPrompt as resolveHeartbeatPromptFromConfig,
+  stripHeartbeatToken,
 } from "../auto-reply/heartbeat.js";
 import { getReplyFromConfig } from "../auto-reply/reply.js";
+import { HEARTBEAT_TOKEN } from "../auto-reply/tokens.js";
 import type { ReplyPayload } from "../auto-reply/types.js";
 import { getChannelPlugin } from "../channels/plugins/index.js";
 import type { ChannelHeartbeatDeps } from "../channels/plugins/types.js";
@@ -35,7 +41,8 @@ import { getQueueSize } from "../process/command-queue.js";
 import { CommandLane } from "../process/lanes.js";
 import { normalizeAgentId, toAgentStoreSessionKey } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
-import { formatErrorMessage } from "./errors.js";
+import { escapeRegExp } from "../utils.js";
+import { formatErrorMessage, hasErrnoCode } from "./errors.js";
 import { isWithinActiveHours } from "./heartbeat-active-hours.js";
 import {
   buildExecEventPrompt,
@@ -54,6 +61,7 @@ import {
 } from "./heartbeat-wake.js";
 import type { OutboundSendDeps } from "./outbound/deliver.js";
 import { deliverOutboundPayloads } from "./outbound/deliver.js";
+import { buildOutboundSessionContext } from "./outbound/session-context.js";
 import {
   resolveHeartbeatDeliveryTarget,
   resolveHeartbeatSenderContext,
@@ -87,6 +95,7 @@ export type HeartbeatSummary = {
   prompt: string;
   target: string;
   model?: string;
+  ackMaxChars: number;
 };
 
 const DEFAULT_HEARTBEAT_TARGET = "none";
@@ -153,6 +162,7 @@ export function resolveHeartbeatSummaryForAgent(
       prompt: defaults?.prompt?.trim() || (defaults?.file ? `[file: ${defaults.file}]` : ""),
       target: defaults?.target ?? DEFAULT_HEARTBEAT_TARGET,
       model: defaults?.model,
+      ackMaxChars: Math.max(0, defaults?.ackMaxChars ?? DEFAULT_HEARTBEAT_ACK_MAX_CHARS),
     };
   }
 
@@ -165,6 +175,13 @@ export function resolveHeartbeatSummaryForAgent(
   const target =
     merged?.target ?? defaults?.target ?? overrides?.target ?? DEFAULT_HEARTBEAT_TARGET;
   const model = merged?.model ?? defaults?.model ?? overrides?.model;
+  const ackMaxChars = Math.max(
+    0,
+    merged?.ackMaxChars ??
+      defaults?.ackMaxChars ??
+      overrides?.ackMaxChars ??
+      DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
+  );
 
   return {
     enabled: true,
@@ -173,6 +190,7 @@ export function resolveHeartbeatSummaryForAgent(
     prompt,
     target,
     model,
+    ackMaxChars,
   };
 }
 
@@ -231,6 +249,15 @@ export async function resolveHeartbeatPrompt(
   const resolvedAgentId = agentId ?? resolveDefaultAgentId(cfg);
   const workspaceDir = resolveAgentWorkspaceDir(cfg, resolvedAgentId);
   return resolveHeartbeatPromptFromConfig({ prompt, file, workspaceDir });
+}
+
+function resolveHeartbeatAckMaxChars(cfg: RemoteClawConfig, heartbeat?: HeartbeatConfig) {
+  return Math.max(
+    0,
+    heartbeat?.ackMaxChars ??
+      cfg.agents?.defaults?.heartbeat?.ackMaxChars ??
+      DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
+  );
 }
 
 function resolveHeartbeatSession(
@@ -398,38 +425,44 @@ async function captureTranscriptState(params: {
   }
 }
 
-function normalizeHeartbeatReply(payload: ReplyPayload, responsePrefix: string | undefined) {
-  const report = payload.heartbeatReport;
-  const rawText = typeof payload.text === "string" ? payload.text.trim() : "";
+function stripLeadingHeartbeatResponsePrefix(
+  text: string,
+  responsePrefix: string | undefined,
+): string {
+  const normalizedPrefix = responsePrefix?.trim();
+  if (!normalizedPrefix) {
+    return text;
+  }
+
+  // Require a boundary after the configured prefix so short prefixes like "Hi"
+  // do not strip the beginning of normal words like "History".
+  const prefixPattern = new RegExp(
+    `^${escapeRegExp(normalizedPrefix)}(?=$|\\s|[\\p{P}\\p{S}])\\s*`,
+    "iu",
+  );
+  return text.replace(prefixPattern, "");
+}
+
+function normalizeHeartbeatReply(
+  payload: ReplyPayload,
+  responsePrefix: string | undefined,
+  ackMaxChars: number,
+) {
+  const rawText = typeof payload.text === "string" ? payload.text : "";
+  const textForStrip = stripLeadingHeartbeatResponsePrefix(rawText, responsePrefix);
+  const stripped = stripHeartbeatToken(textForStrip, {
+    mode: "heartbeat",
+    maxAckChars: ackMaxChars,
+  });
   const hasMedia = Boolean(payload.mediaUrl || (payload.mediaUrls?.length ?? 0) > 0);
-
-  // When heartbeat_report tool was called, use its structured semantics.
-  if (report) {
-    if (!report.anythingDone) {
-      // Nothing happened — suppress unless showOk delivers the summary.
-      // The summary (if any) is returned but shouldSkip is true; the caller
-      // decides whether to deliver based on showOk.
-      return {
-        shouldSkip: true,
-        text: report.summary?.trim() ?? "",
-        hasMedia,
-      };
-    }
-    // Actions taken — deliver the summary (or a default).
-    const summaryText = report.summary?.trim() || "Agent performed actions";
-    let finalText = summaryText;
-    if (responsePrefix && finalText && !finalText.startsWith(responsePrefix)) {
-      finalText = `${responsePrefix} ${finalText}`;
-    }
-    return { shouldSkip: false, text: finalText, hasMedia };
+  if (stripped.shouldSkip && !hasMedia) {
+    return {
+      shouldSkip: true,
+      text: "",
+      hasMedia,
+    };
   }
-
-  // No heartbeat_report tool call — natural text fallback.
-  // Deliver the agent's text as-is (agents unaware of the tool).
-  if (!rawText && !hasMedia) {
-    return { shouldSkip: true, text: "", hasMedia };
-  }
-  let finalText = rawText;
+  let finalText = stripped.text;
   if (responsePrefix && finalText && !finalText.startsWith(responsePrefix)) {
     finalText = `${responsePrefix} ${finalText}`;
   }
@@ -442,11 +475,14 @@ type HeartbeatReasonFlags = {
   isWakeReason: boolean;
 };
 
+type HeartbeatSkipReason = "empty-heartbeat-file";
+
 type HeartbeatPreflight = HeartbeatReasonFlags & {
   session: ReturnType<typeof resolveHeartbeatSession>;
   pendingEventEntries: ReturnType<typeof peekSystemEventEntries>;
   hasTaggedCronEvents: boolean;
   shouldInspectPendingEvents: boolean;
+  skipReason?: HeartbeatSkipReason;
 };
 
 function resolveHeartbeatReasonFlags(reason?: string): HeartbeatReasonFlags {
@@ -478,13 +514,43 @@ async function resolveHeartbeatPreflight(params: {
   );
   const shouldInspectPendingEvents =
     reasonFlags.isExecEventReason || reasonFlags.isCronEventReason || hasTaggedCronEvents;
-  return {
+  const shouldBypassFileGates =
+    reasonFlags.isExecEventReason ||
+    reasonFlags.isCronEventReason ||
+    reasonFlags.isWakeReason ||
+    hasTaggedCronEvents;
+  const basePreflight = {
     ...reasonFlags,
     session,
     pendingEventEntries,
     hasTaggedCronEvents,
     shouldInspectPendingEvents,
-  } satisfies HeartbeatPreflight;
+  } satisfies Omit<HeartbeatPreflight, "skipReason">;
+
+  if (shouldBypassFileGates) {
+    return basePreflight;
+  }
+
+  const workspaceDir = resolveAgentWorkspaceDir(params.cfg, params.agentId);
+  const heartbeatFilePath = path.join(workspaceDir, DEFAULT_HEARTBEAT_FILENAME);
+  try {
+    const heartbeatFileContent = await fs.readFile(heartbeatFilePath, "utf-8");
+    if (isHeartbeatContentEffectivelyEmpty(heartbeatFileContent)) {
+      return {
+        ...basePreflight,
+        skipReason: "empty-heartbeat-file",
+      };
+    }
+  } catch (err: unknown) {
+    if (hasErrnoCode(err, "ENOENT")) {
+      // Missing HEARTBEAT.md is intentional in some setups (for example, when
+      // heartbeat instructions live outside the file), so keep the run active.
+      return basePreflight;
+    }
+    // For other read errors, proceed with heartbeat as before.
+  }
+
+  return basePreflight;
 }
 
 type HeartbeatPromptResolution = {
@@ -553,7 +619,7 @@ export async function runHeartbeatOnce(opts: {
     return { status: "skipped", reason: "requests-in-flight" };
   }
 
-  // Preflight centralizes trigger classification and event inspection.
+  // Preflight centralizes trigger classification, event inspection, and HEARTBEAT.md gating.
   const preflight = await resolveHeartbeatPreflight({
     cfg,
     agentId,
@@ -561,6 +627,14 @@ export async function runHeartbeatOnce(opts: {
     forcedSessionKey: opts.sessionKey,
     reason: opts.reason,
   });
+  if (preflight.skipReason) {
+    emitHeartbeatEvent({
+      status: "skipped",
+      reason: preflight.skipReason,
+      durationMs: Date.now() - startedAt,
+    });
+    return { status: "skipped", reason: preflight.skipReason };
+  }
   const { entry, sessionKey, storePath } = preflight.session;
   const previousUpdatedAt = entry?.updatedAt;
   const delivery = resolveHeartbeatDeliveryTarget({ cfg, entry, heartbeat });
@@ -633,8 +707,17 @@ export async function runHeartbeatOnce(opts: {
     return { status: "skipped", reason: "alerts-disabled" };
   }
 
-  const maybeSendHeartbeatOkSummary = async (summary: string) => {
-    if (!visibility.showOk || delivery.channel === "none" || !delivery.to || !summary.trim()) {
+  const heartbeatOkText = responsePrefix ? `${responsePrefix} ${HEARTBEAT_TOKEN}` : HEARTBEAT_TOKEN;
+  const outboundSession = buildOutboundSessionContext({
+    cfg,
+    agentId,
+    sessionKey,
+  });
+  const canAttemptHeartbeatOk = Boolean(
+    visibility.showOk && delivery.channel !== "none" && delivery.to,
+  );
+  const maybeSendHeartbeatOk = async () => {
+    if (!canAttemptHeartbeatOk || delivery.channel === "none" || !delivery.to) {
       return false;
     }
     const heartbeatPlugin = getChannelPlugin(delivery.channel);
@@ -654,15 +737,15 @@ export async function runHeartbeatOnce(opts: {
       to: delivery.to,
       accountId: delivery.accountId,
       threadId: delivery.threadId,
-      payloads: [{ text: summary }],
+      payloads: [{ text: heartbeatOkText }],
+      session: outboundSession,
       deps: opts.deps,
     });
     return true;
   };
 
   try {
-    // Capture transcript state before the heartbeat run so we can prune
-    // when the heartbeat_report tool says nothing happened.
+    // Capture transcript state before the heartbeat run so we can prune if HEARTBEAT_OK
     const transcriptState = await captureTranscriptState({
       storePath,
       sessionKey,
@@ -679,34 +762,40 @@ export async function runHeartbeatOnce(opts: {
 
     if (
       !replyPayload ||
-      (!replyPayload.text &&
-        !replyPayload.mediaUrl &&
-        !replyPayload.mediaUrls?.length &&
-        !replyPayload.heartbeatReport)
+      (!replyPayload.text && !replyPayload.mediaUrl && !replyPayload.mediaUrls?.length)
     ) {
       await restoreHeartbeatUpdatedAt({
         storePath,
         sessionKey,
         updatedAt: previousUpdatedAt,
       });
+      // Prune the transcript to remove HEARTBEAT_OK turns
       await pruneHeartbeatTranscript(transcriptState);
+      const okSent = await maybeSendHeartbeatOk();
       emitHeartbeatEvent({
         status: "ok-empty",
         reason: opts.reason,
         durationMs: Date.now() - startedAt,
         channel: delivery.channel !== "none" ? delivery.channel : undefined,
         accountId: delivery.accountId,
-        silent: true,
+        silent: !okSent,
         indicatorType: visibility.useIndicator ? resolveIndicatorType("ok-empty") : undefined,
       });
       return { status: "ran", durationMs: Date.now() - startedAt };
     }
 
-    const normalized = normalizeHeartbeatReply(replyPayload, responsePrefix);
-    // For exec completion events, don't skip even if the heartbeat_report says nothing done.
-    // The model should be responding with exec results, not ack.
-    if (hasExecCompletion && normalized.shouldSkip && replyPayload.text?.trim()) {
-      normalized.text = replyPayload.text.trim();
+    const ackMaxChars = resolveHeartbeatAckMaxChars(cfg, heartbeat);
+    const normalized = normalizeHeartbeatReply(replyPayload, responsePrefix, ackMaxChars);
+    // For exec completion events, don't skip even if the response looks like HEARTBEAT_OK.
+    // The model should be responding with exec results, not ack tokens.
+    // Also, if normalized.text is empty due to token stripping but we have exec completion,
+    // fall back to the original reply text.
+    const execFallbackText =
+      hasExecCompletion && !normalized.text.trim() && replyPayload.text?.trim()
+        ? replyPayload.text.trim()
+        : null;
+    if (execFallbackText) {
+      normalized.text = execFallbackText;
       normalized.shouldSkip = false;
     }
     const shouldSkipMain = normalized.shouldSkip && !normalized.hasMedia && !hasExecCompletion;
@@ -716,9 +805,9 @@ export async function runHeartbeatOnce(opts: {
         sessionKey,
         updatedAt: previousUpdatedAt,
       });
+      // Prune the transcript to remove HEARTBEAT_OK turns
       await pruneHeartbeatTranscript(transcriptState);
-      // When showOk is true and there's a summary from heartbeat_report, deliver it.
-      const okSent = await maybeSendHeartbeatOkSummary(normalized.text);
+      const okSent = await maybeSendHeartbeatOk();
       emitHeartbeatEvent({
         status: "ok-token",
         reason: opts.reason,
@@ -832,6 +921,7 @@ export async function runHeartbeatOnce(opts: {
       channel: delivery.channel,
       to: delivery.to,
       accountId: deliveryAccountId,
+      session: outboundSession,
       threadId: delivery.threadId,
       payloads: [
         {

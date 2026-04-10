@@ -87,8 +87,6 @@ function buildCtx(): NodeEventContext {
     agentRunSeq: new Map(),
     getHealthCache: () => null,
     refreshHealthSnapshot: async () => ({}) as HealthSummary,
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
-    loadGatewayModelCatalog: async () => [],
     logGateway: { warn: () => {} },
   };
 }

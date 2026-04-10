@@ -752,8 +752,6 @@ export const nodeHandlers: GatewayRequestHandlers = {
         command,
         rawParams: p.params,
         client,
-        // @ts-expect-error — upstream feature not available in RemoteClaw fork
-        execApprovalManager: context.execApprovalManager,
       });
       if (!forwardedParams.ok) {
         respond(

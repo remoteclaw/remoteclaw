@@ -131,48 +131,4 @@ describe("promptRemoteGatewayConfig", () => {
     expect(next.gateway?.remote?.url).toBe("wss://remote.example.com:18789");
     expect(next.gateway?.remote?.token).toBeUndefined();
   });
-
-  // Gutted in RemoteClaw fork — resolveSecretInputModeForEnvSelection always returns "plaintext"
-  it.skip("supports storing remote auth as an external env secret ref", async () => {
-    process.env.REMOTECLAW_GATEWAY_TOKEN = "remote-token-value";
-    const text: WizardPrompter["text"] = vi.fn(async (params) => {
-      if (params.message === "Gateway WebSocket URL") {
-        return "wss://remote.example.com:18789";
-      }
-      if (params.message === "Environment variable name") {
-        return "REMOTECLAW_GATEWAY_TOKEN";
-      }
-      return "";
-    }) as WizardPrompter["text"];
-
-    const select: WizardPrompter["select"] = vi.fn(async (params) => {
-      if (params.message === "Gateway auth") {
-        return "token" as never;
-      }
-      if (params.message === "How do you want to provide this gateway token?") {
-        return "ref" as never;
-      }
-      if (params.message === "Where is this gateway token stored?") {
-        return "env" as never;
-      }
-      return (params.options[0]?.value ?? "") as never;
-    });
-
-    const cfg = {} as RemoteClawConfig;
-    const prompter = createPrompter({
-      confirm: vi.fn(async () => false),
-      select,
-      text,
-    });
-
-    const next = await promptRemoteGatewayConfig(cfg, prompter);
-
-    expect(next.gateway?.mode).toBe("remote");
-    expect(next.gateway?.remote?.url).toBe("wss://remote.example.com:18789");
-    expect(next.gateway?.remote?.token).toEqual({
-      source: "env",
-      provider: "default",
-      id: "REMOTECLAW_GATEWAY_TOKEN",
-    });
-  });
 });

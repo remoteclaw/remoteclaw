@@ -4,7 +4,6 @@ import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { withEnvAsync } from "../test-utils/env.js";
 import { pathExists } from "../utils.js";
-import { resolveStableNodePath } from "./stable-node-path.js";
 import { runGatewayUpdate } from "./update-runner.js";
 
 type CommandResponse = { stdout?: string; stderr?: string; code?: number | null };
@@ -49,111 +48,6 @@ describe("runGatewayUpdate", () => {
   afterEach(async () => {
     // Shared fixtureRoot cleaned up in afterAll.
   });
-
-  async function createStableTagRunner(params: {
-    stableTag: string;
-    uiIndexPath: string;
-    onDoctor?: () => Promise<void>;
-    onUiBuild?: (count: number) => Promise<void>;
-  }) {
-    const calls: string[] = [];
-    let uiBuildCount = 0;
-    const doctorNodePath = await resolveStableNodePath(process.execPath);
-    const doctorKey = `${doctorNodePath} ${path.join(tempDir, "remoteclaw.mjs")} doctor --non-interactive --fix`;
-
-    const runCommand = async (argv: string[]) => {
-      const key = argv.join(" ");
-      calls.push(key);
-
-      if (key === `git -C ${tempDir} rev-parse --show-toplevel`) {
-        return { stdout: tempDir, stderr: "", code: 0 };
-      }
-      if (key === `git -C ${tempDir} rev-parse HEAD`) {
-        return { stdout: "abc123", stderr: "", code: 0 };
-      }
-      if (key === `git -C ${tempDir} status --porcelain -- :!dist/control-ui/`) {
-        return { stdout: "", stderr: "", code: 0 };
-      }
-      if (key === `git -C ${tempDir} fetch --all --prune --tags`) {
-        return { stdout: "", stderr: "", code: 0 };
-      }
-      if (key === `git -C ${tempDir} tag --list v* --sort=-v:refname`) {
-        return { stdout: `${params.stableTag}\n`, stderr: "", code: 0 };
-      }
-      if (key === `git -C ${tempDir} checkout --detach ${params.stableTag}`) {
-        return { stdout: "", stderr: "", code: 0 };
-      }
-      if (key === "pnpm install") {
-        return { stdout: "", stderr: "", code: 0 };
-      }
-      if (key === "pnpm build") {
-        return { stdout: "", stderr: "", code: 0 };
-      }
-      if (key === "pnpm ui:build") {
-        uiBuildCount += 1;
-        await params.onUiBuild?.(uiBuildCount);
-        return { stdout: "", stderr: "", code: 0 };
-      }
-      if (key === doctorKey) {
-        await params.onDoctor?.();
-        return { stdout: "", stderr: "", code: 0 };
-      }
-      return { stdout: "", stderr: "", code: 0 };
-    };
-
-    return {
-      runCommand,
-      calls,
-      doctorKey,
-      getUiBuildCount: () => uiBuildCount,
-    };
-  }
-
-  async function setupGitCheckout(options?: { packageManager?: string }) {
-    await fs.mkdir(path.join(tempDir, ".git"));
-    const pkg: Record<string, string> = { name: "remoteclaw", version: "1.0.0" };
-    if (options?.packageManager) {
-      pkg.packageManager = options.packageManager;
-    }
-    await fs.writeFile(path.join(tempDir, "package.json"), JSON.stringify(pkg), "utf-8");
-  }
-
-  async function setupUiIndex() {
-    const uiIndexPath = path.join(tempDir, "dist", "control-ui", "index.html");
-    await fs.mkdir(path.dirname(uiIndexPath), { recursive: true });
-    await fs.writeFile(uiIndexPath, "<html></html>", "utf-8");
-    return uiIndexPath;
-  }
-
-  function buildStableTagResponses(
-    stableTag: string,
-    options?: { additionalTags?: string[] },
-  ): Record<string, CommandResponse> {
-    const tagOutput = [stableTag, ...(options?.additionalTags ?? [])].join("\n");
-    return {
-      [`git -C ${tempDir} rev-parse --show-toplevel`]: { stdout: tempDir },
-      [`git -C ${tempDir} rev-parse HEAD`]: { stdout: "abc123" },
-      [`git -C ${tempDir} status --porcelain -- :!dist/control-ui/`]: { stdout: "" },
-      [`git -C ${tempDir} fetch --all --prune --tags`]: { stdout: "" },
-      [`git -C ${tempDir} tag --list v* --sort=-v:refname`]: { stdout: `${tagOutput}\n` },
-      [`git -C ${tempDir} checkout --detach ${stableTag}`]: { stdout: "" },
-    };
-  }
-
-  function buildGitWorktreeProbeResponses(options?: { status?: string; branch?: string }) {
-    return {
-      [`git -C ${tempDir} rev-parse --show-toplevel`]: { stdout: tempDir },
-      [`git -C ${tempDir} rev-parse HEAD`]: { stdout: "abc123" },
-      [`git -C ${tempDir} rev-parse --abbrev-ref HEAD`]: { stdout: options?.branch ?? "main" },
-      [`git -C ${tempDir} status --porcelain -- :!dist/control-ui/`]: {
-        stdout: options?.status ?? "",
-      },
-    } satisfies Record<string, CommandResponse>;
-  }
-
-  async function removeControlUiAssets() {
-    await fs.rm(path.join(tempDir, "dist", "control-ui"), { recursive: true, force: true });
-  }
 
   async function runWithCommand(
     runCommand: (argv: string[]) => Promise<CommandResult>,
@@ -216,102 +110,6 @@ describe("runGatewayUpdate", () => {
       return { stdout: "", stderr: "", code: 0 };
     };
   }
-
-  // Gutted in RemoteClaw fork — updater uses npm-based detection, no git worktree checks
-  it.skip("skips git update when worktree is dirty", async () => {
-    await setupGitCheckout();
-    const { runner, calls } = createRunner({
-      ...buildGitWorktreeProbeResponses({ status: " M README.md" }),
-    });
-
-    const result = await runWithRunner(runner);
-
-    expect(result.status).toBe("skipped");
-    expect(result.reason).toBe("dirty");
-    expect(calls.some((call) => call.includes("rebase"))).toBe(false);
-  });
-
-  // Gutted in RemoteClaw fork — updater uses npm-based detection, no git rebase
-  it.skip("aborts rebase on failure", async () => {
-    await setupGitCheckout();
-    const { runner, calls } = createRunner({
-      ...buildGitWorktreeProbeResponses(),
-      [`git -C ${tempDir} rev-parse --abbrev-ref --symbolic-full-name @{upstream}`]: {
-        stdout: "origin/main",
-      },
-      [`git -C ${tempDir} fetch --all --prune --tags`]: { stdout: "" },
-      [`git -C ${tempDir} rev-parse @{upstream}`]: { stdout: "upstream123" },
-      [`git -C ${tempDir} rev-list --max-count=10 upstream123`]: { stdout: "upstream123\n" },
-      [`git -C ${tempDir} rebase upstream123`]: { code: 1, stderr: "conflict" },
-      [`git -C ${tempDir} rebase --abort`]: { stdout: "" },
-    });
-
-    const result = await runWithRunner(runner);
-
-    expect(result.status).toBe("error");
-    expect(result.reason).toBe("rebase-failed");
-    expect(calls.some((call) => call.includes("rebase --abort"))).toBe(true);
-  });
-
-  // Gutted in RemoteClaw fork — isStableTag/isBetaTag always return false
-  it.skip("returns error and stops early when deps install fails", async () => {
-    await setupGitCheckout({ packageManager: "pnpm@8.0.0" });
-    const stableTag = "v1.0.1-1";
-    const { runner, calls } = createRunner({
-      ...buildStableTagResponses(stableTag),
-      "pnpm install": { code: 1, stderr: "ERR_PNPM_NETWORK" },
-    });
-
-    const result = await runWithRunner(runner, { channel: "stable" });
-
-    expect(result.status).toBe("error");
-    expect(result.reason).toBe("deps-install-failed");
-    expect(calls.some((call) => call === "pnpm build")).toBe(false);
-    expect(calls.some((call) => call === "pnpm ui:build")).toBe(false);
-  });
-
-  // Gutted in RemoteClaw fork — isStableTag/isBetaTag always return false
-  it.skip("returns error and stops early when build fails", async () => {
-    await setupGitCheckout({ packageManager: "pnpm@8.0.0" });
-    const stableTag = "v1.0.1-1";
-    const { runner, calls } = createRunner({
-      ...buildStableTagResponses(stableTag),
-      "pnpm install": { stdout: "" },
-      "pnpm build": { code: 1, stderr: "tsc: error TS2345" },
-    });
-
-    const result = await runWithRunner(runner, { channel: "stable" });
-
-    expect(result.status).toBe("error");
-    expect(result.reason).toBe("build-failed");
-    expect(calls.some((call) => call === "pnpm install")).toBe(true);
-    expect(calls.some((call) => call === "pnpm ui:build")).toBe(false);
-  });
-
-  // Gutted in RemoteClaw fork — isStableTag/isBetaTag always return false
-  it.skip("uses stable tag when beta tag is older than release", async () => {
-    await setupGitCheckout({ packageManager: "pnpm@8.0.0" });
-    await setupUiIndex();
-    const stableTag = "v1.0.1-1";
-    const betaTag = "v1.0.0-beta.2";
-    const doctorNodePath = await resolveStableNodePath(process.execPath);
-    const { runner, calls } = createRunner({
-      ...buildStableTagResponses(stableTag, { additionalTags: [betaTag] }),
-      "pnpm install": { stdout: "" },
-      "pnpm build": { stdout: "" },
-      "pnpm ui:build": { stdout: "" },
-      [`${doctorNodePath} ${path.join(tempDir, "remoteclaw.mjs")} doctor --non-interactive --fix`]:
-        {
-          stdout: "",
-        },
-    });
-
-    const result = await runWithRunner(runner, { channel: "beta" });
-
-    expect(result.status).toBe("ok");
-    expect(calls).toContain(`git -C ${tempDir} checkout --detach ${stableTag}`);
-    expect(calls).not.toContain(`git -C ${tempDir} checkout --detach ${betaTag}`);
-  });
 
   it("skips update when no package manager detected", async () => {
     await fs.writeFile(
@@ -447,41 +245,6 @@ describe("runGatewayUpdate", () => {
     expect(await pathExists(staleDir)).toBe(false);
   });
 
-  // Gutted in RemoteClaw fork — npm updater has no --omit=optional retry logic
-  it.skip("retries global npm update with --omit=optional when initial install fails", async () => {
-    const nodeModules = path.join(tempDir, "node_modules");
-    const pkgRoot = path.join(nodeModules, "remoteclaw");
-    await seedGlobalPackageRoot(pkgRoot);
-
-    let firstAttempt = true;
-    const runCommand = createGlobalNpmUpdateRunner({
-      nodeModules,
-      pkgRoot,
-      onBaseInstall: async () => {
-        firstAttempt = false;
-        return { stdout: "", stderr: "node-gyp failed", code: 1 };
-      },
-      onOmitOptionalInstall: async () => {
-        await fs.writeFile(
-          path.join(pkgRoot, "package.json"),
-          JSON.stringify({ name: "remoteclaw", version: "2.0.0" }),
-          "utf-8",
-        );
-        return { stdout: "ok", stderr: "", code: 0 };
-      },
-    });
-
-    const result = await runWithCommand(runCommand, { cwd: pkgRoot });
-
-    expect(firstAttempt).toBe(false);
-    expect(result.status).toBe("ok");
-    expect(result.mode).toBe("npm");
-    expect(result.steps.map((s) => s.name)).toEqual([
-      "global update",
-      "global update (omit optional)",
-    ]);
-  });
-
   it("updates global bun installs when detected", async () => {
     const bunInstall = path.join(tempDir, "bun-install");
     await withEnvAsync({ BUN_INSTALL: bunInstall }, async () => {
@@ -521,73 +284,5 @@ describe("runGatewayUpdate", () => {
 
     expect(result.status).toBe("error");
     expect(result.reason).toContain("no root");
-  });
-
-  // Gutted in RemoteClaw fork — isStableTag/isBetaTag always return false
-  it.skip("fails with a clear reason when remoteclaw.mjs is missing", async () => {
-    await setupGitCheckout({ packageManager: "pnpm@8.0.0" });
-    await fs.rm(path.join(tempDir, "remoteclaw.mjs"), { force: true });
-
-    const stableTag = "v1.0.1-1";
-    const { runner } = createRunner({
-      ...buildStableTagResponses(stableTag),
-      "pnpm install": { stdout: "" },
-      "pnpm build": { stdout: "" },
-      "pnpm ui:build": { stdout: "" },
-    });
-
-    const result = await runWithRunner(runner, { channel: "stable" });
-
-    expect(result.status).toBe("error");
-    expect(result.reason).toBe("doctor-entry-missing");
-    expect(result.steps.at(-1)?.name).toBe("remoteclaw doctor entry");
-  });
-
-  // Gutted in RemoteClaw fork — isStableTag/isBetaTag always return false
-  it.skip("repairs UI assets when doctor run removes control-ui files", async () => {
-    await setupGitCheckout({ packageManager: "pnpm@8.0.0" });
-    const uiIndexPath = await setupUiIndex();
-
-    const stableTag = "v1.0.1-1";
-    const { runCommand, calls, doctorKey, getUiBuildCount } = await createStableTagRunner({
-      stableTag,
-      uiIndexPath,
-      onUiBuild: async (count) => {
-        await fs.mkdir(path.dirname(uiIndexPath), { recursive: true });
-        await fs.writeFile(uiIndexPath, `<html>${count}</html>`, "utf-8");
-      },
-      onDoctor: removeControlUiAssets,
-    });
-
-    const result = await runWithCommand(runCommand, { channel: "stable" });
-
-    expect(result.status).toBe("ok");
-    expect(getUiBuildCount()).toBe(2);
-    expect(await pathExists(uiIndexPath)).toBe(true);
-    expect(calls).toContain(doctorKey);
-  });
-
-  // Gutted in RemoteClaw fork — isStableTag/isBetaTag always return false
-  it.skip("fails when UI assets are still missing after post-doctor repair", async () => {
-    await setupGitCheckout({ packageManager: "pnpm@8.0.0" });
-    const uiIndexPath = await setupUiIndex();
-
-    const stableTag = "v1.0.1-1";
-    const { runCommand } = await createStableTagRunner({
-      stableTag,
-      uiIndexPath,
-      onUiBuild: async (count) => {
-        if (count === 1) {
-          await fs.mkdir(path.dirname(uiIndexPath), { recursive: true });
-          await fs.writeFile(uiIndexPath, "<html>built</html>", "utf-8");
-        }
-      },
-      onDoctor: removeControlUiAssets,
-    });
-
-    const result = await runWithCommand(runCommand, { channel: "stable" });
-
-    expect(result.status).toBe("error");
-    expect(result.reason).toBe("ui-assets-missing");
   });
 });

@@ -2,7 +2,6 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { RemoteClawConfig } from "../../config/config.js";
 
 const hoisted = vi.hoisted(() => {
   const sendMessageDiscord = vi.fn(async (_to: string, _text: string, _opts?: unknown) => ({}));
@@ -56,9 +55,7 @@ const {
   __testing,
   autoBindSpawnedDiscordSubagent,
   createThreadBindingManager,
-  reconcileAcpThreadBindingsOnStartup,
   resolveThreadBindingInactivityExpiresAt,
-  resolveThreadBindingIntroText,
   resolveThreadBindingMaxAgeExpiresAt,
   setThreadBindingIdleTimeoutBySessionKey,
   setThreadBindingMaxAgeBySessionKey,
@@ -100,107 +97,6 @@ describe("thread binding lifecycle", () => {
       webhookToken: "tok-1",
     });
   };
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("includes idle and max-age details in intro text", () => {
-    const intro = resolveThreadBindingIntroText({
-      agentId: "main",
-      label: "worker",
-      idleTimeoutMs: 24 * 60 * 60 * 1000,
-      maxAgeMs: 48 * 60 * 60 * 1000,
-    });
-    expect(intro).toContain("idle auto-unfocus after 24h inactivity");
-    expect(intro).toContain("max age 48h");
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("includes cwd near the top of intro text", () => {
-    const intro = resolveThreadBindingIntroText({
-      agentId: "codex",
-      idleTimeoutMs: 24 * 60 * 60 * 1000,
-      sessionCwd: "/home/bob/clawd",
-      sessionDetails: ["session ids: pending (available after the first reply)"],
-    });
-    expect(intro).toContain("\ncwd: /home/bob/clawd\nsession ids: pending");
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("auto-unfocuses idle-expired bindings and sends inactivity message", async () => {
-    vi.useFakeTimers();
-    try {
-      const manager = createThreadBindingManager({
-        accountId: "default",
-        persist: false,
-        enableSweeper: true,
-        idleTimeoutMs: 60_000,
-        maxAgeMs: 0,
-      });
-
-      const binding = await manager.bindTarget({
-        threadId: "thread-1",
-        channelId: "parent-1",
-        targetKind: "subagent",
-        targetSessionKey: "agent:main:subagent:child",
-        agentId: "main",
-        webhookId: "wh-1",
-        webhookToken: "tok-1",
-        introText: "intro",
-      });
-      expect(binding).not.toBeNull();
-      hoisted.sendMessageDiscord.mockClear();
-      hoisted.sendWebhookMessageDiscord.mockClear();
-
-      await vi.advanceTimersByTimeAsync(120_000);
-
-      expect(manager.getByThreadId("thread-1")).toBeUndefined();
-      expect(hoisted.restGet).not.toHaveBeenCalled();
-      expect(hoisted.sendWebhookMessageDiscord).not.toHaveBeenCalled();
-      expect(hoisted.sendMessageDiscord).toHaveBeenCalledTimes(1);
-      const farewell = hoisted.sendMessageDiscord.mock.calls[0]?.[1] as string | undefined;
-      expect(farewell).toContain("after 1m of inactivity");
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("auto-unfocuses max-age-expired bindings and sends max-age message", async () => {
-    vi.useFakeTimers();
-    try {
-      const manager = createThreadBindingManager({
-        accountId: "default",
-        persist: false,
-        enableSweeper: true,
-        idleTimeoutMs: 0,
-        maxAgeMs: 60_000,
-      });
-
-      const binding = await manager.bindTarget({
-        threadId: "thread-1",
-        channelId: "parent-1",
-        targetKind: "subagent",
-        targetSessionKey: "agent:main:subagent:child",
-        agentId: "main",
-        webhookId: "wh-1",
-        webhookToken: "tok-1",
-      });
-      expect(binding).not.toBeNull();
-      hoisted.sendMessageDiscord.mockClear();
-
-      await vi.advanceTimersByTimeAsync(120_000);
-
-      expect(manager.getByThreadId("thread-1")).toBeUndefined();
-      expect(hoisted.sendMessageDiscord).toHaveBeenCalledTimes(1);
-      const farewell = hoisted.sendMessageDiscord.mock.calls[0]?.[1] as string | undefined;
-      expect(farewell).toContain("max age of 1m");
-    } finally {
-      vi.useRealTimers();
-    }
-  });
 
   it("keeps binding when thread sweep probe fails transiently", async () => {
     vi.useFakeTimers();
@@ -757,125 +653,6 @@ describe("thread binding lifecycle", () => {
     expect(removedA).toHaveLength(1);
     expect(a.getByThreadId("thread-1")).toBeUndefined();
     expect(b.getByThreadId("thread-1")?.targetSessionKey).toBe("agent:main:subagent:b");
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("removes stale ACP bindings during startup reconciliation", async () => {
-    const manager = createThreadBindingManager({
-      accountId: "default",
-      persist: false,
-      enableSweeper: false,
-      idleTimeoutMs: 24 * 60 * 60 * 1000,
-      maxAgeMs: 0,
-    });
-
-    await manager.bindTarget({
-      threadId: "thread-acp-healthy",
-      channelId: "parent-1",
-      targetKind: "acp",
-      targetSessionKey: "agent:codex:acp:healthy",
-      agentId: "codex",
-      webhookId: "wh-1",
-      webhookToken: "tok-1",
-    });
-    await manager.bindTarget({
-      threadId: "thread-acp-stale",
-      channelId: "parent-1",
-      targetKind: "acp",
-      targetSessionKey: "agent:codex:acp:stale",
-      agentId: "codex",
-      webhookId: "wh-1",
-      webhookToken: "tok-1",
-    });
-    await manager.bindTarget({
-      threadId: "thread-subagent",
-      channelId: "parent-1",
-      targetKind: "subagent",
-      targetSessionKey: "agent:main:subagent:child",
-      agentId: "main",
-      webhookId: "wh-1",
-      webhookToken: "tok-1",
-    });
-
-    hoisted.readAcpSessionEntry.mockImplementation((paramsUnknown: unknown) => {
-      const sessionKey = (paramsUnknown as { sessionKey?: string }).sessionKey ?? "";
-      if (sessionKey === "agent:codex:acp:healthy") {
-        return {
-          sessionKey,
-          storeSessionKey: sessionKey,
-          acp: {
-            backend: "acpx",
-            agent: "codex",
-            runtimeSessionName: "runtime:healthy",
-            mode: "persistent",
-            state: "idle",
-            lastActivityAt: Date.now(),
-          },
-        };
-      }
-      return {
-        sessionKey,
-        storeSessionKey: sessionKey,
-        acp: undefined,
-      };
-    });
-
-    const result = reconcileAcpThreadBindingsOnStartup({
-      cfg: {} as RemoteClawConfig,
-      accountId: "default",
-    });
-
-    expect(result.checked).toBe(2);
-    expect(result.removed).toBe(1);
-    expect(result.staleSessionKeys).toContain("agent:codex:acp:stale");
-    expect(manager.getByThreadId("thread-acp-healthy")).toBeDefined();
-    expect(manager.getByThreadId("thread-acp-stale")).toBeUndefined();
-    expect(manager.getByThreadId("thread-subagent")).toBeDefined();
-    expect(hoisted.sendMessageDiscord).not.toHaveBeenCalled();
-    expect(hoisted.sendWebhookMessageDiscord).not.toHaveBeenCalled();
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("keeps ACP bindings when session store reads fail during startup reconciliation", async () => {
-    const manager = createThreadBindingManager({
-      accountId: "default",
-      persist: false,
-      enableSweeper: false,
-      idleTimeoutMs: 24 * 60 * 60 * 1000,
-      maxAgeMs: 0,
-    });
-
-    await manager.bindTarget({
-      threadId: "thread-acp-uncertain",
-      channelId: "parent-1",
-      targetKind: "acp",
-      targetSessionKey: "agent:codex:acp:uncertain",
-      agentId: "codex",
-      webhookId: "wh-1",
-      webhookToken: "tok-1",
-    });
-
-    hoisted.readAcpSessionEntry.mockReturnValue({
-      sessionKey: "agent:codex:acp:uncertain",
-      storeSessionKey: "agent:codex:acp:uncertain",
-      cfg: {} as RemoteClawConfig,
-      storePath: "/tmp/mock-sessions.json",
-      storeReadFailed: true,
-      entry: undefined,
-      acp: undefined,
-    });
-
-    const result = reconcileAcpThreadBindingsOnStartup({
-      cfg: {} as RemoteClawConfig,
-      accountId: "default",
-    });
-
-    expect(result.checked).toBe(1);
-    expect(result.removed).toBe(0);
-    expect(result.staleSessionKeys).toEqual([]);
-    expect(manager.getByThreadId("thread-acp-uncertain")).toBeDefined();
   });
 
   it("migrates legacy expiresAt bindings to idle/max-age semantics", () => {

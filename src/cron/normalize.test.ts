@@ -29,11 +29,6 @@ function expectAnnounceDeliveryTarget(
   expect(delivery.to).toBe(params.to);
 }
 
-function expectPayloadDeliveryHintsCleared(payload: Record<string, unknown>): void {
-  expect(payload.channel).toBeUndefined();
-  expect(payload.deliver).toBeUndefined();
-}
-
 function normalizeIsolatedAgentTurnCreateJob(params: {
   name: string;
   payload?: Record<string, unknown>;
@@ -72,25 +67,6 @@ function normalizeMainSystemEventCreateJob(params: {
 }
 
 describe("normalizeCronJobCreate", () => {
-  // Gutted in RemoteClaw fork — legacy delivery migration stubs return no-ops
-  it.skip("maps legacy payload.provider to payload.channel and strips provider", () => {
-    const normalized = normalizeIsolatedAgentTurnCreateJob({
-      name: "legacy",
-      payload: {
-        deliver: true,
-        provider: " TeLeGrAm ",
-        to: "7200373102",
-      },
-    });
-
-    const payload = normalized.payload as Record<string, unknown>;
-    expectPayloadDeliveryHintsCleared(payload);
-    expect("provider" in payload).toBe(false);
-
-    const delivery = normalized.delivery as Record<string, unknown>;
-    expectAnnounceDeliveryTarget(delivery, { channel: "telegram", to: "7200373102" });
-  });
-
   it("trims agentId and drops null", () => {
     const normalized = normalizeCronJobCreate({
       name: "agent-set",
@@ -145,24 +121,6 @@ describe("normalizeCronJobCreate", () => {
       payload: { kind: "systemEvent", text: "hi" },
     }) as unknown as Record<string, unknown>;
     expect("sessionKey" in cleared).toBe(false);
-  });
-
-  // Gutted in RemoteClaw fork — legacy delivery migration stubs return no-ops
-  it.skip("canonicalizes payload.channel casing", () => {
-    const normalized = normalizeIsolatedAgentTurnCreateJob({
-      name: "legacy provider",
-      payload: {
-        deliver: true,
-        channel: "Telegram",
-        to: "7200373102",
-      },
-    });
-
-    const payload = normalized.payload as Record<string, unknown>;
-    expectPayloadDeliveryHintsCleared(payload);
-
-    const delivery = normalized.delivery as Record<string, unknown>;
-    expectAnnounceDeliveryTarget(delivery, { channel: "telegram", to: "7200373102" });
   });
 
   it("coerces ISO schedule.at to normalized ISO (UTC)", () => {
@@ -290,46 +248,6 @@ describe("normalizeCronJobCreate", () => {
 
     const delivery = normalized.delivery as Record<string, unknown>;
     expect(delivery.mode).toBe("announce");
-  });
-
-  // Gutted in RemoteClaw fork — legacy delivery migration stubs return no-ops
-  it.skip("migrates legacy delivery fields to delivery", () => {
-    const normalized = normalizeCronJobCreate({
-      name: "legacy deliver",
-      enabled: true,
-      schedule: { kind: "cron", expr: "* * * * *" },
-      payload: {
-        kind: "agentTurn",
-        message: "hi",
-        deliver: true,
-        channel: "telegram",
-        to: "7200373102",
-        bestEffortDeliver: true,
-      },
-    }) as unknown as Record<string, unknown>;
-
-    const delivery = normalized.delivery as Record<string, unknown>;
-    expectAnnounceDeliveryTarget(delivery, { channel: "telegram", to: "7200373102" });
-    expect(delivery.bestEffort).toBe(true);
-  });
-
-  // Gutted in RemoteClaw fork — legacy delivery migration stubs return no-ops
-  it.skip("maps legacy deliver=false to delivery none", () => {
-    const normalized = normalizeCronJobCreate({
-      name: "legacy off",
-      enabled: true,
-      schedule: { kind: "cron", expr: "* * * * *" },
-      payload: {
-        kind: "agentTurn",
-        message: "hi",
-        deliver: false,
-        channel: "telegram",
-        to: "7200373102",
-      },
-    }) as unknown as Record<string, unknown>;
-
-    const delivery = normalized.delivery as Record<string, unknown>;
-    expect(delivery.mode).toBe("none");
   });
 
   it("migrates legacy isolation settings to announce delivery", () => {

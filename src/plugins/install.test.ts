@@ -544,14 +544,6 @@ describe("installPluginFromArchive", () => {
     expect.unreachable("expected install to fail without remoteclaw.extensions");
   });
 
-  // Gutted in RemoteClaw fork — skill scanner is stubbed (always returns safe),
-  // so dangerous code pattern warnings are never produced
-  it.skip("warns when plugin contains dangerous code patterns", () => {});
-
-  // Gutted in RemoteClaw fork — skill scanner is stubbed (always returns safe),
-  // so hidden directory scan warnings are never produced
-  it.skip("scans extension entry files in hidden directories", () => {});
-
   it("continues install when scanner throws", async () => {
     const scanSpy = vi
       .spyOn(skillScanner, "scanDirectoryWithSummary")

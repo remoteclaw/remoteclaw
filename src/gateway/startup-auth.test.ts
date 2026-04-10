@@ -106,33 +106,6 @@ describe("ensureGatewayStartupAuth", () => {
     );
   });
 
-  // Gutted in RemoteClaw fork — secret resolution is stubbed out
-  it.skip("resolves gateway.auth.password SecretRef before startup auth checks", async () => {
-    const result = await ensureGatewayStartupAuth({
-      cfg: {
-        gateway: {
-          auth: {
-            mode: "password",
-            password: { source: "env", provider: "default", id: "GW_PASSWORD" },
-          },
-        },
-        secrets: {
-          providers: {
-            default: { source: "env" },
-          },
-        },
-      },
-      env: {
-        GW_PASSWORD: "resolved-password",
-      } as NodeJS.ProcessEnv,
-      persist: true,
-    });
-
-    expect(result.generatedToken).toBeUndefined();
-    expect(result.auth.mode).toBe("password");
-    expect(result.auth.password).toBe("resolved-password");
-  });
-
   it("uses REMOTECLAW_GATEWAY_PASSWORD without resolving configured password SecretRef", async () => {
     const result = await ensureGatewayStartupAuth({
       cfg: {

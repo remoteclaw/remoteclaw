@@ -53,42 +53,6 @@ describe("cron main job passes heartbeat target=last", () => {
     cron.stop();
   }
 
-  // Gutted in RemoteClaw fork — heartbeat target=last pass-through not present
-  it.skip("should pass heartbeat.target=last to runHeartbeatOnce for wakeMode=now main jobs", async () => {
-    const { storePath } = await makeStorePath();
-    const now = Date.now();
-
-    const job = createMainCronJob({
-      now,
-      id: "test-main-delivery",
-      wakeMode: "now",
-    });
-
-    await writeCronStoreSnapshot({ storePath, jobs: [job] });
-
-    const runHeartbeatOnce = vi.fn<RunHeartbeatOnce>(async () => ({
-      status: "ran" as const,
-      durationMs: 50,
-    }));
-
-    const { cron } = createCronWithSpies({
-      storePath,
-      runHeartbeatOnce,
-    });
-
-    await runSingleTick(cron);
-
-    // runHeartbeatOnce should have been called
-    expect(runHeartbeatOnce).toHaveBeenCalled();
-
-    // The heartbeat config passed should include target: "last" so the
-    // heartbeat runner delivers the response to the last active channel.
-    const callArgs = runHeartbeatOnce.mock.calls[0]?.[0];
-    expect(callArgs).toBeDefined();
-    expect(callArgs?.heartbeat).toBeDefined();
-    expect(callArgs?.heartbeat?.target).toBe("last");
-  });
-
   it("should not pass heartbeat target for wakeMode=next-heartbeat main jobs", async () => {
     const { storePath } = await makeStorePath();
     const now = Date.now();

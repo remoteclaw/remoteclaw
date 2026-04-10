@@ -4,16 +4,11 @@ import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { captureEnv } from "../test-utils/env.js";
 import { startGatewayServer } from "./server.js";
-import { extractPayloadText } from "./test-helpers.agent-results.js";
 import {
   connectDeviceAuthReq,
   connectGatewayClient,
   getFreeGatewayPort,
-  startGatewayWithClient,
 } from "./test-helpers.e2e.js";
-import { installOpenAiResponsesMock } from "./test-helpers.openai-mock.js";
-import { buildOpenAiResponsesProviderConfig } from "./test-openai-responses-model.js";
-
 let writeConfigFile: typeof import("../config/config.js").writeConfigFile;
 let resolveConfigPath: typeof import("../config/config.js").resolveConfigPath;
 const GATEWAY_E2E_TIMEOUT_MS = 30_000;
@@ -27,104 +22,6 @@ describe("gateway e2e", () => {
   beforeAll(async () => {
     ({ writeConfigFile, resolveConfigPath } = await import("../config/config.js"));
   });
-
-  // Gutted in RemoteClaw fork — OpenAI responses model and mock are stubbed out
-  it.skip(
-    "runs a mock OpenAI tool call end-to-end via gateway agent loop",
-    { timeout: GATEWAY_E2E_TIMEOUT_MS },
-    async () => {
-      const envSnapshot = captureEnv([
-        "HOME",
-        "REMOTECLAW_CONFIG_PATH",
-        "REMOTECLAW_GATEWAY_TOKEN",
-        "REMOTECLAW_SKIP_CHANNELS",
-        "REMOTECLAW_SKIP_GMAIL_WATCHER",
-        "REMOTECLAW_SKIP_CRON",
-        "REMOTECLAW_SKIP_CANVAS_HOST",
-        "REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER",
-      ]);
-
-      const { baseUrl: openaiBaseUrl, restore } = installOpenAiResponsesMock();
-
-      const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-gw-mock-home-"));
-      process.env.HOME = tempHome;
-      process.env.REMOTECLAW_SKIP_CHANNELS = "1";
-      process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = "1";
-      process.env.REMOTECLAW_SKIP_CRON = "1";
-      process.env.REMOTECLAW_SKIP_CANVAS_HOST = "1";
-      process.env.REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER = "1";
-
-      const token = nextGatewayId("test-token");
-      process.env.REMOTECLAW_GATEWAY_TOKEN = token;
-
-      const workspaceDir = path.join(tempHome, "remoteclaw");
-      await fs.mkdir(workspaceDir, { recursive: true });
-
-      const nonceA = nextGatewayId("nonce-a");
-      const nonceB = nextGatewayId("nonce-b");
-      const toolProbePath = path.join(workspaceDir, `.remoteclaw-tool-probe.${nonceA}.txt`);
-      await fs.writeFile(toolProbePath, `nonceA=${nonceA}\nnonceB=${nonceB}\n`);
-
-      const configDir = path.join(tempHome, ".remoteclaw");
-      await fs.mkdir(configDir, { recursive: true });
-      const configPath = path.join(configDir, "remoteclaw.json");
-
-      const cfg = {
-        agents: { defaults: { workspace: workspaceDir } },
-        models: {
-          mode: "replace",
-          providers: {
-            openai: buildOpenAiResponsesProviderConfig(openaiBaseUrl),
-          },
-        },
-        gateway: { auth: { token } },
-      };
-
-      const { server, client } = await startGatewayWithClient({
-        cfg,
-        configPath,
-        token,
-        clientDisplayName: "vitest-mock-openai",
-      });
-
-      try {
-        const sessionKey = "agent:dev:mock-openai";
-
-        await client.request("sessions.patch", {
-          key: sessionKey,
-          model: "openai/gpt-5.2",
-        });
-
-        const runId = nextGatewayId("run");
-        const payload = await client.request<{
-          status?: unknown;
-          result?: unknown;
-        }>(
-          "agent",
-          {
-            sessionKey,
-            idempotencyKey: `idem-${runId}`,
-            message:
-              `Call the read tool on "${toolProbePath}". ` +
-              `Then reply with exactly: ${nonceA} ${nonceB}. No extra text.`,
-            deliver: false,
-          },
-          { expectFinal: true },
-        );
-
-        expect(payload?.status).toBe("ok");
-        const text = extractPayloadText(payload?.result);
-        expect(text).toContain(nonceA);
-        expect(text).toContain(nonceB);
-      } finally {
-        client.stop();
-        await server.close({ reason: "mock openai test complete" });
-        await fs.rm(tempHome, { recursive: true, force: true });
-        restore();
-        envSnapshot.restore();
-      }
-    },
-  );
 
   it(
     "runs wizard over ws and writes auth token config",

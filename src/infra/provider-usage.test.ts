@@ -1,8 +1,4 @@
-import fs from "node:fs";
-import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { withTempHome } from "../../test/helpers/temp-home.js";
-import { ensureAuthProfileStore, listProfilesForProvider } from "../agents/auth-profiles.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { createProviderUsageFetch, makeResponse } from "../test-utils/provider-usage-fetch.js";
 import {
@@ -230,75 +226,6 @@ describe("provider usage loading", () => {
         ],
       },
       25,
-    );
-  });
-
-  // Gutted in RemoteClaw fork — auth profiles subsystem is stubbed
-  it.skip("discovers Claude usage from token auth profiles", async () => {
-    await withTempHome(
-      async (tempHome) => {
-        const agentDir = path.join(
-          process.env.REMOTECLAW_STATE_DIR ?? path.join(tempHome, ".remoteclaw"),
-          "agents",
-          "main",
-          "agent",
-        );
-        fs.mkdirSync(agentDir, { recursive: true, mode: 0o700 });
-        fs.writeFileSync(
-          path.join(agentDir, "auth-profiles.json"),
-          `${JSON.stringify(
-            {
-              version: 1,
-              order: { anthropic: ["anthropic:default"] },
-              profiles: {
-                "anthropic:default": {
-                  type: "token",
-                  provider: "anthropic",
-                  token: "token-1",
-                  expires: Date.UTC(2100, 0, 1, 0, 0, 0),
-                },
-              },
-            },
-            null,
-            2,
-          )}\n`,
-          "utf8",
-        );
-        const store = ensureAuthProfileStore(agentDir, {
-          allowKeychainPrompt: false,
-        });
-        expect(listProfilesForProvider(store, "anthropic")).toContain("anthropic:default");
-
-        const mockFetch = createProviderUsageFetch(async (url, init) => {
-          if (url.includes("api.anthropic.com/api/oauth/usage")) {
-            const headers = (init?.headers ?? {}) as Record<string, string>;
-            expect(headers.Authorization).toBe("Bearer token-1");
-            return makeResponse(200, {
-              five_hour: {
-                utilization: 20,
-                resets_at: "2026-01-07T01:00:00Z",
-              },
-            });
-          }
-          return makeResponse(404, "not found");
-        });
-
-        const summary = await loadProviderUsageSummary({
-          now: usageNow,
-          providers: ["anthropic"],
-          fetch: mockFetch as unknown as typeof fetch,
-        } as unknown as Parameters<typeof loadProviderUsageSummary>[0]);
-
-        const claude = expectSingleAnthropicProvider(summary);
-        expect(claude?.windows[0]?.label).toBe("5h");
-        expect(mockFetch).toHaveBeenCalled();
-      },
-      {
-        env: {
-          REMOTECLAW_STATE_DIR: (home) => path.join(home, ".remoteclaw"),
-        },
-        prefix: "remoteclaw-provider-usage-",
-      },
     );
   });
 

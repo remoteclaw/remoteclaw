@@ -158,56 +158,6 @@ describe("applyPluginAutoEnable", () => {
     expect(result.changes.join("\n")).toContain("IRC configured, enabled automatically.");
   });
 
-  // Gutted in RemoteClaw fork: PROVIDER_PLUGIN_IDS is empty, so provider auth
-  // plugins are never auto-enabled.
-  it.skip("auto-enables provider auth plugins when profiles exist", () => {
-    const result = applyPluginAutoEnable({
-      config: {
-        auth: {
-          profiles: {
-            "google-gemini-cli:default": {
-              provider: "google-gemini-cli",
-              mode: "oauth",
-            },
-          },
-        },
-      },
-      env: {},
-    });
-
-    expect(result.config.plugins?.entries?.["google-gemini-cli-auth"]?.enabled).toBe(true);
-  });
-
-  // Gutted in RemoteClaw fork: no ACP handling in plugin-auto-enable.ts
-  it.skip("auto-enables acpx plugin when ACP is configured", () => {
-    const result = applyPluginAutoEnable({
-      config: {
-        acp: {
-          enabled: true,
-        },
-      },
-      env: {},
-    });
-
-    expect(result.config.plugins?.entries?.acpx?.enabled).toBe(true);
-    expect(result.changes.join("\n")).toContain("ACP runtime configured, enabled automatically.");
-  });
-
-  // Gutted in RemoteClaw fork: no ACP handling in plugin-auto-enable.ts
-  it.skip("does not auto-enable acpx when a different ACP backend is configured", () => {
-    const result = applyPluginAutoEnable({
-      config: {
-        acp: {
-          enabled: true,
-          backend: "custom-runtime",
-        },
-      },
-      env: {},
-    });
-
-    expect(result.config.plugins?.entries?.acpx?.enabled).toBeUndefined();
-  });
-
   it("skips when plugins are globally disabled", () => {
     const result = applyPluginAutoEnable({
       config: {
@@ -265,19 +215,6 @@ describe("applyPluginAutoEnable", () => {
   });
 
   describe("preferOver channel prioritization", () => {
-    // Gutted in RemoteClaw fork: preferOver metadata requires plugin manifests on disk;
-    // without them, resolvePreferredOverIds returns [] and both channels get auto-enabled.
-    it.skip("prefers bluebubbles: skips imessage auto-configure when both are configured", () => {
-      const result = applyWithBluebubblesImessageConfig();
-
-      expect(result.config.plugins?.entries?.bluebubbles?.enabled).toBe(true);
-      expect(result.config.plugins?.entries?.imessage?.enabled).toBeUndefined();
-      expect(result.changes.join("\n")).toContain("bluebubbles configured, enabled automatically.");
-      expect(result.changes.join("\n")).not.toContain(
-        "iMessage configured, enabled automatically.",
-      );
-    });
-
     it("keeps imessage enabled if already explicitly enabled (non-destructive)", () => {
       const result = applyWithBluebubblesImessageConfig({
         plugins: { entries: { imessage: { enabled: true } } },

@@ -149,25 +149,6 @@ describe("chat error propagation separates error and non-error reply parts", () 
     mockState.agentRunId = "run-err-1";
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("broadcasts error state when agent run produces only error payloads", async () => {
-    createTranscriptFixture("remoteclaw-chat-err-only-");
-    mockState.payloads = [{ text: "auth failure: invalid token", isError: true }];
-    const context = createChatContext();
-
-    const broadcasts = await runChatSendAndWaitForBroadcast({
-      context,
-      idempotencyKey: "idem-err-only",
-    });
-
-    expect(broadcasts.length).toBe(1);
-    expect(broadcasts[0]).toMatchObject({
-      state: "error",
-      errorMessage: "auth failure: invalid token",
-    });
-  });
-
   it("does not broadcast error when agent run produces mixed error and non-error payloads", async () => {
     createTranscriptFixture("remoteclaw-chat-mixed-");
     mockState.payloads = [
@@ -184,43 +165,6 @@ describe("chat error propagation separates error and non-error reply parts", () 
     // Should NOT broadcast an error — there is non-error text present
     const errorBroadcasts = broadcasts.filter((b) => b.state === "error");
     expect(errorBroadcasts.length).toBe(0);
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("does not include non-error text in error broadcast for error-only runs", async () => {
-    createTranscriptFixture("remoteclaw-chat-err-text-isolation-");
-    mockState.payloads = [{ text: "CLI crashed: segfault", isError: true }];
-    const context = createChatContext();
-
-    const broadcasts = await runChatSendAndWaitForBroadcast({
-      context,
-      idempotencyKey: "idem-err-isolation",
-    });
-
-    expect(broadcasts.length).toBe(1);
-    expect(broadcasts[0]?.errorMessage).toBe("CLI crashed: segfault");
-    expect(broadcasts[0]?.state).toBe("error");
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("concatenates multiple error payloads in error broadcast", async () => {
-    createTranscriptFixture("remoteclaw-chat-multi-err-");
-    mockState.payloads = [
-      { text: "error one", isError: true },
-      { text: "error two", isError: true },
-    ];
-    const context = createChatContext();
-
-    const broadcasts = await runChatSendAndWaitForBroadcast({
-      context,
-      idempotencyKey: "idem-multi-err",
-    });
-
-    expect(broadcasts.length).toBe(1);
-    expect(broadcasts[0]?.state).toBe("error");
-    expect(broadcasts[0]?.errorMessage).toBe("error one\n\nerror two");
   });
 
   it("sets hasErrorPayload even when error payload has empty text", async () => {

@@ -14,7 +14,6 @@ type NodeInvokeCall = {
 };
 
 let lastNodeInvokeCall: NodeInvokeCall | null = null;
-let lastApprovalRequestCall: { params?: Record<string, unknown> } | null = null;
 
 const callGateway = vi.fn(async (opts: NodeInvokeCall) => {
   if (opts.method === "node.list") {
@@ -53,26 +52,6 @@ const callGateway = vi.fn(async (opts: NodeInvokeCall) => {
       },
     };
   }
-  if (opts.method === "exec.approvals.node.get") {
-    return {
-      path: "/tmp/exec-approvals.json",
-      exists: true,
-      hash: "hash",
-      file: {
-        version: 1,
-        defaults: {
-          security: "allowlist",
-          ask: "on-miss",
-          askFallback: "deny",
-        },
-        agents: {},
-      },
-    };
-  }
-  if (opts.method === "exec.approval.request") {
-    lastApprovalRequestCall = opts as { params?: Record<string, unknown> };
-    return { decision: "allow-once" };
-  }
   return { ok: true };
 });
 
@@ -105,8 +84,6 @@ describe("nodes-cli coverage", () => {
     return last;
   };
 
-  const getApprovalRequestCall = () => lastApprovalRequestCall;
-
   const runNodesCommand = async (args: string[]) => {
     await sharedProgram.parseAsync(args, { from: "user" });
     return getNodeInvokeCall();
@@ -124,89 +101,6 @@ describe("nodes-cli coverage", () => {
     callGateway.mockClear();
     randomIdempotencyKey.mockClear();
     lastNodeInvokeCall = null;
-    lastApprovalRequestCall = null;
-  });
-
-  it.skip("invokes system.run with parsed params", async () => {
-    // Gutted in RemoteClaw fork — exec approvals path
-    const invoke = await runNodesCommand([
-      "nodes",
-      "run",
-      "--node",
-      "mac-1",
-      "--cwd",
-      "/tmp",
-      "--env",
-      "FOO=bar",
-      "--command-timeout",
-      "1200",
-      "--needs-screen-recording",
-      "--invoke-timeout",
-      "5000",
-      "echo",
-      "hi",
-    ]);
-
-    expect(invoke).toBeTruthy();
-    expect(invoke?.params?.idempotencyKey).toBe("rk_test");
-    expect(invoke?.params?.command).toBe("system.run");
-    expect(invoke?.params?.params).toEqual({
-      command: ["echo", "hi"],
-      rawCommand: null,
-      cwd: "/tmp",
-      env: { FOO: "bar" },
-      timeoutMs: 1200,
-      needsScreenRecording: true,
-      agentId: "main",
-      approved: true,
-      approvalDecision: "allow-once",
-      runId: expect.any(String),
-    });
-    expect(invoke?.params?.timeoutMs).toBe(5000);
-    const approval = getApprovalRequestCall();
-    expect(approval?.params?.["commandArgv"]).toEqual(["echo", "hi"]);
-    expect(approval?.params?.["systemRunPlan"]).toEqual({
-      argv: ["echo", "hi"],
-      cwd: "/tmp",
-      rawCommand: null,
-      agentId: "main",
-      sessionKey: null,
-    });
-  });
-
-  it.skip("invokes system.run with raw command", async () => {
-    // Gutted in RemoteClaw fork — exec approvals path
-    const invoke = await runNodesCommand([
-      "nodes",
-      "run",
-      "--agent",
-      "main",
-      "--node",
-      "mac-1",
-      "--raw",
-      "echo hi",
-    ]);
-
-    expect(invoke).toBeTruthy();
-    expect(invoke?.params?.idempotencyKey).toBe("rk_test");
-    expect(invoke?.params?.command).toBe("system.run");
-    expect(invoke?.params?.params).toMatchObject({
-      command: ["/bin/sh", "-lc", "echo hi"],
-      rawCommand: "echo hi",
-      agentId: "main",
-      approved: true,
-      approvalDecision: "allow-once",
-      runId: expect.any(String),
-    });
-    const approval = getApprovalRequestCall();
-    expect(approval?.params?.["commandArgv"]).toEqual(["/bin/sh", "-lc", "echo hi"]);
-    expect(approval?.params?.["systemRunPlan"]).toEqual({
-      argv: ["/bin/sh", "-lc", "echo hi"],
-      cwd: null,
-      rawCommand: "echo hi",
-      agentId: "main",
-      sessionKey: null,
-    });
   });
 
   it("invokes system.notify with provided fields", async () => {

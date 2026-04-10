@@ -362,25 +362,6 @@ describe("resolveSessionModelRef", () => {
     expect(resolved).toEqual({ provider: "openai-codex", model: "gpt-5.3-codex" });
   });
 
-  // Upstream v2026.3.2 — provider inference logic changed
-  test.skip("falls back to resolved provider for unprefixed legacy runtime model", () => {
-    const cfg = createModelDefaultsConfig({
-      primary: "google-gemini-cli/gemini-3-pro-preview",
-    });
-
-    const resolved = resolveSessionModelRef(cfg, {
-      sessionId: "legacy-session",
-      updatedAt: Date.now(),
-      model: "claude-sonnet-4-6",
-      modelProvider: undefined,
-    });
-
-    expect(resolved).toEqual({
-      provider: "google-gemini-cli",
-      model: "claude-sonnet-4-6",
-    });
-  });
-
   test("preserves provider from slash-prefixed model when modelProvider is missing", () => {
     // When model string contains a provider prefix (e.g. "anthropic/claude-sonnet-4-6")
     // parseModelRef should extract it correctly even without modelProvider set.
@@ -421,20 +402,6 @@ describe("resolveSessionModelIdentityRef", () => {
     expect(resolved).toEqual({ model: "claude-sonnet-4-6" });
   });
 
-  // Upstream v2026.3.2 — provider inference logic changed
-  test.skip("infers provider from configured model allowlist when unambiguous", () => {
-    const cfg = createModelDefaultsConfig({
-      primary: "google-gemini-cli/gemini-3-pro-preview",
-      models: {
-        "anthropic/claude-sonnet-4-6": {},
-      },
-    });
-
-    const resolved = resolveLegacyIdentityRef(cfg);
-
-    expect(resolved).toEqual({ provider: "anthropic", model: "claude-sonnet-4-6" });
-  });
-
   test("keeps provider unknown when configured models are ambiguous", () => {
     const cfg = createModelDefaultsConfig({
       primary: "google-gemini-cli/gemini-3-pro-preview",
@@ -462,28 +429,6 @@ describe("resolveSessionModelIdentityRef", () => {
     });
 
     expect(resolved).toEqual({ provider: "anthropic", model: "claude-sonnet-4-6" });
-  });
-
-  // Upstream v2026.3.2 — provider inference logic changed
-  test.skip("infers wrapper provider for slash-prefixed runtime model when allowlist match is unique", () => {
-    const cfg = createModelDefaultsConfig({
-      primary: "google-gemini-cli/gemini-3-pro-preview",
-      models: {
-        "vercel-ai-gateway/anthropic/claude-sonnet-4-6": {},
-      },
-    });
-
-    const resolved = resolveSessionModelIdentityRef(cfg, {
-      sessionId: "slash-model",
-      updatedAt: Date.now(),
-      model: "anthropic/claude-sonnet-4-6",
-      modelProvider: undefined,
-    });
-
-    expect(resolved).toEqual({
-      provider: "vercel-ai-gateway",
-      model: "anthropic/claude-sonnet-4-6",
-    });
   });
 });
 
@@ -675,7 +620,6 @@ describe("listSessionsFromStore search", () => {
     expect(result.sessions.map((session) => session.key)).toEqual(["agent:main:cron:job-1"]);
   });
 
-  // Upstream v2026.3.2 — provider inference for legacy runtime models changed
   test.each([
     {
       name: "does not guess provider for legacy runtime model without modelProvider",

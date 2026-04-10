@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { migrateLegacyConfig } from "./legacy-migrate.js";
 import { validateConfigObjectRaw } from "./validation.js";
 
 describe("thread binding config keys", () => {
@@ -71,80 +70,6 @@ describe("thread binding config keys", () => {
         path: "channels.discord.accounts",
         message: expect.stringContaining("ttlHours"),
       }),
-    );
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("migrates session.threadBindings.ttlHours to idleHours", () => {
-    const result = migrateLegacyConfig({
-      session: {
-        threadBindings: {
-          ttlHours: 24,
-        },
-      },
-    });
-
-    expect(result.config?.session?.threadBindings?.idleHours).toBe(24);
-    const normalized = result.config?.session?.threadBindings as
-      | Record<string, unknown>
-      | undefined;
-    expect(normalized?.ttlHours).toBeUndefined();
-    expect(result.changes).toContain(
-      "Moved session.threadBindings.ttlHours → session.threadBindings.idleHours.",
-    );
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("migrates Discord threadBindings.ttlHours for root and account entries", () => {
-    const result = migrateLegacyConfig({
-      channels: {
-        discord: {
-          threadBindings: {
-            ttlHours: 12,
-          },
-          accounts: {
-            alpha: {
-              threadBindings: {
-                ttlHours: 6,
-              },
-            },
-            beta: {
-              threadBindings: {
-                idleHours: 4,
-                ttlHours: 9,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    const discord = result.config?.channels?.discord;
-    expect(discord?.threadBindings?.idleHours).toBe(12);
-    expect(
-      (discord?.threadBindings as Record<string, unknown> | undefined)?.ttlHours,
-    ).toBeUndefined();
-
-    expect(discord?.accounts?.alpha?.threadBindings?.idleHours).toBe(6);
-    expect(
-      (discord?.accounts?.alpha?.threadBindings as Record<string, unknown> | undefined)?.ttlHours,
-    ).toBeUndefined();
-
-    expect(discord?.accounts?.beta?.threadBindings?.idleHours).toBe(4);
-    expect(
-      (discord?.accounts?.beta?.threadBindings as Record<string, unknown> | undefined)?.ttlHours,
-    ).toBeUndefined();
-
-    expect(result.changes).toContain(
-      "Moved channels.discord.threadBindings.ttlHours → channels.discord.threadBindings.idleHours.",
-    );
-    expect(result.changes).toContain(
-      "Moved channels.discord.accounts.alpha.threadBindings.ttlHours → channels.discord.accounts.alpha.threadBindings.idleHours.",
-    );
-    expect(result.changes).toContain(
-      "Removed channels.discord.accounts.beta.threadBindings.ttlHours (channels.discord.accounts.beta.threadBindings.idleHours already set).",
     );
   });
 });

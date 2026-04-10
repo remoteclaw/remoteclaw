@@ -52,39 +52,6 @@ describe("pairing setup code", () => {
     });
   });
 
-  // Gutted in RemoteClaw fork — resolveSecretRefValues is a no-op stub
-  it.skip("resolves gateway.auth.password SecretRef for pairing payload", async () => {
-    const resolved = await resolvePairingSetupFromConfig(
-      {
-        gateway: {
-          bind: "custom",
-          customBindHost: "gateway.local",
-          auth: {
-            mode: "password",
-            password: { source: "env", provider: "default", id: "GW_PASSWORD" },
-          },
-        },
-        secrets: {
-          providers: {
-            default: { source: "env" },
-          },
-        },
-      },
-      {
-        env: {
-          GW_PASSWORD: "resolved-password",
-        },
-      },
-    );
-
-    expect(resolved.ok).toBe(true);
-    if (!resolved.ok) {
-      throw new Error("expected setup resolution to succeed");
-    }
-    expect(resolved.payload.password).toBe("resolved-password");
-    expect(resolved.authLabel).toBe("password");
-  });
-
   it("uses REMOTECLAW_GATEWAY_PASSWORD without resolving configured password SecretRef", async () => {
     const resolved = await resolvePairingSetupFromConfig(
       {

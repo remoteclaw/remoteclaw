@@ -37,24 +37,6 @@ function makeRecord(overrides?: Partial<PluginRecord>): PluginRecord {
   } as PluginRecord;
 }
 
-// Gutted in RemoteClaw fork — dead hook guards were removed because the hook names
-// (before_model_resolve, before_prompt_build, before_agent_start, llm_input,
-// llm_output, tool_result_persist) are valid PluginHookName values in the upstream
-// plugin system. RemoteClaw no longer filters them since the embedded Pi agent
-// was gutted and hooks are now passthrough.
-describe.skip("dead hook guards", () => {
-  describe("registerHook (legacy string-based)", () => {
-    it("warns and skips dead hook", () => {});
-    it("allows live hooks through without warnings", () => {});
-    it("filters dead hooks from a mixed array, keeping live ones", () => {});
-    it("returns early when all events in array are dead", () => {});
-  });
-  describe("api.on() (typed hook)", () => {
-    it("warns and skips dead hook via api.on()", () => {});
-    it("allows live hooks through api.on() without warnings", () => {});
-  });
-});
-
 describe("hook registration (post-gut)", () => {
   it("registers hooks via registerHook", () => {
     const { registry, registerHook } = createPluginRegistry(makeRegistryParams());

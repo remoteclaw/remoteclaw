@@ -507,24 +507,6 @@ describe("processDiscordMessage draft streaming", () => {
     expect(deliverDiscordReply).toHaveBeenCalledTimes(1);
   });
 
-  // Gutted in RemoteClaw fork — EmbeddedBlockChunker is a no-op stub
-  it.skip("streams block previews using draft chunking", async () => {
-    const draftStream = createMockDraftStreamForTest();
-
-    dispatchInboundMessage.mockImplementationOnce(async (params?: DispatchInboundParams) => {
-      await params?.replyOptions?.onPartialReply?.({ text: "HelloWorld" });
-      return createNoQueuedDispatchResult();
-    });
-
-    const ctx = await createBlockModeContext();
-
-    // oxlint-disable-next-line typescript/no-explicit-any
-    await processDiscordMessage(ctx as any);
-
-    const updates = draftStream.update.mock.calls.map((call) => call[0]);
-    expect(updates).toEqual(["Hello", "HelloWorld"]);
-  });
-
   it("forces new preview messages on assistant boundaries in block mode", async () => {
     const draftStream = createMockDraftStreamForTest();
 

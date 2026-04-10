@@ -2,14 +2,10 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const buildModelAliasIndex = (..._args: unknown[]) => ({}) as Record<string, unknown>;
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { formatZonedTimestamp } from "../../infra/format-time/format-datetime.ts";
 import { enqueueSystemEvent, resetSystemEventsForTest } from "../../infra/system-events.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const applyResetModelOverride = (..._args: unknown[]) => undefined as unknown;
 import { buildQueuedSystemPrompt } from "./session-updates.js";
 import { persistSessionUsageUpdate } from "./session-usage.js";
 import { initSessionState } from "./session.js";
@@ -61,93 +57,6 @@ async function writeSessionStoreFast(
 }
 
 describe("initSessionState thread forking", () => {
-  // Gutted in RemoteClaw fork: SessionManager is stubbed, so forked session
-  // files are not actually written to disk.
-  it.skip("forks a new session from the parent session file", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const root = await makeCaseDir("remoteclaw-thread-session-");
-    const sessionsDir = path.join(root, "sessions");
-    await fs.mkdir(sessionsDir);
-
-    const parentSessionId = "parent-session";
-    const parentSessionFile = path.join(sessionsDir, "parent.jsonl");
-    const header = {
-      type: "session",
-      version: 3,
-      id: parentSessionId,
-      timestamp: new Date().toISOString(),
-      cwd: process.cwd(),
-    };
-    const message = {
-      type: "message",
-      id: "m1",
-      parentId: null,
-      timestamp: new Date().toISOString(),
-      message: { role: "user", content: "Parent prompt" },
-    };
-    const assistantMessage = {
-      type: "message",
-      id: "m2",
-      parentId: "m1",
-      timestamp: new Date().toISOString(),
-      message: { role: "assistant", content: "Parent reply" },
-    };
-    await fs.writeFile(
-      parentSessionFile,
-      `${JSON.stringify(header)}\n${JSON.stringify(message)}\n${JSON.stringify(assistantMessage)}\n`,
-      "utf-8",
-    );
-
-    const storePath = path.join(root, "sessions.json");
-    const parentSessionKey = "agent:main:slack:channel:c1";
-    await writeSessionStoreFast(storePath, {
-      [parentSessionKey]: {
-        sessionId: parentSessionId,
-        sessionFile: parentSessionFile,
-        updatedAt: Date.now(),
-      },
-    });
-
-    const cfg = {
-      session: { store: storePath },
-    } as RemoteClawConfig;
-
-    const threadSessionKey = "agent:main:slack:channel:c1:thread:123";
-    const threadLabel = "Slack thread #general: starter";
-    const result = await initSessionState({
-      ctx: {
-        Body: "Thread reply",
-        SessionKey: threadSessionKey,
-        ParentSessionKey: parentSessionKey,
-        ThreadLabel: threadLabel,
-      },
-      cfg,
-      commandAuthorized: true,
-    });
-
-    expect(result.sessionKey).toBe(threadSessionKey);
-    expect(result.sessionEntry.sessionId).not.toBe(parentSessionId);
-    expect(result.sessionEntry.sessionFile).toBeTruthy();
-    expect(result.sessionEntry.displayName).toBe(threadLabel);
-
-    const newSessionFile = result.sessionEntry.sessionFile;
-    if (!newSessionFile) {
-      throw new Error("Missing session file for forked thread");
-    }
-    const [headerLine] = (await fs.readFile(newSessionFile, "utf-8"))
-      .split(/\r?\n/)
-      .filter((line) => line.trim().length > 0);
-    const parsedHeader = JSON.parse(headerLine) as {
-      parentSession?: string;
-    };
-    const expectedParentSession = await fs.realpath(parentSessionFile);
-    const actualParentSession = parsedHeader.parentSession
-      ? await fs.realpath(parsedHeader.parentSession)
-      : undefined;
-    expect(actualParentSession).toBe(expectedParentSession);
-    warn.mockRestore();
-  });
-
   it("forks from parent when thread session key already exists but was not forked yet", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const root = await makeCaseDir("remoteclaw-thread-session-existing-");
@@ -297,83 +206,6 @@ describe("initSessionState thread forking", () => {
     expect(result.sessionEntry.sessionId).not.toBe(parentSessionId);
     // Session file should NOT be the parent's file (it was not forked)
     expect(result.sessionEntry.sessionFile).not.toBe(parentSessionFile);
-  });
-
-  // Gutted in RemoteClaw fork: SessionManager is stubbed, so forked session
-  // files are not actually written to disk.
-  it.skip("respects session.parentForkMaxTokens override", async () => {
-    const root = await makeCaseDir("remoteclaw-thread-session-overflow-override-");
-    const sessionsDir = path.join(root, "sessions");
-    await fs.mkdir(sessionsDir);
-
-    const parentSessionId = "parent-override";
-    const parentSessionFile = path.join(sessionsDir, "parent.jsonl");
-    const header = {
-      type: "session",
-      version: 3,
-      id: parentSessionId,
-      timestamp: new Date().toISOString(),
-      cwd: process.cwd(),
-    };
-    const message = {
-      type: "message",
-      id: "m1",
-      parentId: null,
-      timestamp: new Date().toISOString(),
-      message: { role: "user", content: "Parent prompt" },
-    };
-    const assistantMessage = {
-      type: "message",
-      id: "m2",
-      parentId: "m1",
-      timestamp: new Date().toISOString(),
-      message: { role: "assistant", content: "Parent reply" },
-    };
-    await fs.writeFile(
-      parentSessionFile,
-      `${JSON.stringify(header)}\n${JSON.stringify(message)}\n${JSON.stringify(assistantMessage)}\n`,
-      "utf-8",
-    );
-
-    const storePath = path.join(root, "sessions.json");
-    const parentSessionKey = "agent:main:slack:channel:c1";
-    await writeSessionStoreFast(storePath, {
-      [parentSessionKey]: {
-        sessionId: parentSessionId,
-        sessionFile: parentSessionFile,
-        updatedAt: Date.now(),
-        totalTokens: 170_000,
-      },
-    });
-
-    const cfg = {
-      session: {
-        store: storePath,
-        parentForkMaxTokens: 200_000,
-      },
-    } as RemoteClawConfig;
-
-    const threadSessionKey = "agent:main:slack:channel:c1:thread:789";
-    const result = await initSessionState({
-      ctx: {
-        Body: "Thread reply",
-        SessionKey: threadSessionKey,
-        ParentSessionKey: parentSessionKey,
-      },
-      cfg,
-      commandAuthorized: true,
-    });
-
-    expect(result.sessionEntry.forkedFromParent).toBe(true);
-    expect(result.sessionEntry.sessionFile).toBeTruthy();
-    const forkedContent = await fs.readFile(result.sessionEntry.sessionFile ?? "", "utf-8");
-    const [headerLine] = forkedContent.split(/\r?\n/).filter((line) => line.trim().length > 0);
-    const parsedHeader = JSON.parse(headerLine) as { parentSession?: string };
-    const expectedParentSession = await fs.realpath(parentSessionFile);
-    const actualParentSession = parsedHeader.parentSession
-      ? await fs.realpath(parsedHeader.parentSession)
-      : undefined;
-    expect(actualParentSession).toBe(expectedParentSession);
   });
 
   it("records topic-specific session files when MessageThreadId is present", async () => {
@@ -897,102 +729,6 @@ describe("initSessionState reset triggers in Slack channels", () => {
     expect(result.resetTriggered).toBe(true);
     expect(result.sessionId).not.toBe(existingSessionId);
     expect(result.bodyStripped).toBe("take notes");
-  });
-});
-
-// Gutted in RemoteClaw fork: applyResetModelOverride is a no-op stub.
-describe.skip("applyResetModelOverride", () => {
-  it("selects a model hint and strips it from the body", async () => {
-    const cfg = {} as RemoteClawConfig;
-    const aliasIndex = buildModelAliasIndex({ cfg, defaultProvider: "openai" });
-    const sessionEntry: SessionEntry = {
-      sessionId: "s1",
-      updatedAt: Date.now(),
-    };
-    const sessionStore: Record<string, SessionEntry> = { "agent:main:dm:1": sessionEntry };
-    const sessionCtx = { BodyStripped: "minimax summarize" };
-    const ctx = { ChatType: "direct" };
-
-    await applyResetModelOverride({
-      cfg,
-      resetTriggered: true,
-      bodyStripped: "minimax summarize",
-      sessionCtx,
-      ctx,
-      sessionEntry,
-      sessionStore,
-      sessionKey: "agent:main:dm:1",
-      defaultProvider: "openai",
-      defaultModel: "gpt-4o-mini",
-      aliasIndex,
-    });
-
-    expect(sessionEntry.providerOverride).toBe("minimax");
-    expect(sessionEntry.modelOverride).toBe("m2.5");
-    expect(sessionCtx.BodyStripped).toBe("summarize");
-  });
-
-  it("clears auth profile overrides when reset applies a model", async () => {
-    const cfg = {} as RemoteClawConfig;
-    const aliasIndex = buildModelAliasIndex({ cfg, defaultProvider: "openai" });
-    const sessionEntry: SessionEntry = {
-      sessionId: "s1",
-      updatedAt: Date.now(),
-      authProfileOverride: "anthropic:default",
-      authProfileOverrideSource: "user",
-      authProfileOverrideCompactionCount: 2,
-    };
-    const sessionStore: Record<string, SessionEntry> = { "agent:main:dm:1": sessionEntry };
-    const sessionCtx = { BodyStripped: "minimax summarize" };
-    const ctx = { ChatType: "direct" };
-
-    await applyResetModelOverride({
-      cfg,
-      resetTriggered: true,
-      bodyStripped: "minimax summarize",
-      sessionCtx,
-      ctx,
-      sessionEntry,
-      sessionStore,
-      sessionKey: "agent:main:dm:1",
-      defaultProvider: "openai",
-      defaultModel: "gpt-4o-mini",
-      aliasIndex,
-    });
-
-    expect(sessionEntry.authProfileOverride).toBeUndefined();
-    expect(sessionEntry.authProfileOverrideSource).toBeUndefined();
-    expect(sessionEntry.authProfileOverrideCompactionCount).toBeUndefined();
-  });
-
-  it("skips when resetTriggered is false", async () => {
-    const cfg = {} as RemoteClawConfig;
-    const aliasIndex = buildModelAliasIndex({ cfg, defaultProvider: "openai" });
-    const sessionEntry: SessionEntry = {
-      sessionId: "s1",
-      updatedAt: Date.now(),
-    };
-    const sessionStore: Record<string, SessionEntry> = { "agent:main:dm:1": sessionEntry };
-    const sessionCtx = { BodyStripped: "minimax summarize" };
-    const ctx = { ChatType: "direct" };
-
-    await applyResetModelOverride({
-      cfg,
-      resetTriggered: false,
-      bodyStripped: "minimax summarize",
-      sessionCtx,
-      ctx,
-      sessionEntry,
-      sessionStore,
-      sessionKey: "agent:main:dm:1",
-      defaultProvider: "openai",
-      defaultModel: "gpt-4o-mini",
-      aliasIndex,
-    });
-
-    expect(sessionEntry.providerOverride).toBeUndefined();
-    expect(sessionEntry.modelOverride).toBeUndefined();
-    expect(sessionCtx.BodyStripped).toBe("minimax summarize");
   });
 });
 

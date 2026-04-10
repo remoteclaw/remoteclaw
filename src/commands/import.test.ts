@@ -216,52 +216,6 @@ describe("stripUnrecognizedConfigKeys", () => {
     expect(result.deadTopLevel).toBeUndefined();
   });
 
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("strips unknown keys from agents.defaults", () => {
-    const input = JSON.stringify({
-      agents: {
-        defaults: { compaction: { mode: "default" }, workspace: "~/ws" },
-        list: [{ id: "main" }],
-      },
-    });
-    const result = JSON.parse(stripUnrecognizedConfigKeys(input));
-    expect(result.agents.defaults.workspace).toBe("~/ws");
-    expect(result.agents.defaults.compaction).toBeUndefined();
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("strips unknown nested keys from agents.defaults.heartbeat", () => {
-    const input = JSON.stringify({
-      agents: {
-        defaults: {
-          heartbeat: { every: "30m", includeReasoning: true },
-        },
-        list: [{ id: "main" }],
-      },
-    });
-    const result = JSON.parse(stripUnrecognizedConfigKeys(input));
-    expect(result.agents.defaults.heartbeat.every).toBe("30m");
-    expect(result.agents.defaults.heartbeat.includeReasoning).toBeUndefined();
-  });
-
-  // Skipped: tests gutted functionality (Middleware Boundary Principle)
-
-  it.skip("strips unknown nested keys from agents.defaults.subagents", () => {
-    const input = JSON.stringify({
-      agents: {
-        defaults: {
-          subagents: { maxConcurrent: 2, thinking: "high" },
-        },
-        list: [{ id: "main" }],
-      },
-    });
-    const result = JSON.parse(stripUnrecognizedConfigKeys(input));
-    expect(result.agents.defaults.subagents.maxConcurrent).toBe(2);
-    expect(result.agents.defaults.subagents.thinking).toBeUndefined();
-  });
-
   it("strips unknown keys from nested gateway sub-objects", () => {
     const input = JSON.stringify({
       gateway: {

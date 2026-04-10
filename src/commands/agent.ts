@@ -9,7 +9,7 @@ import {
 import { resolveChannelMessageToolHints } from "../agents/channel-tools.js";
 import { getCliSessionId } from "../agents/cli-session.js";
 // Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
-import { normalizeModelRef } from "../agents/provider-utils.js";
+import { normalizeModelRef, normalizeProviderId } from "../agents/provider-utils.js";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
 import { normalizeVerboseLevel, type VerboseLevel } from "../auto-reply/thinking.js";
 import { formatCliCommand } from "../cli/command-format.js";
@@ -17,6 +17,7 @@ import { type CliDeps, createDefaultDeps } from "../cli/deps.js";
 import { type RemoteClawConfig, loadConfig } from "../config/config.js";
 import { resolveGatewayPort } from "../config/paths.js";
 import {
+  mergeSessionEntry,
   parseSessionThreadInfo,
   resolveAndPersistSessionFile,
   resolveAgentIdFromSessionKey,
@@ -31,6 +32,7 @@ import {
   emitAgentEvent,
   registerAgentRunContext,
 } from "../infra/agent-events.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
 import { withAuthKeyRetry } from "../middleware/auth-key-retry.js";
 import { ChannelBridge } from "../middleware/channel-bridge.js";
 import type { SessionMap } from "../middleware/session-map.js";
@@ -46,6 +48,31 @@ import { updateSessionStoreAfterAgentRun } from "./agent/session-store.js";
 import { resolveSession } from "./agent/session.js";
 import type { AgentCommandIngressOpts, AgentCommandOpts } from "./agent/types.js";
 
+const log = createSubsystemLogger("commands/agent");
+
+type OverrideFieldClearedByDelete =
+  | "providerOverride"
+  | "modelOverride"
+  | "authProfileOverride"
+  | "authProfileOverrideSource"
+  | "authProfileOverrideCompactionCount"
+  | "fallbackNoticeSelectedModel"
+  | "fallbackNoticeActiveModel"
+  | "fallbackNoticeReason"
+  | "claudeCliSessionId";
+
+const OVERRIDE_FIELDS_CLEARED_BY_DELETE: OverrideFieldClearedByDelete[] = [
+  "providerOverride",
+  "modelOverride",
+  "authProfileOverride",
+  "authProfileOverrideSource",
+  "authProfileOverrideCompactionCount",
+  "fallbackNoticeSelectedModel",
+  "fallbackNoticeActiveModel",
+  "fallbackNoticeReason",
+  "claudeCliSessionId",
+];
+
 type PersistSessionEntryParams = {
   sessionStore: Record<string, SessionEntry>;
   sessionKey: string;
@@ -54,10 +81,18 @@ type PersistSessionEntryParams = {
 };
 
 async function persistSessionEntry(params: PersistSessionEntryParams): Promise<void> {
-  params.sessionStore[params.sessionKey] = params.entry;
-  await updateSessionStore(params.storePath, (store) => {
-    store[params.sessionKey] = params.entry;
+  const persisted = await updateSessionStore(params.storePath, (store) => {
+    const merged = mergeSessionEntry(store[params.sessionKey], params.entry);
+    // Preserve explicit `delete` clears done by session override helpers.
+    for (const field of OVERRIDE_FIELDS_CLEARED_BY_DELETE) {
+      if (!Object.hasOwn(params.entry, field)) {
+        Reflect.deleteProperty(merged, field);
+      }
+    }
+    store[params.sessionKey] = merged;
+    return merged;
   });
+  params.sessionStore[params.sessionKey] = persisted;
 }
 
 // ── ChannelBridge helpers ───────────────────────────────────────────────
@@ -116,6 +151,105 @@ function buildCliChannelMessage(params: {
     messageToolHints: params.messageToolHints?.length ? params.messageToolHints : undefined,
     senderIsOwner: true, // CLI user is always the bot owner
   };
+}
+
+/** Mutable reference to the current session entry — allows runAgentAttempt to
+ *  update the entry on session-expired retry while keeping the sessionMap
+ *  adapter's closure in sync. */
+type SessionEntryRef = { current: SessionEntry | undefined };
+
+const SESSION_EXPIRED_RE = /session[_\s-]?expire/i;
+
+/** Check whether a bridge error string indicates a CLI session expiry. */
+function isSessionExpiredBridgeError(error: string | undefined): boolean {
+  return !!error && SESSION_EXPIRED_RE.test(error);
+}
+
+/**
+ * Execute an agent run via ChannelBridge with session-expired retry.
+ *
+ * On session_expired errors the stale CLI session is cleared and the bridge
+ * dispatch is retried once with a fresh (sessionless) invocation.  The post-run
+ * `updateSessionStoreAfterAgentRun` call stores the new session ID from the
+ * successful retry.
+ */
+async function runAgentAttempt(params: {
+  cfg: ReturnType<typeof loadConfig>;
+  sessionAgentId: string;
+  provider: string;
+  runtimeEnv: Record<string, string>;
+  message: ChannelMessage;
+  abortSignal: AbortSignal | undefined;
+  workspaceDir: string;
+  runtimeArgs: string[] | undefined;
+  sessionEntryRef: SessionEntryRef;
+  sessionKey: string | undefined;
+  sessionStore: Record<string, SessionEntry> | undefined;
+  storePath: string;
+}): Promise<AgentDeliveryResult> {
+  const sessionMap = createSessionMapAdapter({
+    getSessionId: () => getCliSessionId(params.sessionEntryRef.current, params.provider),
+  });
+
+  const bridge = new ChannelBridge({
+    provider: resolveAgentRuntimeOrThrow(params.cfg, params.sessionAgentId),
+    sessionMap,
+    gatewayUrl: resolveGatewayUrlFromConfig(params.cfg),
+    gatewayToken: resolveGatewayTokenFromConfig(params.cfg),
+    workspaceDir: params.workspaceDir,
+    runtimeArgs: params.runtimeArgs,
+    runtimeEnv: params.runtimeEnv,
+  });
+
+  /** Run the bridge — closure allows retry with the same bridge instance. */
+  const runBridgeWithSession = () => bridge.handle(params.message, undefined, params.abortSignal);
+
+  let bridgeResult = await runBridgeWithSession();
+
+  // Handle CLI session expired: clear stale session and retry once.
+  if (
+    isSessionExpiredBridgeError(bridgeResult.error) &&
+    getCliSessionId(params.sessionEntryRef.current, params.provider) &&
+    params.sessionKey &&
+    params.sessionStore &&
+    params.storePath
+  ) {
+    log.warn(
+      `CLI session expired, clearing from session store: provider=${params.provider} sessionKey=${params.sessionKey}`,
+    );
+
+    const entry = params.sessionStore[params.sessionKey];
+    if (entry) {
+      const updatedEntry = { ...entry };
+      const normalizedProvider = normalizeProviderId(params.provider);
+      if (updatedEntry.cliSessionIds) {
+        const newIds = { ...updatedEntry.cliSessionIds };
+        delete newIds[normalizedProvider];
+        updatedEntry.cliSessionIds = newIds;
+      }
+      if (normalizedProvider === "claude-cli") {
+        delete updatedEntry.claudeCliSessionId;
+      }
+      updatedEntry.updatedAt = Date.now();
+
+      await persistSessionEntry({
+        sessionStore: params.sessionStore,
+        sessionKey: params.sessionKey,
+        storePath: params.storePath,
+        entry: updatedEntry,
+      });
+      params.sessionEntryRef.current = updatedEntry;
+    }
+
+    // Retry with cleared session — bridge reads updated entry via adapter closure.
+    bridgeResult = await runBridgeWithSession();
+  }
+
+  if (bridgeResult.error && bridgeResult.payloads.length === 0) {
+    throw new Error(bridgeResult.error);
+  }
+
+  return bridgeResult;
 }
 
 export async function agentCommand(
@@ -275,6 +409,7 @@ export async function agentCommand(
 
     const startedAt = Date.now();
 
+    const sessionEntryRef: SessionEntryRef = { current: sessionEntry };
     let result: AgentDeliveryResult;
     const fallbackProvider = provider;
     const fallbackModel = model;
@@ -284,10 +419,6 @@ export async function agentCommand(
         runContext.messageChannel,
         opts.replyChannel ?? opts.channel,
       );
-
-      const sessionMap = createSessionMapAdapter({
-        getSessionId: () => getCliSessionId(sessionEntry, provider),
-      });
 
       const baseRuntimeEnv = resolveAgentRuntimeEnv(cfg, sessionAgentId);
 
@@ -311,27 +442,24 @@ export async function agentCommand(
       // Execute with auth key retry — rotates to next profile on rate-limit/auth errors.
       result = await withAuthKeyRetry<AgentDeliveryResult>(
         { cfg, agentId: sessionAgentId, baseEnv: baseRuntimeEnv },
-        async (runtimeEnv) => {
-          const bridge = new ChannelBridge({
-            provider: resolveAgentRuntimeOrThrow(cfg, sessionAgentId),
-            sessionMap,
-            gatewayUrl: resolveGatewayUrlFromConfig(cfg),
-            gatewayToken: resolveGatewayTokenFromConfig(cfg),
+        async (runtimeEnv) =>
+          runAgentAttempt({
+            cfg,
+            sessionAgentId,
+            provider,
+            runtimeEnv,
+            message,
+            abortSignal: opts.abortSignal,
             workspaceDir: workspaceDir.dir,
             runtimeArgs: resolveAgentRuntimeArgs(cfg, sessionAgentId),
-            runtimeEnv,
-          });
-
-          const bridgeResult = await bridge.handle(message, undefined, opts.abortSignal);
-
-          if (bridgeResult.error && bridgeResult.payloads.length === 0) {
-            throw new Error(bridgeResult.error);
-          }
-
-          return bridgeResult;
-        },
+            sessionEntryRef,
+            sessionKey,
+            sessionStore,
+            storePath,
+          }),
         (bridgeResult) => bridgeResult.error,
       );
+      sessionEntry = sessionEntryRef.current;
       emitAgentEvent({
         runId,
         stream: "lifecycle",

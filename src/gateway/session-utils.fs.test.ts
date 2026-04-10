@@ -339,7 +339,7 @@ describe("readLastMessagePreviewFromTranscript", () => {
       JSON.stringify({
         message: {
           role: "assistant",
-          content: "Hello [[reply_to_current]] world [[audio_as_voice]]",
+          content: "Hello [[rc:reply]] world [[audio_as_voice]]",
         },
       }),
     ];
@@ -601,7 +601,7 @@ describe("readSessionPreviewItemsFromTranscript", () => {
       JSON.stringify({
         message: {
           role: "assistant",
-          content: "A [[reply_to:abc-123]] B [[audio_as_voice]]",
+          content: "A [[rc:reply:abc-123]] B [[audio_as_voice]]",
         },
       }),
     ];

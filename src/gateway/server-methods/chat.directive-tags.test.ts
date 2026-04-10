@@ -10,7 +10,7 @@ import type { GatewayRequestContext } from "./types.js";
 const mockState = vi.hoisted(() => ({
   transcriptPath: "",
   sessionId: "sess-1",
-  finalText: "[[reply_to_current]]",
+  finalText: "[[rc:reply]]",
   triggerAgentRunStart: false,
   agentRunId: "run-agent-1",
   sessionEntry: {} as Record<string, unknown>,
@@ -188,7 +188,7 @@ async function runNonStreamingChatSend(params: {
 
 describe("chat directive tag stripping for non-streaming final payloads", () => {
   afterEach(() => {
-    mockState.finalText = "[[reply_to_current]]";
+    mockState.finalText = "[[rc:reply]]";
     mockState.triggerAgentRunStart = false;
     mockState.agentRunId = "run-agent-1";
     mockState.sessionEntry = {};
@@ -263,7 +263,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     const context = createChatContext();
 
     await chatHandlers["chat.inject"]({
-      params: { sessionKey: "main", message: "[[reply_to_current]]" },
+      params: { sessionKey: "main", message: "[[rc:reply]]" },
       respond,
       req: {} as never,
       client: null as never,
@@ -288,7 +288,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
 
   it("chat.send non-streaming final keeps message defined for directive-only assistant text", async () => {
     createTranscriptFixture("remoteclaw-chat-send-directive-only-");
-    mockState.finalText = "[[reply_to_current]]";
+    mockState.finalText = "[[rc:reply]]";
     const respond = vi.fn();
     const context = createChatContext();
 

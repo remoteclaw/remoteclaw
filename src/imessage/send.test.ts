@@ -95,15 +95,15 @@ describe("sendMessageIMessage", () => {
       replyToId: "abc-123",
     });
     const params = getSentParams();
-    expect(params.text).toBe("[[reply_to:abc-123]] hello\nworld");
+    expect(params.text).toBe("[[rc:reply:abc-123]] hello\nworld");
   });
 
   it("rewrites an existing leading reply tag to keep the requested id first", async () => {
-    await sendWithDefaults("chat_id:123", " [[reply_to:old-id]] hello", {
+    await sendWithDefaults("chat_id:123", " [[rc:reply:old-id]] hello", {
       replyToId: "new-id",
     });
     const params = getSentParams();
-    expect(params.text).toBe("[[reply_to:new-id]] hello");
+    expect(params.text).toBe("[[rc:reply:new-id]] hello");
   });
 
   it("sanitizes replyToId before writing the leading reply tag", async () => {
@@ -111,7 +111,7 @@ describe("sendMessageIMessage", () => {
       replyToId: " [ab]\n\u0000c\td ] ",
     });
     const params = getSentParams();
-    expect(params.text).toBe("[[reply_to:abcd]] hello");
+    expect(params.text).toBe("[[rc:reply:abcd]] hello");
   });
 
   it("skips reply tagging when sanitized replyToId is empty", async () => {

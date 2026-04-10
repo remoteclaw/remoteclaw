@@ -148,7 +148,7 @@ describe("buildThreadingToolContext", () => {
 });
 
 describe("applyReplyThreading auto-threading", () => {
-  it("sets replyToId to currentMessageId even without [[reply_to_current]] tag", () => {
+  it("sets replyToId to currentMessageId even without [[rc:reply]] tag", () => {
     const result = applyReplyThreading({
       payloads: [{ text: "Hello" }],
       replyToMode: "first",
@@ -208,7 +208,7 @@ describe("applyReplyThreading auto-threading", () => {
 
   it("strips explicit tags for Slack when off mode disallows tags", () => {
     const result = applyReplyThreading({
-      payloads: [{ text: "[[reply_to_current]]A" }],
+      payloads: [{ text: "[[rc:reply]]A" }],
       replyToMode: "off",
       replyToChannel: "slack",
       currentMessageId: "42",
@@ -220,7 +220,7 @@ describe("applyReplyThreading auto-threading", () => {
 
   it("keeps explicit tags for Telegram when off mode is enabled", () => {
     const result = applyReplyThreading({
-      payloads: [{ text: "[[reply_to_current]]A" }],
+      payloads: [{ text: "[[rc:reply]]A" }],
       replyToMode: "off",
       replyToChannel: "telegram",
       currentMessageId: "42",

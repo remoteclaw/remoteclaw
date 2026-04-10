@@ -93,9 +93,9 @@ describe("buildSystemPrompt", () => {
   });
 
   describe("content correctness", () => {
-    it("reply tags section contains [[reply_to_current]] syntax", () => {
+    it("reply tags section contains [[rc:reply]] syntax", () => {
       const result = buildSystemPrompt(makeParams());
-      expect(result).toContain("[[reply_to_current]]");
+      expect(result).toContain("[[rc:reply]]");
     });
 
     it("silent replies section contains NO_REPLY token", () => {

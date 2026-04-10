@@ -69,32 +69,32 @@ describe("directive parsing", () => {
     expect(res.cleaned).toBe("please now");
   });
 
-  it("extracts reply_to_current tag", () => {
-    const res = extractReplyToTag("ok [[reply_to_current]]", "msg-1");
+  it("extracts rc:reply tag", () => {
+    const res = extractReplyToTag("ok [[rc:reply]]", "msg-1");
     expect(res.replyToId).toBe("msg-1");
     expect(res.cleaned).toBe("ok");
   });
 
-  it("extracts reply_to_current tag with whitespace", () => {
-    const res = extractReplyToTag("ok [[ reply_to_current ]]", "msg-1");
+  it("extracts rc:reply tag with whitespace", () => {
+    const res = extractReplyToTag("ok [[ rc:reply ]]", "msg-1");
     expect(res.replyToId).toBe("msg-1");
     expect(res.cleaned).toBe("ok");
   });
 
-  it("extracts reply_to id tag", () => {
-    const res = extractReplyToTag("see [[reply_to:12345]] now", "msg-1");
+  it("extracts rc:reply id tag", () => {
+    const res = extractReplyToTag("see [[rc:reply:12345]] now", "msg-1");
     expect(res.replyToId).toBe("12345");
     expect(res.cleaned).toBe("see now");
   });
 
-  it("extracts reply_to id tag with whitespace", () => {
-    const res = extractReplyToTag("see [[ reply_to : 12345 ]] now", "msg-1");
+  it("extracts rc:reply id tag with whitespace", () => {
+    const res = extractReplyToTag("see [[ rc:reply : 12345 ]] now", "msg-1");
     expect(res.replyToId).toBe("12345");
     expect(res.cleaned).toBe("see now");
   });
 
   it("preserves newlines when stripping reply tags", () => {
-    const res = extractReplyToTag("line 1\nline 2 [[reply_to_current]]\n\nline 3", "msg-2");
+    const res = extractReplyToTag("line 1\nline 2 [[rc:reply]]\n\nline 3", "msg-2");
     expect(res.replyToId).toBe("msg-2");
     expect(res.cleaned).toBe("line 1\nline 2\n\nline 3");
   });

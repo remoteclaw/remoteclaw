@@ -47,8 +47,7 @@ export const handleCommandsListCommand: CommandHandler = async (params, allowTex
   const surface = params.ctx.Surface;
 
   if (surface === "telegram") {
-    const result = buildCommandsMessagePaginated(params.cfg, {
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
+    const result = buildCommandsMessagePaginated(params.cfg, undefined, {
       page: 1,
       surface,
     });
@@ -79,8 +78,7 @@ export const handleCommandsListCommand: CommandHandler = async (params, allowTex
 
   return {
     shouldContinue: false,
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
-    reply: { text: buildCommandsMessage(params.cfg, { surface }) },
+    reply: { text: buildCommandsMessage(params.cfg, undefined, { surface }) },
   };
 };
 

@@ -929,8 +929,7 @@ export const registerTelegramHandlers = ({
         }
 
         const agentId = paginationMatch[2]?.trim() || resolveDefaultAgentId(cfg);
-        const result = buildCommandsMessagePaginated(cfg, {
-          // @ts-expect-error — upstream feature not available in RemoteClaw fork
+        const result = buildCommandsMessagePaginated(cfg, undefined, {
           page,
           surface: "telegram",
         });

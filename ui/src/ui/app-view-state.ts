@@ -8,9 +8,6 @@ import type {
 import type { DevicePairingList } from "./controllers/devices.ts";
 import type { ExecApprovalRequest } from "./controllers/exec-approval.ts";
 import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exec-approvals.ts";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./controllers/skills.ts";
-type SkillMessage = Record<string, unknown>;
 import type { GatewayBrowserClient, GatewayHelloOk } from "./gateway.ts";
 import type { Tab } from "./navigation.ts";
 import type { UiSettings } from "./storage.ts";
@@ -42,7 +39,6 @@ import type {
   CostUsageSummary,
   SessionUsageTimeSeries,
   SessionsListResult,
-  SkillStatusReport,
   ToolsCatalogResult,
   StatusSummary,
 } from "./types.ts";
@@ -146,7 +142,7 @@ export type AppViewState = {
   toolsCatalogLoading: boolean;
   toolsCatalogError: string | null;
   toolsCatalogResult: ToolsCatalogResult | null;
-  agentsPanel: "overview" | "files" | "tools" | "skills" | "channels" | "cron";
+  agentsPanel: "overview" | "files" | "tools" | "channels" | "cron";
   agentFilesLoading: boolean;
   agentFilesError: string | null;
   agentFilesList: AgentsFilesListResult | null;
@@ -157,10 +153,6 @@ export type AppViewState = {
   agentIdentityLoading: boolean;
   agentIdentityError: string | null;
   agentIdentityById: Record<string, AgentIdentityResult>;
-  agentSkillsLoading: boolean;
-  agentSkillsError: string | null;
-  agentSkillsReport: SkillStatusReport | null;
-  agentSkillsAgentId: string | null;
   sessionsLoading: boolean;
   sessionsResult: SessionsListResult | null;
   sessionsError: string | null;
@@ -237,13 +229,6 @@ export type AppViewState = {
   cronRunsSortDir: CronSortDir;
   cronModelSuggestions: string[];
   cronBusy: boolean;
-  skillsLoading: boolean;
-  skillsReport: SkillStatusReport | null;
-  skillsError: string | null;
-  skillsFilter: string;
-  skillEdits: Record<string, string>;
-  skillMessages: Record<string, SkillMessage>;
-  skillsBusyKey: string | null;
   debugLoading: boolean;
   debugStatus: StatusSummary | null;
   debugHealth: HealthSnapshot | null;

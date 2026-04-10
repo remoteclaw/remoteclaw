@@ -1,12 +1,13 @@
 import { formatCliCommand } from "../cli/command-format.js";
 import { withProgress } from "../cli/progress.js";
-import { resolveGatewayPort } from "../config/config.js";
+import { loadConfig, resolveGatewayPort } from "../config/config.js";
 import { buildGatewayConnectionDetails, callGateway } from "../gateway/call.js";
 import { info } from "../globals.js";
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import type { HeartbeatEventPayload } from "../infra/heartbeat-events.js";
 import { formatUsageReportLines, loadProviderUsageSummary } from "../infra/provider-usage.js";
 import { normalizeUpdateChannel, resolveUpdateChannelDisplay } from "../infra/update-channels.js";
+import { formatGitInstallLabel } from "../infra/update-check.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { runSecurityAudit } from "../security/audit.js";
 import { renderTable } from "../terminal/table.js";
@@ -14,6 +15,7 @@ import { theme } from "../terminal/theme.js";
 import { formatHealthChannelLines, type HealthSummary } from "./health.js";
 import { resolveControlUiLinks } from "./onboard-helpers.js";
 import { statusAllCommand } from "./status-all.js";
+import { groupChannelIssuesByChannel } from "./status-all/channel-issues.js";
 import { formatGatewayAuthUsed } from "./status-all/format.js";
 import { getDaemonStatusSummary, getNodeDaemonStatusSummary } from "./status.daemon.js";
 import {
@@ -73,10 +75,33 @@ export async function statusCommand(
     return;
   }
 
-  const scan = await scanStatus(
-    { json: opts.json, timeoutMs: opts.timeoutMs, all: opts.all },
-    runtime,
-  );
+  const [scan, securityAudit] = opts.json
+    ? await Promise.all([
+        scanStatus({ json: opts.json, timeoutMs: opts.timeoutMs, all: opts.all }, runtime),
+        runSecurityAudit({
+          config: loadConfig(),
+          deep: false,
+          includeFilesystem: true,
+          includeChannelSecurity: true,
+        }),
+      ])
+    : [
+        await scanStatus({ json: opts.json, timeoutMs: opts.timeoutMs, all: opts.all }, runtime),
+        await withProgress(
+          {
+            label: "Running security audit…",
+            indeterminate: true,
+            enabled: true,
+          },
+          async () =>
+            await runSecurityAudit({
+              config: loadConfig(),
+              deep: false,
+              includeFilesystem: true,
+              includeChannelSecurity: true,
+            }),
+        ),
+      ];
   const {
     cfg,
     osSummary,
@@ -95,21 +120,6 @@ export async function statusCommand(
     channels,
     summary,
   } = scan;
-
-  const securityAudit = await withProgress(
-    {
-      label: "Running security audit…",
-      indeterminate: true,
-      enabled: opts.json !== true,
-    },
-    async () =>
-      await runSecurityAudit({
-        config: cfg,
-        deep: false,
-        includeFilesystem: true,
-        includeChannelSecurity: true,
-      }),
-  );
 
   const usage = opts.usage
     ? await withProgress(
@@ -148,6 +158,9 @@ export async function statusCommand(
   const configChannel = normalizeUpdateChannel(cfg.update?.channel);
   const channelInfo = resolveUpdateChannelDisplay({
     configChannel,
+    installKind: update.installKind,
+    gitTag: update.git?.tag ?? null,
+    gitBranch: update.git?.branch ?? null,
   });
 
   if (opts.json) {
@@ -249,10 +262,14 @@ export async function statusCommand(
   });
 
   const agentsValue = (() => {
+    const pending =
+      (agentStatus.bootstrapPendingCount ?? 0) > 0
+        ? `${agentStatus.bootstrapPendingCount} bootstrap file${agentStatus.bootstrapPendingCount === 1 ? "" : "s"} present`
+        : "no bootstrap files";
     const def = agentStatus.agents.find((a) => a.id === agentStatus.defaultId);
     const defActive = def?.lastActiveAgeMs != null ? formatTimeAgo(def.lastActiveAgeMs) : "unknown";
     const defSuffix = def ? ` · default ${def.id} active ${defActive}` : "";
-    return `${agentStatus.agents.length} · sessions ${agentStatus.totalSessions}${defSuffix}`;
+    return `${agentStatus.agents.length} · ${pending} · sessions ${agentStatus.totalSessions}${defSuffix}`;
   })();
 
   const [daemon, nodeDaemon] = await Promise.all([
@@ -319,6 +336,8 @@ export async function statusCommand(
   const updateAvailability = resolveUpdateAvailability(update);
   const updateLine = formatUpdateOneLiner(update).replace(/^Update:\s*/i, "");
   const channelLabel = channelInfo.label;
+  const gitLabel = formatGitInstallLabel(update);
+
   const overviewRows = [
     { Item: "Dashboard", Value: dashboard },
     { Item: "OS", Value: `${osSummary.label} · node ${process.versions.node}` },
@@ -332,6 +351,7 @@ export async function statusCommand(
             : warn(`${tailscaleMode} · magicdns unknown`),
     },
     { Item: "Channel", Value: channelLabel },
+    ...(gitLabel ? [{ Item: "Git", Value: gitLabel }] : []),
     {
       Item: "Update",
       Value: updateAvailability.available ? warn(`available · ${updateLine}`) : updateLine,
@@ -428,19 +448,7 @@ export async function statusCommand(
 
   runtime.log("");
   runtime.log(theme.heading("Channels"));
-  const channelIssuesByChannel = (() => {
-    const map = new Map<string, typeof channelIssues>();
-    for (const issue of channelIssues) {
-      const key = issue.channel;
-      const list = map.get(key);
-      if (list) {
-        list.push(issue);
-      } else {
-        map.set(key, [issue]);
-      }
-    }
-    return map;
-  })();
+  const channelIssuesByChannel = groupChannelIssuesByChannel(channelIssues);
   runtime.log(
     renderTable({
       width: tableWidth,

@@ -4,11 +4,9 @@ import { loadConfig } from "../../config/config.js";
 import { randomIdempotencyKey } from "../../gateway/call.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
 // import ... from "../../infra/exec-approvals.js";
+import type { ExecApprovalsFile, ExecAsk, ExecSecurity } from "../../infra/exec-approvals.js";
 // oxlint-disable-next-line typescript/no-explicit-any
 const DEFAULT_EXEC_APPROVAL_TIMEOUT_MS = undefined as any;
-type ExecApprovalsFile = Record<string, unknown>;
-type ExecAsk = Record<string, unknown>;
-type ExecSecurity = Record<string, unknown>;
 // oxlint-disable-next-line typescript/no-explicit-any
 const maxAsk = (..._args: unknown[]) => undefined as any;
 // oxlint-disable-next-line typescript/no-explicit-any
@@ -53,7 +51,6 @@ type ExecDefaults = {
 function normalizeExecSecurity(value?: string | null): ExecSecurity | null {
   const normalized = value?.trim().toLowerCase();
   if (normalized === "deny" || normalized === "allowlist" || normalized === "full") {
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     return normalized;
   }
   return null;
@@ -62,7 +59,6 @@ function normalizeExecSecurity(value?: string | null): ExecSecurity | null {
 function normalizeExecAsk(value?: string | null): ExecAsk | null {
   const normalized = value?.trim().toLowerCase();
   if (normalized === "off" || normalized === "on-miss" || normalized === "always") {
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     return normalized as ExecAsk;
   }
   return null;
@@ -76,9 +72,7 @@ function resolveExecDefaults(
   if (!agentId) {
     return globalExec
       ? {
-          // @ts-expect-error — upstream feature not available in RemoteClaw fork
           security: globalExec.security,
-          // @ts-expect-error — upstream feature not available in RemoteClaw fork
           ask: globalExec.ask,
           node: globalExec.node,
           pathPrepend: globalExec.pathPrepend,
@@ -88,9 +82,7 @@ function resolveExecDefaults(
   }
   const agentExec = resolveAgentConfig(cfg, agentId)?.tools?.exec;
   return {
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     security: agentExec?.security ?? globalExec?.security,
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     ask: agentExec?.ask ?? globalExec?.ask,
     node: agentExec?.node ?? globalExec?.node,
     pathPrepend: agentExec?.pathPrepend ?? globalExec?.pathPrepend,
@@ -118,13 +110,11 @@ function requirePreparedRunPayload(payload: unknown) {
 }
 
 function resolveNodesRunPolicy(opts: NodesRunOpts, execDefaults: ExecDefaults | undefined) {
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   const configuredSecurity = normalizeExecSecurity(execDefaults?.security) ?? "allowlist";
   const requestedSecurity = normalizeExecSecurity(opts.security);
   if (opts.security && !requestedSecurity) {
     throw new Error("invalid --security (use deny|allowlist|full)");
   }
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   const configuredAsk = normalizeExecAsk(execDefaults?.ask) ?? "on-miss";
   const requestedAsk = normalizeExecAsk(opts.ask);
   if (opts.ask && !requestedAsk) {
@@ -224,7 +214,6 @@ async function maybeRequestNodesRunApproval(params: {
   let approvedByAsk = false;
   let approvalDecision: "allow-once" | "allow-always" | null = null;
   let approvalId: string | null = null;
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   const requiresAsk = params.hostAsk === "always" || params.hostAsk === "on-miss";
   if (!requiresAsk) {
     return { approvedByAsk, approvalDecision, approvalId };
@@ -263,11 +252,9 @@ async function maybeRequestNodesRunApproval(params: {
     throw new Error("exec denied: user denied");
   }
   if (!decision) {
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     if (params.askFallback === "full") {
       approvedByAsk = true;
       approvalDecision = "allow-once";
-      // @ts-expect-error — upstream feature not available in RemoteClaw fork
     } else if (params.askFallback !== "allowlist") {
       throw new Error("exec denied: approval required (approval UI not available)");
     }

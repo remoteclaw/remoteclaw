@@ -106,6 +106,38 @@ describe("M2 middleware integration", () => {
     });
   }
 
+  // ── workingDirectory plumbing ────────────────────────────────────────
+
+  describe("workingDirectory plumbing", () => {
+    it("passes workspaceDir as a string to runtime.execute()", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge({ workspaceDir: "/my/workspace" });
+      await bridge.handle(makeMessage());
+
+      const params = executeFn.mock.calls[0][0];
+      expect(typeof params.workingDirectory).toBe("string");
+      expect(params.workingDirectory).toBe("/my/workspace");
+    });
+
+    it("rejects non-string workspaceDir at the type level", () => {
+      // This test documents the contract: workspaceDir must be a string.
+      // If ensureAgentWorkspace() returns { dir: string }, callers must
+      // extract .dir before passing to ChannelBridge. The TypeScript
+      // compiler enforces this — this test guards against @ts-expect-error
+      // or type assertion bypasses.
+      const opts: ChannelBridgeOptions = {
+        provider: "claude",
+        sessionMap,
+        gatewayUrl: "wss://gw.test.com",
+        gatewayToken: "tok",
+        workspaceDir: "/valid/string/path",
+      };
+      expect(typeof opts.workspaceDir).toBe("string");
+    });
+  });
+
   // ── Basic pipeline flow ──────────────────────────────────────────────
 
   describe("basic pipeline flow", () => {

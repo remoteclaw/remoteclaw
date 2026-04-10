@@ -615,7 +615,7 @@ export async function collectPluginsTrustFindings(params: {
         hasString(process.env.SLACK_BOT_TOKEN) ||
         hasString(process.env.SLACK_APP_TOKEN);
 
-      const skillCommandsLikelyExposed =
+      const nativeSkillsLikelyExposed =
         (discordConfigured &&
           resolveNativeSkillsEnabled({
             providerId: "discord",
@@ -637,11 +637,11 @@ export async function collectPluginsTrustFindings(params: {
 
       findings.push({
         checkId: "plugins.extensions_no_allowlist",
-        severity: skillCommandsLikelyExposed ? "critical" : "warn",
+        severity: nativeSkillsLikelyExposed ? "critical" : "warn",
         title: "Extensions exist but plugins.allow is not set",
         detail:
           `Found ${pluginDirs.length} extension(s) under ${extensionsDir}. Without plugins.allow, any discovered plugin id may load (depending on config and plugin behavior).` +
-          (skillCommandsLikelyExposed
+          (nativeSkillsLikelyExposed
             ? "\nNative skill commands are enabled on at least one configured chat surface; treat unpinned/unallowlisted extensions as high risk."
             : ""),
         remediation: "Set plugins.allow to an explicit list of plugin ids you trust.",

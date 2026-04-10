@@ -2,7 +2,7 @@ import type { SlackActionMiddlewareArgs, SlackCommandMiddlewareArgs } from "@sla
 import type { ChatCommandDefinition, CommandArgs } from "../../auto-reply/commands-registry.js";
 import type { ReplyPayload } from "../../auto-reply/types.js";
 import { resolveCommandAuthorizedFromAuthorizers } from "../../channels/command-gating.js";
-import { resolveNativeCommandsEnabled, resolveNativeSkillsEnabled } from "../../config/commands.js";
+import { resolveNativeCommandsEnabled } from "../../config/commands.js";
 import { danger, logVerbose } from "../../globals.js";
 import { chunkItems } from "../../utils/chunk-items.js";
 import type { ResolvedSlackAccount } from "../accounts.js";
@@ -647,20 +647,11 @@ export async function registerSlackMonitorSlashCommands(params: {
     providerSetting: account.config.commands?.native,
     globalSetting: cfg.commands?.native,
   });
-  const nativeSkillsEnabled = resolveNativeSkillsEnabled({
-    providerId: "slack",
-    providerSetting: account.config.commands?.nativeSkills,
-    globalSetting: cfg.commands?.nativeSkills,
-  });
-
   let reg: CommandsRegistry | undefined;
   let nativeCommands: Array<{ name: string }> = [];
   if (nativeEnabled) {
     reg = await getCommandsRegistry();
-    const skillCommands = nativeSkillsEnabled
-      ? (await import("../../auto-reply/skill-commands.js")).listSkillCommandsForAgents({ cfg })
-      : [];
-    nativeCommands = reg.listNativeCommandSpecsForConfig(cfg, { skillCommands, provider: "slack" });
+    nativeCommands = reg.listNativeCommandSpecsForConfig(cfg, { provider: "slack" });
   }
 
   if (nativeCommands.length > 0) {

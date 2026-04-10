@@ -929,7 +929,7 @@ export const registerTelegramHandlers = ({
         }
 
         const agentId = paginationMatch[2]?.trim() || resolveDefaultAgentId(cfg);
-        const result = buildCommandsMessagePaginated(cfg, undefined, {
+        const result = buildCommandsMessagePaginated(cfg, {
           page,
           surface: "telegram",
         });

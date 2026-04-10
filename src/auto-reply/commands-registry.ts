@@ -6,9 +6,6 @@ const DEFAULT_PROVIDER = "cli";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
 // import ... from "../agents/model-selection.js";
 const resolveConfiguredModelRef = (..._args: unknown[]) => ({ provider: "cli", model: "default" });
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/skills.js";
-type SkillCommandSpec = Record<string, unknown>;
 import { isCommandFlagEnabled } from "../config/commands.js";
 import type { RemoteClawConfig } from "../config/types.js";
 import { escapeRegExp } from "../utils.js";
@@ -78,20 +75,8 @@ function getTextAliasMap(): Map<string, TextAliasSpec> {
   return map;
 }
 
-function buildSkillCommandDefinitions(
-  _skillCommands?: SkillCommandSpec[],
-): ChatCommandDefinition[] {
-  return [];
-}
-
-export function listChatCommands(params?: {
-  skillCommands?: SkillCommandSpec[];
-}): ChatCommandDefinition[] {
-  const commands = getChatCommands();
-  if (!params?.skillCommands?.length) {
-    return [...commands];
-  }
-  return [...commands, ...buildSkillCommandDefinitions(params.skillCommands)];
+export function listChatCommands(): ChatCommandDefinition[] {
+  return [...getChatCommands()];
 }
 
 export function isCommandEnabled(cfg: RemoteClawConfig, commandKey: string): boolean {
@@ -107,15 +92,8 @@ export function isCommandEnabled(cfg: RemoteClawConfig, commandKey: string): boo
   return true;
 }
 
-export function listChatCommandsForConfig(
-  cfg: RemoteClawConfig,
-  params?: { skillCommands?: SkillCommandSpec[] },
-): ChatCommandDefinition[] {
-  const base = getChatCommands().filter((command) => isCommandEnabled(cfg, command.key));
-  if (!params?.skillCommands?.length) {
-    return base;
-  }
-  return [...base, ...buildSkillCommandDefinitions(params.skillCommands)];
+export function listChatCommandsForConfig(cfg: RemoteClawConfig): ChatCommandDefinition[] {
+  return getChatCommands().filter((command) => isCommandEnabled(cfg, command.key));
 }
 
 const NATIVE_NAME_OVERRIDES: Record<string, Record<string, string>> = {
@@ -160,21 +138,15 @@ function listNativeSpecsFromCommands(
     .map((command) => toNativeCommandSpec(command, provider));
 }
 
-export function listNativeCommandSpecs(params?: {
-  skillCommands?: SkillCommandSpec[];
-  provider?: string;
-}): NativeCommandSpec[] {
-  return listNativeSpecsFromCommands(
-    listChatCommands({ skillCommands: params?.skillCommands }),
-    params?.provider,
-  );
+export function listNativeCommandSpecs(params?: { provider?: string }): NativeCommandSpec[] {
+  return listNativeSpecsFromCommands(listChatCommands(), params?.provider);
 }
 
 export function listNativeCommandSpecsForConfig(
   cfg: RemoteClawConfig,
-  params?: { skillCommands?: SkillCommandSpec[]; provider?: string },
+  params?: { provider?: string },
 ): NativeCommandSpec[] {
-  return listNativeSpecsFromCommands(listChatCommandsForConfig(cfg, params), params?.provider);
+  return listNativeSpecsFromCommands(listChatCommandsForConfig(cfg), params?.provider);
 }
 
 export function findCommandByNativeName(

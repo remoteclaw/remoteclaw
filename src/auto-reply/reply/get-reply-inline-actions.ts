@@ -46,7 +46,6 @@ export async function handleInlineActions(params: {
   command: Parameters<typeof handleCommands>[0]["command"];
   directives: InlineDirectives;
   cleanedBody: string;
-  skillCommands?: unknown[];
   defaultActivation: Parameters<typeof buildStatusReply>[0]["defaultGroupActivation"];
   resolvedThinkLevel?: unknown;
   resolvedVerboseLevel: VerboseLevel | undefined;

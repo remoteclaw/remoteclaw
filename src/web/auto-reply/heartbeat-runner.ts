@@ -1,4 +1,3 @@
-// Heartbeat file resolution removed (upstream simplified to string prompt)
 import { appendCronStyleCurrentTimeLine } from "../../agents/current-time.js";
 import { resolveHeartbeatReplyPayload } from "../../auto-reply/heartbeat-reply-payload.js";
 import { resolveHeartbeatPrompt } from "../../auto-reply/heartbeat.js";
@@ -157,7 +156,7 @@ export async function runWebHeartbeatOnce(opts: {
     }
 
     const defaults = cfg.agents?.defaults?.heartbeat;
-    const heartbeatPrompt = resolveHeartbeatPrompt(defaults?.prompt);
+    const heartbeatPrompt = await resolveHeartbeatPrompt({ prompt: defaults?.prompt });
     if (!heartbeatPrompt) {
       heartbeatLogger.info({ to: redactedTo, reason: "no-prompt" }, "heartbeat skipped");
       emitHeartbeatEvent({

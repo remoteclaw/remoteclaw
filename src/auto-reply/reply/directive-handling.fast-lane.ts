@@ -45,7 +45,6 @@ export async function applyInlineDirectivesFastLane(
   }
 
   const agentCfg = params.agentCfg;
-  // @ts-expect-error — upstream feature not available in RemoteClaw fork
   const { currentVerboseLevel } = await resolveCurrentDirectiveLevels({
     sessionEntry,
     agentCfg,

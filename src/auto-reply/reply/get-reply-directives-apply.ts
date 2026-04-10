@@ -141,7 +141,6 @@ export async function applyInlineDirectiveOverrides(params: {
       typing.cleanup();
       return { kind: "reply", reply: undefined };
     }
-    // @ts-expect-error — upstream feature not available in RemoteClaw fork
     const { currentVerboseLevel } = await resolveCurrentDirectiveLevels({
       sessionEntry,
       agentCfg,

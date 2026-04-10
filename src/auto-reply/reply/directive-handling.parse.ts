@@ -1,6 +1,7 @@
 import type { RemoteClawConfig } from "../../config/config.js";
 import { extractModelDirective } from "../model.js";
 import type { MsgContext } from "../templating.js";
+import type { ElevatedLevel, ReasoningLevel } from "../thinking.js";
 import type { VerboseLevel } from "./directives.js";
 import { extractStatusDirective, extractVerboseDirective } from "./directives.js";
 import { stripMentions, stripStructuralPrefixes } from "./mentions.js";
@@ -31,10 +32,10 @@ export type InlineDirectives = {
   thinkLevel?: string;
   hasThinkDirective?: boolean;
   /** Upstream feature: reasoning level directive. */
-  reasoningLevel?: string;
+  reasoningLevel?: ReasoningLevel;
   hasReasoningDirective?: boolean;
   /** Upstream feature: elevated security level directive. */
-  elevatedLevel?: string;
+  elevatedLevel?: ElevatedLevel;
   rawElevatedLevel?: string;
   hasElevatedDirective?: boolean;
   /** Upstream feature: exec directives. */
@@ -42,6 +43,8 @@ export type InlineDirectives = {
   execHost?: string;
   execNode?: string;
   execSecurity?: string;
+  /** Upstream feature: whether any exec directive was detected. */
+  hasExecDirective?: boolean;
 };
 
 export function parseInlineDirectives(

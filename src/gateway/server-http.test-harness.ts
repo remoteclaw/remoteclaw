@@ -98,8 +98,6 @@ export function createTestGatewayServer(options: {
     clients: new Set(),
     controlUiEnabled: false,
     controlUiBasePath: "/__control__",
-    openAiChatCompletionsEnabled: false,
-    openResponsesEnabled: false,
     handleHooksRequest: async () => false,
     ...options.overrides,
     resolvedAuth: options.resolvedAuth,

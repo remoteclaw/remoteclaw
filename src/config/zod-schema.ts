@@ -128,15 +128,6 @@ const HttpUrlSchema = z
     return protocol === "http:" || protocol === "https:";
   }, "Expected http:// or https:// URL");
 
-const ResponsesEndpointUrlFetchShape = {
-  allowUrl: z.boolean().optional(),
-  urlAllowlist: z.array(z.string()).optional(),
-  allowedMimes: z.array(z.string()).optional(),
-  maxBytes: z.number().int().positive().optional(),
-  maxRedirects: z.number().int().nonnegative().optional(),
-  timeoutMs: z.number().int().positive().optional(),
-};
-
 const SkillEntrySchema = z
   .object({
     enabled: z.boolean().optional(),
@@ -699,46 +690,6 @@ export const RemoteClawSchema = z
           .optional(),
         http: z
           .object({
-            endpoints: z
-              .object({
-                chatCompletions: z
-                  .object({
-                    enabled: z.boolean().optional(),
-                  })
-                  .strict()
-                  .optional(),
-                responses: z
-                  .object({
-                    enabled: z.boolean().optional(),
-                    maxBodyBytes: z.number().int().positive().optional(),
-                    maxUrlParts: z.number().int().nonnegative().optional(),
-                    files: z
-                      .object({
-                        ...ResponsesEndpointUrlFetchShape,
-                        maxChars: z.number().int().positive().optional(),
-                        pdf: z
-                          .object({
-                            maxPages: z.number().int().positive().optional(),
-                            maxPixels: z.number().int().positive().optional(),
-                            minTextChars: z.number().int().nonnegative().optional(),
-                          })
-                          .strict()
-                          .optional(),
-                      })
-                      .strict()
-                      .optional(),
-                    images: z
-                      .object({
-                        ...ResponsesEndpointUrlFetchShape,
-                      })
-                      .strict()
-                      .optional(),
-                  })
-                  .strict()
-                  .optional(),
-              })
-              .strict()
-              .optional(),
             securityHeaders: z
               .object({
                 strictTransportSecurity: z.union([z.string(), z.literal(false)]).optional(),

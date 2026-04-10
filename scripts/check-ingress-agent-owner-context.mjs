@@ -8,8 +8,6 @@ import { runAsScript, toLine, unwrapExpression } from "./lib/ts-guard-utils.mjs"
 const sourceRoots = ["src/gateway", "src/discord/voice"];
 const enforcedFiles = new Set([
   "src/discord/voice/manager.ts",
-  "src/gateway/openai-http.ts",
-  "src/gateway/openresponses-http.ts",
   "src/gateway/server-methods/agent.ts",
   "src/gateway/server-node-events.ts",
 ]);

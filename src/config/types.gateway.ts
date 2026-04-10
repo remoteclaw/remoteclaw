@@ -197,90 +197,6 @@ export type GatewayReloadConfig = {
   debounceMs?: number;
 };
 
-export type GatewayHttpChatCompletionsConfig = {
-  /**
-   * If false, the Gateway will not serve `POST /v1/chat/completions`.
-   * Default: false when absent.
-   */
-  enabled?: boolean;
-};
-
-export type GatewayHttpResponsesConfig = {
-  /**
-   * If false, the Gateway will not serve `POST /v1/responses` (OpenResponses API).
-   * Default: false when absent.
-   */
-  enabled?: boolean;
-  /**
-   * Max request body size in bytes for `/v1/responses`.
-   * Default: 20MB.
-   */
-  maxBodyBytes?: number;
-  /**
-   * Max number of URL-based `input_file` + `input_image` parts per request.
-   * Default: 8.
-   */
-  maxUrlParts?: number;
-  /** File inputs (input_file). */
-  files?: GatewayHttpResponsesFilesConfig;
-  /** Image inputs (input_image). */
-  images?: GatewayHttpResponsesImagesConfig;
-};
-
-export type GatewayHttpResponsesFilesConfig = {
-  /** Allow URL fetches for input_file. Default: true. */
-  allowUrl?: boolean;
-  /**
-   * Optional hostname allowlist for URL fetches.
-   * Supports exact hosts and `*.example.com` wildcards.
-   */
-  urlAllowlist?: string[];
-  /** Allowed MIME types (case-insensitive). */
-  allowedMimes?: string[];
-  /** Max bytes per file. Default: 5MB. */
-  maxBytes?: number;
-  /** Max decoded characters per file. Default: 200k. */
-  maxChars?: number;
-  /** Max redirects when fetching a URL. Default: 3. */
-  maxRedirects?: number;
-  /** Fetch timeout in ms. Default: 10s. */
-  timeoutMs?: number;
-  /** PDF handling (application/pdf). */
-  pdf?: GatewayHttpResponsesPdfConfig;
-};
-
-export type GatewayHttpResponsesPdfConfig = {
-  /** Max pages to parse/render. Default: 4. */
-  maxPages?: number;
-  /** Max pixels per rendered page. Default: 4M. */
-  maxPixels?: number;
-  /** Minimum extracted text length to skip rasterization. Default: 200 chars. */
-  minTextChars?: number;
-};
-
-export type GatewayHttpResponsesImagesConfig = {
-  /** Allow URL fetches for input_image. Default: true. */
-  allowUrl?: boolean;
-  /**
-   * Optional hostname allowlist for URL fetches.
-   * Supports exact hosts and `*.example.com` wildcards.
-   */
-  urlAllowlist?: string[];
-  /** Allowed MIME types (case-insensitive). */
-  allowedMimes?: string[];
-  /** Max bytes per image. Default: 10MB. */
-  maxBytes?: number;
-  /** Max redirects when fetching a URL. Default: 3. */
-  maxRedirects?: number;
-  /** Fetch timeout in ms. Default: 10s. */
-  timeoutMs?: number;
-};
-
-export type GatewayHttpEndpointsConfig = {
-  chatCompletions?: GatewayHttpChatCompletionsConfig;
-  responses?: GatewayHttpResponsesConfig;
-};
-
 export type GatewayHttpSecurityHeadersConfig = {
   /**
    * Value for the Strict-Transport-Security response header.
@@ -292,7 +208,6 @@ export type GatewayHttpSecurityHeadersConfig = {
 };
 
 export type GatewayHttpConfig = {
-  endpoints?: GatewayHttpEndpointsConfig;
   securityHeaders?: GatewayHttpSecurityHeadersConfig;
 };
 

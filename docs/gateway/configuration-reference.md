@@ -2402,17 +2402,6 @@ See [Plugins](/tools/plugin).
 
 </Accordion>
 
-### OpenAI-compatible endpoints
-
-- Chat Completions: disabled by default. Enable with `gateway.http.endpoints.chatCompletions.enabled: true`.
-- Responses API: `gateway.http.endpoints.responses.enabled`.
-- Responses URL-input hardening:
-  - `gateway.http.endpoints.responses.maxUrlParts`
-  - `gateway.http.endpoints.responses.files.urlAllowlist`
-  - `gateway.http.endpoints.responses.images.urlAllowlist`
-- Optional response hardening header:
-  - `gateway.http.securityHeaders.strictTransportSecurity` (set only for HTTPS origins you control; see [Trusted Proxy Auth](/gateway/trusted-proxy-auth#tls-termination-and-hsts))
-
 ### Multi-instance isolation
 
 Run multiple gateways on one host with unique ports and state dirs:

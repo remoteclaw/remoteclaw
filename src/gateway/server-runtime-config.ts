@@ -22,9 +22,6 @@ import { mergeGatewayTailscaleConfig } from "./startup-auth.js";
 export type GatewayRuntimeConfig = {
   bindHost: string;
   controlUiEnabled: boolean;
-  openAiChatCompletionsEnabled: boolean;
-  openResponsesEnabled: boolean;
-  openResponsesConfig?: import("../config/types.gateway.js").GatewayHttpResponsesConfig;
   strictTransportSecurityHeader?: string;
   controlUiBasePath: string;
   controlUiRoot?: string;
@@ -42,8 +39,6 @@ export async function resolveGatewayRuntimeConfig(params: {
   bind?: GatewayBindMode;
   host?: string;
   controlUiEnabled?: boolean;
-  openAiChatCompletionsEnabled?: boolean;
-  openResponsesEnabled?: boolean;
   auth?: GatewayAuthConfig;
   tailscale?: GatewayTailscaleConfig;
 }): Promise<GatewayRuntimeConfig> {
@@ -73,12 +68,6 @@ export async function resolveGatewayRuntimeConfig(params: {
   }
   const controlUiEnabled =
     params.controlUiEnabled ?? params.cfg.gateway?.controlUi?.enabled ?? true;
-  const openAiChatCompletionsEnabled =
-    params.openAiChatCompletionsEnabled ??
-    params.cfg.gateway?.http?.endpoints?.chatCompletions?.enabled ??
-    false;
-  const openResponsesConfig = params.cfg.gateway?.http?.endpoints?.responses;
-  const openResponsesEnabled = params.openResponsesEnabled ?? openResponsesConfig?.enabled ?? false;
   const strictTransportSecurityConfig =
     params.cfg.gateway?.http?.securityHeaders?.strictTransportSecurity;
   const strictTransportSecurityHeader =
@@ -167,11 +156,6 @@ export async function resolveGatewayRuntimeConfig(params: {
   return {
     bindHost,
     controlUiEnabled,
-    openAiChatCompletionsEnabled,
-    openResponsesEnabled,
-    openResponsesConfig: openResponsesConfig
-      ? { ...openResponsesConfig, enabled: openResponsesEnabled }
-      : undefined,
     strictTransportSecurityHeader,
     controlUiBasePath,
     controlUiRoot,

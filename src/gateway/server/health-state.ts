@@ -1,4 +1,4 @@
-import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
+import { listAgentEntries } from "../../agents/agent-scope.js";
 import { getHealthSnapshot, type HealthSummary } from "../../commands/health.js";
 import { CONFIG_PATH, STATE_DIR, loadConfig } from "../../config/config.js";
 import { resolveMainSessionKey } from "../../config/sessions.js";
@@ -16,7 +16,7 @@ let broadcastHealthUpdate: ((snap: HealthSummary) => void) | null = null;
 
 export function buildGatewaySnapshot(): Snapshot {
   const cfg = loadConfig();
-  const defaultAgentId = resolveDefaultAgentId(cfg);
+  const defaultAgentId = listAgentEntries(cfg)[0]?.id ?? "default";
   const mainKey = normalizeMainKey(cfg.session?.mainKey);
   const mainSessionKey = resolveMainSessionKey(cfg);
   const scope = cfg.session?.scope ?? "per-sender";

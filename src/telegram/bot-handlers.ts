@@ -1,5 +1,5 @@
 import type { Message, ReactionTypeEmoji } from "@grammyjs/types";
-import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { listAgentEntries } from "../agents/agent-scope.js";
 import {
   createInboundDebouncer,
   resolveInboundDebounceMs,
@@ -928,7 +928,7 @@ export const registerTelegramHandlers = ({
           return;
         }
 
-        const agentId = paginationMatch[2]?.trim() || resolveDefaultAgentId(cfg);
+        const agentId = paginationMatch[2]?.trim() || listAgentEntries(cfg)[0]?.id || "default";
         const result = buildCommandsMessagePaginated(cfg, {
           page,
           surface: "telegram",

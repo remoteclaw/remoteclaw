@@ -2,7 +2,6 @@ import {
   listAgentEntries,
   resolveAgentDir,
   resolveAgentWorkspaceDir,
-  resolveDefaultAgentId,
 } from "../agents/agent-scope.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { IdentityConfig } from "../config/types.js";
@@ -20,7 +19,6 @@ export type AgentSummary = {
   bindingDetails?: string[];
   routes?: string[];
   providers?: string[];
-  isDefault: boolean;
 };
 
 type AgentEntry = NonNullable<NonNullable<RemoteClawConfig["agents"]>["list"]>[number];
@@ -47,12 +45,11 @@ function resolveAgentRuntimeLabel(cfg: RemoteClawConfig, agentId: string): strin
 }
 
 export function buildAgentSummaries(cfg: RemoteClawConfig): AgentSummary[] {
-  const defaultAgentId = normalizeAgentId(resolveDefaultAgentId(cfg));
   const configuredAgents = listAgentEntries(cfg);
-  const orderedIds =
-    configuredAgents.length > 0
-      ? configuredAgents.map((agent) => normalizeAgentId(agent.id))
-      : [defaultAgentId];
+  if (configuredAgents.length === 0) {
+    return [];
+  }
+  const orderedIds = configuredAgents.map((agent) => normalizeAgentId(agent.id));
   const bindingCounts = new Map<string, number>();
   for (const binding of cfg.bindings ?? []) {
     const agentId = normalizeAgentId(binding.agentId);
@@ -77,7 +74,6 @@ export function buildAgentSummaries(cfg: RemoteClawConfig): AgentSummary[] {
       agentDir: resolveAgentDir(cfg, id),
       runtime: resolveAgentRuntimeLabel(cfg, id),
       bindings: bindingCounts.get(id) ?? 0,
-      isDefault: id === defaultAgentId,
     };
   });
 }
@@ -111,9 +107,6 @@ export function applyAgentConfig(
   if (index >= 0) {
     nextList[index] = nextEntry;
   } else {
-    if (nextList.length === 0 && agentId !== normalizeAgentId(resolveDefaultAgentId(cfg))) {
-      nextList.push({ id: resolveDefaultAgentId(cfg) });
-    }
     nextList.push(nextEntry);
   }
   return {

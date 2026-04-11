@@ -144,7 +144,7 @@ export function summarizeBindings(cfg: RemoteClawConfig, bindings: AgentBinding[
 }
 
 export function listProvidersForAgent(params: {
-  summaryIsDefault: boolean;
+  isSoleAgent: boolean;
   cfg: RemoteClawConfig;
   bindings: AgentBinding[];
   providerStatus: Map<string, ProviderAccountStatus>;
@@ -176,7 +176,7 @@ export function listProvidersForAgent(params: {
     return providerLines;
   }
 
-  if (params.summaryIsDefault) {
+  if (params.isSoleAgent) {
     for (const entry of allProviderEntries) {
       if (shouldShowProviderEntry(entry, params.cfg)) {
         providerLines.push(formatProviderEntry(entry));

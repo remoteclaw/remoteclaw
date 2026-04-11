@@ -6,7 +6,6 @@ export type NodeTargetOption = {
 export type ConfigAgentOption = {
   id: string;
   name?: string;
-  isDefault: boolean;
   index: number;
   record: Record<string, unknown>;
 };
@@ -26,8 +25,7 @@ export function resolveConfigAgents(config: Record<string, unknown> | null): Con
       return;
     }
     const name = typeof record.name === "string" ? record.name.trim() : undefined;
-    const isDefault = record.default === true;
-    agents.push({ id, name: name || undefined, isDefault, index, record });
+    agents.push({ id, name: name || undefined, index, record });
   });
 
   return agents;

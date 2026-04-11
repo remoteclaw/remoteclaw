@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { listAgentEntries } from "../agents/agent-scope.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { createConfigIO } from "../config/config.js";
 import { collectIncludePathsRecursive } from "../config/includes-scan.js";
@@ -330,17 +330,23 @@ async function chmodCredentialsAndAgentState(params: {
   }
 
   const ids = new Set<string>();
-  ids.add(resolveDefaultAgentId(params.cfg));
-  const list = Array.isArray(params.cfg.agents?.list) ? params.cfg.agents?.list : [];
-  for (const agent of list ?? []) {
-    if (!agent || typeof agent !== "object") {
-      continue;
-    }
-    const id =
-      typeof (agent as { id?: unknown }).id === "string" ? (agent as { id: string }).id.trim() : "";
+  for (const agent of listAgentEntries(params.cfg)) {
+    const id = typeof agent.id === "string" ? agent.id.trim() : "";
     if (id) {
       ids.add(id);
     }
+  }
+  // Also scan the filesystem for any existing agent directories not in config
+  const agentsParentDir = path.join(params.stateDir, "agents");
+  try {
+    const agentDirEntries = await fs.readdir(agentsParentDir, { withFileTypes: true });
+    for (const entry of agentDirEntries) {
+      if (entry.isDirectory() && entry.name.trim()) {
+        ids.add(entry.name.trim());
+      }
+    }
+  } catch {
+    // agents/ directory may not exist yet
   }
 
   for (const agentId of ids) {

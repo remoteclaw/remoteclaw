@@ -1,4 +1,4 @@
-import { resolveDefaultAgentId, resolveFirstAgentWorkspace } from "../../agents/agent-scope.js";
+import { listAgentEntries, resolveFirstAgentWorkspace } from "../../agents/agent-scope.js";
 import { listChannelPluginCatalogEntries } from "../../channels/plugins/catalog.js";
 import { getChannelPlugin, normalizeChannelId } from "../../channels/plugins/index.js";
 import { moveSingleAccountChannelSectionToDefaultAccount } from "../../channels/plugins/setup-helpers.js";
@@ -134,15 +134,14 @@ export async function channelsAddCommand(
       });
       if (bindNow) {
         const agentSummaries = buildAgentSummaries(nextConfig);
-        const defaultAgentId = resolveDefaultAgentId(nextConfig);
         for (const target of bindTargets) {
           const targetAgentId = await prompter.select({
             message: `Route ${target.channel} account "${target.accountId}" to agent`,
             options: agentSummaries.map((agent) => ({
               value: agent.id,
-              label: agent.isDefault ? `${agent.id} (default)` : agent.id,
+              label: agent.id,
             })),
-            initialValue: defaultAgentId,
+            initialValue: agentSummaries[0]?.id,
           });
           const bindingResult = applyAgentBindings(nextConfig, [
             {

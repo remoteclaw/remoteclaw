@@ -1,5 +1,5 @@
 import path from "node:path";
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { listAgentEntries, resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import { initSubagentRegistry } from "../agents/subagent-registry.js";
 import { getTotalPendingReplies } from "../auto-reply/reply/dispatcher-registry.js";
 import type { CanvasHostServer } from "../canvas-host/server.js";
@@ -273,8 +273,8 @@ export async function startGatewayServer(
   setPreRestartDeferralCheck(() => getTotalQueueSize() + getTotalPendingReplies());
 
   initSubagentRegistry();
-  const defaultAgentId = resolveDefaultAgentId(cfgAtStart);
-  const defaultWorkspaceDir = resolveAgentWorkspaceDir(cfgAtStart, defaultAgentId);
+  const firstAgentId = listAgentEntries(cfgAtStart)[0]?.id ?? "default";
+  const defaultWorkspaceDir = resolveAgentWorkspaceDir(cfgAtStart, firstAgentId);
   const baseMethods = listGatewayMethods();
   const emptyPluginRegistry = createEmptyPluginRegistry();
   const { pluginRegistry, gatewayMethods: baseGatewayMethods } = minimalTestGateway

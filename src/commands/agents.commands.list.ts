@@ -20,11 +20,8 @@ type AgentsListOptions = {
 };
 
 function formatSummary(summary: AgentSummary) {
-  const defaultTag = summary.isDefault ? " (default)" : "";
   const header =
-    summary.name && summary.name !== summary.id
-      ? `${summary.id}${defaultTag} (${summary.name})`
-      : `${summary.id}${defaultTag}`;
+    summary.name && summary.name !== summary.id ? `${summary.id} (${summary.name})` : summary.id;
 
   const identityParts = [];
   if (summary.identityEmoji) {
@@ -99,12 +96,10 @@ export async function agentsListCommand(
     const routes = summarizeBindings(cfg, bindings);
     if (routes.length > 0) {
       summary.routes = routes;
-    } else if (summary.isDefault) {
-      summary.routes = ["default (no explicit rules)"];
     }
 
     const providerLines = listProvidersForAgent({
-      summaryIsDefault: summary.isDefault,
+      isSoleAgent: summaries.length === 1,
       cfg,
       bindings,
       providerStatus,
@@ -116,6 +111,11 @@ export async function agentsListCommand(
 
   if (opts.json) {
     runtime.log(JSON.stringify(summaries, null, 2));
+    return;
+  }
+
+  if (summaries.length === 0) {
+    runtime.log("No agents configured.");
     return;
   }
 

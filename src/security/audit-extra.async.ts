@@ -5,7 +5,7 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { listAgentEntries } from "../agents/agent-scope.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle) — sandbox/skills/policy subsystems
 const isToolAllowedByPolicies = (..._args: unknown[]) => true;
 const resolveSandboxConfigForAgent = (..._args: unknown[]) => ({
@@ -1044,13 +1044,10 @@ export async function collectStateDeepFilesystemFindings(params: {
     }
   }
 
-  const agentIds = Array.isArray(params.cfg.agents?.list)
-    ? params.cfg.agents?.list
-        .map((a) => (a && typeof a === "object" && typeof a.id === "string" ? a.id.trim() : ""))
-        .filter(Boolean)
-    : [];
-  const defaultAgentId = resolveDefaultAgentId(params.cfg);
-  const ids = Array.from(new Set([defaultAgentId, ...agentIds])).map((id) => normalizeAgentId(id));
+  const agentIds = listAgentEntries(params.cfg)
+    .map((a) => a.id?.trim() ?? "")
+    .filter(Boolean);
+  const ids = Array.from(new Set(agentIds)).map((id) => normalizeAgentId(id));
 
   for (const agentId of ids) {
     const agentDir = path.join(params.stateDir, "agents", agentId, "agent");

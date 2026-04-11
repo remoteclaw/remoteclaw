@@ -83,7 +83,6 @@ export type AgentContext = {
   model: string;
   identityName: string;
   identityEmoji: string;
-  isDefault: boolean;
 };
 
 export function renderAgents(props: AgentsProps) {
@@ -354,8 +353,6 @@ function renderAgentOverview(params: {
     : agentIdentityError
       ? "Unavailable"
       : "";
-  const isDefault = Boolean(params.defaultId && agent.id === params.defaultId);
-
   return html`
     <section class="card">
       <div class="card-title">Overview</div>
@@ -375,10 +372,6 @@ function renderAgentOverview(params: {
           ${identityStatus ? html`<div class="agent-kv-sub muted">${identityStatus}</div>` : nothing}
         </div>
         <div class="agent-kv">
-          <div class="label">Default</div>
-          <div>${isDefault ? "yes" : "no"}</div>
-        </div>
-        <div class="agent-kv">
           <div class="label">Identity Emoji</div>
           <div>${identityEmoji}</div>
         </div>
@@ -388,22 +381,18 @@ function renderAgentOverview(params: {
         <div class="label">Model Selection</div>
         <div class="row" style="gap: 12px; flex-wrap: wrap;">
           <label class="field" style="min-width: 260px; flex: 1;">
-            <span>Primary model${isDefault ? " (default)" : ""}</span>
+            <span>Primary model</span>
             <select
               .value=${effectivePrimary ?? ""}
               ?disabled=${!configForm || configLoading || configSaving}
               @change=${(e: Event) =>
                 onModelChange(agent.id, (e.target as HTMLSelectElement).value || null)}
             >
-              ${
-                isDefault
-                  ? nothing
-                  : html`
-                      <option value="">
-                        ${defaultPrimary ? `Inherit default (${defaultPrimary})` : "Inherit default"}
-                      </option>
-                    `
-              }
+              ${html`
+                <option value="">
+                  ${defaultPrimary ? `Inherit default (${defaultPrimary})` : "Inherit default"}
+                </option>
+              `}
               ${buildModelOptions(configForm, effectivePrimary ?? undefined)}
             </select>
           </label>

@@ -50,7 +50,6 @@ describe("agents helpers", () => {
     expect(work?.workspace).toBe(path.resolve("/work-ws"));
     expect(work?.agentDir).toBe(path.resolve("/state/agents/work/agent"));
     expect(work?.bindings).toBe(1);
-    expect(work?.isDefault).toBe(true);
   });
 
   it("applyAgentConfig merges updates", () => {

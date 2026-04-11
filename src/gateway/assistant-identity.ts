@@ -1,4 +1,4 @@
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { listAgentEntries, resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import { resolveAgentIdentity } from "../agents/identity.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
 const loadAgentIdentity = (
@@ -86,7 +86,9 @@ export function resolveAssistantIdentity(params: {
   agentId?: string | null;
   workspaceDir?: string | null;
 }): AssistantIdentity {
-  const agentId = normalizeAgentId(params.agentId ?? resolveDefaultAgentId(params.cfg));
+  const agentId = normalizeAgentId(
+    params.agentId ?? listAgentEntries(params.cfg)[0]?.id ?? "default",
+  );
   const workspaceDir = params.workspaceDir ?? resolveAgentWorkspaceDir(params.cfg, agentId);
   const configAssistant = params.cfg.ui?.assistant;
   const agentIdentity = resolveAgentIdentity(params.cfg, agentId);

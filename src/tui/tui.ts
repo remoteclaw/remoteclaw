@@ -8,7 +8,7 @@ import {
   Text,
   TUI,
 } from "@mariozechner/pi-tui";
-import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { listAgentEntries } from "../agents/agent-scope.js";
 import { loadConfig } from "../config/config.js";
 import {
   buildAgentMainSessionKey,
@@ -302,7 +302,7 @@ export async function runTui(opts: TuiOptions) {
   const initialSessionInput = (opts.session ?? "").trim();
   let sessionScope: SessionScope = (config.session?.scope ?? "per-sender") as SessionScope;
   let sessionMainKey = normalizeMainKey(config.session?.mainKey);
-  let agentDefaultId = resolveDefaultAgentId(config);
+  let agentDefaultId = listAgentEntries(config)[0]?.id ?? "default";
   let currentAgentId = agentDefaultId;
   let agents: AgentSummary[] = [];
   const agentNames = new Map<string, string>();

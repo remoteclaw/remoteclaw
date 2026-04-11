@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage } from "node:http";
-import { listAgentIds, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { listAgentEntries, listAgentIds } from "../agents/agent-scope.js";
 import { listChannelPlugins } from "../channels/plugins/index.js";
 import type { ChannelId } from "../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../config/config.js";
@@ -52,8 +52,8 @@ export function resolveHooksConfig(cfg: RemoteClawConfig): HooksConfigResolved |
       ? cfg.hooks.maxBodyBytes
       : DEFAULT_HOOKS_MAX_BODY_BYTES;
   const mappings = resolveHookMappings(cfg.hooks);
-  const defaultAgentId = resolveDefaultAgentId(cfg);
-  const knownAgentIds = resolveKnownAgentIds(cfg, defaultAgentId);
+  const defaultAgentId = listAgentEntries(cfg)[0]?.id ?? "default";
+  const knownAgentIds = resolveKnownAgentIds(cfg);
   const allowedAgentIds = resolveAllowedAgentIds(cfg.hooks?.allowedAgentIds);
   const defaultSessionKey = resolveSessionKey(cfg.hooks?.defaultSessionKey);
   const allowedSessionKeyPrefixes = resolveAllowedSessionKeyPrefixes(
@@ -93,10 +93,8 @@ export function resolveHooksConfig(cfg: RemoteClawConfig): HooksConfigResolved |
   };
 }
 
-function resolveKnownAgentIds(cfg: RemoteClawConfig, defaultAgentId: string): Set<string> {
-  const known = new Set(listAgentIds(cfg));
-  known.add(defaultAgentId);
-  return known;
+function resolveKnownAgentIds(cfg: RemoteClawConfig): Set<string> {
+  return new Set(listAgentIds(cfg));
 }
 
 function resolveAllowedAgentIds(raw: string[] | undefined): Set<string> | undefined {

@@ -8,8 +8,6 @@ export function clearInlineDirectives(cleaned: string | InlineDirectives): Inlin
     verboseLevel: undefined,
     rawVerboseLevel: undefined,
     hasStatusDirective: false,
-    hasModelDirective: false,
-    rawModelDirective: undefined,
     hasQueueDirective: false,
     queueMode: undefined,
     queueReset: false,

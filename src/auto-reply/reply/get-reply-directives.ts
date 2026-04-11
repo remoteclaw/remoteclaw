@@ -2,7 +2,7 @@ import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { listChatCommands, shouldHandleTextCommands } from "../commands-registry.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
-import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../thinking.js";
+import type { VerboseLevel } from "../thinking.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { resolveBlockStreamingChunking } from "./block-streaming.js";
 import { buildCommandContext } from "./commands.js";
@@ -19,21 +19,12 @@ type ExecToolDefaults = Record<string, unknown>;
 export const createModelSelectionState = (..._args: unknown[]) => ({
   provider: "cli" as string,
   model: "default" as string,
-  resolveDefaultThinkingLevel: async (): Promise<ThinkLevel | undefined> => undefined,
-  resolveDefaultReasoningLevel: async (): Promise<ReasoningLevel> => "off" as ReasoningLevel,
   aliasIndex: new Map<string, { provider: string; model: string }>(),
   allowedModelKeys: new Set<string>(),
   allowedModelCatalog: [] as Array<{ id: string; provider: string }>,
   resetModelOverride: false,
 });
 
-const resolveSandboxRuntimeStatus = (..._args: unknown[]) => ({ sandboxed: false });
-const formatElevatedUnavailableMessage = (..._args: unknown[]) => undefined as string | undefined;
-const resolveElevatedPermissions = (..._args: unknown[]) => ({
-  enabled: false,
-  allowed: false,
-  failures: [] as never[],
-});
 import type { TypingController } from "./typing.js";
 
 type AgentDefaults = NonNullable<RemoteClawConfig["agents"]>["defaults"];
@@ -48,12 +39,9 @@ export type ReplyDirectiveContinuation = {
   messageProviderKey: string;
   elevatedEnabled: boolean;
   elevatedAllowed: boolean;
-  elevatedFailures: Array<{ gate: string; key: string }>;
+  elevatedFailures: string[];
   defaultActivation: ReturnType<typeof defaultGroupActivation>;
-  resolvedThinkLevel: ThinkLevel | undefined;
   resolvedVerboseLevel: VerboseLevel | undefined;
-  resolvedReasoningLevel: ReasoningLevel;
-  resolvedElevatedLevel: ElevatedLevel;
   execOverrides?: ExecOverrides;
   blockStreamingEnabled: boolean;
   blockReplyChunking?: {
@@ -76,21 +64,11 @@ export type ReplyDirectiveContinuation = {
   };
 };
 
-function resolveExecOverrides(params: {
+function resolveExecOverrides(_params: {
   directives: InlineDirectives;
   sessionEntry?: SessionEntry;
 }): ExecOverrides | undefined {
-  const host =
-    params.directives.execHost ?? (params.sessionEntry?.execHost as ExecOverrides["host"]);
-  const security =
-    params.directives.execSecurity ??
-    (params.sessionEntry?.execSecurity as ExecOverrides["security"]);
-  const ask = params.directives.execAsk ?? (params.sessionEntry?.execAsk as ExecOverrides["ask"]);
-  const node = params.directives.execNode ?? params.sessionEntry?.execNode;
-  if (!host && !security && !ask && !node) {
-    return undefined;
-  }
-  return { host, security, ask, node };
+  return undefined;
 }
 
 export type ReplyDirectiveResult =
@@ -205,29 +183,8 @@ export async function resolveReplyDirectives(params: {
       hasStatusDirective: false,
     };
   }
-  if (isGroup && ctx.WasMentioned !== true && parsedDirectives.hasElevatedDirective) {
-    if (parsedDirectives.elevatedLevel !== "off") {
-      parsedDirectives = {
-        ...parsedDirectives,
-        hasElevatedDirective: false,
-        elevatedLevel: undefined,
-        rawElevatedLevel: undefined,
-      };
-    }
-  }
-  if (isGroup && ctx.WasMentioned !== true && parsedDirectives.hasExecDirective) {
-    if (parsedDirectives.execSecurity !== "deny") {
-      parsedDirectives = clearInlineDirectives(parsedDirectives);
-    }
-  }
   const hasInlineDirective =
-    parsedDirectives.hasThinkDirective ||
-    parsedDirectives.hasVerboseDirective ||
-    parsedDirectives.hasReasoningDirective ||
-    parsedDirectives.hasElevatedDirective ||
-    parsedDirectives.hasExecDirective ||
-    parsedDirectives.hasModelDirective ||
-    parsedDirectives.hasQueueDirective;
+    parsedDirectives.hasVerboseDirective || parsedDirectives.hasQueueDirective;
   if (hasInlineDirective) {
     const stripped = stripStructuralPrefixes(parsedDirectives.cleaned);
     const noMentions = isGroup ? stripMentions(stripped, ctx, cfg, agentId) : stripped;
@@ -253,11 +210,8 @@ export async function resolveReplyDirectives(params: {
     ? parsedDirectives
     : {
         ...parsedDirectives,
-        hasThinkDirective: false,
         hasVerboseDirective: false,
-        hasReasoningDirective: false,
         hasStatusDirective: false,
-        hasModelDirective: false,
         hasQueueDirective: false,
         queueReset: false,
       };
@@ -300,32 +254,9 @@ export async function resolveReplyDirectives(params: {
 
   const messageProviderKey =
     sessionCtx.Provider?.trim().toLowerCase() ?? ctx.Provider?.trim().toLowerCase() ?? "";
-  const elevated = resolveElevatedPermissions({
-    cfg,
-    agentId,
-    ctx,
-    provider: messageProviderKey,
-  });
-  const elevatedEnabled = elevated.enabled;
-  const elevatedAllowed = elevated.allowed;
-  const elevatedFailures = elevated.failures;
-  if (directives.hasElevatedDirective && (!elevatedEnabled || !elevatedAllowed)) {
-    typing.cleanup();
-    const runtimeSandboxed = resolveSandboxRuntimeStatus({
-      cfg,
-      sessionKey: ctx.SessionKey,
-    }).sandboxed;
-    return {
-      kind: "reply",
-      reply: {
-        text: formatElevatedUnavailableMessage({
-          runtimeSandboxed,
-          failures: elevatedFailures,
-          sessionKey: ctx.SessionKey,
-        }),
-      },
-    };
-  }
+  const elevatedEnabled = false;
+  const elevatedAllowed = false;
+  const elevatedFailures: string[] = [];
 
   const requireMention = resolveGroupRequireMention({
     cfg,
@@ -333,24 +264,11 @@ export async function resolveReplyDirectives(params: {
     groupResolution,
   });
   const defaultActivation = defaultGroupActivation(requireMention);
-  const resolvedThinkLevel =
-    (directives.thinkLevel as ThinkLevel | undefined) ??
-    (sessionEntry?.thinkingLevel as ThinkLevel | undefined);
 
   const resolvedVerboseLevel =
     directives.verboseLevel ??
     (sessionEntry?.verboseLevel as VerboseLevel | undefined) ??
     (agentCfg?.verboseDefault as VerboseLevel | undefined);
-  let resolvedReasoningLevel: ReasoningLevel =
-    directives.reasoningLevel ??
-    (sessionEntry?.reasoningLevel as ReasoningLevel | undefined) ??
-    "off";
-  const resolvedElevatedLevel = elevatedAllowed
-    ? (directives.elevatedLevel ??
-      (sessionEntry?.elevatedLevel as ElevatedLevel | undefined) ??
-      (agentCfg?.elevatedDefault as ElevatedLevel | undefined) ??
-      "on")
-    : "off";
   const resolvedBlockStreaming =
     opts?.disableBlockStreaming === true
       ? "off"
@@ -379,27 +297,9 @@ export async function resolveReplyDirectives(params: {
     defaultModel,
     provider,
     model,
-    hasModelDirective: directives.hasModelDirective,
-    hasResolvedHeartbeatModelOverride: false,
   });
   provider = modelState.provider;
   model = modelState.model;
-  const resolvedThinkLevelWithDefault: ThinkLevel | undefined =
-    resolvedThinkLevel ??
-    (await modelState.resolveDefaultThinkingLevel()) ??
-    (agentCfg?.thinkingDefault as ThinkLevel | undefined);
-
-  // When neither directive nor session set reasoning, default to model capability
-  // (e.g. OpenRouter with reasoning: true). Skip auto-enabling when thinking is
-  // active, including model-inferred defaults, or internal thinking blocks can
-  // be emitted as visible "Reasoning:" messages.
-  const reasoningExplicitlySet =
-    directives.reasoningLevel !== undefined ||
-    (sessionEntry?.reasoningLevel !== undefined && sessionEntry?.reasoningLevel !== null);
-  const thinkingActive = resolvedThinkLevelWithDefault !== "off";
-  if (!reasoningExplicitlySet && resolvedReasoningLevel === "off" && !thinkingActive) {
-    resolvedReasoningLevel = await modelState.resolveDefaultReasoningLevel();
-  }
 
   const initialModelLabel = `${provider}/${model}`;
   const formatModelSwitchEvent = (label: string, alias?: string) =>
@@ -431,7 +331,6 @@ export async function resolveReplyDirectives(params: {
     modelState,
     initialModelLabel,
     formatModelSwitchEvent,
-    resolvedElevatedLevel,
     defaultActivation: () => defaultActivation,
     typing,
   });
@@ -457,10 +356,7 @@ export async function resolveReplyDirectives(params: {
       elevatedAllowed,
       elevatedFailures,
       defaultActivation,
-      resolvedThinkLevel: resolvedThinkLevelWithDefault,
       resolvedVerboseLevel,
-      resolvedReasoningLevel,
-      resolvedElevatedLevel,
       execOverrides,
       blockStreamingEnabled,
       blockReplyChunking,

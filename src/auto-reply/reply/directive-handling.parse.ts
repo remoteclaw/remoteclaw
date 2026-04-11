@@ -1,7 +1,5 @@
 import type { RemoteClawConfig } from "../../config/config.js";
-import { extractModelDirective } from "../model.js";
 import type { MsgContext } from "../templating.js";
-import type { ElevatedLevel, ReasoningLevel } from "../thinking.js";
 import type { VerboseLevel } from "./directives.js";
 import { extractStatusDirective, extractVerboseDirective } from "./directives.js";
 import { stripMentions, stripStructuralPrefixes } from "./mentions.js";
@@ -14,9 +12,6 @@ export type InlineDirectives = {
   verboseLevel?: VerboseLevel;
   rawVerboseLevel?: string;
   hasStatusDirective: boolean;
-  hasModelDirective: boolean;
-  rawModelDirective?: string;
-  rawModelProfile?: string;
   hasQueueDirective: boolean;
   queueMode?: QueueMode;
   queueReset: boolean;
@@ -28,23 +23,6 @@ export type InlineDirectives = {
   rawCap?: string;
   rawDrop?: string;
   hasQueueOptions: boolean;
-  /** Upstream feature: thinking level directive. */
-  thinkLevel?: string;
-  hasThinkDirective?: boolean;
-  /** Upstream feature: reasoning level directive. */
-  reasoningLevel?: ReasoningLevel;
-  hasReasoningDirective?: boolean;
-  /** Upstream feature: elevated security level directive. */
-  elevatedLevel?: ElevatedLevel;
-  rawElevatedLevel?: string;
-  hasElevatedDirective?: boolean;
-  /** Upstream feature: exec directives. */
-  execAsk?: boolean;
-  execHost?: string;
-  execNode?: string;
-  execSecurity?: string;
-  /** Upstream feature: whether any exec directive was detected. */
-  hasExecDirective?: boolean;
 };
 
 export function parseInlineDirectives(
@@ -65,14 +43,6 @@ export function parseInlineDirectives(
     ? extractStatusDirective(verboseCleaned)
     : { cleaned: verboseCleaned, hasDirective: false };
   const {
-    cleaned: modelCleaned,
-    rawModel,
-    rawProfile,
-    hasDirective: hasModelDirective,
-  } = extractModelDirective(statusCleaned, {
-    aliases: options?.modelAliases,
-  });
-  const {
     cleaned: queueCleaned,
     queueMode,
     queueReset,
@@ -85,7 +55,7 @@ export function parseInlineDirectives(
     rawDrop,
     hasDirective: hasQueueDirective,
     hasOptions: hasQueueOptions,
-  } = extractQueueDirective(modelCleaned);
+  } = extractQueueDirective(statusCleaned);
 
   return {
     cleaned: queueCleaned,
@@ -93,9 +63,6 @@ export function parseInlineDirectives(
     verboseLevel,
     rawVerboseLevel,
     hasStatusDirective,
-    hasModelDirective,
-    rawModelDirective: rawModel,
-    rawModelProfile: rawProfile,
     hasQueueDirective,
     queueMode,
     queueReset,
@@ -119,11 +86,7 @@ export function isDirectiveOnly(params: {
   isGroup: boolean;
 }): boolean {
   const { directives, cleanedBody, ctx, cfg, agentId, isGroup } = params;
-  if (
-    !directives.hasVerboseDirective &&
-    !directives.hasModelDirective &&
-    !directives.hasQueueDirective
-  ) {
+  if (!directives.hasVerboseDirective && !directives.hasQueueDirective) {
     return false;
   }
   const stripped = stripStructuralPrefixes(cleanedBody ?? "");

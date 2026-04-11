@@ -1,7 +1,6 @@
 import crypto from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { formatThinkingLevels, normalizeThinkLevel } from "../auto-reply/thinking.js";
 import { DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH } from "../config/agent-limits.js";
 import { loadConfig } from "../config/config.js";
 import { callGateway } from "../gateway/call.js";
@@ -23,7 +22,6 @@ const resolveSandboxRuntimeStatus = (..._args: unknown[]) => ({
 import { buildSubagentSystemPrompt } from "./subagent-announce.js";
 import { getSubagentDepthFromSessionStore } from "./subagent-depth.js";
 import { countActiveRunsForSession, registerSubagentRun } from "./subagent-registry.js";
-import { readStringParam } from "./tools/common.js";
 import {
   resolveDisplaySessionKey,
   resolveInternalSessionKey,
@@ -265,7 +263,7 @@ export async function spawnSubagentDirect(
     };
   }
   const _modelOverride = params.model;
-  const thinkingOverrideRaw = params.thinking;
+  const _thinkingOverrideRaw = params.thinking;
   const requestThreadBinding = params.thread === true;
   const sandboxMode = params.sandbox === "require" ? "require" : "inherit";
   const spawnMode = resolveSpawnMode({
@@ -388,27 +386,10 @@ export async function spawnSubagentDirect(
   }
   const childDepth = callerDepth + 1;
   const spawnedByKey = requesterInternalKey;
-  const targetAgentConfig = resolveAgentConfig(cfg, targetAgentId);
+  const _targetAgentConfig = resolveAgentConfig(cfg, targetAgentId);
   const resolvedModel = undefined as string | undefined;
 
-  const resolvedThinkingDefaultRaw =
-    readStringParam(targetAgentConfig?.subagents ?? {}, "thinking") ??
-    readStringParam(cfg.agents?.defaults?.subagents ?? {}, "thinking");
-
-  let thinkingOverride: string | undefined;
-  const thinkingCandidateRaw = thinkingOverrideRaw || resolvedThinkingDefaultRaw;
-  if (thinkingCandidateRaw) {
-    const normalized = normalizeThinkLevel(thinkingCandidateRaw);
-    if (!normalized) {
-      const { provider, model } = splitModelRef(resolvedModel);
-      const hint = formatThinkingLevels(provider, model);
-      return {
-        status: "error",
-        error: `Invalid thinking level "${thinkingCandidateRaw}". Use one of: ${hint}.`,
-      };
-    }
-    thinkingOverride = normalized;
-  }
+  const thinkingOverride = undefined as string | undefined;
   const patchChildSession = async (patch: Record<string, unknown>): Promise<string | undefined> => {
     try {
       await callGateway({

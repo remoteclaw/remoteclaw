@@ -456,13 +456,6 @@ function buildChatCommands(): ChatCommandDefinition[] {
       argsMenu: "auto",
     }),
     defineChatCommand({
-      key: "stop",
-      nativeName: "stop",
-      description: "Stop the current run.",
-      textAlias: "/stop",
-      category: "session",
-    }),
-    defineChatCommand({
       key: "restart",
       nativeName: "restart",
       description: "Restart RemoteClaw.",

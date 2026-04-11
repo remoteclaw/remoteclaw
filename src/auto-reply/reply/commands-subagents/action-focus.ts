@@ -1,13 +1,3 @@
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../../acp/runtime/session-identifiers.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveAcpSessionCwd = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveAcpThreadSessionDetailLines = (..._args: unknown[]) => undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../../acp/runtime/session-meta.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const readAcpSessionEntry = (..._args: unknown[]) => undefined as any;
 import {
   resolveDiscordThreadBindingIdleTimeoutMs,
   resolveDiscordThreadBindingMaxAgeMs,
@@ -77,13 +67,6 @@ export async function handleSubagentsFocusAction(
   }
 
   const label = focusTarget.label || token;
-  const acpMeta =
-    focusTarget.targetKind === "acp"
-      ? readAcpSessionEntry({
-          cfg: params.cfg,
-          sessionKey: focusTarget.targetSessionKey,
-        })?.acp
-      : undefined;
   const placement = currentThreadId ? "current" : "child";
   if (!capabilities.placements.includes(placement)) {
     return stopWithText("⚠️ Discord thread bindings are unavailable for this account.");
@@ -123,14 +106,6 @@ export async function handleSubagentsFocusAction(
             cfg: params.cfg,
             accountId,
           }),
-          sessionCwd: focusTarget.targetKind === "acp" ? resolveAcpSessionCwd(acpMeta) : undefined,
-          sessionDetails:
-            focusTarget.targetKind === "acp"
-              ? resolveAcpThreadSessionDetailLines({
-                  sessionKey: focusTarget.targetSessionKey,
-                  meta: acpMeta,
-                })
-              : [],
         }),
       },
     });

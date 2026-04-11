@@ -9,11 +9,6 @@ export {
   resolveThreadBindingIntroText,
   resolveThreadBindingThreadName,
 } from "./thread-bindings.messages.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle) — thread-bindings.persona removed
-// oxlint-disable-next-line typescript/no-explicit-any
-export const resolveThreadBindingPersona = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-export const resolveThreadBindingPersonaFromRecord = (..._args: unknown[]) => undefined as any;
 
 export {
   resolveDiscordThreadBindingIdleTimeoutMs,

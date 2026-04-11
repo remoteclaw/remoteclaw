@@ -31,12 +31,6 @@ const internalHookMocks = vi.hoisted(() => ({
   createInternalHookEvent: vi.fn(),
   triggerInternalHook: vi.fn(async () => {}),
 }));
-const acpMocks = vi.hoisted(() => ({
-  listAcpSessionEntries: vi.fn(async () => []),
-  readAcpSessionEntry: vi.fn<() => unknown>(() => null),
-  upsertAcpSessionMeta: vi.fn(async () => null),
-  requireAcpRuntimeBackend: vi.fn<() => unknown>(),
-}));
 const sessionBindingMocks = vi.hoisted(() => ({
   listBySession: vi.fn<(targetSessionKey: string) => SessionBindingRecord[]>(() => []),
 }));
@@ -107,14 +101,6 @@ vi.mock("../../hooks/internal-hooks.js", () => ({
   createInternalHookEvent: internalHookMocks.createInternalHookEvent,
   triggerInternalHook: internalHookMocks.triggerInternalHook,
 }));
-vi.mock("../../acp/runtime/session-meta.js", () => ({
-  listAcpSessionEntries: acpMocks.listAcpSessionEntries,
-  readAcpSessionEntry: acpMocks.readAcpSessionEntry,
-  upsertAcpSessionMeta: acpMocks.upsertAcpSessionMeta,
-}));
-vi.mock("../../acp/runtime/registry.js", () => ({
-  requireAcpRuntimeBackend: acpMocks.requireAcpRuntimeBackend,
-}));
 vi.mock("../../infra/outbound/session-binding-service.js", async (importOriginal) => {
   const actual =
     await importOriginal<typeof import("../../infra/outbound/session-binding-service.js")>();
@@ -146,7 +132,6 @@ vi.mock("../../tts/tts.js", () => ({
 
 const { dispatchReplyFromConfig } = await import("./dispatch-from-config.js");
 const { resetInboundDedupe } = await import("./inbound-dedupe.js");
-const acpManagerTesting = { resetForTest: () => {} } as Record<string, unknown>;
 
 const noAbortResult = { handled: false, aborted: false } as const;
 const emptyConfig = {} as RemoteClawConfig;
@@ -165,26 +150,6 @@ function createDispatcher(): ReplyDispatcher {
 
 function setNoAbort() {
   mocks.tryFastAbortFromMessage.mockResolvedValue(noAbortResult);
-}
-
-function createAcpRuntime(events: Array<Record<string, unknown>>) {
-  return {
-    ensureSession: vi.fn(
-      async (input: { sessionKey: string; mode: string; agent: string }) =>
-        ({
-          sessionKey: input.sessionKey,
-          backend: "acpx",
-          runtimeSessionName: `${input.sessionKey}:${input.mode}`,
-        }) as { sessionKey: string; backend: string; runtimeSessionName: string },
-    ),
-    runTurn: vi.fn(async function* () {
-      for (const event of events) {
-        yield event;
-      }
-    }),
-    cancel: vi.fn(async () => {}),
-    close: vi.fn(async () => {}),
-  };
 }
 
 function firstToolResultPayload(dispatcher: ReplyDispatcher): ReplyPayload | undefined {
@@ -206,11 +171,9 @@ async function dispatchTwiceWithFreshDispatchers(params: Omit<DispatchReplyArgs,
 
 describe("dispatchReplyFromConfig", () => {
   beforeEach(() => {
-    (acpManagerTesting as Record<string, () => void>).resetAcpSessionManagerForTests?.();
     resetInboundDedupe();
     mocks.routeReply.mockReset();
     mocks.routeReply.mockResolvedValue({ ok: true, messageId: "mock" });
-    acpMocks.listAcpSessionEntries.mockReset().mockResolvedValue([]);
     diagnosticMocks.logMessageQueued.mockClear();
     diagnosticMocks.logMessageProcessed.mockClear();
     diagnosticMocks.logSessionStateChange.mockClear();
@@ -220,11 +183,6 @@ describe("dispatchReplyFromConfig", () => {
     internalHookMocks.createInternalHookEvent.mockClear();
     internalHookMocks.createInternalHookEvent.mockImplementation(createInternalHookEventPayload);
     internalHookMocks.triggerInternalHook.mockClear();
-    acpMocks.readAcpSessionEntry.mockReset();
-    acpMocks.readAcpSessionEntry.mockReturnValue(null);
-    acpMocks.upsertAcpSessionMeta.mockReset();
-    acpMocks.upsertAcpSessionMeta.mockResolvedValue(null);
-    acpMocks.requireAcpRuntimeBackend.mockReset();
     sessionBindingMocks.listBySession.mockReset();
     sessionBindingMocks.listBySession.mockReturnValue([]);
     ttsMocks.state.synthesizeFinalAudio = false;
@@ -591,60 +549,6 @@ describe("dispatchReplyFromConfig", () => {
 
     expect(dispatcher.sendFinalReply).toHaveBeenCalledWith({
       text: "⚙️ Agent was aborted. Stopped 2 sub-agents.",
-    });
-  });
-
-  it("routes ACP slash commands through the normal command pipeline", async () => {
-    setNoAbort();
-    const runtime = createAcpRuntime([{ type: "done" }]);
-    acpMocks.readAcpSessionEntry.mockReturnValue({
-      sessionKey: "agent:codex-acp:session-1",
-      storeSessionKey: "agent:codex-acp:session-1",
-      cfg: {},
-      storePath: "/tmp/mock-sessions.json",
-      entry: {},
-      acp: {
-        backend: "acpx",
-        agent: "codex",
-        runtimeSessionName: "runtime:1",
-        mode: "persistent",
-        state: "idle",
-        lastActivityAt: Date.now(),
-      },
-    });
-    acpMocks.requireAcpRuntimeBackend.mockReturnValue({
-      id: "acpx",
-      runtime,
-    });
-
-    const cfg = {
-      acp: {
-        enabled: true,
-        dispatch: { enabled: true },
-      },
-      session: {
-        sendPolicy: {
-          default: "deny",
-        },
-      },
-    } as RemoteClawConfig;
-    const dispatcher = createDispatcher();
-    const ctx = buildTestCtx({
-      Provider: "discord",
-      Surface: "discord",
-      SessionKey: "agent:codex-acp:session-1",
-      CommandBody: "/acp cancel",
-      BodyForCommands: "/acp cancel",
-      BodyForAgent: "/acp cancel",
-    });
-    const replyResolver = vi.fn(async () => ({ text: "command output" }) as ReplyPayload);
-
-    await dispatchReplyFromConfig({ ctx, cfg, dispatcher, replyResolver });
-
-    expect(replyResolver).toHaveBeenCalledTimes(1);
-    expect(runtime.runTurn).not.toHaveBeenCalled();
-    expect(dispatcher.sendFinalReply).toHaveBeenCalledWith({
-      text: "command output",
     });
   });
 

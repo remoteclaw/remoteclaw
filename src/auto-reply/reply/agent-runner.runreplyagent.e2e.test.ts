@@ -249,7 +249,6 @@ async function runReplyAgentWithBase(params: {
     sessionKey: params.sessionKey,
     storePath: params.storePath,
     defaultModel: "anthropic/claude-opus-4-5",
-    agentCfgContextTokens: 100_000,
     resolvedVerboseLevel: "off",
     isNewSession: false,
     blockStreamingEnabled: false,

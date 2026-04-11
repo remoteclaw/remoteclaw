@@ -136,7 +136,6 @@ export const handleStatusCommand: CommandHandler = async (params, allowTextComma
     sessionScope: params.sessionScope,
     provider: params.provider,
     model: params.model,
-    contextTokens: params.contextTokens,
     resolvedVerboseLevel: params.resolvedVerboseLevel,
     isGroup: params.isGroup,
     defaultGroupActivation: params.defaultGroupActivation,

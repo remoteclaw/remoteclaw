@@ -488,7 +488,6 @@ export async function agentCommand(
     if (sessionStore && sessionKey) {
       await updateSessionStoreAfterAgentRun({
         cfg,
-        contextTokensOverride: agentCfg?.contextTokens,
         sessionId,
         sessionKey,
         storePath,

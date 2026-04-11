@@ -51,7 +51,7 @@ Row shape (JSON):
 - `displayName` (group display label if available)
 - `updatedAt` (ms)
 - `sessionId`
-- `model`, `contextTokens`, `totalTokens`
+- `model`, `totalTokens`
 - `thinkingLevel`, `verboseLevel`, `systemSent`, `abortedLastRun`
 - `sendPolicy` (session override if set)
 - `lastChannel`, `lastTo`

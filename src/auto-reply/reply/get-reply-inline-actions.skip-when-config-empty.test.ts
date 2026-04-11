@@ -70,7 +70,6 @@ const createHandleInlineActionsInput = (params: {
     resolvedVerboseLevel: undefined,
     provider: "openai",
     model: "gpt-4o-mini",
-    contextTokens: 0,
     abortedLastRun: false,
     sessionScope: "per-sender",
     ...params.overrides,

@@ -310,7 +310,6 @@ Configure agent defaults and define multiple agents:
     defaults: {
       runtime: "claude",
       workspace: "~/projects",
-      contextTokens: 200000,
     },
     list: [
       {
@@ -334,7 +333,6 @@ Key agent default options:
 | --------------------------------- | ------ | ----------------------------------------------------------- |
 | `agents.defaults.runtime`         | string | Default agent CLI (`claude`, `gemini`, `codex`, `opencode`) |
 | `agents.defaults.workspace`       | string | Workspace root directory                                    |
-| `agents.defaults.contextTokens`   | number | Context window size                                         |
 | `agents.defaults.timeoutSeconds`  | number | Agent response timeout                                      |
 | `agents.defaults.maxConcurrent`   | number | Max concurrent sessions                                     |
 | `agents.defaults.typingMode`      | string | Typing indicator: `never`, `instant`, `thinking`, `message` |

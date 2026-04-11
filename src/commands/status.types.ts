@@ -19,10 +19,7 @@ export type SessionStatus = {
   totalTokensFresh: boolean;
   cacheRead?: number;
   cacheWrite?: number;
-  remainingTokens: number | null;
-  percentUsed: number | null;
   model: string | null;
-  contextTokens: number | null;
   flags: string[];
 };
 
@@ -49,7 +46,7 @@ export type StatusSummary = {
   sessions: {
     paths: string[];
     count: number;
-    defaults: { model: string | null; contextTokens: number | null };
+    defaults: { model: string | null };
     recent: SessionStatus[];
     byAgent: Array<{
       agentId: string;

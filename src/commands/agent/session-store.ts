@@ -8,7 +8,6 @@ import type { AgentDeliveryResult } from "../../middleware/types.js";
 
 export async function updateSessionStoreAfterAgentRun(params: {
   cfg: RemoteClawConfig;
-  contextTokensOverride?: number;
   sessionId: string;
   sessionKey: string;
   storePath: string;
@@ -45,8 +44,6 @@ export async function updateSessionStoreAfterAgentRun(params: {
     : undefined;
   const modelUsed = fallbackModel ?? defaultModel;
   const providerUsed = fallbackProvider ?? defaultProvider;
-  const contextTokens = params.contextTokensOverride ?? 200_000;
-
   const entry = sessionStore[sessionKey] ?? {
     sessionId,
     updatedAt: Date.now(),
@@ -55,7 +52,6 @@ export async function updateSessionStoreAfterAgentRun(params: {
     ...entry,
     sessionId,
     updatedAt: Date.now(),
-    contextTokens,
   };
   next.modelProvider = providerUsed;
   next.model = modelUsed;
@@ -72,7 +68,6 @@ export async function updateSessionStoreAfterAgentRun(params: {
     const totalTokens =
       deriveSessionTotalTokens({
         usage,
-        contextTokens,
       }) ?? input;
     next.inputTokens = input;
     next.outputTokens = output;

@@ -298,7 +298,6 @@ function buildPolicyParams(
     resolvedVerboseLevel: "off",
     provider: "telegram",
     model: "test-model",
-    contextTokens: 0,
     isGroup: false,
   };
   return params;

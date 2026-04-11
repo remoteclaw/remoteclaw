@@ -57,7 +57,6 @@ export async function handleInlineActions(params: {
   elevatedFailures?: unknown[];
   provider: string;
   model: string;
-  contextTokens: number;
   directiveAck?: ReplyPayload;
   abortedLastRun: boolean;
 }): Promise<InlineActionResult> {
@@ -86,7 +85,6 @@ export async function handleInlineActions(params: {
     resolvedVerboseLevel,
     provider,
     model,
-    contextTokens,
     directiveAck,
     abortedLastRun: initialAbortedLastRun,
   } = params;
@@ -160,7 +158,6 @@ export async function handleInlineActions(params: {
       sessionScope,
       provider,
       model,
-      contextTokens,
       resolvedVerboseLevel: resolvedVerboseLevel ?? "off",
       isGroup,
       defaultGroupActivation: defaultActivation,
@@ -188,7 +185,6 @@ export async function handleInlineActions(params: {
       resolvedVerboseLevel: resolvedVerboseLevel ?? "off",
       provider,
       model,
-      contextTokens,
       isGroup,
     });
 

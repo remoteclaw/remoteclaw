@@ -149,7 +149,7 @@ Key fields (not exhaustive):
   - `modelOverride`: model to pass to the CLI runtime (e.g. `--model` flag)
   - `providerOverride`: which provider to route to (e.g. `anthropic`, `openai`)
 - Token counters (best-effort / provider-dependent):
-  - `inputTokens`, `outputTokens`, `totalTokens`, `contextTokens`
+  - `inputTokens`, `outputTokens`, `totalTokens`
 
 The store is safe to edit, but the Gateway is the authority: it may rewrite or rehydrate entries as sessions run.
 
@@ -185,8 +185,7 @@ Two different concepts matter:
 
 If you’re tuning limits:
 
-- The context window is determined by the CLI runtime (e.g., the model the CLI agent is using) and can be overridden via config.
-- `contextTokens` in the store is a runtime estimate/reporting value; don’t treat it as a strict guarantee.
+- The context window is determined by the CLI runtime (e.g., the model the CLI agent is using).
 
 For more, see [/token-use](/reference/token-use).
 

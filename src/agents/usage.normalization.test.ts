@@ -56,7 +56,6 @@ describe("normalizeUsage", () => {
           cacheWrite: 0,
           total: 2_402_300,
         },
-        contextTokens: 200_000,
       }),
     ).toBe(2_400_027);
   });
@@ -70,7 +69,6 @@ describe("normalizeUsage", () => {
           cacheWrite: 50,
           total: 2_000,
         },
-        contextTokens: 200_000,
       }),
     ).toBe(1_550);
   });
@@ -85,7 +83,6 @@ describe("normalizeUsage", () => {
           total: 9_999,
         },
         promptTokens: 65_000,
-        contextTokens: 200_000,
       }),
     ).toBe(65_000);
   });

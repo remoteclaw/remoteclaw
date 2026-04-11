@@ -42,10 +42,9 @@ Session pruning trims **old tool results** from the in-memory context before pas
 
 Pruning uses an estimated context window (chars ≈ tokens × 4). The base window is resolved in this order:
 
-1. `agents.defaults.contextTokens` (if set).
-2. Default `200000` tokens.
+Default `200000` tokens.
 
-Context window limits are determined by the CLI agent's own configuration; RemoteClaw uses the configured value as a pruning budget estimate.
+Context window limits are determined by the CLI agent's own configuration; RemoteClaw uses this default as a pruning budget estimate.
 
 ## Mode
 

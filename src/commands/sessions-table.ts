@@ -24,7 +24,6 @@ export type SessionDisplayRow = {
   modelProvider?: string;
   providerOverride?: string;
   modelOverride?: string;
-  contextTokens?: number;
 };
 
 export type SessionDisplayDefaults = {
@@ -57,7 +56,6 @@ export function toSessionDisplayRows(store: Record<string, SessionEntry>): Sessi
         modelProvider: entry?.modelProvider,
         providerOverride: entry?.providerOverride,
         modelOverride: entry?.modelOverride,
-        contextTokens: entry?.contextTokens,
       } satisfies SessionDisplayRow;
     })
     .toSorted((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));

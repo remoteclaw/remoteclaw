@@ -148,7 +148,7 @@ export async function getReplyFromConfig(
     provider: resolvedProvider,
     model: resolvedModel,
     modelState,
-    contextTokens,
+
     inlineStatusRequested,
     directiveAck,
     perMessageQueueMode,
@@ -210,7 +210,7 @@ export async function getReplyFromConfig(
     resolveDefaultThinkingLevel: modelState.resolveDefaultThinkingLevel,
     provider,
     model,
-    contextTokens,
+
     directiveAck,
     abortedLastRun,
   });

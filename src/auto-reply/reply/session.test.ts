@@ -931,7 +931,6 @@ describe("persistSessionUsageUpdate", () => {
       sessionKey,
       usage: accumulatedUsage,
       lastCallUsage,
-      contextTokensUsed: 200_000,
     });
 
     const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
@@ -965,7 +964,6 @@ describe("persistSessionUsageUpdate", () => {
         cacheRead: 18_000,
         cacheWrite: 4_000,
       },
-      contextTokensUsed: 200_000,
     });
 
     const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
@@ -988,7 +986,6 @@ describe("persistSessionUsageUpdate", () => {
       storePath,
       sessionKey,
       usage: { input: 50_000, output: 5_000, total: 55_000 },
-      contextTokensUsed: 200_000,
     });
 
     const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
@@ -1010,7 +1007,6 @@ describe("persistSessionUsageUpdate", () => {
       sessionKey,
       usage: { input: 50_000, output: 5_000, total: 55_000 },
       promptTokens: 42_000,
-      contextTokensUsed: 200_000,
     });
 
     const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
@@ -1037,7 +1033,6 @@ describe("persistSessionUsageUpdate", () => {
       sessionKey,
       usage: undefined,
       promptTokens: 39_000,
-      contextTokensUsed: 200_000,
     });
 
     const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
@@ -1061,7 +1056,6 @@ describe("persistSessionUsageUpdate", () => {
       sessionKey,
       usage: { input: 300_000, output: 10_000, total: 310_000 },
       lastCallUsage: { input: 250_000, output: 5_000, total: 255_000 },
-      contextTokensUsed: 200_000,
     });
 
     const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));

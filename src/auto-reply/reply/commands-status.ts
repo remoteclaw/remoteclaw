@@ -31,7 +31,6 @@ export async function buildStatusReply(params: {
   storePath?: string;
   provider: string;
   model: string;
-  contextTokens: number;
   resolvedVerboseLevel: VerboseLevel;
   isGroup: boolean;
   defaultGroupActivation: () => "always" | "mention";
@@ -46,7 +45,6 @@ export async function buildStatusReply(params: {
     storePath,
     provider,
     model: _model,
-    contextTokens,
     resolvedVerboseLevel,
     isGroup,
     defaultGroupActivation,
@@ -127,7 +125,6 @@ export async function buildStatusReply(params: {
     config: cfg,
     agent: {
       ...agentDefaults,
-      contextTokens,
       verboseDefault: agentDefaults.verboseDefault,
     },
     agentId: statusAgentId,

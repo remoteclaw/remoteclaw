@@ -14,25 +14,13 @@ export const formatDuration = (ms: number | null | undefined) => {
 };
 
 export const formatTokensCompact = (
-  sess: Pick<
-    SessionStatus,
-    "totalTokens" | "contextTokens" | "percentUsed" | "cacheRead" | "cacheWrite"
-  >,
+  sess: Pick<SessionStatus, "totalTokens" | "cacheRead" | "cacheWrite">,
 ) => {
   const used = sess.totalTokens;
-  const ctx = sess.contextTokens;
   const cacheRead = sess.cacheRead;
   const cacheWrite = sess.cacheWrite;
 
-  let result = "";
-  if (used == null) {
-    result = ctx ? `unknown/${formatKTokens(ctx)} (?%)` : "unknown used";
-  } else if (!ctx) {
-    result = `${formatKTokens(used)} used`;
-  } else {
-    const pctLabel = sess.percentUsed != null ? `${sess.percentUsed}%` : "?%";
-    result = `${formatKTokens(used)}/${formatKTokens(ctx)} (${pctLabel})`;
-  }
+  let result = used == null ? "unknown used" : `${formatKTokens(used)} used`;
 
   // Add cache hit rate if there are cached reads
   if (typeof cacheRead === "number" && cacheRead > 0) {

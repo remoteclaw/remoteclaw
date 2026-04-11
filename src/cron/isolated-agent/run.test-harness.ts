@@ -164,7 +164,6 @@ vi.mock("./session.js", () => ({
 
 vi.mock("../../agents/defaults.js", () => ({
   DEFAULT_AGENT_ID: "default",
-  DEFAULT_CONTEXT_TOKENS: 128000,
 }));
 
 export function makeCronSessionEntry(overrides?: Record<string, unknown>): CronSessionEntry {

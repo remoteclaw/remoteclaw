@@ -8,7 +8,7 @@ function createSessions(): SessionsListResult {
     ts: 0,
     path: "",
     count: 0,
-    defaults: { model: null, contextTokens: null },
+    defaults: { model: null },
     sessions: [],
   };
 }

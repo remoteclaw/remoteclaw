@@ -23,7 +23,7 @@ struct MenuSessionsInjectorTests {
         let injector = MenuSessionsInjector()
         injector.setTestingControlChannelConnected(true)
 
-        let defaults = SessionDefaults(model: "anthropic/claude-opus-4-6", contextTokens: 200_000)
+        let defaults = SessionDefaults(model: "anthropic/claude-opus-4-6")
         let rows = [
             SessionRow(
                 id: "main",
@@ -39,7 +39,7 @@ struct MenuSessionsInjectorTests {
                 verboseLevel: nil,
                 systemSent: false,
                 abortedLastRun: false,
-                tokens: SessionTokenStats(input: 10, output: 20, total: 30, contextTokens: 200_000),
+                tokens: SessionTokenStats(input: 10, output: 20, total: 30),
                 model: "claude-opus-4-6"),
             SessionRow(
                 id: "discord:group:alpha",
@@ -55,7 +55,7 @@ struct MenuSessionsInjectorTests {
                 verboseLevel: "debug",
                 systemSent: true,
                 abortedLastRun: true,
-                tokens: SessionTokenStats(input: 50, output: 50, total: 100, contextTokens: 200_000),
+                tokens: SessionTokenStats(input: 50, output: 50, total: 100),
                 model: "claude-opus-4-6"),
         ]
         let snapshot = SessionStoreSnapshot(

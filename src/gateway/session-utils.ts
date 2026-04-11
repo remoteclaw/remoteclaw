@@ -612,11 +612,10 @@ export function loadCombinedSessionStoreForGateway(cfg: RemoteClawConfig): {
   return { storePath, store: combined };
 }
 
-export function getSessionDefaults(cfg: RemoteClawConfig): GatewaySessionsDefaults {
+export function getSessionDefaults(_cfg: RemoteClawConfig): GatewaySessionsDefaults {
   return {
     modelProvider: "unknown",
     model: "unknown",
-    contextTokens: cfg.agents?.defaults?.contextTokens ?? 200_000,
   };
 }
 
@@ -814,7 +813,6 @@ export function listSessionsFromStore(params: {
         responseUsage: entry?.responseUsage,
         modelProvider,
         model,
-        contextTokens: entry?.contextTokens,
         deliveryContext: deliveryFields.deliveryContext,
         lastChannel: deliveryFields.lastChannel ?? entry?.lastChannel,
         lastTo: deliveryFields.lastTo ?? entry?.lastTo,

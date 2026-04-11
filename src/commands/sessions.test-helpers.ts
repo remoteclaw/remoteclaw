@@ -15,7 +15,6 @@ export function mockSessionsConfig() {
           defaults: {
             model: { primary: "pi:opus" },
             models: { "pi:opus": {} },
-            contextTokens: 32000,
           },
         },
       }),

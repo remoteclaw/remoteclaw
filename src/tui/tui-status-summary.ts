@@ -1,5 +1,4 @@
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
-import { formatTokenCount } from "../utils/usage-format.js";
 import { formatContextUsageLine } from "./tui-formatters.js";
 import type { GatewayStatusSummary } from "./tui-types.js";
 
@@ -50,11 +49,7 @@ export function formatStatusSummary(summary: GatewayStatusSummary) {
 
   const defaults = summary.sessions?.defaults;
   const defaultModel = defaults?.model ?? "unknown";
-  const defaultCtx =
-    typeof defaults?.contextTokens === "number"
-      ? ` (${formatTokenCount(defaults.contextTokens)} ctx)`
-      : "";
-  lines.push(`Default model: ${defaultModel}${defaultCtx}`);
+  lines.push(`Default model: ${defaultModel}`);
 
   const sessionCount = summary.sessions?.count ?? 0;
   lines.push(`Active sessions: ${sessionCount}`);
@@ -67,9 +62,6 @@ export function formatStatusSummary(summary: GatewayStatusSummary) {
       const model = entry.model ?? "unknown";
       const usage = formatContextUsageLine({
         total: entry.totalTokens ?? null,
-        context: entry.contextTokens ?? null,
-        remaining: entry.remainingTokens ?? null,
-        percent: entry.percentUsed ?? null,
       });
       const flags = entry.flags?.length ? ` | flags: ${entry.flags.join(", ")}` : "";
       lines.push(

@@ -341,20 +341,9 @@ export function formatTokens(total?: number | null, context?: number | null) {
   return `tokens ${totalLabel}/${formatTokenCount(context)}${pct !== null ? ` (${pct}%)` : ""}`;
 }
 
-export function formatContextUsageLine(params: {
-  total?: number | null;
-  context?: number | null;
-  remaining?: number | null;
-  percent?: number | null;
-}) {
-  const totalLabel = typeof params.total === "number" ? formatTokenCount(params.total) : "?";
-  const ctxLabel = typeof params.context === "number" ? formatTokenCount(params.context) : "?";
-  const pct = typeof params.percent === "number" ? Math.min(999, Math.round(params.percent)) : null;
-  const remainingLabel =
-    typeof params.remaining === "number" ? `${formatTokenCount(params.remaining)} left` : null;
-  const pctLabel = pct !== null ? `${pct}%` : null;
-  const extra = [remainingLabel, pctLabel].filter(Boolean).join(", ");
-  return `tokens ${totalLabel}/${ctxLabel}${extra ? ` (${extra})` : ""}`;
+export function formatContextUsageLine(params: { total?: number | null }) {
+  const totalLabel = typeof params.total === "number" ? formatTokenCount(params.total) : "unknown";
+  return `tokens ${totalLabel} used`;
 }
 
 export function asString(value: unknown, fallback = ""): string {

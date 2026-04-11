@@ -140,7 +140,6 @@ function createContinueDirectivesResult(resetHookTriggered: boolean) {
       modelState: {
         resolveDefaultThinkingLevel: async () => undefined,
       },
-      contextTokens: 0,
       inlineStatusRequested: false,
       directiveAck: undefined,
       perMessageQueueMode: undefined,

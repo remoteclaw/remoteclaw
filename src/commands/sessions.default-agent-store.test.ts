@@ -7,7 +7,6 @@ const loadConfigMock = vi.hoisted(() =>
       defaults: {
         model: { primary: "pi:opus" },
         models: { "pi:opus": {} },
-        contextTokens: 32000,
       },
       list: [{ id: "main" }, { id: "voice" }],
     },

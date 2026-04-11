@@ -173,7 +173,6 @@ describe("redactConfigSnapshot", () => {
               {
                 id: "gpt-5",
                 maxTokens: 65536,
-                contextTokens: 200000,
                 maxTokensField: "max_completion_tokens",
               },
             ],
@@ -182,7 +181,6 @@ describe("redactConfigSnapshot", () => {
             maxTokens: 8192,
             maxOutputTokens: 4096,
             maxCompletionTokens: 2048,
-            contextTokens: 128000,
             tokenCount: 500,
             tokenLimit: 100000,
             tokenBudget: 50000,
@@ -199,7 +197,6 @@ describe("redactConfigSnapshot", () => {
       (models.providers as Record<string, unknown>).openai as Record<string, unknown>
     ).models ?? []) as Array<Record<string, unknown>>;
     expect(providerList[0]?.maxTokens).toBe(65536);
-    expect(providerList[0]?.contextTokens).toBe(200000);
     expect(providerList[0]?.maxTokensField).toBe("max_completion_tokens");
 
     const providers = (models.providers as Record<string, Record<string, unknown>>) ?? {};
@@ -208,7 +205,6 @@ describe("redactConfigSnapshot", () => {
     expect(providers.openai.maxTokens).toBe(8192);
     expect(providers.openai.maxOutputTokens).toBe(4096);
     expect(providers.openai.maxCompletionTokens).toBe(2048);
-    expect(providers.openai.contextTokens).toBe(128000);
     expect(providers.openai.tokenCount).toBe(500);
     expect(providers.openai.tokenLimit).toBe(100000);
     expect(providers.openai.tokenBudget).toBe(50000);

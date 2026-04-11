@@ -10,7 +10,6 @@ struct ContextMenuCardView: View {
     private let paddingBottom: CGFloat = 8
     private let paddingTrailing: CGFloat = 10
     private let paddingLeading: CGFloat = 20
-    private let barHeight: CGFloat = 3
 
     init(
         rows: [SessionRow],
@@ -73,9 +72,7 @@ struct ContextMenuCardView: View {
     private func sessionRow(_ row: SessionRow) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             ContextUsageBar(
-                usedTokens: row.tokens.total,
-                contextTokens: row.tokens.contextTokens,
-                height: self.barHeight)
+                usedTokens: row.tokens.total)
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(row.label)
@@ -98,9 +95,7 @@ struct ContextMenuCardView: View {
     private var placeholderRow: some View {
         VStack(alignment: .leading, spacing: 5) {
             ContextUsageBar(
-                usedTokens: 0,
-                contextTokens: 200_000,
-                height: self.barHeight)
+                usedTokens: 0)
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("main")
@@ -108,7 +103,7 @@ struct ContextMenuCardView: View {
                     .lineLimit(1)
                     .layoutPriority(1)
                 Spacer(minLength: 8)
-                Text("000k/000k")
+                Text("000k used")
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: true, vertical: false)

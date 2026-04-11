@@ -421,11 +421,9 @@ export async function runCronIsolatedAgentTurn(params: {
       : undefined;
     const modelUsed = model;
     const providerUsed = provider;
-    const contextTokens = agentCfg?.contextTokens ?? 200_000;
 
     cronSession.sessionEntry.modelProvider = providerUsed;
     cronSession.sessionEntry.model = modelUsed;
-    cronSession.sessionEntry.contextTokens = contextTokens;
     if (isCliProvider(providerUsed, cfgWithAgentDefaults)) {
       const cliSessionId = runResult.run.sessionId?.trim();
       if (cliSessionId) {
@@ -438,7 +436,6 @@ export async function runCronIsolatedAgentTurn(params: {
       const totalTokens =
         deriveSessionTotalTokens({
           usage,
-          contextTokens,
         }) ?? input;
       cronSession.sessionEntry.inputTokens = input;
       cronSession.sessionEntry.outputTokens = output;

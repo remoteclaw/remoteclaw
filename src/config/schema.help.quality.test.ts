@@ -370,11 +370,6 @@ const TARGET_KEYS = [
   "agents.defaults.compaction.maxHistoryShare",
   "agents.defaults.compaction.identifierPolicy",
   "agents.defaults.compaction.identifierInstructions",
-  "agents.defaults.compaction.memoryFlush",
-  "agents.defaults.compaction.memoryFlush.enabled",
-  "agents.defaults.compaction.memoryFlush.softThresholdTokens",
-  "agents.defaults.compaction.memoryFlush.prompt",
-  "agents.defaults.compaction.memoryFlush.systemPrompt",
 ] as const;
 
 const ENUM_EXPECTATIONS: Record<string, string[]> = {
@@ -784,8 +779,5 @@ describe("config help copy quality", () => {
     expect(identifierPolicy.includes('"strict"')).toBe(true);
     expect(identifierPolicy.includes('"off"')).toBe(true);
     expect(identifierPolicy.includes('"custom"')).toBe(true);
-
-    const flush = FIELD_HELP["agents.defaults.compaction.memoryFlush.enabled"];
-    expect(/pre-compaction|memory flush|token/i.test(flush)).toBe(true);
   });
 });

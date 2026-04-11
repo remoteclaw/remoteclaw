@@ -419,14 +419,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "agents.defaults.compaction.maxHistoryShare": "Compaction Max History Share",
   "agents.defaults.compaction.identifierPolicy": "Compaction Identifier Policy",
   "agents.defaults.compaction.identifierInstructions": "Compaction Identifier Instructions",
-  "agents.defaults.compaction.memoryFlush": "Compaction Memory Flush",
-  "agents.defaults.compaction.memoryFlush.enabled": "Compaction Memory Flush Enabled",
-  "agents.defaults.compaction.memoryFlush.softThresholdTokens":
-    "Compaction Memory Flush Soft Threshold",
-  "agents.defaults.compaction.memoryFlush.forceFlushTranscriptBytes":
-    "Compaction Memory Flush Transcript Size Threshold",
-  "agents.defaults.compaction.memoryFlush.prompt": "Compaction Memory Flush Prompt",
-  "agents.defaults.compaction.memoryFlush.systemPrompt": "Compaction Memory Flush System Prompt",
   "agents.defaults.heartbeat.directPolicy": "Heartbeat Direct Policy",
   "agents.list.*.heartbeat.directPolicy": "Heartbeat Direct Policy",
   "agents.defaults.heartbeat.suppressToolErrorWarnings": "Heartbeat Suppress Tool Error Warnings",

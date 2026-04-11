@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { isValidNonNegativeByteSizeString } from "./byte-size.js";
 import {
   BootSchema,
   HeartbeatSchema,
@@ -92,23 +91,6 @@ export const AgentDefaultsSchema = z
           .union([z.literal("strict"), z.literal("off"), z.literal("custom")])
           .optional(),
         identifierInstructions: z.string().optional(),
-        memoryFlush: z
-          .object({
-            enabled: z.boolean().optional(),
-            softThresholdTokens: z.number().int().nonnegative().optional(),
-            forceFlushTranscriptBytes: z
-              .union([
-                z.number().int().nonnegative(),
-                z
-                  .string()
-                  .refine(isValidNonNegativeByteSizeString, "Expected byte size string like 2mb"),
-              ])
-              .optional(),
-            prompt: z.string().optional(),
-            systemPrompt: z.string().optional(),
-          })
-          .strict()
-          .optional(),
       })
       .strict()
       .optional(),

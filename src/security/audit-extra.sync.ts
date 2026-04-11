@@ -127,27 +127,9 @@ function isGatewayRemotelyExposed(cfg: RemoteClawConfig): boolean {
 
 type ModelRef = { id: string; source: string };
 
-function addModel(models: ModelRef[], raw: unknown, source: string) {
-  if (typeof raw !== "string") {
-    return;
-  }
-  const id = raw.trim();
-  if (!id) {
-    return;
-  }
-  models.push({ id, source });
-}
-
-// Model config gutted from per-agent and defaults — only legacy imageModel
-// and per-model settings map still contribute refs for auditing.
-function collectModels(cfg: RemoteClawConfig): ModelRef[] {
-  const out: ModelRef[] = [];
-  // imageModel is a legacy field kept for config compat — still audit if present.
-  const imageModel = cfg.agents?.defaults?.imageModel;
-  if (typeof imageModel === "string" && imageModel.trim()) {
-    addModel(out, imageModel, "agents.defaults.imageModel");
-  }
-  return out;
+// Model config fully gutted — CLI runtimes manage their own models.
+function collectModels(_cfg: RemoteClawConfig): ModelRef[] {
+  return [];
 }
 
 const LEGACY_MODEL_PATTERNS: Array<{ id: string; re: RegExp; label: string }> = [

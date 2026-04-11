@@ -1,5 +1,5 @@
 import type { ChannelId } from "../channels/plugins/types.js";
-import type { AgentModelConfig, AgentSandboxConfig } from "./types.agents-shared.js";
+import type { AgentSandboxConfig } from "./types.agents-shared.js";
 import type {
   BlockStreamingChunkConfig,
   BlockStreamingCoalesceConfig,
@@ -7,19 +7,6 @@ import type {
   TypingMode,
 } from "./types.base.js";
 import type { MemorySearchConfig } from "./types.tools.js";
-
-export type AgentModelEntryConfig = {
-  alias?: string;
-  /** Provider-specific API parameters (e.g., GLM-4.7 thinking mode). */
-  params?: Record<string, unknown>;
-  /** Enable streaming for this model (default: true, false for Ollama to avoid SDK issue #1205). */
-  streaming?: boolean;
-};
-
-export type AgentModelListConfig = {
-  primary?: string;
-  fallbacks?: string[];
-};
 
 export type AgentContextPruningConfig = {
   mode?: "off" | "cache-ttl";
@@ -132,28 +119,10 @@ export type AgentDefaultsConfig = {
   runtimeArgs?: string[];
   /** Default extra environment variables injected into runtime invocation. */
   runtimeEnv?: Record<string, string>;
-  /** Primary model and fallbacks (provider/model). Accepts string or {primary,fallbacks}. */
-  model?: AgentModelConfig;
-  /** Optional image-capable model and fallbacks (provider/model). Accepts string or {primary,fallbacks}. */
-  imageModel?: AgentModelConfig;
-  /** Optional PDF-capable model and fallbacks (provider/model). Accepts string or {primary,fallbacks}. */
-  pdfModel?: AgentModelConfig;
-  /** Maximum PDF file size in megabytes (default: 10). */
-  pdfMaxBytesMb?: number;
-  /** Maximum number of PDF pages to process (default: 20). */
-  pdfMaxPages?: number;
-  /** Model catalog with optional aliases (full provider/model keys). */
-  models?: Record<string, AgentModelEntryConfig>;
   /** Agent working directory (preferred). Used as the default cwd for agent runs. */
   workspace?: string;
   /** Optional repository root for system prompt runtime line (overrides auto-detect). */
   repoRoot?: string;
-  /** Skip bootstrap (BOOTSTRAP.md creation, etc.) for pre-configured deployments. */
-  skipBootstrap?: boolean;
-  /** Max chars for injected bootstrap files before truncation (default: 20000). */
-  bootstrapMaxChars?: number;
-  /** Max total chars across all injected bootstrap files (default: 150000). */
-  bootstrapTotalMaxChars?: number;
   /** Optional IANA timezone for the user (used in system prompt; defaults to host timezone). */
   userTimezone?: string;
   /** Time format in system prompt: auto (OS preference), 12-hour, or 24-hour. */
@@ -270,8 +239,6 @@ export type AgentDefaultsConfig = {
     maxChildrenPerAgent?: number;
     /** Auto-archive sub-agent sessions after N minutes (default: 60). */
     archiveAfterMinutes?: number;
-    /** Default model selection for spawned sub-agents (string or {primary,fallbacks}). */
-    model?: AgentModelConfig;
     /** Default thinking level for spawned sub-agents (e.g. "off", "low", "medium", "high"). */
     thinking?: string;
     /** Default run timeout in seconds for spawned sub-agents (0 = no timeout). */

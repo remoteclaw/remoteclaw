@@ -166,37 +166,6 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
     message: "tools.bash was removed; use tools.exec instead (auto-migrated on load).",
   },
   {
-    path: ["agent", "model"],
-    message:
-      "agent.model string was replaced by agents.defaults.model.primary/fallbacks and agents.defaults.models (auto-migrated on load).",
-    match: (value) => typeof value === "string",
-  },
-  {
-    path: ["agent", "imageModel"],
-    message:
-      "agent.imageModel string was replaced by agents.defaults.imageModel.primary/fallbacks (auto-migrated on load).",
-    match: (value) => typeof value === "string",
-  },
-  {
-    path: ["agent", "allowedModels"],
-    message: "agent.allowedModels was replaced by agents.defaults.models (auto-migrated on load).",
-  },
-  {
-    path: ["agent", "modelAliases"],
-    message:
-      "agent.modelAliases was replaced by agents.defaults.models.*.alias (auto-migrated on load).",
-  },
-  {
-    path: ["agent", "modelFallbacks"],
-    message:
-      "agent.modelFallbacks was replaced by agents.defaults.model.fallbacks (auto-migrated on load).",
-  },
-  {
-    path: ["agent", "imageModelFallbacks"],
-    message:
-      "agent.imageModelFallbacks was replaced by agents.defaults.imageModel.fallbacks (auto-migrated on load).",
-  },
-  {
     path: ["messages", "tts", "enabled"],
     message: "messages.tts.enabled was replaced by messages.tts.auto (auto-migrated on load).",
   },

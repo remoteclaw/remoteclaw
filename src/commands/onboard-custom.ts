@@ -1,4 +1,5 @@
 import type { RemoteClawConfig } from "../config/config.js";
+import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
 import type { ModelProviderConfig } from "../config/types.models.js";
 import { isSecretRef, type SecretInput } from "../config/types.secrets.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -654,6 +655,10 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
 
   config = applyPrimaryModel(config, modelRef);
   if (alias) {
+    const legacyDefaults = config.agents?.defaults as Record<string, unknown> | undefined;
+    const legacyModels = legacyDefaults?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined;
     config = {
       ...config,
       agents: {
@@ -661,13 +666,13 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
         defaults: {
           ...config.agents?.defaults,
           models: {
-            ...config.agents?.defaults?.models,
+            ...legacyModels,
             [modelRef]: {
-              ...config.agents?.defaults?.models?.[modelRef],
+              ...legacyModels?.[modelRef],
               alias,
             },
           },
-        },
+        } as AgentDefaultsConfig,
       },
     };
   }

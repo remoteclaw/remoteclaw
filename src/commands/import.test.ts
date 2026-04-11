@@ -203,6 +203,28 @@ describe("materializeWorkspaceDefaults", () => {
     const result = JSON.parse(materializeWorkspaceDefaults(input));
     expect(result.agents.list[0].workspace).toBe("~/.remoteclaw/workspace");
   });
+
+  it("strips deprecated default field from agent entries", () => {
+    const input = JSON.stringify({
+      agents: { list: [{ id: "main", default: true }] },
+    });
+    const result = JSON.parse(materializeWorkspaceDefaults(input));
+    expect(result.agents.list[0].default).toBeUndefined();
+    expect(result.agents.list[0].workspace).toBe("~/.remoteclaw/workspace");
+  });
+
+  it("strips deprecated default field and assigns workspace by sole-agent rule", () => {
+    const input = JSON.stringify({
+      agents: {
+        list: [{ id: "alpha", default: true }, { id: "beta" }],
+      },
+    });
+    const result = JSON.parse(materializeWorkspaceDefaults(input));
+    expect(result.agents.list[0].default).toBeUndefined();
+    expect(result.agents.list[1].default).toBeUndefined();
+    expect(result.agents.list[0].workspace).toBe("~/.remoteclaw/workspace-alpha");
+    expect(result.agents.list[1].workspace).toBe("~/.remoteclaw/workspace-beta");
+  });
 });
 
 describe("stripUnrecognizedConfigKeys", () => {

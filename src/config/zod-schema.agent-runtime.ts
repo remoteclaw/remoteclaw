@@ -727,6 +727,8 @@ export const AgentEntrySchema = z
       .optional(),
     runtimeArgs: z.array(z.string()).optional(),
     runtimeEnv: z.record(z.string(), z.string()).optional(),
+    // Deprecated: accepted for backward compat, stripped by legacy migration (#1581)
+    default: z.boolean().optional(),
   })
   .strict();
 

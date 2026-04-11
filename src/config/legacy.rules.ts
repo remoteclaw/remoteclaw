@@ -17,6 +17,13 @@ function hasLegacyThreadBindingTtlInAccounts(value: unknown): boolean {
   );
 }
 
+function hasLegacyAgentDefaultField(value: unknown): boolean {
+  if (!Array.isArray(value)) {
+    return false;
+  }
+  return value.some((entry) => isRecord(entry) && entry.default === true);
+}
+
 function isLegacyGatewayBindHostAlias(value: unknown): boolean {
   if (typeof value !== "string") {
     return false;
@@ -203,5 +210,11 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
       "gateway.bind host aliases (for example 0.0.0.0/localhost) are legacy; use bind modes (lan/loopback/custom/tailnet/auto) instead (auto-migrated on load).",
     match: (value) => isLegacyGatewayBindHostAlias(value),
     requireSourceLiteral: true,
+  },
+  {
+    path: ["agents", "list"],
+    message:
+      "agents.list[].default was removed; sole-agent auto-selection replaces explicit defaults (auto-migrated on load).",
+    match: (value) => hasLegacyAgentDefaultField(value),
   },
 ];

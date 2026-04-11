@@ -8,7 +8,6 @@ import { createRuntimeEvents } from "./runtime-events.js";
 import { createRuntimeLogging } from "./runtime-logging.js";
 import { createRuntimeMedia } from "./runtime-media.js";
 import { createRuntimeSystem } from "./runtime-system.js";
-import { createRuntimeTools } from "./runtime-tools.js";
 import type { PluginRuntime } from "./types.js";
 
 let cachedVersion: string | null = null;
@@ -36,7 +35,6 @@ export function createPluginRuntime(): PluginRuntime {
     media: createRuntimeMedia(),
     tts: { textToSpeechTelephony },
     stt: { transcribeAudioFile },
-    tools: createRuntimeTools(),
     channel: createRuntimeChannel(),
     events: createRuntimeEvents(),
     logging: createRuntimeLogging(),

@@ -136,19 +136,6 @@ const coreEntries: CoreCliEntry[] = [
   {
     commands: [
       {
-        name: "memory",
-        description: "Search and reindex memory files",
-        hasSubcommands: true,
-      },
-    ],
-    register: async ({ program }) => {
-      const mod = await import("../memory-cli.js");
-      mod.registerMemoryCli(program);
-    },
-  },
-  {
-    commands: [
-      {
         name: "agent",
         description: "Run one agent turn via the Gateway",
         hasSubcommands: false,

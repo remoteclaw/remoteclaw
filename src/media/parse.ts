@@ -19,8 +19,8 @@ const SCHEME_RE = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
 const HAS_FILE_EXT = /\.\w{1,10}$/;
 
 // Recognize local file path patterns. Security validation is deferred to the
-// load layer (loadWebMedia / resolveSandboxedMediaSource) which has the context
-// needed to enforce sandbox roots and allowed directories.
+// load layer (loadWebMedia) which has the context needed to enforce allowed
+// directories.
 function isLikelyLocalPath(candidate: string): boolean {
   return (
     candidate.startsWith("/") ||

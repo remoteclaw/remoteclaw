@@ -24,11 +24,6 @@ vi.mock("./doctor-platform-notes.js", () => ({
   noteMacLaunchctlGatewayEnvOverrides: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("./doctor-sandbox.js", () => ({
-  maybeRepairSandboxImages: vi.fn(async (cfg: unknown) => cfg),
-  noteSandboxScopeWarnings: vi.fn(),
-}));
-
 vi.mock("./doctor-security.js", () => ({
   noteSecurityWarnings: vi.fn().mockResolvedValue(undefined),
 }));

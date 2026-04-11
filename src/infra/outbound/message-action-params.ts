@@ -1,6 +1,5 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { assertMediaNotDataUrl, resolveSandboxedMediaSource } from "../../agents/sandbox-paths.js";
 import { readStringParam } from "../../agents/tools/common.js";
 import type {
   ChannelId,
@@ -275,13 +274,8 @@ export async function normalizeSandboxMediaParams(params: {
     if (!raw) {
       continue;
     }
-    assertMediaNotDataUrl(raw);
     if (!sandboxRoot) {
       continue;
-    }
-    const normalized = resolveSandboxedMediaSource({ media: raw, sandboxRoot });
-    if (normalized !== raw) {
-      params.args[key] = normalized;
     }
   }
 }
@@ -290,7 +284,6 @@ export async function normalizeSandboxMediaList(params: {
   values: string[];
   sandboxRoot?: string;
 }): Promise<string[]> {
-  const sandboxRoot = params.sandboxRoot?.trim();
   const normalized: string[] = [];
   const seen = new Set<string>();
   for (const value of params.values) {
@@ -298,8 +291,7 @@ export async function normalizeSandboxMediaList(params: {
     if (!raw) {
       continue;
     }
-    assertMediaNotDataUrl(raw);
-    const resolved = sandboxRoot ? resolveSandboxedMediaSource({ media: raw, sandboxRoot }) : raw;
+    const resolved = raw;
     if (seen.has(resolved)) {
       continue;
     }

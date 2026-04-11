@@ -23,7 +23,6 @@ function createDefaultSessionStoreEntry() {
     cacheRead: 2_000,
     cacheWrite: 1_000,
     totalTokens: 5_000,
-    contextTokens: 10_000,
     model: "pi:opus",
     sessionId: "abc123",
     systemSent: true,
@@ -36,7 +35,6 @@ function createUnknownUsageSessionStore() {
       updatedAt: Date.now() - 60_000,
       inputTokens: 2_000,
       outputTokens: 3_000,
-      contextTokens: 10_000,
       model: "pi:opus",
     },
   };
@@ -369,16 +367,9 @@ describe("statusCommand", () => {
     expect(payload.sessions.paths).toContain("/tmp/sessions.json");
     // Gutted in RemoteClaw fork — model defaults may be empty
     expect(payload.sessions.defaults).toBeDefined();
-    // resolveContextTokensForModel gutted to return 200000 as config default
-    expect(payload.sessions.defaults.contextTokens).toBe(200000);
-    // Session entry has contextTokens: 10_000, totalTokens: 5_000
-    // 5000/10000 * 100 = 50
-    expect(payload.sessions.recent[0].percentUsed).toBe(50);
     expect(payload.sessions.recent[0].cacheRead).toBe(2_000);
     expect(payload.sessions.recent[0].cacheWrite).toBe(1_000);
     expect(payload.sessions.recent[0].totalTokensFresh).toBe(true);
-    // 10000 - 5000 = 5000
-    expect(payload.sessions.recent[0].remainingTokens).toBe(5000);
     expect(payload.sessions.recent[0].flags).toContain("verbose:on");
     expect(payload.securityAudit.summary.critical).toBe(1);
     expect(payload.securityAudit.summary.warn).toBe(1);
@@ -393,15 +384,13 @@ describe("statusCommand", () => {
       const payload = JSON.parse(String(runtimeLogMock.mock.calls.at(-1)?.[0]));
       expect(payload.sessions.recent[0].totalTokens).toBeNull();
       expect(payload.sessions.recent[0].totalTokensFresh).toBe(false);
-      expect(payload.sessions.recent[0].percentUsed).toBeNull();
-      expect(payload.sessions.recent[0].remainingTokens).toBeNull();
     });
   });
 
   it("prints unknown usage in formatted output when totalTokens is missing", async () => {
     await withUnknownUsageStore(async () => {
       const logs = await runStatusAndGetLogs();
-      expect(logs.some((line) => line.includes("unknown/") && line.includes("(?%)"))).toBe(true);
+      expect(logs.some((line) => line.includes("unknown"))).toBe(true);
     });
   });
 
@@ -423,8 +412,6 @@ describe("statusCommand", () => {
       // "bootstrap files",
       "Sessions",
       "+1000",
-      // Session entry contextTokens: 10_000, totalTokens: 5_000 → 50%
-      "50%",
       // 3000 cache out of 5000 total = 60% cached (not 40%)
       // The cache display may differ due to context token changes
       "cached",
@@ -575,7 +562,6 @@ describe("statusCommand", () => {
             inputTokens: 1_000,
             outputTokens: 1_000,
             totalTokens: 2_000,
-            contextTokens: 10_000,
             model: "pi:opus",
           },
         };

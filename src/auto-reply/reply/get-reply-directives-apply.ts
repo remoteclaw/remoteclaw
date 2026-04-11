@@ -24,7 +24,6 @@ export type ApplyDirectiveResult =
       directives: InlineDirectives;
       provider: string;
       model: string;
-      contextTokens: number;
       directiveAck?: ReplyPayload;
       perMessageQueueMode?: InlineDirectives["queueMode"];
       perMessageQueueOptions?: {
@@ -59,7 +58,6 @@ export async function applyInlineDirectiveOverrides(params: {
   defaultActivation: () => ReturnType<
     Parameters<typeof buildStatusReply>[0]["defaultGroupActivation"]
   >;
-  contextTokens: number;
   /** Upstream feature: whether elevated security is enabled. */
   elevatedEnabled?: boolean;
   /** Upstream feature: elevated security allowed for this context. */
@@ -93,7 +91,6 @@ export async function applyInlineDirectiveOverrides(params: {
   } = params;
   let { directives } = params;
   let { provider, model } = params;
-  let { contextTokens } = params;
   // Model selection gutted in RemoteClaw — derive from runtimeId.
   const defaultProvider = runtimeId;
   const defaultModel = "default";
@@ -161,7 +158,6 @@ export async function applyInlineDirectiveOverrides(params: {
         sessionScope,
         provider,
         model,
-        contextTokens,
         resolvedVerboseLevel: currentVerboseLevel ?? "off",
         isGroup,
         defaultGroupActivation: defaultActivation,
@@ -214,17 +210,14 @@ export async function applyInlineDirectiveOverrides(params: {
     model = fastLane.model;
   }
 
-  const persisted = await persistInlineDirectives({
+  await persistInlineDirectives({
     directives,
     cfg,
     sessionEntry,
     sessionStore,
     sessionKey,
     storePath,
-    agentCfg,
   });
-  contextTokens = persisted.contextTokens;
-
   const perMessageQueueMode =
     directives.hasQueueDirective && !directives.queueReset ? directives.queueMode : undefined;
   const perMessageQueueOptions =
@@ -241,7 +234,6 @@ export async function applyInlineDirectiveOverrides(params: {
     directives,
     provider,
     model,
-    contextTokens,
     directiveAck,
     perMessageQueueMode,
     perMessageQueueOptions,

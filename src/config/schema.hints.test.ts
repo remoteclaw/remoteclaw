@@ -13,7 +13,6 @@ describe("isSensitiveConfigPath", () => {
       "maxOutputTokens",
       "maxInputTokens",
       "maxCompletionTokens",
-      "contextTokens",
       "totalTokens",
       "tokenCount",
       "tokenLimit",

@@ -131,9 +131,7 @@ export function registerStatusHealthSessionsCommands(program: Command) {
           ["remoteclaw sessions --active 120", "Only last 2 hours."],
           ["remoteclaw sessions --json", "Machine-readable output."],
           ["remoteclaw sessions --store ./tmp/sessions.json", "Use a specific session store."],
-        ])}\n\n${theme.muted(
-          "Shows token usage per session when the agent reports it; set agents.defaults.contextTokens to cap the window and show %.",
-        )}`,
+        ])}\n\n${theme.muted("Shows token usage per session when the agent reports it.")}`,
     )
     .addHelpText(
       "after",

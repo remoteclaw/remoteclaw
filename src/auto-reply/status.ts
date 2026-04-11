@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import { DEFAULT_CONTEXT_TOKENS } from "../agents/defaults.js";
 import { derivePromptTokens, normalizeUsage, type UsageLike } from "../agents/usage.js";
 
 // Gutted in RemoteClaw fork — CLI runtimes manage their own model selection
@@ -144,22 +143,12 @@ function resolveRuntimeLabel(
   return `${runtime}/${sandboxMode}`;
 }
 
-const formatTokens = (total: number | null | undefined, contextTokens: number | null) => {
-  const ctx = contextTokens ?? null;
+const formatTokens = (total: number | null | undefined) => {
   if (total == null) {
-    const ctxLabel = ctx ? formatTokenCount(ctx) : "?";
-    return `?/${ctxLabel}`;
+    return "unknown";
   }
-  const pct = ctx ? Math.min(999, Math.round((total / ctx) * 100)) : null;
-  const totalLabel = formatTokenCount(total);
-  const ctxLabel = ctx ? formatTokenCount(ctx) : "?";
-  return `${totalLabel}/${ctxLabel}${pct !== null ? ` (${pct}%)` : ""}`;
+  return `${formatTokenCount(total)} used`;
 };
-
-export const formatContextUsageShort = (
-  total: number | null | undefined,
-  contextTokens: number | null | undefined,
-) => `Context ${formatTokens(total, contextTokens ?? null)}`;
 
 const formatQueueDetails = (queue?: QueueStatus) => {
   if (!queue) {
@@ -356,10 +345,6 @@ export function buildStatusMessage(args: StatusArgs): string {
     selectedModel,
     sessionEntry: entry,
   });
-  let _activeProvider = modelRefs.active.provider;
-  let _activeModel = modelRefs.active.model;
-  let contextTokens = entry?.contextTokens ?? args.agent?.contextTokens ?? DEFAULT_CONTEXT_TOKENS;
-
   let inputTokens = entry?.inputTokens;
   let outputTokens = entry?.outputTokens;
   let cacheRead = entry?.cacheRead;
@@ -393,9 +378,6 @@ export function buildStatusMessage(args: StatusArgs): string {
         } else {
           _activeModel = logUsage.model;
         }
-      }
-      if (!contextTokens) {
-        contextTokens = DEFAULT_CONTEXT_TOKENS;
       }
       if (!inputTokens || inputTokens === 0) {
         inputTokens = logUsage.input;
@@ -437,7 +419,7 @@ export function buildStatusMessage(args: StatusArgs): string {
     : undefined;
 
   const contextLine = [
-    `Context: ${formatTokens(totalTokens, contextTokens ?? null)}`,
+    `Tokens: ${formatTokens(totalTokens)}`,
     `🧹 Compactions: ${entry?.compactionCount ?? 0}`,
   ]
     .filter(Boolean)

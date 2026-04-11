@@ -46,14 +46,12 @@ export type GatewaySessionList = {
   defaults?: {
     model?: string | null;
     modelProvider?: string | null;
-    contextTokens?: number | null;
   };
   sessions: Array<
     Pick<
       SessionInfo,
       | "verboseLevel"
       | "model"
-      | "contextTokens"
       | "inputTokens"
       | "outputTokens"
       | "totalTokens"

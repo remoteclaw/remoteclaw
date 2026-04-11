@@ -30,7 +30,6 @@ type SessionActionContext = {
 type SessionInfoDefaults = {
   model?: string | null;
   modelProvider?: string | null;
-  contextTokens?: number | null;
 };
 
 type SessionInfoEntry = SessionInfo & {
@@ -138,12 +137,10 @@ export function createSessionActions(context: SessionActionContext) {
     force?: boolean;
   }) => {
     const entry = params.entry ?? undefined;
-    const defaults = params.defaults ?? lastSessionDefaults ?? undefined;
     const previousDefaults = lastSessionDefaults;
     const defaultsChanged = params.defaults
       ? previousDefaults?.model !== params.defaults.model ||
-        previousDefaults?.modelProvider !== params.defaults.modelProvider ||
-        previousDefaults?.contextTokens !== params.defaults.contextTokens
+        previousDefaults?.modelProvider !== params.defaults.modelProvider
       : false;
     if (params.defaults) {
       lastSessionDefaults = params.defaults;
@@ -181,10 +178,6 @@ export function createSessionActions(context: SessionActionContext) {
     }
     if (entry?.totalTokens !== undefined) {
       next.totalTokens = entry.totalTokens;
-    }
-    if (entry?.contextTokens !== undefined || defaults?.contextTokens !== undefined) {
-      next.contextTokens =
-        entry?.contextTokens ?? defaults?.contextTokens ?? state.sessionInfo.contextTokens;
     }
     if (entry?.displayName !== undefined) {
       next.displayName = entry.displayName;

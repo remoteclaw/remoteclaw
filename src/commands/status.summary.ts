@@ -1,4 +1,3 @@
-import { DEFAULT_CONTEXT_TOKENS } from "../agents/defaults.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { loadConfig } from "../config/config.js";
 import {
@@ -62,7 +61,6 @@ export function redactSensitiveStatusSummary(summary: StatusSummary): StatusSumm
       paths: [],
       defaults: {
         model: null,
-        contextTokens: null,
       },
       recent: [],
       byAgent: summary.sessions.byAgent.map((entry) => ({
@@ -99,8 +97,6 @@ export async function getStatusSummary(
 
   // Gutted in RemoteClaw fork — CLI runtimes manage their own model selection
   const configModel = null;
-  const configContextTokens = cfg.agents?.defaults?.contextTokens ?? DEFAULT_CONTEXT_TOKENS;
-
   const now = Date.now();
   const storeCache = new Map<string, Record<string, SessionEntry | undefined>>();
   const loadStore = (storePath: string) => {
@@ -123,16 +119,9 @@ export async function getStatusSummary(
         const age = updatedAt ? now - updatedAt : null;
         const resolvedModel = resolveSessionModelRef(cfg, entry, opts.agentIdOverride);
         const model = resolvedModel.model ?? configModel ?? null;
-        const contextTokens = entry?.contextTokens ?? configContextTokens ?? null;
         const total = resolveFreshSessionTotalTokens(entry);
         const totalTokensFresh =
           typeof entry?.totalTokens === "number" ? entry?.totalTokensFresh !== false : false;
-        const remaining =
-          contextTokens != null && total !== undefined ? Math.max(0, contextTokens - total) : null;
-        const pct =
-          contextTokens && contextTokens > 0 && total !== undefined
-            ? Math.min(999, Math.round((total / contextTokens) * 100))
-            : null;
         const parsedAgentId = parseAgentSessionKey(key)?.agentId;
         const agentId = opts.agentIdOverride ?? parsedAgentId;
 
@@ -155,10 +144,7 @@ export async function getStatusSummary(
           cacheWrite: entry?.cacheWrite,
           totalTokens: total ?? null,
           totalTokensFresh,
-          remainingTokens: remaining,
-          percentUsed: pct,
           model,
-          contextTokens,
           flags: buildFlags(entry),
         } satisfies SessionStatus;
       })
@@ -204,7 +190,6 @@ export async function getStatusSummary(
       count: totalSessions,
       defaults: {
         model: configModel ?? null,
-        contextTokens: configContextTokens ?? null,
       },
       recent,
       byAgent,

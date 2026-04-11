@@ -1,7 +1,5 @@
 import fs from "node:fs";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const lookupContextTokens = (..._args: unknown[]) => undefined as number | undefined;
-const DEFAULT_CONTEXT_TOKENS = 128_000;
 const resolveModelAuthMode = (..._args: unknown[]) => "api-key" as string;
 const isCliProvider = (..._args: unknown[]) => false;
 const queueEmbeddedPiMessage = (..._args: unknown[]) => false;
@@ -104,7 +102,6 @@ export async function runReplyAgent(params: {
   sessionKey?: string;
   storePath?: string;
   defaultModel: string;
-  agentCfgContextTokens?: number;
   resolvedVerboseLevel: VerboseLevel;
   isNewSession: boolean;
   blockStreamingEnabled: boolean;
@@ -135,7 +132,7 @@ export async function runReplyAgent(params: {
     sessionKey,
     storePath,
     defaultModel,
-    agentCfgContextTokens,
+
     resolvedVerboseLevel,
     isNewSession,
     blockStreamingEnabled,
@@ -254,7 +251,7 @@ export async function runReplyAgent(params: {
     sessionCtx,
     opts,
     defaultModel,
-    agentCfgContextTokens,
+
     resolvedVerboseLevel,
     sessionEntry: activeSessionEntry,
     sessionStore: activeSessionStore,
@@ -272,7 +269,6 @@ export async function runReplyAgent(params: {
     sessionKey,
     storePath,
     defaultModel,
-    agentCfgContextTokens,
   });
 
   let responseUsageLine: string | undefined;
@@ -479,12 +475,6 @@ export async function runReplyAgent(params: {
     const cliSessionId = isCliProvider(providerUsed, cfg)
       ? (agentMeta?.sessionId as string | undefined)?.trim()
       : undefined;
-    const contextTokensUsed =
-      agentCfgContextTokens ??
-      lookupContextTokens(modelUsed) ??
-      activeSessionEntry?.contextTokens ??
-      DEFAULT_CONTEXT_TOKENS;
-
     await persistRunSessionUsage({
       storePath,
       sessionKey,
@@ -493,7 +483,6 @@ export async function runReplyAgent(params: {
       promptTokens,
       modelUsed,
       providerUsed,
-      contextTokensUsed,
       systemPromptReport: (runResult.meta as Record<string, unknown> | undefined)
         ?.systemPromptReport as
         | import("../../config/sessions/types.js").SessionSystemPromptReport
@@ -590,10 +579,6 @@ export async function runReplyAgent(params: {
           total: totalTokens,
         },
         lastCallUsage: agentMeta?.lastCallUsage as NormalizedUsage | undefined,
-        context: {
-          limit: contextTokensUsed,
-          used: totalTokens,
-        },
         costUsd,
         durationMs: Date.now() - runStartedAt,
       });
@@ -695,7 +680,6 @@ export async function runReplyAgent(params: {
         sessionKey,
         storePath,
         lastCallUsage: agentMeta?.lastCallUsage as NormalizedUsage | undefined,
-        contextTokensUsed,
       });
 
       // Inject post-compaction workspace context for the next agent turn

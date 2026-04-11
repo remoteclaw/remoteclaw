@@ -53,7 +53,6 @@ export type SessionListRow = {
   updatedAt?: number | null;
   sessionId?: string;
   model?: string;
-  contextTokens?: number | null;
   totalTokens?: number | null;
   thinkingLevel?: string;
   verboseLevel?: string;

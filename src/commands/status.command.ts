@@ -18,12 +18,7 @@ import { statusAllCommand } from "./status-all.js";
 import { groupChannelIssuesByChannel } from "./status-all/channel-issues.js";
 import { formatGatewayAuthUsed } from "./status-all/format.js";
 import { getDaemonStatusSummary, getNodeDaemonStatusSummary } from "./status.daemon.js";
-import {
-  formatDuration,
-  formatKTokens,
-  formatTokensCompact,
-  shortenText,
-} from "./status.format.js";
+import { formatDuration, formatTokensCompact, shortenText } from "./status.format.js";
 import { resolveGatewayProbeAuth } from "./status.gateway-probe.js";
 import { scanStatus } from "./status.scan.js";
 import {
@@ -292,9 +287,6 @@ export async function statusCommand(
   })();
 
   const defaults = summary.sessions.defaults;
-  const defaultCtx = defaults.contextTokens
-    ? ` (${formatKTokens(defaults.contextTokens)} ctx)`
-    : "";
   const eventsValue =
     summary.queuedSystemEvents.length > 0 ? `${summary.queuedSystemEvents.length} queued` : "none";
 
@@ -366,7 +358,7 @@ export async function statusCommand(
     ...(lastHeartbeatValue ? [{ Item: "Last heartbeat", Value: lastHeartbeatValue }] : []),
     {
       Item: "Sessions",
-      Value: `${summary.sessions.count} active · default ${defaults.model ?? "unknown"}${defaultCtx} · ${storeLabel}`,
+      Value: `${summary.sessions.count} active · default ${defaults.model ?? "unknown"} · ${storeLabel}`,
     },
   ];
 

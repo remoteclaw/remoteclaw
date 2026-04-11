@@ -32,7 +32,6 @@ export type SessionInfo = {
   reasoningLevel?: string;
   model?: string;
   modelProvider?: string;
-  contextTokens?: number | null;
   inputTokens?: number | null;
   outputTokens?: number | null;
   totalTokens?: number | null;
@@ -69,7 +68,7 @@ export type GatewayStatusSummary = {
   sessions?: {
     paths?: string[];
     count?: number;
-    defaults?: { model?: string | null; contextTokens?: number | null };
+    defaults?: { model?: string | null };
     recent?: Array<{
       agentId?: string;
       key: string;
@@ -78,9 +77,6 @@ export type GatewayStatusSummary = {
       age?: number | null;
       model?: string | null;
       totalTokens?: number | null;
-      contextTokens?: number | null;
-      remainingTokens?: number | null;
-      percentUsed?: number | null;
       flags?: string[];
     }>;
   };

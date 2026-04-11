@@ -42,12 +42,11 @@ describe("sessionsCommand", () => {
 
     fs.rmSync(store);
 
-    const tableHeader = logs.find((line) => line.includes("Tokens (ctx %"));
+    const tableHeader = logs.find((line) => line.includes("Tokens"));
     expect(tableHeader).toBeTruthy();
 
     const row = logs.find((line) => line.includes("+15555550123")) ?? "";
-    // Config sets contextTokens: 32000 → 2000/32000 = 6%
-    expect(row).toContain("2.0k/32k (6%)");
+    expect(row).toContain("2.0k");
     expect(row).toContain("45m ago");
     expect(row).toContain("pi:opus");
   });
@@ -66,8 +65,7 @@ describe("sessionsCommand", () => {
     fs.rmSync(store);
 
     const row = logs.find((line) => line.includes("discord:group:demo")) ?? "";
-    // Config sets contextTokens: 32000
-    expect(row).toContain("unknown/32k (?%)");
+    expect(row).toContain("unknown");
     expect(row).toContain("5m ago");
   });
 

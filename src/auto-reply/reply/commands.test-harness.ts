@@ -41,7 +41,6 @@ export function buildCommandTestParams(
     resolvedVerboseLevel: "off",
     provider: "whatsapp",
     model: "test-model",
-    contextTokens: 0,
     isGroup: false,
   };
   return params;

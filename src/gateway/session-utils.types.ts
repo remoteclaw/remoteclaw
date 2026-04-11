@@ -10,7 +10,6 @@ import type { DeliveryContext } from "../utils/delivery-context.js";
 export type GatewaySessionsDefaults = {
   modelProvider: string | null;
   model: string | null;
-  contextTokens: number | null;
 };
 
 export type GatewaySessionRow = {
@@ -42,7 +41,6 @@ export type GatewaySessionRow = {
   responseUsage?: "on" | "off" | "tokens" | "full";
   modelProvider?: string;
   model?: string;
-  contextTokens?: number;
   deliveryContext?: DeliveryContext;
   lastChannel?: SessionEntry["lastChannel"];
   lastTo?: string;

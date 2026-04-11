@@ -9,7 +9,6 @@ type IncrementRunCompactionCountParams = Omit<
   "tokensAfter"
 > & {
   lastCallUsage?: NormalizedUsage;
-  contextTokensUsed?: number;
 };
 
 export async function persistRunSessionUsage(params: PersistRunSessionUsageParams): Promise<void> {
@@ -22,7 +21,6 @@ export async function incrementRunCompactionCount(
   const tokensAfterCompaction = params.lastCallUsage
     ? deriveSessionTotalTokens({
         usage: params.lastCallUsage,
-        contextTokens: params.contextTokensUsed,
       })
     : undefined;
   return incrementCompactionCount({

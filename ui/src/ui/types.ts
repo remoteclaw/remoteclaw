@@ -323,7 +323,6 @@ export type PresenceEntry = {
 
 export type GatewaySessionsDefaults = {
   model: string | null;
-  contextTokens: number | null;
 };
 
 export type GatewayAgentRow = {
@@ -431,7 +430,6 @@ export type GatewaySessionRow = {
   totalTokens?: number;
   model?: string;
   modelProvider?: string;
-  contextTokens?: number;
 };
 
 export type SessionsListResult = {

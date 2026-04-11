@@ -2,7 +2,6 @@ import Foundation
 
 public struct RemoteClawChatSessionsDefaults: Codable, Sendable {
     public let model: String?
-    public let contextTokens: Int?
 }
 
 public struct RemoteClawChatSessionEntry: Codable, Identifiable, Sendable, Hashable {
@@ -28,7 +27,6 @@ public struct RemoteClawChatSessionEntry: Codable, Identifiable, Sendable, Hasha
     public let totalTokens: Int?
 
     public let model: String?
-    public let contextTokens: Int?
 }
 
 public struct RemoteClawChatSessionsListResponse: Codable, Sendable {

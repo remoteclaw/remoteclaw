@@ -7,18 +7,9 @@ struct UsageMenuLabelView: View {
     @Environment(\.menuItemHighlighted) private var isHighlighted
     private let paddingLeading: CGFloat = 22
     private let paddingTrailing: CGFloat = 14
-    private let barHeight: CGFloat = 6
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let used = row.usedPercent {
-                ContextUsageBar(
-                    usedTokens: Int(round(used)),
-                    contextTokens: 100,
-                    width: max(1, self.width - (self.paddingLeading + self.paddingTrailing)),
-                    height: self.barHeight)
-            }
-
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(self.row.titleText)
                     .font(.caption.weight(.semibold))

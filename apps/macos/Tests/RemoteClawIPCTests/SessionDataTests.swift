@@ -17,11 +17,6 @@ struct SessionDataTests {
         #expect(SessionTokenStats.formatKTokens(12340) == "12k")
     }
 
-    @Test func sessionTokenStatsPercentUsedClampsTo100() {
-        let stats = SessionTokenStats(input: 0, output: 0, total: 250_000, contextTokens: 200_000)
-        #expect(stats.percentUsed == 100)
-    }
-
     @Test func sessionRowFlagLabelsIncludeNonDefaultFlags() {
         let row = SessionRow(
             id: "x",
@@ -37,7 +32,7 @@ struct SessionDataTests {
             verboseLevel: "debug",
             systemSent: true,
             abortedLastRun: true,
-            tokens: SessionTokenStats(input: 1, output: 2, total: 3, contextTokens: 10),
+            tokens: SessionTokenStats(input: 1, output: 2, total: 3),
             model: nil)
         #expect(row.flagLabels.contains("verbose debug"))
         #expect(row.flagLabels.contains("system sent"))

@@ -10,9 +10,8 @@ export async function persistInlineDirectives(params: {
   sessionStore?: Record<string, SessionEntry>;
   sessionKey?: string;
   storePath?: string;
-  agentCfg: NonNullable<RemoteClawConfig["agents"]>["defaults"] | undefined;
-}): Promise<{ contextTokens: number }> {
-  const { directives, sessionEntry, sessionStore, sessionKey, storePath, agentCfg } = params;
+}): Promise<void> {
+  const { directives, sessionEntry, sessionStore, sessionKey, storePath } = params;
   if (sessionEntry && sessionStore && sessionKey) {
     let updated = false;
 
@@ -41,9 +40,4 @@ export async function persistInlineDirectives(params: {
       }
     }
   }
-
-  return {
-    // Context token lookup from model catalog gutted in RemoteClaw — CLI agents manage their own context.
-    contextTokens: agentCfg?.contextTokens ?? 200_000,
-  };
 }

@@ -846,7 +846,6 @@ Time format in system prompt. Default: `auto` (OS preference).
       elevatedDefault: "on",
       timeoutSeconds: 600,
       mediaMaxMb: 5,
-      contextTokens: 200000,
       maxConcurrent: 3,
     },
   },

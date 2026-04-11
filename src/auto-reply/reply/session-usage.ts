@@ -45,7 +45,6 @@ export async function persistSessionUsageUpdate(params: {
   lastCallUsage?: NormalizedUsage;
   modelUsed?: string;
   providerUsed?: string;
-  contextTokensUsed?: number;
   promptTokens?: number;
   systemPromptReport?: SessionSystemPromptReport;
   cliSessionId?: string;
@@ -70,7 +69,6 @@ export async function persistSessionUsageUpdate(params: {
         storePath,
         sessionKey,
         update: async (entry) => {
-          const resolvedContextTokens = params.contextTokensUsed ?? entry.contextTokens;
           // Use last-call usage for totalTokens when available. The accumulated
           // `usage.input` sums input tokens from every API call in the run
           // (tool-use loops, compaction retries), overstating actual context.
@@ -79,14 +77,12 @@ export async function persistSessionUsageUpdate(params: {
           const totalTokens = hasFreshContextSnapshot
             ? deriveSessionTotalTokens({
                 usage: usageForContext,
-                contextTokens: resolvedContextTokens,
                 promptTokens: params.promptTokens,
               })
             : undefined;
           const patch: Partial<SessionEntry> = {
             modelProvider: params.providerUsed ?? entry.modelProvider,
             model: params.modelUsed ?? entry.model,
-            contextTokens: resolvedContextTokens,
             systemPromptReport: params.systemPromptReport ?? entry.systemPromptReport,
             updatedAt: Date.now(),
           };
@@ -112,7 +108,7 @@ export async function persistSessionUsageUpdate(params: {
     return;
   }
 
-  if (params.modelUsed || params.contextTokensUsed) {
+  if (params.modelUsed) {
     try {
       await updateSessionStoreEntry({
         storePath,
@@ -121,7 +117,6 @@ export async function persistSessionUsageUpdate(params: {
           const patch: Partial<SessionEntry> = {
             modelProvider: params.providerUsed ?? entry.modelProvider,
             model: params.modelUsed ?? entry.model,
-            contextTokens: params.contextTokensUsed ?? entry.contextTokens,
             systemPromptReport: params.systemPromptReport ?? entry.systemPromptReport,
             updatedAt: Date.now(),
           };
@@ -129,7 +124,7 @@ export async function persistSessionUsageUpdate(params: {
         },
       });
     } catch (err) {
-      logVerbose(`failed to persist ${label}model/context update: ${String(err)}`);
+      logVerbose(`failed to persist ${label}model update: ${String(err)}`);
     }
   }
 }

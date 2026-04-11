@@ -189,7 +189,6 @@ describe("deriveSessionTotalTokens", () => {
         cacheRead: 500,
         cacheWrite: 200,
       },
-      contextTokens: 4000,
     });
     expect(totalTokens).toBe(1700); // 1000 + 500 + 200
   });
@@ -201,7 +200,6 @@ describe("deriveSessionTotalTokens", () => {
         cacheRead: 500,
         cacheWrite: 200,
       },
-      contextTokens: 4000,
       promptTokens: 2500, // Override
     });
     expect(totalTokens).toBe(2500);

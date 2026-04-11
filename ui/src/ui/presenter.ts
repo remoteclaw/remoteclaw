@@ -27,8 +27,7 @@ export function formatSessionTokens(row: GatewaySessionRow) {
     return "n/a";
   }
   const total = row.totalTokens ?? 0;
-  const ctx = row.contextTokens ?? 0;
-  return ctx ? `${total} / ${ctx}` : String(total);
+  return String(total);
 }
 
 export function formatEventPayload(payload: unknown): string {

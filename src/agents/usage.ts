@@ -158,7 +158,6 @@ export function deriveSessionTotalTokens(params: {
     cacheRead?: number;
     cacheWrite?: number;
   };
-  contextTokens?: number;
   promptTokens?: number;
 }): number | undefined {
   const promptOverride = params.promptTokens;

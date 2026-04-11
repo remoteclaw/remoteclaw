@@ -342,7 +342,7 @@ describe("runReplyAgent token update", () => {
       sessionKey,
       storePath,
       defaultModel: "anthropic/claude-opus-4-5",
-      agentCfgContextTokens: 200_000,
+
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: false,
@@ -396,7 +396,7 @@ describe("runReplyAgent token update", () => {
       sessionKey,
       storePath,
       defaultModel: "anthropic/claude-opus-4-5",
-      agentCfgContextTokens: 200_000,
+
       resolvedVerboseLevel: "off",
       isNewSession: false,
       blockStreamingEnabled: false,

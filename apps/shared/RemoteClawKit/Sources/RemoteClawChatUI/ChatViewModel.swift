@@ -453,8 +453,7 @@ public final class RemoteClawChatViewModel {
             inputTokens: nil,
             outputTokens: nil,
             totalTokens: nil,
-            model: nil,
-            contextTokens: nil)
+            model: nil)
     }
 
     private func handleTransportEvent(_ evt: RemoteClawChatTransportEvent) {

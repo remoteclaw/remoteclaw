@@ -3,7 +3,6 @@ import SwiftUI
 
 struct GatewaySessionDefaultsRecord: Codable {
     let model: String?
-    let contextTokens: Int?
 }
 
 struct GatewaySessionEntryRecord: Codable {
@@ -22,7 +21,6 @@ struct GatewaySessionEntryRecord: Codable {
     let outputTokens: Int?
     let totalTokens: Int?
     let model: String?
-    let contextTokens: Int?
 }
 
 struct GatewaySessionsListResponse: Codable {
@@ -37,24 +35,13 @@ struct SessionTokenStats {
     let input: Int
     let output: Int
     let total: Int
-    let contextTokens: Int
 
     var contextSummaryShort: String {
-        "\(Self.formatKTokens(self.total))/\(Self.formatKTokens(self.contextTokens))"
-    }
-
-    var percentUsed: Int? {
-        guard self.contextTokens > 0, self.total > 0 else { return nil }
-        return min(100, Int(round((Double(self.total) / Double(self.contextTokens)) * 100)))
+        "\(Self.formatKTokens(self.total)) used"
     }
 
     var summary: String {
-        let parts = ["in \(input)", "out \(output)", "total \(total)"]
-        var text = parts.joined(separator: " | ")
-        if let percentUsed {
-            text += " (\(percentUsed)% of \(self.contextTokens))"
-        }
-        return text
+        ["in \(input)", "out \(output)", "total \(total)"].joined(separator: " | ")
     }
 
     static func formatKTokens(_ value: Int) -> String {
@@ -132,7 +119,6 @@ enum SessionKind {
 
 struct SessionDefaults {
     let model: String
-    let contextTokens: Int
 }
 
 extension SessionRow {
@@ -152,7 +138,7 @@ extension SessionRow {
                 verboseLevel: "info",
                 systemSent: false,
                 abortedLastRun: false,
-                tokens: SessionTokenStats(input: 320, output: 680, total: 1000, contextTokens: 200_000),
+                tokens: SessionTokenStats(input: 320, output: 680, total: 1000),
                 model: "claude-3.5-sonnet"),
             SessionRow(
                 id: "group-1",
@@ -168,7 +154,7 @@ extension SessionRow {
                 verboseLevel: nil,
                 systemSent: true,
                 abortedLastRun: true,
-                tokens: SessionTokenStats(input: 5000, output: 1200, total: 6200, contextTokens: 200_000),
+                tokens: SessionTokenStats(input: 5000, output: 1200, total: 6200),
                 model: "claude-opus-4-6"),
             SessionRow(
                 id: "global",
@@ -184,7 +170,7 @@ extension SessionRow {
                 verboseLevel: nil,
                 systemSent: false,
                 abortedLastRun: false,
-                tokens: SessionTokenStats(input: 150, output: 220, total: 370, contextTokens: 200_000),
+                tokens: SessionTokenStats(input: 150, output: 220, total: 370),
                 model: "gpt-4.1-mini"),
         ]
     }
@@ -242,7 +228,6 @@ struct SessionStoreSnapshot {
 @MainActor
 enum SessionLoader {
     static let fallbackModel = "claude-opus-4-6"
-    static let fallbackContextTokens = 200_000
 
     static let defaultStorePath = standardize(
         RemoteClawPaths.stateDirURL
@@ -281,15 +266,13 @@ enum SessionLoader {
         }
 
         let defaults = SessionDefaults(
-            model: decoded.defaults?.model ?? self.fallbackModel,
-            contextTokens: decoded.defaults?.contextTokens ?? self.fallbackContextTokens)
+            model: decoded.defaults?.model ?? self.fallbackModel)
 
         let rows = decoded.sessions.map { entry -> SessionRow in
             let updated = entry.updatedAt.map { Date(timeIntervalSince1970: $0 / 1000) }
             let input = entry.inputTokens ?? 0
             let output = entry.outputTokens ?? 0
             let total = entry.totalTokens ?? input + output
-            let context = entry.contextTokens ?? defaults.contextTokens
             let model = entry.model ?? defaults.model
 
             return SessionRow(
@@ -309,8 +292,7 @@ enum SessionLoader {
                 tokens: SessionTokenStats(
                     input: input,
                     output: output,
-                    total: total,
-                    contextTokens: context),
+                    total: total),
                 model: model)
         }.sorted { ($0.updatedAt ?? .distantPast) > ($1.updatedAt ?? .distantPast) }
 

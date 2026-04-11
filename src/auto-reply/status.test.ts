@@ -87,7 +87,7 @@ describe("buildStatusMessage", () => {
 
     const normalized = normalizeTestText(text);
     expect(normalized).toContain("Model:");
-    expect(normalized).toContain("Context:");
+    expect(normalized).toContain("Tokens:");
     expect(normalized).toContain("Queue: collect");
   });
 
@@ -131,7 +131,7 @@ describe("buildStatusMessage", () => {
 
   it("inserts usage summary beneath context line", () => {
     const text = buildStatusMessage({
-      agent: { model: "anthropic/claude-opus-4-5", contextTokens: 32_000 },
+      agent: { model: "anthropic/claude-opus-4-5" },
       sessionEntry: { sessionId: "u1", updatedAt: 0, totalTokens: 1000 },
       sessionKey: "agent:main:main",
       sessionScope: "per-sender",
@@ -141,9 +141,9 @@ describe("buildStatusMessage", () => {
     });
 
     const lines = normalizeTestText(text).split("\n");
-    const contextIndex = lines.findIndex((line) => line.includes("Context:"));
-    expect(contextIndex).toBeGreaterThan(-1);
-    expect(lines[contextIndex + 1]).toContain("Usage: Claude 80% left (5h)");
+    const tokensIndex = lines.findIndex((line) => line.includes("Tokens:"));
+    expect(tokensIndex).toBeGreaterThan(-1);
+    expect(lines[tokensIndex + 1]).toContain("Usage: Claude 80% left (5h)");
   });
 
   it("never shows cost line — cost calculation removed", () => {

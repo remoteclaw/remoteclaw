@@ -1,4 +1,3 @@
-import { DEFAULT_CONTEXT_TOKENS } from "../agents/defaults.js";
 import { loadConfig } from "../config/config.js";
 import { loadSessionStore, resolveFreshSessionTotalTokens } from "../config/sessions.js";
 import { classifySessionKey } from "../gateway/session-utils.js";
@@ -32,38 +31,13 @@ const TOKENS_PAD = 20;
 
 const formatKTokens = (value: number) => `${(value / 1000).toFixed(value >= 10_000 ? 0 : 1)}k`;
 
-const colorByPct = (label: string, pct: number | null, rich: boolean) => {
-  if (!rich || pct === null) {
-    return label;
-  }
-  if (pct >= 95) {
-    return theme.error(label);
-  }
-  if (pct >= 80) {
-    return theme.warn(label);
-  }
-  if (pct >= 60) {
-    return theme.success(label);
-  }
-  return theme.muted(label);
-};
-
-const formatTokensCell = (
-  total: number | undefined,
-  contextTokens: number | null,
-  rich: boolean,
-) => {
+const formatTokensCell = (total: number | undefined, rich: boolean) => {
   if (total === undefined) {
-    const ctxLabel = contextTokens ? formatKTokens(contextTokens) : "?";
-    const label = `unknown/${ctxLabel} (?%)`;
+    const label = "unknown";
     return rich ? theme.muted(label.padEnd(TOKENS_PAD)) : label.padEnd(TOKENS_PAD);
   }
-  const totalLabel = formatKTokens(total);
-  const ctxLabel = contextTokens ? formatKTokens(contextTokens) : "?";
-  const pct = contextTokens ? Math.min(999, Math.round((total / contextTokens) * 100)) : null;
-  const label = `${totalLabel}/${ctxLabel} (${pct ?? "?"}%)`;
-  const padded = label.padEnd(TOKENS_PAD);
-  return colorByPct(padded, pct, rich);
+  const label = formatKTokens(total);
+  return label.padEnd(TOKENS_PAD);
 };
 
 const formatKindCell = (kind: SessionRow["kind"], rich: boolean) => {
@@ -90,7 +64,6 @@ export async function sessionsCommand(
   const aggregateAgents = opts.allAgents === true;
   const cfg = loadConfig();
   const displayDefaults = resolveSessionDisplayDefaults(cfg);
-  const configContextTokens = cfg.agents?.defaults?.contextTokens ?? DEFAULT_CONTEXT_TOKENS;
   const targets = resolveSessionStoreTargetsOrExit({
     cfg,
     opts: {
@@ -158,7 +131,6 @@ export async function sessionsCommand(
               totalTokens: resolveFreshSessionTotalTokens(r) ?? null,
               totalTokensFresh:
                 typeof r.totalTokens === "number" ? r.totalTokensFresh !== false : false,
-              contextTokens: r.contextTokens ?? configContextTokens ?? null,
               model,
             };
           }),
@@ -194,7 +166,7 @@ export async function sessionsCommand(
     "Key".padEnd(SESSION_KEY_PAD),
     "Age".padEnd(SESSION_AGE_PAD),
     "Model".padEnd(SESSION_MODEL_PAD),
-    "Tokens (ctx %)".padEnd(TOKENS_PAD),
+    "Tokens".padEnd(TOKENS_PAD),
     "Flags",
   ].join(" ");
 
@@ -202,7 +174,6 @@ export async function sessionsCommand(
 
   for (const row of rows) {
     const model = resolveSessionDisplayModel(cfg, row, displayDefaults);
-    const contextTokens = row.contextTokens ?? configContextTokens;
     const total = resolveFreshSessionTotalTokens(row);
 
     const line = [
@@ -213,7 +184,7 @@ export async function sessionsCommand(
       formatSessionKeyCell(row.key, rich),
       formatSessionAgeCell(row.updatedAt, rich),
       formatSessionModelCell(model, rich),
-      formatTokensCell(total, contextTokens ?? null, rich),
+      formatTokensCell(total, rich),
       formatSessionFlagsCell(row, rich),
     ].join(" ");
 

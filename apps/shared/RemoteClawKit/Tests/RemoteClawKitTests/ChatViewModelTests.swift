@@ -491,8 +491,7 @@ extension TestChatTransportState {
                     inputTokens: nil,
                     outputTokens: nil,
                     totalTokens: nil,
-                    model: nil,
-                    contextTokens: nil),
+                    model: nil),
                 RemoteClawChatSessionEntry(
                     key: "main",
                     kind: nil,
@@ -510,8 +509,7 @@ extension TestChatTransportState {
                     inputTokens: nil,
                     outputTokens: nil,
                     totalTokens: nil,
-                    model: nil,
-                    contextTokens: nil),
+                    model: nil),
                 RemoteClawChatSessionEntry(
                     key: "recent-2",
                     kind: nil,
@@ -529,8 +527,7 @@ extension TestChatTransportState {
                     inputTokens: nil,
                     outputTokens: nil,
                     totalTokens: nil,
-                    model: nil,
-                    contextTokens: nil),
+                    model: nil),
                 RemoteClawChatSessionEntry(
                     key: "old-1",
                     kind: nil,
@@ -548,8 +545,7 @@ extension TestChatTransportState {
                     inputTokens: nil,
                     outputTokens: nil,
                     totalTokens: nil,
-                    model: nil,
-                    contextTokens: nil),
+                    model: nil),
             ])
 
         let transport = TestChatTransport(
@@ -594,8 +590,7 @@ extension TestChatTransportState {
                     inputTokens: nil,
                     outputTokens: nil,
                     totalTokens: nil,
-                    model: nil,
-                    contextTokens: nil),
+                    model: nil),
             ])
 
         let transport = TestChatTransport(

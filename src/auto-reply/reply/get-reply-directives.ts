@@ -1,4 +1,3 @@
-import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { listChatCommands, shouldHandleTextCommands } from "../commands-registry.js";
@@ -22,7 +21,6 @@ export const createModelSelectionState = (..._args: unknown[]) => ({
   model: "default" as string,
   resolveDefaultThinkingLevel: async (): Promise<ThinkLevel | undefined> => undefined,
   resolveDefaultReasoningLevel: async (): Promise<ReasoningLevel> => "off" as ReasoningLevel,
-  contextTokens: DEFAULT_CONTEXT_TOKENS,
   aliasIndex: new Map<string, { provider: string; model: string }>(),
   allowedModelKeys: new Set<string>(),
   allowedModelCatalog: [] as Array<{ id: string; provider: string }>,
@@ -68,7 +66,6 @@ export type ReplyDirectiveContinuation = {
   provider: string;
   model: string;
   modelState: Awaited<ReturnType<typeof createModelSelectionState>>;
-  contextTokens: number;
   inlineStatusRequested: boolean;
   directiveAck?: ReplyPayload;
   perMessageQueueMode?: InlineDirectives["queueMode"];
@@ -404,8 +401,6 @@ export async function resolveReplyDirectives(params: {
     resolvedReasoningLevel = await modelState.resolveDefaultReasoningLevel();
   }
 
-  let contextTokens = agentCfg?.contextTokens ?? DEFAULT_CONTEXT_TOKENS;
-
   const initialModelLabel = `${provider}/${model}`;
   const formatModelSwitchEvent = (label: string, alias?: string) =>
     alias ? `Model switched to ${alias} (${label}).` : `Model switched to ${label}.`;
@@ -438,7 +433,6 @@ export async function resolveReplyDirectives(params: {
     formatModelSwitchEvent,
     resolvedElevatedLevel,
     defaultActivation: () => defaultActivation,
-    contextTokens,
     typing,
   });
   if (applyResult.kind === "reply") {
@@ -447,7 +441,6 @@ export async function resolveReplyDirectives(params: {
   directives = applyResult.directives;
   provider = applyResult.provider;
   model = applyResult.model;
-  contextTokens = applyResult.contextTokens;
   const { directiveAck, perMessageQueueMode, perMessageQueueOptions } = applyResult;
   const execOverrides = resolveExecOverrides({ directives, sessionEntry });
 
@@ -475,7 +468,6 @@ export async function resolveReplyDirectives(params: {
       provider,
       model,
       modelState,
-      contextTokens,
       inlineStatusRequested,
       directiveAck,
       perMessageQueueMode,

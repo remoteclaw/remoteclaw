@@ -22,7 +22,6 @@ const hoisted = vi.hoisted(() => {
     },
   }));
   const createThreadDiscord = vi.fn(async (..._args: unknown[]) => ({ id: "thread-created" }));
-  const readAcpSessionEntry = vi.fn();
   return {
     sendMessageDiscord,
     sendWebhookMessageDiscord,
@@ -30,7 +29,6 @@ const hoisted = vi.hoisted(() => {
     restPost,
     createDiscordRestClient,
     createThreadDiscord,
-    readAcpSessionEntry,
   };
 });
 
@@ -45,10 +43,6 @@ vi.mock("../client.js", () => ({
 
 vi.mock("../send.messages.js", () => ({
   createThreadDiscord: hoisted.createThreadDiscord,
-}));
-
-vi.mock("../../acp/runtime/session-meta.js", () => ({
-  readAcpSessionEntry: hoisted.readAcpSessionEntry,
 }));
 
 const {
@@ -71,7 +65,6 @@ describe("thread binding lifecycle", () => {
     hoisted.restPost.mockClear();
     hoisted.createDiscordRestClient.mockClear();
     hoisted.createThreadDiscord.mockClear();
-    hoisted.readAcpSessionEntry.mockReset().mockReturnValue(null);
     vi.useRealTimers();
   });
 

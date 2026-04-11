@@ -1,14 +1,11 @@
 import { Type } from "@sinclair/typebox";
 import type { GatewayMessageChannel } from "../../utils/message-channel.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const ACP_SPAWN_MODES: readonly string[] = ["run", "session"] as const;
-const spawnAcpDirect = (..._args: unknown[]) => undefined as unknown;
 import { optionalStringEnum } from "../schema/typebox.js";
 import { SUBAGENT_SPAWN_MODES, spawnSubagentDirect } from "../subagent-spawn.js";
 import type { AnyAgentTool } from "./common.js";
 import { jsonResult, readStringParam, ToolInputError } from "./common.js";
 
-const SESSIONS_SPAWN_RUNTIMES = ["subagent", "acp"] as const;
+const SESSIONS_SPAWN_RUNTIMES = ["subagent"] as const;
 const SESSIONS_SPAWN_SANDBOX_MODES = ["inherit", "require"] as const;
 const UNSUPPORTED_SESSIONS_SPAWN_PARAM_KEYS = [
   "target",
@@ -28,7 +25,6 @@ const SessionsSpawnToolSchema = Type.Object({
   agentId: Type.Optional(Type.String()),
   model: Type.Optional(Type.String()),
   thinking: Type.Optional(Type.String()),
-  cwd: Type.Optional(Type.String()),
   runTimeoutSeconds: Type.Optional(Type.Number({ minimum: 0 })),
   // Back-compat: older callers used timeoutSeconds for this tool.
   timeoutSeconds: Type.Optional(Type.Number({ minimum: 0 })),
@@ -76,7 +72,7 @@ export function createSessionsSpawnTool(opts?: {
     label: "Sessions",
     name: "sessions_spawn",
     description:
-      'Spawn an isolated session (runtime="subagent" or runtime="acp"). mode="run" is one-shot and mode="session" is persistent/thread-bound.',
+      'Spawn an isolated session. mode="run" is one-shot and mode="session" is persistent/thread-bound.',
     parameters: SessionsSpawnToolSchema,
     execute: async (_toolCallId, args) => {
       const params = args;
@@ -90,11 +86,9 @@ export function createSessionsSpawnTool(opts?: {
       }
       const task = readStringParam(params, "task", { required: true });
       const label = typeof params.label === "string" ? params.label.trim() : "";
-      const runtime = params.runtime === "acp" ? "acp" : "subagent";
       const requestedAgentId = readStringParam(params, "agentId");
       const modelOverride = readStringParam(params, "model");
       const thinkingOverrideRaw = readStringParam(params, "thinking");
-      const cwd = readStringParam(params, "cwd");
       const mode = params.mode === "run" || params.mode === "session" ? params.mode : undefined;
       const cleanup =
         params.cleanup === "keep" || params.cleanup === "delete" ? params.cleanup : "keep";
@@ -119,36 +113,6 @@ export function createSessionsSpawnTool(opts?: {
             mimeType?: string;
           }>)
         : undefined;
-
-      if (runtime === "acp") {
-        if (Array.isArray(attachments) && attachments.length > 0) {
-          return jsonResult({
-            status: "error",
-            error:
-              "attachments are currently unsupported for runtime=acp; use runtime=subagent or remove attachments",
-          });
-        }
-        const result = await spawnAcpDirect(
-          {
-            task,
-            label: label || undefined,
-            agentId: requestedAgentId,
-            cwd,
-            mode: mode && ACP_SPAWN_MODES.includes(mode) ? mode : undefined,
-            thread,
-            sandbox,
-          },
-          {
-            agentSessionKey: opts?.agentSessionKey,
-            agentChannel: opts?.agentChannel,
-            agentAccountId: opts?.agentAccountId,
-            agentTo: opts?.agentTo,
-            agentThreadId: opts?.agentThreadId,
-            sandboxed: opts?.sandboxed,
-          },
-        );
-        return jsonResult(result);
-      }
 
       const result = await spawnSubagentDirect(
         {

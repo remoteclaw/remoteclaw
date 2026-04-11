@@ -1,7 +1,3 @@
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../acp/runtime/session-meta.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const readAcpSessionEntry = (..._args: unknown[]) => undefined as any;
 import type { RemoteClawConfig } from "../../config/config.js";
 import { normalizeAccountId } from "../../routing/session-key.js";
 import { parseDiscordTarget } from "../targets.js";
@@ -277,21 +273,8 @@ export function reconcileAcpThreadBindingsOnStartup(params: {
   }
 
   const acpBindings = manager.listBindings().filter((binding) => binding.targetKind === "acp");
-  const staleBindings = acpBindings.filter((binding) => {
-    const sessionKey = binding.targetSessionKey.trim();
-    if (!sessionKey) {
-      return true;
-    }
-    const session = readAcpSessionEntry({
-      cfg: params.cfg,
-      sessionKey,
-    });
-    // Session store read failures are transient; never auto-unbind on uncertain reads.
-    if (session?.storeReadFailed) {
-      return false;
-    }
-    return !session?.acp;
-  });
+  // ACP runtime was removed — all ACP-kind bindings are stale by definition.
+  const staleBindings = acpBindings;
   if (staleBindings.length === 0) {
     return {
       checked: acpBindings.length,

@@ -11,7 +11,6 @@ const hoisted = vi.hoisted(() => {
   const callGatewayMock = vi.fn();
   const getThreadBindingManagerMock = vi.fn();
   const resolveThreadBindingThreadNameMock = vi.fn(() => "🤖 codex");
-  const readAcpSessionEntryMock = vi.fn();
   const sessionBindingCapabilitiesMock = vi.fn();
   const sessionBindingBindMock = vi.fn();
   const sessionBindingResolveByConversationMock = vi.fn();
@@ -21,7 +20,6 @@ const hoisted = vi.hoisted(() => {
     callGatewayMock,
     getThreadBindingManagerMock,
     resolveThreadBindingThreadNameMock,
-    readAcpSessionEntryMock,
     sessionBindingCapabilitiesMock,
     sessionBindingBindMock,
     sessionBindingResolveByConversationMock,
@@ -54,10 +52,6 @@ function buildFocusSessionBindingService() {
 
 vi.mock("../../gateway/call.js", () => ({
   callGateway: hoisted.callGatewayMock,
-}));
-
-vi.mock("../../acp/runtime/session-meta.js", () => ({
-  readAcpSessionEntry: (params: unknown) => hoisted.readAcpSessionEntryMock(params),
 }));
 
 vi.mock("../../discord/monitor/thread-bindings.js", async (importOriginal) => {
@@ -298,7 +292,6 @@ describe("/focus, /unfocus, /agents", () => {
     hoisted.callGatewayMock.mockClear();
     hoisted.getThreadBindingManagerMock.mockClear().mockReturnValue(null);
     hoisted.resolveThreadBindingThreadNameMock.mockClear().mockReturnValue("🤖 codex");
-    hoisted.readAcpSessionEntryMock.mockReset().mockReturnValue(null);
     hoisted.sessionBindingCapabilitiesMock
       .mockReset()
       .mockReturnValue(createSessionBindingCapabilities());

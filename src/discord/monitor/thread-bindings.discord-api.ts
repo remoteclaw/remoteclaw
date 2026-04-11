@@ -3,9 +3,6 @@ import { logVerbose } from "../../globals.js";
 import { createDiscordRestClient } from "../client.js";
 import { sendMessageDiscord, sendWebhookMessageDiscord } from "../send.js";
 import { createThreadDiscord } from "../send.messages.js";
-// import { summarizeBindingPersona } from "./thread-bindings.messages.js"; // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// oxlint-disable-next-line typescript/no-explicit-any
-const summarizeBindingPersona = (..._args: unknown[]) => undefined as any;
 import {
   BINDINGS_BY_THREAD_ID,
   REUSABLE_WEBHOOKS_BY_ACCOUNT_CHANNEL,
@@ -140,7 +137,7 @@ export async function maybeSendBindingMessage(params: {
         webhookToken: record.webhookToken,
         accountId: record.accountId,
         threadId: record.threadId,
-        username: summarizeBindingPersona(record),
+        username: undefined,
       });
       return;
     } catch (err) {

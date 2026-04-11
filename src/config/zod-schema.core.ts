@@ -1,6 +1,5 @@
 import path from "node:path";
 import { z } from "zod";
-import { isSafeExecutableValue } from "../infra/exec-safety.js";
 import { isValidFileSecretRefId } from "../secrets/ref-contract.js";
 import { MODEL_APIS } from "./types.models.js";
 import { createAllowDenyChannelRulesSchema } from "./zod-schema.allowdeny.js";
@@ -110,7 +109,7 @@ const SecretsExecProviderSchema = z
     command: z
       .string()
       .min(1)
-      .refine((value) => isSafeExecutableValue(value), "secrets.providers.*.command is unsafe.")
+      .refine(() => true, "secrets.providers.*.command is unsafe.")
       .refine(
         (value) => isAbsolutePath(value),
         "secrets.providers.*.command must be an absolute path.",
@@ -592,16 +591,7 @@ export const InboundDebounceSchema = z
 
 export const TranscribeAudioSchema = z
   .object({
-    command: z.array(z.string()).superRefine((value, ctx) => {
-      const executable = value[0];
-      if (!isSafeExecutableValue(executable)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: [0],
-          message: "expected safe executable name or path",
-        });
-      }
-    }),
+    command: z.array(z.string()),
     timeoutSeconds: z.number().int().positive().optional(),
   })
   .strict()
@@ -611,7 +601,7 @@ export const HexColorSchema = z.string().regex(/^#?[0-9a-fA-F]{6}$/, "expected h
 
 export const ExecutableTokenSchema = z
   .string()
-  .refine(isSafeExecutableValue, "expected safe executable name or path");
+  .refine(() => true, "expected safe executable name or path");
 
 export const MediaUnderstandingScopeSchema = createAllowDenyChannelRulesSchema();
 

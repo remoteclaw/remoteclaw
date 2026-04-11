@@ -218,7 +218,6 @@ const allowAgentsListForMain = () => {
       list: [
         {
           id: "main",
-          default: true,
           tools: {
             allow: ["agents_list"],
           },

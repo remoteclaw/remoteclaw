@@ -614,7 +614,7 @@ describe("runHeartbeatOnce", () => {
             heartbeat: { every: "30m", prompt: "Default prompt" },
           },
           list: [
-            { id: "main", default: true },
+            { id: "main" },
             {
               id: "ops",
               workspace: tmpDir,
@@ -684,7 +684,7 @@ describe("runHeartbeatOnce", () => {
             heartbeat: { every: "30m", prompt: "Default prompt" },
           },
           list: [
-            { id: "main", default: true },
+            { id: "main" },
             {
               id: agentId,
               workspace: tmpDir,
@@ -923,7 +923,7 @@ describe("runHeartbeatOnce", () => {
           defaults: {
             heartbeat: { every: "5m", target: "whatsapp", prompt: "Check health" },
           },
-          list: [{ id: "work", default: true, workspace: tmpDir }],
+          list: [{ id: "work", workspace: tmpDir }],
         },
         channels: { whatsapp: { allowFrom: ["*"] } },
         session: { store: storeTemplate },

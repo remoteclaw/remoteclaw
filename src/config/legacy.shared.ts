@@ -94,16 +94,14 @@ export const getAgentsList = (agents: Record<string, unknown> | null) => {
 export const resolveDefaultAgentIdFromRaw = (raw: Record<string, unknown>) => {
   const agents = getRecord(raw.agents);
   const list = getAgentsList(agents);
-  const defaultEntry = list.find(
-    (entry): entry is { id: string } =>
-      isRecord(entry) &&
-      entry.default === true &&
-      typeof entry.id === "string" &&
-      entry.id.trim() !== "",
-  );
-  if (defaultEntry) {
-    return defaultEntry.id.trim();
+  // Sole-agent auto-selection: use the agent's ID when exactly one is configured.
+  if (list.length === 1) {
+    const entry = list[0];
+    if (isRecord(entry) && typeof entry.id === "string" && entry.id.trim() !== "") {
+      return entry.id.trim();
+    }
   }
+  // Legacy fallback: routing.defaultAgentId (migrated on load).
   const routing = getRecord(raw.routing);
   const routingDefault =
     typeof routing?.defaultAgentId === "string" ? routing.defaultAgentId.trim() : "";

@@ -472,7 +472,7 @@ describe("gateway agent handler", () => {
     mocks.loadSessionEntry.mockReturnValue({
       cfg: {
         session: { mainKey: "work" },
-        agents: { list: [{ id: "main", default: true }] },
+        agents: { list: [{ id: "main" }] },
       },
       storePath: "/tmp/sessions.json",
       entry: {

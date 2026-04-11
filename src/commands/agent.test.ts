@@ -289,10 +289,7 @@ describe("agentCommand", () => {
           systemSent: true,
         },
       });
-      mockConfig(home, storePattern, undefined, undefined, [
-        { id: "dev" },
-        { id: "exec", default: true },
-      ]);
+      mockConfig(home, storePattern, undefined, undefined, [{ id: "dev" }, { id: "exec" }]);
 
       // Should not throw — session resolves through cross-agent store lookup.
       await agentCommand({ message: "resume me", sessionId: "session-exec-hook" }, runtime);

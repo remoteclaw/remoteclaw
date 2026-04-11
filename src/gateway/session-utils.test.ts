@@ -35,7 +35,7 @@ function createSingleAgentAvatarConfig(workspace: string): RemoteClawConfig {
   return {
     session: { mainKey: "main" },
     agents: {
-      list: [{ id: "main", default: true, workspace, identity: { avatar: "avatar-link.png" } }],
+      list: [{ id: "main", workspace, identity: { avatar: "avatar-link.png" } }],
     },
   } as RemoteClawConfig;
 }
@@ -105,7 +105,7 @@ describe("gateway session utils", () => {
   test("resolveSessionStoreKey maps main aliases to default agent main", () => {
     const cfg = {
       session: { mainKey: "work" },
-      agents: { list: [{ id: "ops", default: true }] },
+      agents: { list: [{ id: "ops" }] },
     } as RemoteClawConfig;
     expect(resolveSessionStoreKey({ cfg, sessionKey: "main" })).toBe("agent:ops:work");
     expect(resolveSessionStoreKey({ cfg, sessionKey: "work" })).toBe("agent:ops:work");
@@ -118,7 +118,7 @@ describe("gateway session utils", () => {
   test("resolveSessionStoreKey canonicalizes bare keys to default agent", () => {
     const cfg = {
       session: { mainKey: "main" },
-      agents: { list: [{ id: "ops", default: true }] },
+      agents: { list: [{ id: "ops" }] },
     } as RemoteClawConfig;
     expect(resolveSessionStoreKey({ cfg, sessionKey: "discord:group:123" })).toBe(
       "agent:ops:discord:group:123",
@@ -150,7 +150,7 @@ describe("gateway session utils", () => {
   test("resolveSessionStoreKey normalizes session key casing", () => {
     const cfg = {
       session: { mainKey: "main" },
-      agents: { list: [{ id: "ops", default: true }] },
+      agents: { list: [{ id: "ops" }] },
     } as RemoteClawConfig;
     // Bare keys with different casing must resolve to the same canonical key
     expect(resolveSessionStoreKey({ cfg, sessionKey: "CoP" })).toBe(
@@ -167,7 +167,7 @@ describe("gateway session utils", () => {
   test("resolveSessionStoreKey honors global scope", () => {
     const cfg = {
       session: { scope: "global", mainKey: "work" },
-      agents: { list: [{ id: "ops", default: true }] },
+      agents: { list: [{ id: "ops" }] },
     } as RemoteClawConfig;
     expect(resolveSessionStoreKey({ cfg, sessionKey: "main" })).toBe("global");
     const target = resolveGatewaySessionStoreTarget({ cfg, key: "main" });
@@ -184,7 +184,7 @@ describe("gateway session utils", () => {
     );
     const cfg = {
       session: { mainKey: "main", store: storeTemplate },
-      agents: { list: [{ id: "ops", default: true }] },
+      agents: { list: [{ id: "ops" }] },
     } as RemoteClawConfig;
     const target = resolveGatewaySessionStoreTarget({ cfg, key: "main" });
     expect(target.canonicalKey).toBe("agent:ops:main");
@@ -203,7 +203,7 @@ describe("gateway session utils", () => {
     );
     const cfg = {
       session: { mainKey: "main", store: storePath },
-      agents: { list: [{ id: "ops", default: true }] },
+      agents: { list: [{ id: "ops" }] },
     } as RemoteClawConfig;
     // Client passes the lowercased canonical key (as returned by sessions.list)
     const target = resolveGatewaySessionStoreTarget({ cfg, key: "agent:ops:mysession" });
@@ -232,7 +232,7 @@ describe("gateway session utils", () => {
     );
     const cfg = {
       session: { mainKey: "main", store: storePath },
-      agents: { list: [{ id: "ops", default: true }] },
+      agents: { list: [{ id: "ops" }] },
     } as RemoteClawConfig;
     const target = resolveGatewaySessionStoreTarget({ cfg, key: "agent:ops:mysession" });
     // storeKeys must include BOTH variants so delete/reset/patch can clean up all duplicates
@@ -252,7 +252,7 @@ describe("gateway session utils", () => {
     );
     const cfg = {
       session: { mainKey: "work", store: storePath },
-      agents: { list: [{ id: "ops", default: true }] },
+      agents: { list: [{ id: "ops" }] },
     } as RemoteClawConfig;
     const target = resolveGatewaySessionStoreTarget({ cfg, key: "agent:ops:main" });
     expect(target.canonicalKey).toBe("agent:ops:work");
@@ -530,7 +530,7 @@ describe("deriveSessionTitle", () => {
 describe("listSessionsFromStore search", () => {
   const baseCfg = {
     session: { mainKey: "main" },
-    agents: { list: [{ id: "main", default: true }] },
+    agents: { list: [{ id: "main" }] },
   } as RemoteClawConfig;
 
   const makeStore = (): Record<string, SessionEntry> => ({

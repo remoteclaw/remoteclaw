@@ -1,7 +1,6 @@
 import path from "node:path";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
-import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
   DEFAULT_AGENT_ID,
   normalizeAgentId,
@@ -9,7 +8,6 @@ import {
   resolveAgentIdFromSessionKey,
 } from "../routing/session-key.js";
 import { resolveUserPath } from "../utils.js";
-const log = createSubsystemLogger("agent-scope");
 
 /** Strip null bytes from paths to prevent ENOTDIR errors. */
 function stripNullBytes(s: string): string {
@@ -39,8 +37,6 @@ type ResolvedAgentConfig = {
   runtimeEnv?: AgentEntry["runtimeEnv"];
 };
 
-let defaultAgentWarned = false;
-
 export function listAgentEntries(cfg: RemoteClawConfig): AgentEntry[] {
   const list = cfg.agents?.list;
   if (!Array.isArray(list)) {
@@ -67,18 +63,48 @@ export function listAgentIds(cfg: RemoteClawConfig): string[] {
   return ids.length > 0 ? ids : [DEFAULT_AGENT_ID];
 }
 
-export function resolveDefaultAgentId(cfg: RemoteClawConfig): string {
+/**
+ * Returns the sole agent's ID when exactly one agent is configured, or null otherwise.
+ *
+ * Use this instead of the deprecated `resolveDefaultAgentId` for new code.
+ */
+export function resolveSoleAgentId(cfg: RemoteClawConfig): string | null {
+  const agents = listAgentEntries(cfg);
+  if (agents.length !== 1) {
+    return null;
+  }
+  const id = agents[0]?.id?.trim();
+  return id ? normalizeAgentId(id) : null;
+}
+
+/**
+ * Returns the sole agent's ID when exactly one agent is configured, or throws.
+ *
+ * @throws {Error} when zero or multiple agents are configured.
+ */
+export function requireSoleAgentId(cfg: RemoteClawConfig): string {
   const agents = listAgentEntries(cfg);
   if (agents.length === 0) {
-    return DEFAULT_AGENT_ID;
+    throw new Error("No agents configured — add at least one entry to agents.list");
   }
-  const defaults = agents.filter((agent) => agent?.default);
-  if (defaults.length > 1 && !defaultAgentWarned) {
-    defaultAgentWarned = true;
-    log.warn("Multiple agents marked default=true; using the first entry as default.");
+  if (agents.length > 1) {
+    throw new Error(
+      `Multiple agents configured (${agents.map((a) => a.id).join(", ")}); sole-agent auto-selection requires exactly one`,
+    );
   }
-  const chosen = (defaults[0] ?? agents[0])?.id?.trim();
-  return normalizeAgentId(chosen || DEFAULT_AGENT_ID);
+  const id = agents[0]?.id?.trim();
+  if (!id) {
+    throw new Error("Agent entry has no id — every agents.list entry requires an id");
+  }
+  return normalizeAgentId(id);
+}
+
+/**
+ * @deprecated Use {@link resolveSoleAgentId} or {@link requireSoleAgentId} instead.
+ * Temporary shim — will be removed once all callers migrate (#1576–#1581).
+ */
+export function resolveDefaultAgentId(cfg: RemoteClawConfig): string {
+  return resolveSoleAgentId(cfg) ?? DEFAULT_AGENT_ID;
 }
 
 export function resolveSessionAgentIds(params: {

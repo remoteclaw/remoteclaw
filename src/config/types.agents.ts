@@ -7,7 +7,6 @@ import type { AgentToolsConfig } from "./types.tools.js";
 
 export type AgentConfig = {
   id: string;
-  default?: boolean;
   name?: string;
   workspace?: string;
   agentDir?: string;

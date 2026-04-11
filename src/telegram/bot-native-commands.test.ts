@@ -177,7 +177,7 @@ describe("registerTelegramNativeCommands", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         list: [
-          { id: "main", default: true, workspace: "/tmp/test-workspace" },
+          { id: "main", workspace: "/tmp/test-workspace" },
           { id: "work", workspace: "/tmp/test-workspace" },
         ],
       },

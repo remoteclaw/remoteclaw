@@ -44,7 +44,7 @@ async function postHook(
 
 function setMainAndHooksAgents(): void {
   testState.agentsConfig = {
-    list: [{ id: "main", default: true }, { id: "hooks" }],
+    list: [{ id: "main" }, { id: "hooks" }],
   };
 }
 
@@ -337,7 +337,7 @@ describe("gateway server hooks", () => {
       allowedAgentIds: [],
     };
     testState.agentsConfig = {
-      list: [{ id: "main", default: true }, { id: "hooks" }],
+      list: [{ id: "main" }, { id: "hooks" }],
     };
     await withGatewayServer(async ({ port }) => {
       const resDenied = await postHook(port, "/hooks/agent", {

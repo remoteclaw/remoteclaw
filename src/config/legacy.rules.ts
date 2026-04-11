@@ -109,7 +109,7 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
   {
     path: ["routing", "defaultAgentId"],
     message:
-      "routing.defaultAgentId was moved; use agents.list[].default instead (auto-migrated on load).",
+      "routing.defaultAgentId was removed; sole-agent auto-selection replaces explicit defaults (auto-migrated on load).",
   },
   {
     path: ["routing", "agentToAgent"],

@@ -2,6 +2,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import {
+  requireSoleAgentId,
   resolveAgentAuth,
   resolveAgentConfig,
   resolveAgentDir,
@@ -10,6 +11,7 @@ import {
   resolveAgentRuntimeEnv,
   resolveAgentRuntimeOrThrow,
   resolveFallbackAgentId,
+  resolveSoleAgentId,
   resolveAgentWorkspaceDir,
   resolveAgentWorkspaceDirOrNull,
 } from "./agent-scope.js";
@@ -244,6 +246,70 @@ describe("resolveAgentConfig", () => {
     };
     const result = resolveAgentConfig(cfg, "main");
     expect(result?.runtime).toBe("gemini");
+  });
+});
+
+describe("resolveSoleAgentId", () => {
+  it("returns agent ID when exactly one agent is configured", () => {
+    const cfg: RemoteClawConfig = {
+      agents: { list: [{ id: "home", workspace: "~/remoteclaw" }] },
+    };
+    expect(resolveSoleAgentId(cfg)).toBe("home");
+  });
+
+  it("returns null when no agents are configured", () => {
+    expect(resolveSoleAgentId({})).toBeNull();
+  });
+
+  it("returns null when agents list is empty", () => {
+    const cfg: RemoteClawConfig = { agents: { list: [] } };
+    expect(resolveSoleAgentId(cfg)).toBeNull();
+  });
+
+  it("returns null when multiple agents are configured", () => {
+    const cfg: RemoteClawConfig = {
+      agents: { list: [{ id: "home" }, { id: "work" }] },
+    };
+    expect(resolveSoleAgentId(cfg)).toBeNull();
+  });
+
+  it("normalizes the agent ID", () => {
+    const cfg: RemoteClawConfig = {
+      agents: { list: [{ id: "  MyAgent  " }] },
+    };
+    expect(resolveSoleAgentId(cfg)).toBe("myagent");
+  });
+});
+
+describe("requireSoleAgentId", () => {
+  it("returns agent ID when exactly one agent is configured", () => {
+    const cfg: RemoteClawConfig = {
+      agents: { list: [{ id: "home", workspace: "~/remoteclaw" }] },
+    };
+    expect(requireSoleAgentId(cfg)).toBe("home");
+  });
+
+  it("throws when no agents are configured", () => {
+    expect(() => requireSoleAgentId({})).toThrow("No agents configured");
+  });
+
+  it("throws when agents list is empty", () => {
+    const cfg: RemoteClawConfig = { agents: { list: [] } };
+    expect(() => requireSoleAgentId(cfg)).toThrow("No agents configured");
+  });
+
+  it("throws when multiple agents are configured", () => {
+    const cfg: RemoteClawConfig = {
+      agents: { list: [{ id: "home" }, { id: "work" }] },
+    };
+    expect(() => requireSoleAgentId(cfg)).toThrow("Multiple agents configured");
+  });
+
+  it("includes agent IDs in the multi-agent error message", () => {
+    const cfg: RemoteClawConfig = {
+      agents: { list: [{ id: "home" }, { id: "work" }] },
+    };
+    expect(() => requireSoleAgentId(cfg)).toThrow("home, work");
   });
 });
 

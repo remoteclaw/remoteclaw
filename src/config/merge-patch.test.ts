@@ -86,7 +86,7 @@ describe("applyMergePatch", () => {
     const base = {
       agents: {
         list: [
-          { id: "main", default: true, workspace: "/home/main" },
+          { id: "main", workspace: "/home/main" },
           { id: "ota", workspace: "/home/ota" },
           { id: "trading", workspace: "/home/trading" },
           { id: "codex", workspace: "/home/codex" },
@@ -103,13 +103,12 @@ describe("applyMergePatch", () => {
       mergeObjectArraysById: true,
     }) as {
       agents?: {
-        list?: Array<{ id?: string; workspace?: string; model?: string; default?: boolean }>;
+        list?: Array<{ id?: string; workspace?: string; model?: string }>;
       };
     };
     expect(merged.agents?.list).toHaveLength(4);
     const main = merged.agents?.list?.find((entry) => entry.id === "main");
     expect(main?.model).toBe("claude-opus-4-20250918");
-    expect(main?.default).toBe(true);
     expect(main?.workspace).toBe("/home/main");
     expect(merged.agents?.list?.find((entry) => entry.id === "ota")?.workspace).toBe("/home/ota");
     expect(merged.agents?.list?.find((entry) => entry.id === "trading")?.workspace).toBe(

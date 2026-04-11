@@ -232,10 +232,7 @@ describe("getHealthSnapshot", () => {
             target: "last",
           },
         },
-        list: [
-          { id: "main", default: true },
-          { id: "ops", heartbeat: { every: "1h", target: "whatsapp" } },
-        ],
+        list: [{ id: "main" }, { id: "ops", heartbeat: { every: "1h", target: "whatsapp" } }],
       },
     };
     testStore = {};

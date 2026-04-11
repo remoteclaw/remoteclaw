@@ -201,7 +201,7 @@ describe("gateway server sessions", () => {
 
   test("sessions.preview resolves legacy mixed-case main alias with custom mainKey", async () => {
     const { dir, storePath } = await createSessionStoreDir();
-    testState.agentsConfig = { list: [{ id: "ops", default: true }] };
+    testState.agentsConfig = { list: [{ id: "ops" }] };
     testState.sessionConfig = { mainKey: "work" };
     const sessionId = "sess-legacy-main";
     const transcriptPath = path.join(dir, `${sessionId}.jsonl`);

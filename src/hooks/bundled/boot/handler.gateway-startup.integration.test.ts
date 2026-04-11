@@ -34,7 +34,7 @@ describe("boot startup hook integration", () => {
       agents: {
         defaults: { boot: bootConfig },
         list: [
-          { id: "main", default: true, workspace: "/ws/main" },
+          { id: "main", workspace: "/ws/main" },
           { id: "ops", workspace: "/ws/ops" },
         ],
       },

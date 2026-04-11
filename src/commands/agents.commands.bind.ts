@@ -1,4 +1,4 @@
-import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { listAgentEntries } from "../agents/agent-scope.js";
 import { writeConfigFile } from "../config/config.js";
 import { logConfigUpdated } from "../config/logging.js";
 import type { AgentBinding } from "../config/types.js";
@@ -44,7 +44,8 @@ function resolveAgentId(
     return normalizeAgentId(agentInput);
   }
   if (params?.fallbackToDefault) {
-    return resolveDefaultAgentId(cfg);
+    const firstId = listAgentEntries(cfg)[0]?.id;
+    return firstId ? normalizeAgentId(firstId) : null;
   }
   return null;
 }

@@ -24,7 +24,6 @@ type ExecApprovalsResolvedDefaults = {
 type ExecApprovalsAgentOption = {
   id: string;
   name?: string;
-  isDefault?: boolean;
 };
 
 type ExecApprovalsTargetNode = NodeTargetOption;
@@ -96,7 +95,6 @@ function resolveConfigAgents(config: Record<string, unknown> | null): ExecApprov
   return resolveSharedConfigAgents(config).map((entry) => ({
     id: entry.id,
     name: entry.name,
-    isDefault: entry.isDefault,
   }));
 }
 
@@ -116,15 +114,9 @@ function resolveExecApprovalsAgents(
   });
   const agents = Array.from(merged.values());
   if (agents.length === 0) {
-    agents.push({ id: "main", isDefault: true });
+    agents.push({ id: "main" });
   }
   agents.sort((a, b) => {
-    if (a.isDefault && !b.isDefault) {
-      return -1;
-    }
-    if (!a.isDefault && b.isDefault) {
-      return 1;
-    }
     const aLabel = a.name?.trim() ? a.name : a.id;
     const bLabel = b.name?.trim() ? b.name : b.id;
     return aLabel.localeCompare(bLabel);

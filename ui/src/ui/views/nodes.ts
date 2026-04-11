@@ -220,7 +220,6 @@ type BindingAgent = {
   id: string;
   name: string | undefined;
   index: number;
-  isDefault: boolean;
   binding: string | null;
 };
 
@@ -367,7 +366,7 @@ function renderAgentBinding(agent: BindingAgent, state: BindingState) {
       <div class="list-main">
         <div class="list-title">${label}</div>
         <div class="list-sub">
-          ${agent.isDefault ? "default agent" : "agent"} ·
+          agent ·
           ${
             bindingValue === "__default__"
               ? `uses default (${state.defaultBinding ?? "any"})`
@@ -417,7 +416,6 @@ function resolveAgentBindings(config: Record<string, unknown> | null): {
     id: "main",
     name: undefined,
     index: 0,
-    isDefault: true,
     binding: null,
   };
   if (!config || typeof config !== "object") {
@@ -442,7 +440,6 @@ function resolveAgentBindings(config: Record<string, unknown> | null): {
       id: entry.id,
       name: entry.name,
       index: entry.index,
-      isDefault: entry.isDefault,
       binding,
     };
   });

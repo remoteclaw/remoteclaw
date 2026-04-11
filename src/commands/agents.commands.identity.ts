@@ -1,5 +1,5 @@
 import path from "node:path";
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import { writeConfigFile } from "../config/config.js";
 import { logConfigUpdated } from "../config/logging.js";
 import type { IdentityConfig } from "../config/types.js";
@@ -32,10 +32,7 @@ function resolveAgentIdByWorkspace(
   workspaceDir: string,
 ): string[] {
   const list = listAgentEntries(cfg);
-  const ids =
-    list.length > 0
-      ? list.map((entry) => normalizeAgentId(entry.id))
-      : [resolveDefaultAgentId(cfg)];
+  const ids = list.map((entry) => normalizeAgentId(entry.id));
   const normalizedTarget = normalizeWorkspacePath(workspaceDir);
   return ids.filter(
     (id) => normalizeWorkspacePath(resolveAgentWorkspaceDir(cfg, id)) === normalizedTarget,
@@ -127,10 +124,6 @@ export async function agentsSetIdentityCommand(
   if (index >= 0) {
     nextList[index] = nextEntry;
   } else {
-    const defaultId = normalizeAgentId(resolveDefaultAgentId(cfg));
-    if (nextList.length === 0 && agentId !== defaultId) {
-      nextList.push({ id: defaultId });
-    }
     nextList.push(nextEntry);
   }
 

@@ -33,8 +33,7 @@ function collectReferencedAgentIds(cfg: RemoteClawConfig): string[] {
   const ids = new Set<string>();
 
   const agents = Array.isArray(cfg.agents?.list) ? cfg.agents?.list : [];
-  const defaultAgentId =
-    agents.find((agent) => agent?.default)?.id ?? agents[0]?.id ?? DEFAULT_AGENT_ID;
+  const defaultAgentId = agents[0]?.id ?? DEFAULT_AGENT_ID;
   ids.add(normalizeAgentId(defaultAgentId));
 
   for (const entry of agents) {

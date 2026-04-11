@@ -18,7 +18,7 @@ describe("agents helpers", () => {
           { id: "main", workspace: "/main-ws" },
           {
             id: "work",
-            default: true,
+
             name: "Work",
             workspace: "/work-ws",
             agentDir: "/state/agents/work/agent",
@@ -217,7 +217,7 @@ describe("agents helpers", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         list: [
-          { id: "work", default: true, workspace: "/work-ws" },
+          { id: "work", workspace: "/work-ws" },
           { id: "home", workspace: "/home-ws" },
         ],
       },

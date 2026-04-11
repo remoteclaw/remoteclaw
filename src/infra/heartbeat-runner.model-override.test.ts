@@ -134,7 +134,7 @@ describe("runHeartbeatOnce – heartbeat model override", () => {
             },
           },
           list: [
-            { id: "main", default: true, workspace: tmpDir },
+            { id: "main", workspace: tmpDir },
             {
               id: "ops",
               workspace: tmpDir,

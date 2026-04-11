@@ -33,7 +33,7 @@ describe("gateway hooks helpers", () => {
         allowedAgentIds,
       },
       agents: {
-        list: [{ id: "main", default: true }, { id: "hooks" }],
+        list: [{ id: "main" }, { id: "hooks" }],
       },
     }) as RemoteClawConfig;
 
@@ -162,7 +162,7 @@ describe("gateway hooks helpers", () => {
     const cfg = {
       hooks: { enabled: true, token: "secret" },
       agents: {
-        list: [{ id: "main", default: true }, { id: "hooks" }],
+        list: [{ id: "main" }, { id: "hooks" }],
       },
     } as RemoteClawConfig;
     const resolved = resolveHooksConfig(cfg);

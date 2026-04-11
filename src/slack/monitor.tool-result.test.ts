@@ -160,7 +160,6 @@ describe("monitorSlackProvider tool results", () => {
         list: [
           {
             id: "main",
-            default: true,
             identity: { name: "Mainbot", theme: "space crab", emoji: "🦀" },
           },
           {

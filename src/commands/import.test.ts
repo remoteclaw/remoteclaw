@@ -109,7 +109,7 @@ describe("materializeWorkspaceDefaults", () => {
   it("sets workspace on non-default agent using id suffix", () => {
     const input = JSON.stringify({
       agents: {
-        list: [{ id: "main", default: true, workspace: "~/ws" }, { id: "helper" }],
+        list: [{ id: "main", workspace: "~/ws" }, { id: "helper" }],
       },
     });
     const result = JSON.parse(materializeWorkspaceDefaults(input));

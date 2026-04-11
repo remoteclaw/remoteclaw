@@ -9,10 +9,7 @@ const loadConfigMock = vi.hoisted(() =>
         models: { "pi:opus": {} },
         contextTokens: 32000,
       },
-      list: [
-        { id: "main", default: false },
-        { id: "voice", default: true },
-      ],
+      list: [{ id: "main" }, { id: "voice" }],
     },
     session: {
       store: "/tmp/sessions-{agentId}.json",

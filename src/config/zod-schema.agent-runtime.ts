@@ -689,7 +689,6 @@ export { AgentModelSchema };
 export const AgentEntrySchema = z
   .object({
     id: z.string(),
-    default: z.boolean().optional(),
     name: z.string().optional(),
     workspace: z.string().optional(),
     agentDir: z.string().optional(),

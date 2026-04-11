@@ -356,16 +356,20 @@ describe("applyJobPatch", () => {
   });
 });
 
-function createMockState(now: number, opts?: { defaultAgentId?: string }): CronServiceState {
+function createMockState(
+  now: number,
+  opts?: { defaultAgentId?: string; soleAgentId?: string | null },
+): CronServiceState {
   return {
     deps: {
       nowMs: () => now,
       defaultAgentId: opts?.defaultAgentId,
+      soleAgentId: opts?.soleAgentId,
     },
   } as unknown as CronServiceState;
 }
 
-describe("createJob rejects sessionTarget main for non-default agents", () => {
+describe("createJob rejects sessionTarget main for non-sole agents", () => {
   const now = Date.parse("2026-02-28T12:00:00.000Z");
 
   const mainJobInput = (agentId?: string) => ({
@@ -378,33 +382,33 @@ describe("createJob rejects sessionTarget main for non-default agents", () => {
     ...(agentId !== undefined ? { agentId } : {}),
   });
 
-  it("allows creating a main-session job for the default agent", () => {
-    const state = createMockState(now, { defaultAgentId: "main" });
+  it("allows creating a main-session job for the sole agent", () => {
+    const state = createMockState(now, { soleAgentId: "main" });
     expect(() => createJob(state, mainJobInput())).not.toThrow();
     expect(() => createJob(state, mainJobInput("main"))).not.toThrow();
   });
 
-  it("allows creating a main-session job when defaultAgentId matches (case-insensitive)", () => {
-    const state = createMockState(now, { defaultAgentId: "Main" });
+  it("allows creating a main-session job when soleAgentId matches (case-insensitive)", () => {
+    const state = createMockState(now, { soleAgentId: "main" });
     expect(() => createJob(state, mainJobInput("MAIN"))).not.toThrow();
   });
 
-  it("rejects creating a main-session job for a non-default agentId", () => {
-    const state = createMockState(now, { defaultAgentId: "main" });
+  it("rejects creating a main-session job for a non-sole agentId", () => {
+    const state = createMockState(now, { soleAgentId: "main" });
     expect(() => createJob(state, mainJobInput("custom-agent"))).toThrow(
-      'cron: sessionTarget "main" is only valid for the default agent',
+      'cron: sessionTarget "main" is only valid for the sole configured agent "main"',
     );
   });
 
-  it("rejects main-session job for non-default agent even without explicit defaultAgentId", () => {
-    const state = createMockState(now);
+  it("rejects main-session job when no sole agent is configured", () => {
+    const state = createMockState(now, { soleAgentId: null });
     expect(() => createJob(state, mainJobInput("custom-agent"))).toThrow(
-      'cron: sessionTarget "main" is only valid for the default agent',
+      'cron: sessionTarget "main" requires exactly one configured agent',
     );
   });
 
-  it("allows isolated session job for non-default agents", () => {
-    const state = createMockState(now, { defaultAgentId: "main" });
+  it("allows isolated session job for non-sole agents", () => {
+    const state = createMockState(now, { soleAgentId: "main" });
     expect(() =>
       createJob(state, {
         name: "isolated-job",
@@ -419,7 +423,7 @@ describe("createJob rejects sessionTarget main for non-default agents", () => {
   });
 
   it("rejects failureDestination on main jobs without webhook delivery mode", () => {
-    const state = createMockState(now, { defaultAgentId: "main" });
+    const state = createMockState(now, { soleAgentId: "main" });
     expect(() =>
       createJob(state, {
         ...mainJobInput("main"),
@@ -455,22 +459,31 @@ describe("applyJobPatch rejects sessionTarget main for non-default agents", () =
     agentId,
   });
 
-  it("rejects patching agentId to non-default on a main-session job", () => {
+  it("rejects patching agentId to non-sole agent on a main-session job", () => {
     const job = createMainJob();
     expect(() =>
       applyJobPatch(job, { agentId: "custom-agent" } as CronJobPatch, {
-        defaultAgentId: "main",
+        soleAgentId: "main",
       }),
-    ).toThrow('cron: sessionTarget "main" is only valid for the default agent');
+    ).toThrow('cron: sessionTarget "main" is only valid for the sole configured agent "main"');
   });
 
-  it("allows patching agentId to the default agent on a main-session job", () => {
+  it("allows patching agentId to the sole agent on a main-session job", () => {
     const job = createMainJob();
     expect(() =>
       applyJobPatch(job, { agentId: "main" } as CronJobPatch, {
-        defaultAgentId: "main",
+        soleAgentId: "main",
       }),
     ).not.toThrow();
+  });
+
+  it("rejects patching agentId on main-session job when no sole agent", () => {
+    const job = createMainJob();
+    expect(() =>
+      applyJobPatch(job, { agentId: "main" } as CronJobPatch, {
+        soleAgentId: null,
+      }),
+    ).toThrow('cron: sessionTarget "main" requires exactly one configured agent');
   });
 });
 

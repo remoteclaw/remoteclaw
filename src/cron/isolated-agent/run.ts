@@ -6,7 +6,7 @@ import {
   resolveAgentRuntimeEnv,
   resolveAgentRuntimeOrThrow,
   resolveAgentWorkspaceDir,
-  resolveDefaultAgentId,
+  resolveSoleAgentId,
 } from "../../agents/agent-scope.js";
 import { resolveChannelMessageToolHints } from "../../agents/channel-tools.js";
 import { getCliSessionId, setCliSessionId } from "../../agents/cli-session.js";
@@ -30,7 +30,11 @@ import { withAuthKeyRetry } from "../../middleware/auth-key-retry.js";
 import { ChannelBridge } from "../../middleware/channel-bridge.js";
 import type { SessionMap } from "../../middleware/session-map.js";
 import type { AgentDeliveryResult, ChannelMessage } from "../../middleware/types.js";
-import { buildAgentMainSessionKey, normalizeAgentId } from "../../routing/session-key.js";
+import {
+  DEFAULT_AGENT_ID,
+  buildAgentMainSessionKey,
+  normalizeAgentId,
+} from "../../routing/session-key.js";
 import {
   buildSafeExternalPrompt,
   detectSuspiciousPatterns,
@@ -156,7 +160,7 @@ export async function runCronIsolatedAgentTurn(params: {
       : "cron: job execution timed out";
   };
   const isFastTestEnv = process.env.REMOTECLAW_TEST_FAST === "1";
-  const defaultAgentId = resolveDefaultAgentId(params.cfg);
+  const soleAgentId = resolveSoleAgentId(params.cfg);
   const requestedAgentId =
     typeof params.agentId === "string" && params.agentId.trim()
       ? params.agentId
@@ -167,10 +171,10 @@ export async function runCronIsolatedAgentTurn(params: {
   const agentConfigOverride = normalizedRequested
     ? resolveAgentConfig(params.cfg, normalizedRequested)
     : undefined;
-  // Use the requested agentId even when there is no explicit agent config entry.
+  // Use the requested agentId, falling back to the sole configured agent.
   // This ensures auth-profiles, workspace, and agentDir all resolve to the
   // correct per-agent paths (e.g. ~/.remoteclaw/agents/<agentId>/agent/).
-  const agentId = normalizedRequested ?? defaultAgentId;
+  const agentId = normalizedRequested ?? soleAgentId ?? DEFAULT_AGENT_ID;
   const agentCfg: AgentDefaultsConfig = Object.assign(
     {},
     params.cfg.agents?.defaults,

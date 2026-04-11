@@ -603,15 +603,18 @@ export async function onTimer(state: CronServiceState) {
     // top of onTimer would otherwise skip the reaper indefinitely.
     const storePaths = new Set<string>();
     if (state.deps.resolveSessionStorePath) {
-      const defaultAgentId = state.deps.defaultAgentId ?? DEFAULT_AGENT_ID;
       if (state.store?.jobs?.length) {
         for (const job of state.store.jobs) {
-          const agentId =
-            typeof job.agentId === "string" && job.agentId.trim() ? job.agentId : defaultAgentId;
-          storePaths.add(state.deps.resolveSessionStorePath(agentId));
+          if (typeof job.agentId === "string" && job.agentId.trim()) {
+            storePaths.add(state.deps.resolveSessionStorePath(job.agentId));
+          }
         }
-      } else {
-        storePaths.add(state.deps.resolveSessionStorePath(defaultAgentId));
+      }
+      // Fall back to sole/default agent only when no job-specific paths were collected
+      if (storePaths.size === 0) {
+        const fallbackAgentId =
+          state.deps.soleAgentId ?? state.deps.defaultAgentId ?? DEFAULT_AGENT_ID;
+        storePaths.add(state.deps.resolveSessionStorePath(fallbackAgentId));
       }
     } else if (state.deps.sessionStorePath) {
       storePaths.add(state.deps.sessionStorePath);

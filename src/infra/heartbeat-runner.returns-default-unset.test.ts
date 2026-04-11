@@ -184,18 +184,18 @@ describe("resolveHeartbeatPrompt", () => {
 });
 
 describe("isHeartbeatEnabledForAgent", () => {
-  it("enables only explicit heartbeat agents when configured", () => {
+  it("enables ALL agents when defaults.heartbeat is configured", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: { heartbeat: { every: "30m" } },
         list: [{ id: "main" }, { id: "ops", heartbeat: { every: "1h" } }],
       },
     };
-    expect(isHeartbeatEnabledForAgent(cfg, "main")).toBe(false);
+    expect(isHeartbeatEnabledForAgent(cfg, "main")).toBe(true);
     expect(isHeartbeatEnabledForAgent(cfg, "ops")).toBe(true);
   });
 
-  it("falls back to default agent when no explicit heartbeat entries", () => {
+  it("enables ALL agents via defaults.heartbeat even without per-agent overrides", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: { heartbeat: { every: "30m" } },
@@ -203,7 +203,32 @@ describe("isHeartbeatEnabledForAgent", () => {
       },
     };
     expect(isHeartbeatEnabledForAgent(cfg, "main")).toBe(true);
-    expect(isHeartbeatEnabledForAgent(cfg, "ops")).toBe(false);
+    expect(isHeartbeatEnabledForAgent(cfg, "ops")).toBe(true);
+  });
+
+  it("enables only per-agent heartbeat agents when no defaults", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [{ id: "main" }, { id: "ops", heartbeat: { every: "1h" } }],
+      },
+    };
+    expect(isHeartbeatEnabledForAgent(cfg, "main")).toBe(false);
+    expect(isHeartbeatEnabledForAgent(cfg, "ops")).toBe(true);
+  });
+
+  it("returns false when no agents are configured", () => {
+    const cfg: RemoteClawConfig = {};
+    expect(isHeartbeatEnabledForAgent(cfg)).toBe(false);
+  });
+
+  it("returns false for an agent not in the list", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: { heartbeat: { every: "30m" } },
+        list: [{ id: "main" }],
+      },
+    };
+    expect(isHeartbeatEnabledForAgent(cfg, "unknown")).toBe(false);
   });
 });
 
@@ -479,9 +504,9 @@ describe("runHeartbeatOnce", () => {
   });
 
   it("skips when agent heartbeat is not enabled", async () => {
+    // No defaults.heartbeat and agent has no per-agent heartbeat
     const cfg: RemoteClawConfig = {
       agents: {
-        defaults: { heartbeat: { every: "30m" } },
         list: [{ id: "main" }, { id: "ops", heartbeat: { every: "1h" } }],
       },
     };
@@ -503,6 +528,7 @@ describe("runHeartbeatOnce", () => {
             activeHours: { start: "08:00", end: "24:00", timezone: "user" },
           },
         },
+        list: [{ id: "main" }],
       },
     };
 

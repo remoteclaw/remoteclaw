@@ -270,7 +270,10 @@ export async function update(state: CronServiceState, id: string, patch: CronJob
     await ensureLoaded(state, { skipRecompute: true });
     const job = findJobOrThrow(state, id);
     const now = state.deps.nowMs();
-    applyJobPatch(job, patch, { defaultAgentId: state.deps.defaultAgentId });
+    applyJobPatch(job, patch, {
+      defaultAgentId: state.deps.defaultAgentId,
+      soleAgentId: state.deps.soleAgentId,
+    });
     if (job.schedule.kind === "every") {
       const anchor = job.schedule.anchorMs;
       if (typeof anchor !== "number" || !Number.isFinite(anchor)) {

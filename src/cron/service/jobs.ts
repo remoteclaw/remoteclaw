@@ -109,7 +109,7 @@ export function assertSupportedJobSpec(job: Pick<CronJob, "sessionTarget" | "pay
 
 function assertMainSessionAgentId(
   job: Pick<CronJob, "sessionTarget" | "agentId">,
-  defaultAgentId: string | undefined,
+  soleAgentId: string | null | undefined,
 ) {
   if (job.sessionTarget !== "main") {
     return;
@@ -118,10 +118,14 @@ function assertMainSessionAgentId(
     return;
   }
   const normalized = normalizeAgentId(job.agentId);
-  const normalizedDefault = normalizeAgentId(defaultAgentId);
-  if (normalized !== normalizedDefault) {
+  if (soleAgentId == null) {
     throw new Error(
-      `cron: sessionTarget "main" is only valid for the default agent. Use sessionTarget "isolated" with payload.kind "agentTurn" for non-default agents (agentId: ${job.agentId})`,
+      `cron: sessionTarget "main" requires exactly one configured agent. Use sessionTarget "isolated" with payload.kind "agentTurn" for multi-agent setups (agentId: ${job.agentId})`,
+    );
+  }
+  if (normalized !== soleAgentId) {
+    throw new Error(
+      `cron: sessionTarget "main" is only valid for the sole configured agent "${soleAgentId}". Use sessionTarget "isolated" with payload.kind "agentTurn" for other agents (agentId: ${job.agentId})`,
     );
   }
 }
@@ -487,7 +491,7 @@ export function createJob(state: CronServiceState, input: CronJobCreate): CronJo
     },
   };
   assertSupportedJobSpec(job);
-  assertMainSessionAgentId(job, state.deps.defaultAgentId);
+  assertMainSessionAgentId(job, state.deps.soleAgentId);
   assertDeliverySupport(job);
   assertFailureDestinationSupport(job);
   job.state.nextRunAtMs = computeJobNextRunAtMs(job, now);
@@ -497,7 +501,7 @@ export function createJob(state: CronServiceState, input: CronJobCreate): CronJo
 export function applyJobPatch(
   job: CronJob,
   patch: CronJobPatch,
-  opts?: { defaultAgentId?: string },
+  opts?: { defaultAgentId?: string; soleAgentId?: string | null },
 ) {
   if ("name" in patch) {
     job.name = normalizeRequiredName(patch.name);
@@ -577,7 +581,7 @@ export function applyJobPatch(
     job.sessionKey = normalizeOptionalSessionKey((patch as { sessionKey?: unknown }).sessionKey);
   }
   assertSupportedJobSpec(job);
-  assertMainSessionAgentId(job, opts?.defaultAgentId);
+  assertMainSessionAgentId(job, opts?.soleAgentId);
   assertDeliverySupport(job);
   assertFailureDestinationSupport(job);
 }

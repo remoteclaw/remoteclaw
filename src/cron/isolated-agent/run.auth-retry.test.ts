@@ -49,7 +49,7 @@ vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentRuntimeEnv: resolveAgentRuntimeEnvMock,
   resolveAgentRuntimeOrThrow: vi.fn().mockReturnValue("claude"),
   resolveAgentWorkspaceDir: vi.fn().mockReturnValue("/tmp/workspace"),
-  resolveDefaultAgentId: vi.fn().mockReturnValue("default"),
+  resolveSoleAgentId: vi.fn().mockReturnValue("default"),
 }));
 
 vi.mock("../../agents/workspace.js", () => ({
@@ -327,7 +327,7 @@ describe("runCronIsolatedAgentTurn — auth key retry wiring", () => {
     expect(runtimeEnvPassedToBridge).toEqual(injectedEnv);
   });
 
-  it("default agentId falls back to resolveDefaultAgentId", async () => {
+  it("default agentId falls back to resolveSoleAgentId", async () => {
     await runCronIsolatedAgentTurn(makeParams());
 
     const options = withAuthKeyRetryMock.mock.calls[0][0];

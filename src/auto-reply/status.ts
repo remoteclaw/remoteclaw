@@ -366,19 +366,6 @@ export function buildStatusMessage(args: StatusArgs): string {
       if (!totalTokens || totalTokens === 0 || candidate > totalTokens) {
         totalTokens = candidate;
       }
-      if (!entry?.model && logUsage.model) {
-        const slashIndex = logUsage.model.indexOf("/");
-        if (slashIndex > 0) {
-          const provider = logUsage.model.slice(0, slashIndex).trim();
-          const model = logUsage.model.slice(slashIndex + 1).trim();
-          if (provider && model) {
-            _activeProvider = provider;
-            _activeModel = model;
-          }
-        } else {
-          _activeModel = logUsage.model;
-        }
-      }
       if (!inputTokens || inputTokens === 0) {
         inputTokens = logUsage.input;
       }

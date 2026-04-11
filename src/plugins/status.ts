@@ -1,4 +1,4 @@
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveFirstAgentWorkspace } from "../agents/agent-scope.js";
 import { loadConfig } from "../config/config.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { loadRemoteClawPlugins } from "./loader.js";
@@ -18,7 +18,7 @@ export function buildPluginStatusReport(params?: {
   const config = params?.config ?? loadConfig();
   const workspaceDir = params?.workspaceDir
     ? params.workspaceDir
-    : resolveAgentWorkspaceDir(config, resolveDefaultAgentId(config));
+    : (resolveFirstAgentWorkspace(config) ?? undefined);
 
   const registry = loadRemoteClawPlugins({
     config,

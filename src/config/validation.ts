@@ -1,5 +1,9 @@
 import path from "node:path";
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import {
+  resolveAgentWorkspaceDir,
+  resolveDefaultAgentId,
+  resolveFirstAgentWorkspace,
+} from "../agents/agent-scope.js";
 import { CHANNEL_IDS, normalizeChatChannelId } from "../channels/registry.js";
 import {
   normalizePluginsConfig,
@@ -361,7 +365,7 @@ function validateConfigObjectWithPluginsBase(
       return registryInfo;
     }
 
-    const workspaceDir = resolveAgentWorkspaceDir(config, resolveDefaultAgentId(config));
+    const workspaceDir = resolveFirstAgentWorkspace(config);
     const registry = loadPluginManifestRegistry({
       config,
       workspaceDir: workspaceDir ?? undefined,

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
+import { resolveFirstAgentWorkspace } from "../../agents/agent-scope.js";
 import type { ChannelPluginCatalogEntry } from "../../channels/plugins/catalog.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
@@ -206,8 +206,7 @@ export function reloadOnboardingPluginRegistry(params: {
   runtime: RuntimeEnv;
   workspaceDir?: string;
 }): void {
-  const workspaceDir =
-    params.workspaceDir ?? resolveAgentWorkspaceDir(params.cfg, resolveDefaultAgentId(params.cfg));
+  const workspaceDir = params.workspaceDir ?? resolveFirstAgentWorkspace(params.cfg) ?? undefined;
   const log = createSubsystemLogger("plugins");
   loadRemoteClawPlugins({
     config: params.cfg,

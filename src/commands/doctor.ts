@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { intro as clackIntro, outro as clackOutro } from "@clack/prompts";
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveFirstAgentWorkspace } from "../agents/agent-scope.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { CONFIG_PATH, readConfigFileSnapshot, writeConfigFile } from "../config/config.js";
@@ -257,8 +257,10 @@ export async function doctorCommand(
   }
 
   if (options.workspaceSuggestions !== false) {
-    const workspaceDir = resolveAgentWorkspaceDir(cfg, resolveDefaultAgentId(cfg));
-    noteWorkspaceBackupTip(workspaceDir);
+    const workspaceDir = resolveFirstAgentWorkspace(cfg);
+    if (workspaceDir) {
+      noteWorkspaceBackupTip(workspaceDir);
+    }
   }
 
   const finalSnapshot = await readConfigFileSnapshot();

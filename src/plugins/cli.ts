@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveFirstAgentWorkspace } from "../agents/agent-scope.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { loadConfig } from "../config/config.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
@@ -10,7 +10,7 @@ const log = createSubsystemLogger("plugins");
 
 export function registerPluginCliCommands(program: Command, cfg?: RemoteClawConfig) {
   const config = cfg ?? loadConfig();
-  const workspaceDir = resolveAgentWorkspaceDir(config, resolveDefaultAgentId(config));
+  const workspaceDir = resolveFirstAgentWorkspace(config) ?? undefined;
   const logger: PluginLogger = {
     info: (msg: string) => log.info(msg),
     warn: (msg: string) => log.warn(msg),

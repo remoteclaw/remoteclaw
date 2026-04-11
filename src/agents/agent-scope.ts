@@ -100,6 +100,32 @@ export function requireSoleAgentId(cfg: RemoteClawConfig): string {
 }
 
 /**
+ * Returns a workspace directory without requiring a specific agent ID.
+ *
+ * Resolution order:
+ * 1. `agents.defaults.workspace` if set
+ * 2. First agent entry's `workspace` if set
+ * 3. `null` when no workspace is available
+ *
+ * Use this for call sites that only need a workspace directory (plugin loading,
+ * config validation, CLI commands) and don't care which agent owns it.
+ */
+export function resolveFirstAgentWorkspace(cfg: RemoteClawConfig): string | null {
+  const defaultsWorkspace = cfg.agents?.defaults?.workspace?.trim();
+  if (defaultsWorkspace) {
+    return stripNullBytes(resolveUserPath(defaultsWorkspace));
+  }
+  const agents = listAgentEntries(cfg);
+  if (agents.length > 0) {
+    const firstWorkspace = agents[0]?.workspace?.trim();
+    if (firstWorkspace) {
+      return stripNullBytes(resolveUserPath(firstWorkspace));
+    }
+  }
+  return null;
+}
+
+/**
  * @deprecated Use {@link resolveSoleAgentId} or {@link requireSoleAgentId} instead.
  * Temporary shim — will be removed once all callers migrate (#1576–#1581).
  */

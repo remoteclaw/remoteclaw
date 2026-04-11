@@ -1,5 +1,3 @@
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const getActiveEmbeddedRunCount = (..._args: unknown[]) => 0;
 import { getTotalPendingReplies } from "../auto-reply/reply/dispatcher-registry.js";
 import type { CliDeps } from "../cli/deps.js";
 import { resolveAgentMaxConcurrent, resolveSubagentMaxConcurrent } from "../config/agent-limits.js";
@@ -164,12 +162,10 @@ export function createGatewayReloadHandlers(params: {
     const getActiveCounts = () => {
       const queueSize = getTotalQueueSize();
       const pendingReplies = getTotalPendingReplies();
-      const embeddedRuns = getActiveEmbeddedRunCount();
       return {
         queueSize,
         pendingReplies,
-        embeddedRuns,
-        totalActive: queueSize + pendingReplies + embeddedRuns,
+        totalActive: queueSize + pendingReplies,
       };
     };
     const formatActiveDetails = (counts: ReturnType<typeof getActiveCounts>) => {
@@ -179,9 +175,6 @@ export function createGatewayReloadHandlers(params: {
       }
       if (counts.pendingReplies > 0) {
         details.push(`${counts.pendingReplies} reply(ies)`);
-      }
-      if (counts.embeddedRuns > 0) {
-        details.push(`${counts.embeddedRuns} embedded run(s)`);
       }
       return details;
     };

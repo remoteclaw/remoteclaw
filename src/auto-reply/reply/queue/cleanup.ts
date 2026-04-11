@@ -1,5 +1,3 @@
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const resolveEmbeddedSessionLane = (key: string) => `session:${key.trim() || "main"}`;
 import { clearCommandLane } from "../../../process/command-queue.js";
 import { clearFollowupDrainCallback } from "./drain.js";
 import { clearFollowupQueue } from "./state.js";
@@ -25,7 +23,7 @@ export function clearSessionQueues(keys: Array<string | undefined>): ClearSessio
     clearedKeys.push(cleaned);
     followupCleared += clearFollowupQueue(cleaned);
     clearFollowupDrainCallback(cleaned);
-    laneCleared += clearCommandLane(resolveEmbeddedSessionLane(cleaned));
+    laneCleared += clearCommandLane(`session:${cleaned}`);
   }
 
   return { followupCleared, laneCleared, keys: clearedKeys };

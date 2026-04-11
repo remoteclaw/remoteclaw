@@ -16,12 +16,10 @@ import {
 } from "./commands-info.js";
 import { handlePluginCommand } from "./commands-plugin.js";
 import {
-  handleAbortTrigger,
   handleActivationCommand,
   handleRestartCommand,
   handleSessionCommand,
   handleSendPolicyCommand,
-  handleStopCommand,
   handleUsageCommand,
 } from "./commands-session.js";
 import { handleSubagentsCommand } from "./commands-subagents.js";
@@ -146,8 +144,6 @@ export async function handleCommands(params: HandleCommandsParams): Promise<Comm
       handleSubagentsCommand,
       handleConfigCommand,
       handleDebugCommand,
-      handleStopCommand,
-      handleAbortTrigger,
     ];
   }
   const resetMatch = params.command.commandBodyNormalized.match(/^\/(new|reset)(?:\s|$)/);

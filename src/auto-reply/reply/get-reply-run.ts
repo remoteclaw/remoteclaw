@@ -2,10 +2,6 @@ import crypto from "node:crypto";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
 const resolveSessionAuthProfileOverride = (..._args: unknown[]) => undefined as unknown;
 type ExecToolDefaults = Record<string, unknown>;
-const abortEmbeddedPiRun = (..._args: unknown[]) => false;
-const isEmbeddedPiRunActive = (..._args: unknown[]) => false;
-const isEmbeddedPiRunStreaming = (..._args: unknown[]) => false;
-const resolveEmbeddedSessionLane = (key: string) => `session:${key.trim() || "main"}`;
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
   resolveGroupSessionKey,
@@ -438,17 +434,14 @@ export async function runPreparedReply(
     inlineMode: perMessageQueueMode,
     inlineOptions: perMessageQueueOptions,
   });
-  const sessionLaneKey = resolveEmbeddedSessionLane(sessionKey ?? sessionIdFinal);
+  const sessionLaneKey = `session:${(sessionKey ?? sessionIdFinal).trim() || "main"}`;
   const laneSize = getQueueSize(sessionLaneKey);
   if (resolvedQueue.mode === "interrupt" && laneSize > 0) {
     const cleared = clearCommandLane(sessionLaneKey);
-    const aborted = abortEmbeddedPiRun(sessionIdFinal);
-    logVerbose(`Interrupting ${sessionLaneKey} (cleared ${cleared}, aborted=${aborted})`);
+    logVerbose(`Interrupting ${sessionLaneKey} (cleared ${cleared})`);
   }
   const queueKey = sessionKey ?? sessionIdFinal;
-  const isActive = isEmbeddedPiRunActive(sessionIdFinal);
-  const isStreaming = isEmbeddedPiRunStreaming(sessionIdFinal);
-  const shouldSteer = resolvedQueue.mode === "steer" || resolvedQueue.mode === "steer-backlog";
+  const isActive = false;
   const shouldFollowup =
     resolvedQueue.mode === "followup" ||
     resolvedQueue.mode === "collect" ||
@@ -527,10 +520,8 @@ export async function runPreparedReply(
     followupRun,
     queueKey,
     resolvedQueue,
-    shouldSteer,
     shouldFollowup,
     isActive,
-    isStreaming,
     opts,
     typing,
     sessionEntry,

@@ -28,10 +28,6 @@ import { resolveDiscordChannelId } from "../../discord/targets.js";
 // import ... from "@mariozechner/pi-agent-core";
 import type { AgentToolResult } from "../agent-types.js";
 import { withNormalizedTimestamp } from "../date-time.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../sandbox-paths.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const assertMediaNotDataUrl = (..._args: unknown[]) => undefined as any;
 import {
   type ActionGate,
   jsonResult,
@@ -305,7 +301,6 @@ export async function handleDiscordMessagingAction(
             "Voice messages cannot include text content (Discord limitation). Remove the content parameter.",
           );
         }
-        assertMediaNotDataUrl(mediaUrl);
         const result = await sendVoiceMessageDiscord(to, mediaUrl, {
           ...(accountId ? { accountId } : {}),
           replyTo,

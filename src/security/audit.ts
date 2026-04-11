@@ -3,8 +3,6 @@ import path from "node:path";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
 const resolveSandboxConfigForAgent = (..._args: unknown[]) =>
   ({ mode: undefined }) as Record<string, unknown>;
-const execDockerRaw = (..._args: unknown[]) =>
-  Promise.resolve({ code: 1, stdout: Buffer.from(""), stderr: Buffer.from("") });
 import { resolveBrowserConfig, resolveProfile } from "../browser/config.js";
 import { resolveBrowserControlAuth } from "../browser/control-auth.js";
 import { listChannelPlugins } from "../channels/plugins/index.js";
@@ -16,11 +14,6 @@ import { resolveGatewayAuth } from "../gateway/auth.js";
 import { buildGatewayConnectionDetails } from "../gateway/call.js";
 import { resolveGatewayProbeAuth } from "../gateway/probe-auth.js";
 import { probeGateway } from "../gateway/probe.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const listInterpreterLikeSafeBins = (..._args: unknown[]) => [] as string[];
-const resolveMergedSafeBinProfileFixtures = (..._args: unknown[]) =>
-  ({}) as Record<string, unknown>;
-const normalizeTrustedSafeBinDirs = (..._args: unknown[]) => [] as string[];
 import { collectChannelSecurityFindings } from "./audit-channel.js";
 import {
   collectAttackSurfaceSummaryFindings,
@@ -106,8 +99,6 @@ export type SecurityAuditOptions = {
   probeGatewayFn?: typeof probeGateway;
   /** Dependency injection for tests (Windows ACL checks). */
   execIcacls?: ExecFn;
-  /** Dependency injection for tests (Docker label checks). */
-  execDockerRawFn?: typeof execDockerRaw;
   /** Optional preloaded config snapshot to skip audit-time config file reads. */
   configSnapshot?: ConfigFileSnapshot | null;
   /** Optional cache for code-safety summaries across repeated deep audits. */
@@ -125,7 +116,6 @@ type AuditExecutionContext = {
   stateDir: string;
   configPath: string;
   execIcacls?: ExecFn;
-  execDockerRawFn?: typeof execDockerRaw;
   probeGatewayFn?: typeof probeGateway;
   plugins?: ReturnType<typeof listChannelPlugins>;
   configSnapshot: ConfigFileSnapshot | null;
@@ -894,25 +884,11 @@ function collectExecRuntimeFindings(cfg: RemoteClawConfig): SecurityAuditFinding
     });
   }
 
-  const normalizeConfiguredSafeBins = (entries: unknown): string[] => {
-    if (!Array.isArray(entries)) {
-      return [];
-    }
-    return Array.from(
-      new Set(
-        entries
-          .map((entry) => (typeof entry === "string" ? entry.trim().toLowerCase() : ""))
-          .filter((entry) => entry.length > 0),
-      ),
-    ).toSorted();
-  };
   const normalizeConfiguredTrustedDirs = (entries: unknown): string[] => {
     if (!Array.isArray(entries)) {
       return [];
     }
-    return normalizeTrustedSafeBinDirs(
-      entries.filter((entry): entry is string => typeof entry === "string"),
-    );
+    return entries.filter((entry): entry is string => typeof entry === "string");
   };
   const classifyRiskySafeBinTrustedDir = (entry: string): string | null => {
     const raw = entry.trim();
@@ -976,51 +952,8 @@ function collectExecRuntimeFindings(cfg: RemoteClawConfig): SecurityAuditFinding
     );
   }
 
-  const interpreterHits: string[] = [];
-  const globalSafeBins = normalizeConfiguredSafeBins(globalExec?.safeBins);
-  if (globalSafeBins.length > 0) {
-    const merged = resolveMergedSafeBinProfileFixtures({ global: globalExec }) ?? {};
-    const interpreters = listInterpreterLikeSafeBins(globalSafeBins).filter((bin) => !merged[bin]);
-    if (interpreters.length > 0) {
-      interpreterHits.push(`- tools.exec.safeBins: ${interpreters.join(", ")}`);
-    }
-  }
-
-  for (const entry of agents) {
-    if (!entry || typeof entry !== "object" || typeof entry.id !== "string") {
-      continue;
-    }
-    const agentExec = entry.tools?.exec;
-    const agentSafeBins = normalizeConfiguredSafeBins(agentExec?.safeBins);
-    if (agentSafeBins.length === 0) {
-      continue;
-    }
-    const merged =
-      resolveMergedSafeBinProfileFixtures({
-        global: globalExec,
-        local: agentExec,
-      }) ?? {};
-    const interpreters = listInterpreterLikeSafeBins(agentSafeBins).filter((bin) => !merged[bin]);
-    if (interpreters.length === 0) {
-      continue;
-    }
-    interpreterHits.push(
-      `- agents.list.${entry.id}.tools.exec.safeBins: ${interpreters.join(", ")}`,
-    );
-  }
-
-  if (interpreterHits.length > 0) {
-    findings.push({
-      checkId: "tools.exec.safe_bins_interpreter_unprofiled",
-      severity: "warn",
-      title: "safeBins includes interpreter/runtime binaries without explicit profiles",
-      detail:
-        `Detected interpreter-like safeBins entries missing explicit profiles:\n${interpreterHits.join("\n")}\n` +
-        "These entries can turn safeBins into a broad execution surface when used with permissive argv profiles.",
-      remediation:
-        "Remove interpreter/runtime bins from safeBins (prefer allowlist entries) or define hardened tools.exec.safeBinProfiles.<bin> rules.",
-    });
-  }
+  // Gutted in RemoteClaw fork — upstream safe-bin profile/interpreter
+  // subsystem removed; interpreter-unprofiled check is a no-op without it.
 
   if (riskyTrustedDirHits.length > 0) {
     findings.push({
@@ -1108,7 +1041,6 @@ async function createAuditExecutionContext(
     stateDir,
     configPath,
     execIcacls: opts.execIcacls,
-    execDockerRawFn: opts.execDockerRawFn,
     probeGatewayFn: opts.probeGatewayFn,
     plugins: opts.plugins,
     configSnapshot,
@@ -1173,11 +1105,7 @@ export async function runSecurityAudit(opts: SecurityAuditOptions): Promise<Secu
       })),
     );
     findings.push(...(await collectWorkspaceSkillSymlinkEscapeFindings({ cfg })));
-    findings.push(
-      ...(await collectSandboxBrowserHashLabelFindings({
-        execDockerRawFn: context.execDockerRawFn,
-      })),
-    );
+    findings.push(...(await collectSandboxBrowserHashLabelFindings()));
     findings.push(...(await collectPluginsTrustFindings({ cfg, stateDir })));
     if (context.deep) {
       findings.push(

@@ -14,14 +14,6 @@ const windowsAuditEnv = {
   USERNAME: "Tester",
   USERDOMAIN: "DESKTOP-TEST",
 };
-const execDockerRawUnavailable: NonNullable<SecurityAuditOptions["execDockerRawFn"]> = async () => {
-  return {
-    stdout: Buffer.alloc(0),
-    stderr: Buffer.from("docker unavailable"),
-    code: 1,
-  };
-};
-
 function stubChannelPlugin(params: {
   id: "discord" | "slack" | "telegram";
   label: string;
@@ -155,18 +147,6 @@ describe("security audit", () => {
     const dir = path.join(fixtureRoot, `case-${caseId++}-${label}`);
     await fs.mkdir(dir, { recursive: true });
     return dir;
-  };
-
-  const createFilesystemAuditFixture = async (label: string) => {
-    const tmp = await makeTmpDir(label);
-    const stateDir = path.join(tmp, "state");
-    await fs.mkdir(stateDir, { recursive: true, mode: 0o700 });
-    const configPath = path.join(stateDir, "remoteclaw.json");
-    await fs.writeFile(configPath, "{}\n", "utf-8");
-    if (!isWindows) {
-      await fs.chmod(configPath, 0o600);
-    }
-    return { tmp, stateDir, configPath };
   };
 
   const withChannelSecurityStateDir = async (fn: (tmp: string) => Promise<void>) => {
@@ -482,7 +462,6 @@ description: test skill
       platform: "win32",
       env: windowsAuditEnv,
       execIcacls,
-      execDockerRawFn: execDockerRawUnavailable,
     });
 
     const forbidden = new Set([
@@ -529,7 +508,6 @@ description: test skill
       platform: "win32",
       env: windowsAuditEnv,
       execIcacls,
-      execDockerRawFn: execDockerRawUnavailable,
     });
 
     expect(
@@ -537,123 +515,6 @@ description: test skill
         (f) => f.checkId === "fs.state_dir.perms_readable" && f.severity === "warn",
       ),
     ).toBe(true);
-  });
-
-  it("warns when sandbox browser containers have missing or stale hash labels", async () => {
-    const { stateDir, configPath } = await createFilesystemAuditFixture("browser-hash-labels");
-
-    const execDockerRawFn = (async (args: string[]) => {
-      if (args[0] === "ps") {
-        return {
-          stdout: Buffer.from("remoteclaw-sbx-browser-old\nremoteclaw-sbx-browser-missing-hash\n"),
-          stderr: Buffer.alloc(0),
-          code: 0,
-        };
-      }
-      if (args[0] === "inspect" && args.at(-1) === "remoteclaw-sbx-browser-old") {
-        return {
-          stdout: Buffer.from("abc123\tepoch-v0\n"),
-          stderr: Buffer.alloc(0),
-          code: 0,
-        };
-      }
-      if (args[0] === "inspect" && args.at(-1) === "remoteclaw-sbx-browser-missing-hash") {
-        return {
-          stdout: Buffer.from("<no value>\t<no value>\n"),
-          stderr: Buffer.alloc(0),
-          code: 0,
-        };
-      }
-      return {
-        stdout: Buffer.alloc(0),
-        stderr: Buffer.from("not found"),
-        code: 1,
-      };
-    }) as NonNullable<SecurityAuditOptions["execDockerRawFn"]>;
-
-    const res = await runSecurityAudit({
-      config: {},
-      includeFilesystem: true,
-      includeChannelSecurity: false,
-      stateDir,
-      configPath,
-      execDockerRawFn,
-    });
-
-    expect(hasFinding(res, "sandbox.browser_container.hash_label_missing", "warn")).toBe(true);
-    expect(hasFinding(res, "sandbox.browser_container.hash_epoch_stale", "warn")).toBe(true);
-    const staleEpoch = res.findings.find(
-      (f) => f.checkId === "sandbox.browser_container.hash_epoch_stale",
-    );
-    expect(staleEpoch?.detail).toContain("remoteclaw-sbx-browser-old");
-  });
-
-  it("skips sandbox browser hash label checks when docker inspect is unavailable", async () => {
-    const { stateDir, configPath } = await createFilesystemAuditFixture("browser-hash-labels-skip");
-
-    const execDockerRawFn = (async () => {
-      throw new Error("spawn docker ENOENT");
-    }) as NonNullable<SecurityAuditOptions["execDockerRawFn"]>;
-
-    const res = await runSecurityAudit({
-      config: {},
-      includeFilesystem: true,
-      includeChannelSecurity: false,
-      stateDir,
-      configPath,
-      execDockerRawFn,
-    });
-
-    expect(hasFinding(res, "sandbox.browser_container.hash_label_missing")).toBe(false);
-    expect(hasFinding(res, "sandbox.browser_container.hash_epoch_stale")).toBe(false);
-  });
-
-  it("flags sandbox browser containers with non-loopback published ports", async () => {
-    const { stateDir, configPath } = await createFilesystemAuditFixture(
-      "browser-non-loopback-publish",
-    );
-
-    const execDockerRawFn = (async (args: string[]) => {
-      if (args[0] === "ps") {
-        return {
-          stdout: Buffer.from("remoteclaw-sbx-browser-exposed\n"),
-          stderr: Buffer.alloc(0),
-          code: 0,
-        };
-      }
-      if (args[0] === "inspect" && args.at(-1) === "remoteclaw-sbx-browser-exposed") {
-        return {
-          stdout: Buffer.from("hash123\t2026-02-21-novnc-auth-default\n"),
-          stderr: Buffer.alloc(0),
-          code: 0,
-        };
-      }
-      if (args[0] === "port" && args.at(-1) === "remoteclaw-sbx-browser-exposed") {
-        return {
-          stdout: Buffer.from("6080/tcp -> 0.0.0.0:49101\n9222/tcp -> 127.0.0.1:49100\n"),
-          stderr: Buffer.alloc(0),
-          code: 0,
-        };
-      }
-      return {
-        stdout: Buffer.alloc(0),
-        stderr: Buffer.from("not found"),
-        code: 1,
-      };
-    }) as NonNullable<SecurityAuditOptions["execDockerRawFn"]>;
-
-    const res = await runSecurityAudit({
-      config: {},
-      includeFilesystem: true,
-      includeChannelSecurity: false,
-      stateDir,
-      configPath,
-      execDockerRawFn,
-    });
-
-    expect(hasFinding(res, "sandbox.browser_container.non_loopback_publish", "critical")).toBe(
-      true,
-    );
   });
 
   it("uses symlink target permissions for config checks", async () => {
@@ -678,7 +539,6 @@ description: test skill
       includeChannelSecurity: false,
       stateDir,
       configPath,
-      execDockerRawFn: execDockerRawUnavailable,
     });
 
     expect(res.findings).toEqual(
@@ -713,7 +573,6 @@ description: test skill
       includeChannelSecurity: false,
       stateDir,
       configPath,
-      execDockerRawFn: execDockerRawUnavailable,
     });
 
     expect(res.findings.some((f) => f.checkId === "skills.workspace.symlink_escape")).toBe(false);
@@ -2024,7 +1883,6 @@ description: test skill
         ? { ...process.env, USERNAME: "Tester", USERDOMAIN: "DESKTOP-TEST" }
         : undefined,
       execIcacls,
-      execDockerRawFn: execDockerRawUnavailable,
     });
 
     const expectedCheckId = isWindows
@@ -2057,7 +1915,6 @@ description: test skill
         includeChannelSecurity: false,
         stateDir,
         configPath: path.join(stateDir, "remoteclaw.json"),
-        execDockerRawFn: execDockerRawUnavailable,
       });
 
       expect(res.findings).toEqual(
@@ -2117,7 +1974,6 @@ description: test skill
       includeChannelSecurity: false,
       stateDir: sharedInstallMetadataStateDir,
       configPath: path.join(sharedInstallMetadataStateDir, "remoteclaw.json"),
-      execDockerRawFn: execDockerRawUnavailable,
     });
 
     expect(hasFinding(res, "plugins.installs_unpinned_npm_specs", "warn")).toBe(true);
@@ -2156,7 +2012,6 @@ description: test skill
       includeChannelSecurity: false,
       stateDir: sharedInstallMetadataStateDir,
       configPath: path.join(sharedInstallMetadataStateDir, "remoteclaw.json"),
-      execDockerRawFn: execDockerRawUnavailable,
     });
 
     expect(hasFinding(res, "plugins.installs_unpinned_npm_specs")).toBe(false);
@@ -2214,7 +2069,6 @@ description: test skill
       includeChannelSecurity: false,
       stateDir,
       configPath: path.join(stateDir, "remoteclaw.json"),
-      execDockerRawFn: execDockerRawUnavailable,
     });
 
     expect(hasFinding(res, "plugins.installs_version_drift", "warn")).toBe(true);
@@ -2233,7 +2087,6 @@ description: test skill
       includeChannelSecurity: false,
       stateDir,
       configPath: path.join(stateDir, "remoteclaw.json"),
-      execDockerRawFn: execDockerRawUnavailable,
     });
 
     expect(res.findings).toEqual(
@@ -2254,7 +2107,6 @@ description: test skill
       includeChannelSecurity: false,
       deep: false,
       stateDir: sharedCodeSafetyStateDir,
-      execDockerRawFn: execDockerRawUnavailable,
     });
     expect(nonDeepRes.findings.some((f) => f.checkId === "plugins.code_safety")).toBe(false);
 

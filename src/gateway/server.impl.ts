@@ -30,8 +30,6 @@ import {
 } from "../infra/control-ui-assets.js";
 import { isDiagnosticsEnabled } from "../infra/diagnostic-events.js";
 import { logAcceptedEnvOption } from "../infra/env.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const createExecApprovalForwarder = (..._args: unknown[]) => undefined as unknown;
 import { onHeartbeatEvent } from "../infra/heartbeat-events.js";
 import { startHeartbeatRunner, type HeartbeatRunner } from "../infra/heartbeat-runner.js";
 import { getMachineDisplayName } from "../infra/machine-name.js";
@@ -730,10 +728,7 @@ export async function startGatewayServer(
   }
 
   const execApprovalManager = new ExecApprovalManager();
-  const execApprovalForwarder = createExecApprovalForwarder();
-  const execApprovalHandlers = createExecApprovalHandlers(execApprovalManager, {
-    forwarder: execApprovalForwarder,
-  });
+  const execApprovalHandlers = createExecApprovalHandlers(execApprovalManager);
   const secretsHandlers = createSecretsHandlers({
     reloadSecrets: async () => {
       const active = getActiveSecretsRuntimeSnapshot();

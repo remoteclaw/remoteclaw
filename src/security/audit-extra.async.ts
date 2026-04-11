@@ -14,12 +14,6 @@ const resolveSandboxConfigForAgent = (..._args: unknown[]) => ({
 const resolveSandboxToolPolicyForAgent = (..._args: unknown[]) => ({}) as Record<string, unknown>;
 const SANDBOX_BROWSER_SECURITY_HASH_EPOCH = 0;
 type ExecDockerRawResult = { code: number; stdout: Buffer; stderr: Buffer };
-const execDockerRaw = (..._args: unknown[]) =>
-  Promise.resolve({
-    code: 1,
-    stdout: Buffer.from(""),
-    stderr: Buffer.from(""),
-  } as ExecDockerRawResult);
 type SandboxToolPolicy = Record<string, unknown>;
 const loadWorkspaceSkillEntries = (..._args: unknown[]) =>
   [] as Array<{ skill: { source: string; baseDir: string; name: string } }>;
@@ -381,10 +375,10 @@ function normalizeDockerLabelValue(raw: string | undefined): string | null {
 }
 
 async function listSandboxBrowserContainers(
-  execDockerRawFn: ExecDockerRawFn,
+  dockerExecFn: ExecDockerRawFn,
 ): Promise<string[] | null> {
   try {
-    const result = await execDockerRawFn(
+    const result = await dockerExecFn(
       ["ps", "-a", "--filter", "label=remoteclaw.sandboxBrowser=1", "--format", "{{.Names}}"],
       { allowFailure: true },
     );
@@ -403,10 +397,10 @@ async function listSandboxBrowserContainers(
 
 async function readSandboxBrowserHashLabels(params: {
   containerName: string;
-  execDockerRawFn: ExecDockerRawFn;
+  dockerExecFn: ExecDockerRawFn;
 }): Promise<{ configHash: string | null; epoch: string | null } | null> {
   try {
-    const result = await params.execDockerRawFn(
+    const result = await params.dockerExecFn(
       [
         "inspect",
         "-f",
@@ -452,10 +446,10 @@ function isLoopbackPublishHost(host: string): boolean {
 
 async function readSandboxBrowserPortMappings(params: {
   containerName: string;
-  execDockerRawFn: ExecDockerRawFn;
+  dockerExecFn: ExecDockerRawFn;
 }): Promise<string[] | null> {
   try {
-    const result = await params.execDockerRawFn(["port", params.containerName], {
+    const result = await params.dockerExecFn(["port", params.containerName], {
       allowFailure: true,
     });
     if (result.code !== 0) {
@@ -472,10 +466,13 @@ async function readSandboxBrowserPortMappings(params: {
 }
 
 export async function collectSandboxBrowserHashLabelFindings(params?: {
-  execDockerRawFn?: ExecDockerRawFn;
+  dockerExecFn?: ExecDockerRawFn;
 }): Promise<SecurityAuditFinding[]> {
   const findings: SecurityAuditFinding[] = [];
-  const execFn = params?.execDockerRawFn ?? execDockerRaw;
+  const execFn = params?.dockerExecFn;
+  if (!execFn) {
+    return findings;
+  }
   const containers = await listSandboxBrowserContainers(execFn);
   if (!containers || containers.length === 0) {
     return findings;
@@ -486,7 +483,7 @@ export async function collectSandboxBrowserHashLabelFindings(params?: {
   const nonLoopbackPublished: string[] = [];
 
   for (const containerName of containers) {
-    const labels = await readSandboxBrowserHashLabels({ containerName, execDockerRawFn: execFn });
+    const labels = await readSandboxBrowserHashLabels({ containerName, dockerExecFn: execFn });
     if (!labels) {
       continue;
     }
@@ -498,7 +495,7 @@ export async function collectSandboxBrowserHashLabelFindings(params?: {
     }
     const portMappings = await readSandboxBrowserPortMappings({
       containerName,
-      execDockerRawFn: execFn,
+      dockerExecFn: execFn,
     });
     if (!portMappings?.length) {
       continue;

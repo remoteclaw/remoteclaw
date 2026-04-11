@@ -1,21 +1,3 @@
-import type { NormalizedUsage } from "../agents/usage.js";
-import type { RemoteClawConfig } from "../config/config.js";
-
-export type ModelCostConfig = {
-  input: number;
-  output: number;
-  cacheRead: number;
-  cacheWrite: number;
-};
-
-export type UsageTotals = {
-  input?: number;
-  output?: number;
-  cacheRead?: number;
-  cacheWrite?: number;
-  total?: number;
-};
-
 export function formatTokenCount(value?: number): string {
   if (value === undefined || !Number.isFinite(value)) {
     return "0";
@@ -41,41 +23,4 @@ export function formatUsd(value?: number): string | undefined {
     return `$${value.toFixed(2)}`;
   }
   return `$${value.toFixed(4)}`;
-}
-
-export function resolveModelCostConfig(_params: {
-  provider?: string;
-  model?: string;
-  config?: RemoteClawConfig;
-}): ModelCostConfig | undefined {
-  // Models config section has been removed — cost data is no longer available
-  // from config. CLI agents resolve model costs directly.
-  return undefined;
-}
-
-const toNumber = (value: number | undefined): number =>
-  typeof value === "number" && Number.isFinite(value) ? value : 0;
-
-export function estimateUsageCost(params: {
-  usage?: NormalizedUsage | UsageTotals | null;
-  cost?: ModelCostConfig;
-}): number | undefined {
-  const usage = params.usage;
-  const cost = params.cost;
-  if (!usage || !cost) {
-    return undefined;
-  }
-  const input = toNumber(usage.input);
-  const output = toNumber(usage.output);
-  const cacheRead = toNumber(usage.cacheRead);
-  const cacheWrite = toNumber(usage.cacheWrite);
-  const total =
-    input * cost.input +
-    output * cost.output +
-    cacheRead * cost.cacheRead +
-    cacheWrite * cost.cacheWrite;
-  if (!Number.isFinite(total)) {
-    return undefined;
-  }
-  return total / 1_000_000;
 }

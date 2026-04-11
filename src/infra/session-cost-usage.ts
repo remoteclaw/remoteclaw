@@ -12,7 +12,6 @@ import {
 import type { SessionEntry } from "../config/sessions/types.js";
 import { stripEnvelope, stripMessageIdHints } from "../shared/chat-envelope.js";
 import { countToolResults, extractToolCallNames } from "../utils/transcript-tools.js";
-import { estimateUsageCost, resolveModelCostConfig } from "../utils/usage-format.js";
 import type {
   CostBreakdown,
   CostUsageTotals,
@@ -248,15 +247,6 @@ async function scanTranscriptFile(params: {
     const entry = parseTranscriptEntry(parsed);
     if (!entry) {
       continue;
-    }
-
-    if (entry.usage && entry.costTotal === undefined) {
-      const cost = resolveModelCostConfig({
-        provider: entry.provider,
-        model: entry.model,
-        config: params.config,
-      });
-      entry.costTotal = estimateUsageCost({ usage: entry.usage, cost });
     }
 
     params.onEntry(entry);
@@ -981,13 +971,6 @@ export async function loadSessionLogs(params: {
           const breakdown = extractCostBreakdown(usageRaw);
           if (breakdown?.total !== undefined) {
             cost = breakdown.total;
-          } else {
-            const costConfig = resolveModelCostConfig({
-              provider: message.provider as string | undefined,
-              model: message.model as string | undefined,
-              config: params.config,
-            });
-            cost = estimateUsageCost({ usage, cost: costConfig });
           }
         }
       }

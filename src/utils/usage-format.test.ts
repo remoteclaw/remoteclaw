@@ -14,7 +14,4 @@ describe("usage-format", () => {
     expect(formatUsd(0.5)).toBe("$0.50");
     expect(formatUsd(0.0042)).toBe("$0.0042");
   });
-
-  // Test "resolves model cost config and estimates usage cost" removed:
-  // resolveModelCostConfig is now a no-op that always returns undefined.
 });

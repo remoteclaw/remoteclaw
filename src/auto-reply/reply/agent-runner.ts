@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import { isCliProvider } from "../../agents/provider-utils.js";
 import { hasNonzeroUsage, type NormalizedUsage } from "../../agents/usage.js";
-import { resolveModelAuthMode } from "../../auth/provider-auth.js";
 import {
   resolveAgentIdFromSessionKey,
   resolveSessionFilePath,
@@ -15,7 +14,6 @@ import type { TypingMode } from "../../config/types.js";
 import { emitDiagnosticEvent, isDiagnosticsEnabled } from "../../infra/diagnostic-events.js";
 import { generateSecureUuid } from "../../infra/secure-random.js";
 import { defaultRuntime } from "../../runtime.js";
-import { estimateUsageCost, resolveModelCostConfig } from "../../utils/usage-format.js";
 import type { OriginatingChannelType, TemplateContext } from "../templating.js";
 import { resolveResponseUsageMode, type VerboseLevel } from "../thinking.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
@@ -443,12 +441,6 @@ export async function runReplyAgent(params: {
       const cacheWrite = usage.cacheWrite ?? 0;
       const promptTokens = input + cacheRead + cacheWrite;
       const totalTokens = usage.total ?? promptTokens + output;
-      const costConfig = resolveModelCostConfig({
-        provider: providerUsed,
-        model: modelUsed,
-        config: cfg,
-      });
-      const costUsd = estimateUsageCost({ usage, cost: costConfig });
       emitDiagnosticEvent({
         type: "model.usage",
         sessionKey,
@@ -465,7 +457,6 @@ export async function runReplyAgent(params: {
           total: totalTokens,
         },
         lastCallUsage: agentMeta?.lastCallUsage as NormalizedUsage | undefined,
-        costUsd,
         durationMs: Date.now() - runStartedAt,
       });
     }
@@ -475,20 +466,7 @@ export async function runReplyAgent(params: {
       (sessionKey ? activeSessionStore?.[sessionKey]?.responseUsage : undefined);
     const responseUsageMode = resolveResponseUsageMode(responseUsageRaw);
     if (responseUsageMode !== "off" && hasNonzeroUsage(usage)) {
-      const authMode = resolveModelAuthMode(providerUsed, cfg);
-      const showCost = authMode === "api-key";
-      const costConfig = showCost
-        ? resolveModelCostConfig({
-            provider: providerUsed,
-            model: modelUsed,
-            config: cfg,
-          })
-        : undefined;
-      let formatted = formatResponseUsageLine({
-        usage,
-        showCost,
-        costConfig,
-      });
+      let formatted = formatResponseUsageLine({ usage });
       if (formatted && responseUsageMode === "full" && sessionKey) {
         formatted = `${formatted} · session \`${sessionKey}\``;
       }

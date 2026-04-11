@@ -112,7 +112,6 @@ export default defineConfig({
 
         // Hard-to-unit-test modules; exercised indirectly by integration tests.
         "src/infra/state-migrations.ts",
-        "src/infra/skills-remote.ts",
         "src/infra/update-check.ts",
         "src/infra/ports-inspect.ts",
         "src/infra/outbound/outbound-session.ts",

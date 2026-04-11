@@ -114,21 +114,25 @@ export type HeartbeatRunner = {
   updateConfig: (cfg: RemoteClawConfig) => void;
 };
 
-function hasExplicitHeartbeatAgents(cfg: RemoteClawConfig) {
-  const list = cfg.agents?.list ?? [];
-  return list.some((entry) => Boolean(entry?.heartbeat));
-}
-
 export function isHeartbeatEnabledForAgent(cfg: RemoteClawConfig, agentId?: string): boolean {
-  const resolvedAgentId = normalizeAgentId(agentId ?? resolveDefaultAgentId(cfg));
   const list = cfg.agents?.list ?? [];
-  const hasExplicit = hasExplicitHeartbeatAgents(cfg);
-  if (hasExplicit) {
-    return list.some(
-      (entry) => Boolean(entry?.heartbeat) && normalizeAgentId(entry?.id) === resolvedAgentId,
-    );
+  if (list.length === 0) {
+    return false;
   }
-  return resolvedAgentId === resolveDefaultAgentId(cfg);
+  const resolvedAgentId = normalizeAgentId(agentId ?? resolveDefaultAgentId(cfg));
+  const agentEntry = list.find(
+    (entry) =>
+      entry && typeof entry.id === "string" && normalizeAgentId(entry.id) === resolvedAgentId,
+  );
+  if (!agentEntry) {
+    return false;
+  }
+  // Per-agent heartbeat config takes precedence
+  if (agentEntry.heartbeat) {
+    return true;
+  }
+  // agents.defaults.heartbeat applies to ALL configured agents
+  return Boolean(cfg.agents?.defaults?.heartbeat);
 }
 
 function resolveHeartbeatConfig(
@@ -196,17 +200,21 @@ export function resolveHeartbeatSummaryForAgent(
 
 function resolveHeartbeatAgents(cfg: RemoteClawConfig): HeartbeatAgent[] {
   const list = cfg.agents?.list ?? [];
-  if (hasExplicitHeartbeatAgents(cfg)) {
-    return list
-      .filter((entry) => entry?.heartbeat)
-      .map((entry) => {
-        const id = normalizeAgentId(entry.id);
-        return { agentId: id, heartbeat: resolveHeartbeatConfig(cfg, id) };
-      })
-      .filter((entry) => entry.agentId);
+  if (list.length === 0) {
+    return [];
   }
-  const fallbackId = resolveDefaultAgentId(cfg);
-  return [{ agentId: fallbackId, heartbeat: resolveHeartbeatConfig(cfg, fallbackId) }];
+  return list
+    .filter((entry) => {
+      if (!entry || typeof entry.id !== "string") {
+        return false;
+      }
+      return isHeartbeatEnabledForAgent(cfg, entry.id);
+    })
+    .map((entry) => {
+      const id = normalizeAgentId(entry.id);
+      return { agentId: id, heartbeat: resolveHeartbeatConfig(cfg, id) };
+    })
+    .filter((entry) => entry.agentId);
 }
 
 export function resolveHeartbeatIntervalMs(

@@ -44,6 +44,8 @@ export type CronServiceDeps = {
   cronConfig?: CronConfig;
   /** Default agent id for jobs without an agent id. */
   defaultAgentId?: string;
+  /** Sole agent id when exactly one agent is configured, null otherwise. */
+  soleAgentId?: string | null;
   /** Resolve session store path for a given agent id. */
   resolveSessionStorePath?: (agentId?: string) => string;
   /** Path to the session store (sessions.json) for reaper use. */

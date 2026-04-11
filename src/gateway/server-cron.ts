@@ -1,4 +1,4 @@
-import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveDefaultAgentId, resolveSoleAgentId } from "../agents/agent-scope.js";
 import type { CliDeps } from "../cli/deps.js";
 import { createOutboundSendDeps } from "../cli/outbound-send-deps.js";
 import { loadConfig } from "../config/config.js";
@@ -155,14 +155,25 @@ export function buildGatewayCronService(params: {
     const runtimeConfig = loadConfig();
     const normalized =
       typeof requested === "string" && requested.trim() ? normalizeAgentId(requested) : undefined;
-    const hasAgent =
-      normalized !== undefined &&
-      Array.isArray(runtimeConfig.agents?.list) &&
-      runtimeConfig.agents.list.some(
-        (entry) =>
-          entry && typeof entry.id === "string" && normalizeAgentId(entry.id) === normalized,
-      );
-    const agentId = hasAgent ? normalized : resolveDefaultAgentId(runtimeConfig);
+    if (normalized !== undefined) {
+      const hasAgent =
+        Array.isArray(runtimeConfig.agents?.list) &&
+        runtimeConfig.agents.list.some(
+          (entry) =>
+            entry && typeof entry.id === "string" && normalizeAgentId(entry.id) === normalized,
+        );
+      if (!hasAgent) {
+        cronLogger.warn(
+          { requestedAgentId: requested, normalized },
+          "cron: specified agentId not found in config — refusing silent fallback",
+        );
+        throw new Error(
+          `cron: agent "${requested}" is not configured. Check agents.list in your config.`,
+        );
+      }
+      return { agentId: normalized, cfg: runtimeConfig };
+    }
+    const agentId = resolveDefaultAgentId(runtimeConfig);
     return { agentId, cfg: runtimeConfig };
   };
 
@@ -221,6 +232,7 @@ export function buildGatewayCronService(params: {
   };
 
   const defaultAgentId = resolveDefaultAgentId(params.cfg);
+  const soleAgentId = resolveSoleAgentId(params.cfg);
   const runLogPrune = resolveCronRunLogPruneOptions(params.cfg.cron?.runLog);
   const resolveSessionStorePath = (agentId?: string) =>
     resolveStorePath(params.cfg.session?.store, {
@@ -234,6 +246,7 @@ export function buildGatewayCronService(params: {
     cronEnabled,
     cronConfig: params.cfg.cron,
     defaultAgentId,
+    soleAgentId,
     resolveSessionStorePath,
     sessionStorePath,
     enqueueSystemEvent: (text, opts) => {

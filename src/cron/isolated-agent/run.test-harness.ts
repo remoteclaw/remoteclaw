@@ -44,7 +44,7 @@ vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentRuntimeEnv: vi.fn().mockReturnValue(undefined),
   resolveAgentRuntimeOrThrow: vi.fn().mockReturnValue("claude"),
   resolveAgentWorkspaceDir: vi.fn().mockReturnValue("/tmp/workspace"),
-  resolveDefaultAgentId: vi.fn().mockReturnValue("default"),
+  resolveSoleAgentId: vi.fn().mockReturnValue("default"),
   resolveAgentSkillsFilter: resolveAgentSkillsFilterMock,
 }));
 

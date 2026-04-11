@@ -1,6 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import {
+  resolveAgentWorkspaceDir,
+  resolveDefaultAgentId,
+  resolveSessionKeyAgentId,
+} from "../agents/agent-scope.js";
 // Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
 import { parseModelRef } from "../agents/provider-utils.js";
 import { type RemoteClawConfig, loadConfig } from "../config/config.js";
@@ -783,8 +787,7 @@ export function listSessionsFromStore(params: {
         entry?.label ??
         originLabel;
       const deliveryFields = normalizeSessionDeliveryFields(entry);
-      const parsedAgent = parseAgentSessionKey(key);
-      const sessionAgentId = normalizeAgentId(parsedAgent?.agentId ?? resolveDefaultAgentId(cfg));
+      const sessionAgentId = resolveSessionKeyAgentId(key, cfg);
       const resolvedModel = resolveSessionModelIdentityRef(cfg, entry, sessionAgentId);
       const modelProvider = resolvedModel.provider;
       const model = resolvedModel.model ?? "unknown";
@@ -844,9 +847,7 @@ export function listSessionsFromStore(params: {
     let lastMessagePreview: string | undefined;
     if (entry?.sessionId) {
       if (includeDerivedTitles || includeLastMessage) {
-        const parsed = parseAgentSessionKey(s.key);
-        const agentId =
-          parsed && parsed.agentId ? normalizeAgentId(parsed.agentId) : resolveDefaultAgentId(cfg);
+        const agentId = resolveSessionKeyAgentId(s.key, cfg);
         const fields = readSessionTitleFieldsFromTranscript(
           entry.sessionId,
           storePath,

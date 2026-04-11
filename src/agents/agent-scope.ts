@@ -1,13 +1,17 @@
 import path from "node:path";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
   DEFAULT_AGENT_ID,
+  classifySessionKeyShape,
   normalizeAgentId,
   parseAgentSessionKey,
   resolveAgentIdFromSessionKey,
 } from "../routing/session-key.js";
 import { resolveUserPath } from "../utils.js";
+
+const log = createSubsystemLogger("agents/scope");
 
 /** Strip null bytes from paths to prevent ENOTDIR errors. */
 function stripNullBytes(s: string): string {
@@ -105,6 +109,58 @@ export function requireSoleAgentId(cfg: RemoteClawConfig): string {
  */
 export function resolveDefaultAgentId(cfg: RemoteClawConfig): string {
   return resolveSoleAgentId(cfg) ?? DEFAULT_AGENT_ID;
+}
+
+/**
+ * Resolve the agent ID for a session key with config-aware fallback.
+ *
+ * - Valid `agent:` prefix key → parsed agent ID.
+ * - Legacy/alias key (no prefix), single-agent config → sole agent inferred seamlessly.
+ * - Legacy/alias key, multi-agent config → first configured agent, warning logged.
+ * - Malformed `agent:` key → warning logged, best-effort fallback to sole/first agent.
+ * - Missing/empty key → sole/first agent (no warning).
+ */
+export function resolveSessionKeyAgentId(
+  sessionKey: string | undefined | null,
+  cfg: RemoteClawConfig,
+): string {
+  const shape = classifySessionKeyShape(sessionKey);
+
+  switch (shape) {
+    case "agent": {
+      const parsed = parseAgentSessionKey(sessionKey);
+      // classifySessionKeyShape returns "agent" only when parseAgentSessionKey succeeds
+      return normalizeAgentId(parsed!.agentId);
+    }
+
+    case "legacy_or_alias": {
+      const sole = resolveSoleAgentId(cfg);
+      if (sole) {
+        return sole;
+      }
+      const agents = listAgentIds(cfg);
+      const chosen = agents[0];
+      log.warn("legacy session key without agent: prefix in multi-agent config; inferring agent", {
+        sessionKey: (sessionKey ?? "").trim(),
+        chosenAgent: chosen,
+      });
+      return chosen;
+    }
+
+    case "malformed_agent": {
+      log.warn("malformed session key — cannot determine agent", {
+        sessionKey: (sessionKey ?? "").trim(),
+      });
+      const sole = resolveSoleAgentId(cfg);
+      return sole ?? listAgentIds(cfg)[0];
+    }
+
+    case "missing":
+    default: {
+      const sole = resolveSoleAgentId(cfg);
+      return sole ?? listAgentIds(cfg)[0];
+    }
+  }
 }
 
 export function resolveSessionAgentIds(params: {

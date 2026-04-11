@@ -13,13 +13,6 @@ import type { RuntimeEnv } from "../runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../test-utils/channel-plugins.js";
 import { agentCommand } from "./agent.js";
 
-// model-catalog.js was deleted; the mock is provided by isolated-agent.mocks.js.
-// Access the mock function via vi.hoisted so we can configure return values per-test.
-const loadModelCatalogMock = vi.fn();
-vi.mock("../agents/model-catalog.js", () => ({
-  loadModelCatalog: loadModelCatalogMock,
-}));
-
 // ── ChannelBridge mock ──────────────────────────────────────────────────
 
 type BridgeConstructorOpts = {
@@ -215,7 +208,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   bridgeConstructorCalls.length = 0;
   bridgeHandleMock.mockResolvedValue(defaultBridgeResult());
-  loadModelCatalogMock?.mockResolvedValue([]);
 
   // Default: withAuthKeyRetry passes through to the execute callback
   withAuthKeyRetryMock.mockImplementation(
@@ -379,10 +371,6 @@ describe("agentCommand", () => {
         models: {},
       });
 
-      loadModelCatalogMock.mockResolvedValueOnce([
-        { id: "claude-opus-4-5", name: "Opus", provider: "anthropic" },
-      ]);
-
       await agentCommand(
         {
           message: "hi",
@@ -525,14 +513,6 @@ describe("agentCommand", () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store);
-      loadModelCatalogMock.mockResolvedValueOnce([
-        {
-          id: "claude-opus-4-5",
-          name: "Opus 4.5",
-          provider: "anthropic",
-          reasoning: true,
-        },
-      ]);
 
       await agentCommand({ message: "hi", to: "+1555" }, runtime);
 

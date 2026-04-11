@@ -77,21 +77,6 @@ vi.mock("../../agents/workspace.js", () => ({
   ensureAgentWorkspace: vi.fn().mockResolvedValue({ dir: "/tmp/workspace" }),
 }));
 
-vi.mock("../../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn().mockResolvedValue({ models: [] }),
-}));
-
-vi.mock("../../agents/model-selection.js", () => ({
-  getModelRefStatus: vi.fn().mockReturnValue({ allowed: false }),
-  resolveAllowedModelRef: vi
-    .fn()
-    .mockReturnValue({ ref: { provider: "claude", model: "claude-sonnet-4-5" } }),
-  resolveConfiguredModelRef: vi
-    .fn()
-    .mockReturnValue({ provider: "claude", model: "claude-sonnet-4-5" }),
-  resolveHooksGmailModel: vi.fn().mockReturnValue(null),
-}));
-
 vi.mock("../../agents/provider-utils.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../agents/provider-utils.js")>();
   return {

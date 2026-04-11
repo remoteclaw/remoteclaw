@@ -61,16 +61,6 @@ vi.mock("../../channels/plugins/pairing.js", async () => {
   };
 });
 
-vi.mock("../../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn(async () => [
-    { provider: "anthropic", id: "claude-opus-4-5", name: "Claude Opus" },
-    { provider: "anthropic", id: "claude-sonnet-4-5", name: "Claude Sonnet" },
-    { provider: "openai", id: "gpt-4.1", name: "GPT-4.1" },
-    { provider: "openai", id: "gpt-4.1-mini", name: "GPT-4.1 Mini" },
-    { provider: "google", id: "gemini-2.0-flash", name: "Gemini Flash" },
-  ]),
-}));
-
 vi.mock("../../infra/system-events.js", () => ({
   enqueueSystemEvent: vi.fn(),
 }));

@@ -1,9 +1,3 @@
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./device-metadata-normalization.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const normalizeDeviceMetadataForAuth = (..._args: unknown[]) => undefined as any;
-export { normalizeDeviceMetadataForAuth };
-
 export type DeviceAuthPayloadParams = {
   deviceId: string;
   clientId: string;
@@ -39,8 +33,8 @@ export function buildDeviceAuthPayload(params: DeviceAuthPayloadParams): string 
 export function buildDeviceAuthPayloadV3(params: DeviceAuthPayloadV3Params): string {
   const scopes = params.scopes.join(",");
   const token = params.token ?? "";
-  const platform = normalizeDeviceMetadataForAuth(params.platform);
-  const deviceFamily = normalizeDeviceMetadataForAuth(params.deviceFamily);
+  const platform = params.platform ?? "";
+  const deviceFamily = params.deviceFamily ?? "";
   return [
     "v3",
     params.deviceId,

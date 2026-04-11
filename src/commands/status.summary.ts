@@ -1,5 +1,4 @@
 import { DEFAULT_CONTEXT_TOKENS } from "../agents/defaults.js";
-import { resolveConfiguredModelRef } from "../agents/model-selection.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { loadConfig } from "../config/config.js";
 import {
@@ -98,8 +97,8 @@ export async function getStatusSummary(
   const mainSessionKey = resolveMainSessionKey(cfg);
   const queuedSystemEvents = peekSystemEvents(mainSessionKey);
 
-  const resolved = resolveConfiguredModelRef({ cfg });
-  const configModel = resolved.model || null;
+  // Gutted in RemoteClaw fork — CLI runtimes manage their own model selection
+  const configModel = null;
   const configContextTokens = cfg.agents?.defaults?.contextTokens ?? DEFAULT_CONTEXT_TOKENS;
 
   const now = Date.now();

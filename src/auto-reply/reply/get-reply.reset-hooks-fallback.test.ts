@@ -15,9 +15,6 @@ vi.mock("../../agents/agent-scope.js", () => ({
   resolveSessionAgentId: vi.fn(() => "main"),
   resolveAgentSkillsFilter: vi.fn(() => undefined),
 }));
-vi.mock("../../agents/model-selection.js", () => ({
-  resolveModelRefFromString: vi.fn(() => null),
-}));
 vi.mock("../../agents/timeout.js", () => ({
   resolveAgentTimeoutMs: vi.fn(() => 60000),
 }));

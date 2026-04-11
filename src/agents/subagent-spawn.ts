@@ -15,9 +15,7 @@ import {
 import { normalizeDeliveryContext } from "../utils/delivery-context.js";
 import { resolveAgentConfig, resolveAgentWorkspaceDir } from "./agent-scope.js";
 import { AGENT_LANE_SUBAGENT } from "./lanes.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const resolveSubagentSpawnModelSelection = (..._args: unknown[]) => undefined as unknown;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// Gutted in RemoteClaw fork — CLI runtimes manage their own model selection
 const resolveSandboxRuntimeStatus = (..._args: unknown[]) => ({
   sandboxed: false,
   mode: "off" as const,
@@ -266,7 +264,7 @@ export async function spawnSubagentDirect(
       error: `Invalid agentId "${requestedAgentId}". Agent IDs must match [a-z0-9][a-z0-9_-]{0,63}. Use agents_list to discover valid targets.`,
     };
   }
-  const modelOverride = params.model;
+  const _modelOverride = params.model;
   const thinkingOverrideRaw = params.thinking;
   const requestThreadBinding = params.thread === true;
   const sandboxMode = params.sandbox === "require" ? "require" : "inherit";
@@ -391,11 +389,7 @@ export async function spawnSubagentDirect(
   const childDepth = callerDepth + 1;
   const spawnedByKey = requesterInternalKey;
   const targetAgentConfig = resolveAgentConfig(cfg, targetAgentId);
-  const resolvedModel = resolveSubagentSpawnModelSelection({
-    cfg,
-    agentId: targetAgentId,
-    modelOverride,
-  }) as string | undefined;
+  const resolvedModel = undefined as string | undefined;
 
   const resolvedThinkingDefaultRaw =
     readStringParam(targetAgentConfig?.subagents ?? {}, "thinking") ??

@@ -33,7 +33,6 @@ import {
   serializeCommandArgs,
 } from "../../auto-reply/commands-registry.js";
 import { finalizeInboundContext } from "../../auto-reply/reply/inbound-context.js";
-import { resolveStoredModelOverride } from "../../auto-reply/reply/model-selection.js";
 import { dispatchReplyWithDispatcher } from "../../auto-reply/reply/provider-dispatcher.js";
 import type { ReplyPayload } from "../../auto-reply/types.js";
 import { resolveCommandAuthorizedFromAuthorizers } from "../../channels/command-gating.js";
@@ -41,7 +40,6 @@ import { createReplyPrefixOptions } from "../../channels/reply-prefix.js";
 import type { RemoteClawConfig, loadConfig } from "../../config/config.js";
 import { isDangerousNameMatchingEnabled } from "../../config/dangerous-name-matching.js";
 import { resolveOpenProviderRuntimeGroupPolicy } from "../../config/runtime-group-policy.js";
-import { loadSessionStore, resolveStorePath } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
@@ -415,37 +413,16 @@ async function resolveDiscordModelPickerRoute(params: {
     : route;
 }
 
+// Gutted in RemoteClaw fork — stored model overrides removed; CLI runtimes handle model selection
 function resolveDiscordModelPickerCurrentModel(params: {
   cfg: ReturnType<typeof loadConfig>;
   route: ReturnType<typeof resolveAgentRoute>;
   data: Awaited<ReturnType<typeof loadDiscordModelPickerData>>;
 }): string {
-  const fallback = buildDiscordModelPickerCurrentModel(
+  return buildDiscordModelPickerCurrentModel(
     params.data.resolvedDefault.provider,
     params.data.resolvedDefault.model,
   );
-  try {
-    const storePath = resolveStorePath(params.cfg.session?.store, {
-      agentId: params.route.agentId,
-    });
-    const sessionStore = loadSessionStore(storePath, { skipCache: true });
-    const sessionEntry = sessionStore[params.route.sessionKey];
-    const override = resolveStoredModelOverride({
-      sessionEntry,
-      sessionStore,
-      sessionKey: params.route.sessionKey,
-    }) as { model?: string; provider?: string } | undefined;
-    if (!override?.model) {
-      return fallback;
-    }
-    const provider = (override.provider || params.data.resolvedDefault.provider).trim();
-    if (!provider) {
-      return fallback;
-    }
-    return `${provider}/${override.model}`;
-  } catch {
-    return fallback;
-  }
 }
 
 async function replyWithDiscordModelPickerProviders(params: {

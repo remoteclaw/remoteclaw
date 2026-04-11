@@ -28,11 +28,12 @@ export {
   shouldVerifyRequesterSpawnedSessionVisibility,
 } from "./sessions-resolution.js";
 import { extractTextFromChatContent } from "../../shared/chat-content.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const sanitizeUserFacingText = (text: string, _opts?: unknown): string => text;
-const stripDowngradedToolCallText = (text: string): string => text;
-const stripMinimaxToolCallXml = (text: string): string => text;
-const stripThinkingTagsFromText = (text: string): string => text;
+import { sanitizeUserFacingText } from "../agent-helpers.js";
+import {
+  stripDowngradedToolCallText,
+  stripMinimaxToolCallXml,
+  stripThinkingTagsFromText,
+} from "../agent-utils.js";
 
 export type SessionKind = "main" | "group" | "cron" | "hook" | "node" | "other";
 

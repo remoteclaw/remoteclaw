@@ -1,10 +1,4 @@
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../agents/bash-tools.js";
-type ExecToolDefaults = Record<string, unknown>;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../../agents/sandbox.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveSandboxRuntimeStatus = (..._args: unknown[]) => ({ sandboxed: false });
+import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { listChatCommands, shouldHandleTextCommands } from "../commands-registry.js";
@@ -18,34 +12,30 @@ import { applyInlineDirectiveOverrides } from "./get-reply-directives-apply.js";
 import { clearInlineDirectives } from "./get-reply-directives-utils.js";
 import { defaultGroupActivation, resolveGroupRequireMention } from "./groups.js";
 import { CURRENT_MESSAGE_MARKER, stripMentions, stripStructuralPrefixes } from "./mentions.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./model-selection.js";
-// oxlint-disable-next-line typescript/no-explicit-any
+import { stripInlineStatus } from "./reply-inline.js";
+
+// Gutted in RemoteClaw fork — CLI runtimes manage their own model/sandbox/elevated state
+type ExecToolDefaults = Record<string, unknown>;
+
 export const createModelSelectionState = (..._args: unknown[]) => ({
   provider: "cli" as string,
   model: "default" as string,
   resolveDefaultThinkingLevel: async (): Promise<ThinkLevel | undefined> => undefined,
   resolveDefaultReasoningLevel: async (): Promise<ReasoningLevel> => "off" as ReasoningLevel,
-  contextTokens: 128000,
+  contextTokens: DEFAULT_CONTEXT_TOKENS,
   aliasIndex: new Map<string, { provider: string; model: string }>(),
   allowedModelKeys: new Set<string>(),
   allowedModelCatalog: [] as Array<{ id: string; provider: string }>,
   resetModelOverride: false,
 });
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveContextTokens = (..._args: unknown[]) => 128000;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./reply-elevated.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const formatElevatedUnavailableMessage = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
+
+const resolveSandboxRuntimeStatus = (..._args: unknown[]) => ({ sandboxed: false });
+const formatElevatedUnavailableMessage = (..._args: unknown[]) => undefined as string | undefined;
 const resolveElevatedPermissions = (..._args: unknown[]) => ({
   enabled: false,
   allowed: false,
-  // oxlint-disable-next-line typescript/no-explicit-any
-  failures: [] as any[],
+  failures: [] as never[],
 });
-import { stripInlineStatus } from "./reply-inline.js";
 import type { TypingController } from "./typing.js";
 
 type AgentDefaults = NonNullable<RemoteClawConfig["agents"]>["defaults"];
@@ -414,10 +404,7 @@ export async function resolveReplyDirectives(params: {
     resolvedReasoningLevel = await modelState.resolveDefaultReasoningLevel();
   }
 
-  let contextTokens = resolveContextTokens({
-    agentCfg,
-    model,
-  });
+  let contextTokens = agentCfg?.contextTokens ?? DEFAULT_CONTEXT_TOKENS;
 
   const initialModelLabel = `${provider}/${model}`;
   const formatModelSwitchEvent = (label: string, alias?: string) =>

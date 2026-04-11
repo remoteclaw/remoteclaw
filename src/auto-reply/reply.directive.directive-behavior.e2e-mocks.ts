@@ -11,10 +11,6 @@ const hoisted = vi.hoisted(() => ({
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type annotation avoids TS2742 (non-portable inferred type)
 export const runAgent: MockInstance = hoisted.runAgent;
 
-vi.mock("../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn(),
-}));
-
 /**
  * ChannelBridge mock that delegates to runAgent, bridging the
  * ChannelBridge interface to the embedded agent interface so that existing

@@ -1,33 +1,10 @@
 import fs from "node:fs";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/context.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveContextTokensForModel = (..._args: unknown[]) => 128000;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/defaults.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const DEFAULT_CONTEXT_TOKENS = 128000;
-// oxlint-disable-next-line typescript/no-explicit-any
-const DEFAULT_MODEL = "default";
-// oxlint-disable-next-line typescript/no-explicit-any
-const DEFAULT_PROVIDER = "cli";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/model-selection.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const buildModelAliasIndex = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveConfiguredModelRef = (..._args: unknown[]) => ({ provider: "cli", model: "default" });
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveModelRefFromString = (..._args: unknown[]) => undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/sandbox.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveSandboxRuntimeStatus = (..._args: unknown[]) => ({
-  sandboxed: false,
-  mode: "off" as const,
-});
+import { DEFAULT_CONTEXT_TOKENS } from "../agents/defaults.js";
 import { derivePromptTokens, normalizeUsage, type UsageLike } from "../agents/usage.js";
-import { resolveChannelModelOverride } from "../channels/model-overrides.js";
+
+// Gutted in RemoteClaw fork — CLI runtimes manage their own model selection
+const DEFAULT_MODEL = "default";
+const DEFAULT_PROVIDER = "cli";
 import { isCommandFlagEnabled } from "../config/commands.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import {
@@ -138,17 +115,9 @@ function resolveRuntimeLabel(
   args: Pick<StatusArgs, "config" | "agent" | "sessionKey" | "sessionScope">,
 ): string {
   const sessionKey = args.sessionKey?.trim();
+  // Gutted in RemoteClaw fork — sandbox runtime removed; always direct
   if (args.config && sessionKey) {
-    const runtimeStatus = resolveSandboxRuntimeStatus({
-      cfg: args.config,
-      sessionKey,
-    });
-    const sandboxMode = runtimeStatus.mode ?? "off";
-    if (sandboxMode === "off") {
-      return "direct";
-    }
-    const runtime = runtimeStatus.sandboxed ? "docker" : sessionKey ? "direct" : "unknown";
-    return `${runtime}/${String(sandboxMode)}`;
+    return "direct";
   }
 
   const sandboxMode = args.agent?.sandbox?.mode ?? "off";
@@ -163,10 +132,7 @@ function resolveRuntimeLabel(
       return true;
     }
     if (args.config) {
-      return resolveSandboxRuntimeStatus({
-        cfg: args.config,
-        sessionKey,
-      }).sandboxed;
+      return false; // Gutted in RemoteClaw fork — sandbox runtime removed
     }
     const sessionScope = args.sessionScope ?? "per-sender";
     const mainKey = resolveMainSessionKey({
@@ -383,49 +349,16 @@ const formatVoiceModeLine = (
 export function buildStatusMessage(args: StatusArgs): string {
   const now = args.now ?? Date.now();
   const entry = args.sessionEntry;
-  const selectionConfig = {
-    agents: {
-      defaults: args.agent ?? {},
-    },
-  } as RemoteClawConfig;
-  const contextConfig = args.config
-    ? ({
-        ...args.config,
-        agents: {
-          ...args.config.agents,
-          defaults: {
-            ...args.config.agents?.defaults,
-            ...args.agent,
-          },
-        },
-      } as RemoteClawConfig)
-    : ({
-        agents: {
-          defaults: args.agent ?? {},
-        },
-      } as RemoteClawConfig);
-  const resolved = resolveConfiguredModelRef({
-    cfg: selectionConfig,
-    defaultProvider: DEFAULT_PROVIDER,
-    defaultModel: DEFAULT_MODEL,
-  });
-  const selectedProvider = entry?.providerOverride ?? resolved.provider ?? DEFAULT_PROVIDER;
-  const selectedModel = entry?.modelOverride ?? resolved.model ?? DEFAULT_MODEL;
+  const selectedProvider = entry?.providerOverride ?? DEFAULT_PROVIDER;
+  const selectedModel = entry?.modelOverride ?? DEFAULT_MODEL;
   const modelRefs = resolveSelectedAndActiveModel({
     selectedProvider,
     selectedModel,
     sessionEntry: entry,
   });
-  let activeProvider = modelRefs.active.provider;
-  let activeModel = modelRefs.active.model;
-  let contextTokens =
-    resolveContextTokensForModel({
-      cfg: contextConfig,
-      provider: activeProvider,
-      model: activeModel,
-      contextTokensOverride: entry?.contextTokens ?? args.agent?.contextTokens,
-      fallbackContextTokens: DEFAULT_CONTEXT_TOKENS,
-    }) ?? DEFAULT_CONTEXT_TOKENS;
+  let _activeProvider = modelRefs.active.provider;
+  let _activeModel = modelRefs.active.model;
+  let contextTokens = entry?.contextTokens ?? args.agent?.contextTokens ?? DEFAULT_CONTEXT_TOKENS;
 
   let inputTokens = entry?.inputTokens;
   let outputTokens = entry?.outputTokens;
@@ -454,20 +387,15 @@ export function buildStatusMessage(args: StatusArgs): string {
           const provider = logUsage.model.slice(0, slashIndex).trim();
           const model = logUsage.model.slice(slashIndex + 1).trim();
           if (provider && model) {
-            activeProvider = provider;
-            activeModel = model;
+            _activeProvider = provider;
+            _activeModel = model;
           }
         } else {
-          activeModel = logUsage.model;
+          _activeModel = logUsage.model;
         }
       }
-      if (!contextTokens && logUsage.model) {
-        contextTokens =
-          resolveContextTokensForModel({
-            cfg: contextConfig,
-            model: logUsage.model,
-            fallbackContextTokens: contextTokens ?? undefined,
-          }) ?? contextTokens;
+      if (!contextTokens) {
+        contextTokens = DEFAULT_CONTEXT_TOKENS;
       }
       if (!inputTokens || inputTokens === 0) {
         inputTokens = logUsage.input;
@@ -546,44 +474,8 @@ export function buildStatusMessage(args: StatusArgs): string {
   const selectedModelLabel = modelRefs.selected.label || "unknown";
 
   const selectedAuthLabel = selectedAuthLabelValue ? ` · 🔑 ${selectedAuthLabelValue}` : "";
-  const channelModelNote = (() => {
-    if (!args.config || !entry) {
-      return undefined;
-    }
-    if (entry.modelOverride?.trim() || entry.providerOverride?.trim()) {
-      return undefined;
-    }
-    const channelOverride = resolveChannelModelOverride({
-      cfg: args.config,
-      channel: entry.channel ?? entry.origin?.provider,
-      groupId: entry.groupId,
-      groupChannel: entry.groupChannel,
-      groupSubject: entry.subject,
-      parentSessionKey: args.parentSessionKey,
-    });
-    if (!channelOverride) {
-      return undefined;
-    }
-    const aliasIndex = buildModelAliasIndex({
-      cfg: args.config,
-      defaultProvider: DEFAULT_PROVIDER,
-    });
-    const resolvedOverride = resolveModelRefFromString({
-      raw: channelOverride.model,
-      defaultProvider: DEFAULT_PROVIDER,
-      aliasIndex,
-    });
-    if (!resolvedOverride) {
-      return undefined;
-    }
-    if (
-      resolvedOverride.ref.provider !== selectedProvider ||
-      resolvedOverride.ref.model !== selectedModel
-    ) {
-      return undefined;
-    }
-    return "channel override";
-  })();
+  // Gutted in RemoteClaw fork — model alias index and ref resolution removed
+  const channelModelNote = undefined as string | undefined;
   const modelNote = channelModelNote ? ` · ${channelModelNote}` : "";
   const modelLine = `🧠 Model: ${selectedModelLabel}${selectedAuthLabel}${modelNote}`;
   const commit = resolveCommitHash();

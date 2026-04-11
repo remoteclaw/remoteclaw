@@ -15,13 +15,6 @@ vi.mock("../../agents/session-write-lock.js", () => ({
   acquireSessionWriteLock: async () => ({ release: async () => {} }),
 }));
 
-vi.mock("../../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn(async () => [
-    { provider: "minimax", id: "m2.5", name: "M2.5" },
-    { provider: "openai", id: "gpt-4o-mini", name: "GPT-4o mini" },
-  ]),
-}));
-
 let suiteRoot = "";
 let suiteCase = 0;
 

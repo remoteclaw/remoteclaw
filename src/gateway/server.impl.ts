@@ -110,8 +110,6 @@ import { safeParseJson } from "./server-methods/nodes.helpers.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
 const createSecretsHandlers = (..._args: unknown[]) => ({}) as GatewayRequestHandlers;
 import { hasConnectedMobileNode } from "./server-mobile-nodes.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const loadGatewayModelCatalog = async (): Promise<Record<string, unknown>[]> => [];
 import { createNodeSubscriptionManager } from "./server-node-subscriptions.js";
 import { loadGatewayPlugins } from "./server-plugins.js";
 import { createGatewayReloadHandlers } from "./server-reload-handlers.js";
@@ -132,16 +130,6 @@ import {
 } from "./server/health-state.js";
 import { loadGatewayTlsRuntime } from "./server/tls.js";
 import { ensureGatewayStartupAuth } from "./startup-auth.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const maybeSeedControlUiAllowedOriginsAtStartup = async (params: {
-  config: RemoteClawConfig;
-  [key: string]: unknown;
-}) => params.config;
-
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-export const __resetModelCatalogCacheForTest = (..._args: unknown[]) => undefined as unknown;
 
 ensureRemoteClawCliOnPath();
 
@@ -433,13 +421,6 @@ export async function startGatewayServer(
   setPreRestartDeferralCheck(
     () => getTotalQueueSize() + getTotalPendingReplies() + getActiveEmbeddedRunCount(),
   );
-  // Unconditional startup migration: seed gateway.controlUi.allowedOrigins for existing
-  // non-loopback installs that upgraded to v2026.2.26+ without required origins.
-  cfgAtStart = await maybeSeedControlUiAllowedOriginsAtStartup({
-    config: cfgAtStart,
-    writeConfig: writeConfigFile,
-    log,
-  });
 
   initSubagentRegistry();
   const defaultAgentId = resolveDefaultAgentId(cfgAtStart);
@@ -793,7 +774,6 @@ export async function startGatewayServer(
       cron,
       cronStorePath,
       execApprovalManager,
-      loadGatewayModelCatalog,
       getHealthCache,
       refreshHealthSnapshot: refreshGatewayHealthSnapshot,
       logHealth,

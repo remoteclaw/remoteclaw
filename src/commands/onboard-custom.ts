@@ -1,17 +1,3 @@
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/context-window-guard.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const CONTEXT_WINDOW_HARD_MIN_TOKENS = undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/defaults.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const DEFAULT_PROVIDER = undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/model-selection.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const buildModelAliasIndex = (..._args: unknown[]) => undefined as any;
-// oxlint-disable-next-line typescript/no-explicit-any
-const modelKey = (..._args: unknown[]) => undefined as any;
 import type { RemoteClawConfig } from "../config/config.js";
 import type { ModelProviderConfig } from "../config/types.models.js";
 import { isSecretRef, type SecretInput } from "../config/types.secrets.js";
@@ -22,19 +8,23 @@ import {
   normalizeOptionalSecretInput,
 } from "../utils/normalize-secret-input.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./auth-choice.apply-helpers.js";
+import type { SecretInputMode } from "./onboard-types.js";
+
+// Gutted in RemoteClaw fork — model provider onboarding removed; CLI runtimes handle models
+// oxlint-disable-next-line typescript/no-explicit-any
+const CONTEXT_WINDOW_HARD_MIN_TOKENS = undefined as any;
+// oxlint-disable-next-line typescript/no-explicit-any
+const DEFAULT_PROVIDER = undefined as any;
+// oxlint-disable-next-line typescript/no-explicit-any
+const buildModelAliasIndex = (..._args: unknown[]) => undefined as any;
+// oxlint-disable-next-line typescript/no-explicit-any
+const modelKey = (..._args: unknown[]) => undefined as any;
 // oxlint-disable-next-line typescript/no-explicit-any
 const ensureApiKeyFromEnvOrPrompt = (..._args: unknown[]) => undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./model-picker.js";
 // oxlint-disable-next-line typescript/no-explicit-any
 const applyPrimaryModel = (..._args: unknown[]) => undefined as any;
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "./models/shared.js";
 // oxlint-disable-next-line typescript/no-explicit-any
 const normalizeAlias = (..._args: unknown[]) => undefined as any;
-import type { SecretInputMode } from "./onboard-types.js";
 
 const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434/v1";
 const DEFAULT_CONTEXT_WINDOW = CONTEXT_WINDOW_HARD_MIN_TOKENS;

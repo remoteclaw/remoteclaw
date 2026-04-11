@@ -1,12 +1,8 @@
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/defaults.js";
-// oxlint-disable-next-line typescript/no-explicit-any
+import { isCommandFlagEnabled } from "../config/commands.js";
+
+// Gutted in RemoteClaw fork — CLI runtimes manage their own model selection
 const DEFAULT_MODEL = "default";
 const DEFAULT_PROVIDER = "cli";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../agents/model-selection.js";
-const resolveConfiguredModelRef = (..._args: unknown[]) => ({ provider: "cli", model: "default" });
-import { isCommandFlagEnabled } from "../config/commands.js";
 import type { RemoteClawConfig } from "../config/types.js";
 import { escapeRegExp } from "../utils.js";
 import { getChatCommands, getNativeCommandSurfaces } from "./commands-registry.data.js";
@@ -261,19 +257,12 @@ export function buildCommandTextFromArgs(
   return buildCommandText(commandName, serializeCommandArgs(command, args));
 }
 
-function resolveDefaultCommandContext(cfg?: RemoteClawConfig): {
+// Gutted in RemoteClaw fork — CLI runtimes manage their own model selection
+function resolveDefaultCommandContext(_cfg?: RemoteClawConfig): {
   provider: string;
   model: string;
 } {
-  const resolved = resolveConfiguredModelRef({
-    cfg: cfg ?? ({} as RemoteClawConfig),
-    defaultProvider: DEFAULT_PROVIDER,
-    defaultModel: DEFAULT_MODEL,
-  });
-  return {
-    provider: resolved.provider ?? DEFAULT_PROVIDER,
-    model: resolved.model ?? DEFAULT_MODEL,
-  };
+  return { provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL };
 }
 
 export type ResolvedCommandArgChoice = { value: string; label: string };

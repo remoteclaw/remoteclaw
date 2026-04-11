@@ -1102,32 +1102,19 @@ describe("realredactConfigSnapshot_real", () => {
     const hints = mainSchemaHints;
 
     const snapshot = makeSnapshot({
-      agents: {
-        defaults: {
-          memorySearch: {
-            remote: {
-              apiKey: "1234",
-            },
+      tools: {
+        web: {
+          search: {
+            apiKey: "brave-key-1234",
           },
         },
-        list: [
-          {
-            memorySearch: {
-              remote: {
-                apiKey: "6789",
-              },
-            },
-          },
-        ],
       },
     });
 
     const result = redactConfigSnapshot(snapshot, hints);
     const config = result.config as typeof snapshot.config;
-    expect(config.agents.defaults.memorySearch.remote.apiKey).toBe(REDACTED_SENTINEL);
-    expect(config.agents.list[0].memorySearch.remote.apiKey).toBe(REDACTED_SENTINEL);
+    expect(config.tools.web.search.apiKey).toBe(REDACTED_SENTINEL);
     const restored = restoreRedactedValues(result.config, snapshot.config, hints);
-    expect(restored.agents.defaults.memorySearch.remote.apiKey).toBe("1234");
-    expect(restored.agents.list[0].memorySearch.remote.apiKey).toBe("6789");
+    expect(restored.tools.web.search.apiKey).toBe("brave-key-1234");
   });
 });

@@ -3,7 +3,6 @@ import {
   BootSchema,
   HeartbeatSchema,
   AgentSandboxSchema,
-  AgentModelSchema,
   MemorySearchSchema,
 } from "./zod-schema.agent-runtime.js";
 import {
@@ -16,30 +15,19 @@ import {
 
 export const AgentDefaultsSchema = z
   .object({
-    model: AgentModelSchema.optional(),
-    imageModel: AgentModelSchema.optional(),
-    pdfModel: AgentModelSchema.optional(),
-    pdfMaxBytesMb: z.number().positive().optional(),
-    pdfMaxPages: z.number().int().positive().optional(),
-    models: z
-      .record(
-        z.string(),
-        z
-          .object({
-            alias: z.string().optional(),
-            /** Provider-specific API parameters (e.g., GLM-4.7 thinking mode). */
-            params: z.record(z.string(), z.unknown()).optional(),
-            /** Enable streaming for this model (default: true, false for Ollama to avoid SDK issue #1205). */
-            streaming: z.boolean().optional(),
-          })
-          .strict(),
-      )
-      .optional(),
+    // Model selection config gutted — CLI runtimes manage their own models.
+    // Stubs kept for config parse compatibility (existing configs still parse).
+    model: z.unknown().optional(),
+    imageModel: z.unknown().optional(),
+    pdfModel: z.unknown().optional(),
+    pdfMaxBytesMb: z.unknown().optional(),
+    pdfMaxPages: z.unknown().optional(),
+    models: z.unknown().optional(),
     workspace: z.string().optional(),
     repoRoot: z.string().optional(),
-    skipBootstrap: z.boolean().optional(),
-    bootstrapMaxChars: z.number().int().positive().optional(),
-    bootstrapTotalMaxChars: z.number().int().positive().optional(),
+    skipBootstrap: z.unknown().optional(),
+    bootstrapMaxChars: z.unknown().optional(),
+    bootstrapTotalMaxChars: z.unknown().optional(),
     userTimezone: z.string().optional(),
     timeFormat: z.union([z.literal("auto"), z.literal("12"), z.literal("24")]).optional(),
     envelopeTimezone: z.string().optional(),
@@ -144,7 +132,7 @@ export const AgentDefaultsSchema = z
             "Maximum number of active children a single agent session can spawn (default: 5).",
           ),
         archiveAfterMinutes: z.number().int().positive().optional(),
-        model: AgentModelSchema.optional(),
+        model: z.unknown().optional(),
         thinking: z.string().optional(),
         runTimeoutSeconds: z.number().int().min(0).optional(),
         announceTimeoutMs: z.number().int().positive().optional(),

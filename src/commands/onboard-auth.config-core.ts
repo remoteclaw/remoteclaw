@@ -1,4 +1,5 @@
 import type { RemoteClawConfig } from "../config/config.js";
+import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
 import { KILOCODE_BASE_URL } from "../providers/kilocode-shared.js";
 import {
   HUGGINGFACE_DEFAULT_MODEL_REF,
@@ -36,7 +37,11 @@ export function applyZaiProviderConfig(
   const modelId = params?.modelId?.trim() || ZAI_DEFAULT_MODEL_ID;
   const modelRef = `zai/${modelId}`;
 
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   models[modelRef] = {
     ...models[modelRef],
     alias: models[modelRef]?.alias ?? "GLM",
@@ -53,7 +58,11 @@ export function applyZaiConfig(
 }
 
 export function applyOpenrouterProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   models[OPENROUTER_DEFAULT_MODEL_REF] = {
     ...models[OPENROUTER_DEFAULT_MODEL_REF],
     alias: models[OPENROUTER_DEFAULT_MODEL_REF]?.alias ?? "OpenRouter",
@@ -66,7 +75,7 @@ export function applyOpenrouterProviderConfig(cfg: RemoteClawConfig): RemoteClaw
       defaults: {
         ...cfg.agents?.defaults,
         models,
-      },
+      } as AgentDefaultsConfig,
     },
   };
 }
@@ -76,7 +85,11 @@ export function applyOpenrouterConfig(cfg: RemoteClawConfig): RemoteClawConfig {
 }
 
 export function applyMoonshotProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   models[MOONSHOT_DEFAULT_MODEL_REF] = {
     ...models[MOONSHOT_DEFAULT_MODEL_REF],
     alias: models[MOONSHOT_DEFAULT_MODEL_REF]?.alias ?? "Kimi",
@@ -98,7 +111,11 @@ export function applyMoonshotConfigCn(cfg: RemoteClawConfig): RemoteClawConfig {
 }
 
 export function applyKimiCodeProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   models[KIMI_CODING_MODEL_REF] = {
     ...models[KIMI_CODING_MODEL_REF],
     alias: models[KIMI_CODING_MODEL_REF]?.alias ?? "Kimi for Coding",
@@ -113,7 +130,11 @@ export function applyKimiCodeConfig(cfg: RemoteClawConfig): RemoteClawConfig {
 
 export function applySyntheticProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   const syntheticModelRef = "synthetic/hf:MiniMaxAI/MiniMax-M2.1";
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   models[syntheticModelRef] = {
     ...models[syntheticModelRef],
     alias: models[syntheticModelRef]?.alias ?? "MiniMax M2.1",
@@ -127,7 +148,11 @@ export function applySyntheticConfig(cfg: RemoteClawConfig): RemoteClawConfig {
 }
 
 export function applyXiaomiProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   models[XIAOMI_DEFAULT_MODEL_REF] = {
     ...models[XIAOMI_DEFAULT_MODEL_REF],
     alias: models[XIAOMI_DEFAULT_MODEL_REF]?.alias ?? "Xiaomi",
@@ -146,7 +171,11 @@ export function applyXiaomiConfig(cfg: RemoteClawConfig): RemoteClawConfig {
  */
 export function applyVeniceProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   const veniceModelRef = "venice/llama-3.3-70b";
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   models[veniceModelRef] = {
     ...models[veniceModelRef],
     alias: models[veniceModelRef]?.alias ?? "Llama 3.3 70B",
@@ -164,7 +193,11 @@ export function applyVeniceConfig(cfg: RemoteClawConfig): RemoteClawConfig {
  * Registers Together models and sets up the provider, but preserves existing model selection.
  */
 export function applyTogetherProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   models[TOGETHER_DEFAULT_MODEL_REF] = {
     ...models[TOGETHER_DEFAULT_MODEL_REF],
     alias: models[TOGETHER_DEFAULT_MODEL_REF]?.alias ?? "Together AI",
@@ -181,7 +214,11 @@ export function applyTogetherConfig(cfg: RemoteClawConfig): RemoteClawConfig {
  * Apply Hugging Face (Inference Providers) provider configuration without changing the default model.
  */
 export function applyHuggingfaceProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   models[HUGGINGFACE_DEFAULT_MODEL_REF] = {
     ...models[HUGGINGFACE_DEFAULT_MODEL_REF],
     alias: models[HUGGINGFACE_DEFAULT_MODEL_REF]?.alias ?? "Hugging Face",
@@ -195,7 +232,11 @@ export function applyHuggingfaceConfig(cfg: RemoteClawConfig): RemoteClawConfig 
 }
 
 export function applyXaiProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   models[XAI_DEFAULT_MODEL_REF] = {
     ...models[XAI_DEFAULT_MODEL_REF],
     alias: models[XAI_DEFAULT_MODEL_REF]?.alias ?? "Grok",
@@ -209,7 +250,11 @@ export function applyXaiConfig(cfg: RemoteClawConfig): RemoteClawConfig {
 }
 
 export function applyMistralProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   models[MISTRAL_DEFAULT_MODEL_REF] = {
     ...models[MISTRAL_DEFAULT_MODEL_REF],
     alias: models[MISTRAL_DEFAULT_MODEL_REF]?.alias ?? "Mistral",
@@ -229,7 +274,11 @@ export { KILOCODE_BASE_URL };
  * Registers Kilo Gateway and sets up the provider, but preserves existing model selection.
  */
 export function applyKilocodeProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   models[KILOCODE_DEFAULT_MODEL_REF] = {
     ...models[KILOCODE_DEFAULT_MODEL_REF],
     alias: models[KILOCODE_DEFAULT_MODEL_REF]?.alias ?? "Kilo Gateway",
@@ -315,7 +364,11 @@ export function applyAuthProfileConfig(
 }
 
 export function applyQianfanProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   models[QIANFAN_DEFAULT_MODEL_REF] = {
     ...models[QIANFAN_DEFAULT_MODEL_REF],
     alias: models[QIANFAN_DEFAULT_MODEL_REF]?.alias ?? "QIANFAN",

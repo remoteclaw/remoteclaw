@@ -162,7 +162,11 @@ export async function resolveReplyDirectives(params: {
     ),
   );
 
-  const rawAliases = Object.values(cfg.agents?.defaults?.models ?? {})
+  // Model catalog gutted — aliases extracted from legacy config for compat.
+  const legacyModels = (cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+    | Record<string, { alias?: string }>
+    | undefined;
+  const rawAliases = Object.values(legacyModels ?? {})
     .map((entry) => entry.alias?.trim())
     .filter((alias): alias is string => Boolean(alias))
     .filter((alias) => !reservedCommands.has(alias.toLowerCase()));

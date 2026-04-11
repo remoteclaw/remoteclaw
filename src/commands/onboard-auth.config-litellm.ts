@@ -6,7 +6,11 @@ export const LITELLM_BASE_URL = "http://localhost:4000";
 export const LITELLM_DEFAULT_MODEL_ID = "claude-opus-4-6";
 
 export function applyLitellmProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   models[LITELLM_DEFAULT_MODEL_REF] = {
     ...models[LITELLM_DEFAULT_MODEL_REF],
     alias: models[LITELLM_DEFAULT_MODEL_REF]?.alias ?? "LiteLLM",

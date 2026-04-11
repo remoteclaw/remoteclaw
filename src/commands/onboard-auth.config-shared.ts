@@ -1,5 +1,8 @@
 import type { RemoteClawConfig } from "../config/config.js";
-import type { AgentModelEntryConfig } from "../config/types.agent-defaults.js";
+import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
+
+/** Legacy model entry shape preserved for backward-compat config writes. */
+type AgentModelEntryConfig = Record<string, unknown>;
 
 export function applyOnboardAuthAgentModelsAndProviders(
   cfg: RemoteClawConfig,
@@ -15,7 +18,7 @@ export function applyOnboardAuthAgentModelsAndProviders(
       defaults: {
         ...cfg.agents?.defaults,
         models: params.agentModels,
-      },
+      } as AgentDefaultsConfig,
     },
   };
 }
@@ -31,7 +34,7 @@ export function applyAgentDefaultModelPrimary(
       defaults: {
         ...cfg.agents?.defaults,
         model,
-      },
+      } as AgentDefaultsConfig,
     },
   };
 }

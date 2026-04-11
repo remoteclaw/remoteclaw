@@ -6,6 +6,7 @@ import {
   resolveActiveTalkProviderConfig,
   resolveTalkApiKey,
 } from "./talk.js";
+import type { AgentDefaultsConfig } from "./types.agent-defaults.js";
 import type { RemoteClawConfig } from "./types.js";
 import { hasConfiguredSecretInput } from "./types.secrets.js";
 
@@ -162,7 +163,8 @@ export function applyModelDefaults(cfg: RemoteClawConfig): RemoteClawConfig {
   if (!existingAgent) {
     return cfg;
   }
-  const existingModels = existingAgent.models ?? {};
+  const legacyAgent = existingAgent as Record<string, unknown>;
+  const existingModels = (legacyAgent.models as Record<string, { alias?: string }>) ?? {};
   if (Object.keys(existingModels).length === 0) {
     return cfg;
   }
@@ -192,7 +194,7 @@ export function applyModelDefaults(cfg: RemoteClawConfig): RemoteClawConfig {
     ...cfg,
     agents: {
       ...cfg.agents,
-      defaults: { ...existingAgent, models: nextModels },
+      defaults: { ...existingAgent, models: nextModels } as AgentDefaultsConfig,
     },
   };
 }
@@ -289,7 +291,10 @@ export function applyContextPruningDefaults(cfg: RemoteClawConfig): RemoteClawCo
   }
 
   if (authMode === "api_key") {
-    const nextModels = defaults.models ? { ...defaults.models } : {};
+    const legacyDefaultsForModels = defaults as Record<string, unknown>;
+    const nextModels: Record<string, Record<string, unknown>> = legacyDefaultsForModels.models
+      ? { ...(legacyDefaultsForModels.models as Record<string, Record<string, unknown>>) }
+      : {};
     let modelsMutated = false;
     const isAnthropicCacheRetentionTarget = (
       parsed: { provider: string; model: string } | null | undefined,
@@ -312,14 +317,14 @@ export function applyContextPruningDefaults(cfg: RemoteClawConfig): RemoteClawCo
         continue;
       }
       nextModels[key] = {
-        ...(current as Record<string, unknown>),
+        ...current,
         params: { ...params, cacheRetention: "short" },
       };
       modelsMutated = true;
     }
 
     if (modelsMutated) {
-      nextDefaults.models = nextModels;
+      (nextDefaults as Record<string, unknown>).models = nextModels;
       mutated = true;
     }
   }

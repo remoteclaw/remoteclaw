@@ -27,7 +27,7 @@ describe("buildStatusMessage", () => {
     const text = buildStatusMessage({
       agent: {
         model: "anthropic/pi:opus",
-      },
+      } as Record<string, unknown>,
       sessionEntry: {
         sessionId: "abc",
         updatedAt: 0,
@@ -47,7 +47,7 @@ describe("buildStatusMessage", () => {
 
   it("shows verbose label when enabled", () => {
     const text = buildStatusMessage({
-      agent: { model: "anthropic/claude-opus-4-5" },
+      agent: { model: "anthropic/claude-opus-4-5" } as Record<string, unknown>,
       sessionEntry: { sessionId: "v1", updatedAt: 0 },
       sessionKey: "agent:main:main",
       sessionScope: "per-sender",
@@ -60,7 +60,7 @@ describe("buildStatusMessage", () => {
 
   it("does not show verbose label when off", () => {
     const text = buildStatusMessage({
-      agent: { model: "anthropic/claude-opus-4-5" },
+      agent: { model: "anthropic/claude-opus-4-5" } as Record<string, unknown>,
       sessionEntry: { sessionId: "v1", updatedAt: 0 },
       sessionKey: "agent:main:main",
       sessionScope: "per-sender",
@@ -127,7 +127,7 @@ describe("buildStatusMessage", () => {
 
   it("inserts usage summary beneath context line", () => {
     const text = buildStatusMessage({
-      agent: { model: "anthropic/claude-opus-4-5" },
+      agent: { model: "anthropic/claude-opus-4-5" } as Record<string, unknown>,
       sessionEntry: { sessionId: "u1", updatedAt: 0, totalTokens: 1000 },
       sessionKey: "agent:main:main",
       sessionScope: "per-sender",
@@ -144,7 +144,7 @@ describe("buildStatusMessage", () => {
 
   it("never shows cost line — cost calculation removed", () => {
     const text = buildStatusMessage({
-      agent: { model: "anthropic/claude-opus-4-5" },
+      agent: { model: "anthropic/claude-opus-4-5" } as Record<string, unknown>,
       sessionEntry: { sessionId: "c1", updatedAt: 0, inputTokens: 10 },
       sessionKey: "agent:main:main",
       sessionScope: "per-sender",

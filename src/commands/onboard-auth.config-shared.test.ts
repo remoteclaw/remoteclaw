@@ -9,7 +9,9 @@ describe("applyOnboardAuthAgentModelsAndProviders", () => {
       "custom/model-a": {},
     };
     const result = applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels });
-    expect(result.agents?.defaults?.models).toEqual(agentModels);
+    expect((result.agents?.defaults as Record<string, unknown> | undefined)?.models).toEqual(
+      agentModels,
+    );
   });
 
   it("preserves existing config fields while setting agent models", () => {
@@ -24,7 +26,9 @@ describe("applyOnboardAuthAgentModelsAndProviders", () => {
       "custom/model-b": { alias: "Custom" },
     };
     const result = applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels });
-    expect(result.agents?.defaults?.models).toEqual(agentModels);
+    expect((result.agents?.defaults as Record<string, unknown> | undefined)?.models).toEqual(
+      agentModels,
+    );
     expect(result.agents?.defaults?.runtime).toBe("claude");
   });
 });

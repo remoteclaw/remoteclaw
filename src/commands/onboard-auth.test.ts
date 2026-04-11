@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
+import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
 import type { ModelApi } from "../config/types.models.js";
 import {
   applyAuthProfileConfig,
@@ -50,16 +51,20 @@ function createLegacyProviderConfig(params: {
 }
 
 function expectPrimaryModelPreserved(cfg: ReturnType<typeof applyMinimaxApiProviderConfig>) {
-  expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBe(
-    "anthropic/claude-opus-4-5",
-  );
+  const legacyDefaults = cfg.agents?.defaults as Record<string, unknown> | undefined;
+  expect(
+    resolveAgentModelPrimaryValue(
+      legacyDefaults?.model as Parameters<typeof resolveAgentModelPrimaryValue>[0],
+    ),
+  ).toBe("anthropic/claude-opus-4-5");
 }
 
 function expectAllowlistContains(
   cfg: ReturnType<typeof applyOpenrouterProviderConfig>,
   key: string,
 ) {
-  const models = cfg.agents?.defaults?.models ?? {};
+  const legacyDefaults = cfg.agents?.defaults as Record<string, unknown> | undefined;
+  const models = (legacyDefaults?.models as Record<string, unknown>) ?? {};
   expect(Object.keys(models)).toContain(key);
 }
 
@@ -68,7 +73,9 @@ function expectAliasPreserved(
   key: string,
   alias: string,
 ) {
-  expect(cfg.agents?.defaults?.models?.[key]?.alias).toBe(alias);
+  const legacyDefaults = cfg.agents?.defaults as Record<string, unknown> | undefined;
+  const models = legacyDefaults?.models as Record<string, Record<string, unknown>> | undefined;
+  expect(models?.[key]?.alias).toBe(alias);
 }
 
 describe("applyAuthProfileConfig", () => {
@@ -157,12 +164,19 @@ describe("applyMinimaxApiConfig", () => {
                 params: { custom: "value" },
               },
             },
-          },
+          } as AgentDefaultsConfig,
         },
       },
       "MiniMax-M2.5",
     );
-    expect(cfg.agents?.defaults?.models?.["minimax/MiniMax-M2.5"]).toMatchObject({
+    expect(
+      (
+        (cfg.agents?.defaults as Record<string, unknown>)?.models as Record<
+          string,
+          Record<string, unknown>
+        >
+      )?.["minimax/MiniMax-M2.5"],
+    ).toMatchObject({
       alias: "Minimax",
       params: { custom: "value" },
     });
@@ -225,7 +239,9 @@ describe("provider config helpers", () => {
     const providerConfigAppliers = [applyMinimaxApiProviderConfig, applyZaiProviderConfig];
     for (const applyConfig of providerConfigAppliers) {
       const cfg = applyConfig({
-        agents: { defaults: { model: { primary: "anthropic/claude-opus-4-5" } } },
+        agents: {
+          defaults: { model: { primary: "anthropic/claude-opus-4-5" } } as AgentDefaultsConfig,
+        },
       });
       expectPrimaryModelPreserved(cfg);
     }
@@ -243,7 +259,13 @@ describe("primary model defaults", () => {
     ] as const;
     for (const { getConfig, primaryModel } of configCases) {
       const cfg = getConfig();
-      expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBe(primaryModel);
+      expect(
+        resolveAgentModelPrimaryValue(
+          (cfg.agents?.defaults as Record<string, unknown> | undefined)?.model as Parameters<
+            typeof resolveAgentModelPrimaryValue
+          >[0],
+        ),
+      ).toBe(primaryModel);
     }
   });
 });
@@ -260,7 +282,14 @@ describe("provider alias defaults", () => {
     ] as const;
     for (const testCase of aliasCases) {
       const cfg = testCase.applyConfig();
-      expect(cfg.agents?.defaults?.models?.[testCase.modelRef]?.alias).toBe(testCase.alias);
+      expect(
+        (
+          (cfg.agents?.defaults as Record<string, unknown>)?.models as Record<
+            string,
+            Record<string, unknown>
+          >
+        )?.[testCase.modelRef]?.alias,
+      ).toBe(testCase.alias);
     }
   });
 });
@@ -289,7 +318,7 @@ describe("allowlist provider helpers", () => {
             models: {
               [modelRef]: { alias },
             },
-          },
+          } as AgentDefaultsConfig,
         },
       });
       expectAliasPreserved(withAlias, modelRef, alias);

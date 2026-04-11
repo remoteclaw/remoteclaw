@@ -5,7 +5,11 @@ import { VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF } from "./onboard-auth.credentials.
 const CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF = "cloudflare-ai-gateway/claude-sonnet-4-5";
 
 export function applyVercelAiGatewayProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   models[VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF] = {
     ...models[VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF],
     alias: models[VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF]?.alias ?? "Vercel AI Gateway",
@@ -18,7 +22,11 @@ export function applyCloudflareAiGatewayProviderConfig(
   cfg: RemoteClawConfig,
   _params?: { accountId?: string; gatewayId?: string },
 ): RemoteClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   models[CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF] = {
     ...models[CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF],
     alias: models[CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF]?.alias ?? "Cloudflare AI Gateway",

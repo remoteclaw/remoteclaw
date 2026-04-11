@@ -140,7 +140,7 @@ describe("config schema regressions", () => {
     expect(res.ok).toBe(true);
   });
 
-  it("rejects non-positive pdf limits", () => {
+  it("accepts legacy pdf limits (compat stubs)", () => {
     const res = validateConfigObject({
       agents: {
         defaults: {
@@ -151,10 +151,8 @@ describe("config schema regressions", () => {
       },
     });
 
-    expect(res.ok).toBe(false);
-    if (!res.ok) {
-      expect(res.issues.some((issue) => issue.path.includes("agents.defaults.pdfMax"))).toBe(true);
-    }
+    // Model selection config gutted — fields are z.unknown() compat stubs.
+    expect(res.ok).toBe(true);
   });
 
   it("rejects relative iMessage attachment roots", () => {

@@ -43,9 +43,7 @@ const resolveSelectedAndActiveModel = (..._args: unknown[]) => ({
 import type { VerboseLevel } from "./thinking.js";
 
 type AgentDefaults = NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]>;
-type AgentConfig = Partial<AgentDefaults> & {
-  model?: AgentDefaults["model"] | string;
-};
+type AgentConfig = Partial<AgentDefaults>;
 
 export const formatTokenCount = formatTokenCountShared;
 

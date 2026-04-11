@@ -1,5 +1,6 @@
 import type { RemoteClawConfig } from "../config/config.js";
 import { toAgentModelListLike } from "../config/model-input.js";
+import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
 import {
   applyAgentDefaultModelPrimary,
   applyOnboardAuthAgentModelsAndProviders,
@@ -19,7 +20,11 @@ import {
 } from "./onboard-auth.models.js";
 
 export function applyMinimaxProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   models["anthropic/claude-opus-4-6"] = {
     ...models["anthropic/claude-opus-4-6"],
     alias: models["anthropic/claude-opus-4-6"]?.alias ?? "Opus",
@@ -55,7 +60,11 @@ export function applyMinimaxHostedProviderConfig(
   cfg: RemoteClawConfig,
   params?: { baseUrl?: string },
 ): RemoteClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   models[MINIMAX_HOSTED_MODEL_REF] = {
     ...models[MINIMAX_HOSTED_MODEL_REF],
     alias: models[MINIMAX_HOSTED_MODEL_REF]?.alias ?? "Minimax",
@@ -93,6 +102,7 @@ export function applyMinimaxHostedConfig(
   params?: { baseUrl?: string },
 ): RemoteClawConfig {
   const next = applyMinimaxHostedProviderConfig(cfg, params);
+  const legacyDefaults = next.agents?.defaults as Record<string, unknown> | undefined;
   return {
     ...next,
     agents: {
@@ -100,10 +110,12 @@ export function applyMinimaxHostedConfig(
       defaults: {
         ...next.agents?.defaults,
         model: {
-          ...toAgentModelListLike(next.agents?.defaults?.model),
+          ...toAgentModelListLike(
+            legacyDefaults?.model as Parameters<typeof toAgentModelListLike>[0],
+          ),
           primary: MINIMAX_HOSTED_MODEL_REF,
         },
-      },
+      } as AgentDefaultsConfig,
     },
   };
 }
@@ -185,7 +197,11 @@ function applyMinimaxApiProviderConfigWithBaseUrl(
     models: mergedModels.length > 0 ? mergedModels : [apiModel],
   };
 
-  const models = { ...cfg.agents?.defaults?.models };
+  const models = {
+    ...((cfg.agents?.defaults as Record<string, unknown> | undefined)?.models as
+      | Record<string, Record<string, unknown>>
+      | undefined),
+  };
   const modelRef = `${params.providerId}/${params.modelId}`;
   models[modelRef] = {
     ...models[modelRef],
@@ -199,7 +215,7 @@ function applyMinimaxApiProviderConfigWithBaseUrl(
       defaults: {
         ...cfg.agents?.defaults,
         models,
-      },
+      } as AgentDefaultsConfig,
     },
     models: { mode: cfg.models?.mode ?? "merge", providers },
   };

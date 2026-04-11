@@ -140,7 +140,7 @@ function mockConfig(
         runtime: "claude",
         models: { "anthropic/claude-opus-4-5": {} },
         ...agentOverrides,
-      },
+      } as NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]>,
       list: agentsList
         ? agentsList.map((a) => ({ ...a, workspace: a.workspace ?? path.join(home, "remoteclaw") }))
         : [{ id: "main", workspace: path.join(home, "remoteclaw") }],
@@ -342,7 +342,7 @@ describe("agentCommand", () => {
           "anthropic/claude-opus-4-5": {},
           "openai/gpt-4.1-mini": {},
         },
-      });
+      } as Record<string, unknown>);
 
       await agentCommand({ message: "hi", to: "+1555" }, runtime);
 
@@ -366,7 +366,7 @@ describe("agentCommand", () => {
 
       mockConfig(home, store, {
         models: {},
-      });
+      } as Record<string, unknown>);
 
       await agentCommand(
         {

@@ -1,5 +1,4 @@
 import type { ChatType } from "../channels/chat-type.js";
-import type { SafeBinProfileFixture } from "../infra/exec-safe-bin-policy.js";
 import type { AgentElevatedAllowFromConfig, SessionSendPolicyAction } from "./types.base.js";
 
 export type MediaUnderstandingScopeMatch = {
@@ -240,7 +239,7 @@ export type ExecToolConfig = {
   /** Extra explicit directories trusted for safeBins path checks (never derived from PATH). */
   safeBinTrustedDirs?: string[];
   /** Optional custom safe-bin profiles for entries in tools.exec.safeBins. */
-  safeBinProfiles?: Record<string, SafeBinProfileFixture>;
+  safeBinProfiles?: Record<string, Record<string, unknown>>;
   /** Default time (ms) before an exec command auto-backgrounds. */
   backgroundMs?: number;
   /** Default timeout (seconds) before auto-killing exec commands. */

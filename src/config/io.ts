@@ -41,7 +41,6 @@ import {
 } from "./includes.js";
 import { findLegacyConfigIssues } from "./legacy.js";
 import { applyMergePatch } from "./merge-patch.js";
-import { normalizeExecSafeBinProfilesInConfig } from "./normalize-exec-safe-bin.js";
 import { normalizeConfigPaths } from "./normalize-paths.js";
 import { resolveConfigPath, resolveDefaultConfigCandidates, resolveStateDir } from "./paths.js";
 import { isBlockedObjectKey } from "./prototype-keys.js";
@@ -744,7 +743,6 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
         ),
       );
       normalizeConfigPaths(cfg);
-      normalizeExecSafeBinProfilesInConfig(cfg);
 
       const duplicates = findDuplicateAgentDirs(cfg, {
         env: deps.env,
@@ -960,7 +958,6 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
           ),
         ),
       );
-      normalizeExecSafeBinProfilesInConfig(snapshotConfig);
       return {
         snapshot: {
           path: configPath,

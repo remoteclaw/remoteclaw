@@ -11,6 +11,3 @@ export * from "./sessions/transcript.js";
 export * from "./sessions/session-file.js";
 export * from "./sessions/delivery-info.js";
 export * from "./sessions/disk-budget.js";
-
-// Gutted in RemoteClaw fork — stub export for upstream compat
-export function setSessionRuntimeModel(..._args: unknown[]): void {}

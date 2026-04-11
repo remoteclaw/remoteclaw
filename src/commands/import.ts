@@ -391,8 +391,13 @@ export function materializeWorkspaceDefaults(jsonContent: string): string {
     config.agents = newAgents;
     mutated = true;
   } else {
-    // Step 1: Materialize workspace on existing agents
+    // Step 1: Materialize workspace on existing agents and strip deprecated `default` field
     for (const entry of agentsList) {
+      // Strip deprecated `default` field (#1581)
+      if (entry.default !== undefined) {
+        delete entry.default;
+        mutated = true;
+      }
       if (typeof entry.workspace === "string" && entry.workspace.trim()) {
         continue;
       }
@@ -400,8 +405,7 @@ export function materializeWorkspaceDefaults(jsonContent: string): string {
         entry.workspace = defaultsWorkspace;
       } else {
         const id = typeof entry.id === "string" ? entry.id.trim() : "";
-        const isDefault =
-          entry.default === true || id === DEFAULT_AGENT_ID || agentsList.length === 1;
+        const isDefault = id === DEFAULT_AGENT_ID || agentsList.length === 1;
         entry.workspace = isDefault
           ? DEFAULT_WORKSPACE
           : `~/.remoteclaw/workspace-${id || DEFAULT_AGENT_ID}`;

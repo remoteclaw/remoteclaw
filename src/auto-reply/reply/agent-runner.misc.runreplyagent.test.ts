@@ -18,7 +18,6 @@ import type { FollowupRun, QueueSettings } from "./queue.js";
 import { createMockTypingController } from "./test-helpers.js";
 
 const channelBridgeHandleMock = vi.fn();
-const runWithModelFallbackMock = vi.fn();
 const runtimeErrorMock = vi.fn();
 
 type BridgeConstructorOpts = {
@@ -31,14 +30,6 @@ type BridgeConstructorOpts = {
   runtimeEnv?: Record<string, string>;
 };
 const bridgeConstructorCalls: BridgeConstructorOpts[] = [];
-
-vi.mock("../../agents/model-fallback.js", () => ({
-  runWithModelFallback: (params: {
-    provider: string;
-    model: string;
-    run: (provider: string, model: string) => Promise<unknown>;
-  }) => runWithModelFallbackMock(params),
-}));
 
 vi.mock("../../middleware/channel-bridge.js", () => ({
   ChannelBridge: class MockChannelBridge {
@@ -86,12 +77,6 @@ vi.mock("./queue.js", async () => {
 });
 
 import { runReplyAgent } from "./agent-runner.js";
-
-type RunWithModelFallbackParams = {
-  provider: string;
-  model: string;
-  run: (provider: string, model: string) => Promise<unknown>;
-};
 
 const EMPTY_MCP: McpSideEffects = {
   sentTexts: [],
@@ -158,18 +143,8 @@ function makeDeliveryResult(overrides?: {
 
 beforeEach(() => {
   channelBridgeHandleMock.mockClear();
-  runWithModelFallbackMock.mockClear();
   runtimeErrorMock.mockClear();
   bridgeConstructorCalls.length = 0;
-
-  // Default: no provider switch; execute the chosen provider+model.
-  runWithModelFallbackMock.mockImplementation(
-    async ({ provider, model, run }: RunWithModelFallbackParams) => ({
-      result: await run(provider, model),
-      provider,
-      model,
-    }),
-  );
 });
 
 afterEach(() => {
@@ -1164,107 +1139,6 @@ describe("runReplyAgent reminder commitment guard", () => {
     expect(result).toMatchObject({
       text: "I'll remind you tomorrow morning.",
     });
-  });
-});
-
-describe("runReplyAgent fallback provider routing", () => {
-  function createRun(params?: {
-    sessionEntry?: SessionEntry;
-    sessionKey?: string;
-    agentCfgContextTokens?: number;
-  }) {
-    const typing = createMockTypingController();
-    const sessionCtx = {
-      Provider: "whatsapp",
-      OriginatingTo: "+15550001111",
-      AccountId: "primary",
-      MessageSid: "msg",
-    } as unknown as TemplateContext;
-    const resolvedQueue = { mode: "interrupt" } as unknown as QueueSettings;
-    const sessionKey = params?.sessionKey ?? "main";
-    const followupRun = {
-      prompt: "hello",
-      summaryLine: "hello",
-      enqueuedAt: Date.now(),
-      run: {
-        agentId: "main",
-        agentDir: "/tmp/agent",
-        sessionId: "session",
-        sessionKey,
-        messageProvider: "whatsapp",
-        sessionFile: "/tmp/session.jsonl",
-        workspaceDir: "/tmp",
-        config: { agents: { defaults: { runtime: "claude" } } },
-        provider: "anthropic",
-        model: "claude",
-
-        verboseLevel: "off",
-        timeoutMs: 1_000,
-        blockReplyBreak: "message_end",
-      },
-    } as unknown as FollowupRun;
-
-    return runReplyAgent({
-      commandBody: "hello",
-      followupRun,
-      queueKey: "main",
-      resolvedQueue,
-      shouldSteer: false,
-      shouldFollowup: false,
-      isActive: false,
-      isStreaming: false,
-      typing,
-      sessionCtx,
-      sessionEntry: params?.sessionEntry,
-      sessionKey,
-      defaultModel: "anthropic/claude-opus-4-5",
-      agentCfgContextTokens: params?.agentCfgContextTokens,
-      resolvedVerboseLevel: "off",
-      isNewSession: false,
-      blockStreamingEnabled: false,
-      resolvedBlockStreamingBreak: "message_end",
-      shouldInjectGroupIntro: false,
-      typingMode: "instant",
-    });
-  }
-
-  it("routes to bridge when the fallback provider changes", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(
-      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
-    );
-    runWithModelFallbackMock.mockImplementationOnce(
-      async ({ run }: RunWithModelFallbackParams) => ({
-        result: await run("google-gemini-cli", "gemini-3"),
-        provider: "google-gemini-cli",
-        model: "gemini-3",
-      }),
-    );
-
-    const result = await createRun();
-
-    // Bridge was called for the fallback provider
-    expect(channelBridgeHandleMock).toHaveBeenCalledTimes(1);
-    expect(result).toMatchObject({ text: "ok" });
-  });
-
-  it("routes to bridge during memory flush on fallback providers", async () => {
-    channelBridgeHandleMock.mockResolvedValue(makeDeliveryResult({ payloads: [{ text: "ok" }] }));
-    runWithModelFallbackMock.mockImplementation(async ({ run }: RunWithModelFallbackParams) => ({
-      result: await run("google-gemini-cli", "gemini-3"),
-      provider: "google-gemini-cli",
-      model: "gemini-3",
-    }));
-
-    await createRun({
-      sessionEntry: {
-        sessionId: "session",
-        updatedAt: Date.now(),
-        totalTokens: 1_000_000,
-      },
-    });
-
-    // Bridge was called at least once (main run; memory flush is gutted)
-    expect(channelBridgeHandleMock).toHaveBeenCalled();
   });
 });
 

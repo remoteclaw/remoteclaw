@@ -121,10 +121,6 @@ vi.mock("../../infra/outbound/deliver.js", () => ({
   deliverOutboundPayloads: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../../infra/skills-remote.js", () => ({
-  getRemoteSkillEligibility: vi.fn().mockReturnValue({}),
-}));
-
 vi.mock("../../logger.js", () => ({
   logWarn: (...args: unknown[]) => logWarnMock(...args),
 }));

@@ -13,9 +13,6 @@ import {
   formatUtcTimestamp,
   formatZonedTimestamp,
 } from "../../infra/format-time/format-datetime.ts";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const getRemoteSkillEligibility = (..._args: unknown[]) =>
-  ({ eligible: false }) as { eligible: boolean };
 import { drainSystemEventEntries } from "../../infra/system-events.js";
 
 export async function buildQueuedSystemPrompt(params: {
@@ -159,7 +156,6 @@ export async function ensureSkillSnapshot(params: {
 
   let nextEntry = sessionEntry;
   let systemSent = sessionEntry?.systemSent ?? false;
-  const remoteEligibility = getRemoteSkillEligibility();
   const snapshotVersion = getSkillsSnapshotVersion(workspaceDir);
   ensureSkillsWatcher({ workspaceDir, config: cfg });
   const shouldRefreshSnapshot =
@@ -176,7 +172,6 @@ export async function ensureSkillSnapshot(params: {
         ? buildWorkspaceSkillSnapshot(workspaceDir, {
             config: cfg,
             skillFilter,
-            eligibility: { remote: remoteEligibility },
             snapshotVersion,
           })
         : current.skillsSnapshot;
@@ -200,7 +195,6 @@ export async function ensureSkillSnapshot(params: {
     ? buildWorkspaceSkillSnapshot(workspaceDir, {
         config: cfg,
         skillFilter,
-        eligibility: { remote: remoteEligibility },
         snapshotVersion,
       })
     : (nextEntry?.skillsSnapshot ??
@@ -209,7 +203,6 @@ export async function ensureSkillSnapshot(params: {
         : buildWorkspaceSkillSnapshot(workspaceDir, {
             config: cfg,
             skillFilter,
-            eligibility: { remote: remoteEligibility },
             snapshotVersion,
           })));
   if (

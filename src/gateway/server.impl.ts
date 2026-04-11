@@ -1,6 +1,5 @@
 import path from "node:path";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
-const registerSkillsChangeListener = (_cb: (_e: { reason: string }) => void) => () => {};
 import { initSubagentRegistry } from "../agents/subagent-registry.js";
 import { getTotalPendingReplies } from "../auto-reply/reply/dispatcher-registry.js";
 import type { CanvasHostServer } from "../canvas-host/server.js";
@@ -19,7 +18,6 @@ import {
 } from "../config/config.js";
 import { formatConfigIssueLines } from "../config/issue-format.js";
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
-import { resolveMainSessionKey } from "../config/sessions.js";
 import { clearAgentRunContext, onAgentEvent } from "../infra/agent-events.js";
 import {
   ensureControlUiAssetsBuilt,
@@ -33,11 +31,6 @@ import { startHeartbeatRunner, type HeartbeatRunner } from "../infra/heartbeat-r
 import { getMachineDisplayName } from "../infra/machine-name.js";
 import { ensureRemoteClawCliOnPath } from "../infra/path-env.js";
 import { setGatewaySigusr1RestartPolicy, setPreRestartDeferralCheck } from "../infra/restart.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const primeRemoteSkillsCache = (..._args: unknown[]) => undefined as unknown;
-const refreshRemoteBinsForConnectedNodes = (..._args: unknown[]) => undefined as unknown;
-const setSkillsRemoteRegistry = (..._args: unknown[]) => undefined as unknown;
-import { enqueueSystemEvent } from "../infra/system-events.js";
 import { scheduleGatewayUpdateCheck } from "../infra/update-startup.js";
 import { startDiagnosticHeartbeat, stopDiagnosticHeartbeat } from "../logging/diagnostic.js";
 import { createSubsystemLogger, runtimeForLogger } from "../logging/subsystem.js";
@@ -47,34 +40,6 @@ import { createPluginRuntime } from "../plugins/runtime/index.js";
 import type { PluginServicesHandle } from "../plugins/services.js";
 import { getTotalQueueSize } from "../process/command-queue.js";
 import type { RuntimeEnv } from "../runtime.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle) — secrets subsystem
-type CommandSecretAssignment = Record<string, unknown>;
-const GATEWAY_AUTH_SURFACE_PATHS = [] as string[];
-const evaluateGatewayAuthSurfaceStates = (..._args: unknown[]) =>
-  ({}) as Record<
-    string,
-    { active: boolean; configured: boolean; hasSecretRef?: boolean; reason?: string }
-  >;
-const activateSecretsRuntimeSnapshot = (..._args: unknown[]) => undefined as unknown;
-const clearSecretsRuntimeSnapshot = (..._args: unknown[]) => undefined as unknown;
-type SecretsRuntimeSnapshot = {
-  sourceConfig: RemoteClawConfig;
-  config: RemoteClawConfig;
-  warnings: Array<{ code: string; path: string; message: string }>;
-};
-const getActiveSecretsRuntimeSnapshot = (..._args: unknown[]) =>
-  undefined as SecretsRuntimeSnapshot | undefined;
-const prepareSecretsRuntimeSnapshot = (params: { config: RemoteClawConfig }) =>
-  ({
-    sourceConfig: params.config,
-    config: params.config,
-    warnings: [] as Array<{ code: string; path: string; message: string }>,
-  }) as SecretsRuntimeSnapshot;
-const resolveCommandSecretsFromActiveRuntimeSnapshot = (..._args: unknown[]) => ({
-  assignments: [] as CommandSecretAssignment[],
-  diagnostics: [] as string[],
-  inactiveRefPaths: [] as string[],
-});
 import { runOnboardingWizard } from "../wizard/onboarding.js";
 import { createAuthRateLimiter, type AuthRateLimiter } from "./auth-rate-limit.js";
 import { startChannelHealthMonitor } from "./channel-health-monitor.js";
@@ -103,8 +68,6 @@ import { coreGatewayHandlers } from "./server-methods.js";
 import type { GatewayRequestHandlers } from "./server-methods/types.js";
 const createExecApprovalHandlers = (..._args: unknown[]) => ({}) as GatewayRequestHandlers;
 import { safeParseJson } from "./server-methods/nodes.helpers.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const createSecretsHandlers = (..._args: unknown[]) => ({}) as GatewayRequestHandlers;
 import { hasConnectedMobileNode } from "./server-mobile-nodes.js";
 import { createNodeSubscriptionManager } from "./server-node-subscriptions.js";
 import { loadGatewayPlugins } from "./server-plugins.js";
@@ -141,7 +104,6 @@ const logReload = log.child("reload");
 const logHooks = log.child("hooks");
 const logPlugins = log.child("plugins");
 const logWsControl = log.child("ws");
-const logSecrets = log.child("secrets");
 const gatewayRuntime = runtimeForLogger(log);
 const canvasRuntime = runtimeForLogger(logCanvas);
 
@@ -158,35 +120,6 @@ function createGatewayAuthRateLimiters(rateLimitConfig: AuthRateLimitConfig | un
     exemptLoopback: false,
   });
   return { rateLimiter, browserRateLimiter };
-}
-
-function logGatewayAuthSurfaceDiagnostics(prepared: {
-  sourceConfig: RemoteClawConfig;
-  warnings: Array<{ code: string; path: string; message: string }>;
-}): void {
-  const states = evaluateGatewayAuthSurfaceStates({
-    config: prepared.sourceConfig,
-    defaults: prepared.sourceConfig.secrets?.defaults,
-    env: process.env,
-  });
-  const inactiveWarnings = new Map<string, string>();
-  for (const warning of prepared.warnings) {
-    if (warning.code !== "SECRETS_REF_IGNORED_INACTIVE_SURFACE") {
-      continue;
-    }
-    inactiveWarnings.set(warning.path, warning.message);
-  }
-  for (const path of GATEWAY_AUTH_SURFACE_PATHS) {
-    const state = states[path];
-    if (!state.hasSecretRef) {
-      continue;
-    }
-    const stateLabel = state.active ? "active" : "inactive";
-    const inactiveDetails =
-      !state.active && inactiveWarnings.get(path) ? inactiveWarnings.get(path) : undefined;
-    const details = inactiveDetails ?? state.reason;
-    logSecrets.info(`[SECRETS_GATEWAY_AUTH_SURFACE] ${path} is ${stateLabel}. ${details}`);
-  }
 }
 
 export type GatewayServer = {
@@ -300,73 +233,6 @@ export async function startGatewayServer(
     }
   }
 
-  let secretsDegraded = false;
-  const emitSecretsStateEvent = (
-    code: "SECRETS_RELOADER_DEGRADED" | "SECRETS_RELOADER_RECOVERED",
-    message: string,
-    cfg: RemoteClawConfig,
-  ) => {
-    enqueueSystemEvent(`[${code}] ${message}`, {
-      sessionKey: resolveMainSessionKey(cfg),
-      contextKey: code,
-    });
-  };
-  let secretsActivationTail: Promise<void> = Promise.resolve();
-  const runWithSecretsActivationLock = async <T>(operation: () => Promise<T>): Promise<T> => {
-    const run = secretsActivationTail.then(operation, operation);
-    secretsActivationTail = run.then(
-      () => undefined,
-      () => undefined,
-    );
-    return await run;
-  };
-  const activateRuntimeSecrets = async (
-    config: RemoteClawConfig,
-    params: { reason: "startup" | "reload" | "restart-check"; activate: boolean },
-  ) =>
-    await runWithSecretsActivationLock(async () => {
-      try {
-        const prepared = prepareSecretsRuntimeSnapshot({ config });
-        if (params.activate) {
-          activateSecretsRuntimeSnapshot(prepared);
-          logGatewayAuthSurfaceDiagnostics(prepared);
-        }
-        for (const warning of prepared.warnings) {
-          logSecrets.warn(`[${warning.code}] ${warning.message}`);
-        }
-        if (secretsDegraded) {
-          const recoveredMessage =
-            "Secret resolution recovered; runtime remained on last-known-good during the outage.";
-          logSecrets.info(`[SECRETS_RELOADER_RECOVERED] ${recoveredMessage}`);
-          emitSecretsStateEvent("SECRETS_RELOADER_RECOVERED", recoveredMessage, prepared.config);
-        }
-        secretsDegraded = false;
-        return prepared;
-      } catch (err) {
-        const details = String(err);
-        if (!secretsDegraded) {
-          logSecrets.error(`[SECRETS_RELOADER_DEGRADED] ${details}`);
-          if (params.reason !== "startup") {
-            emitSecretsStateEvent(
-              "SECRETS_RELOADER_DEGRADED",
-              `Secret resolution failed; runtime remains on last-known-good snapshot. ${details}`,
-              config,
-            );
-          }
-        } else {
-          logSecrets.warn(`[SECRETS_RELOADER_DEGRADED] ${details}`);
-        }
-        secretsDegraded = true;
-        if (params.reason === "startup") {
-          throw new Error(`Startup failed: required secrets are unavailable. ${details}`, {
-            cause: err,
-          });
-        }
-        throw err;
-      }
-    });
-
-  // Fail fast before startup if required refs are unresolved.
   let cfgAtStart: RemoteClawConfig;
   {
     const freshSnapshot = await readConfigFileSnapshot();
@@ -377,10 +243,6 @@ export async function startGatewayServer(
           : "Unknown validation issue.";
       throw new Error(`Invalid config at ${freshSnapshot.path}.\n${issues}`);
     }
-    await activateRuntimeSecrets(freshSnapshot.config, {
-      reason: "startup",
-      activate: false,
-    });
   }
 
   cfgAtStart = loadConfig();
@@ -403,12 +265,6 @@ export async function startGatewayServer(
       );
     }
   }
-  cfgAtStart = (
-    await activateRuntimeSecrets(cfgAtStart, {
-      reason: "startup",
-      activate: true,
-    })
-  ).config;
   const diagnosticsEnabled = isDiagnosticsEnabled(cfgAtStart);
   if (diagnosticsEnabled) {
     startDiagnosticHeartbeat();
@@ -601,31 +457,6 @@ export async function startGatewayServer(
     bonjourStop = discovery.bonjourStop;
   }
 
-  if (!minimalTestGateway) {
-    setSkillsRemoteRegistry(nodeRegistry);
-    void primeRemoteSkillsCache();
-  }
-  // Debounce skills-triggered node probes to avoid feedback loops and rapid-fire invokes.
-  // Skills changes can happen in bursts (e.g., file watcher events), and each probe
-  // takes time to complete. A 30-second delay ensures we batch changes together.
-  let skillsRefreshTimer: ReturnType<typeof setTimeout> | null = null;
-  const skillsRefreshDelayMs = 30_000;
-  const skillsChangeUnsub = minimalTestGateway
-    ? () => {}
-    : registerSkillsChangeListener((event) => {
-        if (event.reason === "remote-node") {
-          return;
-        }
-        if (skillsRefreshTimer) {
-          clearTimeout(skillsRefreshTimer);
-        }
-        skillsRefreshTimer = setTimeout(() => {
-          skillsRefreshTimer = null;
-          const latest = loadConfig();
-          void refreshRemoteBinsForConnectedNodes(latest);
-        }, skillsRefreshDelayMs);
-      });
-
   const noopInterval = () => setInterval(() => {}, 1 << 30);
   let tickInterval = noopInterval();
   let healthInterval = noopInterval();
@@ -706,36 +537,6 @@ export async function startGatewayServer(
 
   const execApprovalManager = new ExecApprovalManager();
   const execApprovalHandlers = createExecApprovalHandlers(execApprovalManager);
-  const secretsHandlers = createSecretsHandlers({
-    reloadSecrets: async () => {
-      const active = getActiveSecretsRuntimeSnapshot();
-      if (!active) {
-        throw new Error("Secrets runtime snapshot is not active.");
-      }
-      const prepared = await activateRuntimeSecrets(active.sourceConfig, {
-        reason: "reload",
-        activate: true,
-      });
-      return { warningCount: prepared.warnings.length };
-    },
-    resolveSecrets: async ({
-      commandName,
-      targetIds,
-    }: {
-      commandName: string;
-      targetIds: string[];
-    }) => {
-      const { assignments, diagnostics, inactiveRefPaths } =
-        resolveCommandSecretsFromActiveRuntimeSnapshot({
-          commandName,
-          targetIds: new Set(targetIds),
-        });
-      if (assignments.length === 0) {
-        return { assignments: [] as CommandSecretAssignment[], diagnostics, inactiveRefPaths };
-      }
-      return { assignments, diagnostics, inactiveRefPaths };
-    },
-  });
 
   const canvasHostServerPort = (canvasHostServer as CanvasHostServer | null)?.port;
 
@@ -757,7 +558,6 @@ export async function startGatewayServer(
     extraHandlers: {
       ...pluginRegistry.gatewayHandlers,
       ...execApprovalHandlers,
-      ...secretsHandlers,
     },
     broadcast,
     context: {
@@ -903,24 +703,9 @@ export async function startGatewayServer(
           initialConfig: cfgAtStart,
           readSnapshot: readConfigFileSnapshot,
           onHotReload: async (plan, nextConfig) => {
-            const previousSnapshot = getActiveSecretsRuntimeSnapshot();
-            const prepared = await activateRuntimeSecrets(nextConfig, {
-              reason: "reload",
-              activate: true,
-            });
-            try {
-              await applyHotReload(plan, prepared.config);
-            } catch (err) {
-              if (previousSnapshot) {
-                activateSecretsRuntimeSnapshot(previousSnapshot);
-              } else {
-                clearSecretsRuntimeSnapshot();
-              }
-              throw err;
-            }
+            await applyHotReload(plan, nextConfig);
           },
           onRestart: async (plan, nextConfig) => {
-            await activateRuntimeSecrets(nextConfig, { reason: "restart-check", activate: false });
             requestGatewayRestart(plan, nextConfig);
           },
           log: {
@@ -969,15 +754,9 @@ export async function startGatewayServer(
       if (diagnosticsEnabled) {
         stopDiagnosticHeartbeat();
       }
-      if (skillsRefreshTimer) {
-        clearTimeout(skillsRefreshTimer);
-        skillsRefreshTimer = null;
-      }
-      skillsChangeUnsub();
       authRateLimiter?.dispose();
       browserAuthRateLimiter.dispose();
       channelHealthMonitor?.stop();
-      clearSecretsRuntimeSnapshot();
       await close(opts);
     },
   };

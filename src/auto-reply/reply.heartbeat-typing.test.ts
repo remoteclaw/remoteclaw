@@ -3,11 +3,6 @@ import type { RemoteClawConfig } from "../config/config.js";
 import { runAgent as runEmbeddedPiAgentMock } from "./reply.directive.directive-behavior.e2e-mocks.js";
 import { createTempHomeHarness, makeReplyConfig } from "./reply.test-harness.js";
 
-vi.mock(
-  "../agents/model-fallback.js",
-  async () => await import("../test-utils/model-fallback.mock.js"),
-);
-
 const webMocks = vi.hoisted(() => ({
   webAuthExists: vi.fn().mockResolvedValue(true),
   getWebAuthAgeMs: vi.fn().mockReturnValue(120_000),

@@ -33,7 +33,6 @@ export const resolveAllowedModelRefMock = createMock();
 export const resolveConfiguredModelRefMock = createMock();
 export const resolveHooksGmailModelMock = createMock();
 export const resolveThinkingDefaultMock = createMock();
-export const runWithModelFallbackMock = createMock();
 export const runEmbeddedPiAgentMock = createMock();
 export const runCliAgentMock = createMock();
 export const getCliSessionIdMock = createMock();
@@ -83,14 +82,6 @@ vi.mock("../../agents/model-selection.js", async (importOriginal) => {
     resolveThinkingDefault: resolveThinkingDefaultMock,
   };
 });
-
-vi.mock("../../agents/model-fallback.js", () => ({
-  runWithModelFallback: runWithModelFallbackMock,
-}));
-
-vi.mock("../../agents/context.js", () => ({
-  lookupContextTokens: vi.fn().mockReturnValue(128000),
-}));
 
 vi.mock("../../agents/date-time.js", () => ({
   formatUserTime: vi.fn().mockReturnValue("2026-02-10 12:00"),
@@ -195,9 +186,8 @@ vi.mock("./session.js", () => ({
 }));
 
 vi.mock("../../agents/defaults.js", () => ({
+  DEFAULT_AGENT_ID: "default",
   DEFAULT_CONTEXT_TOKENS: 128000,
-  DEFAULT_MODEL: "gpt-4",
-  DEFAULT_PROVIDER: "openai",
 }));
 
 export function makeCronSessionEntry(overrides?: Record<string, unknown>): CronSessionEntry {
@@ -219,17 +209,6 @@ export function makeCronSession(overrides?: Record<string, unknown>): CronSessio
     isNewSession: true,
     ...overrides,
   } as CronSession;
-}
-
-function makeDefaultModelFallbackResult() {
-  return {
-    result: {
-      payloads: [{ text: "test output" }],
-      meta: { agentMeta: { usage: { input: 10, output: 20 } } },
-    },
-    provider: "openai",
-    model: "gpt-4",
-  };
 }
 
 function makeDefaultEmbeddedResult() {
@@ -258,8 +237,6 @@ export function resetRunCronIsolatedAgentTurnHarness(): void {
   getModelRefStatusMock.mockReturnValue({ allowed: false });
   isCliProviderMock.mockReturnValue(false);
 
-  runWithModelFallbackMock.mockReset();
-  runWithModelFallbackMock.mockResolvedValue(makeDefaultModelFallbackResult());
   runEmbeddedPiAgentMock.mockReset();
   runEmbeddedPiAgentMock.mockResolvedValue(makeDefaultEmbeddedResult());
 

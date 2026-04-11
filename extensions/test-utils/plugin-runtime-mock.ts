@@ -53,7 +53,7 @@ export function createPluginRuntimeMock(overrides: DeepPartial<PluginRuntime> = 
       resolveAgentWorkspaceDir: vi.fn(() => "/tmp/workspace"),
       resolveAgentIdentity: vi.fn(() => ({ name: "test-agent" })),
       resolveThinkingDefault: vi.fn(() => "off"),
-      runEmbeddedPiAgent: noopAsync,
+      runAgent: noopAsync,
     },
     logging: {
       shouldLogVerbose: vi.fn(() => false),

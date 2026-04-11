@@ -2,7 +2,6 @@ import fs from "node:fs";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
 const resolveModelAuthMode = (..._args: unknown[]) => "api-key" as string;
 const isCliProvider = (..._args: unknown[]) => false;
-const queueEmbeddedPiMessage = (..._args: unknown[]) => false;
 import { hasNonzeroUsage, type NormalizedUsage } from "../../agents/usage.js";
 import {
   resolveAgentIdFromSessionKey,
@@ -91,10 +90,8 @@ export async function runReplyAgent(params: {
   followupRun: FollowupRun;
   queueKey: string;
   resolvedQueue: QueueSettings;
-  shouldSteer: boolean;
   shouldFollowup: boolean;
   isActive: boolean;
-  isStreaming: boolean;
   opts?: GetReplyOptions;
   typing: TypingController;
   sessionEntry?: SessionEntry;
@@ -121,10 +118,8 @@ export async function runReplyAgent(params: {
     followupRun,
     queueKey,
     resolvedQueue,
-    shouldSteer,
     shouldFollowup,
     isActive,
-    isStreaming,
     opts,
     typing,
     sessionEntry,
@@ -213,15 +208,6 @@ export async function runReplyAgent(params: {
       });
     }
   };
-
-  if (shouldSteer && isStreaming) {
-    const steered = queueEmbeddedPiMessage(followupRun.run.sessionId, followupRun.prompt);
-    if (steered && !shouldFollowup) {
-      await touchActiveSessionEntry();
-      typing.cleanup();
-      return undefined;
-    }
-  }
 
   const activeRunQueueAction = resolveActiveRunQueueAction({
     isActive,

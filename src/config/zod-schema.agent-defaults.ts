@@ -112,14 +112,6 @@ export const AgentDefaultsSchema = z
       })
       .strict()
       .optional(),
-    embeddedPi: z
-      .object({
-        projectSettingsPolicy: z
-          .union([z.literal("trusted"), z.literal("sanitize"), z.literal("ignore")])
-          .optional(),
-      })
-      .strict()
-      .optional(),
     thinkingDefault: z
       .union([
         z.literal("off"),

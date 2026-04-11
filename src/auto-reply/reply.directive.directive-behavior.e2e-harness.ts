@@ -123,7 +123,7 @@ export const makeEmbeddedTextResult = (text: string) => ({ text, usage: {}, tool
 // oxlint-disable-next-line typescript/no-explicit-any
 export const mockEmbeddedTextResult: import("vitest").Mock = _vi.fn();
 // oxlint-disable-next-line typescript/no-explicit-any
-export const runEmbeddedPiAgent = _vi.fn(async (..._args: any[]) => ({
+export const runAgentMock = _vi.fn(async (..._args: any[]) => ({
   text: "",
   usage: {},
   toolCalls: [],

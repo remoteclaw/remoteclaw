@@ -27,7 +27,7 @@ export const buildWorkspaceSkillSnapshotMock = createMock();
 export const resolveAgentConfigMock = createMock();
 export const resolveAgentModelFallbacksOverrideMock = createMock();
 export const resolveAgentSkillsFilterMock = createMock();
-export const runEmbeddedPiAgentMock = createMock();
+export const runAgentMock = createMock();
 export const runCliAgentMock = createMock();
 export const getCliSessionIdMock = createMock();
 export const updateSessionStoreMock = createMock();
@@ -206,8 +206,8 @@ export function resetRunCronIsolatedAgentTurnHarness(): void {
   resolveAgentModelFallbacksOverrideMock.mockReturnValue(undefined);
   resolveAgentSkillsFilterMock.mockReturnValue(undefined);
 
-  runEmbeddedPiAgentMock.mockReset();
-  runEmbeddedPiAgentMock.mockResolvedValue(makeDefaultEmbeddedResult());
+  runAgentMock.mockReset();
+  runAgentMock.mockResolvedValue(makeDefaultEmbeddedResult());
 
   runCliAgentMock.mockReset();
   getCliSessionIdMock.mockReturnValue(undefined);

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
-import { runAgent as runEmbeddedPiAgentMock } from "./reply.directive.directive-behavior.e2e-mocks.js";
+import { runAgent as runAgentMock } from "./reply.directive.directive-behavior.e2e-mocks.js";
 import { createTempHomeHarness, makeReplyConfig } from "./reply.test-harness.js";
 
 const webMocks = vi.hoisted(() => ({
@@ -15,7 +15,7 @@ import { getReplyFromConfig } from "./reply.js";
 
 const { withTempHome } = createTempHomeHarness({
   prefix: "remoteclaw-typing-",
-  beforeEachCase: () => runEmbeddedPiAgentMock.mockClear(),
+  beforeEachCase: () => runAgentMock.mockClear(),
 });
 
 afterEach(() => {
@@ -26,7 +26,7 @@ describe("getReplyFromConfig typing (heartbeat)", () => {
   async function runReplyFlow(isHeartbeat: boolean): Promise<ReturnType<typeof vi.fn>> {
     const onReplyStart = vi.fn();
     await withTempHome(async (home) => {
-      runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      runAgentMock.mockResolvedValueOnce({
         payloads: [{ text: "ok" }],
         meta: {},
       });

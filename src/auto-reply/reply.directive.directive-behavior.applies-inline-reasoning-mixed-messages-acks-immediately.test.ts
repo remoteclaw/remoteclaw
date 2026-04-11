@@ -5,7 +5,7 @@ import {
   installDirectiveBehaviorE2EHooks,
   makeWhatsAppDirectiveConfig,
   replyText,
-  runEmbeddedPiAgent,
+  runAgentMock,
   sessionStorePath,
   withTempHome,
 } from "./reply.directive.directive-behavior.e2e-harness.js";
@@ -42,7 +42,7 @@ describe("directive behavior", () => {
       const store = loadSessionStore(storePath);
       const entry = Object.values(store)[0];
       expect(entry?.verboseLevel).toBe("off");
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgentMock).not.toHaveBeenCalled();
     });
   });
   it("keeps reserved command aliases from matching after trimming", async () => {
@@ -69,7 +69,7 @@ describe("directive behavior", () => {
 
       const text = replyText(res);
       expect(text).toContain("Help");
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgentMock).not.toHaveBeenCalled();
     });
   });
   it("reports invalid queue options and current queue settings", async () => {
@@ -129,7 +129,7 @@ describe("directive behavior", () => {
       expect(text).toContain(
         "Options: modes steer, followup, collect, steer+backlog, interrupt; debounce:<ms|s|m>, cap:<n>, drop:old|new|summarize.",
       );
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgentMock).not.toHaveBeenCalled();
     });
   });
 });

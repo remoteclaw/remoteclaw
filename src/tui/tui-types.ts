@@ -83,7 +83,7 @@ export type GatewayStatusSummary = {
 };
 
 export type TuiStateAccess = {
-  agentDefaultId: string;
+  firstAgentId: string;
   sessionMainKey: string;
   sessionScope: SessionScope;
   agents: AgentSummary[];

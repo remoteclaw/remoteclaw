@@ -302,8 +302,8 @@ export async function runTui(opts: TuiOptions) {
   const initialSessionInput = (opts.session ?? "").trim();
   let sessionScope: SessionScope = (config.session?.scope ?? "per-sender") as SessionScope;
   let sessionMainKey = normalizeMainKey(config.session?.mainKey);
-  let agentDefaultId = listAgentEntries(config)[0]?.id ?? "default";
-  let currentAgentId = agentDefaultId;
+  let firstAgentId = listAgentEntries(config)[0]?.id ?? "default";
+  let currentAgentId = firstAgentId;
   let agents: AgentSummary[] = [];
   const agentNames = new Map<string, string>();
   let currentSessionKey = "";
@@ -332,11 +332,11 @@ export async function runTui(opts: TuiOptions) {
   let lastActivityStatus = activityStatus;
 
   const state: TuiStateAccess = {
-    get agentDefaultId() {
-      return agentDefaultId;
+    get firstAgentId() {
+      return firstAgentId;
     },
-    set agentDefaultId(value) {
-      agentDefaultId = value;
+    set firstAgentId(value) {
+      firstAgentId = value;
     },
     get sessionMainKey() {
       return sessionMainKey;

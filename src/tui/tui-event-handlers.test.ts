@@ -35,7 +35,7 @@ function createMockChatLog(): MockChatLog & HandlerChatLog {
 
 describe("tui-event-handlers: handleAgentEvent", () => {
   const makeState = (overrides?: Partial<TuiStateAccess>): TuiStateAccess => ({
-    agentDefaultId: "main",
+    firstAgentId: "main",
     sessionMainKey: "agent:main:main",
     sessionScope: "global",
     agents: [],

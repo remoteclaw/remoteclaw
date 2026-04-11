@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { FollowupRun } from "./queue.js";
 
-const { buildRunBaseParams, buildRunContexts, resolveModelFallbackOptions } =
-  await import("./agent-runner-utils.js");
+const { buildRunBaseParams, buildRunContexts } = await import("./agent-runner-utils.js");
 
 function makeRun(overrides: Partial<FollowupRun["run"]> = {}): FollowupRun["run"] {
   return {
@@ -24,20 +23,6 @@ function makeRun(overrides: Partial<FollowupRun["run"]> = {}): FollowupRun["run"
 }
 
 describe("agent-runner-utils", () => {
-  it("resolves model fallback options with undefined fallbacksOverride", () => {
-    const run = makeRun();
-
-    const resolved = resolveModelFallbackOptions(run);
-
-    expect(resolved).toEqual({
-      cfg: run.config,
-      provider: run.provider,
-      model: run.model,
-      agentDir: run.agentDir,
-      fallbacksOverride: undefined,
-    });
-  });
-
   it("builds run base params with run metadata", () => {
     const run = makeRun({ enforceFinalTag: true });
 

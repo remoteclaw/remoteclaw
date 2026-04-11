@@ -13,7 +13,6 @@ vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentRuntime: vi.fn(() => "claude"),
   resolveAgentWorkspaceDir: vi.fn(() => "/tmp/workspace"),
   resolveSessionAgentId: vi.fn(() => "main"),
-  resolveAgentSkillsFilter: vi.fn(() => undefined),
 }));
 vi.mock("../../agents/timeout.js", () => ({
   resolveAgentTimeoutMs: vi.fn(() => 60000),

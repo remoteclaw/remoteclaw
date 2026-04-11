@@ -41,23 +41,11 @@ import type { FollowupRun } from "./queue.js";
 import { createBlockReplyDeliveryHandler } from "./reply-delivery.js";
 import type { TypingSignaler } from "./typing-mode.js";
 
-export type RuntimeFallbackAttempt = {
-  provider: string;
-  model: string;
-  error: string;
-  reason?: string;
-  status?: number;
-  code?: string;
-};
-
 export type AgentRunLoopResult =
   | {
       kind: "success";
       runId: string;
       runResult: AgentDeliveryResult;
-      fallbackProvider?: string;
-      fallbackModel?: string;
-      fallbackAttempts: RuntimeFallbackAttempt[];
       didLogHeartbeatStrip: boolean;
       autoCompactionCompleted?: boolean;
       /** Payload keys sent directly (not via pipeline) during tool flush. */
@@ -593,7 +581,6 @@ export async function runAgentTurnWithFallback(params: {
     kind: "success",
     runId,
     runResult,
-    fallbackAttempts: [],
     didLogHeartbeatStrip,
     directlySentBlockKeys: directlySentBlockKeys.size > 0 ? directlySentBlockKeys : undefined,
   };

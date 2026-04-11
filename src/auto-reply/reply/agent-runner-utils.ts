@@ -125,16 +125,6 @@ export const appendUsageLine = (payloads: ReplyPayload[], line: string): ReplyPa
 export const resolveEnforceFinalTag = (run: FollowupRun["run"], provider: string) =>
   Boolean(run.enforceFinalTag || isReasoningTagProvider(provider));
 
-export function resolveModelFallbackOptions(run: FollowupRun["run"]) {
-  return {
-    cfg: run.config,
-    provider: run.provider,
-    model: run.model,
-    agentDir: run.agentDir,
-    fallbacksOverride: undefined,
-  };
-}
-
 export function buildRunBaseParams(params: {
   run: FollowupRun["run"];
   provider: string;

@@ -26,7 +26,6 @@ function createMock(): Mock {
 export const buildWorkspaceSkillSnapshotMock = createMock();
 export const resolveAgentConfigMock = createMock();
 export const resolveAgentModelFallbacksOverrideMock = createMock();
-export const resolveAgentSkillsFilterMock = createMock();
 export const runAgentMock = createMock();
 export const runCliAgentMock = createMock();
 export const getCliSessionIdMock = createMock();
@@ -45,7 +44,6 @@ vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentRuntimeOrThrow: vi.fn().mockReturnValue("claude"),
   resolveAgentWorkspaceDir: vi.fn().mockReturnValue("/tmp/workspace"),
   resolveSoleAgentId: vi.fn().mockReturnValue("default"),
-  resolveAgentSkillsFilter: resolveAgentSkillsFilterMock,
 }));
 
 vi.mock("../../agents/skills.js", () => ({
@@ -198,8 +196,6 @@ export function resetRunCronIsolatedAgentTurnHarness(): void {
   });
   resolveAgentConfigMock.mockReturnValue(undefined);
   resolveAgentModelFallbacksOverrideMock.mockReturnValue(undefined);
-  resolveAgentSkillsFilterMock.mockReturnValue(undefined);
-
   runAgentMock.mockReset();
   runAgentMock.mockResolvedValue(makeDefaultEmbeddedResult());
 

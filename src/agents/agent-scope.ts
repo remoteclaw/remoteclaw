@@ -386,13 +386,3 @@ export function resolveAgentDir(cfg: RemoteClawConfig, agentId: string) {
   const root = resolveStateDir(process.env);
   return path.join(root, "agents", id, "agent");
 }
-
-// Gutted in RemoteClaw fork (Middleware Boundary Principle) — stub exports for upstream compat
-/** Stub: model fallbacks are not used in RemoteClaw (CLI agents manage their own models). */
-export function resolveEffectiveModelFallbacks(..._args: unknown[]): string[] {
-  return [];
-}
-/** Stub: skills filter not used in RemoteClaw fork. */
-export function resolveAgentSkillsFilter(..._args: unknown[]): unknown {
-  return undefined;
-}

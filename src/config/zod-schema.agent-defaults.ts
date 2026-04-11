@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  BootSchema,
-  HeartbeatSchema,
-  AgentSandboxSchema,
-  MemorySearchSchema,
-} from "./zod-schema.agent-runtime.js";
+import { BootSchema, HeartbeatSchema, AgentSandboxSchema } from "./zod-schema.agent-runtime.js";
 import {
   BlockStreamingChunkSchema,
   BlockStreamingCoalesceSchema,
@@ -34,7 +29,9 @@ export const AgentDefaultsSchema = z
     envelopeTimestamp: z.union([z.literal("on"), z.literal("off")]).optional(),
     envelopeElapsed: z.union([z.literal("on"), z.literal("off")]).optional(),
     cliBackends: z.record(z.string(), CliBackendSchema).optional(),
-    memorySearch: MemorySearchSchema,
+    // Memory search config gutted — agents bring their own memory.
+    // Stub kept for config parse compatibility (existing configs still parse).
+    memorySearch: z.unknown().optional(),
     contextPruning: z
       .object({
         mode: z.union([z.literal("off"), z.literal("cache-ttl")]).optional(),

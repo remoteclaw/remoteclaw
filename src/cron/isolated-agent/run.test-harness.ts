@@ -27,12 +27,6 @@ export const buildWorkspaceSkillSnapshotMock = createMock();
 export const resolveAgentConfigMock = createMock();
 export const resolveAgentModelFallbacksOverrideMock = createMock();
 export const resolveAgentSkillsFilterMock = createMock();
-export const getModelRefStatusMock = createMock();
-export const isCliProviderMock = createMock();
-export const resolveAllowedModelRefMock = createMock();
-export const resolveConfiguredModelRefMock = createMock();
-export const resolveHooksGmailModelMock = createMock();
-export const resolveThinkingDefaultMock = createMock();
 export const runEmbeddedPiAgentMock = createMock();
 export const runCliAgentMock = createMock();
 export const getCliSessionIdMock = createMock();
@@ -65,23 +59,6 @@ vi.mock("../../agents/skills/refresh.js", () => ({
 vi.mock("../../agents/workspace.js", () => ({
   ensureAgentWorkspace: vi.fn().mockResolvedValue({ dir: "/tmp/workspace" }),
 }));
-
-vi.mock("../../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn().mockResolvedValue({ models: [] }),
-}));
-
-vi.mock("../../agents/model-selection.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../agents/model-selection.js")>();
-  return {
-    ...actual,
-    getModelRefStatus: getModelRefStatusMock,
-    isCliProvider: isCliProviderMock,
-    resolveAllowedModelRef: resolveAllowedModelRefMock,
-    resolveConfiguredModelRef: resolveConfiguredModelRefMock,
-    resolveHooksGmailModel: resolveHooksGmailModelMock,
-    resolveThinkingDefault: resolveThinkingDefaultMock,
-  };
-});
 
 vi.mock("../../agents/date-time.js", () => ({
   formatUserTime: vi.fn().mockReturnValue("2026-02-10 12:00"),
@@ -229,13 +206,6 @@ export function resetRunCronIsolatedAgentTurnHarness(): void {
   resolveAgentConfigMock.mockReturnValue(undefined);
   resolveAgentModelFallbacksOverrideMock.mockReturnValue(undefined);
   resolveAgentSkillsFilterMock.mockReturnValue(undefined);
-
-  resolveConfiguredModelRefMock.mockReturnValue({ provider: "openai", model: "gpt-4" });
-  resolveAllowedModelRefMock.mockReturnValue({ ref: { provider: "openai", model: "gpt-4" } });
-  resolveHooksGmailModelMock.mockReturnValue(null);
-  resolveThinkingDefaultMock.mockReturnValue(undefined);
-  getModelRefStatusMock.mockReturnValue({ allowed: false });
-  isCliProviderMock.mockReturnValue(false);
 
   runEmbeddedPiAgentMock.mockReset();
   runEmbeddedPiAgentMock.mockResolvedValue(makeDefaultEmbeddedResult());

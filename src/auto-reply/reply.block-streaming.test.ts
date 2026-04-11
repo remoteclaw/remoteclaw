@@ -37,10 +37,6 @@ const bridgeMock = vi.hoisted(() => ({
   runAgent: vi.fn(),
 }));
 
-vi.mock("../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn().mockResolvedValue([]),
-}));
-
 /** Convert AgentRunResult to AgentDeliveryResult for the bridge mock. */
 function toDeliveryResult(result: AgentRunResult): AgentDeliveryResult {
   return {

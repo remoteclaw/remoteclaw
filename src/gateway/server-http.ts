@@ -8,7 +8,7 @@ import { createServer as createHttpsServer } from "node:https";
 import type { TlsOptions } from "node:tls";
 import type { WebSocketServer } from "ws";
 import { resolveAgentAvatar } from "../agents/identity-avatar.js";
-import { CANVAS_WS_PATH, handleA2uiHttpRequest } from "../canvas-host/a2ui.js";
+import { handleA2uiHttpRequest } from "../canvas-host/a2ui.js";
 import type { CanvasHostHandler } from "../canvas-host/server.js";
 import { loadConfig } from "../config/config.js";
 import type { createSubsystemLogger } from "../logging/subsystem.js";
@@ -46,13 +46,7 @@ import {
   resolveHookDeliver,
 } from "./hooks.js";
 import { sendGatewayAuthFailure, setDefaultSecurityHeaders } from "./http-common.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const authorizeCanvasRequest = (..._args: unknown[]) =>
-  Promise.resolve({ ok: true, browserOriginPolicy: undefined });
-const enforcePluginRouteGatewayAuth = (..._args: unknown[]) => Promise.resolve(true);
-const isCanvasPath = (..._args: unknown[]) => false;
 import {
-  isProtectedPluginRoutePathFromContext,
   resolvePluginRoutePathContext,
   type PluginHttpRequestHandler,
   type PluginRoutePathContext,
@@ -82,14 +76,6 @@ const GATEWAY_PROBE_STATUS_BY_PATH = new Map<string, "live" | "ready">([
   ["/ready", "ready"],
   ["/readyz", "ready"],
 ]);
-
-function shouldEnforceDefaultPluginGatewayAuth(pathContext: PluginRoutePathContext): boolean {
-  return (
-    pathContext.malformedEncoding ||
-    pathContext.decodePassLimitReached ||
-    isProtectedPluginRoutePathFromContext(pathContext)
-  );
-}
 
 function handleGatewayProbeRequest(
   req: IncomingMessage,
@@ -187,26 +173,7 @@ function buildPluginRequestStages(params: {
     {
       name: "plugin-auth",
       run: async () => {
-        const pathContext =
-          params.pluginPathContext ?? resolvePluginRoutePathContext(params.requestPath);
-        if (
-          !(params.shouldEnforcePluginGatewayAuth ?? shouldEnforceDefaultPluginGatewayAuth)(
-            pathContext,
-          )
-        ) {
-          return false;
-        }
-        const pluginAuthOk = await enforcePluginRouteGatewayAuth({
-          req: params.req,
-          res: params.res,
-          auth: params.resolvedAuth,
-          trustedProxies: params.trustedProxies,
-          allowRealIpFallback: params.allowRealIpFallback,
-          rateLimiter: params.rateLimiter,
-        });
-        if (!pluginAuthOk) {
-          return true;
-        }
+        // Gutted in RemoteClaw fork — plugin route auth removed; always pass through
         return false;
       },
     },
@@ -456,7 +423,7 @@ export function createGatewayHttpServer(opts: {
 }): HttpServer {
   const {
     canvasHost,
-    clients,
+    clients: _clients,
     controlUiEnabled,
     controlUiBasePath,
     controlUiRoot,
@@ -522,29 +489,7 @@ export function createGatewayHttpServer(opts: {
         },
       ];
       if (canvasHost) {
-        requestStages.push({
-          name: "canvas-auth",
-          run: async () => {
-            if (!isCanvasPath(requestPath)) {
-              return false;
-            }
-            const ok = await authorizeCanvasRequest({
-              req,
-              auth: resolvedAuth,
-              trustedProxies,
-              allowRealIpFallback,
-              clients,
-              canvasCapability: scopedCanvas.capability,
-              malformedScopedPath: scopedCanvas.malformedScopedPath,
-              rateLimiter,
-            });
-            if (!ok.ok) {
-              sendGatewayAuthFailure(res, ok);
-              return true;
-            }
-            return false;
-          },
-        });
+        // Gutted in RemoteClaw fork — canvas auth removed; pass through
         requestStages.push({
           name: "a2ui",
           run: () => handleA2uiHttpRequest(req, res),
@@ -623,7 +568,14 @@ export function attachGatewayUpgradeHandler(opts: {
   /** Optional rate limiter for auth brute-force protection. */
   rateLimiter?: AuthRateLimiter;
 }) {
-  const { httpServer, wss, canvasHost, clients, resolvedAuth, rateLimiter } = opts;
+  const {
+    httpServer,
+    wss,
+    canvasHost,
+    clients: _clients2,
+    resolvedAuth: _resolvedAuth,
+    rateLimiter: _rateLimiter,
+  } = opts;
   httpServer.on("upgrade", (req, socket, head) => {
     void (async () => {
       const scopedCanvas = normalizeCanvasScopedUrl(req.url ?? "/");
@@ -635,28 +587,8 @@ export function attachGatewayUpgradeHandler(opts: {
       if (scopedCanvas.rewrittenUrl) {
         req.url = scopedCanvas.rewrittenUrl;
       }
+      // Gutted in RemoteClaw fork — canvas auth removed; pass through to upgrade handler
       if (canvasHost) {
-        const url = new URL(req.url ?? "/", "http://localhost");
-        if (url.pathname === CANVAS_WS_PATH) {
-          const configSnapshot = loadConfig();
-          const trustedProxies = configSnapshot.gateway?.trustedProxies ?? [];
-          const allowRealIpFallback = configSnapshot.gateway?.allowRealIpFallback === true;
-          const ok = await authorizeCanvasRequest({
-            req,
-            auth: resolvedAuth,
-            trustedProxies,
-            allowRealIpFallback,
-            clients,
-            canvasCapability: scopedCanvas.capability,
-            malformedScopedPath: scopedCanvas.malformedScopedPath,
-            rateLimiter,
-          });
-          if (!ok.ok) {
-            writeUpgradeAuthFailure(socket, ok);
-            socket.destroy();
-            return;
-          }
-        }
         if (canvasHost.handleUpgrade(req, socket, head)) {
           return;
         }

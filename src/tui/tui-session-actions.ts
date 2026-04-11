@@ -58,7 +58,7 @@ export function createSessionActions(context: SessionActionContext) {
   let lastSessionDefaults: SessionInfoDefaults | null = null;
 
   const applyAgentsResult = (result: GatewayAgentsList) => {
-    state.agentDefaultId = normalizeAgentId(result.defaultId);
+    state.firstAgentId = normalizeAgentId(result.defaultId);
     state.sessionMainKey = normalizeMainKey(result.mainKey);
     state.sessionScope = result.scope ?? state.sessionScope;
     state.agents = result.agents.map((agent) => ({

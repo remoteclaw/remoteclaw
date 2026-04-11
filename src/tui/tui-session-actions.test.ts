@@ -24,7 +24,7 @@ describe("tui session actions", () => {
       );
 
     const state: TuiStateAccess = {
-      agentDefaultId: "main",
+      firstAgentId: "main",
       sessionMainKey: "agent:main:main",
       sessionScope: "global",
       agents: [],

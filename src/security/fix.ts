@@ -336,19 +336,6 @@ async function chmodCredentialsAndAgentState(params: {
       ids.add(id);
     }
   }
-  // Also scan the filesystem for any existing agent directories not in config
-  const agentsParentDir = path.join(params.stateDir, "agents");
-  try {
-    const agentDirEntries = await fs.readdir(agentsParentDir, { withFileTypes: true });
-    for (const entry of agentDirEntries) {
-      if (entry.isDirectory() && entry.name.trim()) {
-        ids.add(entry.name.trim());
-      }
-    }
-  } catch {
-    // agents/ directory may not exist yet
-  }
-
   for (const agentId of ids) {
     const normalizedAgentId = normalizeAgentId(agentId);
     const agentRoot = path.join(params.stateDir, "agents", normalizedAgentId);

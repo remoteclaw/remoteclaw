@@ -103,7 +103,7 @@ export function createCommandHandlers(context: CommandHandlerContext) {
     const items = state.agents.map((agent: AgentSummary) => ({
       value: agent.id,
       label: agent.name ? `${agent.id} (${agent.name})` : agent.id,
-      description: agent.id === state.agentDefaultId ? "default" : "",
+      description: "",
     }));
     const selector = createSearchableSelectList(items, 9);
     openSelector(selector, async (value) => {

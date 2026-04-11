@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
-import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
+import { resolveSessionKeyAgentId } from "../../agents/agent-scope.js";
 import { killSessionRun, waitForSessionRunEnd } from "../../agents/session-run-registry.js";
 import {
   listSubagentRunsForRequester,
@@ -20,11 +20,7 @@ import {
 import { unbindThreadBindingsBySessionKey } from "../../discord/monitor/thread-bindings.js";
 import { createInternalHookEvent, triggerInternalHook } from "../../hooks/internal-hooks.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
-import {
-  isSubagentSessionKey,
-  normalizeAgentId,
-  parseAgentSessionKey,
-} from "../../routing/session-key.js";
+import { isSubagentSessionKey } from "../../routing/session-key.js";
 import {
   ErrorCodes,
   errorShape,
@@ -319,8 +315,7 @@ export const sessionsHandlers: GatewayRequestHandlers = {
       respond(false, undefined, applied.error);
       return;
     }
-    const parsed = parseAgentSessionKey(target.canonicalKey ?? key);
-    const agentId = normalizeAgentId(parsed?.agentId ?? resolveDefaultAgentId(cfg));
+    const agentId = resolveSessionKeyAgentId(target.canonicalKey ?? key, cfg);
     const resolved = resolveSessionModelRef(cfg, applied.entry, agentId);
     const result: SessionsPatchResult = {
       ok: true,

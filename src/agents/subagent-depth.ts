@@ -3,7 +3,7 @@ import JSON5 from "json5";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveStorePath } from "../config/sessions/paths.js";
 import { getSubagentDepth, parseAgentSessionKey } from "../sessions/session-key-utils.js";
-import { resolveDefaultAgentId } from "./agent-scope.js";
+import { listAgentIds, resolveSoleAgentId } from "./agent-scope.js";
 
 type SessionDepthEntry = {
   sessionId?: unknown;
@@ -57,8 +57,8 @@ function buildKeyCandidates(rawKey: string, cfg?: RemoteClawConfig): string[] {
   if (parseAgentSessionKey(rawKey)) {
     return [rawKey];
   }
-  const defaultAgentId = resolveDefaultAgentId(cfg);
-  const prefixed = `agent:${defaultAgentId}:${rawKey}`;
+  const agentId = resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
+  const prefixed = `agent:${agentId}:${rawKey}`;
   return prefixed === rawKey ? [rawKey] : [rawKey, prefixed];
 }
 

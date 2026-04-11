@@ -1,7 +1,6 @@
 import fs from "node:fs/promises";
-import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionEntry } from "../../config/sessions.js";
 import * as sessions from "../../config/sessions.js";
 import type { TypingMode } from "../../config/types.js";
@@ -25,14 +24,8 @@ type AgentRunParams = {
   onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => void;
 };
 
-type EmbeddedRunParams = {
-  prompt?: string;
-  extraSystemPrompt?: string;
-  onAgentEvent?: (evt: { stream?: string; data?: { phase?: string; willRetry?: boolean } }) => void;
-};
-
 const state = vi.hoisted(() => ({
-  runAgentMock: vi.fn(),
+  runEmbeddedPiAgentMock: vi.fn(),
   runCliAgentMock: vi.fn(),
 }));
 
@@ -62,7 +55,7 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  state.runAgentMock.mockClear();
+  state.runEmbeddedPiAgentMock.mockClear();
   state.runCliAgentMock.mockClear();
   vi.mocked(enqueueFollowupRun).mockClear();
   vi.mocked(scheduleFollowupDrain).mockClear();
@@ -152,108 +145,6 @@ function createMinimalRun(params?: {
   };
 }
 
-async function seedSessionStore(params: {
-  storePath: string;
-  sessionKey: string;
-  entry: Record<string, unknown>;
-}) {
-  await fs.mkdir(path.dirname(params.storePath), { recursive: true });
-  await fs.writeFile(
-    params.storePath,
-    JSON.stringify({ [params.sessionKey]: params.entry }, null, 2),
-    "utf-8",
-  );
-}
-
-function createBaseRun(params: {
-  storePath: string;
-  sessionEntry: Record<string, unknown>;
-  config?: Record<string, unknown>;
-  runOverrides?: Partial<FollowupRun["run"]>;
-}) {
-  const typing = createMockTypingController();
-  const sessionCtx = {
-    Provider: "whatsapp",
-    OriginatingTo: "+15550001111",
-    AccountId: "primary",
-    MessageSid: "msg",
-  } as unknown as TemplateContext;
-  const resolvedQueue = { mode: "interrupt" } as unknown as QueueSettings;
-  const followupRun = {
-    prompt: "hello",
-    summaryLine: "hello",
-    enqueuedAt: Date.now(),
-    run: {
-      agentId: "main",
-      agentDir: "/tmp/agent",
-      sessionId: "session",
-      sessionKey: "main",
-      messageProvider: "whatsapp",
-      sessionFile: "/tmp/session.jsonl",
-      workspaceDir: "/tmp",
-      config: params.config ?? {},
-      skillsSnapshot: {},
-      provider: "anthropic",
-      model: "claude",
-      thinkLevel: "low",
-      verboseLevel: "off",
-      elevatedLevel: "off",
-      bashElevated: {
-        enabled: false,
-        allowed: false,
-        defaultLevel: "off",
-      },
-      timeoutMs: 1_000,
-      blockReplyBreak: "message_end",
-    },
-  } as unknown as FollowupRun;
-  const run = {
-    ...followupRun.run,
-    ...params.runOverrides,
-    config: params.config ?? followupRun.run.config,
-  };
-
-  return {
-    typing,
-    sessionCtx,
-    resolvedQueue,
-    followupRun: { ...followupRun, run },
-  };
-}
-
-async function runReplyAgentWithBase(params: {
-  baseRun: ReturnType<typeof createBaseRun>;
-  storePath: string;
-  sessionKey: string;
-  sessionEntry: SessionEntry;
-  commandBody: string;
-  typingMode?: "instant";
-}): Promise<void> {
-  const runReplyAgent = await getRunReplyAgent();
-  const { typing, sessionCtx, resolvedQueue, followupRun } = params.baseRun;
-  await runReplyAgent({
-    commandBody: params.commandBody,
-    followupRun,
-    queueKey: params.sessionKey,
-    resolvedQueue,
-    shouldFollowup: false,
-    isActive: false,
-    typing,
-    sessionCtx,
-    sessionEntry: params.sessionEntry,
-    sessionStore: { [params.sessionKey]: params.sessionEntry } as Record<string, SessionEntry>,
-    sessionKey: params.sessionKey,
-    storePath: params.storePath,
-    defaultModel: "anthropic/claude-opus-4-5",
-    resolvedVerboseLevel: "off",
-    isNewSession: false,
-    blockStreamingEnabled: false,
-    resolvedBlockStreamingBreak: "message_end",
-    shouldInjectGroupIntro: false,
-    typingMode: params.typingMode ?? "instant",
-  });
-}
-
 describe("runReplyAgent heartbeat followup guard", () => {
   it("drops heartbeat runs when another run is active", async () => {
     const { run, typing } = createMinimalRun({
@@ -267,7 +158,7 @@ describe("runReplyAgent heartbeat followup guard", () => {
 
     expect(result).toBeUndefined();
     expect(vi.mocked(enqueueFollowupRun)).not.toHaveBeenCalled();
-    expect(state.runAgentMock).not.toHaveBeenCalled();
+    expect(state.runEmbeddedPiAgentMock).not.toHaveBeenCalled();
     expect(typing.cleanup).toHaveBeenCalledTimes(1);
   });
 
@@ -283,7 +174,7 @@ describe("runReplyAgent heartbeat followup guard", () => {
 
     expect(result).toBeUndefined();
     expect(vi.mocked(enqueueFollowupRun)).toHaveBeenCalledTimes(1);
-    expect(state.runAgentMock).not.toHaveBeenCalled();
+    expect(state.runEmbeddedPiAgentMock).not.toHaveBeenCalled();
   });
 
   it("drains followup queue when an unexpected exception escapes the run path", async () => {
@@ -291,7 +182,7 @@ describe("runReplyAgent heartbeat followup guard", () => {
     const persistSpy = vi
       .spyOn(accounting, "persistRunSessionUsage")
       .mockRejectedValueOnce(new Error("persist exploded"));
-    state.runAgentMock.mockResolvedValueOnce({
+    state.runEmbeddedPiAgentMock.mockResolvedValueOnce({
       payloads: [{ text: "ok" }],
       meta: { agentMeta: { usage: { input: 1, output: 1 } } },
     });
@@ -337,7 +228,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
 
   it("signals typing for normal runs", async () => {
     const onPartialReply = vi.fn();
-    state.runAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
+    state.runEmbeddedPiAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
       await params.onPartialReply?.({ text: "hi" });
       return { payloads: [{ text: "final" }], meta: {} };
     });
@@ -354,7 +245,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
 
   it("never signals typing for heartbeat runs", async () => {
     const onPartialReply = vi.fn();
-    state.runAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
+    state.runEmbeddedPiAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
       await params.onPartialReply?.({ text: "hi" });
       return { payloads: [{ text: "final" }], meta: {} };
     });
@@ -393,7 +284,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
 
     for (const testCase of cases) {
       const onPartialReply = vi.fn();
-      state.runAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
+      state.runEmbeddedPiAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
         for (const text of testCase.partials) {
           await params.onPartialReply?.({ text });
         }
@@ -428,7 +319,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
   });
 
   it("does not start typing on assistant message start without prior text in message mode", async () => {
-    state.runAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
+    state.runEmbeddedPiAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
       await params.onAssistantMessageStart?.();
       return { payloads: [{ text: "final" }], meta: {} };
     });
@@ -443,7 +334,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
   });
 
   it("starts typing from reasoning stream in thinking mode", async () => {
-    state.runAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
+    state.runEmbeddedPiAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
       await params.onReasoningStream?.({ text: "Reasoning:\n_step_" });
       await params.onPartialReply?.({ text: "hi" });
       return { payloads: [{ text: "final" }], meta: {} };
@@ -461,7 +352,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
   it("keeps assistant partial streaming enabled when reasoning mode is stream", async () => {
     const onPartialReply = vi.fn();
     const onReasoningStream = vi.fn();
-    state.runAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
+    state.runEmbeddedPiAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
       await params.onReasoningStream?.({ text: "Reasoning:\n_step_" });
       await params.onPartialReply?.({ text: "answer chunk" });
       return { payloads: [{ text: "final" }], meta: {} };
@@ -478,7 +369,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
   });
 
   it("suppresses typing in never mode", async () => {
-    state.runAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
+    state.runEmbeddedPiAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
       await params.onPartialReply?.({ text: "hi" });
       return { payloads: [{ text: "final" }], meta: {} };
     });
@@ -494,7 +385,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
 
   it("signals typing on normalized block replies", async () => {
     const onBlockReply = vi.fn();
-    state.runAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
+    state.runEmbeddedPiAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
       await params.onBlockReply?.({ text: "\n\nchunk", mediaUrls: [] });
       return { payloads: [{ text: "final" }], meta: {} };
     });
@@ -532,7 +423,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
 
     for (const testCase of cases) {
       const onToolResult = vi.fn();
-      state.runAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
+      state.runEmbeddedPiAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
         await params.onToolResult?.({ text: testCase.toolText, mediaUrls: [] });
         return { payloads: [{ text: "final" }], meta: {} };
       });
@@ -563,7 +454,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
   it("retries transient HTTP failures once with timer-driven backoff", async () => {
     vi.useFakeTimers();
     let calls = 0;
-    state.runAgentMock.mockImplementation(async () => {
+    state.runEmbeddedPiAgentMock.mockImplementation(async () => {
       calls += 1;
       if (calls === 1) {
         throw new Error("502 Bad Gateway");
@@ -593,7 +484,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       deliveryOrder.push(payload.text ?? "");
     });
 
-    state.runAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
+    state.runEmbeddedPiAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
       // Fire two tool results without awaiting each one; await both at the end.
       const first = params.onToolResult?.({ text: "first", mediaUrls: [] });
       const second = params.onToolResult?.({ text: "second", mediaUrls: [] });
@@ -621,7 +512,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       delivered.push(payload.text ?? "");
     });
 
-    state.runAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
+    state.runEmbeddedPiAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
       const first = params.onToolResult?.({ text: "first", mediaUrls: [] });
       const second = params.onToolResult?.({ text: "second", mediaUrls: [] });
       await Promise.allSettled([first, second]);
@@ -644,7 +535,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       const sessionEntry: SessionEntry = { sessionId: "session", updatedAt: Date.now() };
       const sessionStore = { main: sessionEntry };
 
-      state.runAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
+      state.runEmbeddedPiAgentMock.mockImplementationOnce(async (params: AgentRunParams) => {
         params.onAgentEvent?.({
           stream: "compaction",
           data: { phase: "end", willRetry: false },
@@ -688,7 +579,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
       await fs.writeFile(transcriptPath, "ok", "utf-8");
 
-      state.runAgentMock.mockImplementationOnce(async () => {
+      state.runEmbeddedPiAgentMock.mockImplementationOnce(async () => {
         throw new Error(
           'Context overflow: Summarization failed: 400 {"message":"prompt is too long"}',
         );
@@ -702,7 +593,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       });
       const res = await run();
 
-      expect(state.runAgentMock).toHaveBeenCalledTimes(1);
+      expect(state.runEmbeddedPiAgentMock).toHaveBeenCalledTimes(1);
       const payload = Array.isArray(res) ? res[0] : res;
       expect(payload).toMatchObject({
         text: expect.stringContaining("Context limit exceeded during compaction"),
@@ -737,7 +628,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
       await fs.writeFile(transcriptPath, "ok", "utf-8");
 
-      state.runAgentMock.mockImplementationOnce(async () => ({
+      state.runEmbeddedPiAgentMock.mockImplementationOnce(async () => ({
         payloads: [{ text: "Context overflow: prompt too large", isError: true }],
         meta: {
           durationMs: 1,
@@ -756,7 +647,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       });
       const res = await run();
 
-      expect(state.runAgentMock).toHaveBeenCalledTimes(1);
+      expect(state.runEmbeddedPiAgentMock).toHaveBeenCalledTimes(1);
       const payload = Array.isArray(res) ? res[0] : res;
       expect(payload).toMatchObject({
         text: expect.stringContaining("Context limit exceeded"),
@@ -773,7 +664,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
   });
 
   it("surfaces overflow fallback when embedded run returns empty payloads", async () => {
-    state.runAgentMock.mockImplementationOnce(async () => ({
+    state.runEmbeddedPiAgentMock.mockImplementationOnce(async () => ({
       payloads: [],
       meta: {
         durationMs: 1,
@@ -797,7 +688,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
   });
 
   it("surfaces overflow fallback when embedded payload text is whitespace-only", async () => {
-    state.runAgentMock.mockImplementationOnce(async () => ({
+    state.runEmbeddedPiAgentMock.mockImplementationOnce(async () => ({
       payloads: [{ text: "   \n\t  ", isError: true }],
       meta: {
         durationMs: 1,
@@ -833,7 +724,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
       await fs.writeFile(transcriptPath, "ok", "utf-8");
 
-      state.runAgentMock.mockImplementationOnce(async () => ({
+      state.runEmbeddedPiAgentMock.mockImplementationOnce(async () => ({
         payloads: [{ text: "Message ordering conflict - please try again.", isError: true }],
         meta: {
           durationMs: 1,
@@ -877,7 +768,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
           persistStore: true,
         });
 
-      state.runAgentMock.mockImplementationOnce(async () => {
+      state.runEmbeddedPiAgentMock.mockImplementationOnce(async () => {
         throw new Error(
           "function call turn comes immediately after a user turn or after a function response turn",
         );
@@ -916,7 +807,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
       await fs.writeFile(transcriptPath, "ok", "utf-8");
 
-      state.runAgentMock.mockImplementationOnce(async () => {
+      state.runEmbeddedPiAgentMock.mockImplementationOnce(async () => {
         throw new Error("INVALID_ARGUMENT: some other failure");
       });
 
@@ -952,7 +843,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
             persistStore: false,
           });
 
-        state.runAgentMock.mockImplementationOnce(async () => {
+        state.runEmbeddedPiAgentMock.mockImplementationOnce(async () => {
           throw new Error(
             "function call turn comes immediately after a user turn or after a function response turn",
           );
@@ -978,7 +869,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
   });
 
   it("returns friendly message for role ordering errors thrown as exceptions", async () => {
-    state.runAgentMock.mockImplementationOnce(async () => {
+    state.runEmbeddedPiAgentMock.mockImplementationOnce(async () => {
       throw new Error("400 Incorrect role information");
     });
 
@@ -994,7 +885,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
   });
 
   it("rewrites Bun socket errors into friendly text", async () => {
-    state.runAgentMock.mockImplementationOnce(async () => ({
+    state.runEmbeddedPiAgentMock.mockImplementationOnce(async () => ({
       payloads: [
         {
           text: "TypeError: The socket connection was closed unexpectedly. For more information, pass `verbose: true` in the second argument to fetch()",
@@ -1011,423 +902,5 @@ describe("runReplyAgent typing (heartbeat)", () => {
     expect(payloads[0]?.text).toContain("LLM connection failed");
     expect(payloads[0]?.text).toContain("socket connection was closed unexpectedly");
     expect(payloads[0]?.text).toContain("```");
-  });
-});
-
-describe("runReplyAgent memory flush", () => {
-  let fixtureRoot = "";
-  let caseId = 0;
-
-  async function withTempStore<T>(fn: (storePath: string) => Promise<T>): Promise<T> {
-    const dir = path.join(fixtureRoot, `case-${++caseId}`);
-    await fs.mkdir(dir, { recursive: true });
-    return await fn(path.join(dir, "sessions.json"));
-  }
-
-  beforeAll(async () => {
-    fixtureRoot = await fs.mkdtemp(path.join(tmpdir(), "remoteclaw-memory-flush-"));
-  });
-
-  afterAll(async () => {
-    if (fixtureRoot) {
-      await fs.rm(fixtureRoot, { recursive: true, force: true });
-    }
-  });
-
-  it("skips memory flush for CLI providers", async () => {
-    await withTempStore(async (storePath) => {
-      const sessionKey = "main";
-      const sessionEntry = {
-        sessionId: "session",
-        updatedAt: Date.now(),
-        totalTokens: 80_000,
-        compactionCount: 1,
-      };
-
-      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
-
-      state.runAgentMock.mockImplementation(async () => ({
-        payloads: [{ text: "ok" }],
-        meta: { agentMeta: { usage: { input: 1, output: 1 } } },
-      }));
-      state.runCliAgentMock.mockResolvedValue({
-        payloads: [{ text: "ok" }],
-        meta: { agentMeta: { usage: { input: 1, output: 1 } } },
-      });
-
-      const baseRun = createBaseRun({
-        storePath,
-        sessionEntry,
-        runOverrides: { provider: "codex-cli" },
-      });
-
-      await runReplyAgentWithBase({
-        baseRun,
-        storePath,
-        sessionKey,
-        sessionEntry,
-        commandBody: "hello",
-      });
-
-      expect(state.runCliAgentMock).toHaveBeenCalledTimes(1);
-      const call = state.runCliAgentMock.mock.calls[0]?.[0] as { prompt?: string } | undefined;
-      expect(call?.prompt).toBe("hello");
-      expect(state.runAgentMock).not.toHaveBeenCalled();
-    });
-  });
-
-  it("uses configured prompts for memory flush runs", async () => {
-    await withTempStore(async (storePath) => {
-      const sessionKey = "main";
-      const sessionEntry = {
-        sessionId: "session",
-        updatedAt: Date.now(),
-        totalTokens: 80_000,
-        compactionCount: 1,
-      };
-
-      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
-
-      const calls: Array<EmbeddedRunParams> = [];
-      state.runAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
-        calls.push(params);
-        if (params.prompt?.includes("Write notes.")) {
-          return { payloads: [], meta: {} };
-        }
-        return {
-          payloads: [{ text: "ok" }],
-          meta: { agentMeta: { usage: { input: 1, output: 1 } } },
-        };
-      });
-
-      const baseRun = createBaseRun({
-        storePath,
-        sessionEntry,
-        config: {
-          agents: {
-            defaults: {
-              compaction: {
-                memoryFlush: {
-                  prompt: "Write notes.",
-                  systemPrompt: "Flush memory now.",
-                },
-              },
-            },
-          },
-        },
-        runOverrides: { extraSystemPrompt: "extra system" },
-      });
-
-      await runReplyAgentWithBase({
-        baseRun,
-        storePath,
-        sessionKey,
-        sessionEntry,
-        commandBody: "hello",
-      });
-
-      const flushCall = calls[0];
-      expect(flushCall?.prompt).toContain("Write notes.");
-      expect(flushCall?.prompt).toContain("NO_REPLY");
-      expect(flushCall?.extraSystemPrompt).toContain("extra system");
-      expect(flushCall?.extraSystemPrompt).toContain("Flush memory now.");
-      expect(flushCall?.extraSystemPrompt).toContain("NO_REPLY");
-      expect(calls[1]?.prompt).toBe("hello");
-    });
-  });
-
-  it("runs a memory flush turn and updates session metadata", async () => {
-    await withTempStore(async (storePath) => {
-      const sessionKey = "main";
-      const sessionEntry = {
-        sessionId: "session",
-        updatedAt: Date.now(),
-        totalTokens: 80_000,
-        compactionCount: 1,
-      };
-
-      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
-
-      const calls: Array<{ prompt?: string }> = [];
-      state.runAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
-        calls.push({ prompt: params.prompt });
-        if (params.prompt?.includes("Pre-compaction memory flush.")) {
-          return { payloads: [], meta: {} };
-        }
-        return {
-          payloads: [{ text: "ok" }],
-          meta: { agentMeta: { usage: { input: 1, output: 1 } } },
-        };
-      });
-
-      const baseRun = createBaseRun({
-        storePath,
-        sessionEntry,
-      });
-
-      await runReplyAgentWithBase({
-        baseRun,
-        storePath,
-        sessionKey,
-        sessionEntry,
-        commandBody: "hello",
-      });
-
-      expect(calls).toHaveLength(2);
-      expect(calls[0]?.prompt).toContain("Pre-compaction memory flush.");
-      expect(calls[0]?.prompt).toContain("Current time:");
-      expect(calls[0]?.prompt).toMatch(/memory\/\d{4}-\d{2}-\d{2}\.md/);
-      expect(calls[1]?.prompt).toBe("hello");
-
-      const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
-      expect(stored[sessionKey].memoryFlushAt).toBeTypeOf("number");
-      expect(stored[sessionKey].memoryFlushCompactionCount).toBe(1);
-    });
-  });
-
-  it("runs memory flush when transcript fallback uses a relative sessionFile path", async () => {
-    await withTempStore(async (storePath) => {
-      const sessionKey = "main";
-      const sessionFile = "session-relative.jsonl";
-      const transcriptPath = path.join(path.dirname(storePath), sessionFile);
-      await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
-      await fs.writeFile(
-        transcriptPath,
-        JSON.stringify({ usage: { input: 90_000, output: 8_000 } }),
-        "utf-8",
-      );
-
-      const sessionEntry = {
-        sessionId: "session",
-        updatedAt: Date.now(),
-        sessionFile,
-        totalTokens: 10,
-        totalTokensFresh: false,
-        compactionCount: 1,
-      };
-
-      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
-
-      const calls: Array<{ prompt?: string }> = [];
-      state.runAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
-        calls.push({ prompt: params.prompt });
-        if (params.prompt?.includes("Pre-compaction memory flush.")) {
-          return { payloads: [], meta: {} };
-        }
-        return {
-          payloads: [{ text: "ok" }],
-          meta: { agentMeta: { usage: { input: 1, output: 1 } } },
-        };
-      });
-
-      const baseRun = createBaseRun({
-        storePath,
-        sessionEntry,
-        runOverrides: { sessionFile },
-      });
-
-      await runReplyAgentWithBase({
-        baseRun,
-        storePath,
-        sessionKey,
-        sessionEntry,
-        commandBody: "hello",
-      });
-
-      expect(calls).toHaveLength(2);
-      expect(calls[0]?.prompt).toContain("Pre-compaction memory flush.");
-      expect(calls[0]?.prompt).toContain("Current time:");
-      expect(calls[0]?.prompt).toMatch(/memory\/\d{4}-\d{2}-\d{2}\.md/);
-      expect(calls[1]?.prompt).toBe("hello");
-
-      const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
-      expect(stored[sessionKey].memoryFlushAt).toBeTypeOf("number");
-    });
-  });
-
-  it("forces memory flush when transcript file exceeds configured byte threshold", async () => {
-    await withTempStore(async (storePath) => {
-      const sessionKey = "main";
-      const sessionFile = "oversized-session.jsonl";
-      const transcriptPath = path.join(path.dirname(storePath), sessionFile);
-      await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
-      await fs.writeFile(transcriptPath, "x".repeat(3_000), "utf-8");
-
-      const sessionEntry = {
-        sessionId: "session",
-        updatedAt: Date.now(),
-        sessionFile,
-        totalTokens: 10,
-        totalTokensFresh: false,
-        compactionCount: 1,
-      };
-
-      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
-
-      const calls: Array<{ prompt?: string }> = [];
-      state.runAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
-        calls.push({ prompt: params.prompt });
-        if (params.prompt?.includes("Pre-compaction memory flush.")) {
-          return { payloads: [], meta: {} };
-        }
-        return {
-          payloads: [{ text: "ok" }],
-          meta: { agentMeta: { usage: { input: 1, output: 1 } } },
-        };
-      });
-
-      const baseRun = createBaseRun({
-        storePath,
-        sessionEntry,
-        config: {
-          agents: {
-            defaults: {
-              compaction: {
-                memoryFlush: {
-                  forceFlushTranscriptBytes: 256,
-                },
-              },
-            },
-          },
-        },
-        runOverrides: { sessionFile },
-      });
-
-      await runReplyAgentWithBase({
-        baseRun,
-        storePath,
-        sessionKey,
-        sessionEntry,
-        commandBody: "hello",
-      });
-
-      expect(calls).toHaveLength(2);
-      expect(calls[0]?.prompt).toContain("Pre-compaction memory flush.");
-      expect(calls[1]?.prompt).toBe("hello");
-    });
-  });
-
-  it("skips memory flush when disabled in config", async () => {
-    await withTempStore(async (storePath) => {
-      const sessionKey = "main";
-      const sessionEntry = {
-        sessionId: "session",
-        updatedAt: Date.now(),
-        totalTokens: 80_000,
-        compactionCount: 1,
-      };
-
-      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
-
-      state.runAgentMock.mockImplementation(async () => ({
-        payloads: [{ text: "ok" }],
-        meta: { agentMeta: { usage: { input: 1, output: 1 } } },
-      }));
-
-      const baseRun = createBaseRun({
-        storePath,
-        sessionEntry,
-        config: { agents: { defaults: { compaction: { memoryFlush: { enabled: false } } } } },
-      });
-
-      await runReplyAgentWithBase({
-        baseRun,
-        storePath,
-        sessionKey,
-        sessionEntry,
-        commandBody: "hello",
-      });
-
-      expect(state.runAgentMock).toHaveBeenCalledTimes(1);
-      const call = state.runAgentMock.mock.calls[0]?.[0] as { prompt?: string } | undefined;
-      expect(call?.prompt).toBe("hello");
-
-      const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
-      expect(stored[sessionKey].memoryFlushAt).toBeUndefined();
-    });
-  });
-
-  it("skips memory flush after a prior flush in the same compaction cycle", async () => {
-    await withTempStore(async (storePath) => {
-      const sessionKey = "main";
-      const sessionEntry = {
-        sessionId: "session",
-        updatedAt: Date.now(),
-        totalTokens: 80_000,
-        compactionCount: 2,
-        memoryFlushCompactionCount: 2,
-      };
-
-      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
-
-      const calls: Array<{ prompt?: string }> = [];
-      state.runAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
-        calls.push({ prompt: params.prompt });
-        return {
-          payloads: [{ text: "ok" }],
-          meta: { agentMeta: { usage: { input: 1, output: 1 } } },
-        };
-      });
-
-      const baseRun = createBaseRun({
-        storePath,
-        sessionEntry,
-      });
-
-      await runReplyAgentWithBase({
-        baseRun,
-        storePath,
-        sessionKey,
-        sessionEntry,
-        commandBody: "hello",
-      });
-
-      expect(calls.map((call) => call.prompt)).toEqual(["hello"]);
-    });
-  });
-
-  it("increments compaction count when flush compaction completes", async () => {
-    await withTempStore(async (storePath) => {
-      const sessionKey = "main";
-      const sessionEntry = {
-        sessionId: "session",
-        updatedAt: Date.now(),
-        totalTokens: 80_000,
-        compactionCount: 1,
-      };
-
-      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
-
-      state.runAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
-        if (params.prompt?.includes("Pre-compaction memory flush.")) {
-          params.onAgentEvent?.({
-            stream: "compaction",
-            data: { phase: "end", willRetry: false },
-          });
-          return { payloads: [], meta: {} };
-        }
-        return {
-          payloads: [{ text: "ok" }],
-          meta: { agentMeta: { usage: { input: 1, output: 1 } } },
-        };
-      });
-
-      const baseRun = createBaseRun({
-        storePath,
-        sessionEntry,
-      });
-
-      await runReplyAgentWithBase({
-        baseRun,
-        storePath,
-        sessionKey,
-        sessionEntry,
-        commandBody: "hello",
-      });
-
-      const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
-      expect(stored[sessionKey].compactionCount).toBe(2);
-      expect(stored[sessionKey].memoryFlushCompactionCount).toBe(2);
-    });
   });
 });

@@ -16,7 +16,6 @@ import type { TypingMode } from "../../config/types.js";
 import { emitAgentEvent } from "../../infra/agent-events.js";
 import { emitDiagnosticEvent, isDiagnosticsEnabled } from "../../infra/diagnostic-events.js";
 import { generateSecureUuid } from "../../infra/secure-random.js";
-import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { defaultRuntime } from "../../runtime.js";
 import { estimateUsageCost, resolveModelCostConfig } from "../../utils/usage-format.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle) — fallback-state
@@ -60,9 +59,6 @@ import {
   isAudioPayload,
   signalTypingIfNeeded,
 } from "./agent-runner-helpers.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// Returns the session entry unchanged (real impl may compact and update it).
-const runMemoryFlushIfNeeded = async (params: Record<string, unknown>) => params.sessionEntry;
 import { buildReplyPayloads } from "./agent-runner-payloads.js";
 import {
   appendUnscheduledReminderNote,
@@ -74,8 +70,6 @@ import { createAudioAsVoiceBuffer, createBlockReplyPipeline } from "./block-repl
 import { resolveEffectiveBlockStreamingConfig } from "./block-streaming.js";
 import { createFollowupRunner } from "./followup-runner.js";
 import { resolveOriginMessageProvider, resolveOriginMessageTo } from "./origin-routing.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const readPostCompactionContext = async (..._args: unknown[]) => undefined as string | undefined;
 import { resolveActiveRunQueueAction } from "./queue-policy.js";
 import { enqueueFollowupRun, type FollowupRun, type QueueSettings } from "./queue.js";
 import { createReplyToModeFilterForChannel, resolveReplyToMode } from "./reply-threading.js";
@@ -229,22 +223,6 @@ export async function runReplyAgent(params: {
   }
 
   await typingSignals.signalRunStart();
-
-  activeSessionEntry = (await runMemoryFlushIfNeeded({
-    cfg,
-    followupRun,
-    promptForEstimate: followupRun.prompt,
-    sessionCtx,
-    opts,
-    defaultModel,
-
-    resolvedVerboseLevel,
-    sessionEntry: activeSessionEntry,
-    sessionStore: activeSessionStore,
-    sessionKey,
-    storePath,
-    isHeartbeat,
-  })) as SessionEntry | undefined;
 
   const runFollowupTurn = createFollowupRunner({
     opts,
@@ -667,20 +645,6 @@ export async function runReplyAgent(params: {
         storePath,
         lastCallUsage: agentMeta?.lastCallUsage as NormalizedUsage | undefined,
       });
-
-      // Inject post-compaction workspace context for the next agent turn
-      if (sessionKey) {
-        const workspaceDir = process.cwd();
-        readPostCompactionContext(workspaceDir)
-          .then((contextContent: string | undefined) => {
-            if (contextContent) {
-              enqueueSystemEvent(contextContent, { sessionKey });
-            }
-          })
-          .catch(() => {
-            // Silent failure — post-compaction context is best-effort
-          });
-      }
 
       if (verboseEnabled) {
         const suffix = typeof count === "number" ? ` (count ${String(count)})` : "";

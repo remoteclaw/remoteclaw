@@ -1,4 +1,4 @@
-import { listAgentEntries, resolveFirstAgentWorkspace } from "../../agents/agent-scope.js";
+import { resolveFirstAgentWorkspace } from "../../agents/agent-scope.js";
 import { listChannelPluginCatalogEntries } from "../../channels/plugins/catalog.js";
 import { getChannelPlugin, normalizeChannelId } from "../../channels/plugins/index.js";
 import { moveSingleAccountChannelSectionToDefaultAccount } from "../../channels/plugins/setup-helpers.js";

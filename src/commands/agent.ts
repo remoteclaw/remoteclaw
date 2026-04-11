@@ -56,9 +56,6 @@ type OverrideFieldClearedByDelete =
   | "authProfileOverride"
   | "authProfileOverrideSource"
   | "authProfileOverrideCompactionCount"
-  | "fallbackNoticeSelectedModel"
-  | "fallbackNoticeActiveModel"
-  | "fallbackNoticeReason"
   | "claudeCliSessionId";
 
 const OVERRIDE_FIELDS_CLEARED_BY_DELETE: OverrideFieldClearedByDelete[] = [
@@ -67,9 +64,6 @@ const OVERRIDE_FIELDS_CLEARED_BY_DELETE: OverrideFieldClearedByDelete[] = [
   "authProfileOverride",
   "authProfileOverrideSource",
   "authProfileOverrideCompactionCount",
-  "fallbackNoticeSelectedModel",
-  "fallbackNoticeActiveModel",
-  "fallbackNoticeReason",
   "claudeCliSessionId",
 ];
 
@@ -411,8 +405,6 @@ export async function agentCommand(
 
     const sessionEntryRef: SessionEntryRef = { current: sessionEntry };
     let result: AgentDeliveryResult;
-    const fallbackProvider = provider;
-    const fallbackModel = model;
     try {
       const runContext = resolveAgentRunContext(opts);
       const messageChannel = resolveMessageChannel(
@@ -494,8 +486,6 @@ export async function agentCommand(
         sessionStore,
         defaultProvider: provider,
         defaultModel: model,
-        fallbackProvider,
-        fallbackModel,
         result,
       });
     }

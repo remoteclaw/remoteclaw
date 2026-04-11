@@ -14,8 +14,6 @@ export async function updateSessionStoreAfterAgentRun(params: {
   sessionStore: Record<string, SessionEntry>;
   defaultProvider: string;
   defaultModel: string;
-  fallbackProvider?: string;
-  fallbackModel?: string;
   result: AgentDeliveryResult;
 }) {
   const {
@@ -26,8 +24,6 @@ export async function updateSessionStoreAfterAgentRun(params: {
     sessionStore,
     defaultProvider,
     defaultModel,
-    fallbackProvider,
-    fallbackModel,
     result,
   } = params;
 
@@ -42,8 +38,8 @@ export async function updateSessionStoreAfterAgentRun(params: {
         cacheWrite: runUsage.cacheWriteTokens,
       }
     : undefined;
-  const modelUsed = fallbackModel ?? defaultModel;
-  const providerUsed = fallbackProvider ?? defaultProvider;
+  const modelUsed = defaultModel;
+  const providerUsed = defaultProvider;
   const entry = sessionStore[sessionKey] ?? {
     sessionId,
     updatedAt: Date.now(),

@@ -9,6 +9,7 @@ import type { IMessagePayload } from "./monitor/types.js";
 
 function baseCfg(): RemoteClawConfig {
   return {
+    agents: { list: [{ id: "main", workspace: "~/test" }] },
     channels: {
       imessage: {
         dmPolicy: "open",

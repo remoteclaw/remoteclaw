@@ -1156,7 +1156,7 @@ export async function handleFeishuMessage(params: {
     // Dynamic agent creation for DM users
     // When enabled, creates a unique agent instance with its own workspace for each DM user.
     let effectiveCfg = cfg;
-    if (!isGroup && route.matchedBy === "default") {
+    if (!isGroup && route.matchedBy === "sole-agent") {
       const dynamicCfg = feishuCfg?.dynamicAgentCreation as DynamicAgentCreationConfig | undefined;
       if (dynamicCfg?.enabled) {
         const runtime = getFeishuRuntime();

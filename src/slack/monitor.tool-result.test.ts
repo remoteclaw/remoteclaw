@@ -49,6 +49,7 @@ describe("monitorSlackProvider tool results", () => {
 
   function setDirectMessageReplyMode(replyToMode: "off" | "all" | "first") {
     slackTestState.config = {
+      agents: { list: [{ id: "main", workspace: "~/test" }] },
       messages: {
         responsePrefix: "PFX",
         ackReaction: "👀",
@@ -69,6 +70,7 @@ describe("monitorSlackProvider tool results", () => {
 
   function setRequireMentionChannelConfig(mentionPatterns?: string[]) {
     slackTestState.config = {
+      agents: { list: [{ id: "main", workspace: "~/test" }] },
       ...(mentionPatterns
         ? {
             messages: {
@@ -195,6 +197,7 @@ describe("monitorSlackProvider tool results", () => {
 
   it("preserves RawBody without injecting processed room history", async () => {
     slackTestState.config = {
+      agents: { list: [{ id: "main", workspace: "~/test" }] },
       messages: { ackReactionScope: "group-mentions" },
       channels: {
         slack: {
@@ -248,6 +251,7 @@ describe("monitorSlackProvider tool results", () => {
 
   it("scopes thread history to the thread by default", async () => {
     slackTestState.config = {
+      agents: { list: [{ id: "main", workspace: "~/test" }] },
       messages: { ackReactionScope: "group-mentions" },
       channels: {
         slack: {
@@ -385,6 +389,7 @@ describe("monitorSlackProvider tool results", () => {
 
   it("accepts channel messages without mention when channels.slack.requireMention is false", async () => {
     slackTestState.config = {
+      agents: { list: [{ id: "main", workspace: "~/test" }] },
       channels: {
         slack: {
           dm: { enabled: true, policy: "open", allowFrom: ["*"] },
@@ -423,6 +428,7 @@ describe("monitorSlackProvider tool results", () => {
   it("threads replies when incoming message is in a thread", async () => {
     replyMock.mockResolvedValue({ text: "thread reply" });
     slackTestState.config = {
+      agents: { list: [{ id: "main", workspace: "~/test" }] },
       messages: {
         responsePrefix: "PFX",
         ackReaction: "👀",
@@ -446,6 +452,7 @@ describe("monitorSlackProvider tool results", () => {
   it("ignores replyToId directive when replyToMode is off", async () => {
     replyMock.mockResolvedValue({ text: "forced reply", replyToId: "555" });
     slackTestState.config = {
+      agents: { list: [{ id: "main", workspace: "~/test" }] },
       messages: {
         responsePrefix: "PFX",
         ackReaction: "👀",
@@ -578,6 +585,7 @@ describe("monitorSlackProvider tool results", () => {
     replyMock.mockResolvedValue({ text: "thread reply" });
 
     slackTestState.config = {
+      agents: { list: [{ id: "main", workspace: "~/test" }] },
       messages: { responsePrefix: "PFX" },
       channels: {
         slack: {
@@ -620,6 +628,7 @@ describe("monitorSlackProvider tool results", () => {
     }
 
     slackTestState.config = {
+      agents: { list: [{ id: "main", workspace: "~/test" }] },
       messages: { responsePrefix: "PFX" },
       channels: {
         slack: {
@@ -647,6 +656,7 @@ describe("monitorSlackProvider tool results", () => {
   it("scopes thread session keys to the routed agent", async () => {
     replyMock.mockResolvedValue({ text: "ok" });
     slackTestState.config = {
+      agents: { list: [{ id: "support", workspace: "~/test" }] },
       messages: { responsePrefix: "PFX" },
       channels: {
         slack: {

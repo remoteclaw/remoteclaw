@@ -9,6 +9,7 @@ function buildCtx(overrides?: { replyToMode?: "all" | "first" | "off" }) {
   const replyToMode = overrides?.replyToMode ?? "all";
   return createInboundSlackTestContext({
     cfg: {
+      agents: { list: [{ id: "main", workspace: "~/test" }] },
       channels: {
         slack: { enabled: true, replyToMode },
       },

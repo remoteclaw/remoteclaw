@@ -120,6 +120,7 @@ export function installSignalToolResultTestHooks() {
   beforeEach(() => {
     resetInboundDedupe();
     config = {
+      agents: { list: [{ id: "main", workspace: "~/test" }] },
       messages: { responsePrefix: "PFX" },
       channels: {
         signal: { autoStart: false, dmPolicy: "open", allowFrom: ["*"] },

@@ -1,9 +1,9 @@
-import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveSoleAgentId } from "../agents/agent-scope.js";
 import type { ChatType } from "../channels/chat-type.js";
 import { normalizeChatType } from "../channels/chat-type.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { shouldLogVerbose } from "../globals.js";
-import { logDebug } from "../logger.js";
+import { logDebug, logWarn } from "../logger.js";
 import { listBindings } from "./bindings.js";
 import {
   buildAgentMainSessionKey,
@@ -53,7 +53,10 @@ export type ResolvedAgentRoute = {
     | "binding.team"
     | "binding.account"
     | "binding.channel"
-    | "default";
+    | "sole-agent"
+    | "error";
+  /** Present when matchedBy is "error" — describes the routing failure and suggests config fixes. */
+  error?: string;
 };
 
 export { DEFAULT_ACCOUNT_ID, DEFAULT_AGENT_ID } from "./session-key.js";
@@ -114,7 +117,7 @@ function listAgents(cfg: RemoteClawConfig) {
 type AgentLookupCache = {
   agentsRef: RemoteClawConfig["agents"] | undefined;
   byNormalizedId: Map<string, string>;
-  fallbackDefaultAgentId: string;
+  soleAgentId: string | null;
 };
 
 const agentLookupCacheByCfg = new WeakMap<RemoteClawConfig, AgentLookupCache>();
@@ -137,27 +140,24 @@ function resolveAgentLookupCache(cfg: RemoteClawConfig): AgentLookupCache {
   const next: AgentLookupCache = {
     agentsRef,
     byNormalizedId,
-    fallbackDefaultAgentId: sanitizeAgentId(resolveDefaultAgentId(cfg)),
+    soleAgentId: resolveSoleAgentId(cfg),
   };
   agentLookupCacheByCfg.set(cfg, next);
   return next;
 }
 
-function pickFirstExistingAgentId(cfg: RemoteClawConfig, agentId: string): string {
+function resolveExistingAgentId(cfg: RemoteClawConfig, agentId: string): string | null {
   const lookup = resolveAgentLookupCache(cfg);
   const trimmed = (agentId ?? "").trim();
   if (!trimmed) {
-    return lookup.fallbackDefaultAgentId;
+    return null;
   }
   const normalized = normalizeAgentId(trimmed);
   if (lookup.byNormalizedId.size === 0) {
+    // No agents list configured — accept the binding's agent ID as-is.
     return sanitizeAgentId(trimmed);
   }
-  const resolved = lookup.byNormalizedId.get(normalized);
-  if (resolved) {
-    return resolved;
-  }
-  return lookup.fallbackDefaultAgentId;
+  return lookup.byNormalizedId.get(normalized) ?? null;
 }
 
 function matchesChannel(
@@ -574,8 +574,33 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
   const bindings = getEvaluatedBindingsForChannelAccount(input.cfg, channel, accountId);
   const bindingsIndex = getEvaluatedBindingIndexForChannelAccount(input.cfg, channel, accountId);
 
+  const cacheRoute = (route: ResolvedAgentRoute): ResolvedAgentRoute => {
+    if (routeCache && routeCacheKey) {
+      routeCache.set(routeCacheKey, route);
+      if (routeCache.size > MAX_RESOLVED_ROUTE_CACHE_KEYS) {
+        routeCache.clear();
+        routeCache.set(routeCacheKey, route);
+      }
+    }
+    return route;
+  };
+
   const choose = (agentId: string, matchedBy: ResolvedAgentRoute["matchedBy"]) => {
-    const resolvedAgentId = pickFirstExistingAgentId(input.cfg, agentId);
+    const resolvedAgentId = resolveExistingAgentId(input.cfg, agentId);
+    if (!resolvedAgentId) {
+      logWarn(
+        `[routing] binding references unknown agent '${agentId}' — check agents.list in your config`,
+      );
+      return cacheRoute({
+        agentId: "",
+        channel,
+        accountId,
+        sessionKey: "",
+        mainSessionKey: "",
+        matchedBy: "error",
+        error: `Binding references unknown agent '${agentId}' — check agents.list in your config`,
+      });
+    }
     const sessionKey = buildAgentSessionKey({
       agentId: resolvedAgentId,
       channel,
@@ -588,22 +613,14 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
       agentId: resolvedAgentId,
       mainKey: DEFAULT_MAIN_KEY,
     }).toLowerCase();
-    const route = {
+    return cacheRoute({
       agentId: resolvedAgentId,
       channel,
       accountId,
       sessionKey,
       mainSessionKey,
       matchedBy,
-    };
-    if (routeCache && routeCacheKey) {
-      routeCache.set(routeCacheKey, route);
-      if (routeCache.size > MAX_RESOLVED_ROUTE_CACHE_KEYS) {
-        routeCache.clear();
-        routeCache.set(routeCacheKey, route);
-      }
-    }
-    return route;
+    });
   };
 
   const formatPeer = (value?: RoutePeer | null) =>
@@ -636,7 +653,7 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
   };
 
   const tiers: Array<{
-    matchedBy: Exclude<ResolvedAgentRoute["matchedBy"], "default">;
+    matchedBy: Exclude<ResolvedAgentRoute["matchedBy"], "sole-agent" | "error">;
     enabled: boolean;
     scopePeer: RoutePeer | null;
     candidates: EvaluatedBinding[];
@@ -715,5 +732,29 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
     }
   }
 
-  return choose(resolveDefaultAgentId(input.cfg), "default");
+  // Final fallback: sole-agent auto-selection or explicit error.
+  const lookup = resolveAgentLookupCache(input.cfg);
+  if (lookup.soleAgentId) {
+    if (shouldLogDebug) {
+      logDebug(`[routing] no binding match — auto-routing to sole agent: ${lookup.soleAgentId}`);
+    }
+    return choose(lookup.soleAgentId, "sole-agent");
+  }
+  const agentCount = lookup.byNormalizedId.size;
+  const error =
+    agentCount === 0
+      ? "No agents configured — add at least one entry to agents.list"
+      : `No binding matched for channel '${channel}' — add a binding to route messages to one of your ${agentCount} configured agents`;
+  if (shouldLogDebug) {
+    logDebug(`[routing] ${error}`);
+  }
+  return cacheRoute({
+    agentId: "",
+    channel,
+    accountId,
+    sessionKey: "",
+    mainSessionKey: "",
+    matchedBy: "error",
+    error,
+  });
 }

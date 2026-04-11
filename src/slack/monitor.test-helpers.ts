@@ -121,6 +121,7 @@ export async function runSlackMessageOnce(
 }
 
 export const defaultSlackTestConfig = () => ({
+  agents: { list: [{ id: "main", workspace: "~/test" }] },
   messages: {
     responsePrefix: "PFX",
     ackReaction: "👀",

@@ -1,4 +1,4 @@
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveFirstAgentWorkspace } from "../agents/agent-scope.js";
 import { listChannelPluginCatalogEntries } from "../channels/plugins/catalog.js";
 import { resolveChannelDefaultAccountId } from "../channels/plugins/helpers.js";
 import { listChannelPlugins, getChannelPlugin } from "../channels/plugins/index.js";
@@ -117,7 +117,7 @@ async function collectChannelStatus(params: {
 }): Promise<ChannelStatusSummary> {
   const installedPlugins = listChannelPlugins();
   const installedIds = new Set(installedPlugins.map((plugin) => plugin.id));
-  const workspaceDir = resolveAgentWorkspaceDir(params.cfg, resolveDefaultAgentId(params.cfg));
+  const workspaceDir = resolveFirstAgentWorkspace(params.cfg) ?? undefined;
   const catalogEntries = listChannelPluginCatalogEntries({ workspaceDir }).filter(
     (entry) => !installedIds.has(entry.id),
   );
@@ -413,7 +413,7 @@ export async function setupChannels(
     const core = listChatChannels();
     const installed = listChannelPlugins();
     const installedIds = new Set(installed.map((plugin) => plugin.id));
-    const workspaceDir = resolveAgentWorkspaceDir(next, resolveDefaultAgentId(next));
+    const workspaceDir = resolveFirstAgentWorkspace(next) ?? undefined;
     const catalog = listChannelPluginCatalogEntries({ workspaceDir }).filter(
       (entry) => !installedIds.has(entry.id),
     );
@@ -462,7 +462,7 @@ export async function setupChannels(
       );
       return false;
     }
-    const workspaceDir = resolveAgentWorkspaceDir(next, resolveDefaultAgentId(next));
+    const workspaceDir = resolveFirstAgentWorkspace(next) ?? undefined;
     reloadOnboardingPluginRegistry({
       cfg: next,
       runtime,
@@ -623,7 +623,7 @@ export async function setupChannels(
     const { catalogById } = getChannelEntries();
     const catalogEntry = catalogById.get(channel);
     if (catalogEntry) {
-      const workspaceDir = resolveAgentWorkspaceDir(next, resolveDefaultAgentId(next));
+      const workspaceDir = resolveFirstAgentWorkspace(next) ?? undefined;
       const result = await ensureOnboardingPluginInstalled({
         cfg: next,
         entry: catalogEntry,

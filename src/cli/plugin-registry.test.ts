@@ -2,8 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getActivePluginRegistryMock = vi.fn();
 const loadConfigMock = vi.fn();
-const resolveAgentWorkspaceDirOrNullMock = vi.fn();
-const resolveDefaultAgentIdMock = vi.fn();
+const resolveFirstAgentWorkspaceMock = vi.fn();
 const loadRemoteClawPluginsMock = vi.fn();
 
 vi.mock("../plugins/runtime.js", () => ({
@@ -15,8 +14,7 @@ vi.mock("../config/config.js", () => ({
 }));
 
 vi.mock("../agents/agent-scope.js", () => ({
-  resolveAgentWorkspaceDirOrNull: resolveAgentWorkspaceDirOrNullMock,
-  resolveDefaultAgentId: resolveDefaultAgentIdMock,
+  resolveFirstAgentWorkspace: resolveFirstAgentWorkspaceMock,
   resolveAgentRuntime: () => "claude",
 }));
 
@@ -42,11 +40,10 @@ describe("ensurePluginRegistryLoaded", () => {
     ({ ensurePluginRegistryLoaded } = await import("./plugin-registry.js"));
     getActivePluginRegistryMock.mockReturnValue(null);
     loadConfigMock.mockReturnValue({});
-    resolveDefaultAgentIdMock.mockReturnValue("main");
   });
 
   it("does not throw when no workspace is configured (fresh install)", () => {
-    resolveAgentWorkspaceDirOrNullMock.mockReturnValue(null);
+    resolveFirstAgentWorkspaceMock.mockReturnValue(null);
 
     expect(() => ensurePluginRegistryLoaded()).not.toThrow();
     expect(loadRemoteClawPluginsMock).toHaveBeenCalledWith(
@@ -55,7 +52,7 @@ describe("ensurePluginRegistryLoaded", () => {
   });
 
   it("passes resolved workspace to plugin loader", () => {
-    resolveAgentWorkspaceDirOrNullMock.mockReturnValue("/home/user/workspace");
+    resolveFirstAgentWorkspaceMock.mockReturnValue("/home/user/workspace");
 
     ensurePluginRegistryLoaded();
 
@@ -83,7 +80,7 @@ describe("ensurePluginRegistryLoaded", () => {
       channels: [],
       tools: [],
     });
-    resolveAgentWorkspaceDirOrNullMock.mockReturnValue(null);
+    resolveFirstAgentWorkspaceMock.mockReturnValue(null);
 
     ensurePluginRegistryLoaded();
 
@@ -91,7 +88,7 @@ describe("ensurePluginRegistryLoaded", () => {
   });
 
   it("does not reload on subsequent calls", () => {
-    resolveAgentWorkspaceDirOrNullMock.mockReturnValue(null);
+    resolveFirstAgentWorkspaceMock.mockReturnValue(null);
 
     ensurePluginRegistryLoaded();
     ensurePluginRegistryLoaded();

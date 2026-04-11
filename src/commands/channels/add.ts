@@ -1,4 +1,4 @@
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
+import { resolveDefaultAgentId, resolveFirstAgentWorkspace } from "../../agents/agent-scope.js";
 import { listChannelPluginCatalogEntries } from "../../channels/plugins/catalog.js";
 import { getChannelPlugin, normalizeChannelId } from "../../channels/plugins/index.js";
 import { moveSingleAccountChannelSectionToDefaultAccount } from "../../channels/plugins/setup-helpers.js";
@@ -44,7 +44,7 @@ function resolveCatalogChannelEntry(raw: string, cfg: RemoteClawConfig | null) {
   if (!trimmed) {
     return undefined;
   }
-  const workspaceDir = cfg ? resolveAgentWorkspaceDir(cfg, resolveDefaultAgentId(cfg)) : undefined;
+  const workspaceDir = cfg ? (resolveFirstAgentWorkspace(cfg) ?? undefined) : undefined;
   return listChannelPluginCatalogEntries({ workspaceDir }).find((entry) => {
     if (entry.id.toLowerCase() === trimmed) {
       return true;
@@ -187,7 +187,7 @@ export async function channelsAddCommand(
 
   if (!channel && catalogEntry) {
     const prompter = createClackPrompter();
-    const workspaceDir = resolveAgentWorkspaceDir(nextConfig, resolveDefaultAgentId(nextConfig));
+    const workspaceDir = resolveFirstAgentWorkspace(nextConfig) ?? undefined;
     const result = await ensureOnboardingPluginInstalled({
       cfg: nextConfig,
       entry: catalogEntry,

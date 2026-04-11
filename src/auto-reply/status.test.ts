@@ -45,36 +45,32 @@ describe("buildStatusMessage", () => {
     expect(normalized).toContain("Reasoning: on");
   });
 
-  it("shows verbose/elevated labels only when enabled", () => {
+  it("shows verbose label when enabled", () => {
     const text = buildStatusMessage({
       agent: { model: "anthropic/claude-opus-4-5" },
       sessionEntry: { sessionId: "v1", updatedAt: 0 },
       sessionKey: "agent:main:main",
       sessionScope: "per-sender",
-      resolvedThink: "low",
       resolvedVerbose: "on",
-      resolvedElevated: "on",
       queue: { mode: "collect", depth: 0 },
     });
 
     expect(text).toContain("verbose");
-    expect(text).toContain("elevated");
   });
 
-  it("does not show elevated label when session explicitly disables it", () => {
+  it("does not show verbose label when off", () => {
     const text = buildStatusMessage({
-      agent: { model: "anthropic/claude-opus-4-5", elevatedDefault: "on" },
-      sessionEntry: { sessionId: "v1", updatedAt: 0, elevatedLevel: "off" },
+      agent: { model: "anthropic/claude-opus-4-5" },
+      sessionEntry: { sessionId: "v1", updatedAt: 0 },
       sessionKey: "agent:main:main",
       sessionScope: "per-sender",
-      resolvedThink: "low",
       resolvedVerbose: "off",
       queue: { mode: "collect", depth: 0 },
     });
 
     const optionsLine = text.split("\n").find((line) => line.trim().startsWith("⚙️"));
     expect(optionsLine).toBeTruthy();
-    expect(optionsLine).not.toContain("elevated");
+    expect(optionsLine).not.toContain("verbose");
   });
 
   it("handles missing agent config gracefully", () => {

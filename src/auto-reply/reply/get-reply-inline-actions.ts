@@ -47,11 +47,7 @@ export async function handleInlineActions(params: {
   directives: InlineDirectives;
   cleanedBody: string;
   defaultActivation: Parameters<typeof buildStatusReply>[0]["defaultGroupActivation"];
-  resolvedThinkLevel?: unknown;
   resolvedVerboseLevel: VerboseLevel | undefined;
-  resolvedReasoningLevel?: unknown;
-  resolvedElevatedLevel?: unknown;
-  resolveDefaultThinkingLevel?: unknown;
   elevatedEnabled?: boolean;
   elevatedAllowed?: boolean;
   elevatedFailures?: unknown[];

@@ -10,7 +10,6 @@ import {
   isDirectiveOnly,
   persistInlineDirectives,
 } from "./directive-handling.js";
-import { resolveCurrentDirectiveLevels } from "./directive-handling.levels.js";
 import { clearInlineDirectives } from "./get-reply-directives-utils.js";
 import type { createModelSelectionState } from "./get-reply-directives.js";
 import type { TypingController } from "./typing.js";
@@ -64,8 +63,6 @@ export async function applyInlineDirectiveOverrides(params: {
   elevatedAllowed?: boolean;
   /** Upstream feature: elevated security failure reasons. */
   elevatedFailures?: string[];
-  /** Upstream feature: resolved elevated security level. */
-  resolvedElevatedLevel?: string;
   typing: TypingController;
 }): Promise<ApplyDirectiveResult> {
   const {
@@ -138,10 +135,9 @@ export async function applyInlineDirectiveOverrides(params: {
       typing.cleanup();
       return { kind: "reply", reply: undefined };
     }
-    const { currentVerboseLevel } = await resolveCurrentDirectiveLevels({
-      sessionEntry,
-      agentCfg,
-    });
+    const currentVerboseLevel =
+      (sessionEntry?.verboseLevel as import("../thinking.js").VerboseLevel | undefined) ??
+      (agentCfg?.verboseDefault as import("../thinking.js").VerboseLevel | undefined);
     const directiveReply = await handleDirectiveOnly({
       ...createDirectiveHandlingBase(),
       currentVerboseLevel,
@@ -174,10 +170,7 @@ export async function applyInlineDirectiveOverrides(params: {
   }
 
   const hasAnyDirective =
-    directives.hasVerboseDirective ||
-    directives.hasModelDirective ||
-    directives.hasQueueDirective ||
-    directives.hasStatusDirective;
+    directives.hasVerboseDirective || directives.hasQueueDirective || directives.hasStatusDirective;
 
   if (hasAnyDirective && command.isAuthorizedSender) {
     const fastLane = await applyInlineDirectivesFastLane({

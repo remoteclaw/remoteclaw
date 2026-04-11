@@ -1,6 +1,6 @@
+import type { VerboseLevel } from "../thinking.js";
 import type { ReplyPayload } from "../types.js";
 import { handleDirectiveOnly } from "./directive-handling.impl.js";
-import { resolveCurrentDirectiveLevels } from "./directive-handling.levels.js";
 import type { ApplyInlineDirectivesFastLaneParams } from "./directive-handling.params.js";
 import { isDirectiveOnly } from "./directive-handling.parse.js";
 
@@ -45,10 +45,9 @@ export async function applyInlineDirectivesFastLane(
   }
 
   const agentCfg = params.agentCfg;
-  const { currentVerboseLevel } = await resolveCurrentDirectiveLevels({
-    sessionEntry,
-    agentCfg,
-  });
+  const currentVerboseLevel =
+    (sessionEntry?.verboseLevel as VerboseLevel | undefined) ??
+    (agentCfg?.verboseDefault as VerboseLevel | undefined);
 
   const directiveAck = await handleDirectiveOnly({
     cfg,

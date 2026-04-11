@@ -40,7 +40,7 @@ const resolveSelectedAndActiveModel = (..._args: unknown[]) => ({
   selected: { provider: "cli", model: "default", label: "cli/default" },
   active: { provider: "cli", model: "default", label: "cli/default" },
 });
-import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "./thinking.js";
+import type { VerboseLevel } from "./thinking.js";
 
 type AgentDefaults = NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]>;
 type AgentConfig = Partial<AgentDefaults> & {
@@ -68,10 +68,7 @@ type StatusArgs = {
   sessionScope?: SessionScope;
   sessionStorePath?: string;
   groupActivation?: "mention" | "always";
-  resolvedThink?: ThinkLevel;
   resolvedVerbose?: VerboseLevel;
-  resolvedReasoning?: ReasoningLevel;
-  resolvedElevated?: ElevatedLevel;
   modelAuth?: string;
   activeModelAuth?: string;
   usageLine?: string;
@@ -375,16 +372,8 @@ export function buildStatusMessage(args: StatusArgs): string {
     }
   }
 
-  const thinkLevel =
-    args.resolvedThink ?? args.sessionEntry?.thinkingLevel ?? args.agent?.thinkingDefault ?? "off";
   const verboseLevel =
     args.resolvedVerbose ?? args.sessionEntry?.verboseLevel ?? args.agent?.verboseDefault ?? "off";
-  const reasoningLevel = args.resolvedReasoning ?? args.sessionEntry?.reasoningLevel ?? "off";
-  const elevatedLevel =
-    args.resolvedElevated ??
-    args.sessionEntry?.elevatedLevel ??
-    args.agent?.elevatedDefault ??
-    "on";
 
   const runtime = { label: resolveRuntimeLabel(args) };
 
@@ -416,19 +405,7 @@ export function buildStatusMessage(args: StatusArgs): string {
   const queueDetails = formatQueueDetails(args.queue);
   const verboseLabel =
     verboseLevel === "full" ? "verbose:full" : verboseLevel === "on" ? "verbose" : null;
-  const elevatedLabel =
-    elevatedLevel && elevatedLevel !== "off"
-      ? elevatedLevel === "on"
-        ? "elevated"
-        : `elevated:${elevatedLevel}`
-      : null;
-  const optionParts = [
-    `Runtime: ${runtime.label}`,
-    `Think: ${thinkLevel}`,
-    verboseLabel,
-    reasoningLevel !== "off" ? `Reasoning: ${reasoningLevel}` : null,
-    elevatedLabel,
-  ];
+  const optionParts = [`Runtime: ${runtime.label}`, verboseLabel];
   const optionsLine = optionParts.filter(Boolean).join(" · ");
   const activationParts = [
     groupActivationValue ? `👥 Activation: ${groupActivationValue}` : null,
@@ -511,10 +488,10 @@ export function buildHelpMessage(cfg?: RemoteClawConfig): string {
   const lines = ["ℹ️ Help", ""];
 
   lines.push("Session");
-  lines.push("  /new  |  /reset  |  /compact [instructions]  |  /stop");
+  lines.push("  /new  |  /reset");
   lines.push("");
 
-  const optionParts = ["/think <level>", "/model <id>", "/verbose on|off"];
+  const optionParts = ["/verbose on|off"];
   if (isCommandFlagEnabled(cfg, "config")) {
     optionParts.push("/config");
   }
@@ -526,12 +503,7 @@ export function buildHelpMessage(cfg?: RemoteClawConfig): string {
   lines.push("");
 
   lines.push("Status");
-  lines.push("  /status  |  /whoami  |  /context");
-  lines.push("");
-
-  lines.push("Skills");
-  lines.push("  /skill <name> [input]");
-
+  lines.push("  /status  |  /whoami");
   lines.push("");
   lines.push("More: /commands for full list");
 

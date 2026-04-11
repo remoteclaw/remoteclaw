@@ -20,8 +20,6 @@ export async function persistInlineDirectives(params: {
       updated = true;
     }
 
-    // Model directive handling gutted in RemoteClaw — CLI runtimes own model selection.
-
     if (directives.hasQueueDirective && directives.queueReset) {
       delete sessionEntry.queueMode;
       delete sessionEntry.queueDebounceMs;

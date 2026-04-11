@@ -8,7 +8,6 @@ import {
   resolveSessionFilePath,
   resolveSessionFilePathOptions,
   type SessionEntry,
-  updateSessionStore,
 } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { clearCommandLane, getQueueSize } from "../../process/command-queue.js";
@@ -17,15 +16,7 @@ import { isReasoningTagProvider } from "../../utils/provider-utils.js";
 import { hasControlCommand } from "../command-detection.js";
 import { buildInboundMediaNote } from "../media-note.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
-import {
-  type ElevatedLevel,
-  formatXHighModelHint,
-  normalizeThinkLevel,
-  type ReasoningLevel,
-  supportsXHighThinking,
-  type ThinkLevel,
-  type VerboseLevel,
-} from "../thinking.js";
+import type { VerboseLevel } from "../thinking.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { runReplyAgent } from "./agent-runner.js";
@@ -35,9 +26,7 @@ import type { InlineDirectives } from "./directive-handling.js";
 import { buildGroupChatContext, buildGroupIntro } from "./groups.js";
 import { buildInboundMetaSystemPrompt, buildInboundUserContextPrefix } from "./inbound-meta.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-type _createModelSelectionState = (..._args: unknown[]) => Promise<{
-  resolveDefaultThinkingLevel: (..._args: unknown[]) => unknown;
-}>;
+type _createModelSelectionState = (..._args: unknown[]) => Promise<Record<string, unknown>>;
 import { resolveOriginMessageProvider } from "./origin-routing.js";
 import { resolveQueueSettings, type FollowupRun } from "./queue.js";
 import { routeReply } from "./route-reply.js";
@@ -135,10 +124,7 @@ type RunPreparedReplyParams = {
   allowTextCommands: boolean;
   directives: InlineDirectives;
   defaultActivation: Parameters<typeof buildGroupIntro>[0]["defaultActivation"];
-  resolvedThinkLevel: ThinkLevel | undefined;
   resolvedVerboseLevel: VerboseLevel | undefined;
-  resolvedReasoningLevel: ReasoningLevel;
-  resolvedElevatedLevel: ElevatedLevel;
   execOverrides?: ExecOverrides;
   elevatedEnabled: boolean;
   elevatedAllowed: boolean;
@@ -151,7 +137,6 @@ type RunPreparedReplyParams = {
   };
   resolvedBlockStreamingBreak: "text_end" | "message_end";
   modelState: {
-    resolveDefaultThinkingLevel: (..._args: unknown[]) => unknown;
     [key: string]: unknown;
   };
   provider: string;
@@ -194,14 +179,14 @@ export async function runPreparedReply(
     command,
     commandSource,
     allowTextCommands,
-    directives,
+    directives: _directives,
     defaultActivation,
-    elevatedEnabled,
-    elevatedAllowed,
+    elevatedEnabled: _elevatedEnabled,
+    elevatedAllowed: _elevatedAllowed,
     blockStreamingEnabled,
     blockReplyChunking,
     resolvedBlockStreamingBreak,
-    modelState,
+    modelState: _modelState,
     provider,
     model,
     perMessageQueueMode,
@@ -220,15 +205,7 @@ export async function runPreparedReply(
     workspaceDir,
     sessionStore,
   } = params;
-  let {
-    sessionEntry,
-    resolvedThinkLevel,
-    resolvedVerboseLevel,
-    resolvedReasoningLevel,
-    resolvedElevatedLevel,
-    execOverrides,
-    abortedLastRun,
-  } = params;
+  let { sessionEntry, resolvedVerboseLevel, execOverrides, abortedLastRun } = params;
   let currentSystemSent = systemSent;
 
   const isFirstTurnInSession = isNewSession || !currentSystemSent;
@@ -372,37 +349,6 @@ export async function runPreparedReply(
   let prefixedCommandBody = mediaNote
     ? [mediaNote, mediaReplyHint, prefixedBody ?? ""].filter(Boolean).join("\n").trim()
     : prefixedBody;
-  if (!resolvedThinkLevel && prefixedCommandBody) {
-    const parts = prefixedCommandBody.split(/\s+/);
-    const maybeLevel = normalizeThinkLevel(parts[0]);
-    if (maybeLevel && (maybeLevel !== "xhigh" || supportsXHighThinking(provider, model))) {
-      resolvedThinkLevel = maybeLevel;
-      prefixedCommandBody = parts.slice(1).join(" ").trim();
-    }
-  }
-  if (!resolvedThinkLevel) {
-    resolvedThinkLevel = (await modelState.resolveDefaultThinkingLevel()) as ThinkLevel | undefined;
-  }
-  if (resolvedThinkLevel === "xhigh" && !supportsXHighThinking(provider, model)) {
-    const explicitThink = directives.hasThinkDirective && directives.thinkLevel !== undefined;
-    if (explicitThink) {
-      typing.cleanup();
-      return {
-        text: `Thinking level "xhigh" is only supported for ${formatXHighModelHint()}. Use /think high or switch to one of those models.`,
-      };
-    }
-    resolvedThinkLevel = "high";
-    if (sessionEntry && sessionStore && sessionKey && sessionEntry.thinkingLevel === "xhigh") {
-      sessionEntry.thinkingLevel = "high";
-      sessionEntry.updatedAt = Date.now();
-      sessionStore[sessionKey] = sessionEntry;
-      if (storePath) {
-        await updateSessionStore(storePath, (store) => {
-          store[sessionKey] = sessionEntry;
-        });
-      }
-    }
-  }
   if (resetTriggered && command.isAuthorizedSender) {
     await sendResetSessionNotice({
       ctx,
@@ -497,16 +443,8 @@ export async function runPreparedReply(
       model,
       authProfileId,
       authProfileIdSource,
-      thinkLevel: resolvedThinkLevel,
       verboseLevel: resolvedVerboseLevel,
-      reasoningLevel: resolvedReasoningLevel,
-      elevatedLevel: resolvedElevatedLevel,
       execOverrides,
-      bashElevated: {
-        enabled: elevatedEnabled,
-        allowed: elevatedAllowed,
-        defaultLevel: resolvedElevatedLevel ?? "off",
-      },
       timeoutMs,
       blockReplyBreak: resolvedBlockStreamingBreak,
       ownerNumbers: command.ownerList.length > 0 ? command.ownerList : undefined,

@@ -3,7 +3,6 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, vi } from "vitest";
 import type { MockFn } from "../test-utils/vitest-mock-fn.js";
-import type { LegacyStateDetection } from "./doctor-state-migrations.js";
 
 let originalIsTTY: boolean | undefined;
 let originalStateDir: string | undefined;
@@ -107,57 +106,6 @@ export const callGateway = vi
 export const autoMigrateLegacyStateDir = vi.fn().mockResolvedValue({
   migrated: false,
   skipped: false,
-  changes: [],
-  warnings: [],
-}) as unknown as MockFn;
-
-function createLegacyStateMigrationDetectionResult(params?: {
-  hasLegacySessions?: boolean;
-  preview?: string[];
-}): LegacyStateDetection {
-  return {
-    targetAgentId: "main",
-    targetMainKey: "main",
-    targetScope: undefined,
-    stateDir: "/tmp/state",
-    oauthDir: "/tmp/oauth",
-    sessions: {
-      legacyDir: "/tmp/state/sessions",
-      legacyStorePath: "/tmp/state/sessions/sessions.json",
-      targetDir: "/tmp/state/agents/main/sessions",
-      targetStorePath: "/tmp/state/agents/main/sessions/sessions.json",
-      hasLegacy: params?.hasLegacySessions ?? false,
-      legacyKeys: [],
-    },
-    agentDir: {
-      legacyDir: "/tmp/state/agent",
-      targetDir: "/tmp/state/agents/main/agent",
-      hasLegacy: false,
-    },
-    whatsappAuth: {
-      legacyDir: "/tmp/oauth",
-      targetDir: "/tmp/oauth/whatsapp/default",
-      hasLegacy: false,
-    },
-    pairingAllowFrom: {
-      hasLegacyTelegram: false,
-      copyPlans: [],
-    },
-    orphanedMainKeys: {
-      keys: [],
-      scenario: "none",
-      soleAgentId: null,
-      configuredAgentIds: [],
-    },
-    preview: params?.preview ?? [],
-  };
-}
-
-export const detectLegacyStateMigrations = vi
-  .fn()
-  .mockResolvedValue(createLegacyStateMigrationDetectionResult()) as unknown as MockFn;
-
-export const runLegacyStateMigrations = vi.fn().mockResolvedValue({
   changes: [],
   warnings: [],
 }) as unknown as MockFn;
@@ -301,8 +249,6 @@ vi.mock("./onboard-helpers.js", () => ({
 
 vi.mock("./doctor-state-migrations.js", () => ({
   autoMigrateLegacyStateDir,
-  detectLegacyStateMigrations,
-  runLegacyStateMigrations,
 }));
 
 export function mockDoctorConfigSnapshot(
@@ -329,40 +275,6 @@ export function createDoctorRuntime() {
     log: vi.fn() as unknown as MockFn,
     error: vi.fn() as unknown as MockFn,
     exit: vi.fn() as unknown as MockFn,
-  };
-}
-
-export async function arrangeLegacyStateMigrationTest(): Promise<{
-  doctorCommand: unknown;
-  runtime: { log: MockFn; error: MockFn; exit: MockFn };
-  detectLegacyStateMigrations: MockFn;
-  runLegacyStateMigrations: MockFn;
-}> {
-  mockDoctorConfigSnapshot();
-
-  const { doctorCommand } = await import("./doctor.js");
-  const runtime = createDoctorRuntime();
-
-  detectLegacyStateMigrations.mockClear();
-  runLegacyStateMigrations.mockClear();
-  detectLegacyStateMigrations.mockResolvedValueOnce(
-    createLegacyStateMigrationDetectionResult({
-      hasLegacySessions: true,
-      preview: ["- Legacy sessions detected"],
-    }),
-  );
-  runLegacyStateMigrations.mockResolvedValueOnce({
-    changes: ["migrated"],
-    warnings: [],
-  });
-
-  confirm.mockClear();
-
-  return {
-    doctorCommand,
-    runtime,
-    detectLegacyStateMigrations,
-    runLegacyStateMigrations,
   };
 }
 

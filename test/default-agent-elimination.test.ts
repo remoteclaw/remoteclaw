@@ -3,22 +3,16 @@
 // agent through an indirect path — the class of bug no per-phase unit test
 // alone covers.
 
-import fs from "node:fs/promises";
 import path from "node:path";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { resolveFirstAgentWorkspace } from "../src/agents/agent-scope.js";
 import type { RemoteClawConfig } from "../src/config/config.js";
-import type { SessionEntry } from "../src/config/sessions.js";
 import { validateConfigObject } from "../src/config/validation.js";
 import type {
   DiagnosticEventPayload,
   DiagnosticRoutingDropEvent,
 } from "../src/infra/diagnostic-events.js";
 import { onDiagnosticEvent, resetDiagnosticEventsForTest } from "../src/infra/diagnostic-events.js";
-import {
-  detectLegacyStateMigrations,
-  runLegacyStateMigrations,
-} from "../src/infra/state-migrations.js";
 import {
   resolveAgentRouteExplicit,
   resolveAgentRouteWithPolicy,
@@ -34,7 +28,6 @@ import {
   normalizeAgentIdOrNull,
 } from "../src/routing/session-key.js";
 import { handleUnmatched } from "../src/routing/unmatched.js";
-import { captureEnv } from "../src/test-utils/env.js";
 import {
   loadRuntimeSourceFilesForGuardrails,
   type RuntimeSourceGuardrailFile,
@@ -533,187 +526,6 @@ describe("routing end-to-end — additional regression guards", () => {
     expect(counts.total).toBe(3);
     expect(counts.byChannel).toEqual({ telegram: 2, slack: 1 });
     expect(counts.byReason).toEqual({ unmatched: 3 });
-  });
-});
-
-// Session-continuity tests seed a state directory on disk and assert the
-// rewritten store matches the upgrade contract introduced by #2312. They
-// deliberately overlap with src/infra/state-migrations.orphaned-main-keys.test.ts
-// for defense in depth against a cross-phase regression landing via a subtle
-// change in either the detection or execution half of the pipeline.
-
-describe("session continuity across upgrade", () => {
-  let fixtureRoot = "";
-  let caseCounter = 0;
-  let envGuard: { restore: () => void } | null = null;
-
-  type StoreFixture = Record<string, SessionEntry & Record<string, unknown>>;
-
-  const writeSessionStore = async (storePath: string, store: StoreFixture): Promise<void> => {
-    await fs.mkdir(path.dirname(storePath), { recursive: true });
-    await fs.writeFile(storePath, `${JSON.stringify(store, null, 2)}\n`, "utf8");
-  };
-
-  const readStore = async (storePath: string): Promise<StoreFixture> => {
-    const raw = await fs.readFile(storePath, "utf8");
-    return JSON.parse(raw) as StoreFixture;
-  };
-
-  const makeEntry = (updatedAt: number, tag = ""): SessionEntry & Record<string, unknown> => ({
-    sessionId: `session-${updatedAt}${tag}`,
-    updatedAt,
-  });
-
-  const setupCase = async (params: {
-    prefix: string;
-    targetAgentId: string;
-    seed: StoreFixture;
-  }): Promise<{ stateDir: string; targetStorePath: string }> => {
-    const stateDir = path.join(fixtureRoot, `${params.prefix}-${caseCounter++}`);
-    await fs.mkdir(stateDir, { recursive: true });
-    envGuard = captureEnv(["REMOTECLAW_STATE_DIR", "REMOTECLAW_TEST_FAST"]);
-    process.env.REMOTECLAW_STATE_DIR = stateDir;
-    process.env.REMOTECLAW_TEST_FAST = "1";
-    const targetStorePath = path.join(
-      stateDir,
-      "agents",
-      params.targetAgentId,
-      "sessions",
-      "sessions.json",
-    );
-    await writeSessionStore(targetStorePath, params.seed);
-    return { stateDir, targetStorePath };
-  };
-
-  const buildCfg = (ids: string[]): RemoteClawConfig => ({
-    agents: { list: ids.map((id) => ({ id, workspace: "~/w" })) },
-  });
-
-  beforeAll(async () => {
-    const tmpRoot = path.resolve(
-      import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname),
-      "..",
-      ".tmp",
-    );
-    await fs.mkdir(tmpRoot, { recursive: true });
-    fixtureRoot = await fs.mkdtemp(path.join(tmpRoot, "remoteclaw-2316-"));
-  });
-
-  afterAll(async () => {
-    await fs.rm(fixtureRoot, { recursive: true, force: true });
-    fixtureRoot = "";
-    caseCounter = 0;
-  });
-
-  afterEach(() => {
-    envGuard?.restore();
-    envGuard = null;
-  });
-
-  test("Case A: sole non-'main' agent rewrites agent:main:* keys to agent:{soleAgentId}:*", async () => {
-    const ctx = await setupCase({
-      prefix: "case-a",
-      targetAgentId: "assistant",
-      seed: {
-        "agent:main:telegram:direct:42": makeEntry(1_000, "-a"),
-        "agent:main:main": makeEntry(2_000, "-b"),
-      },
-    });
-
-    const cfg = buildCfg(["assistant"]);
-    const detected = await detectLegacyStateMigrations({ cfg });
-    expect(detected.orphanedMainKeys.scenario).toBe("A");
-    expect(detected.orphanedMainKeys.keys).toHaveLength(2);
-
-    const result = await runLegacyStateMigrations({ detected });
-    expect(result.warnings).toEqual([]);
-    expect(result.changes.some((line) => line.includes("Rewrote 2"))).toBe(true);
-
-    const rewritten = await readStore(ctx.targetStorePath);
-    expect(Object.keys(rewritten).toSorted()).toEqual([
-      "agent:assistant:main",
-      "agent:assistant:telegram:direct:42",
-    ]);
-    // Sessions remain reachable — their sessionId fields are preserved.
-    expect(rewritten["agent:assistant:main"]?.sessionId).toBe("session-2000-b");
-    expect(rewritten["agent:assistant:telegram:direct:42"]?.sessionId).toBe("session-1000-a");
-  });
-
-  test('Case B: sole "main" agent performs no rewrite and leaves keys untouched', async () => {
-    const ctx = await setupCase({
-      prefix: "case-b",
-      targetAgentId: "main",
-      seed: {
-        "agent:main:telegram:direct:42": makeEntry(1_000),
-        "agent:main:main": makeEntry(2_000),
-      },
-    });
-
-    const cfg = buildCfg(["main"]);
-    const detected = await detectLegacyStateMigrations({ cfg });
-    expect(detected.orphanedMainKeys.scenario).toBe("B");
-
-    const result = await runLegacyStateMigrations({ detected });
-    expect(result.warnings).toEqual([]);
-    expect(
-      result.changes.some((line) => line.includes("No agent:main:* session key migration needed")),
-    ).toBe(true);
-
-    const after = await readStore(ctx.targetStorePath);
-    expect(Object.keys(after).toSorted()).toEqual([
-      "agent:main:main",
-      "agent:main:telegram:direct:42",
-    ]);
-  });
-
-  test("Case C: multi-agent emits warning and preserves orphaned keys non-destructively", async () => {
-    const ctx = await setupCase({
-      prefix: "case-c",
-      targetAgentId: "alpha",
-      seed: {
-        "agent:main:telegram:direct:42": makeEntry(1_000),
-        "agent:main:whatsapp:group:xyz@g.us": makeEntry(2_000),
-      },
-    });
-
-    const cfg = buildCfg(["alpha", "beta"]);
-    const detected = await detectLegacyStateMigrations({ cfg });
-    expect(detected.orphanedMainKeys.scenario).toBe("C");
-    expect(detected.orphanedMainKeys.configuredAgentIds).toEqual(["alpha", "beta"]);
-
-    const result = await runLegacyStateMigrations({ detected });
-    expect(result.warnings).toHaveLength(1);
-    const warning = result.warnings[0] ?? "";
-    expect(warning).toContain("Found 2 orphaned agent:main:* session key(s)");
-    expect(warning).toContain("Configured agents: alpha, beta");
-
-    // Non-destructive: original keys still present.
-    const after = await readStore(ctx.targetStorePath);
-    expect(after["agent:main:telegram:direct:42"]).toBeDefined();
-    expect(after["agent:main:whatsapp:group:xyz@g.us"]).toBeDefined();
-  });
-
-  test("idempotency: re-running migration reports zero orphan changes and zero warnings", async () => {
-    await setupCase({
-      prefix: "idempotent",
-      targetAgentId: "assistant",
-      seed: {
-        "agent:main:telegram:direct:42": makeEntry(1_000),
-      },
-    });
-
-    const cfg = buildCfg(["assistant"]);
-    const first = await detectLegacyStateMigrations({ cfg });
-    await runLegacyStateMigrations({ detected: first });
-
-    // Second run must find no orphans and make no changes.
-    const second = await detectLegacyStateMigrations({ cfg });
-    expect(second.orphanedMainKeys.scenario).toBe("none");
-    expect(second.orphanedMainKeys.keys).toEqual([]);
-
-    const result = await runLegacyStateMigrations({ detected: second });
-    expect(result.warnings).toEqual([]);
-    expect(result.changes.filter((line) => line.includes("agent:main:")).length).toBe(0);
   });
 });
 

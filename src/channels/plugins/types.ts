@@ -9,6 +9,7 @@ export type {
   ChannelCommandAdapter,
   ChannelConfigAdapter,
   ChannelDirectoryAdapter,
+  ChannelElevatedAdapter,
   ChannelResolveKind,
   ChannelResolveResult,
   ChannelResolverAdapter,

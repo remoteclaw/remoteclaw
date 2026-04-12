@@ -80,4 +80,6 @@ export type ChannelPlugin<ResolvedAccount = any, Probe = unknown, Audit = unknow
   heartbeat?: ChannelHeartbeatAdapter;
   // Channel-owned agent tools (login flows, etc.).
   agentTools?: ChannelAgentToolFactory | ChannelAgentTool[];
+  /** Channel-specific elevated configuration. */
+  elevated?: Record<string, unknown>;
 };

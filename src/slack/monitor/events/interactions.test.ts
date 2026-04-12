@@ -223,6 +223,7 @@ describe("registerSlackInteractionEvents", () => {
     expect(resolveSessionKey).toHaveBeenCalledWith({
       channelId: "C1",
       channelType: "channel",
+      senderId: "U123",
     });
     expect(app.client.chat.update).toHaveBeenCalledTimes(1);
   });
@@ -554,6 +555,7 @@ describe("registerSlackInteractionEvents", () => {
     expect(resolveSessionKey).toHaveBeenCalledWith({
       channelId: "C222",
       channelType: "channel",
+      senderId: "U111",
     });
     expect(enqueueSystemEventMock).toHaveBeenCalledTimes(1);
     const [eventText] = enqueueSystemEventMock.mock.calls[0] as [string];
@@ -952,6 +954,7 @@ describe("registerSlackInteractionEvents", () => {
     expect(resolveSessionKey).toHaveBeenCalledWith({
       channelId: "D123",
       channelType: "im",
+      senderId: "U777",
     });
     expect(enqueueSystemEventMock).toHaveBeenCalledTimes(1);
     const [eventText] = enqueueSystemEventMock.mock.calls[0] as [string];
@@ -1133,13 +1136,13 @@ describe("registerSlackInteractionEvents", () => {
               email_block: {
                 email_input: {
                   type: "email_text_input",
-                  value: "team@remoteclaw.org",
+                  value: "team@remoteclaw.ai",
                 },
               },
               url_block: {
                 url_input: {
                   type: "url_text_input",
-                  value: "https://docs.remoteclaw.org",
+                  value: "https://docs.remoteclaw.ai",
                 },
               },
               richtext_block: {
@@ -1230,12 +1233,12 @@ describe("registerSlackInteractionEvents", () => {
         expect.objectContaining({
           actionId: "email_input",
           inputKind: "email",
-          inputEmail: "team@remoteclaw.org",
+          inputEmail: "team@remoteclaw.ai",
         }),
         expect.objectContaining({
           actionId: "url_input",
           inputKind: "url",
-          inputUrl: "https://docs.remoteclaw.org/",
+          inputUrl: "https://docs.remoteclaw.ai/",
         }),
         expect.objectContaining({
           actionId: "richtext_input",

@@ -61,6 +61,7 @@ vi.mock("../../commands/health.js", () => ({
 
 vi.mock("../../config/config.js", () => ({
   loadConfig: () => ({}),
+  readBestEffortConfig: async () => ({}),
 }));
 
 vi.mock("../../infra/bonjour-discovery.js", () => ({
@@ -76,7 +77,7 @@ vi.mock("../../terminal/health-style.js", () => ({
 }));
 
 vi.mock("../../terminal/links.js", () => ({
-  formatDocsLink: () => "docs.remoteclaw.org/cli/gateway",
+  formatDocsLink: () => "docs.remoteclaw.ai/cli/gateway",
 }));
 
 vi.mock("../../terminal/theme.js", () => ({

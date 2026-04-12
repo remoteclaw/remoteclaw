@@ -6,20 +6,71 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { listAgentEntries } from "../agents/agent-scope.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle) — sandbox/skills/policy subsystems
-const isToolAllowedByPolicies = (..._args: unknown[]) => true;
-const resolveSandboxConfigForAgent = (..._args: unknown[]) => ({
-  mode: undefined as "all" | "non-main" | "off" | undefined,
-});
-const resolveSandboxToolPolicyForAgent = (..._args: unknown[]) => ({}) as Record<string, unknown>;
-const SANDBOX_BROWSER_SECURITY_HASH_EPOCH = 0;
+import { isToolAllowedByPolicies } from "../agents/pi-tools.policy.js";
+import {
+  resolveSandboxConfigForAgent,
+  resolveSandboxToolPolicyForAgent,
+} from "../agents/sandbox.js";
+// Gutted in RemoteClaw fork (Middleware Boundary Principle) — remaining sandbox/skills stubs
+const SANDBOX_BROWSER_SECURITY_HASH_EPOCH = "2026-02-28-no-sandbox-env";
 type ExecDockerRawResult = { code: number; stdout: Buffer; stderr: Buffer };
-type SandboxToolPolicy = Record<string, unknown>;
-const loadWorkspaceSkillEntries = (..._args: unknown[]) =>
-  [] as Array<{ skill: { source: string; baseDir: string; name: string } }>;
+type SandboxToolPolicy = { allow?: string[]; deny?: string[] };
+import fsSync from "node:fs";
+// Minimal stub: scans workspace skills/ directory for SKILL.md files.
+function loadWorkspaceSkillEntries(
+  workspaceDir: string,
+  _opts?: { config?: RemoteClawConfig },
+): Array<{ skill: { source: string; baseDir: string; name: string } }> {
+  const skillsRoot = path.join(workspaceDir, "skills");
+  let entries: fsSync.Dirent[];
+  try {
+    entries = fsSync.readdirSync(skillsRoot, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  const results: Array<{ skill: { source: string; baseDir: string; name: string } }> = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) {
+      continue;
+    }
+    const skillDir = path.join(skillsRoot, entry.name);
+    const skillMd = path.join(skillDir, "SKILL.md");
+    try {
+      fsSync.accessSync(skillMd);
+    } catch {
+      continue;
+    }
+    results.push({
+      skill: {
+        source: "workspace",
+        baseDir: skillDir,
+        name: entry.name,
+      },
+    });
+  }
+  return results;
+}
+import { resolveAgentWorkspaceDirOrNull, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const listAgentWorkspaceDirs = (..._args: unknown[]) => [] as string[];
+function listAgentWorkspaceDirs(cfg: RemoteClawConfig): string[] {
+  const dirs = new Set<string>();
+  const list = cfg.agents?.list;
+  if (Array.isArray(list)) {
+    for (const entry of list) {
+      if (entry && typeof entry === "object" && typeof entry.id === "string") {
+        const dir = resolveAgentWorkspaceDirOrNull(cfg, entry.id);
+        if (dir) {
+          dirs.add(dir);
+        }
+      }
+    }
+  }
+  const defaultDir = resolveAgentWorkspaceDirOrNull(cfg, resolveDefaultAgentId(cfg));
+  if (defaultDir) {
+    dirs.add(defaultDir);
+  }
+  return [...dirs];
+}
 import { formatCliCommand } from "../cli/command-format.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
 const MANIFEST_KEY = "remoteclaw" as const;
@@ -38,30 +89,29 @@ import {
   inspectPathPermissions,
   safeStat,
 } from "./audit-fs.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const pickSandboxToolPolicy = (..._args: unknown[]) => ({}) as Record<string, unknown>;
+// Minimal stub: extracts deny/allow from tools config for policy resolution.
+function pickSandboxToolPolicy(config?: {
+  allow?: string[];
+  alsoAllow?: string[];
+  deny?: string[];
+}): SandboxToolPolicy | undefined {
+  if (!config) {
+    return undefined;
+  }
+  const allow = Array.isArray(config.allow)
+    ? [...config.allow, ...(Array.isArray(config.alsoAllow) ? config.alsoAllow : [])]
+    : Array.isArray(config.alsoAllow) && config.alsoAllow.length > 0
+      ? [...config.alsoAllow]
+      : undefined;
+  const deny = Array.isArray(config.deny) ? config.deny : undefined;
+  if (!allow && !deny) {
+    return undefined;
+  }
+  return { allow, deny };
+}
 import { extensionUsesSkippedScannerPath, isPathInside } from "./scan-paths.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle) — skill scanner
-type SkillScanFinding = {
-  file: string;
-  ruleId: string;
-  message: string;
-  line: number;
-  severity?: string;
-};
-const skillScanner = {
-  scanSkillDirectory: (..._args: unknown[]) => Promise.resolve([] as SkillScanFinding[]),
-  collectSkillScanFindings: (..._args: unknown[]) => Promise.resolve([] as SkillScanFinding[]),
-  scanDirectoryWithSummary: (..._args: unknown[]) =>
-    Promise.resolve({
-      findings: [] as SkillScanFinding[],
-      skippedCount: 0,
-      scannedCount: 0,
-      scannedFiles: 0,
-      critical: 0,
-      warn: 0,
-    }),
-};
+import * as skillScanner from "./skill-scanner.js";
+import type { SkillScanFinding } from "./skill-scanner.js";
 import type { ExecFn } from "./windows-acl.js";
 
 export type SecurityAuditFinding = {

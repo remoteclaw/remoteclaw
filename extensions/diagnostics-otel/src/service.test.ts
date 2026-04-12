@@ -98,17 +98,18 @@ vi.mock("@opentelemetry/semantic-conventions", () => ({
   ATTR_SERVICE_NAME: "service.name",
 }));
 
-vi.mock("remoteclaw/plugin-sdk", async () => {
-  const actual =
-    await vi.importActual<typeof import("remoteclaw/plugin-sdk")>("remoteclaw/plugin-sdk");
+vi.mock("remoteclaw/plugin-sdk/diagnostics-otel", async () => {
+  const actual = await vi.importActual<typeof import("remoteclaw/plugin-sdk/diagnostics-otel")>(
+    "remoteclaw/plugin-sdk/diagnostics-otel",
+  );
   return {
     ...actual,
     registerLogTransport: registerLogTransportMock,
   };
 });
 
-import type { RemoteClawPluginServiceContext } from "remoteclaw/plugin-sdk";
-import { emitDiagnosticEvent } from "remoteclaw/plugin-sdk";
+import type { RemoteClawPluginServiceContext } from "remoteclaw/plugin-sdk/diagnostics-otel";
+import { emitDiagnosticEvent } from "remoteclaw/plugin-sdk/diagnostics-otel";
 import { createDiagnosticsOtelService } from "./service.js";
 
 const OTEL_TEST_STATE_DIR = "/tmp/remoteclaw-diagnostics-otel-test";
@@ -328,13 +329,13 @@ describe("diagnostics-otel service", () => {
 
   test("redacts sensitive data from log attributes before export", async () => {
     const emitCall = await emitAndCaptureLog({
-      0: '{"token":"ghp_abcdefghijklmnopqrstuvwxyz123456"}',
+      0: '{"token":"ghp_abcdefghijklmnopqrstuvwxyz123456"}', // pragma: allowlist secret
       1: "auth configured",
       _meta: { logLevelName: "DEBUG", date: new Date() },
     });
 
     const tokenAttr = emitCall?.attributes?.["remoteclaw.token"];
-    expect(tokenAttr).not.toBe("ghp_abcdefghijklmnopqrstuvwxyz123456");
+    expect(tokenAttr).not.toBe("ghp_abcdefghijklmnopqrstuvwxyz123456"); // pragma: allowlist secret
     if (typeof tokenAttr === "string") {
       expect(tokenAttr).toContain("…");
     }
@@ -348,7 +349,7 @@ describe("diagnostics-otel service", () => {
     emitDiagnosticEvent({
       type: "session.state",
       state: "waiting",
-      reason: "token=ghp_abcdefghijklmnopqrstuvwxyz123456",
+      reason: "token=ghp_abcdefghijklmnopqrstuvwxyz123456", // pragma: allowlist secret
     });
 
     const sessionCounter = telemetryState.counters.get("remoteclaw.session.state");
@@ -361,7 +362,7 @@ describe("diagnostics-otel service", () => {
     const attrs = sessionCounter?.add.mock.calls[0]?.[1] as Record<string, unknown> | undefined;
     expect(typeof attrs?.["remoteclaw.reason"]).toBe("string");
     expect(String(attrs?.["remoteclaw.reason"])).not.toContain(
-      "ghp_abcdefghijklmnopqrstuvwxyz123456",
+      "ghp_abcdefghijklmnopqrstuvwxyz123456", // pragma: allowlist secret
     );
     await service.stop?.(ctx);
   });

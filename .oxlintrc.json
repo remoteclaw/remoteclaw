@@ -18,7 +18,10 @@
     "oxc/no-map-spread": "off",
     "typescript/no-explicit-any": "error",
     "typescript/no-extraneous-class": "off",
+    "typescript/consistent-return": "off",
+    "typescript/no-unnecessary-type-conversion": "off",
     "typescript/no-unsafe-type-assertion": "off",
+    "eslint-plugin-unicorn/prefer-set-size": "off",
     "unicorn/consistent-function-scoping": "off",
     "unicorn/require-post-message-target-origin": "off"
   },

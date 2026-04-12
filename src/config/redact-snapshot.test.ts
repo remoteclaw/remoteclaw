@@ -120,7 +120,7 @@ describe("redactConfigSnapshot", () => {
           serviceAccount: {
             type: "service_account",
             client_email: "bot@example.iam.gserviceaccount.com",
-            private_key: "-----BEGIN PRIVATE KEY-----secret-----END PRIVATE KEY-----",
+            private_key: "-----BEGIN PRIVATE KEY-----secret-----END PRIVATE KEY-----", // pragma: allowlist secret
           },
         },
       },
@@ -173,6 +173,7 @@ describe("redactConfigSnapshot", () => {
               {
                 id: "gpt-5",
                 maxTokens: 65536,
+                contextTokens: 200000,
                 maxTokensField: "max_completion_tokens",
               },
             ],
@@ -181,6 +182,7 @@ describe("redactConfigSnapshot", () => {
             maxTokens: 8192,
             maxOutputTokens: 4096,
             maxCompletionTokens: 2048,
+            contextTokens: 128000,
             tokenCount: 500,
             tokenLimit: 100000,
             tokenBudget: 50000,
@@ -197,6 +199,7 @@ describe("redactConfigSnapshot", () => {
       (models.providers as Record<string, unknown>).openai as Record<string, unknown>
     ).models ?? []) as Array<Record<string, unknown>>;
     expect(providerList[0]?.maxTokens).toBe(65536);
+    expect(providerList[0]?.contextTokens).toBe(200000);
     expect(providerList[0]?.maxTokensField).toBe("max_completion_tokens");
 
     const providers = (models.providers as Record<string, Record<string, unknown>>) ?? {};
@@ -205,6 +208,7 @@ describe("redactConfigSnapshot", () => {
     expect(providers.openai.maxTokens).toBe(8192);
     expect(providers.openai.maxOutputTokens).toBe(4096);
     expect(providers.openai.maxCompletionTokens).toBe(2048);
+    expect(providers.openai.contextTokens).toBe(128000);
     expect(providers.openai.tokenCount).toBe(500);
     expect(providers.openai.tokenLimit).toBe(100000);
     expect(providers.openai.tokenBudget).toBe(50000);
@@ -255,7 +259,7 @@ describe("redactConfigSnapshot", () => {
     const config = {
       gateway: {
         mode: "local",
-        auth: { password: "local" },
+        auth: { password: "local" }, // pragma: allowlist secret
       },
     };
     const snapshot = makeSnapshot(config, JSON.stringify(config));
@@ -295,7 +299,7 @@ describe("redactConfigSnapshot", () => {
 
   it("handles overlap fallback and SecretRef in the same snapshot", () => {
     const config = {
-      gateway: { mode: "default", auth: { password: "default" } },
+      gateway: { mode: "default", auth: { password: "default" } }, // pragma: allowlist secret
       models: {
         providers: {
           default: {
@@ -776,7 +780,7 @@ describe("redactConfigSnapshot", () => {
     };
     const snapshot = makeSnapshot({
       env: {
-        GROQ_API_KEY: "gsk-secret-123",
+        GROQ_API_KEY: "gsk-secret-123", // pragma: allowlist secret
         NODE_ENV: "production",
       },
     });
@@ -799,7 +803,7 @@ describe("redactConfigSnapshot", () => {
         entries: {
           web_search: {
             env: {
-              GEMINI_API_KEY: "gemini-secret-456",
+              GEMINI_API_KEY: "gemini-secret-456", // pragma: allowlist secret
               BRAVE_REGION: "us",
             },
           },
@@ -824,14 +828,14 @@ describe("redactConfigSnapshot", () => {
     const hints = mainSchemaHints;
     const snapshot = makeSnapshot({
       env: {
-        GROQ_API_KEY: "gsk-contract-123",
+        GROQ_API_KEY: "gsk-contract-123", // pragma: allowlist secret
         NODE_ENV: "production",
       },
       skills: {
         entries: {
           web_search: {
             env: {
-              GEMINI_API_KEY: "gemini-contract-456",
+              GEMINI_API_KEY: "gemini-contract-456", // pragma: allowlist secret
               BRAVE_REGION: "us",
             },
           },
@@ -1102,19 +1106,32 @@ describe("realredactConfigSnapshot_real", () => {
     const hints = mainSchemaHints;
 
     const snapshot = makeSnapshot({
-      tools: {
-        web: {
-          search: {
-            apiKey: "brave-key-1234",
+      agents: {
+        defaults: {
+          memorySearch: {
+            remote: {
+              apiKey: "1234",
+            },
           },
         },
+        list: [
+          {
+            memorySearch: {
+              remote: {
+                apiKey: "6789",
+              },
+            },
+          },
+        ],
       },
     });
 
     const result = redactConfigSnapshot(snapshot, hints);
     const config = result.config as typeof snapshot.config;
-    expect(config.tools.web.search.apiKey).toBe(REDACTED_SENTINEL);
+    expect(config.agents.defaults.memorySearch.remote.apiKey).toBe(REDACTED_SENTINEL);
+    expect(config.agents.list[0].memorySearch.remote.apiKey).toBe(REDACTED_SENTINEL);
     const restored = restoreRedactedValues(result.config, snapshot.config, hints);
-    expect(restored.tools.web.search.apiKey).toBe("brave-key-1234");
+    expect(restored.agents.defaults.memorySearch.remote.apiKey).toBe("1234");
+    expect(restored.agents.list[0].memorySearch.remote.apiKey).toBe("6789");
   });
 });

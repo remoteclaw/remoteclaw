@@ -3,6 +3,7 @@ export type TtsSynthesisRequest = {
   voice?: string;
   model?: string;
   apiKey?: string;
+  baseUrl?: string;
   outputFormat?: string;
   speed?: number;
   timeoutMs: number;

@@ -1,15 +1,9 @@
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-type Api = string;
-type Model<_A extends Api = Api> = Record<string, unknown> & {
-  api: string;
-  provider: string;
-  id: string;
-  baseUrl?: string;
-  contextWindow?: number;
-  compat?: { supportsDeveloperRole?: boolean } & Record<string, unknown>;
-};
+import type { Model } from "@mariozechner/pi-ai";
 
-function isOpenAiCompletionsModel(model: Model): model is Model<"openai-completions"> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyModel = Model<any>;
+
+function isOpenAiCompletionsModel(model: AnyModel): model is Model<"openai-completions"> {
   return model.api === "openai-completions";
 }
 
@@ -29,7 +23,7 @@ function isOpenAINativeEndpoint(baseUrl: string): boolean {
   }
 }
 
-function isAnthropicMessagesModel(model: Model): model is Model<"anthropic-messages"> {
+function isAnthropicMessagesModel(model: AnyModel): model is Model<"anthropic-messages"> {
   return model.api === "anthropic-messages";
 }
 
@@ -45,8 +39,8 @@ function isAnthropicMessagesModel(model: Model): model is Model<"anthropic-messa
 function normalizeAnthropicBaseUrl(baseUrl: string): string {
   return baseUrl.replace(/\/v1\/?$/, "");
 }
-export function normalizeModelCompat(model: Model): Model {
-  const baseUrl = model.baseUrl ?? "";
+export function normalizeModelCompat(model: AnyModel): AnyModel {
+  const baseUrl = (model.baseUrl as string | undefined) ?? "";
 
   // Normalise anthropic-messages baseUrl: strip trailing /v1 that users may
   // have included in their config. pi-ai appends /v1/messages itself.
@@ -61,28 +55,30 @@ export function normalizeModelCompat(model: Model): Model {
     return model;
   }
 
-  // The `developer` message role is an OpenAI-native convention. All other
-  // openai-completions backends (proxies, Qwen, GLM, DeepSeek, Kimi, etc.)
-  // only recognise `system`. Force supportsDeveloperRole=false for any model
-  // whose baseUrl is not a known native OpenAI endpoint, unless the caller
-  // has already pinned the value explicitly.
-  const compat = model.compat ?? undefined;
-  if (compat?.supportsDeveloperRole === false) {
-    return model;
-  }
+  // The `developer` role and stream usage chunks are OpenAI-native behaviors.
+  // Many OpenAI-compatible backends reject `developer` and/or emit usage-only
+  // chunks that break strict parsers expecting choices[0]. For non-native
+  // openai-completions endpoints, force both compat flags off.
+  const compat = (model.compat ?? undefined) as
+    | { supportsDeveloperRole?: boolean; supportsUsageInStreaming?: boolean }
+    | undefined;
   // When baseUrl is empty the pi-ai library defaults to api.openai.com, so
-  // leave compat unchanged and let the existing default behaviour apply.
-  // Note: an explicit supportsDeveloperRole: true is intentionally overridden
-  // here for non-native endpoints — those backends would return a 400 if we
-  // sent `developer`, so safety takes precedence over the caller's hint.
+  // leave compat unchanged and let default native behavior apply.
+  // Note: explicit true values are intentionally overridden for non-native
+  // endpoints for safety.
   const needsForce = baseUrl ? !isOpenAINativeEndpoint(baseUrl) : false;
   if (!needsForce) {
+    return model;
+  }
+  if (compat?.supportsDeveloperRole === false && compat?.supportsUsageInStreaming === false) {
     return model;
   }
 
   // Return a new object — do not mutate the caller's model reference.
   return {
     ...model,
-    compat: compat ? { ...compat, supportsDeveloperRole: false } : { supportsDeveloperRole: false },
+    compat: compat
+      ? { ...compat, supportsDeveloperRole: false, supportsUsageInStreaming: false }
+      : { supportsDeveloperRole: false, supportsUsageInStreaming: false },
   } as typeof model;
 }

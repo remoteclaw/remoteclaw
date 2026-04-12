@@ -10,6 +10,7 @@ import type { DeliveryContext } from "../utils/delivery-context.js";
 export type GatewaySessionsDefaults = {
   modelProvider: string | null;
   model: string | null;
+  contextTokens?: number | null;
 };
 
 export type GatewaySessionRow = {

@@ -1,4 +1,4 @@
-import type { PluginRuntime } from "remoteclaw/plugin-sdk";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk/nextcloud-talk";
 
 let runtime: PluginRuntime | null = null;
 

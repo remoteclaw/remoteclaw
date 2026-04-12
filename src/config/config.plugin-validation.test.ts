@@ -37,6 +37,7 @@ describe("config plugin validation", () => {
   let badPluginDir = "";
   let enumPluginDir = "";
   let bluebubblesPluginDir = "";
+  let voiceCallSchemaPluginDir = "";
   const envSnapshot = {
     REMOTECLAW_STATE_DIR: process.env.REMOTECLAW_STATE_DIR,
     REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS: process.env.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS,
@@ -83,16 +84,33 @@ describe("config plugin validation", () => {
       channels: ["bluebubbles"],
       schema: { type: "object" },
     });
+    voiceCallSchemaPluginDir = path.join(suiteHome, "voice-call-schema-plugin");
+    const voiceCallManifestPath = path.join(
+      process.cwd(),
+      "extensions",
+      "voice-call",
+      "remoteclaw.plugin.json",
+    );
+    const voiceCallManifest = JSON.parse(await fs.readFile(voiceCallManifestPath, "utf-8")) as {
+      configSchema?: Record<string, unknown>;
+    };
+    if (!voiceCallManifest.configSchema) {
+      throw new Error("voice-call manifest missing configSchema");
+    }
+    await writePluginFixture({
+      dir: voiceCallSchemaPluginDir,
+      id: "voice-call-schema-fixture",
+      schema: voiceCallManifest.configSchema,
+    });
     process.env.REMOTECLAW_STATE_DIR = path.join(suiteHome, ".remoteclaw");
     process.env.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS = "10000";
     clearPluginManifestRegistryCache();
     // Warm the plugin manifest cache once so path-based validations can reuse
     // parsed manifests across test cases.
     validateInSuite({
-      agents: { defaults: { workspace: "/tmp/remoteclaw-test" } },
       plugins: {
         enabled: false,
-        load: { paths: [badPluginDir, bluebubblesPluginDir] },
+        load: { paths: [badPluginDir, bluebubblesPluginDir, voiceCallSchemaPluginDir] },
       },
     });
   });
@@ -116,7 +134,7 @@ describe("config plugin validation", () => {
   it("reports missing plugin refs across load paths, entries, and allowlist surfaces", async () => {
     const missingPath = path.join(suiteHome, "missing-plugin-dir");
     const res = validateInSuite({
-      agents: { defaults: { workspace: "/tmp/remoteclaw-test" }, list: [{ id: "pi" }] },
+      agents: { list: [{ id: "pi" }] },
       plugins: {
         enabled: false,
         load: { paths: [missingPath] },
@@ -134,12 +152,11 @@ describe("config plugin validation", () => {
             issue.path === "plugins.load.paths" && issue.message.includes("plugin path not found"),
         ),
       ).toBe(true);
-      // Gutted in RemoteClaw fork: plugins.slots is always {} after normalization
-      // (memory slots gutted), so plugins.slots.memory is never validated.
       expect(res.issues).toEqual(
         expect.arrayContaining([
           { path: "plugins.allow", message: "plugin not found: missing-allow" },
           { path: "plugins.deny", message: "plugin not found: missing-deny" },
+          { path: "plugins.slots.memory", message: "plugin not found: missing-slot" },
         ]),
       );
       expect(res.warnings).toContainEqual({
@@ -153,7 +170,7 @@ describe("config plugin validation", () => {
   it("warns for removed legacy plugin ids instead of failing validation", async () => {
     const removedId = "google-antigravity-auth";
     const res = validateInSuite({
-      agents: { defaults: { workspace: "/tmp/remoteclaw-test" }, list: [{ id: "pi" }] },
+      agents: { list: [{ id: "pi" }] },
       plugins: {
         enabled: false,
         entries: { [removedId]: { enabled: true } },
@@ -164,8 +181,6 @@ describe("config plugin validation", () => {
     });
     expect(res.ok).toBe(true);
     if (res.ok) {
-      // Gutted in RemoteClaw fork: plugins.slots is always {} after normalization
-      // (memory slots gutted), so plugins.slots.memory is never validated.
       expect(res.warnings).toEqual(
         expect.arrayContaining([
           {
@@ -183,6 +198,11 @@ describe("config plugin validation", () => {
             message:
               "plugin removed: google-antigravity-auth (stale config entry ignored; remove it from plugins config)",
           },
+          {
+            path: "plugins.slots.memory",
+            message:
+              "plugin removed: google-antigravity-auth (stale config entry ignored; remove it from plugins config)",
+          },
         ]),
       );
     }
@@ -190,7 +210,7 @@ describe("config plugin validation", () => {
 
   it("surfaces plugin config diagnostics", async () => {
     const res = validateInSuite({
-      agents: { defaults: { workspace: "/tmp/remoteclaw-test" }, list: [{ id: "pi" }] },
+      agents: { list: [{ id: "pi" }] },
       plugins: {
         enabled: true,
         load: { paths: [badPluginDir] },
@@ -210,7 +230,7 @@ describe("config plugin validation", () => {
 
   it("surfaces allowed enum values for plugin config diagnostics", async () => {
     const res = validateInSuite({
-      agents: { defaults: { workspace: "/tmp/remoteclaw-test" }, list: [{ id: "pi" }] },
+      agents: { list: [{ id: "pi" }] },
       plugins: {
         enabled: true,
         load: { paths: [enumPluginDir] },
@@ -229,13 +249,41 @@ describe("config plugin validation", () => {
     }
   });
 
+  it("accepts voice-call webhookSecurity and streaming guard config fields", async () => {
+    const res = validateInSuite({
+      agents: { list: [{ id: "pi" }] },
+      plugins: {
+        enabled: true,
+        load: { paths: [voiceCallSchemaPluginDir] },
+        entries: {
+          "voice-call-schema-fixture": {
+            config: {
+              provider: "twilio",
+              webhookSecurity: {
+                allowedHosts: ["voice.example.com"],
+                trustForwardingHeaders: false,
+                trustedProxyIPs: ["127.0.0.1"],
+              },
+              streaming: {
+                enabled: true,
+                preStartTimeoutMs: 5000,
+                maxPendingConnections: 16,
+                maxPendingConnectionsPerIp: 4,
+                maxConnections: 64,
+              },
+              staleCallReaperSeconds: 180,
+            },
+          },
+        },
+      },
+    });
+    expect(res.ok).toBe(true);
+  });
+
   it("accepts known plugin ids and valid channel/heartbeat enums", async () => {
     const res = validateInSuite({
       agents: {
-        defaults: {
-          workspace: "/tmp/remoteclaw-test",
-          heartbeat: { target: "last", directPolicy: "block" },
-        },
+        defaults: { heartbeat: { target: "last", directPolicy: "block" } },
         list: [{ id: "pi", heartbeat: { directPolicy: "allow" } }],
       },
       channels: {
@@ -252,10 +300,7 @@ describe("config plugin validation", () => {
 
   it("accepts plugin heartbeat targets", async () => {
     const res = validateInSuite({
-      agents: {
-        defaults: { workspace: "/tmp/remoteclaw-test", heartbeat: { target: "bluebubbles" } },
-        list: [{ id: "pi" }],
-      },
+      agents: { defaults: { heartbeat: { target: "bluebubbles" } }, list: [{ id: "pi" }] },
       plugins: { enabled: false, load: { paths: [bluebubblesPluginDir] } },
     });
     expect(res.ok).toBe(true);
@@ -264,7 +309,7 @@ describe("config plugin validation", () => {
   it("rejects unknown heartbeat targets", async () => {
     const res = validateInSuite({
       agents: {
-        defaults: { workspace: "/tmp/remoteclaw-test", heartbeat: { target: "not-a-channel" } },
+        defaults: { heartbeat: { target: "not-a-channel" } },
         list: [{ id: "pi" }],
       },
     });
@@ -280,7 +325,7 @@ describe("config plugin validation", () => {
   it("rejects invalid heartbeat directPolicy values", async () => {
     const res = validateInSuite({
       agents: {
-        defaults: { workspace: "/tmp/remoteclaw-test", heartbeat: { directPolicy: "maybe" } },
+        defaults: { heartbeat: { directPolicy: "maybe" } },
         list: [{ id: "pi" }],
       },
     });

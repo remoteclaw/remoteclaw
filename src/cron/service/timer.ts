@@ -133,13 +133,16 @@ function errorBackoffMs(
 const DEFAULT_MAX_TRANSIENT_RETRIES = 3;
 
 const TRANSIENT_PATTERNS: Record<string, RegExp> = {
-  rate_limit: /(rate[_ ]limit|too many requests|429|resource has been exhausted|cloudflare)/i,
+  rate_limit:
+    /(rate[_ ]limit|too many requests|429|resource has been exhausted|cloudflare|tokens per day)/i,
+  overloaded:
+    /\b529\b|\boverloaded(?:_error)?\b|high demand|temporar(?:ily|y) overloaded|capacity exceeded/i,
   network: /(network|econnreset|econnrefused|fetch failed|socket)/i,
   timeout: /(timeout|etimedout)/i,
   server_error: /\b5\d{2}\b/,
 };
 
-function _isTransientCronError(error: string | undefined, retryOn?: CronRetryOn[]): boolean {
+function isTransientCronError(error: string | undefined, retryOn?: CronRetryOn[]): boolean {
   if (!error || typeof error !== "string") {
     return false;
   }
@@ -147,7 +150,7 @@ function _isTransientCronError(error: string | undefined, retryOn?: CronRetryOn[
   return keys.some((k) => TRANSIENT_PATTERNS[k]?.test(error));
 }
 
-function _resolveRetryConfig(cronConfig?: CronConfig) {
+function resolveRetryConfig(cronConfig?: CronConfig) {
   const retry = cronConfig?.retry;
   return {
     maxAttempts:
@@ -301,7 +304,21 @@ export function applyJobResult(
     startedAt: number;
     endedAt: number;
   },
+  opts?: {
+    // Preserve recurring "every" anchors for manual force runs.
+    preserveSchedule?: boolean;
+  },
 ): boolean {
+  const prevLastRunAtMs = job.state.lastRunAtMs;
+  const computeNextWithPreservedLastRun = (nowMs: number) => {
+    const saved = job.state.lastRunAtMs;
+    job.state.lastRunAtMs = prevLastRunAtMs;
+    try {
+      return computeJobNextRunAtMs(job, nowMs);
+    } finally {
+      job.state.lastRunAtMs = saved;
+    }
+  };
   job.state.runningAtMs = undefined;
   job.state.lastRunAtMs = result.startedAt;
   job.state.lastRunStatus = result.status;
@@ -327,28 +344,54 @@ export function applyJobResult(
 
   if (!shouldDelete) {
     if (job.schedule.kind === "at") {
-      // One-shot jobs are always disabled after ANY terminal status
-      // (ok, error, or skipped). This prevents tight-loop rescheduling
-      // when computeJobNextRunAtMs returns the past atMs value (#11452).
-      job.enabled = false;
-      job.state.nextRunAtMs = undefined;
-      if (result.status === "error") {
-        state.deps.log.warn(
-          {
-            jobId: job.id,
-            jobName: job.name,
-            consecutiveErrors: job.state.consecutiveErrors,
-            error: result.error,
-          },
-          "cron: disabling one-shot job after error",
-        );
+      if (result.status === "ok" || result.status === "skipped") {
+        // One-shot done or skipped: disable to prevent tight-loop (#11452).
+        job.enabled = false;
+        job.state.nextRunAtMs = undefined;
+      } else if (result.status === "error") {
+        const retryConfig = resolveRetryConfig(state.deps.cronConfig);
+        const transient = isTransientCronError(result.error, retryConfig.retryOn);
+        // consecutiveErrors is always set to >=1 by the increment block above.
+        const consecutive = job.state.consecutiveErrors;
+        if (transient && consecutive !== undefined && consecutive <= retryConfig.maxAttempts) {
+          // Schedule retry with backoff (#24355).
+          const backoff = errorBackoffMs(consecutive, retryConfig.backoffMs);
+          job.state.nextRunAtMs = result.endedAt + backoff;
+          state.deps.log.info(
+            {
+              jobId: job.id,
+              jobName: job.name,
+              consecutiveErrors: consecutive,
+              backoffMs: backoff,
+              nextRunAtMs: job.state.nextRunAtMs,
+            },
+            "cron: scheduling one-shot retry after transient error",
+          );
+        } else {
+          // Permanent error or max retries exhausted: disable.
+          job.enabled = false;
+          job.state.nextRunAtMs = undefined;
+          state.deps.log.warn(
+            {
+              jobId: job.id,
+              jobName: job.name,
+              consecutiveErrors: consecutive,
+              error: result.error,
+              reason: transient ? "max retries exhausted" : "permanent error",
+            },
+            "cron: disabling one-shot job after error",
+          );
+        }
       }
     } else if (result.status === "error" && job.enabled) {
       // Apply exponential backoff for errored jobs to prevent retry storms.
       const backoff = errorBackoffMs(job.state.consecutiveErrors ?? 1);
       let normalNext: number | undefined;
       try {
-        normalNext = computeJobNextRunAtMs(job, result.endedAt);
+        normalNext =
+          opts?.preserveSchedule && job.schedule.kind === "every"
+            ? computeNextWithPreservedLastRun(result.endedAt)
+            : computeJobNextRunAtMs(job, result.endedAt);
       } catch (err) {
         // If the schedule expression/timezone throws (croner edge cases),
         // record the schedule error (auto-disables after repeated failures)
@@ -371,7 +414,10 @@ export function applyJobResult(
     } else if (job.enabled) {
       let naturalNext: number | undefined;
       try {
-        naturalNext = computeJobNextRunAtMs(job, result.endedAt);
+        naturalNext =
+          opts?.preserveSchedule && job.schedule.kind === "every"
+            ? computeNextWithPreservedLastRun(result.endedAt)
+            : computeJobNextRunAtMs(job, result.endedAt);
       } catch (err) {
         // If the schedule expression/timezone throws (croner edge cases),
         // record the schedule error (auto-disables after repeated failures)

@@ -161,6 +161,75 @@ export function setAccountAllowFromForChannel(params: {
   });
 }
 
+export function setTopLevelChannelAllowFrom(params: {
+  cfg: RemoteClawConfig;
+  channel: string;
+  allowFrom: string[];
+  enabled?: boolean;
+}): RemoteClawConfig {
+  const channelConfig =
+    (params.cfg.channels?.[params.channel] as Record<string, unknown> | undefined) ?? {};
+  return {
+    ...params.cfg,
+    channels: {
+      ...params.cfg.channels,
+      [params.channel]: {
+        ...channelConfig,
+        ...(params.enabled ? { enabled: true } : {}),
+        allowFrom: params.allowFrom,
+      },
+    },
+  };
+}
+
+export function setTopLevelChannelDmPolicyWithAllowFrom(params: {
+  cfg: RemoteClawConfig;
+  channel: string;
+  dmPolicy: DmPolicy;
+  getAllowFrom?: (cfg: RemoteClawConfig) => Array<string | number> | undefined;
+}): RemoteClawConfig {
+  const channelConfig =
+    (params.cfg.channels?.[params.channel] as Record<string, unknown> | undefined) ?? {};
+  const existingAllowFrom =
+    params.getAllowFrom?.(params.cfg) ??
+    (channelConfig.allowFrom as Array<string | number> | undefined) ??
+    undefined;
+  const allowFrom =
+    params.dmPolicy === "open" ? addWildcardAllowFrom(existingAllowFrom) : undefined;
+  return {
+    ...params.cfg,
+    channels: {
+      ...params.cfg.channels,
+      [params.channel]: {
+        ...channelConfig,
+        dmPolicy: params.dmPolicy,
+        ...(allowFrom ? { allowFrom } : {}),
+      },
+    },
+  };
+}
+
+export function setTopLevelChannelGroupPolicy(params: {
+  cfg: RemoteClawConfig;
+  channel: string;
+  groupPolicy: GroupPolicy;
+  enabled?: boolean;
+}): RemoteClawConfig {
+  const channelConfig =
+    (params.cfg.channels?.[params.channel] as Record<string, unknown> | undefined) ?? {};
+  return {
+    ...params.cfg,
+    channels: {
+      ...params.cfg.channels,
+      [params.channel]: {
+        ...channelConfig,
+        ...(params.enabled ? { enabled: true } : {}),
+        groupPolicy: params.groupPolicy,
+      },
+    },
+  };
+}
+
 export function setChannelDmPolicyWithAllowFrom(params: {
   cfg: RemoteClawConfig;
   channel: "imessage" | "signal" | "telegram";
@@ -383,6 +452,23 @@ export function applySingleTokenPromptResult(params: {
   return next;
 }
 
+export function buildSingleChannelSecretPromptState(params: {
+  accountConfigured: boolean;
+  hasConfigToken: boolean;
+  allowEnv: boolean;
+  envValue?: string;
+}): {
+  accountConfigured: boolean;
+  hasConfigToken: boolean;
+  canUseEnv: boolean;
+} {
+  return {
+    accountConfigured: params.accountConfigured,
+    hasConfigToken: params.hasConfigToken,
+    canUseEnv: params.allowEnv && Boolean(params.envValue?.trim()) && !params.hasConfigToken,
+  };
+}
+
 export async function promptSingleChannelToken(params: {
   prompter: Pick<WizardPrompter, "confirm" | "text">;
   accountConfigured: boolean;
@@ -498,11 +584,10 @@ export async function promptSingleChannelSecretInput(params: {
         "No file/exec secret providers are configured yet. Add one under secrets.providers, or select Environment variable.",
     },
   });
-  const typedResolved = resolved as { ref: unknown; resolvedValue: string };
   return {
-    action: "set" as const,
-    value: typedResolved.ref as SecretInput,
-    resolvedValue: typedResolved.resolvedValue,
+    action: "set",
+    value: resolved.ref,
+    resolvedValue: resolved.resolvedValue ?? "",
   };
 }
 

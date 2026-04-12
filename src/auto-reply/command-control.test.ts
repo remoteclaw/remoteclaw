@@ -1,29 +1,16 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../test-utils/channel-plugins.js";
 import { resolveCommandAuthorization } from "./command-auth.js";
 import { hasControlCommand, hasInlineCommandTokens } from "./command-detection.js";
+import { listChatCommands } from "./commands-registry.js";
 import { parseActivationCommand } from "./group-activation.js";
 import { parseSendPolicyCommand } from "./send-policy.js";
 import type { MsgContext } from "./templating.js";
+import { installDiscordRegistryHooks } from "./test-helpers/command-auth-registry-fixture.js";
 
-const createRegistry = () =>
-  createTestRegistry([
-    {
-      pluginId: "discord",
-      plugin: createOutboundTestPlugin({ id: "discord", outbound: { deliveryMode: "direct" } }),
-      source: "test",
-    },
-  ]);
-
-beforeEach(() => {
-  setActivePluginRegistry(createRegistry());
-});
-
-afterEach(() => {
-  setActivePluginRegistry(createRegistry());
-});
+installDiscordRegistryHooks();
 
 describe("resolveCommandAuthorization", () => {
   function resolveWhatsAppAuthorization(params: {
@@ -457,6 +444,52 @@ describe("resolveCommandAuthorization", () => {
       expect(deniedAuth.isAuthorizedSender).toBe(false);
     });
   });
+
+  it("grants senderIsOwner for internal channel with operator.admin scope", () => {
+    const cfg = {} as RemoteClawConfig;
+    const ctx = {
+      Provider: "webchat",
+      Surface: "webchat",
+      GatewayClientScopes: ["operator.admin"],
+    } as MsgContext;
+    const auth = resolveCommandAuthorization({
+      ctx,
+      cfg,
+      commandAuthorized: true,
+    });
+    expect(auth.senderIsOwner).toBe(true);
+  });
+
+  it("does not grant senderIsOwner for internal channel without admin scope", () => {
+    const cfg = {} as RemoteClawConfig;
+    const ctx = {
+      Provider: "webchat",
+      Surface: "webchat",
+      GatewayClientScopes: ["operator.approvals"],
+    } as MsgContext;
+    const auth = resolveCommandAuthorization({
+      ctx,
+      cfg,
+      commandAuthorized: true,
+    });
+    expect(auth.senderIsOwner).toBe(false);
+  });
+
+  it("does not grant senderIsOwner for external channel even with admin scope", () => {
+    const cfg = {} as RemoteClawConfig;
+    const ctx = {
+      Provider: "telegram",
+      Surface: "telegram",
+      From: "telegram:12345",
+      GatewayClientScopes: ["operator.admin"],
+    } as MsgContext;
+    const auth = resolveCommandAuthorization({
+      ctx,
+      cfg,
+      commandAuthorized: true,
+    });
+    expect(auth.senderIsOwner).toBe(false);
+  });
 });
 
 describe("control command parsing", () => {
@@ -492,6 +525,28 @@ describe("control command parsing", () => {
     });
   });
 
+  it("treats bare commands as non-control", () => {
+    expect(hasControlCommand("send")).toBe(false);
+    expect(hasControlCommand("help")).toBe(false);
+    expect(hasControlCommand("/commands")).toBe(true);
+    expect(hasControlCommand("/commands:")).toBe(true);
+    expect(hasControlCommand("commands")).toBe(false);
+    expect(hasControlCommand("/status")).toBe(true);
+    expect(hasControlCommand("/status:")).toBe(true);
+    expect(hasControlCommand("status")).toBe(false);
+    expect(hasControlCommand("usage")).toBe(false);
+
+    for (const command of listChatCommands()) {
+      for (const alias of command.textAliases) {
+        expect(hasControlCommand(alias)).toBe(true);
+        expect(hasControlCommand(`${alias}:`)).toBe(true);
+      }
+    }
+    expect(hasControlCommand("/compact")).toBe(true);
+    expect(hasControlCommand("/compact:")).toBe(true);
+    expect(hasControlCommand("compact")).toBe(false);
+  });
+
   it("respects disabled config/debug commands", () => {
     const cfg = { commands: { config: false, debug: false } };
     expect(hasControlCommand("/config show", cfg)).toBe(false);
@@ -507,7 +562,7 @@ describe("control command parsing", () => {
 
   it("detects inline command tokens", () => {
     expect(hasInlineCommandTokens("hello /status")).toBe(true);
-    expect(hasInlineCommandTokens("hey /verbose on")).toBe(true);
+    expect(hasInlineCommandTokens("hey /think high")).toBe(true);
     expect(hasInlineCommandTokens("plain text")).toBe(false);
     expect(hasInlineCommandTokens("http://example.com/path")).toBe(false);
     expect(hasInlineCommandTokens("stop")).toBe(false);

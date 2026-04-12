@@ -13,6 +13,19 @@ function makeConfig(): RemoteClawConfig {
 }
 
 describe("resolveOnboardingSecretInputString", () => {
+  it("resolves env-template SecretInput strings", async () => {
+    const resolved = await resolveOnboardingSecretInputString({
+      config: makeConfig(),
+      value: "${REMOTECLAW_GATEWAY_PASSWORD}",
+      path: "gateway.auth.password",
+      env: {
+        REMOTECLAW_GATEWAY_PASSWORD: "gateway-secret", // pragma: allowlist secret
+      },
+    });
+
+    expect(resolved).toBe("gateway-secret");
+  });
+
   it("returns plaintext strings when value is not a SecretRef", async () => {
     const resolved = await resolveOnboardingSecretInputString({
       config: makeConfig(),
@@ -21,5 +34,18 @@ describe("resolveOnboardingSecretInputString", () => {
     });
 
     expect(resolved).toBe("plain-text");
+  });
+
+  it("throws with path context when env-template SecretRef cannot resolve", async () => {
+    await expect(
+      resolveOnboardingSecretInputString({
+        config: makeConfig(),
+        value: "${REMOTECLAW_GATEWAY_PASSWORD}",
+        path: "gateway.auth.password",
+        env: {},
+      }),
+    ).rejects.toThrow(
+      'gateway.auth.password: failed to resolve SecretRef "env:default:REMOTECLAW_GATEWAY_PASSWORD"',
+    );
   });
 });

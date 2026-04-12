@@ -1,5 +1,5 @@
 import type { Mock } from "vitest";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { captureEnv } from "../test-utils/env.js";
 
 let envSnapshot: ReturnType<typeof captureEnv>;
@@ -23,6 +23,7 @@ function createDefaultSessionStoreEntry() {
     cacheRead: 2_000,
     cacheWrite: 1_000,
     totalTokens: 5_000,
+    contextTokens: 10_000,
     model: "pi:opus",
     sessionId: "abc123",
     systemSent: true,
@@ -35,6 +36,7 @@ function createUnknownUsageSessionStore() {
       updatedAt: Date.now() - 60_000,
       inputTokens: 2_000,
       outputTokens: 3_000,
+      contextTokens: 10_000,
       model: "pi:opus",
     },
   };
@@ -144,6 +146,7 @@ async function withEnvVar<T>(key: string, value: string, run: () => Promise<T>):
 }
 
 const mocks = vi.hoisted(() => ({
+  loadConfig: vi.fn().mockReturnValue({ session: {} }),
   loadSessionStore: vi.fn().mockReturnValue({
     "+1000": createDefaultSessionStoreEntry(),
   }),
@@ -202,6 +205,36 @@ const mocks = vi.hoisted(() => ({
       },
     ],
   }),
+}));
+
+vi.mock("../memory/manager.js", () => ({
+  MemoryIndexManager: {
+    get: vi.fn(async ({ agentId }: { agentId: string }) => ({
+      probeVectorAvailability: vi.fn(async () => true),
+      status: () => ({
+        files: 2,
+        chunks: 3,
+        dirty: false,
+        workspaceDir: "/tmp/remoteclaw",
+        dbPath: "/tmp/memory.sqlite",
+        provider: "openai",
+        model: "text-embedding-3-small",
+        requestedProvider: "openai",
+        sources: ["memory"],
+        sourceCounts: [{ source: "memory", files: 2, chunks: 3 }],
+        cache: { enabled: true, entries: 10, maxEntries: 500 },
+        fts: { enabled: true, available: true },
+        vector: {
+          enabled: true,
+          available: true,
+          extensionPath: "/opt/vec0.dylib",
+          dims: 1024,
+        },
+      }),
+      close: vi.fn(async () => {}),
+      __agentId: agentId,
+    })),
+  },
 }));
 
 vi.mock("../config/sessions.js", () => ({
@@ -313,7 +346,7 @@ vi.mock("../config/config.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../config/config.js")>();
   return {
     ...actual,
-    loadConfig: () => ({ session: {} }),
+    loadConfig: mocks.loadConfig,
   };
 });
 vi.mock("../daemon/service.js", () => ({
@@ -357,19 +390,28 @@ const runtime = {
 const runtimeLogMock = runtime.log as Mock<(...args: unknown[]) => void>;
 
 describe("statusCommand", () => {
+  afterEach(() => {
+    mocks.loadConfig.mockReset();
+    mocks.loadConfig.mockReturnValue({ session: {} });
+  });
+
   it("prints JSON when requested", async () => {
     await statusCommand({ json: true }, runtime as never);
     const payload = JSON.parse(String(runtimeLogMock.mock.calls[0]?.[0]));
     expect(payload.linkChannel.linked).toBe(true);
-    // Gutted in RemoteClaw fork — memory subsystem removed, payload.memory is undefined
-    expect(payload.memory).toBeUndefined();
+    expect(payload.memory.agentId).toBe("main");
+    expect(payload.memoryPlugin.enabled).toBe(true);
+    expect(payload.memoryPlugin.slot).toBe("memory-core");
+    expect(payload.memory.vector.available).toBe(true);
     expect(payload.sessions.count).toBe(1);
     expect(payload.sessions.paths).toContain("/tmp/sessions.json");
-    // Gutted in RemoteClaw fork — model defaults may be empty
-    expect(payload.sessions.defaults).toBeDefined();
+    expect(payload.sessions.defaults.model).toBeTruthy();
+    expect(payload.sessions.defaults.contextTokens).toBeGreaterThan(0);
+    expect(payload.sessions.recent[0].percentUsed).toBe(50);
     expect(payload.sessions.recent[0].cacheRead).toBe(2_000);
     expect(payload.sessions.recent[0].cacheWrite).toBe(1_000);
     expect(payload.sessions.recent[0].totalTokensFresh).toBe(true);
+    expect(payload.sessions.recent[0].remainingTokens).toBe(5000);
     expect(payload.sessions.recent[0].flags).toContain("verbose:on");
     expect(payload.securityAudit.summary.critical).toBe(1);
     expect(payload.securityAudit.summary.warn).toBe(1);
@@ -384,13 +426,15 @@ describe("statusCommand", () => {
       const payload = JSON.parse(String(runtimeLogMock.mock.calls.at(-1)?.[0]));
       expect(payload.sessions.recent[0].totalTokens).toBeNull();
       expect(payload.sessions.recent[0].totalTokensFresh).toBe(false);
+      expect(payload.sessions.recent[0].percentUsed).toBeNull();
+      expect(payload.sessions.recent[0].remainingTokens).toBeNull();
     });
   });
 
   it("prints unknown usage in formatted output when totalTokens is missing", async () => {
     await withUnknownUsageStore(async () => {
       const logs = await runStatusAndGetLogs();
-      expect(logs.some((line) => line.includes("unknown"))).toBe(true);
+      expect(logs.some((line) => line.includes("unknown/") && line.includes("(?%)"))).toBe(true);
     });
   });
 
@@ -404,27 +448,20 @@ describe("statusCommand", () => {
       "CRITICAL",
       "Dashboard",
       "macos 14.0 (arm64)",
-      // Gutted in RemoteClaw fork — memory subsystem removed
-      // "Memory",
+      "Memory",
       "Channels",
       "WhatsApp",
-      // Gutted in RemoteClaw fork — bootstrap files removed
-      // "bootstrap files",
+      "bootstrap files",
       "Sessions",
       "+1000",
-      // 3000 cache out of 5000 total = 60% cached (not 40%)
-      // The cache display may differ due to context token changes
-      "cached",
+      "50%",
+      "40% cached",
       "LaunchAgent",
       "FAQ:",
       "Troubleshooting:",
-      // Gutted in RemoteClaw fork — "Next steps:" section removed with bootstrap
-      // "Next steps:",
+      "Next steps:",
     ]) {
-      expect(
-        logs.some((line) => line.includes(token)),
-        `Expected output to contain "${token}"`,
-      ).toBe(true);
+      expect(logs.some((line) => line.includes(token))).toBe(true);
     }
     expect(
       logs.some(
@@ -448,6 +485,28 @@ describe("statusCommand", () => {
       const logs = await runStatusAndGetLogs();
       expect(logs.some((l: string) => l.includes("auth token"))).toBe(true);
     });
+  });
+
+  it("warns instead of crashing when gateway auth SecretRef is unresolved for probe auth", async () => {
+    mocks.loadConfig.mockReturnValue({
+      session: {},
+      gateway: {
+        auth: {
+          mode: "token",
+          token: { source: "env", provider: "default", id: "MISSING_GATEWAY_TOKEN" },
+        },
+      },
+      secrets: {
+        providers: {
+          default: { source: "env" },
+        },
+      },
+    });
+
+    await statusCommand({ json: true }, runtime as never);
+    const payload = JSON.parse(String(runtimeLogMock.mock.calls.at(-1)?.[0]));
+    expect(payload.gateway.error).toContain("gateway.auth.token");
+    expect(payload.gateway.error).toContain("SecretRef");
   });
 
   it("surfaces channel runtime errors from the gateway", async () => {
@@ -562,6 +621,7 @@ describe("statusCommand", () => {
             inputTokens: 1_000,
             outputTokens: 1_000,
             totalTokens: 2_000,
+            contextTokens: 10_000,
             model: "pi:opus",
           },
         };

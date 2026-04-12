@@ -5,6 +5,7 @@ export function sanitizeNodeInvokeParamsForForwarding(opts: {
   command: string;
   rawParams: unknown;
   client: GatewayClient | null;
+  execApprovalManager?: unknown;
 }):
   | { ok: true; params: unknown }
   | { ok: false; message: string; details?: Record<string, unknown> } {

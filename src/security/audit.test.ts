@@ -1,24 +1,35 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ChannelPlugin } from "../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { withEnvAsync } from "../test-utils/env.js";
-import { collectPluginsCodeSafetyFindings } from "./audit-extra.js";
+import {
+  collectInstalledSkillsCodeSafetyFindings,
+  collectPluginsCodeSafetyFindings,
+} from "./audit-extra.js";
 import type { SecurityAuditOptions, SecurityAuditReport } from "./audit.js";
 import { runSecurityAudit } from "./audit.js";
+import * as skillScanner from "./skill-scanner.js";
 
 const isWindows = process.platform === "win32";
 const windowsAuditEnv = {
   USERNAME: "Tester",
   USERDOMAIN: "DESKTOP-TEST",
 };
+const execDockerRawUnavailable: NonNullable<SecurityAuditOptions["execDockerRawFn"]> = async () => {
+  throw new Error("docker not available");
+};
+
 function stubChannelPlugin(params: {
   id: "discord" | "slack" | "telegram";
   label: string;
   resolveAccount: (cfg: RemoteClawConfig, accountId: string | null | undefined) => unknown;
+  inspectAccount?: (cfg: RemoteClawConfig, accountId: string | null | undefined) => unknown;
   listAccountIds?: (cfg: RemoteClawConfig) => string[];
+  isConfigured?: (account: unknown, cfg: RemoteClawConfig) => boolean;
+  isEnabled?: (account: unknown, cfg: RemoteClawConfig) => boolean;
 }): ChannelPlugin {
   return {
     id: params.id,
@@ -42,9 +53,10 @@ function stubChannelPlugin(params: {
           );
           return enabled ? ["default"] : [];
         }),
+      inspectAccount: params.inspectAccount,
       resolveAccount: (cfg, accountId) => params.resolveAccount(cfg, accountId),
-      isEnabled: () => true,
-      isConfigured: () => true,
+      isEnabled: (account, cfg) => params.isEnabled?.(account, cfg) ?? true,
+      isConfigured: (account, cfg) => params.isConfigured?.(account, cfg) ?? true,
     },
   };
 }
@@ -140,6 +152,7 @@ describe("security audit", () => {
   let channelSecurityRoot = "";
   let sharedChannelSecurityStateDir = "";
   let sharedCodeSafetyStateDir = "";
+  let sharedCodeSafetyWorkspaceDir = "";
   let sharedExtensionsStateDir = "";
   let sharedInstallMetadataStateDir = "";
 
@@ -147,6 +160,18 @@ describe("security audit", () => {
     const dir = path.join(fixtureRoot, `case-${caseId++}-${label}`);
     await fs.mkdir(dir, { recursive: true });
     return dir;
+  };
+
+  const createFilesystemAuditFixture = async (label: string) => {
+    const tmp = await makeTmpDir(label);
+    const stateDir = path.join(tmp, "state");
+    await fs.mkdir(stateDir, { recursive: true, mode: 0o700 });
+    const configPath = path.join(stateDir, "remoteclaw.json");
+    await fs.writeFile(configPath, "{}\n", "utf-8");
+    if (!isWindows) {
+      await fs.chmod(configPath, 0o600);
+    }
+    return { tmp, stateDir, configPath };
   };
 
   const withChannelSecurityStateDir = async (fn: (tmp: string) => Promise<void>) => {
@@ -209,6 +234,7 @@ description: test skill
     });
     const codeSafetyFixture = await createSharedCodeSafetyFixture();
     sharedCodeSafetyStateDir = codeSafetyFixture.stateDir;
+    sharedCodeSafetyWorkspaceDir = codeSafetyFixture.workspaceDir;
     sharedExtensionsStateDir = path.join(fixtureRoot, "shared-extensions-state");
     await fs.mkdir(path.join(sharedExtensionsStateDir, "extensions", "some-plugin"), {
       recursive: true,
@@ -375,6 +401,178 @@ description: test skill
     );
   });
 
+  it("warns when sandbox exec host is selected while sandbox mode is off", async () => {
+    const cases: Array<{
+      name: string;
+      cfg: RemoteClawConfig;
+      checkId:
+        | "tools.exec.host_sandbox_no_sandbox_defaults"
+        | "tools.exec.host_sandbox_no_sandbox_agents";
+    }> = [
+      {
+        name: "defaults host is sandbox",
+        cfg: {
+          tools: {
+            exec: {
+              host: "sandbox",
+            },
+          },
+          agents: {
+            defaults: {
+              sandbox: {
+                mode: "off",
+              },
+            },
+          },
+        },
+        checkId: "tools.exec.host_sandbox_no_sandbox_defaults",
+      },
+      {
+        name: "agent override host is sandbox",
+        cfg: {
+          tools: {
+            exec: {
+              host: "gateway",
+            },
+          },
+          agents: {
+            defaults: {
+              sandbox: {
+                mode: "off",
+              },
+            },
+            list: [
+              {
+                id: "ops",
+                tools: {
+                  exec: {
+                    host: "sandbox",
+                  },
+                },
+              },
+            ],
+          },
+        },
+        checkId: "tools.exec.host_sandbox_no_sandbox_agents",
+      },
+    ];
+    await Promise.all(
+      cases.map(async (testCase) => {
+        const res = await audit(testCase.cfg);
+        expect(hasFinding(res, testCase.checkId, "warn"), testCase.name).toBe(true);
+      }),
+    );
+  });
+
+  it("warns for interpreter safeBins only when explicit profiles are missing", async () => {
+    const cases: Array<{
+      name: string;
+      cfg: RemoteClawConfig;
+      expected: boolean;
+    }> = [
+      {
+        name: "missing profiles",
+        cfg: {
+          tools: {
+            exec: {
+              safeBins: ["python3"],
+            },
+          },
+          agents: {
+            list: [
+              {
+                id: "ops",
+                tools: {
+                  exec: {
+                    safeBins: ["node"],
+                  },
+                },
+              },
+            ],
+          },
+        },
+        expected: true,
+      },
+      {
+        name: "profiles configured",
+        cfg: {
+          tools: {
+            exec: {
+              safeBins: ["python3"],
+              safeBinProfiles: {
+                python3: {
+                  maxPositional: 0,
+                },
+              },
+            },
+          },
+          agents: {
+            list: [
+              {
+                id: "ops",
+                tools: {
+                  exec: {
+                    safeBins: ["node"],
+                    safeBinProfiles: {
+                      node: {
+                        maxPositional: 0,
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+        expected: false,
+      },
+    ];
+    await Promise.all(
+      cases.map(async (testCase) => {
+        const res = await audit(testCase.cfg);
+        expect(
+          hasFinding(res, "tools.exec.safe_bins_interpreter_unprofiled", "warn"),
+          testCase.name,
+        ).toBe(testCase.expected);
+      }),
+    );
+  });
+
+  it("warns for risky safeBinTrustedDirs entries", async () => {
+    const riskyGlobalTrustedDirs =
+      process.platform === "win32"
+        ? [String.raw`C:\Users\ci-user\bin`, String.raw`C:\Users\ci-user\.local\bin`]
+        : ["/usr/local/bin", "/tmp/remoteclaw-safe-bins"];
+    const cfg: RemoteClawConfig = {
+      tools: {
+        exec: {
+          safeBinTrustedDirs: riskyGlobalTrustedDirs,
+        },
+      },
+      agents: {
+        list: [
+          {
+            id: "ops",
+            tools: {
+              exec: {
+                safeBinTrustedDirs: ["./relative-bin-dir"],
+              },
+            },
+          },
+        ],
+      },
+    };
+
+    const res = await audit(cfg);
+    const finding = res.findings.find(
+      (f) => f.checkId === "tools.exec.safe_bin_trusted_dirs_risky",
+    );
+    expect(finding?.severity).toBe("warn");
+    expect(finding?.detail).toContain(riskyGlobalTrustedDirs[0]);
+    expect(finding?.detail).toContain(riskyGlobalTrustedDirs[1]);
+    expect(finding?.detail).toContain("agents.list.ops.tools.exec");
+  });
+
   it("does not warn for non-risky absolute safeBinTrustedDirs entries", async () => {
     const cfg: RemoteClawConfig = {
       tools: {
@@ -462,6 +660,7 @@ description: test skill
       platform: "win32",
       env: windowsAuditEnv,
       execIcacls,
+      execDockerRawFn: execDockerRawUnavailable,
     });
 
     const forbidden = new Set([
@@ -508,6 +707,7 @@ description: test skill
       platform: "win32",
       env: windowsAuditEnv,
       execIcacls,
+      execDockerRawFn: execDockerRawUnavailable,
     });
 
     expect(
@@ -515,6 +715,123 @@ description: test skill
         (f) => f.checkId === "fs.state_dir.perms_readable" && f.severity === "warn",
       ),
     ).toBe(true);
+  });
+
+  it("warns when sandbox browser containers have missing or stale hash labels", async () => {
+    const { stateDir, configPath } = await createFilesystemAuditFixture("browser-hash-labels");
+
+    const execDockerRawFn = (async (args: string[]) => {
+      if (args[0] === "ps") {
+        return {
+          stdout: Buffer.from("remoteclaw-sbx-browser-old\nremoteclaw-sbx-browser-missing-hash\n"),
+          stderr: Buffer.alloc(0),
+          code: 0,
+        };
+      }
+      if (args[0] === "inspect" && args.at(-1) === "remoteclaw-sbx-browser-old") {
+        return {
+          stdout: Buffer.from("abc123\tepoch-v0\n"),
+          stderr: Buffer.alloc(0),
+          code: 0,
+        };
+      }
+      if (args[0] === "inspect" && args.at(-1) === "remoteclaw-sbx-browser-missing-hash") {
+        return {
+          stdout: Buffer.from("<no value>\t<no value>\n"),
+          stderr: Buffer.alloc(0),
+          code: 0,
+        };
+      }
+      return {
+        stdout: Buffer.alloc(0),
+        stderr: Buffer.from("not found"),
+        code: 1,
+      };
+    }) as unknown as NonNullable<SecurityAuditOptions["execDockerRawFn"]>;
+
+    const res = await runSecurityAudit({
+      config: {},
+      includeFilesystem: true,
+      includeChannelSecurity: false,
+      stateDir,
+      configPath,
+      execDockerRawFn,
+    });
+
+    expect(hasFinding(res, "sandbox.browser_container.hash_label_missing", "warn")).toBe(true);
+    expect(hasFinding(res, "sandbox.browser_container.hash_epoch_stale", "warn")).toBe(true);
+    const staleEpoch = res.findings.find(
+      (f) => f.checkId === "sandbox.browser_container.hash_epoch_stale",
+    );
+    expect(staleEpoch?.detail).toContain("remoteclaw-sbx-browser-old");
+  });
+
+  it("skips sandbox browser hash label checks when docker inspect is unavailable", async () => {
+    const { stateDir, configPath } = await createFilesystemAuditFixture("browser-hash-labels-skip");
+
+    const execDockerRawFn = (async () => {
+      throw new Error("spawn docker ENOENT");
+    }) as unknown as NonNullable<SecurityAuditOptions["execDockerRawFn"]>;
+
+    const res = await runSecurityAudit({
+      config: {},
+      includeFilesystem: true,
+      includeChannelSecurity: false,
+      stateDir,
+      configPath,
+      execDockerRawFn,
+    });
+
+    expect(hasFinding(res, "sandbox.browser_container.hash_label_missing")).toBe(false);
+    expect(hasFinding(res, "sandbox.browser_container.hash_epoch_stale")).toBe(false);
+  });
+
+  it("flags sandbox browser containers with non-loopback published ports", async () => {
+    const { stateDir, configPath } = await createFilesystemAuditFixture(
+      "browser-non-loopback-publish",
+    );
+
+    const execDockerRawFn = (async (args: string[]) => {
+      if (args[0] === "ps") {
+        return {
+          stdout: Buffer.from("remoteclaw-sbx-browser-exposed\n"),
+          stderr: Buffer.alloc(0),
+          code: 0,
+        };
+      }
+      if (args[0] === "inspect" && args.at(-1) === "remoteclaw-sbx-browser-exposed") {
+        return {
+          stdout: Buffer.from("hash123\t2026-02-21-novnc-auth-default\n"),
+          stderr: Buffer.alloc(0),
+          code: 0,
+        };
+      }
+      if (args[0] === "port" && args.at(-1) === "remoteclaw-sbx-browser-exposed") {
+        return {
+          stdout: Buffer.from("6080/tcp -> 0.0.0.0:49101\n9222/tcp -> 127.0.0.1:49100\n"),
+          stderr: Buffer.alloc(0),
+          code: 0,
+        };
+      }
+      return {
+        stdout: Buffer.alloc(0),
+        stderr: Buffer.from("not found"),
+        code: 1,
+      };
+    }) as unknown as NonNullable<SecurityAuditOptions["execDockerRawFn"]>;
+
+    const res = await runSecurityAudit({
+      config: {},
+      includeFilesystem: true,
+      includeChannelSecurity: false,
+      stateDir,
+      configPath,
+      execDockerRawFn,
+    });
+
+    expect(hasFinding(res, "sandbox.browser_container.non_loopback_publish", "critical")).toBe(
+      true,
+    );
   });
 
   it("uses symlink target permissions for config checks", async () => {
@@ -539,6 +856,7 @@ description: test skill
       includeChannelSecurity: false,
       stateDir,
       configPath,
+      execDockerRawFn: execDockerRawUnavailable,
     });
 
     expect(res.findings).toEqual(
@@ -547,6 +865,41 @@ description: test skill
     expect(res.findings.some((f) => f.checkId === "fs.config.perms_writable")).toBe(false);
     expect(res.findings.some((f) => f.checkId === "fs.config.perms_world_readable")).toBe(false);
     expect(res.findings.some((f) => f.checkId === "fs.config.perms_group_readable")).toBe(false);
+  });
+
+  it("warns when workspace skill files resolve outside workspace root", async () => {
+    if (isWindows) {
+      return;
+    }
+
+    const tmp = await makeTmpDir("workspace-skill-symlink-escape");
+    const stateDir = path.join(tmp, "state");
+    const workspaceDir = path.join(tmp, "workspace");
+    const outsideDir = path.join(tmp, "outside");
+    await fs.mkdir(stateDir, { recursive: true, mode: 0o700 });
+    await fs.mkdir(path.join(workspaceDir, "skills", "leak"), { recursive: true });
+    await fs.mkdir(outsideDir, { recursive: true });
+
+    const outsideSkillPath = path.join(outsideDir, "SKILL.md");
+    await fs.writeFile(outsideSkillPath, "# outside\n", "utf-8");
+    await fs.symlink(outsideSkillPath, path.join(workspaceDir, "skills", "leak", "SKILL.md"));
+
+    const configPath = path.join(stateDir, "remoteclaw.json");
+    await fs.writeFile(configPath, "{}\n", "utf-8");
+    await fs.chmod(configPath, 0o600);
+
+    const res = await runSecurityAudit({
+      config: { agents: { defaults: { workspace: workspaceDir } } },
+      includeFilesystem: true,
+      includeChannelSecurity: false,
+      stateDir,
+      configPath,
+      execDockerRawFn: execDockerRawUnavailable,
+    });
+
+    const finding = res.findings.find((f) => f.checkId === "skills.workspace.symlink_escape");
+    expect(finding?.severity).toBe("warn");
+    expect(finding?.detail).toContain(outsideSkillPath);
   });
 
   it("does not warn for workspace skills that stay inside workspace root", async () => {
@@ -573,9 +926,217 @@ description: test skill
       includeChannelSecurity: false,
       stateDir,
       configPath,
+      execDockerRawFn: execDockerRawUnavailable,
     });
 
     expect(res.findings.some((f) => f.checkId === "skills.workspace.symlink_escape")).toBe(false);
+  });
+
+  it("scores small-model risk by tool/sandbox exposure", async () => {
+    const cases: Array<{
+      name: string;
+      cfg: RemoteClawConfig;
+      expectedSeverity: "info" | "critical";
+      detailIncludes: string[];
+    }> = [
+      {
+        name: "small model with web and browser enabled",
+        cfg: {
+          agents: { defaults: { model: { primary: "ollama/mistral-8b" } } },
+          tools: { web: { search: { enabled: true }, fetch: { enabled: true } } },
+          browser: { enabled: true },
+        },
+        expectedSeverity: "critical",
+        detailIncludes: ["mistral-8b", "web_search", "web_fetch", "browser"],
+      },
+      {
+        name: "small model with sandbox all and web/browser disabled",
+        cfg: {
+          agents: {
+            defaults: { model: { primary: "ollama/mistral-8b" }, sandbox: { mode: "all" } },
+          },
+          tools: { web: { search: { enabled: false }, fetch: { enabled: false } } },
+          browser: { enabled: false },
+        },
+        expectedSeverity: "info",
+        detailIncludes: ["mistral-8b", "sandbox=all"],
+      },
+    ];
+    await Promise.all(
+      cases.map(async (testCase) => {
+        const res = await audit(testCase.cfg);
+        const finding = res.findings.find((f) => f.checkId === "models.small_params");
+        expect(finding?.severity, testCase.name).toBe(testCase.expectedSeverity);
+        for (const text of testCase.detailIncludes) {
+          expect(finding?.detail, `${testCase.name}:${text}`).toContain(text);
+        }
+      }),
+    );
+  });
+
+  it("checks sandbox docker mode-off findings with/without agent override", async () => {
+    const cases: Array<{
+      name: string;
+      cfg: RemoteClawConfig;
+      expectedPresent: boolean;
+    }> = [
+      {
+        name: "mode off with docker config only",
+        cfg: {
+          agents: {
+            defaults: {
+              sandbox: {
+                mode: "off",
+                docker: { image: "ghcr.io/example/sandbox:latest" },
+              },
+            },
+          },
+        },
+        expectedPresent: true,
+      },
+      {
+        name: "agent enables sandbox mode",
+        cfg: {
+          agents: {
+            defaults: {
+              sandbox: {
+                mode: "off",
+                docker: { image: "ghcr.io/example/sandbox:latest" },
+              },
+            },
+            list: [{ id: "ops", sandbox: { mode: "all" } }],
+          },
+        },
+        expectedPresent: false,
+      },
+    ];
+    await Promise.all(
+      cases.map(async (testCase) => {
+        const res = await audit(testCase.cfg);
+        expect(hasFinding(res, "sandbox.docker_config_mode_off"), testCase.name).toBe(
+          testCase.expectedPresent,
+        );
+      }),
+    );
+  });
+
+  it("flags dangerous sandbox docker config (binds/network/seccomp/apparmor)", async () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: {
+          sandbox: {
+            mode: "all",
+            docker: {
+              binds: ["/etc/passwd:/mnt/passwd:ro", "/run:/run"],
+              network: "host",
+              seccompProfile: "unconfined",
+              apparmorProfile: "unconfined",
+            },
+          },
+        },
+      },
+    };
+
+    const res = await audit(cfg);
+
+    expect(res.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ checkId: "sandbox.dangerous_bind_mount", severity: "critical" }),
+        expect.objectContaining({
+          checkId: "sandbox.dangerous_network_mode",
+          severity: "critical",
+        }),
+        expect.objectContaining({
+          checkId: "sandbox.dangerous_seccomp_profile",
+          severity: "critical",
+        }),
+        expect.objectContaining({
+          checkId: "sandbox.dangerous_apparmor_profile",
+          severity: "critical",
+        }),
+      ]),
+    );
+  });
+
+  it("flags container namespace join network mode in sandbox config", async () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: {
+          sandbox: {
+            mode: "all",
+            docker: {
+              network: "container:peer",
+            },
+          },
+        },
+      },
+    };
+    const res = await audit(cfg);
+    expect(res.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          checkId: "sandbox.dangerous_network_mode",
+          severity: "critical",
+          title: "Dangerous network mode in sandbox config",
+        }),
+      ]),
+    );
+  });
+
+  it("checks sandbox browser bridge-network restrictions", async () => {
+    const cases: Array<{
+      name: string;
+      cfg: RemoteClawConfig;
+      expectedPresent: boolean;
+      expectedSeverity?: "warn";
+      detailIncludes?: string;
+    }> = [
+      {
+        name: "bridge without cdpSourceRange",
+        cfg: {
+          agents: {
+            defaults: {
+              sandbox: {
+                mode: "all",
+                browser: { enabled: true, network: "bridge" },
+              },
+            },
+          },
+        },
+        expectedPresent: true,
+        expectedSeverity: "warn",
+        detailIncludes: "agents.defaults.sandbox.browser",
+      },
+      {
+        name: "dedicated default network",
+        cfg: {
+          agents: {
+            defaults: {
+              sandbox: {
+                mode: "all",
+                browser: { enabled: true },
+              },
+            },
+          },
+        },
+        expectedPresent: false,
+      },
+    ];
+    await Promise.all(
+      cases.map(async (testCase) => {
+        const res = await audit(testCase.cfg);
+        const finding = res.findings.find(
+          (f) => f.checkId === "sandbox.browser_cdp_bridge_unrestricted",
+        );
+        expect(Boolean(finding), testCase.name).toBe(testCase.expectedPresent);
+        if (testCase.expectedPresent) {
+          expect(finding?.severity, testCase.name).toBe(testCase.expectedSeverity);
+          if (testCase.detailIncludes) {
+            expect(finding?.detail, testCase.name).toContain(testCase.detailIncludes);
+          }
+        }
+      }),
+    );
   });
 
   it("flags ineffective gateway.nodes.denyCommands entries", async () => {
@@ -595,6 +1156,45 @@ description: test skill
     expect(finding?.severity).toBe("warn");
     expect(finding?.detail).toContain("system.*");
     expect(finding?.detail).toContain("system.runx");
+    expect(finding?.detail).toContain("did you mean");
+    expect(finding?.detail).toContain("system.run");
+  });
+
+  it("suggests prefix-matching commands for unknown denyCommands entries", async () => {
+    const cfg: RemoteClawConfig = {
+      gateway: {
+        nodes: {
+          denyCommands: ["system.run.prep"],
+        },
+      },
+    };
+
+    const res = await audit(cfg);
+    const finding = res.findings.find(
+      (f) => f.checkId === "gateway.nodes.deny_commands_ineffective",
+    );
+    expect(finding?.severity).toBe("warn");
+    expect(finding?.detail).toContain("system.run.prep");
+    expect(finding?.detail).toContain("did you mean");
+    expect(finding?.detail).toContain("system.run.prepare");
+  });
+
+  it("keeps unknown denyCommands entries without suggestions when no close command exists", async () => {
+    const cfg: RemoteClawConfig = {
+      gateway: {
+        nodes: {
+          denyCommands: ["zzzzzzzzzzzzzz"],
+        },
+      },
+    };
+
+    const res = await audit(cfg);
+    const finding = res.findings.find(
+      (f) => f.checkId === "gateway.nodes.deny_commands_ineffective",
+    );
+    expect(finding?.severity).toBe("warn");
+    expect(finding?.detail).toContain("zzzzzzzzzzzzzz");
+    expect(finding?.detail).not.toContain("did you mean");
   });
 
   it("scores dangerous gateway.nodes.allowCommands by exposure", async () => {
@@ -807,6 +1407,13 @@ description: test skill
         gmail: { allowUnsafeExternalContent: true },
         mappings: [{ allowUnsafeExternalContent: true }],
       },
+      tools: {
+        exec: {
+          applyPatch: {
+            workspaceOnly: false,
+          },
+        },
+      },
     };
 
     const res = await audit(cfg);
@@ -816,7 +1423,7 @@ description: test skill
     expect(finding?.severity).toBe("warn");
     expect(finding?.detail).toContain("hooks.gmail.allowUnsafeExternalContent=true");
     expect(finding?.detail).toContain("hooks.mappings[0].allowUnsafeExternalContent=true");
-    // tools.exec.applyPatch.workspaceOnly removed from dangerous flags upstream
+    expect(finding?.detail).toContain("tools.exec.applyPatch.workspaceOnly=false");
   });
 
   it("flags non-loopback Control UI without allowed origins", async () => {
@@ -879,7 +1486,7 @@ description: test skill
       channels: {
         feishu: {
           appId: "cli_test",
-          appSecret: "secret_test",
+          appSecret: "secret_test", // pragma: allowlist secret
         },
       },
     };
@@ -911,7 +1518,7 @@ description: test skill
       channels: {
         feishu: {
           appId: "cli_test",
-          appSecret: "secret_test",
+          appSecret: "secret_test", // pragma: allowlist secret
           tools: { doc: false },
         },
       },
@@ -1230,6 +1837,247 @@ description: test skill
     });
   });
 
+  it("keeps channel security findings when SecretRef credentials are configured but unavailable", async () => {
+    await withChannelSecurityStateDir(async () => {
+      const sourceConfig: RemoteClawConfig = {
+        channels: {
+          discord: {
+            enabled: true,
+            token: { source: "env", provider: "default", id: "DISCORD_BOT_TOKEN" },
+            groupPolicy: "allowlist",
+            guilds: {
+              "123": {
+                channels: {
+                  general: { allow: true },
+                },
+              },
+            },
+          },
+        },
+      };
+      const resolvedConfig: RemoteClawConfig = {
+        channels: {
+          discord: {
+            enabled: true,
+            groupPolicy: "allowlist",
+            guilds: {
+              "123": {
+                channels: {
+                  general: { allow: true },
+                },
+              },
+            },
+          },
+        },
+      };
+
+      const inspectableDiscordPlugin = stubChannelPlugin({
+        id: "discord",
+        label: "Discord",
+        inspectAccount: (cfg) => {
+          const channel = cfg.channels?.discord ?? {};
+          const token = channel.token;
+          return {
+            accountId: "default",
+            enabled: true,
+            configured:
+              Boolean(token) &&
+              typeof token === "object" &&
+              !Array.isArray(token) &&
+              "source" in token,
+            token: "",
+            tokenSource:
+              Boolean(token) &&
+              typeof token === "object" &&
+              !Array.isArray(token) &&
+              "source" in token
+                ? "config"
+                : "none",
+            tokenStatus:
+              Boolean(token) &&
+              typeof token === "object" &&
+              !Array.isArray(token) &&
+              "source" in token
+                ? "configured_unavailable"
+                : "missing",
+            config: channel,
+          };
+        },
+        resolveAccount: (cfg) => ({ config: cfg.channels?.discord ?? {} }),
+        isConfigured: (account) => Boolean((account as { configured?: boolean }).configured),
+      });
+
+      const res = await runSecurityAudit({
+        config: resolvedConfig,
+        sourceConfig,
+        includeFilesystem: false,
+        includeChannelSecurity: true,
+        plugins: [inspectableDiscordPlugin],
+      });
+
+      expect(res.findings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            checkId: "channels.discord.commands.native.no_allowlists",
+            severity: "warn",
+          }),
+        ]),
+      );
+    });
+  });
+
+  it("keeps Slack HTTP slash-command findings when resolved inspection only exposes signingSecret status", async () => {
+    await withChannelSecurityStateDir(async () => {
+      const sourceConfig: RemoteClawConfig = {
+        channels: {
+          slack: {
+            enabled: true,
+            mode: "http",
+            groupPolicy: "open",
+            slashCommand: { enabled: true },
+          },
+        },
+      };
+      const resolvedConfig: RemoteClawConfig = {
+        channels: {
+          slack: {
+            enabled: true,
+            mode: "http",
+            groupPolicy: "open",
+            slashCommand: { enabled: true },
+          },
+        },
+      };
+
+      const inspectableSlackPlugin = stubChannelPlugin({
+        id: "slack",
+        label: "Slack",
+        inspectAccount: (cfg) => {
+          const channel = cfg.channels?.slack ?? {};
+          if (cfg === sourceConfig) {
+            return {
+              accountId: "default",
+              enabled: false,
+              configured: true,
+              mode: "http",
+              botTokenSource: "config",
+              botTokenStatus: "configured_unavailable",
+              signingSecretSource: "config", // pragma: allowlist secret
+              signingSecretStatus: "configured_unavailable", // pragma: allowlist secret
+              config: channel,
+            };
+          }
+          return {
+            accountId: "default",
+            enabled: true,
+            configured: true,
+            mode: "http",
+            botTokenSource: "config",
+            botTokenStatus: "available",
+            signingSecretSource: "config", // pragma: allowlist secret
+            signingSecretStatus: "available", // pragma: allowlist secret
+            config: channel,
+          };
+        },
+        resolveAccount: (cfg) => ({ config: cfg.channels?.slack ?? {} }),
+        isConfigured: (account) => Boolean((account as { configured?: boolean }).configured),
+      });
+
+      const res = await runSecurityAudit({
+        config: resolvedConfig,
+        sourceConfig,
+        includeFilesystem: false,
+        includeChannelSecurity: true,
+        plugins: [inspectableSlackPlugin],
+      });
+
+      expect(res.findings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            checkId: "channels.slack.commands.slash.no_allowlists",
+            severity: "warn",
+          }),
+        ]),
+      );
+    });
+  });
+
+  it("keeps source-configured Slack HTTP findings when resolved inspection is unconfigured", async () => {
+    await withChannelSecurityStateDir(async () => {
+      const sourceConfig: RemoteClawConfig = {
+        channels: {
+          slack: {
+            enabled: true,
+            mode: "http",
+            groupPolicy: "open",
+            slashCommand: { enabled: true },
+          },
+        },
+      };
+      const resolvedConfig: RemoteClawConfig = {
+        channels: {
+          slack: {
+            enabled: true,
+            mode: "http",
+            groupPolicy: "open",
+            slashCommand: { enabled: true },
+          },
+        },
+      };
+
+      const inspectableSlackPlugin = stubChannelPlugin({
+        id: "slack",
+        label: "Slack",
+        inspectAccount: (cfg) => {
+          const channel = cfg.channels?.slack ?? {};
+          if (cfg === sourceConfig) {
+            return {
+              accountId: "default",
+              enabled: true,
+              configured: true,
+              mode: "http",
+              botTokenSource: "config",
+              botTokenStatus: "configured_unavailable",
+              signingSecretSource: "config", // pragma: allowlist secret
+              signingSecretStatus: "configured_unavailable", // pragma: allowlist secret
+              config: channel,
+            };
+          }
+          return {
+            accountId: "default",
+            enabled: true,
+            configured: false,
+            mode: "http",
+            botTokenSource: "config",
+            botTokenStatus: "available",
+            signingSecretSource: "config", // pragma: allowlist secret
+            signingSecretStatus: "missing", // pragma: allowlist secret
+            config: channel,
+          };
+        },
+        resolveAccount: (cfg) => ({ config: cfg.channels?.slack ?? {} }),
+        isConfigured: (account) => Boolean((account as { configured?: boolean }).configured),
+      });
+
+      const res = await runSecurityAudit({
+        config: resolvedConfig,
+        sourceConfig,
+        includeFilesystem: false,
+        includeChannelSecurity: true,
+        plugins: [inspectableSlackPlugin],
+      });
+
+      expect(res.findings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            checkId: "channels.slack.commands.slash.no_allowlists",
+            severity: "warn",
+          }),
+        ]),
+      );
+    });
+  });
+
   it("does not flag Discord slash commands when dm.allowFrom includes a Discord snowflake id", async () => {
     await withChannelSecurityStateDir(async () => {
       const cfg: RemoteClawConfig = {
@@ -1388,6 +2236,51 @@ description: test skill
           }),
         ]),
       );
+    });
+  });
+
+  it("does not treat prototype properties as explicit Discord account config paths", async () => {
+    await withChannelSecurityStateDir(async () => {
+      const cfg: RemoteClawConfig = {
+        channels: {
+          discord: {
+            enabled: true,
+            token: "t",
+            dangerouslyAllowNameMatching: true,
+            allowFrom: ["Alice#1234"],
+            accounts: {},
+          },
+        },
+      };
+
+      const pluginWithProtoDefaultAccount: ChannelPlugin = {
+        ...discordPlugin,
+        config: {
+          ...discordPlugin.config,
+          listAccountIds: () => [],
+          defaultAccountId: () => "toString",
+        },
+      };
+
+      const res = await runSecurityAudit({
+        config: cfg,
+        includeFilesystem: false,
+        includeChannelSecurity: true,
+        plugins: [pluginWithProtoDefaultAccount],
+      });
+
+      const dangerousMatchingFinding = res.findings.find(
+        (entry) => entry.checkId === "channels.discord.allowFrom.dangerous_name_matching_enabled",
+      );
+      expect(dangerousMatchingFinding).toBeDefined();
+      expect(dangerousMatchingFinding?.title).not.toContain("(account: toString)");
+
+      const nameBasedFinding = res.findings.find(
+        (entry) => entry.checkId === "channels.discord.allowFrom.name_based_entries",
+      );
+      expect(nameBasedFinding).toBeDefined();
+      expect(nameBasedFinding?.detail).toContain("channels.discord.allowFrom:Alice#1234");
+      expect(nameBasedFinding?.detail).not.toContain("channels.discord.accounts.toString");
     });
   });
 
@@ -1681,6 +2574,45 @@ description: test skill
     );
   });
 
+  it("classifies legacy and weak-tier model identifiers", async () => {
+    const cases: Array<{
+      name: string;
+      model: string;
+      expectedFindings?: Array<{ checkId: string; severity: "warn" }>;
+      expectedAbsentCheckId?: string;
+    }> = [
+      {
+        name: "legacy model",
+        model: "openai/gpt-3.5-turbo",
+        expectedFindings: [{ checkId: "models.legacy", severity: "warn" }],
+      },
+      {
+        name: "weak-tier model",
+        model: "anthropic/claude-haiku-4-5",
+        expectedFindings: [{ checkId: "models.weak_tier", severity: "warn" }],
+      },
+      {
+        // Venice uses "claude-opus-45" format (no dash between 4 and 5).
+        name: "venice opus-45",
+        model: "venice/claude-opus-45",
+        expectedAbsentCheckId: "models.weak_tier",
+      },
+    ];
+    await Promise.all(
+      cases.map(async (testCase) => {
+        const res = await audit({
+          agents: { defaults: { model: { primary: testCase.model } } },
+        });
+        for (const expected of testCase.expectedFindings ?? []) {
+          expect(hasFinding(res, expected.checkId, expected.severity), testCase.name).toBe(true);
+        }
+        if (testCase.expectedAbsentCheckId) {
+          expect(hasFinding(res, testCase.expectedAbsentCheckId), testCase.name).toBe(false);
+        }
+      }),
+    );
+  });
+
   it("warns when hooks token looks short", async () => {
     const cfg: RemoteClawConfig = {
       hooks: { enabled: true, token: "short" },
@@ -1772,10 +2704,11 @@ description: test skill
           gateway: {
             bind: "loopback",
             auth: { mode: "none" },
+            http: { endpoints: { chatCompletions: { enabled: true } } },
           },
         },
         expectedSeverity: "warn",
-        detailIncludes: ["/tools/invoke"],
+        detailIncludes: ["/tools/invoke", "/v1/chat/completions"],
       },
       {
         name: "remote no-auth",
@@ -1783,6 +2716,7 @@ description: test skill
           gateway: {
             bind: "lan",
             auth: { mode: "none" },
+            http: { endpoints: { responses: { enabled: true } } },
           },
         },
         expectedSeverity: "critical",
@@ -1808,6 +2742,12 @@ description: test skill
       gateway: {
         bind: "loopback",
         auth: { mode: "token", token: "secret" },
+        http: {
+          endpoints: {
+            chatCompletions: { enabled: true },
+            responses: { enabled: true },
+          },
+        },
       },
     };
 
@@ -1815,14 +2755,21 @@ description: test skill
     expectNoFinding(res, "gateway.http.no_auth");
   });
 
-  it("does not report HTTP API session-key override (endpoints removed)", async () => {
+  it("reports HTTP API session-key override surfaces when enabled", async () => {
     const cfg: RemoteClawConfig = {
-      gateway: {},
+      gateway: {
+        http: {
+          endpoints: {
+            chatCompletions: { enabled: true },
+            responses: { enabled: true },
+          },
+        },
+      },
     };
 
     const res = await audit(cfg);
 
-    expectNoFinding(res, "gateway.http.session_key_override_enabled");
+    expectFinding(res, "gateway.http.session_key_override_enabled", "info");
   });
 
   it("warns when state/config look like a synced folder", async () => {
@@ -1883,6 +2830,7 @@ description: test skill
         ? { ...process.env, USERNAME: "Tester", USERDOMAIN: "DESKTOP-TEST" }
         : undefined,
       execIcacls,
+      execDockerRawFn: execDockerRawUnavailable,
     });
 
     const expectedCheckId = isWindows
@@ -1915,6 +2863,7 @@ description: test skill
         includeChannelSecurity: false,
         stateDir,
         configPath: path.join(stateDir, "remoteclaw.json"),
+        execDockerRawFn: execDockerRawUnavailable,
       });
 
       expect(res.findings).toEqual(
@@ -1974,6 +2923,7 @@ description: test skill
       includeChannelSecurity: false,
       stateDir: sharedInstallMetadataStateDir,
       configPath: path.join(sharedInstallMetadataStateDir, "remoteclaw.json"),
+      execDockerRawFn: execDockerRawUnavailable,
     });
 
     expect(hasFinding(res, "plugins.installs_unpinned_npm_specs", "warn")).toBe(true);
@@ -2012,6 +2962,7 @@ description: test skill
       includeChannelSecurity: false,
       stateDir: sharedInstallMetadataStateDir,
       configPath: path.join(sharedInstallMetadataStateDir, "remoteclaw.json"),
+      execDockerRawFn: execDockerRawUnavailable,
     });
 
     expect(hasFinding(res, "plugins.installs_unpinned_npm_specs")).toBe(false);
@@ -2069,6 +3020,7 @@ description: test skill
       includeChannelSecurity: false,
       stateDir,
       configPath: path.join(stateDir, "remoteclaw.json"),
+      execDockerRawFn: execDockerRawUnavailable,
     });
 
     expect(hasFinding(res, "plugins.installs_version_drift", "warn")).toBe(true);
@@ -2087,6 +3039,7 @@ description: test skill
       includeChannelSecurity: false,
       stateDir,
       configPath: path.join(stateDir, "remoteclaw.json"),
+      execDockerRawFn: execDockerRawUnavailable,
     });
 
     expect(res.findings).toEqual(
@@ -2099,6 +3052,108 @@ description: test skill
     );
   });
 
+  it("does not flag plugin tool reachability when profile is restrictive", async () => {
+    const stateDir = sharedExtensionsStateDir;
+
+    const cfg: RemoteClawConfig = {
+      plugins: { allow: ["some-plugin"] },
+      tools: { profile: "coding" },
+    };
+    const res = await runSecurityAudit({
+      config: cfg,
+      includeFilesystem: true,
+      includeChannelSecurity: false,
+      stateDir,
+      configPath: path.join(stateDir, "remoteclaw.json"),
+      execDockerRawFn: execDockerRawUnavailable,
+    });
+
+    expect(
+      res.findings.some((f) => f.checkId === "plugins.tools_reachable_permissive_policy"),
+    ).toBe(false);
+  });
+
+  it("flags unallowlisted extensions as critical when native skill commands are exposed", async () => {
+    const prevDiscordToken = process.env.DISCORD_BOT_TOKEN;
+    delete process.env.DISCORD_BOT_TOKEN;
+    const stateDir = sharedExtensionsStateDir;
+
+    try {
+      const cfg: RemoteClawConfig = {
+        channels: {
+          discord: { enabled: true, token: "t" },
+        },
+      };
+      const res = await runSecurityAudit({
+        config: cfg,
+        includeFilesystem: true,
+        includeChannelSecurity: false,
+        stateDir,
+        configPath: path.join(stateDir, "remoteclaw.json"),
+        execDockerRawFn: execDockerRawUnavailable,
+      });
+
+      expect(res.findings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            checkId: "plugins.extensions_no_allowlist",
+            severity: "critical",
+          }),
+        ]),
+      );
+    } finally {
+      if (prevDiscordToken == null) {
+        delete process.env.DISCORD_BOT_TOKEN;
+      } else {
+        process.env.DISCORD_BOT_TOKEN = prevDiscordToken;
+      }
+    }
+  });
+
+  it("treats SecretRef channel credentials as configured for extension allowlist severity", async () => {
+    const prevDiscordToken = process.env.DISCORD_BOT_TOKEN;
+    delete process.env.DISCORD_BOT_TOKEN;
+    const stateDir = sharedExtensionsStateDir;
+
+    try {
+      const cfg: RemoteClawConfig = {
+        channels: {
+          discord: {
+            enabled: true,
+            token: {
+              source: "env",
+              provider: "default",
+              id: "DISCORD_BOT_TOKEN",
+            } as unknown as string,
+          },
+        },
+      };
+      const res = await runSecurityAudit({
+        config: cfg,
+        includeFilesystem: true,
+        includeChannelSecurity: false,
+        stateDir,
+        configPath: path.join(stateDir, "remoteclaw.json"),
+        execDockerRawFn: execDockerRawUnavailable,
+      });
+
+      expect(res.findings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            checkId: "plugins.extensions_no_allowlist",
+            severity: "critical",
+          }),
+        ]),
+      );
+    } finally {
+      if (prevDiscordToken == null) {
+        delete process.env.DISCORD_BOT_TOKEN;
+      } else {
+        process.env.DISCORD_BOT_TOKEN = prevDiscordToken;
+      }
+    }
+  });
+
   it("does not scan plugin code safety findings when deep audit is disabled", async () => {
     const cfg: RemoteClawConfig = {};
     const nonDeepRes = await runSecurityAudit({
@@ -2107,10 +3162,35 @@ description: test skill
       includeChannelSecurity: false,
       deep: false,
       stateDir: sharedCodeSafetyStateDir,
+      execDockerRawFn: execDockerRawUnavailable,
     });
     expect(nonDeepRes.findings.some((f) => f.checkId === "plugins.code_safety")).toBe(false);
 
     // Deep-mode positive coverage lives in the detailed plugin+skills code-safety test below.
+  });
+
+  it("reports detailed code-safety issues for both plugins and skills", async () => {
+    const cfg: RemoteClawConfig = {
+      agents: { defaults: { workspace: sharedCodeSafetyWorkspaceDir } },
+    };
+    const [pluginFindings, skillFindings] = await Promise.all([
+      collectPluginsCodeSafetyFindings({ stateDir: sharedCodeSafetyStateDir }),
+      collectInstalledSkillsCodeSafetyFindings({ cfg, stateDir: sharedCodeSafetyStateDir }),
+    ]);
+
+    const pluginFinding = pluginFindings.find(
+      (finding) => finding.checkId === "plugins.code_safety" && finding.severity === "critical",
+    );
+    expect(pluginFinding).toBeDefined();
+    expect(pluginFinding?.detail).toContain("dangerous-exec");
+    expect(pluginFinding?.detail).toMatch(/\.hidden[\\/]+index\.js:\d+/);
+
+    const skillFinding = skillFindings.find(
+      (finding) => finding.checkId === "skills.code_safety" && finding.severity === "critical",
+    );
+    expect(skillFinding).toBeDefined();
+    expect(skillFinding?.detail).toContain("dangerous-exec");
+    expect(skillFinding?.detail).toMatch(/runner\.js:\d+/);
   });
 
   it("flags plugin extension entry path traversal in deep audit", async () => {
@@ -2128,6 +3208,67 @@ description: test skill
 
     const findings = await collectPluginsCodeSafetyFindings({ stateDir: tmpDir });
     expect(findings.some((f) => f.checkId === "plugins.code_safety.entry_escape")).toBe(true);
+  });
+
+  it("reports scan_failed when plugin code scanner throws during deep audit", async () => {
+    const scanSpy = vi
+      .spyOn(skillScanner, "scanDirectoryWithSummary")
+      .mockRejectedValueOnce(new Error("boom"));
+
+    const tmpDir = await makeTmpDir("audit-scanner-throws");
+    try {
+      const pluginDir = path.join(tmpDir, "extensions", "scanfail-plugin");
+      await fs.mkdir(pluginDir, { recursive: true });
+      await fs.writeFile(
+        path.join(pluginDir, "package.json"),
+        JSON.stringify({
+          name: "scanfail-plugin",
+          remoteclaw: { extensions: ["index.js"] },
+        }),
+      );
+      await fs.writeFile(path.join(pluginDir, "index.js"), "export {};");
+
+      const findings = await collectPluginsCodeSafetyFindings({ stateDir: tmpDir });
+      expect(findings.some((f) => f.checkId === "plugins.code_safety.scan_failed")).toBe(true);
+    } finally {
+      scanSpy.mockRestore();
+    }
+  });
+
+  it("flags open groupPolicy when tools.elevated is enabled", async () => {
+    const cfg: RemoteClawConfig = {
+      tools: { elevated: { enabled: true, allowFrom: { whatsapp: ["+1"] } } },
+      channels: { whatsapp: { groupPolicy: "open" } },
+    };
+
+    const res = await audit(cfg);
+
+    expect(res.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          checkId: "security.exposure.open_groups_with_elevated",
+          severity: "critical",
+        }),
+      ]),
+    );
+  });
+
+  it("flags open groupPolicy when runtime/filesystem tools are exposed without guards", async () => {
+    const cfg: RemoteClawConfig = {
+      channels: { whatsapp: { groupPolicy: "open" } },
+      tools: { elevated: { enabled: false } },
+    };
+
+    const res = await audit(cfg);
+
+    expect(res.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          checkId: "security.exposure.open_groups_with_runtime_or_fs",
+          severity: "critical",
+        }),
+      ]),
+    );
   });
 
   it("does not flag runtime/filesystem exposure for open groups when sandbox mode is all", async () => {
@@ -2355,6 +3496,36 @@ description: test skill
           expect(getAuth()?.password, testCase.name).toBe(testCase.expectedPassword);
         }),
       );
+    });
+
+    it("adds warning finding when probe auth SecretRef is unavailable", async () => {
+      const cfg: RemoteClawConfig = {
+        gateway: {
+          mode: "local",
+          auth: {
+            mode: "token",
+            token: { source: "env", provider: "default", id: "MISSING_GATEWAY_TOKEN" },
+          },
+        },
+        secrets: {
+          providers: {
+            default: { source: "env" },
+          },
+        },
+      };
+
+      const res = await audit(cfg, {
+        deep: true,
+        deepTimeoutMs: 50,
+        probeGatewayFn: async (opts) => successfulProbeResult(opts.url),
+        env: {},
+      });
+
+      const warning = res.findings.find(
+        (finding) => finding.checkId === "gateway.probe_auth_secretref_unavailable",
+      );
+      expect(warning?.severity).toBe("warn");
+      expect(warning?.detail).toContain("gateway.auth.token");
     });
   });
 });

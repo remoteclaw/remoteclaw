@@ -60,6 +60,8 @@ export function createRemoteClawTools(options?: {
   requesterSenderId?: string | null;
   /** Whether the requesting sender is an owner. */
   senderIsOwner?: boolean;
+  /** HTTP callers consume tool output directly; preserve raw media invoke payloads. */
+  allowMediaInvokeCommands?: boolean;
 }): AnyAgentTool[] {
   const workspaceDir = resolveWorkspaceRoot(options?.workspaceDir);
   const messageTool = options?.disableMessageTool

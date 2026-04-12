@@ -81,7 +81,10 @@ export function isRestartEnabled(config?: { commands?: unknown }): boolean {
   return getOwnCommandFlagValue(config, "restart") !== false;
 }
 
-// Gutted in RemoteClaw fork — stub export for upstream compat
-export function resolveNativeSkillsEnabled(..._args: unknown[]): boolean {
-  return false;
+export function resolveNativeSkillsEnabled(params: {
+  providerId: ChannelId;
+  providerSetting?: NativeCommandsSetting;
+  globalSetting?: NativeCommandsSetting;
+}): boolean {
+  return resolveNativeCommandSetting(params);
 }

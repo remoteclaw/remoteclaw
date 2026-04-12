@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { Command } from "commander";
-import { sleep } from "remoteclaw/plugin-sdk";
+import { sleep } from "remoteclaw/plugin-sdk/voice-call";
 import type { VoiceCallConfig } from "./config.js";
 import type { VoiceCallRuntime } from "./runtime.js";
 import { resolveUserPath } from "./utils.js";
@@ -112,7 +112,7 @@ export function registerVoiceCallCli(params: {
   const root = program
     .command("voicecall")
     .description("Voice call utilities")
-    .addHelpText("after", () => `\nDocs: https://docs.remoteclaw.org/cli/voicecall\n`);
+    .addHelpText("after", () => `\nDocs: https://docs.remoteclaw.ai/cli/voicecall\n`);
 
   root
     .command("call")

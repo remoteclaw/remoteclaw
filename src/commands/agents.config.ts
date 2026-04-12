@@ -2,9 +2,16 @@ import {
   listAgentEntries,
   resolveAgentDir,
   resolveAgentWorkspaceDir,
+  resolveDefaultAgentId,
 } from "../agents/agent-scope.js";
+import type { AgentIdentityFile } from "../agents/identity-file.js";
+import {
+  identityHasValues,
+  loadAgentIdentityFromWorkspace,
+  parseIdentityMarkdown as parseIdentityMarkdownFile,
+} from "../agents/identity-file.js";
+import { listRouteBindings } from "../config/bindings.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import type { IdentityConfig } from "../config/types.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 
 export type AgentSummary = {
@@ -12,17 +19,20 @@ export type AgentSummary = {
   name?: string;
   identityName?: string;
   identityEmoji?: string;
+  identitySource?: "identity" | "config";
   workspace: string;
   agentDir: string;
-  runtime?: string;
+  model?: string;
   bindings: number;
   bindingDetails?: string[];
   routes?: string[];
   providers?: string[];
+  isDefault: boolean;
 };
 
 type AgentEntry = NonNullable<NonNullable<RemoteClawConfig["agents"]>["list"]>[number];
 
+export type AgentIdentity = AgentIdentityFile;
 export { listAgentEntries };
 
 export function findAgentEntryIndex(list: AgentEntry[], agentId: string): number {
@@ -37,21 +47,49 @@ function resolveAgentName(cfg: RemoteClawConfig, agentId: string) {
   return entry?.name?.trim() || undefined;
 }
 
-function resolveAgentRuntimeLabel(cfg: RemoteClawConfig, agentId: string): string | undefined {
+function resolveAgentModel(cfg: RemoteClawConfig, agentId: string) {
   const entry = listAgentEntries(cfg).find(
     (agent) => normalizeAgentId(agent.id) === normalizeAgentId(agentId),
   );
-  return entry?.runtime ?? cfg.agents?.defaults?.runtime ?? undefined;
+  if (entry?.model) {
+    if (typeof entry.model === "string" && entry.model.trim()) {
+      return entry.model.trim();
+    }
+    if (typeof entry.model === "object") {
+      const primary = entry.model.primary?.trim();
+      if (primary) {
+        return primary;
+      }
+    }
+  }
+  const raw = cfg.agents?.defaults?.model;
+  if (typeof raw === "string") {
+    return raw;
+  }
+  return raw?.primary?.trim() || undefined;
+}
+
+export function parseIdentityMarkdown(content: string): AgentIdentity {
+  return parseIdentityMarkdownFile(content);
+}
+
+export function loadAgentIdentity(workspace: string): AgentIdentity {
+  const parsed = loadAgentIdentityFromWorkspace(workspace);
+  if (!parsed) {
+    return null;
+  }
+  return identityHasValues(parsed) ? parsed : null;
 }
 
 export function buildAgentSummaries(cfg: RemoteClawConfig): AgentSummary[] {
+  const defaultAgentId = normalizeAgentId(resolveDefaultAgentId(cfg));
   const configuredAgents = listAgentEntries(cfg);
-  if (configuredAgents.length === 0) {
-    return [];
-  }
-  const orderedIds = configuredAgents.map((agent) => normalizeAgentId(agent.id));
+  const orderedIds =
+    configuredAgents.length > 0
+      ? configuredAgents.map((agent) => normalizeAgentId(agent.id))
+      : [defaultAgentId];
   const bindingCounts = new Map<string, number>();
-  for (const binding of cfg.bindings ?? []) {
+  for (const binding of listRouteBindings(cfg)) {
     const agentId = normalizeAgentId(binding.agentId);
     bindingCounts.set(agentId, (bindingCounts.get(agentId) ?? 0) + 1);
   }
@@ -60,20 +98,28 @@ export function buildAgentSummaries(cfg: RemoteClawConfig): AgentSummary[] {
 
   return ordered.map((id) => {
     const workspace = resolveAgentWorkspaceDir(cfg, id);
+    const identity = loadAgentIdentity(workspace);
     const configIdentity = configuredAgents.find(
       (agent) => normalizeAgentId(agent.id) === id,
     )?.identity;
-    const identityName = configIdentity?.name?.trim();
-    const identityEmoji = configIdentity?.emoji?.trim();
+    const identityName = identity?.name ?? configIdentity?.name?.trim();
+    const identityEmoji = identity?.emoji ?? configIdentity?.emoji?.trim();
+    const identitySource = identity
+      ? "identity"
+      : configIdentity && (identityName || identityEmoji)
+        ? "config"
+        : undefined;
     return {
       id,
       name: resolveAgentName(cfg, id),
       identityName,
       identityEmoji,
+      identitySource,
       workspace,
       agentDir: resolveAgentDir(cfg, id),
-      runtime: resolveAgentRuntimeLabel(cfg, id),
+      model: resolveAgentModel(cfg, id),
       bindings: bindingCounts.get(id) ?? 0,
+      isDefault: id === defaultAgentId,
     };
   });
 }
@@ -85,8 +131,9 @@ export function applyAgentConfig(
     name?: string;
     workspace?: string;
     agentDir?: string;
-    identity?: IdentityConfig;
-    runtime?: AgentEntry["runtime"];
+    model?: string;
+    runtime?: string;
+    identity?: Record<string, unknown>;
   },
 ): RemoteClawConfig {
   const agentId = normalizeAgentId(params.agentId);
@@ -94,19 +141,20 @@ export function applyAgentConfig(
   const list = listAgentEntries(cfg);
   const index = findAgentEntryIndex(list, agentId);
   const base = index >= 0 ? list[index] : { id: agentId };
-  const nextIdentity = params.identity ? { ...base.identity, ...params.identity } : base.identity;
   const nextEntry: AgentEntry = {
     ...base,
     ...(name ? { name } : {}),
     ...(params.workspace ? { workspace: params.workspace } : {}),
     ...(params.agentDir ? { agentDir: params.agentDir } : {}),
-    ...(nextIdentity ? { identity: nextIdentity } : {}),
-    ...(params.runtime ? { runtime: params.runtime } : {}),
+    ...(params.model ? { model: params.model } : {}),
   };
   const nextList = [...list];
   if (index >= 0) {
     nextList[index] = nextEntry;
   } else {
+    if (nextList.length === 0 && agentId !== normalizeAgentId(resolveDefaultAgentId(cfg))) {
+      nextList.push({ id: resolveDefaultAgentId(cfg) });
+    }
     nextList.push(nextEntry);
   }
   return {

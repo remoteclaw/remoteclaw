@@ -122,6 +122,12 @@ export type RemoteClawConfig = {
   cli?: unknown;
   /** Skills configuration (upstream feature). */
   skills?: unknown;
+  /** Media configuration (upstream feature). */
+  media?: {
+    /** TTL in hours for media cleanup. */
+    ttlHours?: number;
+    [key: string]: unknown;
+  };
 };
 
 export type ConfigValidationIssue = {

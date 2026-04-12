@@ -46,7 +46,7 @@ type PackageManifest = PluginPackageManifest & {
 };
 
 const MISSING_EXTENSIONS_ERROR =
-  'package.json missing remoteclaw.extensions; update the plugin package to include remoteclaw.extensions (for example ["./dist/index.js"]). See https://docs.remoteclaw.org/help/troubleshooting#plugin-install-fails-with-missing-remoteclaw-extensions';
+  'package.json missing remoteclaw.extensions; update the plugin package to include remoteclaw.extensions (for example ["./dist/index.js"]). See https://docs.remoteclaw.ai/help/troubleshooting#plugin-install-fails-with-missing-remoteclaw-extensions';
 
 export const PLUGIN_INSTALL_ERROR_CODE = {
   INVALID_NPM_SPEC: "invalid_npm_spec",
@@ -349,10 +349,10 @@ async function installPluginFromPackageDir(
     copyErrorPrefix: "failed to copy plugin",
     hasDeps,
     depsLogMessage: "Installing plugin dependencies…",
-    afterCopy: async () => {
+    afterCopy: async (installedDir) => {
       for (const entry of extensions) {
-        const resolvedEntry = path.resolve(targetDir, entry);
-        if (!isPathInside(targetDir, resolvedEntry)) {
+        const resolvedEntry = path.resolve(installedDir, entry);
+        if (!isPathInside(installedDir, resolvedEntry)) {
           logger.warn?.(`extension entry escapes plugin directory: ${entry}`);
           continue;
         }

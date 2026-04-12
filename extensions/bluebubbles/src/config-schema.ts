@@ -1,4 +1,4 @@
-import { MarkdownConfigSchema, ToolPolicySchema } from "remoteclaw/plugin-sdk";
+import { MarkdownConfigSchema, ToolPolicySchema } from "remoteclaw/plugin-sdk/bluebubbles";
 import { z } from "zod";
 import { buildSecretInputSchema, hasConfiguredSecretInput } from "./secret-input.js";
 

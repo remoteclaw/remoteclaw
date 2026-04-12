@@ -8,6 +8,11 @@ const sendMessageTelegram = vi.fn(async () => ({
   messageId: "789",
   chatId: "123",
 }));
+const sendPollTelegram = vi.fn(async () => ({
+  messageId: "790",
+  chatId: "123",
+  pollId: "poll-1",
+}));
 const sendStickerTelegram = vi.fn(async () => ({
   messageId: "456",
   chatId: "123",
@@ -20,6 +25,7 @@ vi.mock("../../telegram/send.js", () => ({
     reactMessageTelegram(...args),
   sendMessageTelegram: (...args: Parameters<typeof sendMessageTelegram>) =>
     sendMessageTelegram(...args),
+  sendPollTelegram: (...args: Parameters<typeof sendPollTelegram>) => sendPollTelegram(...args),
   sendStickerTelegram: (...args: Parameters<typeof sendStickerTelegram>) =>
     sendStickerTelegram(...args),
   deleteMessageTelegram: (...args: Parameters<typeof deleteMessageTelegram>) =>
@@ -83,6 +89,7 @@ describe("handleTelegramAction", () => {
     envSnapshot = captureEnv(["TELEGRAM_BOT_TOKEN"]);
     reactMessageTelegram.mockClear();
     sendMessageTelegram.mockClear();
+    sendPollTelegram.mockClear();
     sendStickerTelegram.mockClear();
     deleteMessageTelegram.mockClear();
     process.env.TELEGRAM_BOT_TOKEN = "tok";
@@ -102,7 +109,7 @@ describe("handleTelegramAction", () => {
       warning: "Reaction unavailable: ✅",
     } as unknown as Awaited<ReturnType<typeof reactMessageTelegram>>);
     const result = await handleTelegramAction(defaultReactionAction, reactionConfig("minimal"));
-    const textPayload = result.content.find((item: { type: string }) => item.type === "text");
+    const textPayload = result.content.find((item) => item.type === "text");
     expect(textPayload?.type).toBe("text");
     const parsed = JSON.parse((textPayload as { type: "text"; text: string }).text) as {
       ok: boolean;
@@ -293,6 +300,70 @@ describe("handleTelegramAction", () => {
     });
   });
 
+  it("sends a poll", async () => {
+    const result = await handleTelegramAction(
+      {
+        action: "poll",
+        to: "@testchannel",
+        question: "Ready?",
+        answers: ["Yes", "No"],
+        allowMultiselect: true,
+        durationSeconds: 60,
+        isAnonymous: false,
+        silent: true,
+      },
+      telegramConfig(),
+    );
+    expect(sendPollTelegram).toHaveBeenCalledWith(
+      "@testchannel",
+      {
+        question: "Ready?",
+        options: ["Yes", "No"],
+        maxSelections: 2,
+        durationSeconds: 60,
+        durationHours: undefined,
+      },
+      expect.objectContaining({
+        token: "tok",
+        isAnonymous: false,
+        silent: true,
+      }),
+    );
+    expect(result.details).toMatchObject({
+      ok: true,
+      messageId: "790",
+      chatId: "123",
+      pollId: "poll-1",
+    });
+  });
+
+  it("parses string booleans for poll flags", async () => {
+    await handleTelegramAction(
+      {
+        action: "poll",
+        to: "@testchannel",
+        question: "Ready?",
+        answers: ["Yes", "No"],
+        allowMultiselect: "true",
+        isAnonymous: "false",
+        silent: "true",
+      },
+      telegramConfig(),
+    );
+    expect(sendPollTelegram).toHaveBeenCalledWith(
+      "@testchannel",
+      expect.objectContaining({
+        question: "Ready?",
+        options: ["Yes", "No"],
+        maxSelections: 2,
+      }),
+      expect.objectContaining({
+        isAnonymous: false,
+        silent: true,
+      }),
+    );
+  });
+
   it("forwards trusted mediaLocalRoots into sendMessageTelegram", async () => {
     await handleTelegramAction(
       {
@@ -390,6 +461,25 @@ describe("handleTelegramAction", () => {
         cfg,
       ),
     ).rejects.toThrow(/Telegram sendMessage is disabled/);
+  });
+
+  it("respects poll gating", async () => {
+    const cfg = {
+      channels: {
+        telegram: { botToken: "tok", actions: { poll: false } },
+      },
+    } as RemoteClawConfig;
+    await expect(
+      handleTelegramAction(
+        {
+          action: "poll",
+          to: "@testchannel",
+          question: "Lunch?",
+          answers: ["Pizza", "Sushi"],
+        },
+        cfg,
+      ),
+    ).rejects.toThrow(/Telegram polls are disabled/);
   });
 
   it("deletes a message", async () => {

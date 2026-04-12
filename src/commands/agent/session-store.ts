@@ -1,20 +1,32 @@
 import { setCliSessionId } from "../../agents/cli-session.js";
-// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
-import { isCliProvider } from "../../agents/provider-utils.js";
+import { resolveContextTokensForModel } from "../../agents/context.js";
+import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
+import { isCliProvider } from "../../agents/model-selection.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
-import type { AgentDeliveryResult } from "../../middleware/types.js";
+import {
+  mergeSessionEntry,
+  setSessionRuntimeModel,
+  type SessionEntry,
+  updateSessionStore,
+} from "../../config/sessions.js";
+
+type RunResult = Awaited<
+  ReturnType<(typeof import("../../agents/pi-embedded.js"))["runEmbeddedPiAgent"]>
+>;
 
 export async function updateSessionStoreAfterAgentRun(params: {
   cfg: RemoteClawConfig;
+  contextTokensOverride?: number;
   sessionId: string;
   sessionKey: string;
   storePath: string;
   sessionStore: Record<string, SessionEntry>;
   defaultProvider: string;
   defaultModel: string;
-  result: AgentDeliveryResult;
+  fallbackProvider?: string;
+  fallbackModel?: string;
+  result: RunResult;
 }) {
   const {
     cfg,
@@ -24,22 +36,25 @@ export async function updateSessionStoreAfterAgentRun(params: {
     sessionStore,
     defaultProvider,
     defaultModel,
+    fallbackProvider,
+    fallbackModel,
     result,
   } = params;
 
-  const runUsage = result.run.usage;
-  // Map AgentUsage (inputTokens/outputTokens) to NormalizedUsage shape (input/output)
-  // used by the usage helper functions.
-  const usage = runUsage
-    ? {
-        input: runUsage.inputTokens,
-        output: runUsage.outputTokens,
-        cacheRead: runUsage.cacheReadTokens,
-        cacheWrite: runUsage.cacheWriteTokens,
-      }
-    : undefined;
-  const modelUsed = defaultModel;
-  const providerUsed = defaultProvider;
+  const usage = result.meta.agentMeta?.usage;
+  const promptTokens = result.meta.agentMeta?.promptTokens;
+  const compactionsThisRun = Math.max(0, result.meta.agentMeta?.compactionCount ?? 0);
+  const modelUsed = result.meta.agentMeta?.model ?? fallbackModel ?? defaultModel;
+  const providerUsed = result.meta.agentMeta?.provider ?? fallbackProvider ?? defaultProvider;
+  const contextTokens =
+    resolveContextTokensForModel({
+      cfg,
+      provider: providerUsed,
+      model: modelUsed,
+      contextTokensOverride: params.contextTokensOverride,
+      fallbackContextTokens: DEFAULT_CONTEXT_TOKENS,
+    }) ?? DEFAULT_CONTEXT_TOKENS;
+
   const entry = sessionStore[sessionKey] ?? {
     sessionId,
     updatedAt: Date.now(),
@@ -48,32 +63,48 @@ export async function updateSessionStoreAfterAgentRun(params: {
     ...entry,
     sessionId,
     updatedAt: Date.now(),
+    contextTokens,
   };
-  next.modelProvider = providerUsed;
-  next.model = modelUsed;
+  setSessionRuntimeModel(next, {
+    provider: providerUsed,
+    model: modelUsed,
+  });
   if (isCliProvider(providerUsed, cfg)) {
-    const cliSessionId = result.run.sessionId?.trim();
+    const cliSessionId = result.meta.agentMeta?.sessionId?.trim();
     if (cliSessionId) {
       setCliSessionId(next, providerUsed, cliSessionId);
     }
   }
-  next.abortedLastRun = result.run.aborted ?? false;
+  next.abortedLastRun = result.meta.aborted ?? false;
+  if (result.meta.systemPromptReport) {
+    next.systemPromptReport = result.meta.systemPromptReport;
+  }
   if (hasNonzeroUsage(usage)) {
     const input = usage.input ?? 0;
     const output = usage.output ?? 0;
-    const totalTokens =
-      deriveSessionTotalTokens({
-        usage,
-      }) ?? input;
+    const totalTokens = deriveSessionTotalTokens({
+      usage,
+      promptTokens,
+    });
     next.inputTokens = input;
     next.outputTokens = output;
-    next.totalTokens = totalTokens;
-    next.totalTokensFresh = true;
+    if (typeof totalTokens === "number" && Number.isFinite(totalTokens) && totalTokens > 0) {
+      next.totalTokens = totalTokens;
+      next.totalTokensFresh = true;
+    } else {
+      next.totalTokens = undefined;
+      next.totalTokensFresh = false;
+    }
     next.cacheRead = usage.cacheRead ?? 0;
     next.cacheWrite = usage.cacheWrite ?? 0;
   }
-  sessionStore[sessionKey] = next;
-  await updateSessionStore(storePath, (store) => {
-    store[sessionKey] = next;
+  if (compactionsThisRun > 0) {
+    next.compactionCount = (entry.compactionCount ?? 0) + compactionsThisRun;
+  }
+  const persisted = await updateSessionStore(storePath, (store) => {
+    const merged = mergeSessionEntry(store[sessionKey], next);
+    store[sessionKey] = merged;
+    return merged;
   });
+  sessionStore[sessionKey] = persisted;
 }

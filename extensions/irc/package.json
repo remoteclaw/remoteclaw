@@ -1,8 +1,11 @@
 {
   "name": "@remoteclaw/irc",
-  "version": "0.5.0",
+  "version": "0.3.0",
   "description": "RemoteClaw IRC channel plugin",
   "type": "module",
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
   "remoteclaw": {
     "extensions": [
       "./index.ts"

@@ -103,7 +103,12 @@ Hook packs are standard npm packages that export one or more hooks via `remotecl
 remoteclaw hooks install <path-or-spec>
 ```
 
-Npm specs are registry-only (package name + optional version/tag). Git/URL/file specs are rejected.
+Npm specs are registry-only (package name + optional exact version or dist-tag).
+Git/URL/file specs and semver ranges are rejected.
+
+Bare specs and `@latest` stay on the stable track. If npm resolves either of
+those to a prerelease, RemoteClaw stops and asks you to opt in explicitly with a
+prerelease tag such as `@beta`/`@rc` or an exact prerelease version.
 
 Example `package.json`:
 
@@ -136,7 +141,7 @@ The `HOOK.md` file contains metadata in YAML frontmatter plus Markdown documenta
 ---
 name: my-hook
 description: "Short description of what this hook does"
-homepage: https://docs.remoteclaw.org/automation/hooks#my-hook
+homepage: https://docs.remoteclaw.ai/automation/hooks#my-hook
 metadata:
   { "remoteclaw": { "emoji": "🔗", "events": ["command:new"], "requires": { "bins": ["node"] } } }
 ---
@@ -242,6 +247,14 @@ Triggered when agent commands are issued:
 - **`command:new`**: When `/new` command is issued
 - **`command:reset`**: When `/reset` command is issued
 - **`command:stop`**: When `/stop` command is issued
+
+### Session Events
+
+- **`session:compact:before`**: Right before compaction summarizes history
+- **`session:compact:after`**: After compaction completes with summary metadata
+
+Internal hook payloads emit these as `type: "session"` with `action: "compact:before"` / `action: "compact:after"`; listeners subscribe with the combined keys above.
+Specific handler registration uses the literal key format `${type}:${action}`. For these events, register `session:compact:before` and `session:compact:after`.
 
 ### Agent Events
 
@@ -350,6 +363,13 @@ export default handler;
 These hooks are not event-stream listeners; they let plugins synchronously adjust tool results before RemoteClaw persists them.
 
 - **`tool_result_persist`**: transform tool results before they are written to the session transcript. Must be synchronous; return the updated tool result payload or `undefined` to keep it as-is. See [Agent Loop](/concepts/agent-loop).
+
+### Plugin Hook Events
+
+Compaction lifecycle hooks exposed through the plugin hook runner:
+
+- **`before_compaction`**: Runs before compaction with count/token metadata
+- **`after_compaction`**: Runs after compaction with compaction summary metadata
 
 ### Future Events
 

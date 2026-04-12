@@ -68,7 +68,7 @@ describe("isReasoningTagProvider", () => {
       value: "Google",
       expected: true,
     },
-    { name: "returns false for gemini (use google instead)", value: "gemini", expected: false },
+    { name: "returns true for google-gemini-cli", value: "google-gemini-cli", expected: true },
     {
       name: "returns true for google-generative-ai",
       value: "google-generative-ai",
@@ -105,5 +105,11 @@ describe("splitShellArgs", () => {
   it("returns null for unterminated quotes", () => {
     expect(splitShellArgs(`echo "oops`)).toBeNull();
     expect(splitShellArgs(`echo 'oops`)).toBeNull();
+  });
+
+  it("stops at unquoted shell comments but keeps quoted hashes literal", () => {
+    expect(splitShellArgs(`echo hi # comment && whoami`)).toEqual(["echo", "hi"]);
+    expect(splitShellArgs(`echo "hi # still-literal"`)).toEqual(["echo", "hi # still-literal"]);
+    expect(splitShellArgs(`echo hi#tail`)).toEqual(["echo", "hi#tail"]);
   });
 });

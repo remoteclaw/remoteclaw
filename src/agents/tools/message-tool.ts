@@ -650,7 +650,9 @@ export function createMessageTool(options?: MessageToolOptions): AnyAgentTool {
           (typeof params.to === "string" && params.to.trim().length > 0) ||
           (typeof params.channelId === "string" && params.channelId.trim().length > 0) ||
           (Array.isArray(params.targets) &&
-            params.targets.some((value) => typeof value === "string" && value.trim().length > 0));
+            params.targets.some(
+              (value: unknown) => typeof value === "string" && value.trim().length > 0,
+            ));
         if (!explicitTarget) {
           throw new Error(
             "Explicit message target required for this run. Provide target/targets (and channel when needed).",

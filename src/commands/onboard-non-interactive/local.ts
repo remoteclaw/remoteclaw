@@ -7,185 +7,17 @@ import { DEFAULT_GATEWAY_DAEMON_RUNTIME } from "../daemon-runtime.js";
 import { applyOnboardingLocalWorkspaceConfig } from "../onboard-config.js";
 import {
   applyWizardMetadata,
+  DEFAULT_WORKSPACE,
   ensureWorkspaceAndSessions,
   resolveControlUiLinks,
   waitForGatewayReachable,
 } from "../onboard-helpers.js";
-import { ONBOARD_PROVIDER_AUTH_FLAGS } from "../onboard-provider-auth-flags.js";
-import type { AgentRuntime, OnboardOptions } from "../onboard-types.js";
+import type { OnboardOptions } from "../onboard-types.js";
+import { inferAuthChoiceFromFlags } from "./local/auth-choice-inference.js";
 import { applyNonInteractiveGatewayConfig } from "./local/gateway-config.js";
 import { logNonInteractiveOnboardingJson } from "./local/output.js";
+import { applyNonInteractiveSkillsConfig } from "./local/skills-config.js";
 import { resolveNonInteractiveWorkspaceDir } from "./local/workspace.js";
-
-function inferRuntimeFromFlags(opts: OnboardOptions): AgentRuntime | undefined {
-  if (opts.runtime) {
-    return opts.runtime;
-  }
-  // Infer from provided key flags.
-  if (opts.codexApiKey) {
-    return "codex";
-  }
-  if (opts.geminiApiKey) {
-    return "gemini";
-  }
-  if (opts.authToken) {
-    return "claude";
-  }
-  if (opts.anthropicApiKey) {
-    return "claude";
-  }
-  if (opts.openaiApiKey) {
-    return "opencode";
-  }
-  return undefined;
-}
-
-async function applyNonInteractiveRuntimeAuth(params: {
-  nextConfig: RemoteClawConfig;
-  runtime: AgentRuntime;
-  opts: OnboardOptions;
-}): Promise<RemoteClawConfig> {
-  const { runtime, opts } = params;
-  let config = {
-    ...params.nextConfig,
-    agents: {
-      ...params.nextConfig.agents,
-      defaults: {
-        ...params.nextConfig.agents?.defaults,
-        runtime,
-      },
-    },
-  };
-
-  /** Set `agents.defaults.auth` on the config being built. */
-  function setAuthDefault(auth: false | string): void {
-    config = {
-      ...config,
-      agents: {
-        ...config.agents,
-        defaults: {
-          ...config.agents?.defaults,
-          auth,
-        },
-      },
-    };
-  }
-
-  const { upsertAuthProfile } = await import("../../auth/index.js");
-
-  let profileId: string | undefined;
-
-  if (runtime === "claude") {
-    if (opts.authToken) {
-      profileId = "claude:oauth-token";
-      upsertAuthProfile({
-        profileId,
-        credential: { type: "token", provider: "anthropic", token: opts.authToken },
-      });
-    } else if (opts.anthropicApiKey) {
-      profileId = "anthropic:default";
-      upsertAuthProfile({
-        profileId,
-        credential: { type: "api_key", provider: "anthropic", key: opts.anthropicApiKey },
-      });
-    }
-  } else if (runtime === "gemini") {
-    if (opts.geminiApiKey) {
-      profileId = "google:default";
-      upsertAuthProfile({
-        profileId,
-        credential: { type: "api_key", provider: "google", key: opts.geminiApiKey },
-      });
-    }
-  } else if (runtime === "codex") {
-    if (opts.codexApiKey) {
-      profileId = "codex:default";
-      upsertAuthProfile({
-        profileId,
-        credential: { type: "api_key", provider: "codex", key: opts.codexApiKey },
-      });
-    }
-  } else if (runtime === "opencode") {
-    if (opts.anthropicApiKey) {
-      profileId = "anthropic:default";
-      upsertAuthProfile({
-        profileId,
-        credential: { type: "api_key", provider: "anthropic", key: opts.anthropicApiKey },
-      });
-    } else if (opts.openaiApiKey) {
-      profileId = "openai:default";
-      upsertAuthProfile({
-        profileId,
-        credential: { type: "api_key", provider: "openai", key: opts.openaiApiKey },
-      });
-    }
-  }
-
-  setAuthDefault(profileId ?? false);
-
-  return config;
-}
-
-/**
- * Apply credential setters for auxiliary (non-runtime) provider API keys.
- *
- * Runtime providers (anthropic, openai, gemini, codex) are already handled by
- * {@link applyNonInteractiveRuntimeAuth}. Providers requiring structured config
- * (cloudflare-ai-gateway) or lacking a setter (volcengine, byteplus) are skipped.
- */
-async function applyNonInteractiveAuxiliaryAuth(opts: OnboardOptions): Promise<void> {
-  const {
-    setElevenLabsApiKey,
-    setHuggingfaceApiKey,
-    setKilocodeApiKey,
-    setKimiCodingApiKey,
-    setLitellmApiKey,
-    setMinimaxApiKey,
-    setMistralApiKey,
-    setMoonshotApiKey,
-    setOpencodeZenApiKey,
-    setOpenrouterApiKey,
-    setQianfanApiKey,
-    setSyntheticApiKey,
-    setTogetherApiKey,
-    setVeniceApiKey,
-    setVercelAiGatewayApiKey,
-    setXaiApiKey,
-    setXiaomiApiKey,
-    setZaiApiKey,
-  } = await import("../onboard-auth.js");
-
-  const setters: Partial<Record<string, (key: string) => void | Promise<void>>> = {
-    mistralApiKey: setMistralApiKey,
-    openrouterApiKey: setOpenrouterApiKey,
-    kilocodeApiKey: setKilocodeApiKey,
-    aiGatewayApiKey: setVercelAiGatewayApiKey,
-    moonshotApiKey: setMoonshotApiKey,
-    kimiCodeApiKey: setKimiCodingApiKey,
-    zaiApiKey: setZaiApiKey,
-    xiaomiApiKey: setXiaomiApiKey,
-    minimaxApiKey: setMinimaxApiKey,
-    syntheticApiKey: setSyntheticApiKey,
-    veniceApiKey: setVeniceApiKey,
-    togetherApiKey: setTogetherApiKey,
-    huggingfaceApiKey: setHuggingfaceApiKey,
-    opencodeZenApiKey: setOpencodeZenApiKey,
-    xaiApiKey: setXaiApiKey,
-    litellmApiKey: setLitellmApiKey,
-    qianfanApiKey: setQianfanApiKey,
-    elevenLabsApiKey: setElevenLabsApiKey,
-  };
-
-  for (const flag of ONBOARD_PROVIDER_AUTH_FLAGS) {
-    const value = opts[flag.optionKey];
-    if (value) {
-      const setter = setters[flag.optionKey];
-      if (setter) {
-        await setter(value);
-      }
-    }
-  }
-}
 
 export async function runNonInteractiveOnboardingLocal(params: {
   opts: OnboardOptions;
@@ -195,35 +27,36 @@ export async function runNonInteractiveOnboardingLocal(params: {
   const { opts, runtime, baseConfig } = params;
   const mode = "local" as const;
 
-  const workspaceRaw = opts.workspace;
-  if (!workspaceRaw?.trim()) {
+  const workspaceDir = resolveNonInteractiveWorkspaceDir({
+    opts,
+    defaultWorkspaceDir: DEFAULT_WORKSPACE,
+  });
+
+  let nextConfig: RemoteClawConfig = applyOnboardingLocalWorkspaceConfig(baseConfig, workspaceDir);
+
+  const inferredAuthChoice = inferAuthChoiceFromFlags(opts);
+  if (!opts.authChoice && inferredAuthChoice.matches.length > 1) {
     runtime.error(
-      "No workspace path provided. Pass --workspace to set per-agent workspace in agents.list[].workspace.",
+      [
+        "Multiple API key flags were provided for non-interactive onboarding.",
+        "Use a single provider flag or pass --auth-choice explicitly.",
+        `Flags: ${inferredAuthChoice.matches.map((match: { label: string }) => match.label).join(", ")}`,
+      ].join("\n"),
     );
     runtime.exit(1);
     return;
   }
-  const workspaceDir = resolveNonInteractiveWorkspaceDir({
-    opts,
-    defaultWorkspaceDir: workspaceRaw,
-  });
-
-  let nextConfig: RemoteClawConfig = applyOnboardingLocalWorkspaceConfig(
-    baseConfig,
-    workspaceRaw.trim(),
-  );
-
-  const selectedRuntime = inferRuntimeFromFlags(opts);
-  if (selectedRuntime) {
-    nextConfig = await applyNonInteractiveRuntimeAuth({
+  const authChoice = opts.authChoice ?? inferredAuthChoice.choice ?? "skip";
+  if (authChoice !== "skip") {
+    const { applyNonInteractiveAuthChoice } = await import("./local/auth-choice.js");
+    await applyNonInteractiveAuthChoice({
       nextConfig,
-      runtime: selectedRuntime,
+      authChoice,
       opts,
+      runtime,
+      baseConfig,
     });
   }
-
-  // Store credentials for auxiliary provider API keys (e.g., --mistral-api-key, --elevenlabs-api-key).
-  await applyNonInteractiveAuxiliaryAuth(opts);
 
   const gatewayBasePort = resolveGatewayPort(baseConfig);
   const gatewayResult = applyNonInteractiveGatewayConfig({
@@ -236,6 +69,8 @@ export async function runNonInteractiveOnboardingLocal(params: {
     return;
   }
   nextConfig = gatewayResult.nextConfig;
+
+  await applyNonInteractiveSkillsConfig({ nextConfig, opts, runtime });
 
   nextConfig = applyWizardMetadata(nextConfig, { command: "onboard", mode });
   await writeConfigFile(nextConfig);
@@ -250,7 +85,6 @@ export async function runNonInteractiveOnboardingLocal(params: {
       opts,
       runtime,
       port: gatewayResult.port,
-      gatewayToken: gatewayResult.gatewayToken,
     });
   }
 
@@ -276,7 +110,6 @@ export async function runNonInteractiveOnboardingLocal(params: {
     runtime,
     mode,
     workspaceDir,
-    runtimeChoice: selectedRuntime,
     gateway: {
       port: gatewayResult.port,
       bind: gatewayResult.bind,
@@ -290,7 +123,7 @@ export async function runNonInteractiveOnboardingLocal(params: {
 
   if (!opts.json) {
     runtime.log(
-      `Tip: run \`${formatCliCommand("remoteclaw configure")}\` to customize your setup. Docs: https://docs.remoteclaw.org`,
+      `Tip: run \`${formatCliCommand("remoteclaw configure --section web")}\` to store your Brave API key for web_search. Docs: https://docs.remoteclaw.ai/tools/web`,
     );
   }
 }

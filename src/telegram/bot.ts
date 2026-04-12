@@ -1,13 +1,19 @@
 import { sequentialize } from "@grammyjs/runner";
 import { apiThrottler } from "@grammyjs/transformer-throttler";
 import type { ApiClientOptions } from "grammy";
-import { Bot, webhookCallback } from "grammy";
-import { listAgentEntries } from "../agents/agent-scope.js";
+import { Bot } from "grammy";
+import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { resolveTextChunkLimit } from "../auto-reply/chunk.js";
 import { DEFAULT_GROUP_HISTORY_LIMIT, type HistoryEntry } from "../auto-reply/reply/history.js";
 import {
+  resolveThreadBindingIdleTimeoutMsForChannel,
+  resolveThreadBindingMaxAgeMsForChannel,
+  resolveThreadBindingSpawnPolicy,
+} from "../channels/thread-bindings-policy.js";
+import {
   isNativeCommandsExplicitlyDisabled,
   resolveNativeCommandsEnabled,
+  resolveNativeSkillsEnabled,
 } from "../config/commands.js";
 import type { RemoteClawConfig, ReplyToMode } from "../config/config.js";
 import { loadConfig } from "../config/config.js";
@@ -35,6 +41,7 @@ import { buildTelegramGroupPeerId, resolveTelegramStreamMode } from "./bot/helpe
 import { resolveTelegramFetch } from "./fetch.js";
 import { createTelegramSendChatActionHandler } from "./sendchataction-401-backoff.js";
 import { getTelegramSequentialKey } from "./sequential-key.js";
+import { createTelegramThreadBindingManager } from "./thread-bindings.js";
 
 export type TelegramBotOptions = {
   token: string;
@@ -66,6 +73,27 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     cfg,
     accountId: opts.accountId,
   });
+  const threadBindingPolicy = resolveThreadBindingSpawnPolicy({
+    cfg,
+    channel: "telegram",
+    accountId: account.accountId,
+    kind: "subagent",
+  });
+  const threadBindingManager = threadBindingPolicy.enabled
+    ? createTelegramThreadBindingManager({
+        accountId: account.accountId,
+        idleTimeoutMs: resolveThreadBindingIdleTimeoutMsForChannel({
+          cfg,
+          channel: "telegram",
+          accountId: account.accountId,
+        }),
+        maxAgeMs: resolveThreadBindingMaxAgeMsForChannel({
+          cfg,
+          channel: "telegram",
+          accountId: account.accountId,
+        }),
+      })
+    : null;
   const telegramCfg = account.config;
 
   const fetchImpl = resolveTelegramFetch(opts.proxyFetch, {
@@ -223,13 +251,18 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     providerSetting: telegramCfg.commands?.native,
     globalSetting: cfg.commands?.native,
   });
+  const nativeSkillsEnabled = resolveNativeSkillsEnabled({
+    providerId: "telegram",
+    providerSetting: telegramCfg.commands?.nativeSkills,
+    globalSetting: cfg.commands?.nativeSkills,
+  });
   const nativeDisabledExplicit = isNativeCommandsExplicitlyDisabled({
     providerSetting: telegramCfg.commands?.native,
     globalSetting: cfg.commands?.native,
   });
   const useAccessGroups = cfg.commands?.useAccessGroups !== false;
   const ackReactionScope = cfg.messages?.ackReactionScope ?? "group-mentions";
-  const mediaMaxBytes = (opts.mediaMaxMb ?? telegramCfg.mediaMaxMb ?? 5) * 1024 * 1024;
+  const mediaMaxBytes = (opts.mediaMaxMb ?? telegramCfg.mediaMaxMb ?? 100) * 1024 * 1024;
   const logger = getChildLogger({ module: "telegram-auto-reply" });
   const streamMode = resolveTelegramStreamMode(telegramCfg);
   const resolveGroupPolicy = (chatId: string | number) =>
@@ -245,7 +278,7 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     messageThreadId?: number;
     sessionKey?: string;
   }) => {
-    const agentId = params.agentId ?? listAgentEntries(cfg)[0]?.id ?? "default";
+    const agentId = params.agentId ?? resolveDefaultAgentId(cfg);
     const sessionKey =
       params.sessionKey ??
       `agent:${agentId}:telegram:group:${buildTelegramGroupPeerId(params.chatId, params.messageThreadId)}`;
@@ -348,6 +381,7 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     textLimit,
     useAccessGroups,
     nativeEnabled,
+    nativeSkillsEnabled,
     nativeDisabledExplicit,
     resolveGroupPolicy,
     resolveTelegramGroupConfig,
@@ -372,9 +406,11 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     logger,
   });
 
-  return bot;
-}
+  const originalStop = bot.stop.bind(bot);
+  bot.stop = ((...args: Parameters<typeof originalStop>) => {
+    threadBindingManager?.stop();
+    return originalStop(...args);
+  }) as typeof bot.stop;
 
-export function createTelegramWebhookCallback(bot: Bot, path = "/telegram-webhook") {
-  return { path, handler: webhookCallback(bot, "http") };
+  return bot;
 }

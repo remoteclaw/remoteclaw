@@ -1,4 +1,7 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { loadConfig } from "../config/config.js";
 import { loadSessionStore, resolveStorePath } from "../config/sessions.js";
 import { listAgentsForGateway } from "../gateway/session-utils.js";
@@ -7,19 +10,32 @@ export type AgentLocalStatus = {
   id: string;
   name?: string;
   workspaceDir: string | null;
+  bootstrapPending: boolean | null;
   sessionsPath: string;
   sessionsCount: number;
   lastUpdatedAt: number | null;
   lastActiveAgeMs: number | null;
 };
 
-export async function getAgentLocalStatuses(cfgOverride?: unknown): Promise<{
+type AgentLocalStatusesResult = {
   defaultId: string;
   agents: AgentLocalStatus[];
   totalSessions: number;
   bootstrapPendingCount: number;
-}> {
-  const cfg = (cfgOverride ?? loadConfig()) as ReturnType<typeof loadConfig>;
+};
+
+async function fileExists(p: string): Promise<boolean> {
+  try {
+    await fs.access(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function getAgentLocalStatuses(
+  cfg: RemoteClawConfig = loadConfig(),
+): Promise<AgentLocalStatusesResult> {
   const agentList = listAgentsForGateway(cfg);
   const now = Date.now();
 
@@ -33,6 +49,9 @@ export async function getAgentLocalStatuses(cfgOverride?: unknown): Promise<{
         return null;
       }
     })();
+
+    const bootstrapPath = workspaceDir != null ? path.join(workspaceDir, "BOOTSTRAP.md") : null;
+    const bootstrapPending = bootstrapPath != null ? await fileExists(bootstrapPath) : null;
 
     const sessionsPath = resolveStorePath(cfg.session?.store, { agentId });
     const store = (() => {
@@ -54,6 +73,7 @@ export async function getAgentLocalStatuses(cfgOverride?: unknown): Promise<{
       id: agentId,
       name: agent.name,
       workspaceDir,
+      bootstrapPending,
       sessionsPath,
       sessionsCount,
       lastUpdatedAt: resolvedLastUpdatedAt,
@@ -62,10 +82,11 @@ export async function getAgentLocalStatuses(cfgOverride?: unknown): Promise<{
   }
 
   const totalSessions = statuses.reduce((sum, s) => sum + s.sessionsCount, 0);
+  const bootstrapPendingCount = statuses.reduce((sum, s) => sum + (s.bootstrapPending ? 1 : 0), 0);
   return {
     defaultId: agentList.defaultId,
     agents: statuses,
     totalSessions,
-    bootstrapPendingCount: 0,
+    bootstrapPendingCount,
   };
 }

@@ -2,9 +2,79 @@ import { describe, expect, it } from "vitest";
 import { normalizePluginsConfig, resolveEffectiveEnableState } from "./config-state.js";
 
 describe("normalizePluginsConfig", () => {
-  it("returns empty slots record", () => {
+  it("uses default memory slot when not specified", () => {
     const result = normalizePluginsConfig({});
-    expect(result.slots).toEqual({});
+    // Memory gutted in RemoteClaw fork — default is "none" (resolves to null)
+    expect(result.slots.memory).toBeNull();
+  });
+
+  it("respects explicit memory slot value", () => {
+    const result = normalizePluginsConfig({
+      slots: { memory: "custom-memory" },
+    });
+    expect(result.slots.memory).toBe("custom-memory");
+  });
+
+  it("disables memory slot when set to 'none' (case insensitive)", () => {
+    expect(
+      normalizePluginsConfig({
+        slots: { memory: "none" },
+      }).slots.memory,
+    ).toBeNull();
+    expect(
+      normalizePluginsConfig({
+        slots: { memory: "None" },
+      }).slots.memory,
+    ).toBeNull();
+  });
+
+  it("trims whitespace from memory slot value", () => {
+    const result = normalizePluginsConfig({
+      slots: { memory: "  custom-memory  " },
+    });
+    expect(result.slots.memory).toBe("custom-memory");
+  });
+
+  it("uses default when memory slot is empty string", () => {
+    const result = normalizePluginsConfig({
+      slots: { memory: "" },
+    });
+    // Memory gutted in RemoteClaw fork — default is "none" (resolves to null)
+    expect(result.slots.memory).toBeNull();
+  });
+
+  it("uses default when memory slot is whitespace only", () => {
+    const result = normalizePluginsConfig({
+      slots: { memory: "   " },
+    });
+    // Memory gutted in RemoteClaw fork — default is "none" (resolves to null)
+    expect(result.slots.memory).toBeNull();
+  });
+
+  it("normalizes plugin hook policy flags", () => {
+    const result = normalizePluginsConfig({
+      entries: {
+        "voice-call": {
+          hooks: {
+            allowPromptInjection: false,
+          },
+        },
+      },
+    });
+    expect(result.entries["voice-call"]?.hooks?.allowPromptInjection).toBe(false);
+  });
+
+  it("drops invalid plugin hook policy values", () => {
+    const result = normalizePluginsConfig({
+      entries: {
+        "voice-call": {
+          hooks: {
+            allowPromptInjection: "nope",
+          } as unknown as { allowPromptInjection: boolean },
+        },
+      },
+    });
+    expect(result.entries["voice-call"]?.hooks).toBeUndefined();
   });
 });
 

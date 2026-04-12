@@ -15,6 +15,76 @@ describe("updateNpmInstalledPlugins", () => {
     installPluginFromNpmSpecMock.mockReset();
   });
 
+  it("skips integrity drift checks for unpinned npm specs during dry-run updates", async () => {
+    installPluginFromNpmSpecMock.mockResolvedValue({
+      ok: true,
+      pluginId: "opik-remoteclaw",
+      targetDir: "/tmp/opik-remoteclaw",
+      version: "0.2.6",
+      extensions: ["index.ts"],
+    });
+
+    const { updateNpmInstalledPlugins } = await import("./update.js");
+    await updateNpmInstalledPlugins({
+      config: {
+        plugins: {
+          installs: {
+            "opik-remoteclaw": {
+              source: "npm",
+              spec: "@opik/opik-remoteclaw",
+              integrity: "sha512-old",
+              installPath: "/tmp/opik-remoteclaw",
+            },
+          },
+        },
+      },
+      pluginIds: ["opik-remoteclaw"],
+      dryRun: true,
+    });
+
+    expect(installPluginFromNpmSpecMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        spec: "@opik/opik-remoteclaw",
+        expectedIntegrity: undefined,
+      }),
+    );
+  });
+
+  it("keeps integrity drift checks for exact-version npm specs during dry-run updates", async () => {
+    installPluginFromNpmSpecMock.mockResolvedValue({
+      ok: true,
+      pluginId: "opik-remoteclaw",
+      targetDir: "/tmp/opik-remoteclaw",
+      version: "0.2.6",
+      extensions: ["index.ts"],
+    });
+
+    const { updateNpmInstalledPlugins } = await import("./update.js");
+    await updateNpmInstalledPlugins({
+      config: {
+        plugins: {
+          installs: {
+            "opik-remoteclaw": {
+              source: "npm",
+              spec: "@opik/opik-remoteclaw@0.2.5",
+              integrity: "sha512-old",
+              installPath: "/tmp/opik-remoteclaw",
+            },
+          },
+        },
+      },
+      pluginIds: ["opik-remoteclaw"],
+      dryRun: true,
+    });
+
+    expect(installPluginFromNpmSpecMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        spec: "@opik/opik-remoteclaw@0.2.5",
+        expectedIntegrity: "sha512-old",
+      }),
+    );
+  });
+
   it("formats package-not-found updates with a stable message", async () => {
     installPluginFromNpmSpecMock.mockResolvedValue({
       ok: false,

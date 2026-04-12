@@ -793,6 +793,15 @@ export const agentsHandlers: GatewayRequestHandlers = {
       await fs.mkdir(parentDir, { recursive: true });
     }
     const content = String(params.content ?? "");
+    const relativeWritePath = path.relative(resolvedPath.workspaceReal, resolvedPath.ioPath);
+    if (
+      !relativeWritePath ||
+      relativeWritePath.startsWith("..") ||
+      path.isAbsolute(relativeWritePath)
+    ) {
+      respondWorkspaceFileUnsafe(respond, name);
+      return;
+    }
     try {
       await writeFileSafely(resolvedPath.ioPath, content);
     } catch {

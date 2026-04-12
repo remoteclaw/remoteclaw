@@ -1,7 +1,12 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import type { ChatType } from "../channels/chat-type.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import { resolveAgentRoute } from "./resolve-route.js";
+import * as routingBindings from "./bindings.js";
+import {
+  deriveLastRoutePolicy,
+  resolveAgentRoute,
+  resolveInboundLastRouteSessionKey,
+} from "./resolve-route.js";
 
 describe("resolveAgentRoute", () => {
   const resolveDiscordGuildRoute = (cfg: RemoteClawConfig) =>
@@ -13,20 +18,19 @@ describe("resolveAgentRoute", () => {
       guildId: "g1",
     });
 
-  test("sole-agent config with no bindings auto-routes to the sole agent", () => {
-    const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "home", workspace: "~/test" }] },
-    };
+  test("defaults to main/default when no bindings exist", () => {
+    const cfg: RemoteClawConfig = {};
     const route = resolveAgentRoute({
       cfg,
       channel: "whatsapp",
       accountId: null,
       peer: { kind: "direct", id: "+15551234567" },
     });
-    expect(route.agentId).toBe("home");
+    expect(route.agentId).toBe("main");
     expect(route.accountId).toBe("default");
-    expect(route.sessionKey).toBe("agent:home:main");
-    expect(route.matchedBy).toBe("sole-agent");
+    expect(route.sessionKey).toBe("agent:main:main");
+    expect(route.lastRoutePolicy).toBe("main");
+    expect(route.matchedBy).toBe("default");
   });
 
   test("dmScope controls direct-message session key isolation", () => {
@@ -39,7 +43,6 @@ describe("resolveAgentRoute", () => {
     ];
     for (const testCase of cases) {
       const cfg: RemoteClawConfig = {
-        agents: { list: [{ id: "main", workspace: "~/test" }] },
         session: { dmScope: testCase.dmScope },
       };
       const route = resolveAgentRoute({
@@ -49,7 +52,45 @@ describe("resolveAgentRoute", () => {
         peer: { kind: "direct", id: "+15551234567" },
       });
       expect(route.sessionKey).toBe(testCase.expected);
+      expect(route.lastRoutePolicy).toBe("session");
     }
+  });
+
+  test("resolveInboundLastRouteSessionKey follows route policy", () => {
+    expect(
+      resolveInboundLastRouteSessionKey({
+        route: {
+          mainSessionKey: "agent:main:main",
+          lastRoutePolicy: "main",
+        },
+        sessionKey: "agent:main:discord:direct:user-1",
+      }),
+    ).toBe("agent:main:main");
+
+    expect(
+      resolveInboundLastRouteSessionKey({
+        route: {
+          mainSessionKey: "agent:main:main",
+          lastRoutePolicy: "session",
+        },
+        sessionKey: "agent:main:telegram:atlas:direct:123",
+      }),
+    ).toBe("agent:main:telegram:atlas:direct:123");
+  });
+
+  test("deriveLastRoutePolicy collapses only main-session routes", () => {
+    expect(
+      deriveLastRoutePolicy({
+        sessionKey: "agent:main:main",
+        mainSessionKey: "agent:main:main",
+      }),
+    ).toBe("main");
+    expect(
+      deriveLastRoutePolicy({
+        sessionKey: "agent:main:telegram:direct:123",
+        mainSessionKey: "agent:main:main",
+      }),
+    ).toBe("session");
   });
 
   test("identityLinks applies to direct-message scopes", () => {
@@ -69,7 +110,6 @@ describe("resolveAgentRoute", () => {
     ];
     for (const testCase of cases) {
       const cfg: RemoteClawConfig = {
-        agents: { list: [{ id: "main", workspace: "~/test" }] },
         session: {
           dmScope: testCase.dmScope,
           identityLinks: {
@@ -143,9 +183,7 @@ describe("resolveAgentRoute", () => {
   });
 
   test("coerces numeric peer ids to stable session keys", () => {
-    const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "main", workspace: "~/test" }] },
-    };
+    const cfg: RemoteClawConfig = {};
     const route = resolveAgentRoute({
       cfg,
       channel: "discord",
@@ -299,8 +337,7 @@ describe("resolveAgentRoute", () => {
 
   test("missing accountId in binding matches default account only", () => {
     const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "main", workspace: "~/test" }] },
-      bindings: [{ agentId: "main", match: { channel: "whatsapp" } }],
+      bindings: [{ agentId: "defaultAcct", match: { channel: "whatsapp" } }],
     };
 
     const defaultRoute = resolveAgentRoute({
@@ -309,7 +346,7 @@ describe("resolveAgentRoute", () => {
       accountId: undefined,
       peer: { kind: "direct", id: "+1000" },
     });
-    expect(defaultRoute.agentId).toBe("main");
+    expect(defaultRoute.agentId).toBe("defaultacct");
     expect(defaultRoute.matchedBy).toBe("binding.account");
 
     const otherRoute = resolveAgentRoute({
@@ -319,7 +356,6 @@ describe("resolveAgentRoute", () => {
       peer: { kind: "direct", id: "+1000" },
     });
     expect(otherRoute.agentId).toBe("main");
-    expect(otherRoute.matchedBy).toBe("sole-agent");
   });
 
   test("accountId=* matches any account as a channel fallback", () => {
@@ -356,10 +392,10 @@ describe("resolveAgentRoute", () => {
     expect(route.accountId).toBe("biz");
   });
 
-  test("sole agent is used when no binding matches", () => {
+  test("defaultAgentId is used when no binding matches", () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "home", workspace: "~/remoteclaw-home" }],
+        list: [{ id: "home", default: true, workspace: "~/remoteclaw-home" }],
       },
     };
     const route = resolveAgentRoute({
@@ -375,7 +411,6 @@ describe("resolveAgentRoute", () => {
 
 test("dmScope=per-account-channel-peer isolates DM sessions per account, channel and sender", () => {
   const cfg: RemoteClawConfig = {
-    agents: { list: [{ id: "main", workspace: "~/test" }] },
     session: { dmScope: "per-account-channel-peer" },
   };
   const route = resolveAgentRoute({
@@ -389,7 +424,6 @@ test("dmScope=per-account-channel-peer isolates DM sessions per account, channel
 
 test("dmScope=per-account-channel-peer uses default accountId when not provided", () => {
   const cfg: RemoteClawConfig = {
-    agents: { list: [{ id: "main", workspace: "~/test" }] },
     session: { dmScope: "per-account-channel-peer" },
   };
   const route = resolveAgentRoute({
@@ -487,22 +521,20 @@ describe("parentPeer binding inheritance (thread support)", () => {
 
   test("parentPeer with empty id is ignored", () => {
     const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "main", workspace: "~/test" }] },
       bindings: [makeDiscordPeerBinding("parent-agent", defaultParentPeer.id)],
     };
     const route = resolveDiscordThreadRoute({ cfg, parentPeer: { kind: "channel", id: "" } });
     expect(route.agentId).toBe("main");
-    expect(route.matchedBy).toBe("sole-agent");
+    expect(route.matchedBy).toBe("default");
   });
 
   test("null parentPeer is handled gracefully", () => {
     const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "main", workspace: "~/test" }] },
       bindings: [makeDiscordPeerBinding("parent-agent", defaultParentPeer.id)],
     };
     const route = resolveDiscordThreadRoute({ cfg, parentPeer: null });
     expect(route.agentId).toBe("main");
-    expect(route.matchedBy).toBe("sole-agent");
+    expect(route.matchedBy).toBe("default");
   });
 });
 
@@ -603,7 +635,6 @@ describe("backward compatibility: peer.kind group ↔ channel", () => {
 
   test("group/channel compatibility does not match direct peer kind", () => {
     const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "main", workspace: "~/test" }] },
       bindings: [
         {
           agentId: "group-only-agent",
@@ -621,7 +652,7 @@ describe("backward compatibility: peer.kind group ↔ channel", () => {
       peer: { kind: "direct", id: "C123456" },
     });
     expect(route.agentId).toBe("main");
-    expect(route.matchedBy).toBe("sole-agent");
+    expect(route.matchedBy).toBe("default");
   });
 });
 
@@ -649,7 +680,6 @@ describe("role-based agent routing", () => {
 
   function expectDiscordRoleRoute(params: {
     bindings: DiscordBinding[];
-    agents?: NonNullable<RemoteClawConfig["agents"]>["list"];
     memberRoleIds?: string[];
     peerId?: string;
     parentPeerId?: string;
@@ -657,10 +687,7 @@ describe("role-based agent routing", () => {
     expectedMatchedBy: string;
   }) {
     const route = resolveAgentRoute({
-      cfg: {
-        bindings: params.bindings,
-        ...(params.agents ? { agents: { list: params.agents } } : {}),
-      },
+      cfg: { bindings: params.bindings },
       channel: "discord",
       guildId: "g1",
       ...(params.memberRoleIds ? { memberRoleIds: params.memberRoleIds } : {}),
@@ -687,10 +714,9 @@ describe("role-based agent routing", () => {
   test("guild+roles binding skipped when no matching role", () => {
     expectDiscordRoleRoute({
       bindings: [makeDiscordRoleBinding("opus", { roles: ["r1"] })],
-      agents: [{ id: "main", workspace: "~/test" }],
       memberRoleIds: ["r2"],
       expectedAgentId: "main",
-      expectedMatchedBy: "sole-agent",
+      expectedMatchedBy: "default",
     });
   });
 
@@ -738,9 +764,8 @@ describe("role-based agent routing", () => {
   test("no memberRoleIds means guild+roles doesn't match", () => {
     expectDiscordRoleRoute({
       bindings: [makeDiscordRoleBinding("opus", { roles: ["r1"] })],
-      agents: [{ id: "main", workspace: "~/test" }],
       expectedAgentId: "main",
-      expectedMatchedBy: "sole-agent",
+      expectedMatchedBy: "default",
     });
   });
 
@@ -768,10 +793,9 @@ describe("role-based agent routing", () => {
   test("guild+roles binding does not match as guild-only when roles do not match", () => {
     expectDiscordRoleRoute({
       bindings: [makeDiscordRoleBinding("opus", { roles: ["admin"] })],
-      agents: [{ id: "main", workspace: "~/test" }],
       memberRoleIds: ["regular"],
       expectedAgentId: "main",
-      expectedMatchedBy: "sole-agent",
+      expectedMatchedBy: "default",
     });
   });
 
@@ -789,111 +813,42 @@ describe("role-based agent routing", () => {
   });
 });
 
-describe("routing error routes", () => {
-  test("no agents configured returns error route", () => {
-    const cfg: RemoteClawConfig = {};
-    const route = resolveAgentRoute({
-      cfg,
-      channel: "whatsapp",
-      accountId: null,
-      peer: { kind: "direct", id: "+15551234567" },
-    });
-    expect(route.matchedBy).toBe("error");
-    expect(route.error).toContain("No agents configured");
-    expect(route.agentId).toBe("");
-  });
-
-  test("multi-agent config with no matching binding returns error route", () => {
+describe("binding evaluation cache scalability", () => {
+  test("does not rescan full bindings after channel/account cache rollover (#36915)", () => {
+    const bindingCount = 2_205;
     const cfg: RemoteClawConfig = {
-      agents: {
-        list: [
-          { id: "home", workspace: "~/home" },
-          { id: "work", workspace: "~/work" },
-        ],
-      },
-    };
-    const route = resolveAgentRoute({
-      cfg,
-      channel: "whatsapp",
-      accountId: null,
-      peer: { kind: "direct", id: "+15551234567" },
-    });
-    expect(route.matchedBy).toBe("error");
-    expect(route.error).toContain("No binding matched");
-    expect(route.error).toContain("2 configured agents");
-    expect(route.agentId).toBe("");
-  });
-
-  test("binding referencing unknown agent ID returns error route", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        list: [
-          { id: "home", workspace: "~/home" },
-          { id: "work", workspace: "~/work" },
-        ],
-      },
-      bindings: [
-        {
-          agentId: "typo-agent",
-          match: { channel: "whatsapp", accountId: "*" },
+      bindings: Array.from({ length: bindingCount }, (_, idx) => ({
+        agentId: `agent-${idx}`,
+        match: {
+          channel: "dingtalk",
+          accountId: `acct-${idx}`,
+          peer: { kind: "direct", id: `user-${idx}` },
         },
-      ],
+      })),
     };
-    const route = resolveAgentRoute({
-      cfg,
-      channel: "whatsapp",
-      accountId: null,
-      peer: { kind: "direct", id: "+15551234567" },
-    });
-    expect(route.matchedBy).toBe("error");
-    expect(route.error).toContain("unknown agent");
-    expect(route.error).toContain("typo-agent");
-    expect(route.agentId).toBe("");
-  });
+    const listBindingsSpy = vi.spyOn(routingBindings, "listBindings");
+    try {
+      for (let idx = 0; idx < bindingCount; idx += 1) {
+        const route = resolveAgentRoute({
+          cfg,
+          channel: "dingtalk",
+          accountId: `acct-${idx}`,
+          peer: { kind: "direct", id: `user-${idx}` },
+        });
+        expect(route.agentId).toBe(`agent-${idx}`);
+        expect(route.matchedBy).toBe("binding.peer");
+      }
 
-  test("binding with empty agentId returns error route", () => {
-    const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "home", workspace: "~/home" }] },
-      bindings: [
-        {
-          agentId: "",
-          match: { channel: "whatsapp", accountId: "*" },
-        },
-      ],
-    };
-    const route = resolveAgentRoute({
-      cfg,
-      channel: "whatsapp",
-      accountId: null,
-      peer: { kind: "direct", id: "+15551234567" },
-    });
-    expect(route.matchedBy).toBe("error");
-    expect(route.agentId).toBe("");
-  });
-
-  test("multi-agent config with matching binding and known agent routes normally", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        list: [
-          { id: "home", workspace: "~/home" },
-          { id: "work", workspace: "~/work" },
-        ],
-      },
-      bindings: [
-        {
-          agentId: "work",
-          match: { channel: "slack", accountId: "*" },
-        },
-      ],
-    };
-    const route = resolveAgentRoute({
-      cfg,
-      channel: "slack",
-      accountId: "biz",
-      peer: { kind: "channel", id: "C123" },
-    });
-    expect(route.agentId).toBe("work");
-    expect(route.matchedBy).toBe("binding.channel");
-    expect(route.error).toBeUndefined();
+      const repeated = resolveAgentRoute({
+        cfg,
+        channel: "dingtalk",
+        accountId: "acct-0",
+        peer: { kind: "direct", id: "user-0" },
+      });
+      expect(repeated.agentId).toBe("agent-0");
+      expect(listBindingsSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      listBindingsSpy.mockRestore();
+    }
   });
 });

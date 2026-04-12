@@ -2,12 +2,13 @@
 // This file is only an example and should stay committed.
 
 REMOTECLAW_CODE_SIGN_STYLE = Automatic
-REMOTECLAW_DEVELOPMENT_TEAM = P5Z8X89DJL
+REMOTECLAW_DEVELOPMENT_TEAM = YOUR_TEAM_ID
 
-REMOTECLAW_APP_BUNDLE_ID = org.remoteclaw.ios.test.mariano
-REMOTECLAW_SHARE_BUNDLE_ID = org.remoteclaw.ios.test.mariano.share
-REMOTECLAW_WATCH_APP_BUNDLE_ID = org.remoteclaw.ios.test.mariano.watchkitapp
-REMOTECLAW_WATCH_EXTENSION_BUNDLE_ID = org.remoteclaw.ios.test.mariano.watchkitapp.extension
+REMOTECLAW_APP_BUNDLE_ID = org.remoteclaw.client
+REMOTECLAW_SHARE_BUNDLE_ID = org.remoteclaw.client.share
+REMOTECLAW_ACTIVITY_WIDGET_BUNDLE_ID = org.remoteclaw.client.activitywidget
+REMOTECLAW_WATCH_APP_BUNDLE_ID = org.remoteclaw.client.watchkitapp
+REMOTECLAW_WATCH_EXTENSION_BUNDLE_ID = org.remoteclaw.client.watchkitapp.extension
 
 // Leave empty with automatic signing.
 REMOTECLAW_APP_PROFILE =

@@ -6,7 +6,7 @@ import {
   type ChannelMessageActionContext,
   type ChannelMessageActionName,
   type ChannelToolSend,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/matrix";
 import { resolveMatrixAccount } from "./matrix/accounts.js";
 import { handleMatrixAction } from "./tool-actions.js";
 import type { CoreConfig } from "./types.js";
@@ -53,7 +53,7 @@ export const matrixMessageActions: ChannelMessageActionAdapter = {
     }
     return { to };
   },
-  handleAction: async (ctx: ChannelMessageActionContext) => {
+  handleAction: (async (ctx: ChannelMessageActionContext) => {
     const { action, params, cfg } = ctx;
     const resolveRoomId = () =>
       readStringParam(params, "roomId") ??
@@ -191,5 +191,5 @@ export const matrixMessageActions: ChannelMessageActionAdapter = {
     }
 
     throw new Error(`Action ${action} is not supported for provider matrix.`);
-  },
+  }) as ChannelMessageActionAdapter["handleAction"],
 };

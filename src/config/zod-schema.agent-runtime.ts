@@ -31,7 +31,6 @@ export const HeartbeatSchema = z
     to: z.string().optional(),
     accountId: z.string().optional(),
     prompt: z.string().optional(),
-    file: z.string().optional(),
     ackMaxChars: z.number().int().nonnegative().optional(),
     suppressToolErrorWarnings: z.boolean().optional(),
     lightContext: z.boolean().optional(),
@@ -91,14 +90,6 @@ export const HeartbeatSchema = z
     validateTime(active.start, { allow24: false }, "start");
     validateTime(active.end, { allow24: true }, "end");
   })
-  .optional();
-
-export const BootSchema = z
-  .object({
-    prompt: z.string().optional(),
-    file: z.string().optional(),
-  })
-  .strict()
   .optional();
 
 export const SandboxDockerSchema = z
@@ -287,6 +278,8 @@ export const ToolsWebSearchSchema = z
     perplexity: z
       .object({
         apiKey: SecretInputSchema.optional().register(sensitive),
+        // Legacy Sonar/OpenRouter fields — kept for backward compatibility
+        // so existing configs don't fail validation. Ignored at runtime.
         baseUrl: z.string().optional(),
         model: z.string().optional(),
       })
@@ -549,21 +542,182 @@ export const AgentToolsSchema = z
   })
   .optional();
 
+export const MemorySearchSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    sources: z.array(z.union([z.literal("memory"), z.literal("sessions")])).optional(),
+    extraPaths: z.array(z.string()).optional(),
+    experimental: z
+      .object({
+        sessionMemory: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+    provider: z
+      .union([
+        z.literal("openai"),
+        z.literal("local"),
+        z.literal("gemini"),
+        z.literal("voyage"),
+        z.literal("mistral"),
+        z.literal("ollama"),
+      ])
+      .optional(),
+    remote: z
+      .object({
+        baseUrl: z.string().optional(),
+        apiKey: SecretInputSchema.optional().register(sensitive),
+        headers: z.record(z.string(), z.string()).optional(),
+        batch: z
+          .object({
+            enabled: z.boolean().optional(),
+            wait: z.boolean().optional(),
+            concurrency: z.number().int().positive().optional(),
+            pollIntervalMs: z.number().int().nonnegative().optional(),
+            timeoutMinutes: z.number().int().positive().optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
+    fallback: z
+      .union([
+        z.literal("openai"),
+        z.literal("gemini"),
+        z.literal("local"),
+        z.literal("voyage"),
+        z.literal("mistral"),
+        z.literal("ollama"),
+        z.literal("none"),
+      ])
+      .optional(),
+    model: z.string().optional(),
+    local: z
+      .object({
+        modelPath: z.string().optional(),
+        modelCacheDir: z.string().optional(),
+      })
+      .strict()
+      .optional(),
+    store: z
+      .object({
+        driver: z.literal("sqlite").optional(),
+        path: z.string().optional(),
+        vector: z
+          .object({
+            enabled: z.boolean().optional(),
+            extensionPath: z.string().optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
+    chunking: z
+      .object({
+        tokens: z.number().int().positive().optional(),
+        overlap: z.number().int().nonnegative().optional(),
+      })
+      .strict()
+      .optional(),
+    sync: z
+      .object({
+        onSessionStart: z.boolean().optional(),
+        onSearch: z.boolean().optional(),
+        watch: z.boolean().optional(),
+        watchDebounceMs: z.number().int().nonnegative().optional(),
+        intervalMinutes: z.number().int().nonnegative().optional(),
+        sessions: z
+          .object({
+            deltaBytes: z.number().int().nonnegative().optional(),
+            deltaMessages: z.number().int().nonnegative().optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
+    query: z
+      .object({
+        maxResults: z.number().int().positive().optional(),
+        minScore: z.number().min(0).max(1).optional(),
+        hybrid: z
+          .object({
+            enabled: z.boolean().optional(),
+            vectorWeight: z.number().min(0).max(1).optional(),
+            textWeight: z.number().min(0).max(1).optional(),
+            candidateMultiplier: z.number().int().positive().optional(),
+            mmr: z
+              .object({
+                enabled: z.boolean().optional(),
+                lambda: z.number().min(0).max(1).optional(),
+              })
+              .strict()
+              .optional(),
+            temporalDecay: z
+              .object({
+                enabled: z.boolean().optional(),
+                halfLifeDays: z.number().int().positive().optional(),
+              })
+              .strict()
+              .optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
+    cache: z
+      .object({
+        enabled: z.boolean().optional(),
+        maxEntries: z.number().int().positive().optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict()
+  .optional();
 export { AgentModelSchema };
+
+const AgentRuntimeAcpSchema = z
+  .object({
+    agent: z.string().optional(),
+    backend: z.string().optional(),
+    mode: z.enum(["persistent", "oneshot"]).optional(),
+    cwd: z.string().optional(),
+  })
+  .strict()
+  .optional();
+
+const AgentRuntimeSchema = z
+  .union([
+    z
+      .object({
+        type: z.literal("embedded"),
+      })
+      .strict(),
+    z
+      .object({
+        type: z.literal("acp"),
+        acp: AgentRuntimeAcpSchema,
+      })
+      .strict(),
+  ])
+  .optional();
+
 export const AgentEntrySchema = z
   .object({
     id: z.string(),
+    default: z.boolean().optional(),
     name: z.string().optional(),
     workspace: z.string().optional(),
     agentDir: z.string().optional(),
     model: AgentModelSchema.optional(),
     skills: z.array(z.string()).optional(),
-    // Memory search config gutted — agents bring their own memory.
-    // Stub kept for config parse compatibility (existing configs still parse).
-    memorySearch: z.unknown().optional(),
+    memorySearch: MemorySearchSchema,
     humanDelay: HumanDelaySchema.optional(),
     heartbeat: HeartbeatSchema,
-    boot: BootSchema,
     identity: IdentitySchema,
     groupChat: GroupChatSchema,
     subagents: z
@@ -584,17 +738,13 @@ export const AgentEntrySchema = z
       })
       .strict()
       .optional(),
-    editableFiles: z.array(z.string()).optional(),
     sandbox: AgentSandboxSchema,
     tools: AgentToolsSchema,
-    auth: z.union([z.literal(false), z.string(), z.array(z.string())]).optional(),
-    runtime: z
-      .union([z.literal("claude"), z.literal("gemini"), z.literal("codex"), z.literal("opencode")])
-      .optional(),
+    runtime: z.union([AgentRuntimeSchema, z.enum(["claude", "gemini", "codex", "opencode"])]),
+    // Fork-specific CLI runtime fields (RemoteClaw middleware bridge)
+    auth: z.union([z.string(), z.array(z.string()), z.literal(false)]).optional(),
     runtimeArgs: z.array(z.string()).optional(),
     runtimeEnv: z.record(z.string(), z.string()).optional(),
-    // Deprecated: accepted for backward compat, stripped by legacy migration (#1581)
-    default: z.boolean().optional(),
   })
   .strict();
 

@@ -24,6 +24,8 @@ const buildSessionLookup = (
   legacyKey: undefined,
 });
 
+const ingressAgentCommandMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+
 vi.mock("../infra/system-events.js", () => ({
   enqueueSystemEvent: vi.fn(),
 }));
@@ -31,8 +33,8 @@ vi.mock("../infra/heartbeat-wake.js", () => ({
   requestHeartbeatNow: vi.fn(),
 }));
 vi.mock("../commands/agent.js", () => ({
-  agentCommand: vi.fn().mockResolvedValue(undefined),
-  agentCommandFromIngress: vi.fn().mockResolvedValue(undefined),
+  agentCommand: ingressAgentCommandMock,
+  agentCommandFromIngress: ingressAgentCommandMock,
 }));
 vi.mock("../config/config.js", () => ({
   loadConfig: vi.fn(() => ({ session: { mainKey: "agent:main:main" } })),
@@ -51,7 +53,7 @@ vi.mock("./session-utils.js", () => ({
 }));
 
 import type { CliDeps } from "../cli/deps.js";
-import { agentCommand, agentCommandFromIngress } from "../commands/agent.js";
+import { agentCommand } from "../commands/agent.js";
 import type { HealthSummary } from "../commands/health.js";
 import { loadConfig } from "../config/config.js";
 import { updateSessionStore } from "../config/sessions.js";
@@ -64,8 +66,7 @@ import { loadSessionEntry } from "./session-utils.js";
 const enqueueSystemEventMock = vi.mocked(enqueueSystemEvent);
 const requestHeartbeatNowMock = vi.mocked(requestHeartbeatNow);
 const loadConfigMock = vi.mocked(loadConfig);
-const _agentCommandMock = vi.mocked(agentCommand);
-const agentCommandFromIngressMock = vi.mocked(agentCommandFromIngress);
+const agentCommandMock = vi.mocked(agentCommand);
 const updateSessionStoreMock = vi.mocked(updateSessionStore);
 const loadSessionEntryMock = vi.mocked(loadSessionEntry);
 
@@ -112,7 +113,10 @@ describe("node exec events", () => {
       "Exec started (node=node-1 id=run-1): ls -la",
       { sessionKey: "agent:main:main", contextKey: "exec:run-1" },
     );
-    expect(requestHeartbeatNowMock).toHaveBeenCalledWith({ reason: "exec-event" });
+    expect(requestHeartbeatNowMock).toHaveBeenCalledWith({
+      reason: "exec-event",
+      sessionKey: "agent:main:main",
+    });
   });
 
   it("enqueues exec.finished events with output", async () => {
@@ -186,7 +190,10 @@ describe("node exec events", () => {
       "Exec denied (node=node-3 id=run-3, allowlist-miss): rm -rf /",
       { sessionKey: "agent:demo:main", contextKey: "exec:run-3" },
     );
-    expect(requestHeartbeatNowMock).toHaveBeenCalledWith({ reason: "exec-event" });
+    expect(requestHeartbeatNowMock).toHaveBeenCalledWith({
+      reason: "exec-event",
+      sessionKey: "agent:demo:main",
+    });
   });
 
   it("suppresses exec.started when notifyOnExit is false", async () => {
@@ -251,9 +258,9 @@ describe("node exec events", () => {
 
 describe("voice transcript events", () => {
   beforeEach(() => {
-    agentCommandFromIngressMock.mockClear();
+    agentCommandMock.mockClear();
     updateSessionStoreMock.mockClear();
-    agentCommandFromIngressMock.mockResolvedValue({ status: "ok" } as never);
+    agentCommandMock.mockResolvedValue({ status: "ok" } as never);
     updateSessionStoreMock.mockImplementation(async (_storePath, update) => {
       update({});
     });
@@ -278,7 +285,7 @@ describe("voice transcript events", () => {
       payloadJSON: JSON.stringify(payload),
     });
 
-    expect(agentCommandFromIngressMock).toHaveBeenCalledTimes(1);
+    expect(agentCommandMock).toHaveBeenCalledTimes(1);
     expect(addChatRun).toHaveBeenCalledTimes(1);
     expect(updateSessionStoreMock).toHaveBeenCalledTimes(1);
   });
@@ -303,7 +310,7 @@ describe("voice transcript events", () => {
       }),
     });
 
-    expect(agentCommandFromIngressMock).toHaveBeenCalledTimes(2);
+    expect(agentCommandMock).toHaveBeenCalledTimes(2);
     expect(updateSessionStoreMock).toHaveBeenCalledTimes(2);
   });
 
@@ -318,8 +325,8 @@ describe("voice transcript events", () => {
       }),
     });
 
-    expect(agentCommandFromIngressMock).toHaveBeenCalledTimes(1);
-    const [opts] = agentCommandFromIngressMock.mock.calls[0] ?? [];
+    expect(agentCommandMock).toHaveBeenCalledTimes(1);
+    const [opts] = agentCommandMock.mock.calls[0] ?? [];
     expect(opts).toMatchObject({
       message: "check provenance",
       deliver: false,
@@ -347,7 +354,7 @@ describe("voice transcript events", () => {
     });
     await Promise.resolve();
 
-    expect(agentCommandFromIngressMock).toHaveBeenCalledTimes(1);
+    expect(agentCommandMock).toHaveBeenCalledTimes(1);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("voice session-store update failed"));
   });
 });
@@ -488,10 +495,10 @@ describe("notifications changed events", () => {
 
 describe("agent request events", () => {
   beforeEach(() => {
-    agentCommandFromIngressMock.mockClear();
+    agentCommandMock.mockClear();
     updateSessionStoreMock.mockClear();
     loadSessionEntryMock.mockClear();
-    agentCommandFromIngressMock.mockResolvedValue({ status: "ok" } as never);
+    agentCommandMock.mockResolvedValue({ status: "ok" } as never);
     updateSessionStoreMock.mockImplementation(async (_storePath, update) => {
       update({});
     });
@@ -512,8 +519,8 @@ describe("agent request events", () => {
       }),
     });
 
-    expect(agentCommandFromIngressMock).toHaveBeenCalledTimes(1);
-    const [opts] = agentCommandFromIngressMock.mock.calls[0] ?? [];
+    expect(agentCommandMock).toHaveBeenCalledTimes(1);
+    const [opts] = agentCommandMock.mock.calls[0] ?? [];
     expect(opts).toMatchObject({
       message: "summarize this",
       sessionKey: "agent:main:main",
@@ -546,8 +553,8 @@ describe("agent request events", () => {
       }),
     });
 
-    expect(agentCommandFromIngressMock).toHaveBeenCalledTimes(1);
-    const [opts] = agentCommandFromIngressMock.mock.calls[0] ?? [];
+    expect(agentCommandMock).toHaveBeenCalledTimes(1);
+    const [opts] = agentCommandMock.mock.calls[0] ?? [];
     expect(opts).toMatchObject({
       message: "route on session",
       sessionKey: "agent:main:main",

@@ -1,4 +1,4 @@
-import type { ChannelAccountSnapshot, ChannelStatusIssue } from "remoteclaw/plugin-sdk";
+import type { ChannelAccountSnapshot, ChannelStatusIssue } from "remoteclaw/plugin-sdk/zalouser";
 
 type ZalouserAccountStatus = {
   accountId?: unknown;

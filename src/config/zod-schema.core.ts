@@ -1,5 +1,6 @@
 import path from "node:path";
 import { z } from "zod";
+import { isSafeExecutableValue } from "../infra/exec-safety.js";
 import { isValidFileSecretRefId } from "../secrets/ref-contract.js";
 import { MODEL_APIS } from "./types.models.js";
 import { createAllowDenyChannelRulesSchema } from "./zod-schema.allowdeny.js";
@@ -109,7 +110,7 @@ const SecretsExecProviderSchema = z
     command: z
       .string()
       .min(1)
-      .refine(() => true, "secrets.providers.*.command is unsafe.")
+      .refine((value) => isSafeExecutableValue(value), "secrets.providers.*.command is unsafe.")
       .refine(
         (value) => isAbsolutePath(value),
         "secrets.providers.*.command must be an absolute path.",
@@ -187,6 +188,7 @@ export const ModelCompatSchema = z
     supportsDeveloperRole: z.boolean().optional(),
     supportsReasoningEffort: z.boolean().optional(),
     supportsUsageInStreaming: z.boolean().optional(),
+    supportsTools: z.boolean().optional(),
     supportsStrictMode: z.boolean().optional(),
     maxTokensField: z
       .union([z.literal("max_completion_tokens"), z.literal("max_tokens")])
@@ -232,7 +234,7 @@ export const ModelProviderSchema = z
       .optional(),
     api: ModelApiSchema.optional(),
     injectNumCtxForOpenAICompat: z.boolean().optional(),
-    headers: z.record(z.string(), z.string()).optional(),
+    headers: z.record(z.string(), SecretInputSchema.register(sensitive)).optional(),
     authHeader: z.boolean().optional(),
     models: z.array(ModelDefinitionSchema),
   })
@@ -400,6 +402,7 @@ export const TtsConfigSchema = z
     openai: z
       .object({
         apiKey: SecretInputSchema.optional().register(sensitive),
+        baseUrl: z.string().optional(),
         model: z.string().optional(),
         voice: z.string().optional(),
       })
@@ -591,7 +594,16 @@ export const InboundDebounceSchema = z
 
 export const TranscribeAudioSchema = z
   .object({
-    command: z.array(z.string()),
+    command: z.array(z.string()).superRefine((value, ctx) => {
+      const executable = value[0];
+      if (!isSafeExecutableValue(executable)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [0],
+          message: "expected safe executable name or path",
+        });
+      }
+    }),
     timeoutSeconds: z.number().int().positive().optional(),
   })
   .strict()
@@ -601,7 +613,7 @@ export const HexColorSchema = z.string().regex(/^#?[0-9a-fA-F]{6}$/, "expected h
 
 export const ExecutableTokenSchema = z
   .string()
-  .refine(() => true, "expected safe executable name or path");
+  .refine(isSafeExecutableValue, "expected safe executable name or path");
 
 export const MediaUnderstandingScopeSchema = createAllowDenyChannelRulesSchema();
 

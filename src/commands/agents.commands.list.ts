@@ -1,5 +1,6 @@
 import { formatCliCommand } from "../cli/command-format.js";
-import type { AgentBinding } from "../config/types.js";
+import { listRouteBindings } from "../config/bindings.js";
+import type { AgentRouteBinding } from "../config/types.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
@@ -20,8 +21,11 @@ type AgentsListOptions = {
 };
 
 function formatSummary(summary: AgentSummary) {
+  const defaultTag = summary.isDefault ? " (default)" : "";
   const header =
-    summary.name && summary.name !== summary.id ? `${summary.id} (${summary.name})` : summary.id;
+    summary.name && summary.name !== summary.id
+      ? `${summary.id}${defaultTag} (${summary.name})`
+      : `${summary.id}${defaultTag}`;
 
   const identityParts = [];
   if (summary.identityEmoji) {
@@ -31,15 +35,21 @@ function formatSummary(summary: AgentSummary) {
     identityParts.push(summary.identityName);
   }
   const identityLine = identityParts.length > 0 ? identityParts.join(" ") : null;
+  const identitySource =
+    summary.identitySource === "identity"
+      ? "IDENTITY.md"
+      : summary.identitySource === "config"
+        ? "config"
+        : null;
 
   const lines = [`- ${header}`];
   if (identityLine) {
-    lines.push(`  Identity: ${identityLine}`);
+    lines.push(`  Identity: ${identityLine}${identitySource ? ` (${identitySource})` : ""}`);
   }
   lines.push(`  Workspace: ${shortenHomePath(summary.workspace)}`);
   lines.push(`  Agent dir: ${shortenHomePath(summary.agentDir)}`);
-  if (summary.runtime) {
-    lines.push(`  Runtime: ${summary.runtime}`);
+  if (summary.model) {
+    lines.push(`  Model: ${summary.model}`);
   }
   lines.push(`  Routing rules: ${summary.bindings}`);
 
@@ -72,8 +82,8 @@ export async function agentsListCommand(
   }
 
   const summaries = buildAgentSummaries(cfg);
-  const bindingMap = new Map<string, AgentBinding[]>();
-  for (const binding of cfg.bindings ?? []) {
+  const bindingMap = new Map<string, AgentRouteBinding[]>();
+  for (const binding of listRouteBindings(cfg)) {
     const agentId = normalizeAgentId(binding.agentId);
     const list = bindingMap.get(agentId) ?? [];
     list.push(binding);
@@ -96,10 +106,12 @@ export async function agentsListCommand(
     const routes = summarizeBindings(cfg, bindings);
     if (routes.length > 0) {
       summary.routes = routes;
+    } else if (summary.isDefault) {
+      summary.routes = ["default (no explicit rules)"];
     }
 
     const providerLines = listProvidersForAgent({
-      isSoleAgent: summaries.length === 1,
+      isSoleAgent: summary.isDefault,
       cfg,
       bindings,
       providerStatus,
@@ -111,11 +123,6 @@ export async function agentsListCommand(
 
   if (opts.json) {
     runtime.log(JSON.stringify(summaries, null, 2));
-    return;
-  }
-
-  if (summaries.length === 0) {
-    runtime.log("No agents configured.");
     return;
   }
 

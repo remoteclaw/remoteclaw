@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { NON_ENV_SECRETREF_MARKER } from "../agents/model-auth-markers.js";
 import { resolveProviderAuths } from "./provider-usage.auth.js";
 
 describe("resolveProviderAuths key normalization", () => {
@@ -67,10 +68,10 @@ describe("resolveProviderAuths key normalization", () => {
   }
 
   async function writeAuthProfiles(home: string, profiles: Record<string, unknown>) {
-    const stateDir = path.join(home, ".remoteclaw");
-    await fs.mkdir(stateDir, { recursive: true });
+    const agentDir = path.join(home, ".remoteclaw", "agents", "main", "agent");
+    await fs.mkdir(agentDir, { recursive: true });
     await fs.writeFile(
-      path.join(stateDir, "auth-profiles.json"),
+      path.join(agentDir, "auth-profiles.json"),
       `${JSON.stringify({ version: 1, profiles }, null, 2)}\n`,
       "utf8",
     );
@@ -86,10 +87,65 @@ describe("resolveProviderAuths key normalization", () => {
     );
   }
 
+  async function writeProfileOrder(home: string, provider: string, profileIds: string[]) {
+    const agentDir = path.join(home, ".remoteclaw", "agents", "main", "agent");
+    const parsed = JSON.parse(
+      await fs.readFile(path.join(agentDir, "auth-profiles.json"), "utf8"),
+    ) as Record<string, unknown>;
+    const order = (parsed.order && typeof parsed.order === "object" ? parsed.order : {}) as Record<
+      string,
+      unknown
+    >;
+    order[provider] = profileIds;
+    parsed.order = order;
+    await fs.writeFile(
+      path.join(agentDir, "auth-profiles.json"),
+      `${JSON.stringify(parsed, null, 2)}\n`,
+    );
+  }
+
   async function writeLegacyPiAuth(home: string, raw: string) {
     const legacyDir = path.join(home, ".pi", "agent");
     await fs.mkdir(legacyDir, { recursive: true });
     await fs.writeFile(path.join(legacyDir, "auth.json"), raw, "utf8");
+  }
+
+  function createTestModelDefinition() {
+    return {
+      id: "test-model",
+      name: "Test Model",
+      reasoning: false,
+      input: ["text"],
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+      contextWindow: 1024,
+      maxTokens: 256,
+    };
+  }
+
+  async function resolveMinimaxAuthFromConfiguredKey(apiKey: string) {
+    return await withSuiteHome(
+      async (home) => {
+        await writeConfig(home, {
+          models: {
+            providers: {
+              minimax: {
+                baseUrl: "https://api.minimaxi.com",
+                models: [createTestModelDefinition()],
+                apiKey,
+              },
+            },
+          },
+        });
+
+        return await resolveProviderAuths({
+          providers: ["minimax"],
+        });
+      },
+      {
+        MINIMAX_API_KEY: undefined,
+        MINIMAX_CODE_PLAN_KEY: undefined,
+      },
+    );
   }
 
   it("strips embedded CR/LF from env keys", async () => {
@@ -112,11 +168,11 @@ describe("resolveProviderAuths key normalization", () => {
     );
   });
 
-  it("strips embedded CR/LF from stored auth profiles (api_key)", async () => {
+  it("strips embedded CR/LF from stored auth profiles (token + api_key)", async () => {
     await withSuiteHome(
       async (home) => {
         await writeAuthProfiles(home, {
-          "minimax:default": { type: "api_key", provider: "minimax", key: "mini-\r\nmax" },
+          "minimax:default": { type: "token", provider: "minimax", token: "mini-\r\nmax" },
           "xiaomi:default": { type: "api_key", provider: "xiaomi", key: "xiao-\r\nmi" },
         });
 
@@ -181,19 +237,70 @@ describe("resolveProviderAuths key normalization", () => {
     );
   });
 
-  // Google OAuth token JSON extraction tests removed: OAuth/token support was gutted.
+  it("extracts google oauth token from JSON payload in token profiles", async () => {
+    await withSuiteHome(async (home) => {
+      await writeAuthProfiles(home, {
+        "google-gemini-cli:default": {
+          type: "token",
+          provider: "google-gemini-cli",
+          token: '{"token":"google-oauth-token"}',
+        },
+      });
 
-  it("returns empty when config api keys are the only source (config provider lookup gutted)", async () => {
+      const auths = await resolveProviderAuths({
+        providers: ["google-gemini-cli"],
+      });
+      expect(auths).toEqual([{ provider: "google-gemini-cli", token: "google-oauth-token" }]);
+    }, {});
+  });
+
+  it("keeps raw google token when token payload is not JSON", async () => {
+    await withSuiteHome(async (home) => {
+      await writeAuthProfiles(home, {
+        "google-gemini-cli:default": {
+          type: "token",
+          provider: "google-gemini-cli",
+          token: "plain-google-token",
+        },
+      });
+
+      const auths = await resolveProviderAuths({
+        providers: ["google-gemini-cli"],
+      });
+      expect(auths).toEqual([{ provider: "google-gemini-cli", token: "plain-google-token" }]);
+    }, {});
+  });
+
+  it("uses config api keys when env and profiles are missing", async () => {
     await withSuiteHome(
       async (home) => {
-        // config.models.providers was gutted — getCustomProviderApiKey always returns undefined.
-        // Even with provider apiKey values in config, no auth should resolve.
+        const modelDef = {
+          id: "test-model",
+          name: "Test Model",
+          reasoning: false,
+          input: ["text"],
+          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+          contextWindow: 1024,
+          maxTokens: 256,
+        };
         await writeConfig(home, {
           models: {
             providers: {
-              zai: { apiKey: "cfg-zai-key" },
-              minimax: { apiKey: "cfg-minimax-key" },
-              xiaomi: { apiKey: "cfg-xiaomi-key" },
+              zai: {
+                baseUrl: "https://api.z.ai",
+                models: [modelDef],
+                apiKey: "cfg-zai-key", // pragma: allowlist secret
+              },
+              minimax: {
+                baseUrl: "https://api.minimaxi.com",
+                models: [modelDef],
+                apiKey: "cfg-minimax-key", // pragma: allowlist secret
+              },
+              xiaomi: {
+                baseUrl: "https://api.xiaomi.example",
+                models: [modelDef],
+                apiKey: "cfg-xiaomi-key", // pragma: allowlist secret
+              },
             },
           },
         });
@@ -201,7 +308,11 @@ describe("resolveProviderAuths key normalization", () => {
         const auths = await resolveProviderAuths({
           providers: ["zai", "minimax", "xiaomi"],
         });
-        expect(auths).toEqual([]);
+        expect(auths).toEqual([
+          { provider: "zai", token: "cfg-zai-key" },
+          { provider: "minimax", token: "cfg-minimax-key" },
+          { provider: "xiaomi", token: "cfg-xiaomi-key" },
+        ]);
       },
       {
         ZAI_API_KEY: undefined,
@@ -266,20 +377,20 @@ describe("resolveProviderAuths key normalization", () => {
     );
   });
 
-  it("skips profiles where config provider mismatches stored profile provider", async () => {
+  it("discovers oauth provider from config but skips mismatched profile providers", async () => {
     await withSuiteHome(async (home) => {
       await writeConfig(home, {
         auth: {
           profiles: {
-            "anthropic:default": { provider: "anthropic", mode: "api_key" },
+            "anthropic:default": { provider: "anthropic", mode: "token" },
           },
         },
       });
       await writeAuthProfiles(home, {
         "anthropic:default": {
-          type: "api_key",
+          type: "token",
           provider: "zai",
-          key: "mismatched-provider-key",
+          token: "mismatched-provider-token",
         },
       });
 
@@ -299,20 +410,48 @@ describe("resolveProviderAuths key normalization", () => {
     }, {});
   });
 
-  it("skips profiles without a key and uses later profiles", async () => {
+  it("skips oauth profiles that resolve without an api key and uses later profiles", async () => {
     await withSuiteHome(async (home) => {
       await writeAuthProfiles(home, {
         "anthropic:empty": {
-          type: "api_key",
+          type: "token",
           provider: "anthropic",
+          token: "expired-token",
+          expires: Date.now() - 60_000,
         },
-        "anthropic:valid": { type: "api_key", provider: "anthropic", key: "anthropic-key" },
+        "anthropic:valid": { type: "token", provider: "anthropic", token: "anthropic-token" },
       });
+      await writeProfileOrder(home, "anthropic", ["anthropic:empty", "anthropic:valid"]);
 
       const auths = await resolveProviderAuths({
         providers: ["anthropic"],
       });
-      expect(auths).toEqual([{ provider: "anthropic", token: "anthropic-key" }]);
+      expect(auths).toEqual([{ provider: "anthropic", token: "anthropic-token" }]);
     }, {});
+  });
+
+  it("skips api_key entries in oauth token resolution order", async () => {
+    await withSuiteHome(async (home) => {
+      await writeAuthProfiles(home, {
+        "anthropic:api": { type: "api_key", provider: "anthropic", key: "api-key-1" },
+        "anthropic:token": { type: "token", provider: "anthropic", token: "token-1" },
+      });
+      await writeProfileOrder(home, "anthropic", ["anthropic:api", "anthropic:token"]);
+
+      const auths = await resolveProviderAuths({
+        providers: ["anthropic"],
+      });
+      expect(auths).toEqual([{ provider: "anthropic", token: "token-1" }]);
+    }, {});
+  });
+
+  it("ignores marker-backed config keys for provider usage auth resolution", async () => {
+    const auths = await resolveMinimaxAuthFromConfiguredKey(NON_ENV_SECRETREF_MARKER);
+    expect(auths).toEqual([]);
+  });
+
+  it("keeps all-caps plaintext config keys eligible for provider usage auth resolution", async () => {
+    const auths = await resolveMinimaxAuthFromConfiguredKey("ALLCAPS_SAMPLE");
+    expect(auths).toEqual([{ provider: "minimax", token: "ALLCAPS_SAMPLE" }]);
   });
 });

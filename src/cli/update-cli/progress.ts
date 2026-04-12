@@ -57,12 +57,10 @@ export function inferUpdateFailureHints(result: UpdateRunResult): string[] {
 
   if (
     failedStep.name.startsWith("global update") &&
-    (stderr.includes("node-gyp") ||
-      stderr.includes("@discordjs/opus") ||
-      stderr.includes("prebuild"))
+    (stderr.includes("node-gyp") || stderr.includes("prebuild"))
   ) {
     hints.push(
-      "Detected native optional dependency build failure (e.g. opus). The updater retries with --omit=optional automatically.",
+      "Detected native optional dependency build failure. The updater retries with --omit=optional automatically.",
     );
     hints.push("If it still fails: npm i -g remoteclaw@latest --omit=optional");
   }
@@ -158,11 +156,13 @@ export function printResult(result: UpdateRunResult, opts: PrintResultOptions): 
     defaultRuntime.log(`  Reason: ${theme.muted(result.reason)}`);
   }
 
-  if (result.before?.version) {
-    defaultRuntime.log(`  Before: ${theme.muted(result.before.version)}`);
+  if (result.before?.version || result.before?.sha) {
+    const before = result.before.version ?? result.before.sha?.slice(0, 8) ?? "";
+    defaultRuntime.log(`  Before: ${theme.muted(before)}`);
   }
-  if (result.after?.version) {
-    defaultRuntime.log(`  After: ${theme.muted(result.after.version)}`);
+  if (result.after?.version || result.after?.sha) {
+    const after = result.after.version ?? result.after.sha?.slice(0, 8) ?? "";
+    defaultRuntime.log(`  After: ${theme.muted(after)}`);
   }
 
   if (!opts.hideSteps && result.steps.length > 0) {

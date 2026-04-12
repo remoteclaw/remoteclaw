@@ -98,6 +98,7 @@ type ResolveGroupRequireMention = (chatId: string | number) => boolean;
 export type BuildTelegramMessageContextParams = {
   primaryCtx: TelegramContext;
   allMedia: TelegramMediaRef[];
+  replyMedia?: TelegramMediaRef[];
   storeAllowFrom: string[];
   options?: TelegramMessageContextOptions;
   bot: Bot;

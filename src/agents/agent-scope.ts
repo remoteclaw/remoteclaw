@@ -282,7 +282,7 @@ export function resolveAgentRuntime(
   agentId: string,
 ): "claude" | "gemini" | "codex" | "opencode" | undefined {
   const entry = resolveAgentEntry(cfg, normalizeAgentId(agentId));
-  if (entry?.runtime) {
+  if (entry?.runtime && typeof entry.runtime === "string") {
     return entry.runtime;
   }
   return cfg.agents?.defaults?.runtime ?? undefined;
@@ -386,3 +386,7 @@ export function resolveAgentDir(cfg: RemoteClawConfig, agentId: string) {
   const root = resolveStateDir(process.env);
   return path.join(root, "agents", id, "agent");
 }
+
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+export const resolveRunModelFallbacksOverride = (..._args: unknown[]): undefined => undefined;
+export const resolveAgentSkillsFilter = (..._args: unknown[]): undefined => undefined;

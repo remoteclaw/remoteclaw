@@ -1,8 +1,9 @@
+import type { SkillCommandSpec } from "../../agents/skills.js";
 import type { ChannelId } from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry, SessionScope } from "../../config/sessions.js";
 import type { MsgContext } from "../templating.js";
-import type { VerboseLevel } from "../thinking.js";
+import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../thinking.js";
 import type { ReplyPayload } from "../types.js";
 import type { InlineDirectives } from "./directive-handling.js";
 
@@ -25,11 +26,17 @@ export type CommandContext = {
 
 export type HandleCommandsParams = {
   ctx: MsgContext;
+  rootCtx?: MsgContext;
   cfg: RemoteClawConfig;
   command: CommandContext;
   agentId?: string;
   agentDir?: string;
   directives: InlineDirectives;
+  elevated: {
+    enabled: boolean;
+    allowed: boolean;
+    failures: Array<{ gate: string; key: string }>;
+  };
   sessionEntry?: SessionEntry;
   previousSessionEntry?: SessionEntry;
   sessionStore?: Record<string, SessionEntry>;
@@ -38,12 +45,16 @@ export type HandleCommandsParams = {
   sessionScope?: SessionScope;
   workspaceDir: string;
   defaultGroupActivation: () => "always" | "mention";
+  resolvedThinkLevel?: ThinkLevel;
   resolvedVerboseLevel: VerboseLevel;
+  resolvedReasoningLevel: ReasoningLevel;
+  resolvedElevatedLevel?: ElevatedLevel;
+  resolveDefaultThinkingLevel: () => Promise<ThinkLevel | undefined>;
   provider: string;
   model: string;
+  contextTokens: number;
   isGroup: boolean;
-  /** Elevated tool config (upstream feature). */
-  elevated?: unknown;
+  skillCommands?: SkillCommandSpec[];
 };
 
 export type CommandHandlerResult = {

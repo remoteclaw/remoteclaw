@@ -92,7 +92,6 @@ function writeHookPackManifest(params: {
   hooks: string[];
   dependencies?: Record<string, string>;
 }) {
-  // MANIFEST_KEY is "remoteclaw" (PROJECT_NAME from compat/legacy-names.ts)
   fs.writeFileSync(
     path.join(params.pkgDir, "package.json"),
     JSON.stringify({
@@ -409,6 +408,28 @@ describe("installHooksFromNpmSpec", () => {
       expectedIntegrity: "sha512-old",
       actualIntegrity: "sha512-new",
     });
+  });
+
+  it("rejects bare npm specs that resolve to prerelease versions", async () => {
+    const run = vi.mocked(runCommandWithTimeout);
+    mockNpmPackMetadataResult(run, {
+      id: "@remoteclaw/test-hooks@0.0.2-beta.1",
+      name: "@remoteclaw/test-hooks",
+      version: "0.0.2-beta.1",
+      filename: "test-hooks-0.0.2-beta.1.tgz",
+      integrity: "sha512-beta",
+      shasum: "betashasum",
+    });
+
+    const result = await installHooksFromNpmSpec({
+      spec: "@remoteclaw/test-hooks",
+      logger: { info: () => {}, warn: () => {} },
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("prerelease version 0.0.2-beta.1");
+      expect(result.error).toContain('"@remoteclaw/test-hooks@beta"');
+    }
   });
 });
 

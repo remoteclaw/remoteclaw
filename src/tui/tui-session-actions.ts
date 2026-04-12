@@ -30,6 +30,7 @@ type SessionActionContext = {
 type SessionInfoDefaults = {
   model?: string | null;
   modelProvider?: string | null;
+  contextTokens?: number | null;
 };
 
 type SessionInfoEntry = SessionInfo & {
@@ -58,7 +59,7 @@ export function createSessionActions(context: SessionActionContext) {
   let lastSessionDefaults: SessionInfoDefaults | null = null;
 
   const applyAgentsResult = (result: GatewayAgentsList) => {
-    state.firstAgentId = normalizeAgentId(result.defaultId);
+    state.agentDefaultId = normalizeAgentId(result.defaultId);
     state.sessionMainKey = normalizeMainKey(result.mainKey);
     state.sessionScope = result.scope ?? state.sessionScope;
     state.agents = result.agents.map((agent) => ({
@@ -137,10 +138,12 @@ export function createSessionActions(context: SessionActionContext) {
     force?: boolean;
   }) => {
     const entry = params.entry ?? undefined;
+    const defaults = params.defaults ?? lastSessionDefaults ?? undefined;
     const previousDefaults = lastSessionDefaults;
     const defaultsChanged = params.defaults
       ? previousDefaults?.model !== params.defaults.model ||
-        previousDefaults?.modelProvider !== params.defaults.modelProvider
+        previousDefaults?.modelProvider !== params.defaults.modelProvider ||
+        previousDefaults?.contextTokens !== params.defaults.contextTokens
       : false;
     if (params.defaults) {
       lastSessionDefaults = params.defaults;
@@ -148,24 +151,25 @@ export function createSessionActions(context: SessionActionContext) {
 
     const entryUpdatedAt = entry?.updatedAt ?? null;
     const currentUpdatedAt = state.sessionInfo.updatedAt ?? null;
-    const modelChanged =
-      (entry?.modelProvider !== undefined &&
-        entry.modelProvider !== state.sessionInfo.modelProvider) ||
-      (entry?.model !== undefined && entry.model !== state.sessionInfo.model);
     if (
       !params.force &&
       entryUpdatedAt !== null &&
       currentUpdatedAt !== null &&
       entryUpdatedAt < currentUpdatedAt &&
-      !defaultsChanged &&
-      !modelChanged
+      !defaultsChanged
     ) {
       return;
     }
 
     const next = { ...state.sessionInfo };
+    if (entry?.thinkingLevel !== undefined) {
+      next.thinkingLevel = entry.thinkingLevel;
+    }
     if (entry?.verboseLevel !== undefined) {
       next.verboseLevel = entry.verboseLevel;
+    }
+    if (entry?.reasoningLevel !== undefined) {
+      next.reasoningLevel = entry.reasoningLevel;
     }
     if (entry?.responseUsage !== undefined) {
       next.responseUsage = entry.responseUsage;
@@ -178,6 +182,10 @@ export function createSessionActions(context: SessionActionContext) {
     }
     if (entry?.totalTokens !== undefined) {
       next.totalTokens = entry.totalTokens;
+    }
+    if (entry?.contextTokens !== undefined || defaults?.contextTokens !== undefined) {
+      next.contextTokens =
+        entry?.contextTokens ?? defaults?.contextTokens ?? state.sessionInfo.contextTokens;
     }
     if (entry?.displayName !== undefined) {
       next.displayName = entry.displayName;
@@ -277,9 +285,11 @@ export function createSessionActions(context: SessionActionContext) {
       const record = history as {
         messages?: unknown[];
         sessionId?: string;
+        thinkingLevel?: string;
         verboseLevel?: string;
       };
       state.currentSessionId = typeof record.sessionId === "string" ? record.sessionId : null;
+      state.sessionInfo.thinkingLevel = record.thinkingLevel ?? state.sessionInfo.thinkingLevel;
       state.sessionInfo.verboseLevel = record.verboseLevel ?? state.sessionInfo.verboseLevel;
       const showTools = (state.sessionInfo.verboseLevel ?? "off") !== "off";
       chatLog.clearAll();
@@ -347,6 +357,9 @@ export function createSessionActions(context: SessionActionContext) {
     state.currentSessionKey = nextKey;
     state.activeChatRunId = null;
     state.currentSessionId = null;
+    // Session keys can move backwards in updatedAt ordering; drop previous session freshness
+    // so refresh data for the newly selected session isn't rejected as stale.
+    state.sessionInfo.updatedAt = null;
     state.historyLoaded = false;
     clearLocalRunIds?.();
     updateHeader();

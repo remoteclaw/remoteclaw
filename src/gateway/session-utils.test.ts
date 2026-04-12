@@ -4,12 +4,14 @@ import path from "node:path";
 import { describe, expect, test } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { SessionEntry } from "../config/sessions.js";
+import { withStateDirEnv } from "../test-helpers/state-dir-env.js";
 import {
   capArrayByJsonBytes,
   classifySessionKey,
   deriveSessionTitle,
   listAgentsForGateway,
   listSessionsFromStore,
+  loadCombinedSessionStoreForGateway,
   parseGroupKey,
   pruneLegacyStoreKeys,
   resolveGatewaySessionStoreTarget,
@@ -35,7 +37,7 @@ function createSingleAgentAvatarConfig(workspace: string): RemoteClawConfig {
   return {
     session: { mainKey: "main" },
     agents: {
-      list: [{ id: "main", workspace, identity: { avatar: "avatar-link.png" } }],
+      list: [{ id: "main", default: true, workspace, identity: { avatar: "avatar-link.png" } }],
     },
   } as RemoteClawConfig;
 }
@@ -105,7 +107,7 @@ describe("gateway session utils", () => {
   test("resolveSessionStoreKey maps main aliases to default agent main", () => {
     const cfg = {
       session: { mainKey: "work" },
-      agents: { list: [{ id: "ops" }] },
+      agents: { list: [{ id: "ops", default: true }] },
     } as RemoteClawConfig;
     expect(resolveSessionStoreKey({ cfg, sessionKey: "main" })).toBe("agent:ops:work");
     expect(resolveSessionStoreKey({ cfg, sessionKey: "work" })).toBe("agent:ops:work");
@@ -118,7 +120,7 @@ describe("gateway session utils", () => {
   test("resolveSessionStoreKey canonicalizes bare keys to default agent", () => {
     const cfg = {
       session: { mainKey: "main" },
-      agents: { list: [{ id: "ops" }] },
+      agents: { list: [{ id: "ops", default: true }] },
     } as RemoteClawConfig;
     expect(resolveSessionStoreKey({ cfg, sessionKey: "discord:group:123" })).toBe(
       "agent:ops:discord:group:123",
@@ -150,7 +152,7 @@ describe("gateway session utils", () => {
   test("resolveSessionStoreKey normalizes session key casing", () => {
     const cfg = {
       session: { mainKey: "main" },
-      agents: { list: [{ id: "ops" }] },
+      agents: { list: [{ id: "ops", default: true }] },
     } as RemoteClawConfig;
     // Bare keys with different casing must resolve to the same canonical key
     expect(resolveSessionStoreKey({ cfg, sessionKey: "CoP" })).toBe(
@@ -167,7 +169,7 @@ describe("gateway session utils", () => {
   test("resolveSessionStoreKey honors global scope", () => {
     const cfg = {
       session: { scope: "global", mainKey: "work" },
-      agents: { list: [{ id: "ops" }] },
+      agents: { list: [{ id: "ops", default: true }] },
     } as RemoteClawConfig;
     expect(resolveSessionStoreKey({ cfg, sessionKey: "main" })).toBe("global");
     const target = resolveGatewaySessionStoreTarget({ cfg, key: "main" });
@@ -184,7 +186,7 @@ describe("gateway session utils", () => {
     );
     const cfg = {
       session: { mainKey: "main", store: storeTemplate },
-      agents: { list: [{ id: "ops" }] },
+      agents: { list: [{ id: "ops", default: true }] },
     } as RemoteClawConfig;
     const target = resolveGatewaySessionStoreTarget({ cfg, key: "main" });
     expect(target.canonicalKey).toBe("agent:ops:main");
@@ -203,7 +205,7 @@ describe("gateway session utils", () => {
     );
     const cfg = {
       session: { mainKey: "main", store: storePath },
-      agents: { list: [{ id: "ops" }] },
+      agents: { list: [{ id: "ops", default: true }] },
     } as RemoteClawConfig;
     // Client passes the lowercased canonical key (as returned by sessions.list)
     const target = resolveGatewaySessionStoreTarget({ cfg, key: "agent:ops:mysession" });
@@ -232,7 +234,7 @@ describe("gateway session utils", () => {
     );
     const cfg = {
       session: { mainKey: "main", store: storePath },
-      agents: { list: [{ id: "ops" }] },
+      agents: { list: [{ id: "ops", default: true }] },
     } as RemoteClawConfig;
     const target = resolveGatewaySessionStoreTarget({ cfg, key: "agent:ops:mysession" });
     // storeKeys must include BOTH variants so delete/reset/patch can clean up all duplicates
@@ -252,7 +254,7 @@ describe("gateway session utils", () => {
     );
     const cfg = {
       session: { mainKey: "work", store: storePath },
-      agents: { list: [{ id: "ops" }] },
+      agents: { list: [{ id: "ops", default: true }] },
     } as RemoteClawConfig;
     const target = resolveGatewaySessionStoreTarget({ cfg, key: "agent:ops:main" });
     expect(target.canonicalKey).toBe("agent:ops:work");
@@ -310,6 +312,21 @@ describe("gateway session utils", () => {
       `data:image/png;base64,${Buffer.from("avatar").toString("base64")}`,
     );
   });
+
+  test("listAgentsForGateway keeps explicit agents.list scope over disk-only agents (scope boundary)", async () => {
+    await withStateDirEnv("remoteclaw-agent-list-scope-", async ({ stateDir }) => {
+      fs.mkdirSync(path.join(stateDir, "agents", "main"), { recursive: true });
+      fs.mkdirSync(path.join(stateDir, "agents", "codex"), { recursive: true });
+
+      const cfg = {
+        session: { mainKey: "main" },
+        agents: { list: [{ id: "main", default: true }] },
+      } as RemoteClawConfig;
+
+      const { agents } = listAgentsForGateway(cfg);
+      expect(agents.map((agent) => agent.id)).toEqual(["main"]);
+    });
+  });
 });
 
 describe("resolveSessionModelRef", () => {
@@ -362,6 +379,24 @@ describe("resolveSessionModelRef", () => {
     expect(resolved).toEqual({ provider: "openai-codex", model: "gpt-5.3-codex" });
   });
 
+  test("falls back to resolved provider for unprefixed legacy runtime model", () => {
+    const cfg = createModelDefaultsConfig({
+      primary: "google-gemini-cli/gemini-3-pro-preview",
+    });
+
+    const resolved = resolveSessionModelRef(cfg, {
+      sessionId: "legacy-session",
+      updatedAt: Date.now(),
+      model: "claude-sonnet-4-6",
+      modelProvider: undefined,
+    });
+
+    expect(resolved).toEqual({
+      provider: "google-gemini-cli",
+      model: "claude-sonnet-4-6",
+    });
+  });
+
   test("preserves provider from slash-prefixed model when modelProvider is missing", () => {
     // When model string contains a provider prefix (e.g. "anthropic/claude-sonnet-4-6")
     // parseModelRef should extract it correctly even without modelProvider set.
@@ -402,6 +437,19 @@ describe("resolveSessionModelIdentityRef", () => {
     expect(resolved).toEqual({ model: "claude-sonnet-4-6" });
   });
 
+  test("infers provider from configured model allowlist when unambiguous", () => {
+    const cfg = createModelDefaultsConfig({
+      primary: "google-gemini-cli/gemini-3-pro-preview",
+      models: {
+        "anthropic/claude-sonnet-4-6": {},
+      },
+    });
+
+    const resolved = resolveLegacyIdentityRef(cfg);
+
+    expect(resolved).toEqual({ provider: "anthropic", model: "claude-sonnet-4-6" });
+  });
+
   test("keeps provider unknown when configured models are ambiguous", () => {
     const cfg = createModelDefaultsConfig({
       primary: "google-gemini-cli/gemini-3-pro-preview",
@@ -429,6 +477,27 @@ describe("resolveSessionModelIdentityRef", () => {
     });
 
     expect(resolved).toEqual({ provider: "anthropic", model: "claude-sonnet-4-6" });
+  });
+
+  test("infers wrapper provider for slash-prefixed runtime model when allowlist match is unique", () => {
+    const cfg = createModelDefaultsConfig({
+      primary: "google-gemini-cli/gemini-3-pro-preview",
+      models: {
+        "vercel-ai-gateway/anthropic/claude-sonnet-4-6": {},
+      },
+    });
+
+    const resolved = resolveSessionModelIdentityRef(cfg, {
+      sessionId: "slash-model",
+      updatedAt: Date.now(),
+      model: "anthropic/claude-sonnet-4-6",
+      modelProvider: undefined,
+    });
+
+    expect(resolved).toEqual({
+      provider: "vercel-ai-gateway",
+      model: "anthropic/claude-sonnet-4-6",
+    });
   });
 });
 
@@ -530,7 +599,7 @@ describe("deriveSessionTitle", () => {
 describe("listSessionsFromStore search", () => {
   const baseCfg = {
     session: { mainKey: "main" },
-    agents: { list: [{ id: "main" }] },
+    agents: { list: [{ id: "main", default: true }] },
   } as RemoteClawConfig;
 
   const makeStore = (): Record<string, SessionEntry> => ({
@@ -626,14 +695,12 @@ describe("listSessionsFromStore search", () => {
       cfg: createLegacyRuntimeListConfig(),
       runtimeModel: "claude-sonnet-4-6",
       expectedProvider: undefined,
-      skip: false,
     },
     {
       name: "infers provider for legacy runtime model when allowlist match is unique",
       cfg: createLegacyRuntimeListConfig({ "anthropic/claude-sonnet-4-6": {} }),
       runtimeModel: "claude-sonnet-4-6",
       expectedProvider: "anthropic",
-      skip: true,
     },
     {
       name: "infers wrapper provider for slash-prefixed legacy runtime model when allowlist match is unique",
@@ -642,12 +709,8 @@ describe("listSessionsFromStore search", () => {
       }),
       runtimeModel: "anthropic/claude-sonnet-4-6",
       expectedProvider: "vercel-ai-gateway",
-      skip: true,
     },
-  ])("$name", ({ cfg, runtimeModel, expectedProvider, skip: shouldSkip }) => {
-    if (shouldSkip) {
-      return;
-    }
+  ])("$name", ({ cfg, runtimeModel, expectedProvider }) => {
     const result = listSessionsFromStore({
       cfg,
       storePath: "/tmp/sessions.json",
@@ -698,5 +761,47 @@ describe("listSessionsFromStore search", () => {
     expect(stale?.totalTokensFresh).toBe(false);
     expect(missing?.totalTokens).toBeUndefined();
     expect(missing?.totalTokensFresh).toBe(false);
+  });
+});
+
+describe("loadCombinedSessionStoreForGateway includes disk-only agents (#32804)", () => {
+  test("ACP agent sessions are visible even when agents.list is configured", async () => {
+    await withStateDirEnv("remoteclaw-acp-vis-", async ({ stateDir }) => {
+      const agentsDir = path.join(stateDir, "agents");
+      const mainDir = path.join(agentsDir, "main", "sessions");
+      const codexDir = path.join(agentsDir, "codex", "sessions");
+      fs.mkdirSync(mainDir, { recursive: true });
+      fs.mkdirSync(codexDir, { recursive: true });
+
+      fs.writeFileSync(
+        path.join(mainDir, "sessions.json"),
+        JSON.stringify({
+          "agent:main:main": { sessionId: "s-main", updatedAt: 100 },
+        }),
+        "utf8",
+      );
+
+      fs.writeFileSync(
+        path.join(codexDir, "sessions.json"),
+        JSON.stringify({
+          "agent:codex:acp-task": { sessionId: "s-codex", updatedAt: 200 },
+        }),
+        "utf8",
+      );
+
+      const cfg = {
+        session: {
+          mainKey: "main",
+          store: path.join(stateDir, "agents", "{agentId}", "sessions", "sessions.json"),
+        },
+        agents: {
+          list: [{ id: "main", default: true }],
+        },
+      } as RemoteClawConfig;
+
+      const { store } = loadCombinedSessionStoreForGateway(cfg);
+      expect(store["agent:main:main"]).toBeDefined();
+      expect(store["agent:codex:acp-task"]).toBeDefined();
+    });
   });
 });

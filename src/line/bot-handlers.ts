@@ -247,11 +247,15 @@ async function handleMessageEvent(event: MessageEvent, context: LineHandlerConte
     }
   }
 
+  // Non-text messages are not command-authorized (fail-closed).
+  const commandAuthorized = event.message.type === "text";
+
   const messageContext = await buildLineMessageContext({
     event,
     allMedia,
     cfg,
     account,
+    commandAuthorized,
   });
 
   if (!messageContext) {
@@ -303,6 +307,7 @@ async function handlePostbackEvent(
     event,
     cfg: context.cfg,
     account: context.account,
+    commandAuthorized: true,
   });
   if (!postbackContext) {
     return;

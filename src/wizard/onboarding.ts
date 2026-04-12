@@ -68,6 +68,10 @@ async function promptRuntimeCredential(params: {
   const { runtime, prompter, upsertAuthProfile, opts } = params;
   let config = params.config;
 
+  if (opts.authChoice === "skip") {
+    return config;
+  }
+
   /** Set `agents.defaults.auth` on the config being built. */
   function setAuthDefault(auth: false | string): void {
     config = {
@@ -315,25 +319,28 @@ export async function runOnboardingWizard(
   await requireRiskAcknowledgement({ opts, prompter });
 
   // Detect existing RemoteClaw installation and offer migration before proceeding.
-  const openclawDir = detectOpenClawInstallation();
-  if (openclawDir) {
+  const remoteclawDir = detectOpenClawInstallation();
+  if (remoteclawDir) {
     const preCheck = await readConfigFileSnapshot();
     if (!preCheck.exists) {
       await prompter.note(
         [
-          `Existing OpenClaw installation found at ${shortenHomePath(openclawDir)}.`,
+          `Existing RemoteClaw installation found at ${shortenHomePath(remoteclawDir)}.`,
           "",
           "RemoteClaw can import your config, sessions, and channel settings.",
         ].join("\n"),
-        "OpenClaw detected",
+        "RemoteClaw detected",
       );
       const shouldImport = await prompter.confirm({
-        message: `Import from ${shortenHomePath(openclawDir)}?`,
+        message: `Import from ${shortenHomePath(remoteclawDir)}?`,
         initialValue: true,
       });
       if (shouldImport) {
-        await importCommand({ sourcePath: openclawDir }, runtime);
-        await prompter.note("OpenClaw config imported. Continuing with setup.", "Import complete");
+        await importCommand({ sourcePath: remoteclawDir }, runtime);
+        await prompter.note(
+          "RemoteClaw config imported. Continuing with setup.",
+          "Import complete",
+        );
       }
     }
   }
@@ -547,9 +554,29 @@ export async function runOnboardingWizard(
 
   const localPort = resolveGatewayPort(baseConfig);
   const localUrl = `ws://127.0.0.1:${localPort}`;
+  let localGatewayToken =
+    process.env.REMOTECLAW_GATEWAY_TOKEN ?? process.env.CLAWDBOT_GATEWAY_TOKEN;
+  try {
+    const resolvedGatewayToken = await resolveOnboardingSecretInputString({
+      config: baseConfig,
+      value: baseConfig.gateway?.auth?.token,
+      path: "gateway.auth.token",
+      env: process.env,
+    });
+    if (resolvedGatewayToken) {
+      localGatewayToken = resolvedGatewayToken;
+    }
+  } catch (error) {
+    await prompter.note(
+      [
+        "Could not resolve gateway.auth.token SecretRef for onboarding probe.",
+        error instanceof Error ? error.message : String(error),
+      ].join("\n"),
+      "Gateway auth",
+    );
+  }
   let localGatewayPassword =
-    process.env.REMOTECLAW_GATEWAY_PASSWORD ??
-    normalizeSecretInputString(baseConfig.gateway?.auth?.password);
+    process.env.REMOTECLAW_GATEWAY_PASSWORD ?? process.env.CLAWDBOT_GATEWAY_PASSWORD;
   try {
     const resolvedGatewayPassword = await resolveOnboardingSecretInputString({
       config: baseConfig,
@@ -572,14 +599,34 @@ export async function runOnboardingWizard(
 
   const localProbe = await onboardHelpers.probeGatewayReachable({
     url: localUrl,
-    token: baseConfig.gateway?.auth?.token ?? process.env.REMOTECLAW_GATEWAY_TOKEN,
+    token: localGatewayToken,
     password: localGatewayPassword,
   });
   const remoteUrl = baseConfig.gateway?.remote?.url?.trim() ?? "";
+  let remoteGatewayToken = normalizeSecretInputString(baseConfig.gateway?.remote?.token);
+  try {
+    const resolvedRemoteGatewayToken = await resolveOnboardingSecretInputString({
+      config: baseConfig,
+      value: baseConfig.gateway?.remote?.token,
+      path: "gateway.remote.token",
+      env: process.env,
+    });
+    if (resolvedRemoteGatewayToken) {
+      remoteGatewayToken = resolvedRemoteGatewayToken;
+    }
+  } catch (error) {
+    await prompter.note(
+      [
+        "Could not resolve gateway.remote.token SecretRef for onboarding probe.",
+        error instanceof Error ? error.message : String(error),
+      ].join("\n"),
+      "Gateway auth",
+    );
+  }
   const remoteProbe = remoteUrl
     ? await onboardHelpers.probeGatewayReachable({
         url: remoteUrl,
-        token: normalizeSecretInputString(baseConfig.gateway?.remote?.token),
+        token: remoteGatewayToken,
       })
     : null;
 
@@ -649,7 +696,7 @@ export async function runOnboardingWizard(
 
   // Step 1: Runtime selection
   const selectedRuntime: AgentRuntime =
-    opts.runtime ??
+    (opts.runtime as AgentRuntime) ??
     (await prompter.select({
       message: "Which agent runtime?",
       options: [

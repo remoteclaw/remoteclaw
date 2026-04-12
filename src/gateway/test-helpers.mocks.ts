@@ -9,7 +9,7 @@ import type { GetReplyOptions, ReplyPayload } from "../auto-reply/types.js";
 import type { ChannelPlugin, ChannelOutboundAdapter } from "../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
-import type { AgentBinding, AgentConfig } from "../config/types.agents.js";
+import type { AgentBinding } from "../config/types.agents.js";
 import type { HooksConfig } from "../config/types.hooks.js";
 import type { TailscaleWhoisIdentity } from "../infra/tailscale.js";
 import type { PluginRegistry } from "../plugins/registry.js";
@@ -145,10 +145,7 @@ const createStubPluginRegistry = (): PluginRegistry => ({
     },
   ],
   providers: [],
-  sttProviders: [],
-  ttsProviders: [],
   gatewayHandlers: {},
-  httpHandlers: [],
   httpRoutes: [],
   cliRegistrars: [],
   services: [],
@@ -173,6 +170,12 @@ const hoisted = vi.hoisted(() => ({
   agentCommand: vi.fn().mockResolvedValue(undefined),
   testIsNixMode: { value: false },
   sessionStoreSaveDelayMs: { value: 0 },
+  embeddedRunMock: {
+    activeIds: new Set<string>(),
+    abortCalls: [] as string[],
+    waitCalls: [] as string[],
+    waitResults: new Map<string, boolean>(),
+  },
   testTailscaleWhois: { value: null as TailscaleWhoisIdentity | null },
   getReplyFromConfig: vi.fn<GetReplyFromConfigFn>().mockResolvedValue(undefined),
   sendWhatsAppMock: vi.fn().mockResolvedValue({ messageId: "msg-1", toJid: "jid-1" }),
@@ -232,6 +235,30 @@ export const testState = {
 
 export const testIsNixMode = hoisted.testIsNixMode;
 export const sessionStoreSaveDelayMs = hoisted.sessionStoreSaveDelayMs;
+export const embeddedRunMock = hoisted.embeddedRunMock;
+
+vi.mock("../agents/pi-model-discovery.js", async () => {
+  const actual = await vi.importActual<typeof import("../agents/pi-model-discovery.js")>(
+    "../agents/pi-model-discovery.js",
+  );
+
+  class MockModelRegistry extends actual.ModelRegistry {
+    override getAll(): ReturnType<typeof actual.ModelRegistry.prototype.getAll> {
+      if (!piSdkMock.enabled) {
+        return super.getAll();
+      }
+      piSdkMock.discoverCalls += 1;
+      // Cast to expected type for testing purposes
+      return piSdkMock.models as ReturnType<typeof actual.ModelRegistry.prototype.getAll>;
+    }
+  }
+
+  return {
+    ...actual,
+    ModelRegistry: MockModelRegistry,
+  };
+});
+
 vi.mock("../cron/isolated-agent.js", () => ({
   runCronIsolatedAgentTurn: (...args: unknown[]) =>
     (cronIsolatedRun as (...args: unknown[]) => unknown)(...args),
@@ -385,27 +412,14 @@ vi.mock("../config/config.js", async () => {
           ? (fileAgents.defaults as Record<string, unknown>)
           : {};
       const defaults = {
+        model: { primary: "anthropic/claude-opus-4-6" },
+        workspace: path.join(os.tmpdir(), "remoteclaw-gateway-test"),
         ...fileDefaults,
         ...testState.agentConfig,
       };
-      const gatewayTestWorkspace = path.join(os.tmpdir(), "remoteclaw-gateway-test");
-      const agentsConfigList =
-        testState.agentsConfig && Array.isArray(testState.agentsConfig.list)
-          ? (testState.agentsConfig.list as Array<Record<string, unknown>>)
-          : [];
-      const fileList = Array.isArray(fileAgents.list)
-        ? (fileAgents.list as Array<Record<string, unknown>>)
-        : [];
-      const resolvedList = (
-        agentsConfigList.length > 0
-          ? agentsConfigList.map((a) => ({ workspace: gatewayTestWorkspace, ...a }))
-          : fileList.length > 0
-            ? fileList
-            : [{ id: "main", workspace: gatewayTestWorkspace }]
-      ) as AgentConfig[];
       const agents = testState.agentsConfig
-        ? { ...fileAgents, ...testState.agentsConfig, defaults, list: resolvedList }
-        : { ...fileAgents, defaults, list: resolvedList };
+        ? { ...fileAgents, ...testState.agentsConfig, defaults }
+        : { ...fileAgents, defaults };
 
       const fileBindings = Array.isArray(fileConfig.bindings)
         ? (fileConfig.bindings as AgentBinding[])
@@ -522,6 +536,24 @@ vi.mock("../config/config.js", async () => {
     }),
     readConfigFileSnapshot,
     writeConfigFile,
+  };
+});
+
+vi.mock("../agents/pi-embedded.js", async () => {
+  const actual = await vi.importActual<typeof import("../agents/pi-embedded.js")>(
+    "../agents/pi-embedded.js",
+  );
+  return {
+    ...actual,
+    isEmbeddedPiRunActive: (sessionId: string) => embeddedRunMock.activeIds.has(sessionId),
+    abortEmbeddedPiRun: (sessionId: string) => {
+      embeddedRunMock.abortCalls.push(sessionId);
+      return embeddedRunMock.activeIds.has(sessionId);
+    },
+    waitForEmbeddedPiRunEnd: async (sessionId: string) => {
+      embeddedRunMock.waitCalls.push(sessionId);
+      return embeddedRunMock.waitResults.get(sessionId) ?? true;
+    },
   };
 });
 

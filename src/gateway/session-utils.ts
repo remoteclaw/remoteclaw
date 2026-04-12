@@ -1,12 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
+import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { lookupContextTokens } from "../agents/context.js";
+import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import {
-  resolveAgentWorkspaceDir,
-  resolveDefaultAgentId,
-  resolveSessionKeyAgentId,
-} from "../agents/agent-scope.js";
-// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
-import { parseModelRef } from "../agents/provider-utils.js";
+  inferUniqueProviderFromConfiguredModels,
+  parseModelRef,
+  resolveConfiguredModelRef,
+  resolveDefaultModelForAgent,
+} from "../agents/model-selection.js";
 import { type RemoteClawConfig, loadConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import {
@@ -20,7 +22,7 @@ import {
   type SessionEntry,
   type SessionScope,
 } from "../config/sessions.js";
-import { openVerifiedFileSync } from "../infra/safe-open-sync.js";
+import { openBoundaryFileSync } from "../infra/boundary-file-read.js";
 import {
   normalizeAgentId,
   normalizeMainKey,
@@ -100,14 +102,13 @@ function resolveIdentityAvatarUrl(
     return undefined;
   }
   try {
-    const resolvedReal = fs.realpathSync(resolvedCandidate);
-    if (!isPathWithinRoot(workspaceRoot, resolvedReal)) {
-      return undefined;
-    }
-    const opened = openVerifiedFileSync({
-      filePath: resolvedReal,
-      resolvedPath: resolvedReal,
+    const opened = openBoundaryFileSync({
+      absolutePath: resolvedCandidate,
+      rootPath: workspaceRoot,
+      rootRealPath: workspaceRoot,
+      boundaryLabel: "workspace root",
       maxBytes: AVATAR_MAX_BYTES,
+      skipLexicalRootCheck: true,
     });
     if (!opened.ok) {
       return undefined;
@@ -309,35 +310,25 @@ function listExistingAgentIdsFromDisk(): string[] {
 }
 
 function listConfiguredAgentIds(cfg: RemoteClawConfig): string[] {
-  const agents = cfg.agents?.list ?? [];
-  if (agents.length > 0) {
-    const ids = new Set<string>();
-    for (const entry of agents) {
-      if (entry?.id) {
-        ids.add(normalizeAgentId(entry.id));
-      }
-    }
-    const defaultId = normalizeAgentId(resolveDefaultAgentId(cfg));
-    ids.add(defaultId);
-    const sorted = Array.from(ids).filter(Boolean);
-    sorted.sort((a, b) => a.localeCompare(b));
-    return sorted.includes(defaultId)
-      ? [defaultId, ...sorted.filter((id) => id !== defaultId)]
-      : sorted;
-  }
-
   const ids = new Set<string>();
   const defaultId = normalizeAgentId(resolveDefaultAgentId(cfg));
   ids.add(defaultId);
+
+  for (const entry of cfg.agents?.list ?? []) {
+    if (entry?.id) {
+      ids.add(normalizeAgentId(entry.id));
+    }
+  }
+
   for (const id of listExistingAgentIdsFromDisk()) {
     ids.add(id);
   }
+
   const sorted = Array.from(ids).filter(Boolean);
   sorted.sort((a, b) => a.localeCompare(b));
-  if (sorted.includes(defaultId)) {
-    return [defaultId, ...sorted.filter((id) => id !== defaultId)];
-  }
-  return sorted;
+  return sorted.includes(defaultId)
+    ? [defaultId, ...sorted.filter((id) => id !== defaultId)]
+    : sorted;
 }
 
 export function listAgentsForGateway(cfg: RemoteClawConfig): {
@@ -616,10 +607,20 @@ export function loadCombinedSessionStoreForGateway(cfg: RemoteClawConfig): {
   return { storePath, store: combined };
 }
 
-export function getSessionDefaults(_cfg: RemoteClawConfig): GatewaySessionsDefaults {
+export function getSessionDefaults(cfg: RemoteClawConfig): GatewaySessionsDefaults {
+  const resolved = resolveConfiguredModelRef({
+    cfg,
+    defaultProvider: DEFAULT_PROVIDER,
+    defaultModel: DEFAULT_MODEL,
+  });
+  const contextTokens =
+    cfg.agents?.defaults?.contextTokens ??
+    lookupContextTokens(resolved.model) ??
+    DEFAULT_CONTEXT_TOKENS;
   return {
-    modelProvider: "unknown",
-    model: "unknown",
+    modelProvider: resolved.provider ?? null,
+    model: resolved.model ?? null,
+    contextTokens: contextTokens ?? null,
   };
 }
 
@@ -628,12 +629,20 @@ export function resolveSessionModelRef(
   entry?:
     | SessionEntry
     | Pick<SessionEntry, "model" | "modelProvider" | "modelOverride" | "providerOverride">,
-  _agentId?: string,
+  agentId?: string,
 ): { provider: string; model: string } {
+  const resolved = agentId
+    ? resolveDefaultModelForAgent({ cfg, agentId })
+    : resolveConfiguredModelRef({
+        cfg,
+        defaultProvider: DEFAULT_PROVIDER,
+        defaultModel: DEFAULT_MODEL,
+      });
+
   // Prefer the last runtime model recorded on the session entry.
   // This is the actual model used by the latest run and must win over defaults.
-  let provider = "unknown";
-  let model = "unknown";
+  let provider = resolved.provider;
+  let model = resolved.model;
   const runtimeModel = entry?.model?.trim();
   const runtimeProvider = entry?.modelProvider?.trim();
   if (runtimeModel) {
@@ -646,7 +655,7 @@ export function resolveSessionModelRef(
       // provider the user has no credentials for.
       return { provider: runtimeProvider, model: runtimeModel };
     }
-    const parsedRuntime = parseModelRef(runtimeModel, provider || "unknown");
+    const parsedRuntime = parseModelRef(runtimeModel, provider || DEFAULT_PROVIDER);
     if (parsedRuntime) {
       provider = parsedRuntime.provider;
       model = parsedRuntime.model;
@@ -660,7 +669,7 @@ export function resolveSessionModelRef(
   // then finally to configured defaults.
   const storedModelOverride = entry?.modelOverride?.trim();
   if (storedModelOverride) {
-    const overrideProvider = entry?.providerOverride?.trim() || provider || "unknown";
+    const overrideProvider = entry?.providerOverride?.trim() || provider || DEFAULT_PROVIDER;
     const parsedOverride = parseModelRef(storedModelOverride, overrideProvider);
     if (parsedOverride) {
       provider = parsedOverride.provider;
@@ -686,8 +695,15 @@ export function resolveSessionModelIdentityRef(
     if (runtimeProvider) {
       return { provider: runtimeProvider, model: runtimeModel };
     }
+    const inferredProvider = inferUniqueProviderFromConfiguredModels({
+      cfg,
+      model: runtimeModel,
+    });
+    if (inferredProvider) {
+      return { provider: inferredProvider, model: runtimeModel };
+    }
     if (runtimeModel.includes("/")) {
-      const parsedRuntime = parseModelRef(runtimeModel, "unknown");
+      const parsedRuntime = parseModelRef(runtimeModel, DEFAULT_PROVIDER);
       if (parsedRuntime) {
         return { provider: parsedRuntime.provider, model: parsedRuntime.model };
       }
@@ -787,10 +803,11 @@ export function listSessionsFromStore(params: {
         entry?.label ??
         originLabel;
       const deliveryFields = normalizeSessionDeliveryFields(entry);
-      const sessionAgentId = resolveSessionKeyAgentId(key, cfg);
+      const parsedAgent = parseAgentSessionKey(key);
+      const sessionAgentId = normalizeAgentId(parsedAgent?.agentId ?? resolveDefaultAgentId(cfg));
       const resolvedModel = resolveSessionModelIdentityRef(cfg, entry, sessionAgentId);
       const modelProvider = resolvedModel.provider;
-      const model = resolvedModel.model ?? "unknown";
+      const model = resolvedModel.model ?? DEFAULT_MODEL;
       return {
         key,
         entry,
@@ -807,7 +824,10 @@ export function listSessionsFromStore(params: {
         sessionId: entry?.sessionId,
         systemSent: entry?.systemSent,
         abortedLastRun: entry?.abortedLastRun,
+        thinkingLevel: entry?.thinkingLevel,
         verboseLevel: entry?.verboseLevel,
+        reasoningLevel: entry?.reasoningLevel,
+        elevatedLevel: entry?.elevatedLevel,
         sendPolicy: entry?.sendPolicy,
         inputTokens: entry?.inputTokens,
         outputTokens: entry?.outputTokens,
@@ -816,6 +836,7 @@ export function listSessionsFromStore(params: {
         responseUsage: entry?.responseUsage,
         modelProvider,
         model,
+        contextTokens: entry?.contextTokens,
         deliveryContext: deliveryFields.deliveryContext,
         lastChannel: deliveryFields.lastChannel ?? entry?.lastChannel,
         lastTo: deliveryFields.lastTo ?? entry?.lastTo,
@@ -847,7 +868,9 @@ export function listSessionsFromStore(params: {
     let lastMessagePreview: string | undefined;
     if (entry?.sessionId) {
       if (includeDerivedTitles || includeLastMessage) {
-        const agentId = resolveSessionKeyAgentId(s.key, cfg);
+        const parsed = parseAgentSessionKey(s.key);
+        const agentId =
+          parsed && parsed.agentId ? normalizeAgentId(parsed.agentId) : resolveDefaultAgentId(cfg);
         const fields = readSessionTitleFieldsFromTranscript(
           entry.sessionId,
           storePath,

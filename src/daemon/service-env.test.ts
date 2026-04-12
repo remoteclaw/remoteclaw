@@ -264,20 +264,20 @@ describe("buildServiceEnvironment", () => {
     const env = buildServiceEnvironment({
       env: { HOME: "/home/user" },
       port: 18789,
-      token: "secret",
     });
     expect(env.HOME).toBe("/home/user");
     if (process.platform === "win32") {
-      expect(env.PATH).toBe("");
+      expect(env).not.toHaveProperty("PATH");
     } else {
       expect(env.PATH).toContain("/usr/bin");
     }
     expect(env.REMOTECLAW_GATEWAY_PORT).toBe("18789");
-    expect(env.REMOTECLAW_GATEWAY_TOKEN).toBe("secret");
+    expect(env.REMOTECLAW_GATEWAY_TOKEN).toBeUndefined();
     expect(env.REMOTECLAW_SERVICE_MARKER).toBe("remoteclaw");
     expect(env.REMOTECLAW_SERVICE_KIND).toBe("gateway");
     expect(typeof env.REMOTECLAW_SERVICE_VERSION).toBe("string");
     expect(env.REMOTECLAW_SYSTEMD_UNIT).toBe("remoteclaw-gateway.service");
+    expect(env.REMOTECLAW_WINDOWS_TASK_NAME).toBe("RemoteClaw Gateway");
     if (process.platform === "darwin") {
       expect(env.REMOTECLAW_LAUNCHD_LABEL).toBe("org.remoteclaw.gateway");
     }
@@ -305,6 +305,7 @@ describe("buildServiceEnvironment", () => {
       port: 18789,
     });
     expect(env.REMOTECLAW_SYSTEMD_UNIT).toBe("remoteclaw-gateway-work.service");
+    expect(env.REMOTECLAW_WINDOWS_TASK_NAME).toBe("RemoteClaw Gateway (work)");
     if (process.platform === "darwin") {
       expect(env.REMOTECLAW_LAUNCHD_LABEL).toBe("org.remoteclaw.work");
     }
@@ -328,6 +329,20 @@ describe("buildServiceEnvironment", () => {
     expect(env.NO_PROXY).toBe("localhost,127.0.0.1");
     expect(env.http_proxy).toBe("http://proxy.local:7890");
     expect(env.all_proxy).toBe("socks5://proxy.local:1080");
+  });
+
+  it("omits PATH on Windows so Scheduled Tasks can inherit the current shell path", () => {
+    const env = buildServiceEnvironment({
+      env: {
+        HOME: "C:\\Users\\alice",
+        PATH: "C:\\Windows\\System32;C:\\Tools\\rg",
+      },
+      port: 18789,
+      platform: "win32",
+    });
+
+    expect(env).not.toHaveProperty("PATH");
+    expect(env.REMOTECLAW_WINDOWS_TASK_NAME).toBe("RemoteClaw Gateway");
   });
 });
 

@@ -9,9 +9,17 @@ type SlotPluginRecord = {
   kind?: PluginKind;
 };
 
-const SLOT_BY_KIND: Partial<Record<string, PluginSlotKey>> = {};
+const SLOT_BY_KIND: Record<PluginKind, PluginSlotKey> = {
+  memory: "memory",
+  "context-engine": "contextEngine",
+};
 
-const DEFAULT_SLOT_BY_KEY: Partial<Record<PluginSlotKey, string>> = {};
+const DEFAULT_SLOT_BY_KEY: Record<PluginSlotKey, string> = {
+  // Memory was gutted in RemoteClaw fork (Middleware Boundary Principle).
+  // Default to "none" so config validation doesn't look for a deleted plugin.
+  memory: "none",
+  contextEngine: "legacy",
+};
 
 export function slotKeyForPluginKind(kind?: PluginKind): PluginSlotKey | null {
   if (!kind) {
@@ -20,7 +28,7 @@ export function slotKeyForPluginKind(kind?: PluginKind): PluginSlotKey | null {
   return SLOT_BY_KIND[kind] ?? null;
 }
 
-export function defaultSlotIdForKey(slotKey: PluginSlotKey): string | undefined {
+export function defaultSlotIdForKey(slotKey: PluginSlotKey): string {
   return DEFAULT_SLOT_BY_KEY[slotKey];
 }
 

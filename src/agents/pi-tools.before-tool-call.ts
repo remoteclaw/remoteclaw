@@ -23,6 +23,14 @@ const adjustedParamsByToolCallId = new Map<string, unknown>();
 const MAX_TRACKED_ADJUSTED_PARAMS = 1024;
 const LOOP_WARNING_BUCKET_SIZE = 10;
 const MAX_LOOP_WARNING_KEYS = 256;
+let beforeToolCallRuntimePromise: Promise<
+  typeof import("./pi-tools.before-tool-call.runtime.js")
+> | null = null;
+
+function loadBeforeToolCallRuntime() {
+  beforeToolCallRuntimePromise ??= import("./pi-tools.before-tool-call.runtime.js");
+  return beforeToolCallRuntimePromise;
+}
 
 function buildAdjustedParamsKey(params: { runId?: string; toolCallId: string }): string {
   if (params.runId && params.runId.trim()) {
@@ -62,9 +70,7 @@ async function recordLoopOutcome(args: {
     return;
   }
   try {
-    const { getDiagnosticSessionState } = await import("../logging/diagnostic-session-state.js");
-    // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-    const recordToolCallOutcome = (..._args: unknown[]) => {};
+    const { getDiagnosticSessionState, recordToolCallOutcome } = await loadBeforeToolCallRuntime();
     const sessionState = getDiagnosticSessionState({
       sessionKey: args.ctx.sessionKey,
       sessionId: args.ctx?.agentId,
@@ -92,26 +98,8 @@ export async function runBeforeToolCallHook(args: {
   const params = args.params;
 
   if (args.ctx?.sessionKey) {
-    const { getDiagnosticSessionState } = await import("../logging/diagnostic-session-state.js");
-    const { logToolLoopAction } = await import("../logging/diagnostic.js");
-    // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-    type LoopDetectorName =
-      | "generic_repeat"
-      | "global_circuit_breaker"
-      | "known_poll_no_progress"
-      | "ping_pong";
-    type LoopResult = {
-      stuck: boolean;
-      level?: string;
-      message: string;
-      detector: LoopDetectorName;
-      count: number;
-      pairedToolName?: string;
-      warningKey?: string;
-    } | null;
-    const detectToolCallLoop = (..._args: unknown[]): LoopResult => null;
-    const recordToolCall = (..._args: unknown[]) => {};
-
+    const { getDiagnosticSessionState, logToolLoopAction, detectToolCallLoop, recordToolCall } =
+      await loadBeforeToolCallRuntime();
     const sessionState = getDiagnosticSessionState({
       sessionKey: args.ctx.sessionKey,
       sessionId: args.ctx?.agentId,
@@ -119,7 +107,7 @@ export async function runBeforeToolCallHook(args: {
 
     const loopResult = detectToolCallLoop(sessionState, toolName, params, args.ctx.loopDetection);
 
-    if (loopResult && loopResult.stuck) {
+    if (loopResult.stuck) {
       if (loopResult.level === "critical") {
         log.error(`Blocking ${toolName} due to critical loop: ${loopResult.message}`);
         logToolLoopAction({
@@ -238,12 +226,7 @@ export function wrapToolWithBeforeToolCallHook(
       }
       const normalizedToolName = normalizeToolName(toolName || "tool");
       try {
-        const result = await execute(
-          toolCallId,
-          outcome.params as Record<string, unknown>,
-          signal,
-          onUpdate,
-        );
+        const result = await execute(toolCallId, outcome.params, signal, onUpdate);
         await recordLoopOutcome({
           ctx,
           toolName: normalizedToolName,

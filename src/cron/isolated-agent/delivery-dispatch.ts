@@ -267,6 +267,7 @@ export async function dispatchCronDelivery(
     if (activeSubagentRuns > 0) {
       // Parent orchestration is still in progress; avoid announcing a partial
       // update to the main requester.
+      deliveryAttempted = true;
       return params.withRunSession({ status: "ok", summary, outputText, ...params.telemetry });
     }
     if (
@@ -277,6 +278,7 @@ export async function dispatchCronDelivery(
     ) {
       // Descendants existed but no post-orchestration synthesis arrived, so
       // suppress stale parent text like "on it, pulling everything together".
+      deliveryAttempted = true;
       return params.withRunSession({ status: "ok", summary, outputText, ...params.telemetry });
     }
     if (synthesizedText.toUpperCase() === SILENT_REPLY_TOKEN.toUpperCase()) {
@@ -428,15 +430,37 @@ export async function dispatchCronDelivery(
     } else {
       const announceResult = await deliverViaAnnounce(params.resolvedDelivery);
       if (announceResult) {
-        return {
-          result: announceResult,
-          delivered,
-          deliveryAttempted,
-          summary,
-          outputText,
-          synthesizedText,
-          deliveryPayloads,
-        };
+        // If announce succeeded (delivered=true) or was suppressed by a non-delivery
+        // early return, return the result. When announce explicitly failed
+        // (delivered=false, deliveryAttempted=true), fall through to direct delivery
+        // as a last resort.
+        if (delivered || !deliveryAttempted) {
+          return {
+            result: announceResult,
+            delivered,
+            deliveryAttempted,
+            summary,
+            outputText,
+            synthesizedText,
+            deliveryPayloads,
+          };
+        }
+        // Announce failed — fall through to direct delivery.
+      }
+      // Announce returned null (no text) or failed — try direct delivery as fallback.
+      if (!delivered) {
+        const directFallbackResult = await deliverViaDirect(params.resolvedDelivery);
+        if (directFallbackResult) {
+          return {
+            result: directFallbackResult,
+            delivered,
+            deliveryAttempted,
+            summary,
+            outputText,
+            synthesizedText,
+            deliveryPayloads,
+          };
+        }
       }
     }
   }

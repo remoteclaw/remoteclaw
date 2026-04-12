@@ -1,11 +1,25 @@
 import type { ChannelId } from "../channels/plugins/types.js";
-import type { AgentSandboxConfig } from "./types.agents-shared.js";
+import type { AgentModelConfig, AgentSandboxConfig } from "./types.agents-shared.js";
 import type {
   BlockStreamingChunkConfig,
   BlockStreamingCoalesceConfig,
   HumanDelayConfig,
   TypingMode,
 } from "./types.base.js";
+import type { MemorySearchConfig } from "./types.tools.js";
+
+export type AgentModelEntryConfig = {
+  alias?: string;
+  /** Provider-specific API parameters (e.g., GLM-4.7 thinking mode). */
+  params?: Record<string, unknown>;
+  /** Enable streaming for this model (default: true, false for Ollama to avoid SDK issue #1205). */
+  streaming?: boolean;
+};
+
+export type AgentModelListConfig = {
+  primary?: string;
+  fallbacks?: string[];
+};
 
 export type AgentContextPruningConfig = {
   mode?: "off" | "cache-ttl";
@@ -104,24 +118,35 @@ export type CliBackendConfig = {
 };
 
 export type AgentDefaultsConfig = {
-  /**
-   * Default auth profile injection policy for all agents.
-   * - `false` — skip auth profile injection
-   * - string — single profile id
-   * - string[] — ordered profile ids
-   * - `undefined` — no default (each agent inherits nothing)
-   */
-  auth?: false | string | string[];
-  /** Default agent runtime (claude, gemini, codex, opencode). */
-  runtime?: "claude" | "gemini" | "codex" | "opencode";
-  /** Default extra CLI arguments appended to runtime invocation. */
-  runtimeArgs?: string[];
-  /** Default extra environment variables injected into runtime invocation. */
-  runtimeEnv?: Record<string, string>;
+  /** Primary model and fallbacks (provider/model). Accepts string or {primary,fallbacks}. */
+  model?: AgentModelConfig;
+  /** Optional image-capable model and fallbacks (provider/model). Accepts string or {primary,fallbacks}. */
+  imageModel?: AgentModelConfig;
+  /** Optional PDF-capable model and fallbacks (provider/model). Accepts string or {primary,fallbacks}. */
+  pdfModel?: AgentModelConfig;
+  /** Maximum PDF file size in megabytes (default: 10). */
+  pdfMaxBytesMb?: number;
+  /** Maximum number of PDF pages to process (default: 20). */
+  pdfMaxPages?: number;
+  /** Model catalog with optional aliases (full provider/model keys). */
+  models?: Record<string, AgentModelEntryConfig>;
   /** Agent working directory (preferred). Used as the default cwd for agent runs. */
   workspace?: string;
   /** Optional repository root for system prompt runtime line (overrides auto-detect). */
   repoRoot?: string;
+  /** Skip bootstrap (BOOTSTRAP.md creation, etc.) for pre-configured deployments. */
+  skipBootstrap?: boolean;
+  /** Max chars for injected bootstrap files before truncation (default: 20000). */
+  bootstrapMaxChars?: number;
+  /** Max total chars across all injected bootstrap files (default: 150000). */
+  bootstrapTotalMaxChars?: number;
+  /**
+   * Agent-visible bootstrap truncation warning mode:
+   * - off: do not inject warning text
+   * - once: inject once per unique truncation signature (default)
+   * - always: inject on every run with truncation
+   */
+  bootstrapPromptTruncationWarning?: "off" | "once" | "always";
   /** Optional IANA timezone for the user (used in system prompt; defaults to host timezone). */
   userTimezone?: string;
   /** Time format in system prompt: auto (OS preference), 12-hour, or 24-hour. */
@@ -138,12 +163,26 @@ export type AgentDefaultsConfig = {
    * Include elapsed time in message envelopes ("on" | "off", default: "on").
    */
   envelopeElapsed?: "on" | "off";
+  /** Optional context window cap (used for runtime estimates + status %). */
+  contextTokens?: number;
   /** Optional CLI backends for text-only fallback (claude-cli, etc.). */
   cliBackends?: Record<string, CliBackendConfig>;
   /** Opt-in: prune old tool results from the LLM context to reduce token usage. */
   contextPruning?: AgentContextPruningConfig;
   /** Compaction tuning and pre-compaction memory flush behavior. */
   compaction?: AgentCompactionConfig;
+  /** Embedded Pi runner hardening and compatibility controls. */
+  embeddedPi?: {
+    /**
+     * How embedded Pi should trust workspace-local `.pi/config/settings.json`.
+     * - sanitize (default): apply project settings except shellPath/shellCommandPrefix
+     * - ignore: ignore project settings entirely
+     * - trusted: trust project settings as-is
+     */
+    projectSettingsPolicy?: "trusted" | "sanitize" | "ignore";
+  };
+  /** Vector memory search configuration (per-agent overrides supported). */
+  memorySearch?: MemorySearchConfig;
   /** Default thinking level when no /think directive is present. */
   thinkingDefault?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "adaptive";
   /** Default verbose level when no /verbose directive is present. */
@@ -205,8 +244,6 @@ export type AgentDefaultsConfig = {
     accountId?: string;
     /** Override the heartbeat prompt body (default: "Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats. If nothing needs attention, reply HEARTBEAT_OK."). */
     prompt?: string;
-    /** Path to a file containing the heartbeat prompt (relative to agent workspace dir, or absolute). `prompt` takes precedence if both are set. */
-    file?: string;
     /** Max chars allowed after HEARTBEAT_OK before delivery (default: 30). */
     ackMaxChars?: number;
     /** Suppress tool error warning payloads during heartbeat runs. */
@@ -236,6 +273,8 @@ export type AgentDefaultsConfig = {
     maxChildrenPerAgent?: number;
     /** Auto-archive sub-agent sessions after N minutes (default: 60). */
     archiveAfterMinutes?: number;
+    /** Default model selection for spawned sub-agents (string or {primary,fallbacks}). */
+    model?: AgentModelConfig;
     /** Default thinking level for spawned sub-agents (e.g. "off", "low", "medium", "high"). */
     thinking?: string;
     /** Default run timeout in seconds for spawned sub-agents (0 = no timeout). */
@@ -245,19 +284,26 @@ export type AgentDefaultsConfig = {
   };
   /** Optional sandbox settings for non-main sessions. */
   sandbox?: AgentSandboxConfig;
-  /** Glob patterns for files exposed via agents.files.list/get/set (default: []). */
+  /** Default CLI runtime name (claude, gemini, codex, opencode). */
+  runtime?: "claude" | "gemini" | "codex" | "opencode";
+  /** Default auth config (false = no auth, string or string[] = allowed senders). */
+  auth?: false | string | string[];
+  /** Default extra CLI args for agent runtimes. */
+  runtimeArgs?: string[];
+  /** Default extra env vars for agent runtimes. */
+  runtimeEnv?: Record<string, string>;
+  /** Optional list of files the agent is allowed to edit. */
   editableFiles?: string[];
-  /** Optional boot prompt configuration. */
-  boot?: {
-    /** Boot prompt text injected into the first system turn. Takes precedence over `file` if both set. */
-    prompt?: string;
-    /** Path to a boot prompt file (relative to workspace directory). */
-    file?: string;
-  };
 };
 
 export type AgentCompactionMode = "default" | "safeguard";
 export type AgentCompactionIdentifierPolicy = "strict" | "off" | "custom";
+export type AgentCompactionQualityGuardConfig = {
+  /** Enable compaction summary quality audits and regeneration retries. Default: false. */
+  enabled?: boolean;
+  /** Maximum regeneration retries after a failed quality audit. Default: 1 when enabled. */
+  maxRetries?: number;
+};
 
 export type AgentCompactionConfig = {
   /** Compaction summarization mode. */
@@ -270,8 +316,36 @@ export type AgentCompactionConfig = {
   reserveTokensFloor?: number;
   /** Max share of context window for history during safeguard pruning (0.1–0.9, default 0.5). */
   maxHistoryShare?: number;
+  /** Preserve this many most-recent user/assistant turns verbatim in compaction summary context. */
+  recentTurnsPreserve?: number;
   /** Identifier-preservation instruction policy for compaction summaries. */
   identifierPolicy?: AgentCompactionIdentifierPolicy;
   /** Custom identifier-preservation instructions used when identifierPolicy is "custom". */
   identifierInstructions?: string;
+  /** Optional quality-audit retries for safeguard compaction summaries. */
+  qualityGuard?: AgentCompactionQualityGuardConfig;
+  /** Pre-compaction memory flush (agentic turn). Default: enabled. */
+  memoryFlush?: AgentCompactionMemoryFlushConfig;
+  /**
+   * H2/H3 section names from AGENTS.md to inject after compaction.
+   * Defaults to ["Session Startup", "Red Lines"] when unset.
+   * Set to [] to disable post-compaction context injection entirely.
+   */
+  postCompactionSections?: string[];
+};
+
+export type AgentCompactionMemoryFlushConfig = {
+  /** Enable the pre-compaction memory flush (default: true). */
+  enabled?: boolean;
+  /** Run the memory flush when context is within this many tokens of the compaction threshold. */
+  softThresholdTokens?: number;
+  /**
+   * Force a memory flush when transcript size reaches this threshold
+   * (bytes, or byte-size string like "2mb"). Set to 0 to disable.
+   */
+  forceFlushTranscriptBytes?: number | string;
+  /** User prompt used for the memory flush turn (NO_REPLY is enforced if missing). */
+  prompt?: string;
+  /** System prompt appended for the memory flush turn. */
+  systemPrompt?: string;
 };

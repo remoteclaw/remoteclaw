@@ -108,7 +108,36 @@ describe("registerOnboardCommand", () => {
     );
   });
 
-  // NOTE: --reset-scope and --mistral-api-key options were removed from upstream in v2026.2.26
+  it("forwards --reset-scope to onboard command options", async () => {
+    await runCli(["onboard", "--reset", "--reset-scope", "full"]);
+    expect(onboardCommandMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reset: true,
+        resetScope: "full",
+      }),
+      runtime,
+    );
+  });
+
+  it("parses --mistral-api-key and forwards mistralApiKey", async () => {
+    await runCli(["onboard", "--mistral-api-key", "sk-mistral-test"]);
+    expect(onboardCommandMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mistralApiKey: "sk-mistral-test", // pragma: allowlist secret
+      }),
+      runtime,
+    );
+  });
+
+  it("forwards --gateway-token-ref-env", async () => {
+    await runCli(["onboard", "--gateway-token-ref-env", "REMOTECLAW_GATEWAY_TOKEN"]);
+    expect(onboardCommandMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        gatewayTokenRefEnv: "REMOTECLAW_GATEWAY_TOKEN",
+      }),
+      runtime,
+    );
+  });
 
   it("reports errors via runtime on onboard command failures", async () => {
     onboardCommandMock.mockRejectedValueOnce(new Error("onboard failed"));

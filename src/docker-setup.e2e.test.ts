@@ -175,7 +175,7 @@ describe("docker-setup.sh", () => {
     const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
     expect(envFile).toContain("REMOTECLAW_DOCKER_APT_PACKAGES=ffmpeg build-essential");
     expect(envFile).toContain("REMOTECLAW_EXTRA_MOUNTS=");
-    expect(envFile).toContain("REMOTECLAW_HOME_VOLUME=remoteclaw-home");
+    expect(envFile).toContain("REMOTECLAW_HOME_VOLUME=remoteclaw-home"); // pragma: allowlist secret
     const extraCompose = await readFile(
       join(activeSandbox.rootDir, "docker-compose.extra.yml"),
       "utf8",
@@ -247,7 +247,56 @@ describe("docker-setup.sh", () => {
 
     expect(result.status).toBe(0);
     const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
-    expect(envFile).toContain("REMOTECLAW_GATEWAY_TOKEN=config-token-123");
+    expect(envFile).toContain("REMOTECLAW_GATEWAY_TOKEN=config-token-123"); // pragma: allowlist secret
+  });
+
+  it("reuses existing .env token when REMOTECLAW_GATEWAY_TOKEN and config token are unset", async () => {
+    const activeSandbox = requireSandbox(sandbox);
+    const configDir = join(activeSandbox.rootDir, "config-dotenv-token-reuse");
+    const workspaceDir = join(activeSandbox.rootDir, "workspace-dotenv-token-reuse");
+    await mkdir(configDir, { recursive: true });
+    await writeFile(
+      join(activeSandbox.rootDir, ".env"),
+      "REMOTECLAW_GATEWAY_TOKEN=dotenv-token-123\nREMOTECLAW_GATEWAY_PORT=18789\n", // pragma: allowlist secret
+    );
+
+    const result = runDockerSetup(activeSandbox, {
+      REMOTECLAW_GATEWAY_TOKEN: undefined,
+      REMOTECLAW_CONFIG_DIR: configDir,
+      REMOTECLAW_WORKSPACE_DIR: workspaceDir,
+    });
+
+    expect(result.status).toBe(0);
+    const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
+    expect(envFile).toContain("REMOTECLAW_GATEWAY_TOKEN=dotenv-token-123"); // pragma: allowlist secret
+    expect(result.stderr).toBe("");
+  });
+
+  it("reuses the last non-empty .env token and strips CRLF without truncating '='", async () => {
+    const activeSandbox = requireSandbox(sandbox);
+    const configDir = join(activeSandbox.rootDir, "config-dotenv-last-wins");
+    const workspaceDir = join(activeSandbox.rootDir, "workspace-dotenv-last-wins");
+    await mkdir(configDir, { recursive: true });
+    await writeFile(
+      join(activeSandbox.rootDir, ".env"),
+      [
+        "REMOTECLAW_GATEWAY_TOKEN=",
+        "REMOTECLAW_GATEWAY_TOKEN=first-token",
+        "REMOTECLAW_GATEWAY_TOKEN=last=token=value\r", // pragma: allowlist secret
+      ].join("\n"),
+    );
+
+    const result = runDockerSetup(activeSandbox, {
+      REMOTECLAW_GATEWAY_TOKEN: undefined,
+      REMOTECLAW_CONFIG_DIR: configDir,
+      REMOTECLAW_WORKSPACE_DIR: workspaceDir,
+    });
+
+    expect(result.status).toBe(0);
+    const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
+    expect(envFile).toContain("REMOTECLAW_GATEWAY_TOKEN=last=token=value"); // pragma: allowlist secret
+    expect(envFile).not.toContain("REMOTECLAW_GATEWAY_TOKEN=first-token");
+    expect(envFile).not.toContain("\r");
   });
 
   it("treats REMOTECLAW_SANDBOX=0 as disabled", async () => {
@@ -398,5 +447,12 @@ describe("docker-setup.sh", () => {
     const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
     expect(compose).toContain('network_mode: "service:remoteclaw-gateway"');
     expect(compose).toContain("depends_on:\n      - remoteclaw-gateway");
+  });
+
+  it("keeps docker-compose gateway token env defaults aligned across services", async () => {
+    const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
+    expect(
+      compose.match(/REMOTECLAW_GATEWAY_TOKEN: \$\{REMOTECLAW_GATEWAY_TOKEN:-\}/g),
+    ).toHaveLength(2);
   });
 });

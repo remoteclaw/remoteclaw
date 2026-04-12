@@ -25,6 +25,7 @@ const userProfileCache = new Map<
 const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 interface LineSendOpts {
+  cfg?: import("../config/config.js").RemoteClawConfig;
   channelAccessToken?: string;
   accountId?: string;
   verbose?: boolean;
@@ -33,7 +34,7 @@ interface LineSendOpts {
 }
 
 type LineClientOpts = Pick<LineSendOpts, "channelAccessToken" | "accountId">;
-type LinePushOpts = Pick<LineSendOpts, "channelAccessToken" | "accountId" | "verbose">;
+type LinePushOpts = Pick<LineSendOpts, "cfg" | "channelAccessToken" | "accountId" | "verbose">;
 
 interface LinePushBehavior {
   errorContext?: string;

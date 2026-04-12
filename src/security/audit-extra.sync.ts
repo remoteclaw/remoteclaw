@@ -1,54 +1,24 @@
-import { isToolAllowedByPolicies } from "../agents/tool-policy-resolution.js";
-// Sandbox infrastructure removed (#68)
-type ToolPolicy = { allow?: string[]; deny?: string[] };
-const resolveSandboxConfigForAgent = (_cfg: unknown, _agentId?: string) =>
-  ({
-    mode: "off",
-    workspaceAccess: undefined,
-    docker: undefined,
-    browser: { enabled: false, network: "", cdpSourceRange: undefined as string | undefined },
-    prune: undefined,
-    scope: undefined,
-  }) as {
-    mode: "off" | "non-main" | "all";
-    workspaceAccess: unknown;
-    docker: unknown;
-    browser: { enabled: boolean; network: string; cdpSourceRange: string | undefined };
-    prune: unknown;
-    scope: unknown;
-  };
-const resolveToolPolicyForAgent = (_cfg: unknown, _agentId?: string) =>
-  undefined as ToolPolicy | undefined;
-const isDangerousNetworkMode = (_mode: string) => false;
-const normalizeNetworkMode = (_mode?: string) => undefined as string | undefined;
-const getBlockedBindReason = (_bind: string) =>
-  undefined as
-    | { kind: "non_absolute"; sourcePath: string }
-    | { kind: "covers" | "targets"; blockedPath: string }
-    | undefined;
-function normalizeToolPolicy(config?: {
-  allow?: string[];
-  deny?: string[];
-}): ToolPolicy | undefined {
-  if (!config) {
-    return undefined;
-  }
-  const allow = Array.isArray(config.allow) ? config.allow : undefined;
-  const deny = Array.isArray(config.deny) ? config.deny : undefined;
-  if (!allow && !deny) {
-    return undefined;
-  }
-  return { allow, deny };
-}
+import { isToolAllowedByPolicies } from "../agents/pi-tools.policy.js";
+import {
+  resolveSandboxConfigForAgent,
+  resolveSandboxToolPolicyForAgent,
+} from "../agents/sandbox.js";
+import { isDangerousNetworkMode, normalizeNetworkMode } from "../agents/sandbox/network-mode.js";
 /**
  * Synchronous security audit collector functions.
  *
  * These functions analyze config-based security properties without I/O.
  */
+import type { SandboxToolPolicy } from "../agents/sandbox/types.js";
+import { getBlockedBindReason } from "../agents/sandbox/validate-sandbox-security.js";
 import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
 import { resolveBrowserConfig } from "../browser/config.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
+import {
+  resolveAgentModelFallbackValues,
+  resolveAgentModelPrimaryValue,
+} from "../config/model-input.js";
 import type { AgentToolsConfig } from "../config/types.tools.js";
 import { resolveGatewayAuth } from "../gateway/auth.js";
 import {
@@ -56,6 +26,7 @@ import {
   resolveNodeCommandAllowlist,
 } from "../gateway/node-command-policy.js";
 import { inferParamBFromIdOrName } from "../shared/model-param-b.js";
+import { pickSandboxToolPolicy } from "./audit-tool-policy.js";
 
 export type SecurityAuditFinding = {
   checkId: string;
@@ -127,9 +98,57 @@ function isGatewayRemotelyExposed(cfg: RemoteClawConfig): boolean {
 
 type ModelRef = { id: string; source: string };
 
-// Model config fully gutted — CLI runtimes manage their own models.
-function collectModels(_cfg: RemoteClawConfig): ModelRef[] {
-  return [];
+function addModel(models: ModelRef[], raw: unknown, source: string) {
+  if (typeof raw !== "string") {
+    return;
+  }
+  const id = raw.trim();
+  if (!id) {
+    return;
+  }
+  models.push({ id, source });
+}
+
+function collectModels(cfg: RemoteClawConfig): ModelRef[] {
+  const out: ModelRef[] = [];
+  addModel(
+    out,
+    resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model),
+    "agents.defaults.model.primary",
+  );
+  for (const f of resolveAgentModelFallbackValues(cfg.agents?.defaults?.model)) {
+    addModel(out, f, "agents.defaults.model.fallbacks");
+  }
+  addModel(
+    out,
+    resolveAgentModelPrimaryValue(cfg.agents?.defaults?.imageModel),
+    "agents.defaults.imageModel.primary",
+  );
+  for (const f of resolveAgentModelFallbackValues(cfg.agents?.defaults?.imageModel)) {
+    addModel(out, f, "agents.defaults.imageModel.fallbacks");
+  }
+
+  const list = Array.isArray(cfg.agents?.list) ? cfg.agents?.list : [];
+  for (const agent of list ?? []) {
+    if (!agent || typeof agent !== "object") {
+      continue;
+    }
+    const id =
+      typeof (agent as { id?: unknown }).id === "string" ? (agent as { id: string }).id : "";
+    const model = (agent as { model?: unknown }).model;
+    if (typeof model === "string") {
+      addModel(out, model, `agents.list.${id}.model`);
+    } else if (model && typeof model === "object") {
+      addModel(out, (model as { primary?: unknown }).primary, `agents.list.${id}.model.primary`);
+      const fallbacks = (model as { fallbacks?: unknown }).fallbacks;
+      if (Array.isArray(fallbacks)) {
+        for (const f of fallbacks) {
+          addModel(out, f, `agents.list.${id}.model.fallbacks`);
+        }
+      }
+    }
+  }
+  return out;
 }
 
 const LEGACY_MODEL_PATTERNS: Array<{ id: string; re: RegExp; label: string }> = [
@@ -221,37 +240,116 @@ function looksLikeNodeCommandPattern(value: string): boolean {
   return /\s/.test(value) || value.includes("group:");
 }
 
+function editDistance(a: string, b: string): number {
+  if (a === b) {
+    return 0;
+  }
+  if (!a) {
+    return b.length;
+  }
+  if (!b) {
+    return a.length;
+  }
+
+  const dp: number[] = Array.from({ length: b.length + 1 }, (_, j) => j);
+
+  for (let i = 1; i <= a.length; i++) {
+    let prev = dp[0];
+    dp[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const temp = dp[j];
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + cost);
+      prev = temp;
+    }
+  }
+
+  return dp[b.length];
+}
+
+function suggestKnownNodeCommands(unknown: string, known: Set<string>): string[] {
+  const needle = unknown.trim();
+  if (!needle) {
+    return [];
+  }
+
+  // Fast path: prefix-ish suggestions.
+  const prefix = needle.includes(".") ? needle.split(".").slice(0, 2).join(".") : needle;
+  const prefixHits = Array.from(known)
+    .filter((cmd) => cmd.startsWith(prefix))
+    .slice(0, 3);
+  if (prefixHits.length > 0) {
+    return prefixHits;
+  }
+
+  // Fuzzy: Levenshtein over a small-ish known set.
+  const ranked = Array.from(known)
+    .map((cmd) => ({ cmd, d: editDistance(needle, cmd) }))
+    .toSorted((a, b) => a.d - b.d || a.cmd.localeCompare(b.cmd));
+
+  const best = ranked[0]?.d ?? Infinity;
+  const threshold = Math.max(2, Math.min(4, best));
+  return ranked
+    .filter((r) => r.d <= threshold)
+    .slice(0, 3)
+    .map((r) => r.cmd);
+}
+
 function resolveToolPolicies(params: {
   cfg: RemoteClawConfig;
   agentTools?: AgentToolsConfig;
   sandboxMode?: "off" | "non-main" | "all";
   agentId?: string | null;
-}): ToolPolicy[] {
-  const policies: ToolPolicy[] = [];
+}): SandboxToolPolicy[] {
+  const policies: SandboxToolPolicy[] = [];
   const profile = params.agentTools?.profile ?? params.cfg.tools?.profile;
   const profilePolicy = resolveToolProfilePolicy(profile);
   if (profilePolicy) {
     policies.push(profilePolicy);
   }
 
-  const globalPolicy = normalizeToolPolicy(params.cfg.tools ?? undefined);
+  const globalPolicy = pickSandboxToolPolicy(params.cfg.tools ?? undefined);
   if (globalPolicy) {
     policies.push(globalPolicy);
   }
 
-  const agentPolicy = normalizeToolPolicy(params.agentTools);
+  const agentPolicy = pickSandboxToolPolicy(params.agentTools);
   if (agentPolicy) {
     policies.push(agentPolicy);
   }
 
   if (params.sandboxMode === "all") {
-    const sandboxPolicy = resolveToolPolicyForAgent(params.cfg, params.agentId ?? undefined);
-    if (sandboxPolicy) {
-      policies.push(sandboxPolicy);
-    }
+    const sandboxPolicy = resolveSandboxToolPolicyForAgent(params.cfg, params.agentId ?? undefined);
+    policies.push(sandboxPolicy);
   }
 
   return policies;
+}
+
+function hasWebSearchKey(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): boolean {
+  const search = cfg.tools?.web?.search;
+  return Boolean(
+    search?.apiKey || search?.perplexity?.apiKey || env.BRAVE_API_KEY || env.PERPLEXITY_API_KEY,
+  );
+}
+
+function isWebSearchEnabled(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): boolean {
+  const enabled = cfg.tools?.web?.search?.enabled;
+  if (enabled === false) {
+    return false;
+  }
+  if (enabled === true) {
+    return true;
+  }
+  return hasWebSearchKey(cfg, env);
+}
+
+function isWebFetchEnabled(cfg: RemoteClawConfig): boolean {
+  const enabled = cfg.tools?.web?.fetch?.enabled;
+  if (enabled === false) {
+    return false;
+  }
+  return true;
 }
 
 function isBrowserEnabled(cfg: RemoteClawConfig): boolean {
@@ -392,14 +490,31 @@ function collectRiskyToolExposureContexts(cfg: RemoteClawConfig): {
   let hasRuntimeRisk = false;
   for (const context of contexts) {
     const sandboxMode = resolveSandboxConfigForAgent(cfg, context.agentId).mode;
-    const runtimeTools: string[] = [];
+    const policies = resolveToolPolicies({
+      cfg,
+      agentTools: context.tools,
+      sandboxMode,
+      agentId: context.agentId ?? null,
+    });
+    const runtimeTools = ["exec", "process"].filter((tool) =>
+      isToolAllowedByPolicies(tool, policies),
+    );
+    const fsTools = ["read", "write", "edit", "apply_patch"].filter((tool) =>
+      isToolAllowedByPolicies(tool, policies),
+    );
+    const fsWorkspaceOnly = context.tools?.fs?.workspaceOnly ?? cfg.tools?.fs?.workspaceOnly;
     const runtimeUnguarded = runtimeTools.length > 0 && sandboxMode !== "all";
-    if (!runtimeUnguarded) {
+    const fsUnguarded = fsTools.length > 0 && sandboxMode !== "all" && fsWorkspaceOnly !== true;
+    if (!runtimeUnguarded && !fsUnguarded) {
       continue;
     }
-    hasRuntimeRisk = true;
+    if (runtimeUnguarded) {
+      hasRuntimeRisk = true;
+    }
     riskyContexts.push(
-      `${context.label} (sandbox=${sandboxMode}; runtime=[${runtimeTools.join(", ") || "off"}])`,
+      `${context.label} (sandbox=${sandboxMode}; runtime=[${runtimeTools.join(", ") || "off"}]; fs=[${fsTools.join(", ") || "off"}]; fs.workspaceOnly=${
+        fsWorkspaceOnly === true ? "true" : "false"
+      })`,
     );
   }
 
@@ -412,12 +527,15 @@ function collectRiskyToolExposureContexts(cfg: RemoteClawConfig): {
 
 export function collectAttackSurfaceSummaryFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] {
   const group = summarizeGroupPolicy(cfg);
+  const elevated = cfg.tools?.elevated?.enabled !== false;
   const webhooksEnabled = cfg.hooks?.enabled === true;
   const internalHooksEnabled = cfg.hooks?.internal?.enabled === true;
   const browserEnabled = cfg.browser?.enabled ?? true;
 
   const detail =
     `groups: open=${group.open}, allowlist=${group.allowlist}` +
+    `\n` +
+    `tools.elevated: ${elevated ? "enabled" : "disabled"}` +
     `\n` +
     `hooks.webhooks: ${webhooksEnabled ? "enabled" : "disabled"}` +
     `\n` +
@@ -591,9 +709,30 @@ export function collectHooksHardeningFindings(
 }
 
 export function collectGatewayHttpSessionKeyOverrideFindings(
-  _cfg: RemoteClawConfig,
+  cfg: RemoteClawConfig,
 ): SecurityAuditFinding[] {
-  return [];
+  const findings: SecurityAuditFinding[] = [];
+  const chatCompletionsEnabled = cfg.gateway?.http?.endpoints?.chatCompletions?.enabled === true;
+  const responsesEnabled = cfg.gateway?.http?.endpoints?.responses?.enabled === true;
+  if (!chatCompletionsEnabled && !responsesEnabled) {
+    return findings;
+  }
+
+  const enabledEndpoints = [
+    chatCompletionsEnabled ? "/v1/chat/completions" : null,
+    responsesEnabled ? "/v1/responses" : null,
+  ].filter((entry): entry is string => Boolean(entry));
+
+  findings.push({
+    checkId: "gateway.http.session_key_override_enabled",
+    severity: "info",
+    title: "HTTP API session-key override is enabled",
+    detail:
+      `${enabledEndpoints.join(", ")} accept x-remoteclaw-session-key for per-request session routing. ` +
+      "Treat API credential holders as trusted principals.",
+  });
+
+  return findings;
 }
 
 export function collectGatewayHttpNoAuthFindings(
@@ -607,7 +746,13 @@ export function collectGatewayHttpNoAuthFindings(
     return findings;
   }
 
-  const enabledEndpoints = ["/tools/invoke"];
+  const chatCompletionsEnabled = cfg.gateway?.http?.endpoints?.chatCompletions?.enabled === true;
+  const responsesEnabled = cfg.gateway?.http?.endpoints?.responses?.enabled === true;
+  const enabledEndpoints = [
+    "/tools/invoke",
+    chatCompletionsEnabled ? "/v1/chat/completions" : null,
+    responsesEnabled ? "/v1/responses" : null,
+  ].filter((entry): entry is string => Boolean(entry));
 
   const remoteExposure = isGatewayRemotelyExposed(cfg);
   findings.push({
@@ -740,7 +885,7 @@ export function collectSandboxDangerousConfigFindings(
 
     const network = typeof docker.network === "string" ? docker.network : undefined;
     const normalizedNetwork = normalizeNetworkMode(network);
-    if (network && isDangerousNetworkMode(network)) {
+    if (isDangerousNetworkMode(network)) {
       const modeLabel = normalizedNetwork === "host" ? '"host"' : `"${network}"`;
       const detail =
         normalizedNetwork === "host"
@@ -854,9 +999,17 @@ export function collectNodeDenyCommandPatternFindings(
     );
   }
   if (unknownExact.length > 0) {
-    detailParts.push(
-      `Unknown command names (not in defaults/allowCommands): ${unknownExact.join(", ")}`,
-    );
+    const unknownDetails = unknownExact
+      .map((entry) => {
+        const suggestions = suggestKnownNodeCommands(entry, knownCommands);
+        if (suggestions.length === 0) {
+          return entry;
+        }
+        return `${entry} (did you mean: ${suggestions.join(", ")})`;
+      })
+      .join(", ");
+
+    detailParts.push(`Unknown command names (not in defaults/allowCommands): ${unknownDetails}`);
   }
   const examples = Array.from(knownCommands).slice(0, 8);
 
@@ -1076,6 +1229,16 @@ export function collectSmallModelRiskFindings(params: {
       agentId,
     });
     const exposed: string[] = [];
+    if (isWebSearchEnabled(params.cfg, params.env)) {
+      if (isToolAllowedByPolicies("web_search", policies)) {
+        exposed.push("web_search");
+      }
+    }
+    if (isWebFetchEnabled(params.cfg)) {
+      if (isToolAllowedByPolicies("web_fetch", policies)) {
+        exposed.push("web_fetch");
+      }
+    }
     if (isBrowserEnabled(params.cfg)) {
       if (isToolAllowedByPolicies("browser", policies)) {
         exposed.push("browser");
@@ -1114,7 +1277,7 @@ export function collectSmallModelRiskFindings(params: {
       `\n` +
       "Small models are not recommended for untrusted inputs.",
     remediation:
-      'If you must use small models, enable sandboxing for all sessions (agents.defaults.sandbox.mode="all") and disable web_fetch/browser (tools.deny=["group:web","browser"]).',
+      'If you must use small models, enable sandboxing for all sessions (agents.defaults.sandbox.mode="all") and disable web_search/web_fetch/browser (tools.deny=["group:web","browser"]).',
   });
 
   return findings;
@@ -1125,6 +1288,19 @@ export function collectExposureMatrixFindings(cfg: RemoteClawConfig): SecurityAu
   const openGroups = listGroupPolicyOpen(cfg);
   if (openGroups.length === 0) {
     return findings;
+  }
+
+  const elevatedEnabled = cfg.tools?.elevated?.enabled !== false;
+  if (elevatedEnabled) {
+    findings.push({
+      checkId: "security.exposure.open_groups_with_elevated",
+      severity: "critical",
+      title: "Open groupPolicy with elevated tools enabled",
+      detail:
+        `Found groupPolicy="open" at:\n${openGroups.map((p) => `- ${p}`).join("\n")}\n` +
+        "With tools.elevated enabled, a prompt injection in those rooms can become a high-impact incident.",
+      remediation: `Set groupPolicy="allowlist" and keep elevated allowlists extremely tight.`,
+    });
   }
 
   const { riskyContexts, hasRuntimeRisk } = collectRiskyToolExposureContexts(cfg);

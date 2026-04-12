@@ -21,5 +21,27 @@ export function collectEnabledInsecureOrDangerousFlags(cfg: RemoteClawConfig): s
       }
     }
   }
+  if (cfg.tools?.exec?.applyPatch?.workspaceOnly === false) {
+    enabledFlags.push("tools.exec.applyPatch.workspaceOnly=false");
+  }
+  if (
+    (cfg.plugins as Record<string, unknown> | undefined)?.entries &&
+    typeof (cfg.plugins as Record<string, unknown>).entries === "object" &&
+    ((cfg.plugins as Record<string, unknown>).entries as Record<string, unknown>)?.acpx &&
+    typeof (
+      ((cfg.plugins as Record<string, unknown>).entries as Record<string, unknown>).acpx as Record<
+        string,
+        unknown
+      >
+    )?.config === "object" &&
+    (
+      (
+        ((cfg.plugins as Record<string, unknown>).entries as Record<string, unknown>)
+          .acpx as Record<string, unknown>
+      ).config as Record<string, unknown>
+    )?.permissionMode === "approve-all"
+  ) {
+    enabledFlags.push("plugins.entries.acpx.config.permissionMode=approve-all");
+  }
   return enabledFlags;
 }

@@ -4,9 +4,7 @@ import type { CronService } from "../../cron/service.js";
 import type { createSubsystemLogger } from "../../logging/subsystem.js";
 import type { WizardSession } from "../../wizard/session.js";
 import type { ChatAbortControllerEntry } from "../chat-abort.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "../exec-approval-manager.js";
-type ExecApprovalManager = Record<string, unknown>;
+import type { ExecApprovalManager } from "../exec-approval-manager.js";
 import type { NodeRegistry } from "../node-registry.js";
 import type { ConnectParams, ErrorShape, RequestFrame } from "../protocol/index.js";
 import type { GatewayBroadcastFn, GatewayBroadcastToConnIdsFn } from "../server-broadcast.js";
@@ -88,6 +86,8 @@ export type GatewayRequestContext = {
     prompter: import("../../wizard/prompts.js").WizardPrompter,
   ) => Promise<void>;
   broadcastVoiceWakeChanged: (triggers: string[]) => void;
+  /** Model catalog loader (upstream v2026.3.7). */
+  loadGatewayModelCatalog?: (...args: unknown[]) => unknown;
 };
 
 export type GatewayRequestOptions = {

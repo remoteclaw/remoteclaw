@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { parseStrictInteger, parseStrictPositiveInteger } from "../infra/parse-finite-number.js";
 import {
   GATEWAY_LAUNCH_AGENT_LABEL,
   resolveGatewayServiceDescription,
@@ -127,15 +128,15 @@ export function parseLaunchctlPrint(output: string): LaunchctlPrintInfo {
   }
   const pidValue = entries.pid;
   if (pidValue) {
-    const pid = Number.parseInt(pidValue, 10);
-    if (Number.isFinite(pid)) {
+    const pid = parseStrictPositiveInteger(pidValue);
+    if (pid !== undefined) {
       info.pid = pid;
     }
   }
   const exitStatusValue = entries["last exit status"];
   if (exitStatusValue) {
-    const status = Number.parseInt(exitStatusValue, 10);
-    if (Number.isFinite(status)) {
+    const status = parseStrictInteger(exitStatusValue);
+    if (status !== undefined) {
       info.lastExitStatus = status;
     }
   }
@@ -422,7 +423,7 @@ export async function installLaunchAgent({
           `LaunchAgent install requires a logged-in macOS GUI session for this user (${domain}).`,
           "This usually means you are running from SSH/headless context or as the wrong user (including sudo).",
           "Fix: sign in to the macOS desktop as the target user and rerun `remoteclaw gateway install --force`.",
-          "Headless deployments should use a dedicated logged-in user session or a custom LaunchDaemon (not shipped): https://docs.remoteclaw.org/gateway",
+          "Headless deployments should use a dedicated logged-in user session or a custom LaunchDaemon (not shipped): https://docs.remoteclaw.ai/gateway",
         ].join("\n"),
       );
     }
@@ -475,7 +476,7 @@ export async function restartLaunchAgent({
           `LaunchAgent restart requires a logged-in macOS GUI session for this user (${domain}).`,
           "This usually means you are running from SSH/headless context or as the wrong user (including sudo).",
           "Fix: sign in to the macOS desktop as the target user and rerun `remoteclaw gateway restart`.",
-          "Headless deployments should use a dedicated logged-in user session or a custom LaunchDaemon (not shipped): https://docs.remoteclaw.org/gateway",
+          "Headless deployments should use a dedicated logged-in user session or a custom LaunchDaemon (not shipped): https://docs.remoteclaw.ai/gateway",
         ].join("\n"),
       );
     }

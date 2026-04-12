@@ -38,7 +38,6 @@ import { isAnnounceSkip } from "./tools/sessions-send-helpers.js";
 
 const FAST_TEST_MODE = process.env.REMOTECLAW_TEST_FAST === "1";
 const FAST_TEST_RETRY_INTERVAL_MS = 8;
-const FAST_TEST_REPLY_CHANGE_WAIT_MS = 20;
 const DEFAULT_SUBAGENT_ANNOUNCE_TIMEOUT_MS = 60_000;
 const MAX_TIMER_SAFE_TIMEOUT_MS = 2_147_000_000;
 const DIRECT_ANNOUNCE_TRANSIENT_RETRY_DELAYS_MS = FAST_TEST_MODE
@@ -1252,7 +1251,7 @@ export async function runSubagentAnnounceFlow(params: {
     }
 
     if (requesterDepth >= 1 && reply?.trim()) {
-      const minReplyChangeWaitMs = FAST_TEST_MODE ? FAST_TEST_REPLY_CHANGE_WAIT_MS : 250;
+      const minReplyChangeWaitMs = FAST_TEST_MODE ? 20 : 250;
       reply = await waitForSubagentOutputChange({
         sessionKey: params.childSessionKey,
         baselineReply: reply,

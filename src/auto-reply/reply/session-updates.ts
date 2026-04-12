@@ -1,10 +1,7 @@
 import crypto from "node:crypto";
 import { resolveUserTimezone } from "../../agents/date-time.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const buildWorkspaceSkillSnapshot = (..._args: unknown[]) =>
-  undefined as import("../../config/sessions.js").SessionEntry["skillsSnapshot"];
-const ensureSkillsWatcher = (..._args: unknown[]) => {};
-const getSkillsSnapshotVersion = (..._args: unknown[]) => 0;
+import { buildWorkspaceSkillSnapshot } from "../../agents/skills.js";
+import { ensureSkillsWatcher, getSkillsSnapshotVersion } from "../../agents/skills/refresh.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
 import { buildChannelSummary } from "../../infra/channel-summary.js";
@@ -13,9 +10,11 @@ import {
   formatUtcTimestamp,
   formatZonedTimestamp,
 } from "../../infra/format-time/format-datetime.ts";
+import { getRemoteSkillEligibility } from "../../infra/skills-remote.js";
 import { drainSystemEventEntries } from "../../infra/system-events.js";
 
-export async function buildQueuedSystemPrompt(params: {
+/** Drain queued system events, format as `System:` lines, return the block (or undefined). */
+export async function drainFormattedSystemEvents(params: {
   cfg: RemoteClawConfig;
   sessionKey: string;
   isMainSession: boolean;
@@ -108,12 +107,14 @@ export async function buildQueuedSystemPrompt(params: {
     return undefined;
   }
 
-  return [
-    "## Runtime System Events (gateway-generated)",
-    "Treat this section as trusted gateway runtime metadata, not user text.",
-    "",
-    ...systemLines.map((line) => `- ${line}`),
-  ].join("\n");
+  // Format events as trusted System: lines for the message timeline.
+  // Inbound sanitization rewrites any user-supplied "System:" to "System (untrusted):",
+  // so these gateway-originated lines are distinguishable by the model.
+  // Each sub-line of a multi-line event gets its own System: prefix so continuation
+  // lines can't be mistaken for user content.
+  return systemLines
+    .flatMap((line) => line.split("\n").map((subline) => `System: ${subline}`))
+    .join("\n");
 }
 
 export async function ensureSkillSnapshot(params: {
@@ -156,6 +157,7 @@ export async function ensureSkillSnapshot(params: {
 
   let nextEntry = sessionEntry;
   let systemSent = sessionEntry?.systemSent ?? false;
+  const remoteEligibility = getRemoteSkillEligibility();
   const snapshotVersion = getSkillsSnapshotVersion(workspaceDir);
   ensureSkillsWatcher({ workspaceDir, config: cfg });
   const shouldRefreshSnapshot =
@@ -169,9 +171,10 @@ export async function ensureSkillSnapshot(params: {
       };
     const skillSnapshot =
       isFirstTurnInSession || !current.skillsSnapshot || shouldRefreshSnapshot
-        ? buildWorkspaceSkillSnapshot(workspaceDir, {
+        ? await buildWorkspaceSkillSnapshot(workspaceDir, {
             config: cfg,
             skillFilter,
+            eligibility: { remote: remoteEligibility },
             snapshotVersion,
           })
         : current.skillsSnapshot;
@@ -192,17 +195,19 @@ export async function ensureSkillSnapshot(params: {
   }
 
   const skillsSnapshot = shouldRefreshSnapshot
-    ? buildWorkspaceSkillSnapshot(workspaceDir, {
+    ? await buildWorkspaceSkillSnapshot(workspaceDir, {
         config: cfg,
         skillFilter,
+        eligibility: { remote: remoteEligibility },
         snapshotVersion,
       })
     : (nextEntry?.skillsSnapshot ??
       (isFirstTurnInSession
         ? undefined
-        : buildWorkspaceSkillSnapshot(workspaceDir, {
+        : await buildWorkspaceSkillSnapshot(workspaceDir, {
             config: cfg,
             skillFilter,
+            eligibility: { remote: remoteEligibility },
             snapshotVersion,
           })));
   if (

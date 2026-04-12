@@ -1,4 +1,4 @@
-import type { RemoteClawConfig, RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
+import type { RemoteClawConfig, RemoteClawPluginApi } from "remoteclaw/plugin-sdk/thread-ownership";
 
 type ThreadOwnershipConfig = {
   forwarderUrl?: string;
@@ -27,7 +27,7 @@ function resolveOwnershipAgent(config: RemoteClawConfig): { id: string; name: st
         Boolean(entry && typeof entry === "object"),
       )
     : [];
-  const selected = list[0];
+  const selected = list.find((entry) => entry.default === true) ?? list[0];
 
   const id =
     typeof selected?.id === "string" && selected.id.trim() ? selected.id.trim() : "unknown";

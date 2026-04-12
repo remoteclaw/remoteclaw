@@ -1,5 +1,5 @@
 ---
-description: "Heartbeat polling messages and notification rules"
+summary: "Heartbeat polling messages and notification rules"
 read_when:
   - Adjusting heartbeat cadence or messaging
   - Deciding between heartbeat and cron for scheduled tasks
@@ -17,11 +17,12 @@ Troubleshooting: [/automation/troubleshooting](/automation/troubleshooting)
 
 ## Quick start (beginner)
 
-1. Leave heartbeats enabled (default is `30m`) or set your own cadence.
+1. Leave heartbeats enabled (default is `30m`, or `1h` for Anthropic OAuth/setup-token) or set your own cadence.
 2. Create a tiny `HEARTBEAT.md` checklist in the agent workspace (optional but recommended).
 3. Decide where heartbeat messages should go (`target: "none"` is the default; set `target: "last"` to route to the last contact).
 4. Optional: enable heartbeat reasoning delivery for transparency.
-5. Optional: restrict heartbeats to active hours (local time).
+5. Optional: use lightweight bootstrap context if heartbeat runs only need `HEARTBEAT.md`.
+6. Optional: restrict heartbeats to active hours (local time).
 
 Example config:
 
@@ -33,7 +34,9 @@ Example config:
         every: "30m",
         target: "last", // explicit delivery to last contact (default is "none")
         directPolicy: "allow", // default: allow direct/DM targets; set "block" to suppress
+        lightContext: true, // optional: only inject HEARTBEAT.md from bootstrap files
         // activeHours: { start: "08:00", end: "24:00" },
+        // includeReasoning: true, // optional: send separate `Reasoning:` message too
       },
     },
   },
@@ -42,7 +45,7 @@ Example config:
 
 ## Defaults
 
-- Interval: `30m`. Set `agents.defaults.heartbeat.every` or per-agent `agents.list[].heartbeat.every`; use `0m` to disable.
+- Interval: `30m` (or `1h` when Anthropic OAuth/setup-token is the detected auth mode). Set `agents.defaults.heartbeat.every` or per-agent `agents.list[].heartbeat.every`; use `0m` to disable.
 - Prompt body (configurable via `agents.defaults.heartbeat.prompt`):
   `Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats. If nothing needs attention, reply HEARTBEAT_OK.`
 - The heartbeat prompt is sent **verbatim** as the user message. The system
@@ -66,35 +69,16 @@ stats” or “verify gateway health”), set `agents.defaults.heartbeat.prompt`
 
 ## Response contract
 
-The agent reports heartbeat results using the `heartbeat_report` MCP tool.
-RemoteClaw automatically appends an instruction to the heartbeat prompt asking
-the agent to call this tool.
+- If nothing needs attention, reply with **`HEARTBEAT_OK`**.
+- During heartbeat runs, RemoteClaw treats `HEARTBEAT_OK` as an ack when it appears
+  at the **start or end** of the reply. The token is stripped and the reply is
+  dropped if the remaining content is **≤ `ackMaxChars`** (default: 300).
+- If `HEARTBEAT_OK` appears in the **middle** of a reply, it is not treated
+  specially.
+- For alerts, **do not** include `HEARTBEAT_OK`; return only the alert text.
 
-### `heartbeat_report` tool
-
-Always available (unconditionally registered). Parameters:
-
-| Parameter       | Type                        | Description                                                                                                                                   |
-| --------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `anything_done` | `boolean` (required)        | `true` if actions were performed or alerts need attention; `false` if nothing needs follow-up.                                                |
-| `summary`       | `string \| null` (optional) | Summary of what was done/observed. When `anything_done` is `true`, delivered to the channel. When `false`, only shown if `showOk` is enabled. |
-
-**Behavior:**
-
-- `anything_done: true` — the summary (or a default message) is delivered to the configured channel.
-- `anything_done: false` — delivery is suppressed (the heartbeat is treated as a no-op acknowledgment).
-- Called outside a heartbeat context: returns "Not in heartbeat mode" (no side effects).
-
-### Legacy `HEARTBEAT_OK` text protocol
-
-If the agent does not call `heartbeat_report`, RemoteClaw falls back to the
-legacy text-based protocol:
-
-- `HEARTBEAT_OK` at the **start or end** of the reply is treated as an ack.
-  The token is stripped and the reply is dropped.
-- `HEARTBEAT_OK` in the **middle** of a reply is not treated specially.
-- Outside heartbeats, stray `HEARTBEAT_OK` is stripped and logged; a message
-  that is only `HEARTBEAT_OK` is dropped.
+Outside heartbeats, stray `HEARTBEAT_OK` at the start/end of a message is stripped
+and logged; a message that is only `HEARTBEAT_OK` is dropped.
 
 ## Config
 
@@ -104,13 +88,14 @@ legacy text-based protocol:
     defaults: {
       heartbeat: {
         every: "30m", // default: 30m (0m disables)
+        model: "anthropic/claude-opus-4-6",
+        includeReasoning: false, // default: false (deliver separate Reasoning: message when available)
+        lightContext: false, // default: false; true keeps only HEARTBEAT.md from workspace bootstrap files
         target: "last", // default: none | options: last | none | <channel id> (core or plugin, e.g. "bluebubbles")
         to: "+15551234567", // optional channel-specific override
         accountId: "ops-bot", // optional multi-account channel id
-        // Heartbeat prompt: use `prompt` (inline) or `file` (path resolved from workspace).
-        // If both are set, `prompt` wins. If neither is set, the built-in default is used.
-        prompt: "Read HEARTBEAT.md if it exists. Follow it strictly. If nothing needs attention, call heartbeat_report(false).",
-        // file: "heartbeat-prompt.md", // alternative: read prompt from a file in the workspace
+        prompt: "Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats. If nothing needs attention, reply HEARTBEAT_OK.",
+        ackMaxChars: 300, // max chars allowed after HEARTBEAT_OK
       },
     },
   },
@@ -224,6 +209,9 @@ Use `accountId` to target a specific account on multi-account channels like Tele
 ### Field notes
 
 - `every`: heartbeat interval (duration string; default unit = minutes).
+- `model`: optional model override for heartbeat runs (`provider/model`).
+- `includeReasoning`: when enabled, also deliver the separate `Reasoning:` message when available (same shape as `/reasoning on`).
+- `lightContext`: when true, heartbeat runs use lightweight bootstrap context and keep only `HEARTBEAT.md` from workspace bootstrap files.
 - `session`: optional session key for heartbeat runs.
   - `main` (default): agent main session.
   - Explicit session key (copy from `remoteclaw sessions --json` or the [sessions CLI](/cli/sessions)).
@@ -238,6 +226,7 @@ Use `accountId` to target a specific account on multi-account channels like Tele
 - `to`: optional recipient override (channel-specific id, e.g. E.164 for WhatsApp or a Telegram chat id). For Telegram topics/threads, use `<chatId>:topic:<messageThreadId>`.
 - `accountId`: optional account id for multi-account channels. When `target: "last"`, the account id applies to the resolved last channel if it supports accounts; otherwise it is ignored. If the account id does not match a configured account for the resolved channel, delivery is skipped.
 - `prompt`: overrides the default prompt body (not merged).
+- `ackMaxChars`: max chars allowed after `HEARTBEAT_OK` before delivery.
 - `suppressToolErrorWarnings`: when true, suppresses tool error warning payloads during heartbeat runs.
 - `activeHours`: restricts heartbeat runs to a time window. Object with `start` (HH:MM, inclusive; use `00:00` for start-of-day), `end` (HH:MM exclusive; `24:00` allowed for end-of-day), and optional `timezone`.
   - Omitted or `"user"`: uses your `agents.defaults.userTimezone` if set, otherwise falls back to the host system timezone.
@@ -374,6 +363,20 @@ If multiple agents have `heartbeat` configured, a manual wake runs each of those
 agent heartbeats immediately.
 
 Use `--mode next-heartbeat` to wait for the next scheduled tick.
+
+## Reasoning delivery (optional)
+
+By default, heartbeats deliver only the final “answer” payload.
+
+If you want transparency, enable:
+
+- `agents.defaults.heartbeat.includeReasoning: true`
+
+When enabled, heartbeats will also deliver a separate message prefixed
+`Reasoning:` (same shape as `/reasoning on`). This can be useful when the agent
+is managing multiple sessions/codexes and you want to see why it decided to ping
+you — but it can also leak more internal detail than you want. Prefer keeping it
+off in group chats.
 
 ## Cost awareness
 

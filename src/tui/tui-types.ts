@@ -35,6 +35,7 @@ export type SessionInfo = {
   inputTokens?: number | null;
   outputTokens?: number | null;
   totalTokens?: number | null;
+  contextTokens?: number | null;
   responseUsage?: ResponseUsageMode;
   updatedAt?: number | null;
   displayName?: string;
@@ -45,6 +46,7 @@ export type SessionScope = "per-sender" | "global";
 export type AgentSummary = {
   id: string;
   name?: string;
+  runtime?: string;
 };
 
 export type GatewayStatusSummary = {
@@ -84,6 +86,7 @@ export type GatewayStatusSummary = {
 
 export type TuiStateAccess = {
   firstAgentId: string;
+  agentDefaultId: string;
   sessionMainKey: string;
   sessionScope: SessionScope;
   agents: AgentSummary[];

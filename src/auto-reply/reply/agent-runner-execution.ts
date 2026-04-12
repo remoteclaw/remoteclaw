@@ -50,6 +50,9 @@ export type AgentRunLoopResult =
       autoCompactionCompleted?: boolean;
       /** Payload keys sent directly (not via pipeline) during tool flush. */
       directlySentBlockKeys?: Set<string>;
+      fallbackProvider?: string;
+      fallbackModel?: string;
+      fallbackAttempts?: number;
     }
   | { kind: "final"; payload: ReplyPayload };
 

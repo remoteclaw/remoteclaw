@@ -8,6 +8,9 @@ import {
 } from "../channels/telegram/allow-from.js";
 import { fetchTelegramChatId } from "../channels/telegram/api.js";
 import { formatCliCommand } from "../cli/command-format.js";
+import { resolveCommandSecretRefsViaGateway } from "../cli/command-secret-gateway.js";
+import { getChannelsCommandSecretTargetIds } from "../cli/command-secret-targets.js";
+import { listRouteBindings } from "../config/bindings.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { CONFIG_PATH, migrateLegacyConfig, readConfigFileSnapshot } from "../config/config.js";
 import { collectProviderDangerousNameMatchingScopes } from "../config/dangerous-name-matching.js";
@@ -15,8 +18,27 @@ import { formatConfigIssueLines } from "../config/issue-format.js";
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
 import { parseToolsBySenderTypedKey } from "../config/types.tools.js";
 import { RemoteClawSchema } from "../config/zod-schema.js";
+import { resolveCommandResolutionFromArgv } from "../infra/exec-command-resolution.js";
+import {
+  listInterpreterLikeSafeBins,
+  resolveMergedSafeBinProfileFixtures,
+} from "../infra/exec-safe-bin-runtime-policy.js";
+import {
+  getTrustedSafeBinDirs,
+  isTrustedSafeBinPath,
+  normalizeTrustedSafeBinDirs,
+} from "../infra/exec-safe-bin-trust.js";
 import { readChannelAllowFromStore } from "../pairing/pairing-store.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/account-id.js";
+import {
+  formatChannelAccountsDefaultPath,
+  formatSetExplicitDefaultInstruction,
+  formatSetExplicitDefaultToConfiguredInstruction,
+} from "../routing/default-account-warnings.js";
+import {
+  DEFAULT_ACCOUNT_ID,
+  normalizeAccountId,
+  normalizeOptionalAccountId,
+} from "../routing/session-key.js";
 import {
   isDiscordMutableAllowEntry,
   isGoogleChatMutableAllowEntry,
@@ -25,6 +47,7 @@ import {
   isMattermostMutableAllowEntry,
   isSlackMutableAllowEntry,
 } from "../security/mutable-allowlist-detectors.js";
+import { inspectTelegramAccount } from "../telegram/account-inspect.js";
 import { listTelegramAccountIds, resolveTelegramAccount } from "../telegram/accounts.js";
 import { note } from "../terminal/note.js";
 import { isRecord, resolveHomeDir } from "../utils.js";
@@ -205,15 +228,21 @@ function normalizeBindingChannelKey(raw?: string | null): string {
   return (raw ?? "").trim().toLowerCase();
 }
 
-export function collectMissingDefaultAccountBindingWarnings(cfg: RemoteClawConfig): string[] {
+type ChannelMissingDefaultAccountContext = {
+  channelKey: string;
+  channel: Record<string, unknown>;
+  normalizedAccountIds: string[];
+};
+
+function collectChannelsMissingDefaultAccount(
+  cfg: RemoteClawConfig,
+): ChannelMissingDefaultAccountContext[] {
   const channels = asObjectRecord(cfg.channels);
   if (!channels) {
     return [];
   }
 
-  const bindings = Array.isArray(cfg.bindings) ? cfg.bindings : [];
-  const warnings: string[] = [];
-
+  const contexts: ChannelMissingDefaultAccountContext[] = [];
   for (const [channelKey, rawChannel] of Object.entries(channels)) {
     const channel = asObjectRecord(rawChannel);
     if (!channel) {
@@ -230,10 +259,20 @@ export function collectMissingDefaultAccountBindingWarnings(cfg: RemoteClawConfi
           .map((accountId) => normalizeAccountId(accountId))
           .filter(Boolean),
       ),
-    );
+    ).toSorted((a, b) => a.localeCompare(b));
     if (normalizedAccountIds.length === 0 || normalizedAccountIds.includes(DEFAULT_ACCOUNT_ID)) {
       continue;
     }
+    contexts.push({ channelKey, channel, normalizedAccountIds });
+  }
+  return contexts;
+}
+
+export function collectMissingDefaultAccountBindingWarnings(cfg: RemoteClawConfig): string[] {
+  const bindings = listRouteBindings(cfg);
+  const warnings: string[] = [];
+
+  for (const { channelKey, normalizedAccountIds } of collectChannelsMissingDefaultAccount(cfg)) {
     const accountIdSet = new Set(normalizedAccountIds);
     const channelPattern = normalizeBindingChannelKey(channelKey);
 
@@ -281,13 +320,43 @@ export function collectMissingDefaultAccountBindingWarnings(cfg: RemoteClawConfi
     }
     if (coveredAccountIds.size > 0) {
       warnings.push(
-        `- channels.${channelKey}: accounts.default is missing and account bindings only cover a subset of configured accounts. Uncovered accounts: ${uncoveredAccountIds.join(", ")}. Add bindings[].match.accountId for uncovered accounts (or "*"), or add channels.${channelKey}.accounts.default.`,
+        `- channels.${channelKey}: accounts.default is missing and account bindings only cover a subset of configured accounts. Uncovered accounts: ${uncoveredAccountIds.join(", ")}. Add bindings[].match.accountId for uncovered accounts (or "*"), or add ${formatChannelAccountsDefaultPath(channelKey)}.`,
       );
       continue;
     }
 
     warnings.push(
-      `- channels.${channelKey}: accounts.default is missing and no valid account-scoped binding exists for configured accounts (${normalizedAccountIds.join(", ")}). Channel-only bindings (no accountId) match only default. Add bindings[].match.accountId for one of these accounts (or "*"), or add channels.${channelKey}.accounts.default.`,
+      `- channels.${channelKey}: accounts.default is missing and no valid account-scoped binding exists for configured accounts (${normalizedAccountIds.join(", ")}). Channel-only bindings (no accountId) match only default. Add bindings[].match.accountId for one of these accounts (or "*"), or add ${formatChannelAccountsDefaultPath(channelKey)}.`,
+    );
+  }
+
+  return warnings;
+}
+
+export function collectMissingExplicitDefaultAccountWarnings(cfg: RemoteClawConfig): string[] {
+  const warnings: string[] = [];
+  for (const { channelKey, channel, normalizedAccountIds } of collectChannelsMissingDefaultAccount(
+    cfg,
+  )) {
+    if (normalizedAccountIds.length < 2) {
+      continue;
+    }
+
+    const preferredDefault = normalizeOptionalAccountId(
+      typeof channel.defaultAccount === "string" ? channel.defaultAccount : undefined,
+    );
+    if (preferredDefault) {
+      if (normalizedAccountIds.includes(preferredDefault)) {
+        continue;
+      }
+      warnings.push(
+        `- channels.${channelKey}: defaultAccount is set to "${preferredDefault}" but does not match configured accounts (${normalizedAccountIds.join(", ")}). ${formatSetExplicitDefaultToConfiguredInstruction({ channelKey })} to avoid fallback routing.`,
+      );
+      continue;
+    }
+
+    warnings.push(
+      `- channels.${channelKey}: multiple accounts are configured but no explicit default is set. ${formatSetExplicitDefaultInstruction(channelKey)} to avoid fallback routing.`,
     );
   }
 
@@ -400,10 +469,20 @@ async function maybeRepairTelegramAllowFromUsernames(cfg: RemoteClawConfig): Pro
     return { config: cfg, changes: [] };
   }
 
+  const { resolvedConfig } = await resolveCommandSecretRefsViaGateway({
+    config: cfg,
+    commandName: "doctor --fix",
+    targetIds: getChannelsCommandSecretTargetIds(),
+    mode: "summary",
+  });
+  const hasConfiguredUnavailableToken = listTelegramAccountIds(cfg).some((accountId) => {
+    const inspected = inspectTelegramAccount({ cfg, accountId });
+    return inspected.enabled && inspected.tokenStatus === "configured_unavailable";
+  });
   const tokens = Array.from(
     new Set(
-      listTelegramAccountIds(cfg)
-        .map((accountId) => resolveTelegramAccount({ cfg, accountId }))
+      listTelegramAccountIds(resolvedConfig)
+        .map((accountId) => resolveTelegramAccount({ cfg: resolvedConfig, accountId }))
         .map((account) => (account.tokenSource === "none" ? "" : account.token))
         .map((token) => token.trim())
         .filter(Boolean),
@@ -414,7 +493,9 @@ async function maybeRepairTelegramAllowFromUsernames(cfg: RemoteClawConfig): Pro
     return {
       config: cfg,
       changes: [
-        `- Telegram allowFrom contains @username entries, but no Telegram bot token is configured; cannot auto-resolve (run onboarding or replace with numeric sender IDs).`,
+        hasConfiguredUnavailableToken
+          ? `- Telegram allowFrom contains @username entries, but configured Telegram bot credentials are unavailable in this command path; cannot auto-resolve (start the gateway or make the secret source available, then rerun doctor --fix).`
+          : `- Telegram allowFrom contains @username entries, but no Telegram bot token is configured; cannot auto-resolve (run onboarding or replace with numeric sender IDs).`,
       ],
     };
   }
@@ -1085,120 +1166,6 @@ function maybeRepairOpenPolicyAllowFrom(cfg: RemoteClawConfig): {
   return { config: next, changes };
 }
 
-type LegacyToolsBySenderKeyHit = {
-  toolsBySenderPath: Array<string | number>;
-  pathLabel: string;
-  key: string;
-  targetKey: string;
-};
-
-function collectLegacyToolsBySenderKeyHits(
-  value: unknown,
-  pathParts: Array<string | number>,
-  hits: LegacyToolsBySenderKeyHit[],
-) {
-  if (Array.isArray(value)) {
-    for (const [index, entry] of value.entries()) {
-      collectLegacyToolsBySenderKeyHits(entry, [...pathParts, index], hits);
-    }
-    return;
-  }
-  const record = asObjectRecord(value);
-  if (!record) {
-    return;
-  }
-
-  const toolsBySender = asObjectRecord(record.toolsBySender);
-  if (toolsBySender) {
-    const path = [...pathParts, "toolsBySender"];
-    const pathLabel = formatPath(path);
-    for (const rawKey of Object.keys(toolsBySender)) {
-      const trimmed = rawKey.trim();
-      if (!trimmed || trimmed === "*" || parseToolsBySenderTypedKey(trimmed)) {
-        continue;
-      }
-      hits.push({
-        toolsBySenderPath: path,
-        pathLabel,
-        key: rawKey,
-        targetKey: `id:${trimmed}`,
-      });
-    }
-  }
-
-  for (const [key, nested] of Object.entries(record)) {
-    if (key === "toolsBySender") {
-      continue;
-    }
-    collectLegacyToolsBySenderKeyHits(nested, [...pathParts, key], hits);
-  }
-}
-
-function scanLegacyToolsBySenderKeys(cfg: RemoteClawConfig): LegacyToolsBySenderKeyHit[] {
-  const hits: LegacyToolsBySenderKeyHit[] = [];
-  collectLegacyToolsBySenderKeyHits(cfg, [], hits);
-  return hits;
-}
-
-function maybeRepairLegacyToolsBySenderKeys(cfg: RemoteClawConfig): {
-  config: RemoteClawConfig;
-  changes: string[];
-} {
-  const next = structuredClone(cfg);
-  const hits = scanLegacyToolsBySenderKeys(next);
-  if (hits.length === 0) {
-    return { config: cfg, changes: [] };
-  }
-
-  const summary = new Map<string, { migrated: number; dropped: number; examples: string[] }>();
-  let changed = false;
-
-  for (const hit of hits) {
-    const toolsBySender = asObjectRecord(resolvePathTarget(next, hit.toolsBySenderPath));
-    if (!toolsBySender || !(hit.key in toolsBySender)) {
-      continue;
-    }
-    const row = summary.get(hit.pathLabel) ?? { migrated: 0, dropped: 0, examples: [] };
-
-    if (toolsBySender[hit.targetKey] === undefined) {
-      toolsBySender[hit.targetKey] = toolsBySender[hit.key];
-      row.migrated++;
-      if (row.examples.length < 3) {
-        row.examples.push(`${hit.key} -> ${hit.targetKey}`);
-      }
-    } else {
-      row.dropped++;
-      if (row.examples.length < 3) {
-        row.examples.push(`${hit.key} (kept existing ${hit.targetKey})`);
-      }
-    }
-    delete toolsBySender[hit.key];
-    summary.set(hit.pathLabel, row);
-    changed = true;
-  }
-
-  if (!changed) {
-    return { config: cfg, changes: [] };
-  }
-
-  const changes: string[] = [];
-  for (const [pathLabel, row] of summary) {
-    if (row.migrated > 0) {
-      const suffix = row.examples.length > 0 ? ` (${row.examples.join(", ")})` : "";
-      changes.push(
-        `- ${pathLabel}: migrated ${row.migrated} legacy key${row.migrated === 1 ? "" : "s"} to typed id: entries${suffix}.`,
-      );
-    }
-    if (row.dropped > 0) {
-      changes.push(
-        `- ${pathLabel}: removed ${row.dropped} legacy key${row.dropped === 1 ? "" : "s"} where typed id: entries already existed.`,
-      );
-    }
-  }
-
-  return { config: next, changes };
-}
-
 function hasAllowFromEntries(list?: Array<string | number>) {
   return Array.isArray(list) && list.map((v) => String(v).trim()).filter(Boolean).length > 0;
 }
@@ -1374,6 +1341,8 @@ function detectEmptyAllowlistPolicy(cfg: RemoteClawConfig): string[] {
     if (!channelName) {
       return true;
     }
+    // These channels enforce group access via channel/space config, not sender-based
+    // groupAllowFrom lists.
     return !(channelName === "discord" || channelName === "slack" || channelName === "googlechat");
   };
 
@@ -1381,6 +1350,7 @@ function detectEmptyAllowlistPolicy(cfg: RemoteClawConfig): string[] {
     if (!channelName) {
       return true;
     }
+    // Keep doctor warnings aligned with runtime access semantics.
     return !(
       channelName === "googlechat" ||
       channelName === "imessage" ||
@@ -1435,6 +1405,8 @@ function detectEmptyAllowlistPolicy(cfg: RemoteClawConfig): string[] {
       const rawGroupAllowFrom =
         (account.groupAllowFrom as Array<string | number> | undefined) ??
         (parent?.groupAllowFrom as Array<string | number> | undefined);
+      // Match runtime semantics: resolveGroupAllowFromSources treats
+      // empty arrays as unset and falls back to allowFrom.
       const groupAllowFrom = hasAllowFromEntries(rawGroupAllowFrom) ? rawGroupAllowFrom : undefined;
       const fallbackToAllowFrom = allowsGroupAllowFromFallback(channelName);
       const effectiveGroupAllowFrom =
@@ -1481,6 +1453,304 @@ function detectEmptyAllowlistPolicy(cfg: RemoteClawConfig): string[] {
   }
 
   return warnings;
+}
+
+type ExecSafeBinCoverageHit = {
+  scopePath: string;
+  bin: string;
+  isInterpreter: boolean;
+};
+
+type ExecSafeBinScopeRef = {
+  scopePath: string;
+  safeBins: string[];
+  exec: Record<string, unknown>;
+  mergedProfiles: Record<string, unknown>;
+  trustedSafeBinDirs: ReadonlySet<string>;
+};
+
+type ExecSafeBinTrustedDirHintHit = {
+  scopePath: string;
+  bin: string;
+  resolvedPath: string;
+};
+
+function normalizeConfiguredSafeBins(entries: unknown): string[] {
+  if (!Array.isArray(entries)) {
+    return [];
+  }
+  return Array.from(
+    new Set(
+      entries
+        .map((entry) => (typeof entry === "string" ? entry.trim().toLowerCase() : ""))
+        .filter((entry) => entry.length > 0),
+    ),
+  ).toSorted();
+}
+
+function normalizeConfiguredTrustedSafeBinDirs(entries: unknown): string[] {
+  if (!Array.isArray(entries)) {
+    return [];
+  }
+  return normalizeTrustedSafeBinDirs(
+    entries.filter((entry): entry is string => typeof entry === "string"),
+  );
+}
+
+function collectExecSafeBinScopes(cfg: RemoteClawConfig): ExecSafeBinScopeRef[] {
+  const scopes: ExecSafeBinScopeRef[] = [];
+  const globalExec = asObjectRecord(cfg.tools?.exec);
+  const globalTrustedDirs = normalizeConfiguredTrustedSafeBinDirs(globalExec?.safeBinTrustedDirs);
+  if (globalExec) {
+    const safeBins = normalizeConfiguredSafeBins(globalExec.safeBins);
+    if (safeBins.length > 0) {
+      scopes.push({
+        scopePath: "tools.exec",
+        safeBins,
+        exec: globalExec,
+        mergedProfiles:
+          resolveMergedSafeBinProfileFixtures({
+            global: globalExec,
+          }) ?? {},
+        trustedSafeBinDirs: new Set(
+          getTrustedSafeBinDirs({
+            extraDirs: globalTrustedDirs,
+          }),
+        ),
+      });
+    }
+  }
+  const agents = Array.isArray(cfg.agents?.list) ? cfg.agents.list : [];
+  for (const agent of agents) {
+    if (!agent || typeof agent !== "object" || typeof agent.id !== "string") {
+      continue;
+    }
+    const agentExec = asObjectRecord(agent.tools?.exec);
+    if (!agentExec) {
+      continue;
+    }
+    const safeBins = normalizeConfiguredSafeBins(agentExec.safeBins);
+    if (safeBins.length === 0) {
+      continue;
+    }
+    scopes.push({
+      scopePath: `agents.list.${agent.id}.tools.exec`,
+      safeBins,
+      exec: agentExec,
+      mergedProfiles:
+        resolveMergedSafeBinProfileFixtures({
+          global: globalExec,
+          local: agentExec,
+        }) ?? {},
+      trustedSafeBinDirs: new Set(
+        getTrustedSafeBinDirs({
+          extraDirs: [
+            ...globalTrustedDirs,
+            ...normalizeConfiguredTrustedSafeBinDirs(agentExec.safeBinTrustedDirs),
+          ],
+        }),
+      ),
+    });
+  }
+  return scopes;
+}
+
+function scanExecSafeBinCoverage(cfg: RemoteClawConfig): ExecSafeBinCoverageHit[] {
+  const hits: ExecSafeBinCoverageHit[] = [];
+  for (const scope of collectExecSafeBinScopes(cfg)) {
+    const interpreterBins = new Set(listInterpreterLikeSafeBins(scope.safeBins));
+    for (const bin of scope.safeBins) {
+      if (scope.mergedProfiles[bin]) {
+        continue;
+      }
+      hits.push({
+        scopePath: scope.scopePath,
+        bin,
+        isInterpreter: interpreterBins.has(bin),
+      });
+    }
+  }
+  return hits;
+}
+
+function scanExecSafeBinTrustedDirHints(cfg: RemoteClawConfig): ExecSafeBinTrustedDirHintHit[] {
+  const hits: ExecSafeBinTrustedDirHintHit[] = [];
+  for (const scope of collectExecSafeBinScopes(cfg)) {
+    for (const bin of scope.safeBins) {
+      const resolution = resolveCommandResolutionFromArgv([bin]);
+      if (!resolution?.resolvedPath) {
+        continue;
+      }
+      if (
+        isTrustedSafeBinPath({
+          resolvedPath: resolution.resolvedPath,
+          trustedDirs: scope.trustedSafeBinDirs,
+        })
+      ) {
+        continue;
+      }
+      hits.push({
+        scopePath: scope.scopePath,
+        bin,
+        resolvedPath: resolution.resolvedPath,
+      });
+    }
+  }
+  return hits;
+}
+
+function maybeRepairExecSafeBinProfiles(cfg: RemoteClawConfig): {
+  config: RemoteClawConfig;
+  changes: string[];
+  warnings: string[];
+} {
+  const next = structuredClone(cfg);
+  const changes: string[] = [];
+  const warnings: string[] = [];
+
+  for (const scope of collectExecSafeBinScopes(next)) {
+    const interpreterBins = new Set(listInterpreterLikeSafeBins(scope.safeBins));
+    const missingBins = scope.safeBins.filter((bin) => !scope.mergedProfiles[bin]);
+    if (missingBins.length === 0) {
+      continue;
+    }
+    const profileHolder =
+      asObjectRecord(scope.exec.safeBinProfiles) ?? (scope.exec.safeBinProfiles = {});
+    for (const bin of missingBins) {
+      if (interpreterBins.has(bin)) {
+        warnings.push(
+          `- ${scope.scopePath}.safeBins includes interpreter/runtime '${bin}' without profile; remove it from safeBins or use explicit allowlist entries.`,
+        );
+        continue;
+      }
+      if (profileHolder[bin] !== undefined) {
+        continue;
+      }
+      profileHolder[bin] = {};
+      changes.push(
+        `- ${scope.scopePath}.safeBinProfiles.${bin}: added scaffold profile {} (review and tighten flags/positionals).`,
+      );
+    }
+  }
+
+  if (changes.length === 0 && warnings.length === 0) {
+    return { config: cfg, changes: [], warnings: [] };
+  }
+  return { config: next, changes, warnings };
+}
+
+type LegacyToolsBySenderKeyHit = {
+  toolsBySenderPath: Array<string | number>;
+  pathLabel: string;
+  key: string;
+  targetKey: string;
+};
+
+function collectLegacyToolsBySenderKeyHits(
+  value: unknown,
+  pathParts: Array<string | number>,
+  hits: LegacyToolsBySenderKeyHit[],
+) {
+  if (Array.isArray(value)) {
+    for (const [index, entry] of value.entries()) {
+      collectLegacyToolsBySenderKeyHits(entry, [...pathParts, index], hits);
+    }
+    return;
+  }
+  const record = asObjectRecord(value);
+  if (!record) {
+    return;
+  }
+
+  const toolsBySender = asObjectRecord(record.toolsBySender);
+  if (toolsBySender) {
+    const path = [...pathParts, "toolsBySender"];
+    const pathLabel = formatPath(path);
+    for (const rawKey of Object.keys(toolsBySender)) {
+      const trimmed = rawKey.trim();
+      if (!trimmed || trimmed === "*" || parseToolsBySenderTypedKey(trimmed)) {
+        continue;
+      }
+      hits.push({
+        toolsBySenderPath: path,
+        pathLabel,
+        key: rawKey,
+        targetKey: `id:${trimmed}`,
+      });
+    }
+  }
+
+  for (const [key, nested] of Object.entries(record)) {
+    if (key === "toolsBySender") {
+      continue;
+    }
+    collectLegacyToolsBySenderKeyHits(nested, [...pathParts, key], hits);
+  }
+}
+
+function scanLegacyToolsBySenderKeys(cfg: RemoteClawConfig): LegacyToolsBySenderKeyHit[] {
+  const hits: LegacyToolsBySenderKeyHit[] = [];
+  collectLegacyToolsBySenderKeyHits(cfg, [], hits);
+  return hits;
+}
+
+function maybeRepairLegacyToolsBySenderKeys(cfg: RemoteClawConfig): {
+  config: RemoteClawConfig;
+  changes: string[];
+} {
+  const next = structuredClone(cfg);
+  const hits = scanLegacyToolsBySenderKeys(next);
+  if (hits.length === 0) {
+    return { config: cfg, changes: [] };
+  }
+
+  const summary = new Map<string, { migrated: number; dropped: number; examples: string[] }>();
+  let changed = false;
+
+  for (const hit of hits) {
+    const toolsBySender = asObjectRecord(resolvePathTarget(next, hit.toolsBySenderPath));
+    if (!toolsBySender || !(hit.key in toolsBySender)) {
+      continue;
+    }
+    const row = summary.get(hit.pathLabel) ?? { migrated: 0, dropped: 0, examples: [] };
+
+    if (toolsBySender[hit.targetKey] === undefined) {
+      toolsBySender[hit.targetKey] = toolsBySender[hit.key];
+      row.migrated++;
+      if (row.examples.length < 3) {
+        row.examples.push(`${hit.key} -> ${hit.targetKey}`);
+      }
+    } else {
+      row.dropped++;
+      if (row.examples.length < 3) {
+        row.examples.push(`${hit.key} (kept existing ${hit.targetKey})`);
+      }
+    }
+    delete toolsBySender[hit.key];
+    summary.set(hit.pathLabel, row);
+    changed = true;
+  }
+
+  if (!changed) {
+    return { config: cfg, changes: [] };
+  }
+
+  const changes: string[] = [];
+  for (const [pathLabel, row] of summary) {
+    if (row.migrated > 0) {
+      const suffix = row.examples.length > 0 ? ` (${row.examples.join(", ")})` : "";
+      changes.push(
+        `- ${pathLabel}: migrated ${row.migrated} legacy key${row.migrated === 1 ? "" : "s"} to typed id: entries${suffix}.`,
+      );
+    }
+    if (row.dropped > 0) {
+      changes.push(
+        `- ${pathLabel}: removed ${row.dropped} legacy key${row.dropped === 1 ? "" : "s"} where typed id: entries already existed.`,
+      );
+    }
+  }
+
+  return { config: next, changes };
 }
 
 async function maybeMigrateLegacyConfig(): Promise<string[]> {
@@ -1619,6 +1889,10 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
   if (missingDefaultAccountBindingWarnings.length > 0) {
     note(missingDefaultAccountBindingWarnings.join("\n"), "Doctor warnings");
   }
+  const missingExplicitDefaultWarnings = collectMissingExplicitDefaultAccountWarnings(candidate);
+  if (missingExplicitDefaultWarnings.length > 0) {
+    note(missingExplicitDefaultWarnings.join("\n"), "Doctor warnings");
+  }
 
   if (shouldRepair) {
     const repair = await maybeRepairTelegramAllowFromUsernames(candidate);
@@ -1664,6 +1938,17 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
       candidate = toolsBySenderRepair.config;
       pendingChanges = true;
       cfg = toolsBySenderRepair.config;
+    }
+
+    const safeBinProfileRepair = maybeRepairExecSafeBinProfiles(candidate);
+    if (safeBinProfileRepair.changes.length > 0) {
+      note(safeBinProfileRepair.changes.join("\n"), "Doctor changes");
+      candidate = safeBinProfileRepair.config;
+      pendingChanges = true;
+      cfg = safeBinProfileRepair.config;
+    }
+    if (safeBinProfileRepair.warnings.length > 0) {
+      note(safeBinProfileRepair.warnings.join("\n"), "Doctor warnings");
     }
   } else {
     const hits = scanTelegramAllowFromUsernameEntries(candidate);
@@ -1716,6 +2001,60 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
         ].join("\n"),
         "Doctor warnings",
       );
+    }
+
+    const safeBinCoverage = scanExecSafeBinCoverage(candidate);
+    if (safeBinCoverage.length > 0) {
+      const interpreterHits = safeBinCoverage.filter((hit) => hit.isInterpreter);
+      const customHits = safeBinCoverage.filter((hit) => !hit.isInterpreter);
+      const lines: string[] = [];
+      if (interpreterHits.length > 0) {
+        for (const hit of interpreterHits.slice(0, 5)) {
+          lines.push(
+            `- ${hit.scopePath}.safeBins includes interpreter/runtime '${hit.bin}' without profile.`,
+          );
+        }
+        if (interpreterHits.length > 5) {
+          lines.push(
+            `- ${interpreterHits.length - 5} more interpreter/runtime safeBins entries are missing profiles.`,
+          );
+        }
+      }
+      if (customHits.length > 0) {
+        for (const hit of customHits.slice(0, 5)) {
+          lines.push(
+            `- ${hit.scopePath}.safeBins entry '${hit.bin}' is missing safeBinProfiles.${hit.bin}.`,
+          );
+        }
+        if (customHits.length > 5) {
+          lines.push(
+            `- ${customHits.length - 5} more custom safeBins entries are missing profiles.`,
+          );
+        }
+      }
+      lines.push(
+        `- Run "${formatCliCommand("remoteclaw doctor --fix")}" to scaffold missing custom safeBinProfiles entries.`,
+      );
+      note(lines.join("\n"), "Doctor warnings");
+    }
+
+    const safeBinTrustedDirHints = scanExecSafeBinTrustedDirHints(candidate);
+    if (safeBinTrustedDirHints.length > 0) {
+      const lines = safeBinTrustedDirHints
+        .slice(0, 5)
+        .map(
+          (hit) =>
+            `- ${hit.scopePath}.safeBins entry '${hit.bin}' resolves to '${hit.resolvedPath}' outside trusted safe-bin dirs.`,
+        );
+      if (safeBinTrustedDirHints.length > 5) {
+        lines.push(
+          `- ${safeBinTrustedDirHints.length - 5} more safeBins entries resolve outside trusted safe-bin dirs.`,
+        );
+      }
+      lines.push(
+        "- If intentional, add the binary directory to tools.exec.safeBinTrustedDirs (global or agent scope).",
+      );
+      note(lines.join("\n"), "Doctor warnings");
     }
   }
 

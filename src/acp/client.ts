@@ -195,7 +195,9 @@ function shouldAutoApproveToolCall(
 ): boolean {
   const isTrustedToolId =
     typeof toolName === "string" &&
-    (isKnownCoreToolId(toolName) || TRUSTED_SAFE_TOOL_ALIASES.has(toolName));
+    (isKnownCoreToolId(toolName) ||
+      TRUSTED_SAFE_TOOL_ALIASES.has(toolName) ||
+      SAFE_AUTO_APPROVE_TOOL_IDS.has(toolName));
   if (!toolName || !isTrustedToolId || !SAFE_AUTO_APPROVE_TOOL_IDS.has(toolName)) {
     return false;
   }

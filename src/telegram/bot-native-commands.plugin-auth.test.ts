@@ -57,6 +57,7 @@ describe("registerTelegramNativeCommands (plugin auth)", () => {
       textLimit: 4000,
       useAccessGroups: false,
       nativeEnabled: false,
+      nativeSkillsEnabled: false,
       nativeDisabledExplicit: false,
       resolveGroupPolicy: () =>
         ({
@@ -121,6 +122,7 @@ describe("registerTelegramNativeCommands (plugin auth)", () => {
       textLimit: 4000,
       useAccessGroups: false,
       nativeEnabled: false,
+      nativeSkillsEnabled: false,
       nativeDisabledExplicit: false,
       resolveGroupPolicy,
       resolveTelegramGroupConfig: () => ({

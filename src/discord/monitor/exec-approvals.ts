@@ -12,6 +12,12 @@ export class DiscordExecApprovalHandler {
   constructor(..._args: unknown[]) {
     this._stub = true;
   }
+  start(..._args: unknown[]): Promise<void> {
+    return Promise.resolve();
+  }
+  stop(..._args: unknown[]): Promise<void> {
+    return Promise.resolve();
+  }
   shouldHandle(..._args: unknown[]): boolean {
     return false;
   }

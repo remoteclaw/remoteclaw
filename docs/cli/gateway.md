@@ -1,5 +1,5 @@
 ---
-description: "RemoteClaw Gateway CLI (`remoteclaw gateway`) — run, query, and discover gateways"
+summary: "RemoteClaw Gateway CLI (`remoteclaw gateway`) — run, query, and discover gateways"
 read_when:
   - Running the Gateway from the CLI (dev or servers)
   - Debugging Gateway auth, bind modes, and connectivity
@@ -46,13 +46,16 @@ Notes:
 - `--bind <loopback|lan|tailnet|auto|custom>`: listener bind mode.
 - `--auth <token|password>`: auth mode override.
 - `--token <token>`: token override (also sets `REMOTECLAW_GATEWAY_TOKEN` for the process).
-- `--password <password>`: password override (also sets `REMOTECLAW_GATEWAY_PASSWORD` for the process).
+- `--password <password>`: password override. Warning: inline passwords can be exposed in local process listings.
+- `--password-file <path>`: read the gateway password from a file.
 - `--tailscale <off|serve|funnel>`: expose the Gateway via Tailscale.
 - `--tailscale-reset-on-exit`: reset Tailscale serve/funnel config on shutdown.
 - `--allow-unconfigured`: allow gateway start without `gateway.mode=local` in config.
+- `--dev`: create a dev config + workspace if missing (skips BOOTSTRAP.md).
+- `--reset`: reset dev config + credentials + sessions + workspace (requires `--dev`).
 - `--force`: kill any existing listener on the selected port before starting.
 - `--verbose`: verbose logs.
-- `--claude-logs`: only show claude logs in the console (and enable its stdout/stderr).
+- `--claude-cli-logs`: only show claude-cli logs in the console (and enable its stdout/stderr).
 - `--ws-log <auto|full|compact>`: websocket log style (default `auto`).
 - `--compact`: alias for `--ws-log compact`.
 - `--raw-stream`: log raw model stream events to jsonl.
@@ -102,6 +105,12 @@ Options:
 - `--timeout <ms>`: probe timeout (default `10000`).
 - `--no-probe`: skip the RPC probe (service-only view).
 - `--deep`: scan system-level services too.
+
+Notes:
+
+- `gateway status` resolves configured auth SecretRefs for probe auth when possible.
+- If a required auth SecretRef is unresolved in this command path, probe auth can fail; pass `--token`/`--password` explicitly or resolve the secret source first.
+- On Linux systemd installs, service auth drift checks read both `Environment=` and `EnvironmentFile=` values from the unit (including `%h`, quoted paths, multiple files, and optional `-` files).
 
 ### `gateway probe`
 
@@ -160,6 +169,11 @@ remoteclaw gateway uninstall
 Notes:
 
 - `gateway install` supports `--port`, `--runtime`, `--token`, `--force`, `--json`.
+- When token auth requires a token and `gateway.auth.token` is SecretRef-managed, `gateway install` validates that the SecretRef is resolvable but does not persist the resolved token into service environment metadata.
+- If token auth requires a token and the configured token SecretRef is unresolved, install fails closed instead of persisting fallback plaintext.
+- For password auth on `gateway run`, prefer `REMOTECLAW_GATEWAY_PASSWORD`, `--password-file`, or a SecretRef-backed `gateway.auth.password` over inline `--password`.
+- In inferred auth mode, shell-only `REMOTECLAW_GATEWAY_PASSWORD`/`CLAWDBOT_GATEWAY_PASSWORD` does not relax install token requirements; use durable config (`gateway.auth.password` or config `env`) when installing a managed service.
+- If both `gateway.auth.token` and `gateway.auth.password` are configured and `gateway.auth.mode` is unset, install is blocked until mode is set explicitly.
 - Lifecycle commands accept `--json` for scripting.
 
 ## Discover gateways (Bonjour)

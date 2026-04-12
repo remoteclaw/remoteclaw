@@ -185,18 +185,21 @@ export class ChannelBridge {
             runtimeName: this.#provider,
           },
         );
-        if (spawnResult?.workspaceDir) {
+        const spawnOverrides = spawnResult as
+          | { workspaceDir?: string; env?: Record<string, string> }
+          | undefined;
+        if (spawnOverrides?.workspaceDir) {
           logDebug(
             // oxlint-disable-next-line
-            `[channel-bridge] hook overrode workspaceDir: ${this.#workspaceDir} -> ${spawnResult.workspaceDir}`,
+            `[channel-bridge] hook overrode workspaceDir: ${this.#workspaceDir} -> ${spawnOverrides.workspaceDir}`,
           );
-          workspaceDir = spawnResult.workspaceDir;
+          workspaceDir = spawnOverrides.workspaceDir;
         }
-        if (spawnResult?.env) {
+        if (spawnOverrides?.env) {
           logDebug(
-            `[channel-bridge] hook injected env keys: ${Object.keys(spawnResult.env).join(", ")}`,
+            `[channel-bridge] hook injected env keys: ${Object.keys(spawnOverrides.env).join(", ")}`,
           );
-          hookEnv = spawnResult.env as Record<string, string>;
+          hookEnv = spawnOverrides.env;
         }
       }
 
@@ -321,6 +324,7 @@ export class ChannelBridge {
         if (hookRunner.hasHooks("agent_end")) {
           void hookRunner.runAgentEnd(
             {
+              messages: [],
               runId,
               sessionId: finalResult.sessionId,
               success: !finalResult.errorSubtype && !lastError,

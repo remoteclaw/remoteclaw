@@ -4,7 +4,6 @@ import {
   HeartbeatSchema,
   AgentSandboxSchema,
   AgentModelSchema,
-  MemorySearchSchema,
 } from "./zod-schema.agent-runtime.js";
 import {
   BlockStreamingChunkSchema,
@@ -50,7 +49,9 @@ export const AgentDefaultsSchema = z
     envelopeElapsed: z.union([z.literal("on"), z.literal("off")]).optional(),
     contextTokens: z.number().int().positive().optional(),
     cliBackends: z.record(z.string(), CliBackendSchema).optional(),
-    memorySearch: MemorySearchSchema,
+    // Memory search config gutted — agents bring their own memory.
+    // Stub kept for config parse compatibility (existing configs still parse).
+    memorySearch: z.unknown().optional(),
     contextPruning: z
       .object({
         mode: z.union([z.literal("off"), z.literal("cache-ttl")]).optional(),
@@ -124,14 +125,9 @@ export const AgentDefaultsSchema = z
       })
       .strict()
       .optional(),
-    embeddedPi: z
-      .object({
-        projectSettingsPolicy: z
-          .union([z.literal("trusted"), z.literal("sanitize"), z.literal("ignore")])
-          .optional(),
-      })
-      .strict()
-      .optional(),
+    // Embedded Pi config gutted — Pi orchestrator replaced by AgentRuntime.
+    // Stub kept for config parse compatibility (existing configs still parse).
+    embeddedPi: z.unknown().optional(),
     thinkingDefault: z
       .union([
         z.literal("off"),

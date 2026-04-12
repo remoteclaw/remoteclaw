@@ -6,7 +6,6 @@ import type {
   HumanDelayConfig,
   TypingMode,
 } from "./types.base.js";
-import type { MemorySearchConfig } from "./types.tools.js";
 
 export type AgentModelEntryConfig = {
   alias?: string;
@@ -171,18 +170,10 @@ export type AgentDefaultsConfig = {
   contextPruning?: AgentContextPruningConfig;
   /** Compaction tuning and pre-compaction memory flush behavior. */
   compaction?: AgentCompactionConfig;
-  /** Embedded Pi runner hardening and compatibility controls. */
-  embeddedPi?: {
-    /**
-     * How embedded Pi should trust workspace-local `.pi/config/settings.json`.
-     * - sanitize (default): apply project settings except shellPath/shellCommandPrefix
-     * - ignore: ignore project settings entirely
-     * - trusted: trust project settings as-is
-     */
-    projectSettingsPolicy?: "trusted" | "sanitize" | "ignore";
-  };
-  /** Vector memory search configuration (per-agent overrides supported). */
-  memorySearch?: MemorySearchConfig;
+  /** @deprecated Embedded Pi config gutted — parsed but ignored. */
+  embeddedPi?: unknown;
+  /** @deprecated Memory search config gutted — parsed but ignored. */
+  memorySearch?: unknown;
   /** Default thinking level when no /think directive is present. */
   thinkingDefault?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "adaptive";
   /** Default verbose level when no /verbose directive is present. */

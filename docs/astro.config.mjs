@@ -38,7 +38,6 @@ const redirects = {
   "/gateway/trusted-proxy": "/gateway/trusted-proxy-auth",
   "/gcp": "/install/gcp",
   "/getting-started": "/start/getting-started",
-  "/gmail-pubsub": "/automation/gmail-pubsub",
   "/group-messages": "/channels/group-messages",
   "/groups": "/channels/groups",
   "/health": "/gateway/health",
@@ -363,7 +362,6 @@ export default defineConfig({
                 { slug: "automation/cron-vs-heartbeat" },
                 { slug: "automation/troubleshooting" },
                 { slug: "automation/webhook" },
-                { slug: "automation/gmail-pubsub" },
                 { slug: "automation/poll" },
                 { slug: "automation/auth-monitoring" },
               ],
@@ -542,7 +540,6 @@ export default defineConfig({
                 { slug: "cli/uninstall" },
                 { slug: "cli/update" },
                 { slug: "cli/voicecall" },
-                { slug: "cli/webhooks" },
               ],
             },
             {

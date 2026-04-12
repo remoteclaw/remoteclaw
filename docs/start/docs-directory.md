@@ -58,6 +58,5 @@ For a complete map of the docs, see [Docs hubs](/start/hubs).
 - [Sessions](/concepts/session)
 - [Cron jobs](/automation/cron-jobs)
 - [Webhooks](/automation/webhook)
-- [Gmail hooks (Pub/Sub)](/automation/gmail-pubsub)
 - [Security](/gateway/security)
 - [Troubleshooting](/gateway/troubleshooting)

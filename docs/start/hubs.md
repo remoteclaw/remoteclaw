@@ -81,7 +81,6 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [Location parsing](/channels/location)
 - [WebChat](/web/webchat)
 - [Webhooks](/automation/webhook)
-- [Gmail Pub/Sub](/automation/gmail-pubsub)
 
 ## Gateway + operations
 

@@ -92,7 +92,6 @@ export function registerChannelsCli(program: Command) {
   channels
     .command("list")
     .description("List configured channels + auth profiles")
-    .option("--no-usage", "Skip model provider usage/quota snapshots")
     .option("--json", "Output JSON", false)
     .action(async (opts) => {
       await runChannelsCommand(async () => {

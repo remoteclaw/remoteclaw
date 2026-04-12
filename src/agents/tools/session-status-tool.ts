@@ -13,11 +13,6 @@ import {
 } from "../../config/sessions.js";
 import { loadCombinedSessionStoreForGateway } from "../../gateway/session-utils.js";
 import {
-  formatUsageWindowSummary,
-  loadProviderUsageSummary,
-  resolveUsageProviderId,
-} from "../../infra/provider-usage.js";
-import {
   buildAgentMainSessionKey,
   resolveAgentIdFromSessionKey,
 } from "../../routing/session-key.js";
@@ -271,31 +266,6 @@ export function createSessionStatusTool(opts?: {
         }
       }
 
-      const providerForCard = resolved.entry.providerOverride?.trim() || configured.provider;
-      const usageProvider = resolveUsageProviderId(providerForCard);
-      let usageLine: string | undefined;
-      if (usageProvider) {
-        try {
-          const usageSummary = await loadProviderUsageSummary({
-            timeoutMs: 3500,
-            providers: [usageProvider],
-          });
-          const snapshot = usageSummary.providers.find((entry) => entry.provider === usageProvider);
-          if (snapshot) {
-            const formatted = formatUsageWindowSummary(snapshot, {
-              now: Date.now(),
-              maxWindows: 2,
-              includeResets: true,
-            });
-            if (formatted && !formatted.startsWith("error:")) {
-              usageLine = `📊 Usage: ${formatted}`;
-            }
-          }
-        } catch {
-          // ignore
-        }
-      }
-
       const isGroup =
         resolved.entry.chatType === "group" ||
         resolved.entry.chatType === "channel" ||
@@ -334,7 +304,6 @@ export function createSessionStatusTool(opts?: {
         sessionKey: resolved.key,
         sessionStorePath: storePath,
         groupActivation,
-        usageLine,
         timeLine,
         queue: {
           mode: queueSettings.mode,

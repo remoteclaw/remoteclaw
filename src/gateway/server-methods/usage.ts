@@ -5,7 +5,6 @@ import {
   resolveSessionFilePathOptions,
 } from "../../config/sessions/paths.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
-import { loadProviderUsageSummary } from "../../infra/provider-usage.js";
 import type {
   CostUsageSummary,
   SessionDailyModelUsage,
@@ -348,10 +347,6 @@ export const __test = {
 export type { SessionUsageEntry, SessionsUsageAggregates, SessionsUsageResult };
 
 export const usageHandlers: GatewayRequestHandlers = {
-  "usage.status": async ({ respond }) => {
-    const summary = await loadProviderUsageSummary();
-    respond(true, summary, undefined);
-  },
   "usage.cost": async ({ respond, params }) => {
     const config = loadConfig();
     const { startMs, endMs } = parseDateRange({

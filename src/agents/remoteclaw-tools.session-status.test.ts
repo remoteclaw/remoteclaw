@@ -50,15 +50,6 @@ vi.mock("../agents/model-auth.js", () => ({
   resolveModelAuthMode: () => "api-key",
 }));
 
-vi.mock("../infra/provider-usage.js", () => ({
-  resolveUsageProviderId: () => undefined,
-  loadProviderUsageSummary: async () => ({
-    updatedAt: Date.now(),
-    providers: [],
-  }),
-  formatUsageSummaryLine: () => null,
-}));
-
 import "./test-helpers/fast-core-tools.js";
 import { createRemoteClawTools } from "./remoteclaw-tools.js";
 

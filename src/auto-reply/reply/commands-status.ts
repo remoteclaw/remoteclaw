@@ -8,11 +8,6 @@ import {
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry, SessionScope } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
-import {
-  formatUsageWindowSummary,
-  loadProviderUsageSummary,
-  resolveUsageProviderId,
-} from "../../infra/provider-usage.js";
 import { getRoutingDropCounts } from "../../routing/routing-drops-accumulator.js";
 import { normalizeGroupActivation } from "../group-activation.js";
 import { buildStatusMessage } from "../status.js";
@@ -63,7 +58,7 @@ export async function buildStatusReply(params: {
     parentSessionKey,
     sessionScope,
     storePath,
-    provider,
+    provider: _provider,
     model: _model,
     resolvedVerboseLevel,
     isGroup,
@@ -74,35 +69,6 @@ export async function buildStatusReply(params: {
     return undefined;
   }
   const statusAgentId = resolveSessionKeyAgentId(sessionKey, cfg);
-  const currentUsageProvider = (() => {
-    try {
-      return resolveUsageProviderId(provider);
-    } catch {
-      return undefined;
-    }
-  })();
-  let usageLine: string | null = null;
-  if (currentUsageProvider) {
-    try {
-      const usageSummary = await loadProviderUsageSummary({
-        timeoutMs: 3500,
-        providers: [currentUsageProvider],
-      });
-      const usageEntry = usageSummary.providers[0];
-      if (usageEntry && !usageEntry.error && usageEntry.windows.length > 0) {
-        const summaryLine = formatUsageWindowSummary(usageEntry, {
-          now: Date.now(),
-          maxWindows: 2,
-          includeResets: true,
-        });
-        if (summaryLine) {
-          usageLine = `📊 Usage: ${summaryLine}`;
-        }
-      }
-    } catch {
-      usageLine = null;
-    }
-  }
   const queueSettings = resolveQueueSettings({
     cfg,
     channel: command.channel,
@@ -154,7 +120,6 @@ export async function buildStatusReply(params: {
     sessionStorePath: storePath,
     groupActivation,
     resolvedVerbose: resolvedVerboseLevel,
-    usageLine: usageLine ?? undefined,
     queue: {
       mode: queueSettings.mode,
       depth: queueDepth,

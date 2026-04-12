@@ -5,7 +5,6 @@ import { buildGatewayConnectionDetails, callGateway } from "../gateway/call.js";
 import { info } from "../globals.js";
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import type { HeartbeatEventPayload } from "../infra/heartbeat-events.js";
-import { formatUsageReportLines, loadProviderUsageSummary } from "../infra/provider-usage.js";
 import { normalizeUpdateChannel, resolveUpdateChannelDisplay } from "../infra/update-channels.js";
 import { formatGitInstallLabel } from "../infra/update-check.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -58,7 +57,6 @@ export async function statusCommand(
   opts: {
     json?: boolean;
     deep?: boolean;
-    usage?: boolean;
     timeoutMs?: number;
     verbose?: boolean;
     all?: boolean;
@@ -116,16 +114,6 @@ export async function statusCommand(
     summary,
   } = scan;
 
-  const usage = opts.usage
-    ? await withProgress(
-        {
-          label: "Fetching usage snapshot…",
-          indeterminate: true,
-          enabled: opts.json !== true,
-        },
-        async () => await loadProviderUsageSummary({ timeoutMs: opts.timeoutMs }),
-      )
-    : undefined;
   const health: HealthSummary | undefined = opts.deep
     ? await withProgress(
         {
@@ -185,7 +173,7 @@ export async function statusCommand(
           nodeService: nodeDaemon,
           agents: agentStatus,
           securityAudit,
-          ...(health || usage || lastHeartbeat ? { health, usage, lastHeartbeat } : {}),
+          ...(health || lastHeartbeat ? { health, lastHeartbeat } : {}),
         },
         null,
         2,
@@ -577,14 +565,6 @@ export async function statusCommand(
         rows,
       }).trimEnd(),
     );
-  }
-
-  if (usage) {
-    runtime.log("");
-    runtime.log(theme.heading("Usage"));
-    for (const line of formatUsageReportLines(usage)) {
-      runtime.log(line);
-    }
   }
 
   runtime.log("");

@@ -1,10 +1,8 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { normalizeTestText } from "../../test/helpers/normalize-text.js";
 import { resolveSessionKey } from "../config/sessions.js";
 import {
-  getProviderUsageMocks,
   getRunAgentMock as getRunEmbeddedPiAgentMock,
   makeCfg,
   requireSessionStorePath,
@@ -12,8 +10,6 @@ import {
 } from "./reply.triggers.trigger-handling.test-harness.js";
 
 type GetReplyFromConfig = typeof import("./reply.js").getReplyFromConfig;
-
-const usageMocks = getProviderUsageMocks();
 
 async function readSessionStore(storePath: string): Promise<Record<string, unknown>> {
   const raw = await readFile(storePath, "utf-8");
@@ -37,22 +33,6 @@ export function registerTriggerHandlingUsageSummaryCases(params: {
       await withTempHome(async (home) => {
         const runEmbeddedPiAgentMock = getRunEmbeddedPiAgentMock();
         const getReplyFromConfig = getReplyFromConfigNow(params.getReplyFromConfig);
-        usageMocks.loadProviderUsageSummary.mockClear();
-        usageMocks.loadProviderUsageSummary.mockResolvedValue({
-          updatedAt: 0,
-          providers: [
-            {
-              provider: "anthropic",
-              displayName: "Anthropic",
-              windows: [
-                {
-                  label: "5h",
-                  usedPercent: 20,
-                },
-              ],
-            },
-          ],
-        });
 
         {
           const res = await getReplyFromConfig(
@@ -71,10 +51,6 @@ export function registerTriggerHandlingUsageSummaryCases(params: {
           const text = Array.isArray(res) ? res[0]?.text : res?.text;
           expect(text).toContain("Model:");
           expect(text).toContain("RemoteClaw");
-          expect(normalizeTestText(text ?? "")).toContain("Usage: Claude 80% left");
-          expect(usageMocks.loadProviderUsageSummary).toHaveBeenCalledWith(
-            expect.objectContaining({ providers: ["anthropic"] }),
-          );
           expect(runEmbeddedPiAgentMock).not.toHaveBeenCalled();
         }
 

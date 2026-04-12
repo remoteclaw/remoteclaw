@@ -60,16 +60,7 @@ describe("registerStatusHealthSessionsCommands", () => {
   });
 
   it("runs status command with timeout and debug-derived verbose", async () => {
-    await runCli([
-      "status",
-      "--json",
-      "--all",
-      "--deep",
-      "--usage",
-      "--debug",
-      "--timeout",
-      "5000",
-    ]);
+    await runCli(["status", "--json", "--all", "--deep", "--debug", "--timeout", "5000"]);
 
     expect(setVerbose).toHaveBeenCalledWith(true);
     expect(statusCommand).toHaveBeenCalledWith(
@@ -77,7 +68,6 @@ describe("registerStatusHealthSessionsCommands", () => {
         json: true,
         all: true,
         deep: true,
-        usage: true,
         timeoutMs: 5000,
         verbose: true,
       }),

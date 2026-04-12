@@ -13,9 +13,7 @@ function applyResolvedConfig(
       runtime.profile = nextProfile;
       continue;
     }
-    if (!runtime.running) {
-      current.profiles.delete(name);
-    }
+    current.profiles.delete(name);
   }
 }
 

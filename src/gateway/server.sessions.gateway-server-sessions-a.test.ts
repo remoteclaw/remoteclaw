@@ -48,10 +48,6 @@ const acpRuntimeMocks = vi.hoisted(() => ({
   getAcpRuntimeBackend: vi.fn(),
   requireAcpRuntimeBackend: vi.fn(),
 }));
-const browserSessionTabMocks = vi.hoisted(() => ({
-  closeTrackedBrowserTabsForSessions: vi.fn(async () => 0),
-}));
-
 vi.mock("../auto-reply/reply/queue.js", async () => {
   const actual = await vi.importActual<typeof import("../auto-reply/reply/queue.js")>(
     "../auto-reply/reply/queue.js",
@@ -123,14 +119,6 @@ vi.mock("../acp/runtime/registry.js", async (importOriginal) => {
       }
       return backend;
     },
-  };
-});
-
-vi.mock("../browser/session-tab-registry.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../browser/session-tab-registry.js")>();
-  return {
-    ...actual,
-    closeTrackedBrowserTabsForSessions: browserSessionTabMocks.closeTrackedBrowserTabsForSessions,
   };
 });
 
@@ -229,8 +217,6 @@ describe("gateway server sessions", () => {
     acpRuntimeMocks.requireAcpRuntimeBackend.mockImplementation((backendId?: string) =>
       acpRuntimeMocks.getAcpRuntimeBackend(backendId),
     );
-    browserSessionTabMocks.closeTrackedBrowserTabsForSessions.mockClear();
-    browserSessionTabMocks.closeTrackedBrowserTabsForSessions.mockResolvedValue(0);
   });
 
   test("lists and patches session store via sessions.* RPC", async () => {
@@ -724,15 +710,6 @@ describe("gateway server sessions", () => {
       ["discord:group:dev", "agent:test-agent:discord:group:dev", "sess-active"],
       "sess-active",
     );
-    expect(browserSessionTabMocks.closeTrackedBrowserTabsForSessions).toHaveBeenCalledTimes(1);
-    expect(browserSessionTabMocks.closeTrackedBrowserTabsForSessions).toHaveBeenCalledWith({
-      sessionKeys: expect.arrayContaining([
-        "discord:group:dev",
-        "agent:test-agent:discord:group:dev",
-        "sess-active",
-      ]),
-      onWarn: expect.any(Function),
-    });
     expect(subagentLifecycleHookMocks.runSubagentEnded).toHaveBeenCalledTimes(1);
     expect(subagentLifecycleHookMocks.runSubagentEnded).toHaveBeenCalledWith(
       {
@@ -969,11 +946,6 @@ describe("gateway server sessions", () => {
       "sess-main",
     );
     expect(waitCallCountAtSnapshotClear).toEqual([1]);
-    expect(browserSessionTabMocks.closeTrackedBrowserTabsForSessions).toHaveBeenCalledTimes(1);
-    expect(browserSessionTabMocks.closeTrackedBrowserTabsForSessions).toHaveBeenCalledWith({
-      sessionKeys: expect.arrayContaining(["main", "agent:test-agent:main", "sess-main"]),
-      onWarn: expect.any(Function),
-    });
     expect(subagentLifecycleHookMocks.runSubagentEnded).toHaveBeenCalledTimes(1);
     expect(subagentLifecycleHookMocks.runSubagentEnded).toHaveBeenCalledWith(
       {
@@ -1207,7 +1179,6 @@ describe("gateway server sessions", () => {
       "sess-main",
     );
     expect(waitCallCountAtSnapshotClear).toEqual([1]);
-    expect(browserSessionTabMocks.closeTrackedBrowserTabsForSessions).not.toHaveBeenCalled();
 
     const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
       string,
@@ -1249,7 +1220,6 @@ describe("gateway server sessions", () => {
       ["discord:group:dev", "agent:test-agent:discord:group:dev", "sess-active"],
       "sess-active",
     );
-    expect(browserSessionTabMocks.closeTrackedBrowserTabsForSessions).not.toHaveBeenCalled();
 
     const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
       string,

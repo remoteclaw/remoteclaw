@@ -1,9 +1,20 @@
-import { resolveBrowserExecutableForPlatform } from "../chrome.executables.js";
 import { createBrowserProfilesService } from "../profiles-service.js";
 import type { BrowserRouteContext, ProfileContext } from "../server-context.js";
-import { resolveProfileContext } from "./agent.shared.js";
 import type { BrowserRequest, BrowserResponse, BrowserRouteRegistrar } from "./types.js";
 import { getProfileContext, jsonError, toStringOrEmpty } from "./utils.js";
+
+function resolveProfileContextOrRespond(
+  req: BrowserRequest,
+  res: BrowserResponse,
+  ctx: BrowserRouteContext,
+): ProfileContext | null {
+  const profileCtx = getProfileContext(req, ctx);
+  if ("error" in profileCtx) {
+    jsonError(res, profileCtx.status, profileCtx.error);
+    return null;
+  }
+  return profileCtx;
+}
 
 async function withBasicProfileRoute(params: {
   req: BrowserRequest;
@@ -11,7 +22,7 @@ async function withBasicProfileRoute(params: {
   ctx: BrowserRouteContext;
   run: (profileCtx: ProfileContext) => Promise<void>;
 }) {
-  const profileCtx = resolveProfileContext(params.req, params.res, params.ctx);
+  const profileCtx = resolveProfileContextOrRespond(params.req, params.res, params.ctx);
   if (!profileCtx) {
     return;
   }
@@ -53,44 +64,22 @@ export function registerBrowserBasicRoutes(app: BrowserRouteRegistrar, ctx: Brow
       profileCtx.isReachable(600),
     ]);
 
-    const profileState = current.profiles.get(profileCtx.profile.name);
-    let detectedBrowser: string | null = null;
-    let detectedExecutablePath: string | null = null;
-    let detectError: string | null = null;
-
-    try {
-      const detected = resolveBrowserExecutableForPlatform(current.resolved, process.platform);
-      if (detected) {
-        detectedBrowser = detected.kind;
-        detectedExecutablePath = detected.path;
-      }
-    } catch (err) {
-      detectError = String(err);
-    }
-
     res.json({
       enabled: current.resolved.enabled,
       profile: profileCtx.profile.name,
       running: cdpReady,
       cdpReady,
       cdpHttp,
-      pid: profileState?.running?.pid ?? null,
       cdpPort: profileCtx.profile.cdpPort,
       cdpUrl: profileCtx.profile.cdpUrl,
-      chosenBrowser: profileState?.running?.exe.kind ?? null,
-      detectedBrowser,
-      detectedExecutablePath,
-      detectError,
-      userDataDir: profileState?.running?.userDataDir ?? null,
       color: profileCtx.profile.color,
       headless: current.resolved.headless,
       noSandbox: current.resolved.noSandbox,
-      executablePath: current.resolved.executablePath ?? null,
       attachOnly: current.resolved.attachOnly,
     });
   });
 
-  // Start browser (profile-aware)
+  // Start browser (profile-aware) — verifies CDP is reachable
   app.post("/start", async (req, res) => {
     await withBasicProfileRoute({
       req,
@@ -103,7 +92,7 @@ export function registerBrowserBasicRoutes(app: BrowserRouteRegistrar, ctx: Brow
     });
   });
 
-  // Stop browser (profile-aware)
+  // Stop browser (profile-aware) — only meaningful for extension driver
   app.post("/stop", async (req, res) => {
     await withBasicProfileRoute({
       req,
@@ -120,7 +109,7 @@ export function registerBrowserBasicRoutes(app: BrowserRouteRegistrar, ctx: Brow
     });
   });
 
-  // Reset profile (profile-aware)
+  // Reset profile (profile-aware) — moves user-data dir for local profiles
   app.post("/reset-profile", async (req, res) => {
     await withBasicProfileRoute({
       req,

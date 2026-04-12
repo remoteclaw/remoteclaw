@@ -7,7 +7,6 @@ import {
   resolveAgentWorkspaceDir,
 } from "../../agents/agent-scope.js";
 import { ensureAgentWorkspace } from "../../agents/workspace.js";
-import { movePathToTrash } from "../../browser/trash.js";
 import {
   applyAgentConfig,
   findAgentEntryIndex,
@@ -20,6 +19,7 @@ import { resolveSessionTranscriptsDirForAgent } from "../../config/sessions/path
 import { sameFileIdentity } from "../../infra/file-identity.js";
 import { SafeOpenError, readLocalFileSafely } from "../../infra/fs-safe.js";
 import { isNotFoundPathError, isPathInside } from "../../infra/path-guards.js";
+import { movePathToTrash } from "../../infra/trash.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
 import { resolveUserPath } from "../../utils.js";
 import {

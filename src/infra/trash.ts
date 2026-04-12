@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { generateSecureToken } from "../infra/secure-random.js";
 import { runExec } from "../process/exec.js";
+import { generateSecureToken } from "./secure-random.js";
 
 export async function movePathToTrash(targetPath: string): Promise<string> {
   try {

@@ -9,7 +9,6 @@ import type {
 } from "../browser/client.js";
 import { danger, info } from "../globals.js";
 import { defaultRuntime } from "../runtime.js";
-import { shortenHomePath } from "../utils.js";
 import { callBrowserRequest, type BrowserParentOpts } from "./browser-cli-shared.js";
 import { runCommandWithRuntime } from "./cli-utils.js";
 
@@ -113,8 +112,6 @@ export function registerBrowserManageCommands(
         if (printJsonResult(parent, status)) {
           return;
         }
-        const detectedPath = status.detectedExecutablePath ?? status.executablePath;
-        const detectedDisplay = detectedPath ? shortenHomePath(detectedPath) : "auto";
         defaultRuntime.log(
           [
             `profile: ${status.profile ?? "remoteclaw"}`,
@@ -122,11 +119,7 @@ export function registerBrowserManageCommands(
             `running: ${status.running}`,
             `cdpPort: ${status.cdpPort}`,
             `cdpUrl: ${status.cdpUrl ?? `http://127.0.0.1:${status.cdpPort}`}`,
-            `browser: ${status.chosenBrowser ?? "unknown"}`,
-            `detectedBrowser: ${status.detectedBrowser ?? "unknown"}`,
-            `detectedPath: ${detectedDisplay}`,
             `profileColor: ${status.color}`,
-            ...(status.detectError ? [`detectError: ${status.detectError}`] : []),
           ].join("\n"),
         );
       });
@@ -341,34 +334,21 @@ export function registerBrowserManageCommands(
 
   browser
     .command("close")
-    .description("Close a tab (target id optional)")
-    .argument("[targetId]", "Target id or unique prefix (optional)")
-    .action(async (targetId: string | undefined, _opts, cmd) => {
+    .description("Close a tab by target id (or unique prefix)")
+    .argument("<targetId>", "Target id or unique prefix")
+    .action(async (targetId: string, _opts, cmd) => {
       const parent = parentOpts(cmd);
       const profile = parent?.browserProfile;
       await runBrowserCommand(async () => {
-        if (targetId?.trim()) {
-          await callBrowserRequest(
-            parent,
-            {
-              method: "DELETE",
-              path: `/tabs/${encodeURIComponent(targetId.trim())}`,
-              query: resolveProfileQuery(profile),
-            },
-            { timeoutMs: 5000 },
-          );
-        } else {
-          await callBrowserRequest(
-            parent,
-            {
-              method: "POST",
-              path: "/act",
-              query: resolveProfileQuery(profile),
-              body: { kind: "close" },
-            },
-            { timeoutMs: 20000 },
-          );
-        }
+        await callBrowserRequest(
+          parent,
+          {
+            method: "DELETE",
+            path: `/tabs/${encodeURIComponent(targetId.trim())}`,
+            query: resolveProfileQuery(profile),
+          },
+          { timeoutMs: 5000 },
+        );
         if (printJsonResult(parent, { ok: true })) {
           return;
         }

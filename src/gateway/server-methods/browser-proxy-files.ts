@@ -1,4 +1,4 @@
-import { saveMediaBuffer } from "../media/store.js";
+import { saveMediaBuffer } from "../../media/store.js";
 
 export type BrowserProxyFile = {
   path: string;

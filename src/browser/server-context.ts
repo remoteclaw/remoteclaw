@@ -1,14 +1,9 @@
 import fs from "node:fs";
 import { SsrFBlockedError } from "../infra/net/ssrf.js";
+import { movePathToTrash } from "../infra/trash.js";
+import { isCdpHttpReachable, isCdpReady } from "./cdp-reachability.js";
 import { fetchJson, fetchOk } from "./cdp.helpers.js";
 import { appendCdpPath, createTargetViaCdp, normalizeCdpWsUrl } from "./cdp.js";
-import {
-  isChromeCdpReady,
-  isChromeReachable,
-  launchRemoteClawChrome,
-  resolveRemoteClawUserDataDir,
-  stopRemoteClawChrome,
-} from "./chrome.js";
 import type { ResolvedBrowserProfile } from "./config.js";
 import { resolveProfile } from "./config.js";
 import {
@@ -21,8 +16,7 @@ import {
   InvalidBrowserNavigationUrlError,
   withBrowserNavigationPolicy,
 } from "./navigation-guard.js";
-import type { PwAiModule } from "./pw-ai-module.js";
-import { getPwAiModule } from "./pw-ai-module.js";
+import { resolveRemoteClawUserDataDir } from "./profile-paths.js";
 import {
   refreshResolvedBrowserConfigFromDisk,
   resolveBrowserProfileWithHotReload,
@@ -37,7 +31,6 @@ import type {
   ProfileStatus,
 } from "./server-context.types.js";
 import { resolveTargetIdFromTabs } from "./target-id.js";
-import { movePathToTrash } from "./trash.js";
 
 export type {
   BrowserRouteContext,
@@ -87,35 +80,16 @@ function createProfileContext(
 
   const getProfileState = (): ProfileRuntimeState => {
     const current = state();
-    let profileState = current.profiles.get(profile.name);
-    if (!profileState) {
-      profileState = { profile, running: null, lastTargetId: null };
-      current.profiles.set(profile.name, profileState);
+    const existing = current.profiles.get(profile.name);
+    if (existing) {
+      return existing;
     }
-    return profileState;
-  };
-
-  const setProfileRunning = (running: ProfileRuntimeState["running"]) => {
-    const profileState = getProfileState();
-    profileState.running = running;
+    const created: ProfileRuntimeState = { profile, lastTargetId: null };
+    current.profiles.set(profile.name, created);
+    return created;
   };
 
   const listTabs = async (): Promise<BrowserTab[]> => {
-    // For remote profiles, use Playwright's persistent connection to avoid ephemeral sessions
-    if (!profile.cdpIsLoopback) {
-      const mod = await getPwAiModule({ mode: "strict" });
-      const listPagesViaPlaywright = (mod as Partial<PwAiModule> | null)?.listPagesViaPlaywright;
-      if (typeof listPagesViaPlaywright === "function") {
-        const pages = await listPagesViaPlaywright({ cdpUrl: profile.cdpUrl });
-        return pages.map((p) => ({
-          targetId: p.targetId,
-          title: p.title,
-          url: p.url,
-          type: p.type,
-        }));
-      }
-    }
-
     const raw = await fetchJson<
       Array<{
         id?: string;
@@ -138,28 +112,6 @@ function createProfileContext(
 
   const openTab = async (url: string): Promise<BrowserTab> => {
     const ssrfPolicyOpts = withBrowserNavigationPolicy(state().resolved.ssrfPolicy);
-
-    // For remote profiles, use Playwright's persistent connection to create tabs
-    // This ensures the tab persists beyond a single request
-    if (!profile.cdpIsLoopback) {
-      const mod = await getPwAiModule({ mode: "strict" });
-      const createPageViaPlaywright = (mod as Partial<PwAiModule> | null)?.createPageViaPlaywright;
-      if (typeof createPageViaPlaywright === "function") {
-        const page = await createPageViaPlaywright({
-          cdpUrl: profile.cdpUrl,
-          url,
-          ...ssrfPolicyOpts,
-        });
-        const profileState = getProfileState();
-        profileState.lastTargetId = page.targetId;
-        return {
-          targetId: page.targetId,
-          title: page.title,
-          url: page.url,
-          type: page.type,
-        };
-      }
-    }
 
     const createdViaCdp = await createTargetViaCdp({
       cdpUrl: profile.cdpUrl,
@@ -253,33 +205,17 @@ function createProfileContext(
   const isReachable = async (timeoutMs?: number) => {
     const httpTimeout = resolveRemoteHttpTimeout(timeoutMs);
     const wsTimeout = resolveRemoteWsTimeout(timeoutMs);
-    return await isChromeCdpReady(profile.cdpUrl, httpTimeout, wsTimeout);
+    return await isCdpReady(profile.cdpUrl, httpTimeout, wsTimeout);
   };
 
   const isHttpReachable = async (timeoutMs?: number) => {
     const httpTimeout = resolveRemoteHttpTimeout(timeoutMs);
-    return await isChromeReachable(profile.cdpUrl, httpTimeout);
-  };
-
-  const attachRunning = (running: NonNullable<ProfileRuntimeState["running"]>) => {
-    setProfileRunning(running);
-    running.proc.on("exit", () => {
-      // Guard against server teardown (e.g., SIGUSR1 restart)
-      if (!opts.getState()) {
-        return;
-      }
-      const profileState = getProfileState();
-      if (profileState.running?.pid === running.pid) {
-        setProfileRunning(null);
-      }
-    });
+    return await isCdpHttpReachable(profile.cdpUrl, httpTimeout);
   };
 
   const ensureBrowserAvailable = async (): Promise<void> => {
-    const current = state();
     const remoteCdp = !profile.cdpIsLoopback;
     const isExtension = profile.driver === "extension";
-    const profileState = getProfileState();
     const httpReachable = await isHttpReachable();
 
     if (isExtension && remoteCdp) {
@@ -310,63 +246,34 @@ function createProfileContext(
     }
 
     if (!httpReachable) {
-      if ((current.resolved.attachOnly || remoteCdp) && opts.onEnsureAttachTarget) {
+      if (opts.onEnsureAttachTarget) {
         await opts.onEnsureAttachTarget(profile);
         if (await isHttpReachable(1200)) {
           return;
         }
       }
-      if (current.resolved.attachOnly || remoteCdp) {
-        throw new Error(
-          remoteCdp
-            ? `Remote CDP for profile "${profile.name}" is not reachable at ${profile.cdpUrl}.`
-            : `Browser attachOnly is enabled and profile "${profile.name}" is not running.`,
-        );
-      }
-      const launched = await launchRemoteClawChrome(current.resolved, profile);
-      attachRunning(launched);
-      return;
+      throw new Error(
+        remoteCdp
+          ? `Remote CDP for profile "${profile.name}" is not reachable at ${profile.cdpUrl}.`
+          : `CDP for profile "${profile.name}" is not reachable at ${profile.cdpUrl}.`,
+      );
     }
 
-    // Port is reachable - check if we own it
     if (await isReachable()) {
       return;
     }
 
-    // HTTP responds but WebSocket fails - port in use by something else
-    if (!profileState.running) {
-      throw new Error(
-        `Port ${profile.cdpPort} is in use for profile "${profile.name}" but not by remoteclaw. ` +
-          `Run action=reset-profile profile=${profile.name} to kill the process.`,
-      );
-    }
-
-    // We own it but WebSocket failed - restart
-    if (current.resolved.attachOnly || remoteCdp) {
-      if (opts.onEnsureAttachTarget) {
-        await opts.onEnsureAttachTarget(profile);
-        if (await isReachable(1200)) {
-          return;
-        }
+    if (opts.onEnsureAttachTarget) {
+      await opts.onEnsureAttachTarget(profile);
+      if (await isReachable(1200)) {
+        return;
       }
-      throw new Error(
-        remoteCdp
-          ? `Remote CDP websocket for profile "${profile.name}" is not reachable.`
-          : `Browser attachOnly is enabled and CDP websocket for profile "${profile.name}" is not reachable.`,
-      );
     }
-
-    await stopRemoteClawChrome(profileState.running);
-    setProfileRunning(null);
-
-    const relaunched = await launchRemoteClawChrome(current.resolved, profile);
-    attachRunning(relaunched);
-
-    if (!(await isReachable(600))) {
-      throw new Error(
-        `Chrome CDP websocket for profile "${profile.name}" is not reachable after restart.`,
-      );
-    }
+    throw new Error(
+      remoteCdp
+        ? `Remote CDP websocket for profile "${profile.name}" is not reachable.`
+        : `CDP websocket for profile "${profile.name}" is not reachable.`,
+    );
   };
 
   const ensureTabAvailable = async (targetId?: string): Promise<BrowserTab> => {
@@ -384,8 +291,6 @@ function createProfileContext(
     }
 
     const tabs = await listTabs();
-    // For remote profiles using Playwright's persistent connection, we don't need wsUrl
-    // because we access pages directly through Playwright, not via individual WebSocket URLs.
     const candidates =
       profile.driver === "extension" || !profile.cdpIsLoopback
         ? tabs
@@ -448,22 +353,6 @@ function createProfileContext(
 
   const focusTab = async (targetId: string): Promise<void> => {
     const resolvedTargetId = await resolveTargetIdOrThrow(targetId);
-
-    if (!profile.cdpIsLoopback) {
-      const mod = await getPwAiModule({ mode: "strict" });
-      const focusPageByTargetIdViaPlaywright = (mod as Partial<PwAiModule> | null)
-        ?.focusPageByTargetIdViaPlaywright;
-      if (typeof focusPageByTargetIdViaPlaywright === "function") {
-        await focusPageByTargetIdViaPlaywright({
-          cdpUrl: profile.cdpUrl,
-          targetId: resolvedTargetId,
-        });
-        const profileState = getProfileState();
-        profileState.lastTargetId = resolvedTargetId;
-        return;
-      }
-    }
-
     await fetchOk(appendCdpPath(profile.cdpUrl, `/json/activate/${resolvedTargetId}`));
     const profileState = getProfileState();
     profileState.lastTargetId = resolvedTargetId;
@@ -471,21 +360,6 @@ function createProfileContext(
 
   const closeTab = async (targetId: string): Promise<void> => {
     const resolvedTargetId = await resolveTargetIdOrThrow(targetId);
-
-    // For remote profiles, use Playwright's persistent connection to close tabs
-    if (!profile.cdpIsLoopback) {
-      const mod = await getPwAiModule({ mode: "strict" });
-      const closePageByTargetIdViaPlaywright = (mod as Partial<PwAiModule> | null)
-        ?.closePageByTargetIdViaPlaywright;
-      if (typeof closePageByTargetIdViaPlaywright === "function") {
-        await closePageByTargetIdViaPlaywright({
-          cdpUrl: profile.cdpUrl,
-          targetId: resolvedTargetId,
-        });
-        return;
-      }
-    }
-
     await fetchOk(appendCdpPath(profile.cdpUrl, `/json/close/${resolvedTargetId}`));
   };
 
@@ -496,13 +370,7 @@ function createProfileContext(
       });
       return { stopped };
     }
-    const profileState = getProfileState();
-    if (!profileState.running) {
-      return { stopped: false };
-    }
-    await stopRemoteClawChrome(profileState.running);
-    setProfileRunning(null);
-    return { stopped: true };
+    return { stopped: false };
   };
 
   const resetProfile = async () => {
@@ -516,34 +384,9 @@ function createProfileContext(
       );
     }
     const userDataDir = resolveRemoteClawUserDataDir(profile.name);
-    const profileState = getProfileState();
-
-    const httpReachable = await isHttpReachable(300);
-    if (httpReachable && !profileState.running) {
-      // Port in use but not by us - kill it
-      try {
-        const mod = await import("./pw-ai.js");
-        await mod.closePlaywrightBrowserConnection();
-      } catch {
-        // ignore
-      }
-    }
-
-    if (profileState.running) {
-      await stopRunningBrowser();
-    }
-
-    try {
-      const mod = await import("./pw-ai.js");
-      await mod.closePlaywrightBrowserConnection();
-    } catch {
-      // ignore
-    }
-
     if (!fs.existsSync(userDataDir)) {
       return { moved: false, from: userDataDir };
     }
-
     const moved = await movePathToTrash(userDataDir);
     return { moved: true, from: userDataDir, to: moved };
   };
@@ -600,7 +443,6 @@ export function createBrowserRouteContext(opts: ContextOptions): BrowserRouteCon
     const result: ProfileStatus[] = [];
 
     for (const name of Object.keys(current.resolved.profiles)) {
-      const profileState = current.profiles.get(name);
       const profile = resolveProfile(current.resolved, name);
       if (!profile) {
         continue;
@@ -609,28 +451,16 @@ export function createBrowserRouteContext(opts: ContextOptions): BrowserRouteCon
       let tabCount = 0;
       let running = false;
 
-      if (profileState?.running) {
-        running = true;
-        try {
+      try {
+        const reachable = await isCdpHttpReachable(profile.cdpUrl, 200);
+        if (reachable) {
+          running = true;
           const ctx = createProfileContext(opts, profile);
-          const tabs = await ctx.listTabs();
+          const tabs = await ctx.listTabs().catch(() => []);
           tabCount = tabs.filter((t) => t.type === "page").length;
-        } catch {
-          // Browser might not be responsive
         }
-      } else {
-        // Check if something is listening on the port
-        try {
-          const reachable = await isChromeReachable(profile.cdpUrl, 200);
-          if (reachable) {
-            running = true;
-            const ctx = createProfileContext(opts, profile);
-            const tabs = await ctx.listTabs().catch(() => []);
-            tabCount = tabs.filter((t) => t.type === "page").length;
-          }
-        } catch {
-          // Not reachable
-        }
+      } catch {
+        // Not reachable
       }
 
       result.push({

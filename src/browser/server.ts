@@ -4,7 +4,6 @@ import { loadConfig } from "../config/config.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { resolveBrowserConfig } from "./config.js";
 import { ensureBrowserControlAuth, resolveBrowserControlAuth } from "./control-auth.js";
-import { isPwAiLoaded } from "./pw-ai-state.js";
 import { registerBrowserRoutes } from "./routes/index.js";
 import type { BrowserRouteRegistrar } from "./routes/types.js";
 import { type BrowserServerState, createBrowserRouteContext } from "./server-context.js";
@@ -108,14 +107,4 @@ export async function stopBrowserControlServer(): Promise<void> {
     });
   }
   state = null;
-
-  // Optional: avoid importing heavy Playwright bridge when this process never used it.
-  if (isPwAiLoaded()) {
-    try {
-      const mod = await import("./pw-ai.js");
-      await mod.closePlaywrightBrowserConnection();
-    } catch {
-      // ignore
-    }
-  }
 }

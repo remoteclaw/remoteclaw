@@ -14,17 +14,17 @@ vi.mock("../config/config.js", async (importOriginal) => {
   };
 });
 
-vi.mock("./trash.js", () => ({
+vi.mock("../infra/trash.js", () => ({
   movePathToTrash: vi.fn(async (targetPath: string) => targetPath),
 }));
 
-vi.mock("./chrome.js", () => ({
+vi.mock("./profile-paths.js", () => ({
   resolveRemoteClawUserDataDir: vi.fn(() => "/tmp/remoteclaw-test/remoteclaw/user-data"),
 }));
 
 import { loadConfig, writeConfigFile } from "../config/config.js";
-import { resolveRemoteClawUserDataDir } from "./chrome.js";
-import { movePathToTrash } from "./trash.js";
+import { movePathToTrash } from "../infra/trash.js";
+import { resolveRemoteClawUserDataDir } from "./profile-paths.js";
 
 function createCtx(resolved: BrowserServerState["resolved"]) {
   const state: BrowserServerState = {

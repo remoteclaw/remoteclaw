@@ -69,12 +69,4 @@ export async function stopBrowserControlService(): Promise<void> {
   });
 
   state = null;
-
-  // Optional: Playwright is not always available (e.g. embedded gateway builds).
-  try {
-    const mod = await import("./pw-ai.js");
-    await mod.closePlaywrightBrowserConnection();
-  } catch {
-    // ignore
-  }
 }

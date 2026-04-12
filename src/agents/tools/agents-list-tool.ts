@@ -1,10 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { loadConfig } from "../../config/config.js";
-import {
-  DEFAULT_AGENT_ID,
-  normalizeAgentId,
-  parseAgentSessionKey,
-} from "../../routing/session-key.js";
+import { normalizeAgentId, parseAgentSessionKey } from "../../routing/session-key.js";
 import { resolveAgentConfig } from "../agent-scope.js";
 import type { AnyAgentTool } from "./common.js";
 import { jsonResult } from "./common.js";
@@ -40,11 +36,14 @@ export function createAgentsListTool(opts?: {
               mainKey,
             })
           : alias;
-      const requesterAgentId = normalizeAgentId(
-        opts?.requesterAgentIdOverride ??
-          parseAgentSessionKey(requesterInternalKey)?.agentId ??
-          DEFAULT_AGENT_ID,
-      );
+      const rawRequesterAgentId =
+        opts?.requesterAgentIdOverride ?? parseAgentSessionKey(requesterInternalKey)?.agentId;
+      if (!rawRequesterAgentId) {
+        throw new Error(
+          "agents_list tool: cannot resolve requester agent id — tool must run inside an agent session",
+        );
+      }
+      const requesterAgentId = normalizeAgentId(rawRequesterAgentId);
 
       const allowAgents = resolveAgentConfig(cfg, requesterAgentId)?.subagents?.allowAgents ?? [];
       const allowAny = allowAgents.some((value) => value.trim() === "*");

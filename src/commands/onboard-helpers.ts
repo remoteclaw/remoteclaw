@@ -6,6 +6,7 @@ import { cancel, isCancel } from "@clack/prompts";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { CONFIG_PATH } from "../config/config.js";
+import { resolveStateDir } from "../config/paths.js";
 import { resolveSessionTranscriptsDirForAgent } from "../config/sessions.js";
 import { callGateway } from "../gateway/call.js";
 import { normalizeControlUiBasePath } from "../gateway/control-ui-shared.js";
@@ -307,7 +308,9 @@ export async function handleReset(scope: ResetScope, workspaceDir: string, runti
     return;
   }
   await moveToTrash(path.join(CONFIG_DIR, "credentials"), runtime);
-  await moveToTrash(resolveSessionTranscriptsDirForAgent(), runtime);
+  // Reset removes the entire agents tree (every agent's sessions, workspace cache, etc.).
+  // Per-agent dirs are created by setup/add commands, so this is the correct scope.
+  await moveToTrash(path.join(resolveStateDir(), "agents"), runtime);
   if (scope === "full") {
     await moveToTrash(workspaceDir, runtime);
   }

@@ -362,7 +362,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       await fs.writeFile(storePath, JSON.stringify(sessionStore), "utf-8");
     }
 
-    const transcriptPath = sessions.resolveSessionTranscriptPath(params.sessionId);
+    const transcriptPath = sessions.resolveSessionTranscriptPath(params.sessionId, "main");
     await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
     await fs.writeFile(transcriptPath, "bad", "utf-8");
 
@@ -1116,7 +1116,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     await withTempStateDir(async (stateDir) => {
       const sessionId = "session";
       const storePath = path.join(stateDir, "sessions", "sessions.json");
-      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId);
+      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId, "main");
       const sessionEntry: SessionEntry = {
         sessionId,
         updatedAt: Date.now(),
@@ -1172,7 +1172,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     await withTempStateDir(async (stateDir) => {
       const sessionId = "session";
       const storePath = path.join(stateDir, "sessions", "sessions.json");
-      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId);
+      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId, "main");
       const sessionEntry = { sessionId, updatedAt: Date.now(), sessionFile: transcriptPath };
       const sessionStore = { main: sessionEntry };
 
@@ -1268,7 +1268,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     await withTempStateDir(async (stateDir) => {
       const sessionId = "session";
       const storePath = path.join(stateDir, "sessions", "sessions.json");
-      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId);
+      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId, "main");
       const sessionEntry = { sessionId, updatedAt: Date.now(), sessionFile: transcriptPath };
       const sessionStore = { main: sessionEntry };
 
@@ -1356,7 +1356,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       await fs.mkdir(path.dirname(storePath), { recursive: true });
       await fs.writeFile(storePath, JSON.stringify(sessionStore), "utf-8");
 
-      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId);
+      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId, "main");
       await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
       await fs.writeFile(transcriptPath, "ok", "utf-8");
 

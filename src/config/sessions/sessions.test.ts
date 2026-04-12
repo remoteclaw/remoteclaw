@@ -353,6 +353,7 @@ describe("resolveAndPersistSessionFile", () => {
       storePath: fixture.storePath(),
       sessionEntry: sessionStore[sessionKey],
       fallbackSessionFile,
+      agentId: "main",
     });
 
     expect(result.sessionFile).toBe(fallbackSessionFile);
@@ -374,6 +375,7 @@ describe("resolveAndPersistSessionFile", () => {
       sessionStore,
       storePath: fixture.storePath(),
       fallbackSessionFile,
+      agentId: "main",
     });
 
     expect(result.sessionFile).toBe(fallbackSessionFile);

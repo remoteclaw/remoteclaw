@@ -2,7 +2,7 @@ import { resolveAgentDir, resolveAgentWorkspaceDirOrNull } from "../agents/agent
 import { upsertAuthProfile } from "../auth/index.js";
 import { writeConfigFile } from "../config/config.js";
 import { logConfigUpdated } from "../config/logging.js";
-import { DEFAULT_AGENT_ID, normalizeAgentId } from "../routing/session-key.js";
+import { normalizeAgentId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { resolveUserPath, shortenHomePath } from "../utils.js";
@@ -67,11 +67,6 @@ export async function agentsAddCommand(
       return;
     }
     const agentId = normalizeAgentId(nameInput);
-    if (agentId === DEFAULT_AGENT_ID) {
-      runtime.error(`"${DEFAULT_AGENT_ID}" is reserved. Choose another name.`);
-      runtime.exit(1);
-      return;
-    }
     if (agentId !== nameInput) {
       runtime.log(`Normalized agent id to "${agentId}".`);
     }
@@ -167,10 +162,6 @@ export async function agentsAddCommand(
           if (!value?.trim()) {
             return "Required";
           }
-          const normalized = normalizeAgentId(value);
-          if (normalized === DEFAULT_AGENT_ID) {
-            return `"${DEFAULT_AGENT_ID}" is reserved. Choose another name.`;
-          }
           return undefined;
         },
       }));
@@ -191,9 +182,6 @@ export async function agentsAddCommand(
             return "Must start with a letter or digit and contain only letters, digits, hyphens, and underscores (max 64 chars).";
           }
           const normalized = trimmed.toLowerCase();
-          if (normalized === DEFAULT_AGENT_ID) {
-            return `"${DEFAULT_AGENT_ID}" is reserved. Choose another id.`;
-          }
           if (existingIds.has(normalized)) {
             return `Agent "${normalized}" already exists.`;
           }

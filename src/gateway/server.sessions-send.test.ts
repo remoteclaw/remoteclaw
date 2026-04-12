@@ -50,7 +50,7 @@ async function emitLifecycleAssistantReply(params: {
   };
   const sessionId = commandParams.sessionId ?? params.defaultSessionId;
   const runId = commandParams.runId ?? sessionId;
-  const sessionFile = resolveSessionTranscriptPath(sessionId);
+  const sessionFile = resolveSessionTranscriptPath(sessionId, "main");
   await fs.mkdir(path.dirname(sessionFile), { recursive: true });
 
   const startedAt = Date.now();

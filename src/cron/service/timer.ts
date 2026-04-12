@@ -1,7 +1,6 @@
 import type { CronConfig, CronRetryOn } from "../../config/types.cron.js";
 import { isCronSystemEvent } from "../../infra/heartbeat-events-filter.js";
 import type { HeartbeatRunResult } from "../../infra/heartbeat-wake.js";
-import { DEFAULT_AGENT_ID } from "../../routing/session-key.js";
 import { resolveCronDeliveryPlan } from "../delivery.js";
 import { shouldEnqueueCronMainSummary } from "../heartbeat-policy.js";
 import { sweepCronRunSessions } from "../session-reaper.js";
@@ -656,11 +655,14 @@ export async function onTimer(state: CronServiceState) {
           }
         }
       }
-      // Fall back to sole/default agent only when no job-specific paths were collected
+      // Fall back to sole/default agent only when no job-specific paths were collected.
+      // If neither is available, skip the reaper sweep — no agent means no session store
+      // to sweep, and inventing a default here would reintroduce the phantom-agent pattern.
       if (storePaths.size === 0) {
-        const fallbackAgentId =
-          state.deps.soleAgentId ?? state.deps.defaultAgentId ?? DEFAULT_AGENT_ID;
-        storePaths.add(state.deps.resolveSessionStorePath(fallbackAgentId));
+        const fallbackAgentId = state.deps.soleAgentId ?? state.deps.defaultAgentId;
+        if (fallbackAgentId) {
+          storePaths.add(state.deps.resolveSessionStorePath(fallbackAgentId));
+        }
       }
     } else if (state.deps.sessionStorePath) {
       storePaths.add(state.deps.sessionStorePath);

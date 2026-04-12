@@ -31,6 +31,7 @@ import type {
   BridgeCallbacks,
   ChannelMessage,
 } from "../../middleware/types.js";
+import { resolveAgentIdFromSessionKeyOrNull } from "../../routing/session-key.js";
 import { defaultRuntime } from "../../runtime.js";
 import type { TemplateContext } from "../templating.js";
 import type { VerboseLevel } from "../thinking.js";
@@ -500,11 +501,14 @@ export async function runAgentTurnWithFallback(params: {
         try {
           // Delete transcript file if it exists
           if (corruptedSessionId) {
-            const transcriptPath = resolveSessionTranscriptPath(corruptedSessionId);
-            try {
-              fs.unlinkSync(transcriptPath);
-            } catch {
-              // Ignore if file doesn't exist
+            const agentId = resolveAgentIdFromSessionKeyOrNull(params.sessionKey) ?? undefined;
+            if (agentId) {
+              const transcriptPath = resolveSessionTranscriptPath(corruptedSessionId, agentId);
+              try {
+                fs.unlinkSync(transcriptPath);
+              } catch {
+                // Ignore if file doesn't exist
+              }
             }
           }
 

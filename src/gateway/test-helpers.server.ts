@@ -14,7 +14,7 @@ import {
 import { drainSystemEvents, peekSystemEvents } from "../infra/system-events.js";
 import { rawDataToString } from "../infra/ws.js";
 import { resetLogger, setLoggerOverride } from "../logging.js";
-import { DEFAULT_AGENT_ID, toAgentStoreSessionKey } from "../routing/session-key.js";
+import { toAgentStoreSessionKey } from "../routing/session-key.js";
 import { captureEnv } from "../test-utils/env.js";
 import { getDeterministicFreePortBlock } from "../test-utils/ports.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
@@ -73,7 +73,10 @@ export async function writeSessionStore(params: {
   if (!storePath) {
     throw new Error("writeSessionStore requires testState.sessionStorePath");
   }
-  const agentId = params.agentId ?? DEFAULT_AGENT_ID;
+  // Test helpers use a literal default agent id for fixtures when the caller
+  // doesn't supply one. This is NOT a phantom fallback — it's explicit test
+  // setup data.
+  const agentId = params.agentId ?? "main";
   const store: Record<string, Partial<SessionEntry>> = {};
   for (const [requestKey, entry] of Object.entries(params.entries)) {
     const rawKey = requestKey.trim();

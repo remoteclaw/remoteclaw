@@ -16,7 +16,9 @@ export {
   normalizeOptionalAccountId,
 } from "./account-id.js";
 
-export const DEFAULT_AGENT_ID = "main";
+// The main session-key segment used to construct the canonical session key for
+// direct chats (format: `agent:{agentId}:{mainKey}`). Unrelated to the phantom
+// agent concept — this is a SESSION-KEY SEGMENT, not a default agent identity.
 export const DEFAULT_MAIN_KEY = "main";
 export type SessionKeyShape = "missing" | "agent" | "legacy_or_alias" | "malformed_agent";
 
@@ -71,8 +73,20 @@ export function toAgentStoreSessionKey(params: {
 }
 
 export function resolveAgentIdFromSessionKey(sessionKey: string | undefined | null): string {
+  const agentId = resolveAgentIdFromSessionKeyOrNull(sessionKey);
+  if (agentId === null) {
+    throw new Error(
+      `Cannot resolve agent id: session key has no agent segment (got ${sessionKey ?? "null"})`,
+    );
+  }
+  return agentId;
+}
+
+export function resolveAgentIdFromSessionKeyOrNull(
+  sessionKey: string | undefined | null,
+): string | null {
   const parsed = parseAgentSessionKey(sessionKey);
-  return normalizeAgentId(parsed?.agentId ?? DEFAULT_AGENT_ID);
+  return normalizeAgentIdOrNull(parsed?.agentId);
 }
 
 export function classifySessionKeyShape(sessionKey: string | undefined | null): SessionKeyShape {
@@ -86,24 +100,31 @@ export function classifySessionKeyShape(sessionKey: string | undefined | null): 
   return raw.toLowerCase().startsWith("agent:") ? "malformed_agent" : "legacy_or_alias";
 }
 
-export function normalizeAgentId(value: string | undefined | null): string {
+export function normalizeAgentId(value: string): string {
+  const result = normalizeAgentIdOrNull(value);
+  if (result === null) {
+    throw new Error("Agent id is required and cannot be empty");
+  }
+  return result;
+}
+
+export function normalizeAgentIdOrNull(value: string | undefined | null): string | null {
   const trimmed = (value ?? "").trim();
   if (!trimmed) {
-    return DEFAULT_AGENT_ID;
+    return null;
   }
   // Keep it path-safe + shell-friendly.
   if (VALID_ID_RE.test(trimmed)) {
     return trimmed.toLowerCase();
   }
   // Best-effort fallback: collapse invalid characters to "-"
-  return (
-    trimmed
-      .toLowerCase()
-      .replace(INVALID_CHARS_RE, "-")
-      .replace(LEADING_DASH_RE, "")
-      .replace(TRAILING_DASH_RE, "")
-      .slice(0, 64) || DEFAULT_AGENT_ID
-  );
+  const sanitized = trimmed
+    .toLowerCase()
+    .replace(INVALID_CHARS_RE, "-")
+    .replace(LEADING_DASH_RE, "")
+    .replace(TRAILING_DASH_RE, "")
+    .slice(0, 64);
+  return sanitized || null;
 }
 
 export function isValidAgentId(value: string | undefined | null): boolean {
@@ -111,7 +132,7 @@ export function isValidAgentId(value: string | undefined | null): boolean {
   return Boolean(trimmed) && VALID_ID_RE.test(trimmed);
 }
 
-export function sanitizeAgentId(value: string | undefined | null): string {
+export function sanitizeAgentId(value: string): string {
   return normalizeAgentId(value);
 }
 

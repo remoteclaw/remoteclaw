@@ -177,11 +177,15 @@ export function registerTriggerHandlingUsageSummaryCases(params: {
             ),
           );
 
-          const sessionKey = resolveSessionKey("per-sender", {
-            From: "+1002",
-            To: "+2000",
-            Provider: "whatsapp",
-          } as Parameters<typeof resolveSessionKey>[1]);
+          const sessionKey = resolveSessionKey(
+            "per-sender",
+            {
+              From: "+1002",
+              To: "+2000",
+              Provider: "whatsapp",
+            } as Parameters<typeof resolveSessionKey>[1],
+            "main",
+          );
           await writeFile(
             requireSessionStorePath(cfg),
             JSON.stringify(

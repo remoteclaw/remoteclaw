@@ -1,7 +1,7 @@
 import os from "node:os";
 import path from "node:path";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
-import { DEFAULT_AGENT_ID, normalizeAgentId } from "../routing/session-key.js";
+import { normalizeAgentId } from "../routing/session-key.js";
 import { resolveUserPath } from "../utils.js";
 import { resolveStateDir } from "./paths.js";
 import type { RemoteClawConfig } from "./types.js";
@@ -33,9 +33,6 @@ function collectReferencedAgentIds(cfg: RemoteClawConfig): string[] {
   const ids = new Set<string>();
 
   const agents = Array.isArray(cfg.agents?.list) ? cfg.agents?.list : [];
-  const defaultAgentId = agents[0]?.id ?? DEFAULT_AGENT_ID;
-  ids.add(normalizeAgentId(defaultAgentId));
-
   for (const entry of agents) {
     if (entry?.id) {
       ids.add(normalizeAgentId(entry.id));

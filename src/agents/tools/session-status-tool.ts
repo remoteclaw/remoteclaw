@@ -19,7 +19,6 @@ import {
 } from "../../infra/provider-usage.js";
 import {
   buildAgentMainSessionKey,
-  DEFAULT_AGENT_ID,
   resolveAgentIdFromSessionKey,
 } from "../../routing/session-key.js";
 // Model override infrastructure gutted in RemoteClaw — inline override logic.
@@ -45,6 +44,7 @@ function resolveSessionEntry(params: {
   keyRaw: string;
   alias: string;
   mainKey: string;
+  agentId: string;
 }): { key: string; entry: SessionEntry } | null {
   const keyRaw = params.keyRaw.trim();
   if (!keyRaw) {
@@ -58,13 +58,13 @@ function resolveSessionEntry(params: {
 
   const candidates = new Set<string>([keyRaw, internal]);
   if (!keyRaw.startsWith("agent:")) {
-    candidates.add(`agent:${DEFAULT_AGENT_ID}:${keyRaw}`);
-    candidates.add(`agent:${DEFAULT_AGENT_ID}:${internal}`);
+    candidates.add(`agent:${params.agentId}:${keyRaw}`);
+    candidates.add(`agent:${params.agentId}:${internal}`);
   }
   if (keyRaw === "main") {
     candidates.add(
       buildAgentMainSessionKey({
-        agentId: DEFAULT_AGENT_ID,
+        agentId: params.agentId,
         mainKey: params.mainKey,
       }),
     );
@@ -196,6 +196,7 @@ export function createSessionStatusTool(opts?: {
         keyRaw: requestedKeyRaw,
         alias,
         mainKey,
+        agentId,
       });
 
       if (!resolved && shouldResolveSessionIdInput(requestedKeyRaw)) {
@@ -216,6 +217,7 @@ export function createSessionStatusTool(opts?: {
             keyRaw: requestedKeyRaw,
             alias,
             mainKey,
+            agentId,
           });
         }
       }

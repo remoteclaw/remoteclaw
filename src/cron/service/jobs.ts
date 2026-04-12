@@ -150,6 +150,11 @@ function assertMainSessionAgentId(
   if (!job.agentId) {
     return;
   }
+  if (!defaultAgentId) {
+    throw new Error(
+      `cron: sessionTarget "main" is only valid for the default agent, but no default agent is configured (agentId: ${job.agentId})`,
+    );
+  }
   const normalized = normalizeAgentId(job.agentId);
   const normalizedDefault = normalizeAgentId(defaultAgentId);
   if (normalized !== normalizedDefault) {

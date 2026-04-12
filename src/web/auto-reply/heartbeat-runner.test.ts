@@ -45,7 +45,6 @@ vi.mock("../../config/config.js", () => ({
 
 vi.mock("../../routing/session-key.js", () => ({
   normalizeMainKey: () => null,
-  DEFAULT_AGENT_ID: "default",
 }));
 
 vi.mock("../../agents/agent-scope.js", () => ({

@@ -20,7 +20,7 @@ describe("resolveSessionKey", () => {
         From: "discord:123456",
         SenderId: "123456",
       });
-      expect(resolveSessionKey("per-sender", ctx)).toBe("agent:fina:discord:direct:123456");
+      expect(resolveSessionKey("per-sender", ctx, "main")).toBe("agent:fina:discord:direct:123456");
     });
 
     it("migrates legacy discord:dm: keys to discord:direct:", () => {
@@ -30,7 +30,7 @@ describe("resolveSessionKey", () => {
         From: "discord:123456",
         SenderId: "123456",
       });
-      expect(resolveSessionKey("per-sender", ctx)).toBe("agent:fina:discord:direct:123456");
+      expect(resolveSessionKey("per-sender", ctx, "main")).toBe("agent:fina:discord:direct:123456");
     });
 
     it("fixes phantom discord:channel:USERID keys when sender matches", () => {
@@ -40,7 +40,7 @@ describe("resolveSessionKey", () => {
         From: "discord:123456",
         SenderId: "123456",
       });
-      expect(resolveSessionKey("per-sender", ctx)).toBe("agent:fina:discord:direct:123456");
+      expect(resolveSessionKey("per-sender", ctx, "main")).toBe("agent:fina:discord:direct:123456");
     });
 
     it("does not rewrite discord:channel: keys for non-direct chats", () => {
@@ -50,7 +50,9 @@ describe("resolveSessionKey", () => {
         From: "discord:channel:123456",
         SenderId: "789",
       });
-      expect(resolveSessionKey("per-sender", ctx)).toBe("agent:fina:discord:channel:123456");
+      expect(resolveSessionKey("per-sender", ctx, "main")).toBe(
+        "agent:fina:discord:channel:123456",
+      );
     });
 
     it("does not rewrite discord:channel: keys when sender does not match", () => {
@@ -60,7 +62,9 @@ describe("resolveSessionKey", () => {
         From: "discord:789",
         SenderId: "789",
       });
-      expect(resolveSessionKey("per-sender", ctx)).toBe("agent:fina:discord:channel:123456");
+      expect(resolveSessionKey("per-sender", ctx, "main")).toBe(
+        "agent:fina:discord:channel:123456",
+      );
     });
 
     it("handles keys without an agent prefix", () => {
@@ -70,7 +74,7 @@ describe("resolveSessionKey", () => {
         From: "discord:123456",
         SenderId: "123456",
       });
-      expect(resolveSessionKey("per-sender", ctx)).toBe("discord:direct:123456");
+      expect(resolveSessionKey("per-sender", ctx, "main")).toBe("discord:direct:123456");
     });
   });
 });

@@ -30,11 +30,7 @@ import { withAuthKeyRetry } from "../../middleware/auth-key-retry.js";
 import { ChannelBridge } from "../../middleware/channel-bridge.js";
 import type { SessionMap } from "../../middleware/session-map.js";
 import type { AgentDeliveryResult, ChannelMessage } from "../../middleware/types.js";
-import {
-  DEFAULT_AGENT_ID,
-  buildAgentMainSessionKey,
-  normalizeAgentId,
-} from "../../routing/session-key.js";
+import { buildAgentMainSessionKey, normalizeAgentId } from "../../routing/session-key.js";
 import {
   buildSafeExternalPrompt,
   detectSuspiciousPatterns,
@@ -174,7 +170,14 @@ export async function runCronIsolatedAgentTurn(params: {
   // Use the requested agentId, falling back to the sole configured agent.
   // This ensures auth-profiles, workspace, and agentDir all resolve to the
   // correct per-agent paths (e.g. ~/.remoteclaw/agents/<agentId>/agent/).
-  const agentId = normalizedRequested ?? soleAgentId ?? DEFAULT_AGENT_ID;
+  const agentId = normalizedRequested ?? soleAgentId;
+  if (!agentId) {
+    return {
+      status: "error",
+      error:
+        "cron isolated run: cannot resolve agent id — no agent specified and no sole agent configured",
+    };
+  }
   const agentCfg: AgentDefaultsConfig = Object.assign(
     {},
     params.cfg.agents?.defaults,

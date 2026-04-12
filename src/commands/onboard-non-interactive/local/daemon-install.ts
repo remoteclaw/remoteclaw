@@ -4,7 +4,6 @@ import { isSystemdUserServiceAvailable } from "../../../daemon/systemd.js";
 import type { RuntimeEnv } from "../../../runtime.js";
 import { buildGatewayInstallPlan, gatewayInstallErrorHint } from "../../daemon-install-helpers.js";
 import { DEFAULT_GATEWAY_DAEMON_RUNTIME, isGatewayDaemonRuntime } from "../../daemon-runtime.js";
-import { resolveGatewayInstallToken } from "../../gateway-install-token.js";
 import type { OnboardOptions } from "../../onboard-types.js";
 import { ensureSystemdUserLingerNonInteractive } from "../../systemd-linger.js";
 
@@ -34,10 +33,12 @@ export async function installGatewayDaemonNonInteractive(params: {
   }
 
   const service = resolveGatewayService();
-  const tokenResolution = await resolveGatewayInstallToken({
-    config: params.nextConfig,
-    env: process.env,
-  });
+  // Gateway install token resolution is gutted in this fork; treat as
+  // available with no warnings.
+  const tokenResolution: { warnings: string[]; unavailableReason: string | null } = {
+    warnings: [],
+    unavailableReason: null,
+  };
   for (const warning of tokenResolution.warnings) {
     runtime.log(warning);
   }

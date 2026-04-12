@@ -10,7 +10,8 @@ import {
   readJsonFile,
   type NonInteractiveRuntime,
 } from "./onboard-non-interactive.test-helpers.js";
-import { OPENAI_DEFAULT_MODEL } from "./openai-model-default.js";
+
+const OPENAI_DEFAULT_MODEL = "gpt-4o";
 
 type OnboardEnv = {
   configPath: string;

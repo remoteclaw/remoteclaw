@@ -11,7 +11,6 @@ import {
   GATEWAY_DAEMON_RUNTIME_OPTIONS,
   type GatewayDaemonRuntime,
 } from "./daemon-runtime.js";
-import { resolveGatewayInstallToken } from "./gateway-install-token.js";
 import { guardCancel } from "./onboard-helpers.js";
 import { ensureSystemdUserLingerInteractive } from "./systemd-linger.js";
 
@@ -97,10 +96,12 @@ export async function maybeInstallDaemon(params: {
         progress.setLabel("Preparing Gateway service…");
 
         const cfg = loadConfig();
-        const tokenResolution = await resolveGatewayInstallToken({
-          config: cfg,
-          env: process.env,
-        });
+        // Gateway install token resolution is gutted in this fork; treat as
+        // available with no warnings.
+        const tokenResolution: { warnings: string[]; unavailableReason: string | null } = {
+          warnings: [],
+          unavailableReason: null,
+        };
         for (const warning of tokenResolution.warnings) {
           note(warning, "Gateway");
         }

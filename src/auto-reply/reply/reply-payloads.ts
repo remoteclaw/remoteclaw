@@ -1,4 +1,4 @@
-import { isMessagingToolDuplicate } from "../../agents/pi-embedded-helpers.js";
+import { isMessagingToolDuplicate } from "../../agents/agent-helpers/messaging-dedupe.js";
 import type { MessagingToolSend } from "../../agents/pi-embedded-runner.js";
 import { normalizeChannelId } from "../../channels/plugins/index.js";
 import type { ReplyToMode } from "../../config/types.js";

@@ -28,7 +28,6 @@ import {
 } from "./daemon-runtime.js";
 import { buildGatewayRuntimeHints, formatGatewayRuntimeSummary } from "./doctor-format.js";
 import type { DoctorOptions, DoctorPrompter } from "./doctor-prompter.js";
-import { resolveGatewayInstallToken } from "./gateway-install-token.js";
 import { formatHealthCheckFailure } from "./health-format.js";
 import { healthCommand } from "./health.js";
 
@@ -172,10 +171,12 @@ export async function maybeRepairGatewayDaemon(params: {
           },
           DEFAULT_GATEWAY_DAEMON_RUNTIME,
         );
-        const tokenResolution = await resolveGatewayInstallToken({
-          config: params.cfg,
-          env: process.env,
-        });
+        // Gateway install token resolution is gutted in this fork; treat as
+        // available with no warnings.
+        const tokenResolution: { warnings: string[]; unavailableReason: string | null } = {
+          warnings: [],
+          unavailableReason: null,
+        };
         for (const warning of tokenResolution.warnings) {
           note(warning, "Gateway");
         }

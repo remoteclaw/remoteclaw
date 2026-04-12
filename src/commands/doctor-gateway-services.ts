@@ -24,7 +24,6 @@ import type { RuntimeEnv } from "../runtime.js";
 import { note } from "../terminal/note.js";
 import { buildGatewayInstallPlan } from "./daemon-install-helpers.js";
 import { DEFAULT_GATEWAY_DAEMON_RUNTIME, type GatewayDaemonRuntime } from "./daemon-runtime.js";
-import { resolveGatewayAuthTokenForService } from "./doctor-gateway-auth-token.js";
 import type { DoctorOptions, DoctorPrompter } from "./doctor-prompter.js";
 
 const execFileAsync = promisify(execFile);
@@ -218,14 +217,9 @@ export async function maybeRepairGatewayServiceConfig(
       defaults: cfg.secrets?.defaults,
     }).ref,
   );
-  const gatewayTokenResolution = await resolveGatewayAuthTokenForService(cfg, process.env);
-  if (gatewayTokenResolution.unavailableReason) {
-    note(
-      `Unable to verify gateway service token drift: ${gatewayTokenResolution.unavailableReason}`,
-      "Gateway service config",
-    );
-  }
-  const expectedGatewayToken = tokenRefConfigured ? undefined : gatewayTokenResolution.token;
+  // Gateway token resolution is gutted in this fork; pass undefined so the audit
+  // treats the service token as unverifiable rather than asserting drift.
+  const expectedGatewayToken: string | undefined = undefined;
   const audit = await auditGatewayServiceConfig({
     env: process.env,
     command,

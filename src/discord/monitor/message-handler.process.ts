@@ -1,6 +1,5 @@
 import { ChannelType, type RequestClient } from "@buape/carbon";
 import { resolveAckReaction, resolveHumanDelayConfig } from "../../agents/identity.js";
-import { EmbeddedBlockChunker } from "../../agents/pi-embedded-block-chunker.js";
 import { resolveChunkMode } from "../../auto-reply/chunk.js";
 import { dispatchInboundMessage } from "../../auto-reply/dispatch.js";
 import { formatInboundEnvelope, resolveEnvelopeFormatOptions } from "../../auto-reply/envelope.js";
@@ -51,6 +50,21 @@ import { buildDirectLabel, buildGuildLabel, resolveReplyContext } from "./reply-
 import { deliverDiscordReply } from "./reply-delivery.js";
 import { resolveDiscordAutoThreadReplyPlan, resolveDiscordThreadStarter } from "./threading.js";
 import { sendTyping } from "./typing.js";
+
+// Local no-op stand-in for the gutted EmbeddedBlockChunker; draft-streaming
+// chunking is not implemented in this fork.
+class EmbeddedBlockChunker {
+  feed(..._args: unknown[]) {}
+  flush(..._args: unknown[]): unknown[] {
+    return [];
+  }
+  reset(..._args: unknown[]) {}
+  append(..._args: unknown[]) {}
+  drain(..._args: unknown[]) {}
+  hasBuffered(..._args: unknown[]): boolean {
+    return false;
+  }
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {

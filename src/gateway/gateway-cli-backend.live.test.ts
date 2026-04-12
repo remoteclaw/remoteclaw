@@ -171,7 +171,6 @@ describeLive("gateway live (cli backend)", () => {
       configPath: process.env.REMOTECLAW_CONFIG_PATH,
       token: process.env.REMOTECLAW_GATEWAY_TOKEN,
       skipChannels: process.env.REMOTECLAW_SKIP_CHANNELS,
-      skipGmail: process.env.REMOTECLAW_SKIP_GMAIL_WATCHER,
       skipCron: process.env.REMOTECLAW_SKIP_CRON,
       skipCanvas: process.env.REMOTECLAW_SKIP_CANVAS_HOST,
       anthropicApiKey: process.env.ANTHROPIC_API_KEY,
@@ -179,7 +178,6 @@ describeLive("gateway live (cli backend)", () => {
     };
 
     process.env.REMOTECLAW_SKIP_CHANNELS = "1";
-    process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = "1";
     process.env.REMOTECLAW_SKIP_CRON = "1";
     process.env.REMOTECLAW_SKIP_CANVAS_HOST = "1";
     delete process.env.ANTHROPIC_API_KEY;
@@ -402,11 +400,6 @@ describeLive("gateway live (cli backend)", () => {
         delete process.env.REMOTECLAW_SKIP_CHANNELS;
       } else {
         process.env.REMOTECLAW_SKIP_CHANNELS = previous.skipChannels;
-      }
-      if (previous.skipGmail === undefined) {
-        delete process.env.REMOTECLAW_SKIP_GMAIL_WATCHER;
-      } else {
-        process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = previous.skipGmail;
       }
       if (previous.skipCron === undefined) {
         delete process.env.REMOTECLAW_SKIP_CRON;

@@ -257,7 +257,7 @@ describe("deliverAgentCommandResult", () => {
         to: "+15551234567",
       },
       outboundSession: {
-        key: "agent:exec:hook:gmail:thread-1",
+        key: "agent:exec:hook:webhook:thread-1",
         agentId: "exec",
       },
     });
@@ -265,7 +265,7 @@ describe("deliverAgentCommandResult", () => {
     expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(
       expect.objectContaining({
         session: expect.objectContaining({
-          key: "agent:exec:hook:gmail:thread-1",
+          key: "agent:exec:hook:webhook:thread-1",
           agentId: "exec",
         }),
       }),

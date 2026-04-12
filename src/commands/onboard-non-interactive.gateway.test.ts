@@ -90,7 +90,6 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
       "REMOTECLAW_STATE_DIR",
       "REMOTECLAW_CONFIG_PATH",
       "REMOTECLAW_SKIP_CHANNELS",
-      "REMOTECLAW_SKIP_GMAIL_WATCHER",
       "REMOTECLAW_SKIP_CRON",
       "REMOTECLAW_SKIP_CANVAS_HOST",
       "REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER",
@@ -98,7 +97,6 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
       "REMOTECLAW_GATEWAY_PASSWORD",
     ]);
     process.env.REMOTECLAW_SKIP_CHANNELS = "1";
-    process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = "1";
     process.env.REMOTECLAW_SKIP_CRON = "1";
     process.env.REMOTECLAW_SKIP_CANVAS_HOST = "1";
     process.env.REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER = "1";

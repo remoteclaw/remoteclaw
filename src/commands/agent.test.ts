@@ -163,7 +163,7 @@ async function withCrossAgentResumeFixture(
     const storePattern = path.join(home, "sessions", "{agentId}", "sessions.json");
     const execStore = path.join(home, "sessions", "exec", "sessions.json");
     const sessionId = "session-exec-hook";
-    const sessionKey = "agent:exec:hook:gmail:thread-1";
+    const sessionKey = "agent:exec:hook:webhook:thread-1";
     writeSessionStoreSeed(execStore, {
       [sessionKey]: {
         sessionId,

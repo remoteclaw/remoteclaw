@@ -255,9 +255,9 @@ describe("gateway hooks helpers", () => {
     const allowed = resolveHookSessionKey({
       hooksConfig: resolved,
       source: "mapping",
-      sessionKey: "hook:gmail:1",
+      sessionKey: "hook:webhook:1",
     });
-    expect(allowed).toEqual({ ok: true, value: "hook:gmail:1" });
+    expect(allowed).toEqual({ ok: true, value: "hook:webhook:1" });
   });
 
   test("resolveHookSessionKey uses defaultSessionKey when request key is absent", () => {

@@ -35,7 +35,7 @@ describe("heartbeat-reason", () => {
     expect(isHeartbeatEventDrivenReason("exec-event")).toBe(true);
     expect(isHeartbeatEventDrivenReason("cron:job-1")).toBe(true);
     expect(isHeartbeatEventDrivenReason("wake")).toBe(true);
-    expect(isHeartbeatEventDrivenReason("hook:gmail:sync")).toBe(true);
+    expect(isHeartbeatEventDrivenReason("hook:webhook:sync")).toBe(true);
     expect(isHeartbeatEventDrivenReason("interval")).toBe(false);
     expect(isHeartbeatEventDrivenReason("manual")).toBe(false);
     expect(isHeartbeatEventDrivenReason("other")).toBe(false);

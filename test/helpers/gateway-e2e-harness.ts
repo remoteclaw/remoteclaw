@@ -147,7 +147,6 @@ export async function spawnGatewayInstance(name: string): Promise<GatewayInstanc
           REMOTECLAW_GATEWAY_PASSWORD: "",
           REMOTECLAW_SKIP_CHANNELS: "1",
           REMOTECLAW_SKIP_PROVIDERS: "1",
-          REMOTECLAW_SKIP_GMAIL_WATCHER: "1",
           REMOTECLAW_SKIP_CRON: "1",
           REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
           REMOTECLAW_SKIP_CANVAS_HOST: "1",

@@ -41,37 +41,6 @@ export type HookMappingConfig = {
   transform?: HookMappingTransform;
 };
 
-export type HooksGmailTailscaleMode = "off" | "serve" | "funnel";
-
-export type HooksGmailConfig = {
-  account?: string;
-  label?: string;
-  topic?: string;
-  subscription?: string;
-  pushToken?: string;
-  hookUrl?: string;
-  includeBody?: boolean;
-  maxBytes?: number;
-  renewEveryMinutes?: number;
-  /** DANGEROUS: Disable external content safety wrapping for Gmail hooks. */
-  allowUnsafeExternalContent?: boolean;
-  serve?: {
-    bind?: string;
-    port?: number;
-    path?: string;
-  };
-  tailscale?: {
-    mode?: HooksGmailTailscaleMode;
-    path?: string;
-    /** Optional tailscale serve/funnel target (port, host:port, or full URL). */
-    target?: string;
-  };
-  /** Optional model override for Gmail hook processing (provider/model or alias). */
-  model?: string;
-  /** Optional thinking level override for Gmail hook processing. */
-  thinking?: "off" | "minimal" | "low" | "medium" | "high";
-};
-
 export type InternalHookHandlerConfig = {
   /** Event key to listen for (e.g., 'command:new', 'message:received', 'message:transcribed', 'session:start') */
   event: string;
@@ -135,7 +104,6 @@ export type HooksConfig = {
   presets?: string[];
   transformsDir?: string;
   mappings?: HookMappingConfig[];
-  gmail?: HooksGmailConfig;
   /** Internal agent event hooks */
   internal?: InternalHooksConfig;
 };

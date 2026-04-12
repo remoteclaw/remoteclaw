@@ -4,10 +4,10 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { applyHookMappings, resolveHookMappings } from "./hooks-mapping.js";
 
-const baseUrl = new URL("http://127.0.0.1:18789/hooks/gmail");
+const baseUrl = new URL("http://127.0.0.1:18789/hooks/demo");
 
 describe("hooks mapping", () => {
-  const gmailPayload = { messages: [{ subject: "Hello" }] };
+  const demoPayload = { messages: [{ subject: "Hello" }] };
 
   function expectSkippedTransformResult(result: Awaited<ReturnType<typeof applyHookMappings>>) {
     expect(result?.ok).toBe(true);
@@ -17,7 +17,7 @@ describe("hooks mapping", () => {
     }
   }
 
-  function createGmailAgentMapping(params: {
+  function createDemoAgentMapping(params: {
     id: string;
     messageTemplate: string;
     model?: string;
@@ -25,7 +25,7 @@ describe("hooks mapping", () => {
   }) {
     return {
       id: params.id,
-      match: { path: "gmail" },
+      match: { path: "demo" },
       action: "agent" as const,
       messageTemplate: params.messageTemplate,
       ...(params.model ? { model: params.model } : {}),
@@ -33,13 +33,13 @@ describe("hooks mapping", () => {
     };
   }
 
-  async function applyGmailMappings(config: Parameters<typeof resolveHookMappings>[0]) {
+  async function applyDemoMappings(config: Parameters<typeof resolveHookMappings>[0]) {
     const mappings = resolveHookMappings(config);
     return applyHookMappings(mappings, {
-      payload: gmailPayload,
+      payload: demoPayload,
       headers: {},
       url: baseUrl,
-      path: "gmail",
+      path: "demo",
     });
   }
 
@@ -62,7 +62,7 @@ describe("hooks mapping", () => {
   }) {
     const mappings = resolveHookMappings({
       mappings: [
-        createGmailAgentMapping({
+        createDemoAgentMapping({
           id: params.id,
           messageTemplate: params.messageTemplate,
         }),
@@ -72,7 +72,7 @@ describe("hooks mapping", () => {
       payload: params.payload,
       headers: {},
       url: baseUrl,
-      path: "gmail",
+      path: "demo",
     });
     expectAgentMessage(result, params.expectedMessage);
   }
@@ -110,16 +110,10 @@ describe("hooks mapping", () => {
     });
   }
 
-  it("resolves gmail preset", () => {
-    const mappings = resolveHookMappings({ presets: ["gmail"] });
-    expect(mappings.length).toBeGreaterThan(0);
-    expect(mappings[0]?.matchPath).toBe("gmail");
-  });
-
   it("renders template from payload", async () => {
-    const result = await applyGmailMappings({
+    const result = await applyDemoMappings({
       mappings: [
-        createGmailAgentMapping({
+        createDemoAgentMapping({
           id: "demo",
           messageTemplate: "Subject: {{messages[0].subject}}",
         }),
@@ -129,9 +123,9 @@ describe("hooks mapping", () => {
   });
 
   it("passes model override from mapping", async () => {
-    const result = await applyGmailMappings({
+    const result = await applyDemoMappings({
       mappings: [
-        createGmailAgentMapping({
+        createDemoAgentMapping({
           id: "demo",
           messageTemplate: "Subject: {{messages[0].subject}}",
           model: "openai/gpt-4.1-mini",
@@ -362,11 +356,11 @@ describe("hooks mapping", () => {
     expectSkippedTransformResult(result);
   });
 
-  it("prefers explicit mappings over presets", async () => {
-    const result = await applyGmailMappings({
-      presets: ["gmail"],
+  it("ignores unknown presets and applies explicit mappings", async () => {
+    const result = await applyDemoMappings({
+      presets: ["unknown-preset"],
       mappings: [
-        createGmailAgentMapping({
+        createDemoAgentMapping({
           id: "override",
           messageTemplate: "Override subject: {{messages[0].subject}}",
         }),
@@ -376,9 +370,9 @@ describe("hooks mapping", () => {
   });
 
   it("passes agentId from mapping", async () => {
-    const result = await applyGmailMappings({
+    const result = await applyDemoMappings({
       mappings: [
-        createGmailAgentMapping({
+        createDemoAgentMapping({
           id: "hooks-agent",
           messageTemplate: "Subject: {{messages[0].subject}}",
           agentId: "hooks",
@@ -392,9 +386,9 @@ describe("hooks mapping", () => {
   });
 
   it("agentId is undefined when not set", async () => {
-    const result = await applyGmailMappings({
+    const result = await applyDemoMappings({
       mappings: [
-        createGmailAgentMapping({
+        createDemoAgentMapping({
           id: "no-agent",
           messageTemplate: "Subject: {{messages[0].subject}}",
         }),

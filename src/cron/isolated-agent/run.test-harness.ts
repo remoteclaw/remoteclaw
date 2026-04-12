@@ -31,7 +31,6 @@ export const getModelRefStatusMock = createMock();
 export const isCliProviderMock = createMock();
 export const resolveAllowedModelRefMock = createMock();
 export const resolveConfiguredModelRefMock = createMock();
-export const resolveHooksGmailModelMock = createMock();
 export const resolveThinkingDefaultMock = createMock();
 export const runWithModelFallbackMock = createMock();
 export const runEmbeddedPiAgentMock = createMock();
@@ -80,7 +79,6 @@ vi.mock("../../agents/model-selection.js", async (importOriginal) => {
     isCliProvider: isCliProviderMock,
     resolveAllowedModelRef: resolveAllowedModelRefMock,
     resolveConfiguredModelRef: resolveConfiguredModelRefMock,
-    resolveHooksGmailModel: resolveHooksGmailModelMock,
     resolveThinkingDefault: resolveThinkingDefaultMock,
   };
 });
@@ -259,7 +257,6 @@ export function resetRunCronIsolatedAgentTurnHarness(): void {
 
   resolveConfiguredModelRefMock.mockReturnValue({ provider: "openai", model: "gpt-4" });
   resolveAllowedModelRefMock.mockReturnValue({ ref: { provider: "openai", model: "gpt-4" } });
-  resolveHooksGmailModelMock.mockReturnValue(null);
   resolveThinkingDefaultMock.mockReturnValue(undefined);
   getModelRefStatusMock.mockReturnValue({ allowed: false });
   isCliProviderMock.mockReturnValue(false);

@@ -46,7 +46,6 @@ This page describes the current CLI behavior. If commands change, update this do
 - [`dns`](/cli/dns)
 - [`docs`](/cli/docs)
 - [`hooks`](/cli/hooks)
-- [`webhooks`](/cli/webhooks)
 - [`pairing`](/cli/pairing)
 - [`qr`](/cli/qr)
 - [`plugins`](/cli/plugins) (plugin commands)
@@ -504,15 +503,6 @@ Subcommands:
 - `devices clear --yes [--pending]`
 - `devices rotate --device <id> --role <role> [--scope <scope...>]`
 - `devices revoke --device <id> --role <role>`
-
-### `webhooks gmail`
-
-Gmail Pub/Sub hook setup + runner. See [/automation/gmail-pubsub](/automation/gmail-pubsub).
-
-Subcommands:
-
-- `webhooks gmail setup` (requires `--account <email>`; supports `--project`, `--topic`, `--subscription`, `--label`, `--hook-url`, `--hook-token`, `--push-token`, `--bind`, `--port`, `--path`, `--include-body`, `--max-bytes`, `--renew-minutes`, `--tailscale`, `--tailscale-path`, `--tailscale-target`, `--push-endpoint`, `--json`)
-- `webhooks gmail run` (runtime overrides for the same flags)
 
 ### `dns setup`
 

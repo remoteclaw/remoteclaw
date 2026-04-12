@@ -3,12 +3,12 @@ import {
   createBrowserControlContext,
   startBrowserControlServiceFromConfig,
 } from "../../browser/control-service.js";
-import { applyBrowserProxyPaths, persistBrowserProxyFiles } from "../../browser/proxy-files.js";
 import { createBrowserRouteDispatcher } from "../../browser/routes/dispatcher.js";
 import { loadConfig } from "../../config/config.js";
 import { isNodeCommandAllowed, resolveNodeCommandAllowlist } from "../node-command-policy.js";
 import type { NodeSession } from "../node-registry.js";
 import { ErrorCodes, errorShape } from "../protocol/index.js";
+import { applyBrowserProxyPaths, persistBrowserProxyFiles } from "./browser-proxy-files.js";
 import { respondUnavailableOnNodeInvokeError, safeParseJson } from "./nodes.helpers.js";
 import type { GatewayRequestHandlers } from "./types.js";
 

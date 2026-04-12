@@ -75,7 +75,7 @@ vi.mock("../../config/sessions/paths.js", () => ({
   resolveSessionTranscriptsDirForAgent: mocks.resolveSessionTranscriptsDirForAgent,
 }));
 
-vi.mock("../../browser/trash.js", () => ({
+vi.mock("../../infra/trash.js", () => ({
   movePathToTrash: mocks.movePathToTrash,
 }));
 

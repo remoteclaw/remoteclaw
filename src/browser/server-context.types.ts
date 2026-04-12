@@ -1,16 +1,14 @@
 import type { Server } from "node:http";
-import type { RunningChrome } from "./chrome.js";
 import type { BrowserTab } from "./client.js";
 import type { ResolvedBrowserConfig, ResolvedBrowserProfile } from "./config.js";
 
 export type { BrowserTab };
 
 /**
- * Runtime state for a single profile's Chrome instance.
+ * Runtime state for a single profile's CDP attachment.
  */
 export type ProfileRuntimeState = {
   profile: ResolvedBrowserProfile;
-  running: RunningChrome | null;
   /** Sticky tab selection when callers omit targetId (keeps snapshot+act consistent). */
   lastTargetId?: string | null;
 };

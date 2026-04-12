@@ -3,9 +3,10 @@ import path from "node:path";
 import type { BrowserProfileConfig, RemoteClawConfig } from "../config/config.js";
 import { loadConfig, writeConfigFile } from "../config/config.js";
 import { deriveDefaultBrowserCdpPortRange } from "../config/port-defaults.js";
-import { resolveRemoteClawUserDataDir } from "./chrome.js";
+import { movePathToTrash } from "../infra/trash.js";
 import { parseHttpUrl, resolveProfile } from "./config.js";
 import { DEFAULT_BROWSER_DEFAULT_PROFILE_NAME } from "./constants.js";
+import { resolveRemoteClawUserDataDir } from "./profile-paths.js";
 import {
   allocateCdpPort,
   allocateColor,
@@ -14,7 +15,6 @@ import {
   isValidProfileName,
 } from "./profiles.js";
 import type { BrowserRouteContext, ProfileStatus } from "./server-context.js";
-import { movePathToTrash } from "./trash.js";
 
 export type CreateProfileParams = {
   name: string;

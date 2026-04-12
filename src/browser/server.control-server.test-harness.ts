@@ -65,87 +65,14 @@ const cdpMocks = vi.hoisted(() => ({
   createTargetViaCdp: vi.fn<() => Promise<{ targetId: string }>>(async () => {
     throw new Error("cdp disabled");
   }),
-  snapshotAria: vi.fn(async () => ({
-    nodes: [{ ref: "1", role: "link", name: "x", depth: 0 }],
-  })),
 }));
 
-export function getCdpMocks(): { createTargetViaCdp: MockFn; snapshotAria: MockFn } {
-  return cdpMocks as unknown as { createTargetViaCdp: MockFn; snapshotAria: MockFn };
-}
-
-const pwMocks = vi.hoisted(() => ({
-  armDialogViaPlaywright: vi.fn(async () => {}),
-  armFileUploadViaPlaywright: vi.fn(async () => {}),
-  clickViaPlaywright: vi.fn(async () => {}),
-  closePageViaPlaywright: vi.fn(async () => {}),
-  closePlaywrightBrowserConnection: vi.fn(async () => {}),
-  downloadViaPlaywright: vi.fn(async () => ({
-    url: "https://example.com/report.pdf",
-    suggestedFilename: "report.pdf",
-    path: "/tmp/report.pdf",
-  })),
-  dragViaPlaywright: vi.fn(async () => {}),
-  evaluateViaPlaywright: vi.fn(async () => "ok"),
-  fillFormViaPlaywright: vi.fn(async () => {}),
-  getConsoleMessagesViaPlaywright: vi.fn(async () => []),
-  hoverViaPlaywright: vi.fn(async () => {}),
-  scrollIntoViewViaPlaywright: vi.fn(async () => {}),
-  navigateViaPlaywright: vi.fn(async () => ({ url: "https://example.com" })),
-  pdfViaPlaywright: vi.fn(async () => ({ buffer: Buffer.from("pdf") })),
-  pressKeyViaPlaywright: vi.fn(async () => {}),
-  responseBodyViaPlaywright: vi.fn(async () => ({
-    url: "https://example.com/api/data",
-    status: 200,
-    headers: { "content-type": "application/json" },
-    body: '{"ok":true}',
-  })),
-  resizeViewportViaPlaywright: vi.fn(async () => {}),
-  selectOptionViaPlaywright: vi.fn(async () => {}),
-  setInputFilesViaPlaywright: vi.fn(async () => {}),
-  snapshotAiViaPlaywright: vi.fn(async () => ({ snapshot: "ok" })),
-  traceStopViaPlaywright: vi.fn(async () => {}),
-  takeScreenshotViaPlaywright: vi.fn(async () => ({
-    buffer: Buffer.from("png"),
-  })),
-  typeViaPlaywright: vi.fn(async () => {}),
-  waitForDownloadViaPlaywright: vi.fn(async () => ({
-    url: "https://example.com/report.pdf",
-    suggestedFilename: "report.pdf",
-    path: "/tmp/report.pdf",
-  })),
-  waitForViaPlaywright: vi.fn(async () => {}),
-}));
-
-export function getPwMocks(): Record<string, MockFn> {
-  return pwMocks as unknown as Record<string, MockFn>;
+export function getCdpMocks(): { createTargetViaCdp: MockFn } {
+  return cdpMocks as unknown as { createTargetViaCdp: MockFn };
 }
 
 const chromeUserDataDir = vi.hoisted(() => ({ dir: "/tmp/remoteclaw" }));
 installChromeUserDataDirHooks(chromeUserDataDir);
-
-function makeProc(pid = 123) {
-  const handlers = new Map<string, Array<(...args: unknown[]) => void>>();
-  return {
-    pid,
-    killed: false,
-    exitCode: null as number | null,
-    on: (event: string, cb: (...args: unknown[]) => void) => {
-      handlers.set(event, [...(handlers.get(event) ?? []), cb]);
-      return undefined;
-    },
-    emitExit: () => {
-      for (const cb of handlers.get("exit") ?? []) {
-        cb(0);
-      }
-    },
-    kill: () => {
-      return true;
-    },
-  };
-}
-
-const proc = makeProc();
 
 vi.mock("../config/config.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../config/config.js")>();
@@ -168,59 +95,29 @@ vi.mock("../config/config.js", async (importOriginal) => {
   };
 });
 
-const launchCalls = vi.hoisted(() => [] as Array<{ port: number }>);
+vi.mock("./cdp-reachability.js", () => ({
+  isCdpHttpReachable: vi.fn(async () => state.reachable),
+  isCdpReady: vi.fn(async () => state.reachable),
+  getCdpWebSocketUrl: vi.fn(async () => null),
+}));
 
-export function getLaunchCalls() {
-  return launchCalls;
-}
-
-vi.mock("./chrome.js", () => ({
-  isChromeCdpReady: vi.fn(async () => state.reachable),
-  isChromeReachable: vi.fn(async () => state.reachable),
-  launchRemoteClawChrome: vi.fn(async (_resolved: unknown, profile: { cdpPort: number }) => {
-    launchCalls.push({ port: profile.cdpPort });
-    state.reachable = true;
-    return {
-      pid: 123,
-      exe: { kind: "chrome", path: "/fake/chrome" },
-      userDataDir: chromeUserDataDir.dir,
-      cdpPort: profile.cdpPort,
-      startedAt: Date.now(),
-      proc,
-    };
-  }),
+vi.mock("./profile-paths.js", () => ({
   resolveRemoteClawUserDataDir: vi.fn(() => chromeUserDataDir.dir),
-  stopRemoteClawChrome: vi.fn(async () => {
-    state.reachable = false;
-  }),
+}));
+
+vi.mock("../infra/trash.js", () => ({
+  movePathToTrash: vi.fn(async (targetPath: string) => targetPath),
 }));
 
 vi.mock("./cdp.js", () => ({
   createTargetViaCdp: cdpMocks.createTargetViaCdp,
   normalizeCdpWsUrl: vi.fn((wsUrl: string) => wsUrl),
-  snapshotAria: cdpMocks.snapshotAria,
   getHeadersWithAuth: vi.fn(() => ({})),
   appendCdpPath: vi.fn((cdpUrl: string, cdpPath: string) => {
     const base = cdpUrl.replace(/\/$/, "");
     const suffix = cdpPath.startsWith("/") ? cdpPath : `/${cdpPath}`;
     return `${base}${suffix}`;
   }),
-}));
-
-vi.mock("./pw-ai.js", () => pwMocks);
-
-vi.mock("../media/store.js", () => ({
-  ensureMediaDir: vi.fn(async () => {}),
-  saveMediaBuffer: vi.fn(async () => ({ path: "/tmp/fake.png" })),
-}));
-
-vi.mock("./screenshot.js", () => ({
-  DEFAULT_BROWSER_SCREENSHOT_MAX_BYTES: 128,
-  DEFAULT_BROWSER_SCREENSHOT_MAX_SIDE: 64,
-  normalizeBrowserScreenshot: vi.fn(async (buf: Buffer) => ({
-    buffer: buf,
-    contentType: "image/png",
-  })),
 }));
 
 const server = await import("./server.js");
@@ -253,7 +150,6 @@ export async function resetBrowserControlServerTestContext(): Promise<void> {
   state.cfgAttachOnly = false;
   state.createTargetId = null;
 
-  mockClearAll(pwMocks);
   mockClearAll(cdpMocks);
 
   state.testPort = await getFreePort();

@@ -35,7 +35,7 @@ function makeProcessMessageArgs(params: {
     // oxlint-disable-next-line typescript/no-explicit-any
     msg: params.msg as any,
     route: {
-      agentId: "main",
+      agentId: "test-agent",
       accountId: "default",
       sessionKey: params.routeSessionKey,
       // oxlint-disable-next-line typescript/no-explicit-any
@@ -214,7 +214,7 @@ describe("web processMessage inbound contract", () => {
       agents: {
         list: [
           {
-            id: "main",
+            id: "test-agent",
             default: true,
             identity: { name: "Mainbot", emoji: "🦞", theme: "space lobster" },
           },
@@ -376,7 +376,7 @@ describe("web processMessage inbound contract", () => {
           },
         },
         messages: {},
-        session: { store: sessionStorePath, dmScope: "main" },
+        session: { store: sessionStorePath, dmScope: "test-agent" },
       } as unknown as ReturnType<typeof import("../../../config/config.js").loadConfig>,
       msg: {
         id: "msg-last-route-3",
@@ -412,7 +412,7 @@ describe("web processMessage inbound contract", () => {
           },
         },
         messages: {},
-        session: { store: sessionStorePath, dmScope: "main" },
+        session: { store: sessionStorePath, dmScope: "test-agent" },
       } as unknown as ReturnType<typeof import("../../../config/config.js").loadConfig>,
       msg: {
         id: "msg-last-route-4",

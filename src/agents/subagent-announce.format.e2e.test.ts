@@ -147,9 +147,9 @@ vi.mock("../config/sessions.js", async (importOriginal) => {
   return {
     ...actual,
     loadSessionStore: vi.fn(() => loadSessionStoreFixture()),
-    resolveAgentIdFromSessionKey: () => "main",
+    resolveAgentIdFromSessionKey: () => "test-agent",
     resolveStorePath: () => "/tmp/sessions.json",
-    resolveMainSessionKey: () => "agent:main:main",
+    resolveMainSessionKey: () => "agent:test-agent:main",
     readSessionUpdatedAt: vi.fn(() => undefined),
     recordSessionMetaFromInbound: vi.fn().mockResolvedValue(undefined),
   };

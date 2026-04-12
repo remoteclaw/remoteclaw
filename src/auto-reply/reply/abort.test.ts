@@ -22,7 +22,7 @@ import { buildTestCtx } from "./test-ctx.js";
 
 vi.mock("../../agents/pi-embedded.js", () => ({
   abortEmbeddedPiRun: vi.fn().mockReturnValue(true),
-  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
+  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "test-agent"}`,
 }));
 
 const commandQueueMocks = vi.hoisted(() => ({
@@ -134,7 +134,7 @@ describe("abort detection", () => {
       prompt: "queued",
       enqueuedAt: Date.now(),
       run: {
-        agentId: "main",
+        agentId: "test-agent",
         agentDir: path.join(params.root, "agent"),
         sessionId: params.sessionId,
         sessionKey: params.sessionKey,

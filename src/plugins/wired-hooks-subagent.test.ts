@@ -15,8 +15,8 @@ describe("subagent hook runner methods", () => {
 
   const baseSubagentCtx = {
     runId: "run-1",
-    childSessionKey: "agent:main:subagent:child",
-    requesterSessionKey: "agent:main:main",
+    childSessionKey: "agent:test-agent:subagent:child",
+    requesterSessionKey: "agent:test-agent:main",
   };
 
   it("runSubagentSpawning invokes registered subagent_spawning hooks", async () => {
@@ -24,16 +24,16 @@ describe("subagent hook runner methods", () => {
     const registry = createMockPluginRegistry([{ hookName: "subagent_spawning", handler }]);
     const runner = createHookRunner(registry);
     const event = {
-      childSessionKey: "agent:main:subagent:child",
-      agentId: "main",
+      childSessionKey: "agent:test-agent:subagent:child",
+      agentId: "test-agent",
       label: "research",
       mode: "session" as const,
       requester: baseRequester,
       threadRequested: true,
     };
     const ctx = {
-      childSessionKey: "agent:main:subagent:child",
-      requesterSessionKey: "agent:main:main",
+      childSessionKey: "agent:test-agent:subagent:child",
+      requesterSessionKey: "agent:test-agent:main",
     };
 
     const result = await runner.runSubagentSpawning(event, ctx);
@@ -48,8 +48,8 @@ describe("subagent hook runner methods", () => {
     const runner = createHookRunner(registry);
     const event = {
       runId: "run-1",
-      childSessionKey: "agent:main:subagent:child",
-      agentId: "main",
+      childSessionKey: "agent:test-agent:subagent:child",
+      agentId: "test-agent",
       label: "research",
       mode: "run" as const,
       requester: baseRequester,
@@ -73,8 +73,8 @@ describe("subagent hook runner methods", () => {
     const registry = createMockPluginRegistry([{ hookName: "subagent_delivery_target", handler }]);
     const runner = createHookRunner(registry);
     const event = {
-      childSessionKey: "agent:main:subagent:child",
-      requesterSessionKey: "agent:main:main",
+      childSessionKey: "agent:test-agent:subagent:child",
+      requesterSessionKey: "agent:test-agent:main",
       requesterOrigin: baseRequester,
       childRunId: "run-1",
       spawnMode: "session" as const,
@@ -99,8 +99,8 @@ describe("subagent hook runner methods", () => {
     const runner = createHookRunner(registry);
     const result = await runner.runSubagentDeliveryTarget(
       {
-        childSessionKey: "agent:main:subagent:child",
-        requesterSessionKey: "agent:main:main",
+        childSessionKey: "agent:test-agent:subagent:child",
+        requesterSessionKey: "agent:test-agent:main",
         requesterOrigin: baseRequester,
         childRunId: "run-1",
         spawnMode: "session",
@@ -116,7 +116,7 @@ describe("subagent hook runner methods", () => {
     const registry = createMockPluginRegistry([{ hookName: "subagent_ended", handler }]);
     const runner = createHookRunner(registry);
     const event = {
-      targetSessionKey: "agent:main:subagent:child",
+      targetSessionKey: "agent:test-agent:subagent:child",
       targetKind: "subagent" as const,
       reason: "subagent-complete",
       sendFarewell: true,

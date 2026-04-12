@@ -43,7 +43,7 @@ function runGroupGating(params: {
 }) {
   const groupHistories = new Map<string, GroupHistoryEntry[]>();
   const conversationId = params.conversationId ?? "123@g.us";
-  const agentId = params.agentId ?? "main";
+  const agentId = params.agentId ?? "test-agent";
   const sessionKey = `agent:${agentId}:whatsapp:group:${conversationId}`;
   const baseMentionConfig = buildMentionConfig(params.cfg, undefined);
   const result = applyGroupGating({
@@ -96,7 +96,7 @@ function makeOwnerGroupConfig() {
 
 function makeInboundCfg(messagePrefix = "") {
   return {
-    agents: { list: [{ id: "main", workspace: "/tmp/remoteclaw" }] },
+    agents: { list: [{ id: "test-agent", workspace: "/tmp/remoteclaw" }] },
     channels: { whatsapp: { messagePrefix } },
   } as never;
 }
@@ -276,7 +276,7 @@ describe("buildInboundLine", () => {
   it("prefixes group messages with sender", () => {
     const line = buildInboundLine({
       cfg: makeInboundCfg(""),
-      agentId: "main",
+      agentId: "test-agent",
       msg: createGroupMessage({
         to: "+15550009999",
         accountId: "default",
@@ -295,7 +295,7 @@ describe("buildInboundLine", () => {
   it("includes reply-to context blocks when replyToBody is present", () => {
     const line = buildInboundLine({
       cfg: makeInboundCfg(""),
-      agentId: "main",
+      agentId: "test-agent",
       msg: {
         from: "+1555",
         to: "+1555",
@@ -316,7 +316,7 @@ describe("buildInboundLine", () => {
   it("applies the WhatsApp messagePrefix when configured", () => {
     const line = buildInboundLine({
       cfg: makeInboundCfg("[PFX]"),
-      agentId: "main",
+      agentId: "test-agent",
       msg: {
         from: "+1555",
         to: "+2666",
@@ -332,7 +332,7 @@ describe("buildInboundLine", () => {
   it("normalizes direct from labels by stripping whatsapp: prefix", () => {
     const line = buildInboundLine({
       cfg: makeInboundCfg(""),
-      agentId: "main",
+      agentId: "test-agent",
       msg: {
         from: "whatsapp:+15550001111",
         to: "+2666",

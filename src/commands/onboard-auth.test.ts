@@ -153,7 +153,10 @@ describe("writeOAuthCredentials", () => {
     });
 
     await expect(
-      fs.readFile(path.join(env.stateDir, "agents", "main", "agent", "auth-profiles.json"), "utf8"),
+      fs.readFile(
+        path.join(env.stateDir, "agents", "alpha", "agent", "auth-profiles.json"),
+        "utf8",
+      ),
     ).rejects.toThrow();
   });
 
@@ -161,7 +164,7 @@ describe("writeOAuthCredentials", () => {
     tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-oauth-sync-"));
     process.env.REMOTECLAW_STATE_DIR = tempStateDir;
 
-    const mainAgentDir = path.join(tempStateDir, "agents", "main", "agent");
+    const mainAgentDir = path.join(tempStateDir, "agents", "alpha", "agent");
     const kidAgentDir = path.join(tempStateDir, "agents", "kid", "agent");
     const workerAgentDir = path.join(tempStateDir, "agents", "worker", "agent");
     await fs.mkdir(mainAgentDir, { recursive: true });
@@ -198,7 +201,7 @@ describe("writeOAuthCredentials", () => {
     tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-oauth-nosync-"));
     process.env.REMOTECLAW_STATE_DIR = tempStateDir;
 
-    const mainAgentDir = path.join(tempStateDir, "agents", "main", "agent");
+    const mainAgentDir = path.join(tempStateDir, "agents", "alpha", "agent");
     const kidAgentDir = path.join(tempStateDir, "agents", "kid", "agent");
     await fs.mkdir(mainAgentDir, { recursive: true });
     await fs.mkdir(kidAgentDir, { recursive: true });
@@ -263,7 +266,7 @@ describe("writeOAuthCredentials", () => {
     }
 
     // Global state dir should NOT have credentials written
-    const globalMain = path.join(tempStateDir, "agents", "main", "agent");
+    const globalMain = path.join(tempStateDir, "agents", "alpha", "agent");
     await expect(fs.readFile(authProfilePathFor(globalMain), "utf8")).rejects.toThrow();
   });
 });
@@ -295,7 +298,10 @@ describe("setMinimaxApiKey", () => {
     });
 
     await expect(
-      fs.readFile(path.join(env.stateDir, "agents", "main", "agent", "auth-profiles.json"), "utf8"),
+      fs.readFile(
+        path.join(env.stateDir, "agents", "alpha", "agent", "auth-profiles.json"),
+        "utf8",
+      ),
     ).rejects.toThrow();
   });
 });

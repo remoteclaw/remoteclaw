@@ -188,10 +188,10 @@ describe("isHeartbeatEnabledForAgent", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: { heartbeat: { every: "30m" } },
-        list: [{ id: "main" }, { id: "ops", heartbeat: { every: "1h" } }],
+        list: [{ id: "alpha" }, { id: "ops", heartbeat: { every: "1h" } }],
       },
     };
-    expect(isHeartbeatEnabledForAgent(cfg, "main")).toBe(false);
+    expect(isHeartbeatEnabledForAgent(cfg, "alpha")).toBe(false);
     expect(isHeartbeatEnabledForAgent(cfg, "ops")).toBe(true);
   });
 
@@ -199,12 +199,12 @@ describe("isHeartbeatEnabledForAgent", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: { heartbeat: { every: "30m" } },
-        list: [{ id: "main" }, { id: "ops" }],
+        list: [{ id: "alpha" }, { id: "ops" }],
       },
     };
     // Per #2310: with agents.list populated but no per-entry heartbeat config,
     // every configured agent receives heartbeats — no phantom "main" fallback.
-    expect(isHeartbeatEnabledForAgent(cfg, "main")).toBe(true);
+    expect(isHeartbeatEnabledForAgent(cfg, "alpha")).toBe(true);
     expect(isHeartbeatEnabledForAgent(cfg, "ops")).toBe(true);
   });
 });
@@ -484,11 +484,11 @@ describe("runHeartbeatOnce", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: { heartbeat: { every: "30m" } },
-        list: [{ id: "main" }, { id: "ops", heartbeat: { every: "1h" } }],
+        list: [{ id: "alpha" }, { id: "ops", heartbeat: { every: "1h" } }],
       },
     };
 
-    const res = await runHeartbeatOnce({ cfg, agentId: "main" });
+    const res = await runHeartbeatOnce({ cfg, agentId: "alpha" });
     expect(res.status).toBe("skipped");
     if (res.status === "skipped") {
       expect(res.reason).toBe("disabled");
@@ -505,7 +505,7 @@ describe("runHeartbeatOnce", () => {
             activeHours: { start: "08:00", end: "24:00", timezone: "user" },
           },
         },
-        list: [{ id: "main" }],
+        list: [{ id: "alpha" }],
       },
     };
 
@@ -531,7 +531,7 @@ describe("runHeartbeatOnce", () => {
             workspace: tmpDir,
             heartbeat: { every: "5m", target: "whatsapp" },
           },
-          list: [{ id: "main" }],
+          list: [{ id: "alpha" }],
         },
         channels: { whatsapp: { allowFrom: ["*"] } },
         session: { store: storePath },
@@ -583,7 +583,7 @@ describe("runHeartbeatOnce", () => {
             heartbeat: { every: "30m", prompt: "Default prompt" },
           },
           list: [
-            { id: "main", default: true },
+            { id: "alpha", default: true },
             {
               id: "ops",
               workspace: tmpDir,
@@ -653,7 +653,7 @@ describe("runHeartbeatOnce", () => {
             heartbeat: { every: "30m", prompt: "Default prompt" },
           },
           list: [
-            { id: "main", default: true },
+            { id: "alpha", default: true },
             {
               id: agentId,
               workspace: tmpDir,
@@ -768,7 +768,7 @@ describe("runHeartbeatOnce", () => {
                 target: "last",
               },
             },
-            list: [{ id: "main" }],
+            list: [{ id: "alpha" }],
           },
           channels: { whatsapp: { allowFrom: ["*"] } },
           session: { store: storePath },
@@ -842,7 +842,7 @@ describe("runHeartbeatOnce", () => {
     try {
       const cfg: RemoteClawConfig = {
         agents: {
-          list: [{ id: "main", workspace: tmpDir }],
+          list: [{ id: "alpha", workspace: tmpDir }],
           defaults: {
             workspace: tmpDir,
             heartbeat: { every: "5m", target: "whatsapp" },
@@ -919,7 +919,7 @@ describe("runHeartbeatOnce", () => {
                 includeReasoning: true,
               },
             },
-            list: [{ id: "main" }],
+            list: [{ id: "alpha" }],
           },
           channels: { whatsapp: { allowFrom: ["*"] } },
           session: { store: storePath },
@@ -1054,7 +1054,7 @@ describe("runHeartbeatOnce", () => {
           workspace: workspaceDir,
           heartbeat: { every: "5m", target: "whatsapp" },
         },
-        list: [{ id: "main" }],
+        list: [{ id: "alpha" }],
       },
       channels: { whatsapp: { allowFrom: ["*"] } },
       session: { store: storePath },
@@ -1223,7 +1223,7 @@ describe("runHeartbeatOnce", () => {
           workspace: tmpDir,
           heartbeat: { every: "5m", target: "none" },
         },
-        list: [{ id: "main" }],
+        list: [{ id: "alpha" }],
       },
       channels: { whatsapp: { allowFrom: ["*"] } },
       session: { store: storePath },
@@ -1277,7 +1277,7 @@ describe("runHeartbeatOnce", () => {
           workspace: tmpDir,
           heartbeat: { every: "5m", target: "none" },
         },
-        list: [{ id: "main" }],
+        list: [{ id: "alpha" }],
       },
       channels: { whatsapp: { allowFrom: ["*"] } },
       session: { store: storePath },

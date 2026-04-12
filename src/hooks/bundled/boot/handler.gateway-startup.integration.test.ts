@@ -34,7 +34,7 @@ describe("boot startup hook integration", () => {
       agents: {
         defaults: { boot: bootConfig },
         list: [
-          { id: "main", workspace: "/ws/main" },
+          { id: "alpha", workspace: "/ws/alpha" },
           { id: "ops", workspace: "/ws/ops" },
         ],
       },
@@ -46,15 +46,15 @@ describe("boot startup hook integration", () => {
     const event = createInternalHookEvent("gateway", "startup", "gateway:startup", { cfg, deps });
     await triggerInternalHook(event);
 
-    const mainWorkspaceDir = resolveAgentWorkspaceDir(cfg, "main");
+    const alphaWorkspaceDir = resolveAgentWorkspaceDir(cfg, "alpha");
     const opsWorkspaceDir = resolveAgentWorkspaceDir(cfg, "ops");
 
     expect(runBootOnce).toHaveBeenCalledTimes(2);
     expect(runBootOnce).toHaveBeenNthCalledWith(1, {
       cfg,
       deps,
-      workspaceDir: mainWorkspaceDir,
-      agentId: "main",
+      workspaceDir: alphaWorkspaceDir,
+      agentId: "alpha",
     });
     expect(runBootOnce).toHaveBeenNthCalledWith(2, {
       cfg,

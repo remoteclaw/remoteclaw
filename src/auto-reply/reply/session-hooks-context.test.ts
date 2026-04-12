@@ -53,7 +53,7 @@ describe("session hook context wiring", () => {
   });
 
   it("passes sessionKey to session_start hook context", async () => {
-    const sessionKey = "agent:main:telegram:direct:123";
+    const sessionKey = "agent:test-agent:telegram:direct:123";
     const storePath = await createStorePath("remoteclaw-session-hook-start");
     await writeStore(storePath, {});
     const cfg = { session: { store: storePath } } as RemoteClawConfig;
@@ -67,12 +67,12 @@ describe("session hook context wiring", () => {
     await vi.waitFor(() => expect(hookRunnerMocks.runSessionStart).toHaveBeenCalledTimes(1));
     const [event, context] = hookRunnerMocks.runSessionStart.mock.calls[0] ?? [];
     expect(event).toMatchObject({ sessionKey });
-    expect(context).toMatchObject({ sessionKey, agentId: "main" });
+    expect(context).toMatchObject({ sessionKey, agentId: "test-agent" });
     expect(context).toMatchObject({ sessionId: event?.sessionId });
   });
 
   it("passes sessionKey to session_end hook context on reset", async () => {
-    const sessionKey = "agent:main:telegram:direct:123";
+    const sessionKey = "agent:test-agent:telegram:direct:123";
     const storePath = await createStorePath("remoteclaw-session-hook-end");
     await writeStore(storePath, {
       [sessionKey]: {
@@ -92,7 +92,7 @@ describe("session hook context wiring", () => {
     await vi.waitFor(() => expect(hookRunnerMocks.runSessionStart).toHaveBeenCalledTimes(1));
     const [event, context] = hookRunnerMocks.runSessionEnd.mock.calls[0] ?? [];
     expect(event).toMatchObject({ sessionKey });
-    expect(context).toMatchObject({ sessionKey, agentId: "main" });
+    expect(context).toMatchObject({ sessionKey, agentId: "test-agent" });
     expect(context).toMatchObject({ sessionId: event?.sessionId });
 
     const [startEvent] = hookRunnerMocks.runSessionStart.mock.calls[0] ?? [];

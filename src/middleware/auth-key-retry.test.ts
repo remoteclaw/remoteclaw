@@ -32,7 +32,7 @@ const multiKeyCfg: RemoteClawConfig = {
   agents: {
     list: [
       {
-        id: "main",
+        id: "test-agent",
         workspace: "~/w",
         auth: ["anthropic:key1", "anthropic:key2", "anthropic:key3"],
       },
@@ -57,7 +57,7 @@ describe("withAuthKeyRetry", () => {
     const store = freshMultiKeyStore();
 
     const result = await withAuthKeyRetry<FakeResult>(
-      { cfg: multiKeyCfg, agentId: "main", baseEnv: {}, store },
+      { cfg: multiKeyCfg, agentId: "test-agent", baseEnv: {}, store },
       async (env) => {
         envsSeen.push({ ...env });
         callCount++;
@@ -81,7 +81,7 @@ describe("withAuthKeyRetry", () => {
     const store = freshMultiKeyStore();
 
     const result = await withAuthKeyRetry<FakeResult>(
-      { cfg: multiKeyCfg, agentId: "main", baseEnv: {}, store },
+      { cfg: multiKeyCfg, agentId: "test-agent", baseEnv: {}, store },
       async () => {
         callCount++;
         if (callCount === 1) {
@@ -102,7 +102,7 @@ describe("withAuthKeyRetry", () => {
     const store = freshMultiKeyStore();
 
     const result = await withAuthKeyRetry<FakeResult>(
-      { cfg: multiKeyCfg, agentId: "main", baseEnv: {}, store },
+      { cfg: multiKeyCfg, agentId: "test-agent", baseEnv: {}, store },
       async () => {
         callCount++;
         return { text: "", error: "rate limit exceeded" };
@@ -121,7 +121,7 @@ describe("withAuthKeyRetry", () => {
 
     await expect(
       withAuthKeyRetry<FakeResult>(
-        { cfg: multiKeyCfg, agentId: "main", baseEnv: {}, store },
+        { cfg: multiKeyCfg, agentId: "test-agent", baseEnv: {}, store },
         async () => {
           callCount++;
           throw new Error("HTTP 401 Unauthorized");
@@ -136,7 +136,7 @@ describe("withAuthKeyRetry", () => {
   it("single key config — no retry attempted", async () => {
     const singleKeyCfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "main", workspace: "~/w", auth: "anthropic:key1" }],
+        list: [{ id: "test-agent", workspace: "~/w", auth: "anthropic:key1" }],
       },
     };
     const store = freshMultiKeyStore();
@@ -144,7 +144,7 @@ describe("withAuthKeyRetry", () => {
 
     await expect(
       withAuthKeyRetry<FakeResult>(
-        { cfg: singleKeyCfg, agentId: "main", baseEnv: {}, store },
+        { cfg: singleKeyCfg, agentId: "test-agent", baseEnv: {}, store },
         async () => {
           callCount++;
           throw new Error("rate limit exceeded");
@@ -159,7 +159,7 @@ describe("withAuthKeyRetry", () => {
   it("auth: false — no retry attempted", async () => {
     const noAuthCfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "main", workspace: "~/w", auth: false }],
+        list: [{ id: "test-agent", workspace: "~/w", auth: false }],
       },
     };
     const store = freshMultiKeyStore();
@@ -167,7 +167,7 @@ describe("withAuthKeyRetry", () => {
 
     await expect(
       withAuthKeyRetry<FakeResult>(
-        { cfg: noAuthCfg, agentId: "main", baseEnv: {}, store },
+        { cfg: noAuthCfg, agentId: "test-agent", baseEnv: {}, store },
         async () => {
           callCount++;
           throw new Error("rate limit exceeded");
@@ -182,7 +182,7 @@ describe("withAuthKeyRetry", () => {
   it("retry count never exceeds number of configured keys", async () => {
     const twoKeyCfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "main", workspace: "~/w", auth: ["anthropic:key1", "anthropic:key2"] }],
+        list: [{ id: "test-agent", workspace: "~/w", auth: ["anthropic:key1", "anthropic:key2"] }],
       },
     };
     const twoKeyStore = makeStore({
@@ -192,7 +192,7 @@ describe("withAuthKeyRetry", () => {
     let callCount = 0;
 
     const result = await withAuthKeyRetry<FakeResult>(
-      { cfg: twoKeyCfg, agentId: "main", baseEnv: {}, store: twoKeyStore },
+      { cfg: twoKeyCfg, agentId: "test-agent", baseEnv: {}, store: twoKeyStore },
       async () => {
         callCount++;
         return { text: "", error: "quota exceeded" };
@@ -211,7 +211,7 @@ describe("withAuthKeyRetry", () => {
 
     await expect(
       withAuthKeyRetry<FakeResult>(
-        { cfg: multiKeyCfg, agentId: "main", baseEnv: {}, store },
+        { cfg: multiKeyCfg, agentId: "test-agent", baseEnv: {}, store },
         async () => {
           callCount++;
           throw new Error("context length exceeded");
@@ -231,7 +231,7 @@ describe("withAuthKeyRetry", () => {
     await withAuthKeyRetry<FakeResult>(
       {
         cfg: multiKeyCfg,
-        agentId: "main",
+        agentId: "test-agent",
         baseEnv: { NODE_ENV: "test", EXISTING: "value" },
         store,
       },
@@ -254,7 +254,7 @@ describe("withAuthKeyRetry", () => {
     let capturedEnv: Record<string, string> | undefined;
 
     await withAuthKeyRetry<FakeResult>(
-      { cfg: noAuthCfg, agentId: "main", baseEnv: { BASE: "env" } },
+      { cfg: noAuthCfg, agentId: "test-agent", baseEnv: { BASE: "env" } },
       async (env) => {
         capturedEnv = env;
         return { text: "ok" };

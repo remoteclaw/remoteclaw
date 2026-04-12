@@ -17,7 +17,7 @@ const defaultSessions: HealthSummary["sessions"] = {
 };
 
 const createMainAgentSummary = (sessions = defaultSessions) => ({
-  agentId: "main",
+  agentId: "test-agent",
   isDefault: true,
   heartbeat: {
     enabled: true,
@@ -45,7 +45,7 @@ const createHealthSummary = (params: {
     channelOrder: params.channelOrder,
     channelLabels: params.channelLabels,
     heartbeatSeconds: 60,
-    defaultAgentId: "main",
+    defaultAgentId: "test-agent",
     agents: [createMainAgentSummary(sessions)],
     sessions,
   };
@@ -124,12 +124,12 @@ describe("healthCommand", () => {
     const summary = createHealthSummary({
       channels: {
         telegram: {
-          accountId: "main",
+          accountId: "test-agent",
           configured: true,
           probe: { ok: true, elapsedMs: 196, bot: { username: "pinguini_ugi_bot" } },
           accounts: {
             main: {
-              accountId: "main",
+              accountId: "test-agent",
               configured: true,
               probe: { ok: true, elapsedMs: 196, bot: { username: "pinguini_ugi_bot" } },
             },

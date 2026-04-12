@@ -62,7 +62,7 @@ async function writeStoredModelOverride(cfg: ReturnType<typeof makeCfg>): Promis
     requireSessionStorePath(cfg),
     JSON.stringify({
       [MAIN_SESSION_KEY]: {
-        sessionId: "main",
+        sessionId: "test-agent",
         updatedAt: Date.now(),
         providerOverride: "openai",
         modelOverride: "gpt-5.2",
@@ -298,7 +298,7 @@ describe("trigger handling", () => {
         expect(text?.startsWith("⚙️ Compacted")).toBe(true);
         expect(getCompactSessionMock()).toHaveBeenCalledOnce();
         const store = loadSessionStore(storePath);
-        const sessionKey = resolveSessionKey("per-sender", request, "main");
+        const sessionKey = resolveSessionKey("per-sender", request, "test-agent");
         expect(store[sessionKey]?.compactionCount).toBe(1);
       }
 
@@ -335,7 +335,7 @@ describe("trigger handling", () => {
         if (!storePath) {
           throw new Error("missing session store path");
         }
-        const targetSessionKey = "agent:main:telegram:group:123";
+        const targetSessionKey = "agent:test-agent:telegram:group:123";
         const targetSessionId = "session-target";
         await fs.writeFile(
           storePath,
@@ -350,7 +350,7 @@ describe("trigger handling", () => {
           prompt: "queued",
           enqueuedAt: Date.now(),
           run: {
-            agentId: "main",
+            agentId: "test-agent",
             agentDir: join(home, "agent"),
             sessionId: targetSessionId,
             sessionKey: targetSessionKey,

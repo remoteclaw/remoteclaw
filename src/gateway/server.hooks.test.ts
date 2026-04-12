@@ -44,7 +44,7 @@ async function postHook(
 
 function setMainAndHooksAgents(): void {
   testState.agentsConfig = {
-    list: [{ id: "main", default: true }, { id: "hooks" }],
+    list: [{ id: "primary", default: true }, { id: "hooks" }],
   };
 }
 
@@ -116,7 +116,7 @@ describe("gateway server hooks", () => {
       const fallbackCall = (cronIsolatedRun.mock.calls[0] as unknown[] | undefined)?.[0] as {
         job?: { agentId?: string };
       };
-      expect(fallbackCall?.job?.agentId).toBe("main");
+      expect(fallbackCall?.job?.agentId).toBe("primary");
       drainSystemEvents(resolveMainKey());
 
       const resQuery = await postHook(
@@ -284,7 +284,7 @@ describe("gateway server hooks", () => {
         {
           match: { path: "mapped" },
           action: "agent",
-          agentId: "main",
+          agentId: "primary",
           messageTemplate: "Mapped: {{payload.subject}}",
         },
       ],
@@ -316,7 +316,7 @@ describe("gateway server hooks", () => {
 
       const resDenied = await postHook(port, "/hooks/agent", {
         message: "Denied",
-        agentId: "main",
+        agentId: "primary",
       });
       expect(resDenied.status).toBe(400);
       const deniedBody = (await resDenied.json()) as { error?: string };
@@ -337,7 +337,7 @@ describe("gateway server hooks", () => {
       allowedAgentIds: [],
     };
     testState.agentsConfig = {
-      list: [{ id: "main", default: true }, { id: "hooks" }],
+      list: [{ id: "primary", default: true }, { id: "hooks" }],
     };
     await withGatewayServer(async ({ port }) => {
       const resDenied = await postHook(port, "/hooks/agent", {

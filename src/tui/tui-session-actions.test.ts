@@ -24,13 +24,13 @@ describe("tui session actions", () => {
       );
 
     const state: TuiStateAccess = {
-      firstAgentId: "main",
-      agentDefaultId: "main",
-      sessionMainKey: "agent:main:main",
+      firstAgentId: "test-agent",
+      agentDefaultId: "test-agent",
+      sessionMainKey: "agent:test-agent:main",
       sessionScope: "global",
       agents: [],
-      currentAgentId: "main",
-      currentSessionKey: "agent:main:main",
+      currentAgentId: "test-agent",
+      currentSessionKey: "agent:test-agent:main",
       currentSessionId: null,
       activeChatRunId: null,
       historyLoaded: false,
@@ -79,7 +79,7 @@ describe("tui session actions", () => {
       defaults: {},
       sessions: [
         {
-          key: "agent:main:main",
+          key: "agent:test-agent:main",
           model: "old",
           modelProvider: "anthropic",
         },
@@ -98,7 +98,7 @@ describe("tui session actions", () => {
       defaults: {},
       sessions: [
         {
-          key: "agent:main:main",
+          key: "agent:test-agent:main",
           model: "Minimax-M2.5",
           modelProvider: "minimax",
         },
@@ -121,7 +121,7 @@ describe("tui session actions", () => {
       defaults: {},
       sessions: [
         {
-          key: "agent:main:main",
+          key: "agent:test-agent:main",
           model: "old-model",
           modelProvider: "ollama",
           updatedAt: 100,
@@ -130,13 +130,13 @@ describe("tui session actions", () => {
     });
 
     const state: TuiStateAccess = {
-      firstAgentId: "main",
-      agentDefaultId: "main",
-      sessionMainKey: "agent:main:main",
+      firstAgentId: "test-agent",
+      agentDefaultId: "test-agent",
+      sessionMainKey: "agent:test-agent:main",
       sessionScope: "global",
       agents: [],
-      currentAgentId: "main",
-      currentSessionKey: "agent:main:main",
+      currentAgentId: "test-agent",
+      currentSessionKey: "agent:test-agent:main",
       currentSessionId: null,
       activeChatRunId: null,
       historyLoaded: false,
@@ -175,7 +175,7 @@ describe("tui session actions", () => {
     applySessionInfoFromPatch({
       ok: true,
       path: "/tmp/sessions.json",
-      key: "agent:main:main",
+      key: "agent:test-agent:main",
       entry: {
         sessionId: "session-1",
         model: "new-model",
@@ -202,7 +202,7 @@ describe("tui session actions", () => {
       defaults: {},
       sessions: [
         {
-          key: "agent:main:other",
+          key: "agent:test-agent:other",
           model: "session-model",
           modelProvider: "openai",
           updatedAt: 50,
@@ -215,13 +215,13 @@ describe("tui session actions", () => {
     });
 
     const state: TuiStateAccess = {
-      firstAgentId: "main",
-      agentDefaultId: "main",
-      sessionMainKey: "agent:main:main",
+      firstAgentId: "test-agent",
+      agentDefaultId: "test-agent",
+      sessionMainKey: "agent:test-agent:main",
       sessionScope: "global",
       agents: [],
-      currentAgentId: "main",
-      currentSessionKey: "agent:main:main",
+      currentAgentId: "test-agent",
+      currentSessionKey: "agent:test-agent:main",
       currentSessionId: null,
       activeChatRunId: null,
       historyLoaded: true,
@@ -256,20 +256,20 @@ describe("tui session actions", () => {
       agentNames: new Map(),
       initialSessionInput: "",
       initialSessionAgentId: null,
-      resolveSessionKey: vi.fn((raw?: string) => raw ?? "agent:main:main"),
+      resolveSessionKey: vi.fn((raw?: string) => raw ?? "agent:test-agent:main"),
       updateHeader: vi.fn(),
       updateFooter: vi.fn(),
       updateAutocompleteProvider: vi.fn(),
       setActivityStatus: vi.fn(),
     });
 
-    await setSession("agent:main:other");
+    await setSession("agent:test-agent:other");
 
     expect(loadHistory).toHaveBeenCalledWith({
-      sessionKey: "agent:main:other",
+      sessionKey: "agent:test-agent:other",
       limit: 200,
     });
-    expect(state.currentSessionKey).toBe("agent:main:other");
+    expect(state.currentSessionKey).toBe("agent:test-agent:other");
     expect(state.sessionInfo.model).toBe("session-model");
     expect(state.sessionInfo.modelProvider).toBe("openai");
     expect(state.sessionInfo.updatedAt).toBe(50);

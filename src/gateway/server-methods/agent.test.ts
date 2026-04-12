@@ -27,7 +27,7 @@ vi.mock("../../config/sessions.js", async () => {
   return {
     ...actual,
     updateSessionStore: mocks.updateSessionStore,
-    resolveAgentIdFromSessionKey: () => "main",
+    resolveAgentIdFromSessionKey: () => "test-agent",
     resolveExplicitAgentSessionKey: () => undefined,
     resolveAgentMainSessionKey: ({
       cfg,
@@ -35,7 +35,10 @@ vi.mock("../../config/sessions.js", async () => {
     }: {
       cfg?: { session?: { mainKey?: string } };
       agentId: string;
-    }) => `agent:${agentId}:${cfg?.session?.mainKey ?? "main"}`,
+    }) => {
+      const mainKey = cfg?.session?.mainKey ?? "main";
+      return `agent:${agentId}:${mainKey}`;
+    },
   };
 });
 
@@ -54,7 +57,7 @@ vi.mock("../../config/config.js", async () => {
 });
 
 vi.mock("../../agents/agent-scope.js", () => ({
-  listAgentIds: () => ["main"],
+  listAgentIds: () => ["test-agent"],
 }));
 
 vi.mock("../../infra/agent-events.js", () => ({
@@ -105,7 +108,7 @@ function mockMainSessionEntry(entry: Record<string, unknown>, cfg: Record<string
       updatedAt: Date.now(),
       ...entry,
     },
-    canonicalKey: "agent:main:main",
+    canonicalKey: "agent:test-agent:main",
   });
 }
 
@@ -114,7 +117,7 @@ function captureUpdatedMainEntry() {
   mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
     const store: Record<string, unknown> = {};
     await updater(store);
-    capturedEntry = store["agent:main:main"] as Record<string, unknown>;
+    capturedEntry = store["agent:test-agent:main"] as Record<string, unknown>;
   });
   return () => capturedEntry;
 }
@@ -181,8 +184,8 @@ async function runMainAgent(message: string, idempotencyKey: string) {
   await invokeAgent(
     {
       message,
-      agentId: "main",
-      sessionKey: "agent:main:main",
+      agentId: "test-agent",
+      sessionKey: "agent:test-agent:main",
       idempotencyKey,
     },
     { respond, reqId: idempotencyKey },
@@ -206,7 +209,7 @@ function mockSessionResetSuccess(params: {
   key?: string;
   sessionId?: string;
 }) {
-  const key = params.key ?? "agent:main:main";
+  const key = params.key ?? "agent:test-agent:main";
   const sessionId = params.sessionId ?? "reset-session-id";
   mocks.sessionsResetHandler.mockImplementation(
     async (opts: {
@@ -288,10 +291,10 @@ describe("gateway agent handler", () => {
     let capturedEntry: Record<string, unknown> | undefined;
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
       const store: Record<string, unknown> = {
-        "agent:main:main": buildExistingMainStoreEntry({ acp: existingAcpMeta }),
+        "agent:test-agent:main": buildExistingMainStoreEntry({ acp: existingAcpMeta }),
       };
       const result = await updater(store);
-      capturedEntry = store["agent:main:main"] as Record<string, unknown>;
+      capturedEntry = store["agent:test-agent:main"] as Record<string, unknown>;
       return result;
     });
 
@@ -330,8 +333,8 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: "Is it the weekend?",
-        agentId: "main",
-        sessionKey: "agent:main:main",
+        agentId: "test-agent",
+        sessionKey: "agent:test-agent:main",
         idempotencyKey: "test-timestamp-inject",
       },
       { reqId: "ts-1" },
@@ -365,7 +368,7 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: "owner-tools check",
-        sessionKey: "agent:main:main",
+        sessionKey: "agent:test-agent:main",
         idempotencyKey,
       },
       {
@@ -393,8 +396,8 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: "strict delivery",
-        agentId: "main",
-        sessionKey: "agent:main:main",
+        agentId: "test-agent",
+        sessionKey: "agent:test-agent:main",
         deliver: true,
         replyChannel: "telegram",
         to: "123",
@@ -416,7 +419,7 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: "normal run",
-        sessionKey: "agent:main:main",
+        sessionKey: "agent:test-agent:main",
         workspaceDir: "/tmp/ignored",
         idempotencyKey: "workspace-ignored",
       },
@@ -430,8 +433,8 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: "spawned run",
-        sessionKey: "agent:main:main",
-        spawnedBy: "agent:main:subagent:parent",
+        sessionKey: "agent:test-agent:main",
+        spawnedBy: "agent:test-agent:subagent:parent",
         workspaceDir: "/tmp/inherited",
         idempotencyKey: "workspace-forwarded",
       },
@@ -450,7 +453,7 @@ describe("gateway agent handler", () => {
     });
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
       const store: Record<string, unknown> = {
-        "agent:main:main": buildExistingMainStoreEntry({
+        "agent:test-agent:main": buildExistingMainStoreEntry({
           lastChannel: "telegram",
           lastTo: "12345",
         }),
@@ -465,7 +468,7 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: "webchat turn",
-        sessionKey: "agent:main:main",
+        sessionKey: "agent:test-agent:main",
         idempotencyKey: "test-webchat-origin-channel",
       },
       {
@@ -511,14 +514,14 @@ describe("gateway agent handler", () => {
         sessionId: "existing-session-id",
         updatedAt: Date.now(),
       },
-      canonicalKey: "agent:main:work",
+      canonicalKey: "agent:test-agent:work",
     });
 
     let capturedStore: Record<string, unknown> | undefined;
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
       const store: Record<string, unknown> = {
-        "agent:main:work": { sessionId: "existing-session-id", updatedAt: 10 },
-        "agent:main:MAIN": { sessionId: "legacy-session-id", updatedAt: 5 },
+        "agent:test-agent:work": { sessionId: "existing-session-id", updatedAt: 10 },
+        "agent:test-agent:MAIN": { sessionId: "legacy-session-id", updatedAt: 5 },
       };
       await updater(store);
       capturedStore = store;
@@ -532,7 +535,7 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: "test",
-        agentId: "main",
+        agentId: "test-agent",
         sessionKey: "main",
         idempotencyKey: "test-idem-alias-prune",
       },
@@ -541,8 +544,8 @@ describe("gateway agent handler", () => {
 
     expect(mocks.updateSessionStore).toHaveBeenCalled();
     expect(capturedStore).toBeDefined();
-    expect(capturedStore?.["agent:main:work"]).toBeDefined();
-    expect(capturedStore?.["agent:main:MAIN"]).toBeUndefined();
+    expect(capturedStore?.["agent:test-agent:work"]).toBeDefined();
+    expect(capturedStore?.["agent:test-agent:MAIN"]).toBeUndefined();
   });
 
   it("handles bare /new by resetting the same session and sending reset greeting prompt", async () => {
@@ -553,7 +556,7 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: "/new",
-        sessionKey: "agent:main:main",
+        sessionKey: "agent:test-agent:main",
         idempotencyKey: "test-idem-new",
       },
       { reqId: "4" },
@@ -581,7 +584,7 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: "/reset check status",
-        sessionKey: "agent:main:main",
+        sessionKey: "agent:test-agent:main",
         idempotencyKey: "test-idem-reset-suffix",
       },
       { reqId: "4b" },

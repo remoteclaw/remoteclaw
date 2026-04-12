@@ -309,8 +309,8 @@ describe("exec approval handlers", () => {
       argv: ["/usr/bin/echo", "ok"],
       cwd: "/tmp",
       rawCommand: "/usr/bin/echo ok",
-      agentId: "main",
-      sessionKey: "agent:main:main",
+      agentId: "test-agent",
+      sessionKey: "agent:test-agent:main",
     },
     cwd: "/tmp",
     nodeId: "node-1",
@@ -577,8 +577,8 @@ describe("exec approval handlers", () => {
           argv: ["/usr/bin/echo", "ok"],
           cwd: "/real/cwd",
           rawCommand: "/usr/bin/echo ok",
-          agentId: "main",
-          sessionKey: "agent:main:main",
+          agentId: "test-agent",
+          sessionKey: "agent:test-agent:main",
         },
       },
     });
@@ -588,14 +588,14 @@ describe("exec approval handlers", () => {
     expect(request["command"]).toBe("/usr/bin/echo ok");
     expect(request["commandArgv"]).toEqual(["/usr/bin/echo", "ok"]);
     expect(request["cwd"]).toBe("/real/cwd");
-    expect(request["agentId"]).toBe("main");
-    expect(request["sessionKey"]).toBe("agent:main:main");
+    expect(request["agentId"]).toBe("test-agent");
+    expect(request["sessionKey"]).toBe("agent:test-agent:main");
     expect(request["systemRunPlan"]).toEqual({
       argv: ["/usr/bin/echo", "ok"],
       cwd: "/real/cwd",
       rawCommand: "/usr/bin/echo ok",
-      agentId: "main",
-      sessionKey: "agent:main:main",
+      agentId: "test-agent",
+      sessionKey: "agent:test-agent:main",
     });
   });
 

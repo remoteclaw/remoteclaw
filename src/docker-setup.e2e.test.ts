@@ -216,8 +216,8 @@ describe("docker-setup.sh", () => {
     });
 
     expect(result.status).toBe(0);
-    const agentDirStat = await stat(join(configDir, "agents", "main", "agent"));
-    expect(agentDirStat.isDirectory()).toBe(true);
+    const agentWorkspaceStat = await stat(join(configDir, "agents", "main", "agent"));
+    expect(agentWorkspaceStat.isDirectory()).toBe(true);
     const sessionsDirStat = await stat(join(configDir, "agents", "main", "sessions"));
     expect(sessionsDirStat.isDirectory()).toBe(true);
 

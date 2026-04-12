@@ -9,7 +9,7 @@ describe("startHeartbeatRunner", () => {
       cfg: {
         agents: {
           defaults: { heartbeat: { every: "30m" } },
-          list: [{ id: "main" }],
+          list: [{ id: "alpha" }],
         },
       } as RemoteClawConfig,
       runOnce,
@@ -34,14 +34,14 @@ describe("startHeartbeatRunner", () => {
 
     expect(runSpy).toHaveBeenCalledTimes(1);
     expect(runSpy.mock.calls[0]?.[0]).toEqual(
-      expect.objectContaining({ agentId: "main", reason: "interval" }),
+      expect.objectContaining({ agentId: "alpha", reason: "interval" }),
     );
 
     runner.updateConfig({
       agents: {
         defaults: { heartbeat: { every: "30m" } },
         list: [
-          { id: "main", heartbeat: { every: "10m" } },
+          { id: "alpha", heartbeat: { every: "10m" } },
           { id: "ops", heartbeat: { every: "15m" } },
         ],
       },
@@ -51,7 +51,7 @@ describe("startHeartbeatRunner", () => {
 
     expect(runSpy).toHaveBeenCalledTimes(2);
     expect(runSpy.mock.calls[1]?.[0]).toEqual(
-      expect.objectContaining({ agentId: "main", heartbeat: { every: "10m" } }),
+      expect.objectContaining({ agentId: "alpha", heartbeat: { every: "10m" } }),
     );
 
     await vi.advanceTimersByTimeAsync(5 * 60_000 + 1_000);
@@ -99,7 +99,7 @@ describe("startHeartbeatRunner", () => {
     const runSpy2 = vi.fn().mockResolvedValue({ status: "ran", durationMs: 1 });
 
     const cfg = {
-      agents: { defaults: { heartbeat: { every: "30m" } }, list: [{ id: "main" }] },
+      agents: { defaults: { heartbeat: { every: "30m" } }, list: [{ id: "alpha" }] },
     } as RemoteClawConfig;
 
     // Start runner A
@@ -152,7 +152,7 @@ describe("startHeartbeatRunner", () => {
 
     const runner = startHeartbeatRunner({
       cfg: {
-        agents: { defaults: { heartbeat: { every: "30m" } }, list: [{ id: "main" }] },
+        agents: { defaults: { heartbeat: { every: "30m" } }, list: [{ id: "alpha" }] },
       } as RemoteClawConfig,
       runOnce: runSpy,
     });
@@ -186,7 +186,7 @@ describe("startHeartbeatRunner", () => {
 
     const runner = startHeartbeatRunner({
       cfg: {
-        agents: { defaults: { heartbeat: { every: "30m" } }, list: [{ id: "main" }] },
+        agents: { defaults: { heartbeat: { every: "30m" } }, list: [{ id: "alpha" }] },
       } as RemoteClawConfig,
       runOnce: runSpy,
     });
@@ -220,7 +220,7 @@ describe("startHeartbeatRunner", () => {
         agents: {
           defaults: { heartbeat: { every: "30m" } },
           list: [
-            { id: "main", heartbeat: { every: "30m" } },
+            { id: "alpha", heartbeat: { every: "30m" } },
             { id: "ops", heartbeat: { every: "15m" } },
           ],
         },
@@ -258,7 +258,7 @@ describe("startHeartbeatRunner", () => {
         agents: {
           defaults: { heartbeat: { every: "30m" } },
           list: [
-            { id: "main", heartbeat: { every: "30m" } },
+            { id: "alpha", heartbeat: { every: "30m" } },
             { id: "finance", heartbeat: { every: "30m" } },
           ],
         },
@@ -268,7 +268,7 @@ describe("startHeartbeatRunner", () => {
 
     requestHeartbeatNow({
       reason: "exec-event",
-      sessionKey: "agent:main:main",
+      sessionKey: "agent:alpha:main",
       coalesceMs: 0,
     });
     await vi.advanceTimersByTimeAsync(1);
@@ -276,9 +276,9 @@ describe("startHeartbeatRunner", () => {
     expect(runSpy).toHaveBeenCalledTimes(1);
     expect(runSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        agentId: "main",
+        agentId: "alpha",
         reason: "exec-event",
-        sessionKey: "agent:main:main",
+        sessionKey: "agent:alpha:main",
       }),
     );
     expect(runSpy.mock.calls.some((call) => call[0]?.agentId === "finance")).toBe(false);

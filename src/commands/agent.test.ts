@@ -490,7 +490,7 @@ describe("agentCommand", () => {
       );
       expect(matchingCall?.[2]).toEqual(
         expect.objectContaining({
-          agentId: "main",
+          agentId: "test-agent",
           sessionsDir: customStoreDir,
         }),
       );

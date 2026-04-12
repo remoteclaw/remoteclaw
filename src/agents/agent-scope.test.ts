@@ -204,8 +204,8 @@ describe("resolveAgentConfig", () => {
     // Clear state dir so it falls back to REMOTECLAW_HOME
     vi.stubEnv("REMOTECLAW_STATE_DIR", "");
 
-    const agentDir = resolveAgentDir({} as RemoteClawConfig, "main");
-    expect(agentDir).toBe(path.join(path.resolve(home), ".remoteclaw", "agents", "main", "agent"));
+    const dir = resolveAgentDir({} as RemoteClawConfig, "test-agent");
+    expect(dir).toBe(path.join(path.resolve(home), ".remoteclaw", "agents", "test-agent", "agent"));
   });
 
   it("should include auth in resolved agent config", () => {

@@ -29,7 +29,7 @@ function useTempSessionsFixture(prefix: string) {
 
   beforeEach(() => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
-    sessionsDir = path.join(tempDir, "agents", "main", "sessions");
+    sessionsDir = path.join(tempDir, "agents", "test-agent", "sessions");
     fs.mkdirSync(sessionsDir, { recursive: true });
     storePath = path.join(sessionsDir, "sessions.json");
   });
@@ -85,10 +85,10 @@ describe("session path safety", () => {
     const realRoot = path.join(tmpDir, "real-state");
     const aliasRoot = path.join(tmpDir, "alias-state");
     try {
-      const sessionsDir = path.join(realRoot, "agents", "main", "sessions");
+      const sessionsDir = path.join(realRoot, "agents", "test-agent", "sessions");
       fs.mkdirSync(sessionsDir, { recursive: true });
       fs.symlinkSync(realRoot, aliasRoot, "dir");
-      const viaAlias = path.join(aliasRoot, "agents", "main", "sessions", "sess-1.jsonl");
+      const viaAlias = path.join(aliasRoot, "agents", "test-agent", "sessions", "sess-1.jsonl");
       fs.writeFileSync(path.join(sessionsDir, "sess-1.jsonl"), "");
       const resolved = resolveSessionFilePath("sess-1", { sessionFile: viaAlias }, { sessionsDir });
       expect(fs.realpathSync(resolved)).toBe(
@@ -104,7 +104,7 @@ describe("session path safety", () => {
       return;
     }
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-symlink-escape-"));
-    const sessionsDir = path.join(tmpDir, "agents", "main", "sessions");
+    const sessionsDir = path.join(tmpDir, "agents", "test-agent", "sessions");
     const outsideDir = path.join(tmpDir, "outside");
     try {
       fs.mkdirSync(sessionsDir, { recursive: true });
@@ -353,7 +353,7 @@ describe("resolveAndPersistSessionFile", () => {
       storePath: fixture.storePath(),
       sessionEntry: sessionStore[sessionKey],
       fallbackSessionFile,
-      agentId: "main",
+      agentId: "test-agent",
     });
 
     expect(result.sessionFile).toBe(fallbackSessionFile);
@@ -375,7 +375,7 @@ describe("resolveAndPersistSessionFile", () => {
       sessionStore,
       storePath: fixture.storePath(),
       fallbackSessionFile,
-      agentId: "main",
+      agentId: "test-agent",
     });
 
     expect(result.sessionFile).toBe(fallbackSessionFile);

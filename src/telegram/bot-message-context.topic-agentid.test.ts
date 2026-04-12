@@ -5,7 +5,7 @@ import { buildTelegramMessageContextForTest } from "./bot-message-context.test-h
 const { defaultRouteConfig } = vi.hoisted(() => ({
   defaultRouteConfig: {
     agents: {
-      list: [{ id: "main", default: true }, { id: "zu" }, { id: "q" }, { id: "support" }],
+      list: [{ id: "alpha", default: true }, { id: "zu" }, { id: "q" }, { id: "support" }],
     },
     channels: { telegram: {} },
     messages: { groupChat: { mentionPatterns: [] } },
@@ -60,7 +60,7 @@ describe("buildTelegramMessageContext per-topic agentId routing", () => {
     const ctx = await buildForumContext({ topicConfig: { systemPrompt: "Be nice" } });
 
     expect(ctx).not.toBeNull();
-    expect(ctx?.ctxPayload?.SessionKey).toBe("agent:main:telegram:group:-1001234567890:topic:3");
+    expect(ctx?.ctxPayload?.SessionKey).toBe("agent:alpha:telegram:group:-1001234567890:topic:3");
   });
 
   it("routes to topic-specific agent when agentId is set", async () => {
@@ -77,11 +77,11 @@ describe("buildTelegramMessageContext per-topic agentId routing", () => {
     const buildForTopic = async (threadId: number, agentId: string) =>
       await buildForumContext({ threadId, topicConfig: { agentId } });
 
-    const ctxA = await buildForTopic(1, "main");
+    const ctxA = await buildForTopic(1, "alpha");
     const ctxB = await buildForTopic(3, "zu");
     const ctxC = await buildForTopic(5, "q");
 
-    expect(ctxA?.ctxPayload?.SessionKey).toContain("agent:main:");
+    expect(ctxA?.ctxPayload?.SessionKey).toContain("agent:alpha:");
     expect(ctxB?.ctxPayload?.SessionKey).toContain("agent:zu:");
     expect(ctxC?.ctxPayload?.SessionKey).toContain("agent:q:");
 
@@ -95,13 +95,13 @@ describe("buildTelegramMessageContext per-topic agentId routing", () => {
     });
 
     expect(ctx).not.toBeNull();
-    expect(ctx?.ctxPayload?.SessionKey).toContain("agent:main:");
+    expect(ctx?.ctxPayload?.SessionKey).toContain("agent:alpha:");
   });
 
   it("falls back to default agent when topic agentId does not exist", async () => {
     vi.mocked(loadConfig).mockReturnValue({
       agents: {
-        list: [{ id: "main", default: true }, { id: "zu" }],
+        list: [{ id: "alpha", default: true }, { id: "zu" }],
       },
       channels: { telegram: {} },
       messages: { groupChat: { mentionPatterns: [] } },
@@ -110,7 +110,7 @@ describe("buildTelegramMessageContext per-topic agentId routing", () => {
     const ctx = await buildForumContext({ topicConfig: { agentId: "ghost" } });
 
     expect(ctx).not.toBeNull();
-    expect(ctx?.ctxPayload?.SessionKey).toContain("agent:main:");
+    expect(ctx?.ctxPayload?.SessionKey).toContain("agent:alpha:");
   });
 
   it("routes DM topic to specific agent when agentId is set", async () => {

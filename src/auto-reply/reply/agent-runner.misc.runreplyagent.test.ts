@@ -176,7 +176,7 @@ describe("runReplyAgent onAgentRunStart", () => {
       enqueuedAt: Date.now(),
       run: {
         sessionId: "session",
-        sessionKey: "main",
+        sessionKey: "test-agent",
         messageProvider: "webchat",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
@@ -193,7 +193,7 @@ describe("runReplyAgent onAgentRunStart", () => {
     return runReplyAgent({
       commandBody: "hello",
       followupRun,
-      queueKey: "main",
+      queueKey: "test-agent",
       resolvedQueue,
       shouldFollowup: false,
       shouldSteer: false,
@@ -281,10 +281,10 @@ describe("runReplyAgent token update", () => {
       summaryLine: "hello",
       enqueuedAt: Date.now(),
       run: {
-        agentId: "main",
+        agentId: "test-agent",
         agentDir: "/tmp/agent",
         sessionId: "session",
-        sessionKey: "main",
+        sessionKey: "test-agent",
         messageProvider: "whatsapp",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
@@ -303,7 +303,7 @@ describe("runReplyAgent token update", () => {
   it("persists usage from bridge result", async () => {
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-compact-tokens-"));
     const storePath = path.join(tmp, "sessions.json");
-    const sessionKey = "main";
+    const sessionKey = "test-agent";
     const sessionEntry = {
       sessionId: "session",
       updatedAt: Date.now(),
@@ -329,7 +329,7 @@ describe("runReplyAgent token update", () => {
     await runReplyAgent({
       commandBody: "hello",
       followupRun,
-      queueKey: "main",
+      queueKey: "test-agent",
       resolvedQueue,
       shouldFollowup: false,
       shouldSteer: false,
@@ -359,7 +359,7 @@ describe("runReplyAgent token update", () => {
   it("persists usage tokens from bridge result", async () => {
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-usage-last-"));
     const storePath = path.join(tmp, "sessions.json");
-    const sessionKey = "main";
+    const sessionKey = "test-agent";
     const sessionEntry = {
       sessionId: "session",
       updatedAt: Date.now(),
@@ -383,7 +383,7 @@ describe("runReplyAgent token update", () => {
     await runReplyAgent({
       commandBody: "hello",
       followupRun,
-      queueKey: "main",
+      queueKey: "test-agent",
       resolvedQueue,
       shouldFollowup: false,
       shouldSteer: false,
@@ -436,7 +436,7 @@ describe("runReplyAgent block streaming", () => {
       enqueuedAt: Date.now(),
       run: {
         sessionId: "session",
-        sessionKey: "main",
+        sessionKey: "test-agent",
         messageProvider: "discord",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
@@ -464,7 +464,7 @@ describe("runReplyAgent block streaming", () => {
     const result = await runReplyAgent({
       commandBody: "hello",
       followupRun,
-      queueKey: "main",
+      queueKey: "test-agent",
       resolvedQueue,
       shouldFollowup: false,
       shouldSteer: false,
@@ -530,7 +530,7 @@ describe("runReplyAgent block streaming", () => {
       enqueuedAt: Date.now(),
       run: {
         sessionId: "session",
-        sessionKey: "main",
+        sessionKey: "test-agent",
         messageProvider: "discord",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
@@ -558,7 +558,7 @@ describe("runReplyAgent block streaming", () => {
     const resultPromise = runReplyAgent({
       commandBody: "hello",
       followupRun,
-      queueKey: "main",
+      queueKey: "test-agent",
       resolvedQueue,
       shouldFollowup: false,
       shouldSteer: false,
@@ -605,7 +605,7 @@ describe("runReplyAgent claude-cli routing", () => {
       enqueuedAt: Date.now(),
       run: {
         sessionId: "session",
-        sessionKey: "main",
+        sessionKey: "test-agent",
         messageProvider: "webchat",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
@@ -622,7 +622,7 @@ describe("runReplyAgent claude-cli routing", () => {
     return runReplyAgent({
       commandBody: "hello",
       followupRun,
-      queueKey: "main",
+      queueKey: "test-agent",
       resolvedQueue,
       shouldFollowup: false,
       shouldSteer: false,
@@ -676,7 +676,7 @@ describe("runReplyAgent messaging tool suppression", () => {
     opts: { storePath?: string; sessionKey?: string } = {},
   ) {
     const typing = createMockTypingController();
-    const sessionKey = opts.sessionKey ?? "main";
+    const sessionKey = opts.sessionKey ?? "test-agent";
     const sessionCtx = {
       Provider: messageProvider,
       OriginatingTo: "channel:C1",
@@ -707,7 +707,7 @@ describe("runReplyAgent messaging tool suppression", () => {
     return runReplyAgent({
       commandBody: "hello",
       followupRun,
-      queueKey: "main",
+      queueKey: "test-agent",
       resolvedQueue,
       shouldFollowup: false,
       shouldSteer: false,
@@ -803,7 +803,7 @@ describe("runReplyAgent messaging tool suppression", () => {
       await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-session-store-")),
       "sessions.json",
     );
-    const sessionKey = "main";
+    const sessionKey = "test-agent";
     const entry: SessionEntry = { sessionId: "session", updatedAt: Date.now() };
     await saveSessionStore(storePath, { [sessionKey]: entry });
 
@@ -835,7 +835,7 @@ describe("runReplyAgent messaging tool suppression", () => {
       await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-session-store-")),
       "sessions.json",
     );
-    const sessionKey = "main";
+    const sessionKey = "test-agent";
     const entry: SessionEntry = { sessionId: "session", updatedAt: Date.now() };
     await saveSessionStore(storePath, { [sessionKey]: entry });
 
@@ -865,7 +865,7 @@ describe("runReplyAgent messaging tool suppression", () => {
       await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-session-store-")),
       "sessions.json",
     );
-    const sessionKey = "main";
+    const sessionKey = "test-agent";
     const entry: SessionEntry = {
       sessionId: "session",
       updatedAt: Date.now(),
@@ -908,7 +908,7 @@ describe("runReplyAgent ChannelBridge constructor args", () => {
       MessageSid: "msg",
     } as unknown as TemplateContext;
     const resolvedQueue = { mode: "interrupt" } as unknown as QueueSettings;
-    const agentId = overrides?.agentId ?? "main";
+    const agentId = overrides?.agentId ?? "test-agent";
     const config: Record<string, unknown> = {
       agents: {
         defaults: {
@@ -924,7 +924,7 @@ describe("runReplyAgent ChannelBridge constructor args", () => {
       run: {
         agentId,
         sessionId: "session",
-        sessionKey: "main",
+        sessionKey: "test-agent",
         messageProvider: "webchat",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: overrides?.workspaceDir ?? "/tmp/workspace",
@@ -941,7 +941,7 @@ describe("runReplyAgent ChannelBridge constructor args", () => {
     return runReplyAgent({
       commandBody: "hello",
       followupRun,
-      queueKey: "main",
+      queueKey: "test-agent",
       resolvedQueue,
       shouldFollowup: false,
       shouldSteer: false,
@@ -1077,7 +1077,7 @@ describe("runReplyAgent reminder commitment guard", () => {
       enqueuedAt: Date.now(),
       run: {
         sessionId: "session",
-        sessionKey: "main",
+        sessionKey: "test-agent",
         messageProvider: "telegram",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
@@ -1094,7 +1094,7 @@ describe("runReplyAgent reminder commitment guard", () => {
     return runReplyAgent({
       commandBody: "hello",
       followupRun,
-      queueKey: "main",
+      queueKey: "test-agent",
       resolvedQueue,
       shouldFollowup: false,
       shouldSteer: false,
@@ -1102,7 +1102,7 @@ describe("runReplyAgent reminder commitment guard", () => {
       isStreaming: false,
       typing,
       sessionCtx,
-      sessionKey: "main",
+      sessionKey: "test-agent",
       defaultModel: "anthropic/claude-opus-4-5",
       resolvedVerboseLevel: "off",
       isNewSession: false,
@@ -1164,7 +1164,7 @@ describe("runReplyAgent response usage footer", () => {
       summaryLine: "hello",
       enqueuedAt: Date.now(),
       run: {
-        agentId: "main",
+        agentId: "test-agent",
         agentDir: "/tmp/agent",
         sessionId: "session",
         sessionKey: params.sessionKey,
@@ -1184,7 +1184,7 @@ describe("runReplyAgent response usage footer", () => {
     return runReplyAgent({
       commandBody: "hello",
       followupRun,
-      queueKey: "main",
+      queueKey: "test-agent",
       resolvedQueue,
       shouldFollowup: false,
       shouldSteer: false,
@@ -1212,7 +1212,7 @@ describe("runReplyAgent response usage footer", () => {
       }),
     );
 
-    const sessionKey = "agent:main:whatsapp:dm:+1000";
+    const sessionKey = "agent:test-agent:whatsapp:dm:+1000";
     const res = await createRun({ responseUsage: "full", sessionKey });
     const payload = Array.isArray(res) ? res[0] : res;
     expect(String(payload?.text ?? "")).toContain("Usage:");
@@ -1227,7 +1227,7 @@ describe("runReplyAgent response usage footer", () => {
       }),
     );
 
-    const sessionKey = "agent:main:whatsapp:dm:+1000";
+    const sessionKey = "agent:test-agent:whatsapp:dm:+1000";
     const res = await createRun({ responseUsage: "tokens", sessionKey });
     const payload = Array.isArray(res) ? res[0] : res;
     expect(String(payload?.text ?? "")).toContain("Usage:");
@@ -1258,7 +1258,7 @@ describe("runReplyAgent transient HTTP retry", () => {
       enqueuedAt: Date.now(),
       run: {
         sessionId: "session",
-        sessionKey: "main",
+        sessionKey: "test-agent",
         messageProvider: "telegram",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
@@ -1275,7 +1275,7 @@ describe("runReplyAgent transient HTTP retry", () => {
     const runPromise = runReplyAgent({
       commandBody: "hello",
       followupRun,
-      queueKey: "main",
+      queueKey: "test-agent",
       resolvedQueue,
       shouldFollowup: false,
       shouldSteer: false,

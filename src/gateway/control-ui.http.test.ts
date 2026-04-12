@@ -3,6 +3,7 @@ import type { IncomingMessage } from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_ASSISTANT_IDENTITY } from "./assistant-identity.js";
 import { CONTROL_UI_BOOTSTRAP_CONFIG_PATH } from "./control-ui-contract.js";
 import { handleControlUiAvatarRequest, handleControlUiHttpRequest } from "./control-ui.js";
 import { makeMockHttpResponse } from "./test-http-response.js";
@@ -166,7 +167,7 @@ describe("handleControlUiHttpRequest", () => {
         expect(parsed.basePath).toBe("");
         expect(parsed.assistantName).toBe("</script><script>alert(1)//");
         expect(parsed.assistantAvatar).toBe("/avatar/main");
-        expect(parsed.assistantAgentId).toBe("main");
+        expect(parsed.assistantAgentId).toBe(DEFAULT_ASSISTANT_IDENTITY.agentId);
       },
     });
   });
@@ -195,7 +196,7 @@ describe("handleControlUiHttpRequest", () => {
         expect(parsed.basePath).toBe("/remoteclaw");
         expect(parsed.assistantName).toBe("Ops");
         expect(parsed.assistantAvatar).toBe("/remoteclaw/avatar/main");
-        expect(parsed.assistantAgentId).toBe("main");
+        expect(parsed.assistantAgentId).toBe(DEFAULT_ASSISTANT_IDENTITY.agentId);
       },
     });
   });

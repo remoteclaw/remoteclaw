@@ -93,7 +93,7 @@ vi.mock("../runtime.js", () => ({
 }));
 
 vi.mock("../config/config.js", () => ({
-  loadConfig: () => ({ agents: { list: [{ id: "main" }] } }),
+  loadConfig: () => ({ agents: { list: [{ id: "test-agent" }] } }),
 }));
 
 vi.mock("../infra/exec-approvals.js", async () => {
@@ -179,7 +179,7 @@ describe("nodes-cli coverage", () => {
       env: { FOO: "bar" },
       timeoutMs: 1200,
       needsScreenRecording: true,
-      agentId: "main",
+      agentId: "test-agent",
       approved: true,
       approvalDecision: "allow-once",
       runId: expect.any(String),
@@ -191,7 +191,7 @@ describe("nodes-cli coverage", () => {
       argv: ["echo", "hi"],
       cwd: "/tmp",
       rawCommand: null,
-      agentId: "main",
+      agentId: "test-agent",
       sessionKey: null,
     });
   });
@@ -201,7 +201,7 @@ describe("nodes-cli coverage", () => {
       "nodes",
       "run",
       "--agent",
-      "main",
+      "test-agent",
       "--node",
       "mac-1",
       "--raw",
@@ -214,7 +214,7 @@ describe("nodes-cli coverage", () => {
     expect(invoke?.params?.params).toMatchObject({
       command: ["/bin/sh", "-lc", "echo hi"],
       rawCommand: "echo hi",
-      agentId: "main",
+      agentId: "test-agent",
       approved: true,
       approvalDecision: "allow-once",
       runId: expect.any(String),
@@ -225,7 +225,7 @@ describe("nodes-cli coverage", () => {
       argv: ["/bin/sh", "-lc", "echo hi"],
       cwd: null,
       rawCommand: "echo hi",
-      agentId: "main",
+      agentId: "test-agent",
       sessionKey: null,
     });
   });

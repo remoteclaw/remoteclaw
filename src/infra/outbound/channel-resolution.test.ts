@@ -73,9 +73,9 @@ describe("plugin-loading workspace resolution — regression for #2308", () => {
       expect(resolveFirstAgentWorkspace(cfg)).toBe(path.resolve("/tmp/shared"));
     });
 
-    it("does not depend on an agent named 'main'", () => {
-      // Explicit regression pin: the pre-#2308 code used DEFAULT_AGENT_ID="main"
-      // as a phantom fallback. This multi-agent config has no "main" and no
+    it("does not depend on the legacy phantom default agent", () => {
+      // Explicit regression pin: the pre-#2308 code used a phantom default
+      // fallback. This multi-agent config has neither the phantom id nor a
       // defaults.workspace, which is exactly the scenario that used to crash.
       const cfg: RemoteClawConfig = {
         agents: {

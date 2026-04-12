@@ -13,6 +13,7 @@ import {
   loadProviderUsageSummary,
   resolveUsageProviderId,
 } from "../../infra/provider-usage.js";
+import { getRoutingDropCounts } from "../../routing/routing-drops-accumulator.js";
 import { normalizeGroupActivation } from "../group-activation.js";
 import { buildStatusMessage } from "../status.js";
 import type { VerboseLevel } from "../thinking.js";
@@ -20,6 +21,19 @@ import type { ReplyPayload } from "../types.js";
 import type { CommandContext } from "./commands-types.js";
 import { getFollowupQueueDepth, resolveQueueSettings } from "./queue.js";
 import { resolveSubagentLabel } from "./subagents-utils.js";
+
+function formatRoutingDropsLine(): string | undefined {
+  const drops = getRoutingDropCounts();
+  if (drops.total === 0) {
+    return undefined;
+  }
+  const perChannel = Object.entries(drops.byChannel)
+    .toSorted((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([channel, count]) => `${channel}:${count}`)
+    .join(", ");
+  return `🚫 Drops: ${drops.total}${perChannel ? ` (${perChannel})` : ""}`;
+}
 
 export async function buildStatusReply(params: {
   cfg: RemoteClawConfig;
@@ -127,6 +141,7 @@ export async function buildStatusReply(params: {
     ? (normalizeGroupActivation(sessionEntry?.groupActivation) ?? defaultGroupActivation())
     : undefined;
   const agentDefaults = cfg.agents?.defaults ?? {};
+  const routingDropsLine = formatRoutingDropsLine();
   const statusText = await buildStatusMessage({
     config: cfg,
     agent: {
@@ -151,6 +166,7 @@ export async function buildStatusReply(params: {
       showDetails: queueOverrides,
     },
     subagentsLine,
+    routingDropsLine,
     includeTranscriptUsage: false,
   });
 

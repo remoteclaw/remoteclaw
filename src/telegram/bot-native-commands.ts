@@ -458,7 +458,7 @@ export const registerTelegramNativeCommands = ({
   }): Promise<{
     chatId: number;
     threadSpec: ReturnType<typeof resolveTelegramThreadSpec>;
-    route: ReturnType<typeof resolveTelegramConversationRoute>["route"];
+    route: NonNullable<ReturnType<typeof resolveTelegramConversationRoute>>["route"];
     mediaLocalRoots: readonly string[] | undefined;
     tableMode: ReturnType<typeof resolveMarkdownTableMode>;
     chunkMode: ReturnType<typeof resolveChunkMode>;
@@ -471,7 +471,7 @@ export const registerTelegramNativeCommands = ({
       isForum,
       messageThreadId,
     });
-    let { route, configuredBinding } = resolveTelegramConversationRoute({
+    const conversationRoute = resolveTelegramConversationRoute({
       cfg,
       accountId,
       chatId,
@@ -481,6 +481,12 @@ export const registerTelegramNativeCommands = ({
       senderId,
       topicAgentId,
     });
+    if (!conversationRoute) {
+      // Silent drop: routing.unmatched policy dropped the message. Telemetry
+      // already fired via handleUnmatched.
+      return null;
+    }
+    let { route, configuredBinding } = conversationRoute;
     if (configuredBinding) {
       const ensured = await ensureConfiguredAcpRouteReady({
         cfg,

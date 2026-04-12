@@ -350,6 +350,11 @@ export async function preflightDiscordMessage(
     }),
     parentConversationId: earlyThreadParentId,
   });
+  if (!route) {
+    // Silent drop: routing.unmatched policy says no catch-all. Telemetry
+    // already fired via handleUnmatched.
+    return null;
+  }
   let threadBinding: SessionBindingRecord | undefined;
   threadBinding =
     getSessionBindingService().resolveByConversation({

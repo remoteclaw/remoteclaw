@@ -1,4 +1,4 @@
-import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveSoleAgentId } from "../agents/agent-scope.js";
 import { normalizeChatChannelId } from "../channels/registry.js";
 import { listRouteBindings } from "../config/bindings.js";
 import type { RemoteClawConfig } from "../config/config.js";
@@ -61,7 +61,14 @@ export function listBoundAccountIds(cfg: RemoteClawConfig, channelId: string): s
   return Array.from(ids).toSorted((a, b) => a.localeCompare(b));
 }
 
-export function resolveDefaultAgentBoundAccountId(
+/**
+ * Find the first account bound to the sole configured agent on a given channel.
+ *
+ * Returns `null` when there is no sole agent (zero or multiple agents configured)
+ * or when no binding targets that agent on the requested channel. Multi-agent
+ * configs have no implicit "default" agent — callers must disambiguate explicitly.
+ */
+export function resolveSoleAgentBoundAccountId(
   cfg: RemoteClawConfig,
   channelId: string,
 ): string | null {
@@ -69,13 +76,17 @@ export function resolveDefaultAgentBoundAccountId(
   if (!normalizedChannel) {
     return null;
   }
-  const defaultAgentId = normalizeAgentId(resolveDefaultAgentId(cfg));
+  const soleAgentId = resolveSoleAgentId(cfg);
+  if (!soleAgentId) {
+    return null;
+  }
+  const normalizedSoleAgentId = normalizeAgentId(soleAgentId);
   for (const binding of listBindings(cfg)) {
     const resolved = resolveNormalizedBindingMatch(binding);
     if (
       !resolved ||
       resolved.channelId !== normalizedChannel ||
-      resolved.agentId !== defaultAgentId
+      resolved.agentId !== normalizedSoleAgentId
     ) {
       continue;
     }

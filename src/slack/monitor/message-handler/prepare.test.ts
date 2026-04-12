@@ -42,6 +42,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
   function createDefaultSlackCtx() {
     const slackCtx = createInboundSlackCtx({
       cfg: {
+        agents: { list: [{ id: "main" }] },
         channels: { slack: { enabled: true } },
       } as RemoteClawConfig,
     });
@@ -134,6 +135,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
   function createDmScopeMainSlackCtx(): SlackMonitorContext {
     const slackCtx = createInboundSlackCtx({
       cfg: {
+        agents: { list: [{ id: "main" }] },
         channels: { slack: { enabled: true } },
         session: { dmScope: "main" },
       } as RemoteClawConfig,
@@ -177,6 +179,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
   }): SlackMonitorContext {
     const slackCtx = createInboundSlackCtx({
       cfg: {
+        agents: { list: [{ id: "main" }] },
         channels: {
           slack: {
             enabled: true,
@@ -270,6 +273,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
   it("extracts attachment text for bot messages with empty text when allowBots is true (#27616)", async () => {
     const slackCtx = createInboundSlackCtx({
       cfg: {
+        agents: { list: [{ id: "main" }] },
         channels: {
           slack: { enabled: true },
         },
@@ -300,6 +304,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
   it("keeps channel metadata out of GroupSystemPrompt", async () => {
     const slackCtx = createInboundSlackCtx({
       cfg: {
+        agents: { list: [{ id: "main" }] },
         channels: {
           slack: {
             enabled: true,
@@ -434,6 +439,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
       });
     const slackCtx = createThreadSlackCtx({
       cfg: {
+        agents: { list: [{ id: "main" }] },
         session: { store: storePath },
         channels: { slack: { enabled: true, replyToMode: "all", groupPolicy: "open" } },
       } as RemoteClawConfig,
@@ -460,6 +466,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
   it("skips loading thread history when thread session already exists in store (bloat fix)", async () => {
     const { storePath } = makeTmpStorePath();
     const cfg = {
+      agents: { list: [{ id: "main" }] },
       session: { store: storePath },
       channels: { slack: { enabled: true, replyToMode: "all", groupPolicy: "open" } },
     } as RemoteClawConfig;
@@ -549,6 +556,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
     const { storePath } = makeTmpStorePath();
     const slackCtx = createInboundSlackCtx({
       cfg: {
+        agents: { list: [{ id: "main" }] },
         session: { store: storePath },
         channels: { slack: { enabled: true, replyToMode: "all" } },
       } as RemoteClawConfig,
@@ -581,7 +589,10 @@ describe("prepareSlackMessage sender prefix", () => {
   }): SlackMonitorContext {
     return {
       cfg: {
-        agents: { defaults: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/remoteclaw" } },
+        agents: {
+          list: [{ id: "main" }],
+          defaults: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/remoteclaw" },
+        },
         channels: { slack: params.channels },
       },
       accountId: "default",

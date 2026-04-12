@@ -74,6 +74,7 @@ describe("web auto-reply", () => {
 
   async function withMediaCap<T>(mediaMaxMb: number, run: () => Promise<T>): Promise<T> {
     setLoadConfigMock(() => ({
+      agents: { list: [{ id: "main" }] },
       channels: {
         whatsapp: {
           allowFrom: ["*"],
@@ -257,6 +258,7 @@ describe("web auto-reply", () => {
     expect(bigPng.length).toBeGreaterThan(SMALL_MEDIA_CAP_BYTES);
 
     setLoadConfigMock(() => ({
+      agents: { list: [{ id: "main" }] },
       channels: {
         whatsapp: {
           allowFrom: ["*"],

@@ -31,7 +31,7 @@ describe("discord route resolution helpers", () => {
       sessionKey: "agent:main:discord:channel:c1",
       mainSessionKey: "agent:main:main",
       lastRoutePolicy: "session",
-      matchedBy: "default",
+      matchedBy: "binding.channel",
     };
 
     expect(
@@ -56,7 +56,7 @@ describe("discord route resolution helpers", () => {
       sessionKey: "agent:main:discord:channel:c1",
       mainSessionKey: "agent:main:main",
       lastRoutePolicy: "session",
-      matchedBy: "default",
+      matchedBy: "binding.channel",
     };
     const configuredRoute = {
       route: {

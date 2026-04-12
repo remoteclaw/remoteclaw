@@ -239,6 +239,10 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
         unit: "1",
         description: "Run attempts",
       });
+      const routingDropsCounter = meter.createCounter("remoteclaw.routing.drops", {
+        unit: "1",
+        description: "Inbound messages silently dropped by routing policy",
+      });
 
       if (logsEnabled) {
         const logExporter = new OTLPLogExporter({
@@ -616,6 +620,15 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
         queueDepthHistogram.record(evt.queued, { "remoteclaw.channel": "heartbeat" });
       };
 
+      const recordRoutingDrop = (
+        evt: Extract<DiagnosticEventPayload, { type: "routing.drop" }>,
+      ) => {
+        routingDropsCounter.add(1, {
+          "remoteclaw.channel": evt.channel,
+          "remoteclaw.reason": evt.reason,
+        });
+      };
+
       unsubscribe = onDiagnosticEvent((evt: DiagnosticEventPayload) => {
         try {
           switch (evt.type) {
@@ -654,6 +667,9 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
               return;
             case "diagnostic.heartbeat":
               recordHeartbeat(evt);
+              return;
+            case "routing.drop":
+              recordRoutingDrop(evt);
               return;
           }
         } catch (err) {

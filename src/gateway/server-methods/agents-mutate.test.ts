@@ -1,6 +1,10 @@
 import path from "node:path";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
+// Pinned legacy alias id used by the reserved-name delete test below.
+// Hoisted so vi.mock() factories can close over it safely.
+const { LEGACY_RESERVED_ID } = vi.hoisted(() => ({ LEGACY_RESERVED_ID: "main" }));
+
 /* ------------------------------------------------------------------ */
 /* Mocks                                                              */
 /* ------------------------------------------------------------------ */
@@ -17,8 +21,8 @@ const mocks = vi.hoisted(() => ({
   resolveAgentWorkspaceDir: vi.fn(() => "/workspace/test-agent"),
   resolveSessionTranscriptsDirForAgent: vi.fn(() => "/transcripts/test-agent"),
   listAgentsForGateway: vi.fn(() => ({
-    defaultId: "main",
-    mainKey: "agent:main:main",
+    defaultId: "test-agent",
+    mainKey: "agent:test-agent:main",
     scope: "global",
     agents: [],
   })),
@@ -51,7 +55,7 @@ vi.mock("../../commands/agents.config.js", () => ({
 }));
 
 vi.mock("../../agents/agent-scope.js", () => ({
-  listAgentIds: () => ["main"],
+  listAgentIds: () => ["test-agent", LEGACY_RESERVED_ID],
   resolveAgentDir: mocks.resolveAgentDir,
   resolveAgentWorkspaceDir: mocks.resolveAgentWorkspaceDir,
   resolveAgentRuntime: () => "claude",
@@ -173,8 +177,8 @@ function expectNotFoundResponseAndNoWrite(respond: ReturnType<typeof vi.fn>) {
 async function expectUnsafeWorkspaceFile(method: "agents.files.get" | "agents.files.set") {
   const params =
     method === "agents.files.set"
-      ? { agentId: "main", name: "AGENTS.md", content: "x" }
-      : { agentId: "main", name: "AGENTS.md" };
+      ? { agentId: "test-agent", name: "AGENTS.md", content: "x" }
+      : { agentId: "test-agent", name: "AGENTS.md" };
   const { respond, promise } = makeCall(method, params);
   await promise;
   expect(respond).toHaveBeenCalledWith(
@@ -444,7 +448,7 @@ describe("agents.delete", () => {
 
   it("rejects deleting the main agent", async () => {
     const { respond, promise } = makeCall("agents.delete", {
-      agentId: "main",
+      agentId: LEGACY_RESERVED_ID,
     });
     await promise;
 
@@ -486,7 +490,7 @@ describe("agents.files.list", () => {
   });
 
   it("returns empty list with hint when editableFiles is empty", async () => {
-    const { respond, promise } = makeCall("agents.files.list", { agentId: "main" });
+    const { respond, promise } = makeCall("agents.files.list", { agentId: "test-agent" });
     await promise;
 
     const [ok, result] = respond.mock.calls[0] ?? [];
@@ -509,7 +513,7 @@ describe("agents.files.list", () => {
       mtimeMs: 1000,
     }));
 
-    const { respond, promise } = makeCall("agents.files.list", { agentId: "main" });
+    const { respond, promise } = makeCall("agents.files.list", { agentId: "test-agent" });
     await promise;
 
     const [ok, result] = respond.mock.calls[0] ?? [];
@@ -522,7 +526,7 @@ describe("agents.files.list", () => {
     mocks.loadConfigReturn = {
       agents: {
         defaults: { editableFiles: ["*.txt"] },
-        list: [{ id: "main", editableFiles: ["*.md"] }],
+        list: [{ id: "test-agent", editableFiles: ["*.md"] }],
       },
     };
     mocks.fsReaddir.mockImplementation(async () => [
@@ -535,7 +539,7 @@ describe("agents.files.list", () => {
       mtimeMs: 2000,
     }));
 
-    const { respond, promise } = makeCall("agents.files.list", { agentId: "main" });
+    const { respond, promise } = makeCall("agents.files.list", { agentId: "test-agent" });
     await promise;
 
     const [ok, result] = respond.mock.calls[0] ?? [];
@@ -549,7 +553,7 @@ describe("agents.files.list", () => {
       agents: { defaults: { editableFiles: ["../etc/passwd"] } },
     };
 
-    const { respond, promise } = makeCall("agents.files.list", { agentId: "main" });
+    const { respond, promise } = makeCall("agents.files.list", { agentId: "test-agent" });
     await promise;
 
     expect(respond).toHaveBeenCalledWith(
@@ -570,7 +574,7 @@ describe("agents.files.get", () => {
 
   it("rejects files not matching any glob", async () => {
     const { respond, promise } = makeCall("agents.files.get", {
-      agentId: "main",
+      agentId: "test-agent",
       name: "secret.key",
     });
     await promise;
@@ -593,7 +597,7 @@ describe("agents.files.get", () => {
     }));
 
     const { respond, promise } = makeCall("agents.files.get", {
-      agentId: "main",
+      agentId: "test-agent",
       name: "README.md",
     });
     await promise;
@@ -606,7 +610,7 @@ describe("agents.files.get", () => {
 
   it("returns missing:true for non-existent matching file", async () => {
     const { respond, promise } = makeCall("agents.files.get", {
-      agentId: "main",
+      agentId: "test-agent",
       name: "MISSING.md",
     });
     await promise;
@@ -627,7 +631,7 @@ describe("agents.files.set", () => {
 
   it("rejects files not matching any glob", async () => {
     const { respond, promise } = makeCall("agents.files.set", {
-      agentId: "main",
+      agentId: "test-agent",
       name: "secret.key",
       content: "bad",
     });
@@ -652,7 +656,7 @@ describe("agents.files.set", () => {
     }));
 
     const { respond, promise } = makeCall("agents.files.set", {
-      agentId: "main",
+      agentId: "test-agent",
       name: "CLAUDE.md",
       content: "hello world",
     });
@@ -666,7 +670,7 @@ describe("agents.files.set", () => {
 
   it("rejects file names with path traversal", async () => {
     const { respond, promise } = makeCall("agents.files.set", {
-      agentId: "main",
+      agentId: "test-agent",
       name: "../etc/passwd",
       content: "bad",
     });
@@ -768,7 +772,7 @@ describe("agents.files.get/set symlink safety", () => {
         }) as unknown,
     );
 
-    const getCall = makeCall("agents.files.get", { agentId: "main", name: "AGENTS.md" });
+    const getCall = makeCall("agents.files.get", { agentId: "test-agent", name: "AGENTS.md" });
     await getCall.promise;
     expect(getCall.respond).toHaveBeenCalledWith(
       true,
@@ -779,7 +783,7 @@ describe("agents.files.get/set symlink safety", () => {
     );
 
     const setCall = makeCall("agents.files.set", {
-      agentId: "main",
+      agentId: "test-agent",
       name: "AGENTS.md",
       content: "updated\n",
     });

@@ -41,13 +41,13 @@ describe("sendDiscordComponentMessage", () => {
       {
         rest,
         token: "t",
-        sessionKey: "agent:main:discord:channel:dm-1",
-        agentId: "main",
+        sessionKey: "agent:test-agent:discord:channel:dm-1",
+        agentId: "test-agent",
       },
     );
 
     expect(registerMock).toHaveBeenCalledTimes(1);
     const args = registerMock.mock.calls[0]?.[0];
-    expect(args?.entries[0]?.sessionKey).toBe("agent:main:discord:channel:dm-1");
+    expect(args?.entries[0]?.sessionKey).toBe("agent:test-agent:discord:channel:dm-1");
   });
 });

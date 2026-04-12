@@ -233,7 +233,7 @@ describe("legacy config detection", () => {
   it("migrates legacy model config to agent.models + model lists", async () => {
     const res = migrateLegacyConfig({
       agents: {
-        list: [{ id: "main", workspace: "/tmp/main" }],
+        list: [{ id: "test-agent", workspace: "/tmp/test-agent" }],
       },
       agent: {
         model: "anthropic/claude-opus-4-5",
@@ -337,7 +337,7 @@ describe("legacy config detection", () => {
   it("rejects bindings[].match.provider on load", async () => {
     await expectLoadRejectionPreservesField({
       config: {
-        bindings: [{ agentId: "main", match: { provider: "slack" } }],
+        bindings: [{ agentId: "test-agent", match: { provider: "slack" } }],
       },
       readValue: (parsed) =>
         (parsed as { bindings?: Array<{ match?: { provider?: string } }> }).bindings?.[0]?.match
@@ -348,7 +348,7 @@ describe("legacy config detection", () => {
   it("rejects bindings[].match.accountID on load", async () => {
     await expectLoadRejectionPreservesField({
       config: {
-        bindings: [{ agentId: "main", match: { channel: "telegram", accountID: "work" } }],
+        bindings: [{ agentId: "test-agent", match: { channel: "telegram", accountID: "work" } }],
       },
       readValue: (parsed) =>
         (parsed as { bindings?: Array<{ match?: { accountID?: string } }> }).bindings?.[0]?.match
@@ -359,7 +359,9 @@ describe("legacy config detection", () => {
   it("accepts bindings[].comment on load", () => {
     expectValidConfigValue({
       config: {
-        bindings: [{ agentId: "main", comment: "primary route", match: { channel: "telegram" } }],
+        bindings: [
+          { agentId: "test-agent", comment: "primary route", match: { channel: "telegram" } },
+        ],
       },
       readValue: (config) =>
         (config as { bindings?: Array<{ comment?: string }> }).bindings?.[0]?.comment,

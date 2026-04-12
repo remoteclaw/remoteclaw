@@ -9,7 +9,7 @@ const resolveAgentWorkspaceDir = vi.fn();
 const mockDeps = { mock: "deps" };
 const logWarn = vi.fn();
 const logDebug = vi.fn();
-const MAIN_WORKSPACE_DIR = path.join(path.sep, "ws", "main");
+const ALPHA_WORKSPACE_DIR = path.join(path.sep, "ws", "alpha");
 const OPS_WORKSPACE_DIR = path.join(path.sep, "ws", "ops");
 
 vi.mock("../../../gateway/boot.js", () => ({ runBootOnce }));
@@ -48,21 +48,21 @@ describe("boot handler", () => {
     const cfg = {
       agents: {
         defaults: { boot: { prompt: "Default boot" } },
-        list: [{ id: "main" }, { id: "ops" }],
+        list: [{ id: "alpha" }, { id: "ops" }],
       },
     };
-    listAgentIds.mockReturnValue(["main", "ops"]);
+    listAgentIds.mockReturnValue(["alpha", "ops"]);
     resolveAgentConfig.mockReturnValue(undefined);
     resolveAgentWorkspaceDir.mockImplementation((_cfg: unknown, id: string) =>
-      id === "main" ? MAIN_WORKSPACE_DIR : OPS_WORKSPACE_DIR,
+      id === "alpha" ? ALPHA_WORKSPACE_DIR : OPS_WORKSPACE_DIR,
     );
     return cfg;
   }
 
-  function setupSingleMainAgentBootConfig(cfg: unknown) {
-    listAgentIds.mockReturnValue(["main"]);
+  function setupSingleAgentBootConfig(cfg: unknown) {
+    listAgentIds.mockReturnValue(["alpha"]);
     resolveAgentConfig.mockReturnValue(undefined);
-    resolveAgentWorkspaceDir.mockReturnValue(MAIN_WORKSPACE_DIR);
+    resolveAgentWorkspaceDir.mockReturnValue(ALPHA_WORKSPACE_DIR);
     return cfg;
   }
 
@@ -96,8 +96,8 @@ describe("boot handler", () => {
     expect(runBootOnce).toHaveBeenCalledWith({
       cfg,
       deps: mockDeps,
-      workspaceDir: MAIN_WORKSPACE_DIR,
-      agentId: "main",
+      workspaceDir: ALPHA_WORKSPACE_DIR,
+      agentId: "alpha",
     });
     expect(runBootOnce).toHaveBeenCalledWith({
       cfg,
@@ -111,15 +111,15 @@ describe("boot handler", () => {
     const cfg = {
       agents: {
         defaults: { boot: { prompt: "Default boot" } },
-        list: [{ id: "main" }, { id: "ops", boot: { prompt: "Ops-specific boot" } }],
+        list: [{ id: "alpha" }, { id: "ops", boot: { prompt: "Ops-specific boot" } }],
       },
     };
-    listAgentIds.mockReturnValue(["main", "ops"]);
+    listAgentIds.mockReturnValue(["alpha", "ops"]);
     resolveAgentConfig.mockImplementation((_cfg: unknown, id: string) =>
       id === "ops" ? { boot: { prompt: "Ops-specific boot" } } : undefined,
     );
     resolveAgentWorkspaceDir.mockImplementation((_cfg: unknown, id: string) =>
-      id === "main" ? MAIN_WORKSPACE_DIR : OPS_WORKSPACE_DIR,
+      id === "alpha" ? ALPHA_WORKSPACE_DIR : OPS_WORKSPACE_DIR,
     );
     runBootOnce.mockResolvedValue({ status: "ran" });
 
@@ -128,8 +128,8 @@ describe("boot handler", () => {
     expect(runBootOnce).toHaveBeenCalledWith({
       cfg,
       deps: mockDeps,
-      workspaceDir: MAIN_WORKSPACE_DIR,
-      agentId: "main",
+      workspaceDir: ALPHA_WORKSPACE_DIR,
+      agentId: "alpha",
     });
     expect(runBootOnce).toHaveBeenCalledWith({
       cfg,
@@ -140,14 +140,14 @@ describe("boot handler", () => {
   });
 
   it("runs boot for single default agent when no agents configured", async () => {
-    const cfg = setupSingleMainAgentBootConfig({});
+    const cfg = setupSingleAgentBootConfig({});
     runBootOnce.mockResolvedValue({ status: "skipped", reason: "not-configured" });
 
     await runBootChecklist(makeEvent({ context: { cfg } }));
 
     expect(runBootOnce).toHaveBeenCalledTimes(1);
     expect(runBootOnce).toHaveBeenCalledWith(
-      expect.objectContaining({ cfg, workspaceDir: MAIN_WORKSPACE_DIR, agentId: "main" }),
+      expect.objectContaining({ cfg, workspaceDir: ALPHA_WORKSPACE_DIR, agentId: "alpha" }),
     );
   });
 
@@ -168,14 +168,14 @@ describe("boot handler", () => {
   });
 
   it("logs debug details when a per-agent boot run is skipped", async () => {
-    const cfg = setupSingleMainAgentBootConfig({ agents: { list: [{ id: "main" }] } });
+    const cfg = setupSingleAgentBootConfig({ agents: { list: [{ id: "alpha" }] } });
     runBootOnce.mockResolvedValue({ status: "skipped", reason: "not-configured" });
 
     await runBootChecklist(makeEvent({ context: { cfg } }));
 
     expect(logDebug).toHaveBeenCalledWith("boot skipped for agent startup run", {
-      agentId: "main",
-      workspaceDir: MAIN_WORKSPACE_DIR,
+      agentId: "alpha",
+      workspaceDir: ALPHA_WORKSPACE_DIR,
       reason: "not-configured",
     });
   });

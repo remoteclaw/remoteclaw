@@ -15,7 +15,7 @@ describe("agents helpers", () => {
       agents: {
         defaults: {},
         list: [
-          { id: "main", workspace: "/main-ws" },
+          { id: "primary", workspace: "/primary-ws" },
           {
             id: "work",
 
@@ -31,19 +31,19 @@ describe("agents helpers", () => {
           agentId: "work",
           match: { channel: "whatsapp", accountId: "biz" },
         },
-        { agentId: "main", match: { channel: "telegram" } },
+        { agentId: "primary", match: { channel: "telegram" } },
       ],
     };
 
     const summaries = buildAgentSummaries(cfg);
-    const main = summaries.find((summary) => summary.id === "main");
+    const primary = summaries.find((summary) => summary.id === "primary");
     const work = summaries.find((summary) => summary.id === "work");
 
-    expect(main).toBeTruthy();
-    expect(main?.workspace).toBe(path.resolve("/main-ws"));
-    expect(main?.bindings).toBe(1);
-    expect((main as Record<string, unknown> | undefined)?.runtime).toBeUndefined();
-    expect(main?.agentDir.endsWith(path.join("agents", "main", "agent"))).toBe(true);
+    expect(primary).toBeTruthy();
+    expect(primary?.workspace).toBe(path.resolve("/primary-ws"));
+    expect(primary?.bindings).toBe(1);
+    expect((primary as Record<string, unknown> | undefined)?.runtime).toBeUndefined();
+    expect(primary?.agentDir.endsWith(path.join("agents", "primary", "agent"))).toBe(true);
 
     expect(work).toBeTruthy();
     expect(work?.name).toBe("Work");
@@ -74,10 +74,10 @@ describe("agents helpers", () => {
 
   it("applyAgentBindings skips duplicates and reports conflicts", () => {
     const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
+      agents: { list: [{ id: "primary", workspace: "/tmp/test-workspace" }] },
       bindings: [
         {
-          agentId: "main",
+          agentId: "primary",
           match: { channel: "whatsapp", accountId: "default" },
         },
       ],
@@ -85,7 +85,7 @@ describe("agents helpers", () => {
 
     const result = applyAgentBindings(cfg, [
       {
-        agentId: "main",
+        agentId: "primary",
         match: { channel: "whatsapp", accountId: "default" },
       },
       {
@@ -108,7 +108,7 @@ describe("agents helpers", () => {
     const cfg: RemoteClawConfig = {
       bindings: [
         {
-          agentId: "main",
+          agentId: "primary",
           match: { channel: "telegram" },
         },
       ],
@@ -116,7 +116,7 @@ describe("agents helpers", () => {
 
     const result = applyAgentBindings(cfg, [
       {
-        agentId: "main",
+        agentId: "primary",
         match: { channel: "telegram", accountId: "work" },
       },
     ]);
@@ -126,7 +126,7 @@ describe("agents helpers", () => {
     expect(result.conflicts).toHaveLength(0);
     expect(result.config.bindings).toEqual([
       {
-        agentId: "main",
+        agentId: "primary",
         match: { channel: "telegram", accountId: "work" },
       },
     ]);
@@ -136,7 +136,7 @@ describe("agents helpers", () => {
     const cfg: RemoteClawConfig = {
       bindings: [
         {
-          agentId: "main",
+          agentId: "primary",
           match: {
             channel: "discord",
             accountId: "guild-a",
@@ -167,7 +167,7 @@ describe("agents helpers", () => {
     const cfg: RemoteClawConfig = {
       bindings: [
         {
-          agentId: "main",
+          agentId: "primary",
           match: {
             channel: "discord",
             accountId: "guild-a",
@@ -176,7 +176,7 @@ describe("agents helpers", () => {
           },
         },
         {
-          agentId: "main",
+          agentId: "primary",
           match: {
             channel: "discord",
             accountId: "guild-a",
@@ -188,7 +188,7 @@ describe("agents helpers", () => {
 
     const result = removeAgentBindings(cfg, [
       {
-        agentId: "main",
+        agentId: "primary",
         match: {
           channel: "discord",
           accountId: "guild-a",
@@ -201,7 +201,7 @@ describe("agents helpers", () => {
     expect(result.conflicts).toHaveLength(0);
     expect(result.config.bindings).toEqual([
       {
-        agentId: "main",
+        agentId: "primary",
         match: {
           channel: "discord",
           accountId: "guild-a",

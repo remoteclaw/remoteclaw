@@ -100,7 +100,7 @@ describe("transformConfigContent", () => {
 describe("materializeWorkspaceDefaults", () => {
   it("sets workspace on default agent when missing", () => {
     const input = JSON.stringify({
-      agents: { list: [{ id: "main" }] },
+      agents: { list: [{ id: "test-agent" }] },
     });
     const result = JSON.parse(materializeWorkspaceDefaults(input));
     expect(result.agents.list[0].workspace).toBe("~/.remoteclaw/workspace");
@@ -109,7 +109,7 @@ describe("materializeWorkspaceDefaults", () => {
   it("sets workspace on non-default agent using id suffix", () => {
     const input = JSON.stringify({
       agents: {
-        list: [{ id: "main", workspace: "~/ws" }, { id: "helper" }],
+        list: [{ id: "test-agent", workspace: "~/ws" }, { id: "helper" }],
       },
     });
     const result = JSON.parse(materializeWorkspaceDefaults(input));
@@ -121,7 +121,7 @@ describe("materializeWorkspaceDefaults", () => {
     const input = JSON.stringify({
       agents: {
         defaults: { workspace: "~/custom-ws", model: "x" },
-        list: [{ id: "main" }, { id: "helper" }],
+        list: [{ id: "test-agent" }, { id: "helper" }],
       },
     });
     const result = JSON.parse(materializeWorkspaceDefaults(input));
@@ -133,7 +133,7 @@ describe("materializeWorkspaceDefaults", () => {
     const input = JSON.stringify({
       agents: {
         defaults: { workspace: "~/custom-ws", model: "x" },
-        list: [{ id: "main" }],
+        list: [{ id: "test-agent" }],
       },
     });
     const result = JSON.parse(materializeWorkspaceDefaults(input));
@@ -145,7 +145,7 @@ describe("materializeWorkspaceDefaults", () => {
     const input = JSON.stringify({
       agents: {
         defaults: { workspace: "~/custom-ws" },
-        list: [{ id: "main" }],
+        list: [{ id: "test-agent" }],
       },
     });
     const result = JSON.parse(materializeWorkspaceDefaults(input));
@@ -159,7 +159,7 @@ describe("materializeWorkspaceDefaults", () => {
     });
     const result = JSON.parse(materializeWorkspaceDefaults(input));
     expect(result.agents.list).toHaveLength(1);
-    expect(result.agents.list[0].id).toBe("main");
+    expect(result.agents.list[0].id).toBe("test-agent");
     expect(result.agents.list[0].workspace).toBe("~/.remoteclaw/workspace");
   });
 
@@ -168,7 +168,7 @@ describe("materializeWorkspaceDefaults", () => {
       plugins: { entries: {} },
     });
     const result = JSON.parse(materializeWorkspaceDefaults(input));
-    expect(result.agents.list[0].id).toBe("main");
+    expect(result.agents.list[0].id).toBe("test-agent");
     expect(result.agents.list[0].workspace).toBe("~/.remoteclaw/workspace");
   });
 
@@ -183,7 +183,7 @@ describe("materializeWorkspaceDefaults", () => {
   it("preserves existing workspace values", () => {
     const input = JSON.stringify({
       agents: {
-        list: [{ id: "main", workspace: "~/my-workspace" }],
+        list: [{ id: "test-agent", workspace: "~/my-workspace" }],
       },
     });
     const output = materializeWorkspaceDefaults(input);
@@ -206,7 +206,7 @@ describe("materializeWorkspaceDefaults", () => {
 
   it("strips deprecated default field from agent entries", () => {
     const input = JSON.stringify({
-      agents: { list: [{ id: "main", default: true }] },
+      agents: { list: [{ id: "test-agent", default: true }] },
     });
     const result = JSON.parse(materializeWorkspaceDefaults(input));
     expect(result.agents.list[0].default).toBeUndefined();
@@ -255,7 +255,7 @@ describe("stripUnrecognizedConfigKeys", () => {
       gateway: { port: 18789 },
       agents: {
         defaults: { workspace: "~/ws", timeoutSeconds: 60 },
-        list: [{ id: "main" }],
+        list: [{ id: "test-agent" }],
       },
     });
     expect(stripUnrecognizedConfigKeys(input)).toBe(input);
@@ -379,7 +379,7 @@ describe("discoverSourceAuthProfileIds", () => {
   });
 
   it("discovers profiles from modern auth-profiles.json", async () => {
-    const agentDir = path.join(tmpDir, "agents", "main", "agent");
+    const agentDir = path.join(tmpDir, "agents", "test-agent", "agent");
     await fsp.mkdir(agentDir, { recursive: true });
     await fsp.writeFile(
       path.join(agentDir, "auth-profiles.json"),
@@ -399,7 +399,7 @@ describe("discoverSourceAuthProfileIds", () => {
   });
 
   it("discovers profiles from legacy auth.json", async () => {
-    const agentDir = path.join(tmpDir, "agents", "main", "agent");
+    const agentDir = path.join(tmpDir, "agents", "test-agent", "agent");
     await fsp.mkdir(agentDir, { recursive: true });
     await fsp.writeFile(
       path.join(agentDir, "auth.json"),
@@ -420,7 +420,7 @@ describe("discoverSourceAuthProfileIds", () => {
   });
 
   it("returns empty array for malformed auth files", async () => {
-    const agentDir = path.join(tmpDir, "agents", "main", "agent");
+    const agentDir = path.join(tmpDir, "agents", "test-agent", "agent");
     await fsp.mkdir(agentDir, { recursive: true });
     await fsp.writeFile(path.join(agentDir, "auth-profiles.json"), "not valid json {{{");
 
@@ -428,7 +428,7 @@ describe("discoverSourceAuthProfileIds", () => {
   });
 
   it("deduplicates profile IDs across multiple auth files", async () => {
-    const agent1 = path.join(tmpDir, "agents", "main", "agent");
+    const agent1 = path.join(tmpDir, "agents", "test-agent", "agent");
     const agent2 = path.join(tmpDir, "agents", "helper", "agent");
     await fsp.mkdir(agent1, { recursive: true });
     await fsp.mkdir(agent2, { recursive: true });
@@ -445,7 +445,7 @@ describe("discoverSourceAuthProfileIds", () => {
   });
 
   it("skips legacy auth.json that has profiles key (modern format)", async () => {
-    const agentDir = path.join(tmpDir, "agents", "main", "agent");
+    const agentDir = path.join(tmpDir, "agents", "test-agent", "agent");
     await fsp.mkdir(agentDir, { recursive: true });
     // A file named auth.json but with modern format should not produce legacy-style IDs
     await fsp.writeFile(
@@ -474,7 +474,7 @@ describe("discoverSourceAuthProfiles", () => {
   });
 
   it("returns full profile credentials from modern auth-profiles.json", async () => {
-    const agentDir = path.join(tmpDir, "agents", "main", "agent");
+    const agentDir = path.join(tmpDir, "agents", "test-agent", "agent");
     await fsp.mkdir(agentDir, { recursive: true });
     await fsp.writeFile(
       path.join(agentDir, "auth-profiles.json"),
@@ -494,7 +494,7 @@ describe("discoverSourceAuthProfiles", () => {
   });
 
   it("returns full profile credentials from legacy auth.json", async () => {
-    const agentDir = path.join(tmpDir, "agents", "main", "agent");
+    const agentDir = path.join(tmpDir, "agents", "test-agent", "agent");
     await fsp.mkdir(agentDir, { recursive: true });
     await fsp.writeFile(
       path.join(agentDir, "auth.json"),
@@ -510,7 +510,7 @@ describe("discoverSourceAuthProfiles", () => {
   });
 
   it("returns profiles from multiple agent directories", async () => {
-    const agent1 = path.join(tmpDir, "agents", "main", "agent");
+    const agent1 = path.join(tmpDir, "agents", "test-agent", "agent");
     const agent2 = path.join(tmpDir, "agents", "helper", "agent");
     await fsp.mkdir(agent1, { recursive: true });
     await fsp.mkdir(agent2, { recursive: true });
@@ -615,7 +615,7 @@ describe("consolidateAuthProfiles", () => {
         {
           id: "anthropic:default",
           credential: { type: "api_key", provider: "anthropic", key: "key-first" },
-          sourceFile: path.join(sourceDir, "agents", "main", "agent", "auth-profiles.json"),
+          sourceFile: path.join(sourceDir, "agents", "test-agent", "agent", "auth-profiles.json"),
         },
         {
           id: "anthropic:default",
@@ -663,7 +663,7 @@ describe("consolidateAuthProfiles", () => {
         {
           id: "anthropic:default",
           credential: { type: "api_key", provider: "anthropic", key: "same-key" },
-          sourceFile: path.join(sourceDir, "agents", "main", "agent", "auth-profiles.json"),
+          sourceFile: path.join(sourceDir, "agents", "test-agent", "agent", "auth-profiles.json"),
         },
         {
           id: "anthropic:default",
@@ -741,7 +741,7 @@ describe("materializeAuthDefaults", () => {
     const input = JSON.stringify({
       agents: {
         defaults: { runtime: "claude" },
-        list: [{ id: "main", workspace: "~/ws" }],
+        list: [{ id: "test-agent", workspace: "~/ws" }],
       },
     });
     const result = JSON.parse(materializeAuthDefaults(input, ["anthropic:default"]));
@@ -752,7 +752,7 @@ describe("materializeAuthDefaults", () => {
     const input = JSON.stringify({
       agents: {
         defaults: { runtime: "gemini" },
-        list: [{ id: "main", workspace: "~/ws" }],
+        list: [{ id: "test-agent", workspace: "~/ws" }],
       },
     });
     const result = JSON.parse(materializeAuthDefaults(input, ["google:my-key"]));
@@ -763,7 +763,7 @@ describe("materializeAuthDefaults", () => {
     const input = JSON.stringify({
       agents: {
         defaults: { runtime: "codex" },
-        list: [{ id: "main", workspace: "~/ws" }],
+        list: [{ id: "test-agent", workspace: "~/ws" }],
       },
     });
     const result = JSON.parse(materializeAuthDefaults(input, ["openai-codex:default"]));
@@ -774,7 +774,7 @@ describe("materializeAuthDefaults", () => {
     const input = JSON.stringify({
       agents: {
         defaults: { runtime: "opencode" },
-        list: [{ id: "main", workspace: "~/ws" }],
+        list: [{ id: "test-agent", workspace: "~/ws" }],
       },
     });
     const result = JSON.parse(materializeAuthDefaults(input, ["anthropic:default"]));
@@ -785,7 +785,7 @@ describe("materializeAuthDefaults", () => {
     const input = JSON.stringify({
       agents: {
         defaults: { runtime: "claude" },
-        list: [{ id: "main", workspace: "~/ws" }],
+        list: [{ id: "test-agent", workspace: "~/ws" }],
       },
     });
     const result = JSON.parse(
@@ -798,7 +798,7 @@ describe("materializeAuthDefaults", () => {
     const input = JSON.stringify({
       agents: {
         defaults: { workspace: "~/ws" },
-        list: [{ id: "main", workspace: "~/ws" }],
+        list: [{ id: "test-agent", workspace: "~/ws" }],
       },
     });
     const output = materializeAuthDefaults(input, ["anthropic:default"]);
@@ -809,7 +809,7 @@ describe("materializeAuthDefaults", () => {
     const input = JSON.stringify({
       agents: {
         defaults: { runtime: "claude", auth: "existing:profile" },
-        list: [{ id: "main", workspace: "~/ws" }],
+        list: [{ id: "test-agent", workspace: "~/ws" }],
       },
     });
     const output = materializeAuthDefaults(input, ["anthropic:default"]);
@@ -820,7 +820,7 @@ describe("materializeAuthDefaults", () => {
     const input = JSON.stringify({
       agents: {
         defaults: { runtime: "claude", auth: false },
-        list: [{ id: "main", workspace: "~/ws" }],
+        list: [{ id: "test-agent", workspace: "~/ws" }],
       },
     });
     const output = materializeAuthDefaults(input, ["anthropic:default"]);
@@ -831,7 +831,7 @@ describe("materializeAuthDefaults", () => {
     const input = JSON.stringify({
       agents: {
         defaults: { runtime: "claude" },
-        list: [{ id: "main", workspace: "~/ws" }],
+        list: [{ id: "test-agent", workspace: "~/ws" }],
       },
     });
     const output = materializeAuthDefaults(input, ["google:key"]);
@@ -842,7 +842,7 @@ describe("materializeAuthDefaults", () => {
     const input = JSON.stringify({
       agents: {
         defaults: { runtime: "claude" },
-        list: [{ id: "main", workspace: "~/ws" }],
+        list: [{ id: "test-agent", workspace: "~/ws" }],
       },
     });
     const output = materializeAuthDefaults(input, []);
@@ -864,7 +864,7 @@ describe("materializeAuthDefaults", () => {
     const input = JSON.stringify({
       agents: {
         defaults: { runtime: "claude" },
-        list: [{ id: "main", workspace: "~/ws" }],
+        list: [{ id: "test-agent", workspace: "~/ws" }],
       },
     });
     const result = JSON.parse(materializeAuthDefaults(input, ["claude:custom-profile"]));
@@ -924,8 +924,8 @@ describe("discoverImportableFiles", () => {
   });
 
   it("discovers files matching glob patterns", async () => {
-    await fsp.mkdir(path.join(tmpDir, "agents", "main", "sessions"), { recursive: true });
-    await fsp.writeFile(path.join(tmpDir, "agents", "main", "sessions", "data.bin"), "bin");
+    await fsp.mkdir(path.join(tmpDir, "agents", "test-agent", "sessions"), { recursive: true });
+    await fsp.writeFile(path.join(tmpDir, "agents", "test-agent", "sessions", "data.bin"), "bin");
     await fsp.writeFile(path.join(tmpDir, ".env"), "KEY=value");
     await fsp.writeFile(path.join(tmpDir, "openclaw.json"), "{}");
 
@@ -933,26 +933,26 @@ describe("discoverImportableFiles", () => {
 
     expect(files).toContain(".env");
     expect(files).toContain("openclaw.json");
-    expect(files).toContain(path.join("agents", "main", "sessions", "data.bin"));
+    expect(files).toContain(path.join("agents", "test-agent", "sessions", "data.bin"));
   });
 
   it("excludes agent working directories (only sessions are imported)", async () => {
-    await fsp.mkdir(path.join(tmpDir, "agents", "main", "agent"), { recursive: true });
-    await fsp.mkdir(path.join(tmpDir, "agents", "main", "sessions"), { recursive: true });
+    await fsp.mkdir(path.join(tmpDir, "agents", "test-agent", "agent"), { recursive: true });
+    await fsp.mkdir(path.join(tmpDir, "agents", "test-agent", "sessions"), { recursive: true });
     await fsp.writeFile(
-      path.join(tmpDir, "agents", "main", "agent", "auth-profiles.json"),
+      path.join(tmpDir, "agents", "test-agent", "agent", "auth-profiles.json"),
       '{"profiles":{}}',
     );
-    await fsp.writeFile(path.join(tmpDir, "agents", "main", "agent", "auth.json"), "{}");
-    await fsp.writeFile(path.join(tmpDir, "agents", "main", "agent", "data.bin"), "bin");
-    await fsp.writeFile(path.join(tmpDir, "agents", "main", "sessions", "log.json"), "{}");
+    await fsp.writeFile(path.join(tmpDir, "agents", "test-agent", "agent", "auth.json"), "{}");
+    await fsp.writeFile(path.join(tmpDir, "agents", "test-agent", "agent", "data.bin"), "bin");
+    await fsp.writeFile(path.join(tmpDir, "agents", "test-agent", "sessions", "log.json"), "{}");
 
     const files = await discoverImportableFiles(tmpDir);
 
-    expect(files).toContain(path.join("agents", "main", "sessions", "log.json"));
-    expect(files).not.toContain(path.join("agents", "main", "agent", "auth-profiles.json"));
-    expect(files).not.toContain(path.join("agents", "main", "agent", "auth.json"));
-    expect(files).not.toContain(path.join("agents", "main", "agent", "data.bin"));
+    expect(files).toContain(path.join("agents", "test-agent", "sessions", "log.json"));
+    expect(files).not.toContain(path.join("agents", "test-agent", "agent", "auth-profiles.json"));
+    expect(files).not.toContain(path.join("agents", "test-agent", "agent", "auth.json"));
+    expect(files).not.toContain(path.join("agents", "test-agent", "agent", "data.bin"));
   });
 
   it("excludes files outside importable patterns", async () => {
@@ -978,13 +978,13 @@ describe("discoverImportableFiles", () => {
   });
 
   it("does not include directories as entries", async () => {
-    await fsp.mkdir(path.join(tmpDir, "agents", "main", "sessions"), { recursive: true });
-    await fsp.writeFile(path.join(tmpDir, "agents", "main", "sessions", "data.txt"), "data");
+    await fsp.mkdir(path.join(tmpDir, "agents", "test-agent", "sessions"), { recursive: true });
+    await fsp.writeFile(path.join(tmpDir, "agents", "test-agent", "sessions", "data.txt"), "data");
 
     const files = await discoverImportableFiles(tmpDir);
 
     // Should contain the file but not the intermediate directory
-    expect(files).toContain(path.join("agents", "main", "sessions", "data.txt"));
+    expect(files).toContain(path.join("agents", "test-agent", "sessions", "data.txt"));
     for (const f of files) {
       const stat = await fsp.stat(path.join(tmpDir, f));
       expect(stat.isFile()).toBe(true);
@@ -1123,12 +1123,15 @@ describe("importCommand", () => {
   });
 
   it("copies files matching glob patterns within allowed directories", async () => {
-    await fsp.mkdir(path.join(sourceDir, "agents", "main", "sessions"), { recursive: true });
+    await fsp.mkdir(path.join(sourceDir, "agents", "test-agent", "sessions"), { recursive: true });
     await fsp.writeFile(
-      path.join(sourceDir, "agents", "main", "sessions", "custom-data.bin"),
+      path.join(sourceDir, "agents", "test-agent", "sessions", "custom-data.bin"),
       "bin",
     );
-    await fsp.writeFile(path.join(sourceDir, "agents", "main", "sessions", "notes.txt"), "notes");
+    await fsp.writeFile(
+      path.join(sourceDir, "agents", "test-agent", "sessions", "notes.txt"),
+      "notes",
+    );
 
     const pathsMod = await import("../config/paths.js");
     vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
@@ -1137,11 +1140,11 @@ describe("importCommand", () => {
 
     expect(result.copiedFiles).toHaveLength(2);
     expect(
-      fs.existsSync(path.join(targetDir, "agents", "main", "sessions", "custom-data.bin")),
+      fs.existsSync(path.join(targetDir, "agents", "test-agent", "sessions", "custom-data.bin")),
     ).toBe(true);
-    expect(fs.existsSync(path.join(targetDir, "agents", "main", "sessions", "notes.txt"))).toBe(
-      true,
-    );
+    expect(
+      fs.existsSync(path.join(targetDir, "agents", "test-agent", "sessions", "notes.txt")),
+    ).toBe(true);
   });
 
   it("imports workspace-{agentId} directories", async () => {
@@ -1299,7 +1302,7 @@ describe("importCommand", () => {
     const configContent = JSON.stringify({
       gateway: { port: 18789 },
       channels: { whatsapp: {} },
-      agents: { list: [{ id: "main" }] },
+      agents: { list: [{ id: "test-agent" }] },
     });
     await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
 
@@ -1318,13 +1321,13 @@ describe("importCommand", () => {
     const configContent = JSON.stringify({
       agents: {
         defaults: { runtime: "claude" },
-        list: [{ id: "main", workspace: "~/ws" }],
+        list: [{ id: "test-agent", workspace: "~/ws" }],
       },
     });
     await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
 
     // Create auth profiles in the source
-    const agentDir = path.join(sourceDir, "agents", "main", "agent");
+    const agentDir = path.join(sourceDir, "agents", "test-agent", "agent");
     await fsp.mkdir(agentDir, { recursive: true });
     await fsp.writeFile(
       path.join(agentDir, "auth-profiles.json"),
@@ -1349,7 +1352,7 @@ describe("importCommand", () => {
   it("clears wizard section from main config during import", async () => {
     const configContent = JSON.stringify({
       gateway: { port: 18789 },
-      agents: { list: [{ id: "main", workspace: "~/ws" }] },
+      agents: { list: [{ id: "test-agent", workspace: "~/ws" }] },
       wizard: {
         lastRunAt: "2025-01-01T00:00:00Z",
         lastRunVersion: "2026.2.6-3",
@@ -1375,7 +1378,7 @@ describe("importCommand", () => {
     const configContent = JSON.stringify({
       agents: {
         defaults: { runtime: "claude" },
-        list: [{ id: "main", workspace: "~/ws" }],
+        list: [{ id: "test-agent", workspace: "~/ws" }],
       },
     });
     await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
@@ -1393,12 +1396,12 @@ describe("importCommand", () => {
   it("does not set auth when no runtime is configured", async () => {
     const configContent = JSON.stringify({
       agents: {
-        list: [{ id: "main", workspace: "~/ws" }],
+        list: [{ id: "test-agent", workspace: "~/ws" }],
       },
     });
     await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
 
-    const agentDir = path.join(sourceDir, "agents", "main", "agent");
+    const agentDir = path.join(sourceDir, "agents", "test-agent", "agent");
     await fsp.mkdir(agentDir, { recursive: true });
     await fsp.writeFile(
       path.join(agentDir, "auth-profiles.json"),
@@ -1443,7 +1446,7 @@ describe("importCommand", () => {
     const configContent = JSON.stringify({
       $schema: "https://openclaw.org/config.json",
       gateway: { port: 18789 },
-      agents: { list: [{ id: "main", workspace: "~/ws" }] },
+      agents: { list: [{ id: "test-agent", workspace: "~/ws" }] },
     });
     await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
 
@@ -1462,13 +1465,13 @@ describe("importCommand", () => {
     const configContent = JSON.stringify({
       agents: {
         defaults: { runtime: "claude" },
-        list: [{ id: "main", workspace: "~/ws" }],
+        list: [{ id: "test-agent", workspace: "~/ws" }],
       },
     });
     await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
 
     // Create auth profiles in two agent directories
-    const agent1 = path.join(sourceDir, "agents", "main", "agent");
+    const agent1 = path.join(sourceDir, "agents", "test-agent", "agent");
     const agent2 = path.join(sourceDir, "agents", "helper", "agent");
     await fsp.mkdir(agent1, { recursive: true });
     await fsp.mkdir(agent2, { recursive: true });
@@ -1507,7 +1510,7 @@ describe("importCommand", () => {
 
     // Per-agent auth-profiles.json should NOT be copied
     expect(
-      fs.existsSync(path.join(targetDir, "agents", "main", "agent", "auth-profiles.json")),
+      fs.existsSync(path.join(targetDir, "agents", "test-agent", "agent", "auth-profiles.json")),
     ).toBe(false);
     expect(
       fs.existsSync(path.join(targetDir, "agents", "helper", "agent", "auth-profiles.json")),
@@ -1521,13 +1524,13 @@ describe("importCommand", () => {
     const configContent = JSON.stringify({
       agents: {
         defaults: { runtime: "claude" },
-        list: [{ id: "main", workspace: "~/ws" }],
+        list: [{ id: "test-agent", workspace: "~/ws" }],
       },
     });
     await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
 
     // Same profile ID in two agents with different keys
-    const agent1 = path.join(sourceDir, "agents", "main", "agent");
+    const agent1 = path.join(sourceDir, "agents", "test-agent", "agent");
     const agent2 = path.join(sourceDir, "agents", "helper", "agent");
     await fsp.mkdir(agent1, { recursive: true });
     await fsp.mkdir(agent2, { recursive: true });

@@ -10,7 +10,7 @@ describe("telegram topic agentId schema", () => {
             "-1001234567890": {
               topics: {
                 "42": {
-                  agentId: "main",
+                  agentId: "test-agent",
                 },
               },
             },
@@ -25,7 +25,7 @@ describe("telegram topic agentId schema", () => {
       return;
     }
     expect(res.data.channels?.telegram?.groups?.["-1001234567890"]?.topics?.["42"]?.agentId).toBe(
-      "main",
+      "test-agent",
     );
   });
 
@@ -91,7 +91,7 @@ describe("telegram topic agentId schema", () => {
           groups: {
             "-1001234567890": {
               topics: {
-                "1": { agentId: "main" },
+                "1": { agentId: "test-agent" },
                 "3": { agentId: "zu" },
                 "5": { agentId: "q" },
               },
@@ -107,7 +107,7 @@ describe("telegram topic agentId schema", () => {
       return;
     }
     const topics = res.data.channels?.telegram?.groups?.["-1001234567890"]?.topics;
-    expect(topics?.["1"]?.agentId).toBe("main");
+    expect(topics?.["1"]?.agentId).toBe("test-agent");
     expect(topics?.["3"]?.agentId).toBe("zu");
     expect(topics?.["5"]?.agentId).toBe("q");
   });
@@ -120,7 +120,7 @@ describe("telegram topic agentId schema", () => {
             "-1001234567890": {
               topics: {
                 "42": {
-                  agentId: "main",
+                  agentId: "test-agent",
                   unknownField: "should fail",
                 },
               },

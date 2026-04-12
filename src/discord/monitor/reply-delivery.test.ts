@@ -44,8 +44,8 @@ describe("deliverDiscordReply", () => {
       threadId: "thread-1",
       channelId: "parent-1",
       targetKind: "subagent",
-      targetSessionKey: "agent:main:subagent:child",
-      agentId: "main",
+      targetSessionKey: "agent:test-agent:subagent:child",
+      agentId: "test-agent",
       webhookId: "wh_1",
       webhookToken: "tok_1",
       introText: "",
@@ -365,7 +365,7 @@ describe("deliverDiscordReply", () => {
       runtime,
       textLimit: 2000,
       replyToId: "reply-1",
-      sessionKey: "agent:main:subagent:child",
+      sessionKey: "agent:test-agent:subagent:child",
       threadBindings,
     });
 
@@ -396,7 +396,7 @@ describe("deliverDiscordReply", () => {
         token: "token",
         runtime,
         textLimit: 2000,
-        sessionKey: "agent:main:subagent:child",
+        sessionKey: "agent:test-agent:subagent:child",
         threadBindings,
       });
 
@@ -419,7 +419,7 @@ describe("deliverDiscordReply", () => {
       accountId: "default",
       runtime,
       textLimit: 2000,
-      sessionKey: "agent:main:subagent:child",
+      sessionKey: "agent:test-agent:subagent:child",
       threadBindings,
     });
 
@@ -442,7 +442,7 @@ describe("deliverDiscordReply", () => {
       accountId: "default",
       runtime,
       textLimit: 2000,
-      sessionKey: "agent:main:subagent:child",
+      sessionKey: "agent:test-agent:subagent:child",
       threadBindings,
     });
 

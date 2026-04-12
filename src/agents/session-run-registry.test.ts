@@ -23,7 +23,7 @@ describe("session-run-registry", () => {
     registerSessionRun("session-1", {
       startedAt: Date.now(),
       sessionKey: "session-1",
-      agentId: "main",
+      agentId: "test-agent",
     });
     expect(isSessionRunActive("session-1")).toBe(true);
   });
@@ -32,7 +32,7 @@ describe("session-run-registry", () => {
     registerSessionRun("session-1", {
       startedAt: Date.now(),
       sessionKey: "session-1",
-      agentId: "main",
+      agentId: "test-agent",
     });
     unregisterSessionRun("session-1");
     expect(isSessionRunActive("session-1")).toBe(false);
@@ -44,7 +44,7 @@ describe("session-run-registry", () => {
     registerSessionRun("session-a", {
       startedAt: Date.now(),
       sessionKey: "session-a",
-      agentId: "main",
+      agentId: "test-agent",
     });
     expect(getActiveSessionRunCount()).toBe(1);
 
@@ -72,7 +72,7 @@ describe("session-run-registry", () => {
     registerSessionRun(sessionKey, {
       startedAt: Date.now(),
       sessionKey,
-      agentId: "main",
+      agentId: "test-agent",
     });
     expect(isSessionRunActive(sessionKey)).toBe(true);
 
@@ -110,12 +110,12 @@ describe("session-run-registry", () => {
       registerSessionRun("session-1", {
         startedAt: 1000,
         sessionKey: "session-1",
-        agentId: "main",
+        agentId: "test-agent",
       });
       const handle = getSessionRunHandle("session-1");
       expect(handle).toBeDefined();
       expect(handle!.startedAt).toBe(1000);
-      expect(handle!.agentId).toBe("main");
+      expect(handle!.agentId).toBe("test-agent");
     });
   });
 
@@ -129,7 +129,7 @@ describe("session-run-registry", () => {
       registerSessionRun("session-1", {
         startedAt: Date.now(),
         sessionKey: "session-1",
-        agentId: "main",
+        agentId: "test-agent",
         abortController: ctrl,
       });
       expect(ctrl.signal.aborted).toBe(false);
@@ -143,7 +143,7 @@ describe("session-run-registry", () => {
       registerSessionRun("session-1", {
         startedAt: Date.now(),
         sessionKey: "session-1",
-        agentId: "main",
+        agentId: "test-agent",
         abortController: ctrl,
       });
       expect(killSessionRun("session-1")).toBe(false);
@@ -160,7 +160,7 @@ describe("session-run-registry", () => {
       registerSessionRun("session-1", {
         startedAt: Date.now(),
         sessionKey: "session-1",
-        agentId: "main",
+        agentId: "test-agent",
       });
       setTimeout(() => unregisterSessionRun("session-1"), 30);
       const result = await waitForSessionRunEnd("session-1", 500);
@@ -171,7 +171,7 @@ describe("session-run-registry", () => {
       registerSessionRun("session-1", {
         startedAt: Date.now(),
         sessionKey: "session-1",
-        agentId: "main",
+        agentId: "test-agent",
       });
       const result = await waitForSessionRunEnd("session-1", 80);
       expect(result).toBe(false);

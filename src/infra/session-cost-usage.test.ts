@@ -18,7 +18,7 @@ describe("session cost usage", () => {
 
   it("aggregates daily totals with log cost and pricing fallback", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-cost-"));
-    const sessionsDir = path.join(root, "agents", "main", "sessions");
+    const sessionsDir = path.join(root, "agents", "test-agent", "sessions");
     await fs.mkdir(sessionsDir, { recursive: true });
     const sessionFile = path.join(sessionsDir, "sess-1.jsonl");
 
@@ -85,7 +85,7 @@ describe("session cost usage", () => {
     const config = {} as unknown as RemoteClawConfig;
 
     await withStateDir(root, async () => {
-      const summary = await loadCostUsageSummary({ days: 30, config, agentId: "main" });
+      const summary = await loadCostUsageSummary({ days: 30, config, agentId: "test-agent" });
       expect(summary.daily.length).toBe(1);
       expect(summary.totals.totalTokens).toBe(50);
       // Only explicit cost.total from log entries counts; pricing fallback no longer works
@@ -197,7 +197,7 @@ describe("session cost usage", () => {
 
   it("does not exclude sessions with mtime after endMs during discovery", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-discover-"));
-    const sessionsDir = path.join(root, "agents", "main", "sessions");
+    const sessionsDir = path.join(root, "agents", "test-agent", "sessions");
     await fs.mkdir(sessionsDir, { recursive: true });
     const sessionFile = path.join(sessionsDir, "sess-late.jsonl");
     await fs.writeFile(sessionFile, "", "utf-8");
@@ -207,7 +207,7 @@ describe("session cost usage", () => {
 
     await withStateDir(root, async () => {
       const sessions = await discoverAllSessions({
-        agentId: "main",
+        agentId: "test-agent",
         startMs: now - 7 * 24 * 60 * 60 * 1000,
         endMs: now - 24 * 60 * 60 * 1000,
       });
@@ -335,7 +335,7 @@ describe("session cost usage", () => {
 
   it("strips inbound and untrusted metadata blocks from session usage logs", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-logs-sanitize-"));
-    const sessionsDir = path.join(root, "agents", "main", "sessions");
+    const sessionsDir = path.join(root, "agents", "test-agent", "sessions");
     await fs.mkdir(sessionsDir, { recursive: true });
     const sessionFile = path.join(sessionsDir, "sess-sanitize.jsonl");
 
@@ -377,7 +377,7 @@ example
 
   it("preserves totals and cumulative values when downsampling timeseries", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-timeseries-downsample-"));
-    const sessionsDir = path.join(root, "agents", "main", "sessions");
+    const sessionsDir = path.join(root, "agents", "test-agent", "sessions");
     await fs.mkdir(sessionsDir, { recursive: true });
     const sessionFile = path.join(sessionsDir, "sess-downsample.jsonl");
 

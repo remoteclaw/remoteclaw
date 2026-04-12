@@ -23,20 +23,20 @@ describe("resolveSessionStoreTargets", () => {
   });
 
   it("resolves the default agent store when no selector is provided", () => {
-    resolveSoleAgentIdMock.mockReturnValue("main");
-    resolveStorePathMock.mockReturnValue("/tmp/main-sessions.json");
+    resolveSoleAgentIdMock.mockReturnValue("alpha");
+    resolveStorePathMock.mockReturnValue("/tmp/alpha-sessions.json");
 
     const targets = resolveSessionStoreTargets({}, {});
 
-    expect(targets).toEqual([{ agentId: "main", storePath: "/tmp/main-sessions.json" }]);
-    expect(resolveStorePathMock).toHaveBeenCalledWith(undefined, { agentId: "main" });
+    expect(targets).toEqual([{ agentId: "alpha", storePath: "/tmp/alpha-sessions.json" }]);
+    expect(resolveStorePathMock).toHaveBeenCalledWith(undefined, { agentId: "alpha" });
   });
 
   it("resolves all configured agent stores", () => {
-    listAgentIdsMock.mockReturnValue(["main", "work"]);
+    listAgentIdsMock.mockReturnValue(["alpha", "beta"]);
     resolveStorePathMock
-      .mockReturnValueOnce("/tmp/main-sessions.json")
-      .mockReturnValueOnce("/tmp/work-sessions.json");
+      .mockReturnValueOnce("/tmp/alpha-sessions.json")
+      .mockReturnValueOnce("/tmp/beta-sessions.json");
 
     const targets = resolveSessionStoreTargets(
       {
@@ -46,13 +46,13 @@ describe("resolveSessionStoreTargets", () => {
     );
 
     expect(targets).toEqual([
-      { agentId: "main", storePath: "/tmp/main-sessions.json" },
-      { agentId: "work", storePath: "/tmp/work-sessions.json" },
+      { agentId: "alpha", storePath: "/tmp/alpha-sessions.json" },
+      { agentId: "beta", storePath: "/tmp/beta-sessions.json" },
     ]);
   });
 
   it("dedupes shared store paths for --all-agents", () => {
-    listAgentIdsMock.mockReturnValue(["main", "work"]);
+    listAgentIdsMock.mockReturnValue(["alpha", "beta"]);
     resolveStorePathMock.mockReturnValue("/tmp/shared-sessions.json");
 
     const targets = resolveSessionStoreTargets(
@@ -62,17 +62,17 @@ describe("resolveSessionStoreTargets", () => {
       { allAgents: true },
     );
 
-    expect(targets).toEqual([{ agentId: "main", storePath: "/tmp/shared-sessions.json" }]);
+    expect(targets).toEqual([{ agentId: "alpha", storePath: "/tmp/shared-sessions.json" }]);
     expect(resolveStorePathMock).toHaveBeenCalledTimes(2);
   });
 
   it("rejects unknown agent ids", () => {
-    listAgentIdsMock.mockReturnValue(["main", "work"]);
+    listAgentIdsMock.mockReturnValue(["alpha", "beta"]);
     expect(() => resolveSessionStoreTargets({}, { agent: "ghost" })).toThrow(/Unknown agent id/);
   });
 
   it("rejects conflicting selectors", () => {
-    expect(() => resolveSessionStoreTargets({}, { agent: "main", allAgents: true })).toThrow(
+    expect(() => resolveSessionStoreTargets({}, { agent: "alpha", allAgents: true })).toThrow(
       /cannot be used together/i,
     );
     expect(() =>

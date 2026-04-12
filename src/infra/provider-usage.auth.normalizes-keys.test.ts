@@ -68,10 +68,10 @@ describe("resolveProviderAuths key normalization", () => {
   }
 
   async function writeAuthProfiles(home: string, profiles: Record<string, unknown>) {
-    const agentDir = path.join(home, ".remoteclaw", "agents", "main", "agent");
-    await fs.mkdir(agentDir, { recursive: true });
+    const authDir = path.join(home, ".remoteclaw", "agents", "main", "agent");
+    await fs.mkdir(authDir, { recursive: true });
     await fs.writeFile(
-      path.join(agentDir, "auth-profiles.json"),
+      path.join(authDir, "auth-profiles.json"),
       `${JSON.stringify({ version: 1, profiles }, null, 2)}\n`,
       "utf8",
     );
@@ -88,9 +88,9 @@ describe("resolveProviderAuths key normalization", () => {
   }
 
   async function writeProfileOrder(home: string, provider: string, profileIds: string[]) {
-    const agentDir = path.join(home, ".remoteclaw", "agents", "main", "agent");
+    const authDir = path.join(home, ".remoteclaw", "agents", "main", "agent");
     const parsed = JSON.parse(
-      await fs.readFile(path.join(agentDir, "auth-profiles.json"), "utf8"),
+      await fs.readFile(path.join(authDir, "auth-profiles.json"), "utf8"),
     ) as Record<string, unknown>;
     const order = (parsed.order && typeof parsed.order === "object" ? parsed.order : {}) as Record<
       string,
@@ -99,7 +99,7 @@ describe("resolveProviderAuths key normalization", () => {
     order[provider] = profileIds;
     parsed.order = order;
     await fs.writeFile(
-      path.join(agentDir, "auth-profiles.json"),
+      path.join(authDir, "auth-profiles.json"),
       `${JSON.stringify(parsed, null, 2)}\n`,
     );
   }

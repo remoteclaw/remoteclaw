@@ -61,6 +61,31 @@ export type LegacyStateDetection = {
     hasLegacyTelegram: boolean;
     copyPlans: FileCopyPlan[];
   };
+  /**
+   * Orphaned `agent:main:*` session keys discovered in the sessions store(s).
+   *
+   * Early adopters who ran pre-v0.1.0 RemoteClaw with the implicit "main"
+   * agent have persisted session keys like `agent:main:telegram:direct:123`.
+   * After default-agent elimination (#2308-#2311) "main" has no special
+   * runtime status; these keys become orphaned when the user's real agent is
+   * named differently.
+   *
+   * The scenario field classifies how {@link migrateOrphanedMainSessionKeys}
+   * will handle them:
+   * - `A`: exactly one configured agent with id ≠ "main" → auto-rewrite to
+   *   `agent:{soleAgentId}:*` with newer-wins collision handling.
+   * - `B`: exactly one configured agent with id = "main" → no-op (keys still
+   *   valid); brief info log only.
+   * - `C`: multiple configured agents (or zero) → no auto-rewrite, WARN log
+   *   with manual-resolution instructions; orphan keys left in place.
+   * - `none`: no orphaned keys found.
+   */
+  orphanedMainKeys: {
+    keys: string[];
+    scenario: "A" | "B" | "C" | "none";
+    soleAgentId: string | null;
+    configuredAgentIds: string[];
+  };
   preview: string[];
 };
 
@@ -332,6 +357,61 @@ function listLegacySessionKeys(params: {
     }
   }
   return legacy;
+}
+
+const AGENT_MAIN_KEY_PREFIX = "agent:main:";
+
+function isOrphanedMainKey(key: string): boolean {
+  return key.toLowerCase().startsWith(AGENT_MAIN_KEY_PREFIX);
+}
+
+function rewriteOrphanedMainKey(key: string, newAgentId: string): string {
+  const lower = key.toLowerCase();
+  if (!lower.startsWith(AGENT_MAIN_KEY_PREFIX)) {
+    return key;
+  }
+  const rest = key.slice(AGENT_MAIN_KEY_PREFIX.length);
+  return `agent:${newAgentId}:${rest}`.toLowerCase();
+}
+
+function detectOrphanedMainKeys(params: {
+  cfg: RemoteClawConfig;
+  sessionStorePaths: string[];
+}): LegacyStateDetection["orphanedMainKeys"] {
+  const configuredAgentIds = listAgentIds(params.cfg);
+  const soleAgentId = resolveSoleAgentId(params.cfg);
+
+  const seenKeys = new Set<string>();
+  for (const storePath of params.sessionStorePaths) {
+    if (!fileExists(storePath)) {
+      continue;
+    }
+    const parsed = readSessionStoreJson5(storePath);
+    if (!parsed.ok) {
+      continue;
+    }
+    for (const key of Object.keys(parsed.store)) {
+      if (isOrphanedMainKey(key)) {
+        seenKeys.add(key);
+      }
+    }
+  }
+
+  const keys = [...seenKeys].toSorted();
+  if (keys.length === 0) {
+    return { keys, scenario: "none", soleAgentId, configuredAgentIds };
+  }
+
+  let scenario: "A" | "B" | "C";
+  if (configuredAgentIds.length === 1 && soleAgentId && soleAgentId !== "main") {
+    scenario = "A";
+  } else if (configuredAgentIds.length === 1 && soleAgentId === "main") {
+    scenario = "B";
+  } else {
+    scenario = "C";
+  }
+
+  return { keys, scenario, soleAgentId, configuredAgentIds };
 }
 
 function emptyDirOrMissing(dir: string): boolean {
@@ -666,12 +746,26 @@ export async function detectLegacyStateMigrations(params: {
     : [];
   const hasLegacyTelegramAllowFrom = telegramPairingAllowFromPlans.length > 0;
 
+  const orphanedMainKeys = detectOrphanedMainKeys({
+    cfg: params.cfg,
+    sessionStorePaths: [sessionsTargetStorePath, sessionsLegacyStorePath],
+  });
+
   const preview: string[] = [];
   if (hasLegacySessions) {
     preview.push(`- Sessions: ${sessionsLegacyDir} → ${sessionsTargetDir}`);
   }
   if (legacyKeys.length > 0) {
     preview.push(`- Sessions: canonicalize legacy keys in ${sessionsTargetStorePath}`);
+  }
+  if (orphanedMainKeys.scenario === "A") {
+    preview.push(
+      `- Sessions: rewrite ${orphanedMainKeys.keys.length} orphaned agent:main:* key(s) → agent:${orphanedMainKeys.soleAgentId}:*`,
+    );
+  } else if (orphanedMainKeys.scenario === "C") {
+    preview.push(
+      `- Sessions: ${orphanedMainKeys.keys.length} orphaned agent:main:* key(s) detected — multi-agent config, manual resolution required`,
+    );
   }
   if (hasLegacyAgentDir) {
     preview.push(`- Agent dir: ${legacyAgentDir} → ${targetAgentDir}`);
@@ -711,6 +805,7 @@ export async function detectLegacyStateMigrations(params: {
       hasLegacyTelegram: hasLegacyTelegramAllowFrom,
       copyPlans: telegramPairingAllowFromPlans,
     },
+    orphanedMainKeys,
     preview,
   };
 }
@@ -938,6 +1033,116 @@ async function migrateLegacyTelegramPairingAllowFrom(
   return await runFileCopyPlans(detected.pairingAllowFrom.copyPlans);
 }
 
+async function migrateOrphanedMainSessionKeys(
+  detected: LegacyStateDetection,
+): Promise<{ changes: string[]; warnings: string[] }> {
+  const changes: string[] = [];
+  const warnings: string[] = [];
+  const orphans = detected.orphanedMainKeys;
+
+  if (orphans.scenario === "none") {
+    return { changes, warnings };
+  }
+
+  if (orphans.scenario === "B") {
+    changes.push(
+      `No agent:main:* session key migration needed (sole agent id is "main" — ${orphans.keys.length} key(s) preserved in place)`,
+    );
+    return { changes, warnings };
+  }
+
+  if (orphans.scenario === "C") {
+    const agentList = orphans.configuredAgentIds.length
+      ? orphans.configuredAgentIds.join(", ")
+      : "(none)";
+    warnings.push(
+      `Found ${orphans.keys.length} orphaned agent:main:* session key(s) but no sole agent to migrate them to. Configured agents: ${agentList}. To resolve:\n  1. Reconfigure with a single agent temporarily, run the gateway once (auto-migrates), then add the other agents back, OR\n  2. Accept that pre-upgrade session continuity for those chats is lost (new sessions will start on next message).`,
+    );
+    return { changes, warnings };
+  }
+
+  // Scenario A: rewrite agent:main:* → agent:{soleAgentId}:*
+  const newAgentId = orphans.soleAgentId;
+  if (!newAgentId) {
+    warnings.push(
+      "Internal: orphanedMainKeys scenario=A but soleAgentId is null; skipping rewrite",
+    );
+    return { changes, warnings };
+  }
+
+  const storePath = detected.sessions.targetStorePath;
+  if (!fileExists(storePath)) {
+    return { changes, warnings };
+  }
+
+  const parsed = readSessionStoreJson5(storePath);
+  if (!parsed.ok) {
+    warnings.push(`Could not read ${storePath}; skipping agent:main:* session key rewrite`);
+    return { changes, warnings };
+  }
+
+  const rewritten: Record<string, SessionEntryLike> = {};
+  // Copy non-main keys as-is.
+  for (const [key, entry] of Object.entries(parsed.store)) {
+    if (!isOrphanedMainKey(key)) {
+      rewritten[key] = entry;
+    }
+  }
+  // Rewrite main keys with newer-wins collision handling.
+  const collisions: string[] = [];
+  let rewrittenCount = 0;
+  for (const [key, entry] of Object.entries(parsed.store)) {
+    if (!isOrphanedMainKey(key)) {
+      continue;
+    }
+    const newKey = rewriteOrphanedMainKey(key, newAgentId);
+    const existing = rewritten[newKey];
+    if (existing) {
+      const winner = mergeSessionEntry({
+        existing,
+        incoming: entry,
+        preferIncomingOnTie: false,
+      });
+      rewritten[newKey] = winner;
+      collisions.push(`${key} ↔ ${newKey}`);
+    } else {
+      rewritten[newKey] = entry;
+    }
+    rewrittenCount += 1;
+  }
+
+  if (rewrittenCount === 0) {
+    return { changes, warnings };
+  }
+
+  const normalized: Record<string, SessionEntry> = {};
+  for (const [key, entry] of Object.entries(rewritten)) {
+    const normalizedEntry = normalizeSessionEntry(entry);
+    if (!normalizedEntry) {
+      continue;
+    }
+    normalized[key] = normalizedEntry;
+  }
+
+  try {
+    await saveSessionStore(storePath, normalized, { skipMaintenance: true });
+  } catch (err) {
+    warnings.push(`Failed to write rewritten sessions store (${storePath}): ${String(err)}`);
+    return { changes, warnings };
+  }
+
+  changes.push(
+    `Rewrote ${rewrittenCount} agent:main:* session key(s) → agent:${newAgentId}:* in ${storePath}`,
+  );
+  if (collisions.length > 0) {
+    changes.push(
+      `Resolved ${collisions.length} session key collision(s) by picking newer entry (by updatedAt):\n${collisions.map((c) => `  - ${c}`).join("\n")}`,
+    );
+  }
+
+  return { changes, warnings };
+}
+
 export async function runLegacyStateMigrations(params: {
   detected: LegacyStateDetection;
   now?: () => number;
@@ -948,18 +1153,21 @@ export async function runLegacyStateMigrations(params: {
   const agentDir = await migrateLegacyAgentDir(detected, now);
   const whatsappAuth = await migrateLegacyWhatsAppAuth(detected);
   const telegramPairingAllowFrom = await migrateLegacyTelegramPairingAllowFrom(detected);
+  const orphanedMainKeys = await migrateOrphanedMainSessionKeys(detected);
   return {
     changes: [
       ...sessions.changes,
       ...agentDir.changes,
       ...whatsappAuth.changes,
       ...telegramPairingAllowFrom.changes,
+      ...orphanedMainKeys.changes,
     ],
     warnings: [
       ...sessions.warnings,
       ...agentDir.warnings,
       ...whatsappAuth.warnings,
       ...telegramPairingAllowFrom.warnings,
+      ...orphanedMainKeys.warnings,
     ],
   };
 }
@@ -1016,7 +1224,8 @@ export async function autoMigrateLegacyState(params: {
     env,
     homedir: params.homedir,
   });
-  if (!detected.sessions.hasLegacy && !detected.agentDir.hasLegacy) {
+  const hasOrphanedMainKeys = detected.orphanedMainKeys.scenario !== "none";
+  if (!detected.sessions.hasLegacy && !detected.agentDir.hasLegacy && !hasOrphanedMainKeys) {
     return {
       migrated: stateDirResult.migrated,
       skipped: false,
@@ -1028,8 +1237,19 @@ export async function autoMigrateLegacyState(params: {
   const now = params.now ?? (() => Date.now());
   const sessions = await migrateLegacySessions(detected, now);
   const agentDir = await migrateLegacyAgentDir(detected, now);
-  const changes = [...stateDirResult.changes, ...sessions.changes, ...agentDir.changes];
-  const warnings = [...stateDirResult.warnings, ...sessions.warnings, ...agentDir.warnings];
+  const orphanedMainKeys = await migrateOrphanedMainSessionKeys(detected);
+  const changes = [
+    ...stateDirResult.changes,
+    ...sessions.changes,
+    ...agentDir.changes,
+    ...orphanedMainKeys.changes,
+  ];
+  const warnings = [
+    ...stateDirResult.warnings,
+    ...sessions.warnings,
+    ...agentDir.warnings,
+    ...orphanedMainKeys.warnings,
+  ];
 
   const logger = params.log ?? createSubsystemLogger("state-migrations");
   if (changes.length > 0) {

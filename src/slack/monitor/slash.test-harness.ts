@@ -64,7 +64,7 @@ export function resetSlackSlashMocks() {
   mocks.readAllowFromStoreMock.mockReset().mockResolvedValue([]);
   mocks.upsertPairingRequestMock.mockReset().mockResolvedValue({ code: "PAIRCODE", created: true });
   mocks.resolveAgentRouteMock.mockReset().mockReturnValue({
-    agentId: "main",
+    agentId: "test-agent",
     sessionKey: "session:1",
     accountId: "acct",
   });

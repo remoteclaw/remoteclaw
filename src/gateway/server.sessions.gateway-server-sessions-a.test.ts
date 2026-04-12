@@ -272,10 +272,10 @@ describe("gateway server sessions", () => {
           updatedAt: stale,
           totalTokens: 50,
         },
-        "agent:main:subagent:one": {
+        "agent:test-agent:subagent:one": {
           sessionId: "sess-subagent",
           updatedAt: stale,
-          spawnedBy: "agent:main:main",
+          spawnedBy: "agent:test-agent:main",
         },
         global: {
           sessionId: "sess-global",
@@ -300,13 +300,13 @@ describe("gateway server sessions", () => {
       key: "main",
     });
     expect(resolvedByKey.ok).toBe(true);
-    expect(resolvedByKey.payload?.key).toBe("agent:main:main");
+    expect(resolvedByKey.payload?.key).toBe("agent:test-agent:main");
 
     const resolvedBySessionId = await rpcReq<{ ok: true; key: string }>(ws, "sessions.resolve", {
       sessionId: "sess-group",
     });
     expect(resolvedBySessionId.ok).toBe(true);
-    expect(resolvedBySessionId.payload?.key).toBe("agent:main:discord:group:dev");
+    expect(resolvedBySessionId.payload?.key).toBe("agent:test-agent:discord:group:dev");
 
     const list1 = await rpcReq<{
       path: string;
@@ -326,7 +326,7 @@ describe("gateway server sessions", () => {
     expect(list1.payload?.path).toBe(storePath);
     expect(list1.payload?.sessions.some((s) => s.key === "global")).toBe(false);
     expect(list1.payload?.defaults?.modelProvider).toBe(DEFAULT_PROVIDER);
-    const main = list1.payload?.sessions.find((s) => s.key === "agent:main:main");
+    const main = list1.payload?.sessions.find((s) => s.key === "agent:test-agent:main");
     expect(main?.totalTokens).toBeUndefined();
     expect(main?.totalTokensFresh).toBe(false);
     expect(main?.thinkingLevel).toBe("low");
@@ -346,7 +346,7 @@ describe("gateway server sessions", () => {
       activeMinutes: 5,
     });
     expect(active.ok).toBe(true);
-    expect(active.payload?.sessions.map((s) => s.key)).toEqual(["agent:main:main"]);
+    expect(active.payload?.sessions.map((s) => s.key)).toEqual(["agent:test-agent:main"]);
 
     const limited = await rpcReq<{
       sessions: Array<{ key: string }>;
@@ -360,18 +360,18 @@ describe("gateway server sessions", () => {
     expect(limited.payload?.sessions[0]?.key).toBe("global");
 
     const patched = await rpcReq<{ ok: true; key: string }>(ws, "sessions.patch", {
-      key: "agent:main:main",
+      key: "agent:test-agent:main",
       thinkingLevel: "medium",
       verboseLevel: "off",
     });
     expect(patched.ok).toBe(true);
     expect(patched.payload?.ok).toBe(true);
-    expect(patched.payload?.key).toBe("agent:main:main");
+    expect(patched.payload?.key).toBe("agent:test-agent:main");
 
     const sendPolicyPatched = await rpcReq<{
       ok: true;
       entry: { sendPolicy?: string };
-    }>(ws, "sessions.patch", { key: "agent:main:main", sendPolicy: "deny" });
+    }>(ws, "sessions.patch", { key: "agent:test-agent:main", sendPolicy: "deny" });
     expect(sendPolicyPatched.ok).toBe(true);
     expect(sendPolicyPatched.payload?.entry.sendPolicy).toBe("deny");
 
@@ -379,14 +379,14 @@ describe("gateway server sessions", () => {
       ok: true;
       entry: { label?: string };
     }>(ws, "sessions.patch", {
-      key: "agent:main:subagent:one",
+      key: "agent:test-agent:subagent:one",
       label: "Briefing",
     });
     expect(labelPatched.ok).toBe(true);
     expect(labelPatched.payload?.entry.label).toBe("Briefing");
 
     const labelPatchedDuplicate = await rpcReq(ws, "sessions.patch", {
-      key: "agent:main:discord:group:dev",
+      key: "agent:test-agent:discord:group:dev",
       label: "Briefing",
     });
     expect(labelPatchedDuplicate.ok).toBe(false);
@@ -402,16 +402,16 @@ describe("gateway server sessions", () => {
       }>;
     }>(ws, "sessions.list", {});
     expect(list2.ok).toBe(true);
-    const main2 = list2.payload?.sessions.find((s) => s.key === "agent:main:main");
+    const main2 = list2.payload?.sessions.find((s) => s.key === "agent:test-agent:main");
     expect(main2?.thinkingLevel).toBe("medium");
     expect(main2?.verboseLevel).toBe("off");
     expect(main2?.sendPolicy).toBe("deny");
-    const subagent = list2.payload?.sessions.find((s) => s.key === "agent:main:subagent:one");
+    const subagent = list2.payload?.sessions.find((s) => s.key === "agent:test-agent:subagent:one");
     expect(subagent?.label).toBe("Briefing");
     expect(subagent?.displayName).toBe("Briefing");
 
     const clearedVerbose = await rpcReq<{ ok: true; key: string }>(ws, "sessions.patch", {
-      key: "agent:main:main",
+      key: "agent:test-agent:main",
       verboseLevel: null,
     });
     expect(clearedVerbose.ok).toBe(true);
@@ -423,7 +423,7 @@ describe("gateway server sessions", () => {
       }>;
     }>(ws, "sessions.list", {});
     expect(list3.ok).toBe(true);
-    const main3 = list3.payload?.sessions.find((s) => s.key === "agent:main:main");
+    const main3 = list3.payload?.sessions.find((s) => s.key === "agent:test-agent:main");
     expect(main3?.verboseLevel).toBeUndefined();
 
     const listByLabel = await rpcReq<{
@@ -434,38 +434,42 @@ describe("gateway server sessions", () => {
       label: "Briefing",
     });
     expect(listByLabel.ok).toBe(true);
-    expect(listByLabel.payload?.sessions.map((s) => s.key)).toEqual(["agent:main:subagent:one"]);
+    expect(listByLabel.payload?.sessions.map((s) => s.key)).toEqual([
+      "agent:test-agent:subagent:one",
+    ]);
 
     const resolvedByLabel = await rpcReq<{ ok: true; key: string }>(ws, "sessions.resolve", {
       label: "Briefing",
-      agentId: "main",
+      agentId: "test-agent",
     });
     expect(resolvedByLabel.ok).toBe(true);
-    expect(resolvedByLabel.payload?.key).toBe("agent:main:subagent:one");
+    expect(resolvedByLabel.payload?.key).toBe("agent:test-agent:subagent:one");
 
     const spawnedOnly = await rpcReq<{
       sessions: Array<{ key: string }>;
     }>(ws, "sessions.list", {
       includeGlobal: true,
       includeUnknown: true,
-      spawnedBy: "agent:main:main",
+      spawnedBy: "agent:test-agent:main",
     });
     expect(spawnedOnly.ok).toBe(true);
-    expect(spawnedOnly.payload?.sessions.map((s) => s.key)).toEqual(["agent:main:subagent:one"]);
+    expect(spawnedOnly.payload?.sessions.map((s) => s.key)).toEqual([
+      "agent:test-agent:subagent:one",
+    ]);
 
     const spawnedPatched = await rpcReq<{
       ok: true;
       entry: { spawnedBy?: string };
     }>(ws, "sessions.patch", {
-      key: "agent:main:subagent:two",
-      spawnedBy: "agent:main:main",
+      key: "agent:test-agent:subagent:two",
+      spawnedBy: "agent:test-agent:main",
     });
     expect(spawnedPatched.ok).toBe(true);
-    expect(spawnedPatched.payload?.entry.spawnedBy).toBe("agent:main:main");
+    expect(spawnedPatched.payload?.entry.spawnedBy).toBe("agent:test-agent:main");
 
     const spawnedPatchedInvalidKey = await rpcReq(ws, "sessions.patch", {
-      key: "agent:main:main",
-      spawnedBy: "agent:main:main",
+      key: "agent:test-agent:main",
+      spawnedBy: "agent:test-agent:main",
     });
     expect(spawnedPatchedInvalidKey.ok).toBe(false);
 
@@ -481,7 +485,7 @@ describe("gateway server sessions", () => {
       };
       resolved?: { model?: string; modelProvider?: string };
     }>(ws, "sessions.patch", {
-      key: "agent:main:main",
+      key: "agent:test-agent:main",
       model: "openai/gpt-test-a",
     });
     expect(modelPatched.ok).toBe(true);
@@ -497,13 +501,13 @@ describe("gateway server sessions", () => {
     }>(ws, "sessions.list", {});
     expect(listAfterModelPatch.ok).toBe(true);
     const mainAfterModelPatch = listAfterModelPatch.payload?.sessions.find(
-      (session) => session.key === "agent:main:main",
+      (session) => session.key === "agent:test-agent:main",
     );
     expect(mainAfterModelPatch?.modelProvider).toBe("openai");
     expect(mainAfterModelPatch?.model).toBe("gpt-test-a");
 
     const compacted = await rpcReq<{ ok: true; compacted: boolean }>(ws, "sessions.compact", {
-      key: "agent:main:main",
+      key: "agent:test-agent:main",
       maxLines: 3,
     });
     expect(compacted.ok).toBe(true);
@@ -516,7 +520,7 @@ describe("gateway server sessions", () => {
     expect(filesAfterCompact.some((f) => f.startsWith("sess-main.jsonl.bak."))).toBe(true);
 
     const deleted = await rpcReq<{ ok: true; deleted: boolean }>(ws, "sessions.delete", {
-      key: "agent:main:discord:group:dev",
+      key: "agent:test-agent:discord:group:dev",
     });
     expect(deleted.ok).toBe(true);
     expect(deleted.payload?.deleted).toBe(true);
@@ -525,7 +529,7 @@ describe("gateway server sessions", () => {
     }>(ws, "sessions.list", {});
     expect(listAfterDelete.ok).toBe(true);
     expect(
-      listAfterDelete.payload?.sessions.some((s) => s.key === "agent:main:discord:group:dev"),
+      listAfterDelete.payload?.sessions.some((s) => s.key === "agent:test-agent:discord:group:dev"),
     ).toBe(false);
     const filesAfterDelete = await fs.readdir(dir);
     expect(filesAfterDelete.some((f) => f.startsWith("sess-group.jsonl.deleted."))).toBe(true);
@@ -534,9 +538,9 @@ describe("gateway server sessions", () => {
       ok: true;
       key: string;
       entry: { sessionId: string; modelProvider?: string; model?: string };
-    }>(ws, "sessions.reset", { key: "agent:main:main" });
+    }>(ws, "sessions.reset", { key: "agent:test-agent:main" });
     expect(reset.ok).toBe(true);
-    expect(reset.payload?.key).toBe("agent:main:main");
+    expect(reset.payload?.key).toBe("agent:test-agent:main");
     expect(reset.payload?.entry.sessionId).not.toBe("sess-main");
     expect(reset.payload?.entry.modelProvider).toBe("openai");
     expect(reset.payload?.entry.model).toBe("gpt-test-a");
@@ -544,7 +548,7 @@ describe("gateway server sessions", () => {
     expect(filesAfterReset.some((f) => f.startsWith("sess-main.jsonl.reset."))).toBe(true);
 
     const badThinking = await rpcReq(ws, "sessions.patch", {
-      key: "agent:main:main",
+      key: "agent:test-agent:main",
       thinkingLevel: "banana",
     });
     expect(badThinking.ok).toBe(false);
@@ -716,15 +720,15 @@ describe("gateway server sessions", () => {
     expect(deleted.ok).toBe(true);
     expect(deleted.payload?.deleted).toBe(true);
     expectActiveRunCleanup(
-      "agent:main:discord:group:dev",
-      ["discord:group:dev", "agent:main:discord:group:dev", "sess-active"],
+      "agent:test-agent:discord:group:dev",
+      ["discord:group:dev", "agent:test-agent:discord:group:dev", "sess-active"],
       "sess-active",
     );
     expect(browserSessionTabMocks.closeTrackedBrowserTabsForSessions).toHaveBeenCalledTimes(1);
     expect(browserSessionTabMocks.closeTrackedBrowserTabsForSessions).toHaveBeenCalledWith({
       sessionKeys: expect.arrayContaining([
         "discord:group:dev",
-        "agent:main:discord:group:dev",
+        "agent:test-agent:discord:group:dev",
         "sess-active",
       ]),
       onWarn: expect.any(Function),
@@ -732,19 +736,19 @@ describe("gateway server sessions", () => {
     expect(subagentLifecycleHookMocks.runSubagentEnded).toHaveBeenCalledTimes(1);
     expect(subagentLifecycleHookMocks.runSubagentEnded).toHaveBeenCalledWith(
       {
-        targetSessionKey: "agent:main:discord:group:dev",
+        targetSessionKey: "agent:test-agent:discord:group:dev",
         targetKind: "acp",
         reason: "session-delete",
         sendFarewell: true,
         outcome: "deleted",
       },
       {
-        childSessionKey: "agent:main:discord:group:dev",
+        childSessionKey: "agent:test-agent:discord:group:dev",
       },
     );
     expect(threadBindingMocks.unbindThreadBindingsBySessionKey).toHaveBeenCalledTimes(1);
     expect(threadBindingMocks.unbindThreadBindingsBySessionKey).toHaveBeenCalledWith({
-      targetSessionKey: "agent:main:discord:group:dev",
+      targetSessionKey: "agent:test-agent:discord:group:dev",
       targetKind: "acp",
       reason: "session-delete",
       sendFarewell: true,
@@ -779,7 +783,7 @@ describe("gateway server sessions", () => {
       id: "acpx",
       runtime: {
         ensureSession: vi.fn(async () => ({
-          sessionKey: "agent:main:discord:group:dev",
+          sessionKey: "agent:test-agent:discord:group:dev",
           backend: "acpx",
           runtimeSessionName: "runtime:delete",
         })),
@@ -797,7 +801,7 @@ describe("gateway server sessions", () => {
     expect(deleted.payload?.deleted).toBe(true);
     expect(acpRuntimeMocks.close).toHaveBeenCalledWith({
       handle: {
-        sessionKey: "agent:main:discord:group:dev",
+        sessionKey: "agent:test-agent:discord:group:dev",
         backend: "acpx",
         runtimeSessionName: "runtime:delete",
       },
@@ -805,7 +809,7 @@ describe("gateway server sessions", () => {
     });
     expect(acpRuntimeMocks.cancel).toHaveBeenCalledWith({
       handle: {
-        sessionKey: "agent:main:discord:group:dev",
+        sessionKey: "agent:test-agent:discord:group:dev",
         backend: "acpx",
         runtimeSessionName: "runtime:delete",
       },
@@ -826,7 +830,7 @@ describe("gateway server sessions", () => {
 
     const { ws } = await openClient();
     const deleted = await rpcReq<{ ok: true; deleted: boolean }>(ws, "sessions.delete", {
-      key: "agent:main:subagent:missing",
+      key: "agent:test-agent:subagent:missing",
     });
 
     expect(deleted.ok).toBe(true);
@@ -842,7 +846,7 @@ describe("gateway server sessions", () => {
     await writeSingleLineSession(dir, "sess-subagent", "hello");
     await writeSessionStore({
       entries: {
-        "agent:main:subagent:worker": {
+        "agent:test-agent:subagent:worker": {
           sessionId: "sess-subagent",
           updatedAt: Date.now(),
         },
@@ -851,7 +855,7 @@ describe("gateway server sessions", () => {
 
     const { ws } = await openClient();
     const deleted = await rpcReq<{ ok: true; deleted: boolean }>(ws, "sessions.delete", {
-      key: "agent:main:subagent:worker",
+      key: "agent:test-agent:subagent:worker",
     });
     expect(deleted.ok).toBe(true);
     expect(deleted.payload?.deleted).toBe(true);
@@ -860,14 +864,14 @@ describe("gateway server sessions", () => {
       | { targetKind?: string; targetSessionKey?: string; reason?: string; outcome?: string }
       | undefined;
     expect(event).toMatchObject({
-      targetSessionKey: "agent:main:subagent:worker",
+      targetSessionKey: "agent:test-agent:subagent:worker",
       targetKind: "subagent",
       reason: "session-delete",
       outcome: "deleted",
     });
     expect(threadBindingMocks.unbindThreadBindingsBySessionKey).toHaveBeenCalledTimes(1);
     expect(threadBindingMocks.unbindThreadBindingsBySessionKey).toHaveBeenCalledWith({
-      targetSessionKey: "agent:main:subagent:worker",
+      targetSessionKey: "agent:test-agent:subagent:worker",
       targetKind: "subagent",
       reason: "session-delete",
       sendFarewell: true,
@@ -881,7 +885,7 @@ describe("gateway server sessions", () => {
     await writeSingleLineSession(dir, "sess-subagent", "hello");
     await writeSessionStore({
       entries: {
-        "agent:main:subagent:worker": {
+        "agent:test-agent:subagent:worker": {
           sessionId: "sess-subagent",
           updatedAt: Date.now(),
         },
@@ -890,7 +894,7 @@ describe("gateway server sessions", () => {
 
     const { ws } = await openClient();
     const deleted = await rpcReq<{ ok: true; deleted: boolean }>(ws, "sessions.delete", {
-      key: "agent:main:subagent:worker",
+      key: "agent:test-agent:subagent:worker",
       emitLifecycleHooks: false,
     });
     expect(deleted.ok).toBe(true);
@@ -898,7 +902,7 @@ describe("gateway server sessions", () => {
     expect(subagentLifecycleHookMocks.runSubagentEnded).not.toHaveBeenCalled();
     expect(threadBindingMocks.unbindThreadBindingsBySessionKey).toHaveBeenCalledTimes(1);
     expect(threadBindingMocks.unbindThreadBindingsBySessionKey).toHaveBeenCalledWith({
-      targetSessionKey: "agent:main:subagent:worker",
+      targetSessionKey: "agent:test-agent:subagent:worker",
       targetKind: "subagent",
       reason: "session-delete",
       sendFarewell: true,
@@ -912,7 +916,7 @@ describe("gateway server sessions", () => {
     await writeSingleLineSession(dir, "sess-subagent", "hello");
     await writeSessionStore({
       entries: {
-        "agent:main:subagent:worker": {
+        "agent:test-agent:subagent:worker": {
           sessionId: "sess-subagent",
           updatedAt: Date.now(),
         },
@@ -922,13 +926,13 @@ describe("gateway server sessions", () => {
 
     const { ws } = await openClient();
     const deleted = await rpcReq<{ ok: true; deleted: boolean }>(ws, "sessions.delete", {
-      key: "agent:main:subagent:worker",
+      key: "agent:test-agent:subagent:worker",
     });
     expect(deleted.ok).toBe(true);
     expect(subagentLifecycleHookMocks.runSubagentEnded).not.toHaveBeenCalled();
     expect(threadBindingMocks.unbindThreadBindingsBySessionKey).toHaveBeenCalledTimes(1);
     expect(threadBindingMocks.unbindThreadBindingsBySessionKey).toHaveBeenCalledWith({
-      targetSessionKey: "agent:main:subagent:worker",
+      targetSessionKey: "agent:test-agent:subagent:worker",
       targetKind: "subagent",
       reason: "session-delete",
       sendFarewell: true,
@@ -957,35 +961,35 @@ describe("gateway server sessions", () => {
       },
     );
     expect(reset.ok).toBe(true);
-    expect(reset.payload?.key).toBe("agent:main:main");
+    expect(reset.payload?.key).toBe("agent:test-agent:main");
     expect(reset.payload?.entry.sessionId).not.toBe("sess-main");
     expectActiveRunCleanup(
-      "agent:main:main",
-      ["main", "agent:main:main", "sess-main"],
+      "agent:test-agent:main",
+      ["main", "agent:test-agent:main", "sess-main"],
       "sess-main",
     );
     expect(waitCallCountAtSnapshotClear).toEqual([1]);
     expect(browserSessionTabMocks.closeTrackedBrowserTabsForSessions).toHaveBeenCalledTimes(1);
     expect(browserSessionTabMocks.closeTrackedBrowserTabsForSessions).toHaveBeenCalledWith({
-      sessionKeys: expect.arrayContaining(["main", "agent:main:main", "sess-main"]),
+      sessionKeys: expect.arrayContaining(["main", "agent:test-agent:main", "sess-main"]),
       onWarn: expect.any(Function),
     });
     expect(subagentLifecycleHookMocks.runSubagentEnded).toHaveBeenCalledTimes(1);
     expect(subagentLifecycleHookMocks.runSubagentEnded).toHaveBeenCalledWith(
       {
-        targetSessionKey: "agent:main:main",
+        targetSessionKey: "agent:test-agent:main",
         targetKind: "acp",
         reason: "session-reset",
         sendFarewell: true,
         outcome: "reset",
       },
       {
-        childSessionKey: "agent:main:main",
+        childSessionKey: "agent:test-agent:main",
       },
     );
     expect(threadBindingMocks.unbindThreadBindingsBySessionKey).toHaveBeenCalledTimes(1);
     expect(threadBindingMocks.unbindThreadBindingsBySessionKey).toHaveBeenCalledWith({
-      targetSessionKey: "agent:main:main",
+      targetSessionKey: "agent:test-agent:main",
       targetKind: "acp",
       reason: "session-reset",
       sendFarewell: true,
@@ -1018,7 +1022,7 @@ describe("gateway server sessions", () => {
       id: "acpx",
       runtime: {
         ensureSession: vi.fn(async () => ({
-          sessionKey: "agent:main:main",
+          sessionKey: "agent:test-agent:main",
           backend: "acpx",
           runtimeSessionName: "runtime:reset",
         })),
@@ -1035,7 +1039,7 @@ describe("gateway server sessions", () => {
     expect(reset.ok).toBe(true);
     expect(acpRuntimeMocks.close).toHaveBeenCalledWith({
       handle: {
-        sessionKey: "agent:main:main",
+        sessionKey: "agent:test-agent:main",
         backend: "acpx",
         runtimeSessionName: "runtime:reset",
       },
@@ -1059,7 +1063,7 @@ describe("gateway server sessions", () => {
       ws,
       "sessions.reset",
       {
-        key: "agent:main:subagent:missing",
+        key: "agent:test-agent:subagent:missing",
       },
     );
 
@@ -1075,7 +1079,7 @@ describe("gateway server sessions", () => {
     await writeSingleLineSession(dir, "sess-subagent", "hello");
     await writeSessionStore({
       entries: {
-        "agent:main:subagent:worker": {
+        "agent:test-agent:subagent:worker": {
           sessionId: "sess-subagent",
           updatedAt: Date.now(),
         },
@@ -1087,25 +1091,25 @@ describe("gateway server sessions", () => {
       ws,
       "sessions.reset",
       {
-        key: "agent:main:subagent:worker",
+        key: "agent:test-agent:subagent:worker",
       },
     );
     expect(reset.ok).toBe(true);
-    expect(reset.payload?.key).toBe("agent:main:subagent:worker");
+    expect(reset.payload?.key).toBe("agent:test-agent:subagent:worker");
     expect(reset.payload?.entry.sessionId).not.toBe("sess-subagent");
     expect(subagentLifecycleHookMocks.runSubagentEnded).toHaveBeenCalledTimes(1);
     const event = (subagentLifecycleHookMocks.runSubagentEnded.mock.calls as unknown[][])[0]?.[0] as
       | { targetKind?: string; targetSessionKey?: string; reason?: string; outcome?: string }
       | undefined;
     expect(event).toMatchObject({
-      targetSessionKey: "agent:main:subagent:worker",
+      targetSessionKey: "agent:test-agent:subagent:worker",
       targetKind: "subagent",
       reason: "session-reset",
       outcome: "reset",
     });
     expect(threadBindingMocks.unbindThreadBindingsBySessionKey).toHaveBeenCalledTimes(1);
     expect(threadBindingMocks.unbindThreadBindingsBySessionKey).toHaveBeenCalledWith({
-      targetSessionKey: "agent:main:subagent:worker",
+      targetSessionKey: "agent:test-agent:subagent:worker",
       targetKind: "subagent",
       reason: "session-reset",
       sendFarewell: true,
@@ -1135,7 +1139,7 @@ describe("gateway server sessions", () => {
     expect(subagentLifecycleHookMocks.runSubagentEnded).not.toHaveBeenCalled();
     expect(threadBindingMocks.unbindThreadBindingsBySessionKey).toHaveBeenCalledTimes(1);
     expect(threadBindingMocks.unbindThreadBindingsBySessionKey).toHaveBeenCalledWith({
-      targetSessionKey: "agent:main:main",
+      targetSessionKey: "agent:test-agent:main",
       targetKind: "acp",
       reason: "session-reset",
       sendFarewell: true,
@@ -1170,7 +1174,7 @@ describe("gateway server sessions", () => {
     expect(event).toMatchObject({
       type: "command",
       action: "new",
-      sessionKey: "agent:main:main",
+      sessionKey: "agent:test-agent:main",
       context: {
         commandSource: "gateway:sessions.reset",
       },
@@ -1198,8 +1202,8 @@ describe("gateway server sessions", () => {
     expect(reset.error?.code).toBe("UNAVAILABLE");
     expect(reset.error?.message ?? "").toMatch(/still active/i);
     expectActiveRunCleanup(
-      "agent:main:main",
-      ["main", "agent:main:main", "sess-main"],
+      "agent:test-agent:main",
+      ["main", "agent:test-agent:main", "sess-main"],
       "sess-main",
     );
     expect(waitCallCountAtSnapshotClear).toEqual([1]);
@@ -1209,7 +1213,7 @@ describe("gateway server sessions", () => {
       string,
       { sessionId?: string }
     >;
-    expect(store["agent:main:main"]?.sessionId).toBe("sess-main");
+    expect(store["agent:test-agent:main"]?.sessionId).toBe("sess-main");
     const filesAfterResetAttempt = await fs.readdir(dir);
     expect(filesAfterResetAttempt.some((f) => f.startsWith("sess-main.jsonl.reset."))).toBe(false);
 
@@ -1241,8 +1245,8 @@ describe("gateway server sessions", () => {
     expect(deleted.error?.code).toBe("UNAVAILABLE");
     expect(deleted.error?.message ?? "").toMatch(/still active/i);
     expectActiveRunCleanup(
-      "agent:main:discord:group:dev",
-      ["discord:group:dev", "agent:main:discord:group:dev", "sess-active"],
+      "agent:test-agent:discord:group:dev",
+      ["discord:group:dev", "agent:test-agent:discord:group:dev", "sess-active"],
       "sess-active",
     );
     expect(browserSessionTabMocks.closeTrackedBrowserTabsForSessions).not.toHaveBeenCalled();
@@ -1251,7 +1255,7 @@ describe("gateway server sessions", () => {
       string,
       { sessionId?: string }
     >;
-    expect(store["agent:main:discord:group:dev"]?.sessionId).toBe("sess-active");
+    expect(store["agent:test-agent:discord:group:dev"]?.sessionId).toBe("sess-active");
     const filesAfterDeleteAttempt = await fs.readdir(dir);
     expect(filesAfterDeleteAttempt.some((f) => f.startsWith("sess-active.jsonl.deleted."))).toBe(
       false,
@@ -1292,14 +1296,14 @@ describe("gateway server sessions", () => {
     });
 
     const patched = await rpcReq(ws, "sessions.patch", {
-      key: "agent:main:discord:group:dev",
+      key: "agent:test-agent:discord:group:dev",
       label: "should-fail",
     });
     expect(patched.ok).toBe(false);
     expect(patched.error?.message ?? "").toMatch(/webchat clients cannot patch sessions/i);
 
     const deleted = await rpcReq(ws, "sessions.delete", {
-      key: "agent:main:discord:group:dev",
+      key: "agent:test-agent:discord:group:dev",
     });
     expect(deleted.ok).toBe(false);
     expect(deleted.error?.message ?? "").toMatch(/webchat clients cannot delete sessions/i);
@@ -1341,7 +1345,7 @@ describe("gateway server sessions", () => {
     });
 
     const deleted = await rpcReq<{ ok: true; deleted: boolean }>(ws, "sessions.delete", {
-      key: "agent:main:discord:group:dev",
+      key: "agent:test-agent:discord:group:dev",
     });
     expect(deleted.ok).toBe(true);
     expect(deleted.payload?.deleted).toBe(true);
@@ -1350,7 +1354,7 @@ describe("gateway server sessions", () => {
       string,
       { sessionId?: string }
     >;
-    expect(store["agent:main:discord:group:dev"]).toBeUndefined();
+    expect(store["agent:test-agent:discord:group:dev"]).toBeUndefined();
 
     ws.close();
   });

@@ -41,7 +41,7 @@ function createThreadBinding(
 ) {
   return {
     bindingId: "default:thread-1",
-    targetSessionKey: "agent:main:subagent:child-1",
+    targetSessionKey: "agent:test-agent:subagent:child-1",
     targetKind: "subagent",
     conversation: {
       channel: "discord",
@@ -52,7 +52,7 @@ function createThreadBinding(
     status: "active",
     boundAt: 1,
     metadata: {
-      agentId: "main",
+      agentId: "test-agent",
       boundBy: "test",
       webhookId: "wh-1",
       webhookToken: "tok-1",
@@ -275,7 +275,7 @@ describe("preflightDiscordMessage", () => {
   it("drops bound-thread bot system messages to prevent ACP self-loop", async () => {
     const threadBinding = createThreadBinding({
       targetKind: "session",
-      targetSessionKey: "agent:main:acp:discord-thread-1",
+      targetSessionKey: "agent:test-agent:acp:discord-thread-1",
     });
     const threadId = "thread-system-1";
     const parentId = "channel-parent-1";
@@ -307,7 +307,7 @@ describe("preflightDiscordMessage", () => {
   it("keeps bound-thread regular bot messages flowing when allowBots=true", async () => {
     const threadBinding = createThreadBinding({
       targetKind: "session",
-      targetSessionKey: "agent:main:acp:discord-thread-1",
+      targetSessionKey: "agent:test-agent:acp:discord-thread-1",
     });
     const threadId = "thread-bot-regular-1";
     const parentId = "channel-parent-regular-1";
@@ -647,8 +647,8 @@ describe("shouldIgnoreBoundThreadWebhookMessage", () => {
       threadId: "thread-1",
       channelId: "parent-1",
       targetKind: "subagent",
-      targetSessionKey: "agent:main:subagent:child-1",
-      agentId: "main",
+      targetSessionKey: "agent:test-agent:subagent:child-1",
+      agentId: "test-agent",
       webhookId: "wh-1",
       webhookToken: "tok-1",
     });

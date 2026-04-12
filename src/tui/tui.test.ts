@@ -60,18 +60,18 @@ describe("resolveTuiSessionKey", () => {
       resolveTuiSessionKey({
         raw: "",
         sessionScope: "global",
-        currentAgentId: "main",
-        sessionMainKey: "agent:main:main",
+        currentAgentId: "test-agent",
+        sessionMainKey: "agent:test-agent:main",
       }),
     ).toBe("global");
     expect(
       resolveTuiSessionKey({
         raw: "test123",
         sessionScope: "global",
-        currentAgentId: "main",
-        sessionMainKey: "agent:main:main",
+        currentAgentId: "test-agent",
+        sessionMainKey: "agent:test-agent:main",
       }),
-    ).toBe("agent:main:test123");
+    ).toBe("agent:test-agent:test123");
   });
 
   it("keeps explicit agent-prefixed keys unchanged", () => {
@@ -79,8 +79,8 @@ describe("resolveTuiSessionKey", () => {
       resolveTuiSessionKey({
         raw: "agent:ops:incident",
         sessionScope: "global",
-        currentAgentId: "main",
-        sessionMainKey: "agent:main:main",
+        currentAgentId: "test-agent",
+        sessionMainKey: "agent:test-agent:main",
       }),
     ).toBe("agent:ops:incident");
   });
@@ -89,21 +89,21 @@ describe("resolveTuiSessionKey", () => {
     // Uppercase in agent-prefixed form
     expect(
       resolveTuiSessionKey({
-        raw: "agent:main:Test1",
+        raw: "agent:test-agent:Test1",
         sessionScope: "global",
-        currentAgentId: "main",
-        sessionMainKey: "agent:main:main",
+        currentAgentId: "test-agent",
+        sessionMainKey: "agent:test-agent:main",
       }),
-    ).toBe("agent:main:test1");
+    ).toBe("agent:test-agent:test1");
     // Uppercase in bare form (prefixed by currentAgentId)
     expect(
       resolveTuiSessionKey({
         raw: "Test1",
         sessionScope: "global",
-        currentAgentId: "main",
-        sessionMainKey: "agent:main:main",
+        currentAgentId: "test-agent",
+        sessionMainKey: "agent:test-agent:main",
       }),
-    ).toBe("agent:main:test1");
+    ).toBe("agent:test-agent:test1");
   });
 });
 

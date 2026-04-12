@@ -379,18 +379,18 @@ describe("createJob rejects sessionTarget main for non-default agents", () => {
   });
 
   it("allows creating a main-session job for the default agent", () => {
-    const state = createMockState(now, { defaultAgentId: "main" });
+    const state = createMockState(now, { defaultAgentId: "primary" });
     expect(() => createJob(state, mainJobInput())).not.toThrow();
-    expect(() => createJob(state, mainJobInput("main"))).not.toThrow();
+    expect(() => createJob(state, mainJobInput("primary"))).not.toThrow();
   });
 
   it("allows creating a main-session job when defaultAgentId matches (case-insensitive)", () => {
-    const state = createMockState(now, { defaultAgentId: "Main" });
-    expect(() => createJob(state, mainJobInput("MAIN"))).not.toThrow();
+    const state = createMockState(now, { defaultAgentId: "Primary" });
+    expect(() => createJob(state, mainJobInput("PRIMARY"))).not.toThrow();
   });
 
   it("rejects creating a main-session job for a non-default agentId", () => {
-    const state = createMockState(now, { defaultAgentId: "main" });
+    const state = createMockState(now, { defaultAgentId: "primary" });
     expect(() => createJob(state, mainJobInput("custom-agent"))).toThrow(
       'cron: sessionTarget "main" is only valid for the default agent',
     );
@@ -404,7 +404,7 @@ describe("createJob rejects sessionTarget main for non-default agents", () => {
   });
 
   it("allows isolated session job for non-default agents", () => {
-    const state = createMockState(now, { defaultAgentId: "main" });
+    const state = createMockState(now, { defaultAgentId: "primary" });
     expect(() =>
       createJob(state, {
         name: "isolated-job",
@@ -419,10 +419,10 @@ describe("createJob rejects sessionTarget main for non-default agents", () => {
   });
 
   it("rejects failureDestination on main jobs without webhook delivery mode", () => {
-    const state = createMockState(now, { defaultAgentId: "main" });
+    const state = createMockState(now, { defaultAgentId: "primary" });
     expect(() =>
       createJob(state, {
-        ...mainJobInput("main"),
+        ...mainJobInput("primary"),
         delivery: {
           mode: "announce",
           channel: "telegram",
@@ -459,7 +459,7 @@ describe("applyJobPatch rejects sessionTarget main for non-default agents", () =
     const job = createMainJob();
     expect(() =>
       applyJobPatch(job, { agentId: "custom-agent" } as CronJobPatch, {
-        defaultAgentId: "main",
+        defaultAgentId: "primary",
       }),
     ).toThrow('cron: sessionTarget "main" is only valid for the default agent');
   });
@@ -467,8 +467,8 @@ describe("applyJobPatch rejects sessionTarget main for non-default agents", () =
   it("allows patching agentId to the default agent on a main-session job", () => {
     const job = createMainJob();
     expect(() =>
-      applyJobPatch(job, { agentId: "main" } as CronJobPatch, {
-        defaultAgentId: "main",
+      applyJobPatch(job, { agentId: "primary" } as CronJobPatch, {
+        defaultAgentId: "primary",
       }),
     ).not.toThrow();
   });
@@ -590,7 +590,7 @@ describe("createJob delivery defaults", () => {
   });
 
   it("does not set delivery for main systemEvent jobs without explicit delivery", () => {
-    const state = createMockState(now, { defaultAgentId: "main" });
+    const state = createMockState(now, { defaultAgentId: "primary" });
     const job = createJob(state, {
       name: "main-no-delivery",
       enabled: true,

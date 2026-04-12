@@ -33,7 +33,7 @@ vi.mock("../../config/sessions.js", async () => {
 import { runMessageAction } from "./message-action-runner.js";
 
 const slackConfig = {
-  agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
+  agents: { list: [{ id: "test-agent", workspace: "/tmp/test-workspace" }] },
   channels: {
     slack: {
       botToken: "xoxb-test",
@@ -43,7 +43,7 @@ const slackConfig = {
 } as RemoteClawConfig;
 
 const telegramConfig = {
-  agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
+  agents: { list: [{ id: "test-agent", workspace: "/tmp/test-workspace" }] },
   channels: {
     telegram: {
       botToken: "telegram-test",
@@ -61,7 +61,7 @@ async function runThreadingAction(params: {
     action: "send",
     params: params.actionParams as never,
     toolContext: params.toolContext as never,
-    agentId: "main",
+    agentId: "test-agent",
   });
   return mocks.executeSendAction.mock.calls[0]?.[0] as {
     threadId?: string;
@@ -124,13 +124,13 @@ describe("runMessageAction threading auto-injection", () => {
       name: "exact channel id",
       target: "channel:C123",
       threadTs: "111.222",
-      expectedSessionKey: "agent:main:slack:channel:c123:thread:111.222",
+      expectedSessionKey: "agent:test-agent:slack:channel:c123:thread:111.222",
     },
     {
       name: "case-insensitive channel id",
       target: "channel:c123",
       threadTs: "333.444",
-      expectedSessionKey: "agent:main:slack:channel:c123:thread:333.444",
+      expectedSessionKey: "agent:test-agent:slack:channel:c123:thread:333.444",
     },
   ] as const)("auto-threads slack using $name", async (testCase) => {
     mockHandledSendAction();
@@ -149,7 +149,7 @@ describe("runMessageAction threading auto-injection", () => {
       },
     });
 
-    expect(call?.ctx?.agentId).toBe("main");
+    expect(call?.ctx?.agentId).toBe("test-agent");
     expect(call?.ctx?.mirror?.sessionKey).toBe(testCase.expectedSessionKey);
   });
 

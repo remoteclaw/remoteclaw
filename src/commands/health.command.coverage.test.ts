@@ -10,7 +10,7 @@ const logWebSelfIdMock = vi.fn();
 
 function createRecentSessionRows(now = Date.now()) {
   return [
-    { key: "main", updatedAt: now - 60_000, age: 60_000 },
+    { key: "test-agent", updatedAt: now - 60_000, age: 60_000 },
     { key: "foo", updatedAt: null, age: null },
   ];
 }
@@ -96,10 +96,10 @@ describe("healthCommand (coverage)", () => {
         discord: "Discord",
       },
       heartbeatSeconds: 60,
-      defaultAgentId: "main",
+      defaultAgentId: "test-agent",
       agents: [
         {
-          agentId: "main",
+          agentId: "test-agent",
           isDefault: true,
           heartbeat: {
             enabled: true,

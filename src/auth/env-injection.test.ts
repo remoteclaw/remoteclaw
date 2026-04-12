@@ -69,24 +69,24 @@ describe("resolveAuthEnv", () => {
 
   it("returns undefined when auth is undefined (no config)", async () => {
     const cfg: RemoteClawConfig = {};
-    const result = await resolveAuthEnv({ cfg, agentId: "main" });
+    const result = await resolveAuthEnv({ cfg, agentId: "test-agent" });
     expect(result).toBeUndefined();
   });
 
   it("returns undefined when auth is false", async () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "main", workspace: "~/w", auth: false }],
+        list: [{ id: "test-agent", workspace: "~/w", auth: false }],
       },
     };
-    const result = await resolveAuthEnv({ cfg, agentId: "main" });
+    const result = await resolveAuthEnv({ cfg, agentId: "test-agent" });
     expect(result).toBeUndefined();
   });
 
   it("injects CLAUDE_CODE_OAUTH_TOKEN for anthropic token credential", async () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "main", workspace: "~/w", auth: "claude:oauth-token" }],
+        list: [{ id: "test-agent", workspace: "~/w", auth: "claude:oauth-token" }],
       },
     };
     const store: AuthProfileStore = {
@@ -100,14 +100,14 @@ describe("resolveAuthEnv", () => {
       },
     };
 
-    const result = await resolveAuthEnv({ cfg, agentId: "main", store });
+    const result = await resolveAuthEnv({ cfg, agentId: "test-agent", store });
     expect(result).toEqual({ CLAUDE_CODE_OAUTH_TOKEN: "sk-ant-oat01-test-oauth-token" });
   });
 
   it("injects ANTHROPIC_API_KEY for anthropic api_key credential", async () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "main", workspace: "~/w", auth: "anthropic:default" }],
+        list: [{ id: "test-agent", workspace: "~/w", auth: "anthropic:default" }],
       },
     };
     const store: AuthProfileStore = {
@@ -121,75 +121,75 @@ describe("resolveAuthEnv", () => {
       },
     };
 
-    const result = await resolveAuthEnv({ cfg, agentId: "main", store });
+    const result = await resolveAuthEnv({ cfg, agentId: "test-agent", store });
     expect(result).toEqual({ ANTHROPIC_API_KEY: "sk-ant-api03-regular-api-key" });
   });
 
   it("injects correct env var for single anthropic profile", async () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "main", workspace: "~/w", auth: "anthropic:default" }],
+        list: [{ id: "test-agent", workspace: "~/w", auth: "anthropic:default" }],
       },
     };
     const store = makeStore({
       "anthropic:default": { provider: "anthropic", key: "sk-ant-test-key" },
     });
 
-    const result = await resolveAuthEnv({ cfg, agentId: "main", store });
+    const result = await resolveAuthEnv({ cfg, agentId: "test-agent", store });
     expect(result).toEqual({ ANTHROPIC_API_KEY: "sk-ant-test-key" });
   });
 
   it("injects correct env var for google profile", async () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "main", workspace: "~/w", auth: "google:default" }],
+        list: [{ id: "test-agent", workspace: "~/w", auth: "google:default" }],
       },
     };
     const store = makeStore({
       "google:default": { provider: "google", key: "gemini-test-key" },
     });
 
-    const result = await resolveAuthEnv({ cfg, agentId: "main", store });
+    const result = await resolveAuthEnv({ cfg, agentId: "test-agent", store });
     expect(result).toEqual({ GEMINI_API_KEY: "gemini-test-key" });
   });
 
   it("injects correct env var for openai profile", async () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "main", workspace: "~/w", auth: "openai:default" }],
+        list: [{ id: "test-agent", workspace: "~/w", auth: "openai:default" }],
       },
     };
     const store = makeStore({
       "openai:default": { provider: "openai", key: "sk-openai-test" },
     });
 
-    const result = await resolveAuthEnv({ cfg, agentId: "main", store });
+    const result = await resolveAuthEnv({ cfg, agentId: "test-agent", store });
     expect(result).toEqual({ OPENAI_API_KEY: "sk-openai-test" });
   });
 
   it("returns undefined for missing profile and logs warning", async () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "main", workspace: "~/w", auth: "anthropic:nonexistent" }],
+        list: [{ id: "test-agent", workspace: "~/w", auth: "anthropic:nonexistent" }],
       },
     };
     const store = makeStore({});
 
-    const result = await resolveAuthEnv({ cfg, agentId: "main", store });
+    const result = await resolveAuthEnv({ cfg, agentId: "test-agent", store });
     expect(result).toBeUndefined();
   });
 
   it("returns undefined for profile with unknown provider", async () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "main", workspace: "~/w", auth: "exotic:p1" }],
+        list: [{ id: "test-agent", workspace: "~/w", auth: "exotic:p1" }],
       },
     };
     const store = makeStore({
       "exotic:p1": { provider: "exotic", key: "exotic-key" },
     });
 
-    const result = await resolveAuthEnv({ cfg, agentId: "main", store });
+    const result = await resolveAuthEnv({ cfg, agentId: "test-agent", store });
     expect(result).toBeUndefined();
   });
 
@@ -197,14 +197,14 @@ describe("resolveAuthEnv", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: { auth: "anthropic:shared" },
-        list: [{ id: "main", workspace: "~/w" }],
+        list: [{ id: "test-agent", workspace: "~/w" }],
       },
     };
     const store = makeStore({
       "anthropic:shared": { provider: "anthropic", key: "sk-shared" },
     });
 
-    const result = await resolveAuthEnv({ cfg, agentId: "main", store });
+    const result = await resolveAuthEnv({ cfg, agentId: "test-agent", store });
     expect(result).toEqual({ ANTHROPIC_API_KEY: "sk-shared" });
   });
 
@@ -214,7 +214,7 @@ describe("resolveAuthEnv", () => {
         agents: {
           list: [
             {
-              id: "main",
+              id: "test-agent",
               workspace: "~/w",
               auth: ["anthropic:key1", "anthropic:key2", "anthropic:key3"],
             },
@@ -235,7 +235,7 @@ describe("resolveAuthEnv", () => {
         },
       );
 
-      const r1 = await resolveAuthEnv({ cfg, agentId: "main", store });
+      const r1 = await resolveAuthEnv({ cfg, agentId: "test-agent", store });
       expect(r1).toEqual({ ANTHROPIC_API_KEY: "sk-2" });
     });
 
@@ -244,7 +244,7 @@ describe("resolveAuthEnv", () => {
         agents: {
           list: [
             {
-              id: "main",
+              id: "test-agent",
               workspace: "~/w",
               auth: ["anthropic:key1", "anthropic:key2"],
             },
@@ -256,7 +256,7 @@ describe("resolveAuthEnv", () => {
         "anthropic:key2": { provider: "anthropic", key: "sk-2" },
       });
 
-      const result = await resolveAuthEnv({ cfg, agentId: "main", store });
+      const result = await resolveAuthEnv({ cfg, agentId: "test-agent", store });
       expect(result).toEqual({ ANTHROPIC_API_KEY: "sk-1" });
     });
 
@@ -265,7 +265,7 @@ describe("resolveAuthEnv", () => {
         agents: {
           list: [
             {
-              id: "main",
+              id: "test-agent",
               workspace: "~/w",
               auth: ["anthropic:key1", "anthropic:key2"],
             },
@@ -282,19 +282,19 @@ describe("resolveAuthEnv", () => {
         },
       );
 
-      const result = await resolveAuthEnv({ cfg, agentId: "main", store });
+      const result = await resolveAuthEnv({ cfg, agentId: "test-agent", store });
       expect(result).toEqual({ ANTHROPIC_API_KEY: "sk-2" });
     });
 
     it("returns undefined for empty auth array", async () => {
       const cfg: RemoteClawConfig = {
         agents: {
-          list: [{ id: "main", workspace: "~/w", auth: [] }],
+          list: [{ id: "test-agent", workspace: "~/w", auth: [] }],
         },
       };
       const store = makeStore({});
 
-      const result = await resolveAuthEnv({ cfg, agentId: "main", store });
+      const result = await resolveAuthEnv({ cfg, agentId: "test-agent", store });
       expect(result).toBeUndefined();
     });
   });
@@ -302,48 +302,52 @@ describe("resolveAuthEnv", () => {
 
 describe("resolveAuthProfileCount", () => {
   it("returns 0 when auth is undefined (no config)", () => {
-    expect(resolveAuthProfileCount({}, "main")).toBe(0);
+    expect(resolveAuthProfileCount({}, "test-agent")).toBe(0);
   });
 
   it("returns 0 when auth is false", () => {
     const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "main", workspace: "~/w", auth: false }] },
+      agents: { list: [{ id: "test-agent", workspace: "~/w", auth: false }] },
     };
-    expect(resolveAuthProfileCount(cfg, "main")).toBe(0);
+    expect(resolveAuthProfileCount(cfg, "test-agent")).toBe(0);
   });
 
   it("returns 1 for single string profile", () => {
     const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "main", workspace: "~/w", auth: "anthropic:default" }] },
+      agents: { list: [{ id: "test-agent", workspace: "~/w", auth: "anthropic:default" }] },
     };
-    expect(resolveAuthProfileCount(cfg, "main")).toBe(1);
+    expect(resolveAuthProfileCount(cfg, "test-agent")).toBe(1);
   });
 
   it("returns array length for multiple profiles", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         list: [
-          { id: "main", workspace: "~/w", auth: ["anthropic:k1", "anthropic:k2", "anthropic:k3"] },
+          {
+            id: "test-agent",
+            workspace: "~/w",
+            auth: ["anthropic:k1", "anthropic:k2", "anthropic:k3"],
+          },
         ],
       },
     };
-    expect(resolveAuthProfileCount(cfg, "main")).toBe(3);
+    expect(resolveAuthProfileCount(cfg, "test-agent")).toBe(3);
   });
 
   it("returns 0 for empty array", () => {
     const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "main", workspace: "~/w", auth: [] }] },
+      agents: { list: [{ id: "test-agent", workspace: "~/w", auth: [] }] },
     };
-    expect(resolveAuthProfileCount(cfg, "main")).toBe(0);
+    expect(resolveAuthProfileCount(cfg, "test-agent")).toBe(0);
   });
 
   it("resolves from defaults when agent has no auth", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: { auth: ["anthropic:d1", "anthropic:d2"] },
-        list: [{ id: "main", workspace: "~/w" }],
+        list: [{ id: "test-agent", workspace: "~/w" }],
       },
     };
-    expect(resolveAuthProfileCount(cfg, "main")).toBe(2);
+    expect(resolveAuthProfileCount(cfg, "test-agent")).toBe(2);
   });
 });

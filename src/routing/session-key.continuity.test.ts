@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { buildAgentSessionKey } from "./resolve-route.js";
 
 describe("Discord Session Key Continuity", () => {
-  const agentId = "main";
+  const agentId = "alpha";
   const channel = "discord";
   const accountId = "default";
 
@@ -24,8 +24,8 @@ describe("Discord Session Key Continuity", () => {
       dmScope: "main",
     });
 
-    expect(dmKey).toBe("agent:main:main");
-    expect(groupKey).toBe("agent:main:discord:channel:channel456");
+    expect(dmKey).toBe("agent:alpha:main");
+    expect(groupKey).toBe("agent:alpha:discord:channel:channel456");
     expect(dmKey).not.toBe(groupKey);
   });
 
@@ -47,8 +47,8 @@ describe("Discord Session Key Continuity", () => {
       dmScope: "per-peer",
     });
 
-    expect(dmKey).toBe("agent:main:direct:user123");
-    expect(groupKey).toBe("agent:main:discord:channel:channel456");
+    expect(dmKey).toBe("agent:alpha:direct:user123");
+    expect(groupKey).toBe("agent:alpha:discord:channel:channel456");
     expect(dmKey).not.toBe(groupKey);
   });
 
@@ -65,6 +65,6 @@ describe("Discord Session Key Continuity", () => {
     expect(missingIdKey).toContain("unknown");
 
     // Should still be distinct from main
-    expect(missingIdKey).not.toBe("agent:main:main");
+    expect(missingIdKey).not.toBe("agent:alpha:main");
   });
 });

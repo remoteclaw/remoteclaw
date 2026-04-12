@@ -35,13 +35,13 @@ function createMockChatLog(): MockChatLog & HandlerChatLog {
 
 describe("tui-event-handlers: handleAgentEvent", () => {
   const makeState = (overrides?: Partial<TuiStateAccess>): TuiStateAccess => ({
-    firstAgentId: "main",
-    agentDefaultId: "main",
-    sessionMainKey: "agent:main:main",
+    firstAgentId: "test-agent",
+    agentDefaultId: "test-agent",
+    sessionMainKey: "agent:test-agent:main",
     sessionScope: "global",
     agents: [],
-    currentAgentId: "main",
-    currentSessionKey: "agent:main:main",
+    currentAgentId: "test-agent",
+    currentSessionKey: "agent:test-agent:main",
     currentSessionId: "session-1",
     activeChatRunId: "run-1",
     historyLoaded: true,
@@ -197,7 +197,7 @@ describe("tui-event-handlers: handleAgentEvent", () => {
   it("accepts chat events when session key is an alias of the active canonical key", () => {
     const { state, chatLog, handleChatEvent } = createHandlersHarness({
       state: {
-        currentSessionKey: "agent:main:main",
+        currentSessionKey: "agent:test-agent:main",
         activeChatRunId: null,
       },
     });
@@ -244,7 +244,7 @@ describe("tui-event-handlers: handleAgentEvent", () => {
       message: { content: "hello" },
     });
 
-    state.currentSessionKey = "agent:main:other";
+    state.currentSessionKey = "agent:test-agent:other";
     state.activeChatRunId = null;
     tui.requestRender.mockClear();
 

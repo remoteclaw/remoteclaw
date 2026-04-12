@@ -8,7 +8,7 @@ vi.mock("../../config/config.js", () => {
   return {
     loadConfig: vi.fn(() => ({
       agents: {
-        list: [{ id: "main" }, { id: "opus" }],
+        list: [{ id: "alpha" }, { id: "opus" }],
       },
       session: {},
     })),
@@ -30,11 +30,11 @@ vi.mock("../../infra/session-cost-usage.js", async () => {
   return {
     ...actual,
     discoverAllSessions: vi.fn(async (params?: { agentId?: string }) => {
-      if (params?.agentId === "main") {
+      if (params?.agentId === "alpha") {
         return [
           {
-            sessionId: "s-main",
-            sessionFile: "/tmp/agents/main/sessions/s-main.jsonl",
+            sessionId: "s-alpha",
+            sessionFile: "/tmp/agents/alpha/sessions/s-alpha.jsonl",
             mtime: 100,
             firstUserMessage: "hello",
           },
@@ -136,7 +136,7 @@ describe("sessions.usage", () => {
     const respond = await runSessionsUsage(BASE_USAGE_RANGE);
 
     expect(vi.mocked(discoverAllSessions)).toHaveBeenCalledTimes(2);
-    expect(vi.mocked(discoverAllSessions).mock.calls[0]?.[0]?.agentId).toBe("main");
+    expect(vi.mocked(discoverAllSessions).mock.calls[0]?.[0]?.agentId).toBe("alpha");
     expect(vi.mocked(discoverAllSessions).mock.calls[1]?.[0]?.agentId).toBe("opus");
 
     const sessions = expectSuccessfulSessionsUsage(respond);
@@ -145,8 +145,8 @@ describe("sessions.usage", () => {
     // Sorted by most recent first (mtime=200 -> opus first).
     expect(sessions[0].key).toBe("agent:opus:s-opus");
     expect(sessions[0].agentId).toBe("opus");
-    expect(sessions[1].key).toBe("agent:main:s-main");
-    expect(sessions[1].agentId).toBe("main");
+    expect(sessions[1].key).toBe("agent:alpha:s-alpha");
+    expect(sessions[1].agentId).toBe("alpha");
   });
 
   it("resolves store entries by sessionId when queried via discovered agent-prefixed key", async () => {

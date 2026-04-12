@@ -25,11 +25,11 @@ describe("discord route resolution helpers", () => {
 
   it("resolves bound session keys on top of the routed session", () => {
     const route: ResolvedAgentRoute = {
-      agentId: "main",
+      agentId: "test-agent",
       channel: "discord",
       accountId: "default",
-      sessionKey: "agent:main:discord:channel:c1",
-      mainSessionKey: "agent:main:main",
+      sessionKey: "agent:test-agent:discord:channel:c1",
+      mainSessionKey: "agent:test-agent:main",
       lastRoutePolicy: "session",
       matchedBy: "binding.channel",
     };
@@ -50,11 +50,11 @@ describe("discord route resolution helpers", () => {
 
   it("falls back to configured route when no bound session exists", () => {
     const route: ResolvedAgentRoute = {
-      agentId: "main",
+      agentId: "test-agent",
       channel: "discord",
       accountId: "default",
-      sessionKey: "agent:main:discord:channel:c1",
-      mainSessionKey: "agent:main:main",
+      sessionKey: "agent:test-agent:discord:channel:c1",
+      mainSessionKey: "agent:test-agent:main",
       lastRoutePolicy: "session",
       matchedBy: "binding.channel",
     };

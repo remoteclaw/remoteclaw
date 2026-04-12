@@ -7,8 +7,8 @@ vi.mock("../../config/config.js", () => ({
 }));
 
 vi.mock("../../agents/agent-scope.js", () => ({
-  listAgentIds: vi.fn(() => ["main"]),
-  resolveSoleAgentId: vi.fn(() => "main"),
+  listAgentIds: vi.fn(() => ["test-agent"]),
+  resolveSoleAgentId: vi.fn(() => "test-agent"),
   resolveAgentWorkspaceDir: vi.fn(() => "/tmp/workspace-main"),
   resolveAgentDir: vi.fn(() => "/tmp/agents/main/agent"),
   resolveAgentRuntime: vi.fn(() => "claude"),
@@ -82,7 +82,7 @@ describe("tools.catalog handler", () => {
           }>;
         }
       | undefined;
-    expect(payload?.agentId).toBe("main");
+    expect(payload?.agentId).toBe("test-agent");
     expect(payload?.groups.some((group) => group.source === "plugin")).toBe(false);
     const media = payload?.groups.find((group) => group.id === "media");
     expect(media?.tools.some((tool) => tool.id === "tts" && tool.source === "core")).toBe(true);

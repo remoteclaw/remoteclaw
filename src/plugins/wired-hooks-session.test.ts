@@ -14,13 +14,13 @@ describe("session hook runner methods", () => {
     const runner = createHookRunner(registry);
 
     await runner.runSessionStart(
-      { sessionId: "abc-123", sessionKey: "agent:main:abc", resumedFrom: "old-session" },
-      { sessionId: "abc-123", sessionKey: "agent:main:abc", agentId: "main" },
+      { sessionId: "abc-123", sessionKey: "agent:test-agent:abc", resumedFrom: "old-session" },
+      { sessionId: "abc-123", sessionKey: "agent:test-agent:abc", agentId: "test-agent" },
     );
 
     expect(handler).toHaveBeenCalledWith(
-      { sessionId: "abc-123", sessionKey: "agent:main:abc", resumedFrom: "old-session" },
-      { sessionId: "abc-123", sessionKey: "agent:main:abc", agentId: "main" },
+      { sessionId: "abc-123", sessionKey: "agent:test-agent:abc", resumedFrom: "old-session" },
+      { sessionId: "abc-123", sessionKey: "agent:test-agent:abc", agentId: "test-agent" },
     );
   });
 
@@ -30,13 +30,13 @@ describe("session hook runner methods", () => {
     const runner = createHookRunner(registry);
 
     await runner.runSessionEnd(
-      { sessionId: "abc-123", sessionKey: "agent:main:abc", messageCount: 42 },
-      { sessionId: "abc-123", sessionKey: "agent:main:abc", agentId: "main" },
+      { sessionId: "abc-123", sessionKey: "agent:test-agent:abc", messageCount: 42 },
+      { sessionId: "abc-123", sessionKey: "agent:test-agent:abc", agentId: "test-agent" },
     );
 
     expect(handler).toHaveBeenCalledWith(
-      { sessionId: "abc-123", sessionKey: "agent:main:abc", messageCount: 42 },
-      { sessionId: "abc-123", sessionKey: "agent:main:abc", agentId: "main" },
+      { sessionId: "abc-123", sessionKey: "agent:test-agent:abc", messageCount: 42 },
+      { sessionId: "abc-123", sessionKey: "agent:test-agent:abc", agentId: "test-agent" },
     );
   });
 

@@ -162,7 +162,7 @@ describe("gateway hooks helpers", () => {
     const cfg = {
       hooks: { enabled: true, token: "secret" },
       agents: {
-        list: [{ id: "main" }, { id: "hooks" }],
+        list: [{ id: "alpha" }, { id: "hooks" }],
       },
     } as RemoteClawConfig;
     const resolved = resolveHooksConfig(cfg);
@@ -171,7 +171,7 @@ describe("gateway hooks helpers", () => {
       return;
     }
     expect(resolveHookTargetAgentId(resolved, "hooks")).toBe("hooks");
-    expect(resolveHookTargetAgentId(resolved, "missing-agent")).toBe("main");
+    expect(resolveHookTargetAgentId(resolved, "missing-agent")).toBe("alpha");
     expect(resolveHookTargetAgentId(resolved, undefined)).toBeUndefined();
   });
 

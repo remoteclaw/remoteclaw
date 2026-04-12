@@ -127,7 +127,7 @@ describe("createNodesTool screen_record duration guardrails", () => {
     expect(prepareCall).toBeTruthy();
     expect(prepareCall?.params).toMatchObject({
       command: ["bash", "-lc", "echo hi"],
-      agentId: "main",
+      agentId: "test-agent",
     });
     expect(prepareCall?.params).not.toHaveProperty("rawCommand");
   });

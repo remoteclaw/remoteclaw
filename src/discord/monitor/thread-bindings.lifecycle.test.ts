@@ -94,8 +94,8 @@ describe("thread binding lifecycle", () => {
       threadId: "thread-1",
       channelId: "parent-1",
       targetKind: "subagent",
-      targetSessionKey: "agent:main:subagent:child",
-      agentId: "main",
+      targetSessionKey: "agent:test-agent:subagent:child",
+      agentId: "test-agent",
       webhookId: "wh-1",
       webhookToken: "tok-1",
     });
@@ -103,7 +103,7 @@ describe("thread binding lifecycle", () => {
 
   it("includes idle and max-age details in intro text", () => {
     const intro = resolveThreadBindingIntroText({
-      agentId: "main",
+      agentId: "test-agent",
       label: "worker",
       idleTimeoutMs: 24 * 60 * 60 * 1000,
       maxAgeMs: 48 * 60 * 60 * 1000,
@@ -137,8 +137,8 @@ describe("thread binding lifecycle", () => {
         threadId: "thread-1",
         channelId: "parent-1",
         targetKind: "subagent",
-        targetSessionKey: "agent:main:subagent:child",
-        agentId: "main",
+        targetSessionKey: "agent:test-agent:subagent:child",
+        agentId: "test-agent",
         webhookId: "wh-1",
         webhookToken: "tok-1",
         introText: "intro",
@@ -175,8 +175,8 @@ describe("thread binding lifecycle", () => {
         threadId: "thread-1",
         channelId: "parent-1",
         targetKind: "subagent",
-        targetSessionKey: "agent:main:subagent:child",
-        agentId: "main",
+        targetSessionKey: "agent:test-agent:subagent:child",
+        agentId: "test-agent",
         webhookId: "wh-1",
         webhookToken: "tok-1",
       });
@@ -247,8 +247,8 @@ describe("thread binding lifecycle", () => {
         threadId: "thread-1",
         channelId: "parent-1",
         targetKind: "subagent",
-        targetSessionKey: "agent:main:subagent:child",
-        agentId: "main",
+        targetSessionKey: "agent:test-agent:subagent:child",
+        agentId: "test-agent",
         webhookId: "wh-1",
         webhookToken: "tok-1",
       });
@@ -258,7 +258,7 @@ describe("thread binding lifecycle", () => {
 
       const updated = setThreadBindingIdleTimeoutBySessionKey({
         accountId: "default",
-        targetSessionKey: "agent:main:subagent:child",
+        targetSessionKey: "agent:test-agent:subagent:child",
         idleTimeoutMs: 2 * 60 * 60 * 1000,
       });
 
@@ -292,14 +292,14 @@ describe("thread binding lifecycle", () => {
         threadId: "thread-1",
         channelId: "parent-1",
         targetKind: "subagent",
-        targetSessionKey: "agent:main:subagent:child",
-        agentId: "main",
+        targetSessionKey: "agent:test-agent:subagent:child",
+        agentId: "test-agent",
       });
 
       vi.setSystemTime(new Date("2026-02-20T10:30:00.000Z"));
       const updated = setThreadBindingMaxAgeBySessionKey({
         accountId: "default",
-        targetSessionKey: "agent:main:subagent:child",
+        targetSessionKey: "agent:test-agent:subagent:child",
         maxAgeMs: 3 * 60 * 60 * 1000,
       });
 
@@ -332,15 +332,15 @@ describe("thread binding lifecycle", () => {
         threadId: "thread-1",
         channelId: "parent-1",
         targetKind: "subagent",
-        targetSessionKey: "agent:main:subagent:child",
-        agentId: "main",
+        targetSessionKey: "agent:test-agent:subagent:child",
+        agentId: "test-agent",
         webhookId: "wh-1",
         webhookToken: "tok-1",
       });
 
       const updated = setThreadBindingIdleTimeoutBySessionKey({
         accountId: "default",
-        targetSessionKey: "agent:main:subagent:child",
+        targetSessionKey: "agent:test-agent:subagent:child",
         idleTimeoutMs: 0,
       });
       expect(updated).toHaveLength(1);
@@ -369,8 +369,8 @@ describe("thread binding lifecycle", () => {
         threadId: "thread-1",
         channelId: "parent-1",
         targetKind: "subagent",
-        targetSessionKey: "agent:main:subagent:first",
-        agentId: "main",
+        targetSessionKey: "agent:test-agent:subagent:first",
+        agentId: "test-agent",
         webhookId: "wh-1",
         webhookToken: "tok-1",
       });
@@ -378,8 +378,8 @@ describe("thread binding lifecycle", () => {
         threadId: "thread-2",
         channelId: "parent-1",
         targetKind: "subagent",
-        targetSessionKey: "agent:main:subagent:second",
-        agentId: "main",
+        targetSessionKey: "agent:test-agent:subagent:second",
+        agentId: "test-agent",
         webhookId: "wh-2",
         webhookToken: "tok-2",
       });
@@ -388,7 +388,7 @@ describe("thread binding lifecycle", () => {
       // an awaited probe and gives a window for in-pass touches.
       setThreadBindingIdleTimeoutBySessionKey({
         accountId: "default",
-        targetSessionKey: "agent:main:subagent:first",
+        targetSessionKey: "agent:test-agent:subagent:first",
         idleTimeoutMs: 0,
       });
 
@@ -430,8 +430,8 @@ describe("thread binding lifecycle", () => {
         threadId: "thread-1",
         channelId: "parent-1",
         targetKind: "subagent",
-        targetSessionKey: "agent:main:subagent:child",
-        agentId: "main",
+        targetSessionKey: "agent:test-agent:subagent:child",
+        agentId: "test-agent",
       });
 
       vi.setSystemTime(new Date("2026-02-20T00:00:30.000Z"));
@@ -472,8 +472,8 @@ describe("thread binding lifecycle", () => {
         threadId: "thread-1",
         channelId: "parent-1",
         targetKind: "subagent",
-        targetSessionKey: "agent:main:subagent:child",
-        agentId: "main",
+        targetSessionKey: "agent:test-agent:subagent:child",
+        agentId: "test-agent",
         webhookId: "wh-1",
         webhookToken: "tok-1",
       });
@@ -525,8 +525,8 @@ describe("thread binding lifecycle", () => {
       threadId: "thread-1",
       channelId: "parent-1",
       targetKind: "subagent",
-      targetSessionKey: "agent:main:subagent:child-1",
-      agentId: "main",
+      targetSessionKey: "agent:test-agent:subagent:child-1",
+      agentId: "test-agent",
     });
     expect(first).not.toBeNull();
     expect(hoisted.restPost).toHaveBeenCalledTimes(1);
@@ -540,8 +540,8 @@ describe("thread binding lifecycle", () => {
       threadId: "thread-2",
       channelId: "parent-1",
       targetKind: "subagent",
-      targetSessionKey: "agent:main:subagent:child-2",
-      agentId: "main",
+      targetSessionKey: "agent:test-agent:subagent:child-2",
+      agentId: "test-agent",
     });
     expect(second).not.toBeNull();
     expect(second?.webhookId).toBe("wh-created");
@@ -562,8 +562,8 @@ describe("thread binding lifecycle", () => {
       threadId: "thread-1",
       channelId: "parent-1",
       targetKind: "subagent",
-      targetSessionKey: "agent:main:subagent:parent",
-      agentId: "main",
+      targetSessionKey: "agent:test-agent:subagent:parent",
+      agentId: "test-agent",
     });
     hoisted.createThreadDiscord.mockClear();
     hoisted.createThreadDiscord.mockResolvedValueOnce({ id: "thread-created-2" });
@@ -573,8 +573,8 @@ describe("thread binding lifecycle", () => {
       channel: "discord",
       to: "channel:thread-1",
       threadId: "thread-1",
-      childSessionKey: "agent:main:subagent:child-2",
-      agentId: "main",
+      childSessionKey: "agent:test-agent:subagent:child-2",
+      agentId: "test-agent",
     });
 
     expect(childBinding).not.toBeNull();
@@ -584,9 +584,11 @@ describe("thread binding lifecycle", () => {
       expect.objectContaining({ autoArchiveMinutes: 60 }),
       expect.objectContaining({ accountId: "default" }),
     );
-    expect(manager.getByThreadId("thread-1")?.targetSessionKey).toBe("agent:main:subagent:parent");
+    expect(manager.getByThreadId("thread-1")?.targetSessionKey).toBe(
+      "agent:test-agent:subagent:parent",
+    );
     expect(manager.getByThreadId("thread-created-2")?.targetSessionKey).toBe(
-      "agent:main:subagent:child-2",
+      "agent:test-agent:subagent:child-2",
     );
   });
 
@@ -612,8 +614,8 @@ describe("thread binding lifecycle", () => {
       accountId: "default",
       channel: "discord",
       to: "channel:thread-lookup",
-      childSessionKey: "agent:main:subagent:child-lookup",
-      agentId: "main",
+      childSessionKey: "agent:test-agent:subagent:child-lookup",
+      agentId: "test-agent",
     });
 
     expect(childBinding).not.toBeNull();
@@ -650,8 +652,8 @@ describe("thread binding lifecycle", () => {
       accountId: "runtime",
       channel: "discord",
       to: "channel:thread-runtime",
-      childSessionKey: "agent:main:subagent:child-runtime",
-      agentId: "main",
+      childSessionKey: "agent:test-agent:subagent:child-runtime",
+      agentId: "test-agent",
     });
 
     expect(childBinding).not.toBeNull();
@@ -690,8 +692,8 @@ describe("thread binding lifecycle", () => {
       createThread: true,
       channelId: "parent-runtime",
       targetKind: "subagent",
-      targetSessionKey: "agent:main:subagent:token-refresh",
-      agentId: "main",
+      targetSessionKey: "agent:test-agent:subagent:token-refresh",
+      agentId: "test-agent",
     });
 
     expect(bound).not.toBeNull();
@@ -726,29 +728,29 @@ describe("thread binding lifecycle", () => {
       threadId: "thread-1",
       channelId: "parent-1",
       targetKind: "subagent",
-      targetSessionKey: "agent:main:subagent:a",
-      agentId: "main",
+      targetSessionKey: "agent:test-agent:subagent:a",
+      agentId: "test-agent",
     });
     const bBinding = await b.bindTarget({
       threadId: "thread-1",
       channelId: "parent-1",
       targetKind: "subagent",
-      targetSessionKey: "agent:main:subagent:b",
-      agentId: "main",
+      targetSessionKey: "agent:test-agent:subagent:b",
+      agentId: "test-agent",
     });
 
     expect(aBinding?.accountId).toBe("a");
     expect(bBinding?.accountId).toBe("b");
-    expect(a.getByThreadId("thread-1")?.targetSessionKey).toBe("agent:main:subagent:a");
-    expect(b.getByThreadId("thread-1")?.targetSessionKey).toBe("agent:main:subagent:b");
+    expect(a.getByThreadId("thread-1")?.targetSessionKey).toBe("agent:test-agent:subagent:a");
+    expect(b.getByThreadId("thread-1")?.targetSessionKey).toBe("agent:test-agent:subagent:b");
 
     const removedA = a.unbindBySessionKey({
-      targetSessionKey: "agent:main:subagent:a",
+      targetSessionKey: "agent:test-agent:subagent:a",
       sendFarewell: false,
     });
     expect(removedA).toHaveLength(1);
     expect(a.getByThreadId("thread-1")).toBeUndefined();
-    expect(b.getByThreadId("thread-1")?.targetSessionKey).toBe("agent:main:subagent:b");
+    expect(b.getByThreadId("thread-1")?.targetSessionKey).toBe("agent:test-agent:subagent:b");
   });
 
   it("removes stale ACP bindings during startup reconciliation", async () => {
@@ -782,8 +784,8 @@ describe("thread binding lifecycle", () => {
       threadId: "thread-subagent",
       channelId: "parent-1",
       targetKind: "subagent",
-      targetSessionKey: "agent:main:subagent:child",
-      agentId: "main",
+      targetSessionKey: "agent:test-agent:subagent:child",
+      agentId: "test-agent",
       webhookId: "wh-1",
       webhookToken: "tok-1",
     });
@@ -1168,8 +1170,8 @@ describe("thread binding lifecycle", () => {
                 channelId: "parent-1",
                 threadId: "thread-legacy-active",
                 targetKind: "subagent",
-                targetSessionKey: "agent:main:subagent:legacy-active",
-                agentId: "main",
+                targetSessionKey: "agent:test-agent:subagent:legacy-active",
+                agentId: "test-agent",
                 boundBy: "system",
                 boundAt,
                 expiresAt,
@@ -1179,8 +1181,8 @@ describe("thread binding lifecycle", () => {
                 channelId: "parent-1",
                 threadId: "thread-legacy-disabled",
                 targetKind: "subagent",
-                targetSessionKey: "agent:main:subagent:legacy-disabled",
-                agentId: "main",
+                targetSessionKey: "agent:test-agent:subagent:legacy-disabled",
+                agentId: "test-agent",
                 boundBy: "system",
                 boundAt,
                 expiresAt: 0,
@@ -1265,8 +1267,8 @@ describe("thread binding lifecycle", () => {
                 channelId: "parent-1",
                 threadId: "thread-1",
                 targetKind: "subagent",
-                targetSessionKey: "agent:main:subagent:child",
-                agentId: "main",
+                targetSessionKey: "agent:test-agent:subagent:child",
+                agentId: "test-agent",
                 boundBy: "system",
                 boundAt: now,
                 lastActivityAt: now,
@@ -1282,7 +1284,7 @@ describe("thread binding lifecycle", () => {
       );
 
       const removed = unbindThreadBindingsBySessionKey({
-        targetSessionKey: "agent:main:subagent:child",
+        targetSessionKey: "agent:test-agent:subagent:child",
       });
       expect(removed).toHaveLength(1);
 

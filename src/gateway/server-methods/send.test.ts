@@ -39,7 +39,7 @@ function resolveAgentIdFromSessionKeyForTests(params: { sessionKey?: string }): 
       return match[1];
     }
   }
-  return "main";
+  return "test-agent";
 }
 
 function passthroughPluginAutoEnable(config: unknown) {
@@ -56,8 +56,8 @@ vi.mock("../../agents/agent-scope.js", () => ({
   }) => resolveAgentIdFromSessionKeyForTests({ sessionKey }),
   resolveSessionKeyAgentId: (sessionKey: string | undefined | null) =>
     resolveAgentIdFromSessionKeyForTests({ sessionKey: sessionKey ?? undefined }),
-  resolveSoleAgentId: () => "main",
-  listAgentIds: () => ["main"],
+  resolveSoleAgentId: () => "test-agent",
+  listAgentIds: () => ["test-agent"],
   resolveAgentWorkspaceDir: () => TEST_AGENT_WORKSPACE,
   resolveAgentRuntime: () => "claude",
 }));
@@ -308,13 +308,13 @@ describe("gateway send mirroring", () => {
       message: "hi",
       channel: "slack",
       idempotencyKey: "idem-1",
-      sessionKey: "agent:main:main",
+      sessionKey: "agent:test-agent:main",
     });
 
     expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(
       expect.objectContaining({
         mirror: expect.objectContaining({
-          sessionKey: "agent:main:main",
+          sessionKey: "agent:test-agent:main",
         }),
       }),
     );
@@ -329,13 +329,13 @@ describe("gateway send mirroring", () => {
       mediaUrl: "https://example.com/files/report.pdf?sig=1",
       channel: "slack",
       idempotencyKey: "idem-2",
-      sessionKey: "agent:main:main",
+      sessionKey: "agent:test-agent:main",
     });
 
     expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(
       expect.objectContaining({
         mirror: expect.objectContaining({
-          sessionKey: "agent:main:main",
+          sessionKey: "agent:test-agent:main",
           text: "caption",
           mediaUrls: ["https://example.com/files/report.pdf?sig=1"],
         }),
@@ -351,13 +351,13 @@ describe("gateway send mirroring", () => {
       message: "Here\nMEDIA:https://example.com/image.png",
       channel: "slack",
       idempotencyKey: "idem-3",
-      sessionKey: "agent:main:main",
+      sessionKey: "agent:test-agent:main",
     });
 
     expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(
       expect.objectContaining({
         mirror: expect.objectContaining({
-          sessionKey: "agent:main:main",
+          sessionKey: "agent:test-agent:main",
           text: "Here",
           mediaUrls: ["https://example.com/image.png"],
         }),
@@ -373,13 +373,13 @@ describe("gateway send mirroring", () => {
       message: "hi",
       channel: "slack",
       idempotencyKey: "idem-lower",
-      sessionKey: "agent:main:slack:channel:C123",
+      sessionKey: "agent:test-agent:slack:channel:C123",
     });
 
     expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(
       expect.objectContaining({
         mirror: expect.objectContaining({
-          sessionKey: "agent:main:slack:channel:c123",
+          sessionKey: "agent:test-agent:slack:channel:c123",
         }),
       }),
     );
@@ -399,8 +399,8 @@ describe("gateway send mirroring", () => {
     expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(
       expect.objectContaining({
         mirror: expect.objectContaining({
-          sessionKey: "agent:main:slack:channel:resolved",
-          agentId: "main",
+          sessionKey: "agent:test-agent:slack:channel:resolved",
+          agentId: "test-agent",
         }),
       }),
     );
@@ -456,7 +456,7 @@ describe("gateway send mirroring", () => {
       message: "hello",
       channel: "slack",
       agentId: "work",
-      sessionKey: "agent:main:slack:channel:c1",
+      sessionKey: "agent:test-agent:slack:channel:c1",
       idempotencyKey: "idem-agent-precedence",
     });
 
@@ -464,10 +464,10 @@ describe("gateway send mirroring", () => {
       expect.objectContaining({
         session: expect.objectContaining({
           agentId: "work",
-          key: "agent:main:slack:channel:c1",
+          key: "agent:test-agent:slack:channel:c1",
         }),
         mirror: expect.objectContaining({
-          sessionKey: "agent:main:slack:channel:c1",
+          sessionKey: "agent:test-agent:slack:channel:c1",
           agentId: "work",
         }),
       }),

@@ -60,7 +60,7 @@ const { handleSessionCommand } = await import("./commands-session.js");
 const { buildCommandTestParams } = await import("./commands.test-harness.js");
 
 const baseCfg = {
-  session: { mainKey: "main", scope: "per-sender" },
+  session: { mainKey: "test-agent", scope: "per-sender" },
 } satisfies RemoteClawConfig;
 
 type FakeBinding = {
@@ -108,8 +108,8 @@ function createFakeBinding(overrides: Partial<FakeBinding> = {}): FakeBinding {
     channelId: "parent-1",
     threadId: "thread-1",
     targetKind: "subagent",
-    targetSessionKey: "agent:main:subagent:child",
-    agentId: "main",
+    targetSessionKey: "agent:test-agent:subagent:child",
+    agentId: "test-agent",
     boundBy: "user-1",
     boundAt: now,
     lastActivityAt: now,
@@ -120,7 +120,7 @@ function createFakeBinding(overrides: Partial<FakeBinding> = {}): FakeBinding {
 function createTelegramBinding(overrides?: Partial<SessionBindingRecord>): SessionBindingRecord {
   return {
     bindingId: "default:-100200300:topic:77",
-    targetSessionKey: "agent:main:subagent:child",
+    targetSessionKey: "agent:test-agent:subagent:child",
     targetKind: "subagent",
     conversation: {
       channel: "telegram",
@@ -176,7 +176,7 @@ describe("/session idle and /session max-age", () => {
     const text = result?.reply?.text ?? "";
 
     expect(hoisted.setThreadBindingIdleTimeoutBySessionKeyMock).toHaveBeenCalledWith({
-      targetSessionKey: "agent:main:subagent:child",
+      targetSessionKey: "agent:test-agent:subagent:child",
       accountId: "default",
       idleTimeoutMs: 2 * 60 * 60 * 1000,
     });
@@ -220,7 +220,7 @@ describe("/session idle and /session max-age", () => {
     const text = result?.reply?.text ?? "";
 
     expect(hoisted.setThreadBindingMaxAgeBySessionKeyMock).toHaveBeenCalledWith({
-      targetSessionKey: "agent:main:subagent:child",
+      targetSessionKey: "agent:test-agent:subagent:child",
       accountId: "default",
       maxAgeMs: 3 * 60 * 60 * 1000,
     });
@@ -235,7 +235,7 @@ describe("/session idle and /session max-age", () => {
     hoisted.sessionBindingResolveByConversationMock.mockReturnValue(createTelegramBinding());
     hoisted.setTelegramThreadBindingIdleTimeoutBySessionKeyMock.mockReturnValue([
       {
-        targetSessionKey: "agent:main:subagent:child",
+        targetSessionKey: "agent:test-agent:subagent:child",
         boundAt: Date.now(),
         lastActivityAt: Date.now(),
         idleTimeoutMs: 2 * 60 * 60 * 1000,
@@ -249,7 +249,7 @@ describe("/session idle and /session max-age", () => {
     const text = result?.reply?.text ?? "";
 
     expect(hoisted.setTelegramThreadBindingIdleTimeoutBySessionKeyMock).toHaveBeenCalledWith({
-      targetSessionKey: "agent:main:subagent:child",
+      targetSessionKey: "agent:test-agent:subagent:child",
       accountId: "default",
       idleTimeoutMs: 2 * 60 * 60 * 1000,
     });
@@ -267,7 +267,7 @@ describe("/session idle and /session max-age", () => {
     );
     hoisted.setTelegramThreadBindingMaxAgeBySessionKeyMock.mockReturnValue([
       {
-        targetSessionKey: "agent:main:subagent:child",
+        targetSessionKey: "agent:test-agent:subagent:child",
         boundAt,
         lastActivityAt: Date.now(),
         maxAgeMs: 3 * 60 * 60 * 1000,
@@ -281,7 +281,7 @@ describe("/session idle and /session max-age", () => {
     const text = result?.reply?.text ?? "";
 
     expect(hoisted.setTelegramThreadBindingMaxAgeBySessionKeyMock).toHaveBeenCalledWith({
-      targetSessionKey: "agent:main:subagent:child",
+      targetSessionKey: "agent:test-agent:subagent:child",
       accountId: "default",
       maxAgeMs: 3 * 60 * 60 * 1000,
     });
@@ -300,7 +300,7 @@ describe("/session idle and /session max-age", () => {
     );
 
     expect(hoisted.setThreadBindingMaxAgeBySessionKeyMock).toHaveBeenCalledWith({
-      targetSessionKey: "agent:main:subagent:child",
+      targetSessionKey: "agent:test-agent:subagent:child",
       accountId: "default",
       maxAgeMs: 0,
     });

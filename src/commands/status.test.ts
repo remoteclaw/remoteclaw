@@ -399,7 +399,7 @@ describe("statusCommand", () => {
     await statusCommand({ json: true }, runtime as never);
     const payload = JSON.parse(String(runtimeLogMock.mock.calls[0]?.[0]));
     expect(payload.linkChannel.linked).toBe(true);
-    expect(payload.memory.agentId).toBe("main");
+    expect(payload.memory.agentId).toBe("test-agent");
     expect(payload.memoryPlugin.enabled).toBe(true);
     expect(payload.memoryPlugin.slot).toBe("memory-core");
     expect(payload.memory.vector.available).toBe(true);

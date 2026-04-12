@@ -6,10 +6,10 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 const getMemorySearchManager = vi.fn();
 const loadConfig = vi.fn<() => Record<string, unknown>>(() => ({
-  agents: { list: [{ id: "main" }] },
+  agents: { list: [{ id: "test-agent" }] },
 }));
-const resolveSoleAgentId = vi.fn(() => "main");
-const listAgentIds = vi.fn(() => ["main"]);
+const resolveSoleAgentId = vi.fn(() => "test-agent");
+const listAgentIds = vi.fn(() => ["test-agent"]);
 const resolveCommandSecretRefsViaGateway = vi.fn(async ({ config }: { config: unknown }) => ({
   resolvedConfig: config,
   diagnostics: [] as string[],
@@ -275,7 +275,7 @@ describe("memory cli", () => {
     });
 
     const log = spyRuntimeLogs();
-    await runMemoryCli(["status", "--agent", "main"]);
+    await runMemoryCli(["status", "--agent", "test-agent"]);
 
     expect(log).toHaveBeenCalledWith(expect.stringContaining("Vector: unavailable"));
     expect(log).toHaveBeenCalledWith(expect.stringContaining("Vector error: load failed"));
@@ -353,7 +353,7 @@ describe("memory cli", () => {
 
     expectCliSync(sync);
     expect(close).toHaveBeenCalled();
-    expect(log).toHaveBeenCalledWith("Memory index updated (main).");
+    expect(log).toHaveBeenCalledWith("Memory index updated (test-agent).");
   });
 
   it("logs qmd index file path and size after index", async () => {
@@ -367,7 +367,7 @@ describe("memory cli", () => {
 
       expectCliSync(sync);
       expect(log).toHaveBeenCalledWith(expect.stringContaining("QMD index: "));
-      expect(log).toHaveBeenCalledWith("Memory index updated (main).");
+      expect(log).toHaveBeenCalledWith("Memory index updated (test-agent).");
       expect(close).toHaveBeenCalled();
     });
   });
@@ -383,7 +383,7 @@ describe("memory cli", () => {
 
       expectCliSync(sync);
       expect(error).toHaveBeenCalledWith(
-        expect.stringContaining("Memory index failed (main): QMD index file is empty"),
+        expect.stringContaining("Memory index failed (test-agent): QMD index file is empty"),
       );
       expect(close).toHaveBeenCalled();
       expect(process.exitCode).toBe(1);
@@ -449,7 +449,7 @@ describe("memory cli", () => {
 
     const payload = firstLoggedJson(log);
     expect(Array.isArray(payload)).toBe(true);
-    expect((payload[0] as Record<string, unknown>)?.agentId).toBe("main");
+    expect((payload[0] as Record<string, unknown>)?.agentId).toBe("test-agent");
     expect(close).toHaveBeenCalled();
   });
 

@@ -43,7 +43,7 @@ function resolveWithStoredEntry(params?: {
   return resolveCronSession({
     cfg: {} as RemoteClawConfig,
     sessionKey,
-    agentId: "main",
+    agentId: "test-agent",
     nowMs: NOW_MS,
     forceNew: params?.forceNew,
   });
@@ -56,7 +56,7 @@ describe("resolveCronSession", () => {
 
   it("preserves modelOverride and providerOverride from existing session entry", () => {
     const result = resolveWithStoredEntry({
-      sessionKey: "agent:main:cron:test-job",
+      sessionKey: "agent:test-agent:cron:test-job",
       entry: {
         sessionId: "old-session-id",
         updatedAt: 1000,
@@ -76,7 +76,7 @@ describe("resolveCronSession", () => {
 
   it("handles missing modelOverride gracefully", () => {
     const result = resolveWithStoredEntry({
-      sessionKey: "agent:main:cron:test-job",
+      sessionKey: "agent:test-agent:cron:test-job",
       entry: {
         sessionId: "old-session-id",
         updatedAt: 1000,
@@ -90,7 +90,7 @@ describe("resolveCronSession", () => {
 
   it("handles no existing session entry", () => {
     const result = resolveWithStoredEntry({
-      sessionKey: "agent:main:cron:new-job",
+      sessionKey: "agent:test-agent:cron:new-job",
     });
 
     expect(result.sessionEntry.modelOverride).toBeUndefined();

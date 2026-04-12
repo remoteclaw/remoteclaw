@@ -7,8 +7,8 @@ describe("ACP binding cutover schema", () => {
       agents: {
         list: [
           {
-            id: "main",
-            workspace: "/tmp/main",
+            id: "primary",
+            workspace: "/tmp/primary",
             default: true,
             runtime: { type: "embedded" },
           },
@@ -30,7 +30,7 @@ describe("ACP binding cutover schema", () => {
       bindings: [
         {
           type: "route",
-          agentId: "main",
+          agentId: "primary",
           match: { channel: "discord", accountId: "default" },
         },
         {

@@ -11,6 +11,9 @@ import {
   toAgentStoreSessionKey,
 } from "./session-key.js";
 
+// Legacy alias string pinned as test input for parser-semantics cases.
+const LEGACY_ALIAS = "main";
+
 describe("classifySessionKeyShape", () => {
   it("classifies empty keys as missing", () => {
     expect(classifySessionKeyShape(undefined)).toBe("missing");
@@ -53,7 +56,7 @@ describe("session key backward compatibility", () => {
 describe("getSubagentDepth", () => {
   it("returns 0 for non-subagent session keys", () => {
     expect(getSubagentDepth("agent:main:main")).toBe(0);
-    expect(getSubagentDepth("main")).toBe(0);
+    expect(getSubagentDepth(LEGACY_ALIAS)).toBe(0);
     expect(getSubagentDepth(undefined)).toBe(0);
   });
 
@@ -101,8 +104,8 @@ describe("deriveSessionChatType", () => {
 
 describe("session key canonicalization", () => {
   it("parses agent keys case-insensitively and returns lowercase tokens", () => {
-    expect(parseAgentSessionKey("AGENT:Main:Hook:Webhook:42")).toEqual({
-      agentId: "main",
+    expect(parseAgentSessionKey("AGENT:Alpha:Hook:Webhook:42")).toEqual({
+      agentId: "alpha",
       rest: "hook:webhook:42",
     });
   });
@@ -110,16 +113,16 @@ describe("session key canonicalization", () => {
   it("does not double-prefix already-qualified agent keys", () => {
     expect(
       toAgentStoreSessionKey({
-        agentId: "main",
-        requestKey: "agent:main:main",
+        agentId: "alpha",
+        requestKey: "agent:alpha:main",
       }),
-    ).toBe("agent:main:main");
+    ).toBe("agent:alpha:main");
   });
 });
 
 describe("isValidAgentId", () => {
   it("accepts valid agent ids", () => {
-    expect(isValidAgentId("main")).toBe(true);
+    expect(isValidAgentId(LEGACY_ALIAS)).toBe(true);
     expect(isValidAgentId("my-research_agent01")).toBe(true);
   });
 

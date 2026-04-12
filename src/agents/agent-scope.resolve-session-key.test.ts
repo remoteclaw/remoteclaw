@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 
+// Legacy session-key alias (no "agent:" prefix). Pre-#2308 this was the
+// implicit default DM session key; post-elimination it is just a legacy alias
+// string that resolvers fall back on.
+const LEGACY_ALIAS = "main";
+
 const { warnMock } = vi.hoisted(() => ({
   warnMock: vi.fn(),
 }));
@@ -41,7 +46,7 @@ describe("resolveSessionKeyAgentId", () => {
       const cfg: RemoteClawConfig = {
         agents: { list: [{ id: "Main" }] },
       };
-      expect(resolveSessionKeyAgentId("AGENT:Main:session", cfg)).toBe("main");
+      expect(resolveSessionKeyAgentId("AGENT:Main:session", cfg)).toBe(LEGACY_ALIAS);
       expect(warnMock).not.toHaveBeenCalled();
     });
   });
@@ -51,7 +56,7 @@ describe("resolveSessionKeyAgentId", () => {
       const cfg: RemoteClawConfig = {
         agents: { list: [{ id: "home" }] },
       };
-      expect(resolveSessionKeyAgentId("main", cfg)).toBe("home");
+      expect(resolveSessionKeyAgentId(LEGACY_ALIAS, cfg)).toBe("home");
       expect(warnMock).not.toHaveBeenCalled();
     });
 
@@ -69,13 +74,13 @@ describe("resolveSessionKeyAgentId", () => {
       const cfg: RemoteClawConfig = {
         agents: { list: [{ id: "alpha" }, { id: "beta" }] },
       };
-      const result = resolveSessionKeyAgentId("main", cfg);
+      const result = resolveSessionKeyAgentId(LEGACY_ALIAS, cfg);
       expect(result).toBe("alpha");
       expect(warnMock).toHaveBeenCalledOnce();
       expect(warnMock).toHaveBeenCalledWith(
         expect.stringContaining("legacy session key"),
         expect.objectContaining({
-          sessionKey: "main",
+          sessionKey: LEGACY_ALIAS,
           chosenAgent: "alpha",
         }),
       );
@@ -152,14 +157,14 @@ describe("resolveSessionKeyAgentId", () => {
   });
 
   describe("no agents configured", () => {
-    it("returns default agent ID for legacy key", () => {
+    it("returns legacy alias for legacy key", () => {
       const cfg: RemoteClawConfig = {};
-      expect(resolveSessionKeyAgentId("main", cfg)).toBe("main");
+      expect(resolveSessionKeyAgentId(LEGACY_ALIAS, cfg)).toBe(LEGACY_ALIAS);
     });
 
-    it("returns default agent ID for missing key", () => {
+    it("returns legacy alias for missing key", () => {
       const cfg: RemoteClawConfig = {};
-      expect(resolveSessionKeyAgentId(undefined, cfg)).toBe("main");
+      expect(resolveSessionKeyAgentId(undefined, cfg)).toBe(LEGACY_ALIAS);
     });
   });
 });

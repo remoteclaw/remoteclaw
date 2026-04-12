@@ -4,7 +4,7 @@ import type { StatusSummary } from "./status.types.js";
 
 function createRecentSessionRow() {
   return {
-    key: "main",
+    key: "test-agent",
     kind: "direct" as const,
     sessionId: "sess-1",
     updatedAt: 1,
@@ -20,8 +20,8 @@ describe("redactSensitiveStatusSummary", () => {
   it("removes sensitive session and path details while preserving summary structure", () => {
     const input: StatusSummary = {
       heartbeat: {
-        defaultAgentId: "main",
-        agents: [{ agentId: "main", enabled: true, every: "5m", everyMs: 300_000 }],
+        defaultAgentId: "test-agent",
+        agents: [{ agentId: "test-agent", enabled: true, every: "5m", everyMs: 300_000 }],
       },
       channelSummary: ["ok"],
       queuedSystemEvents: ["none"],
@@ -32,7 +32,7 @@ describe("redactSensitiveStatusSummary", () => {
         recent: [createRecentSessionRow()],
         byAgent: [
           {
-            agentId: "main",
+            agentId: "test-agent",
             path: "/tmp/remoteclaw/main-sessions.json",
             count: 1,
             recent: [createRecentSessionRow()],

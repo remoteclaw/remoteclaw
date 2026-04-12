@@ -105,7 +105,7 @@ describe("CronService - session reaper runs in finally block (#31946)", () => {
       enqueueSystemEvent: vi.fn(),
       requestHeartbeatNow: vi.fn(),
       runIsolatedAgentJob: vi.fn().mockResolvedValue({ status: "ok", summary: "done" }),
-      soleAgentId: "main",
+      soleAgentId: "test-agent",
       resolveSessionStorePath: (agentId) => {
         const p = path.join(path.dirname(store.storePath), `${agentId}-sessions`, "sessions.json");
         resolvedPaths.push(p);

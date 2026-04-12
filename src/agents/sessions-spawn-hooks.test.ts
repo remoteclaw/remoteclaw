@@ -185,7 +185,7 @@ describe("sessions_spawn subagent lifecycle hooks", () => {
     expect(hookRunnerMocks.runSubagentSpawning).toHaveBeenCalledWith(
       {
         childSessionKey: expect.stringMatching(/^agent:main:subagent:/),
-        agentId: "main",
+        agentId: "test-agent",
         label: "research",
         mode: "session",
         requester: {
@@ -209,7 +209,7 @@ describe("sessions_spawn subagent lifecycle hooks", () => {
     ];
     expect(event).toMatchObject({
       runId: "run-1",
-      agentId: "main",
+      agentId: "test-agent",
       label: "research",
       mode: "session",
       requester: {

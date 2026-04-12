@@ -209,7 +209,7 @@ describe("security fix", () => {
     const configPath = path.join(stateDir, "remoteclaw.json");
     await fs.writeFile(
       configPath,
-      `{ "$include": "./includes/extra.json5", agents: { list: [{ id: "main", workspace: "/tmp/main" }] }, channels: { whatsapp: { groupPolicy: "open" } } }\n`,
+      `{ "$include": "./includes/extra.json5", agents: { list: [{ id: "test-agent", workspace: "/tmp/test-agent" }] }, channels: { whatsapp: { groupPolicy: "open" } } }\n`,
       "utf-8",
     );
     await fs.chmod(configPath, 0o644);
@@ -224,13 +224,13 @@ describe("security fix", () => {
     );
     await fs.chmod(allowFromPath, 0o644);
 
-    const agentDir = path.join(stateDir, "agents", "main", "agent");
+    const agentDir = path.join(stateDir, "agents", "test-agent", "agent");
     await fs.mkdir(agentDir, { recursive: true });
     const authProfilesPath = path.join(agentDir, "auth-profiles.json");
     await fs.writeFile(authProfilesPath, "{}\n", "utf-8");
     await fs.chmod(authProfilesPath, 0o644);
 
-    const sessionsDir = path.join(stateDir, "agents", "main", "sessions");
+    const sessionsDir = path.join(stateDir, "agents", "test-agent", "sessions");
     await fs.mkdir(sessionsDir, { recursive: true });
     const sessionsStorePath = path.join(sessionsDir, "sessions.json");
     await fs.writeFile(sessionsStorePath, "{}\n", "utf-8");

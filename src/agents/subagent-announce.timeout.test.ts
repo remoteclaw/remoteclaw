@@ -44,9 +44,9 @@ vi.mock("../config/config.js", async (importOriginal) => {
 
 vi.mock("../config/sessions.js", () => ({
   loadSessionStore: vi.fn(() => sessionStore),
-  resolveAgentIdFromSessionKey: () => "main",
-  resolveStorePath: () => "/tmp/sessions-main.json",
-  resolveMainSessionKey: () => "agent:main:main",
+  resolveAgentIdFromSessionKey: () => "test-agent",
+  resolveStorePath: () => "/tmp/sessions-test-agent.json",
+  resolveMainSessionKey: () => "agent:test-agent:main",
 }));
 
 vi.mock("./subagent-depth.js", () => ({

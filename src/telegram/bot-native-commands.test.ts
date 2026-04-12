@@ -103,7 +103,7 @@ describe("registerTelegramNativeCommands", () => {
   it("scopes skill commands to default agent without a matching binding (#15599)", () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "main", default: true }, { id: "butler" }],
+        list: [{ id: "alpha", default: true }, { id: "butler" }],
       },
     };
 
@@ -111,7 +111,7 @@ describe("registerTelegramNativeCommands", () => {
 
     expect(listSkillCommandsForAgents).toHaveBeenCalledWith({
       cfg,
-      agentIds: ["main"],
+      agentIds: ["alpha"],
     });
   });
 

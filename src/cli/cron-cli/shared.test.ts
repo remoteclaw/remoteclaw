@@ -17,7 +17,7 @@ function createBaseJob(overrides: Partial<CronJob>): CronJob {
   const now = Date.now();
   return {
     id: "job-id",
-    agentId: "main",
+    agentId: "test-agent",
     name: "Test Job",
     enabled: true,
     createdAtMs: now,

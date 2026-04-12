@@ -143,6 +143,12 @@ function createLegacyStateMigrationDetectionResult(params?: {
       hasLegacyTelegram: false,
       copyPlans: [],
     },
+    orphanedMainKeys: {
+      keys: [],
+      scenario: "none",
+      soleAgentId: null,
+      configuredAgentIds: [],
+    },
     preview: params?.preview ?? [],
   };
 }

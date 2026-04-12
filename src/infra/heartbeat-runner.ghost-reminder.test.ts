@@ -48,7 +48,7 @@ describe("Ghost reminder bug (issue #13317)", () => {
             prompt: "Check status",
           },
         },
-        list: [{ id: "main", workspace: params.tmpDir }],
+        list: [{ id: "alpha", workspace: params.tmpDir }],
       },
       channels: { telegram: { allowFrom: ["*"] } },
       session: { store: params.storePath },
@@ -115,7 +115,7 @@ describe("Ghost reminder bug (issue #13317)", () => {
         params.enqueue(sessionKey);
         const result = await runHeartbeatOnce({
           cfg,
-          agentId: "main",
+          agentId: "alpha",
           reason: params.reason,
           deps: {
             sendTelegram,

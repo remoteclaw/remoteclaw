@@ -121,7 +121,7 @@ function createMinimalRun(params?: {
   const resolvedQueue = {
     mode: params?.resolvedQueueMode ?? "interrupt",
   } as unknown as QueueSettings;
-  const sessionKey = params?.sessionKey ?? "main";
+  const sessionKey = params?.sessionKey ?? "test-agent";
   const followupRun = {
     prompt: "hello",
     summaryLine: "hello",
@@ -158,7 +158,7 @@ function createMinimalRun(params?: {
       return runReplyAgent({
         commandBody: "hello",
         followupRun,
-        queueKey: "main",
+        queueKey: "test-agent",
         resolvedQueue,
         shouldSteer: false,
         shouldFollowup: params?.shouldFollowup ?? false,
@@ -215,10 +215,10 @@ function createBaseRun(params: {
     summaryLine: "hello",
     enqueuedAt: Date.now(),
     run: {
-      agentId: "main",
+      agentId: "test-agent",
       agentDir: "/tmp/agent",
       sessionId: "session",
-      sessionKey: "main",
+      sessionKey: "test-agent",
       messageProvider: "whatsapp",
       sessionFile: "/tmp/session.jsonl",
       workspaceDir: "/tmp",
@@ -362,7 +362,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       await fs.writeFile(storePath, JSON.stringify(sessionStore), "utf-8");
     }
 
-    const transcriptPath = sessions.resolveSessionTranscriptPath(params.sessionId, "main");
+    const transcriptPath = sessions.resolveSessionTranscriptPath(params.sessionId, "test-agent");
     await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
     await fs.writeFile(transcriptPath, "bad", "utf-8");
 
@@ -690,7 +690,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
         resolvedVerboseLevel: "on",
         sessionEntry,
         sessionStore,
-        sessionKey: "main",
+        sessionKey: "test-agent",
         storePath,
       });
       const res = await run();
@@ -738,7 +738,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
         resolvedVerboseLevel: testCase.verbose,
         sessionEntry,
         sessionStore,
-        sessionKey: "main",
+        sessionKey: "test-agent",
       });
       const phases: string[] = [];
       const off = onAgentEvent((evt) => {
@@ -798,7 +798,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
         resolvedVerboseLevel: "on",
         sessionEntry,
         sessionStore,
-        sessionKey: "main",
+        sessionKey: "test-agent",
       });
       const fallbackEvents: Array<Record<string, unknown>> = [];
       const off = onAgentEvent((evt) => {
@@ -872,7 +872,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
         resolvedVerboseLevel: "on",
         sessionEntry,
         sessionStore,
-        sessionKey: "main",
+        sessionKey: "test-agent",
       });
       const first = await run();
       const second = await run();
@@ -941,7 +941,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
         resolvedVerboseLevel: "on",
         sessionEntry,
         sessionStore,
-        sessionKey: "main",
+        sessionKey: "test-agent",
       });
       const phases: string[] = [];
       const off = onAgentEvent((evt) => {
@@ -1020,7 +1020,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
         resolvedVerboseLevel: "off",
         sessionEntry,
         sessionStore,
-        sessionKey: "main",
+        sessionKey: "test-agent",
       });
       const phases: string[] = [];
       const off = onAgentEvent((evt) => {
@@ -1100,7 +1100,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
           resolvedVerboseLevel: "on",
           sessionEntry,
           sessionStore,
-          sessionKey: "main",
+          sessionKey: "test-agent",
         });
         const res = await run();
         const firstText = Array.isArray(res) ? res[0]?.text : res?.text;
@@ -1116,7 +1116,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     await withTempStateDir(async (stateDir) => {
       const sessionId = "session";
       const storePath = path.join(stateDir, "sessions", "sessions.json");
-      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId, "main");
+      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId, "test-agent");
       const sessionEntry: SessionEntry = {
         sessionId,
         updatedAt: Date.now(),
@@ -1141,7 +1141,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       const { run } = createMinimalRun({
         sessionEntry,
         sessionStore,
-        sessionKey: "main",
+        sessionKey: "test-agent",
         storePath,
       });
       const res = await run();
@@ -1172,7 +1172,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     await withTempStateDir(async (stateDir) => {
       const sessionId = "session";
       const storePath = path.join(stateDir, "sessions", "sessions.json");
-      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId, "main");
+      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId, "test-agent");
       const sessionEntry = { sessionId, updatedAt: Date.now(), sessionFile: transcriptPath };
       const sessionStore = { main: sessionEntry };
 
@@ -1195,7 +1195,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       const { run } = createMinimalRun({
         sessionEntry,
         sessionStore,
-        sessionKey: "main",
+        sessionKey: "test-agent",
         storePath,
       });
       const res = await run();
@@ -1268,7 +1268,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     await withTempStateDir(async (stateDir) => {
       const sessionId = "session";
       const storePath = path.join(stateDir, "sessions", "sessions.json");
-      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId, "main");
+      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId, "test-agent");
       const sessionEntry = { sessionId, updatedAt: Date.now(), sessionFile: transcriptPath };
       const sessionStore = { main: sessionEntry };
 
@@ -1291,7 +1291,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       const { run } = createMinimalRun({
         sessionEntry,
         sessionStore,
-        sessionKey: "main",
+        sessionKey: "test-agent",
         storePath,
       });
       const res = await run();
@@ -1330,7 +1330,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       const { run } = createMinimalRun({
         sessionEntry,
         sessionStore,
-        sessionKey: "main",
+        sessionKey: "test-agent",
         storePath,
       });
       const res = await run();
@@ -1356,7 +1356,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       await fs.mkdir(path.dirname(storePath), { recursive: true });
       await fs.writeFile(storePath, JSON.stringify(sessionStore), "utf-8");
 
-      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId, "main");
+      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId, "test-agent");
       await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
       await fs.writeFile(transcriptPath, "ok", "utf-8");
 
@@ -1367,7 +1367,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       const { run } = createMinimalRun({
         sessionEntry,
         sessionStore,
-        sessionKey: "main",
+        sessionKey: "test-agent",
         storePath,
       });
       const res = await run();
@@ -1405,7 +1405,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
         const { run } = createMinimalRun({
           sessionEntry,
           sessionStore,
-          sessionKey: "main",
+          sessionKey: "test-agent",
           storePath,
         });
         const res = await run();
@@ -1480,7 +1480,7 @@ describe("runReplyAgent memory flush", () => {
 
   it("skips memory flush for CLI providers", async () => {
     await withTempStore(async (storePath) => {
-      const sessionKey = "main";
+      const sessionKey = "test-agent";
       const sessionEntry: SessionEntry = {
         sessionId: "session",
         updatedAt: Date.now(),
@@ -1522,7 +1522,7 @@ describe("runReplyAgent memory flush", () => {
 
   it("uses configured prompts for memory flush runs", async () => {
     await withTempStore(async (storePath) => {
-      const sessionKey = "main";
+      const sessionKey = "test-agent";
       const sessionEntry = {
         sessionId: "session",
         updatedAt: Date.now(),
@@ -1582,7 +1582,7 @@ describe("runReplyAgent memory flush", () => {
 
   it("passes stored bootstrap warning signatures to memory flush runs", async () => {
     await withTempStore(async (storePath) => {
-      const sessionKey = "main";
+      const sessionKey = "test-agent";
       const sessionEntry: SessionEntry = {
         sessionId: "session",
         updatedAt: Date.now(),
@@ -1653,7 +1653,7 @@ describe("runReplyAgent memory flush", () => {
 
   it("runs a memory flush turn and updates session metadata", async () => {
     await withTempStore(async (storePath) => {
-      const sessionKey = "main";
+      const sessionKey = "test-agent";
       const sessionEntry = {
         sessionId: "session",
         updatedAt: Date.now(),
@@ -1702,7 +1702,7 @@ describe("runReplyAgent memory flush", () => {
 
   it("runs memory flush when transcript fallback uses a relative sessionFile path", async () => {
     await withTempStore(async (storePath) => {
-      const sessionKey = "main";
+      const sessionKey = "test-agent";
       const sessionFile = "session-relative.jsonl";
       const transcriptPath = path.join(path.dirname(storePath), sessionFile);
       await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
@@ -1762,7 +1762,7 @@ describe("runReplyAgent memory flush", () => {
 
   it("forces memory flush when transcript file exceeds configured byte threshold", async () => {
     await withTempStore(async (storePath) => {
-      const sessionKey = "main";
+      const sessionKey = "test-agent";
       const sessionFile = "oversized-session.jsonl";
       const transcriptPath = path.join(path.dirname(storePath), sessionFile);
       await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
@@ -1824,7 +1824,7 @@ describe("runReplyAgent memory flush", () => {
 
   it("skips memory flush when disabled in config", async () => {
     await withTempStore(async (storePath) => {
-      const sessionKey = "main";
+      const sessionKey = "test-agent";
       const sessionEntry = {
         sessionId: "session",
         updatedAt: Date.now(),
@@ -1866,7 +1866,7 @@ describe("runReplyAgent memory flush", () => {
 
   it("skips memory flush after a prior flush in the same compaction cycle", async () => {
     await withTempStore(async (storePath) => {
-      const sessionKey = "main";
+      const sessionKey = "test-agent";
       const sessionEntry = {
         sessionId: "session",
         updatedAt: Date.now(),
@@ -1905,7 +1905,7 @@ describe("runReplyAgent memory flush", () => {
 
   it("increments compaction count when flush compaction completes", async () => {
     await withTempStore(async (storePath) => {
-      const sessionKey = "main";
+      const sessionKey = "test-agent";
       const sessionEntry = {
         sessionId: "session",
         updatedAt: Date.now(),

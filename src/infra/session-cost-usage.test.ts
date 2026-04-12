@@ -85,7 +85,7 @@ describe("session cost usage", () => {
     const config = {} as unknown as RemoteClawConfig;
 
     await withStateDir(root, async () => {
-      const summary = await loadCostUsageSummary({ days: 30, config });
+      const summary = await loadCostUsageSummary({ days: 30, config, agentId: "main" });
       expect(summary.daily.length).toBe(1);
       expect(summary.totals.totalTokens).toBe(50);
       // Only explicit cost.total from log entries counts; pricing fallback no longer works
@@ -207,6 +207,7 @@ describe("session cost usage", () => {
 
     await withStateDir(root, async () => {
       const sessions = await discoverAllSessions({
+        agentId: "main",
         startMs: now - 7 * 24 * 60 * 60 * 1000,
         endMs: now - 24 * 60 * 60 * 1000,
       });

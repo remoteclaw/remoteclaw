@@ -842,6 +842,7 @@ describe("runHeartbeatOnce", () => {
     try {
       const cfg: RemoteClawConfig = {
         agents: {
+          list: [{ id: "main", workspace: tmpDir }],
           defaults: {
             workspace: tmpDir,
             heartbeat: { every: "5m", target: "whatsapp" },

@@ -11,7 +11,7 @@ import {
   resolveSessionFilePathOptions,
   resolveSessionKey,
   resolveSessionTranscriptPath,
-  resolveSessionTranscriptsDir,
+  resolveSessionTranscriptsDirForAgent,
   updateLastRoute,
   updateSessionStore,
   updateSessionStoreEntry,
@@ -208,7 +208,7 @@ describe("sessions", () => {
 
   for (const testCase of resolveSessionKeyCases) {
     it(testCase.name, () => {
-      expect(resolveSessionKey(testCase.scope, testCase.ctx, testCase.mainKey)).toBe(
+      expect(resolveSessionKey(testCase.scope, testCase.ctx, "main", testCase.mainKey)).toBe(
         testCase.expected,
       );
     });
@@ -540,7 +540,8 @@ describe("sessions", () => {
   });
 
   it("derives session transcripts dir from REMOTECLAW_STATE_DIR", () => {
-    const dir = resolveSessionTranscriptsDir(
+    const dir = resolveSessionTranscriptsDirForAgent(
+      "main",
       { REMOTECLAW_STATE_DIR: "/custom/state" } as NodeJS.ProcessEnv,
       () => "/home/ignored",
     );

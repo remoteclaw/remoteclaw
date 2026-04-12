@@ -298,7 +298,7 @@ describe("trigger handling", () => {
         expect(text?.startsWith("⚙️ Compacted")).toBe(true);
         expect(getCompactSessionMock()).toHaveBeenCalledOnce();
         const store = loadSessionStore(storePath);
-        const sessionKey = resolveSessionKey("per-sender", request);
+        const sessionKey = resolveSessionKey("per-sender", request, "main");
         expect(store[sessionKey]?.compactionCount).toBe(1);
       }
 

@@ -1,6 +1,5 @@
 import {
   buildAgentMainSessionKey,
-  DEFAULT_AGENT_ID,
   normalizeAgentId,
   normalizeMainKey,
   resolveAgentIdFromSessionKey,
@@ -15,9 +14,11 @@ export function resolveMainSessionKey(cfg?: {
   if (cfg?.session?.scope === "global") {
     return "global";
   }
-  const agents = cfg?.agents?.list ?? [];
-  const defaultAgentId = agents[0]?.id ?? DEFAULT_AGENT_ID;
-  const agentId = normalizeAgentId(defaultAgentId);
+  const firstAgentId = cfg?.agents?.list?.[0]?.id;
+  if (!firstAgentId) {
+    throw new Error("Cannot resolve main session key: no agents configured (agents.list is empty)");
+  }
+  const agentId = normalizeAgentId(firstAgentId);
   const mainKey = normalizeMainKey(cfg?.session?.mainKey);
   return buildAgentMainSessionKey({ agentId, mainKey });
 }

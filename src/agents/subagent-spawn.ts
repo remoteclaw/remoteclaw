@@ -340,9 +340,16 @@ export async function spawnSubagentDirect(
     };
   }
 
-  const requesterAgentId = normalizeAgentId(
-    ctx.requesterAgentIdOverride ?? parseAgentSessionKey(requesterInternalKey)?.agentId,
-  );
+  const rawRequesterAgentId =
+    ctx.requesterAgentIdOverride ?? parseAgentSessionKey(requesterInternalKey)?.agentId;
+  if (!rawRequesterAgentId) {
+    return {
+      status: "forbidden",
+      error:
+        "sessions_spawn: cannot resolve requester agent id — tool must run inside an agent session",
+    };
+  }
+  const requesterAgentId = normalizeAgentId(rawRequesterAgentId);
   const targetAgentId = requestedAgentId ? normalizeAgentId(requestedAgentId) : requesterAgentId;
   if (targetAgentId !== requesterAgentId) {
     const allowAgents = resolveAgentConfig(cfg, requesterAgentId)?.subagents?.allowAgents ?? [];

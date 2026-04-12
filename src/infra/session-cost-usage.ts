@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline";
+import { listAgentIds } from "../agents/agent-scope.js";
 import type { NormalizedUsage, UsageLike } from "../agents/usage.js";
 import { normalizeUsage } from "../agents/usage.js";
 import { stripInboundMetadata } from "../auto-reply/reply/strip-inbound-meta.js";
@@ -303,26 +304,38 @@ export async function loadCostUsageSummary(params?: {
   const dailyMap = new Map<string, CostUsageTotals>();
   const totals = emptyTotals();
 
-  const sessionsDir = resolveSessionTranscriptsDirForAgent(params?.agentId);
-  const entries = await fs.promises.readdir(sessionsDir, { withFileTypes: true }).catch(() => []);
-  const files = (
-    await Promise.all(
-      entries
-        .filter((entry) => entry.isFile() && entry.name.endsWith(".jsonl"))
-        .map(async (entry) => {
-          const filePath = path.join(sessionsDir, entry.name);
-          const stats = await fs.promises.stat(filePath).catch(() => null);
-          if (!stats) {
-            return null;
-          }
-          // Include file if it was modified after our start time
-          if (stats.mtimeMs < sinceTime) {
-            return null;
-          }
-          return filePath;
-        }),
-    )
-  ).filter((filePath): filePath is string => Boolean(filePath));
+  // Resolve the list of agents to scan. Explicit agentId scopes to one agent;
+  // otherwise iterate every configured agent. Empty config + no agentId yields
+  // an empty summary (no phantom "main" fallback).
+  const agentsToScan: string[] = params?.agentId
+    ? [params.agentId]
+    : params?.config
+      ? listAgentIds(params.config)
+      : [];
+
+  const files: string[] = [];
+  for (const agentId of agentsToScan) {
+    const sessionsDir = resolveSessionTranscriptsDirForAgent(agentId);
+    const entries = await fs.promises.readdir(sessionsDir, { withFileTypes: true }).catch(() => []);
+    const agentFiles = (
+      await Promise.all(
+        entries
+          .filter((entry) => entry.isFile() && entry.name.endsWith(".jsonl"))
+          .map(async (entry) => {
+            const filePath = path.join(sessionsDir, entry.name);
+            const stats = await fs.promises.stat(filePath).catch(() => null);
+            if (!stats) {
+              return null;
+            }
+            if (stats.mtimeMs < sinceTime) {
+              return null;
+            }
+            return filePath;
+          }),
+      )
+    ).filter((filePath): filePath is string => Boolean(filePath));
+    files.push(...agentFiles);
+  }
 
   for (const filePath of files) {
     await scanUsageFile({
@@ -371,13 +384,18 @@ export async function loadCostUsageSummary(params?: {
 /**
  * Scan all transcript files to discover sessions not in the session store.
  * Returns basic metadata for each discovered session.
+ *
+ * Requires an explicit agentId — the caller is responsible for iterating
+ * agents if the scan should span multiple configured agents (see
+ * `discoverAllSessionsForUsage` in gateway/server-methods/usage.ts for the
+ * multi-agent pattern).
  */
-export async function discoverAllSessions(params?: {
-  agentId?: string;
+export async function discoverAllSessions(params: {
+  agentId: string;
   startMs?: number;
   endMs?: number;
 }): Promise<DiscoveredSession[]> {
-  const sessionsDir = resolveSessionTranscriptsDirForAgent(params?.agentId);
+  const sessionsDir = resolveSessionTranscriptsDirForAgent(params.agentId);
   const entries = await fs.promises.readdir(sessionsDir, { withFileTypes: true }).catch(() => []);
 
   const discovered: DiscoveredSession[] = [];

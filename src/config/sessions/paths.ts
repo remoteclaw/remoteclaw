@@ -2,35 +2,31 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { expandHomePrefix, resolveRequiredHomeDir } from "../../infra/home-dir.js";
-import { DEFAULT_AGENT_ID, normalizeAgentId } from "../../routing/session-key.js";
+import { normalizeAgentId } from "../../routing/session-key.js";
 import { resolveStateDir } from "../paths.js";
 
 function resolveAgentSessionsDir(
-  agentId?: string,
+  agentId: string | undefined,
   env: NodeJS.ProcessEnv = process.env,
   homedir: () => string = () => resolveRequiredHomeDir(env, os.homedir),
 ): string {
+  if (!agentId) {
+    throw new Error("resolveAgentSessionsDir: agentId is required — no phantom default agent");
+  }
   const root = resolveStateDir(env, homedir);
-  const id = normalizeAgentId(agentId ?? DEFAULT_AGENT_ID);
+  const id = normalizeAgentId(agentId);
   return path.join(root, "agents", id, "sessions");
 }
 
-export function resolveSessionTranscriptsDir(
-  env: NodeJS.ProcessEnv = process.env,
-  homedir: () => string = () => resolveRequiredHomeDir(env, os.homedir),
-): string {
-  return resolveAgentSessionsDir(DEFAULT_AGENT_ID, env, homedir);
-}
-
 export function resolveSessionTranscriptsDirForAgent(
-  agentId?: string,
+  agentId: string | undefined,
   env: NodeJS.ProcessEnv = process.env,
   homedir: () => string = () => resolveRequiredHomeDir(env, os.homedir),
 ): string {
   return resolveAgentSessionsDir(agentId, env, homedir);
 }
 
-export function resolveDefaultSessionStorePath(agentId?: string): string {
+export function resolveDefaultSessionStorePath(agentId: string | undefined): string {
   return path.join(resolveAgentSessionsDir(agentId), "sessions.json");
 }
 
@@ -72,7 +68,10 @@ function resolveSessionsDir(opts?: SessionFilePathOptions): string {
   if (sessionsDir) {
     return path.resolve(sessionsDir);
   }
-  return resolveAgentSessionsDir(opts?.agentId);
+  if (!opts?.agentId) {
+    throw new Error("resolveSessionsDir requires opts.sessionsDir or opts.agentId");
+  }
+  return resolveAgentSessionsDir(opts.agentId);
 }
 
 function resolvePathFromAgentSessionsDir(
@@ -253,7 +252,7 @@ export function resolveSessionTranscriptPathInDir(
 
 export function resolveSessionTranscriptPath(
   sessionId: string,
-  agentId?: string,
+  agentId: string | undefined,
   topicId?: string | number,
 ): string {
   return resolveSessionTranscriptPathInDir(sessionId, resolveAgentSessionsDir(agentId), topicId);
@@ -277,11 +276,17 @@ export function resolveSessionFilePath(
 }
 
 export function resolveStorePath(store?: string, opts?: { agentId?: string }) {
-  const agentId = normalizeAgentId(opts?.agentId ?? DEFAULT_AGENT_ID);
-  if (!store) {
-    return resolveDefaultSessionStorePath(agentId);
-  }
-  if (store.includes("{agentId}")) {
+  const requiresAgentId = !store || store.includes("{agentId}");
+  if (requiresAgentId) {
+    if (!opts?.agentId) {
+      throw new Error(
+        "resolveStorePath: opts.agentId is required when store is unset or contains the {agentId} template",
+      );
+    }
+    const agentId = normalizeAgentId(opts.agentId);
+    if (!store) {
+      return resolveDefaultSessionStorePath(agentId);
+    }
     const expanded = store.replaceAll("{agentId}", agentId);
     if (expanded.startsWith("~")) {
       return path.resolve(

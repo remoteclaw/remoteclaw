@@ -3,7 +3,8 @@ import JSON5 from "json5";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
 import { type RemoteClawConfig, createConfigIO, writeConfigFile } from "../config/config.js";
 import { formatConfigPath } from "../config/logging.js";
-import { resolveSessionTranscriptsDir } from "../config/sessions.js";
+import { resolveSessionTranscriptsDirForAgent } from "../config/sessions.js";
+import { normalizeAgentId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { shortenHomePath } from "../utils.js";
@@ -50,7 +51,10 @@ export async function setupCommand(
     runtime.log(`Workspace OK: ${shortenHomePath(ws.dir)}`);
   }
 
-  const sessionsDir = resolveSessionTranscriptsDir();
-  await fs.mkdir(sessionsDir, { recursive: true });
-  runtime.log(`Sessions OK: ${shortenHomePath(sessionsDir)}`);
+  const firstAgentId = cfg.agents?.list?.[0]?.id;
+  if (firstAgentId) {
+    const sessionsDir = resolveSessionTranscriptsDirForAgent(normalizeAgentId(firstAgentId));
+    await fs.mkdir(sessionsDir, { recursive: true });
+    runtime.log(`Sessions OK: ${shortenHomePath(sessionsDir)}`);
+  }
 }

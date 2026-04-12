@@ -24,9 +24,11 @@ const OPENCLAW_CONFIG_FILENAME = "openclaw.json";
 const REMOTECLAW_CONFIG_FILENAME = "remoteclaw.json";
 
 /**
- * Default agent id used by OpenClaw when no explicit id is set.
+ * Legacy agent id used by OpenClaw when no explicit id was set. Used here
+ * only for backwards-compatible imports of pre-RemoteClaw configs — this is
+ * NOT a phantom agent default at runtime.
  */
-const DEFAULT_AGENT_ID = "main";
+const LEGACY_OPENCLAW_DEFAULT_AGENT_ID = "main";
 
 /**
  * Default workspace path for the default agent.
@@ -387,7 +389,7 @@ export function materializeWorkspaceDefaults(jsonContent: string): string {
   if (agentsList.length === 0 && hasSubstantiveContent) {
     // Step 2: Create default agent entry when config has real content
     const newAgents = agents ?? {};
-    newAgents.list = [{ id: DEFAULT_AGENT_ID, workspace: DEFAULT_WORKSPACE }];
+    newAgents.list = [{ id: LEGACY_OPENCLAW_DEFAULT_AGENT_ID, workspace: DEFAULT_WORKSPACE }];
     config.agents = newAgents;
     mutated = true;
   } else {
@@ -405,10 +407,10 @@ export function materializeWorkspaceDefaults(jsonContent: string): string {
         entry.workspace = defaultsWorkspace;
       } else {
         const id = typeof entry.id === "string" ? entry.id.trim() : "";
-        const isDefault = id === DEFAULT_AGENT_ID || agentsList.length === 1;
+        const isDefault = id === LEGACY_OPENCLAW_DEFAULT_AGENT_ID || agentsList.length === 1;
         entry.workspace = isDefault
           ? DEFAULT_WORKSPACE
-          : `~/.remoteclaw/workspace-${id || DEFAULT_AGENT_ID}`;
+          : `~/.remoteclaw/workspace-${id || LEGACY_OPENCLAW_DEFAULT_AGENT_ID}`;
       }
       mutated = true;
     }

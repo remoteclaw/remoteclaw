@@ -20,7 +20,7 @@ import { resolveSessionTranscriptsDirForAgent } from "../../config/sessions/path
 import { sameFileIdentity } from "../../infra/file-identity.js";
 import { SafeOpenError, readLocalFileSafely } from "../../infra/fs-safe.js";
 import { isNotFoundPathError, isPathInside } from "../../infra/path-guards.js";
-import { DEFAULT_AGENT_ID, normalizeAgentId } from "../../routing/session-key.js";
+import { normalizeAgentId } from "../../routing/session-key.js";
 import { resolveUserPath } from "../../utils.js";
 import {
   ErrorCodes,
@@ -479,14 +479,6 @@ export const agentsHandlers: GatewayRequestHandlers = {
     const cfg = loadConfig();
     const rawName = String(params.name ?? "").trim();
     const agentId = normalizeAgentId(rawName);
-    if (agentId === DEFAULT_AGENT_ID) {
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, `"${DEFAULT_AGENT_ID}" is reserved`),
-      );
-      return;
-    }
 
     if (findAgentEntryIndex(listAgentEntries(cfg), agentId) >= 0) {
       respond(
@@ -574,14 +566,6 @@ export const agentsHandlers: GatewayRequestHandlers = {
 
     const cfg = loadConfig();
     const agentId = normalizeAgentId(String(params.agentId ?? ""));
-    if (agentId === DEFAULT_AGENT_ID) {
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, `"${DEFAULT_AGENT_ID}" cannot be deleted`),
-      );
-      return;
-    }
     if (!isConfiguredAgent(cfg, agentId)) {
       respondAgentNotFound(respond, agentId);
       return;

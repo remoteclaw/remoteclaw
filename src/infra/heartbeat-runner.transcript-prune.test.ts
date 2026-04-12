@@ -47,7 +47,9 @@ describe("heartbeat transcript pruning", () => {
   }) {
     await withTempTelegramHeartbeatSandbox(
       async ({ tmpDir, storePath, replySpy }) => {
-        const sessionKey = resolveMainSessionKey(undefined);
+        const sessionKey = resolveMainSessionKey({
+          agents: { list: [{ id: "main" }] },
+        });
         const transcriptPath = path.join(tmpDir, `${params.sessionId}.jsonl`);
         const originalContent = await createTranscriptWithContent(transcriptPath, params.sessionId);
         const originalSize = (await fs.stat(transcriptPath)).size;

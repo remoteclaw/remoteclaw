@@ -26,7 +26,7 @@ import {
   resolveControlUiRootOverrideSync,
   resolveControlUiRootSync,
 } from "../infra/control-ui-assets.js";
-import { isDiagnosticsEnabled } from "../infra/diagnostic-events.js";
+import { isDiagnosticsEnabled, onDiagnosticEvent } from "../infra/diagnostic-events.js";
 import { logAcceptedEnvOption } from "../infra/env.js";
 import { createExecApprovalForwarder } from "../infra/exec-approval-forwarder.js";
 import { onHeartbeatEvent } from "../infra/heartbeat-events.js";
@@ -47,6 +47,7 @@ import { createEmptyPluginRegistry } from "../plugins/registry.js";
 import { createPluginRuntime } from "../plugins/runtime/index.js";
 import type { PluginServicesHandle } from "../plugins/services.js";
 import { getTotalQueueSize } from "../process/command-queue.js";
+import { installRoutingDropsAccumulator } from "../routing/routing-drops-accumulator.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { runOnboardingWizard } from "../wizard/onboarding.js";
 import { createAuthRateLimiter, type AuthRateLimiter } from "./auth-rate-limit.js";
@@ -592,6 +593,51 @@ export async function startGatewayServer(
         broadcast("heartbeat", evt, { dropIfSlow: true });
       });
 
+  // Install the rolling routing-drop accumulator. This subscribes to the
+  // diagnostic event bus so `/remoteclaw status` can surface drop counts in
+  // its reply. Idempotent — subsequent calls are no-ops.
+  const routingDropAccumulatorUnsub = minimalTestGateway ? null : installRoutingDropsAccumulator();
+
+  // Forward routing-drop diagnostic events to the Control UI. The same drop
+  // event also increments the OTel counter (in diagnostics-otel) and the
+  // in-memory rolling accumulator consumed by /remoteclaw status.
+  const routingDropBroadcastUnsub = minimalTestGateway
+    ? null
+    : onDiagnosticEvent((evt) => {
+        if (evt.type !== "routing.drop") {
+          return;
+        }
+        broadcast(
+          "route.drop",
+          {
+            channel: evt.channel,
+            reason: evt.reason,
+            scope: evt.scope,
+            configuredAgents: evt.configuredAgents,
+            target: evt.target,
+            ts: evt.ts,
+            seq: evt.seq,
+          },
+          { dropIfSlow: true },
+        );
+      });
+
+  const routingDropUnsub =
+    routingDropAccumulatorUnsub || routingDropBroadcastUnsub
+      ? () => {
+          try {
+            routingDropAccumulatorUnsub?.();
+          } catch {
+            /* ignore */
+          }
+          try {
+            routingDropBroadcastUnsub?.();
+          } catch {
+            /* ignore */
+          }
+        }
+      : null;
+
   let heartbeatRunner: HeartbeatRunner = minimalTestGateway
     ? {
         stop: () => {},
@@ -837,6 +883,7 @@ export async function startGatewayServer(
     mediaCleanup,
     agentUnsub,
     heartbeatUnsub,
+    routingDropUnsub,
     chatRunState,
     clients,
     configReloader,

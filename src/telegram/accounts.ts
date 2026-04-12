@@ -9,7 +9,7 @@ import {
   resolveAccountWithDefaultFallback,
 } from "../plugin-sdk/account-resolution.js";
 import { resolveAccountEntry } from "../routing/account-lookup.js";
-import { listBoundAccountIds, resolveDefaultAgentBoundAccountId } from "../routing/bindings.js";
+import { listBoundAccountIds, resolveSoleAgentBoundAccountId } from "../routing/bindings.js";
 import { formatSetExplicitDefaultInstruction } from "../routing/default-account-warnings.js";
 import {
   DEFAULT_ACCOUNT_ID,
@@ -72,9 +72,9 @@ export function resetMissingDefaultWarnFlag(): void {
 }
 
 export function resolveDefaultTelegramAccountId(cfg: RemoteClawConfig): string {
-  const boundDefault = resolveDefaultAgentBoundAccountId(cfg, "telegram");
-  if (boundDefault) {
-    return boundDefault;
+  const boundSoleAgent = resolveSoleAgentBoundAccountId(cfg, "telegram");
+  if (boundSoleAgent) {
+    return boundSoleAgent;
   }
   const preferred = normalizeOptionalAccountId(cfg.channels?.telegram?.defaultAccount);
   if (

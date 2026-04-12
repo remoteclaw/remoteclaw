@@ -73,6 +73,7 @@ type StatusArgs = {
   timeLine?: string;
   queue?: QueueStatus;
   subagentsLine?: string;
+  routingDropsLine?: string;
   includeTranscriptUsage?: boolean;
   now?: number;
 };
@@ -438,6 +439,7 @@ export function buildStatusMessage(args: StatusArgs): string {
     args.usageLine,
     `🧵 ${sessionLine}`,
     args.subagentsLine,
+    args.routingDropsLine,
     `⚙️ ${optionsLine}`,
     voiceLine,
     activationLine,

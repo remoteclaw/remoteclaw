@@ -78,6 +78,7 @@ function createMentionGatedHistoryHandler() {
 
 function createSignalConfig(params: { requireMention: boolean; mentionPattern?: string }) {
   return {
+    agents: { list: [{ id: "main" }] },
     messages: {
       inbound: { debounceMs: 0 },
       groupChat: { mentionPatterns: [params.mentionPattern ?? "@bot"] },

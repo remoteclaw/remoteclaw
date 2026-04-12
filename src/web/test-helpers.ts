@@ -5,6 +5,12 @@ import { createMockBaileys } from "../../test/mocks/baileys.js";
 // Use globalThis to store the mock config so it survives vi.mock hoisting
 const CONFIG_KEY = Symbol.for("remoteclaw:testConfigMock");
 const DEFAULT_CONFIG = {
+  // Sole-agent fixture so web tests that predate #2309's silent-drop policy
+  // continue to exercise their inbound paths. The web adapter still uses the
+  // backward-compat resolveAgentRoute (tagged matchedBy=fallback.legacyRoute
+  // on silent-drop fallback), but having at least one configured agent keeps
+  // the fallback branch from throwing on zero-agents configs.
+  agents: { list: [{ id: "main" }] },
   channels: {
     whatsapp: {
       // Tests can override; default remains open to avoid surprising fixtures
@@ -23,11 +29,26 @@ if (!(globalThis as Record<symbol, unknown>)[CONFIG_KEY]) {
 }
 
 export function setLoadConfigMock(fn: unknown) {
-  (globalThis as Record<symbol, unknown>)[CONFIG_KEY] = typeof fn === "function" ? fn : () => fn;
+  const raw = typeof fn === "function" ? (fn as () => unknown) : () => fn;
+  (globalThis as Record<symbol, unknown>)[CONFIG_KEY] = () => applyRoutingDefaults(raw());
 }
 
 export function resetLoadConfigMock() {
   (globalThis as Record<symbol, unknown>)[CONFIG_KEY] = () => DEFAULT_CONFIG;
+}
+
+function applyRoutingDefaults(cfg: unknown): unknown {
+  // Inject a sole-agent fixture when tests provide a cfg without agents.list.
+  // The web adapter uses backward-compat resolveAgentRoute which fires silent-
+  // drop telemetry then falls back to the first configured agent. Without at
+  // least one agent in the list, the fallback branch throws.
+  if (cfg && typeof cfg === "object") {
+    const typed = cfg as { agents?: { list?: unknown } };
+    if (!typed.agents || !Array.isArray(typed.agents.list) || typed.agents.list.length === 0) {
+      return { ...typed, agents: { list: [{ id: "main" }] } };
+    }
+  }
+  return cfg;
 }
 
 vi.mock("../config/config.js", async (importOriginal) => {
@@ -37,7 +58,7 @@ vi.mock("../config/config.js", async (importOriginal) => {
     loadConfig: () => {
       const getter = (globalThis as Record<symbol, unknown>)[CONFIG_KEY];
       if (typeof getter === "function") {
-        return getter();
+        return applyRoutingDefaults(getter());
       }
       return DEFAULT_CONFIG;
     },
@@ -57,7 +78,7 @@ vi.mock("../../config/config.js", async (importOriginal) => {
     loadConfig: () => {
       const getter = (globalThis as Record<symbol, unknown>)[CONFIG_KEY];
       if (typeof getter === "function") {
-        return getter();
+        return applyRoutingDefaults(getter());
       }
       return DEFAULT_CONFIG;
     },

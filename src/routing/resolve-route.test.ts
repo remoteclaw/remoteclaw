@@ -8,6 +8,14 @@ import {
   resolveInboundLastRouteSessionKey,
 } from "./resolve-route.js";
 
+// Minimal sole-agent fixture used by tests that exercise the fallback path.
+// Supplying exactly one agent triggers sole-agent promotion, preserving the
+// pre-refactor behavior where unmatched messages landed on a "main" route.
+const makeSoleMainAgent = (): NonNullable<RemoteClawConfig["agents"]> => ({
+  list: [{ id: "main" }],
+});
+const SOLE_MAIN_AGENT = makeSoleMainAgent();
+
 describe("resolveAgentRoute", () => {
   const resolveDiscordGuildRoute = (cfg: RemoteClawConfig) =>
     resolveAgentRoute({
@@ -18,8 +26,8 @@ describe("resolveAgentRoute", () => {
       guildId: "g1",
     });
 
-  test("defaults to main/default when no bindings exist", () => {
-    const cfg: RemoteClawConfig = {};
+  test("sole-agent promotion applies when no binding matches", () => {
+    const cfg: RemoteClawConfig = { agents: SOLE_MAIN_AGENT };
     const route = resolveAgentRoute({
       cfg,
       channel: "whatsapp",
@@ -30,7 +38,7 @@ describe("resolveAgentRoute", () => {
     expect(route.accountId).toBe("default");
     expect(route.sessionKey).toBe("agent:main:main");
     expect(route.lastRoutePolicy).toBe("main");
-    expect(route.matchedBy).toBe("default");
+    expect(route.matchedBy).toBe("fallback.soleAgent");
   });
 
   test("dmScope controls direct-message session key isolation", () => {
@@ -43,6 +51,7 @@ describe("resolveAgentRoute", () => {
     ];
     for (const testCase of cases) {
       const cfg: RemoteClawConfig = {
+        agents: SOLE_MAIN_AGENT,
         session: { dmScope: testCase.dmScope },
       };
       const route = resolveAgentRoute({
@@ -110,6 +119,7 @@ describe("resolveAgentRoute", () => {
     ];
     for (const testCase of cases) {
       const cfg: RemoteClawConfig = {
+        agents: SOLE_MAIN_AGENT,
         session: {
           dmScope: testCase.dmScope,
           identityLinks: {
@@ -183,7 +193,7 @@ describe("resolveAgentRoute", () => {
   });
 
   test("coerces numeric peer ids to stable session keys", () => {
-    const cfg: RemoteClawConfig = {};
+    const cfg: RemoteClawConfig = { agents: SOLE_MAIN_AGENT };
     const route = resolveAgentRoute({
       cfg,
       channel: "discord",
@@ -337,6 +347,7 @@ describe("resolveAgentRoute", () => {
 
   test("missing accountId in binding matches default account only", () => {
     const cfg: RemoteClawConfig = {
+      agents: SOLE_MAIN_AGENT,
       bindings: [{ agentId: "defaultAcct", match: { channel: "whatsapp" } }],
     };
 
@@ -411,6 +422,7 @@ describe("resolveAgentRoute", () => {
 
 test("dmScope=per-account-channel-peer isolates DM sessions per account, channel and sender", () => {
   const cfg: RemoteClawConfig = {
+    agents: SOLE_MAIN_AGENT,
     session: { dmScope: "per-account-channel-peer" },
   };
   const route = resolveAgentRoute({
@@ -424,6 +436,7 @@ test("dmScope=per-account-channel-peer isolates DM sessions per account, channel
 
 test("dmScope=per-account-channel-peer uses default accountId when not provided", () => {
   const cfg: RemoteClawConfig = {
+    agents: SOLE_MAIN_AGENT,
     session: { dmScope: "per-account-channel-peer" },
   };
   const route = resolveAgentRoute({
@@ -521,20 +534,22 @@ describe("parentPeer binding inheritance (thread support)", () => {
 
   test("parentPeer with empty id is ignored", () => {
     const cfg: RemoteClawConfig = {
+      agents: SOLE_MAIN_AGENT,
       bindings: [makeDiscordPeerBinding("parent-agent", defaultParentPeer.id)],
     };
     const route = resolveDiscordThreadRoute({ cfg, parentPeer: { kind: "channel", id: "" } });
     expect(route.agentId).toBe("main");
-    expect(route.matchedBy).toBe("default");
+    expect(route.matchedBy).toBe("fallback.soleAgent");
   });
 
   test("null parentPeer is handled gracefully", () => {
     const cfg: RemoteClawConfig = {
+      agents: SOLE_MAIN_AGENT,
       bindings: [makeDiscordPeerBinding("parent-agent", defaultParentPeer.id)],
     };
     const route = resolveDiscordThreadRoute({ cfg, parentPeer: null });
     expect(route.agentId).toBe("main");
-    expect(route.matchedBy).toBe("default");
+    expect(route.matchedBy).toBe("fallback.soleAgent");
   });
 });
 
@@ -635,6 +650,7 @@ describe("backward compatibility: peer.kind group ↔ channel", () => {
 
   test("group/channel compatibility does not match direct peer kind", () => {
     const cfg: RemoteClawConfig = {
+      agents: SOLE_MAIN_AGENT,
       bindings: [
         {
           agentId: "group-only-agent",
@@ -652,7 +668,7 @@ describe("backward compatibility: peer.kind group ↔ channel", () => {
       peer: { kind: "direct", id: "C123456" },
     });
     expect(route.agentId).toBe("main");
-    expect(route.matchedBy).toBe("default");
+    expect(route.matchedBy).toBe("fallback.soleAgent");
   });
 });
 
@@ -687,7 +703,7 @@ describe("role-based agent routing", () => {
     expectedMatchedBy: string;
   }) {
     const route = resolveAgentRoute({
-      cfg: { bindings: params.bindings },
+      cfg: { agents: SOLE_MAIN_AGENT, bindings: params.bindings },
       channel: "discord",
       guildId: "g1",
       ...(params.memberRoleIds ? { memberRoleIds: params.memberRoleIds } : {}),
@@ -716,7 +732,7 @@ describe("role-based agent routing", () => {
       bindings: [makeDiscordRoleBinding("opus", { roles: ["r1"] })],
       memberRoleIds: ["r2"],
       expectedAgentId: "main",
-      expectedMatchedBy: "default",
+      expectedMatchedBy: "fallback.soleAgent",
     });
   });
 
@@ -765,7 +781,7 @@ describe("role-based agent routing", () => {
     expectDiscordRoleRoute({
       bindings: [makeDiscordRoleBinding("opus", { roles: ["r1"] })],
       expectedAgentId: "main",
-      expectedMatchedBy: "default",
+      expectedMatchedBy: "fallback.soleAgent",
     });
   });
 
@@ -795,7 +811,7 @@ describe("role-based agent routing", () => {
       bindings: [makeDiscordRoleBinding("opus", { roles: ["admin"] })],
       memberRoleIds: ["regular"],
       expectedAgentId: "main",
-      expectedMatchedBy: "default",
+      expectedMatchedBy: "fallback.soleAgent",
     });
   });
 

@@ -19,7 +19,10 @@ import {
   resolveChannelGroupPolicy,
   resolveChannelGroupRequireMention,
 } from "../../config/group-policy.js";
-import { resolveAgentRoute } from "../../routing/resolve-route.js";
+import {
+  resolveAgentRouteWithPolicy,
+  type ResolvedAgentRoute,
+} from "../../routing/resolve-route.js";
 import {
   DM_GROUP_ACCESS_REASON,
   resolveDmGroupAccessWithLists,
@@ -70,7 +73,7 @@ export type IMessageInboundDispatchDecision = {
   historyKey?: string;
   sender: string;
   senderNormalized: string;
-  route: ReturnType<typeof resolveAgentRoute>;
+  route: ResolvedAgentRoute;
   bodyText: string;
   createdAt?: number;
   replyContext: IMessageReplyContext | null;
@@ -199,7 +202,7 @@ export function resolveIMessageInboundDecision(params: {
     return { kind: "drop", reason: "group id not in allowlist" };
   }
 
-  const route = resolveAgentRoute({
+  const route = resolveAgentRouteWithPolicy({
     cfg: params.cfg,
     channel: "imessage",
     accountId: params.accountId,
@@ -208,6 +211,11 @@ export function resolveIMessageInboundDecision(params: {
       id: isGroup ? String(chatId ?? "unknown") : senderNormalized,
     },
   });
+  if (!route) {
+    // Silent drop: routing.unmatched policy dropped the message. Telemetry
+    // already fired via handleUnmatched.
+    return { kind: "drop", reason: "unmatched-binding" };
+  }
   const mentionRegexes = buildMentionRegexes(params.cfg, route.agentId);
   const messageText = params.messageText.trim();
   const bodyText = params.bodyText.trim();

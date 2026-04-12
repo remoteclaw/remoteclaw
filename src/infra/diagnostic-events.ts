@@ -147,6 +147,23 @@ export type DiagnosticToolLoopEvent = DiagnosticBaseEvent & {
   pairedToolName?: string;
 };
 
+export type DiagnosticRoutingDropScope = {
+  channel: string;
+  accountId: string | null;
+  peer: { kind: string; id: string } | null;
+  guildId: string | null;
+  teamId: string | null;
+};
+
+export type DiagnosticRoutingDropEvent = DiagnosticBaseEvent & {
+  type: "routing.drop";
+  channel: string;
+  reason: "unmatched";
+  scope: DiagnosticRoutingDropScope;
+  configuredAgents: string[];
+  target?: string;
+};
+
 export type DiagnosticEventPayload =
   | DiagnosticUsageEvent
   | DiagnosticWebhookReceivedEvent
@@ -160,7 +177,8 @@ export type DiagnosticEventPayload =
   | DiagnosticLaneDequeueEvent
   | DiagnosticRunAttemptEvent
   | DiagnosticHeartbeatEvent
-  | DiagnosticToolLoopEvent;
+  | DiagnosticToolLoopEvent
+  | DiagnosticRoutingDropEvent;
 
 export type DiagnosticEventInput = DiagnosticEventPayload extends infer Event
   ? Event extends DiagnosticEventPayload

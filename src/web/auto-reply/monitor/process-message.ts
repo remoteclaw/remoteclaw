@@ -21,7 +21,7 @@ import type { getChildLogger } from "../../../logging.js";
 import { getAgentScopedMediaLocalRoots } from "../../../media/local-roots.js";
 import {
   resolveInboundLastRouteSessionKey,
-  type resolveAgentRoute,
+  type ResolvedAgentRoute,
 } from "../../../routing/resolve-route.js";
 import {
   readStoreAllowFromForDmPolicy,
@@ -126,7 +126,7 @@ function resolvePinnedMainDmRecipient(params: {
 export async function processMessage(params: {
   cfg: ReturnType<typeof loadConfig>;
   msg: WebInboundMsg;
-  route: ReturnType<typeof resolveAgentRoute>;
+  route: ResolvedAgentRoute;
   groupHistoryKey: string;
   groupHistories: Map<string, GroupHistoryEntry[]>;
   groupMemberNames: Map<string, Map<string, string>>;

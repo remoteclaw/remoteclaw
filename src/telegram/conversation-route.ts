@@ -6,7 +6,8 @@ import {
   buildAgentSessionKey,
   deriveLastRoutePolicy,
   pickFirstExistingAgentId,
-  resolveAgentRoute,
+  resolveAgentRouteWithPolicy,
+  type ResolvedAgentRoute,
 } from "../routing/resolve-route.js";
 import { buildAgentMainSessionKey, resolveAgentIdFromSessionKey } from "../routing/session-key.js";
 import {
@@ -25,10 +26,10 @@ export function resolveTelegramConversationRoute(params: {
   senderId?: string | number | null;
   topicAgentId?: string | null;
 }): {
-  route: ReturnType<typeof resolveAgentRoute>;
+  route: ResolvedAgentRoute;
   configuredBinding: ReturnType<typeof resolveConfiguredAcpRoute>["configuredBinding"];
   configuredBindingSessionKey: string;
-} {
+} | null {
   const peerId = params.isGroup
     ? buildTelegramGroupPeerId(params.chatId, params.resolvedThreadId)
     : resolveTelegramDirectPeerId({
@@ -40,7 +41,7 @@ export function resolveTelegramConversationRoute(params: {
     resolvedThreadId: params.resolvedThreadId,
     chatId: params.chatId,
   });
-  let route = resolveAgentRoute({
+  const initialRoute = resolveAgentRouteWithPolicy({
     cfg: params.cfg,
     channel: "telegram",
     accountId: params.accountId,
@@ -50,6 +51,12 @@ export function resolveTelegramConversationRoute(params: {
     },
     parentPeer,
   });
+  if (!initialRoute) {
+    // Silent drop: routing.unmatched policy says no catch-all. Telemetry
+    // already fired via handleUnmatched.
+    return null;
+  }
+  let route: ResolvedAgentRoute = initialRoute;
 
   const rawTopicAgentId = params.topicAgentId?.trim();
   if (rawTopicAgentId) {

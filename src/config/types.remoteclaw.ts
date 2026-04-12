@@ -89,6 +89,17 @@ export type RemoteClawConfig = {
   agents?: AgentsConfig;
   tools?: ToolsConfig;
   bindings?: AgentBinding[];
+  /**
+   * Routing policy for messages that match no binding in multi-agent configs.
+   *
+   * - omitted / `"reject"`: Silent drop with telemetry.
+   * - `{ agent: "id" }`: Route unmatched messages to the named agent (must exist in `agents.list`).
+   *
+   * Single-agent configs route to the sole agent regardless of this setting.
+   */
+  routing?: {
+    unmatched?: "reject" | { agent: string };
+  };
   broadcast?: BroadcastConfig;
   audio?: AudioConfig;
   messages?: MessagesConfig;

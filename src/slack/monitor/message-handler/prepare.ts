@@ -27,7 +27,7 @@ import { recordInboundSession } from "../../../channels/session.js";
 import { readSessionUpdatedAt, resolveStorePath } from "../../../config/sessions.js";
 import { logVerbose, shouldLogVerbose } from "../../../globals.js";
 import { enqueueSystemEvent } from "../../../infra/system-events.js";
-import { resolveAgentRoute } from "../../../routing/resolve-route.js";
+import { resolveAgentRouteWithPolicy } from "../../../routing/resolve-route.js";
 import { resolveThreadSessionKeys } from "../../../routing/session-key.js";
 import { resolvePinnedMainDmOwnerFromAllowlist } from "../../../security/dm-policy-shared.js";
 import { resolveSlackReplyToMode, type ResolvedSlackAccount } from "../../accounts.js";
@@ -97,7 +97,7 @@ type SlackAuthorizationContext = {
 };
 
 type SlackRoutingContext = {
-  route: ReturnType<typeof resolveAgentRoute>;
+  route: NonNullable<ReturnType<typeof resolveAgentRouteWithPolicy>>;
   chatType: "direct" | "group" | "channel";
   replyToMode: ReturnType<typeof resolveSlackReplyToMode>;
   threadContext: ReturnType<typeof resolveSlackThreadContext>;
@@ -260,9 +260,9 @@ function resolveSlackRoutingContext(params: {
   isGroupDm: boolean;
   isRoom: boolean;
   isRoomish: boolean;
-}): SlackRoutingContext {
+}): SlackRoutingContext | null {
   const { ctx, account, message, isDirectMessage, isGroupDm, isRoom, isRoomish } = params;
-  const route = resolveAgentRoute({
+  const route = resolveAgentRouteWithPolicy({
     cfg: ctx.cfg,
     channel: "slack",
     accountId: account.accountId,
@@ -272,6 +272,9 @@ function resolveSlackRoutingContext(params: {
       id: isDirectMessage ? (message.user ?? "unknown") : message.channel,
     },
   });
+  if (!route) {
+    return null;
+  }
 
   const chatType = isDirectMessage ? "direct" : isGroupDm ? "group" : "channel";
   const replyToMode = resolveSlackReplyToMode(account, chatType);
@@ -352,6 +355,11 @@ export async function prepareSlackMessage(params: {
     isRoom,
     isRoomish,
   });
+  if (!routing) {
+    // Silent drop: routing.unmatched policy says no catch-all. Telemetry
+    // already fired via handleUnmatched.
+    return null;
+  }
   const {
     route,
     replyToMode,

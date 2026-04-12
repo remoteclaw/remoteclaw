@@ -411,6 +411,14 @@ export const RemoteClawSchema = z
     agents: AgentsSchema,
     tools: ToolsSchema,
     bindings: BindingsSchema,
+    routing: z
+      .object({
+        unmatched: z
+          .union([z.literal("reject"), z.object({ agent: z.string() }).strict()])
+          .optional(),
+      })
+      .strict()
+      .optional(),
     broadcast: BroadcastSchema,
     audio: AudioSchema,
     media: z
@@ -805,6 +813,35 @@ export const RemoteClawSchema = z
       return;
     }
     const agentIds = new Set(agents.map((agent) => agent.id));
+
+    const routingUnmatched = cfg.routing?.unmatched;
+    if (
+      routingUnmatched &&
+      typeof routingUnmatched === "object" &&
+      "agent" in routingUnmatched &&
+      !agentIds.has(routingUnmatched.agent)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["routing", "unmatched", "agent"],
+        message: `Unknown agent id "${routingUnmatched.agent}" (not in agents.list).`,
+      });
+    }
+
+    const bindings = cfg.bindings;
+    if (Array.isArray(bindings)) {
+      for (let idx = 0; idx < bindings.length; idx += 1) {
+        const binding = bindings[idx];
+        const agentId = binding?.agentId;
+        if (typeof agentId === "string" && agentId && !agentIds.has(agentId)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["bindings", idx, "agentId"],
+            message: `Unknown agent id "${agentId}" (not in agents.list).`,
+          });
+        }
+      }
+    }
 
     const broadcast = cfg.broadcast;
     if (!broadcast) {

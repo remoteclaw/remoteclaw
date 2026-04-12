@@ -2,6 +2,7 @@ import type { RemoteClawConfig } from "../../config/config.js";
 import {
   deriveLastRoutePolicy,
   resolveAgentRoute,
+  resolveAgentRouteWithPolicy,
   type ResolvedAgentRoute,
   type RoutePeer,
 } from "../../routing/resolve-route.js";
@@ -21,6 +22,11 @@ export function buildDiscordRoutePeer(params: {
   };
 }
 
+/**
+ * Resolve a Discord conversation route applying the operator `routing.unmatched`
+ * policy. Returns `null` when the policy drops the message (silent drop +
+ * telemetry) so the preflight handler can halt processing cleanly.
+ */
 export function resolveDiscordConversationRoute(params: {
   cfg: RemoteClawConfig;
   accountId?: string | null;
@@ -28,8 +34,8 @@ export function resolveDiscordConversationRoute(params: {
   memberRoleIds?: string[];
   peer: RoutePeer;
   parentConversationId?: string | null;
-}): ResolvedAgentRoute {
-  return resolveAgentRoute({
+}): ResolvedAgentRoute | null {
+  return resolveAgentRouteWithPolicy({
     cfg: params.cfg,
     channel: "discord",
     accountId: params.accountId,
@@ -42,6 +48,14 @@ export function resolveDiscordConversationRoute(params: {
   });
 }
 
+/**
+ * Resolve a Discord bound conversation route. Used by slash command handlers
+ * which must always receive a usable route — callers invoke this synchronously
+ * to pick an agent for command execution, and silent-drop is not appropriate
+ * UX for user-initiated commands. Uses the backward-compatible
+ * {@link resolveAgentRoute} which falls back to the first configured agent
+ * when no binding matches and no catch-all is configured.
+ */
 export function resolveDiscordBoundConversationRoute(params: {
   cfg: RemoteClawConfig;
   accountId?: string | null;
@@ -56,10 +70,11 @@ export function resolveDiscordBoundConversationRoute(params: {
   configuredRoute?: { route: ResolvedAgentRoute } | null;
   matchedBy?: ResolvedAgentRoute["matchedBy"];
 }): ResolvedAgentRoute {
-  const route = resolveDiscordConversationRoute({
+  const route = resolveAgentRoute({
     cfg: params.cfg,
+    channel: "discord",
     accountId: params.accountId,
-    guildId: params.guildId,
+    guildId: params.guildId ?? undefined,
     memberRoleIds: params.memberRoleIds,
     peer: buildDiscordRoutePeer({
       isDirectMessage: params.isDirectMessage,
@@ -67,7 +82,9 @@ export function resolveDiscordBoundConversationRoute(params: {
       directUserId: params.directUserId,
       conversationId: params.conversationId,
     }),
-    parentConversationId: params.parentConversationId,
+    parentPeer: params.parentConversationId
+      ? { kind: "channel", id: params.parentConversationId }
+      : undefined,
   });
   return resolveDiscordEffectiveRoute({
     route,

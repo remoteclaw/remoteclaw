@@ -12,6 +12,10 @@ type AnyMockFn = any;
 export const DEFAULT_ACCOUNT_ID = "default";
 
 export const DEFAULT_WEB_INBOX_CONFIG = {
+  // Sole-agent fixture so the web adapter's backward-compat resolveAgentRoute
+  // path (which still fires via monitor-inbox) does not throw on empty
+  // agents.list. The actual inbound processing uses this as the routed agent.
+  agents: { list: [{ id: "main" }] },
   channels: {
     whatsapp: {
       // Allow all in tests by default.

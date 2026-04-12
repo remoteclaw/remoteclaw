@@ -1,9 +1,8 @@
-import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import type { ChatType } from "../channels/chat-type.js";
 import { normalizeChatType } from "../channels/chat-type.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { shouldLogVerbose } from "../globals.js";
-import { logDebug } from "../logger.js";
+import { logDebug, logWarn } from "../logger.js";
 import { listBindings } from "./bindings.js";
 import {
   buildAgentMainSessionKey,
@@ -14,6 +13,7 @@ import {
   normalizeAgentId,
   sanitizeAgentId,
 } from "./session-key.js";
+import { handleUnmatched } from "./unmatched.js";
 
 /** @deprecated Use ChatType from channels/chat-type.js */
 export type RoutePeerKind = ChatType;
@@ -36,6 +36,27 @@ export type ResolveAgentRouteInput = {
   memberRoleIds?: string[];
 };
 
+export type MatchedByTier =
+  | "binding.peer"
+  | "binding.peer.parent"
+  | "binding.guild+roles"
+  | "binding.guild"
+  | "binding.team"
+  | "binding.account"
+  | "binding.channel"
+  | "fallback.soleAgent"
+  | "fallback.legacyRoute"
+  | "unmatched.catchAll";
+
+/**
+ * Backward-compatible shape used by downstream consumers (channel adapters,
+ * session builders, tests) that hold a successfully resolved route. This is
+ * the shape emitted by {@link resolveAgentRoute} on the `matched: true` branch
+ * and by {@link buildMatchedRoute}. Consumers that only read the route fields
+ * (`agentId`, `sessionKey`, ...) should type their variables as
+ * `ResolvedAgentRoute`. Code that invokes {@link resolveAgentRoute} directly
+ * and must handle unmatched results should use {@link AgentRouteOutcome}.
+ */
 export type ResolvedAgentRoute = {
   agentId: string;
   channel: string;
@@ -47,28 +68,43 @@ export type ResolvedAgentRoute = {
   /** Which session should receive inbound last-route updates. */
   lastRoutePolicy: "main" | "session";
   /** Match description for debugging/logging. */
-  matchedBy:
-    | "binding.peer"
-    | "binding.peer.parent"
-    | "binding.guild+roles"
-    | "binding.guild"
-    | "binding.team"
-    | "binding.account"
-    | "binding.channel"
-    | "default";
+  matchedBy: MatchedByTier;
 };
 
-export { DEFAULT_ACCOUNT_ID, DEFAULT_AGENT_ID } from "./session-key.js";
+export type MatchedAgentRoute = ResolvedAgentRoute & { matched: true };
+
+/**
+ * Normalized routing scope passed to unmatched handler / telemetry.
+ * Strings are post-normalization forms emitted by {@link resolveAgentRoute}.
+ */
+export type RouteScope = {
+  channel: string;
+  accountId: string;
+  peer: RoutePeer | null;
+  guildId: string | null;
+  teamId: string | null;
+};
+
+export type UnmatchedAgentRoute = {
+  matched: false;
+  reason: "unmatched";
+  scope: RouteScope;
+};
+
+/** Full discriminated return type of {@link resolveAgentRoute}. */
+export type AgentRouteOutcome = MatchedAgentRoute | UnmatchedAgentRoute;
+
+export { DEFAULT_ACCOUNT_ID } from "./session-key.js";
 
 export function deriveLastRoutePolicy(params: {
   sessionKey: string;
   mainSessionKey: string;
-}): ResolvedAgentRoute["lastRoutePolicy"] {
+}): MatchedAgentRoute["lastRoutePolicy"] {
   return params.sessionKey === params.mainSessionKey ? "main" : "session";
 }
 
 export function resolveInboundLastRouteSessionKey(params: {
-  route: Pick<ResolvedAgentRoute, "lastRoutePolicy" | "mainSessionKey">;
+  route: Pick<MatchedAgentRoute, "lastRoutePolicy" | "mainSessionKey">;
   sessionKey: string;
 }): string {
   return params.route.lastRoutePolicy === "main" ? params.route.mainSessionKey : params.sessionKey;
@@ -119,7 +155,6 @@ function listAgents(cfg: RemoteClawConfig) {
 type AgentLookupCache = {
   agentsRef: RemoteClawConfig["agents"] | undefined;
   byNormalizedId: Map<string, string>;
-  fallbackDefaultAgentId: string;
 };
 
 const agentLookupCacheByCfg = new WeakMap<RemoteClawConfig, AgentLookupCache>();
@@ -142,27 +177,30 @@ function resolveAgentLookupCache(cfg: RemoteClawConfig): AgentLookupCache {
   const next: AgentLookupCache = {
     agentsRef,
     byNormalizedId,
-    fallbackDefaultAgentId: sanitizeAgentId(resolveDefaultAgentId(cfg)),
   };
   agentLookupCacheByCfg.set(cfg, next);
   return next;
 }
 
+/**
+ * Resolve an agent id against `cfg.agents.list`, returning the sanitized canonical
+ * form when the id exists, or a sanitized passthrough when the list is empty or the
+ * id is not configured. Schema-level validation in `zod-schema.ts` ensures binding
+ * agent ids must exist in `agents.list`; this function is a runtime safety net for
+ * topic overrides and other operator-supplied ids that bypass the binding path.
+ */
 export function pickFirstExistingAgentId(cfg: RemoteClawConfig, agentId: string): string {
   const lookup = resolveAgentLookupCache(cfg);
   const trimmed = (agentId ?? "").trim();
   if (!trimmed) {
-    return lookup.fallbackDefaultAgentId;
+    return "";
   }
   const normalized = normalizeAgentId(trimmed);
-  if (lookup.byNormalizedId.size === 0) {
-    return sanitizeAgentId(trimmed);
-  }
   const resolved = lookup.byNormalizedId.get(normalized);
   if (resolved) {
     return resolved;
   }
-  return lookup.fallbackDefaultAgentId;
+  return sanitizeAgentId(trimmed);
 }
 
 type NormalizedPeerConstraint =
@@ -206,7 +244,7 @@ const resolvedRouteCacheByCfg = new WeakMap<
     bindingsRef: RemoteClawConfig["bindings"];
     agentsRef: RemoteClawConfig["agents"];
     sessionRef: RemoteClawConfig["session"];
-    byKey: Map<string, ResolvedAgentRoute>;
+    byKey: Map<string, MatchedAgentRoute>;
   }
 >();
 const MAX_RESOLVED_ROUTE_CACHE_KEYS = 4000;
@@ -505,7 +543,7 @@ function normalizeBindingMatch(
   };
 }
 
-function resolveRouteCacheForConfig(cfg: RemoteClawConfig): Map<string, ResolvedAgentRoute> {
+function resolveRouteCacheForConfig(cfg: RemoteClawConfig): Map<string, MatchedAgentRoute> {
   const existing = resolvedRouteCacheByCfg.get(cfg);
   if (
     existing &&
@@ -515,7 +553,7 @@ function resolveRouteCacheForConfig(cfg: RemoteClawConfig): Map<string, Resolved
   ) {
     return existing.byKey;
   }
-  const byKey = new Map<string, ResolvedAgentRoute>();
+  const byKey = new Map<string, MatchedAgentRoute>();
   resolvedRouteCacheByCfg.set(cfg, {
     bindingsRef: cfg.bindings,
     agentsRef: cfg.agents,
@@ -523,6 +561,45 @@ function resolveRouteCacheForConfig(cfg: RemoteClawConfig): Map<string, Resolved
     byKey,
   });
   return byKey;
+}
+
+/**
+ * Build a {@link MatchedAgentRoute} for a given agent/scope without going through
+ * binding resolution. Used by the catch-all unmatched path to produce a route for
+ * the operator-designated fallback agent.
+ */
+export function buildMatchedRoute(params: {
+  cfg: RemoteClawConfig;
+  agentId: string;
+  scope: RouteScope;
+  matchedBy: MatchedByTier;
+}): MatchedAgentRoute {
+  const { cfg, scope, matchedBy } = params;
+  const resolvedAgentId = pickFirstExistingAgentId(cfg, params.agentId);
+  const dmScope = cfg.session?.dmScope ?? "main";
+  const identityLinks = cfg.session?.identityLinks;
+  const sessionKey = buildAgentSessionKey({
+    agentId: resolvedAgentId,
+    channel: scope.channel,
+    accountId: scope.accountId,
+    peer: scope.peer,
+    dmScope,
+    identityLinks,
+  }).toLowerCase();
+  const mainSessionKey = buildAgentMainSessionKey({
+    agentId: resolvedAgentId,
+    mainKey: DEFAULT_MAIN_KEY,
+  }).toLowerCase();
+  return {
+    matched: true as const,
+    agentId: resolvedAgentId,
+    channel: scope.channel,
+    accountId: scope.accountId,
+    sessionKey,
+    mainSessionKey,
+    lastRoutePolicy: deriveLastRoutePolicy({ sessionKey, mainSessionKey }),
+    matchedBy,
+  };
 }
 
 function formatRouteCachePeer(peer: RoutePeer | null): string {
@@ -611,7 +688,13 @@ function matchesBindingScope(match: NormalizedBindingMatch, scope: BindingScope)
   return true;
 }
 
-export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentRoute {
+/**
+ * Low-level route resolution returning the full discriminated outcome. Callers
+ * that want explicit control over unmatched handling (e.g. tests, the policy
+ * wrapper, telemetry) use this form. For the backward-compatible, always-matched
+ * variant, use {@link resolveAgentRoute}.
+ */
+export function resolveAgentRouteExplicit(input: ResolveAgentRouteInput): AgentRouteOutcome {
   const channel = normalizeToken(input.channel);
   const accountId = normalizeAccountId(input.accountId);
   const peer = input.peer
@@ -633,6 +716,14 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
         id: normalizeId(input.parentPeer.id),
       }
     : null;
+
+  const scope: RouteScope = {
+    channel,
+    accountId,
+    peer,
+    guildId: guildId || null,
+    teamId: teamId || null,
+  };
 
   const routeCache =
     !shouldLogDebug && !identityLinks ? resolveRouteCacheForConfig(input.cfg) : null;
@@ -658,29 +749,13 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
   const bindings = getEvaluatedBindingsForChannelAccount(input.cfg, channel, accountId);
   const bindingsIndex = getEvaluatedBindingIndexForChannelAccount(input.cfg, channel, accountId);
 
-  const choose = (agentId: string, matchedBy: ResolvedAgentRoute["matchedBy"]) => {
-    const resolvedAgentId = pickFirstExistingAgentId(input.cfg, agentId);
-    const sessionKey = buildAgentSessionKey({
-      agentId: resolvedAgentId,
-      channel,
-      accountId,
-      peer,
-      dmScope,
-      identityLinks,
-    }).toLowerCase();
-    const mainSessionKey = buildAgentMainSessionKey({
-      agentId: resolvedAgentId,
-      mainKey: DEFAULT_MAIN_KEY,
-    }).toLowerCase();
-    const route = {
-      agentId: resolvedAgentId,
-      channel,
-      accountId,
-      sessionKey,
-      mainSessionKey,
-      lastRoutePolicy: deriveLastRoutePolicy({ sessionKey, mainSessionKey }),
+  const matchAndCache = (agentId: string, matchedBy: MatchedByTier): MatchedAgentRoute => {
+    const route = buildMatchedRoute({
+      cfg: input.cfg,
+      agentId,
+      scope,
       matchedBy,
-    };
+    });
     if (routeCache && routeCacheKey) {
       routeCache.set(routeCacheKey, route);
       if (routeCache.size > MAX_RESOLVED_ROUTE_CACHE_KEYS) {
@@ -721,7 +796,7 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
   };
 
   const tiers: Array<{
-    matchedBy: Exclude<ResolvedAgentRoute["matchedBy"], "default">;
+    matchedBy: Exclude<MatchedByTier, "unmatched.catchAll">;
     enabled: boolean;
     scopePeer: RoutePeer | null;
     candidates: EvaluatedBinding[];
@@ -796,9 +871,122 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
       if (shouldLogDebug) {
         logDebug(`[routing] match: matchedBy=${tier.matchedBy} agentId=${matched.binding.agentId}`);
       }
-      return choose(matched.binding.agentId, tier.matchedBy);
+      return matchAndCache(matched.binding.agentId, tier.matchedBy);
     }
   }
 
-  return choose(resolveDefaultAgentId(input.cfg), "default");
+  // Sole-agent promotion: when exactly one agent is configured, route to it
+  // regardless of bindings. This preserves single-agent behavior without
+  // reintroducing the phantom "default" agent fallback. Downstream consumers
+  // that need to distinguish "this landed on the only agent" from "this matched
+  // an explicit binding" check `matchedBy === "fallback.soleAgent"`.
+  const agents = listAgents(input.cfg);
+  if (agents.length === 1) {
+    const soleAgentId = agents[0]?.id?.trim();
+    if (soleAgentId) {
+      if (shouldLogDebug) {
+        logDebug(`[routing] match: matchedBy=fallback.soleAgent agentId=${soleAgentId}`);
+      }
+      return matchAndCache(soleAgentId, "fallback.soleAgent");
+    }
+  }
+
+  return {
+    matched: false,
+    reason: "unmatched",
+    scope,
+  };
+}
+
+/**
+ * Resolve an agent route, applying the operator `routing.unmatched` policy when
+ * no binding matches and no sole agent is configured. Returns `null` when the
+ * policy drops the message (silent drop + telemetry). Otherwise returns a
+ * {@link ResolvedAgentRoute}.
+ *
+ * This is the preferred entry point for channel adapters. Adapters migrate from
+ * `resolveAgentRoute` to this wrapper with a one-line change: add
+ * `if (!route) return;` after the call.
+ */
+export function resolveAgentRouteWithPolicy(
+  input: ResolveAgentRouteInput,
+): MatchedAgentRoute | null {
+  const outcome = resolveAgentRouteExplicit(input);
+  if (outcome.matched) {
+    return outcome;
+  }
+  const action = handleUnmatched(outcome.scope, input.cfg);
+  if (action.action === "drop") {
+    return null;
+  }
+  return buildMatchedRoute({
+    cfg: input.cfg,
+    agentId: action.agentId,
+    scope: outcome.scope,
+    matchedBy: "unmatched.catchAll",
+  });
+}
+
+/**
+ * Backward-compatible entry point for code paths that type their variable as
+ * {@link ResolvedAgentRoute} and can not tolerate a `null` return. Applies the
+ * operator `routing.unmatched` policy through {@link resolveAgentRouteWithPolicy}
+ * first — this fires the full operator telemetry stack (structured log, OTel
+ * counter, Control UI event, `/remoteclaw status` accrual) when the policy
+ * says drop.
+ *
+ * When the policy says "drop" and the caller is on the legacy path, there is
+ * no safe way to halt processing from inside this function. The wrapper falls
+ * back to the first configured agent and tags the route with
+ * `matchedBy = "fallback.legacyRoute"` so downstream consumers, operators, and
+ * telemetry can distinguish it from sole-agent promotion (a legitimate single-
+ * agent config) or catch-all routing (an explicit operator choice). A
+ * structured warn log fires on every fallback occurrence so the migration
+ * gap is visible in production.
+ *
+ * New adapters SHOULD prefer {@link resolveAgentRouteWithPolicy} for explicit
+ * silent-drop semantics — that form returns `null` instead of a fallback route,
+ * allowing adapters to halt message processing cleanly and honoring the drop
+ * telemetry as the sole outcome.
+ */
+export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentRoute {
+  const resolved = resolveAgentRouteWithPolicy(input);
+  if (resolved) {
+    return resolved;
+  }
+  // Silent-drop telemetry has already fired via handleUnmatched. The legacy
+  // caller path expects a usable route object — fall back to the first
+  // configured agent so message processing continues. Adapters that want to
+  // actually drop the message should migrate to resolveAgentRouteWithPolicy.
+  //
+  // When no agents are configured (unreachable in production because
+  // #2308/schema requires agents.list to be non-empty, but possible in test
+  // fixtures that predate the refactor), fall back to the legacy "main"
+  // sentinel so the function remains total. This preserves test-fixture
+  // semantics without reintroducing the phantom-default behavior in any
+  // production code path.
+  const agents = listAgents(input.cfg);
+  const fallbackAgentId = agents[0]?.id?.trim() || "main";
+  const routingChannel = normalizeToken(input.channel);
+  logWarn(
+    `[routing] legacy fallback: channel=${routingChannel} dropped by routing.unmatched policy but caller used resolveAgentRoute() — routing to "${fallbackAgentId}". Migrate to resolveAgentRouteWithPolicy() for clean drop handling.`,
+  );
+  const scope: RouteScope = {
+    channel: routingChannel,
+    accountId: normalizeAccountId(input.accountId),
+    peer: input.peer
+      ? {
+          kind: normalizeChatType(input.peer.kind) ?? input.peer.kind,
+          id: normalizeId(input.peer.id),
+        }
+      : null,
+    guildId: normalizeId(input.guildId) || null,
+    teamId: normalizeId(input.teamId) || null,
+  };
+  return buildMatchedRoute({
+    cfg: input.cfg,
+    agentId: fallbackAgentId,
+    scope,
+    matchedBy: "fallback.legacyRoute",
+  });
 }

@@ -2,7 +2,7 @@ import type { getReplyFromConfig } from "../../../auto-reply/reply.js";
 import type { MsgContext } from "../../../auto-reply/templating.js";
 import { loadConfig } from "../../../config/config.js";
 import { logVerbose } from "../../../globals.js";
-import { resolveAgentRoute } from "../../../routing/resolve-route.js";
+import { resolveAgentRoute, type ResolvedAgentRoute } from "../../../routing/resolve-route.js";
 import { buildGroupHistoryKey } from "../../../routing/session-key.js";
 import { normalizeE164 } from "../../../utils.js";
 import type { MentionConfig } from "../mentions.js";
@@ -32,7 +32,7 @@ export function createWebOnMessageHandler(params: {
 }) {
   const processForRoute = async (
     msg: WebInboundMsg,
-    route: ReturnType<typeof resolveAgentRoute>,
+    route: ResolvedAgentRoute,
     groupHistoryKey: string,
     opts?: {
       groupHistory?: GroupHistoryEntry[];
@@ -64,6 +64,11 @@ export function createWebOnMessageHandler(params: {
     const conversationId = msg.conversationId ?? msg.from;
     const peerId = resolvePeerId(msg);
     // Fresh config for bindings lookup; other routing inputs are payload-derived.
+    // TODO(#2309 follow-up): migrate to resolveAgentRouteWithPolicy for explicit
+    // silent-drop semantics. The backward-compat resolveAgentRoute still fires
+    // handleUnmatched telemetry on drops but falls back to the first configured
+    // agent (tagged matchedBy=fallback.legacyRoute) so legacy web test fixtures
+    // that lack agents.list continue to exercise the handler.
     const route = resolveAgentRoute({
       cfg: loadConfig(),
       channel: "whatsapp",

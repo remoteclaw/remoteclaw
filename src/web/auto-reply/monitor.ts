@@ -216,6 +216,8 @@ export async function monitorWebChannel(
     emitStatus();
 
     // Surface a concise connection event for the next main-session turn/heartbeat.
+    // Resolution uses the backward-compat resolveAgentRoute because system-event
+    // emission targets the main session regardless of binding policy.
     const { e164: selfE164 } = readWebSelfId(account.authDir);
     const connectRoute = resolveAgentRoute({
       cfg,

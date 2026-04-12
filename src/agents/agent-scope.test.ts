@@ -2,6 +2,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import {
+  listAgentIds,
   requireSoleAgentId,
   resolveAgentAuth,
   resolveAgentConfig,
@@ -11,6 +12,7 @@ import {
   resolveAgentRuntimeEnv,
   resolveAgentRuntimeOrThrow,
   resolveFallbackAgentId,
+  resolveFirstAgentWorkspace,
   resolveSoleAgentId,
   resolveAgentWorkspaceDir,
   resolveAgentWorkspaceDirOrNull,
@@ -576,5 +578,128 @@ describe("resolveAgentRuntimeEnv", () => {
       },
     };
     expect(resolveAgentRuntimeEnv(cfg, "main")).toEqual({ API_KEY: "sk-default" });
+  });
+});
+
+// Regression coverage for #2310 (Wave 3/6 — "eliminate default agent" initiative).
+// These tests pin the post-migration semantics of listAgentIds and
+// resolveFirstAgentWorkspace so that future refactors cannot silently
+// reintroduce a phantom "main" agent fallback. Fixtures use explicit agent
+// IDs (alpha/beta/gamma/solo) and intentionally never use "main", so a
+// regression that re-adds a DEFAULT_AGENT_ID=main fallback would fail these
+// assertions instead of being masked by the fixture name.
+describe("listAgentIds (regression: #2310)", () => {
+  it("returns empty array for empty config (no phantom main injection)", () => {
+    expect(listAgentIds({})).toEqual([]);
+  });
+
+  it("returns empty array when agents.list is an explicit empty array", () => {
+    const cfg: RemoteClawConfig = { agents: { list: [] } };
+    expect(listAgentIds(cfg)).toEqual([]);
+  });
+
+  it("returns empty array when agents is defined but list is absent", () => {
+    const cfg = { agents: {} } as unknown as RemoteClawConfig;
+    expect(listAgentIds(cfg)).toEqual([]);
+  });
+
+  it("returns all configured agent IDs in declaration order", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [
+          { id: "alpha", workspace: "~/alpha" },
+          { id: "beta", workspace: "~/beta" },
+          { id: "gamma", workspace: "~/gamma" },
+        ],
+      },
+    };
+    expect(listAgentIds(cfg)).toEqual(["alpha", "beta", "gamma"]);
+  });
+
+  it("preserves declaration order when the first entry sorts last alphabetically", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [
+          { id: "zulu", workspace: "~/zulu" },
+          { id: "alpha", workspace: "~/alpha" },
+        ],
+      },
+    };
+    expect(listAgentIds(cfg)).toEqual(["zulu", "alpha"]);
+  });
+
+  it("normalizes IDs and drops duplicates after normalization", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [
+          { id: "Alpha", workspace: "~/a" },
+          { id: "  ALPHA  ", workspace: "~/a2" },
+          { id: "beta", workspace: "~/b" },
+        ],
+      },
+    };
+    expect(listAgentIds(cfg)).toEqual(["alpha", "beta"]);
+  });
+
+  it("skips entries with missing or empty id", () => {
+    const cfg = {
+      agents: {
+        list: [
+          { id: "alpha", workspace: "~/a" },
+          { workspace: "~/orphan" },
+          { id: "", workspace: "~/empty" },
+          { id: "beta", workspace: "~/b" },
+        ],
+      },
+    } as unknown as RemoteClawConfig;
+    expect(listAgentIds(cfg)).toEqual(["alpha", "beta"]);
+  });
+});
+
+describe("resolveFirstAgentWorkspace (regression: #2310)", () => {
+  it("returns the sole agent's workspace in a single-agent config without a 'main' entry", () => {
+    const cfg: RemoteClawConfig = {
+      agents: { list: [{ id: "solo", workspace: "/tmp/solo" }] },
+    };
+    expect(resolveFirstAgentWorkspace(cfg)).toBe(path.resolve("/tmp/solo"));
+  });
+
+  it("returns the first agent's workspace in declaration order for multi-agent configs", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [
+          { id: "alpha", workspace: "/tmp/alpha" },
+          { id: "beta", workspace: "/tmp/beta" },
+          { id: "gamma", workspace: "/tmp/gamma" },
+        ],
+      },
+    };
+    expect(resolveFirstAgentWorkspace(cfg)).toBe(path.resolve("/tmp/alpha"));
+  });
+
+  it("returns null for empty config", () => {
+    expect(resolveFirstAgentWorkspace({})).toBeNull();
+  });
+
+  it("returns null when agents.list is an explicit empty array", () => {
+    const cfg: RemoteClawConfig = { agents: { list: [] } };
+    expect(resolveFirstAgentWorkspace(cfg)).toBeNull();
+  });
+
+  it("does not depend on an agent named 'main'", () => {
+    // The pre-#2310 code could fall through to resolveAgentWorkspaceDir(cfg, "main")
+    // which would throw "agent 'main' has no workspace configured" for multi-agent
+    // configs without a "main" entry. This fixture is that exact shape.
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [
+          { id: "alpha", workspace: "/tmp/alpha" },
+          { id: "beta", workspace: "/tmp/beta" },
+        ],
+      },
+    };
+    const resolved = resolveFirstAgentWorkspace(cfg);
+    expect(resolved).toBe(path.resolve("/tmp/alpha"));
+    expect(resolved).not.toContain("main");
   });
 });

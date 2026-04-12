@@ -304,9 +304,7 @@ export function buildSafeExternalPrompt(params: {
 export function isExternalHookSession(sessionKey: string): boolean {
   const normalized = sessionKey.trim().toLowerCase();
   return (
-    normalized.startsWith("hook:gmail:") ||
-    normalized.startsWith("hook:webhook:") ||
-    normalized.startsWith("hook:") // Generic hook prefix
+    normalized.startsWith("hook:webhook:") || normalized.startsWith("hook:") // Generic hook prefix
   );
 }
 
@@ -315,9 +313,6 @@ export function isExternalHookSession(sessionKey: string): boolean {
  */
 export function getHookType(sessionKey: string): ExternalContentSource {
   const normalized = sessionKey.trim().toLowerCase();
-  if (normalized.startsWith("hook:gmail:")) {
-    return "email";
-  }
   if (normalized.startsWith("hook:webhook:")) {
     return "webhook";
   }

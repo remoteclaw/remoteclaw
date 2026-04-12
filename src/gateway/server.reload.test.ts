@@ -37,9 +37,6 @@ const hoisted = vi.hoisted(() => {
     updateConfig: heartbeatUpdateConfig,
   }));
 
-  const startGmailWatcher = vi.fn(async () => ({ started: true }));
-  const stopGmailWatcher = vi.fn(async () => {});
-
   const providerManager = {
     getRuntimeSnapshot: vi.fn(() => ({
       providers: {
@@ -132,8 +129,6 @@ const hoisted = vi.hoisted(() => {
     heartbeatStop,
     heartbeatUpdateConfig,
     startHeartbeatRunner,
-    startGmailWatcher,
-    stopGmailWatcher,
     providerManager,
     createChannelManager,
     startGatewayConfigReloader,
@@ -155,11 +150,6 @@ vi.mock("../infra/heartbeat-runner.js", () => ({
   startHeartbeatRunner: hoisted.startHeartbeatRunner,
 }));
 
-vi.mock("../hooks/gmail-watcher.js", () => ({
-  startGmailWatcher: hoisted.startGmailWatcher,
-  stopGmailWatcher: hoisted.stopGmailWatcher,
-}));
-
 vi.mock("./server-channels.js", () => ({
   createChannelManager: hoisted.createChannelManager,
 }));
@@ -172,17 +162,14 @@ installGatewayTestHooks({ scope: "suite" });
 
 describe("gateway hot reload", () => {
   let prevSkipChannels: string | undefined;
-  let prevSkipGmail: string | undefined;
   let prevSkipProviders: string | undefined;
   let prevOpenAiApiKey: string | undefined;
 
   beforeEach(() => {
     prevSkipChannels = process.env.REMOTECLAW_SKIP_CHANNELS;
-    prevSkipGmail = process.env.REMOTECLAW_SKIP_GMAIL_WATCHER;
     prevSkipProviders = process.env.REMOTECLAW_SKIP_PROVIDERS;
     prevOpenAiApiKey = process.env.OPENAI_API_KEY;
     process.env.REMOTECLAW_SKIP_CHANNELS = "0";
-    delete process.env.REMOTECLAW_SKIP_GMAIL_WATCHER;
     delete process.env.REMOTECLAW_SKIP_PROVIDERS;
   });
 
@@ -191,11 +178,6 @@ describe("gateway hot reload", () => {
       delete process.env.REMOTECLAW_SKIP_CHANNELS;
     } else {
       process.env.REMOTECLAW_SKIP_CHANNELS = prevSkipChannels;
-    }
-    if (prevSkipGmail === undefined) {
-      delete process.env.REMOTECLAW_SKIP_GMAIL_WATCHER;
-    } else {
-      process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = prevSkipGmail;
     }
     if (prevSkipProviders === undefined) {
       delete process.env.REMOTECLAW_SKIP_PROVIDERS;
@@ -346,7 +328,6 @@ describe("gateway hot reload", () => {
         hooks: {
           enabled: true,
           token: "secret",
-          gmail: { account: "me@example.com" },
         },
         cron: { enabled: true, store: "/tmp/cron.json" },
         agents: { defaults: { heartbeat: { every: "1m" }, maxConcurrent: 2 } },
@@ -363,7 +344,6 @@ describe("gateway hot reload", () => {
       await onHotReload?.(
         {
           changedPaths: [
-            "hooks.gmail.account",
             "cron.enabled",
             "agents.defaults.heartbeat.every",
             "browser.enabled",
@@ -377,7 +357,6 @@ describe("gateway hot reload", () => {
           restartReasons: [],
           hotReasons: ["web.enabled"],
           reloadHooks: true,
-          restartGmailWatcher: true,
           restartBrowserControl: true,
           restartCron: true,
           restartHeartbeat: true,
@@ -386,9 +365,6 @@ describe("gateway hot reload", () => {
         },
         nextConfig,
       );
-
-      expect(hoisted.stopGmailWatcher).toHaveBeenCalled();
-      expect(hoisted.startGmailWatcher).toHaveBeenCalledWith(nextConfig);
 
       expect(hoisted.browserStop).toHaveBeenCalledTimes(1);
       expect(hoisted.startBrowserControlServerIfEnabled).toHaveBeenCalledTimes(2);
@@ -427,7 +403,6 @@ describe("gateway hot reload", () => {
           restartReasons: ["gateway.port"],
           hotReasons: [],
           reloadHooks: false,
-          restartGmailWatcher: false,
           restartBrowserControl: false,
           restartCron: false,
           restartHeartbeat: false,
@@ -498,7 +473,6 @@ describe("gateway hot reload", () => {
         restartReasons: [],
         hotReasons: ["models.providers.openai.apiKey"],
         reloadHooks: false,
-        restartGmailWatcher: false,
         restartBrowserControl: false,
         restartCron: false,
         restartHeartbeat: false,

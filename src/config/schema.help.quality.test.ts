@@ -216,10 +216,6 @@ const TARGET_KEYS = [
   "hooks.mappings[].wakeMode",
   "hooks.mappings[].channel",
   "hooks.mappings[].transform.module",
-  "hooks.gmail",
-  "hooks.gmail.pushToken",
-  "hooks.gmail.tailscale.mode",
-  "hooks.gmail.thinking",
   "hooks.internal",
   "hooks.internal.handlers",
   "hooks.internal.handlers[].event",
@@ -396,8 +392,6 @@ const ENUM_EXPECTATIONS: Record<string, string[]> = {
   "broadcast.strategy": ['"parallel"', '"sequential"'],
   "hooks.mappings[].action": ['"wake"', '"agent"'],
   "hooks.mappings[].wakeMode": ['"now"', '"next-heartbeat"'],
-  "hooks.gmail.tailscale.mode": ['"off"', '"serve"', '"funnel"'],
-  "hooks.gmail.thinking": ['"off"', '"minimal"', '"low"', '"medium"', '"high"'],
   "messages.queue.mode": [
     '"steer"',
     '"followup"',
@@ -436,16 +430,6 @@ const ENUM_EXPECTATIONS: Record<string, string[]> = {
 };
 
 const TOOLS_HOOKS_TARGET_KEYS = [
-  "hooks.gmail.account",
-  "hooks.gmail.allowUnsafeExternalContent",
-  "hooks.gmail.hookUrl",
-  "hooks.gmail.includeBody",
-  "hooks.gmail.label",
-  "hooks.gmail.model",
-  "hooks.gmail.serve",
-  "hooks.gmail.subscription",
-  "hooks.gmail.tailscale",
-  "hooks.gmail.topic",
   "hooks.internal.entries",
   "hooks.internal.installs",
   "hooks.internal.load",

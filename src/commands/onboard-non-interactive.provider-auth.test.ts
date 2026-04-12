@@ -86,7 +86,6 @@ async function withOnboardEnv(
         REMOTECLAW_STATE_DIR: tempHome,
         REMOTECLAW_CONFIG_PATH: configPath,
         REMOTECLAW_SKIP_CHANNELS: "1",
-        REMOTECLAW_SKIP_GMAIL_WATCHER: "1",
         REMOTECLAW_SKIP_CRON: "1",
         REMOTECLAW_SKIP_CANVAS_HOST: "1",
         REMOTECLAW_GATEWAY_TOKEN: undefined,

@@ -1404,7 +1404,6 @@ description: test skill
   it("warns when insecure/dangerous debug flags are enabled", async () => {
     const cfg: RemoteClawConfig = {
       hooks: {
-        gmail: { allowUnsafeExternalContent: true },
         mappings: [{ allowUnsafeExternalContent: true }],
       },
       tools: {
@@ -1421,7 +1420,6 @@ description: test skill
 
     expect(finding).toBeTruthy();
     expect(finding?.severity).toBe("warn");
-    expect(finding?.detail).toContain("hooks.gmail.allowUnsafeExternalContent=true");
     expect(finding?.detail).toContain("hooks.mappings[0].allowUnsafeExternalContent=true");
     expect(finding?.detail).toContain("tools.exec.applyPatch.workspaceOnly=false");
   });

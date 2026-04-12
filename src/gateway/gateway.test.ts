@@ -33,14 +33,12 @@ describe("gateway e2e", () => {
         "REMOTECLAW_CONFIG_PATH",
         "REMOTECLAW_GATEWAY_TOKEN",
         "REMOTECLAW_SKIP_CHANNELS",
-        "REMOTECLAW_SKIP_GMAIL_WATCHER",
         "REMOTECLAW_SKIP_CRON",
         "REMOTECLAW_SKIP_CANVAS_HOST",
         "REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER",
       ]);
 
       process.env.REMOTECLAW_SKIP_CHANNELS = "1";
-      process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = "1";
       process.env.REMOTECLAW_SKIP_CRON = "1";
       process.env.REMOTECLAW_SKIP_CANVAS_HOST = "1";
       process.env.REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER = "1";

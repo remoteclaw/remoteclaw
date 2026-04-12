@@ -14,10 +14,10 @@ import {
 
 describe("diffConfigPaths", () => {
   it("captures nested config changes", () => {
-    const prev = { hooks: { gmail: { account: "a" } } };
-    const next = { hooks: { gmail: { account: "b" } } };
+    const prev = { hooks: { token: "a" } };
+    const next = { hooks: { token: "b" } };
     const paths = diffConfigPaths(prev, next);
-    expect(paths).toContain("hooks.gmail.account");
+    expect(paths).toContain("hooks.token");
   });
 
   it("captures array changes", () => {
@@ -123,13 +123,6 @@ describe("buildGatewayReloadPlan", () => {
     expect(plan.restartReasons).toContain("gateway.port");
   });
 
-  it("restarts the Gmail watcher for hooks.gmail changes", () => {
-    const plan = buildGatewayReloadPlan(["hooks.gmail.account"]);
-    expect(plan.restartGateway).toBe(false);
-    expect(plan.restartGmailWatcher).toBe(true);
-    expect(plan.reloadHooks).toBe(true);
-  });
-
   it("restarts providers when provider config prefixes change", () => {
     const changedPaths = ["web.enabled", "channels.telegram.botToken"];
     const plan = buildGatewayReloadPlan(changedPaths);
@@ -205,13 +198,6 @@ describe("buildGatewayReloadPlan", () => {
       expectRestartHealthMonitor: true,
     },
     {
-      path: "hooks.gmail.account",
-      expectRestartGateway: false,
-      expectHotPath: "hooks.gmail.account",
-      expectRestartGmailWatcher: true,
-      expectReloadHooks: true,
-    },
-    {
       path: "gateway.remote.url",
       expectRestartGateway: false,
       expectNoopPath: "gateway.remote.url",
@@ -235,12 +221,6 @@ describe("buildGatewayReloadPlan", () => {
     }
     if (testCase.expectRestartHealthMonitor) {
       expect(plan.restartHealthMonitor).toBe(true);
-    }
-    if (testCase.expectRestartGmailWatcher) {
-      expect(plan.restartGmailWatcher).toBe(true);
-    }
-    if (testCase.expectReloadHooks) {
-      expect(plan.reloadHooks).toBe(true);
     }
   });
 });

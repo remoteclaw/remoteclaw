@@ -187,15 +187,6 @@ const entries: SubCliEntry[] = [
     },
   },
   {
-    name: "webhooks",
-    description: "Webhook helpers and integrations",
-    hasSubcommands: true,
-    register: async (program) => {
-      const mod = await import("../webhooks-cli.js");
-      mod.registerWebhooksCli(program);
-    },
-  },
-  {
     name: "qr",
     description: "Generate iOS pairing QR/setup code",
     hasSubcommands: false,

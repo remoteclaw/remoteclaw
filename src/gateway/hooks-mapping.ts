@@ -64,20 +64,7 @@ export type HookMappingResult =
   | { ok: true; action: null; skipped: true }
   | { ok: false; error: string };
 
-const hookPresetMappings: Record<string, HookMappingConfig[]> = {
-  gmail: [
-    {
-      id: "gmail",
-      match: { path: "gmail" },
-      action: "agent",
-      wakeMode: "now",
-      name: "Gmail",
-      sessionKey: "hook:gmail:{{messages[0].id}}",
-      messageTemplate:
-        "New email from {{messages[0].from}}\nSubject: {{messages[0].subject}}\n{{messages[0].snippet}}\n{{messages[0].body}}",
-    },
-  ],
-};
+const hookPresetMappings: Record<string, HookMappingConfig[]> = {};
 
 const transformCache = new Map<string, HookTransformFn>();
 
@@ -108,7 +95,6 @@ export function resolveHookMappings(
   opts?: { configDir?: string },
 ): HookMappingResolved[] {
   const presets = hooks?.presets ?? [];
-  const gmailAllowUnsafe = hooks?.gmail?.allowUnsafeExternalContent;
   const mappings: HookMappingConfig[] = [];
   if (hooks?.mappings) {
     mappings.push(...hooks.mappings);
@@ -116,15 +102,6 @@ export function resolveHookMappings(
   for (const preset of presets) {
     const presetMappings = hookPresetMappings[preset];
     if (!presetMappings) {
-      continue;
-    }
-    if (preset === "gmail" && typeof gmailAllowUnsafe === "boolean") {
-      mappings.push(
-        ...presetMappings.map((mapping) => ({
-          ...mapping,
-          allowUnsafeExternalContent: gmailAllowUnsafe,
-        })),
-      );
       continue;
     }
     mappings.push(...presetMappings);

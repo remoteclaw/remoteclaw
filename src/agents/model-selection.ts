@@ -151,6 +151,5 @@ export function resolveDefaultModelForAgent(params: {
 
 export const resolveThinkingDefault = (..._args: unknown[]) => undefined as any;
 export const getModelRefStatus = (..._args: unknown[]) => undefined as any;
-export const resolveHooksGmailModel = (..._args: unknown[]) => undefined as any;
 export const inferUniqueProviderFromConfiguredModels = (..._args: unknown[]) => undefined as any;
 export const createModelSelectionState = (..._args: unknown[]) => ({}) as any;

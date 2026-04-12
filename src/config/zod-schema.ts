@@ -10,7 +10,7 @@ import {
   SecretInputSchema,
   SecretsConfigSchema,
 } from "./zod-schema.core.js";
-import { HookMappingSchema, HooksGmailSchema, InternalHooksSchema } from "./zod-schema.hooks.js";
+import { HookMappingSchema, InternalHooksSchema } from "./zod-schema.hooks.js";
 import { InstallRecordShape } from "./zod-schema.installs.js";
 import { ChannelsSchema } from "./zod-schema.providers.js";
 import { sensitive } from "./zod-schema.sensitive.js";
@@ -522,7 +522,6 @@ export const RemoteClawSchema = z
         presets: z.array(z.string()).optional(),
         transformsDir: z.string().optional(),
         mappings: z.array(HookMappingSchema).optional(),
-        gmail: HooksGmailSchema,
         internal: InternalHooksSchema,
       })
       .strict()

@@ -178,7 +178,7 @@ describe("agents add command", () => {
     expect(outroMock).toHaveBeenCalledWith(expect.stringContaining("myagent"));
   });
 
-  it("validates the editable agent id rejects reserved and invalid values", async () => {
+  it("validates the editable agent id rejects invalid values (but not 'main')", async () => {
     const cfg = { ...baseConfigSnapshot };
     readConfigFileSnapshotMock.mockResolvedValue(cfg);
     setupChannelsMock.mockImplementation((c: unknown) => Promise.resolve(c));
@@ -215,7 +215,9 @@ describe("agents add command", () => {
 
     expect(capturedValidate).toBeDefined();
     expect(capturedValidate!("")).toBe("Required");
-    expect(capturedValidate!("main")).toContain("reserved");
+    // Regression guard for #2311: "main" is no longer a reserved agent name.
+    // The validator must accept it like any other syntactically valid id.
+    expect(capturedValidate!("main")).toBeUndefined();
     expect(capturedValidate!("!!!")).toContain("Must start");
     expect(capturedValidate!("valid-id")).toBeUndefined();
   });

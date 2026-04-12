@@ -6,11 +6,9 @@ import {
   GroupChatSchema,
   HumanDelaySchema,
   IdentitySchema,
-  SecretInputSchema,
   ToolsLinksSchema,
   ToolsMediaSchema,
 } from "./zod-schema.core.js";
-import { sensitive } from "./zod-schema.sensitive.js";
 
 export const HeartbeatSchema = z
   .object({
@@ -259,80 +257,6 @@ export const ToolPolicySchema = ToolPolicyBaseSchema.superRefine((value, ctx) =>
   }
 }).optional();
 
-export const ToolsWebSearchSchema = z
-  .object({
-    enabled: z.boolean().optional(),
-    provider: z
-      .union([
-        z.literal("brave"),
-        z.literal("perplexity"),
-        z.literal("grok"),
-        z.literal("gemini"),
-        z.literal("kimi"),
-      ])
-      .optional(),
-    apiKey: SecretInputSchema.optional().register(sensitive),
-    maxResults: z.number().int().positive().optional(),
-    timeoutSeconds: z.number().int().positive().optional(),
-    cacheTtlMinutes: z.number().nonnegative().optional(),
-    perplexity: z
-      .object({
-        apiKey: SecretInputSchema.optional().register(sensitive),
-        // Legacy Sonar/OpenRouter fields — kept for backward compatibility
-        // so existing configs don't fail validation. Ignored at runtime.
-        baseUrl: z.string().optional(),
-        model: z.string().optional(),
-      })
-      .strict()
-      .optional(),
-    grok: z
-      .object({
-        apiKey: SecretInputSchema.optional().register(sensitive),
-        model: z.string().optional(),
-        inlineCitations: z.boolean().optional(),
-      })
-      .strict()
-      .optional(),
-    gemini: z
-      .object({
-        apiKey: SecretInputSchema.optional().register(sensitive),
-        model: z.string().optional(),
-      })
-      .strict()
-      .optional(),
-    kimi: z
-      .object({
-        apiKey: SecretInputSchema.optional().register(sensitive),
-        baseUrl: z.string().optional(),
-        model: z.string().optional(),
-      })
-      .strict()
-      .optional(),
-  })
-  .strict()
-  .optional();
-
-export const ToolsWebFetchSchema = z
-  .object({
-    enabled: z.boolean().optional(),
-    maxChars: z.number().int().positive().optional(),
-    maxCharsCap: z.number().int().positive().optional(),
-    timeoutSeconds: z.number().int().positive().optional(),
-    cacheTtlMinutes: z.number().nonnegative().optional(),
-    maxRedirects: z.number().int().nonnegative().optional(),
-    userAgent: z.string().optional(),
-  })
-  .strict()
-  .optional();
-
-export const ToolsWebSchema = z
-  .object({
-    search: ToolsWebSearchSchema,
-    fetch: ToolsWebFetchSchema,
-  })
-  .strict()
-  .optional();
-
 export const ToolProfileSchema = z
   .union([z.literal("minimal"), z.literal("coding"), z.literal("messaging"), z.literal("full")])
   .optional();
@@ -542,142 +466,6 @@ export const AgentToolsSchema = z
   })
   .optional();
 
-export const MemorySearchSchema = z
-  .object({
-    enabled: z.boolean().optional(),
-    sources: z.array(z.union([z.literal("memory"), z.literal("sessions")])).optional(),
-    extraPaths: z.array(z.string()).optional(),
-    experimental: z
-      .object({
-        sessionMemory: z.boolean().optional(),
-      })
-      .strict()
-      .optional(),
-    provider: z
-      .union([
-        z.literal("openai"),
-        z.literal("local"),
-        z.literal("gemini"),
-        z.literal("voyage"),
-        z.literal("mistral"),
-        z.literal("ollama"),
-      ])
-      .optional(),
-    remote: z
-      .object({
-        baseUrl: z.string().optional(),
-        apiKey: SecretInputSchema.optional().register(sensitive),
-        headers: z.record(z.string(), z.string()).optional(),
-        batch: z
-          .object({
-            enabled: z.boolean().optional(),
-            wait: z.boolean().optional(),
-            concurrency: z.number().int().positive().optional(),
-            pollIntervalMs: z.number().int().nonnegative().optional(),
-            timeoutMinutes: z.number().int().positive().optional(),
-          })
-          .strict()
-          .optional(),
-      })
-      .strict()
-      .optional(),
-    fallback: z
-      .union([
-        z.literal("openai"),
-        z.literal("gemini"),
-        z.literal("local"),
-        z.literal("voyage"),
-        z.literal("mistral"),
-        z.literal("ollama"),
-        z.literal("none"),
-      ])
-      .optional(),
-    model: z.string().optional(),
-    local: z
-      .object({
-        modelPath: z.string().optional(),
-        modelCacheDir: z.string().optional(),
-      })
-      .strict()
-      .optional(),
-    store: z
-      .object({
-        driver: z.literal("sqlite").optional(),
-        path: z.string().optional(),
-        vector: z
-          .object({
-            enabled: z.boolean().optional(),
-            extensionPath: z.string().optional(),
-          })
-          .strict()
-          .optional(),
-      })
-      .strict()
-      .optional(),
-    chunking: z
-      .object({
-        tokens: z.number().int().positive().optional(),
-        overlap: z.number().int().nonnegative().optional(),
-      })
-      .strict()
-      .optional(),
-    sync: z
-      .object({
-        onSessionStart: z.boolean().optional(),
-        onSearch: z.boolean().optional(),
-        watch: z.boolean().optional(),
-        watchDebounceMs: z.number().int().nonnegative().optional(),
-        intervalMinutes: z.number().int().nonnegative().optional(),
-        sessions: z
-          .object({
-            deltaBytes: z.number().int().nonnegative().optional(),
-            deltaMessages: z.number().int().nonnegative().optional(),
-          })
-          .strict()
-          .optional(),
-      })
-      .strict()
-      .optional(),
-    query: z
-      .object({
-        maxResults: z.number().int().positive().optional(),
-        minScore: z.number().min(0).max(1).optional(),
-        hybrid: z
-          .object({
-            enabled: z.boolean().optional(),
-            vectorWeight: z.number().min(0).max(1).optional(),
-            textWeight: z.number().min(0).max(1).optional(),
-            candidateMultiplier: z.number().int().positive().optional(),
-            mmr: z
-              .object({
-                enabled: z.boolean().optional(),
-                lambda: z.number().min(0).max(1).optional(),
-              })
-              .strict()
-              .optional(),
-            temporalDecay: z
-              .object({
-                enabled: z.boolean().optional(),
-                halfLifeDays: z.number().int().positive().optional(),
-              })
-              .strict()
-              .optional(),
-          })
-          .strict()
-          .optional(),
-      })
-      .strict()
-      .optional(),
-    cache: z
-      .object({
-        enabled: z.boolean().optional(),
-        maxEntries: z.number().int().positive().optional(),
-      })
-      .strict()
-      .optional(),
-  })
-  .strict()
-  .optional();
 export { AgentModelSchema };
 
 const AgentRuntimeAcpSchema = z
@@ -715,7 +503,9 @@ export const AgentEntrySchema = z
     agentDir: z.string().optional(),
     model: AgentModelSchema.optional(),
     skills: z.array(z.string()).optional(),
-    memorySearch: MemorySearchSchema,
+    // Memory search config gutted — agents bring their own memory.
+    // Stub kept for config parse compatibility (existing configs still parse).
+    memorySearch: z.unknown().optional(),
     humanDelay: HumanDelaySchema.optional(),
     heartbeat: HeartbeatSchema,
     identity: IdentitySchema,
@@ -751,7 +541,9 @@ export const AgentEntrySchema = z
 export const ToolsSchema = z
   .object({
     ...CommonToolPolicyFields,
-    web: ToolsWebSchema,
+    // Web search/fetch tool config gutted — agents bring their own web tools.
+    // Stub kept for config parse compatibility (existing configs still parse).
+    web: z.unknown().optional(),
     media: ToolsMediaSchema,
     links: ToolsLinksSchema,
     sessions: z

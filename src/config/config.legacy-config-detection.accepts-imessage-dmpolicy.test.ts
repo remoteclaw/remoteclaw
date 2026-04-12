@@ -268,15 +268,6 @@ describe("legacy config detection", () => {
       expectRoutingAllowFromLegacySnapshot(ctx, ["+15555550123"]);
     });
   });
-  it("flags top-level memorySearch as legacy in snapshot", async () => {
-    await withSnapshotForConfig(
-      { memorySearch: { provider: "local", fallback: "none" } },
-      async (ctx) => {
-        expect(ctx.snapshot.valid).toBe(false);
-        expect(ctx.snapshot.legacyIssues.some((issue) => issue.path === "memorySearch")).toBe(true);
-      },
-    );
-  });
   it("flags top-level heartbeat as legacy in snapshot", async () => {
     await withSnapshotForConfig(
       { heartbeat: { model: "anthropic/claude-3-5-haiku-20241022", every: "30m" } },

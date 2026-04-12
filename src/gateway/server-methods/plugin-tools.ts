@@ -1,8 +1,9 @@
 import crypto from "node:crypto";
 import {
+  listAgentIds,
   resolveAgentDir,
   resolveAgentWorkspaceDir,
-  resolveDefaultAgentId,
+  resolveSoleAgentId,
 } from "../../agents/agent-scope.js";
 import { loadConfig } from "../../config/config.js";
 import { resolvePluginTools } from "../../plugins/tools.js";
@@ -14,7 +15,7 @@ function resolveToolContext(rawAgentId: unknown) {
   const agentId =
     typeof rawAgentId === "string" && rawAgentId.trim()
       ? rawAgentId.trim()
-      : resolveDefaultAgentId(cfg);
+      : (resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0]);
   const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
   const agentDir = resolveAgentDir(cfg, agentId);
   return { cfg, agentId, workspaceDir, agentDir };

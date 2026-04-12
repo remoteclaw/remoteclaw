@@ -5,8 +5,11 @@ import { Command } from "commander";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 const getMemorySearchManager = vi.fn();
-const loadConfig = vi.fn(() => ({}));
-const resolveDefaultAgentId = vi.fn(() => "main");
+const loadConfig = vi.fn<() => Record<string, unknown>>(() => ({
+  agents: { list: [{ id: "main" }] },
+}));
+const resolveSoleAgentId = vi.fn(() => "main");
+const listAgentIds = vi.fn(() => ["main"]);
 const resolveCommandSecretRefsViaGateway = vi.fn(async ({ config }: { config: unknown }) => ({
   resolvedConfig: config,
   diagnostics: [] as string[],
@@ -21,7 +24,8 @@ vi.mock("../config/config.js", () => ({
 }));
 
 vi.mock("../agents/agent-scope.js", () => ({
-  resolveDefaultAgentId,
+  resolveSoleAgentId,
+  listAgentIds,
 }));
 
 vi.mock("./command-secret-gateway.js", () => ({

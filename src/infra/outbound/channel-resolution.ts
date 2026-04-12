@@ -1,4 +1,4 @@
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
+import { resolveFirstAgentWorkspace } from "../../agents/agent-scope.js";
 import { getChannelPlugin } from "../../channels/plugins/index.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
@@ -45,8 +45,7 @@ function maybeBootstrapChannelPlugin(params: {
   bootstrapAttempts.add(attemptKey);
 
   const autoEnabled = applyPluginAutoEnable({ config: cfg }).config;
-  const defaultAgentId = resolveDefaultAgentId(autoEnabled);
-  const workspaceDir = resolveAgentWorkspaceDir(autoEnabled, defaultAgentId);
+  const workspaceDir = resolveFirstAgentWorkspace(autoEnabled) ?? undefined;
   try {
     loadRemoteClawPlugins({
       config: autoEnabled,

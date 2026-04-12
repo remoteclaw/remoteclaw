@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { intro as clackIntro, outro as clackOutro } from "@clack/prompts";
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveFirstAgentWorkspace } from "../agents/agent-scope.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { loadModelCatalog } from "../agents/model-catalog.js";
 import {
@@ -343,10 +343,12 @@ export async function doctorCommand(
   }
 
   if (options.workspaceSuggestions !== false) {
-    const workspaceDir = resolveAgentWorkspaceDir(cfg, resolveDefaultAgentId(cfg));
-    noteWorkspaceBackupTip(workspaceDir);
-    if (shouldSuggestMemorySystem(workspaceDir)) {
-      note(MEMORY_SYSTEM_PROMPT, "Workspace");
+    const workspaceDir = resolveFirstAgentWorkspace(cfg);
+    if (workspaceDir) {
+      noteWorkspaceBackupTip(workspaceDir);
+      if (shouldSuggestMemorySystem(workspaceDir)) {
+        note(MEMORY_SYSTEM_PROMPT, "Workspace");
+      }
     }
   }
 

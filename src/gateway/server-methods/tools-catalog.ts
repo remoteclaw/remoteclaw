@@ -2,7 +2,7 @@ import {
   listAgentIds,
   resolveAgentDir,
   resolveAgentWorkspaceDir,
-  resolveDefaultAgentId,
+  resolveSoleAgentId,
 } from "../../agents/agent-scope.js";
 import {
   listCoreToolSections,
@@ -41,7 +41,7 @@ function resolveAgentIdOrRespondError(rawAgentId: unknown, respond: RespondFn) {
   const cfg = loadConfig();
   const knownAgents = listAgentIds(cfg);
   const requestedAgentId = typeof rawAgentId === "string" ? rawAgentId.trim() : "";
-  const agentId = requestedAgentId || resolveDefaultAgentId(cfg);
+  const agentId = requestedAgentId || resolveSoleAgentId(cfg) || knownAgents[0];
   if (requestedAgentId && !knownAgents.includes(agentId)) {
     respond(
       false,

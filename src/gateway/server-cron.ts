@@ -1,4 +1,4 @@
-import { resolveDefaultAgentId, resolveSoleAgentId } from "../agents/agent-scope.js";
+import { listAgentIds, resolveSoleAgentId } from "../agents/agent-scope.js";
 import type { CliDeps } from "../cli/deps.js";
 import { createOutboundSendDeps } from "../cli/outbound-send-deps.js";
 import { loadConfig } from "../config/config.js";
@@ -173,8 +173,13 @@ export function buildGatewayCronService(params: {
       }
       return { agentId: normalized, cfg: runtimeConfig };
     }
-    const agentId = resolveDefaultAgentId(runtimeConfig);
-    return { agentId, cfg: runtimeConfig };
+    const sole = resolveSoleAgentId(runtimeConfig);
+    if (!sole) {
+      throw new Error(
+        "cron: no agentId specified and multiple agents configured — set agentId on the cron job or reduce to a single agent.",
+      );
+    }
+    return { agentId: sole, cfg: runtimeConfig };
   };
 
   const resolveCronSessionKey = (params: {
@@ -231,8 +236,8 @@ export function buildGatewayCronService(params: {
     return { runtimeConfig, agentId, sessionKey };
   };
 
-  const defaultAgentId = resolveDefaultAgentId(params.cfg);
   const soleAgentId = resolveSoleAgentId(params.cfg);
+  const defaultAgentId = soleAgentId ?? listAgentIds(params.cfg)[0];
   const runLogPrune = resolveCronRunLogPruneOptions(params.cfg.cron?.runLog);
   const resolveSessionStorePath = (agentId?: string) =>
     resolveStorePath(params.cfg.session?.store, {

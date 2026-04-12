@@ -50,7 +50,8 @@ vi.mock("../../routing/session-key.js", () => ({
 
 vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentWorkspaceDir: () => "/tmp/workspace",
-  resolveDefaultAgentId: () => "default",
+  resolveSoleAgentId: () => "default",
+  listAgentIds: () => ["default"],
   resolveAgentRuntime: () => "claude",
 }));
 

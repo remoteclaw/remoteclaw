@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { listAgentIds, resolveSoleAgentId } from "../agents/agent-scope.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveOAuthDir, resolveStateDir } from "../config/paths.js";
@@ -479,7 +479,7 @@ export async function noteStateIntegrity(
   const stateDir = resolveStateDir(env, homedir);
   const defaultStateDir = path.join(homedir(), ".remoteclaw");
   const oauthDir = resolveOAuthDir(env, stateDir);
-  const agentId = resolveDefaultAgentId(cfg);
+  const agentId = resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
   const sessionsDir = resolveSessionTranscriptsDirForAgent(agentId, env, homedir);
   const storePath = resolveStorePath(cfg.session?.store, { agentId });
   const storeDir = path.dirname(storePath);

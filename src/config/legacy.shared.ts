@@ -91,33 +91,6 @@ export const getAgentsList = (agents: Record<string, unknown> | null) => {
   return Array.isArray(list) ? list : [];
 };
 
-export const resolveDefaultAgentIdFromRaw = (raw: Record<string, unknown>) => {
-  const agents = getRecord(raw.agents);
-  const list = getAgentsList(agents);
-  // Sole-agent auto-selection: use the agent's ID when exactly one is configured.
-  if (list.length === 1) {
-    const entry = list[0];
-    if (isRecord(entry) && typeof entry.id === "string" && entry.id.trim() !== "") {
-      return entry.id.trim();
-    }
-  }
-  // Legacy fallback: routing.defaultAgentId (migrated on load).
-  const routing = getRecord(raw.routing);
-  const routingDefault =
-    typeof routing?.defaultAgentId === "string" ? routing.defaultAgentId.trim() : "";
-  if (routingDefault) {
-    return routingDefault;
-  }
-  const firstEntry = list.find(
-    (entry): entry is { id: string } =>
-      isRecord(entry) && typeof entry.id === "string" && entry.id.trim() !== "",
-  );
-  if (firstEntry) {
-    return firstEntry.id.trim();
-  }
-  return "main";
-};
-
 export const ensureAgentEntry = (list: unknown[], id: string): Record<string, unknown> => {
   const normalized = id.trim();
   const existing = list.find(

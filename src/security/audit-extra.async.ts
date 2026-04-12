@@ -50,7 +50,10 @@ function loadWorkspaceSkillEntries(
   }
   return results;
 }
-import { resolveAgentWorkspaceDirOrNull, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import {
+  resolveAgentWorkspaceDirOrNull,
+  resolveFirstAgentWorkspace,
+} from "../agents/agent-scope.js";
 import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
 function listAgentWorkspaceDirs(cfg: RemoteClawConfig): string[] {
   const dirs = new Set<string>();
@@ -65,9 +68,9 @@ function listAgentWorkspaceDirs(cfg: RemoteClawConfig): string[] {
       }
     }
   }
-  const defaultDir = resolveAgentWorkspaceDirOrNull(cfg, resolveDefaultAgentId(cfg));
-  if (defaultDir) {
-    dirs.add(defaultDir);
+  const firstDir = resolveFirstAgentWorkspace(cfg);
+  if (firstDir) {
+    dirs.add(firstDir);
   }
   return [...dirs];
 }

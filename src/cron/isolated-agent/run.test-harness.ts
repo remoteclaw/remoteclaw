@@ -51,7 +51,8 @@ vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentDir: vi.fn().mockReturnValue("/tmp/agent-dir"),
   resolveAgentModelFallbacksOverride: resolveAgentModelFallbacksOverrideMock,
   resolveAgentWorkspaceDir: vi.fn().mockReturnValue("/tmp/workspace"),
-  resolveDefaultAgentId: vi.fn().mockReturnValue("default"),
+  resolveSoleAgentId: vi.fn().mockReturnValue("default"),
+  listAgentIds: vi.fn().mockReturnValue(["default"]),
   resolveAgentSkillsFilter: resolveAgentSkillsFilterMock,
 }));
 

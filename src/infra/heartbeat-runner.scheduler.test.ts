@@ -7,7 +7,10 @@ describe("startHeartbeatRunner", () => {
   function startDefaultRunner(runOnce: Parameters<typeof startHeartbeatRunner>[0]["runOnce"]) {
     return startHeartbeatRunner({
       cfg: {
-        agents: { defaults: { heartbeat: { every: "30m" } } },
+        agents: {
+          defaults: { heartbeat: { every: "30m" } },
+          list: [{ id: "main" }],
+        },
       } as RemoteClawConfig,
       runOnce,
     });
@@ -96,7 +99,7 @@ describe("startHeartbeatRunner", () => {
     const runSpy2 = vi.fn().mockResolvedValue({ status: "ran", durationMs: 1 });
 
     const cfg = {
-      agents: { defaults: { heartbeat: { every: "30m" } } },
+      agents: { defaults: { heartbeat: { every: "30m" } }, list: [{ id: "main" }] },
     } as RemoteClawConfig;
 
     // Start runner A
@@ -149,7 +152,7 @@ describe("startHeartbeatRunner", () => {
 
     const runner = startHeartbeatRunner({
       cfg: {
-        agents: { defaults: { heartbeat: { every: "30m" } } },
+        agents: { defaults: { heartbeat: { every: "30m" } }, list: [{ id: "main" }] },
       } as RemoteClawConfig,
       runOnce: runSpy,
     });
@@ -183,7 +186,7 @@ describe("startHeartbeatRunner", () => {
 
     const runner = startHeartbeatRunner({
       cfg: {
-        agents: { defaults: { heartbeat: { every: "30m" } } },
+        agents: { defaults: { heartbeat: { every: "30m" } }, list: [{ id: "main" }] },
       } as RemoteClawConfig,
       runOnce: runSpy,
     });

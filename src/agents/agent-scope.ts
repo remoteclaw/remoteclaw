@@ -3,7 +3,6 @@ import type { RemoteClawConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
-  DEFAULT_AGENT_ID,
   classifySessionKeyShape,
   normalizeAgentId,
   parseAgentSessionKey,
@@ -51,26 +50,25 @@ export function listAgentEntries(cfg: RemoteClawConfig): AgentEntry[] {
 
 export function listAgentIds(cfg: RemoteClawConfig): string[] {
   const agents = listAgentEntries(cfg);
-  if (agents.length === 0) {
-    return [DEFAULT_AGENT_ID];
-  }
   const seen = new Set<string>();
   const ids: string[] = [];
   for (const entry of agents) {
-    const id = normalizeAgentId(entry?.id);
-    if (seen.has(id)) {
+    const id = entry?.id?.trim();
+    if (!id) {
       continue;
     }
-    seen.add(id);
-    ids.push(id);
+    const normalized = normalizeAgentId(id);
+    if (seen.has(normalized)) {
+      continue;
+    }
+    seen.add(normalized);
+    ids.push(normalized);
   }
-  return ids.length > 0 ? ids : [DEFAULT_AGENT_ID];
+  return ids;
 }
 
 /**
  * Returns the sole agent's ID when exactly one agent is configured, or null otherwise.
- *
- * Use this instead of the deprecated `resolveDefaultAgentId` for new code.
  */
 export function resolveSoleAgentId(cfg: RemoteClawConfig): string | null {
   const agents = listAgentEntries(cfg);
@@ -130,14 +128,6 @@ export function resolveFirstAgentWorkspace(cfg: RemoteClawConfig): string | null
 }
 
 /**
- * @deprecated Use {@link resolveSoleAgentId} or {@link requireSoleAgentId} instead.
- * Temporary shim — will be removed once all callers migrate (#1576–#1581).
- */
-export function resolveDefaultAgentId(cfg: RemoteClawConfig): string {
-  return resolveSoleAgentId(cfg) ?? DEFAULT_AGENT_ID;
-}
-
-/**
  * Resolve the agent ID for a session key with config-aware fallback.
  *
  * - Valid `agent:` prefix key → parsed agent ID.
@@ -189,31 +179,18 @@ export function resolveSessionKeyAgentId(
   }
 }
 
-export function resolveSessionAgentIds(params: {
-  sessionKey?: string;
-  config?: RemoteClawConfig;
-  agentId?: string;
-}): {
-  defaultAgentId: string;
-  sessionAgentId: string;
-} {
-  const defaultAgentId = resolveDefaultAgentId(params.config ?? {});
-  const explicitAgentIdRaw =
-    typeof params.agentId === "string" ? params.agentId.trim().toLowerCase() : "";
-  const explicitAgentId = explicitAgentIdRaw ? normalizeAgentId(explicitAgentIdRaw) : null;
-  const sessionKey = params.sessionKey?.trim();
-  const normalizedSessionKey = sessionKey ? sessionKey.toLowerCase() : undefined;
-  const parsed = normalizedSessionKey ? parseAgentSessionKey(normalizedSessionKey) : null;
-  const sessionAgentId =
-    explicitAgentId ?? (parsed?.agentId ? normalizeAgentId(parsed.agentId) : defaultAgentId);
-  return { defaultAgentId, sessionAgentId };
-}
-
 export function resolveSessionAgentId(params: {
   sessionKey?: string;
   config?: RemoteClawConfig;
+  agentId?: string;
 }): string {
-  return resolveSessionAgentIds(params).sessionAgentId;
+  const cfg = params.config ?? {};
+  const explicitAgentIdRaw =
+    typeof params.agentId === "string" ? params.agentId.trim().toLowerCase() : "";
+  if (explicitAgentIdRaw) {
+    return normalizeAgentId(explicitAgentIdRaw);
+  }
+  return resolveSessionKeyAgentId(params.sessionKey, cfg);
 }
 
 function resolveAgentEntry(cfg: RemoteClawConfig, agentId: string): AgentEntry | undefined {

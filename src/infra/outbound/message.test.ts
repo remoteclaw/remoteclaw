@@ -14,7 +14,9 @@ vi.mock("../../channels/plugins/index.js", () => ({
 }));
 
 vi.mock("../../agents/agent-scope.js", () => ({
-  resolveDefaultAgentId: () => "main",
+  resolveSoleAgentId: () => "main",
+  listAgentIds: () => ["main"],
+  resolveFirstAgentWorkspace: () => "/tmp/remoteclaw-test-workspace",
   resolveAgentWorkspaceDir: () => "/tmp/remoteclaw-test-workspace",
   resolveAgentRuntime: () => "claude",
 }));

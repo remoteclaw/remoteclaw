@@ -8,7 +8,7 @@ vi.mock("../../config/config.js", () => ({
 
 vi.mock("../../agents/agent-scope.js", () => ({
   listAgentIds: vi.fn(() => ["main"]),
-  resolveDefaultAgentId: vi.fn(() => "main"),
+  resolveSoleAgentId: vi.fn(() => "main"),
   resolveAgentWorkspaceDir: vi.fn(() => "/tmp/workspace-main"),
   resolveAgentDir: vi.fn(() => "/tmp/agents/main/agent"),
   resolveAgentRuntime: vi.fn(() => "claude"),

@@ -1,4 +1,4 @@
-import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { listAgentIds, resolveSoleAgentId } from "../agents/agent-scope.js";
 import { resolveChannelDefaultAccountId } from "../channels/plugins/helpers.js";
 import { getChannelPlugin, listChannelPlugins } from "../channels/plugins/index.js";
 import type { ChannelAccountSnapshot } from "../channels/plugins/types.js";
@@ -112,7 +112,7 @@ const resolveHeartbeatSummary = (cfg: ReturnType<typeof loadConfig>, agentId: st
   resolveHeartbeatSummaryForAgent(cfg, agentId);
 
 const resolveAgentOrder = (cfg: ReturnType<typeof loadConfig>) => {
-  const defaultAgentId = resolveDefaultAgentId(cfg);
+  const defaultAgentId = resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
   const entries = Array.isArray(cfg.agents?.list) ? cfg.agents.list : [];
   const seen = new Set<string>();
   const ordered: Array<{ id: string; name?: string }> = [];
@@ -132,12 +132,8 @@ const resolveAgentOrder = (cfg: ReturnType<typeof loadConfig>) => {
     ordered.push({ id, name: typeof entry.name === "string" ? entry.name : undefined });
   }
 
-  if (!seen.has(defaultAgentId)) {
+  if (defaultAgentId && !seen.has(defaultAgentId)) {
     ordered.unshift({ id: defaultAgentId });
-  }
-
-  if (ordered.length === 0) {
-    ordered.push({ id: defaultAgentId });
   }
 
   return { defaultAgentId, ordered };

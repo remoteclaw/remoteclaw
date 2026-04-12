@@ -2,8 +2,6 @@ import { loadAuthProfileStore } from "../../auth/index.js";
 import { listChannelPlugins } from "../../channels/plugins/index.js";
 import { buildChannelAccountSnapshot } from "../../channels/plugins/status.js";
 import type { ChannelAccountSnapshot, ChannelPlugin } from "../../channels/plugins/types.js";
-import { withProgress } from "../../cli/progress.js";
-import { formatUsageReportLines, loadProviderUsageSummary } from "../../infra/provider-usage.js";
 import { defaultRuntime, type RuntimeEnv } from "../../runtime.js";
 import { formatDocsLink } from "../../terminal/links.js";
 import { theme } from "../../terminal/theme.js";
@@ -11,7 +9,6 @@ import { formatChannelAccountLabel, requireValidConfig } from "./shared.js";
 
 export type ChannelsListOptions = {
   json?: boolean;
-  usage?: boolean;
 };
 
 const colorValue = (value: string) => {
@@ -86,19 +83,6 @@ function formatAccountLine(params: {
   }
   return `- ${label}: ${bits.join(", ")}`;
 }
-async function loadUsageWithProgress(
-  runtime: RuntimeEnv,
-): Promise<Awaited<ReturnType<typeof loadProviderUsageSummary>> | null> {
-  try {
-    return await withProgress(
-      { label: "Fetching usage snapshot…", indeterminate: true, enabled: true },
-      async () => await loadProviderUsageSummary(),
-    );
-  } catch (err) {
-    runtime.error(String(err));
-    return null;
-  }
-}
 
 export async function channelsListCommand(
   opts: ChannelsListOptions,
@@ -108,7 +92,6 @@ export async function channelsListCommand(
   if (!cfg) {
     return;
   }
-  const includeUsage = opts.usage !== false;
 
   const plugins = listChannelPlugins();
 
@@ -120,12 +103,11 @@ export async function channelsListCommand(
     isExternal: false,
   }));
   if (opts.json) {
-    const usage = includeUsage ? await loadProviderUsageSummary() : undefined;
     const chat: Record<string, string[]> = {};
     for (const plugin of plugins) {
       chat[plugin.id] = plugin.config.listAccountIds(cfg);
     }
-    const payload = { chat, auth: authProfiles, ...(usage ? { usage } : {}) };
+    const payload = { chat, auth: authProfiles };
     runtime.log(JSON.stringify(payload, null, 2));
     return;
   }
@@ -165,18 +147,6 @@ export async function channelsListCommand(
   }
 
   runtime.log(lines.join("\n"));
-
-  if (includeUsage) {
-    runtime.log("");
-    const usage = await loadUsageWithProgress(runtime);
-    if (usage) {
-      const usageLines = formatUsageReportLines(usage);
-      if (usageLines.length > 0) {
-        usageLines[0] = theme.accent(usageLines[0]);
-        runtime.log(usageLines.join("\n"));
-      }
-    }
-  }
 
   runtime.log("");
   runtime.log(`Docs: ${formatDocsLink("/gateway/configuration", "gateway/configuration")}`);

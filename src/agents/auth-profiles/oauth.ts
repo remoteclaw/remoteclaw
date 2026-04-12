@@ -5,9 +5,8 @@ import type { AuthProfileStore } from "./types.js";
  * Minimal implementation for resolving the API key or token from a stored
  * auth profile credential.  The upstream version includes full OAuth refresh
  * flows, provider plugins, and keychain prompts — none of which are needed
- * in the RemoteClaw fork (Middleware Boundary Principle).  This covers the
- * paths exercised by the provider-usage auth pipeline: api_key and token
- * credential types with inline values.
+ * in the RemoteClaw fork (Middleware Boundary Principle).  Handles api_key
+ * and token credential types with inline values.
  */
 export async function resolveApiKeyForProfile(params: {
   cfg?: unknown;

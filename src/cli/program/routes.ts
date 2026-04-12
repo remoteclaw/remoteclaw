@@ -36,14 +36,13 @@ const routeStatus: RouteSpec = {
     const json = hasFlag(argv, "--json");
     const deep = hasFlag(argv, "--deep");
     const all = hasFlag(argv, "--all");
-    const usage = hasFlag(argv, "--usage");
     const verbose = getVerboseFlag(argv, { includeDebug: true });
     const timeoutMs = getPositiveIntFlagValue(argv, "--timeout");
     if (timeoutMs === null) {
       return false;
     }
     const { statusCommand } = await import("../../commands/status.js");
-    await statusCommand({ json, deep, all, usage, timeoutMs, verbose }, defaultRuntime);
+    await statusCommand({ json, deep, all, timeoutMs, verbose }, defaultRuntime);
     return true;
   },
 };

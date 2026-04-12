@@ -320,7 +320,7 @@ describe("channels command", () => {
       },
     });
 
-    await channelsListCommand({ json: true, usage: false }, runtime);
+    await channelsListCommand({ json: true }, runtime);
     const payload = JSON.parse(runtime.log.mock.calls[0]?.[0] as string) as {
       auth?: Array<{ id: string }>;
     };

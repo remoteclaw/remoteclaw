@@ -13,6 +13,7 @@ export const CHAT_CHANNEL_ORDER = [
   "slack",
   "signal",
   "imessage",
+  "line",
 ] as const;
 
 export type ChatChannelId = (typeof CHAT_CHANNEL_ORDER)[number];
@@ -21,7 +22,7 @@ export const CHANNEL_IDS = [...CHAT_CHANNEL_ORDER] as const;
 
 export type ChatChannelMeta = ChannelMeta;
 
-const WEBSITE_URL = "https://remoteclaw.org";
+const WEBSITE_URL = "https://remoteclaw.ai";
 
 const CHAT_CHANNEL_META: Record<ChatChannelId, ChannelMeta> = {
   telegram: {
@@ -106,6 +107,16 @@ const CHAT_CHANNEL_META: Record<ChatChannelId, ChannelMeta> = {
     docsLabel: "imessage",
     blurb: "this is still a work in progress.",
     systemImage: "message.fill",
+  },
+  line: {
+    id: "line",
+    label: "LINE",
+    selectionLabel: "LINE (Messaging API)",
+    detailLabel: "LINE Bot",
+    docsPath: "/channels/line",
+    docsLabel: "line",
+    blurb: "LINE Messaging API webhook bot.",
+    systemImage: "message",
   },
 };
 

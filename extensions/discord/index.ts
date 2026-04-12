@@ -1,5 +1,5 @@
-import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
-import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
+import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/discord";
+import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/discord";
 import { discordPlugin } from "./src/channel.js";
 import { setDiscordRuntime } from "./src/runtime.js";
 import { registerDiscordSubagentHooks } from "./src/subagent-hooks.js";

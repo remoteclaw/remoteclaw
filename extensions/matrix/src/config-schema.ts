@@ -1,4 +1,4 @@
-import { MarkdownConfigSchema, ToolPolicySchema } from "remoteclaw/plugin-sdk";
+import { MarkdownConfigSchema, ToolPolicySchema } from "remoteclaw/plugin-sdk/matrix";
 import { z } from "zod";
 import { buildSecretInputSchema } from "./secret-input.js";
 

@@ -19,8 +19,6 @@ import {
 import { parseSlackBlocksInput } from "../../slack/blocks-input.js";
 import { recordSlackThreadParticipation } from "../../slack/sent-thread-cache.js";
 import { parseSlackTarget, resolveSlackChannelId } from "../../slack/targets.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-// import ... from "@mariozechner/pi-agent-core";
 import type { AgentToolResult } from "../agent-types.js";
 import { withNormalizedTimestamp } from "../date-time.js";
 import {
@@ -52,6 +50,8 @@ export type SlackActionContext = {
   replyToMode?: "off" | "first" | "all";
   /** Mutable ref to track if a reply was sent (for "first" mode). */
   hasRepliedRef?: { value: boolean };
+  /** Allowed local media directories for file uploads. */
+  mediaLocalRoots?: readonly string[];
 };
 
 /**
@@ -106,8 +106,7 @@ export async function handleSlackAction(
   params: Record<string, unknown>,
   cfg: RemoteClawConfig,
   context?: SlackActionContext,
-  // oxlint-disable-next-line
-): Promise<AgentToolResult<unknown>> {
+): Promise<AgentToolResult> {
   const resolveChannelId = () =>
     resolveSlackChannelId(
       readStringParam(params, "channelId", {
@@ -212,6 +211,7 @@ export async function handleSlackAction(
         const result = await sendSlackMessage(to, content ?? "", {
           ...writeOpts,
           mediaUrl: mediaUrl ?? undefined,
+          mediaLocalRoots: context?.mediaLocalRoots,
           threadTs: threadTs ?? undefined,
           blocks,
         });

@@ -1,5 +1,5 @@
 ---
-description: "CLI reference for `remoteclaw cron` (schedule and run background jobs)"
+summary: "CLI reference for `remoteclaw cron` (schedule and run background jobs)"
 read_when:
   - You want scheduled jobs and wakeups
   - You’re debugging cron execution and logs
@@ -42,8 +42,28 @@ Disable delivery for an isolated job:
 remoteclaw cron edit <job-id> --no-deliver
 ```
 
+Enable lightweight bootstrap context for an isolated job:
+
+```bash
+remoteclaw cron edit <job-id> --light-context
+```
+
 Announce to a specific channel:
 
 ```bash
 remoteclaw cron edit <job-id> --announce --channel slack --to "channel:C1234567890"
 ```
+
+Create an isolated job with lightweight bootstrap context:
+
+```bash
+remoteclaw cron add \
+  --name "Lightweight morning brief" \
+  --cron "0 7 * * *" \
+  --session isolated \
+  --message "Summarize overnight updates." \
+  --light-context \
+  --no-deliver
+```
+
+`--light-context` applies to isolated agent-turn jobs only. For cron runs, lightweight mode keeps bootstrap context empty instead of injecting the full workspace bootstrap set.

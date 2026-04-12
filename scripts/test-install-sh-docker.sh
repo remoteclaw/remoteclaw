@@ -7,14 +7,20 @@ NONROOT_IMAGE="${REMOTECLAW_INSTALL_NONROOT_IMAGE:-${CLAWDBOT_INSTALL_NONROOT_IM
 INSTALL_URL="${REMOTECLAW_INSTALL_URL:-${CLAWDBOT_INSTALL_URL:-https://remoteclaw.bot/install.sh}}"
 CLI_INSTALL_URL="${REMOTECLAW_INSTALL_CLI_URL:-${CLAWDBOT_INSTALL_CLI_URL:-https://remoteclaw.bot/install-cli.sh}}"
 SKIP_NONROOT="${REMOTECLAW_INSTALL_SMOKE_SKIP_NONROOT:-${CLAWDBOT_INSTALL_SMOKE_SKIP_NONROOT:-0}}"
+SKIP_SMOKE_IMAGE_BUILD="${REMOTECLAW_INSTALL_SMOKE_SKIP_IMAGE_BUILD:-${CLAWDBOT_INSTALL_SMOKE_SKIP_IMAGE_BUILD:-0}}"
+SKIP_NONROOT_IMAGE_BUILD="${REMOTECLAW_INSTALL_NONROOT_SKIP_IMAGE_BUILD:-${CLAWDBOT_INSTALL_NONROOT_SKIP_IMAGE_BUILD:-0}}"
 LATEST_DIR="$(mktemp -d)"
 LATEST_FILE="${LATEST_DIR}/latest"
 
-echo "==> Build smoke image (upgrade, root): $SMOKE_IMAGE"
-docker build \
-  -t "$SMOKE_IMAGE" \
-  -f "$ROOT_DIR/scripts/docker/install-sh-smoke/Dockerfile" \
-  "$ROOT_DIR/scripts/docker"
+if [[ "$SKIP_SMOKE_IMAGE_BUILD" == "1" ]]; then
+  echo "==> Reuse prebuilt smoke image: $SMOKE_IMAGE"
+else
+  echo "==> Build smoke image (upgrade, root): $SMOKE_IMAGE"
+  docker build \
+    -t "$SMOKE_IMAGE" \
+    -f "$ROOT_DIR/scripts/docker/install-sh-smoke/Dockerfile" \
+    "$ROOT_DIR/scripts/docker"
+fi
 
 echo "==> Run installer smoke test (root): $INSTALL_URL"
 docker run --rm -t \
@@ -36,11 +42,15 @@ fi
 if [[ "$SKIP_NONROOT" == "1" ]]; then
   echo "==> Skip non-root installer smoke (REMOTECLAW_INSTALL_SMOKE_SKIP_NONROOT=1)"
 else
-  echo "==> Build non-root image: $NONROOT_IMAGE"
-  docker build \
-    -t "$NONROOT_IMAGE" \
-    -f "$ROOT_DIR/scripts/docker/install-sh-nonroot/Dockerfile" \
-    "$ROOT_DIR/scripts/docker"
+  if [[ "$SKIP_NONROOT_IMAGE_BUILD" == "1" ]]; then
+    echo "==> Reuse prebuilt non-root image: $NONROOT_IMAGE"
+  else
+    echo "==> Build non-root image: $NONROOT_IMAGE"
+    docker build \
+      -t "$NONROOT_IMAGE" \
+      -f "$ROOT_DIR/scripts/docker/install-sh-nonroot/Dockerfile" \
+      "$ROOT_DIR/scripts/docker"
+  fi
 
   echo "==> Run installer non-root test: $INSTALL_URL"
   docker run --rm -t \

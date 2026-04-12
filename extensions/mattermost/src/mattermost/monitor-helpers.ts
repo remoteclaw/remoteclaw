@@ -2,13 +2,14 @@ import {
   formatInboundFromLabel as formatInboundFromLabelShared,
   resolveThreadSessionKeys as resolveThreadSessionKeysShared,
   type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk";
-export { createDedupeCache, rawDataToString } from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/mattermost";
+export { createDedupeCache, rawDataToString } from "remoteclaw/plugin-sdk/mattermost";
 
 export type ResponsePrefixContext = {
   model?: string;
   modelFull?: string;
   provider?: string;
+  thinkingLevel?: string;
   identityName?: string;
 };
 

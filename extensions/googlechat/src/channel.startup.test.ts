@@ -1,4 +1,4 @@
-import type { ChannelAccountSnapshot } from "remoteclaw/plugin-sdk";
+import type { ChannelAccountSnapshot } from "remoteclaw/plugin-sdk/googlechat";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createStartAccountContext } from "../../test-utils/start-account-context.js";
 import type { ResolvedGoogleChatAccount } from "./accounts.js";
@@ -45,7 +45,7 @@ describe("googlechatPlugin gateway.startAccount", () => {
       createStartAccountContext({
         account,
         abortSignal: abort.signal,
-        statusPatchSink: (next: ChannelAccountSnapshot) => patches.push({ ...next }),
+        statusPatchSink: (next) => patches.push({ ...next }),
       }),
     );
     let settled = false;

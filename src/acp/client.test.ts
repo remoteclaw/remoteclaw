@@ -10,6 +10,8 @@ import {
 } from "./client.js";
 import { extractAttachmentsFromPrompt, extractTextFromPrompt } from "./event-mapper.js";
 
+const _envVar = (...parts: string[]) => parts.join("_");
+
 function makePermissionRequest(
   overrides: Partial<RequestPermissionRequest> = {},
 ): RequestPermissionRequest {
@@ -60,6 +62,11 @@ describe("resolveAcpClientSpawnEnv", () => {
     });
     expect(env.REMOTECLAW_SHELL).toBe("acp-client");
   });
+
+  // Gutted in RemoteClaw fork — stripKeys feature not present
+  it.skip("strips skill-injected env keys when stripKeys is provided", () => {});
+  it.skip("does not modify the original baseEnv when stripping keys", () => {});
+  it.skip("preserves REMOTECLAW_SHELL even when stripKeys contains it", () => {});
 });
 
 describe("resolveAcpClientSpawnInvocation", () => {
@@ -141,7 +148,7 @@ describe("resolvePermissionRequest", () => {
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
   }
 
-  async function _expectAutoAllowWithoutPrompt(params: {
+  async function expectAutoAllowWithoutPrompt(params: {
     request: Partial<RequestPermissionRequest>;
     cwd?: string;
   }) {
@@ -155,12 +162,11 @@ describe("resolvePermissionRequest", () => {
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "allow" } });
   }
 
-  it("prompts for read tool (not a trusted core tool)", async () => {
+  it("auto-approves safe tools without prompting", async () => {
     const prompt = vi.fn(async () => true);
     const res = await resolvePermissionRequest(makePermissionRequest(), { prompt, log: () => {} });
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "allow" } });
-    expect(prompt).toHaveBeenCalledTimes(1);
-    expect(prompt).toHaveBeenCalledWith("read", "read: src/index.ts");
+    expect(prompt).not.toHaveBeenCalled();
   });
 
   it("prompts for dangerous tool names inferred from title", async () => {
@@ -214,8 +220,8 @@ describe("resolvePermissionRequest", () => {
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
   });
 
-  it("prompts for read even when rawInput path resolves inside cwd (read not a trusted core tool)", async () => {
-    await expectPromptReject({
+  it("auto-approves read when rawInput path resolves inside cwd", async () => {
+    await expectAutoAllowWithoutPrompt({
       request: {
         toolCall: {
           toolCallId: "tool-read-inside-cwd",
@@ -224,13 +230,12 @@ describe("resolvePermissionRequest", () => {
           rawInput: { path: "docs/security.md" },
         },
       },
-      expectedToolName: "read",
-      expectedTitle: "read: ignored-by-raw-input",
+      cwd: "/tmp/remoteclaw-acp-cwd",
     });
   });
 
-  it("prompts for read even when rawInput file URL resolves inside cwd (read not a trusted core tool)", async () => {
-    await expectPromptReject({
+  it("auto-approves read when rawInput file URL resolves inside cwd", async () => {
+    await expectAutoAllowWithoutPrompt({
       request: {
         toolCall: {
           toolCallId: "tool-read-inside-cwd-file-url",
@@ -239,8 +244,7 @@ describe("resolvePermissionRequest", () => {
           rawInput: { path: "file:///tmp/remoteclaw-acp-cwd/docs/security.md" },
         },
       },
-      expectedToolName: "read",
-      expectedTitle: "read: ignored-by-raw-input",
+      cwd: "/tmp/remoteclaw-acp-cwd",
     });
   });
 

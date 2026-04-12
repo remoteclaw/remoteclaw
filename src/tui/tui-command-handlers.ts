@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import type { Component, SelectItem, TUI } from "@mariozechner/pi-tui";
-import { normalizeUsageDisplay, resolveResponseUsageMode } from "../auto-reply/thinking.js";
+import {
+  formatThinkingLevels,
+  normalizeUsageDisplay,
+  resolveResponseUsageMode,
+} from "../auto-reply/thinking.js";
 import type { SessionsPatchResult } from "../gateway/protocol/index.js";
 import { formatRelativeTimestamp } from "../infra/format-time/format-relative.ts";
 import { normalizeAgentId } from "../routing/session-key.js";
@@ -12,6 +16,7 @@ import {
   createSettingsList,
 } from "./components/selectors.js";
 import type { GatewayChatClient } from "./gateway-chat.js";
+import { sanitizeRenderableText } from "./tui-formatters.js";
 import { formatStatusSummary } from "./tui-status-summary.js";
 import type {
   AgentSummary,
@@ -93,6 +98,39 @@ export function createCommandHandlers(context: CommandHandlerContext) {
     tui.requestRender();
   };
 
+  const openModelSelector = async () => {
+    try {
+      const models = await client.listModels();
+      if (models.length === 0) {
+        chatLog.addSystem("no models available");
+        tui.requestRender();
+        return;
+      }
+      const items = models.map((model) => ({
+        value: `${model.provider}/${model.id}`,
+        label: `${model.provider}/${model.id}`,
+        description: model.name && model.name !== model.id ? model.name : "",
+      }));
+      const selector = createSearchableSelectList(items, 9);
+      openSelector(selector, async (value) => {
+        try {
+          const result = await client.patchSession({
+            key: state.currentSessionKey,
+            model: value,
+          });
+          chatLog.addSystem(`model set to ${value}`);
+          applySessionInfoFromPatch(result);
+          await refreshSessionInfo();
+        } catch (err) {
+          chatLog.addSystem(`model set failed: ${String(err)}`);
+        }
+      });
+    } catch (err) {
+      chatLog.addSystem(`model list failed: ${String(err)}`);
+      tui.requestRender();
+    }
+  };
+
   const openAgentSelector = async () => {
     await refreshAgents();
     if (state.agents.length === 0) {
@@ -103,7 +141,7 @@ export function createCommandHandlers(context: CommandHandlerContext) {
     const items = state.agents.map((agent: AgentSummary) => ({
       value: agent.id,
       label: agent.name ? `${agent.id} (${agent.name})` : agent.id,
-      description: "",
+      description: agent.id === state.agentDefaultId ? "default" : "",
     }));
     const selector = createSearchableSelectList(items, 9);
     openSelector(selector, async (value) => {
@@ -166,6 +204,12 @@ export function createCommandHandlers(context: CommandHandlerContext) {
         currentValue: state.toolsExpanded ? "expanded" : "collapsed",
         values: ["collapsed", "expanded"],
       },
+      {
+        id: "thinking",
+        label: "Show thinking",
+        currentValue: state.showThinking ? "on" : "off",
+        values: ["off", "on"],
+      },
     ];
     const settings = createSettingsList(
       items,
@@ -173,6 +217,10 @@ export function createCommandHandlers(context: CommandHandlerContext) {
         if (id === "tools") {
           state.toolsExpanded = value === "expanded";
           chatLog.setToolsExpanded(state.toolsExpanded);
+        }
+        if (id === "thinking") {
+          state.showThinking = value === "on";
+          void loadHistory();
         }
         tui.requestRender();
       },
@@ -240,7 +288,7 @@ export function createCommandHandlers(context: CommandHandlerContext) {
         break;
       case "model":
         if (!args) {
-          chatLog.addSystem("usage: /model <provider/model>");
+          await openModelSelector();
         } else {
           try {
             const result = await client.patchSession({
@@ -253,6 +301,31 @@ export function createCommandHandlers(context: CommandHandlerContext) {
           } catch (err) {
             chatLog.addSystem(`model set failed: ${String(err)}`);
           }
+        }
+        break;
+      case "models":
+        await openModelSelector();
+        break;
+      case "think":
+        if (!args) {
+          const levels = formatThinkingLevels(
+            state.sessionInfo.modelProvider,
+            state.sessionInfo.model,
+            "|",
+          );
+          chatLog.addSystem(`usage: /think <${levels}>`);
+          break;
+        }
+        try {
+          const result = await client.patchSession({
+            key: state.currentSessionKey,
+            thinkingLevel: args,
+          });
+          chatLog.addSystem(`thinking set to ${args}`);
+          applySessionInfoFromPatch(result);
+          await refreshSessionInfo();
+        } catch (err) {
+          chatLog.addSystem(`think failed: ${String(err)}`);
         }
         break;
       case "verbose":
@@ -270,6 +343,23 @@ export function createCommandHandlers(context: CommandHandlerContext) {
           await loadHistory();
         } catch (err) {
           chatLog.addSystem(`verbose failed: ${String(err)}`);
+        }
+        break;
+      case "reasoning":
+        if (!args) {
+          chatLog.addSystem("usage: /reasoning <on|off>");
+          break;
+        }
+        try {
+          const result = await client.patchSession({
+            key: state.currentSessionKey,
+            reasoningLevel: args,
+          });
+          chatLog.addSystem(`reasoning set to ${args}`);
+          applySessionInfoFromPatch(result);
+          await refreshSessionInfo();
+        } catch (err) {
+          chatLog.addSystem(`reasoning failed: ${String(err)}`);
         }
         break;
       case "usage": {
@@ -295,6 +385,27 @@ export function createCommandHandlers(context: CommandHandlerContext) {
         }
         break;
       }
+      case "elevated":
+        if (!args) {
+          chatLog.addSystem("usage: /elevated <on|off|ask|full>");
+          break;
+        }
+        if (!["on", "off", "ask", "full"].includes(args)) {
+          chatLog.addSystem("usage: /elevated <on|off|ask|full>");
+          break;
+        }
+        try {
+          const result = await client.patchSession({
+            key: state.currentSessionKey,
+            elevatedLevel: args,
+          });
+          chatLog.addSystem(`elevated set to ${args}`);
+          applySessionInfoFromPatch(result);
+          await refreshSessionInfo();
+        } catch (err) {
+          chatLog.addSystem(`elevated failed: ${String(err)}`);
+        }
+        break;
       case "activation":
         if (!args) {
           chatLog.addSystem("usage: /activation <mention|always>");
@@ -313,6 +424,23 @@ export function createCommandHandlers(context: CommandHandlerContext) {
         }
         break;
       case "new":
+        try {
+          // Clear token counts immediately to avoid stale display (#1523)
+          state.sessionInfo.inputTokens = null;
+          state.sessionInfo.outputTokens = null;
+          state.sessionInfo.totalTokens = null;
+          tui.requestRender();
+
+          // Generate unique session key to isolate this TUI client (#39217)
+          // This ensures /new creates a fresh session that doesn't broadcast
+          // to other connected TUI clients sharing the original session key.
+          const uniqueKey = `tui-${randomUUID()}`;
+          await setSession(uniqueKey);
+          chatLog.addSystem(`new session: ${uniqueKey}`);
+        } catch (err) {
+          chatLog.addSystem(`new session failed: ${sanitizeRenderableText(String(err))}`);
+        }
+        break;
       case "reset":
         try {
           // Clear token counts immediately to avoid stale display (#1523)
@@ -325,7 +453,7 @@ export function createCommandHandlers(context: CommandHandlerContext) {
           chatLog.addSystem(`session ${state.currentSessionKey} reset`);
           await loadHistory();
         } catch (err) {
-          chatLog.addSystem(`reset failed: ${String(err)}`);
+          chatLog.addSystem(`reset failed: ${sanitizeRenderableText(String(err))}`);
         }
         break;
       case "abort":
@@ -384,6 +512,7 @@ export function createCommandHandlers(context: CommandHandlerContext) {
   return {
     handleCommand,
     sendMessage,
+    openModelSelector,
     openAgentSelector,
     openSessionSelector,
     openSettings,

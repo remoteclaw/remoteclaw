@@ -1,9 +1,5 @@
 import path from "node:path";
-import {
-  resolveAgentWorkspaceDir,
-  resolveDefaultAgentId,
-  resolveFirstAgentWorkspace,
-} from "../agents/agent-scope.js";
+import { resolveAgentWorkspaceDirOrNull, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { CHANNEL_IDS, normalizeChatChannelId } from "../channels/registry.js";
 import {
   normalizePluginsConfig,
@@ -185,11 +181,11 @@ function validateIdentityAvatar(config: RemoteClawConfig): ConfigValidationIssue
       });
       continue;
     }
-    const workspaceDir = resolveAgentWorkspaceDir(
+    const workspaceDir = resolveAgentWorkspaceDirOrNull(
       config,
       entry.id ?? resolveDefaultAgentId(config),
     );
-    if (!isWorkspaceAvatarPath(avatar, workspaceDir)) {
+    if (workspaceDir && !isWorkspaceAvatarPath(avatar, workspaceDir)) {
       issues.push({
         path: `agents.list.${index}.identity.avatar`,
         message: "identity.avatar must stay within the agent workspace.",
@@ -291,7 +287,7 @@ export function validateConfigObject(
   };
 }
 
-export function validateConfigObjectWithPlugins(raw: unknown):
+type ValidateConfigWithPluginsResult =
   | {
       ok: true;
       config: RemoteClawConfig;
@@ -301,38 +297,20 @@ export function validateConfigObjectWithPlugins(raw: unknown):
       ok: false;
       issues: ConfigValidationIssue[];
       warnings: ConfigValidationIssue[];
-    } {
+    };
+
+export function validateConfigObjectWithPlugins(raw: unknown): ValidateConfigWithPluginsResult {
   return validateConfigObjectWithPluginsBase(raw, { applyDefaults: true });
 }
 
-export function validateConfigObjectRawWithPlugins(raw: unknown):
-  | {
-      ok: true;
-      config: RemoteClawConfig;
-      warnings: ConfigValidationIssue[];
-    }
-  | {
-      ok: false;
-      issues: ConfigValidationIssue[];
-      warnings: ConfigValidationIssue[];
-    } {
+export function validateConfigObjectRawWithPlugins(raw: unknown): ValidateConfigWithPluginsResult {
   return validateConfigObjectWithPluginsBase(raw, { applyDefaults: false });
 }
 
 function validateConfigObjectWithPluginsBase(
   raw: unknown,
   opts: { applyDefaults: boolean },
-):
-  | {
-      ok: true;
-      config: RemoteClawConfig;
-      warnings: ConfigValidationIssue[];
-    }
-  | {
-      ok: false;
-      issues: ConfigValidationIssue[];
-      warnings: ConfigValidationIssue[];
-    } {
+): ValidateConfigWithPluginsResult {
   const base = opts.applyDefaults ? validateConfigObject(raw) : validateConfigObjectRaw(raw);
   if (!base.ok) {
     return { ok: false, issues: base.issues, warnings: [] };
@@ -365,7 +343,7 @@ function validateConfigObjectWithPluginsBase(
       return registryInfo;
     }
 
-    const workspaceDir = resolveFirstAgentWorkspace(config);
+    const workspaceDir = resolveAgentWorkspaceDirOrNull(config, resolveDefaultAgentId(config));
     const registry = loadPluginManifestRegistry({
       config,
       workspaceDir: workspaceDir ?? undefined,
@@ -545,8 +523,13 @@ function validateConfigObjectWithPluginsBase(
     }
   }
 
-  const memorySlot = (normalizedPlugins.slots as Record<string, unknown>).memory;
-  if (typeof memorySlot === "string" && memorySlot.trim() && !knownIds.has(memorySlot)) {
+  const memorySlot = normalizedPlugins.slots.memory;
+  if (
+    typeof memorySlot === "string" &&
+    memorySlot.trim() &&
+    memorySlot !== "none" &&
+    !knownIds.has(memorySlot)
+  ) {
     pushMissingPluginIssue("plugins.slots.memory", memorySlot);
   }
 

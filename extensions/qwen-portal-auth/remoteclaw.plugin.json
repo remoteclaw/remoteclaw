@@ -1,0 +1,8 @@
+{
+  "id": "qwen-portal-auth",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

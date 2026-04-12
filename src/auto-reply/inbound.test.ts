@@ -381,7 +381,7 @@ describe("mention helpers", () => {
   });
 
   it("normalizes zero-width characters", () => {
-    expect(normalizeMentionText("remote\u200bclaw")).toBe("remoteclaw");
+    expect(normalizeMentionText("open\u200bclaw")).toBe("remoteclaw");
   });
 
   it("matches patterns case-insensitively", () => {
@@ -464,6 +464,54 @@ describe("resolveGroupRequireMention", () => {
       key: "slack:group:C123",
       channel: "slack",
       id: "C123",
+      chatType: "group",
+    };
+
+    expect(resolveGroupRequireMention({ cfg, ctx, groupResolution })).toBe(false);
+  });
+
+  it("respects LINE prefixed group keys in reply-stage requireMention resolution", () => {
+    const cfg: RemoteClawConfig = {
+      channels: {
+        line: {
+          groups: {
+            "room:r123": { requireMention: false },
+          },
+        },
+      },
+    };
+    const ctx: TemplateContext = {
+      Provider: "line",
+      From: "line:room:r123",
+    };
+    const groupResolution: GroupKeyResolution = {
+      key: "line:group:r123",
+      channel: "line",
+      id: "r123",
+      chatType: "group",
+    };
+
+    expect(resolveGroupRequireMention({ cfg, ctx, groupResolution })).toBe(false);
+  });
+
+  it("preserves plugin-backed channel requireMention resolution", () => {
+    const cfg: RemoteClawConfig = {
+      channels: {
+        bluebubbles: {
+          groups: {
+            "chat:primary": { requireMention: false },
+          },
+        },
+      },
+    };
+    const ctx: TemplateContext = {
+      Provider: "bluebubbles",
+      From: "bluebubbles:group:chat:primary",
+    };
+    const groupResolution: GroupKeyResolution = {
+      key: "bluebubbles:group:chat:primary",
+      channel: "bluebubbles",
+      id: "chat:primary",
       chatType: "group",
     };
 

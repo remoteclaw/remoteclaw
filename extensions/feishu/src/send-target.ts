@@ -1,4 +1,4 @@
-import type { ClawdbotConfig } from "remoteclaw/plugin-sdk";
+import type { ClawdbotConfig } from "remoteclaw/plugin-sdk/feishu";
 import { resolveFeishuAccount } from "./accounts.js";
 import { createFeishuClient } from "./client.js";
 import { resolveReceiveIdType, normalizeFeishuTarget } from "./targets.js";

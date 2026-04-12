@@ -18,7 +18,8 @@ import {
   createOutboundTestPlugin,
   createTestRegistry,
 } from "../../test-utils/channel-plugins.js";
-import { listChannelPluginCatalogEntries } from "./catalog.js";
+import { withEnvAsync } from "../../test-utils/env.js";
+import { getChannelPluginCatalogEntry, listChannelPluginCatalogEntries } from "./catalog.js";
 import { resolveChannelConfigWrites } from "./config-writes.js";
 import {
   listDiscordDirectoryGroupsFromConfig,
@@ -101,6 +102,17 @@ describe("channel plugin registry", () => {
 });
 
 describe("channel plugin catalog", () => {
+  it("includes Microsoft Teams", () => {
+    const entry = getChannelPluginCatalogEntry("msteams");
+    expect(entry?.install.npmSpec).toBe("@remoteclaw/msteams");
+    expect(entry?.meta.aliases).toContain("teams");
+  });
+
+  it("lists plugin catalog entries", () => {
+    const ids = listChannelPluginCatalogEntries().map((entry) => entry.id);
+    expect(ids).toContain("msteams");
+  });
+
   it("includes external catalog entries", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-catalog-"));
     const catalogPath = path.join(dir, "catalog.json");
@@ -395,6 +407,72 @@ describe("directory (config-backed)", () => {
         sorted: true,
       },
     );
+    await expectDirectoryIds(listTelegramDirectoryGroupsFromConfig, cfg, ["-1001"]);
+  });
+
+  it("keeps Telegram config-backed directory fallback semantics when accountId is omitted", async () => {
+    await withEnvAsync({ TELEGRAM_BOT_TOKEN: "tok-env" }, async () => {
+      const cfg = {
+        channels: {
+          telegram: {
+            allowFrom: ["alice"],
+            groups: { "-1001": {} },
+            accounts: {
+              work: {
+                botToken: "tok-work",
+                allowFrom: ["bob"],
+                groups: { "-2002": {} },
+              },
+            },
+          },
+        },
+        // oxlint-disable-next-line typescript/no-explicit-any
+      } as any;
+
+      await expectDirectoryIds(listTelegramDirectoryPeersFromConfig, cfg, ["@alice"]);
+      await expectDirectoryIds(listTelegramDirectoryGroupsFromConfig, cfg, ["-1001"]);
+    });
+  });
+
+  it("keeps config-backed directories readable when channel tokens are unresolved SecretRefs", async () => {
+    const envSecret = {
+      source: "env",
+      provider: "default",
+      id: "MISSING_TEST_SECRET",
+    } as const;
+    const cfg = {
+      channels: {
+        slack: {
+          botToken: envSecret,
+          appToken: envSecret,
+          dm: { allowFrom: ["U123"] },
+          channels: { C111: {} },
+        },
+        discord: {
+          token: envSecret,
+          dm: { allowFrom: ["<@111>"] },
+          guilds: {
+            "123": {
+              channels: {
+                "555": {},
+              },
+            },
+          },
+        },
+        telegram: {
+          botToken: envSecret,
+          allowFrom: ["alice"],
+          groups: { "-1001": {} },
+        },
+      },
+      // oxlint-disable-next-line typescript/no-explicit-any
+    } as any;
+
+    await expectDirectoryIds(listSlackDirectoryPeersFromConfig, cfg, ["user:u123"]);
+    await expectDirectoryIds(listSlackDirectoryGroupsFromConfig, cfg, ["channel:c111"]);
+    await expectDirectoryIds(listDiscordDirectoryPeersFromConfig, cfg, ["user:111"]);
+    await expectDirectoryIds(listDiscordDirectoryGroupsFromConfig, cfg, ["channel:555"]);
+    await expectDirectoryIds(listTelegramDirectoryPeersFromConfig, cfg, ["@alice"]);
     await expectDirectoryIds(listTelegramDirectoryGroupsFromConfig, cfg, ["-1001"]);
   });
 

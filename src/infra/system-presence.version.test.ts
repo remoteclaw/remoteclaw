@@ -13,20 +13,21 @@ async function withPresenceModule<T>(
 }
 
 describe("system-presence version fallback", () => {
-  it("uses REMOTECLAW_SERVICE_VERSION when REMOTECLAW_VERSION is not set", async () => {
+  it("uses runtime VERSION when REMOTECLAW_VERSION is not set", async () => {
     await withPresenceModule(
       {
         REMOTECLAW_SERVICE_VERSION: "2.4.6-service",
         npm_package_version: "1.0.0-package",
       },
-      ({ listSystemPresence }) => {
+      async ({ listSystemPresence }) => {
+        const { VERSION } = await import("../version.js");
         const selfEntry = listSystemPresence().find((entry) => entry.reason === "self");
-        expect(selfEntry?.version).toBe("2.4.6-service");
+        expect(selfEntry?.version).toBe(VERSION);
       },
     );
   });
 
-  it("prefers REMOTECLAW_VERSION over REMOTECLAW_SERVICE_VERSION", async () => {
+  it("prefers REMOTECLAW_VERSION over runtime VERSION", async () => {
     await withPresenceModule(
       {
         REMOTECLAW_VERSION: "9.9.9-cli",
@@ -40,16 +41,17 @@ describe("system-presence version fallback", () => {
     );
   });
 
-  it("uses npm_package_version when REMOTECLAW_VERSION and REMOTECLAW_SERVICE_VERSION are blank", async () => {
+  it("uses runtime VERSION when REMOTECLAW_VERSION and REMOTECLAW_SERVICE_VERSION are blank", async () => {
     await withPresenceModule(
       {
         REMOTECLAW_VERSION: " ",
         REMOTECLAW_SERVICE_VERSION: "\t",
         npm_package_version: "1.0.0-package",
       },
-      ({ listSystemPresence }) => {
+      async ({ listSystemPresence }) => {
+        const { VERSION } = await import("../version.js");
         const selfEntry = listSystemPresence().find((entry) => entry.reason === "self");
-        expect(selfEntry?.version).toBe("1.0.0-package");
+        expect(selfEntry?.version).toBe(VERSION);
       },
     );
   });

@@ -100,6 +100,7 @@ describe("healthCommand (coverage)", () => {
       agents: [
         {
           agentId: "main",
+          isDefault: true,
           heartbeat: {
             enabled: true,
             every: "1m",

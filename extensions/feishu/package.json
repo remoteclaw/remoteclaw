@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/feishu",
-  "version": "0.5.0",
+  "version": "0.3.0",
   "description": "RemoteClaw Feishu/Lark channel plugin (community maintained by @m1heng)",
   "type": "module",
   "dependencies": {

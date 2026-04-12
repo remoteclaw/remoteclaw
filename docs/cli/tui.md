@@ -1,5 +1,5 @@
 ---
-description: "CLI reference for `remoteclaw tui` (terminal UI connected to the Gateway)"
+summary: "CLI reference for `remoteclaw tui` (terminal UI connected to the Gateway)"
 read_when:
   - You want a terminal UI for the Gateway (remote-friendly)
   - You want to pass url/token/session from scripts
@@ -13,6 +13,10 @@ Open the terminal UI connected to the Gateway.
 Related:
 
 - TUI guide: [TUI](/web/tui)
+
+Notes:
+
+- `tui` resolves configured gateway auth SecretRefs for token/password auth when possible (`env`/`file`/`exec` providers).
 
 ## Examples
 

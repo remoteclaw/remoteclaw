@@ -1,8 +1,20 @@
+import { collectTextContentBlocks } from "../../agents/content-blocks.js";
+import { createRemoteClawTools } from "../../agents/remoteclaw-tools.js";
+import type { SkillCommandSpec } from "../../agents/skills.js";
+import { applyOwnerOnlyToolPolicy } from "../../agents/tool-policy.js";
 import { getChannelDock } from "../../channels/dock.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
+import { logVerbose } from "../../globals.js";
+import { generateSecureToken } from "../../infra/secure-random.js";
+import { resolveGatewayMessageChannel } from "../../utils/message-channel.js";
+import {
+  listReservedChatSlashCommandNames,
+  listSkillCommandsForWorkspace,
+  resolveSkillCommandInvocation,
+} from "../skill-commands.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
-import type { VerboseLevel } from "../thinking.js";
+import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../thinking.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import {
   clearAbortCutoffInSession,
@@ -14,8 +26,32 @@ import { getAbortMemory, isAbortRequestText } from "./abort.js";
 import { buildStatusReply, handleCommands } from "./commands.js";
 import type { InlineDirectives } from "./directive-handling.js";
 import { isDirectiveOnly } from "./directive-handling.js";
+import type { createModelSelectionState } from "./model-selection.js";
 import { extractInlineSimpleCommand } from "./reply-inline.js";
 import type { TypingController } from "./typing.js";
+
+const builtinSlashCommands = (() => {
+  return listReservedChatSlashCommandNames([
+    "think",
+    "verbose",
+    "reasoning",
+    "elevated",
+    "exec",
+    "model",
+    "status",
+    "queue",
+  ]);
+})();
+
+function resolveSlashCommandName(commandBodyNormalized: string): string | null {
+  const trimmed = commandBodyNormalized.trim();
+  if (!trimmed.startsWith("/")) {
+    return null;
+  }
+  const match = trimmed.match(/^\/([^\s:]+)(?::|\s|$)/);
+  const name = match?.[1]?.trim().toLowerCase() ?? "";
+  return name ? name : null;
+}
 
 export type InlineActionResult =
   | { kind: "reply"; reply: ReplyPayload | ReplyPayload[] | undefined }
@@ -24,6 +60,22 @@ export type InlineActionResult =
       directives: InlineDirectives;
       abortedLastRun: boolean;
     };
+
+// oxlint-disable-next-line typescript/no-explicit-any
+function extractTextFromToolResult(result: any): string | null {
+  if (!result || typeof result !== "object") {
+    return null;
+  }
+  const content = (result as { content?: unknown }).content;
+  if (typeof content === "string") {
+    const trimmed = content.trim();
+    return trimmed ? trimmed : null;
+  }
+  const parts = collectTextContentBlocks(content);
+  const out = parts.join("");
+  const trimmed = out.trim();
+  return trimmed ? trimmed : null;
+}
 
 export async function handleInlineActions(params: {
   ctx: MsgContext;
@@ -44,17 +96,26 @@ export async function handleInlineActions(params: {
   allowTextCommands: boolean;
   inlineStatusRequested: boolean;
   command: Parameters<typeof handleCommands>[0]["command"];
+  skillCommands?: SkillCommandSpec[];
   directives: InlineDirectives;
   cleanedBody: string;
+  elevatedEnabled: boolean;
+  elevatedAllowed: boolean;
+  elevatedFailures: Array<{ gate: string; key: string }>;
   defaultActivation: Parameters<typeof buildStatusReply>[0]["defaultGroupActivation"];
+  resolvedThinkLevel: ThinkLevel | undefined;
   resolvedVerboseLevel: VerboseLevel | undefined;
-  elevatedEnabled?: boolean;
-  elevatedAllowed?: boolean;
-  elevatedFailures?: unknown[];
+  resolvedReasoningLevel: ReasoningLevel;
+  resolvedElevatedLevel: ElevatedLevel;
+  resolveDefaultThinkingLevel: Awaited<
+    ReturnType<typeof createModelSelectionState>
+  >["resolveDefaultThinkingLevel"];
   provider: string;
   model: string;
+  contextTokens: number;
   directiveAck?: ReplyPayload;
   abortedLastRun: boolean;
+  skillFilter?: string[];
 }): Promise<InlineActionResult> {
   const {
     ctx,
@@ -77,16 +138,115 @@ export async function handleInlineActions(params: {
     command,
     directives: initialDirectives,
     cleanedBody: initialCleanedBody,
+    elevatedEnabled,
+    elevatedAllowed,
+    elevatedFailures,
     defaultActivation,
+    resolvedThinkLevel,
     resolvedVerboseLevel,
+    resolvedReasoningLevel,
+    resolvedElevatedLevel,
+    resolveDefaultThinkingLevel,
     provider,
     model,
+    contextTokens,
     directiveAck,
     abortedLastRun: initialAbortedLastRun,
+    skillFilter,
   } = params;
 
   let directives = initialDirectives;
   let cleanedBody = initialCleanedBody;
+
+  const slashCommandName = resolveSlashCommandName(command.commandBodyNormalized);
+  const shouldLoadSkillCommands =
+    allowTextCommands &&
+    slashCommandName !== null &&
+    // `/skill …` needs the full skill command list.
+    (slashCommandName === "skill" || !builtinSlashCommands.includes(slashCommandName));
+  const skillCommands =
+    shouldLoadSkillCommands && params.skillCommands
+      ? params.skillCommands
+      : shouldLoadSkillCommands
+        ? listSkillCommandsForWorkspace({
+            workspaceDir,
+            cfg,
+            skillFilter,
+          })
+        : [];
+
+  const skillInvocation =
+    allowTextCommands && skillCommands.length > 0
+      ? resolveSkillCommandInvocation({
+          commandBodyNormalized: command.commandBodyNormalized,
+          skillCommands,
+        })
+      : null;
+  if (skillInvocation) {
+    if (!command.isAuthorizedSender) {
+      logVerbose(
+        `Ignoring /${skillInvocation.command.name} from unauthorized sender: ${command.senderId || "<unknown>"}`,
+      );
+      typing.cleanup();
+      return { kind: "reply", reply: undefined };
+    }
+
+    const dispatch = skillInvocation.command.dispatch;
+    if (dispatch?.kind === "tool") {
+      const rawArgs = (skillInvocation.args ?? "").trim();
+      const channel =
+        resolveGatewayMessageChannel(ctx.Surface) ??
+        resolveGatewayMessageChannel(ctx.Provider) ??
+        undefined;
+
+      const tools = createRemoteClawTools({
+        agentSessionKey: sessionKey,
+        agentChannel: channel,
+        agentAccountId: (ctx as { AccountId?: string }).AccountId,
+        agentTo: ctx.OriginatingTo ?? ctx.To,
+        agentThreadId: ctx.MessageThreadId ?? undefined,
+        agentDir,
+        workspaceDir,
+        config: cfg,
+      });
+      const authorizedTools = applyOwnerOnlyToolPolicy(tools, command.senderIsOwner);
+
+      const tool = authorizedTools.find((candidate) => candidate.name === dispatch.toolName);
+      if (!tool) {
+        typing.cleanup();
+        return { kind: "reply", reply: { text: `❌ Tool not available: ${dispatch.toolName}` } };
+      }
+
+      const toolCallId = `cmd_${generateSecureToken(8)}`;
+      try {
+        const result = await tool.execute(toolCallId, {
+          command: rawArgs,
+          commandName: skillInvocation.command.name,
+          skillName: skillInvocation.command.skillName,
+          // oxlint-disable-next-line typescript/no-explicit-any
+        } as any);
+        const text = extractTextFromToolResult(result) ?? "✅ Done.";
+        typing.cleanup();
+        return { kind: "reply", reply: { text } };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        typing.cleanup();
+        return { kind: "reply", reply: { text: `❌ ${message}` } };
+      }
+    }
+
+    const promptParts = [
+      `Use the "${skillInvocation.command.skillName}" skill for this request.`,
+      skillInvocation.args ? `User input:\n${skillInvocation.args}` : null,
+    ].filter((entry): entry is string => Boolean(entry));
+    const rewrittenBody = promptParts.join("\n\n");
+    ctx.Body = rewrittenBody;
+    ctx.BodyForAgent = rewrittenBody;
+    sessionCtx.Body = rewrittenBody;
+    sessionCtx.BodyForAgent = rewrittenBody;
+    sessionCtx.BodyStripped = rewrittenBody;
+    cleanedBody = rewrittenBody;
+  }
 
   const sendInlineReply = async (reply?: ReplyPayload) => {
     if (!reply) {
@@ -154,9 +314,15 @@ export async function handleInlineActions(params: {
       sessionScope,
       provider,
       model,
+      contextTokens,
+      resolvedThinkLevel,
       resolvedVerboseLevel: resolvedVerboseLevel ?? "off",
+      resolvedReasoningLevel,
+      resolvedElevatedLevel,
+      resolveDefaultThinkingLevel,
       isGroup,
       defaultGroupActivation: defaultActivation,
+      mediaDecisions: ctx.MediaUnderstandingDecisions,
     });
     await sendInlineReply(inlineStatusReply);
     directives = { ...directives, hasStatusDirective: false };
@@ -164,12 +330,20 @@ export async function handleInlineActions(params: {
 
   const runCommands = (commandInput: typeof command) =>
     handleCommands({
-      ctx,
+      // Pass sessionCtx so command handlers can mutate stripped body for same-turn continuation.
+      ctx: sessionCtx,
+      // Keep original finalized context in sync when command handlers need outer-dispatch side effects.
+      rootCtx: ctx,
       cfg,
       command: commandInput,
       agentId,
       agentDir,
       directives,
+      elevated: {
+        enabled: elevatedEnabled,
+        allowed: elevatedAllowed,
+        failures: elevatedFailures,
+      },
       sessionEntry,
       previousSessionEntry,
       sessionStore,
@@ -178,10 +352,16 @@ export async function handleInlineActions(params: {
       sessionScope,
       workspaceDir,
       defaultGroupActivation: defaultActivation,
+      resolvedThinkLevel,
       resolvedVerboseLevel: resolvedVerboseLevel ?? "off",
+      resolvedReasoningLevel,
+      resolvedElevatedLevel,
+      resolveDefaultThinkingLevel,
       provider,
       model,
+      contextTokens,
       isGroup,
+      skillCommands,
     });
 
   if (inlineCommand) {

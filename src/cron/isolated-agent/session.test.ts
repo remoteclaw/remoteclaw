@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../../config/config.js";
 
 vi.mock("../../config/sessions.js", () => ({
@@ -8,6 +8,16 @@ vi.mock("../../config/sessions.js", () => ({
   resolveSessionResetPolicy: vi.fn().mockReturnValue({ mode: "idle", idleMinutes: 60 }),
 }));
 
+vi.mock("../../agents/bootstrap-cache.js", () => ({
+  clearBootstrapSnapshot: vi.fn(),
+  clearBootstrapSnapshotOnSessionRollover: vi.fn(({ sessionKey, previousSessionId }) => {
+    if (sessionKey && previousSessionId) {
+      clearBootstrapSnapshot(sessionKey);
+    }
+  }),
+}));
+
+import { clearBootstrapSnapshot } from "../../agents/bootstrap-cache.js";
 import { loadSessionStore, evaluateSessionFreshness } from "../../config/sessions.js";
 import { resolveCronSession } from "./session.js";
 
@@ -40,6 +50,10 @@ function resolveWithStoredEntry(params?: {
 }
 
 describe("resolveCronSession", () => {
+  beforeEach(() => {
+    vi.mocked(clearBootstrapSnapshot).mockReset();
+  });
+
   it("preserves modelOverride and providerOverride from existing session entry", () => {
     const result = resolveWithStoredEntry({
       sessionKey: "agent:main:cron:test-job",
@@ -100,6 +114,7 @@ describe("resolveCronSession", () => {
       expect(result.sessionEntry.sessionId).toBe("existing-session-id-123");
       expect(result.isNewSession).toBe(false);
       expect(result.systemSent).toBe(true);
+      expect(clearBootstrapSnapshot).not.toHaveBeenCalled();
     });
 
     it("creates new sessionId when session is stale", () => {
@@ -121,6 +136,7 @@ describe("resolveCronSession", () => {
       expect(result.sessionEntry.modelOverride).toBe("gpt-4.1-mini");
       expect(result.sessionEntry.providerOverride).toBe("openai");
       expect(result.sessionEntry.sendPolicy).toBe("allow");
+      expect(clearBootstrapSnapshot).toHaveBeenCalledWith("webhook:stable-key");
     });
 
     it("creates new sessionId when forceNew is true", () => {
@@ -141,6 +157,7 @@ describe("resolveCronSession", () => {
       expect(result.systemSent).toBe(false);
       expect(result.sessionEntry.modelOverride).toBe("sonnet-4");
       expect(result.sessionEntry.providerOverride).toBe("anthropic");
+      expect(clearBootstrapSnapshot).toHaveBeenCalledWith("webhook:stable-key");
     });
 
     it("clears delivery routing metadata and deliveryContext when forceNew is true", () => {
@@ -229,60 +246,6 @@ describe("resolveCronSession", () => {
         to: "channel:C0XXXXXXXXX",
         threadId: "1737500000.123456",
       });
-    });
-
-    it("clears cliSessionIds and claudeCliSessionId when forceNew is true", () => {
-      const result = resolveWithStoredEntry({
-        entry: {
-          sessionId: "existing-session-id",
-          updatedAt: NOW_MS - 1000,
-          systemSent: true,
-          cliSessionIds: { claude: "cli-sess-old", openai: "cli-sess-openai" },
-          claudeCliSessionId: "cli-sess-old",
-          modelOverride: "sonnet-4",
-        },
-        fresh: true,
-        forceNew: true,
-      });
-
-      expect(result.isNewSession).toBe(true);
-      expect(result.sessionEntry.cliSessionIds).toBeUndefined();
-      expect(result.sessionEntry.claudeCliSessionId).toBeUndefined();
-      // Per-session overrides must be preserved
-      expect(result.sessionEntry.modelOverride).toBe("sonnet-4");
-    });
-
-    it("clears cliSessionIds and claudeCliSessionId when session is stale", () => {
-      const result = resolveWithStoredEntry({
-        entry: {
-          sessionId: "old-session-id",
-          updatedAt: NOW_MS - 86_400_000,
-          cliSessionIds: { claude: "cli-sess-stale" },
-          claudeCliSessionId: "cli-sess-stale",
-        },
-        fresh: false,
-      });
-
-      expect(result.isNewSession).toBe(true);
-      expect(result.sessionEntry.cliSessionIds).toBeUndefined();
-      expect(result.sessionEntry.claudeCliSessionId).toBeUndefined();
-    });
-
-    it("preserves cliSessionIds when reusing fresh session", () => {
-      const result = resolveWithStoredEntry({
-        entry: {
-          sessionId: "existing-session-id",
-          updatedAt: NOW_MS - 1000,
-          systemSent: true,
-          cliSessionIds: { claude: "cli-sess-active" },
-          claudeCliSessionId: "cli-sess-active",
-        },
-        fresh: true,
-      });
-
-      expect(result.isNewSession).toBe(false);
-      expect(result.sessionEntry.cliSessionIds).toEqual({ claude: "cli-sess-active" });
-      expect(result.sessionEntry.claudeCliSessionId).toBe("cli-sess-active");
     });
 
     it("creates new sessionId when entry exists but has no sessionId", () => {

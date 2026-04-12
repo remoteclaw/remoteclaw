@@ -160,7 +160,28 @@ export function stripHeartbeatToken(
   return { shouldSkip: false, text: rest, didStrip: true };
 }
 
-// Gutted in RemoteClaw fork — stub export for upstream compat
-export function isHeartbeatContentEffectivelyEmpty(_content: string): boolean {
-  return false;
+/**
+ * Returns true when the HEARTBEAT.md content is effectively empty —
+ * only contains headings, blank lines, and whitespace with no actionable items.
+ */
+export function isHeartbeatContentEffectivelyEmpty(content: string): boolean {
+  const trimmed = content.trim();
+  if (!trimmed) {
+    return true;
+  }
+  // Strip markdown headings, horizontal rules, and whitespace-only lines.
+  // If nothing remains, the file is effectively empty.
+  const stripped = trimmed
+    .split("\n")
+    .filter((line) => {
+      const t = line.trim();
+      return t && !t.startsWith("#") && !/^-{3,}$/.test(t) && !/^\*{3,}$/.test(t);
+    })
+    .join("")
+    .trim();
+  return stripped.length === 0;
 }
+
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+export const HEARTBEAT_PROMPT = "";
+export const DEFAULT_HEARTBEAT_FILENAME = "HEARTBEAT.md";

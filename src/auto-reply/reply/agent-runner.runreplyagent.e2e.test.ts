@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionEntry } from "../../config/sessions.js";
 import * as sessions from "../../config/sessions.js";
 import type { TypingMode } from "../../config/types.js";
@@ -24,10 +25,21 @@ type AgentRunParams = {
   onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => void;
 };
 
+type EmbeddedRunParams = {
+  prompt?: string;
+  extraSystemPrompt?: string;
+  bootstrapPromptWarningSignaturesSeen?: string[];
+  bootstrapPromptWarningSignature?: string;
+  onAgentEvent?: (evt: { stream?: string; data?: { phase?: string; willRetry?: boolean } }) => void;
+};
+
 const state = vi.hoisted(() => ({
   runEmbeddedPiAgentMock: vi.fn(),
   runCliAgentMock: vi.fn(),
 }));
+
+let modelFallbackModule: typeof import("../../agents/model-fallback.js");
+let onAgentEvent: typeof import("../../infra/agent-events.js").onAgentEvent;
 
 let runReplyAgentPromise:
   | Promise<(typeof import("./agent-runner.js"))["runReplyAgent"]>
@@ -40,6 +52,28 @@ async function getRunReplyAgent() {
   return await runReplyAgentPromise;
 }
 
+vi.mock("../../agents/model-fallback.js", () => ({
+  runWithModelFallback: async ({
+    provider,
+    model,
+    run,
+  }: {
+    provider: string;
+    model: string;
+    run: (provider: string, model: string) => Promise<unknown>;
+  }) => ({
+    result: await run(provider, model),
+    provider,
+    model,
+    attempts: [],
+  }),
+}));
+
+vi.mock("../../agents/pi-embedded.js", () => ({
+  queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
+  runEmbeddedPiAgent: (params: unknown) => state.runEmbeddedPiAgentMock(params),
+}));
+
 vi.mock("../../agents/cli-runner.js", () => ({
   runCliAgent: (params: unknown) => state.runCliAgentMock(params),
 }));
@@ -51,6 +85,8 @@ vi.mock("./queue.js", () => ({
 
 beforeAll(async () => {
   // Avoid attributing the initial agent-runner import cost to the first test case.
+  modelFallbackModule = await import("../../agents/model-fallback.js");
+  ({ onAgentEvent } = await import("../../infra/agent-events.js"));
   await getRunReplyAgent();
 });
 
@@ -124,8 +160,10 @@ function createMinimalRun(params?: {
         followupRun,
         queueKey: "main",
         resolvedQueue,
+        shouldSteer: false,
         shouldFollowup: params?.shouldFollowup ?? false,
         isActive: params?.isActive ?? false,
+        isStreaming: false,
         opts,
         typing,
         sessionEntry: params?.sessionEntry,
@@ -143,6 +181,111 @@ function createMinimalRun(params?: {
       });
     },
   };
+}
+
+async function seedSessionStore(params: {
+  storePath: string;
+  sessionKey: string;
+  entry: Record<string, unknown>;
+}) {
+  await fs.mkdir(path.dirname(params.storePath), { recursive: true });
+  await fs.writeFile(
+    params.storePath,
+    JSON.stringify({ [params.sessionKey]: params.entry }, null, 2),
+    "utf-8",
+  );
+}
+
+function createBaseRun(params: {
+  storePath: string;
+  sessionEntry: Record<string, unknown>;
+  config?: Record<string, unknown>;
+  runOverrides?: Partial<FollowupRun["run"]>;
+}) {
+  const typing = createMockTypingController();
+  const sessionCtx = {
+    Provider: "whatsapp",
+    OriginatingTo: "+15550001111",
+    AccountId: "primary",
+    MessageSid: "msg",
+  } as unknown as TemplateContext;
+  const resolvedQueue = { mode: "interrupt" } as unknown as QueueSettings;
+  const followupRun = {
+    prompt: "hello",
+    summaryLine: "hello",
+    enqueuedAt: Date.now(),
+    run: {
+      agentId: "main",
+      agentDir: "/tmp/agent",
+      sessionId: "session",
+      sessionKey: "main",
+      messageProvider: "whatsapp",
+      sessionFile: "/tmp/session.jsonl",
+      workspaceDir: "/tmp",
+      config: params.config ?? {},
+      skillsSnapshot: {},
+      provider: "anthropic",
+      model: "claude",
+      thinkLevel: "low",
+      verboseLevel: "off",
+      elevatedLevel: "off",
+      bashElevated: {
+        enabled: false,
+        allowed: false,
+        defaultLevel: "off",
+      },
+      timeoutMs: 1_000,
+      blockReplyBreak: "message_end",
+    },
+  } as unknown as FollowupRun;
+  const run = {
+    ...followupRun.run,
+    ...params.runOverrides,
+    config: params.config ?? followupRun.run.config,
+  };
+
+  return {
+    typing,
+    sessionCtx,
+    resolvedQueue,
+    followupRun: { ...followupRun, run },
+  };
+}
+
+async function runReplyAgentWithBase(params: {
+  baseRun: ReturnType<typeof createBaseRun>;
+  storePath: string;
+  sessionKey: string;
+  sessionEntry: SessionEntry;
+  commandBody: string;
+  typingMode?: "instant";
+}): Promise<void> {
+  const runReplyAgent = await getRunReplyAgent();
+  const { typing, sessionCtx, resolvedQueue, followupRun } = params.baseRun;
+  await runReplyAgent({
+    commandBody: params.commandBody,
+    followupRun,
+    queueKey: params.sessionKey,
+    resolvedQueue,
+    shouldSteer: false,
+    shouldFollowup: false,
+    isActive: false,
+    isStreaming: false,
+    typing,
+    sessionCtx,
+    sessionEntry: params.sessionEntry,
+    sessionStore: { [params.sessionKey]: params.sessionEntry } as Record<string, SessionEntry>,
+    sessionKey: params.sessionKey,
+    storePath: params.storePath,
+    defaultModel: "anthropic/claude-opus-4-5",
+    agentCfgContextTokens: 100_000,
+    resolvedVerboseLevel: "off",
+    isNewSession: false,
+    blockStreamingEnabled: false,
+    resolvedBlockStreamingBreak: "message_end",
+    shouldInjectGroupIntro: false,
+    typingMode: params.typingMode ?? "instant",
+  });
 }
 
 describe("runReplyAgent heartbeat followup guard", () => {
@@ -269,7 +412,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
         shouldType: false,
       },
       {
-        partials: ["NO_", "NO_RE", "NO_REPLY"],
+        partials: ["NO", "NO_", "NO_RE", "NO_REPLY"],
         finalText: "NO_REPLY",
         expectedForwarded: [] as string[],
         shouldType: false,
@@ -559,15 +702,428 @@ describe("runReplyAgent typing (heartbeat)", () => {
     });
   });
 
+  it("announces model fallback only when verbose mode is enabled", async () => {
+    const cases = [
+      { name: "verbose on", verbose: "on" as const, expectNotice: true },
+      { name: "verbose off", verbose: "off" as const, expectNotice: false },
+    ] as const;
+    for (const testCase of cases) {
+      const sessionEntry: SessionEntry = {
+        sessionId: "session",
+        updatedAt: Date.now(),
+      };
+      const sessionStore = { main: sessionEntry };
+      state.runEmbeddedPiAgentMock.mockResolvedValueOnce({
+        payloads: [{ text: "final" }],
+        meta: {},
+      });
+      vi.spyOn(modelFallbackModule, "runWithModelFallback").mockImplementationOnce(
+        // @ts-expect-error -- fork stub typing mismatch
+        async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+          result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
+          provider: "deepinfra",
+          model: "moonshotai/Kimi-K2.5",
+          attempts: [
+            {
+              provider: "fireworks",
+              model: "fireworks/minimax-m2p5",
+              error: "Provider fireworks is in cooldown (all profiles unavailable)",
+              reason: "rate_limit",
+            },
+          ],
+        }),
+      );
+
+      const { run } = createMinimalRun({
+        resolvedVerboseLevel: testCase.verbose,
+        sessionEntry,
+        sessionStore,
+        sessionKey: "main",
+      });
+      const phases: string[] = [];
+      const off = onAgentEvent((evt) => {
+        const phase = typeof evt.data?.phase === "string" ? evt.data.phase : null;
+        if (evt.stream === "lifecycle" && phase) {
+          phases.push(phase);
+        }
+      });
+      const res = await run();
+      off();
+      const payload = Array.isArray(res)
+        ? (res[0] as { text?: string })
+        : (res as { text?: string });
+      if (testCase.expectNotice) {
+        expect(payload.text, testCase.name).toContain("Model Fallback:");
+        expect(payload.text, testCase.name).toContain("deepinfra/moonshotai/Kimi-K2.5");
+        expect(sessionEntry.fallbackNoticeReason, testCase.name).toBe("rate limit");
+        continue;
+      }
+      expect(payload.text, testCase.name).not.toContain("Model Fallback:");
+      expect(
+        phases.filter((phase) => phase === "fallback"),
+        testCase.name,
+      ).toHaveLength(1);
+    }
+  });
+
+  it("announces model fallback only once per active fallback state", async () => {
+    const sessionEntry: SessionEntry = {
+      sessionId: "session",
+      updatedAt: Date.now(),
+    };
+    const sessionStore = { main: sessionEntry };
+
+    state.runEmbeddedPiAgentMock.mockResolvedValue({
+      payloads: [{ text: "final" }],
+      meta: {},
+    });
+    const fallbackSpy = vi.spyOn(modelFallbackModule, "runWithModelFallback").mockImplementation(
+      // @ts-expect-error -- fork stub typing mismatch
+      async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+        result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
+        provider: "deepinfra",
+        model: "moonshotai/Kimi-K2.5",
+        attempts: [
+          {
+            provider: "fireworks",
+            model: "fireworks/minimax-m2p5",
+            error: "Provider fireworks is in cooldown (all profiles unavailable)",
+            reason: "rate_limit",
+          },
+        ],
+      }),
+    );
+    try {
+      const { run } = createMinimalRun({
+        resolvedVerboseLevel: "on",
+        sessionEntry,
+        sessionStore,
+        sessionKey: "main",
+      });
+      const fallbackEvents: Array<Record<string, unknown>> = [];
+      const off = onAgentEvent((evt) => {
+        if (evt.stream === "lifecycle" && evt.data?.phase === "fallback") {
+          fallbackEvents.push(evt.data);
+        }
+      });
+      const first = await run();
+      const second = await run();
+      off();
+
+      const firstText = Array.isArray(first) ? first[0]?.text : first?.text;
+      const secondText = Array.isArray(second) ? second[0]?.text : second?.text;
+      expect(firstText).toContain("Model Fallback:");
+      expect(secondText).not.toContain("Model Fallback:");
+      expect(fallbackEvents).toHaveLength(1);
+    } finally {
+      fallbackSpy.mockRestore();
+    }
+  });
+
+  it("re-announces model fallback after returning to selected model", async () => {
+    const sessionEntry: SessionEntry = {
+      sessionId: "session",
+      updatedAt: Date.now(),
+    };
+    const sessionStore = { main: sessionEntry };
+    let callCount = 0;
+
+    state.runEmbeddedPiAgentMock.mockResolvedValue({
+      payloads: [{ text: "final" }],
+      meta: {},
+    });
+    const fallbackSpy = vi.spyOn(modelFallbackModule, "runWithModelFallback").mockImplementation(
+      // @ts-expect-error -- fork stub typing mismatch
+      async ({
+        provider,
+        model,
+        run,
+      }: {
+        provider: string;
+        model: string;
+        run: (provider: string, model: string) => Promise<unknown>;
+      }) => {
+        callCount += 1;
+        if (callCount === 2) {
+          return {
+            result: await run(provider, model),
+            provider,
+            model,
+            attempts: [],
+          };
+        }
+        return {
+          result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
+          provider: "deepinfra",
+          model: "moonshotai/Kimi-K2.5",
+          attempts: [
+            {
+              provider: "fireworks",
+              model: "fireworks/minimax-m2p5",
+              error: "Provider fireworks is in cooldown (all profiles unavailable)",
+              reason: "rate_limit",
+            },
+          ],
+        };
+      },
+    );
+    try {
+      const { run } = createMinimalRun({
+        resolvedVerboseLevel: "on",
+        sessionEntry,
+        sessionStore,
+        sessionKey: "main",
+      });
+      const first = await run();
+      const second = await run();
+      const third = await run();
+
+      const firstText = Array.isArray(first) ? first[0]?.text : first?.text;
+      const secondText = Array.isArray(second) ? second[0]?.text : second?.text;
+      const thirdText = Array.isArray(third) ? third[0]?.text : third?.text;
+      expect(firstText).toContain("Model Fallback:");
+      expect(secondText).not.toContain("Model Fallback:");
+      expect(thirdText).toContain("Model Fallback:");
+    } finally {
+      fallbackSpy.mockRestore();
+    }
+  });
+
+  it("announces fallback-cleared once when runtime returns to selected model", async () => {
+    const sessionEntry: SessionEntry = {
+      sessionId: "session",
+      updatedAt: Date.now(),
+    };
+    const sessionStore = { main: sessionEntry };
+    let callCount = 0;
+
+    state.runEmbeddedPiAgentMock.mockResolvedValue({
+      payloads: [{ text: "final" }],
+      meta: {},
+    });
+    const fallbackSpy = vi.spyOn(modelFallbackModule, "runWithModelFallback").mockImplementation(
+      // @ts-expect-error -- fork stub typing mismatch
+      async ({
+        provider,
+        model,
+        run,
+      }: {
+        provider: string;
+        model: string;
+        run: (provider: string, model: string) => Promise<unknown>;
+      }) => {
+        callCount += 1;
+        if (callCount === 1) {
+          return {
+            result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
+            provider: "deepinfra",
+            model: "moonshotai/Kimi-K2.5",
+            attempts: [
+              {
+                provider: "fireworks",
+                model: "fireworks/minimax-m2p5",
+                error: "Provider fireworks is in cooldown (all profiles unavailable)",
+                reason: "rate_limit",
+              },
+            ],
+          };
+        }
+        return {
+          result: await run(provider, model),
+          provider,
+          model,
+          attempts: [],
+        };
+      },
+    );
+    try {
+      const { run } = createMinimalRun({
+        resolvedVerboseLevel: "on",
+        sessionEntry,
+        sessionStore,
+        sessionKey: "main",
+      });
+      const phases: string[] = [];
+      const off = onAgentEvent((evt) => {
+        const phase = typeof evt.data?.phase === "string" ? evt.data.phase : null;
+        if (evt.stream === "lifecycle" && phase) {
+          phases.push(phase);
+        }
+      });
+      const first = await run();
+      const second = await run();
+      const third = await run();
+      off();
+
+      const firstText = Array.isArray(first) ? first[0]?.text : first?.text;
+      const secondText = Array.isArray(second) ? second[0]?.text : second?.text;
+      const thirdText = Array.isArray(third) ? third[0]?.text : third?.text;
+      expect(firstText).toContain("Model Fallback:");
+      expect(secondText).toContain("Model Fallback cleared:");
+      expect(thirdText).not.toContain("Model Fallback cleared:");
+      expect(phases.filter((phase) => phase === "fallback")).toHaveLength(1);
+      expect(phases.filter((phase) => phase === "fallback_cleared")).toHaveLength(1);
+    } finally {
+      fallbackSpy.mockRestore();
+    }
+  });
+
+  it("emits fallback lifecycle events while verbose is off", async () => {
+    const sessionEntry: SessionEntry = {
+      sessionId: "session",
+      updatedAt: Date.now(),
+    };
+    const sessionStore = { main: sessionEntry };
+    let callCount = 0;
+
+    state.runEmbeddedPiAgentMock.mockResolvedValue({
+      payloads: [{ text: "final" }],
+      meta: {},
+    });
+    const fallbackSpy = vi.spyOn(modelFallbackModule, "runWithModelFallback").mockImplementation(
+      // @ts-expect-error -- fork stub typing mismatch
+      async ({
+        provider,
+        model,
+        run,
+      }: {
+        provider: string;
+        model: string;
+        run: (provider: string, model: string) => Promise<unknown>;
+      }) => {
+        callCount += 1;
+        if (callCount === 1) {
+          return {
+            result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
+            provider: "deepinfra",
+            model: "moonshotai/Kimi-K2.5",
+            attempts: [
+              {
+                provider: "fireworks",
+                model: "fireworks/minimax-m2p5",
+                error: "Provider fireworks is in cooldown (all profiles unavailable)",
+                reason: "rate_limit",
+              },
+            ],
+          };
+        }
+        return {
+          result: await run(provider, model),
+          provider,
+          model,
+          attempts: [],
+        };
+      },
+    );
+    try {
+      const { run } = createMinimalRun({
+        resolvedVerboseLevel: "off",
+        sessionEntry,
+        sessionStore,
+        sessionKey: "main",
+      });
+      const phases: string[] = [];
+      const off = onAgentEvent((evt) => {
+        const phase = typeof evt.data?.phase === "string" ? evt.data.phase : null;
+        if (evt.stream === "lifecycle" && phase) {
+          phases.push(phase);
+        }
+      });
+      const first = await run();
+      const second = await run();
+      off();
+
+      const firstText = Array.isArray(first) ? first[0]?.text : first?.text;
+      const secondText = Array.isArray(second) ? second[0]?.text : second?.text;
+      expect(firstText).not.toContain("Model Fallback:");
+      expect(secondText).not.toContain("Model Fallback cleared:");
+      expect(phases.filter((phase) => phase === "fallback")).toHaveLength(1);
+      expect(phases.filter((phase) => phase === "fallback_cleared")).toHaveLength(1);
+    } finally {
+      fallbackSpy.mockRestore();
+    }
+  });
+
+  it("updates fallback reason summary while fallback stays active", async () => {
+    const cases = [
+      {
+        existingReason: undefined,
+        reportedReason: "rate_limit",
+        expectedReason: "rate limit",
+      },
+      {
+        existingReason: undefined,
+        reportedReason: "overloaded",
+        expectedReason: "overloaded",
+      },
+      {
+        existingReason: "rate limit",
+        reportedReason: "timeout",
+        expectedReason: "timeout",
+      },
+    ] as const;
+
+    for (const testCase of cases) {
+      const sessionEntry: SessionEntry = {
+        sessionId: "session",
+        updatedAt: Date.now(),
+        fallbackNoticeSelectedModel: "anthropic/claude",
+        fallbackNoticeActiveModel: "deepinfra/moonshotai/Kimi-K2.5",
+        ...(testCase.existingReason ? { fallbackNoticeReason: testCase.existingReason } : {}),
+        modelProvider: "deepinfra",
+        model: "moonshotai/Kimi-K2.5",
+      };
+      const sessionStore = { main: sessionEntry };
+
+      state.runEmbeddedPiAgentMock.mockResolvedValue({
+        payloads: [{ text: "final" }],
+        meta: {},
+      });
+      const fallbackSpy = vi.spyOn(modelFallbackModule, "runWithModelFallback").mockImplementation(
+        // @ts-expect-error -- fork stub typing mismatch
+        async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+          result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
+          provider: "deepinfra",
+          model: "moonshotai/Kimi-K2.5",
+          attempts: [
+            {
+              provider: "anthropic",
+              model: "claude",
+              error: "Provider anthropic is in cooldown (all profiles unavailable)",
+              reason: testCase.reportedReason,
+            },
+          ],
+        }),
+      );
+      try {
+        const { run } = createMinimalRun({
+          resolvedVerboseLevel: "on",
+          sessionEntry,
+          sessionStore,
+          sessionKey: "main",
+        });
+        const res = await run();
+        const firstText = Array.isArray(res) ? res[0]?.text : res?.text;
+        expect(firstText).not.toContain("Model Fallback:");
+        expect(sessionEntry.fallbackNoticeReason).toBe(testCase.expectedReason);
+      } finally {
+        fallbackSpy.mockRestore();
+      }
+    }
+  });
+
   it("retries after compaction failure by resetting the session", async () => {
     await withTempStateDir(async (stateDir) => {
       const sessionId = "session";
       const storePath = path.join(stateDir, "sessions", "sessions.json");
       const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId);
-      const sessionEntry = {
+      const sessionEntry: SessionEntry = {
         sessionId,
         updatedAt: Date.now(),
         sessionFile: transcriptPath,
+        fallbackNoticeSelectedModel: "fireworks/minimax-m2p5",
+        fallbackNoticeActiveModel: "deepinfra/moonshotai/Kimi-K2.5",
+        fallbackNoticeReason: "rate limit",
       };
       const sessionStore = { main: sessionEntry };
 
@@ -600,9 +1156,15 @@ describe("runReplyAgent typing (heartbeat)", () => {
       }
       expect(payload.text?.toLowerCase()).toContain("reset");
       expect(sessionStore.main.sessionId).not.toBe(sessionId);
+      expect(sessionStore.main.fallbackNoticeSelectedModel).toBeUndefined();
+      expect(sessionStore.main.fallbackNoticeActiveModel).toBeUndefined();
+      expect(sessionStore.main.fallbackNoticeReason).toBeUndefined();
 
       const persisted = JSON.parse(await fs.readFile(storePath, "utf-8"));
       expect(persisted.main.sessionId).toBe(sessionStore.main.sessionId);
+      expect(persisted.main.fallbackNoticeSelectedModel).toBeUndefined();
+      expect(persisted.main.fallbackNoticeActiveModel).toBeUndefined();
+      expect(persisted.main.fallbackNoticeReason).toBeUndefined();
     });
   });
 
@@ -893,5 +1455,496 @@ describe("runReplyAgent typing (heartbeat)", () => {
     expect(payloads[0]?.text).toContain("LLM connection failed");
     expect(payloads[0]?.text).toContain("socket connection was closed unexpectedly");
     expect(payloads[0]?.text).toContain("```");
+  });
+});
+
+describe("runReplyAgent memory flush", () => {
+  let fixtureRoot = "";
+  let caseId = 0;
+
+  async function withTempStore<T>(fn: (storePath: string) => Promise<T>): Promise<T> {
+    const dir = path.join(fixtureRoot, `case-${++caseId}`);
+    await fs.mkdir(dir, { recursive: true });
+    return await fn(path.join(dir, "sessions.json"));
+  }
+
+  beforeAll(async () => {
+    fixtureRoot = await fs.mkdtemp(path.join(tmpdir(), "remoteclaw-memory-flush-"));
+  });
+
+  afterAll(async () => {
+    if (fixtureRoot) {
+      await fs.rm(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("skips memory flush for CLI providers", async () => {
+    await withTempStore(async (storePath) => {
+      const sessionKey = "main";
+      const sessionEntry: SessionEntry = {
+        sessionId: "session",
+        updatedAt: Date.now(),
+        totalTokens: 80_000,
+        compactionCount: 1,
+      };
+
+      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
+
+      state.runEmbeddedPiAgentMock.mockImplementation(async () => ({
+        payloads: [{ text: "ok" }],
+        meta: { agentMeta: { usage: { input: 1, output: 1 } } },
+      }));
+      state.runCliAgentMock.mockResolvedValue({
+        payloads: [{ text: "ok" }],
+        meta: { agentMeta: { usage: { input: 1, output: 1 } } },
+      });
+
+      const baseRun = createBaseRun({
+        storePath,
+        sessionEntry,
+        runOverrides: { provider: "codex-cli" },
+      });
+
+      await runReplyAgentWithBase({
+        baseRun,
+        storePath,
+        sessionKey,
+        sessionEntry,
+        commandBody: "hello",
+      });
+
+      expect(state.runCliAgentMock).toHaveBeenCalledTimes(1);
+      const call = state.runCliAgentMock.mock.calls[0]?.[0] as { prompt?: string } | undefined;
+      expect(call?.prompt).toBe("hello");
+      expect(state.runEmbeddedPiAgentMock).not.toHaveBeenCalled();
+    });
+  });
+
+  it("uses configured prompts for memory flush runs", async () => {
+    await withTempStore(async (storePath) => {
+      const sessionKey = "main";
+      const sessionEntry = {
+        sessionId: "session",
+        updatedAt: Date.now(),
+        totalTokens: 80_000,
+        compactionCount: 1,
+      };
+
+      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
+
+      const calls: Array<EmbeddedRunParams> = [];
+      state.runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
+        calls.push(params);
+        if (params.prompt?.includes("Write notes.")) {
+          return { payloads: [], meta: {} };
+        }
+        return {
+          payloads: [{ text: "ok" }],
+          meta: { agentMeta: { usage: { input: 1, output: 1 } } },
+        };
+      });
+
+      const baseRun = createBaseRun({
+        storePath,
+        sessionEntry,
+        config: {
+          agents: {
+            defaults: {
+              compaction: {
+                memoryFlush: {
+                  prompt: "Write notes.",
+                  systemPrompt: "Flush memory now.",
+                },
+              },
+            },
+          },
+        },
+        runOverrides: { extraSystemPrompt: "extra system" },
+      });
+
+      await runReplyAgentWithBase({
+        baseRun,
+        storePath,
+        sessionKey,
+        sessionEntry,
+        commandBody: "hello",
+      });
+
+      const flushCall = calls[0];
+      expect(flushCall?.prompt).toContain("Write notes.");
+      expect(flushCall?.prompt).toContain("NO_REPLY");
+      expect(flushCall?.extraSystemPrompt).toContain("extra system");
+      expect(flushCall?.extraSystemPrompt).toContain("Flush memory now.");
+      expect(flushCall?.extraSystemPrompt).toContain("NO_REPLY");
+      expect(calls[1]?.prompt).toBe("hello");
+    });
+  });
+
+  it("passes stored bootstrap warning signatures to memory flush runs", async () => {
+    await withTempStore(async (storePath) => {
+      const sessionKey = "main";
+      const sessionEntry: SessionEntry = {
+        sessionId: "session",
+        updatedAt: Date.now(),
+        totalTokens: 80_000,
+        compactionCount: 1,
+        systemPromptReport: {
+          source: "run",
+          generatedAt: Date.now(),
+          systemPrompt: {
+            chars: 1,
+            projectContextChars: 0,
+            nonProjectContextChars: 1,
+          },
+          injectedWorkspaceFiles: [],
+          skills: {
+            promptChars: 0,
+            entries: [],
+          },
+          tools: {
+            listChars: 0,
+            schemaChars: 0,
+            entries: [],
+          },
+          bootstrapTruncation: {
+            warningMode: "once",
+            warningShown: true,
+            promptWarningSignature: "sig-b",
+            warningSignaturesSeen: ["sig-a", "sig-b"],
+            truncatedFiles: 1,
+            nearLimitFiles: 0,
+            totalNearLimit: false,
+          },
+        },
+      };
+
+      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
+
+      const calls: Array<EmbeddedRunParams> = [];
+      state.runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
+        calls.push(params);
+        if (params.prompt?.includes("Pre-compaction memory flush.")) {
+          return { payloads: [], meta: {} };
+        }
+        return {
+          payloads: [{ text: "ok" }],
+          meta: { agentMeta: { usage: { input: 1, output: 1 } } },
+        };
+      });
+
+      const baseRun = createBaseRun({
+        storePath,
+        sessionEntry,
+      });
+
+      await runReplyAgentWithBase({
+        baseRun,
+        storePath,
+        sessionKey,
+        sessionEntry,
+        commandBody: "hello",
+      });
+
+      expect(calls).toHaveLength(2);
+      expect(calls[0]?.bootstrapPromptWarningSignaturesSeen).toEqual(["sig-a", "sig-b"]);
+      expect(calls[0]?.bootstrapPromptWarningSignature).toBe("sig-b");
+    });
+  });
+
+  it("runs a memory flush turn and updates session metadata", async () => {
+    await withTempStore(async (storePath) => {
+      const sessionKey = "main";
+      const sessionEntry = {
+        sessionId: "session",
+        updatedAt: Date.now(),
+        totalTokens: 80_000,
+        compactionCount: 1,
+      };
+
+      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
+
+      const calls: Array<{ prompt?: string }> = [];
+      state.runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
+        calls.push({ prompt: params.prompt });
+        if (params.prompt?.includes("Pre-compaction memory flush.")) {
+          return { payloads: [], meta: {} };
+        }
+        return {
+          payloads: [{ text: "ok" }],
+          meta: { agentMeta: { usage: { input: 1, output: 1 } } },
+        };
+      });
+
+      const baseRun = createBaseRun({
+        storePath,
+        sessionEntry,
+      });
+
+      await runReplyAgentWithBase({
+        baseRun,
+        storePath,
+        sessionKey,
+        sessionEntry,
+        commandBody: "hello",
+      });
+
+      expect(calls).toHaveLength(2);
+      expect(calls[0]?.prompt).toContain("Pre-compaction memory flush.");
+      expect(calls[0]?.prompt).toContain("Current time:");
+      expect(calls[0]?.prompt).toMatch(/memory\/\d{4}-\d{2}-\d{2}\.md/);
+      expect(calls[1]?.prompt).toBe("hello");
+
+      const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
+      expect(stored[sessionKey].memoryFlushAt).toBeTypeOf("number");
+      expect(stored[sessionKey].memoryFlushCompactionCount).toBe(1);
+    });
+  });
+
+  it("runs memory flush when transcript fallback uses a relative sessionFile path", async () => {
+    await withTempStore(async (storePath) => {
+      const sessionKey = "main";
+      const sessionFile = "session-relative.jsonl";
+      const transcriptPath = path.join(path.dirname(storePath), sessionFile);
+      await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
+      await fs.writeFile(
+        transcriptPath,
+        JSON.stringify({ usage: { input: 90_000, output: 8_000 } }),
+        "utf-8",
+      );
+
+      const sessionEntry = {
+        sessionId: "session",
+        updatedAt: Date.now(),
+        sessionFile,
+        totalTokens: 10,
+        totalTokensFresh: false,
+        compactionCount: 1,
+      };
+
+      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
+
+      const calls: Array<{ prompt?: string }> = [];
+      state.runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
+        calls.push({ prompt: params.prompt });
+        if (params.prompt?.includes("Pre-compaction memory flush.")) {
+          return { payloads: [], meta: {} };
+        }
+        return {
+          payloads: [{ text: "ok" }],
+          meta: { agentMeta: { usage: { input: 1, output: 1 } } },
+        };
+      });
+
+      const baseRun = createBaseRun({
+        storePath,
+        sessionEntry,
+        runOverrides: { sessionFile },
+      });
+
+      await runReplyAgentWithBase({
+        baseRun,
+        storePath,
+        sessionKey,
+        sessionEntry,
+        commandBody: "hello",
+      });
+
+      expect(calls).toHaveLength(2);
+      expect(calls[0]?.prompt).toContain("Pre-compaction memory flush.");
+      expect(calls[0]?.prompt).toContain("Current time:");
+      expect(calls[0]?.prompt).toMatch(/memory\/\d{4}-\d{2}-\d{2}\.md/);
+      expect(calls[1]?.prompt).toBe("hello");
+
+      const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
+      expect(stored[sessionKey].memoryFlushAt).toBeTypeOf("number");
+    });
+  });
+
+  it("forces memory flush when transcript file exceeds configured byte threshold", async () => {
+    await withTempStore(async (storePath) => {
+      const sessionKey = "main";
+      const sessionFile = "oversized-session.jsonl";
+      const transcriptPath = path.join(path.dirname(storePath), sessionFile);
+      await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
+      await fs.writeFile(transcriptPath, "x".repeat(3_000), "utf-8");
+
+      const sessionEntry = {
+        sessionId: "session",
+        updatedAt: Date.now(),
+        sessionFile,
+        totalTokens: 10,
+        totalTokensFresh: false,
+        compactionCount: 1,
+      };
+
+      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
+
+      const calls: Array<{ prompt?: string }> = [];
+      state.runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
+        calls.push({ prompt: params.prompt });
+        if (params.prompt?.includes("Pre-compaction memory flush.")) {
+          return { payloads: [], meta: {} };
+        }
+        return {
+          payloads: [{ text: "ok" }],
+          meta: { agentMeta: { usage: { input: 1, output: 1 } } },
+        };
+      });
+
+      const baseRun = createBaseRun({
+        storePath,
+        sessionEntry,
+        config: {
+          agents: {
+            defaults: {
+              compaction: {
+                memoryFlush: {
+                  forceFlushTranscriptBytes: 256,
+                },
+              },
+            },
+          },
+        },
+        runOverrides: { sessionFile },
+      });
+
+      await runReplyAgentWithBase({
+        baseRun,
+        storePath,
+        sessionKey,
+        sessionEntry,
+        commandBody: "hello",
+      });
+
+      expect(calls).toHaveLength(2);
+      expect(calls[0]?.prompt).toContain("Pre-compaction memory flush.");
+      expect(calls[1]?.prompt).toBe("hello");
+    });
+  });
+
+  it("skips memory flush when disabled in config", async () => {
+    await withTempStore(async (storePath) => {
+      const sessionKey = "main";
+      const sessionEntry = {
+        sessionId: "session",
+        updatedAt: Date.now(),
+        totalTokens: 80_000,
+        compactionCount: 1,
+      };
+
+      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
+
+      state.runEmbeddedPiAgentMock.mockImplementation(async () => ({
+        payloads: [{ text: "ok" }],
+        meta: { agentMeta: { usage: { input: 1, output: 1 } } },
+      }));
+
+      const baseRun = createBaseRun({
+        storePath,
+        sessionEntry,
+        config: { agents: { defaults: { compaction: { memoryFlush: { enabled: false } } } } },
+      });
+
+      await runReplyAgentWithBase({
+        baseRun,
+        storePath,
+        sessionKey,
+        sessionEntry,
+        commandBody: "hello",
+      });
+
+      expect(state.runEmbeddedPiAgentMock).toHaveBeenCalledTimes(1);
+      const call = state.runEmbeddedPiAgentMock.mock.calls[0]?.[0] as
+        | { prompt?: string }
+        | undefined;
+      expect(call?.prompt).toBe("hello");
+
+      const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
+      expect(stored[sessionKey].memoryFlushAt).toBeUndefined();
+    });
+  });
+
+  it("skips memory flush after a prior flush in the same compaction cycle", async () => {
+    await withTempStore(async (storePath) => {
+      const sessionKey = "main";
+      const sessionEntry = {
+        sessionId: "session",
+        updatedAt: Date.now(),
+        totalTokens: 80_000,
+        compactionCount: 2,
+        memoryFlushCompactionCount: 2,
+      };
+
+      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
+
+      const calls: Array<{ prompt?: string }> = [];
+      state.runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
+        calls.push({ prompt: params.prompt });
+        return {
+          payloads: [{ text: "ok" }],
+          meta: { agentMeta: { usage: { input: 1, output: 1 } } },
+        };
+      });
+
+      const baseRun = createBaseRun({
+        storePath,
+        sessionEntry,
+      });
+
+      await runReplyAgentWithBase({
+        baseRun,
+        storePath,
+        sessionKey,
+        sessionEntry,
+        commandBody: "hello",
+      });
+
+      expect(calls.map((call) => call.prompt)).toEqual(["hello"]);
+    });
+  });
+
+  it("increments compaction count when flush compaction completes", async () => {
+    await withTempStore(async (storePath) => {
+      const sessionKey = "main";
+      const sessionEntry = {
+        sessionId: "session",
+        updatedAt: Date.now(),
+        totalTokens: 80_000,
+        compactionCount: 1,
+      };
+
+      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
+
+      state.runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
+        if (params.prompt?.includes("Pre-compaction memory flush.")) {
+          params.onAgentEvent?.({
+            stream: "compaction",
+            data: { phase: "end", willRetry: false },
+          });
+          return { payloads: [], meta: {} };
+        }
+        return {
+          payloads: [{ text: "ok" }],
+          meta: { agentMeta: { usage: { input: 1, output: 1 } } },
+        };
+      });
+
+      const baseRun = createBaseRun({
+        storePath,
+        sessionEntry,
+      });
+
+      await runReplyAgentWithBase({
+        baseRun,
+        storePath,
+        sessionKey,
+        sessionEntry,
+        commandBody: "hello",
+      });
+
+      const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
+      expect(stored[sessionKey].compactionCount).toBe(2);
+      expect(stored[sessionKey].memoryFlushCompactionCount).toBe(2);
+    });
   });
 });

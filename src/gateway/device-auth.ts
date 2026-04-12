@@ -30,6 +30,14 @@ export function buildDeviceAuthPayload(params: DeviceAuthPayloadParams): string 
   ].join("|");
 }
 
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+export function normalizeDeviceMetadataForAuth(value: string | null | undefined): string {
+  if (!value || typeof value !== "string") {
+    return "";
+  }
+  return value.trim().toLowerCase();
+}
+
 export function buildDeviceAuthPayloadV3(params: DeviceAuthPayloadV3Params): string {
   const scopes = params.scopes.join(",");
   const token = params.token ?? "";

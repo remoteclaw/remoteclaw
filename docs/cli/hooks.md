@@ -1,5 +1,5 @@
 ---
-description: "CLI reference for `remoteclaw hooks` (agent hooks)"
+summary: "CLI reference for `remoteclaw hooks` (agent hooks)"
 read_when:
   - You want to manage agent hooks
   - You want to install or update hooks
@@ -32,11 +32,13 @@ List all discovered hooks from workspace, managed, and bundled directories.
 **Example output:**
 
 ```
-Hooks (2/2 ready)
+Hooks (4/4 ready)
 
 Ready:
-  🚀 boot ✓ - Run boot prompt on gateway startup
+  🚀 boot-md ✓ - Run BOOT.md on gateway startup
+  📎 bootstrap-extra-files ✓ - Inject extra workspace bootstrap files during agent bootstrap
   📝 command-logger ✓ - Log all command events to a centralized audit file
+  💾 session-memory ✓ - Save session context to memory when /new command is issued
 ```
 
 **Example (verbose):**
@@ -65,7 +67,7 @@ Show detailed information about a specific hook.
 
 **Arguments:**
 
-- `<name>`: Hook name (e.g., `command-logger`)
+- `<name>`: Hook name (e.g., `session-memory`)
 
 **Options:**
 
@@ -74,22 +76,25 @@ Show detailed information about a specific hook.
 **Example:**
 
 ```bash
-remoteclaw hooks info command-logger
+remoteclaw hooks info session-memory
 ```
 
 **Output:**
 
 ```
-📝 command-logger ✓ Ready
+💾 session-memory ✓ Ready
 
-Log all command events to a centralized audit file
+Save session context to memory when /new command is issued
 
 Details:
   Source: remoteclaw-bundled
-  Path: /path/to/remoteclaw/hooks/bundled/command-logger/HOOK.md
-  Handler: /path/to/remoteclaw/hooks/bundled/command-logger/handler.ts
-  Homepage: https://docs.remoteclaw.org/automation/hooks#command-logger
-  Events: command
+  Path: /path/to/remoteclaw/hooks/bundled/session-memory/HOOK.md
+  Handler: /path/to/remoteclaw/hooks/bundled/session-memory/handler.ts
+  Homepage: https://docs.remoteclaw.ai/automation/hooks#session-memory
+  Events: command:new
+
+Requirements:
+  Config: ✓ workspace.dir
 ```
 
 ## Check Hooks Eligibility
@@ -127,18 +132,18 @@ can’t be enabled/disabled here. Enable/disable the plugin instead.
 
 **Arguments:**
 
-- `<name>`: Hook name (e.g., `command-logger`)
+- `<name>`: Hook name (e.g., `session-memory`)
 
 **Example:**
 
 ```bash
-remoteclaw hooks enable command-logger
+remoteclaw hooks enable session-memory
 ```
 
 **Output:**
 
 ```
-✓ Enabled hook: 📝 command-logger
+✓ Enabled hook: 💾 session-memory
 ```
 
 **What it does:**
@@ -188,8 +193,13 @@ remoteclaw hooks install <npm-spec> --pin
 
 Install a hook pack from a local folder/archive or npm.
 
-Npm specs are **registry-only** (package name + optional version/tag). Git/URL/file
-specs are rejected. Dependency installs run with `--ignore-scripts` for safety.
+Npm specs are **registry-only** (package name + optional **exact version** or
+**dist-tag**). Git/URL/file specs and semver ranges are rejected. Dependency
+installs run with `--ignore-scripts` for safety.
+
+Bare specs and `@latest` stay on the stable track. If npm resolves either of
+those to a prerelease, RemoteClaw stops and asks you to opt in explicitly with a
+prerelease tag such as `@beta`/`@rc` or an exact prerelease version.
 
 **What it does:**
 
@@ -240,13 +250,31 @@ global `--yes` to bypass prompts in CI/non-interactive runs.
 
 ## Bundled Hooks
 
-### ~~session-memory~~ (removed)
+### session-memory
 
-The session-memory hook has been removed.
+Saves session context to memory when you issue `/new`.
 
-### ~~bootstrap-extra-files~~ (removed)
+**Enable:**
 
-The bootstrap-extra-files hook has been removed.
+```bash
+remoteclaw hooks enable session-memory
+```
+
+**Output:** `~/.remoteclaw/workspace/memory/YYYY-MM-DD-slug.md`
+
+**See:** [session-memory documentation](/automation/hooks#session-memory)
+
+### bootstrap-extra-files
+
+Injects additional bootstrap files (for example monorepo-local `AGENTS.md` / `TOOLS.md`) during `agent:bootstrap`.
+
+**Enable:**
+
+```bash
+remoteclaw hooks enable bootstrap-extra-files
+```
+
+**See:** [bootstrap-extra-files documentation](/automation/hooks#bootstrap-extra-files)
 
 ### command-logger
 
@@ -275,16 +303,16 @@ grep '"action":"new"' ~/.remoteclaw/logs/commands.log | jq .
 
 **See:** [command-logger documentation](/automation/hooks#command-logger)
 
-### boot
+### boot-md
 
-Runs the configured boot prompt when the gateway starts (after channels start).
+Runs `BOOT.md` when the gateway starts (after channels start).
 
 **Events**: `gateway:startup`
 
 **Enable**:
 
 ```bash
-remoteclaw hooks enable boot
+remoteclaw hooks enable boot-md
 ```
 
-**See:** [boot documentation](/automation/hooks#boot)
+**See:** [boot-md documentation](/automation/hooks#boot-md)

@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { RemoteClawConfig } from "../../config/config.js";
 
 const hoisted = vi.hoisted(() => {
   const sendMessageDiscord = vi.fn(async (_to: string, _text: string, _opts?: unknown) => ({}));
@@ -22,6 +23,7 @@ const hoisted = vi.hoisted(() => {
     },
   }));
   const createThreadDiscord = vi.fn(async (..._args: unknown[]) => ({ id: "thread-created" }));
+  const readAcpSessionEntry = vi.fn();
   return {
     sendMessageDiscord,
     sendWebhookMessageDiscord,
@@ -29,6 +31,7 @@ const hoisted = vi.hoisted(() => {
     restPost,
     createDiscordRestClient,
     createThreadDiscord,
+    readAcpSessionEntry,
   };
 });
 
@@ -45,11 +48,17 @@ vi.mock("../send.messages.js", () => ({
   createThreadDiscord: hoisted.createThreadDiscord,
 }));
 
+vi.mock("../../acp/runtime/session-meta.js", () => ({
+  readAcpSessionEntry: hoisted.readAcpSessionEntry,
+}));
+
 const {
   __testing,
   autoBindSpawnedDiscordSubagent,
   createThreadBindingManager,
+  reconcileAcpThreadBindingsOnStartup,
   resolveThreadBindingInactivityExpiresAt,
+  resolveThreadBindingIntroText,
   resolveThreadBindingMaxAgeExpiresAt,
   setThreadBindingIdleTimeoutBySessionKey,
   setThreadBindingMaxAgeBySessionKey,
@@ -65,6 +74,7 @@ describe("thread binding lifecycle", () => {
     hoisted.restPost.mockClear();
     hoisted.createDiscordRestClient.mockClear();
     hoisted.createThreadDiscord.mockClear();
+    hoisted.readAcpSessionEntry.mockReset().mockReturnValue(null);
     vi.useRealTimers();
   });
 
@@ -90,6 +100,99 @@ describe("thread binding lifecycle", () => {
       webhookToken: "tok-1",
     });
   };
+
+  it("includes idle and max-age details in intro text", () => {
+    const intro = resolveThreadBindingIntroText({
+      agentId: "main",
+      label: "worker",
+      idleTimeoutMs: 24 * 60 * 60 * 1000,
+      maxAgeMs: 48 * 60 * 60 * 1000,
+    });
+    expect(intro).toContain("idle auto-unfocus after 24h inactivity");
+    expect(intro).toContain("max age 48h");
+  });
+
+  it("includes cwd near the top of intro text", () => {
+    const intro = resolveThreadBindingIntroText({
+      agentId: "codex",
+      idleTimeoutMs: 24 * 60 * 60 * 1000,
+      sessionCwd: "/home/bob/clawd",
+      sessionDetails: ["session ids: pending (available after the first reply)"],
+    });
+    expect(intro).toContain("\ncwd: /home/bob/clawd\nsession ids: pending");
+  });
+
+  it("auto-unfocuses idle-expired bindings and sends inactivity message", async () => {
+    vi.useFakeTimers();
+    try {
+      const manager = createThreadBindingManager({
+        accountId: "default",
+        persist: false,
+        enableSweeper: true,
+        idleTimeoutMs: 60_000,
+        maxAgeMs: 0,
+      });
+
+      const binding = await manager.bindTarget({
+        threadId: "thread-1",
+        channelId: "parent-1",
+        targetKind: "subagent",
+        targetSessionKey: "agent:main:subagent:child",
+        agentId: "main",
+        webhookId: "wh-1",
+        webhookToken: "tok-1",
+        introText: "intro",
+      });
+      expect(binding).not.toBeNull();
+      hoisted.sendMessageDiscord.mockClear();
+      hoisted.sendWebhookMessageDiscord.mockClear();
+
+      await vi.advanceTimersByTimeAsync(120_000);
+
+      expect(manager.getByThreadId("thread-1")).toBeUndefined();
+      expect(hoisted.restGet).not.toHaveBeenCalled();
+      expect(hoisted.sendWebhookMessageDiscord).not.toHaveBeenCalled();
+      expect(hoisted.sendMessageDiscord).toHaveBeenCalledTimes(1);
+      const farewell = hoisted.sendMessageDiscord.mock.calls[0]?.[1] as string | undefined;
+      expect(farewell).toContain("after 1m of inactivity");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("auto-unfocuses max-age-expired bindings and sends max-age message", async () => {
+    vi.useFakeTimers();
+    try {
+      const manager = createThreadBindingManager({
+        accountId: "default",
+        persist: false,
+        enableSweeper: true,
+        idleTimeoutMs: 0,
+        maxAgeMs: 60_000,
+      });
+
+      const binding = await manager.bindTarget({
+        threadId: "thread-1",
+        channelId: "parent-1",
+        targetKind: "subagent",
+        targetSessionKey: "agent:main:subagent:child",
+        agentId: "main",
+        webhookId: "wh-1",
+        webhookToken: "tok-1",
+      });
+      expect(binding).not.toBeNull();
+      hoisted.sendMessageDiscord.mockClear();
+
+      await vi.advanceTimersByTimeAsync(120_000);
+
+      expect(manager.getByThreadId("thread-1")).toBeUndefined();
+      expect(hoisted.sendMessageDiscord).toHaveBeenCalledTimes(1);
+      const farewell = hoisted.sendMessageDiscord.mock.calls[0]?.[1] as string | undefined;
+      expect(farewell).toContain("max age of 1m");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 
   it("keeps binding when thread sweep probe fails transiently", async () => {
     vi.useFakeTimers();
@@ -646,6 +749,402 @@ describe("thread binding lifecycle", () => {
     expect(removedA).toHaveLength(1);
     expect(a.getByThreadId("thread-1")).toBeUndefined();
     expect(b.getByThreadId("thread-1")?.targetSessionKey).toBe("agent:main:subagent:b");
+  });
+
+  it("removes stale ACP bindings during startup reconciliation", async () => {
+    const manager = createThreadBindingManager({
+      accountId: "default",
+      persist: false,
+      enableSweeper: false,
+      idleTimeoutMs: 24 * 60 * 60 * 1000,
+      maxAgeMs: 0,
+    });
+
+    await manager.bindTarget({
+      threadId: "thread-acp-healthy",
+      channelId: "parent-1",
+      targetKind: "acp",
+      targetSessionKey: "agent:codex:acp:healthy",
+      agentId: "codex",
+      webhookId: "wh-1",
+      webhookToken: "tok-1",
+    });
+    await manager.bindTarget({
+      threadId: "thread-acp-stale",
+      channelId: "parent-1",
+      targetKind: "acp",
+      targetSessionKey: "agent:codex:acp:stale",
+      agentId: "codex",
+      webhookId: "wh-1",
+      webhookToken: "tok-1",
+    });
+    await manager.bindTarget({
+      threadId: "thread-subagent",
+      channelId: "parent-1",
+      targetKind: "subagent",
+      targetSessionKey: "agent:main:subagent:child",
+      agentId: "main",
+      webhookId: "wh-1",
+      webhookToken: "tok-1",
+    });
+
+    hoisted.readAcpSessionEntry.mockImplementation((paramsUnknown: unknown) => {
+      const sessionKey = (paramsUnknown as { sessionKey?: string }).sessionKey ?? "";
+      if (sessionKey === "agent:codex:acp:healthy") {
+        return {
+          sessionKey,
+          storeSessionKey: sessionKey,
+          acp: {
+            backend: "acpx",
+            agent: "codex",
+            runtimeSessionName: "runtime:healthy",
+            mode: "persistent",
+            state: "idle",
+            lastActivityAt: Date.now(),
+          },
+        };
+      }
+      return {
+        sessionKey,
+        storeSessionKey: sessionKey,
+        acp: undefined,
+      };
+    });
+
+    const result = await reconcileAcpThreadBindingsOnStartup({
+      cfg: {} as RemoteClawConfig,
+      accountId: "default",
+    });
+
+    expect(result.checked).toBe(2);
+    expect(result.removed).toBe(1);
+    expect(result.staleSessionKeys).toContain("agent:codex:acp:stale");
+    expect(manager.getByThreadId("thread-acp-healthy")).toBeDefined();
+    expect(manager.getByThreadId("thread-acp-stale")).toBeUndefined();
+    expect(manager.getByThreadId("thread-subagent")).toBeDefined();
+    expect(hoisted.sendMessageDiscord).not.toHaveBeenCalled();
+    expect(hoisted.sendWebhookMessageDiscord).not.toHaveBeenCalled();
+  });
+
+  it("keeps ACP bindings when session store reads fail during startup reconciliation", async () => {
+    const manager = createThreadBindingManager({
+      accountId: "default",
+      persist: false,
+      enableSweeper: false,
+      idleTimeoutMs: 24 * 60 * 60 * 1000,
+      maxAgeMs: 0,
+    });
+
+    await manager.bindTarget({
+      threadId: "thread-acp-uncertain",
+      channelId: "parent-1",
+      targetKind: "acp",
+      targetSessionKey: "agent:codex:acp:uncertain",
+      agentId: "codex",
+      webhookId: "wh-1",
+      webhookToken: "tok-1",
+    });
+
+    hoisted.readAcpSessionEntry.mockReturnValue({
+      sessionKey: "agent:codex:acp:uncertain",
+      storeSessionKey: "agent:codex:acp:uncertain",
+      cfg: {} as RemoteClawConfig,
+      storePath: "/tmp/mock-sessions.json",
+      storeReadFailed: true,
+      entry: undefined,
+      acp: undefined,
+    });
+
+    const result = await reconcileAcpThreadBindingsOnStartup({
+      cfg: {} as RemoteClawConfig,
+      accountId: "default",
+    });
+
+    expect(result.checked).toBe(1);
+    expect(result.removed).toBe(0);
+    expect(result.staleSessionKeys).toEqual([]);
+    expect(manager.getByThreadId("thread-acp-uncertain")).toBeDefined();
+  });
+
+  it("removes ACP bindings when health probe marks running session as stale", async () => {
+    const manager = createThreadBindingManager({
+      accountId: "default",
+      persist: false,
+      enableSweeper: false,
+      idleTimeoutMs: 24 * 60 * 60 * 1000,
+      maxAgeMs: 0,
+    });
+
+    await manager.bindTarget({
+      threadId: "thread-acp-running",
+      channelId: "parent-1",
+      targetKind: "acp",
+      targetSessionKey: "agent:codex:acp:running",
+      agentId: "codex",
+      webhookId: "wh-1",
+      webhookToken: "tok-1",
+    });
+
+    hoisted.readAcpSessionEntry.mockReturnValue({
+      sessionKey: "agent:codex:acp:running",
+      storeSessionKey: "agent:codex:acp:running",
+      acp: {
+        backend: "acpx",
+        agent: "codex",
+        runtimeSessionName: "runtime:running",
+        mode: "persistent",
+        state: "running",
+        lastActivityAt: Date.now() - 5 * 60 * 1000,
+      },
+    });
+
+    const result = await reconcileAcpThreadBindingsOnStartup({
+      cfg: {} as RemoteClawConfig,
+      accountId: "default",
+      healthProbe: async () => ({ status: "stale", reason: "status-timeout-running-stale" }),
+    });
+
+    expect(result.checked).toBe(1);
+    expect(result.removed).toBe(1);
+    expect(result.staleSessionKeys).toContain("agent:codex:acp:running");
+    expect(manager.getByThreadId("thread-acp-running")).toBeUndefined();
+  });
+
+  it("keeps running ACP bindings when health probe is uncertain", async () => {
+    const manager = createThreadBindingManager({
+      accountId: "default",
+      persist: false,
+      enableSweeper: false,
+      idleTimeoutMs: 24 * 60 * 60 * 1000,
+      maxAgeMs: 0,
+    });
+
+    await manager.bindTarget({
+      threadId: "thread-acp-running-uncertain",
+      channelId: "parent-1",
+      targetKind: "acp",
+      targetSessionKey: "agent:codex:acp:running-uncertain",
+      agentId: "codex",
+      webhookId: "wh-1",
+      webhookToken: "tok-1",
+    });
+
+    hoisted.readAcpSessionEntry.mockReturnValue({
+      sessionKey: "agent:codex:acp:running-uncertain",
+      storeSessionKey: "agent:codex:acp:running-uncertain",
+      acp: {
+        backend: "acpx",
+        agent: "codex",
+        runtimeSessionName: "runtime:running-uncertain",
+        mode: "persistent",
+        state: "running",
+        lastActivityAt: Date.now(),
+      },
+    });
+
+    const result = await reconcileAcpThreadBindingsOnStartup({
+      cfg: {} as RemoteClawConfig,
+      accountId: "default",
+      healthProbe: async () => ({ status: "uncertain", reason: "status-timeout" }),
+    });
+
+    expect(result.checked).toBe(1);
+    expect(result.removed).toBe(0);
+    expect(result.staleSessionKeys).toEqual([]);
+    expect(manager.getByThreadId("thread-acp-running-uncertain")).toBeDefined();
+  });
+
+  it("keeps ACP bindings in stored error state when no explicit stale probe verdict exists", async () => {
+    const manager = createThreadBindingManager({
+      accountId: "default",
+      persist: false,
+      enableSweeper: false,
+      idleTimeoutMs: 24 * 60 * 60 * 1000,
+      maxAgeMs: 0,
+    });
+
+    await manager.bindTarget({
+      threadId: "thread-acp-error",
+      channelId: "parent-1",
+      targetKind: "acp",
+      targetSessionKey: "agent:codex:acp:error",
+      agentId: "codex",
+      webhookId: "wh-1",
+      webhookToken: "tok-1",
+    });
+
+    hoisted.readAcpSessionEntry.mockReturnValue({
+      sessionKey: "agent:codex:acp:error",
+      storeSessionKey: "agent:codex:acp:error",
+      acp: {
+        backend: "acpx",
+        agent: "codex",
+        runtimeSessionName: "runtime:error",
+        mode: "persistent",
+        state: "error",
+        lastActivityAt: Date.now(),
+      },
+    });
+
+    const result = await reconcileAcpThreadBindingsOnStartup({
+      cfg: {} as RemoteClawConfig,
+      accountId: "default",
+    });
+
+    expect(result.checked).toBe(1);
+    expect(result.removed).toBe(0);
+    expect(result.staleSessionKeys).toEqual([]);
+    expect(manager.getByThreadId("thread-acp-error")).toBeDefined();
+  });
+
+  it("starts ACP health probes in parallel during startup reconciliation", async () => {
+    const manager = createThreadBindingManager({
+      accountId: "default",
+      persist: false,
+      enableSweeper: false,
+      idleTimeoutMs: 24 * 60 * 60 * 1000,
+      maxAgeMs: 0,
+    });
+
+    await manager.bindTarget({
+      threadId: "thread-acp-probe-1",
+      channelId: "parent-1",
+      targetKind: "acp",
+      targetSessionKey: "agent:codex:acp:probe-1",
+      agentId: "codex",
+      webhookId: "wh-1",
+      webhookToken: "tok-1",
+    });
+    await manager.bindTarget({
+      threadId: "thread-acp-probe-2",
+      channelId: "parent-1",
+      targetKind: "acp",
+      targetSessionKey: "agent:codex:acp:probe-2",
+      agentId: "codex",
+      webhookId: "wh-1",
+      webhookToken: "tok-1",
+    });
+
+    hoisted.readAcpSessionEntry.mockImplementation((paramsUnknown: unknown) => {
+      const sessionKey = (paramsUnknown as { sessionKey?: string }).sessionKey ?? "";
+      return {
+        sessionKey,
+        storeSessionKey: sessionKey,
+        acp: {
+          backend: "acpx",
+          agent: "codex",
+          runtimeSessionName: `runtime:${sessionKey}`,
+          mode: "persistent",
+          state: "running",
+          lastActivityAt: Date.now(),
+        },
+      };
+    });
+
+    let resolveFirstProbe: ((value: { status: "healthy" }) => void) | undefined;
+    const firstProbe = new Promise<{ status: "healthy" }>((resolve) => {
+      resolveFirstProbe = resolve;
+    });
+    let probeCallCount = 0;
+    let secondProbeStartedBeforeFirstResolved = false;
+
+    const reconcilePromise = reconcileAcpThreadBindingsOnStartup({
+      cfg: {} as RemoteClawConfig,
+      accountId: "default",
+      healthProbe: async () => {
+        probeCallCount += 1;
+        if (probeCallCount === 1) {
+          return await firstProbe;
+        }
+        secondProbeStartedBeforeFirstResolved = true;
+        return { status: "healthy" as const };
+      },
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+    const observedParallelStart = secondProbeStartedBeforeFirstResolved;
+
+    resolveFirstProbe?.({ status: "healthy" });
+    const result = await reconcilePromise;
+
+    expect(observedParallelStart).toBe(true);
+    expect(result.checked).toBe(2);
+    expect(result.removed).toBe(0);
+  });
+
+  it("caps ACP startup health probe concurrency", async () => {
+    const manager = createThreadBindingManager({
+      accountId: "default",
+      persist: false,
+      enableSweeper: false,
+      idleTimeoutMs: 24 * 60 * 60 * 1000,
+      maxAgeMs: 0,
+    });
+
+    for (let index = 0; index < 12; index += 1) {
+      const key = `agent:codex:acp:cap-${index}`;
+      await manager.bindTarget({
+        threadId: `thread-acp-cap-${index}`,
+        channelId: "parent-1",
+        targetKind: "acp",
+        targetSessionKey: key,
+        agentId: "codex",
+        webhookId: "wh-1",
+        webhookToken: "tok-1",
+      });
+    }
+
+    hoisted.readAcpSessionEntry.mockImplementation((paramsUnknown: unknown) => {
+      const sessionKey = (paramsUnknown as { sessionKey?: string }).sessionKey ?? "";
+      return {
+        sessionKey,
+        storeSessionKey: sessionKey,
+        acp: {
+          backend: "acpx",
+          agent: "codex",
+          runtimeSessionName: `runtime:${sessionKey}`,
+          mode: "persistent",
+          state: "running",
+          lastActivityAt: Date.now(),
+        },
+      };
+    });
+
+    const PROBE_LIMIT = 8;
+    let probeCalls = 0;
+    let inFlight = 0;
+    let maxInFlight = 0;
+    let releaseFirstWave: (() => void) | undefined;
+    const firstWaveGate = new Promise<void>((resolve) => {
+      releaseFirstWave = resolve;
+    });
+
+    const reconcilePromise = reconcileAcpThreadBindingsOnStartup({
+      cfg: {} as RemoteClawConfig,
+      accountId: "default",
+      healthProbe: async () => {
+        probeCalls += 1;
+        inFlight += 1;
+        maxInFlight = Math.max(maxInFlight, inFlight);
+        if (probeCalls <= PROBE_LIMIT) {
+          await firstWaveGate;
+        }
+        inFlight -= 1;
+        return { status: "healthy" as const };
+      },
+    });
+
+    await vi.waitFor(() => {
+      expect(probeCalls).toBe(PROBE_LIMIT);
+    });
+    expect(maxInFlight).toBe(PROBE_LIMIT);
+
+    releaseFirstWave?.();
+    const result = await reconcilePromise;
+    expect(result.checked).toBe(12);
+    expect(result.removed).toBe(0);
+    expect(maxInFlight).toBeLessThanOrEqual(PROBE_LIMIT);
   });
 
   it("migrates legacy expiresAt bindings to idle/max-age semantics", () => {

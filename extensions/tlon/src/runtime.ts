@@ -1,4 +1,4 @@
-import type { PluginRuntime } from "remoteclaw/plugin-sdk";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk/tlon";
 
 let runtime: PluginRuntime | null = null;
 

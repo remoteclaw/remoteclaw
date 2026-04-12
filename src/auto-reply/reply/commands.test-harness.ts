@@ -42,6 +42,10 @@ export function buildCommandTestParams(
     provider: "whatsapp",
     model: "test-model",
     isGroup: false,
+    elevated: { enabled: false, allowed: false, failures: [] },
+    resolvedReasoningLevel: "off" as const,
+    resolveDefaultThinkingLevel: () => Promise.resolve(undefined),
+    contextTokens: 0,
   };
   return params;
 }

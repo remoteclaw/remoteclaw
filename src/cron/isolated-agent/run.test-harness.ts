@@ -26,24 +26,33 @@ function createMock(): Mock {
 export const buildWorkspaceSkillSnapshotMock = createMock();
 export const resolveAgentConfigMock = createMock();
 export const resolveAgentModelFallbacksOverrideMock = createMock();
-export const runAgentMock = createMock();
+export const resolveAgentSkillsFilterMock = createMock();
+export const getModelRefStatusMock = createMock();
+export const isCliProviderMock = createMock();
+export const resolveAllowedModelRefMock = createMock();
+export const resolveConfiguredModelRefMock = createMock();
+export const resolveHooksGmailModelMock = createMock();
+export const resolveThinkingDefaultMock = createMock();
+export const runWithModelFallbackMock = createMock();
+export const runEmbeddedPiAgentMock = createMock();
 export const runCliAgentMock = createMock();
 export const getCliSessionIdMock = createMock();
 export const updateSessionStoreMock = createMock();
 export const resolveCronSessionMock = createMock();
 export const logWarnMock = createMock();
+export const countActiveDescendantRunsMock = createMock();
+export const listDescendantRunsForRequesterMock = createMock();
+export const pickLastNonEmptyTextFromPayloadsMock = createMock();
+export const resolveCronDeliveryPlanMock = createMock();
+export const resolveDeliveryTargetMock = createMock();
 
 vi.mock("../../agents/agent-scope.js", () => ({
-  resolveAgentAuth: vi.fn().mockReturnValue(undefined),
   resolveAgentConfig: resolveAgentConfigMock,
   resolveAgentDir: vi.fn().mockReturnValue("/tmp/agent-dir"),
   resolveAgentModelFallbacksOverride: resolveAgentModelFallbacksOverrideMock,
-  resolveAgentRuntime: vi.fn().mockReturnValue("claude"),
-  resolveAgentRuntimeArgs: vi.fn().mockReturnValue(undefined),
-  resolveAgentRuntimeEnv: vi.fn().mockReturnValue(undefined),
-  resolveAgentRuntimeOrThrow: vi.fn().mockReturnValue("claude"),
   resolveAgentWorkspaceDir: vi.fn().mockReturnValue("/tmp/workspace"),
-  resolveSoleAgentId: vi.fn().mockReturnValue("default"),
+  resolveDefaultAgentId: vi.fn().mockReturnValue("default"),
+  resolveAgentSkillsFilter: resolveAgentSkillsFilterMock,
 }));
 
 vi.mock("../../agents/skills.js", () => ({
@@ -56,6 +65,35 @@ vi.mock("../../agents/skills/refresh.js", () => ({
 
 vi.mock("../../agents/workspace.js", () => ({
   ensureAgentWorkspace: vi.fn().mockResolvedValue({ dir: "/tmp/workspace" }),
+}));
+
+vi.mock("../../agents/model-catalog.js", () => ({
+  loadModelCatalog: vi.fn().mockResolvedValue({ models: [] }),
+}));
+
+vi.mock("../../agents/model-selection.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../agents/model-selection.js")>();
+  return {
+    ...actual,
+    getModelRefStatus: getModelRefStatusMock,
+    isCliProvider: isCliProviderMock,
+    resolveAllowedModelRef: resolveAllowedModelRefMock,
+    resolveConfiguredModelRef: resolveConfiguredModelRefMock,
+    resolveHooksGmailModel: resolveHooksGmailModelMock,
+    resolveThinkingDefault: resolveThinkingDefaultMock,
+  };
+});
+
+vi.mock("../../agents/model-fallback.js", () => ({
+  runWithModelFallback: runWithModelFallbackMock,
+}));
+
+vi.mock("../../agents/pi-embedded.js", () => ({
+  runEmbeddedPiAgent: runEmbeddedPiAgentMock,
+}));
+
+vi.mock("../../agents/context.js", () => ({
+  lookupContextTokens: vi.fn().mockReturnValue(128000),
 }));
 
 vi.mock("../../agents/date-time.js", () => ({
@@ -77,6 +115,11 @@ vi.mock("../../agents/subagent-announce.js", () => ({
   runSubagentAnnounceFlow: vi.fn().mockResolvedValue(true),
 }));
 
+vi.mock("../../agents/subagent-registry.js", () => ({
+  countActiveDescendantRuns: countActiveDescendantRunsMock,
+  listDescendantRunsForRequester: listDescendantRunsForRequesterMock,
+}));
+
 vi.mock("../../agents/cli-runner.js", () => ({
   runCliAgent: runCliAgentMock,
 }));
@@ -87,7 +130,9 @@ vi.mock("../../agents/cli-session.js", () => ({
 }));
 
 vi.mock("../../auto-reply/thinking.js", () => ({
+  normalizeThinkLevel: vi.fn().mockReturnValue(undefined),
   normalizeVerboseLevel: vi.fn().mockReturnValue("off"),
+  supportsXHighThinking: vi.fn().mockReturnValue(false),
 }));
 
 vi.mock("../../cli/outbound-send-deps.js", () => ({
@@ -97,6 +142,7 @@ vi.mock("../../cli/outbound-send-deps.js", () => ({
 vi.mock("../../config/sessions.js", () => ({
   resolveAgentMainSessionKey: vi.fn().mockReturnValue("main:default"),
   resolveSessionTranscriptPath: vi.fn().mockReturnValue("/tmp/transcript.jsonl"),
+  setSessionRuntimeModel: vi.fn(),
   updateSessionStore: updateSessionStoreMock,
 }));
 
@@ -117,6 +163,10 @@ vi.mock("../../infra/outbound/deliver.js", () => ({
   deliverOutboundPayloads: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("../../infra/skills-remote.js", () => ({
+  getRemoteSkillEligibility: vi.fn().mockReturnValue({}),
+}));
+
 vi.mock("../../logger.js", () => ({
   logWarn: (...args: unknown[]) => logWarnMock(...args),
 }));
@@ -129,22 +179,17 @@ vi.mock("../../security/external-content.js", () => ({
 }));
 
 vi.mock("../delivery.js", () => ({
-  resolveCronDeliveryPlan: vi.fn().mockReturnValue({ requested: false }),
+  resolveCronDeliveryPlan: resolveCronDeliveryPlanMock,
 }));
 
 vi.mock("./delivery-target.js", () => ({
-  resolveDeliveryTarget: vi.fn().mockResolvedValue({
-    channel: "discord",
-    to: undefined,
-    accountId: undefined,
-    error: undefined,
-  }),
+  resolveDeliveryTarget: resolveDeliveryTargetMock,
 }));
 
 vi.mock("./helpers.js", () => ({
   isHeartbeatOnlyResponse: vi.fn().mockReturnValue(false),
   pickLastDeliverablePayload: vi.fn().mockReturnValue(undefined),
-  pickLastNonEmptyTextFromPayloads: vi.fn().mockReturnValue("test output"),
+  pickLastNonEmptyTextFromPayloads: pickLastNonEmptyTextFromPayloadsMock,
   pickSummaryFromOutput: vi.fn().mockReturnValue("summary"),
   pickSummaryFromPayloads: vi.fn().mockReturnValue("summary"),
   resolveHeartbeatAckMaxChars: vi.fn().mockReturnValue(100),
@@ -155,7 +200,9 @@ vi.mock("./session.js", () => ({
 }));
 
 vi.mock("../../agents/defaults.js", () => ({
-  DEFAULT_AGENT_ID: "default",
+  DEFAULT_CONTEXT_TOKENS: 128000,
+  DEFAULT_MODEL: "gpt-4",
+  DEFAULT_PROVIDER: "openai",
 }));
 
 export function makeCronSessionEntry(overrides?: Record<string, unknown>): CronSessionEntry {
@@ -179,6 +226,17 @@ export function makeCronSession(overrides?: Record<string, unknown>): CronSessio
   } as CronSession;
 }
 
+function makeDefaultModelFallbackResult() {
+  return {
+    result: {
+      payloads: [{ text: "test output" }],
+      meta: { agentMeta: { usage: { input: 10, output: 20 } } },
+    },
+    provider: "openai",
+    model: "gpt-4",
+  };
+}
+
 function makeDefaultEmbeddedResult() {
   return {
     payloads: [{ text: "test output" }],
@@ -196,8 +254,19 @@ export function resetRunCronIsolatedAgentTurnHarness(): void {
   });
   resolveAgentConfigMock.mockReturnValue(undefined);
   resolveAgentModelFallbacksOverrideMock.mockReturnValue(undefined);
-  runAgentMock.mockReset();
-  runAgentMock.mockResolvedValue(makeDefaultEmbeddedResult());
+  resolveAgentSkillsFilterMock.mockReturnValue(undefined);
+
+  resolveConfiguredModelRefMock.mockReturnValue({ provider: "openai", model: "gpt-4" });
+  resolveAllowedModelRefMock.mockReturnValue({ ref: { provider: "openai", model: "gpt-4" } });
+  resolveHooksGmailModelMock.mockReturnValue(null);
+  resolveThinkingDefaultMock.mockReturnValue(undefined);
+  getModelRefStatusMock.mockReturnValue({ allowed: false });
+  isCliProviderMock.mockReturnValue(false);
+
+  runWithModelFallbackMock.mockReset();
+  runWithModelFallbackMock.mockResolvedValue(makeDefaultModelFallbackResult());
+  runEmbeddedPiAgentMock.mockReset();
+  runEmbeddedPiAgentMock.mockResolvedValue(makeDefaultEmbeddedResult());
 
   runCliAgentMock.mockReset();
   getCliSessionIdMock.mockReturnValue(undefined);
@@ -207,6 +276,22 @@ export function resetRunCronIsolatedAgentTurnHarness(): void {
 
   resolveCronSessionMock.mockReset();
   resolveCronSessionMock.mockReturnValue(makeCronSession());
+
+  countActiveDescendantRunsMock.mockReset();
+  countActiveDescendantRunsMock.mockReturnValue(0);
+  listDescendantRunsForRequesterMock.mockReset();
+  listDescendantRunsForRequesterMock.mockReturnValue([]);
+  pickLastNonEmptyTextFromPayloadsMock.mockReset();
+  pickLastNonEmptyTextFromPayloadsMock.mockReturnValue("test output");
+  resolveCronDeliveryPlanMock.mockReset();
+  resolveCronDeliveryPlanMock.mockReturnValue({ requested: false, mode: "none" });
+  resolveDeliveryTargetMock.mockReset();
+  resolveDeliveryTargetMock.mockResolvedValue({
+    channel: "discord",
+    to: undefined,
+    accountId: undefined,
+    error: undefined,
+  });
 
   logWarnMock.mockReset();
 }

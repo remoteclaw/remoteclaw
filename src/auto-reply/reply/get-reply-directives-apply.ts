@@ -62,7 +62,7 @@ export async function applyInlineDirectiveOverrides(params: {
   /** Upstream feature: elevated security allowed for this context. */
   elevatedAllowed?: boolean;
   /** Upstream feature: elevated security failure reasons. */
-  elevatedFailures?: string[];
+  elevatedFailures?: { gate: string; key: string }[];
   typing: TypingController;
 }): Promise<ApplyDirectiveResult> {
   const {

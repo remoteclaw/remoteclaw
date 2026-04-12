@@ -3,10 +3,11 @@ import type {
   MarkdownTableMode,
   RemoteClawConfig,
   OutboundReplyPayload,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/zalo";
 import {
   createScopedPairingAccess,
   createReplyPrefixOptions,
+  issuePairingChallenge,
   resolveDirectDmAuthorizationOutcome,
   resolveSenderCommandAuthorizationWithRuntime,
   resolveOutboundMediaUrls,
@@ -15,7 +16,7 @@ import {
   sendMediaWithLeadingCaption,
   resolveWebhookPath,
   warnMissingProviderGroupPolicyFallbackOnce,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/zalo";
 import type { ResolvedZaloAccount } from "./accounts.js";
 import {
   ZaloApiError,
@@ -414,31 +415,30 @@ async function processMessageWithPipeline(params: {
   }
   if (directDmOutcome === "unauthorized") {
     if (dmPolicy === "pairing") {
-      const { code, created } = await pairing.upsertPairingRequest({
-        id: senderId,
+      await issuePairingChallenge({
+        channel: "zalo",
+        senderId,
+        senderIdLine: `Your Zalo user id: ${senderId}`,
         meta: { name: senderName ?? undefined },
-      });
-
-      if (created) {
-        logVerbose(core, runtime, `zalo pairing request sender=${senderId}`);
-        try {
+        upsertPairingRequest: pairing.upsertPairingRequest,
+        onCreated: () => {
+          logVerbose(core, runtime, `zalo pairing request sender=${senderId}`);
+        },
+        sendPairingReply: async (text) => {
           await sendMessage(
             token,
             {
               chat_id: chatId,
-              text: core.channel.pairing.buildPairingReply({
-                channel: "zalo",
-                idLine: `Your Zalo user id: ${senderId}`,
-                code,
-              }),
+              text,
             },
             fetcher,
           );
           statusSink?.({ lastOutboundAt: Date.now() });
-        } catch (err) {
+        },
+        onReplyError: (err) => {
           logVerbose(core, runtime, `zalo pairing reply failed for ${senderId}: ${String(err)}`);
-        }
-      }
+        },
+      });
     } else {
       logVerbose(
         core,

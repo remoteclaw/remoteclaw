@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk";
+import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/msteams";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MSTeamsConversationStore } from "./conversation-store.js";
 import type { MSTeamsPollStore } from "./polls.js";
@@ -15,8 +15,14 @@ const expressControl = vi.hoisted(() => ({
   mode: { value: "listening" as "listening" | "error" },
 }));
 
-vi.mock("remoteclaw/plugin-sdk", () => ({
+vi.mock("remoteclaw/plugin-sdk/msteams", () => ({
   DEFAULT_WEBHOOK_MAX_BODY_BYTES: 1024 * 1024,
+  normalizeSecretInputString: (value: unknown) =>
+    typeof value === "string" && value.trim() ? value.trim() : undefined,
+  hasConfiguredSecretInput: (value: unknown) =>
+    typeof value === "string" && value.trim().length > 0,
+  normalizeResolvedSecretInputString: (params: { value?: unknown }) =>
+    typeof params?.value === "string" && params.value.trim() ? params.value.trim() : undefined,
   keepHttpServerTaskAlive: vi.fn(
     async (params: { abortSignal?: AbortSignal; onAbort?: () => Promise<void> | void }) => {
       await new Promise<void>((resolve) => {
@@ -32,13 +38,6 @@ vi.mock("remoteclaw/plugin-sdk", () => ({
   mergeAllowlist: (params: { existing?: string[]; additions?: string[] }) =>
     Array.from(new Set([...(params.existing ?? []), ...(params.additions ?? [])])),
   summarizeMapping: vi.fn(),
-  normalizeSecretInputString: vi.fn((v: unknown) =>
-    typeof v === "string" && v.trim() ? v.trim() : undefined,
-  ),
-  normalizeResolvedSecretInputString: vi.fn(({ value }: { value: unknown }) =>
-    typeof value === "string" && value.trim() ? value.trim() : undefined,
-  ),
-  hasConfiguredSecretInput: vi.fn((v: unknown) => typeof v === "string" && v.trim().length > 0),
 }));
 
 vi.mock("express", () => {
@@ -141,7 +140,7 @@ function createConfig(port: number): RemoteClawConfig {
       msteams: {
         enabled: true,
         appId: "app-id",
-        appPassword: "app-password",
+        appPassword: "app-password", // pragma: allowlist secret
         tenantId: "tenant-id",
         webhook: {
           port,

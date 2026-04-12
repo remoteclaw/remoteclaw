@@ -292,12 +292,16 @@ function buildPolicyParams(
     cfg,
     command,
     directives: parseInlineDirectives(commandBody),
+    elevated: { enabled: false, allowed: false, failures: [] },
     sessionKey: "agent:main:main",
     workspaceDir: "/tmp",
     defaultGroupActivation: () => "mention",
     resolvedVerboseLevel: "off",
+    resolvedReasoningLevel: "off",
+    resolveDefaultThinkingLevel: async () => undefined,
     provider: "telegram",
     model: "test-model",
+    contextTokens: 0,
     isGroup: false,
   };
   return params;

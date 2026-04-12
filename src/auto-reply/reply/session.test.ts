@@ -2,17 +2,31 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import * as bootstrapCache from "../../agents/bootstrap-cache.js";
+import { buildModelAliasIndex } from "../../agents/model-selection.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { formatZonedTimestamp } from "../../infra/format-time/format-datetime.ts";
+import {
+  __testing as sessionBindingTesting,
+  registerSessionBindingAdapter,
+} from "../../infra/outbound/session-binding-service.js";
 import { enqueueSystemEvent, resetSystemEventsForTest } from "../../infra/system-events.js";
-import { buildQueuedSystemPrompt } from "./session-updates.js";
+import { applyResetModelOverride } from "./session-reset-model.js";
+import { drainFormattedSystemEvents } from "./session-updates.js";
 import { persistSessionUsageUpdate } from "./session-usage.js";
 import { initSessionState } from "./session.js";
 
 // Perf: session-store locks are exercised elsewhere; most session tests don't need FS lock files.
 vi.mock("../../agents/session-write-lock.js", () => ({
   acquireSessionWriteLock: async () => ({ release: async () => {} }),
+}));
+
+vi.mock("../../agents/model-catalog.js", () => ({
+  loadModelCatalog: vi.fn(async () => [
+    { provider: "minimax", id: "m2.5", name: "M2.5" },
+    { provider: "openai", id: "gpt-4o-mini", name: "GPT-4o mini" },
+  ]),
 }));
 
 let suiteRoot = "";
@@ -50,6 +64,91 @@ async function writeSessionStoreFast(
 }
 
 describe("initSessionState thread forking", () => {
+  it("forks a new session from the parent session file", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const root = await makeCaseDir("remoteclaw-thread-session-");
+    const sessionsDir = path.join(root, "sessions");
+    await fs.mkdir(sessionsDir);
+
+    const parentSessionId = "parent-session";
+    const parentSessionFile = path.join(sessionsDir, "parent.jsonl");
+    const header = {
+      type: "session",
+      version: 3,
+      id: parentSessionId,
+      timestamp: new Date().toISOString(),
+      cwd: process.cwd(),
+    };
+    const message = {
+      type: "message",
+      id: "m1",
+      parentId: null,
+      timestamp: new Date().toISOString(),
+      message: { role: "user", content: "Parent prompt" },
+    };
+    const assistantMessage = {
+      type: "message",
+      id: "m2",
+      parentId: "m1",
+      timestamp: new Date().toISOString(),
+      message: { role: "assistant", content: "Parent reply" },
+    };
+    await fs.writeFile(
+      parentSessionFile,
+      `${JSON.stringify(header)}\n${JSON.stringify(message)}\n${JSON.stringify(assistantMessage)}\n`,
+      "utf-8",
+    );
+
+    const storePath = path.join(root, "sessions.json");
+    const parentSessionKey = "agent:main:slack:channel:c1";
+    await writeSessionStoreFast(storePath, {
+      [parentSessionKey]: {
+        sessionId: parentSessionId,
+        sessionFile: parentSessionFile,
+        updatedAt: Date.now(),
+      },
+    });
+
+    const cfg = {
+      session: { store: storePath },
+    } as RemoteClawConfig;
+
+    const threadSessionKey = "agent:main:slack:channel:c1:thread:123";
+    const threadLabel = "Slack thread #general: starter";
+    const result = await initSessionState({
+      ctx: {
+        Body: "Thread reply",
+        SessionKey: threadSessionKey,
+        ParentSessionKey: parentSessionKey,
+        ThreadLabel: threadLabel,
+      },
+      cfg,
+      commandAuthorized: true,
+    });
+
+    expect(result.sessionKey).toBe(threadSessionKey);
+    expect(result.sessionEntry.sessionId).not.toBe(parentSessionId);
+    expect(result.sessionEntry.sessionFile).toBeTruthy();
+    expect(result.sessionEntry.displayName).toBe(threadLabel);
+
+    const newSessionFile = result.sessionEntry.sessionFile;
+    if (!newSessionFile) {
+      throw new Error("Missing session file for forked thread");
+    }
+    const [headerLine] = (await fs.readFile(newSessionFile, "utf-8"))
+      .split(/\r?\n/)
+      .filter((line) => line.trim().length > 0);
+    const parsedHeader = JSON.parse(headerLine) as {
+      parentSession?: string;
+    };
+    const expectedParentSession = await fs.realpath(parentSessionFile);
+    const actualParentSession = parsedHeader.parentSession
+      ? await fs.realpath(parsedHeader.parentSession)
+      : undefined;
+    expect(actualParentSession).toBe(expectedParentSession);
+    warn.mockRestore();
+  });
+
   it("forks from parent when thread session key already exists but was not forked yet", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const root = await makeCaseDir("remoteclaw-thread-session-existing-");
@@ -201,6 +300,81 @@ describe("initSessionState thread forking", () => {
     expect(result.sessionEntry.sessionFile).not.toBe(parentSessionFile);
   });
 
+  it("respects session.parentForkMaxTokens override", async () => {
+    const root = await makeCaseDir("remoteclaw-thread-session-overflow-override-");
+    const sessionsDir = path.join(root, "sessions");
+    await fs.mkdir(sessionsDir);
+
+    const parentSessionId = "parent-override";
+    const parentSessionFile = path.join(sessionsDir, "parent.jsonl");
+    const header = {
+      type: "session",
+      version: 3,
+      id: parentSessionId,
+      timestamp: new Date().toISOString(),
+      cwd: process.cwd(),
+    };
+    const message = {
+      type: "message",
+      id: "m1",
+      parentId: null,
+      timestamp: new Date().toISOString(),
+      message: { role: "user", content: "Parent prompt" },
+    };
+    const assistantMessage = {
+      type: "message",
+      id: "m2",
+      parentId: "m1",
+      timestamp: new Date().toISOString(),
+      message: { role: "assistant", content: "Parent reply" },
+    };
+    await fs.writeFile(
+      parentSessionFile,
+      `${JSON.stringify(header)}\n${JSON.stringify(message)}\n${JSON.stringify(assistantMessage)}\n`,
+      "utf-8",
+    );
+
+    const storePath = path.join(root, "sessions.json");
+    const parentSessionKey = "agent:main:slack:channel:c1";
+    await writeSessionStoreFast(storePath, {
+      [parentSessionKey]: {
+        sessionId: parentSessionId,
+        sessionFile: parentSessionFile,
+        updatedAt: Date.now(),
+        totalTokens: 170_000,
+      },
+    });
+
+    const cfg = {
+      session: {
+        store: storePath,
+        parentForkMaxTokens: 200_000,
+      },
+    } as RemoteClawConfig;
+
+    const threadSessionKey = "agent:main:slack:channel:c1:thread:789";
+    const result = await initSessionState({
+      ctx: {
+        Body: "Thread reply",
+        SessionKey: threadSessionKey,
+        ParentSessionKey: parentSessionKey,
+      },
+      cfg,
+      commandAuthorized: true,
+    });
+
+    expect(result.sessionEntry.forkedFromParent).toBe(true);
+    expect(result.sessionEntry.sessionFile).toBeTruthy();
+    const forkedContent = await fs.readFile(result.sessionEntry.sessionFile ?? "", "utf-8");
+    const [headerLine] = forkedContent.split(/\r?\n/).filter((line) => line.trim().length > 0);
+    const parsedHeader = JSON.parse(headerLine) as { parentSession?: string };
+    const expectedParentSession = await fs.realpath(parentSessionFile);
+    const actualParentSession = parsedHeader.parentSession
+      ? await fs.realpath(parsedHeader.parentSession)
+      : undefined;
+    expect(actualParentSession).toBe(expectedParentSession);
+  });
+
   it("records topic-specific session files when MessageThreadId is present", async () => {
     const root = await makeCaseDir("remoteclaw-topic-session-");
     const storePath = path.join(root, "sessions.json");
@@ -287,6 +461,353 @@ describe("initSessionState RawBody", () => {
     expect(result.triggerBodyNormalized).toBe("/NEW KeepThisCase");
   });
 
+  it("does not rotate local session state for /new on bound ACP sessions", async () => {
+    const root = await makeCaseDir("remoteclaw-rawbody-acp-reset-");
+    const storePath = path.join(root, "sessions.json");
+    const sessionKey = "agent:codex:acp:binding:discord:default:feedface";
+    const existingSessionId = "session-existing";
+    const now = Date.now();
+
+    await writeSessionStoreFast(storePath, {
+      [sessionKey]: {
+        sessionId: existingSessionId,
+        updatedAt: now,
+        systemSent: true,
+      },
+    });
+
+    const cfg = {
+      session: { store: storePath },
+      bindings: [
+        {
+          type: "acp",
+          agentId: "codex",
+          match: {
+            channel: "discord",
+            accountId: "default",
+            peer: { kind: "channel", id: "1478836151241412759" },
+          },
+          acp: { mode: "persistent" },
+        },
+      ],
+      channels: {
+        discord: {
+          allowFrom: ["*"],
+        },
+      },
+    } as RemoteClawConfig;
+
+    const result = await initSessionState({
+      ctx: {
+        RawBody: "/new",
+        CommandBody: "/new",
+        Provider: "discord",
+        Surface: "discord",
+        SenderId: "12345",
+        From: "discord:12345",
+        To: "1478836151241412759",
+        SessionKey: sessionKey,
+      },
+      cfg,
+      commandAuthorized: true,
+    });
+
+    expect(result.resetTriggered).toBe(false);
+    expect(result.sessionId).toBe(existingSessionId);
+    expect(result.isNewSession).toBe(false);
+  });
+
+  it("does not rotate local session state for ACP /new when conversation IDs are unavailable", async () => {
+    const root = await makeCaseDir("remoteclaw-rawbody-acp-reset-no-conversation-");
+    const storePath = path.join(root, "sessions.json");
+    const sessionKey = "agent:codex:acp:binding:discord:default:feedface";
+    const existingSessionId = "session-existing";
+    const now = Date.now();
+
+    await writeSessionStoreFast(storePath, {
+      [sessionKey]: {
+        sessionId: existingSessionId,
+        updatedAt: now,
+        systemSent: true,
+      },
+    });
+
+    const cfg = {
+      session: { store: storePath },
+      channels: {
+        discord: {
+          allowFrom: ["*"],
+        },
+      },
+    } as RemoteClawConfig;
+
+    const result = await initSessionState({
+      ctx: {
+        RawBody: "/new",
+        CommandBody: "/new",
+        Provider: "discord",
+        Surface: "discord",
+        SenderId: "12345",
+        From: "discord:12345",
+        To: "user:12345",
+        OriginatingTo: "user:12345",
+        SessionKey: sessionKey,
+      },
+      cfg,
+      commandAuthorized: true,
+    });
+
+    expect(result.resetTriggered).toBe(false);
+    expect(result.sessionId).toBe(existingSessionId);
+    expect(result.isNewSession).toBe(false);
+  });
+
+  it("keeps custom reset triggers working on bound ACP sessions", async () => {
+    const root = await makeCaseDir("remoteclaw-rawbody-acp-custom-reset-");
+    const storePath = path.join(root, "sessions.json");
+    const sessionKey = "agent:codex:acp:binding:discord:default:feedface";
+    const existingSessionId = "session-existing";
+    const now = Date.now();
+
+    await writeSessionStoreFast(storePath, {
+      [sessionKey]: {
+        sessionId: existingSessionId,
+        updatedAt: now,
+        systemSent: true,
+      },
+    });
+
+    const cfg = {
+      session: {
+        store: storePath,
+        resetTriggers: ["/fresh"],
+      },
+      bindings: [
+        {
+          type: "acp",
+          agentId: "codex",
+          match: {
+            channel: "discord",
+            accountId: "default",
+            peer: { kind: "channel", id: "1478836151241412759" },
+          },
+          acp: { mode: "persistent" },
+        },
+      ],
+      channels: {
+        discord: {
+          allowFrom: ["*"],
+        },
+      },
+    } as RemoteClawConfig;
+
+    const result = await initSessionState({
+      ctx: {
+        RawBody: "/fresh",
+        CommandBody: "/fresh",
+        Provider: "discord",
+        Surface: "discord",
+        SenderId: "12345",
+        From: "discord:12345",
+        To: "1478836151241412759",
+        SessionKey: sessionKey,
+      },
+      cfg,
+      commandAuthorized: true,
+    });
+
+    expect(result.resetTriggered).toBe(true);
+    expect(result.isNewSession).toBe(true);
+    expect(result.sessionId).not.toBe(existingSessionId);
+  });
+
+  it("keeps normal /new behavior for unbound ACP-shaped session keys", async () => {
+    const root = await makeCaseDir("remoteclaw-rawbody-acp-unbound-reset-");
+    const storePath = path.join(root, "sessions.json");
+    const sessionKey = "agent:codex:acp:binding:discord:default:feedface";
+    const existingSessionId = "session-existing";
+    const now = Date.now();
+
+    await writeSessionStoreFast(storePath, {
+      [sessionKey]: {
+        sessionId: existingSessionId,
+        updatedAt: now,
+        systemSent: true,
+      },
+    });
+
+    const cfg = {
+      session: { store: storePath },
+      channels: {
+        discord: {
+          allowFrom: ["*"],
+        },
+      },
+    } as RemoteClawConfig;
+
+    const result = await initSessionState({
+      ctx: {
+        RawBody: "/new",
+        CommandBody: "/new",
+        Provider: "discord",
+        Surface: "discord",
+        SenderId: "12345",
+        From: "discord:12345",
+        To: "1478836151241412759",
+        SessionKey: sessionKey,
+      },
+      cfg,
+      commandAuthorized: true,
+    });
+
+    expect(result.resetTriggered).toBe(true);
+    expect(result.isNewSession).toBe(true);
+    expect(result.sessionId).not.toBe(existingSessionId);
+  });
+
+  it("does not suppress /new when active conversation binding points to a non-ACP session", async () => {
+    const root = await makeCaseDir("remoteclaw-rawbody-acp-nonacp-binding-");
+    const storePath = path.join(root, "sessions.json");
+    const sessionKey = "agent:codex:acp:binding:discord:default:feedface";
+    const existingSessionId = "session-existing";
+    const now = Date.now();
+    const channelId = "1478836151241412759";
+    const nonAcpFocusSessionKey = "agent:main:discord:channel:focus-target";
+
+    await writeSessionStoreFast(storePath, {
+      [sessionKey]: {
+        sessionId: existingSessionId,
+        updatedAt: now,
+        systemSent: true,
+      },
+    });
+
+    const cfg = {
+      session: { store: storePath },
+      bindings: [
+        {
+          type: "acp",
+          agentId: "codex",
+          match: {
+            channel: "discord",
+            accountId: "default",
+            peer: { kind: "channel", id: channelId },
+          },
+          acp: { mode: "persistent" },
+        },
+      ],
+      channels: {
+        discord: {
+          allowFrom: ["*"],
+        },
+      },
+    } as RemoteClawConfig;
+
+    sessionBindingTesting.resetSessionBindingAdaptersForTests();
+    registerSessionBindingAdapter({
+      channel: "discord",
+      accountId: "default",
+      capabilities: { bindSupported: false, unbindSupported: false, placements: ["current"] },
+      listBySession: () => [],
+      resolveByConversation: (ref) => {
+        if (ref.conversationId !== channelId) {
+          return null;
+        }
+        return {
+          bindingId: "focus-binding",
+          targetSessionKey: nonAcpFocusSessionKey,
+          targetKind: "session",
+          conversation: {
+            channel: "discord",
+            accountId: "default",
+            conversationId: channelId,
+          },
+          status: "active",
+          boundAt: now,
+        };
+      },
+    });
+    try {
+      const result = await initSessionState({
+        ctx: {
+          RawBody: "/new",
+          CommandBody: "/new",
+          Provider: "discord",
+          Surface: "discord",
+          SenderId: "12345",
+          From: "discord:12345",
+          To: channelId,
+          SessionKey: sessionKey,
+        },
+        cfg,
+        commandAuthorized: true,
+      });
+
+      expect(result.resetTriggered).toBe(true);
+      expect(result.isNewSession).toBe(true);
+      expect(result.sessionId).not.toBe(existingSessionId);
+    } finally {
+      sessionBindingTesting.resetSessionBindingAdaptersForTests();
+    }
+  });
+
+  it("does not suppress /new when active target session key is non-ACP even with configured ACP binding", async () => {
+    const root = await makeCaseDir("remoteclaw-rawbody-acp-configured-fallback-target-");
+    const storePath = path.join(root, "sessions.json");
+    const channelId = "1478836151241412759";
+    const fallbackSessionKey = "agent:main:discord:channel:focus-target";
+    const existingSessionId = "session-existing";
+    const now = Date.now();
+
+    await writeSessionStoreFast(storePath, {
+      [fallbackSessionKey]: {
+        sessionId: existingSessionId,
+        updatedAt: now,
+        systemSent: true,
+      },
+    });
+
+    const cfg = {
+      session: { store: storePath },
+      bindings: [
+        {
+          type: "acp",
+          agentId: "codex",
+          match: {
+            channel: "discord",
+            accountId: "default",
+            peer: { kind: "channel", id: channelId },
+          },
+          acp: { mode: "persistent" },
+        },
+      ],
+      channels: {
+        discord: {
+          allowFrom: ["*"],
+        },
+      },
+    } as RemoteClawConfig;
+
+    const result = await initSessionState({
+      ctx: {
+        RawBody: "/new",
+        CommandBody: "/new",
+        Provider: "discord",
+        Surface: "discord",
+        SenderId: "12345",
+        From: "discord:12345",
+        To: channelId,
+        SessionKey: fallbackSessionKey,
+      },
+      cfg,
+      commandAuthorized: true,
+    });
+
+    expect(result.resetTriggered).toBe(true);
+    expect(result.isNewSession).toBe(true);
+    expect(result.sessionId).not.toBe(existingSessionId);
+  });
+
   it("uses the default per-agent sessions store when config store is unset", async () => {
     const root = await makeCaseDir("remoteclaw-session-store-default-");
     const stateDir = path.join(root, ".remoteclaw");
@@ -330,11 +851,18 @@ describe("initSessionState RawBody", () => {
 });
 
 describe("initSessionState reset policy", () => {
+  let clearBootstrapSnapshotOnSessionRolloverSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
     vi.useFakeTimers();
+    clearBootstrapSnapshotOnSessionRolloverSpy = vi.spyOn(
+      bootstrapCache,
+      "clearBootstrapSnapshotOnSessionRollover",
+    );
   });
 
   afterEach(() => {
+    clearBootstrapSnapshotOnSessionRolloverSpy.mockRestore();
     vi.useRealTimers();
   });
 
@@ -361,6 +889,10 @@ describe("initSessionState reset policy", () => {
 
     expect(result.isNewSession).toBe(true);
     expect(result.sessionId).not.toBe(existingSessionId);
+    expect(clearBootstrapSnapshotOnSessionRolloverSpy).toHaveBeenCalledWith({
+      sessionKey,
+      previousSessionId: existingSessionId,
+    });
   });
 
   it("treats sessions as stale before the daily reset when updated before yesterday's boundary", async () => {
@@ -537,6 +1069,10 @@ describe("initSessionState reset policy", () => {
 
     expect(result.isNewSession).toBe(false);
     expect(result.sessionId).toBe(existingSessionId);
+    expect(clearBootstrapSnapshotOnSessionRolloverSpy).toHaveBeenCalledWith({
+      sessionKey,
+      previousSessionId: undefined,
+    });
   });
 });
 
@@ -725,6 +1261,101 @@ describe("initSessionState reset triggers in Slack channels", () => {
   });
 });
 
+describe("applyResetModelOverride", () => {
+  it("selects a model hint and strips it from the body", async () => {
+    const cfg = {} as RemoteClawConfig;
+    const aliasIndex = buildModelAliasIndex({ cfg, defaultProvider: "openai" });
+    const sessionEntry: SessionEntry = {
+      sessionId: "s1",
+      updatedAt: Date.now(),
+    };
+    const sessionStore: Record<string, SessionEntry> = { "agent:main:dm:1": sessionEntry };
+    const sessionCtx = { BodyStripped: "minimax summarize" };
+    const ctx = { ChatType: "direct" };
+
+    await applyResetModelOverride({
+      cfg,
+      resetTriggered: true,
+      bodyStripped: "minimax summarize",
+      sessionCtx,
+      ctx,
+      sessionEntry,
+      sessionStore,
+      sessionKey: "agent:main:dm:1",
+      defaultProvider: "openai",
+      defaultModel: "gpt-4o-mini",
+      aliasIndex,
+    });
+
+    expect(sessionEntry.providerOverride).toBe("minimax");
+    expect(sessionEntry.modelOverride).toBe("m2.5");
+    expect(sessionCtx.BodyStripped).toBe("summarize");
+  });
+
+  it("clears auth profile overrides when reset applies a model", async () => {
+    const cfg = {} as RemoteClawConfig;
+    const aliasIndex = buildModelAliasIndex({ cfg, defaultProvider: "openai" });
+    const sessionEntry: SessionEntry = {
+      sessionId: "s1",
+      updatedAt: Date.now(),
+      authProfileOverride: "anthropic:default",
+      authProfileOverrideSource: "user",
+      authProfileOverrideCompactionCount: 2,
+    };
+    const sessionStore: Record<string, SessionEntry> = { "agent:main:dm:1": sessionEntry };
+    const sessionCtx = { BodyStripped: "minimax summarize" };
+    const ctx = { ChatType: "direct" };
+
+    await applyResetModelOverride({
+      cfg,
+      resetTriggered: true,
+      bodyStripped: "minimax summarize",
+      sessionCtx,
+      ctx,
+      sessionEntry,
+      sessionStore,
+      sessionKey: "agent:main:dm:1",
+      defaultProvider: "openai",
+      defaultModel: "gpt-4o-mini",
+      aliasIndex,
+    });
+
+    expect(sessionEntry.authProfileOverride).toBeUndefined();
+    expect(sessionEntry.authProfileOverrideSource).toBeUndefined();
+    expect(sessionEntry.authProfileOverrideCompactionCount).toBeUndefined();
+  });
+
+  it("skips when resetTriggered is false", async () => {
+    const cfg = {} as RemoteClawConfig;
+    const aliasIndex = buildModelAliasIndex({ cfg, defaultProvider: "openai" });
+    const sessionEntry: SessionEntry = {
+      sessionId: "s1",
+      updatedAt: Date.now(),
+    };
+    const sessionStore: Record<string, SessionEntry> = { "agent:main:dm:1": sessionEntry };
+    const sessionCtx = { BodyStripped: "minimax summarize" };
+    const ctx = { ChatType: "direct" };
+
+    await applyResetModelOverride({
+      cfg,
+      resetTriggered: false,
+      bodyStripped: "minimax summarize",
+      sessionCtx,
+      ctx,
+      sessionEntry,
+      sessionStore,
+      sessionKey: "agent:main:dm:1",
+      defaultProvider: "openai",
+      defaultModel: "gpt-4o-mini",
+      aliasIndex,
+    });
+
+    expect(sessionEntry.providerOverride).toBeUndefined();
+    expect(sessionEntry.modelOverride).toBeUndefined();
+    expect(sessionCtx.BodyStripped).toBe("minimax summarize");
+  });
+});
+
 describe("initSessionState preserves behavior overrides across /new and /reset", () => {
   async function seedSessionStoreWithOverrides(params: {
     storePath: string;
@@ -842,6 +1473,61 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
     archiveSpy.mockRestore();
   });
 
+  it("archives the old session transcript on daily/scheduled reset (stale session)", async () => {
+    // Daily resets occur when the session becomes stale (not via /new or /reset command).
+    // Previously, previousSessionEntry was only set when resetTriggered=true, leaving
+    // old transcript files orphaned on disk. Refs #35481.
+    vi.useFakeTimers();
+    try {
+      // Simulate: it is 5am, session was last active at 3am (before 4am daily boundary)
+      vi.setSystemTime(new Date(2026, 0, 18, 5, 0, 0));
+      const storePath = await createStorePath("remoteclaw-stale-archive-");
+      const sessionKey = "agent:main:telegram:dm:archive-stale-user";
+      const existingSessionId = "stale-session-to-be-archived";
+
+      await writeSessionStoreFast(storePath, {
+        [sessionKey]: {
+          sessionId: existingSessionId,
+          updatedAt: new Date(2026, 0, 18, 3, 0, 0).getTime(),
+        },
+      });
+
+      const sessionUtils = await import("../../gateway/session-utils.fs.js");
+      const archiveSpy = vi.spyOn(sessionUtils, "archiveSessionTranscripts");
+
+      const cfg = { session: { store: storePath } } as RemoteClawConfig;
+      const result = await initSessionState({
+        ctx: {
+          Body: "hello",
+          RawBody: "hello",
+          CommandBody: "hello",
+          From: "user-stale",
+          To: "bot",
+          ChatType: "direct",
+          SessionKey: sessionKey,
+          Provider: "telegram",
+          Surface: "telegram",
+        },
+        cfg,
+        commandAuthorized: true,
+      });
+
+      expect(result.isNewSession).toBe(true);
+      expect(result.resetTriggered).toBe(false);
+      expect(result.sessionId).not.toBe(existingSessionId);
+      expect(archiveSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sessionId: existingSessionId,
+          storePath,
+          reason: "reset",
+        }),
+      );
+      archiveSpy.mockRestore();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("idle-based new session does NOT preserve overrides (no entry to read)", async () => {
     const storePath = await createStorePath("remoteclaw-idle-no-preserve-");
     const sessionKey = "agent:main:telegram:dm:new-user";
@@ -873,7 +1559,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
   });
 });
 
-describe("buildQueuedSystemPrompt", () => {
+describe("drainFormattedSystemEvents", () => {
   it("adds a local timestamp to queued system events by default", async () => {
     vi.useFakeTimers();
     try {
@@ -883,16 +1569,15 @@ describe("buildQueuedSystemPrompt", () => {
 
       enqueueSystemEvent("Model switched.", { sessionKey: "agent:main:main" });
 
-      const result = await buildQueuedSystemPrompt({
+      const result = await drainFormattedSystemEvents({
         cfg: {} as RemoteClawConfig,
         sessionKey: "agent:main:main",
-        isMainSession: false,
+        isMainSession: true,
         isNewSession: false,
       });
 
       expect(expectedTimestamp).toBeDefined();
-      expect(result).toContain("Runtime System Events (gateway-generated)");
-      expect(result).toContain(`- [${expectedTimestamp}] Model switched.`);
+      expect(result).toContain(`System: [${expectedTimestamp}] Model switched.`);
     } finally {
       resetSystemEventsForTest();
       vi.useRealTimers();
@@ -1251,6 +1936,43 @@ describe("initSessionState internal channel routing preservation", () => {
     expect(result.sessionEntry.deliveryContext?.to).toBe("group:12345");
   });
 
+  it("lets direct webchat turns override persisted external routes for per-channel-peer sessions", async () => {
+    const storePath = await createStorePath("webchat-direct-route-override-");
+    const sessionKey = "agent:main:imessage:direct:+1555";
+    await writeSessionStoreFast(storePath, {
+      [sessionKey]: {
+        sessionId: "sess-webchat-direct",
+        updatedAt: Date.now(),
+        lastChannel: "imessage",
+        lastTo: "+1555",
+        deliveryContext: {
+          channel: "imessage",
+          to: "+1555",
+        },
+      },
+    });
+    const cfg = {
+      session: { store: storePath, dmScope: "per-channel-peer" },
+    } as RemoteClawConfig;
+
+    const result = await initSessionState({
+      ctx: {
+        Body: "reply from control ui",
+        SessionKey: sessionKey,
+        OriginatingChannel: "webchat",
+        OriginatingTo: "session:dashboard",
+        Surface: "webchat",
+      },
+      cfg,
+      commandAuthorized: true,
+    });
+
+    expect(result.sessionEntry.lastChannel).toBe("webchat");
+    expect(result.sessionEntry.lastTo).toBe("session:dashboard");
+    expect(result.sessionEntry.deliveryContext?.channel).toBe("webchat");
+    expect(result.sessionEntry.deliveryContext?.to).toBe("session:dashboard");
+  });
+
   it("keeps persisted external route when OriginatingChannel is non-deliverable", async () => {
     const storePath = await createStorePath("preserve-nondeliverable-route-");
     const sessionKey = "agent:main:discord:channel:24680";
@@ -1338,5 +2060,70 @@ describe("initSessionState internal channel routing preservation", () => {
     });
 
     expect(result.sessionEntry.lastChannel).toBe("webchat");
+  });
+
+  it("does not reuse stale external lastTo for webchat/main turns without destination", async () => {
+    const storePath = await createStorePath("webchat-main-no-stale-lastto-");
+    const sessionKey = "agent:main:main";
+    await writeSessionStoreFast(storePath, {
+      [sessionKey]: {
+        sessionId: "sess-webchat-main-1",
+        updatedAt: Date.now(),
+        lastChannel: "whatsapp",
+        lastTo: "+15555550123",
+        deliveryContext: {
+          channel: "whatsapp",
+          to: "+15555550123",
+        },
+      },
+    });
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
+
+    const result = await initSessionState({
+      ctx: {
+        Body: "webchat follow-up",
+        SessionKey: sessionKey,
+        OriginatingChannel: "webchat",
+      },
+      cfg,
+      commandAuthorized: true,
+    });
+
+    expect(result.sessionEntry.lastChannel).toBe("webchat");
+    expect(result.sessionEntry.lastTo).toBeUndefined();
+  });
+
+  it("prefers webchat route over persisted external route for main session turns", async () => {
+    const storePath = await createStorePath("prefer-webchat-main-route-");
+    const sessionKey = "agent:main:main";
+    await writeSessionStoreFast(storePath, {
+      [sessionKey]: {
+        sessionId: "sess-webchat-main-2",
+        updatedAt: Date.now(),
+        lastChannel: "whatsapp",
+        lastTo: "+15555550123",
+        deliveryContext: {
+          channel: "whatsapp",
+          to: "+15555550123",
+        },
+      },
+    });
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
+
+    const result = await initSessionState({
+      ctx: {
+        Body: "reply only here",
+        SessionKey: sessionKey,
+        OriginatingChannel: "webchat",
+        OriginatingTo: "session:webchat-main",
+      },
+      cfg,
+      commandAuthorized: true,
+    });
+
+    expect(result.sessionEntry.lastChannel).toBe("webchat");
+    expect(result.sessionEntry.lastTo).toBe("session:webchat-main");
+    expect(result.sessionEntry.deliveryContext?.channel).toBe("webchat");
+    expect(result.sessionEntry.deliveryContext?.to).toBe("session:webchat-main");
   });
 });

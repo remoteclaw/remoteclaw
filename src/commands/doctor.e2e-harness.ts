@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, vi } from "vitest";
 import type { MockFn } from "../test-utils/vitest-mock-fn.js";
+import type { LegacyStateDetection } from "./doctor-state-migrations.js";
 
 let originalIsTTY: boolean | undefined;
 let originalStateDir: string | undefined;
@@ -113,7 +114,7 @@ export const autoMigrateLegacyStateDir = vi.fn().mockResolvedValue({
 function createLegacyStateMigrationDetectionResult(params?: {
   hasLegacySessions?: boolean;
   preview?: string[];
-}) {
+}): LegacyStateDetection {
   return {
     targetAgentId: "main",
     targetMainKey: "main",
@@ -139,9 +140,8 @@ function createLegacyStateMigrationDetectionResult(params?: {
       hasLegacy: false,
     },
     pairingAllowFrom: {
-      legacyTelegramPath: "/tmp/oauth/telegram-allowFrom.json",
-      targetTelegramPath: "/tmp/oauth/telegram-default-allowFrom.json",
       hasLegacyTelegram: false,
+      copyPlans: [],
     },
     preview: params?.preview ?? [],
   };
@@ -162,7 +162,7 @@ const DEFAULT_CONFIG_SNAPSHOT = {
   raw: "{}",
   parsed: {},
   valid: true,
-  config: { agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] } },
+  config: {},
   issues: [],
   legacyIssues: [],
 } as const;
@@ -173,6 +173,10 @@ vi.mock("@clack/prompts", () => ({
   note,
   outro: vi.fn(),
   select,
+}));
+
+vi.mock("../agents/skills-status.js", () => ({
+  buildWorkspaceSkillStatus: () => ({ skills: [] }),
 }));
 
 vi.mock("../plugins/loader.js", () => ({
@@ -226,8 +230,8 @@ vi.mock("../infra/update-runner.js", () => ({
   runGatewayUpdate,
 }));
 
-vi.mock("../auth/index.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../auth/index.js")>();
+vi.mock("../agents/auth-profiles.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../agents/auth-profiles.js")>();
   return {
     ...actual,
     ensureAuthProfileStore,
@@ -283,6 +287,7 @@ vi.mock("./health.js", () => ({
 
 vi.mock("./onboard-helpers.js", () => ({
   applyWizardMetadata: (cfg: Record<string, unknown>) => cfg,
+  DEFAULT_WORKSPACE: "/tmp",
   guardCancel: (value: unknown) => value,
   printWizardHeader: vi.fn(),
   randomToken: vi.fn(() => "test-gateway-token"),
@@ -318,6 +323,40 @@ export function createDoctorRuntime() {
     log: vi.fn() as unknown as MockFn,
     error: vi.fn() as unknown as MockFn,
     exit: vi.fn() as unknown as MockFn,
+  };
+}
+
+export async function arrangeLegacyStateMigrationTest(): Promise<{
+  doctorCommand: unknown;
+  runtime: { log: MockFn; error: MockFn; exit: MockFn };
+  detectLegacyStateMigrations: MockFn;
+  runLegacyStateMigrations: MockFn;
+}> {
+  mockDoctorConfigSnapshot();
+
+  const { doctorCommand } = await import("./doctor.js");
+  const runtime = createDoctorRuntime();
+
+  detectLegacyStateMigrations.mockClear();
+  runLegacyStateMigrations.mockClear();
+  detectLegacyStateMigrations.mockResolvedValueOnce(
+    createLegacyStateMigrationDetectionResult({
+      hasLegacySessions: true,
+      preview: ["- Legacy sessions detected"],
+    }),
+  );
+  runLegacyStateMigrations.mockResolvedValueOnce({
+    changes: ["migrated"],
+    warnings: [],
+  });
+
+  confirm.mockClear();
+
+  return {
+    doctorCommand,
+    runtime,
+    detectLegacyStateMigrations,
+    runLegacyStateMigrations,
   };
 }
 

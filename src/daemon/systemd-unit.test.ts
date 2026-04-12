@@ -12,6 +12,18 @@ describe("buildSystemdUnit", () => {
     expect(execStart).toBe('ExecStart=/usr/bin/remoteclaw gateway --name "My Bot"');
   });
 
+  it("renders control-group kill mode for child-process cleanup", () => {
+    const unit = buildSystemdUnit({
+      description: "RemoteClaw Gateway",
+      programArguments: ["/usr/bin/remoteclaw", "gateway", "run"],
+      environment: {},
+    });
+    expect(unit).toContain("KillMode=control-group");
+    expect(unit).toContain("TimeoutStopSec=30");
+    expect(unit).toContain("TimeoutStartSec=30");
+    expect(unit).toContain("SuccessExitStatus=0 143");
+  });
+
   it("rejects environment values with line breaks", () => {
     expect(() =>
       buildSystemdUnit({

@@ -103,6 +103,7 @@ vi.mock("../../auto-reply/reply/reply-dispatcher.js", () => ({
       },
       replyOptions: {},
       markDispatchIdle: vi.fn(),
+      markRunComplete: vi.fn(),
     }),
   ),
 }));
@@ -344,6 +345,32 @@ describe("processDiscordMessage ack reactions", () => {
     expect(emojis).toContain("🟦");
     expect(emojis).toContain("🏁");
   });
+
+  it("clears status reactions when dispatch aborts and removeAckAfterReply is enabled", async () => {
+    const abortController = new AbortController();
+    dispatchInboundMessage.mockImplementationOnce(async () => {
+      abortController.abort();
+      throw new Error("aborted");
+    });
+
+    const ctx = await createBaseContext({
+      abortSignal: abortController.signal,
+      cfg: {
+        messages: {
+          ackReaction: "👀",
+          removeAckAfterReply: true,
+        },
+        session: { store: "/tmp/remoteclaw-discord-process-test-sessions.json" },
+      },
+    });
+
+    // oxlint-disable-next-line typescript/no-explicit-any
+    await processDiscordMessage(ctx as any);
+
+    await vi.waitFor(() => {
+      expect(sendMocks.removeReactionDiscord).toHaveBeenCalledWith("c1", "m1", "👀", { rest: {} });
+    });
+  });
 });
 
 describe("processDiscordMessage session routing", () => {
@@ -505,6 +532,23 @@ describe("processDiscordMessage draft streaming", () => {
     await processStreamOffDiscordMessage();
 
     expect(deliverDiscordReply).toHaveBeenCalledTimes(1);
+  });
+
+  it("streams block previews using draft chunking", async () => {
+    const draftStream = createMockDraftStreamForTest();
+
+    dispatchInboundMessage.mockImplementationOnce(async (params?: DispatchInboundParams) => {
+      await params?.replyOptions?.onPartialReply?.({ text: "HelloWorld" });
+      return createNoQueuedDispatchResult();
+    });
+
+    const ctx = await createBlockModeContext();
+
+    // oxlint-disable-next-line typescript/no-explicit-any
+    await processDiscordMessage(ctx as any);
+
+    const updates = draftStream.update.mock.calls.map((call) => call[0]);
+    expect(updates).toEqual(["Hello", "HelloWorld"]);
   });
 
   it("forces new preview messages on assistant boundaries in block mode", async () => {

@@ -6,6 +6,7 @@ enum HostEnvSanitizer {
     private static let blockedKeys = HostEnvSecurityPolicy.blockedKeys
     private static let blockedPrefixes = HostEnvSecurityPolicy.blockedPrefixes
     private static let blockedOverrideKeys = HostEnvSecurityPolicy.blockedOverrideKeys
+    private static let blockedOverridePrefixes = HostEnvSecurityPolicy.blockedOverridePrefixes
     private static let shellWrapperAllowedOverrideKeys: Set<String> = [
         "TERM",
         "LANG",
@@ -58,6 +59,7 @@ enum HostEnvSanitizer {
             // allow request-scoped PATH overrides from agents/gateways.
             if upper == "PATH" { continue }
             if self.blockedOverrideKeys.contains(upper) { continue }
+            if self.blockedOverridePrefixes.contains(where: { upper.hasPrefix($0) }) { continue }
             if self.isBlocked(upper) { continue }
             merged[key] = value
         }

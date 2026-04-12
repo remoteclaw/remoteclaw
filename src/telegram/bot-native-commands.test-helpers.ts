@@ -17,12 +17,14 @@ export function createNativeCommandTestParams(params: {
   textLimit?: number;
   useAccessGroups?: boolean;
   nativeEnabled?: boolean;
+  nativeSkillsEnabled?: boolean;
   nativeDisabledExplicit?: boolean;
+  resolveTelegramGroupConfig?: RegisterTelegramNativeCommandParams["resolveTelegramGroupConfig"];
   opts?: RegisterTelegramNativeCommandParams["opts"];
 }): RegisterTelegramNativeCommandParams {
   return {
     bot: params.bot,
-    cfg: params.cfg ?? { agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] } },
+    cfg: params.cfg ?? {},
     runtime: params.runtime ?? ({} as RuntimeEnv),
     accountId: params.accountId ?? "default",
     telegramCfg: params.telegramCfg ?? ({} as TelegramAccountConfig),
@@ -32,12 +34,15 @@ export function createNativeCommandTestParams(params: {
     textLimit: params.textLimit ?? 4096,
     useAccessGroups: params.useAccessGroups ?? false,
     nativeEnabled: params.nativeEnabled ?? true,
+    nativeSkillsEnabled: params.nativeSkillsEnabled ?? true,
     nativeDisabledExplicit: params.nativeDisabledExplicit ?? false,
     resolveGroupPolicy: () => ({ allowlistEnabled: false, allowed: true }),
-    resolveTelegramGroupConfig: () => ({
-      groupConfig: undefined,
-      topicConfig: undefined,
-    }),
+    resolveTelegramGroupConfig:
+      params.resolveTelegramGroupConfig ??
+      (() => ({
+        groupConfig: undefined,
+        topicConfig: undefined,
+      })),
     shouldSkipUpdate: () => false,
     opts: params.opts ?? { token: "token" },
   };

@@ -6,6 +6,7 @@ export type AuthChoice =
   // Legacy alias for `setup-token` (kept for backwards CLI compatibility).
   | "oauth"
   | "setup-token"
+  | "claude-cli"
   | "token"
   | "chutes"
   | "vllm"
@@ -23,8 +24,10 @@ export type AuthChoice =
   | "venice-api-key"
   | "together-api-key"
   | "huggingface-api-key"
+  | "codex-cli"
   | "apiKey"
   | "gemini-api-key"
+  | "google-gemini-cli"
   | "zai-api-key"
   | "zai-coding-global"
   | "zai-coding-cn"
@@ -46,7 +49,6 @@ export type AuthChoice =
   | "volcengine-api-key"
   | "byteplus-api-key"
   | "qianfan-api-key"
-  | "elevenlabs-api-key"
   | "custom-api-key"
   | "skip";
 export type AuthChoiceGroupId =
@@ -81,11 +83,14 @@ export type GatewayAuthChoice = "token" | "password";
 export type ResetScope = "config" | "config+creds+sessions" | "full";
 export type GatewayBind = "loopback" | "lan" | "auto" | "custom" | "tailnet";
 export type TailscaleMode = "off" | "serve" | "funnel";
+export type NodeManagerChoice = "npm" | "pnpm" | "bun";
 export type ChannelChoice = ChannelId;
 // Legacy alias (pre-rename).
 export type ProviderChoice = ChannelChoice;
-export type SecretInputMode = "plaintext" | "ref";
+export type SecretInputMode = "plaintext" | "ref"; // pragma: allowlist secret
 
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// Re-typed as string union to match upstream usage in onboarding/wizard code.
 export type AgentRuntime = "claude" | "gemini" | "codex" | "opencode";
 
 export type OnboardOptions = {
@@ -98,24 +103,33 @@ export type OnboardOptions = {
   acceptRisk?: boolean;
   reset?: boolean;
   resetScope?: ResetScope;
-  runtime?: AgentRuntime;
-  anthropicApiKey?: string;
-  openaiApiKey?: string;
-  geminiApiKey?: string;
-  codexApiKey?: string;
-  /** Auth token (e.g., CLAUDE_CODE_OAUTH_TOKEN for Claude). */
+  authChoice?: AuthChoice;
+  runtime?: string;
   authToken?: string;
+  codexApiKey?: string;
+  /** Used when `authChoice=token` in non-interactive mode. */
+  tokenProvider?: string;
+  /** Used when `authChoice=token` in non-interactive mode. */
+  token?: string;
+  /** Used when `authChoice=token` in non-interactive mode. */
+  tokenProfileId?: string;
+  /** Used when `authChoice=token` in non-interactive mode. */
+  tokenExpiresIn?: string;
   /** API key persistence mode for onboarding flows (default: plaintext). */
   secretInputMode?: SecretInputMode;
-  // Provider API key fields (consumed by legacy auth-choice system via ONBOARD_PROVIDER_AUTH_FLAGS).
+  anthropicApiKey?: string;
+  openaiApiKey?: string;
   mistralApiKey?: string;
   openrouterApiKey?: string;
   kilocodeApiKey?: string;
   litellmApiKey?: string;
   aiGatewayApiKey?: string;
+  cloudflareAiGatewayAccountId?: string;
+  cloudflareAiGatewayGatewayId?: string;
   cloudflareAiGatewayApiKey?: string;
   moonshotApiKey?: string;
   kimiCodeApiKey?: string;
+  geminiApiKey?: string;
   zaiApiKey?: string;
   xiaomiApiKey?: string;
   minimaxApiKey?: string;
@@ -125,27 +139,33 @@ export type OnboardOptions = {
   huggingfaceApiKey?: string;
   opencodeZenApiKey?: string;
   xaiApiKey?: string;
-  qianfanApiKey?: string;
   volcengineApiKey?: string;
   byteplusApiKey?: string;
-  elevenLabsApiKey?: string;
+  qianfanApiKey?: string;
+  customBaseUrl?: string;
+  customApiKey?: string;
+  customModelId?: string;
+  customProviderId?: string;
+  customCompatibility?: "openai" | "anthropic";
   gatewayPort?: number;
   gatewayBind?: GatewayBind;
   gatewayAuth?: GatewayAuthChoice;
   gatewayToken?: string;
+  gatewayTokenRefEnv?: string;
   gatewayPassword?: string;
   tailscale?: TailscaleMode;
   tailscaleResetOnExit?: boolean;
   installDaemon?: boolean;
   daemonRuntime?: GatewayDaemonRuntime;
   skipChannels?: boolean;
-  skipHealth?: boolean;
+  /** @deprecated Legacy alias for `skipChannels`. */
   skipProviders?: boolean;
   skipSkills?: boolean;
+  skipSearch?: boolean;
+  skipHealth?: boolean;
   skipUi?: boolean;
+  nodeManager?: NodeManagerChoice;
   remoteUrl?: string;
   remoteToken?: string;
   json?: boolean;
-  /** Upstream feature: auth choice for onboarding. */
-  authChoice?: string;
 };

@@ -17,13 +17,6 @@ function hasLegacyThreadBindingTtlInAccounts(value: unknown): boolean {
   );
 }
 
-function hasLegacyAgentDefaultField(value: unknown): boolean {
-  if (!Array.isArray(value)) {
-    return false;
-  }
-  return value.some((entry) => isRecord(entry) && entry.default === true);
-}
-
 function isLegacyGatewayBindHostAlias(value: unknown): boolean {
   if (typeof value !== "string") {
     return false;
@@ -116,7 +109,7 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
   {
     path: ["routing", "defaultAgentId"],
     message:
-      "routing.defaultAgentId was removed; sole-agent auto-selection replaces explicit defaults (auto-migrated on load).",
+      "routing.defaultAgentId was moved; use agents.list[].default instead (auto-migrated on load).",
   },
   {
     path: ["routing", "agentToAgent"],
@@ -157,8 +150,44 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
       "agent.* was moved; use agents.defaults (and tools.* for tool/elevated/exec settings) instead (auto-migrated on load).",
   },
   {
+    path: ["memorySearch"],
+    message:
+      "top-level memorySearch was moved; use agents.defaults.memorySearch instead (auto-migrated on load).",
+  },
+  {
     path: ["tools", "bash"],
     message: "tools.bash was removed; use tools.exec instead (auto-migrated on load).",
+  },
+  {
+    path: ["agent", "model"],
+    message:
+      "agent.model string was replaced by agents.defaults.model.primary/fallbacks and agents.defaults.models (auto-migrated on load).",
+    match: (value) => typeof value === "string",
+  },
+  {
+    path: ["agent", "imageModel"],
+    message:
+      "agent.imageModel string was replaced by agents.defaults.imageModel.primary/fallbacks (auto-migrated on load).",
+    match: (value) => typeof value === "string",
+  },
+  {
+    path: ["agent", "allowedModels"],
+    message: "agent.allowedModels was replaced by agents.defaults.models (auto-migrated on load).",
+  },
+  {
+    path: ["agent", "modelAliases"],
+    message:
+      "agent.modelAliases was replaced by agents.defaults.models.*.alias (auto-migrated on load).",
+  },
+  {
+    path: ["agent", "modelFallbacks"],
+    message:
+      "agent.modelFallbacks was replaced by agents.defaults.model.fallbacks (auto-migrated on load).",
+  },
+  {
+    path: ["agent", "imageModelFallbacks"],
+    message:
+      "agent.imageModelFallbacks was replaced by agents.defaults.imageModel.fallbacks (auto-migrated on load).",
   },
   {
     path: ["messages", "tts", "enabled"],
@@ -176,9 +205,21 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
     requireSourceLiteral: true,
   },
   {
+    path: ["heartbeat"],
+    message:
+      "top-level heartbeat is not a valid config path; use agents.defaults.heartbeat (cadence/target/model settings) or channels.defaults.heartbeat (showOk/showAlerts/useIndicator).",
+  },
+  {
     path: ["agents", "list"],
     message:
-      "agents.list[].default was removed; sole-agent auto-selection replaces explicit defaults (auto-migrated on load).",
-    match: (value) => hasLegacyAgentDefaultField(value),
+      'agents.list[].default is deprecated; agent ordering is now list-order (#1581). Remove the "default" field from agent entries.',
+    match: (value) =>
+      Array.isArray(value) &&
+      value.some(
+        (entry) =>
+          isRecord(entry) &&
+          Object.prototype.hasOwnProperty.call(entry, "default") &&
+          entry.default === true,
+      ),
   },
 ];

@@ -28,10 +28,15 @@ const shouldEagerRegisterSubcommands = (_argv: string[]) => {
   return isTruthyEnvValue(process.env.REMOTECLAW_DISABLE_LAZY_SUBCOMMANDS);
 };
 
-const loadConfig = async (): Promise<RemoteClawConfig> => {
-  const mod = await import("../../config/config.js");
-  return mod.loadConfig();
-};
+export const loadValidatedConfigForPluginRegistration =
+  async (): Promise<RemoteClawConfig | null> => {
+    const mod = await import("../../config/config.js");
+    const snapshot = await mod.readConfigFileSnapshot();
+    if (!snapshot.valid) {
+      return null;
+    }
+    return mod.loadConfig();
+  };
 
 // Note for humans and agents:
 // If you update the list of commands, also check whether they have subcommands
@@ -83,6 +88,24 @@ const entries: SubCliEntry[] = [
     },
   },
   {
+    name: "models",
+    description: "Discover, scan, and configure models",
+    hasSubcommands: true,
+    register: async (program) => {
+      const mod = await import("../models-cli.js");
+      mod.registerModelsCli(program);
+    },
+  },
+  {
+    name: "approvals",
+    description: "Manage exec approvals (gateway or node host)",
+    hasSubcommands: true,
+    register: async (program) => {
+      const mod = await import("../exec-approvals-cli.js");
+      mod.registerExecApprovalsCli(program);
+    },
+  },
+  {
     name: "nodes",
     description: "Manage gateway-owned node pairing and node commands",
     hasSubcommands: true,
@@ -107,6 +130,15 @@ const entries: SubCliEntry[] = [
     register: async (program) => {
       const mod = await import("../node-cli.js");
       mod.registerNodeCli(program);
+    },
+  },
+  {
+    name: "sandbox",
+    description: "Manage sandbox containers for agent isolation",
+    hasSubcommands: true,
+    register: async (program) => {
+      const mod = await import("../sandbox-cli.js");
+      mod.registerSandboxCli(program);
     },
   },
   {
@@ -137,6 +169,15 @@ const entries: SubCliEntry[] = [
     },
   },
   {
+    name: "docs",
+    description: "Search the live RemoteClaw docs",
+    hasSubcommands: false,
+    register: async (program) => {
+      const mod = await import("../docs-cli.js");
+      mod.registerDocsCli(program);
+    },
+  },
+  {
     name: "hooks",
     description: "Manage internal agent hooks",
     hasSubcommands: true,
@@ -164,6 +205,15 @@ const entries: SubCliEntry[] = [
     },
   },
   {
+    name: "clawbot",
+    description: "Legacy clawbot command aliases",
+    hasSubcommands: true,
+    register: async (program) => {
+      const mod = await import("../clawbot-cli.js");
+      mod.registerClawbotCli(program);
+    },
+  },
+  {
     name: "pairing",
     description: "Secure DM pairing (approve inbound requests)",
     hasSubcommands: true,
@@ -172,7 +222,10 @@ const entries: SubCliEntry[] = [
       // The pairing CLI calls listPairingChannels() at registration time,
       // which requires the plugin registry to be populated with channel plugins.
       const { registerPluginCliCommands } = await import("../../plugins/cli.js");
-      registerPluginCliCommands(program, await loadConfig());
+      const config = await loadValidatedConfigForPluginRegistration();
+      if (config) {
+        registerPluginCliCommands(program, config);
+      }
       const mod = await import("../pairing-cli.js");
       mod.registerPairingCli(program);
     },
@@ -185,7 +238,10 @@ const entries: SubCliEntry[] = [
       const mod = await import("../plugins-cli.js");
       mod.registerPluginsCli(program);
       const { registerPluginCliCommands } = await import("../../plugins/cli.js");
-      registerPluginCliCommands(program, await loadConfig());
+      const config = await loadValidatedConfigForPluginRegistration();
+      if (config) {
+        registerPluginCliCommands(program, config);
+      }
     },
   },
   {
@@ -213,6 +269,24 @@ const entries: SubCliEntry[] = [
     register: async (program) => {
       const mod = await import("../security-cli.js");
       mod.registerSecurityCli(program);
+    },
+  },
+  {
+    name: "secrets",
+    description: "Secrets runtime reload controls",
+    hasSubcommands: true,
+    register: async (program) => {
+      const mod = await import("../secrets-cli.js");
+      mod.registerSecretsCli(program);
+    },
+  },
+  {
+    name: "skills",
+    description: "List and inspect available skills",
+    hasSubcommands: true,
+    register: async (program) => {
+      const mod = await import("../skills-cli.js");
+      mod.registerSkillsCli(program);
     },
   },
   {

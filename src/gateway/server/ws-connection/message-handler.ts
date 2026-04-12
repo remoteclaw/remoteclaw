@@ -16,6 +16,7 @@ import {
   verifyDeviceToken,
 } from "../../../infra/device-pairing.js";
 import { updatePairedNodeMetadata } from "../../../infra/node-pairing.js";
+import { recordRemoteNodeInfo, refreshRemoteNodeBins } from "../../../infra/skills-remote.js";
 import { upsertPresence } from "../../../infra/system-presence.js";
 import { loadVoiceWakeConfig } from "../../../infra/voicewake.js";
 import { rawDataToString } from "../../../infra/ws.js";
@@ -31,7 +32,11 @@ import {
   CANVAS_CAPABILITY_TTL_MS,
   mintCanvasCapabilityToken,
 } from "../../canvas-capability.js";
-import { buildDeviceAuthPayload, buildDeviceAuthPayloadV3 } from "../../device-auth.js";
+import {
+  buildDeviceAuthPayload,
+  buildDeviceAuthPayloadV3,
+  normalizeDeviceMetadataForAuth,
+} from "../../device-auth.js";
 import {
   isLocalishHost,
   isLoopbackAddress,
@@ -212,10 +217,10 @@ function resolvePinnedClientMetadata(params: {
   pinnedPlatform?: string;
   pinnedDeviceFamily?: string;
 } {
-  const claimedPlatform = params.claimedPlatform ?? "";
-  const claimedDeviceFamily = params.claimedDeviceFamily ?? "";
-  const pairedPlatform = params.pairedPlatform ?? "";
-  const pairedDeviceFamily = params.pairedDeviceFamily ?? "";
+  const claimedPlatform = normalizeDeviceMetadataForAuth(params.claimedPlatform);
+  const claimedDeviceFamily = normalizeDeviceMetadataForAuth(params.claimedDeviceFamily);
+  const pairedPlatform = normalizeDeviceMetadataForAuth(params.pairedPlatform);
+  const pairedDeviceFamily = normalizeDeviceMetadataForAuth(params.pairedDeviceFamily);
   const hasPinnedPlatform = pairedPlatform !== "";
   const hasPinnedDeviceFamily = pairedDeviceFamily !== "";
   const platformMismatch = hasPinnedPlatform && claimedPlatform !== pairedPlatform;
@@ -1027,7 +1032,7 @@ export function attachGatewayWsMessageHandler(params: {
           type: "hello-ok",
           protocol: PROTOCOL_VERSION,
           server: {
-            version: resolveRuntimeServiceVersion(process.env, "dev"),
+            version: resolveRuntimeServiceVersion(process.env),
             connId,
           },
           features: { methods: gatewayMethods, events },
@@ -1079,6 +1084,25 @@ export function attachGatewayWsMessageHandler(params: {
               logGateway.warn(`failed to record last connect for ${nodeId}: ${formatForLog(err)}`),
             );
           }
+          recordRemoteNodeInfo({
+            nodeId: nodeSession.nodeId,
+            displayName: nodeSession.displayName,
+            platform: nodeSession.platform,
+            deviceFamily: nodeSession.deviceFamily,
+            commands: nodeSession.commands,
+            remoteIp: nodeSession.remoteIp,
+          });
+          void refreshRemoteNodeBins({
+            nodeId: nodeSession.nodeId,
+            platform: nodeSession.platform,
+            deviceFamily: nodeSession.deviceFamily,
+            commands: nodeSession.commands,
+            cfg: loadConfig(),
+          }).catch((err) =>
+            logGateway.warn(
+              `remote bin probe failed for ${nodeSession.nodeId}: ${formatForLog(err)}`,
+            ),
+          );
           void loadVoiceWakeConfig()
             .then((cfg) => {
               context.nodeRegistry.sendEvent(nodeSession.nodeId, "voicewake.changed", {

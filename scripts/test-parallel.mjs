@@ -114,8 +114,17 @@ const useVmForks =
 const disableIsolation = process.env.REMOTECLAW_TEST_NO_ISOLATE === "1";
 const includeGatewaySuite = process.env.REMOTECLAW_TEST_INCLUDE_GATEWAY === "1";
 const includeExtensionsSuite = process.env.REMOTECLAW_TEST_INCLUDE_EXTENSIONS === "1";
+const rawTestProfile = process.env.REMOTECLAW_TEST_PROFILE?.trim().toLowerCase();
+const testProfile =
+  rawTestProfile === "low" ||
+  rawTestProfile === "max" ||
+  rawTestProfile === "normal" ||
+  rawTestProfile === "serial"
+    ? rawTestProfile
+    : "normal";
+const shouldSplitUnitRuns = testProfile !== "low" && testProfile !== "serial";
 const runs = [
-  ...(useVmForks
+  ...(shouldSplitUnitRuns
     ? [
         {
           name: "unit-fast",
@@ -124,7 +133,7 @@ const runs = [
             "run",
             "--config",
             "vitest.unit.config.ts",
-            "--pool=vmForks",
+            `--pool=${useVmForks ? "vmForks" : "forks"}`,
             ...(disableIsolation ? ["--isolate=false"] : []),
             ...unitIsolatedFiles.flatMap((file) => ["--exclude", file]),
           ],
@@ -144,7 +153,14 @@ const runs = [
     : [
         {
           name: "unit",
-          args: ["vitest", "run", "--config", "vitest.unit.config.ts"],
+          args: [
+            "vitest",
+            "run",
+            "--config",
+            "vitest.unit.config.ts",
+            `--pool=${useVmForks ? "vmForks" : "forks"}`,
+            ...(disableIsolation ? ["--isolate=false"] : []),
+          ],
         },
       ]),
   ...(includeExtensionsSuite
@@ -210,14 +226,7 @@ const silentArgs =
 const rawPassthroughArgs = process.argv.slice(2);
 const passthroughArgs =
   rawPassthroughArgs[0] === "--" ? rawPassthroughArgs.slice(1) : rawPassthroughArgs;
-const rawTestProfile = process.env.REMOTECLAW_TEST_PROFILE?.trim().toLowerCase();
-const testProfile =
-  rawTestProfile === "low" ||
-  rawTestProfile === "max" ||
-  rawTestProfile === "normal" ||
-  rawTestProfile === "serial"
-    ? rawTestProfile
-    : "normal";
+const topLevelParallelEnabled = testProfile !== "low" && testProfile !== "serial";
 const overrideWorkers = Number.parseInt(process.env.REMOTECLAW_TEST_WORKERS ?? "", 10);
 const resolvedOverride =
   Number.isFinite(overrideWorkers) && overrideWorkers > 0 ? overrideWorkers : null;
@@ -402,6 +411,23 @@ const run = async (entry) => {
   return 0;
 };
 
+const runEntries = async (entries) => {
+  if (topLevelParallelEnabled) {
+    const codes = await Promise.all(entries.map(run));
+    return codes.find((code) => code !== 0);
+  }
+
+  for (const entry of entries) {
+    // eslint-disable-next-line no-await-in-loop
+    const code = await run(entry);
+    if (code !== 0) {
+      return code;
+    }
+  }
+
+  return undefined;
+};
+
 const shutdown = (signal) => {
   for (const child of children) {
     child.kill(signal);
@@ -454,8 +480,7 @@ if (passthroughArgs.length > 0) {
   process.exit(Number(code) || 0);
 }
 
-const parallelCodes = await Promise.all(parallelRuns.map(run));
-const failedParallel = parallelCodes.find((code) => code !== 0);
+const failedParallel = await runEntries(parallelRuns);
 if (failedParallel !== undefined) {
   process.exit(failedParallel);
 }

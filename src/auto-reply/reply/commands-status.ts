@@ -34,6 +34,12 @@ export async function buildStatusReply(params: {
   resolvedVerboseLevel: VerboseLevel;
   isGroup: boolean;
   defaultGroupActivation: () => "always" | "mention";
+  contextTokens?: number;
+  resolvedThinkLevel?: unknown;
+  resolvedReasoningLevel?: unknown;
+  resolvedElevatedLevel?: unknown;
+  resolveDefaultThinkingLevel?: (...args: unknown[]) => unknown;
+  mediaDecisions?: unknown;
 }): Promise<ReplyPayload | undefined> {
   const {
     cfg,

@@ -12,6 +12,7 @@ import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../../test-utils/channel-plugins.js";
 import { createIMessageTestPlugin } from "../../test-utils/imessage-test-plugin.js";
 import { loadWebMedia } from "../../web/media.js";
+import { resolvePreferredRemoteClawTmpDir } from "../tmp-remoteclaw-dir.js";
 import { runMessageAction } from "./message-action-runner.js";
 
 vi.mock("../../web/media.js", async () => {
@@ -38,6 +39,15 @@ const whatsappConfig = {
     },
   },
 } as RemoteClawConfig;
+
+async function withSandbox(test: (sandboxDir: string) => Promise<void>) {
+  const sandboxDir = await fs.mkdtemp(path.join(os.tmpdir(), "msg-sandbox-"));
+  try {
+    await test(sandboxDir);
+  } finally {
+    await fs.rm(sandboxDir, { recursive: true, force: true });
+  }
+}
 
 const runDryAction = (params: {
   cfg: RemoteClawConfig;
@@ -68,6 +78,32 @@ const runDrySend = (params: {
     ...params,
     action: "send",
   });
+
+async function expectSandboxMediaRewrite(params: {
+  sandboxDir: string;
+  media?: string;
+  message?: string;
+  expectedRelativePath: string;
+}) {
+  const result = await runDrySend({
+    cfg: slackConfig,
+    actionParams: {
+      channel: "slack",
+      target: "#C12345678",
+      ...(params.media ? { media: params.media } : {}),
+      ...(params.message ? { message: params.message } : {}),
+    },
+    sandboxRoot: params.sandboxDir,
+  });
+
+  expect(result.kind).toBe("send");
+  if (result.kind !== "send") {
+    throw new Error("expected send result");
+  }
+  expect(result.sendResult?.mediaUrl).toBe(
+    path.join(params.sandboxDir, params.expectedRelativePath),
+  );
+}
 
 function createAlwaysConfiguredPluginConfig(account: Record<string, unknown> = { enabled: true }) {
   return {
@@ -198,6 +234,72 @@ describe("runMessageAction context isolation", () => {
         toolContext: { currentChannelId: "C12345678" },
       }),
     ).rejects.toThrow(/message required/i);
+  });
+
+  it("rejects send actions that include poll creation params", async () => {
+    await expect(
+      runDrySend({
+        cfg: slackConfig,
+        actionParams: {
+          channel: "slack",
+          target: "#C12345678",
+          message: "hi",
+          pollQuestion: "Ready?",
+          pollOption: ["Yes", "No"],
+        },
+        toolContext: { currentChannelId: "C12345678" },
+      }),
+    ).rejects.toThrow(/use action "poll" instead of "send"/i);
+  });
+
+  it("rejects send actions that include string-encoded poll params", async () => {
+    await expect(
+      runDrySend({
+        cfg: slackConfig,
+        actionParams: {
+          channel: "slack",
+          target: "#C12345678",
+          message: "hi",
+          pollDurationSeconds: "60",
+          pollPublic: "true",
+        },
+        toolContext: { currentChannelId: "C12345678" },
+      }),
+    ).rejects.toThrow(/use action "poll" instead of "send"/i);
+  });
+
+  it("rejects send actions that include snake_case poll params", async () => {
+    await expect(
+      runDrySend({
+        cfg: slackConfig,
+        actionParams: {
+          channel: "slack",
+          target: "#C12345678",
+          message: "hi",
+          poll_question: "Ready?",
+          poll_option: ["Yes", "No"],
+          poll_public: "true",
+        },
+        toolContext: { currentChannelId: "C12345678" },
+      }),
+    ).rejects.toThrow(/use action "poll" instead of "send"/i);
+  });
+
+  it("allows send when poll booleans are explicitly false", async () => {
+    const result = await runDrySend({
+      cfg: slackConfig,
+      actionParams: {
+        channel: "slack",
+        target: "#C12345678",
+        message: "hi",
+        pollMulti: false,
+        pollAnonymous: false,
+        pollPublic: false,
+      },
+      toolContext: { currentChannelId: "C12345678" },
+    });
+
+    expect(result.kind).toBe("send");
   });
 
   it("blocks send when target differs from current channel", async () => {
@@ -552,6 +654,30 @@ describe("runMessageAction sendAttachment hydration", () => {
     );
   });
 
+  it("rewrites sandboxed media paths for sendAttachment", async () => {
+    await withSandbox(async (sandboxDir) => {
+      await runMessageAction({
+        cfg,
+        action: "sendAttachment",
+        params: {
+          channel: "bluebubbles",
+          target: "+15551234567",
+          media: "./data/pic.png",
+          message: "caption",
+        },
+        sandboxRoot: sandboxDir,
+      });
+
+      const call = vi.mocked(loadWebMedia).mock.calls[0];
+      expect(call?.[0]).toBe(path.join(sandboxDir, "data", "pic.png"));
+      expect(call?.[1]).toEqual(
+        expect.objectContaining({
+          sandboxValidated: true,
+        }),
+      );
+    });
+  });
+
   it("rejects local absolute path for sendAttachment when sandboxRoot is missing", async () => {
     await expectRejectsLocalAbsolutePathWithoutSandbox({
       action: "sendAttachment",
@@ -567,6 +693,140 @@ describe("runMessageAction sendAttachment hydration", () => {
       target: "group:123",
       tempPrefix: "msg-group-icon-",
     });
+  });
+});
+
+describe("runMessageAction sandboxed media validation", () => {
+  beforeEach(() => {
+    installChannelRuntimes({ includeTelegram: false, includeWhatsApp: false });
+    setActivePluginRegistry(
+      createTestRegistry([
+        {
+          pluginId: "slack",
+          source: "test",
+          plugin: slackPlugin,
+        },
+      ]),
+    );
+  });
+
+  afterEach(() => {
+    setActivePluginRegistry(createTestRegistry([]));
+  });
+
+  it.each(["/etc/passwd", "file:///etc/passwd"])(
+    "rejects out-of-sandbox media reference: %s",
+    async (media) => {
+      await withSandbox(async (sandboxDir) => {
+        await expect(
+          runDrySend({
+            cfg: slackConfig,
+            actionParams: {
+              channel: "slack",
+              target: "#C12345678",
+              media,
+              message: "",
+            },
+            sandboxRoot: sandboxDir,
+          }),
+        ).rejects.toThrow(/sandbox/i);
+      });
+    },
+  );
+
+  it("rejects data URLs in media params", async () => {
+    await expect(
+      runDrySend({
+        cfg: slackConfig,
+        actionParams: {
+          channel: "slack",
+          target: "#C12345678",
+          media: "data:image/png;base64,abcd",
+          message: "",
+        },
+      }),
+    ).rejects.toThrow(/data:/i);
+  });
+
+  it("rewrites sandbox-relative media paths", async () => {
+    await withSandbox(async (sandboxDir) => {
+      await expectSandboxMediaRewrite({
+        sandboxDir,
+        media: "./data/file.txt",
+        message: "",
+        expectedRelativePath: path.join("data", "file.txt"),
+      });
+    });
+  });
+
+  it("rewrites /workspace media paths to host sandbox root", async () => {
+    await withSandbox(async (sandboxDir) => {
+      await expectSandboxMediaRewrite({
+        sandboxDir,
+        media: "/workspace/data/file.txt",
+        message: "",
+        expectedRelativePath: path.join("data", "file.txt"),
+      });
+    });
+  });
+
+  it("rewrites MEDIA directives under sandbox", async () => {
+    await withSandbox(async (sandboxDir) => {
+      await expectSandboxMediaRewrite({
+        sandboxDir,
+        message: "Hello\nMEDIA: ./data/note.ogg",
+        expectedRelativePath: path.join("data", "note.ogg"),
+      });
+    });
+  });
+
+  it("allows media paths under preferred RemoteClaw tmp root", async () => {
+    const tmpRoot = resolvePreferredRemoteClawTmpDir();
+    await fs.mkdir(tmpRoot, { recursive: true });
+    const sandboxDir = await fs.mkdtemp(path.join(os.tmpdir(), "msg-sandbox-"));
+    try {
+      const tmpFile = path.join(tmpRoot, "test-media-image.png");
+      const result = await runMessageAction({
+        cfg: slackConfig,
+        action: "send",
+        params: {
+          channel: "slack",
+          target: "#C12345678",
+          media: tmpFile,
+          message: "",
+        },
+        sandboxRoot: sandboxDir,
+        dryRun: true,
+      });
+
+      expect(result.kind).toBe("send");
+      if (result.kind !== "send") {
+        throw new Error("expected send result");
+      }
+      // runMessageAction normalizes media paths through platform resolution.
+      expect(result.sendResult?.mediaUrl).toBe(path.resolve(tmpFile));
+      const hostTmpOutsideRemoteClaw = path.join(
+        os.tmpdir(),
+        "outside-remoteclaw",
+        "test-media.png",
+      );
+      await expect(
+        runMessageAction({
+          cfg: slackConfig,
+          action: "send",
+          params: {
+            channel: "slack",
+            target: "#C12345678",
+            media: hostTmpOutsideRemoteClaw,
+            message: "",
+          },
+          sandboxRoot: sandboxDir,
+          dryRun: true,
+        }),
+      ).rejects.toThrow(/sandbox/i);
+    } finally {
+      await fs.rm(sandboxDir, { recursive: true, force: true });
+    }
   });
 });
 
@@ -708,6 +968,114 @@ describe("runMessageAction card-only send behavior", () => {
     expect(result.payload).toMatchObject({
       ok: true,
       card,
+    });
+  });
+});
+
+describe("runMessageAction telegram plugin poll forwarding", () => {
+  const handleAction = vi.fn(async ({ params }: { params: Record<string, unknown> }) =>
+    jsonResult({
+      ok: true,
+      forwarded: {
+        to: params.to ?? null,
+        pollQuestion: params.pollQuestion ?? null,
+        pollOption: params.pollOption ?? null,
+        pollDurationSeconds: params.pollDurationSeconds ?? null,
+        pollPublic: params.pollPublic ?? null,
+        threadId: params.threadId ?? null,
+      },
+    }),
+  );
+
+  const telegramPollPlugin: ChannelPlugin = {
+    id: "telegram",
+    meta: {
+      id: "telegram",
+      label: "Telegram",
+      selectionLabel: "Telegram",
+      docsPath: "/channels/telegram",
+      blurb: "Telegram poll forwarding test plugin.",
+    },
+    capabilities: { chatTypes: ["direct"] },
+    config: createAlwaysConfiguredPluginConfig(),
+    messaging: {
+      targetResolver: {
+        looksLikeId: () => true,
+      },
+    },
+    actions: {
+      listActions: () => ["poll"],
+      supportsAction: ({ action }) => action === "poll",
+      handleAction,
+    },
+  };
+
+  beforeEach(() => {
+    setActivePluginRegistry(
+      createTestRegistry([
+        {
+          pluginId: "telegram",
+          source: "test",
+          plugin: telegramPollPlugin,
+        },
+      ]),
+    );
+    handleAction.mockClear();
+  });
+
+  afterEach(() => {
+    setActivePluginRegistry(createTestRegistry([]));
+    vi.clearAllMocks();
+  });
+
+  it("forwards telegram poll params through plugin dispatch", async () => {
+    const result = await runMessageAction({
+      cfg: {
+        channels: {
+          telegram: {
+            botToken: "tok",
+          },
+        },
+      } as RemoteClawConfig,
+      action: "poll",
+      params: {
+        channel: "telegram",
+        target: "telegram:123",
+        pollQuestion: "Lunch?",
+        pollOption: ["Pizza", "Sushi"],
+        pollDurationSeconds: 120,
+        pollPublic: true,
+        threadId: "42",
+      },
+      dryRun: false,
+    });
+
+    expect(result.kind).toBe("poll");
+    expect(result.handledBy).toBe("plugin");
+    expect(handleAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "poll",
+        channel: "telegram",
+        params: expect.objectContaining({
+          to: "telegram:123",
+          pollQuestion: "Lunch?",
+          pollOption: ["Pizza", "Sushi"],
+          pollDurationSeconds: 120,
+          pollPublic: true,
+          threadId: "42",
+        }),
+      }),
+    );
+    expect(result.payload).toMatchObject({
+      ok: true,
+      forwarded: {
+        to: "telegram:123",
+        pollQuestion: "Lunch?",
+        pollOption: ["Pizza", "Sushi"],
+        pollDurationSeconds: 120,
+        pollPublic: true,
+        threadId: "42",
+      },
     });
   });
 });

@@ -1,9 +1,10 @@
 {
   "name": "@remoteclaw/matrix",
-  "version": "0.5.0",
+  "version": "0.3.0",
   "description": "RemoteClaw Matrix channel plugin",
   "type": "module",
   "dependencies": {
+    "@mariozechner/pi-agent-core": "0.55.3",
     "@matrix-org/matrix-sdk-crypto-nodejs": "^0.4.0",
     "@vector-im/matrix-bot-sdk": "0.8.0-element.3",
     "markdown-it": "14.1.1",

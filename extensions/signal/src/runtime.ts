@@ -1,4 +1,4 @@
-import type { PluginRuntime } from "remoteclaw/plugin-sdk";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk/signal";
 
 let runtime: PluginRuntime | null = null;
 

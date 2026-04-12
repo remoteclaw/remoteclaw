@@ -1,11 +1,20 @@
 import fs from "node:fs";
 import { intro as clackIntro, outro as clackOutro } from "@clack/prompts";
-import { resolveFirstAgentWorkspace } from "../agents/agent-scope.js";
+import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
+import { loadModelCatalog } from "../agents/model-catalog.js";
+import {
+  getModelRefStatus,
+  resolveConfiguredModelRef,
+  resolveHooksGmailModel,
+} from "../agents/model-selection.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { CONFIG_PATH, readConfigFileSnapshot, writeConfigFile } from "../config/config.js";
 import { logConfigUpdated } from "../config/logging.js";
+import { resolveSecretInputRef } from "../config/types.secrets.js";
 import { resolveGatewayService } from "../daemon/service.js";
+import { hasAmbiguousGatewayAuthModeConfig } from "../gateway/auth-mode-policy.js";
 import { resolveGatewayAuth } from "../gateway/auth.js";
 import { buildGatewayConnectionDetails } from "../gateway/call.js";
 import { resolveRemoteClawPackageRoot } from "../infra/remoteclaw-root.js";
@@ -19,15 +28,17 @@ import {
   maybeRepairAnthropicOAuthProfileId,
   noteAuthProfileHealth,
 } from "./doctor-auth.js";
+import { noteBootstrapFileSize } from "./doctor-bootstrap-size.js";
 import { doctorShellCompletion } from "./doctor-completion.js";
 import { loadAndMaybeMigrateDoctorConfig } from "./doctor-config-flow.js";
 import { maybeRepairGatewayDaemon } from "./doctor-gateway-daemon-flow.js";
-import { checkGatewayHealth } from "./doctor-gateway-health.js";
+import { checkGatewayHealth, probeGatewayMemoryStatus } from "./doctor-gateway-health.js";
 import {
   maybeRepairGatewayServiceConfig,
   maybeScanExtraGatewayServices,
 } from "./doctor-gateway-services.js";
 import { noteSourceInstallIssues } from "./doctor-install.js";
+import { noteMemorySearchHealth } from "./doctor-memory-search.js";
 import {
   noteMacLaunchAgentOverrides,
   noteMacLaunchctlGatewayEnvOverrides,
@@ -35,6 +46,7 @@ import {
   noteStartupOptimizationHints,
 } from "./doctor-platform-notes.js";
 import { createDoctorPrompter, type DoctorOptions } from "./doctor-prompter.js";
+import { maybeRepairSandboxImages, noteSandboxScopeWarnings } from "./doctor-sandbox.js";
 import { noteSecurityWarnings } from "./doctor-security.js";
 import { noteSessionLockHealth } from "./doctor-session-locks.js";
 import { noteStateIntegrity, noteWorkspaceBackupTip } from "./doctor-state-integrity.js";
@@ -44,8 +56,8 @@ import {
 } from "./doctor-state-migrations.js";
 import { maybeRepairUiProtocolFreshness } from "./doctor-ui.js";
 import { maybeOfferUpdateBeforeDoctor } from "./doctor-update.js";
-import { noteVoiceChannelHealth } from "./doctor-voice.js";
 import { noteWorkspaceStatus } from "./doctor-workspace-status.js";
+import { MEMORY_SYSTEM_PROMPT, shouldSuggestMemorySystem } from "./doctor-workspace.js";
 import { noteOpenAIOAuthTlsPrerequisites } from "./oauth-tls-preflight.js";
 import { applyWizardMetadata, printWizardHeader, randomToken } from "./onboard-helpers.js";
 import { ensureSystemdUserLingerInteractive } from "./systemd-linger.js";
@@ -107,6 +119,17 @@ export async function doctorCommand(
     }
     note(lines.join("\n"), "Gateway");
   }
+  if (resolveMode(cfg) === "local" && hasAmbiguousGatewayAuthModeConfig(cfg)) {
+    note(
+      [
+        "gateway.auth.token and gateway.auth.password are both configured while gateway.auth.mode is unset.",
+        "Set an explicit mode to avoid ambiguous auth selection and startup/runtime failures.",
+        `Set token mode: ${formatCliCommand("remoteclaw config set gateway.auth.mode token")}`,
+        `Set password mode: ${formatCliCommand("remoteclaw config set gateway.auth.mode password")}`,
+      ].join("\n"),
+      "Gateway auth",
+    );
+  }
 
   cfg = await maybeRepairAnthropicOAuthProfileId(cfg, prompter);
   cfg = await maybeRemoveDeprecatedCliAuthProfiles(cfg, prompter);
@@ -115,45 +138,59 @@ export async function doctorCommand(
     prompter,
     allowKeychainPrompt: options.nonInteractive !== true && Boolean(process.stdin.isTTY),
   });
-  await noteVoiceChannelHealth(cfg);
   const gatewayDetails = buildGatewayConnectionDetails({ config: cfg });
   if (gatewayDetails.remoteFallbackNote) {
     note(gatewayDetails.remoteFallbackNote, "Gateway");
   }
   if (resolveMode(cfg) === "local" && sourceConfigValid) {
+    const gatewayTokenRef = resolveSecretInputRef({
+      value: cfg.gateway?.auth?.token,
+      defaults: cfg.secrets?.defaults,
+    }).ref;
     const auth = resolveGatewayAuth({
       authConfig: cfg.gateway?.auth,
       tailscaleMode: cfg.gateway?.tailscale?.mode ?? "off",
     });
     const needsToken = auth.mode !== "password" && (auth.mode !== "token" || !auth.token);
     if (needsToken) {
-      note(
-        "Gateway auth is off or missing a token. Token auth is now the recommended default (including loopback).",
-        "Gateway auth",
-      );
-      const shouldSetToken =
-        options.generateGatewayToken === true
-          ? true
-          : options.nonInteractive === true
-            ? false
-            : await prompter.confirmRepair({
-                message: "Generate and configure a gateway token now?",
-                initialValue: true,
-              });
-      if (shouldSetToken) {
-        const nextToken = randomToken();
-        cfg = {
-          ...cfg,
-          gateway: {
-            ...cfg.gateway,
-            auth: {
-              ...cfg.gateway?.auth,
-              mode: "token",
-              token: nextToken,
+      if (gatewayTokenRef) {
+        note(
+          [
+            "Gateway token is managed via SecretRef and is currently unavailable.",
+            "Doctor will not overwrite gateway.auth.token with a plaintext value.",
+            "Resolve/rotate the external secret source, then rerun doctor.",
+          ].join("\n"),
+          "Gateway auth",
+        );
+      } else {
+        note(
+          "Gateway auth is off or missing a token. Token auth is now the recommended default (including loopback).",
+          "Gateway auth",
+        );
+        const shouldSetToken =
+          options.generateGatewayToken === true
+            ? true
+            : options.nonInteractive === true
+              ? false
+              : await prompter.confirmRepair({
+                  message: "Generate and configure a gateway token now?",
+                  initialValue: true,
+                });
+        if (shouldSetToken) {
+          const nextToken = randomToken();
+          cfg = {
+            ...cfg,
+            gateway: {
+              ...cfg.gateway,
+              auth: {
+                ...cfg.gateway?.auth,
+                mode: "token",
+                token: nextToken,
+              },
             },
-          },
-        };
-        note("Gateway token configured.", "Gateway auth");
+          };
+          note("Gateway token configured.", "Gateway auth");
+        }
       }
     }
   }
@@ -184,6 +221,9 @@ export async function doctorCommand(
   await noteStateIntegrity(cfg, prompter, configResult.path ?? CONFIG_PATH);
   await noteSessionLockHealth({ shouldRepair: prompter.shouldRepair });
 
+  cfg = await maybeRepairSandboxImages(cfg, runtime, prompter);
+  void noteSandboxScopeWarnings(cfg);
+
   await maybeScanExtraGatewayServices(options, runtime, prompter);
   await maybeRepairGatewayServiceConfig(cfg, resolveMode(cfg), runtime, prompter);
   await noteMacLaunchAgentOverrides();
@@ -194,6 +234,44 @@ export async function doctorCommand(
     cfg,
     deep: options.deep === true,
   });
+
+  if (cfg.hooks?.gmail?.model?.trim()) {
+    const hooksModelRef = resolveHooksGmailModel({
+      cfg,
+      defaultProvider: DEFAULT_PROVIDER,
+    });
+    if (!hooksModelRef) {
+      note(`- hooks.gmail.model "${cfg.hooks.gmail.model}" could not be resolved`, "Hooks");
+    } else {
+      const { provider: defaultProvider, model: defaultModel } = resolveConfiguredModelRef({
+        cfg,
+        defaultProvider: DEFAULT_PROVIDER,
+        defaultModel: DEFAULT_MODEL,
+      });
+      const catalog = await loadModelCatalog({ config: cfg });
+      const status = getModelRefStatus({
+        cfg,
+        catalog,
+        ref: hooksModelRef,
+        defaultProvider,
+        defaultModel,
+      });
+      const warnings: string[] = [];
+      if (!status.allowed) {
+        warnings.push(
+          `- hooks.gmail.model "${status.key}" not in agents.defaults.models allowlist (will use primary instead)`,
+        );
+      }
+      if (!status.inCatalog) {
+        warnings.push(
+          `- hooks.gmail.model "${status.key}" not in the model catalog (may fail at runtime)`,
+        );
+      }
+      if (warnings.length > 0) {
+        note(warnings.join("\n"), "Hooks");
+      }
+    }
+  }
 
   if (
     options.nonInteractive !== true &&
@@ -222,6 +300,7 @@ export async function doctorCommand(
   }
 
   noteWorkspaceStatus(cfg);
+  await noteBootstrapFileSize(cfg);
 
   // Check and fix shell completion
   await doctorShellCompletion(runtime, prompter, {
@@ -233,6 +312,13 @@ export async function doctorCommand(
     cfg,
     timeoutMs: options.nonInteractive === true ? 3000 : 10_000,
   });
+  const gatewayMemoryProbe = healthOk
+    ? await probeGatewayMemoryStatus({
+        cfg,
+        timeoutMs: options.nonInteractive === true ? 3000 : 10_000,
+      })
+    : { checked: false, ready: false };
+  await noteMemorySearchHealth(cfg, { gatewayMemoryProbe });
   await maybeRepairGatewayDaemon({
     cfg,
     runtime,
@@ -257,9 +343,10 @@ export async function doctorCommand(
   }
 
   if (options.workspaceSuggestions !== false) {
-    const workspaceDir = resolveFirstAgentWorkspace(cfg);
-    if (workspaceDir) {
-      noteWorkspaceBackupTip(workspaceDir);
+    const workspaceDir = resolveAgentWorkspaceDir(cfg, resolveDefaultAgentId(cfg));
+    noteWorkspaceBackupTip(workspaceDir);
+    if (shouldSuggestMemorySystem(workspaceDir)) {
+      note(MEMORY_SYSTEM_PROMPT, "Workspace");
     }
   }
 

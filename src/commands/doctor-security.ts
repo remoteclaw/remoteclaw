@@ -2,15 +2,65 @@ import { listChannelPlugins } from "../channels/plugins/index.js";
 import type { ChannelId } from "../channels/plugins/types.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig, GatewayBindMode } from "../config/config.js";
+import type { AgentConfig } from "../config/types.agents.js";
+import { hasConfiguredSecretInput } from "../config/types.secrets.js";
 import { resolveGatewayAuth } from "../gateway/auth.js";
 import { isLoopbackHost, resolveGatewayBindHost } from "../gateway/net.js";
 import { resolveDmAllowState } from "../security/dm-policy-shared.js";
 import { note } from "../terminal/note.js";
 import { resolveDefaultChannelAccountContext } from "./channel-account-context.js";
 
+function collectImplicitHeartbeatDirectPolicyWarnings(cfg: RemoteClawConfig): string[] {
+  const warnings: string[] = [];
+
+  const maybeWarn = (params: {
+    label: string;
+    heartbeat: AgentConfig["heartbeat"] | undefined;
+    pathHint: string;
+  }) => {
+    const heartbeat = params.heartbeat;
+    if (!heartbeat || heartbeat.target === undefined || heartbeat.target === "none") {
+      return;
+    }
+    if (heartbeat.directPolicy !== undefined) {
+      return;
+    }
+    warnings.push(
+      `- ${params.label}: heartbeat delivery is configured while ${params.pathHint} is unset.`,
+      '  Heartbeat now allows direct/DM targets by default. Set it explicitly to "allow" or "block" to pin upgrade behavior.',
+    );
+  };
+
+  maybeWarn({
+    label: "Heartbeat defaults",
+    heartbeat: cfg.agents?.defaults?.heartbeat,
+    pathHint: "agents.defaults.heartbeat.directPolicy",
+  });
+
+  for (const agent of cfg.agents?.list ?? []) {
+    maybeWarn({
+      label: `Heartbeat agent "${agent.id}"`,
+      heartbeat: agent.heartbeat,
+      pathHint: `heartbeat.directPolicy for agent "${agent.id}"`,
+    });
+  }
+
+  return warnings;
+}
+
 export async function noteSecurityWarnings(cfg: RemoteClawConfig) {
   const warnings: string[] = [];
   const auditHint = `- Run: ${formatCliCommand("remoteclaw security audit --deep")}`;
+
+  if (cfg.approvals?.exec?.enabled === false) {
+    warnings.push(
+      "- Note: approvals.exec.enabled=false disables approval forwarding only.",
+      "  Host exec gating still comes from ~/.remoteclaw/exec-approvals.json.",
+      `  Check local policy with: ${formatCliCommand("remoteclaw approvals get --gateway")}`,
+    );
+  }
+
+  warnings.push(...collectImplicitHeartbeatDirectPolicyWarnings(cfg));
 
   // ===========================================
   // GATEWAY NETWORK EXPOSURE CHECK
@@ -36,8 +86,12 @@ export async function noteSecurityWarnings(cfg: RemoteClawConfig) {
   });
   const authToken = resolvedAuth.token?.trim() ?? "";
   const authPassword = resolvedAuth.password?.trim() ?? "";
-  const hasToken = authToken.length > 0;
-  const hasPassword = authPassword.length > 0;
+  const hasToken =
+    authToken.length > 0 ||
+    hasConfiguredSecretInput(cfg.gateway?.auth?.token, cfg.secrets?.defaults);
+  const hasPassword =
+    authPassword.length > 0 ||
+    hasConfiguredSecretInput(cfg.gateway?.auth?.password, cfg.secrets?.defaults);
   const hasSharedSecret =
     (resolvedAuth.mode === "token" && hasToken) ||
     (resolvedAuth.mode === "password" && hasPassword);
@@ -45,7 +99,7 @@ export async function noteSecurityWarnings(cfg: RemoteClawConfig) {
   const saferRemoteAccessLines = [
     "  Safer remote access: keep bind loopback and use Tailscale Serve/Funnel or an SSH tunnel.",
     "  Example tunnel: ssh -N -L 18789:127.0.0.1:18789 user@gateway-host",
-    "  Docs: https://docs.remoteclaw.org/gateway/remote",
+    "  Docs: https://docs.remoteclaw.ai/gateway/remote",
   ];
 
   if (isExposed) {

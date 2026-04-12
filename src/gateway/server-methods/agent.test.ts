@@ -55,7 +55,6 @@ vi.mock("../../config/config.js", async () => {
 
 vi.mock("../../agents/agent-scope.js", () => ({
   listAgentIds: () => ["main"],
-  resolveAgentRuntime: () => "claude",
 }));
 
 vi.mock("../../infra/agent-events.js", () => ({
@@ -410,6 +409,39 @@ describe("gateway agent handler", () => {
     expect(callArgs.bestEffortDeliver).toBe(false);
   });
 
+  it("only forwards workspaceDir for spawned subagent runs", async () => {
+    primeMainAgentRun();
+    mocks.agentCommand.mockClear();
+
+    await invokeAgent(
+      {
+        message: "normal run",
+        sessionKey: "agent:main:main",
+        workspaceDir: "/tmp/ignored",
+        idempotencyKey: "workspace-ignored",
+      },
+      { reqId: "workspace-ignored-1" },
+    );
+    await vi.waitFor(() => expect(mocks.agentCommand).toHaveBeenCalled());
+    const normalCall = mocks.agentCommand.mock.calls.at(-1)?.[0] as { workspaceDir?: string };
+    expect(normalCall.workspaceDir).toBeUndefined();
+    mocks.agentCommand.mockClear();
+
+    await invokeAgent(
+      {
+        message: "spawned run",
+        sessionKey: "agent:main:main",
+        spawnedBy: "agent:main:subagent:parent",
+        workspaceDir: "/tmp/inherited",
+        idempotencyKey: "workspace-forwarded",
+      },
+      { reqId: "workspace-forwarded-1" },
+    );
+    await vi.waitFor(() => expect(mocks.agentCommand).toHaveBeenCalled());
+    const spawnedCall = mocks.agentCommand.mock.calls.at(-1)?.[0] as { workspaceDir?: string };
+    expect(spawnedCall.workspaceDir).toBe("/tmp/inherited");
+  });
+
   it("keeps origin messageChannel as webchat while delivery channel uses last session channel", async () => {
     mockMainSessionEntry({
       sessionId: "existing-session-id",
@@ -472,7 +504,7 @@ describe("gateway agent handler", () => {
     mocks.loadSessionEntry.mockReturnValue({
       cfg: {
         session: { mainKey: "work" },
-        agents: { list: [{ id: "main" }] },
+        agents: { list: [{ id: "main", default: true }] },
       },
       storePath: "/tmp/sessions.json",
       entry: {
@@ -527,8 +559,13 @@ describe("gateway agent handler", () => {
       { reqId: "4" },
     );
 
-    const call = await expectResetCall(BARE_SESSION_RESET_PROMPT);
+    await vi.waitFor(() => expect(mocks.agentCommand).toHaveBeenCalled());
+    expect(mocks.sessionsResetHandler).toHaveBeenCalledTimes(1);
+    const call = readLastAgentCommandCall();
+    // Message is now dynamically built with current date — check key substrings
     expect(call?.message).toContain("Execute your Session Startup sequence now");
+    expect(call?.message).toContain("Current time:");
+    expect(call?.message).not.toBe(BARE_SESSION_RESET_PROMPT);
     expect(call?.sessionId).toBe("reset-session-id");
   });
 

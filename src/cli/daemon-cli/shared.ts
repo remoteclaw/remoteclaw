@@ -3,8 +3,11 @@ import {
   resolveGatewaySystemdServiceName,
   resolveGatewayWindowsTaskName,
 } from "../../daemon/constants.js";
-import { resolveGatewayLogPaths } from "../../daemon/launchd.js";
 import { formatRuntimeStatus } from "../../daemon/runtime-format.js";
+import {
+  buildPlatformRuntimeLogHints,
+  buildPlatformServiceStartHints,
+} from "../../daemon/runtime-hints.js";
 import { getResolvedLoggerSettings } from "../../logging.js";
 import { colorize, isRich, theme } from "../../terminal/theme.js";
 import { formatCliCommand } from "../command-format.js";
@@ -146,41 +149,24 @@ export function renderRuntimeHints(
     if (fileLog) {
       hints.push(`File logs: ${fileLog}`);
     }
-    if (process.platform === "darwin") {
-      const logs = resolveGatewayLogPaths(env);
-      hints.push(`Launchd stdout (if installed): ${logs.stdoutPath}`);
-      hints.push(`Launchd stderr (if installed): ${logs.stderrPath}`);
-    } else if (process.platform === "linux") {
-      const unit = resolveGatewaySystemdServiceName(env.REMOTECLAW_PROFILE);
-      hints.push(`Logs: journalctl --user -u ${unit}.service -n 200 --no-pager`);
-    } else if (process.platform === "win32") {
-      const task = resolveGatewayWindowsTaskName(env.REMOTECLAW_PROFILE);
-      hints.push(`Logs: schtasks /Query /TN "${task}" /V /FO LIST`);
-    }
+    hints.push(
+      ...buildPlatformRuntimeLogHints({
+        env,
+        systemdServiceName: resolveGatewaySystemdServiceName(env.REMOTECLAW_PROFILE),
+        windowsTaskName: resolveGatewayWindowsTaskName(env.REMOTECLAW_PROFILE),
+      }),
+    );
   }
   return hints;
 }
 
 export function renderGatewayServiceStartHints(env: NodeJS.ProcessEnv = process.env): string[] {
-  const base = [
-    formatCliCommand("remoteclaw gateway install", env),
-    formatCliCommand("remoteclaw gateway", env),
-  ];
   const profile = env.REMOTECLAW_PROFILE;
-  switch (process.platform) {
-    case "darwin": {
-      const label = resolveGatewayLaunchAgentLabel(profile);
-      return [...base, `launchctl bootstrap gui/$UID ~/Library/LaunchAgents/${label}.plist`];
-    }
-    case "linux": {
-      const unit = resolveGatewaySystemdServiceName(profile);
-      return [...base, `systemctl --user start ${unit}.service`];
-    }
-    case "win32": {
-      const task = resolveGatewayWindowsTaskName(profile);
-      return [...base, `schtasks /Run /TN "${task}"`];
-    }
-    default:
-      return base;
-  }
+  return buildPlatformServiceStartHints({
+    installCommand: formatCliCommand("remoteclaw gateway install", env),
+    startCommand: formatCliCommand("remoteclaw gateway", env),
+    launchAgentPlistPath: `~/Library/LaunchAgents/${resolveGatewayLaunchAgentLabel(profile)}.plist`,
+    systemdServiceName: resolveGatewaySystemdServiceName(profile),
+    windowsTaskName: resolveGatewayWindowsTaskName(profile),
+  });
 }

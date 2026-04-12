@@ -1,5 +1,5 @@
 ---
-description: "JSON-only LLM tasks for workflows (optional plugin tool)"
+summary: "JSON-only LLM tasks for workflows (optional plugin tool)"
 read_when:
   - You want a JSON-only LLM step inside workflows
   - You need schema-validated LLM output for automation
@@ -11,8 +11,8 @@ title: "LLM Task"
 `llm-task` is an **optional plugin tool** that runs a JSON-only LLM task and
 returns structured output (optionally validated against JSON Schema).
 
-You can add a single LLM step without writing custom RemoteClaw code for each
-workflow.
+This is ideal for workflow engines like Lobster: you can add a single LLM step
+without writing custom RemoteClaw code for each workflow.
 
 ## Enable the plugin
 
@@ -52,7 +52,10 @@ workflow.
       "llm-task": {
         "enabled": true,
         "config": {
-          "defaultModel": "gpt-5.2",
+          "defaultProvider": "openai-codex",
+          "defaultModel": "gpt-5.4",
+          "defaultAuthProfileId": "main",
+          "allowedModels": ["openai-codex/gpt-5.4"],
           "maxTokens": 800,
           "timeoutMs": 30000
         }
@@ -62,12 +65,17 @@ workflow.
 }
 ```
 
+`allowedModels` is an allowlist of `provider/model` strings. If set, any request
+outside the list is rejected.
+
 ## Tool parameters
 
 - `prompt` (string, required)
 - `input` (any, optional)
 - `schema` (object, optional JSON Schema)
+- `provider` (string, optional)
 - `model` (string, optional)
+- `authProfileId` (string, optional)
 - `temperature` (number, optional)
 - `maxTokens` (number, optional)
 - `timeoutMs` (number, optional)
@@ -76,6 +84,27 @@ workflow.
 
 Returns `details.json` containing the parsed JSON (and validates against
 `schema` when provided).
+
+## Example: Lobster workflow step
+
+```lobster
+remoteclaw.invoke --tool llm-task --action json --args-json '{
+  "prompt": "Given the input email, return intent and draft.",
+  "input": {
+    "subject": "Hello",
+    "body": "Can you help?"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "intent": { "type": "string" },
+      "draft": { "type": "string" }
+    },
+    "required": ["intent", "draft"],
+    "additionalProperties": false
+  }
+}'
+```
 
 ## Safety notes
 

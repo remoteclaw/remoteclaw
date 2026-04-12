@@ -1,7 +1,6 @@
 import JSON5 from "json5";
+import { LEGACY_MANIFEST_KEYS, MANIFEST_KEY } from "../compat/legacy-names.js";
 import { parseBooleanValue } from "../utils/boolean.js";
-
-const MANIFEST_KEY = "remoteclaw" as const;
 
 export function normalizeStringList(input: unknown): string[] {
   if (!input) {
@@ -47,9 +46,12 @@ export function resolveRemoteClawManifestBlock(params: {
       return undefined;
     }
 
-    const candidate = (parsed as Record<string, unknown>)[MANIFEST_KEY];
-    if (candidate && typeof candidate === "object") {
-      return candidate as Record<string, unknown>;
+    const manifestKeys = [MANIFEST_KEY, ...LEGACY_MANIFEST_KEYS];
+    for (const key of manifestKeys) {
+      const candidate = (parsed as Record<string, unknown>)[key];
+      if (candidate && typeof candidate === "object") {
+        return candidate as Record<string, unknown>;
+      }
     }
     return undefined;
   } catch {
@@ -132,6 +134,21 @@ export function parseRemoteClawManifestInstallBase(
   const bins = normalizeStringList(raw.bins);
   if (bins.length > 0) {
     spec.bins = bins;
+  }
+  return spec;
+}
+
+export function applyRemoteClawManifestInstallCommonFields<
+  T extends { id?: string; label?: string; bins?: string[] },
+>(spec: T, parsed: Pick<ParsedRemoteClawManifestInstallBase, "id" | "label" | "bins">): T {
+  if (parsed.id) {
+    spec.id = parsed.id;
+  }
+  if (parsed.label) {
+    spec.label = parsed.label;
+  }
+  if (parsed.bins) {
+    spec.bins = parsed.bins;
   }
   return spec;
 }

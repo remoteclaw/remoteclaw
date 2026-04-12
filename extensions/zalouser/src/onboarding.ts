@@ -1,27 +1,25 @@
-import fsp from "node:fs/promises";
-import path from "node:path";
 import type {
   ChannelOnboardingAdapter,
   ChannelOnboardingDmPolicy,
   RemoteClawConfig,
   WizardPrompter,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/zalouser";
 import {
-  addWildcardAllowFrom,
   DEFAULT_ACCOUNT_ID,
   formatResolvedUnresolvedNote,
   mergeAllowFromEntries,
   normalizeAccountId,
-  promptAccountId,
   promptChannelAccessConfig,
-  resolvePreferredRemoteClawTmpDir,
-} from "remoteclaw/plugin-sdk";
+  resolveAccountIdForConfigure,
+  setTopLevelChannelDmPolicyWithAllowFrom,
+} from "remoteclaw/plugin-sdk/zalouser";
 import {
   listZalouserAccountIds,
   resolveDefaultZalouserAccountId,
   resolveZalouserAccountSync,
   checkZcaAuthenticated,
 } from "./accounts.js";
+import { writeQrDataUrlToTempFile } from "./qr-temp-file.js";
 import {
   logoutZaloProfile,
   resolveZaloAllowFromEntries,
@@ -75,19 +73,11 @@ function setZalouserDmPolicy(
   cfg: RemoteClawConfig,
   dmPolicy: "pairing" | "allowlist" | "open" | "disabled",
 ): RemoteClawConfig {
-  const allowFrom =
-    dmPolicy === "open" ? addWildcardAllowFrom(cfg.channels?.zalouser?.allowFrom) : undefined;
-  return {
-    ...cfg,
-    channels: {
-      ...cfg.channels,
-      zalouser: {
-        ...cfg.channels?.zalouser,
-        dmPolicy,
-        ...(allowFrom ? { allowFrom } : {}),
-      },
-    },
-  } as RemoteClawConfig;
+  return setTopLevelChannelDmPolicyWithAllowFrom({
+    cfg,
+    channel: "zalouser",
+    dmPolicy,
+  }) as RemoteClawConfig;
 }
 
 async function noteZalouserHelp(prompter: WizardPrompter): Promise<void> {
@@ -97,29 +87,10 @@ async function noteZalouserHelp(prompter: WizardPrompter): Promise<void> {
       "",
       "This plugin uses zca-js directly (no external CLI dependency).",
       "",
-      "Docs: https://docs.remoteclaw.org/channels/zalouser",
+      "Docs: https://docs.remoteclaw.ai/channels/zalouser",
     ].join("\n"),
     "Zalo Personal Setup",
   );
-}
-
-async function writeQrDataUrlToTempFile(
-  qrDataUrl: string,
-  profile: string,
-): Promise<string | null> {
-  const trimmed = qrDataUrl.trim();
-  const match = trimmed.match(/^data:image\/png;base64,(.+)$/i);
-  const base64 = (match?.[1] ?? "").trim();
-  if (!base64) {
-    return null;
-  }
-  const safeProfile = profile.replace(/[^a-zA-Z0-9_-]+/g, "-") || "default";
-  const filePath = path.join(
-    resolvePreferredRemoteClawTmpDir(),
-    `remoteclaw-zalouser-qr-${safeProfile}.png`,
-  );
-  await fsp.writeFile(filePath, Buffer.from(base64, "base64"));
-  return filePath;
 }
 
 async function promptZalouserAllowFrom(params: {
@@ -247,20 +218,16 @@ export const zalouserOnboardingAdapter: ChannelOnboardingAdapter = {
     shouldPromptAccountIds,
     forceAllowFrom,
   }) => {
-    const zalouserOverride = accountOverrides.zalouser?.trim();
     const defaultAccountId = resolveDefaultZalouserAccountId(cfg);
-    let accountId = zalouserOverride ? normalizeAccountId(zalouserOverride) : defaultAccountId;
-
-    if (shouldPromptAccountIds && !zalouserOverride) {
-      accountId = await promptAccountId({
-        cfg,
-        prompter,
-        label: "Zalo Personal",
-        currentId: accountId,
-        listAccountIds: listZalouserAccountIds,
-        defaultAccountId,
-      });
-    }
+    const accountId = await resolveAccountIdForConfigure({
+      cfg,
+      prompter,
+      label: "Zalo Personal",
+      accountOverride: accountOverrides.zalouser,
+      shouldPromptAccountIds,
+      listAccountIds: listZalouserAccountIds,
+      defaultAccountId,
+    });
 
     let next = cfg;
     const account = resolveZalouserAccountSync({ cfg: next, accountId });

@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { BootSchema, HeartbeatSchema, AgentSandboxSchema } from "./zod-schema.agent-runtime.js";
+import { isValidNonNegativeByteSizeString } from "./byte-size.js";
+import {
+  HeartbeatSchema,
+  AgentSandboxSchema,
+  AgentModelSchema,
+  MemorySearchSchema,
+} from "./zod-schema.agent-runtime.js";
 import {
   BlockStreamingChunkSchema,
   BlockStreamingCoalesceSchema,
@@ -10,28 +16,41 @@ import {
 
 export const AgentDefaultsSchema = z
   .object({
-    // Model selection config gutted — CLI runtimes manage their own models.
-    // Stubs kept for config parse compatibility (existing configs still parse).
-    model: z.unknown().optional(),
-    imageModel: z.unknown().optional(),
+    model: AgentModelSchema.optional(),
+    imageModel: AgentModelSchema.optional(),
     pdfModel: z.unknown().optional(),
     pdfMaxBytesMb: z.unknown().optional(),
     pdfMaxPages: z.unknown().optional(),
-    models: z.unknown().optional(),
+    models: z
+      .record(
+        z.string(),
+        z
+          .object({
+            alias: z.string().optional(),
+            /** Provider-specific API parameters (e.g., GLM-4.7 thinking mode). */
+            params: z.record(z.string(), z.unknown()).optional(),
+            /** Enable streaming for this model (default: true, false for Ollama to avoid SDK issue #1205). */
+            streaming: z.boolean().optional(),
+          })
+          .strict(),
+      )
+      .optional(),
     workspace: z.string().optional(),
     repoRoot: z.string().optional(),
-    skipBootstrap: z.unknown().optional(),
-    bootstrapMaxChars: z.unknown().optional(),
-    bootstrapTotalMaxChars: z.unknown().optional(),
+    skipBootstrap: z.boolean().optional(),
+    bootstrapMaxChars: z.number().int().positive().optional(),
+    bootstrapTotalMaxChars: z.number().int().positive().optional(),
+    bootstrapPromptTruncationWarning: z
+      .union([z.literal("off"), z.literal("once"), z.literal("always")])
+      .optional(),
     userTimezone: z.string().optional(),
     timeFormat: z.union([z.literal("auto"), z.literal("12"), z.literal("24")]).optional(),
     envelopeTimezone: z.string().optional(),
     envelopeTimestamp: z.union([z.literal("on"), z.literal("off")]).optional(),
     envelopeElapsed: z.union([z.literal("on"), z.literal("off")]).optional(),
+    contextTokens: z.number().int().positive().optional(),
     cliBackends: z.record(z.string(), CliBackendSchema).optional(),
-    // Memory search config gutted — agents bring their own memory.
-    // Stub kept for config parse compatibility (existing configs still parse).
-    memorySearch: z.unknown().optional(),
+    memorySearch: MemorySearchSchema,
     contextPruning: z
       .object({
         mode: z.union([z.literal("off"), z.literal("cache-ttl")]).optional(),
@@ -76,6 +95,40 @@ export const AgentDefaultsSchema = z
           .union([z.literal("strict"), z.literal("off"), z.literal("custom")])
           .optional(),
         identifierInstructions: z.string().optional(),
+        recentTurnsPreserve: z.number().int().min(0).max(12).optional(),
+        qualityGuard: z
+          .object({
+            enabled: z.boolean().optional(),
+            maxRetries: z.number().int().nonnegative().optional(),
+          })
+          .strict()
+          .optional(),
+        postCompactionSections: z.array(z.string()).optional(),
+        memoryFlush: z
+          .object({
+            enabled: z.boolean().optional(),
+            softThresholdTokens: z.number().int().nonnegative().optional(),
+            forceFlushTranscriptBytes: z
+              .union([
+                z.number().int().nonnegative(),
+                z
+                  .string()
+                  .refine(isValidNonNegativeByteSizeString, "Expected byte size string like 2mb"),
+              ])
+              .optional(),
+            prompt: z.string().optional(),
+            systemPrompt: z.string().optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
+    embeddedPi: z
+      .object({
+        projectSettingsPolicy: z
+          .union([z.literal("trusted"), z.literal("sanitize"), z.literal("ignore")])
+          .optional(),
       })
       .strict()
       .optional(),
@@ -105,7 +158,6 @@ export const AgentDefaultsSchema = z
     typingIntervalSeconds: z.number().int().positive().optional(),
     typingMode: TypingModeSchema.optional(),
     heartbeat: HeartbeatSchema,
-    boot: BootSchema,
     maxConcurrent: z.number().int().positive().optional(),
     subagents: z
       .object({
@@ -129,19 +181,19 @@ export const AgentDefaultsSchema = z
             "Maximum number of active children a single agent session can spawn (default: 5).",
           ),
         archiveAfterMinutes: z.number().int().positive().optional(),
-        model: z.unknown().optional(),
+        model: AgentModelSchema.optional(),
         thinking: z.string().optional(),
         runTimeoutSeconds: z.number().int().min(0).optional(),
         announceTimeoutMs: z.number().int().positive().optional(),
       })
       .strict()
       .optional(),
-    editableFiles: z.array(z.string()).optional(),
     sandbox: AgentSandboxSchema,
-    runtime: z.enum(["claude", "gemini", "codex", "opencode"]).optional(),
+    // Fork-specific CLI runtime fields (RemoteClaw middleware bridge)
+    auth: z.union([z.string(), z.array(z.string()), z.literal(false)]).optional(),
+    runtime: z.string().optional(),
     runtimeArgs: z.array(z.string()).optional(),
     runtimeEnv: z.record(z.string(), z.string()).optional(),
-    auth: z.union([z.literal(false), z.string(), z.array(z.string())]).optional(),
   })
   .strict()
   .optional();

@@ -1,6 +1,5 @@
 import crypto from "node:crypto";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-type Skill = Record<string, unknown>;
+import type { Skill } from "@mariozechner/pi-coding-agent";
 import type { ChatType } from "../../channels/chat-type.js";
 import type { ChannelId } from "../../channels/plugins/types.js";
 import type { DeliveryContext } from "../../utils/delivery-context.js";
@@ -136,7 +135,17 @@ export type SessionEntry = {
   cacheWrite?: number;
   modelProvider?: string;
   model?: string;
+  /**
+   * Last selected/runtime model pair for which a fallback notice was emitted.
+   * Used to avoid repeating the same fallback notice every turn.
+   */
+  fallbackNoticeSelectedModel?: string;
+  fallbackNoticeActiveModel?: string;
+  fallbackNoticeReason?: string;
+  contextTokens?: number;
   compactionCount?: number;
+  memoryFlushAt?: number;
+  memoryFlushCompactionCount?: number;
   cliSessionIds?: Record<string, string>;
   claudeCliSessionId?: string;
   label?: string;
@@ -200,6 +209,20 @@ export function normalizeSessionRuntimeModelFields(entry: SessionEntry): Session
     next.modelProvider = normalizedProvider;
   }
   return next;
+}
+
+export function setSessionRuntimeModel(
+  entry: SessionEntry,
+  runtime: { provider: string; model: string },
+): boolean {
+  const provider = runtime.provider.trim();
+  const model = runtime.model.trim();
+  if (!provider || !model) {
+    return false;
+  }
+  entry.modelProvider = provider;
+  entry.model = model;
+  return true;
 }
 
 export type SessionEntryMergePolicy = "touch-activity" | "preserve-activity";
@@ -305,6 +328,15 @@ export type SessionSystemPromptReport = {
   workspaceDir?: string;
   bootstrapMaxChars?: number;
   bootstrapTotalMaxChars?: number;
+  bootstrapTruncation?: {
+    warningMode?: "off" | "once" | "always";
+    warningShown?: boolean;
+    promptWarningSignature?: string;
+    warningSignaturesSeen?: string[];
+    truncatedFiles?: number;
+    nearLimitFiles?: number;
+    totalNearLimit?: boolean;
+  };
   sandbox?: {
     mode?: string;
     sandboxed?: boolean;

@@ -1,14 +1,14 @@
 ---
-description: "What the RemoteClaw system prompt contains and how it is assembled"
+summary: "What the RemoteClaw system prompt contains and how it is assembled"
 read_when:
   - Editing system prompt text, tools list, or time/heartbeat sections
-  - Changing workspace context or skills injection behavior
+  - Changing workspace bootstrap or skills injection behavior
 title: "System Prompt"
 ---
 
 # System Prompt
 
-RemoteClaw builds a custom system prompt for every agent run. The prompt is **RemoteClaw-owned**.
+RemoteClaw builds a custom system prompt for every agent run. The prompt is **RemoteClaw-owned** and does not use the pi-coding-agent default prompt.
 
 The prompt is assembled by RemoteClaw and injected into each agent run.
 
@@ -22,12 +22,12 @@ The prompt is intentionally compact and uses fixed sections:
 - **RemoteClaw Self-Update**: how to run `config.apply` and `update.run`.
 - **Workspace**: working directory (`agents.defaults.workspace`).
 - **Documentation**: local path to RemoteClaw docs (repo or npm package) and when to read them.
-- **Workspace Files (injected)**: indicates workspace context files are included below.
-- **Sandbox** (when enabled): indicates sandboxed runtime and sandbox paths.
+- **Workspace Files (injected)**: indicates bootstrap files are included below.
+- **Sandbox** (when enabled): indicates sandboxed runtime, sandbox paths, and whether elevated exec is available.
 - **Current Date & Time**: user-local time, timezone, and time format.
-- **Reply Tags**: optional reply tag syntax for supported channels.
+- **Reply Tags**: optional reply tag syntax for supported providers.
 - **Heartbeats**: heartbeat prompt and ack behavior.
-- **Runtime**: host, OS, node, runtime name, repo root (when detected), thinking level (one line).
+- **Runtime**: host, OS, node, model, repo root (when detected), thinking level (one line).
 - **Reasoning**: current visibility level + /reasoning toggle hint.
 
 Safety guardrails in the system prompt are advisory. They guide model behavior but do not enforce policy. Use tool policy, exec approvals, sandboxing, and channel allowlists for hard enforcement; operators can disable these by design.
@@ -39,8 +39,8 @@ RemoteClaw can render smaller system prompts for sub-agents. The runtime sets a
 
 - `full` (default): includes all sections above.
 - `minimal`: used for sub-agents; omits **Skills**, **Memory Recall**, **RemoteClaw
-  Self-Update**, **User Identity**, **Reply Tags**,
-  **Messaging**, **Silent Replies**, and **Heartbeats**. **Safety**,
+  Self-Update**, **Model Aliases**, **User Identity**, **Reply Tags**,
+  **Messaging**, **Silent Replies**, and **Heartbeats**. Tooling, **Safety**,
   Workspace, Sandbox, Current Date & Time (when known), Runtime, and injected
   context stay available.
 - `none`: returns only the base identity line.
@@ -48,17 +48,41 @@ RemoteClaw can render smaller system prompts for sub-agents. The runtime sets a
 When `promptMode=minimal`, extra injected prompts are labeled **Subagent
 Context** instead of **Group Chat Context**.
 
-## Workspace context
+## Workspace bootstrap injection
 
-The workspace is a plain working directory. Agents bring their own configuration
-(e.g. `CLAUDE.md` for Claude Code, `.gemini/` for Gemini CLI). RemoteClaw does
-not inject workspace files into the context window — the agent CLI handles its
-own context loading.
+Bootstrap files are trimmed and appended under **Project Context** so the model sees identity and profile context without needing explicit reads:
 
-Files that RemoteClaw may read or write in the workspace:
+- `AGENTS.md`
+- `SOUL.md`
+- `TOOLS.md`
+- `IDENTITY.md`
+- `USER.md`
+- `HEARTBEAT.md`
+- `BOOTSTRAP.md` (only on brand-new workspaces)
+- `MEMORY.md` and/or `memory.md` (when present in the workspace; either or both may be injected)
 
-- `HEARTBEAT.md` — optional checklist for heartbeat runs
-- `MEMORY.md` and/or `memory.md` — long-term memory (when present)
+All of these files are **injected into the context window** on every turn, which
+means they consume tokens. Keep them concise — especially `MEMORY.md`, which can
+grow over time and lead to unexpectedly high context usage and more frequent
+compaction.
+
+> **Note:** `memory/*.md` daily files are **not** injected automatically. They
+> are accessed on demand via the `memory_search` and `memory_get` tools, so they
+> do not count against the context window unless the model explicitly reads them.
+
+Large files are truncated with a marker. The max per-file size is controlled by
+`agents.defaults.bootstrapMaxChars` (default: 20000). Total injected bootstrap
+content across files is capped by `agents.defaults.bootstrapTotalMaxChars`
+(default: 150000). Missing files inject a short missing-file marker. When truncation
+occurs, RemoteClaw can inject a warning block in Project Context; control this with
+`agents.defaults.bootstrapPromptTruncationWarning` (`off`, `once`, `always`;
+default: `once`).
+
+Sub-agent sessions only inject `AGENTS.md` and `TOOLS.md` (other bootstrap files
+are filtered out to keep the sub-agent context small).
+
+Internal hooks can intercept this step via `agent:bootstrap` to mutate or replace
+the injected bootstrap files (for example swapping `SOUL.md` for an alternate persona).
 
 To inspect how much each injected file contributes (raw vs injected, truncation, plus tool schema overhead), use `/context list` or `/context detail`. See [Context](/concepts/context).
 
@@ -102,6 +126,7 @@ This keeps the base prompt small while still enabling targeted skill usage.
 
 When available, the system prompt includes a **Documentation** section that points to the
 local RemoteClaw docs directory (either `docs/` in the repo workspace or the bundled npm
-package docs) and also notes the public mirror, source repo, and community Discord. The prompt instructs the model to consult local docs first
+package docs) and also notes the public mirror, source repo, community Discord, and
+ClawHub ([https://clawhub.com](https://clawhub.com)) for skills discovery. The prompt instructs the model to consult local docs first
 for RemoteClaw behavior, commands, configuration, or architecture, and to run
 `remoteclaw status` itself when possible (asking the user only when it lacks access).

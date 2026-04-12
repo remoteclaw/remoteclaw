@@ -31,8 +31,12 @@ remoteclaw plugins list
 remoteclaw plugins install @remoteclaw/voice-call
 ```
 
-Npm specs are **registry-only** (package name + optional version/tag). Git/URL/file
-specs are rejected.
+Npm specs are **registry-only** (package name + optional **exact version** or
+**dist-tag**). Git/URL/file specs and semver ranges are rejected.
+
+Bare specs and `@latest` stay on the stable track. If npm resolves either of
+those to a prerelease, RemoteClaw stops and asks you to opt in explicitly with a
+prerelease tag such as `@beta`/`@rc` or an exact prerelease version.
 
 3. Restart the Gateway, then configure under `plugins.entries.<id>.config`.
 
@@ -62,10 +66,11 @@ Schema instead. See [Plugin manifest](/plugins/manifest).
 Plugins can register:
 
 - Gateway RPC methods
-- Gateway HTTP handlers
+- Gateway HTTP routes
 - Agent tools
 - CLI commands
 - Background services
+- Context engines
 - Optional config validation
 - **Skills** (by listing `skills` directories in the plugin manifest)
 - **Auto-reply commands** (execute without invoking the AI agent)
@@ -106,6 +111,120 @@ Notes:
 - Uses core media-understanding audio configuration (`tools.media.audio`) and provider fallback order.
 - Returns `{ text: undefined }` when no transcription output is produced (for example skipped/unsupported input).
 
+## Gateway HTTP routes
+
+Plugins can expose HTTP endpoints with `api.registerHttpRoute(...)`.
+
+```ts
+api.registerHttpRoute({
+  path: "/acme/webhook",
+  auth: "plugin",
+  match: "exact",
+  handler: async (_req, res) => {
+    res.statusCode = 200;
+    res.end("ok");
+    return true;
+  },
+});
+```
+
+Route fields:
+
+- `path`: route path under the gateway HTTP server.
+- `auth`: required. Use `"gateway"` to require normal gateway auth, or `"plugin"` for plugin-managed auth/webhook verification.
+- `match`: optional. `"exact"` (default) or `"prefix"`.
+- `replaceExisting`: optional. Allows the same plugin to replace its own existing route registration.
+- `handler`: return `true` when the route handled the request.
+
+Notes:
+
+- `api.registerHttpHandler(...)` is obsolete. Use `api.registerHttpRoute(...)`.
+- Plugin routes must declare `auth` explicitly.
+- Exact `path + match` conflicts are rejected unless `replaceExisting: true`, and one plugin cannot replace another plugin's route.
+- Overlapping routes with different `auth` levels are rejected. Keep `exact`/`prefix` fallthrough chains on the same auth level only.
+
+## Plugin SDK import paths
+
+Use SDK subpaths instead of the monolithic `remoteclaw/plugin-sdk` import when
+authoring plugins:
+
+- `remoteclaw/plugin-sdk/core` for generic plugin APIs, provider auth types, and shared helpers.
+- `remoteclaw/plugin-sdk/compat` for bundled/internal plugin code that needs broader shared runtime helpers than `core`.
+- `remoteclaw/plugin-sdk/telegram` for Telegram channel plugins.
+- `remoteclaw/plugin-sdk/discord` for Discord channel plugins.
+- `remoteclaw/plugin-sdk/slack` for Slack channel plugins.
+- `remoteclaw/plugin-sdk/signal` for Signal channel plugins.
+- `remoteclaw/plugin-sdk/imessage` for iMessage channel plugins.
+- `remoteclaw/plugin-sdk/whatsapp` for WhatsApp channel plugins.
+- `remoteclaw/plugin-sdk/line` for LINE channel plugins.
+- `remoteclaw/plugin-sdk/msteams` for the bundled Microsoft Teams plugin surface.
+- Bundled extension-specific subpaths are also available:
+  `remoteclaw/plugin-sdk/acpx`, `remoteclaw/plugin-sdk/bluebubbles`,
+  `remoteclaw/plugin-sdk/copilot-proxy`, `remoteclaw/plugin-sdk/device-pair`,
+  `remoteclaw/plugin-sdk/diagnostics-otel`, `remoteclaw/plugin-sdk/diffs`,
+  `remoteclaw/plugin-sdk/feishu`,
+  `remoteclaw/plugin-sdk/google-gemini-cli-auth`, `remoteclaw/plugin-sdk/googlechat`,
+  `remoteclaw/plugin-sdk/irc`, `remoteclaw/plugin-sdk/llm-task`,
+  `remoteclaw/plugin-sdk/lobster`, `remoteclaw/plugin-sdk/matrix`,
+  `remoteclaw/plugin-sdk/mattermost`, `remoteclaw/plugin-sdk/memory-core`,
+  `remoteclaw/plugin-sdk/memory-lancedb`,
+  `remoteclaw/plugin-sdk/minimax-portal-auth`,
+  `remoteclaw/plugin-sdk/nextcloud-talk`, `remoteclaw/plugin-sdk/nostr`,
+  `remoteclaw/plugin-sdk/open-prose`, `remoteclaw/plugin-sdk/phone-control`,
+  `remoteclaw/plugin-sdk/qwen-portal-auth`, `remoteclaw/plugin-sdk/synology-chat`,
+  `remoteclaw/plugin-sdk/talk-voice`, `remoteclaw/plugin-sdk/test-utils`,
+  `remoteclaw/plugin-sdk/thread-ownership`, `remoteclaw/plugin-sdk/tlon`,
+  `remoteclaw/plugin-sdk/twitch`, `remoteclaw/plugin-sdk/voice-call`,
+  `remoteclaw/plugin-sdk/zalo`, and `remoteclaw/plugin-sdk/zalouser`.
+
+Compatibility note:
+
+- `remoteclaw/plugin-sdk` remains supported for existing external plugins.
+- New and migrated bundled plugins should use channel or extension-specific
+  subpaths; use `core` for generic surfaces and `compat` only when broader
+  shared helpers are required.
+
+## Read-only channel inspection
+
+If your plugin registers a channel, prefer implementing
+`plugin.config.inspectAccount(cfg, accountId)` alongside `resolveAccount(...)`.
+
+Why:
+
+- `resolveAccount(...)` is the runtime path. It is allowed to assume credentials
+  are fully materialized and can fail fast when required secrets are missing.
+- Read-only command paths such as `remoteclaw status`, `remoteclaw status --all`,
+  `remoteclaw channels status`, `remoteclaw channels resolve`, and doctor/config
+  repair flows should not need to materialize runtime credentials just to
+  describe configuration.
+
+Recommended `inspectAccount(...)` behavior:
+
+- Return descriptive account state only.
+- Preserve `enabled` and `configured`.
+- Include credential source/status fields when relevant, such as:
+  - `tokenSource`, `tokenStatus`
+  - `botTokenSource`, `botTokenStatus`
+  - `appTokenSource`, `appTokenStatus`
+  - `signingSecretSource`, `signingSecretStatus`
+- You do not need to return raw token values just to report read-only
+  availability. Returning `tokenStatus: "available"` (and the matching source
+  field) is enough for status-style commands.
+- Use `configured_unavailable` when a credential is configured via SecretRef but
+  unavailable in the current command path.
+
+This lets read-only commands report “configured but unavailable in this command
+path” instead of crashing or misreporting the account as not configured.
+
+Performance note:
+
+- Plugin discovery and manifest metadata use short in-process caches to reduce
+  bursty startup/reload work.
+- Set `REMOTECLAW_DISABLE_PLUGIN_DISCOVERY_CACHE=1` or
+  `REMOTECLAW_DISABLE_PLUGIN_MANIFEST_CACHE=1` to disable these caches.
+- Tune cache windows with `REMOTECLAW_PLUGIN_DISCOVERY_CACHE_MS` and
+  `REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS`.
+
 ## Discovery & precedence
 
 RemoteClaw scans, in order:
@@ -124,13 +243,21 @@ RemoteClaw scans, in order:
 - `~/.remoteclaw/extensions/*.ts`
 - `~/.remoteclaw/extensions/*/index.ts`
 
-4. Bundled extensions (shipped with RemoteClaw, **disabled by default**)
+4. Bundled extensions (shipped with RemoteClaw, mostly disabled by default)
 
 - `<remoteclaw>/extensions/*`
 
-Bundled plugins must be enabled explicitly via `plugins.entries.<id>.enabled`
-or `remoteclaw plugins enable <id>`. Installed plugins are enabled by default,
-but can be disabled the same way.
+Most bundled plugins must be enabled explicitly via
+`plugins.entries.<id>.enabled` or `remoteclaw plugins enable <id>`.
+
+Default-on bundled plugin exceptions:
+
+- `device-pair`
+- `phone-control`
+- `talk-voice`
+- active memory slot plugin (default slot: `memory-core`)
+
+Installed plugins are enabled by default, but can be disabled the same way.
 
 Hardening notes:
 
@@ -249,6 +376,7 @@ Fields:
 - `allow`: allowlist (optional)
 - `deny`: denylist (optional; deny wins)
 - `load.paths`: extra plugin files/dirs
+- `slots`: exclusive slot selectors such as `memory` and `contextEngine`
 - `entries.<id>`: per‑plugin toggles + config
 
 Config changes **require a gateway restart**.
@@ -272,13 +400,29 @@ Some plugin categories are **exclusive** (only one active at a time). Use
   plugins: {
     slots: {
       memory: "memory-core", // or "none" to disable memory plugins
+      contextEngine: "legacy", // or a plugin id such as "lossless-claw"
     },
   },
 }
 ```
 
-If multiple plugins declare `kind: "memory"`, only the selected one loads. Others
-are disabled with diagnostics.
+Supported exclusive slots:
+
+- `memory`: active memory plugin (`"none"` disables memory plugins)
+- `contextEngine`: active context engine plugin (`"legacy"` is the built-in default)
+
+If multiple plugins declare `kind: "memory"` or `kind: "context-engine"`, only
+the selected plugin loads for that slot. Others are disabled with diagnostics.
+
+### Context engine plugins
+
+Context engine plugins own session context orchestration for ingest, assembly,
+and compaction. Register them from your plugin with
+`api.registerContextEngine(id, factory)`, then select the active engine with
+`plugins.slots.contextEngine`.
+
+Use this when your plugin needs to replace or extend the default context
+pipeline rather than just add memory search or hooks.
 
 ## Control UI (schema + labels)
 
@@ -344,6 +488,37 @@ Plugins export either:
 - A function: `(api) => { ... }`
 - An object: `{ id, name, configSchema, register(api) { ... } }`
 
+Context engine plugins can also register a runtime-owned context manager:
+
+```ts
+export default function (api) {
+  api.registerContextEngine("lossless-claw", () => ({
+    info: { id: "lossless-claw", name: "Lossless Claw", ownsCompaction: true },
+    async ingest() {
+      return { ingested: true };
+    },
+    async assemble({ messages }) {
+      return { messages, estimatedTokens: 0 };
+    },
+    async compact() {
+      return { ok: true, compacted: false };
+    },
+  }));
+}
+```
+
+Then enable it in config:
+
+```json5
+{
+  plugins: {
+    slots: {
+      contextEngine: "lossless-claw",
+    },
+  },
+}
+```
+
 ## Plugin hooks
 
 Plugins can register hooks at runtime. This lets a plugin bundle event-driven
@@ -372,6 +547,59 @@ Notes:
 - Hook eligibility rules still apply (OS/bins/env/config requirements).
 - Plugin-managed hooks show up in `remoteclaw hooks list` with `plugin:<id>`.
 - You cannot enable/disable plugin-managed hooks via `remoteclaw hooks`; enable/disable the plugin instead.
+
+### Agent lifecycle hooks (`api.on`)
+
+For typed runtime lifecycle hooks, use `api.on(...)`:
+
+```ts
+export default function register(api) {
+  api.on(
+    "before_prompt_build",
+    (event, ctx) => {
+      return {
+        prependSystemContext: "Follow company style guide.",
+      };
+    },
+    { priority: 10 },
+  );
+}
+```
+
+Important hooks for prompt construction:
+
+- `before_model_resolve`: runs before session load (`messages` are not available). Use this to deterministically override `modelOverride` or `providerOverride`.
+- `before_prompt_build`: runs after session load (`messages` are available). Use this to shape prompt input.
+- `before_agent_start`: legacy compatibility hook. Prefer the two explicit hooks above.
+
+Core-enforced hook policy:
+
+- Operators can disable prompt mutation hooks per plugin via `plugins.entries.<id>.hooks.allowPromptInjection: false`.
+- When disabled, RemoteClaw blocks `before_prompt_build` and ignores prompt-mutating fields returned from legacy `before_agent_start` while preserving legacy `modelOverride` and `providerOverride`.
+
+`before_prompt_build` result fields:
+
+- `prependContext`: prepends text to the user prompt for this run. Best for turn-specific or dynamic content.
+- `systemPrompt`: full system prompt override.
+- `prependSystemContext`: prepends text to the current system prompt.
+- `appendSystemContext`: appends text to the current system prompt.
+
+Prompt build order in embedded runtime:
+
+1. Apply `prependContext` to the user prompt.
+2. Apply `systemPrompt` override when provided.
+3. Apply `prependSystemContext + current system prompt + appendSystemContext`.
+
+Merge and precedence notes:
+
+- Hook handlers run by priority (higher first).
+- For merged context fields, values are concatenated in execution order.
+- `before_prompt_build` values are applied before legacy `before_agent_start` fallback values.
+
+Migration guidance:
+
+- Move static guidance from `prependContext` to `prependSystemContext` (or `appendSystemContext`) so providers can cache stable system-prefix content.
+- Keep `prependContext` for per-turn dynamic context that should stay tied to the user message.
 
 ## Provider plugins (model auth)
 
@@ -635,6 +863,7 @@ Command handler context:
 Command options:
 
 - `name`: Command name (without the leading `/`)
+- `nativeNames`: Optional native-command aliases for slash/menu surfaces. Use `default` for all native providers, or provider-specific keys like `discord`
 - `description`: Help text shown in command lists
 - `acceptsArgs`: Whether the command accepts arguments (default: false). If false and arguments are provided, the command won't match and the message falls through to other handlers
 - `requireAuth`: Whether to require authorized sender (default: true)

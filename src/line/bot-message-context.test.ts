@@ -75,6 +75,7 @@ describe("buildLineMessageContext", () => {
       allMedia: [],
       cfg,
       account,
+      commandAuthorized: true,
     });
     expect(context).not.toBeNull();
     if (!context) {
@@ -92,6 +93,7 @@ describe("buildLineMessageContext", () => {
       event,
       cfg,
       account,
+      commandAuthorized: true,
     });
 
     expect(context?.ctxPayload.OriginatingTo).toBe("line:group:group-2");
@@ -105,6 +107,7 @@ describe("buildLineMessageContext", () => {
       event,
       cfg,
       account,
+      commandAuthorized: true,
     });
 
     expect(context?.ctxPayload.OriginatingTo).toBe("line:room:room-1");

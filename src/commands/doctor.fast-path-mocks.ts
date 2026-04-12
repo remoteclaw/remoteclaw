@@ -4,6 +4,10 @@ vi.mock("./doctor-completion.js", () => ({
   doctorShellCompletion: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("./doctor-bootstrap-size.js", () => ({
+  noteBootstrapFileSize: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("./doctor-gateway-daemon-flow.js", () => ({
   maybeRepairGatewayDaemon: vi.fn().mockResolvedValue(undefined),
 }));
@@ -13,11 +17,20 @@ vi.mock("./doctor-gateway-health.js", () => ({
   probeGatewayMemoryStatus: vi.fn().mockResolvedValue({ checked: false, ready: false }),
 }));
 
+vi.mock("./doctor-memory-search.js", () => ({
+  noteMemorySearchHealth: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("./doctor-platform-notes.js", () => ({
   noteDeprecatedLegacyEnvVars: vi.fn(),
   noteStartupOptimizationHints: vi.fn(),
   noteMacLaunchAgentOverrides: vi.fn().mockResolvedValue(undefined),
   noteMacLaunchctlGatewayEnvOverrides: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("./doctor-sandbox.js", () => ({
+  maybeRepairSandboxImages: vi.fn(async (cfg: unknown) => cfg),
+  noteSandboxScopeWarnings: vi.fn(),
 }));
 
 vi.mock("./doctor-security.js", () => ({

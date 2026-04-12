@@ -1,4 +1,4 @@
-import { formatRawAssistantErrorForUi } from "../agents/agent-helpers.js";
+import { formatRawAssistantErrorForUi } from "../agents/pi-embedded-helpers.js";
 import { stripLeadingInboundMetadata } from "../auto-reply/reply/strip-inbound-meta.js";
 import { stripAnsi } from "../terminal/ansi.js";
 import { formatTokenCount } from "../utils/usage-format.js";
@@ -11,6 +11,8 @@ const BINARY_LINE_REPLACEMENT_THRESHOLD = 12;
 const URL_PREFIX_RE = /^(https?:\/\/|file:\/\/)/i;
 const WINDOWS_DRIVE_RE = /^[a-zA-Z]:[\\/]/;
 const FILE_LIKE_RE = /^[a-zA-Z0-9._-]+$/;
+const EDGE_PUNCTUATION_RE = /^[`"'([{<]+|[`"')\]}>.,:;!?]+$/g;
+const TOKENISH_MIN_LENGTH = 24;
 const RTL_SCRIPT_RE = /[\u0590-\u08ff\ufb1d-\ufdff\ufe70-\ufefc]/;
 const BIDI_CONTROL_RE = /[\u202a-\u202e\u2066-\u2069]/;
 const RTL_ISOLATE_START = "\u2067";
@@ -56,6 +58,9 @@ function chunkToken(token: string, maxChars: number): string[] {
 }
 
 function isCopySensitiveToken(token: string): boolean {
+  const coreToken = token.replace(EDGE_PUNCTUATION_RE, "");
+  const candidate = coreToken || token;
+
   if (URL_PREFIX_RE.test(token)) {
     return true;
   }
@@ -73,7 +78,16 @@ function isCopySensitiveToken(token: string): boolean {
   if (token.includes("/") || token.includes("\\")) {
     return true;
   }
-  return token.includes("_") && FILE_LIKE_RE.test(token);
+  if (token.includes("_") && FILE_LIKE_RE.test(token)) {
+    return true;
+  }
+
+  // Preserve long credential-like tokens (hex/base62/etc.) to avoid introducing
+  // visible spaces that users may copy back into secrets.
+  if (candidate.length >= TOKENISH_MIN_LENGTH && /[a-z]/i.test(candidate) && /\d/.test(candidate)) {
+    return true;
+  }
+  return false;
 }
 
 function normalizeLongTokenForDisplay(token: string): string {
@@ -142,6 +156,7 @@ export function sanitizeRenderableText(text: string): string {
 export function resolveFinalAssistantText(params: {
   finalText?: string | null;
   streamedText?: string | null;
+  errorMessage?: string | null;
 }) {
   const finalText = params.finalText ?? "";
   if (finalText.trim()) {
@@ -150,6 +165,10 @@ export function resolveFinalAssistantText(params: {
   const streamedText = params.streamedText ?? "";
   if (streamedText.trim()) {
     return streamedText;
+  }
+  const errorMessage = params.errorMessage ?? "";
+  if (errorMessage.trim()) {
+    return formatRawAssistantErrorForUi(errorMessage);
   }
   return "(no output)";
 }
@@ -341,9 +360,20 @@ export function formatTokens(total?: number | null, context?: number | null) {
   return `tokens ${totalLabel}/${formatTokenCount(context)}${pct !== null ? ` (${pct}%)` : ""}`;
 }
 
-export function formatContextUsageLine(params: { total?: number | null }) {
-  const totalLabel = typeof params.total === "number" ? formatTokenCount(params.total) : "unknown";
-  return `tokens ${totalLabel} used`;
+export function formatContextUsageLine(params: {
+  total?: number | null;
+  context?: number | null;
+  remaining?: number | null;
+  percent?: number | null;
+}) {
+  const totalLabel = typeof params.total === "number" ? formatTokenCount(params.total) : "?";
+  const ctxLabel = typeof params.context === "number" ? formatTokenCount(params.context) : "?";
+  const pct = typeof params.percent === "number" ? Math.min(999, Math.round(params.percent)) : null;
+  const remainingLabel =
+    typeof params.remaining === "number" ? `${formatTokenCount(params.remaining)} left` : null;
+  const pctLabel = pct !== null ? `${pct}%` : null;
+  const extra = [remainingLabel, pctLabel].filter(Boolean).join(", ");
+  return `tokens ${totalLabel}/${ctxLabel}${extra ? ` (${extra})` : ""}`;
 }
 
 export function asString(value: unknown, fallback = ""): string {

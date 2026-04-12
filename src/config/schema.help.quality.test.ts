@@ -68,6 +68,37 @@ const TARGET_KEYS = [
   "memory.qmd.limits.maxSnippetChars",
   "memory.qmd.limits.maxInjectedChars",
   "memory.qmd.limits.timeoutMs",
+  "agents.defaults.memorySearch.provider",
+  "agents.defaults.memorySearch.fallback",
+  "agents.defaults.memorySearch.sources",
+  "agents.defaults.memorySearch.extraPaths",
+  "agents.defaults.memorySearch.experimental.sessionMemory",
+  "agents.defaults.memorySearch.remote.baseUrl",
+  "agents.defaults.memorySearch.remote.apiKey",
+  "agents.defaults.memorySearch.remote.headers",
+  "agents.defaults.memorySearch.remote.batch.enabled",
+  "agents.defaults.memorySearch.remote.batch.wait",
+  "agents.defaults.memorySearch.remote.batch.concurrency",
+  "agents.defaults.memorySearch.remote.batch.pollIntervalMs",
+  "agents.defaults.memorySearch.remote.batch.timeoutMinutes",
+  "agents.defaults.memorySearch.local.modelPath",
+  "agents.defaults.memorySearch.store.path",
+  "agents.defaults.memorySearch.store.vector.enabled",
+  "agents.defaults.memorySearch.store.vector.extensionPath",
+  "agents.defaults.memorySearch.query.hybrid.enabled",
+  "agents.defaults.memorySearch.query.hybrid.vectorWeight",
+  "agents.defaults.memorySearch.query.hybrid.textWeight",
+  "agents.defaults.memorySearch.query.hybrid.candidateMultiplier",
+  "agents.defaults.memorySearch.query.hybrid.mmr.enabled",
+  "agents.defaults.memorySearch.query.hybrid.mmr.lambda",
+  "agents.defaults.memorySearch.query.hybrid.temporalDecay.enabled",
+  "agents.defaults.memorySearch.query.hybrid.temporalDecay.halfLifeDays",
+  "agents.defaults.memorySearch.cache.enabled",
+  "agents.defaults.memorySearch.cache.maxEntries",
+  "agents.defaults.memorySearch.sync.onSearch",
+  "agents.defaults.memorySearch.sync.watch",
+  "agents.defaults.memorySearch.sync.sessions.deltaBytes",
+  "agents.defaults.memorySearch.sync.sessions.deltaMessages",
   "models.mode",
   "models.providers.*.auth",
   "models.providers.*.authHeader",
@@ -308,6 +339,8 @@ const TARGET_KEYS = [
   "plugins.slots",
   "plugins.entries",
   "plugins.entries.*.enabled",
+  "plugins.entries.*.hooks",
+  "plugins.entries.*.hooks.allowPromptInjection",
   "plugins.entries.*.apiKey",
   "plugins.entries.*.env",
   "plugins.entries.*.config",
@@ -339,6 +372,16 @@ const TARGET_KEYS = [
   "agents.defaults.compaction.maxHistoryShare",
   "agents.defaults.compaction.identifierPolicy",
   "agents.defaults.compaction.identifierInstructions",
+  "agents.defaults.compaction.recentTurnsPreserve",
+  "agents.defaults.compaction.qualityGuard",
+  "agents.defaults.compaction.qualityGuard.enabled",
+  "agents.defaults.compaction.qualityGuard.maxRetries",
+  "agents.defaults.compaction.postCompactionSections",
+  "agents.defaults.compaction.memoryFlush",
+  "agents.defaults.compaction.memoryFlush.enabled",
+  "agents.defaults.compaction.memoryFlush.softThresholdTokens",
+  "agents.defaults.compaction.memoryFlush.prompt",
+  "agents.defaults.compaction.memoryFlush.systemPrompt",
 ] as const;
 
 const ENUM_EXPECTATIONS: Record<string, string[]> = {
@@ -387,7 +430,7 @@ const ENUM_EXPECTATIONS: Record<string, string[]> = {
   "logging.consoleStyle": ['"pretty"', '"compact"', '"json"'],
   "logging.redactSensitive": ['"off"', '"tools"'],
   "cli.banner.taglineMode": ['"random"', '"default"', '"off"'],
-  "update.channel": ['"stable"', '"beta"', '"next"', '"dev"'],
+  "update.channel": ['"stable"', '"beta"', '"dev"'],
   "agents.defaults.compaction.mode": ['"default"', '"safeguard"'],
   "agents.defaults.compaction.identifierPolicy": ['"strict"', '"off"', '"custom"'],
 };
@@ -447,6 +490,14 @@ const TOOLS_HOOKS_TARGET_KEYS = [
 ] as const;
 
 const CHANNELS_AGENTS_TARGET_KEYS = [
+  "agents.defaults.memorySearch.chunking.overlap",
+  "agents.defaults.memorySearch.chunking.tokens",
+  "agents.defaults.memorySearch.enabled",
+  "agents.defaults.memorySearch.model",
+  "agents.defaults.memorySearch.query.maxResults",
+  "agents.defaults.memorySearch.query.minScore",
+  "agents.defaults.memorySearch.sync.onSessionStart",
+  "agents.defaults.memorySearch.sync.watchDebounceMs",
   "agents.defaults.workspace",
   "agents.list[].tools.alsoAllow",
   "agents.list[].tools.byProvider",
@@ -584,6 +635,9 @@ describe("config help copy quality", () => {
     expect(FIELD_HELP["memory.qmd.paths.pattern"].includes("**/*.md")).toBe(true);
     expect(FIELD_HELP["memory.qmd.update.interval"].includes("5m")).toBe(true);
     expect(FIELD_HELP["memory.qmd.update.embedInterval"].includes("60m")).toBe(true);
+    expect(FIELD_HELP["agents.defaults.memorySearch.store.path"]).toContain(
+      "~/.remoteclaw/memory/{agentId}.sqlite",
+    );
   });
 
   it("documents cron deprecation, migration, and retention formats", () => {
@@ -711,11 +765,19 @@ describe("config help copy quality", () => {
 
     const pluginEnv = FIELD_HELP["plugins.entries.*.env"];
     expect(/scope|plugin|environment/i.test(pluginEnv)).toBe(true);
+
+    const pluginPromptPolicy = FIELD_HELP["plugins.entries.*.hooks.allowPromptInjection"];
+    expect(pluginPromptPolicy.includes("before_prompt_build")).toBe(true);
+    expect(pluginPromptPolicy.includes("before_agent_start")).toBe(true);
+    expect(pluginPromptPolicy.includes("modelOverride")).toBe(true);
   });
 
   it("documents auth/model root semantics and provider secret handling", () => {
     const providerKey = FIELD_HELP["models.providers.*.apiKey"];
     expect(/secret|env|credential/i.test(providerKey)).toBe(true);
+    const modelsMode = FIELD_HELP["models.mode"];
+    expect(modelsMode.includes("SecretRef-managed")).toBe(true);
+    expect(modelsMode.includes("preserve")).toBe(true);
 
     const bedrockRefresh = FIELD_HELP["models.bedrockDiscovery.refreshInterval"];
     expect(/refresh|seconds|interval/i.test(bedrockRefresh)).toBe(true);
@@ -737,5 +799,17 @@ describe("config help copy quality", () => {
     expect(identifierPolicy.includes('"strict"')).toBe(true);
     expect(identifierPolicy.includes('"off"')).toBe(true);
     expect(identifierPolicy.includes('"custom"')).toBe(true);
+
+    const recentTurnsPreserve = FIELD_HELP["agents.defaults.compaction.recentTurnsPreserve"];
+    expect(/recent.*turn|verbatim/i.test(recentTurnsPreserve)).toBe(true);
+    expect(/default:\s*3/i.test(recentTurnsPreserve)).toBe(true);
+
+    const postCompactionSections = FIELD_HELP["agents.defaults.compaction.postCompactionSections"];
+    expect(/Session Startup|Red Lines/i.test(postCompactionSections)).toBe(true);
+    expect(/Every Session|Safety/i.test(postCompactionSections)).toBe(true);
+    expect(/\[\]|disable/i.test(postCompactionSections)).toBe(true);
+
+    const flush = FIELD_HELP["agents.defaults.compaction.memoryFlush.enabled"];
+    expect(/pre-compaction|memory flush|token/i.test(flush)).toBe(true);
   });
 });

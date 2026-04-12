@@ -1,5 +1,9 @@
 import fs from "node:fs";
-import { isCliProvider } from "../../agents/provider-utils.js";
+import { lookupContextTokens } from "../../agents/context.js";
+import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
+import { resolveModelAuthMode } from "../../agents/model-auth.js";
+import { isCliProvider } from "../../agents/model-selection.js";
+import { queueEmbeddedPiMessage } from "../../agents/pi-embedded.js";
 import { hasNonzeroUsage, type NormalizedUsage } from "../../agents/usage.js";
 import {
   resolveAgentIdFromSessionKey,
@@ -11,9 +15,17 @@ import {
   updateSessionStoreEntry,
 } from "../../config/sessions.js";
 import type { TypingMode } from "../../config/types.js";
+import { emitAgentEvent } from "../../infra/agent-events.js";
 import { emitDiagnosticEvent, isDiagnosticsEnabled } from "../../infra/diagnostic-events.js";
 import { generateSecureUuid } from "../../infra/secure-random.js";
+import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { defaultRuntime } from "../../runtime.js";
+import { estimateUsageCost, resolveModelCostConfig } from "../../utils/usage-format.js";
+import {
+  buildFallbackClearedNotice,
+  buildFallbackNotice,
+  resolveFallbackTransition,
+} from "../fallback-state.js";
 import type { OriginatingChannelType, TemplateContext } from "../templating.js";
 import { resolveResponseUsageMode, type VerboseLevel } from "../thinking.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
@@ -25,6 +37,7 @@ import {
   isAudioPayload,
   signalTypingIfNeeded,
 } from "./agent-runner-helpers.js";
+import { runMemoryFlushIfNeeded } from "./agent-runner-memory.js";
 import { buildReplyPayloads } from "./agent-runner-payloads.js";
 import {
   appendUnscheduledReminderNote,
@@ -36,8 +49,10 @@ import { createAudioAsVoiceBuffer, createBlockReplyPipeline } from "./block-repl
 import { resolveEffectiveBlockStreamingConfig } from "./block-streaming.js";
 import { createFollowupRunner } from "./followup-runner.js";
 import { resolveOriginMessageProvider, resolveOriginMessageTo } from "./origin-routing.js";
+import { readPostCompactionContext } from "./post-compaction-context.js";
 import { resolveActiveRunQueueAction } from "./queue-policy.js";
 import { enqueueFollowupRun, type FollowupRun, type QueueSettings } from "./queue.js";
+import { createReplyMediaPathNormalizer } from "./reply-media-paths.js";
 import { createReplyToModeFilterForChannel, resolveReplyToMode } from "./reply-threading.js";
 import { incrementRunCompactionCount, persistRunSessionUsage } from "./session-run-accounting.js";
 import { createTypingSignaler } from "./typing-mode.js";
@@ -50,8 +65,10 @@ export async function runReplyAgent(params: {
   followupRun: FollowupRun;
   queueKey: string;
   resolvedQueue: QueueSettings;
+  shouldSteer: boolean;
   shouldFollowup: boolean;
   isActive: boolean;
+  isStreaming: boolean;
   opts?: GetReplyOptions;
   typing: TypingController;
   sessionEntry?: SessionEntry;
@@ -59,6 +76,7 @@ export async function runReplyAgent(params: {
   sessionKey?: string;
   storePath?: string;
   defaultModel: string;
+  agentCfgContextTokens?: number;
   resolvedVerboseLevel: VerboseLevel;
   isNewSession: boolean;
   blockStreamingEnabled: boolean;
@@ -78,8 +96,10 @@ export async function runReplyAgent(params: {
     followupRun,
     queueKey,
     resolvedQueue,
+    shouldSteer,
     shouldFollowup,
     isActive,
+    isStreaming,
     opts,
     typing,
     sessionEntry,
@@ -87,7 +107,7 @@ export async function runReplyAgent(params: {
     sessionKey,
     storePath,
     defaultModel,
-
+    agentCfgContextTokens,
     resolvedVerboseLevel,
     isNewSession,
     blockStreamingEnabled,
@@ -135,6 +155,11 @@ export async function runReplyAgent(params: {
   );
   const applyReplyToMode = createReplyToModeFilterForChannel(replyToMode, replyToChannel);
   const cfg = followupRun.run.config;
+  const normalizeReplyMediaPaths = createReplyMediaPathNormalizer({
+    cfg,
+    sessionKey,
+    workspaceDir: followupRun.run.workspaceDir,
+  });
   const blockReplyCoalescing =
     blockStreamingEnabled && opts?.onBlockReply
       ? resolveEffectiveBlockStreamingConfig({
@@ -169,6 +194,15 @@ export async function runReplyAgent(params: {
     }
   };
 
+  if (shouldSteer && isStreaming) {
+    const steered = queueEmbeddedPiMessage(followupRun.run.sessionId, followupRun.prompt);
+    if (steered && !shouldFollowup) {
+      await touchActiveSessionEntry();
+      typing.cleanup();
+      return undefined;
+    }
+  }
+
   const activeRunQueueAction = resolveActiveRunQueueAction({
     isActive,
     isHeartbeat,
@@ -190,6 +224,22 @@ export async function runReplyAgent(params: {
 
   await typingSignals.signalRunStart();
 
+  activeSessionEntry = (await runMemoryFlushIfNeeded({
+    cfg,
+    followupRun,
+    promptForEstimate: followupRun.prompt,
+    sessionCtx,
+    opts,
+    defaultModel,
+    agentCfgContextTokens,
+    resolvedVerboseLevel,
+    sessionEntry: activeSessionEntry,
+    sessionStore: activeSessionStore,
+    sessionKey,
+    storePath,
+    isHeartbeat,
+  })) as SessionEntry | undefined;
+
   const runFollowupTurn = createFollowupRunner({
     opts,
     typing,
@@ -199,6 +249,7 @@ export async function runReplyAgent(params: {
     sessionKey,
     storePath,
     defaultModel,
+    agentCfgContextTokens,
   });
 
   let responseUsageLine: string | undefined;
@@ -227,6 +278,9 @@ export async function runReplyAgent(params: {
       updatedAt: Date.now(),
       systemSent: false,
       abortedLastRun: false,
+      fallbackNoticeSelectedModel: undefined,
+      fallbackNoticeActiveModel: undefined,
+      fallbackNoticeReason: undefined,
     };
     const agentId = resolveAgentIdFromSessionKey(sessionKey);
     const nextSessionFile = resolveSessionTranscriptPath(
@@ -314,7 +368,14 @@ export async function runReplyAgent(params: {
       return finalizeWithFollowup(runOutcome.payload, queueKey, runFollowupTurn);
     }
 
-    const { runResult, directlySentBlockKeys } = runOutcome;
+    const {
+      runId,
+      runResult,
+      fallbackProvider,
+      fallbackModel,
+      fallbackAttempts,
+      directlySentBlockKeys,
+    } = runOutcome;
     let { didLogHeartbeatStrip, autoCompactionCompleted } = runOutcome;
 
     if (
@@ -350,26 +411,70 @@ export async function runReplyAgent(params: {
       await Promise.allSettled(pendingToolTasks);
     }
 
-    const agentMeta = runResult.meta?.agentMeta;
-    const usage = agentMeta?.usage as NormalizedUsage | undefined;
-    const promptTokens = agentMeta?.promptTokens as number | undefined;
-    const modelUsed = (agentMeta?.model as string | undefined) ?? defaultModel;
-    const providerUsed = (agentMeta?.provider as string | undefined) ?? followupRun.run.provider;
+    const usage = runResult.meta?.agentMeta?.usage as NormalizedUsage | undefined;
+    const promptTokens = runResult.meta?.agentMeta?.promptTokens as number | undefined;
+    const modelUsed =
+      (runResult.meta?.agentMeta?.model as string | undefined) ?? fallbackModel ?? defaultModel;
+    const providerUsed =
+      (runResult.meta?.agentMeta?.provider as string | undefined) ??
+      fallbackProvider ??
+      followupRun.run.provider;
     const verboseEnabled = resolvedVerboseLevel !== "off";
+    const selectedProvider = followupRun.run.provider;
+    const selectedModel = followupRun.run.model;
+    const fallbackStateEntry =
+      activeSessionEntry ?? (sessionKey ? activeSessionStore?.[sessionKey] : undefined);
+    const fallbackTransition = resolveFallbackTransition({
+      selectedProvider,
+      selectedModel,
+      activeProvider: providerUsed,
+      activeModel: modelUsed,
+      attempts: fallbackAttempts,
+      state: fallbackStateEntry,
+    });
+    if (fallbackTransition.stateChanged) {
+      if (fallbackStateEntry) {
+        fallbackStateEntry.fallbackNoticeSelectedModel = fallbackTransition.nextState.selectedModel;
+        fallbackStateEntry.fallbackNoticeActiveModel = fallbackTransition.nextState.activeModel;
+        fallbackStateEntry.fallbackNoticeReason = fallbackTransition.nextState.reason;
+        fallbackStateEntry.updatedAt = Date.now();
+        activeSessionEntry = fallbackStateEntry;
+      }
+      if (sessionKey && fallbackStateEntry && activeSessionStore) {
+        activeSessionStore[sessionKey] = fallbackStateEntry;
+      }
+      if (sessionKey && storePath) {
+        await updateSessionStoreEntry({
+          storePath,
+          sessionKey,
+          update: async () => ({
+            fallbackNoticeSelectedModel: fallbackTransition.nextState.selectedModel,
+            fallbackNoticeActiveModel: fallbackTransition.nextState.activeModel,
+            fallbackNoticeReason: fallbackTransition.nextState.reason,
+          }),
+        });
+      }
+    }
     const cliSessionId = isCliProvider(providerUsed, cfg)
-      ? (agentMeta?.sessionId as string | undefined)?.trim()
+      ? (runResult.meta?.agentMeta?.sessionId as string | undefined)?.trim()
       : undefined;
+    const contextTokensUsed =
+      agentCfgContextTokens ??
+      lookupContextTokens(modelUsed) ??
+      activeSessionEntry?.contextTokens ??
+      DEFAULT_CONTEXT_TOKENS;
+
     await persistRunSessionUsage({
       storePath,
       sessionKey,
       usage,
-      lastCallUsage: agentMeta?.lastCallUsage as NormalizedUsage | undefined,
+      lastCallUsage: runResult.meta?.agentMeta?.lastCallUsage as NormalizedUsage | undefined,
       promptTokens,
       modelUsed,
       providerUsed,
       systemPromptReport: (runResult.meta as Record<string, unknown> | undefined)
         ?.systemPromptReport as
-        | import("../../config/sessions/types.js").SessionSystemPromptReport
+        | import("../../config/sessions.js").SessionSystemPromptReport
         | undefined,
       cliSessionId,
     });
@@ -381,7 +486,7 @@ export async function runReplyAgent(params: {
       return finalizeWithFollowup(undefined, queueKey, runFollowupTurn);
     }
 
-    const payloadResult = buildReplyPayloads({
+    const payloadResult = await buildReplyPayloads({
       payloads: payloadArray,
       isHeartbeat,
       didLogHeartbeatStrip,
@@ -394,15 +499,14 @@ export async function runReplyAgent(params: {
       messageProvider: followupRun.run.messageProvider,
       messagingToolSentTexts: runResult.messagingToolSentTexts,
       messagingToolSentMediaUrls: runResult.messagingToolSentMediaUrls,
-      messagingToolSentTargets: runResult.messagingToolSentTargets as
-        | Record<string, unknown>[]
-        | undefined,
+      messagingToolSentTargets: runResult.messagingToolSentTargets,
       originatingChannel: sessionCtx.OriginatingChannel,
       originatingTo: resolveOriginMessageTo({
         originatingTo: sessionCtx.OriginatingTo,
         to: sessionCtx.To,
       }),
       accountId: sessionCtx.AccountId,
+      normalizeMediaPaths: normalizeReplyMediaPaths,
     });
     const { replyPayloads } = payloadResult;
     didLogHeartbeatStrip = payloadResult.didLogHeartbeatStrip;
@@ -441,6 +545,12 @@ export async function runReplyAgent(params: {
       const cacheWrite = usage.cacheWrite ?? 0;
       const promptTokens = input + cacheRead + cacheWrite;
       const totalTokens = usage.total ?? promptTokens + output;
+      const costConfig = resolveModelCostConfig({
+        provider: providerUsed,
+        model: modelUsed,
+        config: cfg,
+      });
+      const costUsd = estimateUsageCost({ usage, cost: costConfig });
       emitDiagnosticEvent({
         type: "model.usage",
         sessionKey,
@@ -456,7 +566,12 @@ export async function runReplyAgent(params: {
           promptTokens,
           total: totalTokens,
         },
-        lastCallUsage: agentMeta?.lastCallUsage as NormalizedUsage | undefined,
+        lastCallUsage: runResult.meta?.agentMeta?.lastCallUsage as NormalizedUsage | undefined,
+        context: {
+          limit: contextTokensUsed,
+          used: totalTokens,
+        },
+        costUsd,
         durationMs: Date.now() - runStartedAt,
       });
     }
@@ -466,7 +581,20 @@ export async function runReplyAgent(params: {
       (sessionKey ? activeSessionStore?.[sessionKey]?.responseUsage : undefined);
     const responseUsageMode = resolveResponseUsageMode(responseUsageRaw);
     if (responseUsageMode !== "off" && hasNonzeroUsage(usage)) {
-      let formatted = formatResponseUsageLine({ usage });
+      const authMode = resolveModelAuthMode(providerUsed, cfg);
+      const showCost = authMode === "api-key";
+      const costConfig = showCost
+        ? resolveModelCostConfig({
+            provider: providerUsed,
+            model: modelUsed,
+            config: cfg,
+          })
+        : undefined;
+      let formatted = formatResponseUsageLine({
+        usage,
+        showCost,
+        costConfig,
+      });
       if (formatted && responseUsageMode === "full" && sessionKey) {
         formatted = `${formatted} · session \`${sessionKey}\``;
       }
@@ -483,17 +611,85 @@ export async function runReplyAgent(params: {
       verboseNotices.push({ text: `🧭 New session: ${followupRun.run.sessionId}` });
     }
 
+    if (fallbackTransition.fallbackTransitioned) {
+      emitAgentEvent({
+        runId,
+        sessionKey,
+        stream: "lifecycle",
+        data: {
+          phase: "fallback",
+          selectedProvider,
+          selectedModel,
+          activeProvider: providerUsed,
+          activeModel: modelUsed,
+          reasonSummary: fallbackTransition.reasonSummary,
+          attemptSummaries: fallbackTransition.attemptSummaries,
+          attempts: fallbackAttempts,
+        },
+      });
+      if (verboseEnabled) {
+        const fallbackNotice = buildFallbackNotice({
+          selectedProvider,
+          selectedModel,
+          activeProvider: providerUsed,
+          activeModel: modelUsed,
+          attempts: fallbackAttempts,
+        });
+        if (fallbackNotice) {
+          verboseNotices.push({ text: fallbackNotice });
+        }
+      }
+    }
+    if (fallbackTransition.fallbackCleared) {
+      emitAgentEvent({
+        runId,
+        sessionKey,
+        stream: "lifecycle",
+        data: {
+          phase: "fallback_cleared",
+          selectedProvider,
+          selectedModel,
+          activeProvider: providerUsed,
+          activeModel: modelUsed,
+          previousActiveModel: fallbackTransition.previousState.activeModel,
+        },
+      });
+      if (verboseEnabled) {
+        verboseNotices.push({
+          text: buildFallbackClearedNotice({
+            selectedProvider,
+            selectedModel,
+            previousActiveModel: fallbackTransition.previousState.activeModel,
+          }),
+        });
+      }
+    }
+
     if (autoCompactionCompleted) {
-      const count = incrementRunCompactionCount({
+      const count = await incrementRunCompactionCount({
         sessionEntry: activeSessionEntry,
         sessionStore: activeSessionStore,
         sessionKey,
         storePath,
-        lastCallUsage: agentMeta?.lastCallUsage as NormalizedUsage | undefined,
+        lastCallUsage: runResult.meta?.agentMeta?.lastCallUsage as NormalizedUsage | undefined,
       });
 
+      // Inject post-compaction workspace context for the next agent turn
+      if (sessionKey) {
+        const workspaceDir = process.cwd();
+        readPostCompactionContext(workspaceDir, cfg)
+          .then((contextContent: string | undefined) => {
+            if (contextContent) {
+              enqueueSystemEvent(contextContent, { sessionKey });
+            }
+          })
+          .catch(() => {
+            // Silent failure — post-compaction context is best-effort
+          });
+      }
+
       if (verboseEnabled) {
-        const suffix = typeof count === "number" ? ` (count ${String(count)})` : "";
+        const suffix = typeof count === "number" ? ` (count ${count})` : "";
         verboseNotices.push({ text: `🧹 Auto-compaction complete${suffix}.` });
       }
     }

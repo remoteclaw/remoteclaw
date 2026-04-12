@@ -1,5 +1,6 @@
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveGatewayPort } from "../config/config.js";
+import { isValidEnvSecretRefId, type SecretInput } from "../config/types.secrets.js";
 import {
   maybeAddTailnetOriginToControlUiAllowedOrigins,
   TAILSCALE_DOCS_LINES,
@@ -8,6 +9,7 @@ import {
 } from "../gateway/gateway-config-prompts.shared.js";
 import { findTailscaleBinary } from "../infra/tailscale.js";
 import type { RuntimeEnv } from "../runtime.js";
+import { resolveDefaultSecretProviderAlias } from "../secrets/ref-contract.js";
 import { validateIPv4AddressInput } from "../shared/net/ipv4.js";
 import { note } from "../terminal/note.js";
 import { buildGatewayAuthConfig } from "./configure.gateway-auth.js";
@@ -20,6 +22,7 @@ import {
 } from "./onboard-helpers.js";
 
 type GatewayAuthChoice = "token" | "password" | "trusted-proxy";
+type GatewayTokenInputMode = "plaintext" | "ref";
 
 export async function promptGatewayConfig(
   cfg: RemoteClawConfig,
@@ -156,7 +159,8 @@ export async function promptGatewayConfig(
     tailscaleResetOnExit = false;
   }
 
-  let gatewayToken: string | undefined;
+  let gatewayToken: SecretInput | undefined;
+  let gatewayTokenForCalls: string | undefined;
   let gatewayPassword: string | undefined;
   let trustedProxyConfig:
     | { userHeader: string; requiredHeaders?: string[]; allowUsers?: string[] }
@@ -165,14 +169,69 @@ export async function promptGatewayConfig(
   let next = cfg;
 
   if (authMode === "token") {
-    const tokenInput = guardCancel(
-      await text({
-        message: "Gateway token (blank to generate)",
-        initialValue: randomToken(),
+    const tokenInputMode = guardCancel(
+      await select<GatewayTokenInputMode>({
+        message: "Gateway token source",
+        options: [
+          {
+            value: "plaintext",
+            label: "Generate/store plaintext token",
+            hint: "Default",
+          },
+          {
+            value: "ref",
+            label: "Use SecretRef",
+            hint: "Store an env-backed reference instead of plaintext",
+          },
+        ],
+        initialValue: "plaintext",
       }),
       runtime,
     );
-    gatewayToken = normalizeGatewayTokenInput(tokenInput) || randomToken();
+    if (tokenInputMode === "ref") {
+      const envVar = guardCancel(
+        await text({
+          message: "Gateway token env var",
+          initialValue: "REMOTECLAW_GATEWAY_TOKEN",
+          placeholder: "REMOTECLAW_GATEWAY_TOKEN",
+          validate: (value) => {
+            const candidate = String(value ?? "").trim();
+            if (!isValidEnvSecretRefId(candidate)) {
+              return "Use an env var name like REMOTECLAW_GATEWAY_TOKEN.";
+            }
+            const resolved = process.env[candidate]?.trim();
+            if (!resolved) {
+              return `Environment variable "${candidate}" is missing or empty in this session.`;
+            }
+            return undefined;
+          },
+        }),
+        runtime,
+      );
+      const envVarName = String(envVar ?? "").trim();
+      gatewayToken = {
+        source: "env",
+        provider: resolveDefaultSecretProviderAlias(
+          cfg as Parameters<typeof resolveDefaultSecretProviderAlias>[0],
+          "env",
+          {
+            preferFirstProviderForSource: true,
+          },
+        ),
+        id: envVarName,
+      };
+      note(`Validated ${envVarName}. RemoteClaw will store a token SecretRef.`, "Gateway token");
+    } else {
+      const tokenInput = guardCancel(
+        await text({
+          message: "Gateway token (blank to generate)",
+          initialValue: randomToken(),
+        }),
+        runtime,
+      );
+      gatewayTokenForCalls = normalizeGatewayTokenInput(tokenInput) || randomToken();
+      gatewayToken = gatewayTokenForCalls;
+    }
   }
 
   if (authMode === "password") {
@@ -194,7 +253,7 @@ export async function promptGatewayConfig(
         "Only requests from specified proxy IPs will be trusted.",
         "",
         "Common use cases: Pomerium, Caddy + OAuth, Traefik + forward auth",
-        "Docs: https://docs.remoteclaw.org/gateway/trusted-proxy-auth",
+        "Docs: https://docs.remoteclaw.ai/gateway/trusted-proxy-auth",
       ].join("\n"),
       "Trusted Proxy Auth",
     );
@@ -294,5 +353,5 @@ export async function promptGatewayConfig(
     tailscaleBin,
   });
 
-  return { config: next, port, token: gatewayToken };
+  return { config: next, port, token: gatewayTokenForCalls };
 }

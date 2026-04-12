@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/mattermost";
 import { describe, expect, it } from "vitest";
 import { resolveDefaultMattermostAccountId } from "./accounts.js";
 

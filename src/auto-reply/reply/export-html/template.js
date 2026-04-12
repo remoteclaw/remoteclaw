@@ -374,11 +374,17 @@
           typeof entry.content === "string" ? entry.content : extractContent(entry.content),
         );
         break;
+      case "compaction":
+        parts.push("compaction");
+        break;
       case "branch_summary":
         parts.push("branch summary", entry.summary);
         break;
       case "model_change":
         parts.push("model", entry.modelId);
+        break;
+      case "thinking_level_change":
+        parts.push("thinking", entry.thinkingLevel);
         break;
     }
 
@@ -413,7 +419,7 @@
       }
 
       // Apply filter mode
-      const isSettingsEntry = ["label", "custom", "model_change"].includes(
+      const isSettingsEntry = ["label", "custom", "model_change", "thinking_level_change"].includes(
         entry.type,
       );
       let passesFilter = true;
@@ -628,6 +634,10 @@
         }
         return `[read: ${display}]`;
       }
+      case "write":
+        return `[write: ${shortenPath(String(args.path || args.file_path || ""))}]`;
+      case "edit":
+        return `[edit: ${shortenPath(String(args.path || args.file_path || ""))}]`;
       case "bash": {
         const rawCmd = String(args.command || "");
         const cmd = rawCmd
@@ -653,6 +663,10 @@
     const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  function escapeHtmlAttr(text) {
+    return escapeHtml(text).replaceAll('"', "&quot;").replaceAll("'", "&#39;");
   }
 
   // Validate image fields before interpolating data URLs.
@@ -750,6 +764,11 @@
         }
         return labelHtml + `<span class="tree-muted">[${escapeHtml(msg.role)}]</span>`;
       }
+      case "compaction":
+        return (
+          labelHtml +
+          `<span class="tree-compaction">[compaction: ${Math.round(entry.tokensBefore / 1000)}k tokens]</span>`
+        );
       case "branch_summary": {
         const summary = truncate(normalize(entry.summary || ""));
         return (
@@ -767,6 +786,8 @@
       }
       case "model_change":
         return labelHtml + `<span class="tree-muted">[model: ${escapeHtml(entry.modelId)}]</span>`;
+      case "thinking_level_change":
+        return labelHtml + `<span class="tree-muted">[thinking: ${escapeHtml(entry.thinkingLevel)}]</span>`;
       default:
         return labelHtml + `<span class="tree-muted">[${escapeHtml(entry.type)}]</span>`;
     }
@@ -1088,6 +1109,57 @@
         }
         break;
       }
+      case "write": {
+        const filePath = str(args.file_path ?? args.path);
+        const content = str(args.content);
+
+        html += `<div class="tool-header"><span class="tool-name">write</span> <span class="tool-path">${filePath === null ? invalidArg : escapeHtml(shortenPath(filePath || ""))}</span>`;
+        if (content !== null && content) {
+          const lines = content.split("\n");
+          if (lines.length > 10) {
+            html += ` <span class="line-count">(${lines.length} lines)</span>`;
+          }
+        }
+        html += "</div>";
+
+        if (content === null) {
+          html += `<div class="tool-error">[invalid content arg - expected string]</div>`;
+        } else if (content) {
+          const lang = filePath ? getLanguageFromPath(filePath) : null;
+          html += formatExpandableOutput(content, 10, lang);
+        }
+        if (result) {
+          const output = getResultText().trim();
+          if (output) {
+            html += `<div class="tool-output"><div>${escapeHtml(output)}</div></div>`;
+          }
+        }
+        break;
+      }
+      case "edit": {
+        const filePath = str(args.file_path ?? args.path);
+        html += `<div class="tool-header"><span class="tool-name">edit</span> <span class="tool-path">${filePath === null ? invalidArg : escapeHtml(shortenPath(filePath || ""))}</span></div>`;
+
+        if (result?.details?.diff) {
+          const diffLines = result.details.diff.split("\n");
+          html += '<div class="tool-diff">';
+          for (const line of diffLines) {
+            const cls = line.match(/^\+/)
+              ? "diff-added"
+              : line.match(/^-/)
+                ? "diff-removed"
+                : "diff-context";
+            html += `<div class="${cls}">${escapeHtml(replaceTabs(line))}</div>`;
+          }
+          html += "</div>";
+        } else if (result) {
+          const output = getResultText().trim();
+          if (output) {
+            html += `<div class="tool-output"><pre>${escapeHtml(output)}</pre></div>`;
+          }
+        }
+        break;
+      }
       default: {
         // Check for pre-rendered custom tool HTML
         const rendered = renderedTools?.[call.id];
@@ -1338,6 +1410,14 @@
       return `<div class="model-change" id="${entryId}">${tsHtml}Switched to model: <span class="model-name">${escapeHtml(entry.provider)}/${escapeHtml(entry.modelId)}</span></div>`;
     }
 
+    if (entry.type === "compaction") {
+      return `<div class="compaction" id="${entryId}" onclick="this.classList.toggle('expanded')">
+            <div class="compaction-label">[compaction]</div>
+            <div class="compaction-collapsed">Compacted from ${entry.tokensBefore.toLocaleString()} tokens</div>
+            <div class="compaction-content"><strong>Compacted from ${entry.tokensBefore.toLocaleString()} tokens</strong>\n\n${escapeHtml(entry.summary)}</div>
+          </div>`;
+    }
+
     if (entry.type === "branch_summary") {
       return `<div class="branch-summary" id="${entryId}">${tsHtml}
             <div class="branch-summary-header">Branch Summary</div>
@@ -1364,6 +1444,7 @@
       assistantMessages = 0,
       toolResults = 0;
     let customMessages = 0,
+      compactions = 0,
       branchSummaries = 0,
       toolCalls = 0;
     const tokens = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
@@ -1398,6 +1479,8 @@
         if (msg.role === "toolResult") {
           toolResults++;
         }
+      } else if (entry.type === "compaction") {
+        compactions++;
       } else if (entry.type === "branch_summary") {
         branchSummaries++;
       } else if (entry.type === "custom_message") {
@@ -1410,6 +1493,7 @@
       assistantMessages,
       toolResults,
       customMessages,
+      compactions,
       branchSummaries,
       toolCalls,
       tokens,
@@ -1453,6 +1537,9 @@
     }
     if (globalStats.customMessages) {
       msgParts.push(`${globalStats.customMessages} custom`);
+    }
+    if (globalStats.compactions) {
+      msgParts.push(`${globalStats.compactions} compactions`);
     }
     if (globalStats.branchSummaries) {
       msgParts.push(`${globalStats.branchSummaries} branch summaries`);
@@ -1629,6 +1716,22 @@
     return text.replace(/<(?=[a-zA-Z/])/g, "&lt;");
   }
 
+  const INLINE_DATA_IMAGE_RE = /^data:image\/[a-z0-9.+-]+;base64,/i;
+
+  function normalizeMarkdownImageLabel(text) {
+    const trimmed = typeof text === "string" ? text.trim() : "";
+    return trimmed || "image";
+  }
+
+  function renderMarkdownImage(token) {
+    const label = normalizeMarkdownImageLabel(token?.text);
+    const href = typeof token?.href === "string" ? token.href.trim() : "";
+    if (!INLINE_DATA_IMAGE_RE.test(href)) {
+      return escapeHtml(label);
+    }
+    return `<img src="${escapeHtmlAttr(href)}" alt="${escapeHtmlAttr(label)}">`;
+  }
+
   // Configure marked with syntax highlighting and HTML escaping for text
   marked.use({
     breaks: true,
@@ -1666,6 +1769,9 @@
       // Raw HTML blocks/inline HTML: escape to prevent script execution.
       html(token) {
         return escapeHtml(token.text);
+      },
+      image(token) {
+        return renderMarkdownImage(token);
       },
     },
   });
@@ -1729,6 +1835,9 @@
   const toggleToolOutputs = () => {
     toolOutputsExpanded = !toolOutputsExpanded;
     document.querySelectorAll(".tool-output.expandable").forEach((el) => {
+      el.classList.toggle("expanded", toolOutputsExpanded);
+    });
+    document.querySelectorAll(".compaction").forEach((el) => {
       el.classList.toggle("expanded", toolOutputsExpanded);
     });
   };

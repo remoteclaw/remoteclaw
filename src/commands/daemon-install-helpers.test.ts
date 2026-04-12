@@ -125,7 +125,7 @@ describe("buildGatewayInstallPlan", () => {
       config: {
         env: {
           vars: {
-            GOOGLE_API_KEY: "test-key",
+            GOOGLE_API_KEY: "test-key", // pragma: allowlist secret
           },
           CUSTOM_VAR: "custom-value",
         },
@@ -238,7 +238,7 @@ describe("gatewayInstallErrorHint", () => {
   it("returns platform-specific hints", () => {
     expect(gatewayInstallErrorHint("win32")).toContain("Run as administrator");
     expect(gatewayInstallErrorHint("linux")).toMatch(
-      /remoteclaw( --profile isolated)? gateway install/,
+      /(?:remoteclaw|remoteclaw)( --profile isolated)? gateway install/,
     );
   });
 });

@@ -1,4 +1,4 @@
-import type { MSTeamsConfig } from "remoteclaw/plugin-sdk";
+import type { MSTeamsConfig } from "remoteclaw/plugin-sdk/msteams";
 import {
   hasConfiguredSecretInput,
   normalizeResolvedSecretInputString,

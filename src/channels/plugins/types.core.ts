@@ -1,8 +1,8 @@
 import type { TSchema } from "@sinclair/typebox";
+import type { AgentTool, AgentToolResult } from "../../agents/agent-types.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { PollInput } from "../../polls.js";
-import type { AgentTool, AgentToolResult } from "../../types/agent-types.js";
 import type { GatewayClientMode, GatewayClientName } from "../../utils/message-channel.js";
 import type { ChatType } from "../chat-type.js";
 import type { ChatChannelId } from "../registry.js";
@@ -102,6 +102,7 @@ export type ChannelAccountSnapshot = {
   linked?: boolean;
   running?: boolean;
   connected?: boolean;
+  restartPending?: boolean;
   reconnectAttempts?: number;
   lastConnectedAt?: number | null;
   lastDisconnect?:
@@ -120,12 +121,21 @@ export type ChannelAccountSnapshot = {
   lastStopAt?: number | null;
   lastInboundAt?: number | null;
   lastOutboundAt?: number | null;
+  busy?: boolean;
+  activeRuns?: number;
+  lastRunActivityAt?: number | null;
   mode?: string;
   dmPolicy?: string;
   allowFrom?: string[];
   tokenSource?: string;
   botTokenSource?: string;
   appTokenSource?: string;
+  signingSecretSource?: string;
+  tokenStatus?: string;
+  botTokenStatus?: string;
+  appTokenStatus?: string;
+  signingSecretStatus?: string;
+  userTokenStatus?: string;
   credentialSource?: string;
   secretSource?: string;
   audienceType?: string;
@@ -170,7 +180,6 @@ export type ChannelGroupContext = {
 
 export type ChannelCapabilities = {
   chatTypes: Array<ChatType | "thread">;
-  voiceOnly?: boolean;
   polls?: boolean;
   reactions?: boolean;
   edit?: boolean;
@@ -255,6 +264,8 @@ export type ChannelThreadingContext = {
   ReplyToIdFull?: string;
   ThreadLabel?: string;
   MessageThreadId?: string | number;
+  /** Platform-native channel/conversation id (e.g. Slack DM channel "D…" id). */
+  NativeChannelId?: string;
 };
 
 export type ChannelThreadingToolContext = {
@@ -330,9 +341,16 @@ export type ChannelMessageActionContext = {
 export type ChannelToolSend = {
   to: string;
   accountId?: string | null;
+  threadId?: string | null;
 };
 
 export type ChannelMessageActionAdapter = {
+  /**
+   * Advertise agent-discoverable actions for this channel.
+   * Keep this aligned with any gated capability checks. Poll discovery is
+   * not inferred from `outbound.sendPoll`, so channels that want agents to
+   * create polls should include `"poll"` here when enabled.
+   */
   listActions?: (params: { cfg: RemoteClawConfig }) => ChannelMessageActionName[];
   supportsAction?: (params: { action: ChannelMessageActionName }) => boolean;
   supportsButtons?: (params: { cfg: RemoteClawConfig }) => boolean;

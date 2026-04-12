@@ -42,7 +42,7 @@ describe("agents helpers", () => {
     expect(main).toBeTruthy();
     expect(main?.workspace).toBe(path.resolve("/main-ws"));
     expect(main?.bindings).toBe(1);
-    expect(main?.runtime).toBeUndefined();
+    expect((main as Record<string, unknown> | undefined)?.runtime).toBeUndefined();
     expect(main?.agentDir.endsWith(path.join("agents", "main", "agent"))).toBe(true);
 
     expect(work).toBeTruthy();

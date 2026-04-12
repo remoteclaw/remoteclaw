@@ -8,7 +8,7 @@ import {
   Text,
   TUI,
 } from "@mariozechner/pi-tui";
-import { listAgentEntries } from "../agents/agent-scope.js";
+import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { loadConfig } from "../config/config.js";
 import {
   buildAgentMainSessionKey,
@@ -203,9 +203,9 @@ export function resolveTuiSessionKey(params: {
     return trimmed;
   }
   if (trimmed.startsWith("agent:")) {
-    return trimmed;
+    return trimmed.toLowerCase();
   }
-  return `agent:${params.currentAgentId}:${trimmed}`;
+  return `agent:${params.currentAgentId}:${trimmed.toLowerCase()}`;
 }
 
 export function resolveGatewayDisconnectState(reason?: string): {
@@ -302,8 +302,8 @@ export async function runTui(opts: TuiOptions) {
   const initialSessionInput = (opts.session ?? "").trim();
   let sessionScope: SessionScope = (config.session?.scope ?? "per-sender") as SessionScope;
   let sessionMainKey = normalizeMainKey(config.session?.mainKey);
-  let firstAgentId = listAgentEntries(config)[0]?.id ?? "default";
-  let currentAgentId = firstAgentId;
+  let agentDefaultId = resolveDefaultAgentId(config);
+  let currentAgentId = agentDefaultId;
   let agents: AgentSummary[] = [];
   const agentNames = new Map<string, string>();
   let currentSessionKey = "";
@@ -333,10 +333,13 @@ export async function runTui(opts: TuiOptions) {
 
   const state: TuiStateAccess = {
     get firstAgentId() {
-      return firstAgentId;
+      return agentDefaultId;
     },
-    set firstAgentId(value) {
-      firstAgentId = value;
+    get agentDefaultId() {
+      return agentDefaultId;
+    },
+    set agentDefaultId(value) {
+      agentDefaultId = value;
     },
     get sessionMainKey() {
       return sessionMainKey;
@@ -471,7 +474,7 @@ export async function runTui(opts: TuiOptions) {
     localRunIds.clear();
   };
 
-  const client = new GatewayChatClient({
+  const client = await GatewayChatClient.connect({
     url: opts.url,
     token: opts.token,
     password: opts.password,
@@ -723,7 +726,7 @@ export async function runTui(opts: TuiOptions) {
         ? `${sessionInfo.modelProvider}/${sessionInfo.model}`
         : sessionInfo.model
       : "unknown";
-    const tokens = formatTokens(sessionInfo.totalTokens ?? null);
+    const tokens = formatTokens(sessionInfo.totalTokens ?? null, sessionInfo.contextTokens ?? null);
     const think = sessionInfo.thinkingLevel ?? "off";
     const verbose = sessionInfo.verboseLevel ?? "off";
     const reasoning = sessionInfo.reasoningLevel ?? "off";
@@ -798,7 +801,7 @@ export async function runTui(opts: TuiOptions) {
     process.exit(0);
   };
 
-  const { handleCommand, sendMessage, openAgentSelector, openSessionSelector } =
+  const { handleCommand, sendMessage, openModelSelector, openAgentSelector, openSessionSelector } =
     createCommandHandlers({
       client,
       chatLog,
@@ -874,6 +877,9 @@ export async function runTui(opts: TuiOptions) {
     chatLog.setToolsExpanded(toolsExpanded);
     setActivityStatus(toolsExpanded ? "tools expanded" : "tools collapsed");
     tui.requestRender();
+  };
+  editor.onCtrlL = () => {
+    void openModelSelector();
   };
   editor.onCtrlG = () => {
     void openAgentSelector();

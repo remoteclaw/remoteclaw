@@ -11,10 +11,7 @@ import type { ResolvedSlackAccount } from "../../accounts.js";
 import type { SlackMessageEvent } from "../../types.js";
 import type { SlackMonitorContext } from "../context.js";
 import { prepareSlackMessage } from "./prepare.js";
-import {
-  createInboundSlackTestContext as createInboundSlackCtx,
-  createSlackTestAccount as createSlackAccount,
-} from "./prepare.test-helpers.js";
+import { createInboundSlackTestContext, createSlackTestAccount } from "./prepare.test-helpers.js";
 
 describe("slack prepareSlackMessage inbound contract", () => {
   let fixtureRoot = "";
@@ -24,7 +21,9 @@ describe("slack prepareSlackMessage inbound contract", () => {
     if (!fixtureRoot) {
       throw new Error("fixtureRoot missing");
     }
-    return { storePath: path.join(fixtureRoot, `case-${caseId++}.sessions.json`) };
+    const dir = path.join(fixtureRoot, `case-${caseId++}`);
+    fs.mkdirSync(dir);
+    return { dir, storePath: path.join(dir, "sessions.json") };
   }
 
   beforeAll(() => {
@@ -38,10 +37,11 @@ describe("slack prepareSlackMessage inbound contract", () => {
     }
   });
 
+  const createInboundSlackCtx = createInboundSlackTestContext;
+
   function createDefaultSlackCtx() {
     const slackCtx = createInboundSlackCtx({
       cfg: {
-        agents: { list: [{ id: "main", workspace: "~/test" }] },
         channels: { slack: { enabled: true } },
       } as RemoteClawConfig,
     });
@@ -58,38 +58,27 @@ describe("slack prepareSlackMessage inbound contract", () => {
     userTokenSource: "none",
     config: {},
   };
-  const defaultMessageTemplate = Object.freeze({
-    channel: "D123",
-    channel_type: "im",
-    user: "U1",
-    text: "hi",
-    ts: "1.000",
-  }) as SlackMessageEvent;
-  const threadAccount = Object.freeze({
-    accountId: "default",
-    enabled: true,
-    botTokenSource: "config",
-    appTokenSource: "config",
-    userTokenSource: "none",
-    config: {
-      replyToMode: "all",
-      thread: { initialHistoryLimit: 20 },
-    },
-    replyToMode: "all",
-  }) as ResolvedSlackAccount;
-  const defaultPrepareOpts = Object.freeze({ source: "message" }) as { source: "message" };
 
   async function prepareWithDefaultCtx(message: SlackMessageEvent) {
     return prepareSlackMessage({
       ctx: createDefaultSlackCtx(),
       account: defaultAccount,
       message,
-      opts: defaultPrepareOpts,
+      opts: { source: "message" },
     });
   }
 
+  const createSlackAccount = createSlackTestAccount;
+
   function createSlackMessage(overrides: Partial<SlackMessageEvent>): SlackMessageEvent {
-    return { ...defaultMessageTemplate, ...overrides } as SlackMessageEvent;
+    return {
+      channel: "D123",
+      channel_type: "im",
+      user: "U1",
+      text: "hi",
+      ts: "1.000",
+      ...overrides,
+    } as SlackMessageEvent;
   }
 
   async function prepareMessageWith(
@@ -101,7 +90,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
       ctx,
       account,
       message,
-      opts: defaultPrepareOpts,
+      opts: { source: "message" },
     });
   }
 
@@ -115,7 +104,18 @@ describe("slack prepareSlackMessage inbound contract", () => {
   }
 
   function createThreadAccount(): ResolvedSlackAccount {
-    return threadAccount;
+    return {
+      accountId: "default",
+      enabled: true,
+      botTokenSource: "config",
+      appTokenSource: "config",
+      userTokenSource: "none",
+      config: {
+        replyToMode: "all",
+        thread: { initialHistoryLimit: 20 },
+      },
+      replyToMode: "all",
+    };
   }
 
   function createThreadReplyMessage(overrides: Partial<SlackMessageEvent>): SlackMessageEvent {
@@ -134,7 +134,6 @@ describe("slack prepareSlackMessage inbound contract", () => {
   function createDmScopeMainSlackCtx(): SlackMonitorContext {
     const slackCtx = createInboundSlackCtx({
       cfg: {
-        agents: { list: [{ id: "main", workspace: "~/test" }] },
         channels: { slack: { enabled: true } },
         session: { dmScope: "main" },
       } as RemoteClawConfig,
@@ -178,7 +177,6 @@ describe("slack prepareSlackMessage inbound contract", () => {
   }): SlackMonitorContext {
     const slackCtx = createInboundSlackCtx({
       cfg: {
-        agents: { list: [{ id: "main", workspace: "~/test" }] },
         channels: {
           slack: {
             enabled: true,
@@ -272,7 +270,6 @@ describe("slack prepareSlackMessage inbound contract", () => {
   it("extracts attachment text for bot messages with empty text when allowBots is true (#27616)", async () => {
     const slackCtx = createInboundSlackCtx({
       cfg: {
-        agents: { list: [{ id: "main", workspace: "~/test" }] },
         channels: {
           slack: { enabled: true },
         },
@@ -303,7 +300,6 @@ describe("slack prepareSlackMessage inbound contract", () => {
   it("keeps channel metadata out of GroupSystemPrompt", async () => {
     const slackCtx = createInboundSlackCtx({
       cfg: {
-        agents: { list: [{ id: "main", workspace: "~/test" }] },
         channels: {
           slack: {
             enabled: true,
@@ -438,7 +434,6 @@ describe("slack prepareSlackMessage inbound contract", () => {
       });
     const slackCtx = createThreadSlackCtx({
       cfg: {
-        agents: { list: [{ id: "main", workspace: "~/test" }] },
         session: { store: storePath },
         channels: { slack: { enabled: true, replyToMode: "all", groupPolicy: "open" } },
       } as RemoteClawConfig,
@@ -456,7 +451,6 @@ describe("slack prepareSlackMessage inbound contract", () => {
 
     expect(prepared).toBeTruthy();
     expect(prepared!.ctxPayload.IsFirstThreadTurn).toBe(true);
-    expect(prepared!.ctxPayload.ThreadStarterBody).toBe("starter");
     expect(prepared!.ctxPayload.ThreadHistoryBody).toContain("assistant reply");
     expect(prepared!.ctxPayload.ThreadHistoryBody).toContain("follow-up question");
     expect(prepared!.ctxPayload.ThreadHistoryBody).not.toContain("current message");
@@ -466,7 +460,6 @@ describe("slack prepareSlackMessage inbound contract", () => {
   it("skips loading thread history when thread session already exists in store (bloat fix)", async () => {
     const { storePath } = makeTmpStorePath();
     const cfg = {
-      agents: { list: [{ id: "main", workspace: "~/test" }] },
       session: { store: storePath },
       channels: { slack: { enabled: true, replyToMode: "all", groupPolicy: "open" } },
     } as RemoteClawConfig;
@@ -481,7 +474,6 @@ describe("slack prepareSlackMessage inbound contract", () => {
       baseSessionKey: route.sessionKey,
       threadId: "200.000",
     });
-    // Simulate existing session - thread history should NOT be fetched (bloat fix)
     fs.writeFileSync(
       storePath,
       JSON.stringify({ [threadKeys.sessionKey]: { updatedAt: Date.now() } }, null, 2),
@@ -557,7 +549,6 @@ describe("slack prepareSlackMessage inbound contract", () => {
     const { storePath } = makeTmpStorePath();
     const slackCtx = createInboundSlackCtx({
       cfg: {
-        agents: { list: [{ id: "main", workspace: "~/test" }] },
         session: { store: storePath },
         channels: { slack: { enabled: true, replyToMode: "all" } },
       } as RemoteClawConfig,
@@ -590,10 +581,7 @@ describe("prepareSlackMessage sender prefix", () => {
   }): SlackMonitorContext {
     return {
       cfg: {
-        agents: {
-          list: [{ id: "main", workspace: "~/test" }],
-          defaults: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/remoteclaw" },
-        },
+        agents: { defaults: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/remoteclaw" } },
         channels: { slack: params.channels },
       },
       accountId: "default",

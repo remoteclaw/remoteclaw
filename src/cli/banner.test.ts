@@ -23,12 +23,12 @@ describe("formatCliBannerLine", () => {
       cli: { banner: { taglineMode: "off" } },
     });
 
-    const line = formatCliBannerLine("2026.3.3", {
+    const line = formatCliBannerLine("2026.3.7", {
       commit: "abc1234",
       richTty: false,
     });
 
-    expect(line).toBe("🦞 RemoteClaw 2026.3.3 (abc1234)");
+    expect(line).toBe("🦞 RemoteClaw 2026.3.7 (abc1234)");
   });
 
   it("uses default tagline when cli.banner.taglineMode is default", () => {
@@ -36,12 +36,12 @@ describe("formatCliBannerLine", () => {
       cli: { banner: { taglineMode: "default" } },
     });
 
-    const line = formatCliBannerLine("2026.3.3", {
+    const line = formatCliBannerLine("2026.3.7", {
       commit: "abc1234",
       richTty: false,
     });
 
-    expect(line).toBe("🦞 RemoteClaw 2026.3.3 (abc1234) — All your chats, one RemoteClaw.");
+    expect(line).toBe("🦞 RemoteClaw 2026.3.7 (abc1234) — All your chats, one RemoteClaw.");
   });
 
   it("prefers explicit tagline mode over config", () => {
@@ -49,12 +49,12 @@ describe("formatCliBannerLine", () => {
       cli: { banner: { taglineMode: "off" } },
     });
 
-    const line = formatCliBannerLine("2026.3.3", {
+    const line = formatCliBannerLine("2026.3.7", {
       commit: "abc1234",
       richTty: false,
       mode: "default",
     });
 
-    expect(line).toBe("🦞 RemoteClaw 2026.3.3 (abc1234) — All your chats, one RemoteClaw.");
+    expect(line).toBe("🦞 RemoteClaw 2026.3.7 (abc1234) — All your chats, one RemoteClaw.");
   });
 });

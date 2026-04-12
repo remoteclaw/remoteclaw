@@ -1,5 +1,5 @@
 ---
-description: "CLI reference for `remoteclaw daemon` (legacy alias for gateway service management)"
+summary: "CLI reference for `remoteclaw daemon` (legacy alias for gateway service management)"
 read_when:
   - You still use `remoteclaw daemon ...` in scripts
   - You need service lifecycle commands (install/start/stop/restart/status)
@@ -37,6 +37,14 @@ remoteclaw daemon uninstall
 - `status`: `--url`, `--token`, `--password`, `--timeout`, `--no-probe`, `--deep`, `--json`
 - `install`: `--port`, `--runtime <node|bun>`, `--token`, `--force`, `--json`
 - lifecycle (`uninstall|start|stop|restart`): `--json`
+
+Notes:
+
+- `status` resolves configured auth SecretRefs for probe auth when possible.
+- On Linux systemd installs, `status` token-drift checks include both `Environment=` and `EnvironmentFile=` unit sources.
+- When token auth requires a token and `gateway.auth.token` is SecretRef-managed, `install` validates that the SecretRef is resolvable but does not persist the resolved token into service environment metadata.
+- If token auth requires a token and the configured token SecretRef is unresolved, install fails closed.
+- If both `gateway.auth.token` and `gateway.auth.password` are configured and `gateway.auth.mode` is unset, install is blocked until mode is set explicitly.
 
 ## Prefer
 

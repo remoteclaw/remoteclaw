@@ -1,5 +1,6 @@
 import { parseFrontmatterBlock } from "../markdown/frontmatter.js";
 import {
+  applyRemoteClawManifestInstallCommonFields,
   getFrontmatterString,
   normalizeStringList,
   parseRemoteClawManifestInstallBase,
@@ -27,19 +28,12 @@ function parseInstallSpec(input: unknown): HookInstallSpec | undefined {
     return undefined;
   }
   const { raw } = parsed;
-  const spec: HookInstallSpec = {
-    kind: parsed.kind as HookInstallSpec["kind"],
-  };
-
-  if (parsed.id) {
-    spec.id = parsed.id;
-  }
-  if (parsed.label) {
-    spec.label = parsed.label;
-  }
-  if (parsed.bins) {
-    spec.bins = parsed.bins;
-  }
+  const spec = applyRemoteClawManifestInstallCommonFields<HookInstallSpec>(
+    {
+      kind: parsed.kind as HookInstallSpec["kind"],
+    },
+    parsed,
+  );
   if (typeof raw.package === "string") {
     spec.package = raw.package;
   }

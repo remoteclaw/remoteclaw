@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { clearBootstrapSnapshotOnSessionRollover } from "../../agents/bootstrap-cache.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
   evaluateSessionFreshness,
@@ -58,6 +59,11 @@ export function resolveCronSession(params: {
     systemSent = false;
   }
 
+  clearBootstrapSnapshotOnSessionRollover({
+    sessionKey: params.sessionKey,
+    previousSessionId: isNewSession ? entry?.sessionId : undefined,
+  });
+
   const sessionEntry: SessionEntry = {
     // Preserve existing per-session overrides even when rolling to a new sessionId.
     ...entry,
@@ -77,8 +83,6 @@ export function resolveCronSession(params: {
       lastAccountId: undefined,
       lastThreadId: undefined,
       deliveryContext: undefined,
-      cliSessionIds: undefined,
-      claudeCliSessionId: undefined,
     }),
   };
   return { storePath, store, sessionEntry, systemSent, isNewSession };

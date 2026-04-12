@@ -1,3 +1,4 @@
+import type { AgentToolResult } from "../../../../agents/agent-types.js";
 import {
   readNumberParam,
   readStringArrayParam,
@@ -6,8 +7,7 @@ import {
 import { readDiscordParentIdParam } from "../../../../agents/tools/discord-actions-shared.js";
 import { handleDiscordAction } from "../../../../agents/tools/discord-actions.js";
 import { resolveDiscordChannelId } from "../../../../discord/targets.js";
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-import type { AgentToolResult } from "../../../../types/agent-types.js";
+import { readBooleanParam } from "../../../../plugin-sdk/boolean-param.js";
 import type { ChannelMessageActionContext } from "../../types.js";
 import { resolveReactionMessageId } from "../reaction-message-id.js";
 import { tryHandleDiscordMessageActionGuildAdmin } from "./handle-action.guild-admin.js";
@@ -39,7 +39,7 @@ export async function handleDiscordMessageAction(
 
   if (action === "send") {
     const to = readStringParam(params, "to", { required: true });
-    const asVoice = params.asVoice === true;
+    const asVoice = readBooleanParam(params, "asVoice") === true;
     const rawComponents = params.components;
     const hasComponents =
       Boolean(rawComponents) &&
@@ -58,7 +58,7 @@ export async function handleDiscordMessageAction(
     const replyTo = readStringParam(params, "replyTo");
     const rawEmbeds = params.embeds;
     const embeds = Array.isArray(rawEmbeds) ? rawEmbeds : undefined;
-    const silent = params.silent === true;
+    const silent = readBooleanParam(params, "silent") === true;
     const sessionKey = readStringParam(params, "__sessionKey");
     const agentId = readStringParam(params, "__agentId");
     return await handleDiscordAction(
@@ -87,10 +87,11 @@ export async function handleDiscordMessageAction(
     const question = readStringParam(params, "pollQuestion", {
       required: true,
     });
-    const answers = readStringArrayParam(params, "pollOption", { required: true }) ?? [];
-    const allowMultiselect = typeof params.pollMulti === "boolean" ? params.pollMulti : undefined;
+    const answers = readStringArrayParam(params, "pollOption", { required: true });
+    const allowMultiselect = readBooleanParam(params, "pollMulti");
     const durationHours = readNumberParam(params, "pollDurationHours", {
       integer: true,
+      strict: true,
     });
     return await handleDiscordAction(
       {
@@ -117,7 +118,7 @@ export async function handleDiscordMessageAction(
       );
     }
     const emoji = readStringParam(params, "emoji", { allowEmpty: true });
-    const remove = typeof params.remove === "boolean" ? params.remove : undefined;
+    const remove = readBooleanParam(params, "remove");
     return await handleDiscordAction(
       {
         action: "react",

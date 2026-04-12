@@ -1258,3 +1258,6 @@ export function listDescendantRunsForRequester(rootSessionKey: string): Subagent
 export function initSubagentRegistry() {
   restoreSubagentRunsOnce();
 }
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export const shouldIgnorePostCompletionAnnounceForSession = (..._args: any[]) => undefined as any;

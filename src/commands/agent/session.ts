@@ -1,7 +1,13 @@
 import crypto from "node:crypto";
 import { listAgentIds } from "../../agents/agent-scope.js";
+import { clearBootstrapSnapshotOnSessionRollover } from "../../agents/bootstrap-cache.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
-import { normalizeVerboseLevel, type VerboseLevel } from "../../auto-reply/thinking.js";
+import {
+  normalizeThinkLevel,
+  normalizeVerboseLevel,
+  type ThinkLevel,
+  type VerboseLevel,
+} from "../../auto-reply/thinking.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
   evaluateSessionFreshness,
@@ -24,9 +30,8 @@ export type SessionResolution = {
   sessionStore?: Record<string, SessionEntry>;
   storePath: string;
   isNewSession: boolean;
+  persistedThinking?: ThinkLevel;
   persistedVerbose?: VerboseLevel;
-  /** Upstream feature: persisted thinking level for the session. */
-  persistedThinking?: string;
 };
 
 type SessionKeyResolution = {
@@ -140,6 +145,15 @@ export function resolveSession(opts: {
     opts.sessionId?.trim() || (fresh ? sessionEntry?.sessionId : undefined) || crypto.randomUUID();
   const isNewSession = !fresh && !opts.sessionId;
 
+  clearBootstrapSnapshotOnSessionRollover({
+    sessionKey,
+    previousSessionId: isNewSession ? sessionEntry?.sessionId : undefined,
+  });
+
+  const persistedThinking =
+    fresh && sessionEntry?.thinkingLevel
+      ? normalizeThinkLevel(sessionEntry.thinkingLevel)
+      : undefined;
   const persistedVerbose =
     fresh && sessionEntry?.verboseLevel
       ? normalizeVerboseLevel(sessionEntry.verboseLevel)
@@ -152,6 +166,7 @@ export function resolveSession(opts: {
     sessionStore,
     storePath,
     isNewSession,
+    persistedThinking,
     persistedVerbose,
   };
 }

@@ -9,6 +9,7 @@ vi.mock("../../../plugin-sdk/onboarding.js", () => ({
 
 import {
   applySingleTokenPromptResult,
+  buildSingleChannelSecretPromptState,
   normalizeAllowFromEntries,
   noteChannelLookupFailure,
   noteChannelLookupSummary,
@@ -27,6 +28,9 @@ import {
   setAccountAllowFromForChannel,
   setAccountGroupPolicyForChannel,
   setChannelDmPolicyWithAllowFrom,
+  setTopLevelChannelAllowFrom,
+  setTopLevelChannelDmPolicyWithAllowFrom,
+  setTopLevelChannelGroupPolicy,
   setLegacyChannelAllowFrom,
   setLegacyChannelDmPolicyWithAllowFrom,
   setOnboardingChannelEnabled,
@@ -100,6 +104,38 @@ async function runPromptSingleToken(params: {
     inputPrompt: "token",
   });
 }
+
+describe("buildSingleChannelSecretPromptState", () => {
+  it("enables env path only when env is present and no config token exists", () => {
+    expect(
+      buildSingleChannelSecretPromptState({
+        accountConfigured: false,
+        hasConfigToken: false,
+        allowEnv: true,
+        envValue: "token-from-env",
+      }),
+    ).toEqual({
+      accountConfigured: false,
+      hasConfigToken: false,
+      canUseEnv: true,
+    });
+  });
+
+  it("disables env path when config token already exists", () => {
+    expect(
+      buildSingleChannelSecretPromptState({
+        accountConfigured: true,
+        hasConfigToken: true,
+        allowEnv: true,
+        envValue: "token-from-env",
+      }),
+    ).toEqual({
+      accountConfigured: true,
+      hasConfigToken: true,
+      canUseEnv: false,
+    });
+  });
+});
 
 async function runPromptLegacyAllowFrom(params: {
   cfg?: RemoteClawConfig;
@@ -315,9 +351,6 @@ describe("promptSingleChannelSecretInput", () => {
     expect(result).toEqual({ action: "use-env" });
   });
 
-  // Gutted in RemoteClaw fork — resolveSecretInputModeForEnvSelection always
-  // returns "plaintext", so the "ref" path is unreachable.  The prompt text
-  // value is used as a plaintext credential instead.
   it("returns ref + resolved value when external env ref is selected", async () => {
     process.env.REMOTECLAW_TEST_TOKEN = "secret-token";
     const prompter = {
@@ -344,8 +377,12 @@ describe("promptSingleChannelSecretInput", () => {
 
     expect(result).toEqual({
       action: "set",
-      value: "REMOTECLAW_TEST_TOKEN",
-      resolvedValue: "REMOTECLAW_TEST_TOKEN",
+      value: {
+        source: "env",
+        provider: "default",
+        id: "REMOTECLAW_TEST_TOKEN",
+      },
+      resolvedValue: "secret-token",
     });
   });
 
@@ -909,6 +946,73 @@ describe("setChannelDmPolicyWithAllowFrom", () => {
     });
     expect(next.channels?.telegram?.dmPolicy).toBe("open");
     expect(next.channels?.telegram?.allowFrom).toEqual(["123", "*"]);
+  });
+});
+
+describe("setTopLevelChannelDmPolicyWithAllowFrom", () => {
+  it("adds wildcard allowFrom for open policy", () => {
+    const cfg: RemoteClawConfig = {
+      channels: {
+        zalo: {
+          dmPolicy: "pairing",
+          allowFrom: ["12345"],
+        },
+      },
+    };
+
+    const next = setTopLevelChannelDmPolicyWithAllowFrom({
+      cfg,
+      channel: "zalo",
+      dmPolicy: "open",
+    });
+    expect(next.channels?.zalo?.dmPolicy).toBe("open");
+    expect(next.channels?.zalo?.allowFrom).toEqual(["12345", "*"]);
+  });
+
+  it("supports custom allowFrom lookup callback", () => {
+    const cfg: RemoteClawConfig = {
+      channels: {
+        "nextcloud-talk": {
+          dmPolicy: "pairing",
+          allowFrom: ["alice"],
+        },
+      },
+    };
+
+    const next = setTopLevelChannelDmPolicyWithAllowFrom({
+      cfg,
+      channel: "nextcloud-talk",
+      dmPolicy: "open",
+      getAllowFrom: (inputCfg) =>
+        normalizeAllowFromEntries(inputCfg.channels?.["nextcloud-talk"]?.allowFrom ?? []),
+    });
+    expect(next.channels?.["nextcloud-talk"]?.allowFrom).toEqual(["alice", "*"]);
+  });
+});
+
+describe("setTopLevelChannelAllowFrom", () => {
+  it("writes allowFrom and can force enabled state", () => {
+    const next = setTopLevelChannelAllowFrom({
+      cfg: {},
+      channel: "msteams",
+      allowFrom: ["user-1"],
+      enabled: true,
+    });
+    expect(next.channels?.msteams?.allowFrom).toEqual(["user-1"]);
+    expect(next.channels?.msteams?.enabled).toBe(true);
+  });
+});
+
+describe("setTopLevelChannelGroupPolicy", () => {
+  it("writes groupPolicy and can force enabled state", () => {
+    const next = setTopLevelChannelGroupPolicy({
+      cfg: {},
+      channel: "feishu",
+      groupPolicy: "allowlist",
+      enabled: true,
+    });
+    expect(next.channels?.feishu?.groupPolicy).toBe("allowlist");
+    expect(next.channels?.feishu?.enabled).toBe(true);
   });
 });
 

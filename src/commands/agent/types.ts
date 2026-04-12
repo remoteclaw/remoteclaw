@@ -1,18 +1,7 @@
+import type { AgentInternalEvent } from "../../agents/internal-events.js";
+import type { ClientToolDefinition } from "../../agents/pi-embedded-runner/run/params.js";
+import type { SpawnedRunMetadata } from "../../agents/spawned-context.js";
 import type { ChannelOutboundTargetMode } from "../../channels/plugins/types.js";
-
-/**
- * OpenAI-compatible function-calling tool definition.
- * OpenAI-compatible function-calling tool definition, inlined after engine
- * removal (#74).
- */
-export type ClientToolDefinition = {
-  type: string;
-  function: {
-    name: string;
-    description?: string;
-    parameters?: Record<string, unknown>;
-  };
-};
 import type { InputProvenance } from "../../sessions/input-provenance.js";
 
 /** Image content block for Claude API multimodal messages. */
@@ -70,32 +59,30 @@ export type AgentCommandOpts = {
   channel?: string; // delivery channel (whatsapp|telegram|...)
   /** Account ID for multi-account channel routing (e.g., WhatsApp account). */
   accountId?: string;
-  /** Context for session run routing (channel/account/thread). */
+  /** Context for embedded run routing (channel/account/thread). */
   runContext?: AgentRunContext;
-  /** Group id for channel-level tool policy resolution. */
-  groupId?: string | null;
-  /** Group channel label for channel-level tool policy resolution. */
-  groupChannel?: string | null;
-  /** Group space label for channel-level tool policy resolution. */
-  groupSpace?: string | null;
-  /** Parent session key for subagent policy inheritance. */
-  spawnedBy?: string | null;
+  /** Whether this caller is authorized for owner-only tools (defaults true for local CLI calls). */
+  senderIsOwner?: boolean;
+  /** Group/spawn metadata for subagent policy inheritance and routing context. */
+  groupId?: SpawnedRunMetadata["groupId"];
+  groupChannel?: SpawnedRunMetadata["groupChannel"];
+  groupSpace?: SpawnedRunMetadata["groupSpace"];
+  spawnedBy?: SpawnedRunMetadata["spawnedBy"];
   deliveryTargetMode?: ChannelOutboundTargetMode;
   bestEffortDeliver?: boolean;
   abortSignal?: AbortSignal;
   lane?: string;
   runId?: string;
   extraSystemPrompt?: string;
-  /** Whether this caller is authorized for owner-only tools (defaults true for local CLI calls). */
-  senderIsOwner?: boolean;
-  /** Internal events to replay (gateway session restore). */
-  internalEvents?: unknown[];
+  internalEvents?: AgentInternalEvent[];
   inputProvenance?: InputProvenance;
   /** Per-call stream param overrides (best-effort). */
   streamParams?: AgentStreamParams;
+  /** Explicit workspace directory override (for subagents to inherit parent workspace). */
+  workspaceDir?: SpawnedRunMetadata["workspaceDir"];
 };
 
-/** Ingress variant of AgentCommandOpts that requires senderIsOwner. */
-export type AgentCommandIngressOpts = AgentCommandOpts & {
+export type AgentCommandIngressOpts = Omit<AgentCommandOpts, "senderIsOwner"> & {
+  /** Ingress callsites must always pass explicit owner authorization state. */
   senderIsOwner: boolean;
 };

@@ -2,7 +2,7 @@ import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { listChatCommands, shouldHandleTextCommands } from "../commands-registry.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
-import type { VerboseLevel } from "../thinking.js";
+import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../thinking.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { resolveBlockStreamingChunking } from "./block-streaming.js";
 import { buildCommandContext } from "./commands.js";
@@ -39,9 +39,10 @@ export type ReplyDirectiveContinuation = {
   messageProviderKey: string;
   elevatedEnabled: boolean;
   elevatedAllowed: boolean;
-  elevatedFailures: string[];
+  elevatedFailures: { gate: string; key: string }[];
   defaultActivation: ReturnType<typeof defaultGroupActivation>;
   resolvedVerboseLevel: VerboseLevel | undefined;
+  elevated?: boolean;
   execOverrides?: ExecOverrides;
   blockStreamingEnabled: boolean;
   blockReplyChunking?: {
@@ -62,6 +63,12 @@ export type ReplyDirectiveContinuation = {
     cap?: number;
     dropPolicy?: InlineDirectives["dropPolicy"];
   };
+  skillCommands?: unknown[];
+  resolvedThinkLevel?: ThinkLevel;
+  resolvedReasoningLevel?: ReasoningLevel;
+  resolvedElevatedLevel?: ElevatedLevel;
+  contextTokens?: number;
+  resolveDefaultThinkingLevel?: () => ThinkLevel | undefined;
 };
 
 function resolveExecOverrides(_params: {
@@ -100,6 +107,8 @@ export async function resolveReplyDirectives(params: {
   hasResolvedHeartbeatModelOverride?: boolean;
   typing: TypingController;
   opts?: GetReplyOptions;
+  workspaceDir?: string;
+  skillFilter?: unknown;
 }): Promise<ReplyDirectiveResult> {
   const {
     ctx,
@@ -260,7 +269,7 @@ export async function resolveReplyDirectives(params: {
     sessionCtx.Provider?.trim().toLowerCase() ?? ctx.Provider?.trim().toLowerCase() ?? "";
   const elevatedEnabled = false;
   const elevatedAllowed = false;
-  const elevatedFailures: string[] = [];
+  const elevatedFailures: { gate: string; key: string }[] = [];
 
   const requireMention = resolveGroupRequireMention({
     cfg,

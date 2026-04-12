@@ -151,6 +151,9 @@ describe("control UI routing", () => {
     await app.updateComplete;
 
     expect(app.settings.token).toBe("abc123");
+    expect(JSON.parse(localStorage.getItem("remoteclaw.control.settings.v1") ?? "{}").token).toBe(
+      undefined,
+    );
     expect(window.location.pathname).toBe("/ui/overview");
     expect(window.location.search).toBe("");
   });
@@ -167,12 +170,20 @@ describe("control UI routing", () => {
   it("hydrates token from URL params even when settings already set", async () => {
     localStorage.setItem(
       "remoteclaw.control.settings.v1",
-      JSON.stringify({ token: "existing-token" }),
+      JSON.stringify({ token: "existing-token", gatewayUrl: "wss://gateway.example/remoteclaw" }),
     );
     const app = mountApp("/ui/overview?token=abc123");
     await app.updateComplete;
 
     expect(app.settings.token).toBe("abc123");
+    expect(
+      JSON.parse(localStorage.getItem("remoteclaw.control.settings.v1") ?? "{}"),
+    ).toMatchObject({
+      gatewayUrl: "wss://gateway.example/remoteclaw",
+    });
+    expect(JSON.parse(localStorage.getItem("remoteclaw.control.settings.v1") ?? "{}").token).toBe(
+      undefined,
+    );
     expect(window.location.pathname).toBe("/ui/overview");
     expect(window.location.search).toBe("");
   });
@@ -182,6 +193,9 @@ describe("control UI routing", () => {
     await app.updateComplete;
 
     expect(app.settings.token).toBe("abc123");
+    expect(JSON.parse(localStorage.getItem("remoteclaw.control.settings.v1") ?? "{}").token).toBe(
+      undefined,
+    );
     expect(window.location.pathname).toBe("/ui/overview");
     expect(window.location.hash).toBe("");
   });

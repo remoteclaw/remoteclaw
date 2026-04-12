@@ -1,9 +1,9 @@
-import { resolveSoleAgentId } from "../agents/agent-scope.js";
+import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import type { ChatType } from "../channels/chat-type.js";
 import { normalizeChatType } from "../channels/chat-type.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { shouldLogVerbose } from "../globals.js";
-import { logDebug, logWarn } from "../logger.js";
+import { logDebug } from "../logger.js";
 import { listBindings } from "./bindings.js";
 import {
   buildAgentMainSessionKey,
@@ -44,6 +44,8 @@ export type ResolvedAgentRoute = {
   sessionKey: string;
   /** Convenience alias for direct-chat collapse. */
   mainSessionKey: string;
+  /** Which session should receive inbound last-route updates. */
+  lastRoutePolicy: "main" | "session";
   /** Match description for debugging/logging. */
   matchedBy:
     | "binding.peer"
@@ -53,13 +55,24 @@ export type ResolvedAgentRoute = {
     | "binding.team"
     | "binding.account"
     | "binding.channel"
-    | "sole-agent"
-    | "error";
-  /** Present when matchedBy is "error" — describes the routing failure and suggests config fixes. */
-  error?: string;
+    | "default";
 };
 
 export { DEFAULT_ACCOUNT_ID, DEFAULT_AGENT_ID } from "./session-key.js";
+
+export function deriveLastRoutePolicy(params: {
+  sessionKey: string;
+  mainSessionKey: string;
+}): ResolvedAgentRoute["lastRoutePolicy"] {
+  return params.sessionKey === params.mainSessionKey ? "main" : "session";
+}
+
+export function resolveInboundLastRouteSessionKey(params: {
+  route: Pick<ResolvedAgentRoute, "lastRoutePolicy" | "mainSessionKey">;
+  sessionKey: string;
+}): string {
+  return params.route.lastRoutePolicy === "main" ? params.route.mainSessionKey : params.sessionKey;
+}
 
 function normalizeToken(value: string | undefined | null): string {
   return (value ?? "").trim().toLowerCase();
@@ -73,17 +86,6 @@ function normalizeId(value: unknown): string {
     return String(value).trim();
   }
   return "";
-}
-
-function matchesAccountId(match: string | undefined, actual: string): boolean {
-  const trimmed = (match ?? "").trim();
-  if (!trimmed) {
-    return actual === DEFAULT_ACCOUNT_ID;
-  }
-  if (trimmed === "*") {
-    return true;
-  }
-  return normalizeAccountId(trimmed) === actual;
 }
 
 export function buildAgentSessionKey(params: {
@@ -117,7 +119,7 @@ function listAgents(cfg: RemoteClawConfig) {
 type AgentLookupCache = {
   agentsRef: RemoteClawConfig["agents"] | undefined;
   byNormalizedId: Map<string, string>;
-  soleAgentId: string | null;
+  fallbackDefaultAgentId: string;
 };
 
 const agentLookupCacheByCfg = new WeakMap<RemoteClawConfig, AgentLookupCache>();
@@ -140,35 +142,27 @@ function resolveAgentLookupCache(cfg: RemoteClawConfig): AgentLookupCache {
   const next: AgentLookupCache = {
     agentsRef,
     byNormalizedId,
-    soleAgentId: resolveSoleAgentId(cfg),
+    fallbackDefaultAgentId: sanitizeAgentId(resolveDefaultAgentId(cfg)),
   };
   agentLookupCacheByCfg.set(cfg, next);
   return next;
 }
 
-function resolveExistingAgentId(cfg: RemoteClawConfig, agentId: string): string | null {
+export function pickFirstExistingAgentId(cfg: RemoteClawConfig, agentId: string): string {
   const lookup = resolveAgentLookupCache(cfg);
   const trimmed = (agentId ?? "").trim();
   if (!trimmed) {
-    return null;
+    return lookup.fallbackDefaultAgentId;
   }
   const normalized = normalizeAgentId(trimmed);
   if (lookup.byNormalizedId.size === 0) {
-    // No agents list configured — accept the binding's agent ID as-is.
     return sanitizeAgentId(trimmed);
   }
-  return lookup.byNormalizedId.get(normalized) ?? null;
-}
-
-function matchesChannel(
-  match: { channel?: string | undefined } | undefined,
-  channel: string,
-): boolean {
-  const key = normalizeToken(match?.channel);
-  if (!key) {
-    return false;
+  const resolved = lookup.byNormalizedId.get(normalized);
+  if (resolved) {
+    return resolved;
   }
-  return key === channel;
+  return lookup.fallbackDefaultAgentId;
 }
 
 type NormalizedPeerConstraint =
@@ -187,6 +181,7 @@ type NormalizedBindingMatch = {
 type EvaluatedBinding = {
   binding: ReturnType<typeof listBindings>[number];
   match: NormalizedBindingMatch;
+  order: number;
 };
 
 type BindingScope = {
@@ -198,6 +193,7 @@ type BindingScope = {
 
 type EvaluatedBindingsCache = {
   bindingsRef: RemoteClawConfig["bindings"];
+  byChannel: Map<string, EvaluatedBindingsByChannel>;
   byChannelAccount: Map<string, EvaluatedBinding[]>;
   byChannelAccountIndex: Map<string, EvaluatedBindingsIndex>;
 };
@@ -223,6 +219,101 @@ type EvaluatedBindingsIndex = {
   byAccount: EvaluatedBinding[];
   byChannel: EvaluatedBinding[];
 };
+
+type EvaluatedBindingsByChannel = {
+  byAccount: Map<string, EvaluatedBinding[]>;
+  byAnyAccount: EvaluatedBinding[];
+};
+
+function resolveAccountPatternKey(accountPattern: string): string {
+  if (!accountPattern.trim()) {
+    return DEFAULT_ACCOUNT_ID;
+  }
+  return normalizeAccountId(accountPattern);
+}
+
+function buildEvaluatedBindingsByChannel(
+  cfg: RemoteClawConfig,
+): Map<string, EvaluatedBindingsByChannel> {
+  const byChannel = new Map<string, EvaluatedBindingsByChannel>();
+  let order = 0;
+  for (const binding of listBindings(cfg)) {
+    if (!binding || typeof binding !== "object") {
+      continue;
+    }
+    const channel = normalizeToken(binding.match?.channel);
+    if (!channel) {
+      continue;
+    }
+    const match = normalizeBindingMatch(binding.match);
+    const evaluated: EvaluatedBinding = {
+      binding,
+      match,
+      order,
+    };
+    order += 1;
+    let bucket = byChannel.get(channel);
+    if (!bucket) {
+      bucket = {
+        byAccount: new Map<string, EvaluatedBinding[]>(),
+        byAnyAccount: [],
+      };
+      byChannel.set(channel, bucket);
+    }
+    if (match.accountPattern === "*") {
+      bucket.byAnyAccount.push(evaluated);
+      continue;
+    }
+    const accountKey = resolveAccountPatternKey(match.accountPattern);
+    const existing = bucket.byAccount.get(accountKey);
+    if (existing) {
+      existing.push(evaluated);
+      continue;
+    }
+    bucket.byAccount.set(accountKey, [evaluated]);
+  }
+  return byChannel;
+}
+
+function mergeEvaluatedBindingsInSourceOrder(
+  accountScoped: EvaluatedBinding[],
+  anyAccount: EvaluatedBinding[],
+): EvaluatedBinding[] {
+  if (accountScoped.length === 0) {
+    return anyAccount;
+  }
+  if (anyAccount.length === 0) {
+    return accountScoped;
+  }
+  const merged: EvaluatedBinding[] = [];
+  let accountIdx = 0;
+  let anyIdx = 0;
+  while (accountIdx < accountScoped.length && anyIdx < anyAccount.length) {
+    const accountBinding = accountScoped[accountIdx];
+    const anyBinding = anyAccount[anyIdx];
+    if (
+      (accountBinding?.order ?? Number.MAX_SAFE_INTEGER) <=
+      (anyBinding?.order ?? Number.MAX_SAFE_INTEGER)
+    ) {
+      if (accountBinding) {
+        merged.push(accountBinding);
+      }
+      accountIdx += 1;
+      continue;
+    }
+    if (anyBinding) {
+      merged.push(anyBinding);
+    }
+    anyIdx += 1;
+  }
+  if (accountIdx < accountScoped.length) {
+    merged.push(...accountScoped.slice(accountIdx));
+  }
+  if (anyIdx < anyAccount.length) {
+    merged.push(...anyAccount.slice(anyIdx));
+  }
+  return merged;
+}
 
 function pushToIndexMap(
   map: Map<string, EvaluatedBinding[]>,
@@ -331,6 +422,7 @@ function getEvaluatedBindingsForChannelAccount(
       ? existing
       : {
           bindingsRef,
+          byChannel: buildEvaluatedBindingsByChannel(cfg),
           byChannelAccount: new Map<string, EvaluatedBinding[]>(),
           byChannelAccountIndex: new Map<string, EvaluatedBindingsIndex>(),
         };
@@ -344,18 +436,10 @@ function getEvaluatedBindingsForChannelAccount(
     return hit;
   }
 
-  const evaluated: EvaluatedBinding[] = listBindings(cfg).flatMap((binding) => {
-    if (!binding || typeof binding !== "object") {
-      return [];
-    }
-    if (!matchesChannel(binding.match, channel)) {
-      return [];
-    }
-    if (!matchesAccountId(binding.match?.accountId, accountId)) {
-      return [];
-    }
-    return [{ binding, match: normalizeBindingMatch(binding.match) }];
-  });
+  const channelBindings = cache.byChannel.get(channel);
+  const accountScoped = channelBindings?.byAccount.get(accountId) ?? [];
+  const anyAccount = channelBindings?.byAnyAccount ?? [];
+  const evaluated = mergeEvaluatedBindingsInSourceOrder(accountScoped, anyAccount);
 
   cache.byChannelAccount.set(cacheKey, evaluated);
   cache.byChannelAccountIndex.set(cacheKey, buildEvaluatedBindingsIndex(evaluated));
@@ -574,33 +658,8 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
   const bindings = getEvaluatedBindingsForChannelAccount(input.cfg, channel, accountId);
   const bindingsIndex = getEvaluatedBindingIndexForChannelAccount(input.cfg, channel, accountId);
 
-  const cacheRoute = (route: ResolvedAgentRoute): ResolvedAgentRoute => {
-    if (routeCache && routeCacheKey) {
-      routeCache.set(routeCacheKey, route);
-      if (routeCache.size > MAX_RESOLVED_ROUTE_CACHE_KEYS) {
-        routeCache.clear();
-        routeCache.set(routeCacheKey, route);
-      }
-    }
-    return route;
-  };
-
   const choose = (agentId: string, matchedBy: ResolvedAgentRoute["matchedBy"]) => {
-    const resolvedAgentId = resolveExistingAgentId(input.cfg, agentId);
-    if (!resolvedAgentId) {
-      logWarn(
-        `[routing] binding references unknown agent '${agentId}' — check agents.list in your config`,
-      );
-      return cacheRoute({
-        agentId: "",
-        channel,
-        accountId,
-        sessionKey: "",
-        mainSessionKey: "",
-        matchedBy: "error",
-        error: `Binding references unknown agent '${agentId}' — check agents.list in your config`,
-      });
-    }
+    const resolvedAgentId = pickFirstExistingAgentId(input.cfg, agentId);
     const sessionKey = buildAgentSessionKey({
       agentId: resolvedAgentId,
       channel,
@@ -613,14 +672,23 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
       agentId: resolvedAgentId,
       mainKey: DEFAULT_MAIN_KEY,
     }).toLowerCase();
-    return cacheRoute({
+    const route = {
       agentId: resolvedAgentId,
       channel,
       accountId,
       sessionKey,
       mainSessionKey,
+      lastRoutePolicy: deriveLastRoutePolicy({ sessionKey, mainSessionKey }),
       matchedBy,
-    });
+    };
+    if (routeCache && routeCacheKey) {
+      routeCache.set(routeCacheKey, route);
+      if (routeCache.size > MAX_RESOLVED_ROUTE_CACHE_KEYS) {
+        routeCache.clear();
+        routeCache.set(routeCacheKey, route);
+      }
+    }
+    return route;
   };
 
   const formatPeer = (value?: RoutePeer | null) =>
@@ -653,7 +721,7 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
   };
 
   const tiers: Array<{
-    matchedBy: Exclude<ResolvedAgentRoute["matchedBy"], "sole-agent" | "error">;
+    matchedBy: Exclude<ResolvedAgentRoute["matchedBy"], "default">;
     enabled: boolean;
     scopePeer: RoutePeer | null;
     candidates: EvaluatedBinding[];
@@ -732,29 +800,5 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
     }
   }
 
-  // Final fallback: sole-agent auto-selection or explicit error.
-  const lookup = resolveAgentLookupCache(input.cfg);
-  if (lookup.soleAgentId) {
-    if (shouldLogDebug) {
-      logDebug(`[routing] no binding match — auto-routing to sole agent: ${lookup.soleAgentId}`);
-    }
-    return choose(lookup.soleAgentId, "sole-agent");
-  }
-  const agentCount = lookup.byNormalizedId.size;
-  const error =
-    agentCount === 0
-      ? "No agents configured — add at least one entry to agents.list"
-      : `No binding matched for channel '${channel}' — add a binding to route messages to one of your ${agentCount} configured agents`;
-  if (shouldLogDebug) {
-    logDebug(`[routing] ${error}`);
-  }
-  return cacheRoute({
-    agentId: "",
-    channel,
-    accountId,
-    sessionKey: "",
-    mainSessionKey: "",
-    matchedBy: "error",
-    error,
-  });
+  return choose(resolveDefaultAgentId(input.cfg), "default");
 }

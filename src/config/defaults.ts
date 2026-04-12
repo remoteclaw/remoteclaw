@@ -1,13 +1,15 @@
-import { parseModelRef } from "../agents/provider-utils.js";
+import { DEFAULT_CONTEXT_TOKENS } from "../agents/defaults.js";
+import { normalizeProviderId, parseModelRef } from "../agents/model-selection.js";
 import { DEFAULT_AGENT_MAX_CONCURRENT, DEFAULT_SUBAGENT_MAX_CONCURRENT } from "./agent-limits.js";
+import { resolveAgentModelPrimaryValue } from "./model-input.js";
 import {
   DEFAULT_TALK_PROVIDER,
   normalizeTalkConfig,
   resolveActiveTalkProviderConfig,
   resolveTalkApiKey,
 } from "./talk.js";
-import type { AgentDefaultsConfig } from "./types.agent-defaults.js";
 import type { RemoteClawConfig } from "./types.js";
+import type { ModelDefinitionConfig } from "./types.models.js";
 import { hasConfiguredSecretInput } from "./types.secrets.js";
 
 type WarnState = { warned: boolean };
@@ -22,13 +24,52 @@ const DEFAULT_MODEL_ALIASES: Readonly<Record<string, string>> = {
   sonnet: "anthropic/claude-sonnet-4-6",
 
   // OpenAI
-  gpt: "openai/gpt-5.2",
+  gpt: "openai/gpt-5.4",
   "gpt-mini": "openai/gpt-5-mini",
 
   // Google Gemini (3.x are preview ids in the catalog)
-  gemini: "google/gemini-3-pro-preview",
+  gemini: "google/gemini-3.1-pro-preview",
   "gemini-flash": "google/gemini-3-flash-preview",
+  "gemini-flash-lite": "google/gemini-3.1-flash-lite-preview",
 };
+
+const DEFAULT_MODEL_COST: ModelDefinitionConfig["cost"] = {
+  input: 0,
+  output: 0,
+  cacheRead: 0,
+  cacheWrite: 0,
+};
+const DEFAULT_MODEL_INPUT: ModelDefinitionConfig["input"] = ["text"];
+const DEFAULT_MODEL_MAX_TOKENS = 8192;
+
+type ModelDefinitionLike = Partial<ModelDefinitionConfig> &
+  Pick<ModelDefinitionConfig, "id" | "name">;
+
+function resolveDefaultProviderApi(
+  providerId: string,
+  providerApi: ModelDefinitionConfig["api"] | undefined,
+): ModelDefinitionConfig["api"] | undefined {
+  if (providerApi) {
+    return providerApi;
+  }
+  return normalizeProviderId(providerId) === "anthropic" ? "anthropic-messages" : undefined;
+}
+
+function isPositiveNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function resolveModelCost(
+  raw?: Partial<ModelDefinitionConfig["cost"]>,
+): ModelDefinitionConfig["cost"] {
+  return {
+    input: typeof raw?.input === "number" ? raw.input : DEFAULT_MODEL_COST.input,
+    output: typeof raw?.output === "number" ? raw.output : DEFAULT_MODEL_COST.output,
+    cacheRead: typeof raw?.cacheRead === "number" ? raw.cacheRead : DEFAULT_MODEL_COST.cacheRead,
+    cacheWrite:
+      typeof raw?.cacheWrite === "number" ? raw.cacheWrite : DEFAULT_MODEL_COST.cacheWrite,
+  };
+}
 
 function resolveAnthropicDefaultAuthMode(cfg: RemoteClawConfig): AnthropicAuthDefaultsMode | null {
   const profiles = cfg.auth?.profiles ?? {};
@@ -68,6 +109,18 @@ function resolveAnthropicDefaultAuthMode(cfg: RemoteClawConfig): AnthropicAuthDe
     return "api_key";
   }
   return null;
+}
+
+function resolvePrimaryModelRef(raw?: string): string | null {
+  if (!raw || typeof raw !== "string") {
+    return null;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const aliasKey = trimmed.toLowerCase();
+  return DEFAULT_MODEL_ALIASES[aliasKey] ?? trimmed;
 }
 
 export type SessionDefaultsOptions = {
@@ -142,10 +195,9 @@ export function applyTalkApiKey(config: RemoteClawConfig): RemoteClawConfig {
 
   const nextTalk = {
     ...talk,
+    apiKey: resolved,
     provider: talk?.provider ?? providerId,
     providers,
-    // Keep legacy shape populated during compatibility rollout.
-    apiKey: resolved,
   };
 
   return {
@@ -159,21 +211,116 @@ export function applyTalkConfigNormalization(config: RemoteClawConfig): RemoteCl
 }
 
 export function applyModelDefaults(cfg: RemoteClawConfig): RemoteClawConfig {
-  const existingAgent = cfg.agents?.defaults;
-  if (!existingAgent) {
-    return cfg;
+  let mutated = false;
+  let nextCfg = cfg;
+
+  const providerConfig = nextCfg.models?.providers;
+  if (providerConfig) {
+    const nextProviders = { ...providerConfig };
+    for (const [providerId, provider] of Object.entries(providerConfig)) {
+      const models = provider.models;
+      if (!Array.isArray(models) || models.length === 0) {
+        continue;
+      }
+      const providerApi = resolveDefaultProviderApi(providerId, provider.api);
+      let nextProvider = provider;
+      if (providerApi && provider.api !== providerApi) {
+        mutated = true;
+        nextProvider = { ...nextProvider, api: providerApi };
+      }
+      let providerMutated = false;
+      const nextModels = models.map((model) => {
+        const raw = model as ModelDefinitionLike;
+        let modelMutated = false;
+
+        const reasoning = typeof raw.reasoning === "boolean" ? raw.reasoning : false;
+        if (raw.reasoning !== reasoning) {
+          modelMutated = true;
+        }
+
+        const input = raw.input ?? [...DEFAULT_MODEL_INPUT];
+        if (raw.input === undefined) {
+          modelMutated = true;
+        }
+
+        const cost = resolveModelCost(raw.cost);
+        const costMutated =
+          !raw.cost ||
+          raw.cost.input !== cost.input ||
+          raw.cost.output !== cost.output ||
+          raw.cost.cacheRead !== cost.cacheRead ||
+          raw.cost.cacheWrite !== cost.cacheWrite;
+        if (costMutated) {
+          modelMutated = true;
+        }
+
+        const contextWindow = isPositiveNumber(raw.contextWindow)
+          ? raw.contextWindow
+          : DEFAULT_CONTEXT_TOKENS;
+        if (raw.contextWindow !== contextWindow) {
+          modelMutated = true;
+        }
+
+        const defaultMaxTokens = Math.min(DEFAULT_MODEL_MAX_TOKENS, contextWindow);
+        const rawMaxTokens = isPositiveNumber(raw.maxTokens) ? raw.maxTokens : defaultMaxTokens;
+        const maxTokens = Math.min(rawMaxTokens, contextWindow);
+        if (raw.maxTokens !== maxTokens) {
+          modelMutated = true;
+        }
+        const api = raw.api ?? providerApi;
+        if (raw.api !== api) {
+          modelMutated = true;
+        }
+
+        if (!modelMutated) {
+          return model;
+        }
+        providerMutated = true;
+        return {
+          ...raw,
+          reasoning,
+          input,
+          cost,
+          contextWindow,
+          maxTokens,
+          api,
+        } as ModelDefinitionConfig;
+      });
+
+      if (!providerMutated) {
+        if (nextProvider !== provider) {
+          nextProviders[providerId] = nextProvider;
+        }
+        continue;
+      }
+      nextProviders[providerId] = { ...nextProvider, models: nextModels };
+      mutated = true;
+    }
+
+    if (mutated) {
+      nextCfg = {
+        ...nextCfg,
+        models: {
+          ...nextCfg.models,
+          providers: nextProviders,
+        },
+      };
+    }
   }
-  const legacyAgent = existingAgent as Record<string, unknown>;
-  const existingModels = (legacyAgent.models as Record<string, { alias?: string }>) ?? {};
+
+  const existingAgent = nextCfg.agents?.defaults;
+  if (!existingAgent) {
+    return mutated ? nextCfg : cfg;
+  }
+  const existingModels = existingAgent.models ?? {};
   if (Object.keys(existingModels).length === 0) {
-    return cfg;
+    return mutated ? nextCfg : cfg;
   }
 
   const nextModels: Record<string, { alias?: string }> = {
     ...existingModels,
   };
 
-  let mutated = false;
   for (const [alias, target] of Object.entries(DEFAULT_MODEL_ALIASES)) {
     const entry = nextModels[target];
     if (!entry) {
@@ -191,10 +338,10 @@ export function applyModelDefaults(cfg: RemoteClawConfig): RemoteClawConfig {
   }
 
   return {
-    ...cfg,
+    ...nextCfg,
     agents: {
-      ...cfg.agents,
-      defaults: { ...existingAgent, models: nextModels } as AgentDefaultsConfig,
+      ...nextCfg.agents,
+      defaults: { ...existingAgent, models: nextModels },
     },
   };
 }
@@ -291,10 +438,7 @@ export function applyContextPruningDefaults(cfg: RemoteClawConfig): RemoteClawCo
   }
 
   if (authMode === "api_key") {
-    const legacyDefaultsForModels = defaults as Record<string, unknown>;
-    const nextModels: Record<string, Record<string, unknown>> = legacyDefaultsForModels.models
-      ? { ...(legacyDefaultsForModels.models as Record<string, Record<string, unknown>>) }
-      : {};
+    const nextModels = defaults.models ? { ...defaults.models } : {};
     let modelsMutated = false;
     const isAnthropicCacheRetentionTarget = (
       parsed: { provider: string; model: string } | null | undefined,
@@ -317,14 +461,34 @@ export function applyContextPruningDefaults(cfg: RemoteClawConfig): RemoteClawCo
         continue;
       }
       nextModels[key] = {
-        ...current,
+        ...(current as Record<string, unknown>),
         params: { ...params, cacheRetention: "short" },
       };
       modelsMutated = true;
     }
 
+    const primary = resolvePrimaryModelRef(
+      resolveAgentModelPrimaryValue(defaults.model) ?? undefined,
+    );
+    if (primary) {
+      const parsedPrimary = parseModelRef(primary, "anthropic");
+      if (isAnthropicCacheRetentionTarget(parsedPrimary)) {
+        const key = `${parsedPrimary.provider}/${parsedPrimary.model}`;
+        const entry = nextModels[key];
+        const current = entry ?? {};
+        const params = (current as { params?: Record<string, unknown> }).params ?? {};
+        if (typeof params.cacheRetention !== "string") {
+          nextModels[key] = {
+            ...(current as Record<string, unknown>),
+            params: { ...params, cacheRetention: "short" },
+          };
+          modelsMutated = true;
+        }
+      }
+    }
+
     if (modelsMutated) {
-      (nextDefaults as Record<string, unknown>).models = nextModels;
+      nextDefaults.models = nextModels;
       mutated = true;
     }
   }

@@ -1,5 +1,5 @@
 # ── App classes ───────────────────────────────────────────────────
--keep class org.remoteclaw.android.** { *; }
+-keep class org.remoteclaw.app.** { *; }
 
 # ── Bouncy Castle ─────────────────────────────────────────────────
 -keep class org.bouncycastle.** { *; }

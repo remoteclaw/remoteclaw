@@ -43,20 +43,20 @@ describe("extension-relay-auth", () => {
     }
   });
 
-  it("derives deterministic relay tokens per port", () => {
-    const tokenA1 = resolveRelayAuthTokenForPort(18790);
-    const tokenA2 = resolveRelayAuthTokenForPort(18790);
-    const tokenB = resolveRelayAuthTokenForPort(18791);
+  it("derives deterministic relay tokens per port", async () => {
+    const tokenA1 = await resolveRelayAuthTokenForPort(18790);
+    const tokenA2 = await resolveRelayAuthTokenForPort(18790);
+    const tokenB = await resolveRelayAuthTokenForPort(18791);
     expect(tokenA1).toBe(tokenA2);
     expect(tokenA1).not.toBe(tokenB);
     expect(tokenA1).not.toBe(TEST_GATEWAY_TOKEN);
   });
 
-  it("accepts both relay-scoped and raw gateway tokens for compatibility", () => {
-    const tokens = resolveRelayAcceptedTokensForPort(18790);
+  it("accepts both relay-scoped and raw gateway tokens for compatibility", async () => {
+    const tokens = await resolveRelayAcceptedTokensForPort(18790);
     expect(tokens).toContain(TEST_GATEWAY_TOKEN);
     expect(tokens[0]).not.toBe(TEST_GATEWAY_TOKEN);
-    expect(tokens[0]).toBe(resolveRelayAuthTokenForPort(18790));
+    expect(tokens[0]).toBe(await resolveRelayAuthTokenForPort(18790));
   });
 
   it("accepts authenticated remoteclaw relay probe responses", async () => {
@@ -74,7 +74,7 @@ describe("extension-relay-auth", () => {
         res.end(JSON.stringify({ Browser: "RemoteClaw/extension-relay" }));
       },
       async ({ port }) => {
-        const token = resolveRelayAuthTokenForPort(port);
+        const token = await resolveRelayAuthTokenForPort(port);
         const ok = await probeAuthenticatedRemoteClawRelay({
           baseUrl: `http://127.0.0.1:${port}`,
           relayAuthHeader: "x-remoteclaw-relay-token",

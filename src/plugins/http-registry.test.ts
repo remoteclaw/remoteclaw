@@ -86,7 +86,6 @@ describe("registerPluginHttpRoute", () => {
       path: "/plugins/synology",
       auth: "plugin",
       handler: firstHandler,
-      replaceExisting: true,
       registry,
       accountId: "default",
       pluginId: "synology-chat",
@@ -131,5 +130,38 @@ describe("registerPluginHttpRoute", () => {
       replaceExisting: true,
       expectedLogFragment: "route replacement denied",
     });
+  });
+
+  it("rejects mixed-auth overlapping routes", () => {
+    const registry = createEmptyPluginRegistry();
+    const logs: string[] = [];
+
+    registerPluginHttpRoute({
+      path: "/plugin/secure",
+      auth: "gateway",
+      match: "prefix",
+      handler: vi.fn(),
+      registry,
+      pluginId: "demo-gateway",
+      source: "demo-gateway-src",
+      log: (msg) => logs.push(msg),
+    });
+
+    const unregister = registerPluginHttpRoute({
+      path: "/plugin/secure/report",
+      auth: "plugin",
+      match: "exact",
+      handler: vi.fn(),
+      registry,
+      pluginId: "demo-plugin",
+      source: "demo-plugin-src",
+      log: (msg) => logs.push(msg),
+    });
+
+    expect(registry.httpRoutes).toHaveLength(1);
+    expect(logs.at(-1)).toContain("route overlap denied");
+
+    unregister();
+    expect(registry.httpRoutes).toHaveLength(1);
   });
 });

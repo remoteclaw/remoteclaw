@@ -7,14 +7,13 @@ import {
 } from "../agents/agent-scope.js";
 import { appendCronStyleCurrentTimeLine } from "../agents/current-time.js";
 import { resolveEffectiveMessagesConfig } from "../agents/identity.js";
-// oxlint-disable-next-line typescript/no-explicit-any
-const DEFAULT_HEARTBEAT_FILENAME = "HEARTBEAT.md";
+import { DEFAULT_HEARTBEAT_FILENAME } from "../agents/workspace.js";
 import { resolveHeartbeatReplyPayload } from "../auto-reply/heartbeat-reply-payload.js";
 import {
   DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
   DEFAULT_HEARTBEAT_EVERY,
   isHeartbeatContentEffectivelyEmpty,
-  resolveHeartbeatPrompt as resolveHeartbeatPromptFromConfig,
+  resolveHeartbeatPrompt as resolveHeartbeatPromptText,
   stripHeartbeatToken,
 } from "../auto-reply/heartbeat.js";
 import { getReplyFromConfig } from "../auto-reply/reply.js";
@@ -114,25 +113,21 @@ export type HeartbeatRunner = {
   updateConfig: (cfg: RemoteClawConfig) => void;
 };
 
-export function isHeartbeatEnabledForAgent(cfg: RemoteClawConfig, agentId?: string): boolean {
+function hasExplicitHeartbeatAgents(cfg: RemoteClawConfig) {
   const list = cfg.agents?.list ?? [];
-  if (list.length === 0) {
-    return false;
-  }
+  return list.some((entry) => Boolean(entry?.heartbeat));
+}
+
+export function isHeartbeatEnabledForAgent(cfg: RemoteClawConfig, agentId?: string): boolean {
   const resolvedAgentId = normalizeAgentId(agentId ?? resolveDefaultAgentId(cfg));
-  const agentEntry = list.find(
-    (entry) =>
-      entry && typeof entry.id === "string" && normalizeAgentId(entry.id) === resolvedAgentId,
-  );
-  if (!agentEntry) {
-    return false;
+  const list = cfg.agents?.list ?? [];
+  const hasExplicit = hasExplicitHeartbeatAgents(cfg);
+  if (hasExplicit) {
+    return list.some(
+      (entry) => Boolean(entry?.heartbeat) && normalizeAgentId(entry?.id) === resolvedAgentId,
+    );
   }
-  // Per-agent heartbeat config takes precedence
-  if (agentEntry.heartbeat) {
-    return true;
-  }
-  // agents.defaults.heartbeat applies to ALL configured agents
-  return Boolean(cfg.agents?.defaults?.heartbeat);
+  return resolvedAgentId === resolveDefaultAgentId(cfg);
 }
 
 function resolveHeartbeatConfig(
@@ -150,10 +145,10 @@ function resolveHeartbeatConfig(
   return { ...defaults, ...overrides };
 }
 
-export function resolveHeartbeatSummaryForAgent(
+export async function resolveHeartbeatSummaryForAgent(
   cfg: RemoteClawConfig,
   agentId?: string,
-): HeartbeatSummary {
+): Promise<HeartbeatSummary> {
   const defaults = cfg.agents?.defaults?.heartbeat;
   const overrides = agentId ? resolveAgentConfig(cfg, agentId)?.heartbeat : undefined;
   const enabled = isHeartbeatEnabledForAgent(cfg, agentId);
@@ -163,7 +158,7 @@ export function resolveHeartbeatSummaryForAgent(
       enabled: false,
       every: "disabled",
       everyMs: null,
-      prompt: defaults?.prompt?.trim() || (defaults?.file ? `[file: ${defaults.file}]` : ""),
+      prompt: await resolveHeartbeatPromptText({ prompt: defaults?.prompt }),
       target: defaults?.target ?? DEFAULT_HEARTBEAT_TARGET,
       model: defaults?.model,
       ackMaxChars: Math.max(0, defaults?.ackMaxChars ?? DEFAULT_HEARTBEAT_ACK_MAX_CHARS),
@@ -173,9 +168,9 @@ export function resolveHeartbeatSummaryForAgent(
   const merged = defaults || overrides ? { ...defaults, ...overrides } : undefined;
   const every = merged?.every ?? defaults?.every ?? overrides?.every ?? DEFAULT_HEARTBEAT_EVERY;
   const everyMs = resolveHeartbeatIntervalMs(cfg, undefined, merged);
-  const rawPrompt = merged?.prompt ?? defaults?.prompt ?? overrides?.prompt;
-  const rawFile = merged?.file ?? defaults?.file ?? overrides?.file;
-  const prompt = rawPrompt?.trim() || (rawFile ? `[file: ${rawFile}]` : "");
+  const prompt = await resolveHeartbeatPromptText({
+    prompt: merged?.prompt ?? defaults?.prompt ?? overrides?.prompt,
+  });
   const target =
     merged?.target ?? defaults?.target ?? overrides?.target ?? DEFAULT_HEARTBEAT_TARGET;
   const model = merged?.model ?? defaults?.model ?? overrides?.model;
@@ -200,21 +195,17 @@ export function resolveHeartbeatSummaryForAgent(
 
 function resolveHeartbeatAgents(cfg: RemoteClawConfig): HeartbeatAgent[] {
   const list = cfg.agents?.list ?? [];
-  if (list.length === 0) {
-    return [];
+  if (hasExplicitHeartbeatAgents(cfg)) {
+    return list
+      .filter((entry) => entry?.heartbeat)
+      .map((entry) => {
+        const id = normalizeAgentId(entry.id);
+        return { agentId: id, heartbeat: resolveHeartbeatConfig(cfg, id) };
+      })
+      .filter((entry) => entry.agentId);
   }
-  return list
-    .filter((entry) => {
-      if (!entry || typeof entry.id !== "string") {
-        return false;
-      }
-      return isHeartbeatEnabledForAgent(cfg, entry.id);
-    })
-    .map((entry) => {
-      const id = normalizeAgentId(entry.id);
-      return { agentId: id, heartbeat: resolveHeartbeatConfig(cfg, id) };
-    })
-    .filter((entry) => entry.agentId);
+  const fallbackId = resolveDefaultAgentId(cfg);
+  return [{ agentId: fallbackId, heartbeat: resolveHeartbeatConfig(cfg, fallbackId) }];
 }
 
 export function resolveHeartbeatIntervalMs(
@@ -246,17 +237,10 @@ export function resolveHeartbeatIntervalMs(
   return ms;
 }
 
-export async function resolveHeartbeatPrompt(
-  cfg: RemoteClawConfig,
-  heartbeat?: HeartbeatConfig,
-  agentId?: string,
-): Promise<string> {
-  const defaults = cfg.agents?.defaults?.heartbeat;
-  const prompt = heartbeat?.prompt ?? defaults?.prompt;
-  const file = heartbeat?.file ?? defaults?.file;
-  const resolvedAgentId = agentId ?? resolveDefaultAgentId(cfg);
-  const workspaceDir = resolveAgentWorkspaceDir(cfg, resolvedAgentId);
-  return resolveHeartbeatPromptFromConfig({ prompt, file, workspaceDir });
+export function resolveHeartbeatPrompt(cfg: RemoteClawConfig, heartbeat?: HeartbeatConfig) {
+  return resolveHeartbeatPromptText({
+    prompt: heartbeat?.prompt ?? cfg.agents?.defaults?.heartbeat?.prompt,
+  });
 }
 
 function resolveHeartbeatAckMaxChars(cfg: RemoteClawConfig, heartbeat?: HeartbeatConfig) {
@@ -348,6 +332,16 @@ function resolveHeartbeatSession(
   }
 
   return { sessionKey: mainSessionKey, storePath, store, entry: mainEntry };
+}
+
+function resolveHeartbeatReasoningPayloads(
+  replyResult: ReplyPayload | ReplyPayload[] | undefined,
+): ReplyPayload[] {
+  const payloads = Array.isArray(replyResult) ? replyResult : replyResult ? [replyResult] : [];
+  return payloads.filter((payload) => {
+    const text = typeof payload.text === "string" ? payload.text : "";
+    return text.trimStart().startsWith("Reasoning:");
+  });
 }
 
 async function restoreHeartbeatUpdatedAt(params: {
@@ -553,6 +547,7 @@ async function resolveHeartbeatPreflight(params: {
     if (hasErrnoCode(err, "ENOENT")) {
       // Missing HEARTBEAT.md is intentional in some setups (for example, when
       // heartbeat instructions live outside the file), so keep the run active.
+      // The heartbeat prompt already says "if it exists".
       return basePreflight;
     }
     // For other read errors, proceed with heartbeat as before.
@@ -567,31 +562,51 @@ type HeartbeatPromptResolution = {
   hasCronEvents: boolean;
 };
 
+function appendHeartbeatWorkspacePathHint(prompt: string, workspaceDir: string): string {
+  const heartbeatFilePath = path.join(workspaceDir, DEFAULT_HEARTBEAT_FILENAME).replace(/\\/g, "/");
+  const hint = `When reading HEARTBEAT.md, use workspace file ${heartbeatFilePath} (exact case). Do not read docs/heartbeat.md.`;
+  if (prompt.includes(hint)) {
+    return prompt;
+  }
+  return prompt ? `${prompt}\n${hint}` : hint;
+}
+
 async function resolveHeartbeatRunPrompt(params: {
   cfg: RemoteClawConfig;
-  agentId?: string;
   heartbeat?: HeartbeatConfig;
   preflight: HeartbeatPreflight;
   canRelayToUser: boolean;
+  workspaceDir: string;
 }): Promise<HeartbeatPromptResolution> {
   const pendingEventEntries = params.preflight.pendingEventEntries;
   const pendingEvents = params.preflight.shouldInspectPendingEvents
     ? pendingEventEntries.map((event) => event.text)
     : [];
   const cronEvents = pendingEventEntries
-    .filter(
-      (event) =>
-        (params.preflight.isCronEventReason || event.contextKey?.startsWith("cron:")) &&
-        isCronSystemEvent(event.text),
-    )
+    .filter((event) => {
+      const isCronTagged =
+        params.preflight.isCronEventReason || event.contextKey?.startsWith("cron:");
+      if (!isCronTagged) {
+        return false;
+      }
+      // When the heartbeat was triggered by a cron reason, treat ALL pending
+      // events as cron content — including HEARTBEAT_OK tokens that would
+      // normally be classified as noise. The cron job explicitly enqueued
+      // them, so they carry real scheduling intent.
+      if (params.preflight.isCronEventReason) {
+        return Boolean(event.text.trim());
+      }
+      return isCronSystemEvent(event.text);
+    })
     .map((event) => event.text);
   const hasExecCompletion = pendingEvents.some(isExecCompletionEvent);
   const hasCronEvents = cronEvents.length > 0;
-  const prompt = hasExecCompletion
+  const basePrompt = hasExecCompletion
     ? buildExecEventPrompt({ deliverToUser: params.canRelayToUser })
     : hasCronEvents
       ? buildCronEventPrompt(cronEvents, { deliverToUser: params.canRelayToUser })
-      : await resolveHeartbeatPrompt(params.cfg, params.heartbeat, params.agentId);
+      : await resolveHeartbeatPrompt(params.cfg, params.heartbeat);
+  const prompt = appendHeartbeatWorkspacePathHint(basePrompt, params.workspaceDir);
 
   return { prompt, hasExecCompletion, hasCronEvents };
 }
@@ -676,23 +691,14 @@ export async function runHeartbeatOnce(opts: {
   const canRelayToUser = Boolean(
     delivery.channel !== "none" && delivery.to && visibility.showAlerts,
   );
+  const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
   const { prompt, hasExecCompletion, hasCronEvents } = await resolveHeartbeatRunPrompt({
     cfg,
-    agentId,
     heartbeat,
     preflight,
     canRelayToUser,
+    workspaceDir,
   });
-
-  // When neither prompt nor file is configured, skip the heartbeat entirely.
-  if (!prompt) {
-    emitHeartbeatEvent({
-      status: "skipped",
-      reason: "no-prompt",
-      durationMs: Date.now() - startedAt,
-    });
-    return { status: "skipped", reason: "no-prompt" };
-  }
   const ctx = {
     Body: appendCronStyleCurrentTimeLine(prompt, cfg, startedAt),
     From: sender,
@@ -762,11 +768,22 @@ export async function runHeartbeatOnce(opts: {
 
     const heartbeatModelOverride = heartbeat?.model?.trim() || undefined;
     const suppressToolErrorWarnings = heartbeat?.suppressToolErrorWarnings === true;
+    const bootstrapContextMode: "lightweight" | undefined =
+      heartbeat?.lightContext === true ? "lightweight" : undefined;
     const replyOpts = heartbeatModelOverride
-      ? { isHeartbeat: true, heartbeatModelOverride, suppressToolErrorWarnings }
-      : { isHeartbeat: true, suppressToolErrorWarnings };
+      ? {
+          isHeartbeat: true,
+          heartbeatModelOverride,
+          suppressToolErrorWarnings,
+          bootstrapContextMode,
+        }
+      : { isHeartbeat: true, suppressToolErrorWarnings, bootstrapContextMode };
     const replyResult = await getReplyFromConfig(ctx, replyOpts, cfg);
     const replyPayload = resolveHeartbeatReplyPayload(replyResult);
+    const includeReasoning = heartbeat?.includeReasoning === true;
+    const reasoningPayloads = includeReasoning
+      ? resolveHeartbeatReasoningPayloads(replyResult).filter((payload) => payload !== replyPayload)
+      : [];
 
     if (
       !replyPayload ||
@@ -807,7 +824,7 @@ export async function runHeartbeatOnce(opts: {
       normalized.shouldSkip = false;
     }
     const shouldSkipMain = normalized.shouldSkip && !normalized.hasMedia && !hasExecCompletion;
-    if (shouldSkipMain) {
+    if (shouldSkipMain && reasoningPayloads.length === 0) {
       await restoreHeartbeatUpdatedAt({
         storePath,
         sessionKey,
@@ -865,7 +882,13 @@ export async function runHeartbeatOnce(opts: {
       return { status: "ran", durationMs: Date.now() - startedAt };
     }
 
-    const previewText = normalized.text;
+    // Reasoning payloads are text-only; any attachments stay on the main reply.
+    const previewText = shouldSkipMain
+      ? reasoningPayloads
+          .map((payload) => payload.text)
+          .filter((text): text is string => Boolean(text?.trim()))
+          .join("\n")
+      : normalized.text;
 
     if (delivery.channel === "none" || !delivery.to) {
       emitHeartbeatEvent({
@@ -932,10 +955,15 @@ export async function runHeartbeatOnce(opts: {
       session: outboundSession,
       threadId: delivery.threadId,
       payloads: [
-        {
-          text: normalized.text,
-          mediaUrls,
-        },
+        ...reasoningPayloads,
+        ...(shouldSkipMain
+          ? []
+          : [
+              {
+                text: normalized.text,
+                mediaUrls,
+              },
+            ]),
       ],
       deps: opts.deps,
     });
@@ -1171,8 +1199,10 @@ export function startHeartbeatRunner(opts: {
         continue;
       }
       if (res.status === "skipped" && res.reason === "requests-in-flight") {
-        advanceAgentSchedule(agent, now);
-        scheduleNext();
+        // Do not advance the schedule — the main lane is busy and the wake
+        // layer will retry shortly (DEFAULT_RETRY_MS = 1 s).  Calling
+        // scheduleNext() here would register a 0 ms timer that races with
+        // the wake layer's 1 s retry and wins, bypassing the cooldown.
         return res;
       }
       if (res.status !== "skipped" || res.reason !== "disabled") {

@@ -25,6 +25,14 @@ let lastActivityAt = 0;
 const DEFAULT_STUCK_SESSION_WARN_MS = 120_000;
 const MIN_STUCK_SESSION_WARN_MS = 1_000;
 const MAX_STUCK_SESSION_WARN_MS = 24 * 60 * 60 * 1000;
+let commandPollBackoffRuntimePromise: Promise<
+  typeof import("../agents/command-poll-backoff.runtime.js")
+> | null = null;
+
+function loadCommandPollBackoffRuntime() {
+  commandPollBackoffRuntimePromise ??= import("../agents/command-poll-backoff.runtime.js");
+  return commandPollBackoffRuntimePromise;
+}
 
 function markActivity() {
   lastActivityAt = Date.now();
@@ -376,16 +384,13 @@ export function startDiagnosticHeartbeat(config?: RemoteClawConfig) {
       queued: totalQueued,
     });
 
-    // Gutted in RemoteClaw fork (Middleware Boundary Principle) — command-poll-backoff removed
-    // import("../agents/command-poll-backoff.js")
-    //   .then(({ pruneStaleCommandPolls }) => {
-    //     for (const [, state] of diagnosticSessionStates) {
-    //       pruneStaleCommandPolls(state);
-    //     }
-    //   })
-    //   .catch((err) => {
-    //     diag.debug(`command-poll-backoff prune failed: ${String(err)}`);
-    //   });
+    void loadCommandPollBackoffRuntime()
+      .then(() => {
+        // pruneStaleCommandPolls gutted in RemoteClaw fork
+      })
+      .catch((err) => {
+        diag.debug(`command-poll-backoff prune failed: ${String(err)}`);
+      });
 
     for (const [, state] of diagnosticSessionStates) {
       const ageMs = now - state.lastActivity;

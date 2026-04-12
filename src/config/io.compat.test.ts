@@ -78,8 +78,6 @@ describe("config io paths", () => {
     });
   });
 
-  // Gutted in RemoteClaw fork: normalizeExecSafeBinProfilesInConfig is a no-op,
-  // so safe-bin profiles are not trimmed/lowercased/deduplicated at load time.
   it("normalizes safe-bin config entries at config load time", async () => {
     await withTempHome(async (home) => {
       const configDir = path.join(home, ".remoteclaw");
@@ -125,32 +123,22 @@ describe("config io paths", () => {
       const io = createIoForHome(home);
       expect(io.configPath).toBe(configPath);
       const cfg = io.loadConfig();
-      // In RemoteClaw fork, normalizeExecSafeBinProfilesInConfig is a no-op,
-      // so raw values pass through unchanged.
       expect(cfg.tools?.exec?.safeBinProfiles).toEqual({
-        " MyFilter ": {
-          allowedValueFlags: ["--limit", " --limit ", ""],
+        myfilter: {
+          allowedValueFlags: ["--limit"],
         },
       });
-      expect(cfg.tools?.exec?.safeBinTrustedDirs).toEqual([
-        " /custom/bin ",
-        "",
-        "/custom/bin",
-        "/agent/bin",
-      ]);
+      expect(cfg.tools?.exec?.safeBinTrustedDirs).toEqual(["/custom/bin", "/agent/bin"]);
       expect(cfg.agents?.list?.[0]?.tools?.exec?.safeBinProfiles).toEqual({
-        " Custom ": {
-          deniedFlags: ["-f", " -f ", ""],
+        custom: {
+          deniedFlags: ["-f"],
         },
       });
-      expect(cfg.agents?.list?.[0]?.tools?.exec?.safeBinTrustedDirs).toEqual([
-        " /ops/bin ",
-        "/ops/bin",
-      ]);
+      expect(cfg.agents?.list?.[0]?.tools?.exec?.safeBinTrustedDirs).toEqual(["/ops/bin"]);
     });
   });
 
-  it("logs invalid config path details and returns empty config", async () => {
+  it("logs invalid config path details and throws on invalid config", async () => {
     await withTempHome(async (home) => {
       const configDir = path.join(home, ".remoteclaw");
       await fs.mkdir(configDir, { recursive: true });
@@ -171,7 +159,7 @@ describe("config io paths", () => {
         logger,
       });
 
-      expect(io.loadConfig()).toEqual({});
+      expect(() => io.loadConfig()).toThrow(/Invalid config/);
       expect(logger.error).toHaveBeenCalledWith(
         expect.stringContaining(`Invalid config at ${configPath}:\\n`),
       );

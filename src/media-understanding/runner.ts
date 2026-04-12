@@ -7,3 +7,6 @@ export const buildProviderRegistry = (..._args: unknown[]) => ({}) as Record<str
 export const createMediaAttachmentCache = (..._args: unknown[]) => ({}) as Record<string, unknown>;
 export const normalizeMediaAttachments = (..._args: unknown[]) => [] as unknown[];
 export const runCapability = (..._args: unknown[]) => Promise.resolve(undefined as unknown);
+
+// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+export const resolveAutoImageModel = (..._args: unknown[]): string | undefined => undefined;

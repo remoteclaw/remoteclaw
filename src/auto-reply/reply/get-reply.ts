@@ -2,24 +2,57 @@ import {
   resolveAgentDir,
   resolveAgentWorkspaceDir,
   resolveSessionAgentId,
+  resolveAgentSkillsFilter,
 } from "../../agents/agent-scope.js";
+import { resolveModelRefFromString } from "../../agents/model-selection.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
-import { ensureAgentWorkspace } from "../../agents/workspace.js";
+import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../../agents/workspace.js";
+import { resolveChannelModelOverride } from "../../channels/model-overrides.js";
 import { type RemoteClawConfig, loadConfig } from "../../config/config.js";
+import { applyLinkUnderstanding } from "../../link-understanding/apply.js";
+import { applyMediaUnderstanding } from "../../media-understanding/apply.js";
 import { defaultRuntime } from "../../runtime.js";
+import { normalizeStringEntries } from "../../shared/string-normalization.js";
 import { resolveCommandAuthorization } from "../command-auth.js";
 import type { MsgContext } from "../templating.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { emitResetCommandHooks, type ResetCommandAction } from "./commands-core.js";
+import { resolveDefaultModel } from "./directive-handling.js";
 import { resolveReplyDirectives } from "./get-reply-directives.js";
 import { handleInlineActions } from "./get-reply-inline-actions.js";
 import { runPreparedReply } from "./get-reply-run.js";
 import { finalizeInboundContext } from "./inbound-context.js";
+import { emitPreAgentMessageHooks } from "./message-preprocess-hooks.js";
+import { applyResetModelOverride } from "./session-reset-model.js";
 import { initSessionState } from "./session.js";
+import { stageSandboxMedia } from "./stage-sandbox-media.js";
 import { createTypingController } from "./typing.js";
 
-const DEFAULT_AGENT_WORKSPACE_DIR = ".remoteclaw";
+function mergeSkillFilters(channelFilter?: string[], agentFilter?: string[]): string[] | undefined {
+  const normalize = (list?: string[]) => {
+    if (!Array.isArray(list)) {
+      return undefined;
+    }
+    return normalizeStringEntries(list);
+  };
+  const channel = normalize(channelFilter);
+  const agent = normalize(agentFilter);
+  if (!channel && !agent) {
+    return undefined;
+  }
+  if (!channel) {
+    return agent;
+  }
+  if (!agent) {
+    return channel;
+  }
+  if (channel.length === 0 || agent.length === 0) {
+    return [];
+  }
+  const agentSet = new Set(agent);
+  return channel.filter((name) => agentSet.has(name));
+}
 
 export async function getReplyFromConfig(
   ctx: MsgContext,
@@ -35,20 +68,48 @@ export async function getReplyFromConfig(
     sessionKey: agentSessionKey,
     config: cfg,
   });
+  const mergedSkillFilter = mergeSkillFilters(
+    opts?.skillFilter,
+    resolveAgentSkillsFilter(cfg, agentId),
+  );
+  const resolvedOpts =
+    mergedSkillFilter !== undefined ? { ...opts, skillFilter: mergedSkillFilter } : opts;
   const agentCfg = cfg.agents?.defaults;
   const sessionCfg = cfg.session;
-  // Gutted in RemoteClaw fork — CLI runtimes manage their own model selection
-  const defaultProvider = "cli";
-  const defaultModel = "default";
-  const aliasIndex = {} as Record<string, unknown>;
+  const {
+    provider: defaultProvider,
+    model: defaultModel,
+    aliasIndex,
+  } = resolveDefaultModel({
+    cfg,
+    agentId,
+  });
   let provider = defaultProvider;
   let model = defaultModel;
-  const hasResolvedHeartbeatModelOverride = false;
+  let hasResolvedHeartbeatModelOverride = false;
+  if (opts?.isHeartbeat) {
+    // Prefer the resolved per-agent heartbeat model passed from the heartbeat runner,
+    // fall back to the global defaults heartbeat model for backward compatibility.
+    const heartbeatRaw =
+      opts.heartbeatModelOverride?.trim() ?? agentCfg?.heartbeat?.model?.trim() ?? "";
+    const heartbeatRef = heartbeatRaw
+      ? resolveModelRefFromString({
+          raw: heartbeatRaw,
+          defaultProvider,
+          aliasIndex,
+        })
+      : null;
+    if (heartbeatRef) {
+      provider = heartbeatRef.ref.provider;
+      model = heartbeatRef.ref.model;
+      hasResolvedHeartbeatModelOverride = true;
+    }
+  }
 
   const workspaceDirRaw = resolveAgentWorkspaceDir(cfg, agentId) ?? DEFAULT_AGENT_WORKSPACE_DIR;
   const workspace = await ensureAgentWorkspace({
     dir: workspaceDirRaw,
-    ensureBootstrapFiles: !isFastTestEnv,
+    ensureBootstrapFiles: !agentCfg?.skipBootstrap && !isFastTestEnv,
   });
   const workspaceDir = workspace.dir;
   const agentDir = resolveAgentDir(cfg, agentId);
@@ -67,6 +128,24 @@ export async function getReplyFromConfig(
   opts?.onTypingController?.(typing);
 
   const finalized = finalizeInboundContext(ctx);
+
+  if (!isFastTestEnv) {
+    await applyMediaUnderstanding({
+      ctx: finalized,
+      cfg,
+      agentDir,
+      activeModel: { provider, model },
+    });
+    await applyLinkUnderstanding({
+      ctx: finalized,
+      cfg,
+    });
+  }
+  void emitPreAgentMessageHooks({
+    ctx: finalized,
+    cfg,
+    isFastTestEnv,
+  });
 
   const commandAuthorized = finalized.CommandAuthorized;
   resolveCommandAuthorization({
@@ -95,14 +174,60 @@ export async function getReplyFromConfig(
     groupResolution,
     isGroup,
     triggerBodyNormalized,
-    bodyStripped: _bodyStripped,
+    bodyStripped,
   } = sessionState;
+
+  await applyResetModelOverride({
+    cfg,
+    resetTriggered,
+    bodyStripped,
+    sessionCtx,
+    ctx: finalized,
+    sessionEntry,
+    sessionStore,
+    sessionKey,
+    storePath,
+    defaultProvider,
+    defaultModel,
+    aliasIndex,
+  });
+
+  const channelModelOverride = resolveChannelModelOverride({
+    cfg,
+    channel:
+      groupResolution?.channel ??
+      sessionEntry.channel ??
+      sessionEntry.origin?.provider ??
+      (typeof finalized.OriginatingChannel === "string"
+        ? finalized.OriginatingChannel
+        : undefined) ??
+      finalized.Provider,
+    groupId: groupResolution?.id ?? sessionEntry.groupId,
+    groupChannel: sessionEntry.groupChannel ?? sessionCtx.GroupChannel ?? finalized.GroupChannel,
+    groupSubject: sessionEntry.subject ?? sessionCtx.GroupSubject ?? finalized.GroupSubject,
+    parentSessionKey: sessionCtx.ParentSessionKey,
+  });
+  const hasSessionModelOverride = Boolean(
+    sessionEntry.modelOverride?.trim() || sessionEntry.providerOverride?.trim(),
+  );
+  if (!hasResolvedHeartbeatModelOverride && !hasSessionModelOverride && channelModelOverride) {
+    const resolved = resolveModelRefFromString({
+      raw: channelModelOverride.model,
+      defaultProvider,
+      aliasIndex,
+    });
+    if (resolved) {
+      provider = resolved.ref.provider;
+      model = resolved.ref.model;
+    }
+  }
 
   const directiveResult = await resolveReplyDirectives({
     ctx: finalized,
     cfg,
     agentId,
     agentDir,
+    workspaceDir,
     agentCfg,
     sessionCtx,
     sessionEntry,
@@ -121,7 +246,8 @@ export async function getReplyFromConfig(
     model,
     hasResolvedHeartbeatModelOverride,
     typing,
-    opts,
+    opts: resolvedOpts,
+    skillFilter: mergedSkillFilter,
   });
   if (directiveResult.kind === "reply") {
     return directiveResult.reply;
@@ -131,13 +257,17 @@ export async function getReplyFromConfig(
     commandSource,
     command,
     allowTextCommands,
+    skillCommands,
     directives,
     cleanedBody,
     elevatedEnabled,
     elevatedAllowed,
     elevatedFailures,
     defaultActivation,
+    resolvedThinkLevel,
     resolvedVerboseLevel,
+    resolvedReasoningLevel,
+    resolvedElevatedLevel,
     execOverrides,
     blockStreamingEnabled,
     blockReplyChunking,
@@ -145,7 +275,7 @@ export async function getReplyFromConfig(
     provider: resolvedProvider,
     model: resolvedModel,
     modelState,
-
+    contextTokens,
     inlineStatusRequested,
     directiveAck,
     perMessageQueueMode,
@@ -189,23 +319,31 @@ export async function getReplyFromConfig(
     sessionScope,
     workspaceDir,
     isGroup,
-    opts,
+    opts: resolvedOpts,
     typing,
     allowTextCommands,
     inlineStatusRequested,
     command,
+    skillCommands,
     directives,
     cleanedBody,
     elevatedEnabled,
     elevatedAllowed,
     elevatedFailures,
     defaultActivation: () => defaultActivation,
+    resolvedThinkLevel,
     resolvedVerboseLevel,
+    resolvedReasoningLevel: resolvedReasoningLevel ?? "off",
+    resolvedElevatedLevel: resolvedElevatedLevel ?? "off",
+    resolveDefaultThinkingLevel:
+      (modelState as { resolveDefaultThinkingLevel?: () => string | undefined })
+        .resolveDefaultThinkingLevel ?? (() => undefined),
     provider,
     model,
-
+    contextTokens: contextTokens ?? 0,
     directiveAck,
     abortedLastRun,
+    skillFilter: mergedSkillFilter,
   });
   if (inlineActionResult.kind === "reply") {
     await maybeEmitMissingResetHooks();
@@ -214,6 +352,14 @@ export async function getReplyFromConfig(
   await maybeEmitMissingResetHooks();
   directives = inlineActionResult.directives;
   abortedLastRun = inlineActionResult.abortedLastRun ?? abortedLastRun;
+
+  await stageSandboxMedia({
+    ctx,
+    sessionCtx,
+    cfg,
+    sessionKey,
+    workspaceDir,
+  });
 
   return runPreparedReply({
     ctx,
@@ -229,7 +375,10 @@ export async function getReplyFromConfig(
     allowTextCommands,
     directives,
     defaultActivation,
+    resolvedThinkLevel,
     resolvedVerboseLevel,
+    resolvedReasoningLevel: resolvedReasoningLevel ?? "off",
+    resolvedElevatedLevel: resolvedElevatedLevel ?? "off",
     execOverrides,
     elevatedEnabled,
     elevatedAllowed,
@@ -242,7 +391,7 @@ export async function getReplyFromConfig(
     perMessageQueueMode,
     perMessageQueueOptions,
     typing,
-    opts,
+    opts: resolvedOpts,
     defaultProvider,
     defaultModel,
     timeoutMs,

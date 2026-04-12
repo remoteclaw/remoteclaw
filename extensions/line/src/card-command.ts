@@ -1,4 +1,8 @@
-import type { LineChannelData, RemoteClawPluginApi, ReplyPayload } from "remoteclaw/plugin-sdk";
+import type {
+  LineChannelData,
+  RemoteClawPluginApi,
+  ReplyPayload,
+} from "remoteclaw/plugin-sdk/line";
 import {
   createActionCard,
   createImageCard,
@@ -7,7 +11,7 @@ import {
   createReceiptCard,
   type CardAction,
   type ListItem,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/line";
 
 const CARD_USAGE = `Usage: /card <type> "title" "body" [options]
 

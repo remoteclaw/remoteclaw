@@ -52,6 +52,7 @@ export type ChannelSetupAdapter = {
 export type ChannelConfigAdapter<ResolvedAccount> = {
   listAccountIds: (cfg: RemoteClawConfig) => string[];
   resolveAccount: (cfg: RemoteClawConfig, accountId?: string | null) => ResolvedAccount;
+  inspectAccount?: (cfg: RemoteClawConfig, accountId?: string | null) => unknown;
   defaultAccountId?: (cfg: RemoteClawConfig) => string;
   setAccountEnabled?: (params: {
     cfg: RemoteClawConfig;
@@ -232,7 +233,7 @@ export type ChannelGatewayContext<ResolvedAccount = unknown> = {
    * - External plugins should check for undefined before using
    *
    * @since Plugin SDK 2026.2.19
-   * @see {@link https://docs.remoteclaw.org/plugins/developing-plugins | Plugin SDK documentation}
+   * @see {@link https://docs.remoteclaw.ai/plugins/developing-plugins | Plugin SDK documentation}
    */
   channelRuntime?: PluginRuntime["channel"];
 };
@@ -295,7 +296,6 @@ export type ChannelAuthAdapter = {
     verbose?: boolean;
     channelInput?: string | null;
   }) => Promise<void>;
-  allowFromFallback?: (params: { cfg: RemoteClawConfig }) => unknown;
 };
 
 export type ChannelHeartbeatAdapter = {

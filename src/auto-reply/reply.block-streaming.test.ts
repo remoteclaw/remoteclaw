@@ -1,92 +1,36 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { loadModelCatalog } from "../agents/model-catalog.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { withTempHome as withTempHomeHarness } from "../config/home-env.test-harness.js";
-import type {
-  AgentDeliveryResult,
-  BridgeCallbacks,
-  ChannelMessage,
-  McpSideEffects,
-} from "../middleware/types.js";
 import { getReplyFromConfig } from "./reply.js";
 
-const EMPTY_MCP: McpSideEffects = {
-  sentTexts: [],
-  sentMediaUrls: [],
-  sentTargets: [],
-  cronAdds: 0,
+type RunEmbeddedPiAgent = typeof import("../agents/pi-embedded.js").runEmbeddedPiAgent;
+type RunEmbeddedPiAgentParams = Record<string, unknown> & {
+  onBlockReply?: (payload: { text?: string; mediaUrls?: string[] }) => Promise<void> | void;
+  onPartialReply?: (payload: { text?: string }) => Promise<void> | void;
 };
+type RunEmbeddedPiAgentReply = Awaited<ReturnType<RunEmbeddedPiAgent>>;
 
-/** Shape returned by the bridge mock's runAgent. */
-type AgentRunResult = {
-  payloads?: Array<{ text?: string; mediaUrls?: string[] }>;
-  meta?: {
-    durationMs?: number;
-    aborted?: boolean;
-    agentMeta?: {
-      sessionId?: string;
-      provider?: string;
-      model?: string;
-      usage?: { input?: number; output?: number };
-    };
-  };
-};
-
-const bridgeMock = vi.hoisted(() => ({
-  runAgent: vi.fn(),
+const piEmbeddedMock = vi.hoisted(() => ({
+  abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
+  runEmbeddedPiAgent: vi.fn<RunEmbeddedPiAgent>(),
+  queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
+  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
+  isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
+  isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
 }));
 
-/** Convert AgentRunResult to AgentDeliveryResult for the bridge mock. */
-function toDeliveryResult(result: AgentRunResult): AgentDeliveryResult {
-  return {
-    payloads: result?.payloads ?? [],
-    run: {
-      text: "",
-      sessionId: result?.meta?.agentMeta?.sessionId,
-      durationMs: result?.meta?.durationMs ?? 0,
-      usage: result?.meta?.agentMeta?.usage
-        ? {
-            inputTokens: result.meta.agentMeta.usage.input ?? 0,
-            outputTokens: result.meta.agentMeta.usage.output ?? 0,
-          }
-        : undefined,
-      aborted: result?.meta?.aborted ?? false,
-    },
-    mcp: { ...EMPTY_MCP },
-  };
-}
-
-vi.mock("../middleware/channel-bridge.js", () => ({
-  ChannelBridge: class MockChannelBridge {
-    async handle(message: ChannelMessage, callbacks?: BridgeCallbacks) {
-      const params = {
-        prompt: message.text,
-        onBlockReply: callbacks?.onBlockReply,
-        onPartialReply: callbacks?.onPartialReply,
-        onToolResult: callbacks?.onToolResult,
-      } as Record<string, unknown>;
-      const result = await bridgeMock.runAgent(params);
-      return toDeliveryResult(result);
-    }
-  },
-}));
-
-vi.mock("../config/paths.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/paths.js")>();
-  return {
-    ...actual,
-    resolveGatewayPort: () => 9999,
-  };
-});
-
-vi.mock("../gateway/credentials.js", () => ({
-  resolveGatewayCredentialsFromConfig: () => ({ token: "test-token" }),
+vi.mock("/src/agents/pi-embedded.js", () => piEmbeddedMock);
+vi.mock("../agents/pi-embedded.js", () => piEmbeddedMock);
+vi.mock("../agents/model-catalog.js", () => ({
+  loadModelCatalog: vi.fn(),
 }));
 
 type GetReplyOptions = NonNullable<Parameters<typeof getReplyFromConfig>[1]>;
 
-function createAgentReply(text: string) {
+function createEmbeddedReply(text: string): RunEmbeddedPiAgentReply {
   return {
     payloads: [{ text }],
     meta: {
@@ -110,13 +54,13 @@ function createReplyConfig(home: string, streamMode?: "block"): RemoteClawConfig
   return {
     agents: {
       defaults: {
-        runtime: "claude",
+        model: { primary: "anthropic/claude-opus-4-5" },
+        workspace: path.join(home, "remoteclaw"),
       },
-      list: [{ id: "main", workspace: path.join(home, "remoteclaw") }],
     },
     channels: { telegram: { allowFrom: ["*"], streamMode } },
     session: { store: path.join(home, "sessions.json") },
-  } as RemoteClawConfig;
+  };
 }
 
 async function runTelegramReply(params: {
@@ -150,7 +94,15 @@ async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
 describe("block streaming", () => {
   beforeEach(() => {
     vi.stubEnv("REMOTECLAW_TEST_FAST", "1");
-    bridgeMock.runAgent.mockClear();
+    piEmbeddedMock.abortEmbeddedPiRun.mockClear().mockReturnValue(false);
+    piEmbeddedMock.queueEmbeddedPiMessage.mockClear().mockReturnValue(false);
+    piEmbeddedMock.isEmbeddedPiRunActive.mockClear().mockReturnValue(false);
+    piEmbeddedMock.isEmbeddedPiRunStreaming.mockClear().mockReturnValue(false);
+    piEmbeddedMock.runEmbeddedPiAgent.mockClear();
+    vi.mocked(loadModelCatalog).mockResolvedValue([
+      { id: "claude-opus-4-5", name: "Opus 4.5", provider: "anthropic" },
+      { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", provider: "openai" },
+    ]);
   });
 
   it("handles ordering, timeout fallback, and telegram streamMode block", async () => {
@@ -172,17 +124,16 @@ describe("block streaming", () => {
         seen.push(payload.text ?? "");
       });
 
-      const impl = async (params: {
-        onBlockReply?: (payload: { text?: string; mediaUrls?: string[] }) => void | Promise<void>;
-      }) => {
+      const impl = async (params: RunEmbeddedPiAgentParams) => {
         void params.onBlockReply?.({ text: "first" });
         void params.onBlockReply?.({ text: "second" });
         return {
           payloads: [{ text: "first" }, { text: "second" }],
-          meta: createAgentReply("first").meta,
+          meta: createEmbeddedReply("first").meta,
         };
       };
-      bridgeMock.runAgent.mockImplementation(impl);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      piEmbeddedMock.runEmbeddedPiAgent.mockImplementation(impl as any);
 
       const replyPromise = runTelegramReply({
         home,
@@ -200,7 +151,9 @@ describe("block streaming", () => {
       expect(seen).toEqual(["first\n\nsecond"]);
 
       const onBlockReplyStreamMode = vi.fn().mockResolvedValue(undefined);
-      bridgeMock.runAgent.mockImplementation(async () => createAgentReply("final"));
+      piEmbeddedMock.runEmbeddedPiAgent.mockImplementation(async () =>
+        createEmbeddedReply("final"),
+      );
 
       const resStreamMode = await runTelegramReply({
         home,
@@ -222,14 +175,12 @@ describe("block streaming", () => {
         seen.push(payload.text ?? "");
       });
 
-      bridgeMock.runAgent.mockImplementation(
-        async (params: {
-          onBlockReply?: (payload: { text?: string; mediaUrls?: string[] }) => void | Promise<void>;
-        }) => {
-          void params.onBlockReply?.({ text: "\n\n  Hello from stream" });
-          return createAgentReply("\n\n  Hello from stream");
-        },
-      );
+      /* oxlint-disable typescript/no-explicit-any */
+      piEmbeddedMock.runEmbeddedPiAgent.mockImplementation(((params: RunEmbeddedPiAgentParams) => {
+        void params.onBlockReply?.({ text: "\n\n  Hello from stream" });
+        return Promise.resolve(createEmbeddedReply("\n\n  Hello from stream"));
+      }) as any);
+      /* oxlint-enable typescript/no-explicit-any */
 
       const res = await runTelegramReply({
         home,
@@ -248,14 +199,12 @@ describe("block streaming", () => {
     await withTempHome(async (home) => {
       const onBlockReply = vi.fn();
 
-      bridgeMock.runAgent.mockImplementation(
-        async (params: {
-          onBlockReply?: (payload: { text?: string; mediaUrls?: string[] }) => void | Promise<void>;
-        }) => {
-          void params.onBlockReply?.({ text: "Result\nMEDIA: ./image.png" });
-          return createAgentReply("Result\nMEDIA: ./image.png");
-        },
-      );
+      /* oxlint-disable typescript/no-explicit-any */
+      piEmbeddedMock.runEmbeddedPiAgent.mockImplementation(((params: RunEmbeddedPiAgentParams) => {
+        void params.onBlockReply?.({ text: "Result\nMEDIA: ./image.png" });
+        return Promise.resolve(createEmbeddedReply("Result\nMEDIA: ./image.png"));
+      }) as any);
+      /* oxlint-enable typescript/no-explicit-any */
 
       const res = await runTelegramReply({
         home,
@@ -268,7 +217,7 @@ describe("block streaming", () => {
       expect(onBlockReply).toHaveBeenCalledTimes(1);
       expect(onBlockReply.mock.calls[0][0]).toMatchObject({
         text: "Result",
-        mediaUrls: ["./image.png"],
+        mediaUrls: [path.join(home, "remoteclaw", "image.png")],
       });
     });
   });

@@ -31,8 +31,8 @@ const configureGatewayForOnboarding = vi.hoisted(() =>
 );
 const finalizeOnboardingWizard = vi.hoisted(() =>
   vi.fn(async (options) => {
-    if (!process.env.BRAVE_API_KEY) {
-      await options.prompter.note("hint", "Web search (optional)");
+    if (!options.nextConfig?.tools?.web?.search?.provider) {
+      await options.prompter.note("Web search was skipped.", "Web search");
     }
 
     if (options.opts.skipUi) {
@@ -88,11 +88,6 @@ const ensureControlUiAssetsBuilt = vi.hoisted(() => vi.fn(async () => ({ ok: tru
 const runTui = vi.hoisted(() => vi.fn(async (_options: unknown) => {}));
 const setupOnboardingShellCompletion = vi.hoisted(() => vi.fn(async () => {}));
 const probeGatewayReachable = vi.hoisted(() => vi.fn(async () => ({ ok: true })));
-const collectWorkspaceDirs = vi.hoisted(() => vi.fn(() => []));
-const applyOnboardingLocalWorkspaceConfig = vi.hoisted(() => vi.fn((cfg) => cfg));
-const upsertAuthProfile = vi.hoisted(() => vi.fn(async () => {}));
-const detectOpenClawInstallation = vi.hoisted(() => vi.fn(() => null));
-const importCommandFn = vi.hoisted(() => vi.fn(async () => ({})));
 
 vi.mock("../commands/onboard-channels.js", () => ({
   setupChannels,
@@ -201,26 +196,6 @@ vi.mock("./onboarding.completion.js", () => ({
   setupOnboardingShellCompletion,
 }));
 
-vi.mock("../commands/cleanup-utils.js", () => ({
-  collectWorkspaceDirs,
-}));
-
-vi.mock("../commands/onboard-config.js", () => ({
-  applyOnboardingLocalWorkspaceConfig,
-  ONBOARDING_DEFAULT_DM_SCOPE: "per-channel-peer",
-  ONBOARDING_DEFAULT_TOOLS_PROFILE: "messaging",
-}));
-
-vi.mock("../auth/index.js", () => ({
-  upsertAuthProfile,
-  ensureAuthProfileStore: vi.fn(() => ({ profiles: {} })),
-}));
-
-vi.mock("../commands/import.js", () => ({
-  detectOpenClawInstallation,
-  importCommand: importCommandFn,
-}));
-
 function createRuntime(opts?: { throwsOnExit?: boolean }): RuntimeEnv {
   if (opts?.throwsOnExit) {
     return {
@@ -288,6 +263,7 @@ describe("runOnboardingWizard", () => {
           installDaemon: false,
           skipProviders: true,
           skipSkills: true,
+          skipSearch: true,
           skipHealth: true,
           skipUi: true,
         },
@@ -301,9 +277,8 @@ describe("runOnboardingWizard", () => {
   });
 
   it("skips prompts and setup steps when flags are set", async () => {
-    const caseDir = await makeCaseDir("skip-prompts-");
     const select = vi.fn(
-      async (_params: WizardSelectParams<unknown>) => "skip",
+      async (_params: WizardSelectParams<unknown>) => "quickstart",
     ) as unknown as WizardPrompter["select"];
     const multiselect: WizardPrompter["multiselect"] = vi.fn(async () => []);
     const prompter = buildWizardPrompter({ select, multiselect });
@@ -314,13 +289,13 @@ describe("runOnboardingWizard", () => {
         acceptRisk: true,
         flow: "quickstart",
         mode: "local",
-        workspace: caseDir,
+        workspace: "/tmp/remoteclaw-test-workspace",
         runtime: "claude",
         authChoice: "skip",
         installDaemon: false,
-        skipProviders: true,
         skipChannels: true,
         skipSkills: true,
+        skipSearch: true,
         skipHealth: true,
         skipUi: true,
       },
@@ -328,8 +303,7 @@ describe("runOnboardingWizard", () => {
       prompter,
     );
 
-    // Upstream added runtime credential prompt (always runs even in quickstart),
-    // so select is called at least once.  Verify the skip-able steps are still skipped.
+    expect(select).not.toHaveBeenCalled();
     expect(setupChannels).not.toHaveBeenCalled();
     expect(setupSkills).not.toHaveBeenCalled();
     expect(healthCommand).not.toHaveBeenCalled();
@@ -366,6 +340,7 @@ describe("runOnboardingWizard", () => {
         authChoice: "skip",
         skipProviders: true,
         skipSkills: true,
+        skipSearch: true,
         skipHealth: true,
         installDaemon: false,
       },
@@ -390,7 +365,6 @@ describe("runOnboardingWizard", () => {
   });
 
   it("shows the web search hint at the end of onboarding", async () => {
-    const caseDir = await makeCaseDir("web-search-hint-");
     const prevBraveKey = process.env.BRAVE_API_KEY;
     delete process.env.BRAVE_API_KEY;
 
@@ -404,12 +378,12 @@ describe("runOnboardingWizard", () => {
           acceptRisk: true,
           flow: "quickstart",
           mode: "local",
-          workspace: caseDir,
-          runtime: "claude",
+          workspace: "/tmp/remoteclaw-test-workspace",
           authChoice: "skip",
           installDaemon: false,
           skipProviders: true,
           skipSkills: true,
+          skipSearch: true,
           skipHealth: true,
           skipUi: true,
         },
@@ -419,7 +393,7 @@ describe("runOnboardingWizard", () => {
 
       const calls = (note as unknown as { mock: { calls: unknown[][] } }).mock.calls;
       expect(calls.length).toBeGreaterThan(0);
-      expect(calls.some((call) => call?.[1] === "Web search (optional)")).toBe(true);
+      expect(calls.some((call) => call?.[1] === "Web search")).toBe(true);
     } finally {
       if (prevBraveKey === undefined) {
         delete process.env.BRAVE_API_KEY;
@@ -431,7 +405,7 @@ describe("runOnboardingWizard", () => {
 
   it("resolves gateway.auth.password SecretRef for local onboarding probe", async () => {
     const previous = process.env.REMOTECLAW_GATEWAY_PASSWORD;
-    process.env.REMOTECLAW_GATEWAY_PASSWORD = "gateway-ref-password";
+    process.env.REMOTECLAW_GATEWAY_PASSWORD = "gateway-ref-password"; // pragma: allowlist secret
     probeGatewayReachable.mockClear();
     readConfigFileSnapshot.mockResolvedValueOnce({
       path: "/tmp/.remoteclaw/remoteclaw.json",
@@ -475,6 +449,7 @@ describe("runOnboardingWizard", () => {
           installDaemon: false,
           skipProviders: true,
           skipSkills: true,
+          skipSearch: true,
           skipHealth: true,
           skipUi: true,
         },
@@ -492,13 +467,12 @@ describe("runOnboardingWizard", () => {
     expect(probeGatewayReachable).toHaveBeenCalledWith(
       expect.objectContaining({
         url: "ws://127.0.0.1:18789",
-        password: "gateway-ref-password",
+        password: "gateway-ref-password", // pragma: allowlist secret
       }),
     );
   });
 
   it("passes secretInputMode through to local gateway config step", async () => {
-    const caseDir = await makeCaseDir("secret-input-mode-");
     configureGatewayForOnboarding.mockClear();
     const prompter = buildWizardPrompter({});
     const runtime = createRuntime();
@@ -508,15 +482,16 @@ describe("runOnboardingWizard", () => {
         acceptRisk: true,
         flow: "quickstart",
         mode: "local",
-        workspace: caseDir,
+        workspace: "/tmp/remoteclaw-test-workspace",
         runtime: "claude",
         authChoice: "skip",
         installDaemon: false,
         skipProviders: true,
         skipSkills: true,
+        skipSearch: true,
         skipHealth: true,
         skipUi: true,
-        secretInputMode: "ref",
+        secretInputMode: "ref", // pragma: allowlist secret
       },
       runtime,
       prompter,
@@ -524,7 +499,7 @@ describe("runOnboardingWizard", () => {
 
     expect(configureGatewayForOnboarding).toHaveBeenCalledWith(
       expect.objectContaining({
-        secretInputMode: "ref",
+        secretInputMode: "ref", // pragma: allowlist secret
       }),
     );
   });

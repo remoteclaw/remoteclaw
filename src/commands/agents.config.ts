@@ -2,7 +2,7 @@ import {
   listAgentEntries,
   resolveAgentDir,
   resolveAgentWorkspaceDir,
-  resolveDefaultAgentId,
+  resolveSoleAgentId,
 } from "../agents/agent-scope.js";
 import type { AgentIdentityFile } from "../agents/identity-file.js";
 import {
@@ -82,12 +82,9 @@ export function loadAgentIdentity(workspace: string): AgentIdentity {
 }
 
 export function buildAgentSummaries(cfg: RemoteClawConfig): AgentSummary[] {
-  const defaultAgentId = normalizeAgentId(resolveDefaultAgentId(cfg));
+  const soleAgentId = resolveSoleAgentId(cfg);
   const configuredAgents = listAgentEntries(cfg);
-  const orderedIds =
-    configuredAgents.length > 0
-      ? configuredAgents.map((agent) => normalizeAgentId(agent.id))
-      : [defaultAgentId];
+  const orderedIds = configuredAgents.map((agent) => normalizeAgentId(agent.id));
   const bindingCounts = new Map<string, number>();
   for (const binding of listRouteBindings(cfg)) {
     const agentId = normalizeAgentId(binding.agentId);
@@ -119,7 +116,7 @@ export function buildAgentSummaries(cfg: RemoteClawConfig): AgentSummary[] {
       agentDir: resolveAgentDir(cfg, id),
       model: resolveAgentModel(cfg, id),
       bindings: bindingCounts.get(id) ?? 0,
-      isDefault: id === defaultAgentId,
+      isDefault: soleAgentId !== null && id === soleAgentId,
     };
   });
 }
@@ -152,9 +149,6 @@ export function applyAgentConfig(
   if (index >= 0) {
     nextList[index] = nextEntry;
   } else {
-    if (nextList.length === 0 && agentId !== normalizeAgentId(resolveDefaultAgentId(cfg))) {
-      nextList.push({ id: resolveDefaultAgentId(cfg) });
-    }
     nextList.push(nextEntry);
   }
   return {

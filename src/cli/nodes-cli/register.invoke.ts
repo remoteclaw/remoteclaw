@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { resolveAgentConfig, resolveDefaultAgentId } from "../../agents/agent-scope.js";
+import { listAgentIds, resolveAgentConfig, resolveSoleAgentId } from "../../agents/agent-scope.js";
 import { loadConfig } from "../../config/config.js";
 import { randomIdempotencyKey } from "../../gateway/call.js";
 import {
@@ -364,7 +364,7 @@ export function registerNodesInvokeCommands(nodes: Command) {
       .action(async (command: string[], opts: NodesRunOpts) => {
         await runNodesCommand("run", async () => {
           const cfg = loadConfig();
-          const agentId = opts.agent?.trim() || resolveDefaultAgentId(cfg);
+          const agentId = opts.agent?.trim() || resolveSoleAgentId(cfg) || listAgentIds(cfg)[0];
           const execDefaults = resolveExecDefaults(cfg, agentId);
           const raw = typeof opts.raw === "string" ? opts.raw.trim() : "";
           if (raw && Array.isArray(command) && command.length > 0) {

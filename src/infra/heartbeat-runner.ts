@@ -1,9 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
+  listAgentIds,
   resolveAgentConfig,
   resolveAgentWorkspaceDir,
-  resolveDefaultAgentId,
+  resolveSoleAgentId,
 } from "../agents/agent-scope.js";
 import { appendCronStyleCurrentTimeLine } from "../agents/current-time.js";
 import { resolveEffectiveMessagesConfig } from "../agents/identity.js";
@@ -119,7 +120,8 @@ function hasExplicitHeartbeatAgents(cfg: RemoteClawConfig) {
 }
 
 export function isHeartbeatEnabledForAgent(cfg: RemoteClawConfig, agentId?: string): boolean {
-  const resolvedAgentId = normalizeAgentId(agentId ?? resolveDefaultAgentId(cfg));
+  const fallbackId = resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
+  const resolvedAgentId = normalizeAgentId(agentId ?? fallbackId);
   const list = cfg.agents?.list ?? [];
   const hasExplicit = hasExplicitHeartbeatAgents(cfg);
   if (hasExplicit) {
@@ -127,7 +129,7 @@ export function isHeartbeatEnabledForAgent(cfg: RemoteClawConfig, agentId?: stri
       (entry) => Boolean(entry?.heartbeat) && normalizeAgentId(entry?.id) === resolvedAgentId,
     );
   }
-  return resolvedAgentId === resolveDefaultAgentId(cfg);
+  return listAgentIds(cfg).includes(resolvedAgentId);
 }
 
 function resolveHeartbeatConfig(
@@ -204,8 +206,10 @@ function resolveHeartbeatAgents(cfg: RemoteClawConfig): HeartbeatAgent[] {
       })
       .filter((entry) => entry.agentId);
   }
-  const fallbackId = resolveDefaultAgentId(cfg);
-  return [{ agentId: fallbackId, heartbeat: resolveHeartbeatConfig(cfg, fallbackId) }];
+  return listAgentIds(cfg).map((agentId) => ({
+    agentId,
+    heartbeat: resolveHeartbeatConfig(cfg, agentId),
+  }));
 }
 
 export function resolveHeartbeatIntervalMs(
@@ -260,10 +264,11 @@ function resolveHeartbeatSession(
 ) {
   const sessionCfg = cfg.session;
   const scope = sessionCfg?.scope ?? "per-sender";
-  const resolvedAgentId = normalizeAgentId(agentId ?? resolveDefaultAgentId(cfg));
+  const fallbackId = resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
+  const resolvedAgentId = normalizeAgentId(agentId ?? fallbackId);
   const mainSessionKey =
     scope === "global" ? "global" : resolveAgentMainSessionKey({ cfg, agentId: resolvedAgentId });
-  const storeAgentId = scope === "global" ? resolveDefaultAgentId(cfg) : resolvedAgentId;
+  const storeAgentId = scope === "global" ? fallbackId : resolvedAgentId;
   const storePath = resolveStorePath(sessionCfg?.store, {
     agentId: storeAgentId,
   });
@@ -620,7 +625,8 @@ export async function runHeartbeatOnce(opts: {
   deps?: HeartbeatDeps;
 }): Promise<HeartbeatRunResult> {
   const cfg = opts.cfg ?? loadConfig();
-  const agentId = normalizeAgentId(opts.agentId ?? resolveDefaultAgentId(cfg));
+  const fallbackId = resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
+  const agentId = normalizeAgentId(opts.agentId ?? fallbackId);
   const heartbeat = opts.heartbeat ?? resolveHeartbeatConfig(cfg, agentId);
   if (!heartbeatsEnabled) {
     return { status: "skipped", reason: "disabled" };

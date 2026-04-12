@@ -54,7 +54,10 @@ vi.mock("../../agents/agent-scope.js", () => ({
     config?: unknown;
     agentId?: string;
   }) => resolveAgentIdFromSessionKeyForTests({ sessionKey }),
-  resolveDefaultAgentId: () => "main",
+  resolveSessionKeyAgentId: (sessionKey: string | undefined | null) =>
+    resolveAgentIdFromSessionKeyForTests({ sessionKey: sessionKey ?? undefined }),
+  resolveSoleAgentId: () => "main",
+  listAgentIds: () => ["main"],
   resolveAgentWorkspaceDir: () => TEST_AGENT_WORKSPACE,
   resolveAgentRuntime: () => "claude",
 }));

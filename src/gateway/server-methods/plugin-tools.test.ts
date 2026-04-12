@@ -6,7 +6,8 @@ import type { RespondFn } from "./types.js";
 vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentDir: () => "/mock/agent",
   resolveAgentWorkspaceDir: () => "/mock/workspace",
-  resolveDefaultAgentId: () => "default",
+  resolveSoleAgentId: () => "default",
+  listAgentIds: () => ["default"],
   resolveAgentRuntime: () => "claude",
 }));
 

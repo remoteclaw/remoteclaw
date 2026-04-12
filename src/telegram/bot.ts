@@ -2,7 +2,7 @@ import { sequentialize } from "@grammyjs/runner";
 import { apiThrottler } from "@grammyjs/transformer-throttler";
 import type { ApiClientOptions } from "grammy";
 import { Bot } from "grammy";
-import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { listAgentIds, resolveSoleAgentId } from "../agents/agent-scope.js";
 import { resolveTextChunkLimit } from "../auto-reply/chunk.js";
 import { DEFAULT_GROUP_HISTORY_LIMIT, type HistoryEntry } from "../auto-reply/reply/history.js";
 import {
@@ -278,7 +278,7 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     messageThreadId?: number;
     sessionKey?: string;
   }) => {
-    const agentId = params.agentId ?? resolveDefaultAgentId(cfg);
+    const agentId = params.agentId ?? resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
     const sessionKey =
       params.sessionKey ??
       `agent:${agentId}:telegram:group:${buildTelegramGroupPeerId(params.chatId, params.messageThreadId)}`;

@@ -93,7 +93,7 @@ vi.mock("../runtime.js", () => ({
 }));
 
 vi.mock("../config/config.js", () => ({
-  loadConfig: () => ({}),
+  loadConfig: () => ({ agents: { list: [{ id: "main" }] } }),
 }));
 
 vi.mock("../infra/exec-approvals.js", async () => {

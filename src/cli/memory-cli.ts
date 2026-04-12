@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { Command } from "commander";
-import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { listAgentIds, resolveSoleAgentId } from "../agents/agent-scope.js";
 import { loadConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import { resolveSessionTranscriptsDirForAgent } from "../config/sessions/paths.js";
@@ -101,7 +101,7 @@ function resolveAgent(cfg: ReturnType<typeof loadConfig>, agent?: string) {
   if (trimmed) {
     return trimmed;
   }
-  return resolveDefaultAgentId(cfg);
+  return resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
 }
 
 function resolveAgentIds(cfg: ReturnType<typeof loadConfig>, agent?: string): string[] {
@@ -109,11 +109,7 @@ function resolveAgentIds(cfg: ReturnType<typeof loadConfig>, agent?: string): st
   if (trimmed) {
     return [trimmed];
   }
-  const list = cfg.agents?.list ?? [];
-  if (list.length > 0) {
-    return list.map((entry) => entry.id).filter(Boolean);
-  }
-  return [resolveDefaultAgentId(cfg)];
+  return listAgentIds(cfg);
 }
 
 function formatExtraPaths(workspaceDir: string, extraPaths: string[]): string[] {

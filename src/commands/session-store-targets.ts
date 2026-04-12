@@ -1,4 +1,4 @@
-import { listAgentIds, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { listAgentIds, resolveSoleAgentId } from "../agents/agent-scope.js";
 import { resolveStorePath } from "../config/sessions.js";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { normalizeAgentId } from "../routing/session-key.js";
@@ -29,7 +29,7 @@ export function resolveSessionStoreTargets(
   cfg: RemoteClawConfig,
   opts: SessionStoreSelectionOptions,
 ): SessionStoreTarget[] {
-  const defaultAgentId = resolveDefaultAgentId(cfg);
+  const defaultAgentId = resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
   const hasAgent = Boolean(opts.agent?.trim());
   const allAgents = opts.allAgents === true;
   if (hasAgent && allAgents) {

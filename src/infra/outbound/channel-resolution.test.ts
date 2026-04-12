@@ -179,15 +179,10 @@ describe("plugin-loading workspace resolution — regression for #2308", () => {
       expect(loadRemoteClawPluginsMock).not.toHaveBeenCalled();
     });
 
-    // TODO(#2310): Unskip once Phase 2b migrates channel-resolution.ts off the
-    // deprecated resolveDefaultAgentId shim. Today's implementation at
-    // src/infra/outbound/channel-resolution.ts:48-49 still calls
-    // resolveDefaultAgentId(cfg) + resolveAgentWorkspaceDir(cfg, "main"), which
-    // throws "agent 'main' has no workspace configured" for a multi-agent
-    // config that has neither a "main" entry nor a defaults.workspace. After
-    // Phase 2b replaces that pair with resolveFirstAgentWorkspace(cfg), this
-    // test should pass unchanged and pin the regression.
-    it.skip("bootstraps plugins from the first agent's workspace for multi-agent config without 'main'", async () => {
+    // Unskipped by #2310: channel-resolution.ts now uses resolveFirstAgentWorkspace(cfg),
+    // so multi-agent configs without a "main" entry or defaults.workspace bootstrap
+    // correctly from the first agent's workspace instead of throwing.
+    it("bootstraps plugins from the first agent's workspace for multi-agent config without 'main'", async () => {
       getChannelPluginMock.mockReturnValue(undefined);
 
       const { resolveOutboundChannelPlugin } = await import("./channel-resolution.js");

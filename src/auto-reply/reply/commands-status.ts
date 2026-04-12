@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { resolveDefaultAgentId, resolveSessionAgentId } from "../../agents/agent-scope.js";
+import { resolveSessionKeyAgentId } from "../../agents/agent-scope.js";
 import { listSubagentRunsForRequester } from "../../agents/subagent-registry.js";
 import {
   resolveInternalSessionKey,
@@ -73,9 +73,7 @@ export async function buildStatusReply(params: {
     logVerbose(`Ignoring /status from unauthorized sender: ${command.senderId || "<unknown>"}`);
     return undefined;
   }
-  const statusAgentId = sessionKey
-    ? resolveSessionAgentId({ sessionKey, config: cfg })
-    : resolveDefaultAgentId(cfg);
+  const statusAgentId = resolveSessionKeyAgentId(sessionKey, cfg);
   const currentUsageProvider = (() => {
     try {
       return resolveUsageProviderId(provider);

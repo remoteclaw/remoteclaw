@@ -1,6 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import {
+  listAgentIds,
+  resolveAgentWorkspaceDir,
+  resolveSessionKeyAgentId,
+  resolveSoleAgentId,
+} from "../agents/agent-scope.js";
 import { lookupContextTokens } from "../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import {
@@ -311,8 +316,10 @@ function listExistingAgentIdsFromDisk(): string[] {
 
 function listConfiguredAgentIds(cfg: RemoteClawConfig): string[] {
   const ids = new Set<string>();
-  const defaultId = normalizeAgentId(resolveDefaultAgentId(cfg));
-  ids.add(defaultId);
+  const defaultId = resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
+  if (defaultId) {
+    ids.add(defaultId);
+  }
 
   for (const entry of cfg.agents?.list ?? []) {
     if (entry?.id) {
@@ -326,9 +333,10 @@ function listConfiguredAgentIds(cfg: RemoteClawConfig): string[] {
 
   const sorted = Array.from(ids).filter(Boolean);
   sorted.sort((a, b) => a.localeCompare(b));
-  return sorted.includes(defaultId)
-    ? [defaultId, ...sorted.filter((id) => id !== defaultId)]
-    : sorted;
+  if (defaultId && sorted.includes(defaultId)) {
+    return [defaultId, ...sorted.filter((id) => id !== defaultId)];
+  }
+  return sorted;
 }
 
 export function listAgentsForGateway(cfg: RemoteClawConfig): {
@@ -337,7 +345,7 @@ export function listAgentsForGateway(cfg: RemoteClawConfig): {
   scope: SessionScope;
   agents: GatewayAgentRow[];
 } {
-  const defaultId = normalizeAgentId(resolveDefaultAgentId(cfg));
+  const defaultId = resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
   const mainKey = normalizeMainKey(cfg.session?.mainKey);
   const scope = cfg.session?.scope ?? "per-sender";
   const configuredById = new Map<
@@ -401,7 +409,7 @@ function canonicalizeSessionKeyForAgent(agentId: string, key: string): string {
 }
 
 function resolveDefaultStoreAgentId(cfg: RemoteClawConfig): string {
-  return normalizeAgentId(resolveDefaultAgentId(cfg));
+  return resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
 }
 
 export function resolveSessionStoreKey(params: {
@@ -569,7 +577,7 @@ export function loadCombinedSessionStoreForGateway(cfg: RemoteClawConfig): {
   const storeConfig = cfg.session?.store;
   if (storeConfig && !isStorePathTemplate(storeConfig)) {
     const storePath = resolveStorePath(storeConfig);
-    const defaultAgentId = normalizeAgentId(resolveDefaultAgentId(cfg));
+    const defaultAgentId = resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
     const store = loadSessionStore(storePath);
     const combined: Record<string, SessionEntry> = {};
     for (const [key, entry] of Object.entries(store)) {
@@ -803,8 +811,7 @@ export function listSessionsFromStore(params: {
         entry?.label ??
         originLabel;
       const deliveryFields = normalizeSessionDeliveryFields(entry);
-      const parsedAgent = parseAgentSessionKey(key);
-      const sessionAgentId = normalizeAgentId(parsedAgent?.agentId ?? resolveDefaultAgentId(cfg));
+      const sessionAgentId = resolveSessionKeyAgentId(key, cfg);
       const resolvedModel = resolveSessionModelIdentityRef(cfg, entry, sessionAgentId);
       const modelProvider = resolvedModel.provider;
       const model = resolvedModel.model ?? DEFAULT_MODEL;
@@ -868,9 +875,7 @@ export function listSessionsFromStore(params: {
     let lastMessagePreview: string | undefined;
     if (entry?.sessionId) {
       if (includeDerivedTitles || includeLastMessage) {
-        const parsed = parseAgentSessionKey(s.key);
-        const agentId =
-          parsed && parsed.agentId ? normalizeAgentId(parsed.agentId) : resolveDefaultAgentId(cfg);
+        const agentId = resolveSessionKeyAgentId(s.key, cfg);
         const fields = readSessionTitleFieldsFromTranscript(
           entry.sessionId,
           storePath,

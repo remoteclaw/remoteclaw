@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveSessionStoreTargets } from "./session-store-targets.js";
 
 const resolveStorePathMock = vi.hoisted(() => vi.fn());
-const resolveDefaultAgentIdMock = vi.hoisted(() => vi.fn());
+const resolveSoleAgentIdMock = vi.hoisted(() => vi.fn());
 const listAgentIdsMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../config/sessions.js", () => ({
@@ -10,7 +10,7 @@ vi.mock("../config/sessions.js", () => ({
 }));
 
 vi.mock("../agents/agent-scope.js", () => ({
-  resolveDefaultAgentId: resolveDefaultAgentIdMock,
+  resolveSoleAgentId: resolveSoleAgentIdMock,
   listAgentIds: listAgentIdsMock,
   resolveAgentRuntime: () => "claude",
 }));
@@ -18,10 +18,12 @@ vi.mock("../agents/agent-scope.js", () => ({
 describe("resolveSessionStoreTargets", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resolveSoleAgentIdMock.mockReturnValue(null);
+    listAgentIdsMock.mockReturnValue([]);
   });
 
   it("resolves the default agent store when no selector is provided", () => {
-    resolveDefaultAgentIdMock.mockReturnValue("main");
+    resolveSoleAgentIdMock.mockReturnValue("main");
     resolveStorePathMock.mockReturnValue("/tmp/main-sessions.json");
 
     const targets = resolveSessionStoreTargets({}, {});

@@ -1,4 +1,4 @@
-import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveSoleAgentId } from "../agents/agent-scope.js";
 import { isRouteBinding, listRouteBindings } from "../config/bindings.js";
 import { writeConfigFile } from "../config/config.js";
 import { logConfigUpdated } from "../config/logging.js";
@@ -36,7 +36,7 @@ type AgentsUnbindOptions = {
 function resolveAgentId(
   cfg: Awaited<ReturnType<typeof requireValidConfig>>,
   agentInput: string | undefined,
-  params?: { fallbackToDefault?: boolean },
+  params?: { fallbackToSole?: boolean },
 ): string | null {
   if (!cfg) {
     return null;
@@ -44,8 +44,8 @@ function resolveAgentId(
   if (agentInput?.trim()) {
     return normalizeAgentId(agentInput);
   }
-  if (params?.fallbackToDefault) {
-    return resolveDefaultAgentId(cfg);
+  if (params?.fallbackToSole) {
+    return resolveSoleAgentId(cfg);
   }
   return null;
 }
@@ -67,10 +67,10 @@ function resolveTargetAgentIdOrExit(params: {
   agentInput: string | undefined;
 }): string | null {
   const agentId = resolveAgentId(params.cfg, params.agentInput?.trim(), {
-    fallbackToDefault: true,
+    fallbackToSole: true,
   });
   if (!agentId) {
-    params.runtime.error("Unable to resolve agent id.");
+    params.runtime.error("Unable to resolve agent id — pass --agent explicitly.");
     params.runtime.exit(1);
     return null;
   }

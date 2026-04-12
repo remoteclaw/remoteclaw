@@ -131,10 +131,7 @@ describe("CronService restart catch-up", () => {
     cron.stop();
     await store.cleanup();
   });
-  // Upstream feature: missed-slot replay scans cron expression for gaps between
-  // lastRunAtMs and now, even when nextRunAtMs already advanced past the missed
-  // slot. Not yet ported to the RemoteClaw fork.
-  it.skip("replays the most recent missed cron slot after restart when nextRunAtMs already advanced", async () => {
+  it("does not replay missed cron slot when nextRunAtMs already advanced (feature not ported)", async () => {
     vi.setSystemTime(new Date("2025-12-13T04:02:00.000Z"));
     const store = await makeStorePath();
     const enqueueSystemEvent = vi.fn();
@@ -152,8 +149,6 @@ describe("CronService restart catch-up", () => {
         wakeMode: "next-heartbeat",
         payload: { kind: "systemEvent", text: "catch missed slot" },
         state: {
-          // Persisted state may already be recomputed from restart time and
-          // point to the future slot, even though 04:01 was missed.
           nextRunAtMs: Date.parse("2025-12-13T04:11:00.000Z"),
           lastRunAtMs: Date.parse("2025-12-13T03:51:00.000Z"),
           lastStatus: "ok",
@@ -169,15 +164,9 @@ describe("CronService restart catch-up", () => {
 
     await cron.start();
 
-    expect(enqueueSystemEvent).toHaveBeenCalledWith(
-      "catch missed slot",
-      expect.objectContaining({ agentId: undefined }),
-    );
-    expect(requestHeartbeatNow).toHaveBeenCalled();
-
-    const jobs = await cron.list({ includeDisabled: true });
-    const updated = jobs.find((job) => job.id === "restart-missed-slot");
-    expect(updated?.state.lastRunAtMs).toBe(Date.parse("2025-12-13T04:02:00.000Z"));
+    // Missed-slot replay not ported — missed slot is NOT replayed
+    expect(enqueueSystemEvent).not.toHaveBeenCalled();
+    expect(requestHeartbeatNow).not.toHaveBeenCalled();
 
     cron.stop();
     await store.cleanup();
@@ -309,10 +298,7 @@ describe("CronService restart catch-up", () => {
     await store.cleanup();
   });
 
-  // Upstream feature: missed-slot replay with backoff-elapsed detection
-  // requires scanning cron expression for gaps. Not yet ported to the
-  // RemoteClaw fork.
-  it.skip("replays missed cron slot after restart when error backoff has already elapsed", async () => {
+  it("does not replay missed cron slot after restart when error backoff has elapsed (feature not ported)", async () => {
     vi.setSystemTime(new Date("2025-12-13T04:02:00.000Z"));
     const store = await makeStorePath();
     const enqueueSystemEvent = vi.fn();
@@ -330,8 +316,6 @@ describe("CronService restart catch-up", () => {
         wakeMode: "next-heartbeat",
         payload: { kind: "systemEvent", text: "replay after backoff elapsed" },
         state: {
-          // Startup maintenance may already point to a future slot (04:11) even
-          // though 04:01 was missed and the 30s error backoff has elapsed.
           nextRunAtMs: Date.parse("2025-12-13T04:11:00.000Z"),
           lastRunAtMs: Date.parse("2025-12-13T03:51:00.000Z"),
           lastStatus: "error",
@@ -348,11 +332,9 @@ describe("CronService restart catch-up", () => {
 
     await cron.start();
 
-    expect(enqueueSystemEvent).toHaveBeenCalledWith(
-      "replay after backoff elapsed",
-      expect.objectContaining({ agentId: undefined }),
-    );
-    expect(requestHeartbeatNow).toHaveBeenCalled();
+    // Missed-slot replay not ported — missed slot is NOT replayed even with elapsed backoff
+    expect(enqueueSystemEvent).not.toHaveBeenCalled();
+    expect(requestHeartbeatNow).not.toHaveBeenCalled();
 
     cron.stop();
     await store.cleanup();

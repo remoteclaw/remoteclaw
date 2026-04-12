@@ -1,4 +1,10 @@
-import type { Model } from "@mariozechner/pi-ai";
+// Fork-local type (replaces @mariozechner/pi-ai import)
+type Model<T extends string = string> = {
+  api: T;
+  baseUrl?: string;
+  compat?: { supportsDeveloperRole?: boolean; supportsUsageInStreaming?: boolean };
+  [key: string]: unknown;
+};
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyModel = Model<any>;
@@ -40,7 +46,7 @@ function normalizeAnthropicBaseUrl(baseUrl: string): string {
   return baseUrl.replace(/\/v1\/?$/, "");
 }
 export function normalizeModelCompat(model: AnyModel): AnyModel {
-  const baseUrl = (model.baseUrl as string | undefined) ?? "";
+  const baseUrl = model.baseUrl ?? "";
 
   // Normalise anthropic-messages baseUrl: strip trailing /v1 that users may
   // have included in their config. pi-ai appends /v1/messages itself.

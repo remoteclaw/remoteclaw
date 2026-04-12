@@ -1,14 +1,46 @@
 import { randomUUID } from "node:crypto";
-import type { StreamFn } from "@mariozechner/pi-agent-core";
-import type {
-  AssistantMessage,
-  StopReason,
-  TextContent,
-  ToolCall,
-  Tool,
-} from "@mariozechner/pi-ai";
-import { createAssistantMessageEventStream } from "@mariozechner/pi-ai";
 import { createSubsystemLogger } from "../logging/subsystem.js";
+
+// Fork-local types (replaces @mariozechner/pi-agent-core import)
+type StreamFn = (
+  model: {
+    api: string;
+    provider: string;
+    id: string;
+    contextWindow?: number;
+    [key: string]: unknown;
+  },
+  context: {
+    messages?: Array<{ role: string; content: unknown }>;
+    systemPrompt?: string;
+    tools?: Tool[];
+  },
+  options?: {
+    temperature?: number;
+    maxTokens?: number;
+    headers?: Record<string, string>;
+    apiKey?: string;
+    signal?: AbortSignal;
+  },
+) => AssistantMessageEventStream;
+
+// Fork-local types (replaces @mariozechner/pi-ai import)
+type TextContent = { type: "text"; text: string };
+type ToolCall = { type: "toolCall"; id: string; name: string; arguments: Record<string, unknown> };
+type Tool = { name: string; description?: string; parameters?: unknown };
+type StopReason = "stop" | "length" | "toolUse" | "error" | "aborted";
+type AssistantMessage = {
+  role: "assistant";
+  content: (TextContent | ToolCall)[];
+  stopReason: StopReason;
+  [key: string]: unknown;
+};
+type AssistantMessageEventStream = { push: (event: unknown) => void; end: () => void };
+
+// Fork-local stub (replaces @mariozechner/pi-ai import)
+function createAssistantMessageEventStream(): AssistantMessageEventStream {
+  return { push: () => {}, end: () => {} };
+}
 import { isNonSecretApiKeyMarker } from "./model-auth-markers.js";
 import {
   buildAssistantMessage as buildStreamAssistantMessage,

@@ -63,10 +63,26 @@ describe("resolveAcpClientSpawnEnv", () => {
     expect(env.REMOTECLAW_SHELL).toBe("acp-client");
   });
 
-  // Gutted in RemoteClaw fork — stripKeys feature not present
-  it.skip("strips skill-injected env keys when stripKeys is provided", () => {});
-  it.skip("does not modify the original baseEnv when stripping keys", () => {});
-  it.skip("preserves REMOTECLAW_SHELL even when stripKeys contains it", () => {});
+  it("strips skill-injected env keys when stripKeys is provided", () => {
+    const env = resolveAcpClientSpawnEnv(
+      { PATH: "/usr/bin", SKILL_KEY: "injected", REMOTECLAW_SHELL: "old" },
+      ["SKILL_KEY"],
+    );
+    expect(env.REMOTECLAW_SHELL).toBe("acp-client");
+    expect(env.PATH).toBe("/usr/bin");
+    expect(env.SKILL_KEY).toBeUndefined();
+  });
+
+  it("does not modify the original baseEnv when stripping keys", () => {
+    const original: NodeJS.ProcessEnv = { SKILL_KEY: "keep" };
+    resolveAcpClientSpawnEnv(original, ["SKILL_KEY"]);
+    expect(original.SKILL_KEY).toBe("keep");
+  });
+
+  it("preserves REMOTECLAW_SHELL even when stripKeys contains it", () => {
+    const env = resolveAcpClientSpawnEnv({ PATH: "/usr/bin" }, ["REMOTECLAW_SHELL"]);
+    expect(env.REMOTECLAW_SHELL).toBe("acp-client");
+  });
 });
 
 describe("resolveAcpClientSpawnInvocation", () => {

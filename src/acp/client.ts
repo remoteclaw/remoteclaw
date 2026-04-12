@@ -525,8 +525,17 @@ export async function runAcpClientInteractive(opts: AcpClientOptions = {}): Prom
 
 export function resolveAcpClientSpawnEnv(
   baseEnv: NodeJS.ProcessEnv = process.env,
+  stripKeys?: Iterable<string>,
 ): NodeJS.ProcessEnv {
-  return { ...baseEnv, REMOTECLAW_SHELL: "acp-client" };
+  const env: NodeJS.ProcessEnv = { ...baseEnv, REMOTECLAW_SHELL: "acp-client" };
+  if (stripKeys) {
+    for (const key of stripKeys) {
+      if (key !== "REMOTECLAW_SHELL") {
+        delete env[key];
+      }
+    }
+  }
+  return env;
 }
 
 type AcpSpawnRuntime = {

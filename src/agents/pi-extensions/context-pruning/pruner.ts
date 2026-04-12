@@ -1,4 +1,8 @@
-import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
+// Fork-local type (replaces @mariozechner/pi-coding-agent import)
+type ExtensionContext = {
+  model: { contextWindow?: number; [key: string]: unknown };
+  [key: string]: unknown;
+};
 import type {
   AgentMessage,
   ImageContent,

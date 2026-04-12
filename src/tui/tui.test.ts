@@ -35,22 +35,21 @@ describe("resolveFinalAssistantText", () => {
   });
 });
 
-// Gutted in RemoteClaw fork
-describe.skip("tui slash commands", () => {
-  it("treats /elev as an alias for /elevated", () => {
-    expect(parseCommand("/elev on")).toEqual({ name: "elevated", args: "on" });
+describe("tui slash commands (gutted aliases and gateway text commands)", () => {
+  it("does not alias /elev to /elevated (gutted)", () => {
+    expect(parseCommand("/elev on")).toEqual({ name: "elev", args: "on" });
   });
 
-  it("normalizes alias case", () => {
+  it("normalizes command name to lowercase", () => {
     expect(parseCommand("/ELEV off")).toEqual({
-      name: "elevated",
+      name: "elev",
       args: "off",
     });
   });
 
-  it("includes gateway text commands", () => {
+  it("does not include gutted /context command but keeps /commands", () => {
     const commands = getSlashCommands({});
-    expect(commands.some((command) => command.name === "context")).toBe(true);
+    expect(commands.some((command) => command.name === "context")).toBe(false);
     expect(commands.some((command) => command.name === "commands")).toBe(true);
   });
 });

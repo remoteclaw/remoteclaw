@@ -281,7 +281,7 @@ export const whatsappPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
           fromMe: typeof params.fromMe === "boolean" ? params.fromMe : undefined,
         },
         cfg,
-      )) as import("@mariozechner/pi-agent-core").AgentToolResult<unknown>;
+      )) as import("../../../src/agents/agent-types.js").AgentToolResult<unknown>;
     },
   },
   outbound: {

@@ -33,8 +33,6 @@ const sourceRoots = ["src", "extensions"];
 const allowedCallsites = new Set([
   "src/auto-reply/reply/agent-runner.runreplyagent.e2e.test.ts:42",
   "src/auto-reply/reply/agent-runner.runreplyagent.e2e.test.ts:84",
-  "src/cli/memory-cli.ts:11",
-  "src/cli/memory-cli.ts:12",
   "src/commands/status-all.ts:1",
   "src/config/zod-schema.agent-runtime.ts:2",
   "src/cron/isolated-agent/run.test-harness.ts:75",

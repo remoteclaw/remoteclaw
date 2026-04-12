@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { OAuthCredentials } from "@mariozechner/pi-ai";
 import { resolveRemoteClawAgentDir } from "../agents/agent-paths.js";
+import type { OAuthCredentials } from "../agents/agent-types.js"; // Fork-local type (replaces @mariozechner/pi-ai import)
 import { upsertAuthProfile } from "../agents/auth-profiles.js";
 import { resolveStateDir } from "../config/paths.js";
 import {

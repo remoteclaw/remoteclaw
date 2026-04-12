@@ -44,10 +44,9 @@ describe("Dockerfile", () => {
     expect(dockerfile).toContain('find "$dir" -type f -exec chmod 644 {} +');
   });
 
-  // Gutted in RemoteClaw fork
-  it.skip("Docker GPG fingerprint awk uses correct quoting for REMOTECLAW_SANDBOX=1 build", async () => {
+  it("does not contain gutted sandbox Docker GPG setup", async () => {
     const dockerfile = await readFile(dockerfilePath, "utf8");
-    expect(dockerfile).toContain('== "fpr" {');
-    expect(dockerfile).not.toContain('\\"fpr\\"');
+    expect(dockerfile).not.toContain("fpr");
+    expect(dockerfile).not.toContain("REMOTECLAW_SANDBOX");
   });
 });

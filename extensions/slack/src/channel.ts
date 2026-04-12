@@ -287,7 +287,7 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
         includeReadThreadId: true,
         invoke: async (action, cfg, toolContext) =>
           await getSlackRuntime().channel.slack.handleSlackAction(action, cfg, toolContext),
-      })) as import("@mariozechner/pi-agent-core").AgentToolResult<unknown>,
+      })) as import("../../../src/agents/agent-types.js").AgentToolResult<unknown>,
   },
   setup: {
     resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),

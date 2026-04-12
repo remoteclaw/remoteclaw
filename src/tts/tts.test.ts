@@ -1,18 +1,17 @@
-import { completeSimple, type AssistantMessage } from "@mariozechner/pi-ai";
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import type { AssistantMessage } from "../agents/agent-types.js"; // Fork-local type (replaces @mariozechner/pi-ai import)
 import { ensureCustomApiRegistered } from "../agents/custom-api-registry.js";
 import { getApiKeyForModel } from "../agents/model-auth.js";
 import { resolveModel } from "../agents/pi-embedded-runner/model.js";
+import { completeSimple } from "../agents/stream-message-shared.js"; // Fork-local stub (replaces @mariozechner/pi-ai import)
 import type { RemoteClawConfig } from "../config/config.js";
 import { withEnv } from "../test-utils/env.js";
 import * as tts from "./tts.js";
 
-vi.mock("@mariozechner/pi-ai", () => ({
-  completeSimple: vi.fn(),
-  // Some auth helpers import oauth provider metadata at module load time.
-  getOAuthProviders: () => [],
-  getOAuthApiKey: vi.fn(async () => null),
-}));
+vi.mock("../agents/stream-message-shared.js", async (importOriginal) => {
+  const orig = await importOriginal<Record<string, unknown>>();
+  return { ...orig, completeSimple: vi.fn() };
+});
 
 vi.mock("../agents/pi-embedded-runner/model.js", () => ({
   resolveModel: vi.fn((provider: string, modelId: string) => ({
@@ -354,12 +353,10 @@ describe("tts", () => {
       });
 
       const callArgs = vi.mocked(completeSimple).mock.calls[0];
-      expect(
-        (callArgs?.[1] as unknown as Record<string, unknown> | undefined)?.messages,
-      ).toBeDefined();
+      expect((callArgs?.[1] as Record<string, unknown> | undefined)?.messages).toBeDefined();
       expect(
         (
-          (callArgs?.[1] as unknown as Record<string, unknown> | undefined)?.messages as
+          (callArgs?.[1] as Record<string, unknown> | undefined)?.messages as
             | Array<{ role?: string }>
             | undefined
         )?.[0]?.role,

@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
-import type { Skill } from "@mariozechner/pi-coding-agent";
+// Fork-local type (replaces @mariozechner/pi-coding-agent import)
+type Skill = { name: string; [key: string]: unknown };
 import type { ChatType } from "../../channels/chat-type.js";
 import type { ChannelId } from "../../channels/plugins/types.js";
 import type { DeliveryContext } from "../../utils/delivery-context.js";

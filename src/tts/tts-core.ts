@@ -1,6 +1,6 @@
 import { rmSync } from "node:fs";
-import { completeSimple, type TextContent } from "@mariozechner/pi-ai";
 import { EdgeTTS } from "node-edge-tts";
+import type { TextContent } from "../agents/agent-types.js"; // Fork-local type (replaces @mariozechner/pi-ai import)
 import { ensureCustomApiRegistered } from "../agents/custom-api-registry.js";
 import { getApiKeyForModel, requireApiKey } from "../agents/model-auth.js";
 import {
@@ -11,6 +11,7 @@ import {
 } from "../agents/model-selection.js";
 import { createConfiguredOllamaStreamFn } from "../agents/ollama-stream.js";
 import { resolveModel } from "../agents/pi-embedded-runner/model.js";
+import { completeSimple } from "../agents/stream-message-shared.js"; // Fork-local stub (replaces @mariozechner/pi-ai import)
 import type { RemoteClawConfig } from "../config/config.js";
 import type {
   ResolvedTtsConfig,

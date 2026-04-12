@@ -293,8 +293,7 @@ describe("gateway chat transcript writes (guardrail)", () => {
   });
 });
 
-// Gutted in RemoteClaw fork
-describe.skip("exec approval handlers", () => {
+describe("exec approval handlers", () => {
   const execApprovalNoop = () => false;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   type ExecApprovalHandlers = Record<string, any>;

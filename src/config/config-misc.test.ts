@@ -274,7 +274,10 @@ describe("broadcast", () => {
   it("accepts a broadcast peer map with strategy", () => {
     const res = validateConfigObject({
       agents: {
-        list: [{ id: "alfred" }, { id: "baerbel" }],
+        list: [
+          { id: "alfred", workspace: "/tmp/alfred" },
+          { id: "baerbel", workspace: "/tmp/baerbel" },
+        ],
       },
       broadcast: {
         strategy: "parallel",

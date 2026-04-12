@@ -19,7 +19,9 @@ describe("config pruning defaults", () => {
   it("does not enable contextPruning by default", async () => {
     await withEnvAsync({ ANTHROPIC_API_KEY: "", ANTHROPIC_OAUTH_TOKEN: "" }, async () => {
       await withTempHome(async (home) => {
-        await writeConfigForTest(home, { agents: { defaults: {} } });
+        await writeConfigForTest(home, {
+          agents: { defaults: {}, list: [{ id: "main", workspace: "/tmp/main" }] },
+        });
 
         const cfg = loadConfig();
 
@@ -36,7 +38,7 @@ describe("config pruning defaults", () => {
             "anthropic:me": { provider: "anthropic", mode: "oauth", email: "me@example.com" },
           },
         },
-        agents: { defaults: {} },
+        agents: { defaults: {}, list: [{ id: "main", workspace: "/tmp/main" }] },
       });
 
       const cfg = loadConfig();
@@ -55,7 +57,7 @@ describe("config pruning defaults", () => {
             "anthropic:api": { provider: "anthropic", mode: "api_key" },
           },
         },
-        agents: { defaults: {} },
+        agents: { defaults: {}, list: [{ id: "main", workspace: "/tmp/main" }] },
       });
 
       const cfg = loadConfig();
@@ -68,7 +70,12 @@ describe("config pruning defaults", () => {
 
   it("does not override explicit contextPruning mode", async () => {
     await withTempHome(async (home) => {
-      await writeConfigForTest(home, { agents: { defaults: { contextPruning: { mode: "off" } } } });
+      await writeConfigForTest(home, {
+        agents: {
+          defaults: { contextPruning: { mode: "off" } },
+          list: [{ id: "main", workspace: "/tmp/main" }],
+        },
+      });
 
       const cfg = loadConfig();
 

@@ -711,7 +711,7 @@ export const AgentEntrySchema = z
     id: z.string(),
     default: z.boolean().optional(),
     name: z.string().optional(),
-    workspace: z.string().optional(),
+    workspace: z.string().trim().min(1, "agents.list[].workspace must be a non-empty string"),
     agentDir: z.string().optional(),
     model: AgentModelSchema.optional(),
     skills: z.array(z.string()).optional(),

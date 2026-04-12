@@ -11,7 +11,7 @@ describe("config validation fail-closed behavior", () => {
   it("throws INVALID_CONFIG instead of returning an empty config", async () => {
     await withTempHomeConfig(
       {
-        agents: { list: [{ id: "main" }] },
+        agents: { list: [{ id: "main", workspace: "/tmp/main" }] },
         nope: true,
         channels: {
           whatsapp: {
@@ -39,7 +39,7 @@ describe("config validation fail-closed behavior", () => {
   it("still loads valid security settings unchanged", async () => {
     await withTempHomeConfig(
       {
-        agents: { list: [{ id: "main" }] },
+        agents: { list: [{ id: "main", workspace: "/tmp/main" }] },
         channels: {
           whatsapp: {
             dmPolicy: "allowlist",

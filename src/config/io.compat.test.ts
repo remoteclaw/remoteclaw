@@ -101,6 +101,7 @@ describe("config io paths", () => {
               list: [
                 {
                   id: "ops",
+                  workspace: "/tmp/ops",
                   tools: {
                     exec: {
                       safeBinTrustedDirs: [" /ops/bin ", "/ops/bin"],

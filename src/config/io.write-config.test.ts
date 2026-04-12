@@ -289,6 +289,7 @@ describe("config io write", () => {
         env: { OPENAI_API_KEY: "sk-secret" } as NodeJS.ProcessEnv,
         initialConfig: {
           agents: {
+            list: [{ id: "main", workspace: "/tmp/main" }],
             defaults: {
               cliBackends: {
                 codex: {
@@ -372,6 +373,7 @@ describe("config io write", () => {
         JSON.stringify(
           {
             agents: {
+              list: [{ id: "main", workspace: "/tmp/main" }],
               defaults: {
                 cliBackends: {
                   codex: {

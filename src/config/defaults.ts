@@ -348,7 +348,10 @@ export function applyModelDefaults(cfg: RemoteClawConfig): RemoteClawConfig {
 
 export function applyAgentDefaults(cfg: RemoteClawConfig): RemoteClawConfig {
   const agents = cfg.agents;
-  const defaults = agents?.defaults;
+  if (!agents) {
+    return cfg;
+  }
+  const defaults = agents.defaults;
   const hasMax =
     typeof defaults?.maxConcurrent === "number" && Number.isFinite(defaults.maxConcurrent);
   const hasSubMax =

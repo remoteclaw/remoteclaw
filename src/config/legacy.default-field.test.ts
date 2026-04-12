@@ -6,17 +6,25 @@ import { AgentEntrySchema } from "./zod-schema.agent-runtime.js";
 describe("deprecated agents.list[].default field (#1581)", () => {
   describe("zod schema acceptance", () => {
     it("accepts agent entry with default: true without parse error", () => {
-      const result = AgentEntrySchema.safeParse({ id: "main", default: true });
+      const result = AgentEntrySchema.safeParse({
+        id: "main",
+        workspace: "/tmp/main",
+        default: true,
+      });
       expect(result.success).toBe(true);
     });
 
     it("accepts agent entry with default: false without parse error", () => {
-      const result = AgentEntrySchema.safeParse({ id: "main", default: false });
+      const result = AgentEntrySchema.safeParse({
+        id: "main",
+        workspace: "/tmp/main",
+        default: false,
+      });
       expect(result.success).toBe(true);
     });
 
     it("accepts agent entry without default field", () => {
-      const result = AgentEntrySchema.safeParse({ id: "main" });
+      const result = AgentEntrySchema.safeParse({ id: "main", workspace: "/tmp/main" });
       expect(result.success).toBe(true);
     });
   });

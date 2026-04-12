@@ -134,7 +134,7 @@ describe("config plugin validation", () => {
   it("reports missing plugin refs across load paths, entries, and allowlist surfaces", async () => {
     const missingPath = path.join(suiteHome, "missing-plugin-dir");
     const res = validateInSuite({
-      agents: { list: [{ id: "pi" }] },
+      agents: { list: [{ id: "pi", workspace: "/tmp/pi" }] },
       plugins: {
         enabled: false,
         load: { paths: [missingPath] },
@@ -170,7 +170,7 @@ describe("config plugin validation", () => {
   it("warns for removed legacy plugin ids instead of failing validation", async () => {
     const removedId = "google-antigravity-auth";
     const res = validateInSuite({
-      agents: { list: [{ id: "pi" }] },
+      agents: { list: [{ id: "pi", workspace: "/tmp/pi" }] },
       plugins: {
         enabled: false,
         entries: { [removedId]: { enabled: true } },
@@ -210,7 +210,7 @@ describe("config plugin validation", () => {
 
   it("surfaces plugin config diagnostics", async () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "pi" }] },
+      agents: { list: [{ id: "pi", workspace: "/tmp/pi" }] },
       plugins: {
         enabled: true,
         load: { paths: [badPluginDir] },
@@ -230,7 +230,7 @@ describe("config plugin validation", () => {
 
   it("surfaces allowed enum values for plugin config diagnostics", async () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "pi" }] },
+      agents: { list: [{ id: "pi", workspace: "/tmp/pi" }] },
       plugins: {
         enabled: true,
         load: { paths: [enumPluginDir] },
@@ -251,7 +251,7 @@ describe("config plugin validation", () => {
 
   it("accepts voice-call webhookSecurity and streaming guard config fields", async () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "pi" }] },
+      agents: { list: [{ id: "pi", workspace: "/tmp/pi" }] },
       plugins: {
         enabled: true,
         load: { paths: [voiceCallSchemaPluginDir] },
@@ -284,7 +284,7 @@ describe("config plugin validation", () => {
     const res = validateInSuite({
       agents: {
         defaults: { heartbeat: { target: "last", directPolicy: "block" } },
-        list: [{ id: "pi", heartbeat: { directPolicy: "allow" } }],
+        list: [{ id: "pi", workspace: "/tmp/pi", heartbeat: { directPolicy: "allow" } }],
       },
       channels: {
         modelByChannel: {
@@ -300,7 +300,10 @@ describe("config plugin validation", () => {
 
   it("accepts plugin heartbeat targets", async () => {
     const res = validateInSuite({
-      agents: { defaults: { heartbeat: { target: "bluebubbles" } }, list: [{ id: "pi" }] },
+      agents: {
+        defaults: { heartbeat: { target: "bluebubbles" } },
+        list: [{ id: "pi", workspace: "/tmp/pi" }],
+      },
       plugins: { enabled: false, load: { paths: [bluebubblesPluginDir] } },
     });
     expect(res.ok).toBe(true);
@@ -310,7 +313,7 @@ describe("config plugin validation", () => {
     const res = validateInSuite({
       agents: {
         defaults: { heartbeat: { target: "not-a-channel" } },
-        list: [{ id: "pi" }],
+        list: [{ id: "pi", workspace: "/tmp/pi" }],
       },
     });
     expect(res.ok).toBe(false);
@@ -326,7 +329,7 @@ describe("config plugin validation", () => {
     const res = validateInSuite({
       agents: {
         defaults: { heartbeat: { directPolicy: "maybe" } },
-        list: [{ id: "pi" }],
+        list: [{ id: "pi", workspace: "/tmp/pi" }],
       },
     });
     expect(res.ok).toBe(false);

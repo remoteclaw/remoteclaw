@@ -1,7 +1,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_AGENT_MAX_CONCURRENT, DEFAULT_SUBAGENT_MAX_CONCURRENT } from "./agent-limits.js";
+import {
+  DEFAULT_AGENT_MAX_CONCURRENT,
+  DEFAULT_SUBAGENT_MAX_CONCURRENT,
+  resolveAgentMaxConcurrent,
+  resolveSubagentMaxConcurrent,
+} from "./agent-limits.js";
 import { loadConfig } from "./config.js";
 import { withTempHome } from "./home-env.test-harness.js";
 
@@ -17,6 +22,7 @@ describe("config identity defaults", () => {
       list: [
         {
           id: "main",
+          workspace: "/tmp/main",
           identity: defaultIdentity,
         },
       ],
@@ -54,9 +60,11 @@ describe("config identity defaults", () => {
       expect(cfg.messages?.ackReactionScope).toBe("group-mentions");
       expect(cfg.messages?.responsePrefix).toBeUndefined();
       expect(cfg.messages?.groupChat?.mentionPatterns).toBeUndefined();
-      expect(cfg.agents?.list).toBeUndefined();
-      expect(cfg.agents?.defaults?.maxConcurrent).toBe(DEFAULT_AGENT_MAX_CONCURRENT);
-      expect(cfg.agents?.defaults?.subagents?.maxConcurrent).toBe(DEFAULT_SUBAGENT_MAX_CONCURRENT);
+      // With agents.list required, empty configs leave cfg.agents undefined; runtime
+      // resolvers fall back to the same concurrency defaults.
+      expect(cfg.agents).toBeUndefined();
+      expect(resolveAgentMaxConcurrent(cfg)).toBe(DEFAULT_AGENT_MAX_CONCURRENT);
+      expect(resolveSubagentMaxConcurrent(cfg)).toBe(DEFAULT_SUBAGENT_MAX_CONCURRENT);
       expect(cfg.session).toBeUndefined();
     });
   });
@@ -68,6 +76,7 @@ describe("config identity defaults", () => {
           list: [
             {
               id: "main",
+              workspace: "/tmp/main",
               identity: {
                 name: "Samantha Sloth",
                 theme: "space lobster",

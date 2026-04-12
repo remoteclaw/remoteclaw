@@ -1,5 +1,5 @@
 import path from "node:path";
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveFirstAgentWorkspace } from "../agents/agent-scope.js";
 import { getActiveEmbeddedRunCount } from "../agents/pi-embedded-runner/runs.js";
 import { registerSkillsChangeListener } from "../agents/skills/refresh.js";
 import { initSubagentRegistry } from "../agents/subagent-registry.js";
@@ -315,8 +315,12 @@ export async function startGatewayServer(
   });
 
   initSubagentRegistry();
-  const defaultAgentId = resolveDefaultAgentId(cfgAtStart);
-  const defaultWorkspaceDir = resolveAgentWorkspaceDir(cfgAtStart, defaultAgentId);
+  const defaultWorkspaceDir = resolveFirstAgentWorkspace(cfgAtStart);
+  if (!defaultWorkspaceDir) {
+    throw new Error(
+      "No agents configured — add at least one entry to agents.list in remoteclaw.json",
+    );
+  }
   const baseMethods = listGatewayMethods();
   const emptyPluginRegistry = createEmptyPluginRegistry();
   const { pluginRegistry, gatewayMethods: baseGatewayMethods } = minimalTestGateway

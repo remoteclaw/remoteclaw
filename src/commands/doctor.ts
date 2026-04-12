@@ -50,10 +50,6 @@ import { maybeRepairSandboxImages, noteSandboxScopeWarnings } from "./doctor-san
 import { noteSecurityWarnings } from "./doctor-security.js";
 import { noteSessionLockHealth } from "./doctor-session-locks.js";
 import { noteStateIntegrity, noteWorkspaceBackupTip } from "./doctor-state-integrity.js";
-import {
-  detectLegacyStateMigrations,
-  runLegacyStateMigrations,
-} from "./doctor-state-migrations.js";
 import { maybeRepairUiProtocolFreshness } from "./doctor-ui.js";
 import { maybeOfferUpdateBeforeDoctor } from "./doctor-update.js";
 import { noteWorkspaceStatus } from "./doctor-workspace-status.js";
@@ -191,29 +187,6 @@ export async function doctorCommand(
           };
           note("Gateway token configured.", "Gateway auth");
         }
-      }
-    }
-  }
-
-  const legacyState = await detectLegacyStateMigrations({ cfg });
-  if (legacyState.preview.length > 0) {
-    note(legacyState.preview.join("\n"), "Legacy state detected");
-    const migrate =
-      options.nonInteractive === true
-        ? true
-        : await prompter.confirm({
-            message: "Migrate legacy state (sessions/agent/WhatsApp auth) now?",
-            initialValue: true,
-          });
-    if (migrate) {
-      const migrated = await runLegacyStateMigrations({
-        detected: legacyState,
-      });
-      if (migrated.changes.length > 0) {
-        note(migrated.changes.join("\n"), "Doctor changes");
-      }
-      if (migrated.warnings.length > 0) {
-        note(migrated.warnings.join("\n"), "Doctor warnings");
       }
     }
   }

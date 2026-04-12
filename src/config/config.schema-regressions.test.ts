@@ -33,6 +33,7 @@ describe("config schema regressions", () => {
   it("still parses legacy memorySearch fields without error (compat stub)", () => {
     const res = validateConfigObject({
       agents: {
+        list: [{ id: "main", workspace: "/tmp/main" }],
         defaults: {
           memorySearch: {
             fallback: "voyage",
@@ -100,6 +101,7 @@ describe("config schema regressions", () => {
   it("accepts string values for agents defaults model inputs", () => {
     const res = validateConfigObject({
       agents: {
+        list: [{ id: "main", workspace: "/tmp/main" }],
         defaults: {
           model: "anthropic/claude-opus-4-6",
           imageModel: "openai/gpt-4.1-mini",
@@ -113,6 +115,7 @@ describe("config schema regressions", () => {
   it("accepts pdf default model and limits", () => {
     const res = validateConfigObject({
       agents: {
+        list: [{ id: "main", workspace: "/tmp/main" }],
         defaults: {
           pdfModel: {
             primary: "anthropic/claude-opus-4-6",
@@ -130,6 +133,7 @@ describe("config schema regressions", () => {
   it("accepts legacy pdf limits (compat stubs)", () => {
     const res = validateConfigObject({
       agents: {
+        list: [{ id: "main", workspace: "/tmp/main" }],
         defaults: {
           pdfModel: { primary: "openai/gpt-5-mini" },
           pdfMaxBytesMb: 0,

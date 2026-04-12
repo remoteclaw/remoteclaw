@@ -10,8 +10,8 @@ describe("multi-agent agentDir validation", () => {
     const res = validateConfigObject({
       agents: {
         list: [
-          { id: "a", agentDir: shared },
-          { id: "b", agentDir: shared },
+          { id: "a", workspace: "/tmp/a", agentDir: shared },
+          { id: "b", workspace: "/tmp/b", agentDir: shared },
         ],
       },
     });
@@ -27,8 +27,16 @@ describe("multi-agent agentDir validation", () => {
       {
         agents: {
           list: [
-            { id: "a", agentDir: "~/.remoteclaw/agents/shared/agent" },
-            { id: "b", agentDir: "~/.remoteclaw/agents/shared/agent" },
+            {
+              id: "a",
+              workspace: "~/.remoteclaw/workspaces/a",
+              agentDir: "~/.remoteclaw/agents/shared/agent",
+            },
+            {
+              id: "b",
+              workspace: "~/.remoteclaw/workspaces/b",
+              agentDir: "~/.remoteclaw/agents/shared/agent",
+            },
           ],
         },
         bindings: [{ agentId: "a", match: { channel: "telegram" } }],

@@ -6,9 +6,15 @@ describe("ACP binding cutover schema", () => {
     const parsed = RemoteClawSchema.safeParse({
       agents: {
         list: [
-          { id: "main", default: true, runtime: { type: "embedded" } },
+          {
+            id: "main",
+            workspace: "/tmp/main",
+            default: true,
+            runtime: { type: "embedded" },
+          },
           {
             id: "coding",
+            workspace: "/tmp/coding",
             runtime: {
               type: "acp",
               acp: {

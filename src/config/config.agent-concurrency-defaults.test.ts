@@ -31,6 +31,7 @@ describe("agent concurrency defaults", () => {
   it("accepts subagent spawn depth and per-agent child limits", () => {
     const parsed = RemoteClawSchema.parse({
       agents: {
+        list: [{ id: "main", workspace: "/tmp/main" }],
         defaults: {
           subagents: {
             maxSpawnDepth: 2,
@@ -44,9 +45,24 @@ describe("agent concurrency defaults", () => {
     expect(parsed.agents?.defaults?.subagents?.maxChildrenPerAgent).toBe(7);
   });
 
-  it("injects defaults on load", async () => {
+  it("resolves defaults for configs with no agents declared", async () => {
     await withTempHome(async (home) => {
       await writeRemoteClawConfig(home, {});
+
+      const cfg = loadConfig();
+
+      // With agents.list required, empty configs do not auto-inject agents.defaults;
+      // runtime resolvers still fall back to the same constants.
+      expect(resolveAgentMaxConcurrent(cfg)).toBe(DEFAULT_AGENT_MAX_CONCURRENT);
+      expect(resolveSubagentMaxConcurrent(cfg)).toBe(DEFAULT_SUBAGENT_MAX_CONCURRENT);
+    });
+  });
+
+  it("injects defaults on load when agents are declared", async () => {
+    await withTempHome(async (home) => {
+      await writeRemoteClawConfig(home, {
+        agents: { list: [{ id: "main", workspace: "/tmp/main" }] },
+      });
 
       const cfg = loadConfig();
 

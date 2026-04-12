@@ -209,7 +209,7 @@ describe("security fix", () => {
     const configPath = path.join(stateDir, "remoteclaw.json");
     await fs.writeFile(
       configPath,
-      `{ "$include": "./includes/extra.json5", agents: { list: [{ id: "main" }] }, channels: { whatsapp: { groupPolicy: "open" } } }\n`,
+      `{ "$include": "./includes/extra.json5", agents: { list: [{ id: "main", workspace: "/tmp/main" }] }, channels: { whatsapp: { groupPolicy: "open" } } }\n`,
       "utf-8",
     );
     await fs.chmod(configPath, 0o644);

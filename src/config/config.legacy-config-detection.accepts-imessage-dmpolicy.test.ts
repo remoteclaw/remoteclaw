@@ -232,6 +232,9 @@ describe("legacy config detection", () => {
   });
   it("migrates legacy model config to agent.models + model lists", async () => {
     const res = migrateLegacyConfig({
+      agents: {
+        list: [{ id: "main", workspace: "/tmp/main" }],
+      },
       agent: {
         model: "anthropic/claude-opus-4-5",
         modelFallbacks: ["openai/gpt-4.1-mini"],

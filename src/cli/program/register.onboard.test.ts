@@ -12,8 +12,8 @@ const runtime = {
 vi.mock("../../commands/onboard-provider-auth-flags.js", () => ({
   ONBOARD_PROVIDER_AUTH_FLAGS: [
     {
-      cliOption: "--mistral-api-key <key>",
-      description: "Mistral API key",
+      cliOption: "--codex-api-key <key>",
+      description: "Codex API key",
     },
   ] as Array<{ cliOption: string; description: string }>,
 }));
@@ -115,11 +115,11 @@ describe("registerOnboardCommand", () => {
     );
   });
 
-  it("parses --mistral-api-key and forwards mistralApiKey", async () => {
-    await runCli(["onboard", "--mistral-api-key", "sk-mistral-test"]);
+  it("parses --codex-api-key and forwards codexApiKey", async () => {
+    await runCli(["onboard", "--codex-api-key", "sk-codex-test"]);
     expect(onboardCommandMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        mistralApiKey: "sk-mistral-test", // pragma: allowlist secret
+        codexApiKey: "sk-codex-test", // pragma: allowlist secret
       }),
       runtime,
     );

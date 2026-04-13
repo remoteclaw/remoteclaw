@@ -25,6 +25,7 @@ export type AuthChoice =
   | "together-api-key"
   | "huggingface-api-key"
   | "codex-cli"
+  | "codex-api-key"
   | "apiKey"
   | "gemini-api-key"
   | "google-gemini-cli"
@@ -119,29 +120,9 @@ export type OnboardOptions = {
   secretInputMode?: SecretInputMode;
   anthropicApiKey?: string;
   openaiApiKey?: string;
-  mistralApiKey?: string;
-  openrouterApiKey?: string;
-  kilocodeApiKey?: string;
-  litellmApiKey?: string;
-  aiGatewayApiKey?: string;
+  geminiApiKey?: string;
   cloudflareAiGatewayAccountId?: string;
   cloudflareAiGatewayGatewayId?: string;
-  cloudflareAiGatewayApiKey?: string;
-  moonshotApiKey?: string;
-  kimiCodeApiKey?: string;
-  geminiApiKey?: string;
-  zaiApiKey?: string;
-  xiaomiApiKey?: string;
-  minimaxApiKey?: string;
-  syntheticApiKey?: string;
-  veniceApiKey?: string;
-  togetherApiKey?: string;
-  huggingfaceApiKey?: string;
-  opencodeZenApiKey?: string;
-  xaiApiKey?: string;
-  volcengineApiKey?: string;
-  byteplusApiKey?: string;
-  qianfanApiKey?: string;
   customBaseUrl?: string;
   customApiKey?: string;
   customModelId?: string;

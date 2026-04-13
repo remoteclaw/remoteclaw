@@ -87,9 +87,6 @@ function createContinueDirectivesResult(resetHookTriggered: boolean) {
       resolvedBlockStreamingBreak: undefined,
       provider: "openai",
       model: "gpt-4o-mini",
-      modelState: {
-        resolveDefaultThinkingLevel: async () => undefined,
-      },
       contextTokens: 0,
       inlineStatusRequested: false,
       directiveAck: undefined,

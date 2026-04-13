@@ -298,7 +298,6 @@ function buildPolicyParams(
     defaultGroupActivation: () => "mention",
     resolvedVerboseLevel: "off",
     resolvedReasoningLevel: "off",
-    resolveDefaultThinkingLevel: async () => undefined,
     provider: "telegram",
     model: "test-model",
     contextTokens: 0,

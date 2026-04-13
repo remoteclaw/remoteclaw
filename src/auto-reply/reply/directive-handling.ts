@@ -17,7 +17,6 @@ export const resolveDefaultModel = (
   allowedModelKeys: Set<string>;
   allowedModelCatalog: { id: string; provider: string }[];
   resetModelOverride: boolean;
-  resolveDefaultThinkingLevel?: () => string | undefined;
 } => ({
   provider: "default",
   model: "default",

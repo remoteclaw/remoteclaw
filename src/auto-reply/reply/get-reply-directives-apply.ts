@@ -11,7 +11,6 @@ import {
   persistInlineDirectives,
 } from "./directive-handling.js";
 import { clearInlineDirectives } from "./get-reply-directives-utils.js";
-import type { createModelSelectionState } from "./get-reply-directives.js";
 import type { TypingController } from "./typing.js";
 
 type AgentDefaults = NonNullable<RemoteClawConfig["agents"]>["defaults"];
@@ -51,7 +50,6 @@ export async function applyInlineDirectiveOverrides(params: {
   runtimeId: string;
   provider: string;
   model: string;
-  modelState: Awaited<ReturnType<typeof createModelSelectionState>>;
   initialModelLabel: string;
   formatModelSwitchEvent: (label: string, alias?: string) => string;
   defaultActivation: () => ReturnType<
@@ -80,7 +78,6 @@ export async function applyInlineDirectiveOverrides(params: {
     command,
     messageProviderKey,
     runtimeId,
-    modelState,
     initialModelLabel,
     formatModelSwitchEvent,
     defaultActivation,
@@ -88,14 +85,14 @@ export async function applyInlineDirectiveOverrides(params: {
   } = params;
   let { directives } = params;
   let { provider, model } = params;
-  // Model selection gutted in RemoteClaw — derive from runtimeId.
+  // Model selection gutted in RemoteClaw — derive from runtimeId and pass empty lookups.
   const defaultProvider = runtimeId;
   const defaultModel = "default";
   const aliasIndex = new Map<string, { provider: string; model: string }>();
   const directiveModelState = {
-    allowedModelKeys: modelState.allowedModelKeys,
-    allowedModelCatalog: modelState.allowedModelCatalog,
-    resetModelOverride: modelState.resetModelOverride,
+    allowedModelKeys: new Set<string>(),
+    allowedModelCatalog: [] as Array<{ id: string; provider: string }>,
+    resetModelOverride: false,
   };
   const createDirectiveHandlingBase = () => ({
     cfg,
@@ -194,9 +191,6 @@ export async function applyInlineDirectiveOverrides(params: {
       initialModelLabel,
       formatModelSwitchEvent,
       agentCfg,
-      modelState: {
-        ...directiveModelState,
-      },
     });
     directiveAck = fastLane.directiveAck;
     provider = fastLane.provider;

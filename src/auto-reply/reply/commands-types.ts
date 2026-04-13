@@ -49,7 +49,6 @@ export type HandleCommandsParams = {
   resolvedVerboseLevel: VerboseLevel;
   resolvedReasoningLevel: ReasoningLevel;
   resolvedElevatedLevel?: ElevatedLevel;
-  resolveDefaultThinkingLevel: () => Promise<ThinkLevel | undefined>;
   provider: string;
   model: string;
   contextTokens: number;

@@ -47,7 +47,6 @@ export async function buildStatusReply(params: {
   resolvedThinkLevel?: unknown;
   resolvedReasoningLevel?: unknown;
   resolvedElevatedLevel?: unknown;
-  resolveDefaultThinkingLevel?: (...args: unknown[]) => unknown;
   mediaDecisions?: unknown;
 }): Promise<ReplyPayload | undefined> {
   const {

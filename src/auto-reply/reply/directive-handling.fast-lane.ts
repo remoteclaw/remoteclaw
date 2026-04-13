@@ -26,7 +26,6 @@ export async function applyInlineDirectivesFastLane(
     allowedModelCatalog,
     resetModelOverride,
     formatModelSwitchEvent,
-    modelState: _modelState,
   } = params;
 
   let { provider, model } = params;

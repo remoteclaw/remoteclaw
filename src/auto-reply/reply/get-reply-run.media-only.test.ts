@@ -134,9 +134,6 @@ function baseParams(
     elevatedAllowed: false,
     blockStreamingEnabled: false,
     resolvedBlockStreamingBreak: "message_end",
-    modelState: {
-      resolveDefaultThinkingLevel: async () => "medium",
-    } as never,
     provider: "anthropic",
     model: "claude-opus-4-1",
     typing: {

@@ -35,9 +35,4 @@ export type ApplyInlineDirectivesFastLaneParams = HandleDirectiveOnlyCoreParams 
   agentId?: string;
   isGroup: boolean;
   agentCfg?: NonNullable<RemoteClawConfig["agents"]>["defaults"];
-  modelState: {
-    allowedModelKeys: Set<string>;
-    allowedModelCatalog: Array<{ id: string; provider: string }>;
-    resetModelOverride: boolean;
-  };
 };

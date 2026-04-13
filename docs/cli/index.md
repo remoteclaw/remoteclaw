@@ -285,14 +285,6 @@ Manage extensions and their config:
 
 Most plugin changes require a gateway restart. See [/plugin](/tools/plugin).
 
-## Memory
-
-Vector search over `MEMORY.md` + `memory/*.md`:
-
-- `remoteclaw memory status` — show index stats.
-- `remoteclaw memory index` — reindex memory files.
-- `remoteclaw memory search "<query>"` (or `--query "<query>"`) — semantic search over memory.
-
 ## Chat slash commands
 
 Chat messages support `/...` commands (text and native). See [/tools/slash-commands](/tools/slash-commands).

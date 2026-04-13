@@ -10,7 +10,6 @@ import {
   DEFAULT_GATEWAY_DAEMON_RUNTIME,
   GATEWAY_DAEMON_RUNTIME_OPTIONS,
 } from "../commands/daemon-runtime.js";
-import { resolveGatewayInstallToken } from "../commands/gateway-install-token.js";
 import { formatHealthCheckFailure } from "../commands/health-format.js";
 import { healthCommand } from "../commands/health.js";
 import {
@@ -166,10 +165,12 @@ export async function finalizeOnboardingWizard(
       let installError: string | null = null;
       try {
         progress.update("Preparing Gateway service…");
-        const tokenResolution = await resolveGatewayInstallToken({
-          config: nextConfig,
-          env: process.env,
-        });
+        // Gateway install token resolution is gutted in this fork; treat as
+        // available with no warnings.
+        const tokenResolution: { warnings: string[]; unavailableReason: string | null } = {
+          warnings: [],
+          unavailableReason: null,
+        };
         for (const warning of tokenResolution.warnings) {
           await prompter.note(warning, "Gateway service");
         }

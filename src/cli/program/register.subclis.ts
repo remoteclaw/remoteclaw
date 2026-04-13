@@ -88,24 +88,6 @@ const entries: SubCliEntry[] = [
     },
   },
   {
-    name: "models",
-    description: "Discover, scan, and configure models",
-    hasSubcommands: true,
-    register: async (program) => {
-      const mod = await import("../models-cli.js");
-      mod.registerModelsCli(program);
-    },
-  },
-  {
-    name: "approvals",
-    description: "Manage exec approvals (gateway or node host)",
-    hasSubcommands: true,
-    register: async (program) => {
-      const mod = await import("../exec-approvals-cli.js");
-      mod.registerExecApprovalsCli(program);
-    },
-  },
-  {
     name: "nodes",
     description: "Manage gateway-owned node pairing and node commands",
     hasSubcommands: true,
@@ -130,15 +112,6 @@ const entries: SubCliEntry[] = [
     register: async (program) => {
       const mod = await import("../node-cli.js");
       mod.registerNodeCli(program);
-    },
-  },
-  {
-    name: "sandbox",
-    description: "Manage sandbox containers for agent isolation",
-    hasSubcommands: true,
-    register: async (program) => {
-      const mod = await import("../sandbox-cli.js");
-      mod.registerSandboxCli(program);
     },
   },
   {
@@ -169,15 +142,6 @@ const entries: SubCliEntry[] = [
     },
   },
   {
-    name: "docs",
-    description: "Search the live RemoteClaw docs",
-    hasSubcommands: false,
-    register: async (program) => {
-      const mod = await import("../docs-cli.js");
-      mod.registerDocsCli(program);
-    },
-  },
-  {
     name: "hooks",
     description: "Manage internal agent hooks",
     hasSubcommands: true,
@@ -193,15 +157,6 @@ const entries: SubCliEntry[] = [
     register: async (program) => {
       const mod = await import("../qr-cli.js");
       mod.registerQrCli(program);
-    },
-  },
-  {
-    name: "clawbot",
-    description: "Legacy clawbot command aliases",
-    hasSubcommands: true,
-    register: async (program) => {
-      const mod = await import("../clawbot-cli.js");
-      mod.registerClawbotCli(program);
     },
   },
   {
@@ -260,24 +215,6 @@ const entries: SubCliEntry[] = [
     register: async (program) => {
       const mod = await import("../security-cli.js");
       mod.registerSecurityCli(program);
-    },
-  },
-  {
-    name: "secrets",
-    description: "Secrets runtime reload controls",
-    hasSubcommands: true,
-    register: async (program) => {
-      const mod = await import("../secrets-cli.js");
-      mod.registerSecretsCli(program);
-    },
-  },
-  {
-    name: "skills",
-    description: "List and inspect available skills",
-    hasSubcommands: true,
-    register: async (program) => {
-      const mod = await import("../skills-cli.js");
-      mod.registerSkillsCli(program);
     },
   },
   {

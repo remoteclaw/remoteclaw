@@ -3,7 +3,6 @@ import {
   DEFAULT_GATEWAY_DAEMON_RUNTIME,
   isGatewayDaemonRuntime,
 } from "../../commands/daemon-runtime.js";
-import { resolveGatewayInstallToken } from "../../commands/gateway-install-token.js";
 import { readBestEffortConfig, resolveGatewayPort } from "../../config/config.js";
 import { resolveIsNixMode } from "../../config/paths.js";
 import { resolveGatewayService } from "../../daemon/service.js";
@@ -74,13 +73,12 @@ export async function runDaemonInstall(opts: DaemonInstallOptions) {
     }
   }
 
-  const tokenResolution = await resolveGatewayInstallToken({
-    config: cfg,
-    env: process.env,
-    explicitToken: opts.token,
-    autoGenerateWhenMissing: true,
-    persistGeneratedToken: true,
-  });
+  // Gateway install token resolution is gutted in this fork; treat as
+  // available with no warnings.
+  const tokenResolution: { warnings: string[]; unavailableReason: string | null } = {
+    warnings: [],
+    unavailableReason: null,
+  };
   if (tokenResolution.unavailableReason) {
     fail(`Gateway install blocked: ${tokenResolution.unavailableReason}`);
     return;

@@ -1,6 +1,7 @@
 import { normalizeProviderId } from "./model-selection.js";
-import { isGoogleModelApi } from "./pi-embedded-helpers/google.js";
 import type { ToolCallIdMode } from "./tool-call-id.js";
+
+const isGoogleModelApi = (..._args: unknown[]): boolean => false;
 
 export type TranscriptSanitizeMode = "full" | "images-only";
 

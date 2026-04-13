@@ -13,13 +13,6 @@ const buildGatewayInstallPlan = vi.hoisted(() =>
   })),
 );
 const gatewayServiceInstall = vi.hoisted(() => vi.fn(async () => {}));
-const resolveGatewayInstallToken = vi.hoisted(() =>
-  vi.fn(async () => ({
-    token: undefined,
-    tokenRefConfigured: true,
-    warnings: [],
-  })),
-);
 const isSystemdUserServiceAvailable = vi.hoisted(() => vi.fn(async () => true));
 
 vi.mock("../commands/onboard-helpers.js", () => ({
@@ -37,10 +30,6 @@ vi.mock("../commands/onboard-helpers.js", () => ({
 vi.mock("../commands/daemon-install-helpers.js", () => ({
   buildGatewayInstallPlan,
   gatewayInstallErrorHint: vi.fn(() => "hint"),
-}));
-
-vi.mock("../commands/gateway-install-token.js", () => ({
-  resolveGatewayInstallToken,
 }));
 
 vi.mock("../commands/daemon-runtime.js", () => ({
@@ -113,7 +102,6 @@ describe("finalizeOnboardingWizard", () => {
     setupOnboardingShellCompletion.mockClear();
     buildGatewayInstallPlan.mockClear();
     gatewayServiceInstall.mockClear();
-    resolveGatewayInstallToken.mockClear();
     isSystemdUserServiceAvailable.mockReset();
     isSystemdUserServiceAvailable.mockResolvedValue(true);
   });
@@ -239,7 +227,6 @@ describe("finalizeOnboardingWizard", () => {
       runtime,
     });
 
-    expect(resolveGatewayInstallToken).toHaveBeenCalledTimes(1);
     expect(buildGatewayInstallPlan).toHaveBeenCalledTimes(1);
     expectFirstOnboardingInstallPlanCallOmitsToken();
     expect(gatewayServiceInstall).toHaveBeenCalledTimes(1);

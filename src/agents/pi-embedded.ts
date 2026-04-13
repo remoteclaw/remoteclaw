@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
+// Gutted in RemoteClaw fork (Middleware Boundary Principle).
+// Retained as no-op exports because consumers still reference these symbols.
 export const abortEmbeddedPiRun = (..._args: unknown[]) => undefined as any;
 export const runEmbeddedPiAgent = (..._args: unknown[]) => undefined as any;
 export const queueEmbeddedPiMessage = (..._args: unknown[]) => undefined as any;

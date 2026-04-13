@@ -286,13 +286,6 @@ describe("config plugin validation", () => {
         defaults: { heartbeat: { target: "last", directPolicy: "block" } },
         list: [{ id: "pi", workspace: "/tmp/pi", heartbeat: { directPolicy: "allow" } }],
       },
-      channels: {
-        modelByChannel: {
-          openai: {
-            whatsapp: "openai/gpt-5.2",
-          },
-        },
-      },
       plugins: { enabled: false, entries: { discord: { enabled: true } } },
     });
     expect(res.ok).toBe(true);

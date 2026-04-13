@@ -83,25 +83,6 @@ describe("applyPluginAutoEnable", () => {
     expect(result.config.plugins?.allow).toBeUndefined();
   });
 
-  it("ignores channels.modelByChannel for plugin auto-enable", () => {
-    const result = applyPluginAutoEnable({
-      config: {
-        channels: {
-          modelByChannel: {
-            openai: {
-              whatsapp: "openai/gpt-5.2",
-            },
-          },
-        },
-      },
-      env: {},
-    });
-
-    expect(result.config.plugins?.entries?.modelByChannel).toBeUndefined();
-    expect(result.config.plugins?.allow).toBeUndefined();
-    expect(result.changes).toEqual([]);
-  });
-
   it("keeps auto-enabled WhatsApp config schema-valid", () => {
     const result = applyPluginAutoEnable({
       config: {

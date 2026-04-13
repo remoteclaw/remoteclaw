@@ -94,7 +94,6 @@ export type HeartbeatSummary = {
   everyMs: number | null;
   prompt: string;
   target: string;
-  model?: string;
   ackMaxChars: number;
 };
 
@@ -162,7 +161,6 @@ export async function resolveHeartbeatSummaryForAgent(
       everyMs: null,
       prompt: await resolveHeartbeatPromptText({ prompt: defaults?.prompt }),
       target: defaults?.target ?? DEFAULT_HEARTBEAT_TARGET,
-      model: defaults?.model,
       ackMaxChars: Math.max(0, defaults?.ackMaxChars ?? DEFAULT_HEARTBEAT_ACK_MAX_CHARS),
     };
   }
@@ -175,7 +173,6 @@ export async function resolveHeartbeatSummaryForAgent(
   });
   const target =
     merged?.target ?? defaults?.target ?? overrides?.target ?? DEFAULT_HEARTBEAT_TARGET;
-  const model = merged?.model ?? defaults?.model ?? overrides?.model;
   const ackMaxChars = Math.max(
     0,
     merged?.ackMaxChars ??
@@ -190,7 +187,6 @@ export async function resolveHeartbeatSummaryForAgent(
     everyMs,
     prompt,
     target,
-    model,
     ackMaxChars,
   };
 }
@@ -772,18 +768,14 @@ export async function runHeartbeatOnce(opts: {
       agentId,
     });
 
-    const heartbeatModelOverride = heartbeat?.model?.trim() || undefined;
     const suppressToolErrorWarnings = heartbeat?.suppressToolErrorWarnings === true;
     const bootstrapContextMode: "lightweight" | undefined =
       heartbeat?.lightContext === true ? "lightweight" : undefined;
-    const replyOpts = heartbeatModelOverride
-      ? {
-          isHeartbeat: true,
-          heartbeatModelOverride,
-          suppressToolErrorWarnings,
-          bootstrapContextMode,
-        }
-      : { isHeartbeat: true, suppressToolErrorWarnings, bootstrapContextMode };
+    const replyOpts = {
+      isHeartbeat: true,
+      suppressToolErrorWarnings,
+      bootstrapContextMode,
+    };
     const replyResult = await getReplyFromConfig(ctx, replyOpts, cfg);
     const replyPayload = resolveHeartbeatReplyPayload(replyResult);
     const includeReasoning = heartbeat?.includeReasoning === true;

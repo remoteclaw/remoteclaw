@@ -274,7 +274,6 @@ export async function getReplyFromConfig(
     resolvedBlockStreamingBreak,
     provider: resolvedProvider,
     model: resolvedModel,
-    modelState,
     contextTokens,
     inlineStatusRequested,
     directiveAck,
@@ -335,9 +334,6 @@ export async function getReplyFromConfig(
     resolvedVerboseLevel,
     resolvedReasoningLevel: resolvedReasoningLevel ?? "off",
     resolvedElevatedLevel: resolvedElevatedLevel ?? "off",
-    resolveDefaultThinkingLevel:
-      (modelState as { resolveDefaultThinkingLevel?: () => string | undefined })
-        .resolveDefaultThinkingLevel ?? (() => undefined),
     provider,
     model,
     contextTokens: contextTokens ?? 0,
@@ -385,7 +381,6 @@ export async function getReplyFromConfig(
     blockStreamingEnabled,
     blockReplyChunking,
     resolvedBlockStreamingBreak,
-    modelState,
     provider,
     model,
     perMessageQueueMode,

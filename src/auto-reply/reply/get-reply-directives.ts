@@ -16,15 +16,6 @@ import { stripInlineStatus } from "./reply-inline.js";
 // Gutted in RemoteClaw fork — CLI runtimes manage their own model/sandbox/elevated state
 type ExecToolDefaults = Record<string, unknown>;
 
-export const createModelSelectionState = (..._args: unknown[]) => ({
-  provider: "cli" as string,
-  model: "default" as string,
-  aliasIndex: new Map<string, { provider: string; model: string }>(),
-  allowedModelKeys: new Set<string>(),
-  allowedModelCatalog: [] as Array<{ id: string; provider: string }>,
-  resetModelOverride: false,
-});
-
 import type { TypingController } from "./typing.js";
 
 type AgentDefaults = NonNullable<RemoteClawConfig["agents"]>["defaults"];
@@ -54,7 +45,6 @@ export type ReplyDirectiveContinuation = {
   resolvedBlockStreamingBreak: "text_end" | "message_end";
   provider: string;
   model: string;
-  modelState: Awaited<ReturnType<typeof createModelSelectionState>>;
   inlineStatusRequested: boolean;
   directiveAck?: ReplyPayload;
   perMessageQueueMode?: InlineDirectives["queueMode"];
@@ -68,7 +58,6 @@ export type ReplyDirectiveContinuation = {
   resolvedReasoningLevel?: ReasoningLevel;
   resolvedElevatedLevel?: ElevatedLevel;
   contextTokens?: number;
-  resolveDefaultThinkingLevel?: () => ThinkLevel | undefined;
 };
 
 function resolveExecOverrides(_params: {
@@ -298,22 +287,6 @@ export async function resolveReplyDirectives(params: {
     ? resolveBlockStreamingChunking(cfg, sessionCtx.Provider, sessionCtx.AccountId)
     : undefined;
 
-  const modelState = createModelSelectionState({
-    cfg,
-    agentCfg,
-    sessionEntry,
-    sessionStore,
-    sessionKey,
-    parentSessionKey: ctx.ParentSessionKey,
-    storePath,
-    defaultProvider,
-    defaultModel,
-    provider,
-    model,
-  });
-  provider = modelState.provider;
-  model = modelState.model;
-
   const initialModelLabel = `${provider}/${model}`;
   const formatModelSwitchEvent = (label: string, alias?: string) =>
     alias ? `Model switched to ${alias} (${label}).` : `Model switched to ${label}.`;
@@ -341,7 +314,6 @@ export async function resolveReplyDirectives(params: {
     runtimeId: params.runtimeId ?? defaultProvider,
     provider,
     model,
-    modelState,
     initialModelLabel,
     formatModelSwitchEvent,
     defaultActivation: () => defaultActivation,
@@ -376,7 +348,6 @@ export async function resolveReplyDirectives(params: {
       resolvedBlockStreamingBreak,
       provider,
       model,
-      modelState,
       inlineStatusRequested,
       directiveAck,
       perMessageQueueMode,

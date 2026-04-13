@@ -1,9 +1,6 @@
 import { createHash } from "node:crypto";
 import {
-  loadSessionStore,
   normalizeProviderId,
-  resolveStorePath,
-  resolveStoredModelOverride,
   type ModelsProviderData,
   type RemoteClawConfig,
 } from "remoteclaw/plugin-sdk/mattermost";
@@ -220,28 +217,8 @@ export function resolveMattermostModelPickerCurrentModel(params: {
   data: ModelsProviderData;
   skipCache?: boolean;
 }): string {
-  const fallback = `${params.data.resolvedDefault.provider}/${params.data.resolvedDefault.model}`;
-  try {
-    const storePath = resolveStorePath(params.cfg.session?.store, {
-      agentId: params.route.agentId,
-    });
-    const sessionStore = params.skipCache
-      ? loadSessionStore(storePath, { skipCache: true })
-      : loadSessionStore(storePath);
-    const sessionEntry = sessionStore[params.route.sessionKey];
-    const override = resolveStoredModelOverride({
-      sessionEntry,
-      sessionStore,
-      sessionKey: params.route.sessionKey,
-    });
-    if (!override?.model) {
-      return fallback;
-    }
-    const provider = (override.provider || params.data.resolvedDefault.provider).trim();
-    return provider ? `${provider}/${override.model}` : fallback;
-  } catch {
-    return fallback;
-  }
+  // Model override resolution gutted in RemoteClaw fork — CLI runtimes own model state.
+  return `${params.data.resolvedDefault.provider}/${params.data.resolvedDefault.model}`;
 }
 
 export function renderMattermostModelSummaryView(params: {

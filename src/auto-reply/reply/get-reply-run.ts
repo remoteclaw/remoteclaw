@@ -13,7 +13,6 @@ import {
   resolveSessionFilePath,
   resolveSessionFilePathOptions,
   type SessionEntry,
-  updateSessionStore,
 } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { clearCommandLane, getQueueSize } from "../../process/command-queue.js";
@@ -24,10 +23,7 @@ import { buildInboundMediaNote } from "../media-note.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
 import {
   type ElevatedLevel,
-  formatXHighModelHint,
-  normalizeThinkLevel,
   type ReasoningLevel,
-  supportsXHighThinking,
   type ThinkLevel,
   type VerboseLevel,
 } from "../thinking.js";
@@ -39,7 +35,6 @@ import type { buildCommandContext } from "./commands.js";
 import type { InlineDirectives } from "./directive-handling.js";
 import { buildGroupChatContext, buildGroupIntro } from "./groups.js";
 import { buildInboundMetaSystemPrompt, buildInboundUserContextPrefix } from "./inbound-meta.js";
-import type { createModelSelectionState } from "./model-selection.js";
 import { resolveOriginMessageProvider } from "./origin-routing.js";
 import { resolveQueueSettings } from "./queue.js";
 import { routeReply } from "./route-reply.js";
@@ -152,7 +147,6 @@ type RunPreparedReplyParams = {
     flushOnParagraph?: boolean;
   };
   resolvedBlockStreamingBreak: "text_end" | "message_end";
-  modelState: Awaited<ReturnType<typeof createModelSelectionState>>;
   provider: string;
   model: string;
   perMessageQueueMode?: InlineDirectives["queueMode"];
@@ -193,14 +187,12 @@ export async function runPreparedReply(
     command,
     commandSource,
     allowTextCommands,
-    directives,
     defaultActivation,
     elevatedEnabled,
     elevatedAllowed,
     blockStreamingEnabled,
     blockReplyChunking,
     resolvedBlockStreamingBreak,
-    modelState,
     provider,
     model,
     perMessageQueueMode,
@@ -332,21 +324,9 @@ export async function runPreparedReply(
   });
   const isGroupSession = sessionEntry?.chatType === "group" || sessionEntry?.chatType === "channel";
   const isMainSession = !isGroupSession && sessionKey === normalizeMainKey(sessionCfg?.mainKey);
-  // Extract first-token think hint from the user body BEFORE prepending system events.
-  // If done after, the System: prefix becomes parts[0] and silently shadows any
-  // low|medium|high shorthand the user typed.
-  if (!resolvedThinkLevel && prefixedBodyBase) {
-    const parts = prefixedBodyBase.split(/\s+/);
-    const maybeLevel = normalizeThinkLevel(parts[0]);
-    if (maybeLevel && (maybeLevel !== "xhigh" || supportsXHighThinking(provider, model))) {
-      resolvedThinkLevel = maybeLevel;
-      prefixedBodyBase = parts.slice(1).join(" ").trim();
-    }
-  }
   // Drain system events once, then prepend to each path's body independently.
   // The queue/steer path uses effectiveBaseBody (unstripped, no session hints) to match
-  // main's pre-PR behavior; the immediate-run path uses prefixedBodyBase (post-hints,
-  // post-think-hint-strip) so the run sees the cleaned-up body.
+  // main's pre-PR behavior; the immediate-run path uses prefixedBodyBase (post-hints).
   const eventsBlock = await drainFormattedSystemEvents({
     cfg,
     sessionKey,
@@ -386,29 +366,6 @@ export async function runPreparedReply(
   let prefixedCommandBody = mediaNote
     ? [mediaNote, mediaReplyHint, prefixedBody ?? ""].filter(Boolean).join("\n").trim()
     : prefixedBody;
-  if (!resolvedThinkLevel) {
-    resolvedThinkLevel = await modelState.resolveDefaultThinkingLevel();
-  }
-  if (resolvedThinkLevel === "xhigh" && !supportsXHighThinking(provider, model)) {
-    const explicitThink = directives.hasThinkDirective && directives.thinkLevel !== undefined;
-    if (explicitThink) {
-      typing.cleanup();
-      return {
-        text: `Thinking level "xhigh" is only supported for ${formatXHighModelHint()}. Use /think high or switch to one of those models.`,
-      };
-    }
-    resolvedThinkLevel = "high";
-    if (sessionEntry && sessionStore && sessionKey && sessionEntry.thinkingLevel === "xhigh") {
-      sessionEntry.thinkingLevel = "high";
-      sessionEntry.updatedAt = Date.now();
-      sessionStore[sessionKey] = sessionEntry;
-      if (storePath) {
-        await updateSessionStore(storePath, (store) => {
-          store[sessionKey] = sessionEntry;
-        });
-      }
-    }
-  }
   if (resetTriggered && command.isAuthorizedSender) {
     await sendResetSessionNotice({
       ctx,

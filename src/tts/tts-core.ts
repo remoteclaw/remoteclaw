@@ -1,7 +1,6 @@
 import { rmSync } from "node:fs";
 import { EdgeTTS } from "node-edge-tts";
 import type { TextContent } from "../agents/agent-types.js"; // Fork-local type (replaces @mariozechner/pi-ai import)
-import { ensureCustomApiRegistered } from "../agents/custom-api-registry.js";
 import { getApiKeyForModel, requireApiKey } from "../agents/model-auth.js";
 import {
   buildModelAliasIndex,
@@ -9,7 +8,6 @@ import {
   resolveModelRefFromString,
   type ModelRef,
 } from "../agents/model-selection.js";
-import { createConfiguredOllamaStreamFn } from "../agents/ollama-stream.js";
 import { resolveModel } from "../agents/pi-embedded-runner/model.js";
 import { completeSimple } from "../agents/stream-message-shared.js"; // Fork-local stub (replaces @mariozechner/pi-ai import)
 import type { RemoteClawConfig } from "../config/config.js";
@@ -458,19 +456,6 @@ export async function summarizeText(params: {
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-      if (resolved.model.api === "ollama") {
-        const providerBaseUrl =
-          typeof cfg.models?.providers?.[resolved.model.provider]?.baseUrl === "string"
-            ? cfg.models.providers[resolved.model.provider]?.baseUrl
-            : undefined;
-        void ensureCustomApiRegistered(
-          resolved.model.api,
-          createConfiguredOllamaStreamFn({
-            model: resolved.model,
-            providerBaseUrl,
-          }),
-        );
-      }
       const res = await completeSimple(
         resolved.model,
         {

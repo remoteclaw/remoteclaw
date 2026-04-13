@@ -17,12 +17,10 @@ import { doctorHandlers } from "./server-methods/doctor.js";
 import { execApprovalsHandlers } from "./server-methods/exec-approvals.js";
 import { healthHandlers } from "./server-methods/health.js";
 import { logsHandlers } from "./server-methods/logs.js";
-import { modelsHandlers } from "./server-methods/models.js";
 import { nodeHandlers } from "./server-methods/nodes.js";
 import { pushHandlers } from "./server-methods/push.js";
 import { sendHandlers } from "./server-methods/send.js";
 import { sessionsHandlers } from "./server-methods/sessions.js";
-import { skillsHandlers } from "./server-methods/skills.js";
 import { systemHandlers } from "./server-methods/system.js";
 import { talkHandlers } from "./server-methods/talk.js";
 import { toolsCatalogHandlers } from "./server-methods/tools-catalog.js";
@@ -75,13 +73,11 @@ export const coreGatewayHandlers: GatewayRequestHandlers = {
   ...doctorHandlers,
   ...execApprovalsHandlers,
   ...webHandlers,
-  ...modelsHandlers,
   ...configHandlers,
   ...wizardHandlers,
   ...talkHandlers,
   ...toolsCatalogHandlers,
   ...ttsHandlers,
-  ...skillsHandlers,
   ...sessionsHandlers,
   ...systemHandlers,
   ...updateHandlers,

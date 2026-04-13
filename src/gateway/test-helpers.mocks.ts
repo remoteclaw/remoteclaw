@@ -155,17 +155,6 @@ const createStubPluginRegistry = (): PluginRegistry => ({
 
 const hoisted = vi.hoisted(() => ({
   testTailnetIPv4: { value: undefined as string | undefined },
-  piSdkMock: {
-    enabled: false,
-    discoverCalls: 0,
-    models: [] as Array<{
-      id: string;
-      name?: string;
-      provider: string;
-      contextWindow?: number;
-      reasoning?: boolean;
-    }>,
-  },
   cronIsolatedRun: vi.fn(async () => ({ status: "ok", summary: "ok" })),
   agentCommand: vi.fn().mockResolvedValue(undefined),
   testIsNixMode: { value: false },
@@ -207,7 +196,6 @@ export const setTestConfigRoot = (root: string) => {
 
 export const testTailnetIPv4 = hoisted.testTailnetIPv4;
 export const testTailscaleWhois = hoisted.testTailscaleWhois;
-export const piSdkMock = hoisted.piSdkMock;
 export const cronIsolatedRun = hoisted.cronIsolatedRun;
 export const agentCommand: Mock<() => void> = hoisted.agentCommand;
 export const getReplyFromConfig: Mock<GetReplyFromConfigFn> = hoisted.getReplyFromConfig;
@@ -236,28 +224,6 @@ export const testState = {
 export const testIsNixMode = hoisted.testIsNixMode;
 export const sessionStoreSaveDelayMs = hoisted.sessionStoreSaveDelayMs;
 export const embeddedRunMock = hoisted.embeddedRunMock;
-
-vi.mock("../agents/pi-model-discovery.js", async () => {
-  const actual = await vi.importActual<typeof import("../agents/pi-model-discovery.js")>(
-    "../agents/pi-model-discovery.js",
-  );
-
-  class MockModelRegistry extends actual.ModelRegistry {
-    override getAll(): ReturnType<typeof actual.ModelRegistry.prototype.getAll> {
-      if (!piSdkMock.enabled) {
-        return super.getAll();
-      }
-      piSdkMock.discoverCalls += 1;
-      // Cast to expected type for testing purposes
-      return piSdkMock.models as ReturnType<typeof actual.ModelRegistry.prototype.getAll>;
-    }
-  }
-
-  return {
-    ...actual,
-    ModelRegistry: MockModelRegistry,
-  };
-});
 
 vi.mock("../cron/isolated-agent.js", () => ({
   runCronIsolatedAgentTurn: (...args: unknown[]) =>

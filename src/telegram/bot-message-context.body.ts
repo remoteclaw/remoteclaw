@@ -1,10 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  findModelInCatalog,
-  loadModelCatalog,
-  modelSupportsVision,
-} from "../agents/model-catalog.js";
-import { resolveDefaultModelForAgent } from "../agents/model-selection.js";
 import { hasControlCommand } from "../auto-reply/command-detection.js";
 import {
   recordPendingHistoryEntryIfEnabled,
@@ -53,26 +47,6 @@ export type TelegramInboundBodyResult = {
   stickerCacheHit: boolean;
   locationData?: NormalizedLocation;
 };
-
-async function resolveStickerVisionSupport(params: {
-  cfg: RemoteClawConfig;
-  agentId?: string;
-}): Promise<boolean> {
-  try {
-    const catalog = await loadModelCatalog({ config: params.cfg });
-    const defaultModel = resolveDefaultModelForAgent({
-      cfg: params.cfg,
-      agentId: params.agentId,
-    });
-    const entry = findModelInCatalog(catalog, defaultModel.provider, defaultModel.model);
-    if (!entry) {
-      return false;
-    }
-    return modelSupportsVision(entry);
-  } catch {
-    return false;
-  }
-}
 
 export async function resolveTelegramInboundBody(params: {
   cfg: RemoteClawConfig;
@@ -140,10 +114,7 @@ export async function resolveTelegramInboundBody(params: {
 
   let placeholder = resolveTelegramMediaPlaceholder(msg) ?? "";
   const cachedStickerDescription = allMedia[0]?.stickerMetadata?.cachedDescription;
-  const stickerSupportsVision = msg.sticker
-    ? await resolveStickerVisionSupport({ cfg, agentId: routeAgentId })
-    : false;
-  const stickerCacheHit = Boolean(cachedStickerDescription) && !stickerSupportsVision;
+  const stickerCacheHit = Boolean(cachedStickerDescription);
   if (stickerCacheHit) {
     const emoji = allMedia[0]?.stickerMetadata?.emoji;
     const setName = allMedia[0]?.stickerMetadata?.setName;

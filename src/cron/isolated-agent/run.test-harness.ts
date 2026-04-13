@@ -67,10 +67,6 @@ vi.mock("../../agents/workspace.js", () => ({
   ensureAgentWorkspace: vi.fn().mockResolvedValue({ dir: "/tmp/workspace" }),
 }));
 
-vi.mock("../../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn().mockResolvedValue({ models: [] }),
-}));
-
 vi.mock("../../agents/model-selection.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../agents/model-selection.js")>();
   return {

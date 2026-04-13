@@ -42,9 +42,6 @@ export function registerGetReplyCommonMocks(): void {
   vi.mock("./inbound-context.js", () => ({
     finalizeInboundContext: vi.fn((ctx: unknown) => ctx),
   }));
-  vi.mock("./session-reset-model.js", () => ({
-    applyResetModelOverride: vi.fn(async () => undefined),
-  }));
   vi.mock("./stage-sandbox-media.js", () => ({
     stageSandboxMedia: vi.fn(async () => undefined),
   }));

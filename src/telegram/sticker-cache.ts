@@ -1,18 +1,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { resolveApiKeyForProvider } from "../agents/model-auth.js";
-import type { ModelCatalogEntry } from "../agents/model-catalog.js";
-import {
-  findModelInCatalog,
-  loadModelCatalog,
-  modelSupportsVision,
-} from "../agents/model-catalog.js";
 import { resolveDefaultModelForAgent } from "../agents/model-selection.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { STATE_DIR } from "../config/paths.js";
 import { logVerbose } from "../globals.js";
 import { loadJsonFile, saveJsonFile } from "../infra/json-file.js";
-import { AUTO_IMAGE_KEY_PROVIDERS, DEFAULT_IMAGE_MODELS } from "../media-understanding/defaults.js";
+import { AUTO_IMAGE_KEY_PROVIDERS } from "../media-understanding/defaults.js";
 import { resolveAutoImageModel } from "../media-understanding/runner.js";
 
 const CACHE_FILE = path.join(STATE_DIR, "telegram", "sticker-cache.json");
@@ -168,18 +162,7 @@ export async function describeStickerImage(params: DescribeStickerParams): Promi
   const { imagePath, cfg, agentDir, agentId } = params;
 
   const defaultModel = resolveDefaultModelForAgent({ cfg, agentId });
-  let activeModel = undefined as { provider: string; model: string } | undefined;
-  let catalog: ModelCatalogEntry[] = [];
-  try {
-    catalog = await loadModelCatalog({ config: cfg });
-    const entry = findModelInCatalog(catalog, defaultModel.provider, defaultModel.model);
-    const supportsVision = modelSupportsVision(entry);
-    if (supportsVision) {
-      activeModel = { provider: defaultModel.provider, model: defaultModel.model };
-    }
-  } catch {
-    // Ignore catalog failures; fall back to auto selection.
-  }
+  const activeModel = { provider: defaultModel.provider, model: defaultModel.model };
 
   const hasProviderKey = async (provider: string) => {
     try {
@@ -190,39 +173,12 @@ export async function describeStickerImage(params: DescribeStickerParams): Promi
     }
   };
 
-  const selectCatalogModel = (provider: string) => {
-    const entries = catalog.filter(
-      (entry) =>
-        entry.provider.toLowerCase() === provider.toLowerCase() && modelSupportsVision(entry),
-    );
-    if (entries.length === 0) {
-      return undefined;
-    }
-    const defaultId = DEFAULT_IMAGE_MODELS[provider];
-    const preferred = entries.find((entry) => entry.id === defaultId);
-    return preferred ?? entries[0];
-  };
-
   let resolved = null as { provider: string; model?: string } | null;
   if (
-    activeModel &&
     AUTO_IMAGE_KEY_PROVIDERS.includes(activeModel.provider) &&
     (await hasProviderKey(activeModel.provider))
   ) {
     resolved = activeModel;
-  }
-
-  if (!resolved) {
-    for (const provider of AUTO_IMAGE_KEY_PROVIDERS) {
-      if (!(await hasProviderKey(provider))) {
-        continue;
-      }
-      const entry = selectCatalogModel(provider);
-      if (entry) {
-        resolved = { provider, model: entry.id };
-        break;
-      }
-    }
   }
 
   if (!resolved) {

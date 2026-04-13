@@ -5,7 +5,6 @@ import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.j
 import "../cron/isolated-agent.mocks.js";
 import * as cliRunnerModule from "../agents/cli-runner.js";
 import { FailoverError } from "../agents/failover-error.js";
-import { loadModelCatalog } from "../agents/model-catalog.js";
 import * as modelSelectionModule from "../agents/model-selection.js";
 import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
 import * as commandSecretGatewayModule from "../cli/command-secret-gateway.js";
@@ -209,13 +208,11 @@ async function runAgentWithSessionKey(sessionKey: string): Promise<void> {
 
 async function expectDefaultThinkLevel(params: {
   agentOverrides?: Partial<NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]>>;
-  catalogEntry: Record<string, unknown>;
   expected: string;
 }) {
   await withTempHome(async (home) => {
     const store = path.join(home, "sessions.json");
     mockConfig(home, store, params.agentOverrides);
-    vi.mocked(loadModelCatalog).mockResolvedValueOnce([params.catalogEntry as never]);
     await agentCommand({ message: "hi", to: "+1555" }, runtime);
     expect(getLastEmbeddedCall()?.thinkLevel).toBe(params.expected);
   });
@@ -268,7 +265,6 @@ beforeEach(() => {
   configModule.clearRuntimeConfigSnapshot();
   runCliAgentSpy.mockResolvedValue(createDefaultAgentResult() as never);
   vi.mocked(runEmbeddedPiAgent).mockResolvedValue(createDefaultAgentResult());
-  vi.mocked(loadModelCatalog).mockResolvedValue([]);
   vi.mocked(modelSelectionModule.isCliProvider).mockImplementation(() => false);
   readConfigFileSnapshotForWriteSpy.mockResolvedValue({
     snapshot: { valid: false, resolved: {} as RemoteClawConfig },
@@ -577,11 +573,6 @@ describe("agentCommand", () => {
         },
       });
 
-      vi.mocked(loadModelCatalog).mockResolvedValueOnce([
-        { id: "claude-opus-4-5", name: "Opus", provider: "anthropic" },
-        { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", provider: "openai" },
-        { id: "gpt-5.2", name: "GPT-5.2", provider: "openai" },
-      ]);
       vi.mocked(runEmbeddedPiAgent)
         .mockRejectedValueOnce(Object.assign(new Error("rate limited"), { status: 429 }))
         .mockResolvedValueOnce({
@@ -628,10 +619,6 @@ describe("agentCommand", () => {
         models: {},
       });
 
-      vi.mocked(loadModelCatalog).mockResolvedValueOnce([
-        { id: "claude-opus-4-5", name: "Opus", provider: "anthropic" },
-      ]);
-
       await runAgentWithSessionKey("agent:main:subagent:allow-any");
 
       const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0] as
@@ -673,11 +660,6 @@ describe("agentCommand", () => {
           "openai/gpt-4.1-mini": {},
         },
       });
-
-      vi.mocked(loadModelCatalog).mockResolvedValueOnce([
-        { id: "claude-opus-4-5", name: "Opus", provider: "anthropic" },
-        { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", provider: "openai" },
-      ]);
 
       await runAgentWithSessionKey("agent:main:subagent:clear-overrides");
 
@@ -842,12 +824,6 @@ describe("agentCommand", () => {
 
   it("defaults thinking to low for reasoning-capable models", async () => {
     await expectDefaultThinkLevel({
-      catalogEntry: {
-        id: "claude-opus-4-5",
-        name: "Opus 4.5",
-        provider: "anthropic",
-        reasoning: true,
-      },
       expected: "low",
     });
   });
@@ -857,12 +833,6 @@ describe("agentCommand", () => {
       agentOverrides: {
         model: { primary: "anthropic/claude-opus-4-6" },
         models: { "anthropic/claude-opus-4-6": {} },
-      },
-      catalogEntry: {
-        id: "claude-opus-4-6",
-        name: "Opus 4.6",
-        provider: "anthropic",
-        reasoning: true,
       },
       expected: "adaptive",
     });
@@ -877,12 +847,6 @@ describe("agentCommand", () => {
             params: { thinking: "high" },
           },
         },
-      },
-      catalogEntry: {
-        id: "claude-opus-4-5",
-        name: "Opus 4.5",
-        provider: "anthropic",
-        reasoning: true,
       },
       expected: "high",
     });

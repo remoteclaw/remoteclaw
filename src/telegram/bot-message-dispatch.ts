@@ -1,11 +1,5 @@
 import type { Bot } from "grammy";
 import { resolveAgentDir } from "../agents/agent-scope.js";
-import {
-  findModelInCatalog,
-  loadModelCatalog,
-  modelSupportsVision,
-} from "../agents/model-catalog.js";
-import { resolveDefaultModelForAgent } from "../agents/model-selection.js";
 import { resolveChunkMode } from "../auto-reply/chunk.js";
 import { clearHistoryEntriesIfEnabled } from "../auto-reply/reply/history.js";
 import { dispatchReplyWithBufferedBlockDispatcher } from "../auto-reply/reply/provider-dispatcher.js";
@@ -49,20 +43,6 @@ const EMPTY_RESPONSE_FALLBACK = "No response generated. Please try again.";
 
 /** Minimum chars before sending first streaming message (improves push notification UX) */
 const DRAFT_MIN_INITIAL_CHARS = 30;
-
-async function resolveStickerVisionSupport(cfg: RemoteClawConfig, agentId: string) {
-  try {
-    const catalog = await loadModelCatalog({ config: cfg });
-    const defaultModel = resolveDefaultModelForAgent({ cfg, agentId });
-    const entry = findModelInCatalog(catalog, defaultModel.provider, defaultModel.model);
-    if (!entry) {
-      return false;
-    }
-    return modelSupportsVision(entry);
-  } catch {
-    return false;
-  }
-}
 
 export function pruneStickerMediaFromContext(
   ctxPayload: {
@@ -372,7 +352,6 @@ export const dispatchTelegramMessage = async ({
   const sticker = ctxPayload.Sticker;
   if (sticker?.fileId && sticker.fileUniqueId && ctxPayload.MediaPath) {
     const agentDir = resolveAgentDir(cfg, route.agentId);
-    const stickerSupportsVision = await resolveStickerVisionSupport(cfg, route.agentId);
     let description = sticker.cachedDescription ?? null;
     if (!description) {
       description = await describeStickerImage({
@@ -390,15 +369,14 @@ export const dispatchTelegramMessage = async ({
       const formattedDesc = `[Sticker${stickerContext ? ` ${stickerContext}` : ""}] ${description}`;
 
       sticker.cachedDescription = description;
-      if (!stickerSupportsVision) {
-        // Update context to use description instead of image
-        ctxPayload.Body = formattedDesc;
-        ctxPayload.BodyForAgent = formattedDesc;
-        // Drop only the sticker attachment; keep replied media context if present.
-        pruneStickerMediaFromContext(ctxPayload, {
-          stickerMediaIncluded: ctxPayload.StickerMediaIncluded,
-        });
-      }
+      // Middleware runtime decides whether to attach the image based on its own
+      // mediaCapabilities; Telegram unconditionally substitutes text description
+      // and drops the sticker attachment.
+      ctxPayload.Body = formattedDesc;
+      ctxPayload.BodyForAgent = formattedDesc;
+      pruneStickerMediaFromContext(ctxPayload, {
+        stickerMediaIncluded: ctxPayload.StickerMediaIncluded,
+      });
 
       // Cache the description for future encounters
       if (sticker.fileId) {

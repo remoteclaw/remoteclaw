@@ -25,7 +25,6 @@ import {
   agentCommand,
   cronIsolatedRun,
   embeddedRunMock,
-  piSdkMock,
   sessionStoreSaveDelayMs,
   setTestConfigRoot,
   testIsNixMode,
@@ -166,9 +165,6 @@ async function resetGatewayTestState(options: { uniqueConfigRoot: boolean }) {
   resetAgentRunContextForTest();
   const mod = await getServerModule();
   mod.__resetModelCatalogCacheForTest();
-  piSdkMock.enabled = false;
-  piSdkMock.discoverCalls = 0;
-  piSdkMock.models = [];
 }
 
 async function cleanupGatewayTestHome(options: { restoreEnv: boolean }) {

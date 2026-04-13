@@ -11,7 +11,6 @@ import {
   connectOk,
   embeddedRunMock,
   installGatewayTestHooks,
-  piSdkMock,
   rpcReq,
   testState,
   trackConnectChallengeNonce,
@@ -459,8 +458,6 @@ describe("gateway server sessions", () => {
     });
     expect(spawnedPatchedInvalidKey.ok).toBe(false);
 
-    piSdkMock.enabled = true;
-    piSdkMock.models = [{ id: "gpt-test-a", name: "A", provider: "openai" }];
     const modelPatched = await rpcReq<{
       ok: true;
       entry: {

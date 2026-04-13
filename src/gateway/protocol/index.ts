@@ -134,8 +134,6 @@ import {
   LogsTailParamsSchema,
   type LogsTailResult,
   LogsTailResultSchema,
-  type ModelsListParams,
-  ModelsListParamsSchema,
   type NodeDescribeParams,
   NodeDescribeParamsSchema,
   type NodeEventParams,
@@ -194,15 +192,6 @@ import {
   SessionsUsageParamsSchema,
   type ShutdownEvent,
   ShutdownEventSchema,
-  type SkillsBinsParams,
-  SkillsBinsParamsSchema,
-  type SkillsBinsResult,
-  type SkillsInstallParams,
-  SkillsInstallParamsSchema,
-  type SkillsStatusParams,
-  SkillsStatusParamsSchema,
-  type SkillsUpdateParams,
-  SkillsUpdateParamsSchema,
   type ToolsCatalogParams,
   ToolsCatalogParamsSchema,
   type ToolsCatalogResult,
@@ -340,13 +329,7 @@ export const validateChannelsStatusParams = ajv.compile<ChannelsStatusParams>(
 export const validateChannelsLogoutParams = ajv.compile<ChannelsLogoutParams>(
   ChannelsLogoutParamsSchema,
 );
-export const validateModelsListParams = ajv.compile<ModelsListParams>(ModelsListParamsSchema);
-export const validateSkillsStatusParams = ajv.compile<SkillsStatusParams>(SkillsStatusParamsSchema);
 export const validateToolsCatalogParams = ajv.compile<ToolsCatalogParams>(ToolsCatalogParamsSchema);
-export const validateSkillsBinsParams = ajv.compile<SkillsBinsParams>(SkillsBinsParamsSchema);
-export const validateSkillsInstallParams =
-  ajv.compile<SkillsInstallParams>(SkillsInstallParamsSchema);
-export const validateSkillsUpdateParams = ajv.compile<SkillsUpdateParams>(SkillsUpdateParamsSchema);
 export const validateCronListParams = ajv.compile<CronListParams>(CronListParamsSchema);
 export const validateCronStatusParams = ajv.compile<CronStatusParams>(CronStatusParamsSchema);
 export const validateCronAddParams = ajv.compile<CronAddParams>(CronAddParamsSchema);
@@ -511,11 +494,7 @@ export {
   AgentsFilesSetResultSchema,
   AgentsListParamsSchema,
   AgentsListResultSchema,
-  ModelsListParamsSchema,
-  SkillsStatusParamsSchema,
   ToolsCatalogParamsSchema,
-  SkillsInstallParamsSchema,
-  SkillsUpdateParamsSchema,
   CronJobSchema,
   CronListParamsSchema,
   CronStatusParamsSchema,
@@ -601,13 +580,8 @@ export type {
   AgentsFilesSetResult,
   AgentsListParams,
   AgentsListResult,
-  SkillsStatusParams,
   ToolsCatalogParams,
   ToolsCatalogResult,
-  SkillsBinsParams,
-  SkillsBinsResult,
-  SkillsInstallParams,
-  SkillsUpdateParams,
   NodePairRejectParams,
   NodePairVerifyParams,
   NodeListParams,

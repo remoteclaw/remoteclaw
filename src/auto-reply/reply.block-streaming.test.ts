@@ -1,7 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { loadModelCatalog } from "../agents/model-catalog.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { withTempHome as withTempHomeHarness } from "../config/home-env.test-harness.js";
 import { getReplyFromConfig } from "./reply.js";
@@ -24,9 +23,6 @@ const piEmbeddedMock = vi.hoisted(() => ({
 
 vi.mock("/src/agents/pi-embedded.js", () => piEmbeddedMock);
 vi.mock("../agents/pi-embedded.js", () => piEmbeddedMock);
-vi.mock("../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn(),
-}));
 
 type GetReplyOptions = NonNullable<Parameters<typeof getReplyFromConfig>[1]>;
 
@@ -99,10 +95,6 @@ describe("block streaming", () => {
     piEmbeddedMock.isEmbeddedPiRunActive.mockClear().mockReturnValue(false);
     piEmbeddedMock.isEmbeddedPiRunStreaming.mockClear().mockReturnValue(false);
     piEmbeddedMock.runEmbeddedPiAgent.mockClear();
-    vi.mocked(loadModelCatalog).mockResolvedValue([
-      { id: "claude-opus-4-5", name: "Opus 4.5", provider: "anthropic" },
-      { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", provider: "openai" },
-    ]);
   });
 
   it("handles ordering, timeout fallback, and telegram streamMode block", async () => {

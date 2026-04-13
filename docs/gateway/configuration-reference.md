@@ -42,29 +42,6 @@ Pairing codes expire after 1 hour. Pending DM pairing requests are capped at **3
 If a provider block is missing entirely (`channels.<provider>` absent), runtime group policy falls back to `allowlist` (fail-closed) with a startup warning.
 </Note>
 
-### Channel model overrides
-
-Use `channels.modelByChannel` to pin specific channel IDs to a model. Values accept `provider/model` or configured model aliases. The channel mapping applies when a session does not already have a model override (for example, set via `/model`).
-
-```json5
-{
-  channels: {
-    modelByChannel: {
-      discord: {
-        "123456789012345678": "anthropic/claude-opus-4-6",
-      },
-      slack: {
-        C1234567890: "openai/gpt-4.1",
-      },
-      telegram: {
-        "-1001234567890": "openai/gpt-4.1-mini",
-        "-1001234567890:topic:99": "anthropic/claude-sonnet-4-6",
-      },
-    },
-  },
-}
-```
-
 ### Channel defaults and heartbeat
 
 Use `channels.defaults` for shared group-policy and heartbeat behavior across providers:

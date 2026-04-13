@@ -284,7 +284,7 @@ function collectCandidateChannelIds(cfg: RemoteClawConfig): string[] {
     return Array.from(channelIds);
   }
   for (const key of Object.keys(configuredChannels)) {
-    if (key === "defaults" || key === "modelByChannel") {
+    if (key === "defaults") {
       continue;
     }
     const normalizedBuiltIn = normalizeChatChannelId(key);

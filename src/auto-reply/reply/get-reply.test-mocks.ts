@@ -17,9 +17,6 @@ export function registerGetReplyCommonMocks(): void {
     DEFAULT_AGENT_WORKSPACE_DIR: "/tmp/workspace",
     ensureAgentWorkspace: vi.fn(async () => ({ dir: "/tmp/workspace" })),
   }));
-  vi.mock("../../channels/model-overrides.js", () => ({
-    resolveChannelModelOverride: vi.fn(() => undefined),
-  }));
   vi.mock("../../config/config.js", () => ({
     loadConfig: vi.fn(() => ({})),
   }));

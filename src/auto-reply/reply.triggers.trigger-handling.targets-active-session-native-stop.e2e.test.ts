@@ -242,21 +242,7 @@ describe("trigger handling", () => {
 
       const modelCases = [
         {
-          label: "heartbeat-override",
-          setup: (cfg: ReturnType<typeof makeCfg>) => {
-            cfg.agents = {
-              ...cfg.agents,
-              defaults: {
-                ...cfg.agents?.defaults,
-                heartbeat: { model: "anthropic/claude-haiku-4-5-20251001" },
-              },
-            };
-          },
-          expected: { provider: "anthropic", model: "claude-haiku-4-5-20251001" },
-        },
-        {
           label: "stored-override",
-          setup: () => undefined,
           expected: { provider: "openai", model: "gpt-5.2" },
         },
       ] as const;
@@ -267,7 +253,6 @@ describe("trigger handling", () => {
         const cfg = makeCfg(home);
         cfg.session = { ...cfg.session, store: join(home, `${testCase.label}.sessions.json`) };
         await writeStoredModelOverride(cfg);
-        testCase.setup(cfg);
         await getReplyFromConfig(BASE_MESSAGE, { isHeartbeat: true }, cfg);
 
         const call = runAgentMock.mock.calls[0]?.[0];

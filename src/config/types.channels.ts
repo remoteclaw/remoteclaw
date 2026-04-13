@@ -24,8 +24,6 @@ export type ChannelDefaultsConfig = {
   heartbeat?: ChannelHeartbeatVisibilityConfig;
 };
 
-export type ChannelModelByChannelConfig = Record<string, Record<string, string>>;
-
 /**
  * Base type for extension channel config sections.
  * Extensions can use this as a starting point for their channel config.
@@ -45,8 +43,6 @@ export type ExtensionChannelConfig = {
 
 export type ChannelsConfig = {
   defaults?: ChannelDefaultsConfig;
-  /** Map provider -> channel id -> model override. */
-  modelByChannel?: ChannelModelByChannelConfig;
   whatsapp?: WhatsAppConfig;
   telegram?: TelegramConfig;
   discord?: DiscordConfig;

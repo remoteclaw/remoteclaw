@@ -457,7 +457,7 @@ function shouldRequireOAuthDir(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): b
   }
   // Pairing allowlists are persisted under credentials/<channel>-allowFrom.json.
   for (const [channelId, channelCfg] of Object.entries(channels)) {
-    if (channelId === "defaults" || channelId === "modelByChannel") {
+    if (channelId === "defaults") {
       continue;
     }
     if (hasPairingPolicy(channelCfg)) {

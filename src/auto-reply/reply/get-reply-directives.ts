@@ -93,7 +93,6 @@ export async function resolveReplyDirectives(params: {
   aliasIndex?: unknown;
   provider?: string;
   model?: string;
-  hasResolvedHeartbeatModelOverride?: boolean;
   typing: TypingController;
   opts?: GetReplyOptions;
   workspaceDir?: string;

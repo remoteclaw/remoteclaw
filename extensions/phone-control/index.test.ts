@@ -39,8 +39,6 @@ function createApi(params: {
     registerCli() {},
     registerService() {},
     registerProvider() {},
-    registerSttProvider() {},
-    registerTtsProvider() {},
     registerContextEngine() {},
     registerCommand: params.registerCommand,
     resolvePath(input: string) {

@@ -24,8 +24,6 @@ function makeRecord(overrides?: Partial<PluginRecord>): PluginRecord {
     hookNames: [],
     channelIds: [],
     providerIds: [],
-    sttProviderIds: [],
-    ttsProviderIds: [],
     gatewayMethods: [],
     cliCommands: [],
     services: [],

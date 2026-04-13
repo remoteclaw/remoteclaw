@@ -287,8 +287,6 @@ export type RemoteClawPluginApi = {
   registerCli: (registrar: RemoteClawPluginCliRegistrar, opts?: { commands?: string[] }) => void;
   registerService: (service: RemoteClawPluginService) => void;
   registerProvider: (provider: ProviderPlugin) => void;
-  registerSttProvider: (provider: ProviderPlugin) => void;
-  registerTtsProvider: (provider: ProviderPlugin) => void;
   /**
    * Register a custom command that bypasses the LLM agent.
    * Plugin commands are processed before built-in commands and before agent invocation.

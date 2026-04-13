@@ -3,13 +3,11 @@ import { gatewayStatusCommand } from "../../commands/gateway-status.js";
 import { formatHealthChannelLines, type HealthSummary } from "../../commands/health.js";
 import { readBestEffortConfig } from "../../config/config.js";
 import { discoverGatewayBeacons } from "../../infra/bonjour-discovery.js";
-import type { CostUsageSummary } from "../../infra/session-cost-usage.js";
 import { resolveWideAreaDiscoveryDomain } from "../../infra/widearea-dns.js";
 import { defaultRuntime } from "../../runtime.js";
 import { styleHealthChannelLine } from "../../terminal/health-style.js";
 import { formatDocsLink } from "../../terminal/links.js";
 import { colorize, isRich, theme } from "../../terminal/theme.js";
-import { formatTokenCount, formatUsd } from "../../utils/usage-format.js";
 import { runCommandWithRuntime } from "../cli-utils.js";
 import { inheritOptionFromParent } from "../command-options.js";
 import { addGatewayServiceCommands } from "../daemon-cli.js";
@@ -34,19 +32,6 @@ function runGatewayCommand(action: () => Promise<void>, label?: string) {
   });
 }
 
-function parseDaysOption(raw: unknown, fallback = 30): number {
-  if (typeof raw === "number" && Number.isFinite(raw)) {
-    return Math.max(1, Math.floor(raw));
-  }
-  if (typeof raw === "string" && raw.trim() !== "") {
-    const parsed = Number(raw);
-    if (Number.isFinite(parsed)) {
-      return Math.max(1, Math.floor(parsed));
-    }
-  }
-  return fallback;
-}
-
 function resolveGatewayRpcOptions<T extends { token?: string; password?: string }>(
   opts: T,
   command?: Command,
@@ -58,32 +43,6 @@ function resolveGatewayRpcOptions<T extends { token?: string; password?: string 
     token: opts.token ?? parentToken,
     password: opts.password ?? parentPassword,
   };
-}
-
-function renderCostUsageSummary(summary: CostUsageSummary, days: number, rich: boolean): string[] {
-  const totalCost = formatUsd(summary.totals.totalCost) ?? "$0.00";
-  const totalTokens = formatTokenCount(summary.totals.totalTokens) ?? "0";
-  const lines = [
-    colorize(rich, theme.heading, `Usage cost (${days} days)`),
-    `${colorize(rich, theme.muted, "Total:")} ${totalCost} · ${totalTokens} tokens`,
-  ];
-
-  if (summary.totals.missingCostEntries > 0) {
-    lines.push(
-      `${colorize(rich, theme.muted, "Missing entries:")} ${summary.totals.missingCostEntries}`,
-    );
-  }
-
-  const latest = summary.daily.at(-1);
-  if (latest) {
-    const latestCost = formatUsd(latest.totalCost) ?? "$0.00";
-    const latestTokens = formatTokenCount(latest.totalTokens) ?? "0";
-    lines.push(
-      `${colorize(rich, theme.muted, "Latest day:")} ${latest.date} · ${latestCost} · ${latestTokens} tokens`,
-    );
-  }
-
-  return lines;
 }
 
 export function registerGatewayCli(program: Command) {
@@ -133,30 +92,6 @@ export function registerGatewayCli(program: Command) {
           );
           defaultRuntime.log(JSON.stringify(result, null, 2));
         }, "Gateway call failed");
-      }),
-  );
-
-  gatewayCallOpts(
-    gateway
-      .command("usage-cost")
-      .description("Fetch usage cost summary from session logs")
-      .option("--days <days>", "Number of days to include", "30")
-      .action(async (opts, command) => {
-        await runGatewayCommand(async () => {
-          const rpcOpts = resolveGatewayRpcOptions(opts, command);
-          const days = parseDaysOption(opts.days);
-          const config = await readBestEffortConfig();
-          const result = await callGatewayCli("usage.cost", { ...rpcOpts, config }, { days });
-          if (rpcOpts.json) {
-            defaultRuntime.log(JSON.stringify(result, null, 2));
-            return;
-          }
-          const rich = isRich();
-          const summary = result as CostUsageSummary;
-          for (const line of renderCostUsageSummary(summary, days, rich)) {
-            defaultRuntime.log(line);
-          }
-        }, "Gateway usage cost failed");
       }),
   );
 

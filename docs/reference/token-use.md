@@ -49,29 +49,13 @@ For a practical breakdown (per injected file, tools, skills, and system prompt s
 Use these in chat:
 
 - `/status` → **emoji‑rich status card** with the session model, context usage,
-  last response input/output tokens, and **estimated cost** (API key only).
+  and last response input/output tokens.
 - `/usage off|tokens|full` → appends a **per-response usage footer** to every reply.
   - Persists per session (stored as `responseUsage`).
-  - OAuth auth **hides cost** (tokens only).
-- `/usage cost` → shows a local cost summary from RemoteClaw session logs.
 
 Other surfaces:
 
 - **TUI/Web TUI:** `/status` + `/usage` are supported.
-- **CLI:** `remoteclaw status --usage` and `remoteclaw channels list` show
-  provider quota windows (not per-response costs).
-
-## Cost estimation (when shown)
-
-Costs are estimated from your model pricing config:
-
-```
-models.providers.<provider>.models[].cost
-```
-
-These are **USD per 1M tokens** for `input`, `output`, `cacheRead`, and
-`cacheWrite`. If pricing is missing, RemoteClaw shows tokens only. OAuth tokens
-never show dollar cost.
 
 ## Cache TTL and pruning impact
 

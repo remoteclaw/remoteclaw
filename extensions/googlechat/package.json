@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/googlechat",
-  "version": "0.3.0",
+  "version": "0.6.0",
   "private": true,
   "description": "RemoteClaw Google Chat channel plugin",
   "type": "module",

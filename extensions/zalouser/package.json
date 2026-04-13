@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/zalouser",
-  "version": "0.3.0",
+  "version": "0.6.0",
   "description": "RemoteClaw Zalo Personal Account plugin via native zca-js integration",
   "type": "module",
   "dependencies": {

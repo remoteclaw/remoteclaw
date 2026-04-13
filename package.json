@@ -1,6 +1,6 @@
 {
   "name": "remoteclaw",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Multi-channel AI gateway with extensible messaging integrations",
   "keywords": [
     "agent",

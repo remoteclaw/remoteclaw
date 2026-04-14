@@ -1,0 +1,357 @@
+[
+  {
+    "callsite": "src/auto-reply/reply.block-streaming.test.ts:8",
+    "pattern": "agents/pi-embedded",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/abort.ts:1",
+    "pattern": "acp/control-plane",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/abort.ts:3",
+    "pattern": "agents/pi-embedded",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/agent-runner.media-paths.test.ts:20",
+    "pattern": "agents/pi-embedded",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/agent-runner.runreplyagent.e2e.test.ts:41",
+    "pattern": "agents/model-fallback",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/agent-runner.runreplyagent.e2e.test.ts:88",
+    "pattern": "agents/model-fallback",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/agent-runner.ts:5",
+    "pattern": "agents/model-selection",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/agent-runner.ts:6",
+    "pattern": "agents/pi-embedded",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/commands-subagents-focus.test.ts:55",
+    "pattern": "acp/runtime",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/commands-subagents/action-focus.ts:4",
+    "pattern": "acp/runtime",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/commands-subagents/action-focus.ts:5",
+    "pattern": "acp/runtime",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/commands-types.ts:1",
+    "pattern": "agents/skills",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/directive-handling.ts:9",
+    "pattern": "agents/model-selection",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/dispatch-from-config.test.ts:150",
+    "pattern": "acp/control-plane",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/dispatch-from-config.test.ts:2",
+    "pattern": "acp/runtime",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/followup-runner.ts:6",
+    "pattern": "agents/model-fallback",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/followup-runner.ts:7",
+    "pattern": "agents/pi-embedded",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/get-reply-inline-actions.ts:3",
+    "pattern": "agents/skills",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/get-reply-run.ts:9",
+    "pattern": "agents/pi-embedded",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/reply-media-paths.ts:3",
+    "pattern": "agents/sandbox",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/reply-media-paths.ts:4",
+    "pattern": "agents/sandbox",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/reply-payloads.ts:2",
+    "pattern": "agents/pi-embedded-runner",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/session-updates.ts:3",
+    "pattern": "agents/skills",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/auto-reply/reply/session-updates.ts:4",
+    "pattern": "agents/skills",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/commands/agent.test.ts:8",
+    "pattern": "agents/model-selection",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/commands/agent.test.ts:9",
+    "pattern": "agents/pi-embedded",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/commands/agent/session-store.ts:15",
+    "pattern": "agents/pi-embedded",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/commands/agent/session-store.ts:4",
+    "pattern": "agents/model-selection",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/commands/agent/types.ts:2",
+    "pattern": "agents/pi-embedded-runner",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/commands/status-all.ts:1",
+    "pattern": "agents/skills",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/commands/status.summary.ts:3",
+    "pattern": "agents/model-selection",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/config/defaults.ts:2",
+    "pattern": "agents/model-selection",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/config/zod-schema.agent-runtime.ts:2",
+    "pattern": "agents/sandbox",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/cron/isolated-agent/run.test-harness.ts:71",
+    "pattern": "agents/model-selection",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/discord/monitor/model-picker.test.ts:4",
+    "pattern": "auto-reply/reply/commands-models",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/discord/monitor/model-picker.ts:14",
+    "pattern": "agents/model-selection",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/discord/monitor/model-picker.ts:18",
+    "pattern": "auto-reply/reply/commands-models",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/discord/monitor/thread-bindings.lifecycle.ts:1",
+    "pattern": "acp/runtime",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/gateway/gateway-cli-backend.live.test.ts:6",
+    "pattern": "agents/model-selection",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/gateway/openresponses-http.ts:11",
+    "pattern": "agents/pi-embedded-runner",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/gateway/server-methods/chat.ts:4",
+    "pattern": "agents/model-selection",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/gateway/server-methods/sessions.ts:3",
+    "pattern": "acp/control-plane",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/gateway/server-methods/sessions.ts:6",
+    "pattern": "agents/pi-embedded",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/gateway/server.impl.ts:3",
+    "pattern": "agents/pi-embedded-runner",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/gateway/server.sessions.gateway-server-sessions-a.test.ts:110",
+    "pattern": "acp/runtime",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/gateway/session-utils.ts:16",
+    "pattern": "agents/model-selection",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/gateway/test-helpers.mocks.ts:509",
+    "pattern": "agents/pi-embedded",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/infra/outbound/message-action-params.ts:3",
+    "pattern": "agents/sandbox",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/plugin-sdk/acpx.ts:17",
+    "pattern": "acp/runtime",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/plugin-sdk/acpx.ts:4",
+    "pattern": "acp/runtime",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/plugin-sdk/acpx.ts:5",
+    "pattern": "acp/runtime",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/plugin-sdk/acpx.ts:6",
+    "pattern": "acp/runtime",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/plugin-sdk/index.ts:627",
+    "pattern": "agents/skills",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/plugin-sdk/index.ts:87",
+    "pattern": "acp/runtime",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/plugin-sdk/index.ts:88",
+    "pattern": "acp/runtime",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/plugin-sdk/index.ts:94",
+    "pattern": "acp/runtime",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/plugin-sdk/index.ts:95",
+    "pattern": "acp/runtime",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/plugin-sdk/index.ts:96",
+    "pattern": "acp/runtime",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/plugin-sdk/mattermost.ts:18",
+    "pattern": "agents/model-selection",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/plugin-sdk/mattermost.ts:22",
+    "pattern": "auto-reply/reply/commands-models",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/security/audit-extra.async.ts:13",
+    "pattern": "agents/sandbox",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/security/audit-extra.sync.ts:12",
+    "pattern": "agents/sandbox",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/security/audit-extra.sync.ts:13",
+    "pattern": "agents/sandbox",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/security/audit-extra.sync.ts:5",
+    "pattern": "agents/sandbox",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/security/audit-extra.sync.ts:6",
+    "pattern": "agents/sandbox",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/security/audit.ts:3",
+    "pattern": "agents/sandbox",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/security/audit.ts:4",
+    "pattern": "agents/sandbox",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/telegram/sticker-cache.ts:4",
+    "pattern": "agents/model-selection",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/tts/tts-core.ts:10",
+    "pattern": "agents/model-selection",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/tts/tts-core.ts:11",
+    "pattern": "agents/pi-embedded-runner",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  },
+  {
+    "callsite": "src/tts/tts.test.ts:4",
+    "pattern": "agents/pi-embedded-runner",
+    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
+  }
+]

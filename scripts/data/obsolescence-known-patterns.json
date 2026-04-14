@@ -1,0 +1,19 @@
+{
+  "description": "Known decorative wiring and broken contract patterns. Each entry describes a specific code pattern where values flow to dead ends or registration APIs have no dispatch. Entries are checked by the obsolescence audit gate (scripts/check-obsolescence-audit.mjs). Remove entries when the pattern is fixed; add entries when manual audits discover new instances.",
+  "patterns": [
+    {
+      "category": "broken_contract",
+      "file": "src/auto-reply/reply/commands-models.ts",
+      "identifier": "buildModelsProviderData",
+      "description": "Stub returns {} but Discord/Mattermost model-picker UI still calls it — users see empty model lists",
+      "issue": "https://github.com/remoteclaw/remoteclaw/issues/2337"
+    },
+    {
+      "category": "broken_contract",
+      "file": "src/auto-reply/reply/commands-models.ts",
+      "identifier": "handleModelsCommand",
+      "description": "Stub returns undefined but /models slash command is registered in commands-core.ts handler array — command silently does nothing",
+      "issue": "https://github.com/remoteclaw/remoteclaw/issues/2337"
+    }
+  ]
+}

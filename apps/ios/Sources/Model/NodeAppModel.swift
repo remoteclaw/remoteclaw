@@ -57,6 +57,7 @@ final class NodeAppModel {
 
     private let deepLinkLogger = Logger(subsystem: "org.remoteclaw.ios", category: "DeepLink")
     private let pushWakeLogger = Logger(subsystem: "org.remoteclaw.ios", category: "PushWake")
+    private let pendingActionLogger = Logger(subsystem: "org.remoteclaw.ios", category: "PendingAction")
     private let locationWakeLogger = Logger(subsystem: "org.remoteclaw.ios", category: "LocationWake")
     private let watchReplyLogger = Logger(subsystem: "org.remoteclaw.ios", category: "WatchReply")
     enum CameraHUDKind {
@@ -129,8 +130,8 @@ final class NodeAppModel {
     private var backgroundReconnectSuppressed = false
     private var backgroundReconnectLeaseUntil: Date?
     private var lastSignificantLocationWakeAt: Date?
-    private var queuedWatchReplies: [WatchQuickReplyEvent] = []
-    private var seenWatchReplyIds = Set<String>()
+    @ObservationIgnored private let watchReplyCoordinator = WatchReplyCoordinator()
+    private var pendingForegroundActionDrainInFlight = false
 
     private var gatewayConnected = false
     private var operatorConnected = false
@@ -329,6 +330,9 @@ final class NodeAppModel {
                         self.backgroundTalkKeptActive = false
                     }
                     await self.talkMode.resumeAfterBackground(wasSuspended: suspended, wasKeptActive: keptActive)
+                }
+                Task { [weak self] in
+                    await self?.resumePendingForegroundNodeActionsIfNeeded(trigger: "scene_active")
                 }
             }
             if phase == .active, self.reconnectAfterBackgroundArmed {
@@ -878,16 +882,17 @@ final class NodeAppModel {
         let command = req.command
         switch command {
         case RemoteClawCanvasA2UICommand.reset.rawValue:
-            guard let a2uiUrl = await self.resolveA2UIHostURL() else {
+            switch await self.ensureA2UIReadyWithCapabilityRefresh(timeoutMs: 5000) {
+            case .ready:
+                break
+            case .hostNotConfigured:
                 return BridgeInvokeResponse(
                     id: req.id,
                     ok: false,
                     error: RemoteClawNodeError(
                         code: .unavailable,
                         message: "A2UI_HOST_NOT_CONFIGURED: gateway did not advertise canvas host"))
-            }
-            self.screen.navigate(to: a2uiUrl)
-            if await !self.screen.waitForA2UIReady(timeoutMs: 5000) {
+            case .hostUnavailable:
                 return BridgeInvokeResponse(
                     id: req.id,
                     ok: false,
@@ -895,15 +900,15 @@ final class NodeAppModel {
                         code: .unavailable,
                         message: "A2UI_HOST_UNAVAILABLE: A2UI host not reachable"))
             }
-
             let json = try await self.screen.eval(javaScript: """
             (() => {
-              const host = globalThis.remoteclawA2UI;
-              if (!host) return JSON.stringify({ ok: false, error: "missing remoteclawA2UI" });
+              const host = globalThis.remoteClawA2UI;
+              if (!host) return JSON.stringify({ ok: false, error: "missing remoteClawA2UI" });
               return JSON.stringify(host.reset());
             })()
             """)
             return BridgeInvokeResponse(id: req.id, ok: true, payloadJSON: json)
+
         case RemoteClawCanvasA2UICommand.push.rawValue, RemoteClawCanvasA2UICommand.pushJSONL.rawValue:
             let messages: [RemoteClawKit.AnyCodable]
             if command == RemoteClawCanvasA2UICommand.pushJSONL.rawValue {
@@ -920,16 +925,17 @@ final class NodeAppModel {
                 }
             }
 
-            guard let a2uiUrl = await self.resolveA2UIHostURL() else {
+            switch await self.ensureA2UIReadyWithCapabilityRefresh(timeoutMs: 5000) {
+            case .ready:
+                break
+            case .hostNotConfigured:
                 return BridgeInvokeResponse(
                     id: req.id,
                     ok: false,
                     error: RemoteClawNodeError(
                         code: .unavailable,
                         message: "A2UI_HOST_NOT_CONFIGURED: gateway did not advertise canvas host"))
-            }
-            self.screen.navigate(to: a2uiUrl)
-            if await !self.screen.waitForA2UIReady(timeoutMs: 5000) {
+            case .hostUnavailable:
                 return BridgeInvokeResponse(
                     id: req.id,
                     ok: false,
@@ -942,8 +948,8 @@ final class NodeAppModel {
             let js = """
             (() => {
               try {
-                const host = globalThis.remoteclawA2UI;
-                if (!host) return JSON.stringify({ ok: false, error: "missing remoteclawA2UI" });
+                const host = globalThis.remoteClawA2UI;
+                if (!host) return JSON.stringify({ ok: false, error: "missing remoteClawA2UI" });
                 const messages = \(messagesJSON);
                 return JSON.stringify(host.applyMessages(messages));
               } catch (e) {
@@ -2099,6 +2105,22 @@ private extension NodeAppModel {
 }
 
 extension NodeAppModel {
+    private struct PendingForegroundNodeAction: Decodable {
+        var id: String
+        var command: String
+        var paramsJSON: String?
+        var enqueuedAtMs: Int?
+    }
+
+    private struct PendingForegroundNodeActionsResponse: Decodable {
+        var nodeId: String?
+        var actions: [PendingForegroundNodeAction]
+    }
+
+    private struct PendingForegroundNodeActionsAckRequest: Encodable {
+        var ids: [String]
+    }
+
     private func refreshShareRouteFromGateway() async {
         struct Params: Codable {
             var includeGlobal: Bool
@@ -2162,7 +2184,7 @@ extension NodeAppModel {
 
         let payload = SharedContentPayload(
             title: "RemoteClaw Share Self-Test",
-            url: URL(string: "https://remoteclaw.ai/share-self-test"),
+            url: URL(string: "https://remoteclaw.org/share-self-test"),
             text: "Validate iOS share->deep-link->gateway forwarding.")
         guard let deepLink = ShareToAgentDeepLink.buildURL(
             from: payload,
@@ -2196,40 +2218,102 @@ extension NodeAppModel {
     func onNodeGatewayConnected() async {
         await self.registerAPNsTokenIfNeeded()
         await self.flushQueuedWatchRepliesIfConnected()
+        await self.resumePendingForegroundNodeActionsIfNeeded(trigger: "node_connected")
+    }
+
+    private func resumePendingForegroundNodeActionsIfNeeded(trigger: String) async {
+        guard !self.isBackgrounded else { return }
+        guard await self.isGatewayConnected() else { return }
+        guard !self.pendingForegroundActionDrainInFlight else { return }
+
+        self.pendingForegroundActionDrainInFlight = true
+        defer { self.pendingForegroundActionDrainInFlight = false }
+
+        do {
+            let payload = try await self.nodeGateway.request(
+                method: "node.pending.pull",
+                paramsJSON: "{}",
+                timeoutSeconds: 6)
+            let decoded = try JSONDecoder().decode(
+                PendingForegroundNodeActionsResponse.self,
+                from: payload)
+            guard !decoded.actions.isEmpty else { return }
+            self.pendingActionLogger.info(
+                "Pending actions pulled trigger=\(trigger, privacy: .public) "
+                    + "count=\(decoded.actions.count, privacy: .public)")
+            await self.applyPendingForegroundNodeActions(decoded.actions, trigger: trigger)
+        } catch {
+            // Best-effort only.
+        }
+    }
+
+    private func applyPendingForegroundNodeActions(
+        _ actions: [PendingForegroundNodeAction],
+        trigger: String) async
+    {
+        for action in actions {
+            guard !self.isBackgrounded else {
+                self.pendingActionLogger.info(
+                    "Pending action replay paused trigger=\(trigger, privacy: .public): app backgrounded")
+                return
+            }
+            let req = BridgeInvokeRequest(
+                id: action.id,
+                command: action.command,
+                paramsJSON: action.paramsJSON)
+            let result = await self.handleInvoke(req)
+            self.pendingActionLogger.info(
+                "Pending action replay trigger=\(trigger, privacy: .public) "
+                    + "id=\(action.id, privacy: .public) command=\(action.command, privacy: .public) "
+                    + "ok=\(result.ok, privacy: .public)")
+            guard result.ok else { return }
+            let acked = await self.ackPendingForegroundNodeAction(
+                id: action.id,
+                trigger: trigger,
+                command: action.command)
+            guard acked else { return }
+        }
+    }
+
+    private func ackPendingForegroundNodeAction(
+        id: String,
+        trigger: String,
+        command: String) async -> Bool
+    {
+        do {
+            let payload = try JSONEncoder().encode(PendingForegroundNodeActionsAckRequest(ids: [id]))
+            let paramsJSON = String(decoding: payload, as: UTF8.self)
+            _ = try await self.nodeGateway.request(
+                method: "node.pending.ack",
+                paramsJSON: paramsJSON,
+                timeoutSeconds: 6)
+            return true
+        } catch {
+            self.pendingActionLogger.error(
+                "Pending action ack failed trigger=\(trigger, privacy: .public) "
+                    + "id=\(id, privacy: .public) command=\(command, privacy: .public) "
+                    + "error=\(String(describing: error), privacy: .public)")
+            return false
+        }
     }
 
     private func handleWatchQuickReply(_ event: WatchQuickReplyEvent) async {
-        let replyId = event.replyId.trimmingCharacters(in: .whitespacesAndNewlines)
-        let actionId = event.actionId.trimmingCharacters(in: .whitespacesAndNewlines)
-        if replyId.isEmpty || actionId.isEmpty {
+        switch self.watchReplyCoordinator.ingest(event, isGatewayConnected: await self.isGatewayConnected()) {
+        case .dropMissingFields:
             self.watchReplyLogger.info("watch reply dropped: missing replyId/actionId")
-            return
-        }
-
-        if self.seenWatchReplyIds.contains(replyId) {
+        case .deduped(let replyId):
             self.watchReplyLogger.debug(
                 "watch reply deduped replyId=\(replyId, privacy: .public)")
-            return
-        }
-        self.seenWatchReplyIds.insert(replyId)
-
-        if await !self.isGatewayConnected() {
-            self.queuedWatchReplies.append(event)
+        case .queue(let replyId, let actionId):
             self.watchReplyLogger.info(
                 "watch reply queued replyId=\(replyId, privacy: .public) action=\(actionId, privacy: .public)")
-            return
+        case .forward:
+            await self.forwardWatchReplyToAgent(event)
         }
-
-        await self.forwardWatchReplyToAgent(event)
     }
 
     private func flushQueuedWatchRepliesIfConnected() async {
-        guard await self.isGatewayConnected() else { return }
-        guard !self.queuedWatchReplies.isEmpty else { return }
-
-        let pending = self.queuedWatchReplies
-        self.queuedWatchReplies.removeAll()
-        for event in pending {
+        for event in self.watchReplyCoordinator.drainIfConnected(await self.isGatewayConnected()) {
             await self.forwardWatchReplyToAgent(event)
         }
     }
@@ -2259,7 +2343,7 @@ extension NodeAppModel {
                 "watch reply forwarding failed replyId=\(event.replyId) "
                 + "error=\(error.localizedDescription)"
             self.watchReplyLogger.error("\(failedMessage, privacy: .public)")
-            self.queuedWatchReplies.insert(event, at: 0)
+            self.watchReplyCoordinator.requeueFront(event)
         }
     }
 
@@ -2291,7 +2375,7 @@ extension NodeAppModel {
             self.pushWakeLogger.info("Ignored APNs payload wakeId=\(wakeId, privacy: .public): not silent push")
             return false
         }
-        let pushKind = Self.remoteclawPushKind(userInfo)
+        let pushKind = Self.openclawPushKind(userInfo)
         let receivedMessage =
             "Silent push received wakeId=\(wakeId) "
             + "kind=\(pushKind) "
@@ -2438,7 +2522,7 @@ extension NodeAppModel {
         return String(raw.prefix(8))
     }
 
-    private static func remoteclawPushKind(_ userInfo: [AnyHashable: Any]) -> String {
+    private static func openclawPushKind(_ userInfo: [AnyHashable: Any]) -> String {
         if let payload = userInfo["remoteclaw"] as? [String: Any],
            let kind = payload["kind"] as? String
         {
@@ -2852,11 +2936,24 @@ extension NodeAppModel {
     }
 
     func _test_queuedWatchReplyCount() -> Int {
-        self.queuedWatchReplies.count
+        self.watchReplyCoordinator.queuedCount
     }
 
     func _test_setGatewayConnected(_ connected: Bool) {
         self.gatewayConnected = connected
+    }
+
+    func _test_applyPendingForegroundNodeActions(
+        _ actions: [(id: String, command: String, paramsJSON: String?)]) async
+    {
+        let mapped = actions.map { action in
+            PendingForegroundNodeAction(
+                id: action.id,
+                command: action.command,
+                paramsJSON: action.paramsJSON,
+                enqueuedAtMs: nil)
+        }
+        await self.applyPendingForegroundNodeActions(mapped, trigger: "test")
     }
 
     static func _test_currentDeepLinkKey() -> String {

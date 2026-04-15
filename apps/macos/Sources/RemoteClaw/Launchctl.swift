@@ -1,7 +1,7 @@
 import Foundation
 
 enum Launchctl {
-    struct Result: Sendable {
+    struct Result {
         let status: Int32
         let output: String
     }
@@ -26,7 +26,7 @@ enum Launchctl {
     }
 }
 
-struct LaunchAgentPlistSnapshot: Equatable, Sendable {
+struct LaunchAgentPlistSnapshot: Equatable {
     let programArguments: [String]
     let environment: [String: String]
     let stdoutPath: String?
@@ -59,8 +59,8 @@ enum LaunchAgentPlist {
             .trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
         let port = Self.extractFlagInt(programArguments, flag: "--port")
         let bind = Self.extractFlagString(programArguments, flag: "--bind")?.lowercased()
-        let token = env["REMOTECLAW_GATEWAY_TOKEN"]?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
-        let password = env["REMOTECLAW_GATEWAY_PASSWORD"]?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
+        let token = env["OPENCLAW_GATEWAY_TOKEN"]?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
+        let password = env["OPENCLAW_GATEWAY_PASSWORD"]?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
         return LaunchAgentPlistSnapshot(
             programArguments: programArguments,
             environment: env,

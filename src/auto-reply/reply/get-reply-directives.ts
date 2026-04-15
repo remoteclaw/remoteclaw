@@ -53,7 +53,6 @@ export type ReplyDirectiveContinuation = {
     cap?: number;
     dropPolicy?: InlineDirectives["dropPolicy"];
   };
-  skillCommands?: unknown[];
   resolvedThinkLevel?: ThinkLevel;
   resolvedReasoningLevel?: ReasoningLevel;
   resolvedElevatedLevel?: ElevatedLevel;

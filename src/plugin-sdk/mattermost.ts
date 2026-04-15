@@ -9,13 +9,12 @@ export {
   DEFAULT_GROUP_HISTORY_LIMIT,
   recordPendingHistoryEntryIfEnabled,
 } from "../auto-reply/reply/history.js";
-export { listSkillCommandsForAgents } from "../auto-reply/skill-commands.js";
 export type { ReplyPayload } from "../auto-reply/types.js";
 export type { ChatType } from "../channels/chat-type.js";
 export { resolveControlCommandGate } from "../channels/command-gating.js";
 export { logInboundDrop, logTypingFailure } from "../channels/logging.js";
 export { resolveAllowlistMatchSimple } from "../channels/plugins/allowlist-match.js";
-export { normalizeProviderId } from "../agents/model-selection.js";
+export { normalizeProviderId } from "../agents/provider-utils.js";
 export {
   buildModelsProviderData,
   type ModelsProviderData,
@@ -76,6 +75,7 @@ export {
   requireOpenAllowFrom,
 } from "../config/zod-schema.core.js";
 export { createDedupeCache } from "../infra/dedupe.js";
+export { parseStrictPositiveInteger } from "../infra/parse-finite-number.js";
 export { rawDataToString } from "../infra/ws.js";
 export { isLoopbackHost, isTrustedProxyAddress, resolveClientIp } from "../gateway/net.js";
 export { registerPluginHttpRoute } from "../plugins/http-registry.js";

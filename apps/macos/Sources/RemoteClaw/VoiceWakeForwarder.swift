@@ -2,7 +2,7 @@ import Foundation
 import OSLog
 
 enum VoiceWakeForwarder {
-    private static let logger = Logger(subsystem: "org.remoteclaw", category: "voicewake.forward")
+    private static let logger = Logger(subsystem: "ai.openclaw", category: "voicewake.forward")
 
     static func prefixedTranscript(_ transcript: String, machineName: String? = nil) -> String {
         let resolvedMachine = machineName
@@ -32,7 +32,7 @@ enum VoiceWakeForwarder {
         }
     }
 
-    struct ForwardOptions: Sendable {
+    struct ForwardOptions {
         var sessionKey: String = "main"
         var thinking: String = "low"
         var deliver: Bool = true

@@ -35,7 +35,7 @@ const allowedCallsites = new Set([
   "src/auto-reply/reply/agent-runner.runreplyagent.e2e.test.ts:84",
   "src/commands/status-all.ts:1",
   "src/config/zod-schema.agent-runtime.ts:2",
-  "src/cron/isolated-agent/run.test-harness.ts:75",
+  "src/cron/isolated-agent/run.test-harness.ts:72",
   "src/gateway/gateway-cli-backend.live.test.ts:6",
   "src/infra/outbound/message-action-params.ts:3",
   "src/plugin-sdk/index.ts:86",

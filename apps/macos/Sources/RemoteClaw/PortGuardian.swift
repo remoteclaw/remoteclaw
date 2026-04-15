@@ -15,14 +15,14 @@ actor PortGuardian {
         let timestamp: TimeInterval
     }
 
-    struct Descriptor: Sendable {
+    struct Descriptor {
         let pid: Int32
         let command: String
         let executablePath: String?
     }
 
     private var records: [Record] = []
-    private let logger = Logger(subsystem: "org.remoteclaw", category: "portguard")
+    private let logger = Logger(subsystem: "ai.openclaw", category: "portguard")
     private nonisolated static let appSupportDir: URL = {
         let base = FileManager().urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         return base.appendingPathComponent("RemoteClaw", isDirectory: true)
@@ -267,7 +267,7 @@ actor PortGuardian {
     {
         let expectedDesc: String
         let okPredicate: (Listener) -> Bool
-        let expectedCommands = ["node", "remoteclaw", "tsx", "pnpm", "bun"]
+        let expectedCommands = ["node", "openclaw", "tsx", "pnpm", "bun"]
 
         switch mode {
         case .remote:
@@ -361,10 +361,10 @@ actor PortGuardian {
             if port == GatewayEnvironment.gatewayPort() { return cmd.contains("ssh") }
             return false
         case .local:
-            // The gateway daemon may listen as `remoteclaw` or as its runtime (`node`, `bun`, etc).
+            // The gateway daemon may listen as `openclaw` or as its runtime (`node`, `bun`, etc).
             if full.contains("gateway-daemon") { return true }
             // If args are unavailable, treat a CLI listener as expected.
-            if cmd.contains("remoteclaw"), full == cmd { return true }
+            if cmd.contains("openclaw"), full == cmd { return true }
             return false
         case .unconfigured:
             return false

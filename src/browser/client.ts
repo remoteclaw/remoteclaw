@@ -226,3 +226,7 @@ export async function browserTabAction(
     timeoutMs: 10_000,
   });
 }
+
+/** Stub — browserSnapshot (upstream feature, not available in fork). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- stub return type, consumed by production code
+export const browserSnapshot = (..._args: unknown[]) => Promise.resolve(undefined as any);

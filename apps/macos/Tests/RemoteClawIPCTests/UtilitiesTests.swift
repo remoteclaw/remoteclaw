@@ -3,7 +3,7 @@ import Testing
 @testable import RemoteClaw
 
 @Suite(.serialized) struct UtilitiesTests {
-    @Test func ageStringsCoverCommonWindows() {
+    @Test func `age strings cover common windows`() {
         let now = Date(timeIntervalSince1970: 1_000_000)
         #expect(age(from: now, now: now) == "just now")
         #expect(age(from: now.addingTimeInterval(-45), now: now) == "just now")
@@ -15,7 +15,7 @@ import Testing
         #expect(age(from: now.addingTimeInterval(-3 * 86400), now: now) == "3d ago")
     }
 
-    @Test func parseSSHTargetSupportsUserPortAndDefaults() {
+    @Test func `parse SSH target supports user port and defaults`() {
         let parsed1 = CommandResolver.parseSSHTarget("alice@example.com:2222")
         #expect(parsed1?.user == "alice")
         #expect(parsed1?.host == "example.com")
@@ -32,7 +32,7 @@ import Testing
         #expect(parsed3?.port == 22)
     }
 
-    @Test func sanitizedTargetStripsLeadingSSHPrefix() throws {
+    @Test func `sanitized target strips leading SSH prefix`() throws {
         let defaults = try #require(UserDefaults(suiteName: "UtilitiesTests.\(UUID().uuidString)"))
         defaults.set(AppState.ConnectionMode.remote.rawValue, forKey: connectionModeKey)
         defaults.set("ssh  alice@example.com", forKey: remoteTargetKey)
@@ -42,11 +42,11 @@ import Testing
         #expect(settings.target == "alice@example.com")
     }
 
-    @Test func gatewayEntrypointPrefersDistOverBin() throws {
+    @Test func `gateway entrypoint prefers dist over bin`() throws {
         let tmp = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         let dist = tmp.appendingPathComponent("dist/index.js")
-        let bin = tmp.appendingPathComponent("bin/remoteclaw.js")
+        let bin = tmp.appendingPathComponent("bin/openclaw.js")
         try FileManager().createDirectory(at: dist.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager().createDirectory(at: bin.deletingLastPathComponent(), withIntermediateDirectories: true)
         FileManager().createFile(atPath: dist.path, contents: Data())
@@ -56,13 +56,13 @@ import Testing
         #expect(entry == dist.path)
     }
 
-    @Test func logLocatorPicksNewestLogFile() throws {
+    @Test func `log locator picks newest log file`() throws {
         let fm = FileManager()
-        let dir = URL(fileURLWithPath: "/tmp/remoteclaw", isDirectory: true)
+        let dir = URL(fileURLWithPath: "/tmp/openclaw", isDirectory: true)
         try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
 
-        let older = dir.appendingPathComponent("remoteclaw-old-\(UUID().uuidString).log")
-        let newer = dir.appendingPathComponent("remoteclaw-new-\(UUID().uuidString).log")
+        let older = dir.appendingPathComponent("openclaw-old-\(UUID().uuidString).log")
+        let newer = dir.appendingPathComponent("openclaw-new-\(UUID().uuidString).log")
         fm.createFile(atPath: older.path, contents: Data("old".utf8))
         fm.createFile(atPath: newer.path, contents: Data("new".utf8))
         try fm.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -100)], ofItemAtPath: older.path)
@@ -75,7 +75,7 @@ import Testing
         try? fm.removeItem(at: newer)
     }
 
-    @Test func gatewayEntrypointNilWhenMissing() {
+    @Test func `gateway entrypoint nil when missing`() {
         let tmp = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         #expect(CommandResolver.gatewayEntrypoint(in: tmp) == nil)

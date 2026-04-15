@@ -40,6 +40,38 @@ jobs:
       - name: Check zombie imports
         run: node scripts/check-no-zombie-imports.mjs
 
+  stub-debt-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+
+      - name: Setup Node environment
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+
+      - name: Check stub debt
+        run: node scripts/check-stub-debt.mjs
+
+  obsolescence-audit-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+
+      - name: Setup Node environment
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+
+      - name: Check obsolescence audit
+        run: node scripts/check-obsolescence-audit.mjs
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -96,12 +128,13 @@ jobs:
 
   CI:
     if: always()
-    needs: [rebrand-gate, zombie-import-gate, lint, build, test]
+    needs:
+      [rebrand-gate, zombie-import-gate, stub-debt-gate, obsolescence-audit-gate, lint, build, test]
     runs-on: ubuntu-latest
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.test.result }}" != "success" ]]; then
+          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.test.result }}" != "success" ]]; then
             echo "::error::One or more required jobs failed"
             exit 1
           fi

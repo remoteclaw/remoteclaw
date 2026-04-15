@@ -1,5 +1,6 @@
 // Minimal implementation for RemoteClaw fork
 export const NON_ENV_SECRETREF_MARKER = "__non_env__";
+export const OLLAMA_LOCAL_AUTH_MARKER = "ollama-local";
 
 const OAUTH_API_KEY_MARKER_PREFIX = "oauth:";
 

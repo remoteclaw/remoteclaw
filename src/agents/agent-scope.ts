@@ -1,16 +1,21 @@
+import fs from "node:fs";
 import path from "node:path";
 import type { RemoteClawConfig } from "../config/config.js";
+import { resolveAgentModelFallbackValues } from "../config/model-input.js";
 import { resolveStateDir } from "../config/paths.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
-  classifySessionKeyShape,
   normalizeAgentId,
   parseAgentSessionKey,
   resolveAgentIdFromSessionKey,
 } from "../routing/session-key.js";
 import { resolveUserPath } from "../utils.js";
+import { normalizeSkillFilter } from "./skills/filter.js";
+import { resolveDefaultAgentWorkspaceDir } from "./workspace.js";
 
-const log = createSubsystemLogger("agents/scope");
+/** Default agent ID used when no explicit agent is configured. */
+const DEFAULT_AGENT_ID = "default";
+const log = createSubsystemLogger("agent-scope");
 
 /** Strip null bytes from paths to prevent ENOTDIR errors. */
 function stripNullBytes(s: string): string {
@@ -26,19 +31,19 @@ type ResolvedAgentConfig = {
   name?: string;
   workspace?: string;
   agentDir?: string;
+  model?: AgentEntry["model"];
+  skills?: AgentEntry["skills"];
+  memorySearch?: AgentEntry["memorySearch"];
   humanDelay?: AgentEntry["humanDelay"];
   heartbeat?: AgentEntry["heartbeat"];
-  boot?: AgentEntry["boot"];
   identity?: AgentEntry["identity"];
   groupChat?: AgentEntry["groupChat"];
   subagents?: AgentEntry["subagents"];
   sandbox?: AgentEntry["sandbox"];
   tools?: AgentEntry["tools"];
-  auth?: AgentEntry["auth"];
-  runtime?: AgentEntry["runtime"];
-  runtimeArgs?: AgentEntry["runtimeArgs"];
-  runtimeEnv?: AgentEntry["runtimeEnv"];
 };
+
+let defaultAgentWarned = false;
 
 export function listAgentEntries(cfg: RemoteClawConfig): AgentEntry[] {
   const list = cfg.agents?.list;
@@ -50,147 +55,65 @@ export function listAgentEntries(cfg: RemoteClawConfig): AgentEntry[] {
 
 export function listAgentIds(cfg: RemoteClawConfig): string[] {
   const agents = listAgentEntries(cfg);
+  if (agents.length === 0) {
+    return [];
+  }
   const seen = new Set<string>();
   const ids: string[] = [];
   for (const entry of agents) {
-    const id = entry?.id?.trim();
-    if (!id) {
+    const id = normalizeAgentId(entry?.id);
+    if (seen.has(id)) {
       continue;
     }
-    const normalized = normalizeAgentId(id);
-    if (seen.has(normalized)) {
-      continue;
-    }
-    seen.add(normalized);
-    ids.push(normalized);
+    seen.add(id);
+    ids.push(id);
   }
   return ids;
 }
 
 /**
- * Returns the sole agent's ID when exactly one agent is configured, or null otherwise.
+ * Resolve the default agent ID from config.
+ * Returns the first agent with `default: true`, or the first agent in the list.
  */
-export function resolveSoleAgentId(cfg: RemoteClawConfig): string | null {
-  const agents = listAgentEntries(cfg);
-  if (agents.length !== 1) {
-    return null;
-  }
-  const id = agents[0]?.id?.trim();
-  return id ? normalizeAgentId(id) : null;
-}
-
-/**
- * Returns the sole agent's ID when exactly one agent is configured, or throws.
- *
- * @throws {Error} when zero or multiple agents are configured.
- */
-export function requireSoleAgentId(cfg: RemoteClawConfig): string {
+export function resolveDefaultAgentId(cfg: RemoteClawConfig): string {
   const agents = listAgentEntries(cfg);
   if (agents.length === 0) {
-    throw new Error("No agents configured — add at least one entry to agents.list");
+    return DEFAULT_AGENT_ID;
   }
-  if (agents.length > 1) {
-    throw new Error(
-      `Multiple agents configured (${agents.map((a) => a.id).join(", ")}); sole-agent auto-selection requires exactly one`,
-    );
+  const defaults = agents.filter((agent) => agent?.default);
+  if (defaults.length > 1 && !defaultAgentWarned) {
+    defaultAgentWarned = true;
+    log.warn("Multiple agents marked default=true; using the first entry as default.");
   }
-  const id = agents[0]?.id?.trim();
-  if (!id) {
-    throw new Error("Agent entry has no id — every agents.list entry requires an id");
-  }
-  return normalizeAgentId(id);
+  const chosen = (defaults[0] ?? agents[0])?.id?.trim();
+  return normalizeAgentId(chosen || DEFAULT_AGENT_ID);
 }
 
-/**
- * Returns a workspace directory without requiring a specific agent ID.
- *
- * Resolution order:
- * 1. `agents.defaults.workspace` if set
- * 2. First agent entry's `workspace` if set
- * 3. `null` when no workspace is available
- *
- * Use this for call sites that only need a workspace directory (plugin loading,
- * config validation, CLI commands) and don't care which agent owns it.
- */
-export function resolveFirstAgentWorkspace(cfg: RemoteClawConfig): string | null {
-  const defaultsWorkspace = cfg.agents?.defaults?.workspace?.trim();
-  if (defaultsWorkspace) {
-    return stripNullBytes(resolveUserPath(defaultsWorkspace));
-  }
-  const agents = listAgentEntries(cfg);
-  if (agents.length > 0) {
-    const firstWorkspace = agents[0]?.workspace?.trim();
-    if (firstWorkspace) {
-      return stripNullBytes(resolveUserPath(firstWorkspace));
-    }
-  }
-  return null;
-}
-
-/**
- * Resolve the agent ID for a session key with config-aware fallback.
- *
- * - Valid `agent:` prefix key → parsed agent ID.
- * - Legacy/alias key (no prefix), single-agent config → sole agent inferred seamlessly.
- * - Legacy/alias key, multi-agent config → first configured agent, warning logged.
- * - Malformed `agent:` key → warning logged, best-effort fallback to sole/first agent.
- * - Missing/empty key → sole/first agent (no warning).
- */
-export function resolveSessionKeyAgentId(
-  sessionKey: string | undefined | null,
-  cfg: RemoteClawConfig,
-): string {
-  const shape = classifySessionKeyShape(sessionKey);
-
-  switch (shape) {
-    case "agent": {
-      const parsed = parseAgentSessionKey(sessionKey);
-      // classifySessionKeyShape returns "agent" only when parseAgentSessionKey succeeds
-      return normalizeAgentId(parsed!.agentId);
-    }
-
-    case "legacy_or_alias": {
-      const sole = resolveSoleAgentId(cfg);
-      if (sole) {
-        return sole;
-      }
-      const agents = listAgentIds(cfg);
-      const chosen = agents[0];
-      log.warn("legacy session key without agent: prefix in multi-agent config; inferring agent", {
-        sessionKey: (sessionKey ?? "").trim(),
-        chosenAgent: chosen,
-      });
-      return chosen;
-    }
-
-    case "malformed_agent": {
-      log.warn("malformed session key — cannot determine agent", {
-        sessionKey: (sessionKey ?? "").trim(),
-      });
-      const sole = resolveSoleAgentId(cfg);
-      return sole ?? listAgentIds(cfg)[0];
-    }
-
-    case "missing":
-    default: {
-      const sole = resolveSoleAgentId(cfg);
-      return sole ?? listAgentIds(cfg)[0];
-    }
-  }
+export function resolveSessionAgentIds(params: {
+  sessionKey?: string;
+  config?: RemoteClawConfig;
+  agentId?: string;
+}): {
+  defaultAgentId: string;
+  sessionAgentId: string;
+} {
+  const defaultAgentId = resolveDefaultAgentId(params.config ?? {});
+  const explicitAgentIdRaw =
+    typeof params.agentId === "string" ? params.agentId.trim().toLowerCase() : "";
+  const explicitAgentId = explicitAgentIdRaw ? normalizeAgentId(explicitAgentIdRaw) : null;
+  const sessionKey = params.sessionKey?.trim();
+  const normalizedSessionKey = sessionKey ? sessionKey.toLowerCase() : undefined;
+  const parsed = normalizedSessionKey ? parseAgentSessionKey(normalizedSessionKey) : null;
+  const sessionAgentId =
+    explicitAgentId ?? (parsed?.agentId ? normalizeAgentId(parsed.agentId) : defaultAgentId);
+  return { defaultAgentId, sessionAgentId };
 }
 
 export function resolveSessionAgentId(params: {
   sessionKey?: string;
   config?: RemoteClawConfig;
-  agentId?: string;
 }): string {
-  const cfg = params.config ?? {};
-  const explicitAgentIdRaw =
-    typeof params.agentId === "string" ? params.agentId.trim().toLowerCase() : "";
-  if (explicitAgentIdRaw) {
-    return normalizeAgentId(explicitAgentIdRaw);
-  }
-  return resolveSessionKeyAgentId(params.sessionKey, cfg);
+  return resolveSessionAgentIds(params).sessionAgentId;
 }
 
 function resolveAgentEntry(cfg: RemoteClawConfig, agentId: string): AgentEntry | undefined {
@@ -211,111 +134,84 @@ export function resolveAgentConfig(
     name: typeof entry.name === "string" ? entry.name : undefined,
     workspace: typeof entry.workspace === "string" ? entry.workspace : undefined,
     agentDir: typeof entry.agentDir === "string" ? entry.agentDir : undefined,
+    model:
+      typeof entry.model === "string" || (entry.model && typeof entry.model === "object")
+        ? entry.model
+        : undefined,
+    skills: Array.isArray(entry.skills) ? entry.skills : undefined,
+    memorySearch: entry.memorySearch,
     humanDelay: entry.humanDelay,
     heartbeat: entry.heartbeat,
-    boot: entry.boot,
     identity: entry.identity,
     groupChat: entry.groupChat,
     subagents: typeof entry.subagents === "object" && entry.subagents ? entry.subagents : undefined,
     sandbox: entry.sandbox,
     tools: entry.tools,
-    auth: entry.auth,
-    runtime: entry.runtime,
-    runtimeArgs: entry.runtimeArgs,
-    runtimeEnv: entry.runtimeEnv,
   };
 }
 
-/**
- * Resolve the effective auth setting for an agent.
- *
- * Resolution: agent entry `auth` overrides `agents.defaults.auth`.
- * - Explicit `auth: false` on the entry is an opt-out (not the same as undefined).
- * - `undefined` (missing) on the entry inherits from defaults.
- * - Returns `undefined` when neither the entry nor defaults define auth.
- */
-export function resolveAgentAuth(
-  cfg: RemoteClawConfig,
-  agentId: string,
-): false | string | string[] | undefined {
-  const entry = resolveAgentEntry(cfg, normalizeAgentId(agentId));
-  // Explicit per-agent auth (including `false`) overrides defaults.
-  if (entry && entry.auth !== undefined) {
-    return entry.auth;
-  }
-  // Fall back to defaults.auth.
-  const defaultsAuth = cfg.agents?.defaults?.auth;
-  return defaultsAuth !== undefined ? defaultsAuth : undefined;
-}
-
-/**
- * Resolve the effective runtime for an agent.
- *
- * Resolution: agent entry `runtime` overrides `agents.defaults.runtime`.
- * Returns `undefined` when neither the entry nor defaults define runtime.
- */
-export function resolveAgentRuntime(
-  cfg: RemoteClawConfig,
-  agentId: string,
-): "claude" | "gemini" | "codex" | "opencode" | undefined {
-  const entry = resolveAgentEntry(cfg, normalizeAgentId(agentId));
-  if (entry?.runtime && typeof entry.runtime === "string") {
-    return entry.runtime;
-  }
-  return cfg.agents?.defaults?.runtime ?? undefined;
-}
-
-/**
- * Resolve the effective runtime for an agent, throwing if unset.
- *
- * Same as {@link resolveAgentRuntime} but throws when neither the agent entry
- * nor defaults define a runtime.
- */
-export function resolveAgentRuntimeOrThrow(
-  cfg: RemoteClawConfig,
-  agentId: string,
-): "claude" | "gemini" | "codex" | "opencode" {
-  const runtime = resolveAgentRuntime(cfg, agentId);
-  if (!runtime) {
-    throw new Error(
-      "No runtime configured. Set agents.defaults.runtime to one of: claude, gemini, codex, opencode",
-    );
-  }
-  return runtime;
-}
-
-/**
- * Resolve the effective runtimeArgs for an agent.
- *
- * Resolution: agent entry `runtimeArgs` replaces `agents.defaults.runtimeArgs`.
- * Returns `undefined` when neither the entry nor defaults define runtimeArgs.
- */
-export function resolveAgentRuntimeArgs(
+export function resolveAgentSkillsFilter(
   cfg: RemoteClawConfig,
   agentId: string,
 ): string[] | undefined {
-  const entry = resolveAgentEntry(cfg, normalizeAgentId(agentId));
-  if (entry?.runtimeArgs) {
-    return entry.runtimeArgs;
-  }
-  return cfg.agents?.defaults?.runtimeArgs ?? undefined;
+  return normalizeSkillFilter(resolveAgentConfig(cfg, agentId)?.skills);
 }
 
-/**
- * Resolve the effective runtimeEnv for an agent.
- *
- * Resolution: agent entry `runtimeEnv` replaces `agents.defaults.runtimeEnv`.
- * Returns `undefined` when neither the entry nor defaults define runtimeEnv.
- */
-export function resolveAgentRuntimeEnv(
+function resolveModelPrimary(raw: unknown): string | undefined {
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    return trimmed || undefined;
+  }
+  if (!raw || typeof raw !== "object") {
+    return undefined;
+  }
+  const primary = (raw as { primary?: unknown }).primary;
+  if (typeof primary !== "string") {
+    return undefined;
+  }
+  const trimmed = primary.trim();
+  return trimmed || undefined;
+}
+
+export function resolveAgentExplicitModelPrimary(
   cfg: RemoteClawConfig,
   agentId: string,
-): Record<string, string> | undefined {
-  const entry = resolveAgentEntry(cfg, normalizeAgentId(agentId));
-  if (entry?.runtimeEnv) {
-    return entry.runtimeEnv;
+): string | undefined {
+  const raw = resolveAgentConfig(cfg, agentId)?.model;
+  return resolveModelPrimary(raw);
+}
+
+export function resolveAgentEffectiveModelPrimary(
+  cfg: RemoteClawConfig,
+  agentId: string,
+): string | undefined {
+  return (
+    resolveAgentExplicitModelPrimary(cfg, agentId) ??
+    resolveModelPrimary(cfg.agents?.defaults?.model)
+  );
+}
+
+// Backward-compatible alias. Prefer explicit/effective helpers at new call sites.
+export function resolveAgentModelPrimary(
+  cfg: RemoteClawConfig,
+  agentId: string,
+): string | undefined {
+  return resolveAgentExplicitModelPrimary(cfg, agentId);
+}
+
+export function resolveAgentModelFallbacksOverride(
+  cfg: RemoteClawConfig,
+  agentId: string,
+): string[] | undefined {
+  const raw = resolveAgentConfig(cfg, agentId)?.model;
+  if (!raw || typeof raw === "string") {
+    return undefined;
   }
-  return cfg.agents?.defaults?.runtimeEnv ?? undefined;
+  // Important: treat an explicitly provided empty array as an override to disable global fallbacks.
+  if (!Object.hasOwn(raw, "fallbacks")) {
+    return undefined;
+  }
+  return Array.isArray(raw.fallbacks) ? raw.fallbacks : undefined;
 }
 
 export function resolveFallbackAgentId(params: {
@@ -329,29 +225,115 @@ export function resolveFallbackAgentId(params: {
   return resolveAgentIdFromSessionKey(params.sessionKey);
 }
 
-export function resolveAgentWorkspaceDir(cfg: RemoteClawConfig, agentId: string): string {
-  const id = normalizeAgentId(agentId);
-  const configured =
-    resolveAgentConfig(cfg, id)?.workspace?.trim() || cfg.agents?.defaults?.workspace?.trim();
-  if (configured) {
-    return stripNullBytes(resolveUserPath(configured));
+export function resolveRunModelFallbacksOverride(params: {
+  cfg: RemoteClawConfig | undefined;
+  agentId?: string | null;
+  sessionKey?: string | null;
+}): string[] | undefined {
+  if (!params.cfg) {
+    return undefined;
   }
-  throw new Error(
-    `agent '${id}' has no workspace configured — set agents.list[].workspace in remoteclaw.json`,
+  return resolveAgentModelFallbacksOverride(
+    params.cfg,
+    resolveFallbackAgentId({ agentId: params.agentId, sessionKey: params.sessionKey }),
   );
 }
 
-export function resolveAgentWorkspaceDirOrNull(
-  cfg: RemoteClawConfig,
-  agentId: string,
-): string | null {
+export function hasConfiguredModelFallbacks(params: {
+  cfg: RemoteClawConfig | undefined;
+  agentId?: string | null;
+  sessionKey?: string | null;
+}): boolean {
+  const fallbacksOverride = resolveRunModelFallbacksOverride(params);
+  const defaultFallbacks = resolveAgentModelFallbackValues(params.cfg?.agents?.defaults?.model);
+  return (fallbacksOverride ?? defaultFallbacks).length > 0;
+}
+
+export function resolveEffectiveModelFallbacks(params: {
+  cfg: RemoteClawConfig;
+  agentId: string;
+  hasSessionModelOverride: boolean;
+}): string[] | undefined {
+  const agentFallbacksOverride = resolveAgentModelFallbacksOverride(params.cfg, params.agentId);
+  if (!params.hasSessionModelOverride) {
+    return agentFallbacksOverride;
+  }
+  const defaultFallbacks = resolveAgentModelFallbackValues(params.cfg.agents?.defaults?.model);
+  return agentFallbacksOverride ?? defaultFallbacks;
+}
+
+export function resolveAgentWorkspaceDir(cfg: RemoteClawConfig, agentId: string) {
   const id = normalizeAgentId(agentId);
-  const configured =
-    resolveAgentConfig(cfg, id)?.workspace?.trim() || cfg.agents?.defaults?.workspace?.trim();
+  const configured = resolveAgentConfig(cfg, id)?.workspace?.trim();
   if (configured) {
     return stripNullBytes(resolveUserPath(configured));
   }
-  return null;
+  const preferredAgentId = resolveDefaultAgentId(cfg);
+  if (id === preferredAgentId) {
+    const fallback = cfg.agents?.defaults?.workspace?.trim();
+    if (fallback) {
+      return stripNullBytes(resolveUserPath(fallback));
+    }
+    return stripNullBytes(resolveDefaultAgentWorkspaceDir(process.env));
+  }
+  const stateDir = resolveStateDir(process.env);
+  return stripNullBytes(path.join(stateDir, `workspace-${id}`));
+}
+
+function normalizePathForComparison(input: string): string {
+  const resolved = path.resolve(stripNullBytes(resolveUserPath(input)));
+  let normalized = resolved;
+  // Prefer realpath when available to normalize aliases/symlinks (for example /tmp -> /private/tmp)
+  // and canonical path case without forcing case-folding on case-sensitive macOS volumes.
+  try {
+    normalized = fs.realpathSync.native(resolved);
+  } catch {
+    // Keep lexical path for non-existent directories.
+  }
+  if (process.platform === "win32") {
+    return normalized.toLowerCase();
+  }
+  return normalized;
+}
+
+function isPathWithinRoot(candidatePath: string, rootPath: string): boolean {
+  const relative = path.relative(rootPath, candidatePath);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+export function resolveAgentIdsByWorkspacePath(
+  cfg: RemoteClawConfig,
+  workspacePath: string,
+): string[] {
+  const normalizedWorkspacePath = normalizePathForComparison(workspacePath);
+  const ids = listAgentIds(cfg);
+  const matches: Array<{ id: string; workspaceDir: string; order: number }> = [];
+
+  for (let index = 0; index < ids.length; index += 1) {
+    const id = ids[index];
+    const workspaceDir = normalizePathForComparison(resolveAgentWorkspaceDir(cfg, id));
+    if (!isPathWithinRoot(normalizedWorkspacePath, workspaceDir)) {
+      continue;
+    }
+    matches.push({ id, workspaceDir, order: index });
+  }
+
+  matches.sort((left, right) => {
+    const workspaceLengthDelta = right.workspaceDir.length - left.workspaceDir.length;
+    if (workspaceLengthDelta !== 0) {
+      return workspaceLengthDelta;
+    }
+    return left.order - right.order;
+  });
+
+  return matches.map((entry) => entry.id);
+}
+
+export function resolveAgentIdByWorkspacePath(
+  cfg: RemoteClawConfig,
+  workspacePath: string,
+): string | undefined {
+  return resolveAgentIdsByWorkspacePath(cfg, workspacePath)[0];
 }
 
 export function resolveAgentDir(cfg: RemoteClawConfig, agentId: string) {
@@ -364,6 +346,166 @@ export function resolveAgentDir(cfg: RemoteClawConfig, agentId: string) {
   return path.join(root, "agents", id, "agent");
 }
 
-// Gutted in RemoteClaw fork (Middleware Boundary Principle)
-export const resolveRunModelFallbacksOverride = (..._args: unknown[]): undefined => undefined;
-export const resolveAgentSkillsFilter = (..._args: unknown[]): undefined => undefined;
+// ── Upstream-compat aliases ──────────────────────────────────────────
+// The upstream sync introduced new function names that callers reference.
+// These aliases map the new names to existing implementations.
+
+/**
+ * Alias: upstream introduced resolveSessionKeyAgentId.
+ * Callers use positional args: (sessionKey, cfg).
+ */
+export function resolveSessionKeyAgentId(
+  sessionKey: string | null | undefined | { sessionKey?: string; config?: RemoteClawConfig },
+  cfg?: RemoteClawConfig,
+): string {
+  if (sessionKey && typeof sessionKey === "object") {
+    return resolveSessionAgentId(sessionKey);
+  }
+  return resolveSessionAgentId({ sessionKey: sessionKey ?? undefined, config: cfg });
+}
+
+/**
+ * Alias: upstream introduced resolveSoleAgentId.
+ * Returns the agent ID only when exactly ONE agent is configured.
+ * Returns null for empty config or multi-agent config.
+ */
+export function resolveSoleAgentId(
+  cfgOrParams: RemoteClawConfig | { sessionKey?: string; config?: RemoteClawConfig },
+): string | null {
+  const cfg: RemoteClawConfig =
+    cfgOrParams &&
+    typeof cfgOrParams === "object" &&
+    ("sessionKey" in cfgOrParams || "config" in cfgOrParams)
+      ? ((cfgOrParams as { config?: RemoteClawConfig }).config ?? {})
+      : (cfgOrParams as RemoteClawConfig);
+
+  const agents = listAgentEntries(cfg);
+  if (agents.length !== 1) {
+    return null;
+  }
+  return normalizeAgentId(agents[0]?.id ?? DEFAULT_AGENT_ID);
+}
+
+/**
+ * Alias: upstream introduced resolveFirstAgentWorkspace.
+ * Returns null when no agents configured, when agents.list is empty,
+ * or when no agent has a workspace. When agents have workspaces and
+ * agents.defaults.workspace is set, returns defaults.workspace.
+ * Otherwise returns the first agent's workspace from agents.list[0].
+ */
+export function resolveFirstAgentWorkspace(cfg: RemoteClawConfig): string | null {
+  // If defaults.workspace is set, prefer it (even without agents.list)
+  const defaultsWorkspace = cfg.agents?.defaults?.workspace?.trim();
+  if (defaultsWorkspace) {
+    return stripNullBytes(resolveUserPath(defaultsWorkspace));
+  }
+
+  const agents = listAgentEntries(cfg);
+  if (agents.length === 0) {
+    return null;
+  }
+
+  // Return the first agent's workspace
+  const firstWorkspace = agents[0]?.workspace?.trim();
+  if (!firstWorkspace) {
+    return null;
+  }
+  return stripNullBytes(resolveUserPath(firstWorkspace));
+}
+
+/** Upstream-compat: resolveAgentWorkspaceDirOrNull returns null when workspace cannot be resolved. */
+export function resolveAgentWorkspaceDirOrNull(
+  cfg: RemoteClawConfig,
+  agentId: string,
+): string | null {
+  const id = normalizeAgentId(agentId);
+  const entry = resolveAgentEntry(cfg, id);
+  if (!entry) {
+    return null;
+  }
+  const configured = entry.workspace?.trim();
+  if (!configured) {
+    return null;
+  }
+  try {
+    return stripNullBytes(resolveUserPath(configured));
+  } catch {
+    return null;
+  }
+}
+
+// ── Upstream-compat stubs (gutted in fork) ───────────────────────────
+
+/** Resolve per-agent runtime (fork-specific CLI runtime identifier). */
+export function resolveAgentRuntime(cfg: RemoteClawConfig, agentId: string): string | undefined {
+  const id = normalizeAgentId(agentId);
+  const entry = resolveAgentEntry(cfg, id);
+  const perAgent = entry?.runtime;
+  if (typeof perAgent === "string") {
+    return perAgent;
+  }
+  const defaultVal = (cfg.agents?.defaults as Record<string, unknown> | undefined)?.runtime;
+  if (typeof defaultVal === "string") {
+    return defaultVal;
+  }
+  return undefined;
+}
+
+/** Resolve per-agent runtime args (fork-specific CLI flags). */
+export function resolveAgentRuntimeArgs(
+  cfg: RemoteClawConfig,
+  agentId: string,
+): string[] | undefined {
+  const id = normalizeAgentId(agentId);
+  const entry = resolveAgentEntry(cfg, id);
+  const perAgent = (entry as Record<string, unknown> | undefined)?.runtimeArgs;
+  if (Array.isArray(perAgent)) {
+    return perAgent as string[];
+  }
+  const defaultVal = (cfg.agents?.defaults as Record<string, unknown> | undefined)?.runtimeArgs;
+  if (Array.isArray(defaultVal)) {
+    return defaultVal as string[];
+  }
+  return undefined;
+}
+
+/** Resolve per-agent runtime env (fork-specific CLI env vars). */
+export function resolveAgentRuntimeEnv(
+  cfg: RemoteClawConfig,
+  agentId: string,
+): Record<string, string> | undefined {
+  const id = normalizeAgentId(agentId);
+  const entry = resolveAgentEntry(cfg, id);
+  const perAgent = (entry as Record<string, unknown> | undefined)?.runtimeEnv;
+  if (perAgent && typeof perAgent === "object" && !Array.isArray(perAgent)) {
+    return perAgent as Record<string, string>;
+  }
+  const defaultVal = (cfg.agents?.defaults as Record<string, unknown> | undefined)?.runtimeEnv;
+  if (defaultVal && typeof defaultVal === "object" && !Array.isArray(defaultVal)) {
+    return defaultVal as Record<string, string>;
+  }
+  return undefined;
+}
+
+/** Stub: agent runtime-or-throw gutted in RemoteClaw fork. */
+export function resolveAgentRuntimeOrThrow(..._args: unknown[]): never {
+  throw new Error("resolveAgentRuntimeOrThrow is not available in RemoteClaw fork");
+}
+
+/** Resolve per-agent auth profile (fork-specific auth profile reference). */
+export function resolveAgentAuth(
+  cfg: RemoteClawConfig,
+  agentId: string,
+): string | string[] | false | undefined {
+  const id = normalizeAgentId(agentId);
+  const entry = resolveAgentEntry(cfg, id);
+  const perAgent = (entry as Record<string, unknown> | undefined)?.auth;
+  if (perAgent !== undefined) {
+    return perAgent as string | string[] | false;
+  }
+  const defaultVal = (cfg.agents?.defaults as Record<string, unknown> | undefined)?.auth;
+  if (defaultVal !== undefined) {
+    return defaultVal as string | string[] | false;
+  }
+  return undefined;
+}

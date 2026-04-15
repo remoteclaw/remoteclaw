@@ -1,10 +1,9 @@
 import fs from "node:fs/promises";
 import JSON5 from "json5";
-import { ensureAgentWorkspace } from "../agents/workspace.js";
+import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../agents/workspace.js";
 import { type RemoteClawConfig, createConfigIO, writeConfigFile } from "../config/config.js";
-import { formatConfigPath } from "../config/logging.js";
+import { formatConfigPath, logConfigUpdated } from "../config/logging.js";
 import { resolveSessionTranscriptsDirForAgent } from "../config/sessions.js";
-import { normalizeAgentId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { shortenHomePath } from "../utils.js";
@@ -38,23 +37,55 @@ export async function setupCommand(
   const configPath = io.configPath;
   const existingRaw = await readConfigFileRaw(configPath);
   const cfg = existingRaw.parsed;
+  const defaults = cfg.agents?.defaults ?? {};
 
-  if (!existingRaw.exists) {
-    await writeConfigFile(cfg);
-    runtime.log(`Wrote ${formatConfigPath(configPath)}`);
+  const workspace = desiredWorkspace ?? defaults.workspace ?? DEFAULT_AGENT_WORKSPACE_DIR;
+
+  const next: RemoteClawConfig = {
+    ...cfg,
+    agents: {
+      ...cfg.agents,
+      defaults: {
+        ...defaults,
+        workspace,
+      },
+    },
+    gateway: {
+      ...cfg.gateway,
+      mode: cfg.gateway?.mode ?? "local",
+    },
+  };
+
+  if (
+    !existingRaw.exists ||
+    defaults.workspace !== workspace ||
+    cfg.gateway?.mode !== next.gateway?.mode
+  ) {
+    await writeConfigFile(next);
+    if (!existingRaw.exists) {
+      runtime.log(`Wrote ${formatConfigPath(configPath)}`);
+    } else {
+      const updates: string[] = [];
+      if (defaults.workspace !== workspace) {
+        updates.push("set agents.defaults.workspace");
+      }
+      if (cfg.gateway?.mode !== next.gateway?.mode) {
+        updates.push("set gateway.mode");
+      }
+      const suffix = updates.length > 0 ? `(${updates.join(", ")})` : undefined;
+      logConfigUpdated(runtime, { path: configPath, suffix });
+    }
   } else {
     runtime.log(`Config OK: ${formatConfigPath(configPath)}`);
   }
 
-  if (desiredWorkspace) {
-    const ws = await ensureAgentWorkspace(desiredWorkspace);
-    runtime.log(`Workspace OK: ${shortenHomePath(ws.dir)}`);
-  }
+  const ws = await ensureAgentWorkspace({
+    dir: workspace,
+    ensureBootstrapFiles: !next.agents?.defaults?.skipBootstrap,
+  });
+  runtime.log(`Workspace OK: ${shortenHomePath(ws.dir)}`);
 
-  const firstAgentId = cfg.agents?.list?.[0]?.id;
-  if (firstAgentId) {
-    const sessionsDir = resolveSessionTranscriptsDirForAgent(normalizeAgentId(firstAgentId));
-    await fs.mkdir(sessionsDir, { recursive: true });
-    runtime.log(`Sessions OK: ${shortenHomePath(sessionsDir)}`);
-  }
+  const sessionsDir = resolveSessionTranscriptsDirForAgent("default");
+  await fs.mkdir(sessionsDir, { recursive: true });
+  runtime.log(`Sessions OK: ${shortenHomePath(sessionsDir)}`);
 }

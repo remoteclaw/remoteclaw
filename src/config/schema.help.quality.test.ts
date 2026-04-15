@@ -240,6 +240,7 @@ const TARGET_KEYS = [
   "talk.modelId",
   "talk.outputFormat",
   "talk.interruptOnSpeech",
+  "talk.silenceTimeoutMs",
   "meta",
   "env",
   "env.shellEnv",
@@ -312,6 +313,7 @@ const TARGET_KEYS = [
   "agents.defaults.compaction.qualityGuard.enabled",
   "agents.defaults.compaction.qualityGuard.maxRetries",
   "agents.defaults.compaction.postCompactionSections",
+  "agents.defaults.compaction.model",
   "agents.defaults.compaction.memoryFlush",
   "agents.defaults.compaction.memoryFlush.enabled",
   "agents.defaults.compaction.memoryFlush.softThresholdTokens",
@@ -343,7 +345,7 @@ const ENUM_EXPECTATIONS: Record<string, string[]> = {
   "gateway.bind": ['"auto"', '"lan"', '"loopback"', '"custom"', '"tailnet"'],
   "gateway.auth.mode": ['"none"', '"token"', '"password"', '"trusted-proxy"'],
   "gateway.tailscale.mode": ['"off"', '"serve"', '"funnel"'],
-  "browser.profiles.*.driver": ['"clawd"', '"extension"'],
+  "browser.profiles.*.driver": ['"openclaw"', '"clawd"', '"extension"'],
   "discovery.mdns.mode": ['"off"', '"minimal"', '"full"'],
   "wizard.lastRunMode": ['"local"', '"remote"'],
   "diagnostics.otel.protocol": ['"http/protobuf"', '"grpc"'],
@@ -702,6 +704,9 @@ describe("config help copy quality", () => {
     expect(/Session Startup|Red Lines/i.test(postCompactionSections)).toBe(true);
     expect(/Every Session|Safety/i.test(postCompactionSections)).toBe(true);
     expect(/\[\]|disable/i.test(postCompactionSections)).toBe(true);
+
+    const compactionModel = FIELD_HELP["agents.defaults.compaction.model"];
+    expect(/provider\/model|different model|primary agent model/i.test(compactionModel)).toBe(true);
 
     const flush = FIELD_HELP["agents.defaults.compaction.memoryFlush.enabled"];
     expect(/pre-compaction|memory flush|token/i.test(flush)).toBe(true);

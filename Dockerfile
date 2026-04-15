@@ -72,6 +72,10 @@ RUN pnpm build
 ENV REMOTECLAW_PREFER_PNPM=1
 RUN pnpm ui:build
 
+# ── Prune runtime dependencies ──────────────────────────────────
+FROM build AS runtime-assets
+RUN CI=true pnpm prune --prod
+
 # ── Runtime base images ─────────────────────────────────────────
 FROM ${REMOTECLAW_NODE_BOOKWORM_IMAGE} AS base-default
 ARG REMOTECLAW_NODE_BOOKWORM_DIGEST
@@ -108,7 +112,7 @@ RUN apt-get update && \
 RUN chown node:node /app
 
 COPY --from=build --chown=node:node /app/dist ./dist
-COPY --from=build --chown=node:node /app/node_modules ./node_modules
+COPY --from=runtime-assets --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/package.json .
 COPY --from=build --chown=node:node /app/remoteclaw.mjs .
 COPY --from=build --chown=node:node /app/extensions ./extensions
@@ -118,6 +122,7 @@ COPY --from=build --chown=node:node /app/docs ./docs
 # Docker live-test runners invoke `pnpm` inside the runtime image.
 # Activate the exact pinned package manager now so the container does not
 # rely on a first-run network fetch or missing shims under the non-root user.
+ENV COREPACK_HOME=/usr/local/share/corepack
 RUN corepack enable && \
     corepack prepare "$(node -p "require('./package.json').packageManager")" --activate
 

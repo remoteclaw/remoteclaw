@@ -17,3 +17,5 @@ export const resolveSandboxConfigForAgent = (cfg?: any, agentId?: string) => {
 };
 export const ensureSandboxWorkspaceForSession = (..._args: unknown[]) => undefined as any;
 export const resolveSandboxToolPolicyForAgent = (..._args: unknown[]) => undefined as any;
+export type SandboxToolPolicy = { deny?: string[]; allow?: string[]; [key: string]: unknown };
+export const resolveSandboxRuntimeStatus = (..._args: unknown[]) => undefined as any;

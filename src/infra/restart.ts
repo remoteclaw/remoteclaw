@@ -503,3 +503,6 @@ export const __testing = {
     clearPendingScheduledRestart();
   },
 };
+
+// Compat alias — pre-rebrand name still referenced by some test mocks.
+export const triggerOpenClawRestart = triggerRemoteClawRestart;

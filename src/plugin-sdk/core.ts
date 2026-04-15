@@ -11,7 +11,6 @@ export type { RemoteClawConfig } from "../config/config.js";
 export type { GatewayRequestHandlerOptions } from "../gateway/server-methods/types.js";
 
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
-export { buildOauthProviderAuthResult } from "./provider-auth-result.js";
 
 export {
   approveDevicePairing,

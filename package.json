@@ -118,10 +118,6 @@
       "types": "./dist/plugin-sdk/feishu.d.ts",
       "default": "./dist/plugin-sdk/feishu.js"
     },
-    "./plugin-sdk/google-gemini-cli-auth": {
-      "types": "./dist/plugin-sdk/google-gemini-cli-auth.d.ts",
-      "default": "./dist/plugin-sdk/google-gemini-cli-auth.js"
-    },
     "./plugin-sdk/googlechat": {
       "types": "./dist/plugin-sdk/googlechat.d.ts",
       "default": "./dist/plugin-sdk/googlechat.js"
@@ -146,18 +142,6 @@
       "types": "./dist/plugin-sdk/mattermost.d.ts",
       "default": "./dist/plugin-sdk/mattermost.js"
     },
-    "./plugin-sdk/memory-core": {
-      "types": "./dist/plugin-sdk/memory-core.d.ts",
-      "default": "./dist/plugin-sdk/memory-core.js"
-    },
-    "./plugin-sdk/memory-lancedb": {
-      "types": "./dist/plugin-sdk/memory-lancedb.d.ts",
-      "default": "./dist/plugin-sdk/memory-lancedb.js"
-    },
-    "./plugin-sdk/minimax-portal-auth": {
-      "types": "./dist/plugin-sdk/minimax-portal-auth.d.ts",
-      "default": "./dist/plugin-sdk/minimax-portal-auth.js"
-    },
     "./plugin-sdk/nextcloud-talk": {
       "types": "./dist/plugin-sdk/nextcloud-talk.d.ts",
       "default": "./dist/plugin-sdk/nextcloud-talk.js"
@@ -173,10 +157,6 @@
     "./plugin-sdk/phone-control": {
       "types": "./dist/plugin-sdk/phone-control.d.ts",
       "default": "./dist/plugin-sdk/phone-control.js"
-    },
-    "./plugin-sdk/qwen-portal-auth": {
-      "types": "./dist/plugin-sdk/qwen-portal-auth.d.ts",
-      "default": "./dist/plugin-sdk/qwen-portal-auth.js"
     },
     "./plugin-sdk/synology-chat": {
       "types": "./dist/plugin-sdk/synology-chat.d.ts",

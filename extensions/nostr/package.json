@@ -7,6 +7,11 @@
     "nostr-tools": "^2.23.3",
     "zod": "^4.3.6"
   },
+  "releaseChecks": {
+    "rootDependencyMirrorAllowlist": [
+      "nostr-tools"
+    ]
+  },
   "remoteclaw": {
     "extensions": [
       "./index.ts"

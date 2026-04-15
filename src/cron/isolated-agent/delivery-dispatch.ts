@@ -264,6 +264,26 @@ export async function dispatchCronDelivery(
         deliveryPayloads = [{ text: finalReply }];
       }
     }
+    // When no active descendants were observed but the message looks like an
+    // interim placeholder, try to read a descendant fallback reply that may
+    // have been written after the descendants finished.
+    if (
+      !hadActiveDescendants &&
+      !expectedSubagentFollowup &&
+      isLikelyInterimCronMessage(initialSynthesizedText) &&
+      synthesizedText.trim() === initialSynthesizedText
+    ) {
+      const fallbackReply = await readDescendantSubagentFallbackReply({
+        sessionKey: params.agentSessionKey,
+        runStartedAt: params.runStartedAt,
+      });
+      if (fallbackReply) {
+        outputText = fallbackReply;
+        summary = pickSummaryFromOutput(fallbackReply) ?? summary;
+        synthesizedText = fallbackReply;
+        deliveryPayloads = [{ text: fallbackReply }];
+      }
+    }
     if (activeSubagentRuns > 0) {
       // Parent orchestration is still in progress; avoid announcing a partial
       // update to the main requester.
@@ -430,11 +450,13 @@ export async function dispatchCronDelivery(
     } else {
       const announceResult = await deliverViaAnnounce(params.resolvedDelivery);
       if (announceResult) {
-        // If announce succeeded (delivered=true) or was suppressed by a non-delivery
-        // early return, return the result. When announce explicitly failed
-        // (delivered=false, deliveryAttempted=true), fall through to direct delivery
-        // as a last resort.
-        if (delivered || !deliveryAttempted) {
+        // If announce succeeded (delivered=true), was suppressed by a non-delivery
+        // early return (deliveryAttempted=true with no error), or hasn't attempted
+        // delivery at all, return the result.
+        // Only fall through to direct delivery when announce explicitly failed
+        // (deliveryAttempted=true, delivered=false, AND result carries an error).
+        const announceFailed = deliveryAttempted && !delivered && announceResult.error;
+        if (!announceFailed) {
           return {
             result: announceResult,
             delivered,

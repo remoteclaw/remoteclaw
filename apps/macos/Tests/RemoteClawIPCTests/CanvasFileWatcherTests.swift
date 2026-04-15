@@ -6,12 +6,12 @@ import Testing
 @Suite(.serialized) struct CanvasFileWatcherTests {
     private func makeTempDir() throws -> URL {
         let base = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-        let dir = base.appendingPathComponent("remoteclaw-canvaswatch-\(UUID().uuidString)", isDirectory: true)
+        let dir = base.appendingPathComponent("openclaw-canvaswatch-\(UUID().uuidString)", isDirectory: true)
         try FileManager().createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }
 
-    @Test func detectsInPlaceFileWrites() async throws {
+    @Test func `detects in place file writes`() async throws {
         let dir = try self.makeTempDir()
         defer { try? FileManager().removeItem(at: dir) }
 

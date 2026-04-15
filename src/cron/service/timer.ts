@@ -759,16 +759,34 @@ export async function runMissedJobs(
     if (missed.length === 0) {
       return [] as Array<{ jobId: string; job: CronJob }>;
     }
+
+    // Limit the number of missed jobs to run immediately on startup.
+    // Remaining jobs are deferred with staggered future run times.
+    const maxImmediate = state.deps.maxMissedJobsPerRestart ?? missed.length;
+    const staggerMs = state.deps.missedJobStaggerMs ?? 0;
+    const immediate = missed.slice(0, maxImmediate);
+    const deferred = missed.slice(maxImmediate);
+
+    if (deferred.length > 0 && staggerMs > 0) {
+      for (let i = 0; i < deferred.length; i++) {
+        const job = deferred[i];
+        if (job) {
+          job.state.runningAtMs = undefined;
+          job.state.nextRunAtMs = now + staggerMs * (i + 1);
+        }
+      }
+    }
+
     state.deps.log.info(
-      { count: missed.length, jobIds: missed.map((j) => j.id) },
+      { count: immediate.length, jobIds: immediate.map((j) => j.id) },
       "cron: running missed jobs after restart",
     );
-    for (const job of missed) {
+    for (const job of immediate) {
       job.state.runningAtMs = now;
       job.state.lastError = undefined;
     }
     await persist(state);
-    return missed.map((job) => ({ jobId: job.id, job }));
+    return immediate.map((job) => ({ jobId: job.id, job }));
   });
 
   if (startupCandidates.length === 0) {

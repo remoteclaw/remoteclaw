@@ -67,6 +67,15 @@ export function collectConfigEnvVars(cfg?: RemoteClawConfig): Record<string, str
   return collectConfigRuntimeEnvVars(cfg);
 }
 
+export function createConfigRuntimeEnv(
+  cfg: RemoteClawConfig,
+  baseEnv: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
+  const env = { ...baseEnv };
+  applyConfigEnvVars(cfg, env);
+  return env;
+}
+
 export function applyConfigEnvVars(
   cfg: RemoteClawConfig,
   env: NodeJS.ProcessEnv = process.env,

@@ -178,7 +178,6 @@ export async function getReplyFromConfig(
     model,
     typing,
     opts: resolvedOpts,
-    skillFilter: mergedSkillFilter,
   });
   if (directiveResult.kind === "reply") {
     return directiveResult.reply;
@@ -188,7 +187,6 @@ export async function getReplyFromConfig(
     commandSource,
     command,
     allowTextCommands,
-    skillCommands,
     directives,
     cleanedBody,
     elevatedEnabled,
@@ -254,7 +252,6 @@ export async function getReplyFromConfig(
     allowTextCommands,
     inlineStatusRequested,
     command,
-    skillCommands,
     directives,
     cleanedBody,
     elevatedEnabled,
@@ -270,7 +267,6 @@ export async function getReplyFromConfig(
     contextTokens: contextTokens ?? 0,
     directiveAck,
     abortedLastRun,
-    skillFilter: mergedSkillFilter,
   });
   if (inlineActionResult.kind === "reply") {
     await maybeEmitMissingResetHooks();

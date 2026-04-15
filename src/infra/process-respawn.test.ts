@@ -3,13 +3,13 @@ import { captureFullEnv } from "../test-utils/env.js";
 import { SUPERVISOR_HINT_ENV_VARS } from "./supervisor-markers.js";
 
 const spawnMock = vi.hoisted(() => vi.fn());
-const triggerRemoteClawRestartMock = vi.hoisted(() => vi.fn());
+const triggerOpenClawRestartMock = vi.hoisted(() => vi.fn());
 
 vi.mock("node:child_process", () => ({
   spawn: (...args: unknown[]) => spawnMock(...args),
 }));
 vi.mock("./restart.js", () => ({
-  triggerRemoteClawRestart: (...args: unknown[]) => triggerRemoteClawRestartMock(...args),
+  triggerRemoteClawRestart: (...args: unknown[]) => triggerOpenClawRestartMock(...args),
 }));
 
 import { restartGatewayProcessWithFreshPid } from "./process-respawn.js";
@@ -34,7 +34,7 @@ afterEach(() => {
   process.argv = [...originalArgv];
   process.execArgv = [...originalExecArgv];
   spawnMock.mockClear();
-  triggerRemoteClawRestartMock.mockClear();
+  triggerOpenClawRestartMock.mockClear();
   if (originalPlatformDescriptor) {
     Object.defineProperty(process, "platform", originalPlatformDescriptor);
   }
@@ -46,16 +46,15 @@ function clearSupervisorHints() {
   }
 }
 
-function expectLaunchdKickstartSupervised(params?: { launchJobLabel?: string }) {
+function expectLaunchdSupervisedWithoutKickstart(params?: { launchJobLabel?: string }) {
   setPlatform("darwin");
   if (params?.launchJobLabel) {
     process.env.LAUNCH_JOB_LABEL = params.launchJobLabel;
   }
   process.env.REMOTECLAW_LAUNCHD_LABEL = "org.remoteclaw.gateway";
-  triggerRemoteClawRestartMock.mockReturnValue({ ok: true, method: "launchctl" });
   const result = restartGatewayProcessWithFreshPid();
   expect(result.mode).toBe("supervised");
-  expect(triggerRemoteClawRestartMock).toHaveBeenCalledOnce();
+  expect(triggerOpenClawRestartMock).not.toHaveBeenCalled();
   expect(spawnMock).not.toHaveBeenCalled();
 }
 
@@ -67,35 +66,34 @@ describe("restartGatewayProcessWithFreshPid", () => {
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
-  it("returns supervised when launchd hints are present on macOS", () => {
+  it("returns supervised when launchd hints are present on macOS (no kickstart)", () => {
     clearSupervisorHints();
     setPlatform("darwin");
     process.env.LAUNCH_JOB_LABEL = "org.remoteclaw.gateway";
-    triggerRemoteClawRestartMock.mockReturnValue({ ok: true, method: "launchctl" });
     const result = restartGatewayProcessWithFreshPid();
     expect(result.mode).toBe("supervised");
-    expect(triggerRemoteClawRestartMock).toHaveBeenCalledOnce();
+    expect(triggerOpenClawRestartMock).not.toHaveBeenCalled();
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
-  it("runs launchd kickstart helper on macOS when launchd label is set", () => {
-    expectLaunchdKickstartSupervised({ launchJobLabel: "org.remoteclaw.gateway" });
+  it("returns supervised on macOS when launchd label is set (no kickstart)", () => {
+    expectLaunchdSupervisedWithoutKickstart({ launchJobLabel: "org.remoteclaw.gateway" });
   });
 
-  it("returns failed when launchd kickstart helper fails", () => {
+  it("launchd supervisor never returns failed regardless of triggerOpenClawRestart outcome", () => {
+    clearSupervisorHints();
     setPlatform("darwin");
-    process.env.LAUNCH_JOB_LABEL = "org.remoteclaw.gateway";
     process.env.REMOTECLAW_LAUNCHD_LABEL = "org.remoteclaw.gateway";
-    triggerRemoteClawRestartMock.mockReturnValue({
+    // Even if triggerOpenClawRestart *would* fail, launchd path must not call it.
+    triggerOpenClawRestartMock.mockReturnValue({
       ok: false,
       method: "launchctl",
-      detail: "spawn failed",
+      detail: "Bootstrap failed: 5: Input/output error",
     });
-
     const result = restartGatewayProcessWithFreshPid();
-
-    expect(result.mode).toBe("failed");
-    expect(result.detail).toContain("spawn failed");
+    expect(result.mode).toBe("supervised");
+    expect(result.mode).not.toBe("failed");
+    expect(triggerOpenClawRestartMock).not.toHaveBeenCalled();
   });
 
   it("does not schedule kickstart on non-darwin platforms", () => {
@@ -106,7 +104,17 @@ describe("restartGatewayProcessWithFreshPid", () => {
     const result = restartGatewayProcessWithFreshPid();
 
     expect(result.mode).toBe("supervised");
-    expect(triggerRemoteClawRestartMock).not.toHaveBeenCalled();
+    expect(triggerOpenClawRestartMock).not.toHaveBeenCalled();
+    expect(spawnMock).not.toHaveBeenCalled();
+  });
+
+  it("returns supervised when XPC_SERVICE_NAME is set by launchd", () => {
+    clearSupervisorHints();
+    setPlatform("darwin");
+    process.env.XPC_SERVICE_NAME = "org.remoteclaw.gateway";
+    const result = restartGatewayProcessWithFreshPid();
+    expect(result.mode).toBe("supervised");
+    expect(triggerOpenClawRestartMock).not.toHaveBeenCalled();
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
@@ -133,7 +141,7 @@ describe("restartGatewayProcessWithFreshPid", () => {
 
   it("returns supervised when REMOTECLAW_LAUNCHD_LABEL is set (stock launchd plist)", () => {
     clearSupervisorHints();
-    expectLaunchdKickstartSupervised();
+    expectLaunchdSupervisedWithoutKickstart();
   });
 
   it("returns supervised when REMOTECLAW_SYSTEMD_UNIT is set", () => {
@@ -150,10 +158,10 @@ describe("restartGatewayProcessWithFreshPid", () => {
     setPlatform("win32");
     process.env.REMOTECLAW_SERVICE_MARKER = "remoteclaw";
     process.env.REMOTECLAW_SERVICE_KIND = "gateway";
-    triggerRemoteClawRestartMock.mockReturnValue({ ok: true, method: "schtasks" });
+    triggerOpenClawRestartMock.mockReturnValue({ ok: true, method: "schtasks" });
     const result = restartGatewayProcessWithFreshPid();
     expect(result.mode).toBe("supervised");
-    expect(triggerRemoteClawRestartMock).toHaveBeenCalledOnce();
+    expect(triggerOpenClawRestartMock).toHaveBeenCalledOnce();
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
@@ -167,7 +175,7 @@ describe("restartGatewayProcessWithFreshPid", () => {
     const result = restartGatewayProcessWithFreshPid();
 
     expect(result).toEqual({ mode: "spawned", pid: 4242 });
-    expect(triggerRemoteClawRestartMock).not.toHaveBeenCalled();
+    expect(triggerOpenClawRestartMock).not.toHaveBeenCalled();
   });
 
   it("returns disabled on Windows without Scheduled Task markers", () => {
@@ -192,7 +200,7 @@ describe("restartGatewayProcessWithFreshPid", () => {
     const result = restartGatewayProcessWithFreshPid();
 
     expect(result.mode).toBe("disabled");
-    expect(triggerRemoteClawRestartMock).not.toHaveBeenCalled();
+    expect(triggerOpenClawRestartMock).not.toHaveBeenCalled();
     expect(spawnMock).not.toHaveBeenCalled();
   });
 

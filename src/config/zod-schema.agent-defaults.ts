@@ -105,6 +105,7 @@ export const AgentDefaultsSchema = z
           .strict()
           .optional(),
         postCompactionSections: z.array(z.string()).optional(),
+        model: z.string().optional(),
         memoryFlush: z
           .object({
             enabled: z.boolean().optional(),
@@ -187,7 +188,9 @@ export const AgentDefaultsSchema = z
     sandbox: AgentSandboxSchema,
     // Fork-specific CLI runtime fields (RemoteClaw middleware bridge)
     auth: z.union([z.string(), z.array(z.string()), z.literal(false)]).optional(),
-    runtime: z.string().optional(),
+    runtime: z
+      .union([z.literal("claude"), z.literal("gemini"), z.literal("codex"), z.literal("opencode")])
+      .optional(),
     runtimeArgs: z.array(z.string()).optional(),
     runtimeEnv: z.record(z.string(), z.string()).optional(),
   })

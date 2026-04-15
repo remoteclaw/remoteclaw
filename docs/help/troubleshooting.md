@@ -87,8 +87,8 @@ flowchart TD
   I --> I1[/Browser section/]
 ```
 
-<AccordionGroup>
-  <Accordion title="No replies">
+<details>
+<summary>No replies</summary>
     ```bash
     remoteclaw status
     remoteclaw gateway status
@@ -116,9 +116,10 @@ flowchart TD
     - [/channels/troubleshooting](/channels/troubleshooting)
     - [/channels/pairing](/channels/pairing)
 
-  </Accordion>
+</details>
 
-  <Accordion title="Dashboard or Control UI will not connect">
+<details>
+<summary>Dashboard or Control UI will not connect</summary>
     ```bash
     remoteclaw status
     remoteclaw gateway status
@@ -145,9 +146,10 @@ flowchart TD
     - [/web/control-ui](/web/control-ui)
     - [/gateway/authentication](/gateway/authentication)
 
-  </Accordion>
+</details>
 
-  <Accordion title="Gateway will not start or service installed but not running">
+<details>
+<summary>Gateway will not start or service installed but not running</summary>
     ```bash
     remoteclaw status
     remoteclaw gateway status
@@ -174,9 +176,10 @@ flowchart TD
     - [/gateway/background-process](/gateway/background-process)
     - [/gateway/configuration](/gateway/configuration)
 
-  </Accordion>
+</details>
 
-  <Accordion title="Channel connects but messages do not flow">
+<details>
+<summary>Channel connects but messages do not flow</summary>
     ```bash
     remoteclaw status
     remoteclaw gateway status
@@ -202,9 +205,10 @@ flowchart TD
     - [/gateway/troubleshooting#channel-connected-messages-not-flowing](/gateway/troubleshooting#channel-connected-messages-not-flowing)
     - [/channels/troubleshooting](/channels/troubleshooting)
 
-  </Accordion>
+</details>
 
-  <Accordion title="Cron or heartbeat did not fire or did not deliver">
+<details>
+<summary>Cron or heartbeat did not fire or did not deliver</summary>
     ```bash
     remoteclaw status
     remoteclaw gateway status
@@ -233,9 +237,10 @@ flowchart TD
     - [/automation/troubleshooting](/automation/troubleshooting)
     - [/gateway/heartbeat](/gateway/heartbeat)
 
-  </Accordion>
+</details>
 
-  <Accordion title="Node is paired but tool fails camera canvas screen exec">
+<details>
+<summary>Node is paired but tool fails camera canvas screen exec</summary>
     ```bash
     remoteclaw status
     remoteclaw gateway status
@@ -263,9 +268,10 @@ flowchart TD
     - [/nodes/troubleshooting](/nodes/troubleshooting)
     - [/tools/exec-approvals](/tools/exec-approvals)
 
-  </Accordion>
+</details>
 
-  <Accordion title="Browser tool fails">
+<details>
+<summary>Browser tool fails</summary>
     ```bash
     remoteclaw status
     remoteclaw gateway status
@@ -290,7 +296,7 @@ flowchart TD
 
     - [/gateway/troubleshooting#browser-tool-fails](/gateway/troubleshooting#browser-tool-fails)
     - [/tools/browser-linux-troubleshooting](/tools/browser-linux-troubleshooting)
+    - [/tools/browser-wsl2-windows-remote-cdp-troubleshooting](/tools/browser-wsl2-windows-remote-cdp-troubleshooting)
     - [/tools/chrome-extension](/tools/chrome-extension)
 
-  </Accordion>
-</AccordionGroup>
+</details>

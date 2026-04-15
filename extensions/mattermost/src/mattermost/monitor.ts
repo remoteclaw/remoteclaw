@@ -19,6 +19,7 @@ import {
   DEFAULT_GROUP_HISTORY_LIMIT,
   recordPendingHistoryEntryIfEnabled,
   isDangerousNameMatchingEnabled,
+  parseStrictPositiveInteger,
   registerPluginHttpRoute,
   resolveControlCommandGate,
   readStoreAllowFromForDmPolicy,
@@ -27,10 +28,8 @@ import {
   resolveDefaultGroupPolicy,
   resolveChannelMediaMaxBytes,
   warnMissingProviderGroupPolicyFallbackOnce,
-  listSkillCommandsForAgents,
   type HistoryEntry,
 } from "remoteclaw/plugin-sdk/mattermost";
-import { parseStrictPositiveInteger } from "../../../../src/infra/parse-finite-number.js";
 import { getMattermostRuntime } from "../runtime.js";
 import { resolveMattermostAccount } from "./accounts.js";
 import {
@@ -271,6 +270,17 @@ export function evaluateMattermostMentionGate(
     dropReason: null,
   };
 }
+
+export function resolveMattermostReplyRootId(params: {
+  threadRootId?: string;
+  replyToId?: string;
+}): string | undefined {
+  const threadRootId = params.threadRootId?.trim();
+  if (threadRootId) {
+    return threadRootId;
+  }
+  return params.replyToId?.trim() || undefined;
+}
 type MattermostMediaInfo = {
   path: string;
   contentType?: string;
@@ -378,26 +388,6 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
       const commandsToRegister: import("./slash-commands.js").MattermostCommandSpec[] = [
         ...DEFAULT_COMMAND_SPECS,
       ];
-
-      if (slashConfig.nativeSkills === true) {
-        try {
-          const skillCommands = listSkillCommandsForAgents({ cfg: cfg as any });
-          for (const spec of skillCommands) {
-            const name = typeof spec.name === "string" ? spec.name.trim() : "";
-            if (!name) continue;
-            const trigger = name.startsWith("oc_") ? name : `oc_${name}`;
-            commandsToRegister.push({
-              trigger,
-              description: spec.description || `Run skill ${name}`,
-              autoComplete: true,
-              autoCompleteHint: "[args]",
-              originalName: name,
-            });
-          }
-        } catch (err) {
-          runtime.error?.(`mattermost: failed to list skill commands: ${String(err)}`);
-        }
-      }
 
       // Deduplicate by trigger
       const seen = new Set<string>();
@@ -1651,7 +1641,10 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
               }
               await sendMessageMattermost(to, chunk, {
                 accountId: account.accountId,
-                replyToId: threadRootId,
+                replyToId: resolveMattermostReplyRootId({
+                  threadRootId,
+                  replyToId: payload.replyToId,
+                }),
               });
             }
           } else {
@@ -1662,7 +1655,10 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
               await sendMessageMattermost(to, caption, {
                 accountId: account.accountId,
                 mediaUrl,
-                replyToId: threadRootId,
+                replyToId: resolveMattermostReplyRootId({
+                  threadRootId,
+                  replyToId: payload.replyToId,
+                }),
               });
             }
           }

@@ -84,13 +84,13 @@ enum ExecAsk: String, CaseIterable, Codable, Identifiable {
     }
 }
 
-enum ExecApprovalDecision: String, Codable, Sendable {
+enum ExecApprovalDecision: String, Codable {
     case allowOnce = "allow-once"
     case allowAlways = "allow-always"
     case deny
 }
 
-enum ExecAllowlistPatternValidationReason: String, Codable, Sendable, Equatable {
+enum ExecAllowlistPatternValidationReason: String, Codable, Equatable {
     case empty
     case missingPathComponent
 
@@ -104,12 +104,12 @@ enum ExecAllowlistPatternValidationReason: String, Codable, Sendable, Equatable 
     }
 }
 
-enum ExecAllowlistPatternValidation: Sendable, Equatable {
+enum ExecAllowlistPatternValidation: Equatable {
     case valid(String)
     case invalid(ExecAllowlistPatternValidationReason)
 }
 
-struct ExecAllowlistRejectedEntry: Sendable, Equatable {
+struct ExecAllowlistRejectedEntry: Equatable {
     let id: UUID
     let pattern: String
     let reason: ExecAllowlistPatternValidationReason
@@ -220,7 +220,7 @@ struct ExecApprovalsResolvedDefaults {
 }
 
 enum ExecApprovalsStore {
-    private static let logger = Logger(subsystem: "org.remoteclaw", category: "exec-approvals")
+    private static let logger = Logger(subsystem: "ai.openclaw", category: "exec-approvals")
     private static let defaultAgentId = "main"
     private static let defaultSecurity: ExecSecurity = .deny
     private static let defaultAsk: ExecAsk = .onMiss
@@ -753,7 +753,7 @@ enum ExecApprovalHelpers {
     }
 }
 
-struct ExecEventPayload: Codable, Sendable {
+struct ExecEventPayload: Codable {
     var sessionKey: String
     var runId: String
     var host: String

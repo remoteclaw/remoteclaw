@@ -4,9 +4,9 @@ import RemoteClawKit
 import RemoteClawProtocol
 import OSLog
 
-private let gatewayConnectionLogger = Logger(subsystem: "org.remoteclaw", category: "gateway.connection")
+private let gatewayConnectionLogger = Logger(subsystem: "ai.openclaw", category: "gateway.connection")
 
-enum GatewayAgentChannel: String, Codable, CaseIterable, Sendable {
+enum GatewayAgentChannel: String, Codable, CaseIterable {
     case last
     case whatsapp
     case telegram
@@ -33,7 +33,7 @@ enum GatewayAgentChannel: String, Codable, CaseIterable, Sendable {
     }
 }
 
-struct GatewayAgentInvocation: Sendable {
+struct GatewayAgentInvocation {
     var message: String
     var sessionKey: String = "main"
     var thinking: String?
@@ -53,7 +53,7 @@ actor GatewayConnection {
 
     typealias Config = (url: URL, token: String?, password: String?)
 
-    enum Method: String, Sendable {
+    enum Method: String {
         case agent
         case status
         case setHeartbeats = "set-heartbeats"
@@ -73,10 +73,14 @@ actor GatewayConnection {
         case webLoginStart = "web.login.start"
         case webLoginWait = "web.login.wait"
         case channelsLogout = "channels.logout"
+        case modelsList = "models.list"
         case chatHistory = "chat.history"
         case sessionsPreview = "sessions.preview"
         case chatSend = "chat.send"
         case chatAbort = "chat.abort"
+        case skillsStatus = "skills.status"
+        case skillsInstall = "skills.install"
+        case skillsUpdate = "skills.update"
         case voicewakeGet = "voicewake.get"
         case voicewakeSet = "voicewake.set"
         case nodePairApprove = "node.pair.approve"
@@ -105,6 +109,44 @@ actor GatewayConnection {
 
     private var subscribers: [UUID: AsyncStream<GatewayPush>.Continuation] = [:]
     private var lastSnapshot: HelloOk?
+
+    private struct LossyDecodable<Value: Decodable>: Decodable {
+        let value: Value?
+
+        init(from decoder: Decoder) throws {
+            do {
+                self.value = try Value(from: decoder)
+            } catch {
+                self.value = nil
+            }
+        }
+    }
+
+    private struct LossyCronListResponse: Decodable {
+        let jobs: [LossyDecodable<CronJob>]
+
+        enum CodingKeys: String, CodingKey {
+            case jobs
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.jobs = try container.decodeIfPresent([LossyDecodable<CronJob>].self, forKey: .jobs) ?? []
+        }
+    }
+
+    private struct LossyCronRunsResponse: Decodable {
+        let entries: [LossyDecodable<CronRunLogEntry>]
+
+        enum CodingKeys: String, CodingKey {
+            case entries
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.entries = try container.decodeIfPresent([LossyDecodable<CronRunLogEntry>].self, forKey: .entries) ?? []
+        }
+    }
 
     init(
         configProvider: @escaping @Sendable () async throws -> Config = GatewayConnection.defaultConfigProvider,
@@ -386,9 +428,9 @@ actor GatewayConnection {
 // MARK: - Typed gateway API
 
 extension GatewayConnection {
-    struct ConfigGetSnapshot: Decodable, Sendable {
-        struct SnapshotConfig: Decodable, Sendable {
-            struct Session: Decodable, Sendable {
+    struct ConfigGetSnapshot: Decodable {
+        struct SnapshotConfig: Decodable {
+            struct Session: Decodable {
                 let mainKey: String?
                 let scope: String?
             }
@@ -505,6 +547,42 @@ extension GatewayConnection {
     func healthOK(timeoutMs: Int = 8000) async throws -> Bool {
         let data = try await self.requestRaw(method: .health, timeoutMs: Double(timeoutMs))
         return (try? self.decoder.decode(RemoteClawGatewayHealthOK.self, from: data))?.ok ?? true
+    }
+
+    // MARK: - Skills
+
+    func skillsStatus() async throws -> SkillsStatusReport {
+        try await self.requestDecoded(method: .skillsStatus)
+    }
+
+    func skillsInstall(
+        name: String,
+        installId: String,
+        timeoutMs: Int? = nil) async throws -> SkillInstallResult
+    {
+        var params: [String: AnyCodable] = [
+            "name": AnyCodable(name),
+            "installId": AnyCodable(installId),
+        ]
+        if let timeoutMs {
+            params["timeoutMs"] = AnyCodable(timeoutMs)
+        }
+        return try await self.requestDecoded(method: .skillsInstall, params: params)
+    }
+
+    func skillsUpdate(
+        skillKey: String,
+        enabled: Bool? = nil,
+        apiKey: String? = nil,
+        env: [String: String]? = nil) async throws -> SkillUpdateResult
+    {
+        var params: [String: AnyCodable] = [
+            "skillKey": AnyCodable(skillKey),
+        ]
+        if let enabled { params["enabled"] = AnyCodable(enabled) }
+        if let apiKey { params["apiKey"] = AnyCodable(apiKey) }
+        if let env, !env.isEmpty { params["env"] = AnyCodable(env) }
+        return try await self.requestDecoded(method: .skillsUpdate, params: params)
     }
 
     // MARK: - Sessions
@@ -651,7 +729,7 @@ extension GatewayConnection {
 
     // MARK: - Cron
 
-    struct CronSchedulerStatus: Decodable, Sendable {
+    struct CronSchedulerStatus: Decodable {
         let enabled: Bool
         let storePath: String
         let jobs: Int
@@ -663,17 +741,17 @@ extension GatewayConnection {
     }
 
     func cronList(includeDisabled: Bool = true) async throws -> [CronJob] {
-        let res: CronListResponse = try await self.requestDecoded(
+        let data = try await self.requestRaw(
             method: .cronList,
             params: ["includeDisabled": AnyCodable(includeDisabled)])
-        return res.jobs
+        return try Self.decodeCronListResponse(data)
     }
 
     func cronRuns(jobId: String, limit: Int = 200) async throws -> [CronRunLogEntry] {
-        let res: CronRunsResponse = try await self.requestDecoded(
+        let data = try await self.requestRaw(
             method: .cronRuns,
             params: ["id": AnyCodable(jobId), "limit": AnyCodable(limit)])
-        return res.entries
+        return try Self.decodeCronRunsResponse(data)
     }
 
     func cronRun(jobId: String, force: Bool = true) async throws {
@@ -698,5 +776,25 @@ extension GatewayConnection {
 
     func cronAdd(payload: [String: AnyCodable]) async throws {
         try await self.requestVoid(method: .cronAdd, params: payload)
+    }
+
+    nonisolated static func decodeCronListResponse(_ data: Data) throws -> [CronJob] {
+        let decoded = try JSONDecoder().decode(LossyCronListResponse.self, from: data)
+        let jobs = decoded.jobs.compactMap(\.value)
+        let skipped = decoded.jobs.count - jobs.count
+        if skipped > 0 {
+            gatewayConnectionLogger.warning("cron.list skipped \(skipped, privacy: .public) malformed jobs")
+        }
+        return jobs
+    }
+
+    nonisolated static func decodeCronRunsResponse(_ data: Data) throws -> [CronRunLogEntry] {
+        let decoded = try JSONDecoder().decode(LossyCronRunsResponse.self, from: data)
+        let entries = decoded.entries.compactMap(\.value)
+        let skipped = decoded.entries.count - entries.count
+        if skipped > 0 {
+            gatewayConnectionLogger.warning("cron.runs skipped \(skipped, privacy: .public) malformed entries")
+        }
+        return entries
     }
 }

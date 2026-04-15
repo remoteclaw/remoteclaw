@@ -2,7 +2,7 @@
  * Twitch channel plugin types.
  *
  * This file defines Twitch-specific types. Generic channel types are imported
- * from RemoteClaw core.
+ * from OpenClaw core.
  */
 
 import type {
@@ -19,10 +19,10 @@ import type {
   ChannelResolveKind,
   ChannelResolveResult,
   ChannelStatusAdapter,
-  OutboundDeliveryResult,
   RemoteClawConfig,
+  OutboundDeliveryResult,
   RuntimeEnv,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/twitch";
 
 // ============================================================================
 // Twitch-Specific Types

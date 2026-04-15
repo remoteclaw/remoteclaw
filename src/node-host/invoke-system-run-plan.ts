@@ -835,6 +835,17 @@ function requiresStableInterpreterApprovalBindingWithShellCommand(params: {
   if ((POSIX_SHELL_WRAPPERS as ReadonlySet<string>).has(executable)) {
     return false;
   }
+  // bun and deno subcommands that are NOT file-based do not require stable
+  // binding — there is no mutable file operand to snapshot.
+  if (executable === "bun" || executable === "deno") {
+    // Re-check the same file operand index logic: if bun/deno has no file
+    // operand (e.g. `bun run <pkg-script>`, `deno eval ...`), the command
+    // is a package-manager or eval invocation — not a mutable script.
+    const fileIndex = resolveMutableFileOperandIndex(params.argv, params.cwd);
+    if (fileIndex === null) {
+      return false;
+    }
+  }
   return isMutableScriptRunner(executable);
 }
 

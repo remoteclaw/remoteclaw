@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 import OSLog
 
-enum VoiceWakeChime: Codable, Equatable, Sendable {
+enum VoiceWakeChime: Codable, Equatable {
     case none
     case system(name: String)
     case custom(displayName: String, bookmark: Data)
@@ -43,7 +43,7 @@ enum VoiceWakeChimeCatalog {
 
 @MainActor
 enum VoiceWakeChimePlayer {
-    private static let logger = Logger(subsystem: "org.remoteclaw", category: "voicewake.chime")
+    private static let logger = Logger(subsystem: "ai.openclaw", category: "voicewake.chime")
     private static var lastSound: NSSound?
 
     static func play(_ chime: VoiceWakeChime, reason: String? = nil) {

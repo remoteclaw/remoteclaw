@@ -9,6 +9,13 @@
     "@urbit/aura": "^3.0.0",
     "zod": "^4.3.6"
   },
+  "releaseChecks": {
+    "rootDependencyMirrorAllowlist": [
+      "@tloncorp/api",
+      "@tloncorp/tlon-skill",
+      "@urbit/aura"
+    ]
+  },
   "remoteclaw": {
     "extensions": [
       "./index.ts"

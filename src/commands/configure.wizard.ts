@@ -109,8 +109,8 @@ async function runGatewayHealthCheck(params: {
     note(
       [
         "Docs:",
-        "https://docs.remoteclaw.ai/gateway/health",
-        "https://docs.remoteclaw.ai/gateway/troubleshooting",
+        "https://docs.remoteclaw.org/gateway/health",
+        "https://docs.remoteclaw.org/gateway/troubleshooting",
       ].join("\n"),
       "Health check help",
     );
@@ -188,14 +188,17 @@ async function promptWebToolsConfig(
     if (stored && SEARCH_PROVIDER_OPTIONS.some((e) => e.value === stored)) {
       return stored;
     }
-    return SEARCH_PROVIDER_OPTIONS.find((e) => hasKeyForProvider(e.value))?.value ?? "perplexity";
+    return (
+      SEARCH_PROVIDER_OPTIONS.find((e) => hasKeyForProvider(e.value))?.value ??
+      SEARCH_PROVIDER_OPTIONS[0].value
+    );
   })();
 
   note(
     [
       "Web search lets your agent look things up online using the `web_search` tool.",
       "Choose a provider and paste your API key.",
-      "Docs: https://docs.remoteclaw.ai/tools/web",
+      "Docs: https://docs.remoteclaw.org/tools/web",
     ].join("\n"),
     "Web search",
   );
@@ -267,7 +270,7 @@ async function promptWebToolsConfig(
           "No key stored yet — web_search won't work until a key is available.",
           `Store a key here or set ${envVarNames} in the Gateway environment.`,
           `Get your API key at: ${entry.signupUrl}`,
-          "Docs: https://docs.remoteclaw.ai/tools/web",
+          "Docs: https://docs.remoteclaw.org/tools/web",
         ].join("\n"),
         "Web search",
       );
@@ -320,7 +323,7 @@ export async function runConfigureWizard(
           [
             ...snapshot.issues.map((iss) => `- ${iss.path}: ${iss.message}`),
             "",
-            "Docs: https://docs.remoteclaw.ai/gateway/configuration",
+            "Docs: https://docs.remoteclaw.org/gateway/configuration",
           ].join("\n"),
           "Config issues",
         );
@@ -686,7 +689,7 @@ export async function runConfigureWizard(
         `Web UI: ${links.httpUrl}`,
         `Gateway WS: ${links.wsUrl}`,
         gatewayStatusLine,
-        "Docs: https://docs.remoteclaw.ai/web/control-ui",
+        "Docs: https://docs.remoteclaw.org/web/control-ui",
       ].join("\n"),
       "Control UI",
     );

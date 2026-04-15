@@ -5,15 +5,15 @@ import Testing
 @Suite(.serialized)
 @MainActor
 struct CLIInstallerTests {
-    @Test func installedLocationFindsExecutable() throws {
+    @Test func `installed location finds executable`() throws {
         let fm = FileManager()
         let root = fm.temporaryDirectory.appendingPathComponent(
-            "remoteclaw-cli-installer-\(UUID().uuidString)")
+            "openclaw-cli-installer-\(UUID().uuidString)")
         defer { try? fm.removeItem(at: root) }
 
         let binDir = root.appendingPathComponent("bin")
         try fm.createDirectory(at: binDir, withIntermediateDirectories: true)
-        let cli = binDir.appendingPathComponent("remoteclaw")
+        let cli = binDir.appendingPathComponent("openclaw")
         fm.createFile(atPath: cli.path, contents: Data())
         try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: cli.path)
 

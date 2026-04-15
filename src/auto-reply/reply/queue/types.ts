@@ -1,5 +1,6 @@
 import type { RemoteClawConfig } from "../../../config/config.js";
 import type { SessionEntry } from "../../../config/sessions.js";
+import type { InputProvenance } from "../../../sessions/input-provenance.js";
 import type { OriginatingChannelType } from "../../templating.js";
 import type { VerboseLevel } from "../directives.js";
 
@@ -63,6 +64,7 @@ export type FollowupRun = {
     timeoutMs: number;
     blockReplyBreak: "text_end" | "message_end";
     ownerNumbers?: string[];
+    inputProvenance?: InputProvenance;
     extraSystemPrompt?: string;
     threadContext?: string;
     enforceFinalTag?: boolean;

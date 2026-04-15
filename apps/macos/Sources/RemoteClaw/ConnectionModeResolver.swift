@@ -1,13 +1,13 @@
 import Foundation
 
-enum EffectiveConnectionModeSource: Sendable, Equatable {
+enum EffectiveConnectionModeSource: Equatable {
     case configMode
     case configRemoteURL
     case userDefaults
     case onboarding
 }
 
-struct EffectiveConnectionMode: Sendable, Equatable {
+struct EffectiveConnectionMode: Equatable {
     let mode: AppState.ConnectionMode
     let source: EffectiveConnectionModeSource
 }
@@ -43,7 +43,7 @@ enum ConnectionModeResolver {
             return EffectiveConnectionMode(mode: storedMode, source: .userDefaults)
         }
 
-        let seen = defaults.bool(forKey: "remoteclaw.onboardingSeen")
+        let seen = defaults.bool(forKey: "openclaw.onboardingSeen")
         return EffectiveConnectionMode(mode: seen ? .local : .unconfigured, source: .onboarding)
     }
 }

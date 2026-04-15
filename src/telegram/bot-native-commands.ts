@@ -13,7 +13,6 @@ import {
 } from "../auto-reply/commands-registry.js";
 import { finalizeInboundContext } from "../auto-reply/reply/inbound-context.js";
 import { dispatchReplyWithBufferedBlockDispatcher } from "../auto-reply/reply/provider-dispatcher.js";
-import { listSkillCommandsForAgents } from "../auto-reply/skill-commands.js";
 import { resolveCommandAuthorizedFromAuthorizers } from "../channels/command-gating.js";
 import { resolveNativeCommandSessionTargets } from "../channels/native-command-session-targets.js";
 import { createReplyPrefixOptions } from "../channels/reply-prefix.js";
@@ -41,7 +40,6 @@ import {
   getPluginCommandSpecs,
   matchPluginCommand,
 } from "../plugins/commands.js";
-import { resolveAgentRoute } from "../routing/resolve-route.js";
 import { resolveThreadSessionKeys } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
@@ -353,26 +351,12 @@ export const registerTelegramNativeCommands = ({
   textLimit,
   useAccessGroups,
   nativeEnabled,
-  nativeSkillsEnabled,
   nativeDisabledExplicit,
   resolveGroupPolicy,
   resolveTelegramGroupConfig,
   shouldSkipUpdate,
   opts,
 }: RegisterTelegramNativeCommandsParams) => {
-  const boundRoute =
-    nativeEnabled && nativeSkillsEnabled
-      ? resolveAgentRoute({ cfg, channel: "telegram", accountId })
-      : null;
-  if (nativeEnabled && nativeSkillsEnabled && !boundRoute) {
-    runtime.log?.(
-      "nativeSkillsEnabled is true but no agent route is bound for this Telegram account; skill commands will not appear in the native menu.",
-    );
-  }
-  const skillCommands =
-    nativeEnabled && nativeSkillsEnabled && boundRoute
-      ? listSkillCommandsForAgents({ cfg, agentIds: [boundRoute.agentId] })
-      : [];
   const nativeCommands = nativeEnabled
     ? listNativeCommandSpecsForConfig(cfg, {
         provider: "telegram",
@@ -381,9 +365,6 @@ export const registerTelegramNativeCommands = ({
   const reservedCommands = new Set(
     listNativeCommandSpecs().map((command) => normalizeTelegramCommandName(command.name)),
   );
-  for (const command of skillCommands) {
-    reservedCommands.add(command.name.toLowerCase());
-  }
   const customResolution = resolveTelegramCustomCommands({
     commands: telegramCfg.customCommands,
     reservedCommands,

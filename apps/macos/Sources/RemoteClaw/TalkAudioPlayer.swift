@@ -6,7 +6,7 @@ import OSLog
 final class TalkAudioPlayer: NSObject, @preconcurrency AVAudioPlayerDelegate {
     static let shared = TalkAudioPlayer()
 
-    private let logger = Logger(subsystem: "org.remoteclaw", category: "talk.tts")
+    private let logger = Logger(subsystem: "ai.openclaw", category: "talk.tts")
     private var player: AVAudioPlayer?
     private var playback: Playback?
 
@@ -152,7 +152,7 @@ final class TalkAudioPlayer: NSObject, @preconcurrency AVAudioPlayerDelegate {
     }
 }
 
-struct TalkPlaybackResult: Sendable {
+struct TalkPlaybackResult {
     let finished: Bool
     let interruptedAt: Double?
 }

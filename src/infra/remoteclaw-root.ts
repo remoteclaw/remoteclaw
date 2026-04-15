@@ -116,7 +116,11 @@ function buildCandidates(opts: { cwd?: string; argv1?: string; moduleUrl?: strin
   const candidates: string[] = [];
 
   if (opts.moduleUrl) {
-    candidates.push(path.dirname(fileURLToPath(opts.moduleUrl)));
+    try {
+      candidates.push(path.dirname(fileURLToPath(opts.moduleUrl)));
+    } catch {
+      // moduleUrl is not a valid file:// URL — skip this candidate.
+    }
   }
   if (opts.argv1) {
     candidates.push(...candidateDirsFromArgv1(opts.argv1));

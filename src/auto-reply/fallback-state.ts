@@ -9,3 +9,6 @@ export function buildFallbackNotice(..._args: unknown[]): string | undefined {
 export function resolveFallbackTransition(..._args: unknown[]): any {
   return {};
 }
+export function resolveActiveFallbackState(..._args: unknown[]): any {
+  return undefined;
+}

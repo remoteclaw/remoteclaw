@@ -1,7 +1,7 @@
 import Foundation
 import RemoteClawKit
 
-struct WideAreaGatewayBeacon: Sendable, Equatable {
+struct WideAreaGatewayBeacon: Equatable {
     var instanceName: String
     var displayName: String
     var host: String
@@ -19,7 +19,7 @@ enum WideAreaGatewayDiscovery {
     private static let defaultTimeoutSeconds: TimeInterval = 0.2
     private static let nameserverProbeConcurrency = 6
 
-    struct DiscoveryContext: Sendable {
+    struct DiscoveryContext {
         var tailscaleStatus: @Sendable () -> String?
         var dig: @Sendable (_ args: [String], _ timeout: TimeInterval) -> String?
 
@@ -52,7 +52,7 @@ enum WideAreaGatewayDiscovery {
 
         guard let domain = RemoteClawBonjour.wideAreaGatewayServiceDomain else { return [] }
         let domainTrimmed = domain.trimmingCharacters(in: CharacterSet(charactersIn: "."))
-        let probeName = "_remoteclaw-gw._tcp.\(domainTrimmed)"
+        let probeName = "_openclaw-gw._tcp.\(domainTrimmed)"
         guard let ptrLines = context.dig(
             ["+short", "+time=1", "+tries=1", "@\(nameserver)", probeName, "PTR"],
             min(defaultTimeoutSeconds, remaining()))?.split(whereSeparator: \.isNewline),
@@ -66,7 +66,7 @@ enum WideAreaGatewayDiscovery {
             let ptr = raw.trimmingCharacters(in: .whitespacesAndNewlines)
             if ptr.isEmpty { continue }
             let ptrName = ptr.hasSuffix(".") ? String(ptr.dropLast()) : ptr
-            let suffix = "._remoteclaw-gw._tcp.\(domainTrimmed)"
+            let suffix = "._openclaw-gw._tcp.\(domainTrimmed)"
             let rawInstanceName = ptrName.hasSuffix(suffix)
                 ? String(ptrName.dropLast(suffix.count))
                 : ptrName
@@ -155,7 +155,7 @@ enum WideAreaGatewayDiscovery {
     {
         guard let domain = RemoteClawBonjour.wideAreaGatewayServiceDomain else { return nil }
         let domainTrimmed = domain.trimmingCharacters(in: CharacterSet(charactersIn: "."))
-        let probeName = "_remoteclaw-gw._tcp.\(domainTrimmed)"
+        let probeName = "_openclaw-gw._tcp.\(domainTrimmed)"
 
         let ips = candidates
         candidates.removeAll(keepingCapacity: true)

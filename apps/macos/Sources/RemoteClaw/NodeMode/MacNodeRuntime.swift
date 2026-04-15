@@ -6,6 +6,7 @@ import RemoteClawKit
 actor MacNodeRuntime {
     private let cameraCapture = CameraCaptureService()
     private let makeMainActorServices: () async -> any MacNodeRuntimeMainActorServices
+    private let browserProxyRequest: @Sendable (String?) async throws -> String
     private var cachedMainActorServices: (any MacNodeRuntimeMainActorServices)?
     private var mainSessionKey: String = "main"
     private var eventSender: (@Sendable (String, String?) async -> Void)?
@@ -13,9 +14,13 @@ actor MacNodeRuntime {
     init(
         makeMainActorServices: @escaping () async -> any MacNodeRuntimeMainActorServices = {
             await MainActor.run { LiveMacNodeRuntimeMainActorServices() }
+        },
+        browserProxyRequest: @escaping @Sendable (String?) async throws -> String = { paramsJSON in
+            try await MacNodeBrowserProxy.shared.request(paramsJSON: paramsJSON)
         })
     {
         self.makeMainActorServices = makeMainActorServices
+        self.browserProxyRequest = browserProxyRequest
     }
 
     func updateMainSessionKey(_ sessionKey: String) {
@@ -50,6 +55,8 @@ actor MacNodeRuntime {
                  RemoteClawCanvasA2UICommand.push.rawValue,
                  RemoteClawCanvasA2UICommand.pushJSONL.rawValue:
                 return try await self.handleA2UIInvoke(req)
+            case RemoteClawBrowserCommand.proxy.rawValue:
+                return try await self.handleBrowserProxyInvoke(req)
             case RemoteClawCameraCommand.snap.rawValue,
                  RemoteClawCameraCommand.clip.rawValue,
                  RemoteClawCameraCommand.list.rawValue:
@@ -163,6 +170,19 @@ actor MacNodeRuntime {
         default:
             Self.errorResponse(req, code: .invalidRequest, message: "INVALID_REQUEST: unknown command")
         }
+    }
+
+    private func handleBrowserProxyInvoke(_ req: BridgeInvokeRequest) async throws -> BridgeInvokeResponse {
+        guard RemoteClawConfigFile.browserControlEnabled() else {
+            return BridgeInvokeResponse(
+                id: req.id,
+                ok: false,
+                error: RemoteClawNodeError(
+                    code: .unavailable,
+                    message: "BROWSER_DISABLED: enable Browser in Settings"))
+        }
+        let payloadJSON = try await self.browserProxyRequest(req.paramsJSON)
+        return BridgeInvokeResponse(id: req.id, ok: true, payloadJSON: payloadJSON)
     }
 
     private func handleCameraInvoke(_ req: BridgeInvokeRequest) async throws -> BridgeInvokeResponse {
@@ -345,8 +365,8 @@ actor MacNodeRuntime {
         let sessionKey = self.mainSessionKey
         let json = try await CanvasManager.shared.eval(sessionKey: sessionKey, javaScript: """
         (() => {
-          const host = globalThis.remoteclawA2UI;
-          if (!host) return JSON.stringify({ ok: false, error: "missing remoteclawA2UI" });
+          const host = globalThis.remoteClawA2UI;
+          if (!host) return JSON.stringify({ ok: false, error: "missing remoteClawA2UI" });
           return JSON.stringify(host.reset());
         })()
         """)
@@ -375,8 +395,8 @@ actor MacNodeRuntime {
         let js = """
         (() => {
           try {
-            const host = globalThis.remoteclawA2UI;
-            if (!host) return JSON.stringify({ ok: false, error: "missing remoteclawA2UI" });
+            const host = globalThis.remoteClawA2UI;
+            if (!host) return JSON.stringify({ ok: false, error: "missing remoteClawA2UI" });
             const messages = \(messagesJSON);
             return JSON.stringify(host.applyMessages(messages));
           } catch (e) {
@@ -420,7 +440,7 @@ actor MacNodeRuntime {
                 let sessionKey = self.mainSessionKey
                 let ready = try await CanvasManager.shared.eval(sessionKey: sessionKey, javaScript: """
                 (() => {
-                  const host = globalThis.remoteclawA2UI;
+                  const host = globalThis.remoteClawA2UI;
                   return String(Boolean(host));
                 })()
                 """)

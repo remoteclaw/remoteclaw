@@ -207,6 +207,9 @@ export async function repairLaunchAgentBootstrap(args: {
   const domain = resolveGuiDomain();
   const label = resolveLaunchAgentLabel({ env });
   const plistPath = resolveLaunchAgentPlistPath(env);
+  // launchd can persist "disabled" state after bootout; clear it before bootstrap
+  // (matches the same guard in installLaunchAgent and restartLaunchAgent).
+  await execLaunchctl(["enable", `${domain}/${label}`]);
   const boot = await execLaunchctl(["bootstrap", domain, plistPath]);
   if (boot.code !== 0) {
     return { ok: false, detail: (boot.stderr || boot.stdout).trim() || undefined };
@@ -423,7 +426,7 @@ export async function installLaunchAgent({
           `LaunchAgent install requires a logged-in macOS GUI session for this user (${domain}).`,
           "This usually means you are running from SSH/headless context or as the wrong user (including sudo).",
           "Fix: sign in to the macOS desktop as the target user and rerun `remoteclaw gateway install --force`.",
-          "Headless deployments should use a dedicated logged-in user session or a custom LaunchDaemon (not shipped): https://docs.remoteclaw.ai/gateway",
+          "Headless deployments should use a dedicated logged-in user session or a custom LaunchDaemon (not shipped): https://docs.remoteclaw.org/gateway",
         ].join("\n"),
       );
     }
@@ -466,6 +469,9 @@ export async function restartLaunchAgent({
     await waitForPidExit(previousPid);
   }
 
+  // launchd can persist "disabled" state after bootout; clear it before bootstrap
+  // (matches the same guard in installLaunchAgent).
+  await execLaunchctl(["enable", `${domain}/${label}`]);
   const boot = await execLaunchctl(["bootstrap", domain, plistPath]);
   if (boot.code !== 0) {
     const detail = (boot.stderr || boot.stdout).trim();
@@ -476,7 +482,7 @@ export async function restartLaunchAgent({
           `LaunchAgent restart requires a logged-in macOS GUI session for this user (${domain}).`,
           "This usually means you are running from SSH/headless context or as the wrong user (including sudo).",
           "Fix: sign in to the macOS desktop as the target user and rerun `remoteclaw gateway restart`.",
-          "Headless deployments should use a dedicated logged-in user session or a custom LaunchDaemon (not shipped): https://docs.remoteclaw.ai/gateway",
+          "Headless deployments should use a dedicated logged-in user session or a custom LaunchDaemon (not shipped): https://docs.remoteclaw.org/gateway",
         ].join("\n"),
       );
     }

@@ -1,21 +1,22 @@
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import {
-  listAgentIds,
-  requireSoleAgentId,
-  resolveAgentAuth,
+  hasConfiguredModelFallbacks,
   resolveAgentConfig,
   resolveAgentDir,
-  resolveAgentRuntime,
-  resolveAgentRuntimeArgs,
-  resolveAgentRuntimeEnv,
-  resolveAgentRuntimeOrThrow,
+  resolveAgentEffectiveModelPrimary,
+  resolveAgentExplicitModelPrimary,
   resolveFallbackAgentId,
-  resolveFirstAgentWorkspace,
-  resolveSoleAgentId,
+  resolveEffectiveModelFallbacks,
+  resolveAgentModelFallbacksOverride,
+  resolveAgentModelPrimary,
+  resolveRunModelFallbacksOverride,
   resolveAgentWorkspaceDir,
-  resolveAgentWorkspaceDirOrNull,
+  resolveAgentIdByWorkspacePath,
+  resolveAgentIdsByWorkspacePath,
 } from "./agent-scope.js";
 
 afterEach(() => {
@@ -48,6 +49,7 @@ describe("resolveAgentConfig", () => {
             name: "Main Agent",
             workspace: "~/remoteclaw",
             agentDir: "~/.remoteclaw/agents/main",
+            model: "anthropic/claude-opus-4",
           },
         ],
       },
@@ -57,12 +59,162 @@ describe("resolveAgentConfig", () => {
       name: "Main Agent",
       workspace: "~/remoteclaw",
       agentDir: "~/.remoteclaw/agents/main",
+      model: "anthropic/claude-opus-4",
       identity: undefined,
       groupChat: undefined,
       subagents: undefined,
       sandbox: undefined,
       tools: undefined,
     });
+  });
+
+  it("resolves explicit and effective model primary separately", () => {
+    const cfgWithStringDefault = {
+      agents: {
+        defaults: {
+          model: "anthropic/claude-sonnet-4",
+        },
+        list: [{ id: "main" }],
+      },
+    } as unknown as RemoteClawConfig;
+    expect(resolveAgentExplicitModelPrimary(cfgWithStringDefault, "main")).toBeUndefined();
+    expect(resolveAgentEffectiveModelPrimary(cfgWithStringDefault, "main")).toBe(
+      "anthropic/claude-sonnet-4",
+    );
+
+    const cfgWithObjectDefault: RemoteClawConfig = {
+      agents: {
+        defaults: {
+          model: {
+            primary: "openai/gpt-5.2",
+            fallbacks: ["anthropic/claude-sonnet-4"],
+          },
+        },
+        list: [{ id: "main" }],
+      },
+    };
+    expect(resolveAgentExplicitModelPrimary(cfgWithObjectDefault, "main")).toBeUndefined();
+    expect(resolveAgentEffectiveModelPrimary(cfgWithObjectDefault, "main")).toBe("openai/gpt-5.2");
+
+    const cfgNoDefaults: RemoteClawConfig = {
+      agents: {
+        list: [{ id: "main" }],
+      },
+    };
+    expect(resolveAgentExplicitModelPrimary(cfgNoDefaults, "main")).toBeUndefined();
+    expect(resolveAgentEffectiveModelPrimary(cfgNoDefaults, "main")).toBeUndefined();
+  });
+
+  it("supports per-agent model primary+fallbacks", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: {
+          model: {
+            primary: "anthropic/claude-sonnet-4",
+            fallbacks: ["openai/gpt-4.1"],
+          },
+        },
+        list: [
+          {
+            id: "linus",
+            model: {
+              primary: "anthropic/claude-opus-4",
+              fallbacks: ["openai/gpt-5.2"],
+            },
+          },
+        ],
+      },
+    };
+
+    expect(resolveAgentModelPrimary(cfg, "linus")).toBe("anthropic/claude-opus-4");
+    expect(resolveAgentExplicitModelPrimary(cfg, "linus")).toBe("anthropic/claude-opus-4");
+    expect(resolveAgentEffectiveModelPrimary(cfg, "linus")).toBe("anthropic/claude-opus-4");
+    expect(resolveAgentModelFallbacksOverride(cfg, "linus")).toEqual(["openai/gpt-5.2"]);
+
+    // If fallbacks isn't present, we don't override the global fallbacks.
+    const cfgNoOverride: RemoteClawConfig = {
+      agents: {
+        list: [
+          {
+            id: "linus",
+            model: {
+              primary: "anthropic/claude-opus-4",
+            },
+          },
+        ],
+      },
+    };
+    expect(resolveAgentModelFallbacksOverride(cfgNoOverride, "linus")).toBe(undefined);
+
+    // Explicit empty list disables global fallbacks for that agent.
+    const cfgDisable: RemoteClawConfig = {
+      agents: {
+        list: [
+          {
+            id: "linus",
+            model: {
+              primary: "anthropic/claude-opus-4",
+              fallbacks: [],
+            },
+          },
+        ],
+      },
+    };
+    expect(resolveAgentModelFallbacksOverride(cfgDisable, "linus")).toEqual([]);
+
+    expect(
+      resolveEffectiveModelFallbacks({
+        cfg,
+        agentId: "linus",
+        hasSessionModelOverride: false,
+      }),
+    ).toEqual(["openai/gpt-5.2"]);
+    expect(
+      resolveEffectiveModelFallbacks({
+        cfg,
+        agentId: "linus",
+        hasSessionModelOverride: true,
+      }),
+    ).toEqual(["openai/gpt-5.2"]);
+    expect(
+      resolveEffectiveModelFallbacks({
+        cfg: cfgNoOverride,
+        agentId: "linus",
+        hasSessionModelOverride: true,
+      }),
+    ).toEqual([]);
+
+    const cfgInheritDefaults: RemoteClawConfig = {
+      agents: {
+        defaults: {
+          model: {
+            fallbacks: ["openai/gpt-4.1"],
+          },
+        },
+        list: [
+          {
+            id: "linus",
+            model: {
+              primary: "anthropic/claude-opus-4",
+            },
+          },
+        ],
+      },
+    };
+    expect(
+      resolveEffectiveModelFallbacks({
+        cfg: cfgInheritDefaults,
+        agentId: "linus",
+        hasSessionModelOverride: true,
+      }),
+    ).toEqual(["openai/gpt-4.1"]);
+    expect(
+      resolveEffectiveModelFallbacks({
+        cfg: cfgDisable,
+        agentId: "linus",
+        hasSessionModelOverride: true,
+      }),
+    ).toEqual([]);
   });
 
   it("resolves fallback agent id from explicit agent id first", () => {
@@ -80,6 +232,92 @@ describe("resolveAgentConfig", () => {
         sessionKey: "agent:worker:session",
       }),
     ).toBe("worker");
+  });
+
+  it("resolves run fallback overrides via shared helper", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: {
+          model: {
+            fallbacks: ["openai/gpt-4.1"],
+          },
+        },
+        list: [
+          {
+            id: "support",
+            model: {
+              fallbacks: ["openai/gpt-5.2"],
+            },
+          },
+        ],
+      },
+    };
+
+    expect(
+      resolveRunModelFallbacksOverride({
+        cfg,
+        agentId: "support",
+        sessionKey: "agent:main:session",
+      }),
+    ).toEqual(["openai/gpt-5.2"]);
+    expect(
+      resolveRunModelFallbacksOverride({
+        cfg,
+        agentId: undefined,
+        sessionKey: "agent:support:session",
+      }),
+    ).toEqual(["openai/gpt-5.2"]);
+  });
+
+  it("computes whether any model fallbacks are configured via shared helper", () => {
+    const cfgDefaultsOnly: RemoteClawConfig = {
+      agents: {
+        defaults: {
+          model: {
+            fallbacks: ["openai/gpt-4.1"],
+          },
+        },
+        list: [{ id: "main" }],
+      },
+    };
+    expect(
+      hasConfiguredModelFallbacks({
+        cfg: cfgDefaultsOnly,
+        sessionKey: "agent:main:session",
+      }),
+    ).toBe(true);
+
+    const cfgAgentOverrideOnly: RemoteClawConfig = {
+      agents: {
+        defaults: {
+          model: {
+            fallbacks: [],
+          },
+        },
+        list: [
+          {
+            id: "support",
+            model: {
+              fallbacks: ["openai/gpt-5.2"],
+            },
+          },
+        ],
+      },
+    };
+    expect(
+      hasConfiguredModelFallbacks({
+        cfg: cfgAgentOverrideOnly,
+        agentId: "support",
+        sessionKey: "agent:support:session",
+      }),
+    ).toBe(true);
+    expect(
+      hasConfiguredModelFallbacks({
+        cfg: cfgAgentOverrideOnly,
+        agentId: "main",
+        sessionKey: "agent:main:session",
+      }),
+    ).toBe(false);
   });
 
   it("should return agent-specific sandbox config", () => {
@@ -119,7 +357,11 @@ describe("resolveAgentConfig", () => {
             workspace: "~/remoteclaw-restricted",
             tools: {
               allow: ["read"],
-              deny: ["exec", "write"],
+              deny: ["exec", "write", "edit"],
+              elevated: {
+                enabled: false,
+                allowFrom: { whatsapp: ["+15555550123"] },
+              },
             },
           },
         ],
@@ -128,7 +370,11 @@ describe("resolveAgentConfig", () => {
     const result = resolveAgentConfig(cfg, "restricted");
     expect(result?.tools).toEqual({
       allow: ["read"],
-      deny: ["exec", "write"],
+      deny: ["exec", "write", "edit"],
+      elevated: {
+        enabled: false,
+        allowFrom: { whatsapp: ["+15555550123"] },
+      },
     });
   });
 
@@ -168,34 +414,12 @@ describe("resolveAgentConfig", () => {
     expect(result?.workspace).toBe("~/remoteclaw");
   });
 
-  it("throws when no workspace is configured for agent", () => {
-    expect(() => resolveAgentWorkspaceDir({} as RemoteClawConfig, "main")).toThrow(
-      "agent 'main' has no workspace configured",
-    );
-  });
+  it("uses REMOTECLAW_HOME for default agent workspace", () => {
+    const home = path.join(path.sep, "srv", "remoteclaw-home");
+    vi.stubEnv("REMOTECLAW_HOME", home);
 
-  it("returns configured workspace from agents.list", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        list: [{ id: "main", workspace: "~/my-workspace" }],
-      },
-    };
-    const workspace = resolveAgentWorkspaceDir(cfg, "main");
-    expect(workspace).toContain("my-workspace");
-  });
-
-  it("resolveAgentWorkspaceDirOrNull returns null when no workspace is configured", () => {
-    expect(resolveAgentWorkspaceDirOrNull({} as RemoteClawConfig, "main")).toBeNull();
-  });
-
-  it("resolveAgentWorkspaceDirOrNull returns workspace when configured", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        list: [{ id: "main", workspace: "~/my-workspace" }],
-      },
-    };
-    const workspace = resolveAgentWorkspaceDirOrNull(cfg, "main");
-    expect(workspace).toContain("my-workspace");
+    const workspace = resolveAgentWorkspaceDir({} as RemoteClawConfig, "main");
+    expect(workspace).toBe(path.join(path.resolve(home), ".remoteclaw", "workspace"));
   });
 
   it("uses REMOTECLAW_HOME for default agentDir", () => {
@@ -204,502 +428,96 @@ describe("resolveAgentConfig", () => {
     // Clear state dir so it falls back to REMOTECLAW_HOME
     vi.stubEnv("REMOTECLAW_STATE_DIR", "");
 
-    const dir = resolveAgentDir({} as RemoteClawConfig, "test-agent");
-    expect(dir).toBe(path.join(path.resolve(home), ".remoteclaw", "agents", "test-agent", "agent"));
-  });
-
-  it("should include auth in resolved agent config", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        list: [{ id: "main", workspace: "~/remoteclaw", auth: "anthropic:default" }],
-      },
-    };
-    const result = resolveAgentConfig(cfg, "main");
-    expect(result?.auth).toBe("anthropic:default");
-  });
-
-  it("should include auth: false in resolved agent config", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        list: [{ id: "main", workspace: "~/remoteclaw", auth: false }],
-      },
-    };
-    const result = resolveAgentConfig(cfg, "main");
-    expect(result?.auth).toBe(false);
-  });
-
-  it("should include auth array in resolved agent config", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        list: [
-          { id: "main", workspace: "~/remoteclaw", auth: ["anthropic:key1", "anthropic:key2"] },
-        ],
-      },
-    };
-    const result = resolveAgentConfig(cfg, "main");
-    expect(result?.auth).toEqual(["anthropic:key1", "anthropic:key2"]);
-  });
-
-  it("should include runtime in resolved agent config", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        list: [{ id: "main", workspace: "~/remoteclaw", runtime: "gemini" }],
-      },
-    };
-    const result = resolveAgentConfig(cfg, "main");
-    expect(result?.runtime).toBe("gemini");
+    const agentDir = resolveAgentDir({} as RemoteClawConfig, "main");
+    expect(agentDir).toBe(path.join(path.resolve(home), ".remoteclaw", "agents", "main", "agent"));
   });
 });
 
-describe("resolveSoleAgentId", () => {
-  it("returns agent ID when exactly one agent is configured", () => {
-    const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "home", workspace: "~/remoteclaw" }] },
-    };
-    expect(resolveSoleAgentId(cfg)).toBe("home");
-  });
-
-  it("returns null when no agents are configured", () => {
-    expect(resolveSoleAgentId({})).toBeNull();
-  });
-
-  it("returns null when agents list is empty", () => {
-    const cfg: RemoteClawConfig = { agents: { list: [] } };
-    expect(resolveSoleAgentId(cfg)).toBeNull();
-  });
-
-  it("returns null when multiple agents are configured", () => {
-    const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "home" }, { id: "work" }] },
-    };
-    expect(resolveSoleAgentId(cfg)).toBeNull();
-  });
-
-  it("normalizes the agent ID", () => {
-    const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "  MyAgent  " }] },
-    };
-    expect(resolveSoleAgentId(cfg)).toBe("myagent");
-  });
-});
-
-describe("requireSoleAgentId", () => {
-  it("returns agent ID when exactly one agent is configured", () => {
-    const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "home", workspace: "~/remoteclaw" }] },
-    };
-    expect(requireSoleAgentId(cfg)).toBe("home");
-  });
-
-  it("throws when no agents are configured", () => {
-    expect(() => requireSoleAgentId({})).toThrow("No agents configured");
-  });
-
-  it("throws when agents list is empty", () => {
-    const cfg: RemoteClawConfig = { agents: { list: [] } };
-    expect(() => requireSoleAgentId(cfg)).toThrow("No agents configured");
-  });
-
-  it("throws when multiple agents are configured", () => {
-    const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "home" }, { id: "work" }] },
-    };
-    expect(() => requireSoleAgentId(cfg)).toThrow("Multiple agents configured");
-  });
-
-  it("includes agent IDs in the multi-agent error message", () => {
-    const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "home" }, { id: "work" }] },
-    };
-    expect(() => requireSoleAgentId(cfg)).toThrow("home, work");
-  });
-});
-
-describe("resolveAgentRuntime", () => {
-  it("returns undefined when no agents config exists", () => {
-    expect(resolveAgentRuntime({}, "main")).toBeUndefined();
-  });
-
-  it("returns undefined when agent has no runtime and no defaults", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        list: [{ id: "main", workspace: "~/remoteclaw" }],
-      },
-    };
-    expect(resolveAgentRuntime(cfg, "main")).toBeUndefined();
-  });
-
-  it("inherits runtime from defaults when agent entry has no runtime", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { runtime: "claude" },
-        list: [{ id: "main", workspace: "~/remoteclaw" }],
-      },
-    };
-    expect(resolveAgentRuntime(cfg, "main")).toBe("claude");
-  });
-
-  it("agent entry runtime overrides defaults runtime", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { runtime: "claude" },
-        list: [{ id: "main", workspace: "~/remoteclaw", runtime: "gemini" }],
-      },
-    };
-    expect(resolveAgentRuntime(cfg, "main")).toBe("gemini");
-  });
-
-  it("returns defaults runtime when agent entry does not exist", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { runtime: "codex" },
-        list: [{ id: "other", workspace: "~/remoteclaw" }],
-      },
-    };
-    expect(resolveAgentRuntime(cfg, "main")).toBe("codex");
-  });
-});
-
-describe("resolveAgentAuth", () => {
-  it("returns undefined when no agents config exists", () => {
-    expect(resolveAgentAuth({}, "main")).toBeUndefined();
-  });
-
-  it("returns undefined when agent has no auth and no defaults", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        list: [{ id: "main", workspace: "~/remoteclaw" }],
-      },
-    };
-    expect(resolveAgentAuth(cfg, "main")).toBeUndefined();
-  });
-
-  it("inherits auth from defaults when agent entry has no auth", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { auth: "anthropic:default" },
-        list: [{ id: "main", workspace: "~/remoteclaw" }],
-      },
-    };
-    expect(resolveAgentAuth(cfg, "main")).toBe("anthropic:default");
-  });
-
-  it("agent entry auth overrides defaults auth", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { auth: "anthropic:default" },
-        list: [{ id: "main", workspace: "~/remoteclaw", auth: "anthropic:custom" }],
-      },
-    };
-    expect(resolveAgentAuth(cfg, "main")).toBe("anthropic:custom");
-  });
-
-  it("explicit auth: false on entry overrides defaults", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { auth: "anthropic:default" },
-        list: [{ id: "main", workspace: "~/remoteclaw", auth: false }],
-      },
-    };
-    expect(resolveAgentAuth(cfg, "main")).toBe(false);
-  });
-
-  it("inherits auth array from defaults", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { auth: ["anthropic:key1", "anthropic:key2"] },
-        list: [{ id: "main", workspace: "~/remoteclaw" }],
-      },
-    };
-    expect(resolveAgentAuth(cfg, "main")).toEqual(["anthropic:key1", "anthropic:key2"]);
-  });
-
-  it("agent entry auth array overrides defaults string", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { auth: "anthropic:default" },
-        list: [
-          {
-            id: "main",
-            workspace: "~/remoteclaw",
-            auth: ["anthropic:key1", "anthropic:key2"],
-          },
-        ],
-      },
-    };
-    expect(resolveAgentAuth(cfg, "main")).toEqual(["anthropic:key1", "anthropic:key2"]);
-  });
-
-  it("returns defaults auth: false when no agent entry exists", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { auth: false },
-        list: [{ id: "other", workspace: "~/remoteclaw" }],
-      },
-    };
-    // Agent "main" doesn't exist in list, so resolveAgentEntry returns undefined.
-    // Falls through to defaults.auth.
-    expect(resolveAgentAuth(cfg, "main")).toBe(false);
-  });
-});
-
-describe("resolveAgentRuntimeOrThrow", () => {
-  it("returns runtime when set on agent entry", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { runtime: "claude" },
-        list: [{ id: "main", workspace: "~/remoteclaw", runtime: "gemini" }],
-      },
-    };
-    expect(resolveAgentRuntimeOrThrow(cfg, "main")).toBe("gemini");
-  });
-
-  it("falls back to defaults runtime", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { runtime: "claude" },
-        list: [{ id: "main", workspace: "~/remoteclaw" }],
-      },
-    };
-    expect(resolveAgentRuntimeOrThrow(cfg, "main")).toBe("claude");
-  });
-
-  it("throws when no runtime is configured", () => {
-    expect(() => resolveAgentRuntimeOrThrow({}, "main")).toThrow("No runtime configured");
-  });
-
-  it("includes supported providers in error message", () => {
-    expect(() => resolveAgentRuntimeOrThrow({}, "main")).toThrow("claude, gemini, codex, opencode");
-  });
-});
-
-describe("resolveAgentRuntimeArgs", () => {
-  it("returns undefined when no agents config exists", () => {
-    expect(resolveAgentRuntimeArgs({}, "main")).toBeUndefined();
-  });
-
-  it("returns undefined when agent has no runtimeArgs and no defaults", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        list: [{ id: "main", workspace: "~/remoteclaw" }],
-      },
-    };
-    expect(resolveAgentRuntimeArgs(cfg, "main")).toBeUndefined();
-  });
-
-  it("inherits runtimeArgs from defaults when agent entry has none", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { runtimeArgs: ["--verbose"] },
-        list: [{ id: "main", workspace: "~/remoteclaw" }],
-      },
-    };
-    expect(resolveAgentRuntimeArgs(cfg, "main")).toEqual(["--verbose"]);
-  });
-
-  it("agent entry runtimeArgs replaces defaults entirely", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { runtimeArgs: ["--verbose"] },
-        list: [{ id: "main", workspace: "~/remoteclaw", runtimeArgs: ["--model", "sonnet"] }],
-      },
-    };
-    expect(resolveAgentRuntimeArgs(cfg, "main")).toEqual(["--model", "sonnet"]);
-  });
-
-  it("returns defaults runtimeArgs when agent entry does not exist", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { runtimeArgs: ["--dangerously-skip-permissions"] },
-        list: [{ id: "other", workspace: "~/remoteclaw" }],
-      },
-    };
-    expect(resolveAgentRuntimeArgs(cfg, "main")).toEqual(["--dangerously-skip-permissions"]);
-  });
-
-  it("agent entry with empty runtimeArgs clears defaults", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { runtimeArgs: ["--verbose"] },
-        list: [{ id: "main", workspace: "~/remoteclaw", runtimeArgs: [] }],
-      },
-    };
-    // Empty array is truthy — per-agent [] replaces defaults entirely.
-    expect(resolveAgentRuntimeArgs(cfg, "main")).toEqual([]);
-  });
-});
-
-describe("resolveAgentRuntimeEnv", () => {
-  it("returns undefined when no agents config exists", () => {
-    expect(resolveAgentRuntimeEnv({}, "main")).toBeUndefined();
-  });
-
-  it("returns undefined when agent has no runtimeEnv and no defaults", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        list: [{ id: "main", workspace: "~/remoteclaw" }],
-      },
-    };
-    expect(resolveAgentRuntimeEnv(cfg, "main")).toBeUndefined();
-  });
-
-  it("inherits runtimeEnv from defaults when agent entry has none", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { runtimeEnv: { API_KEY: "sk-default" } },
-        list: [{ id: "main", workspace: "~/remoteclaw" }],
-      },
-    };
-    expect(resolveAgentRuntimeEnv(cfg, "main")).toEqual({ API_KEY: "sk-default" });
-  });
-
-  it("agent entry runtimeEnv replaces defaults entirely", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { runtimeEnv: { API_KEY: "sk-default", SHARED: "yes" } },
-        list: [
-          {
-            id: "main",
-            workspace: "~/remoteclaw",
-            runtimeEnv: { API_KEY: "sk-agent-specific" },
-          },
-        ],
-      },
-    };
-    // Per-agent replaces entirely — SHARED is NOT inherited.
-    expect(resolveAgentRuntimeEnv(cfg, "main")).toEqual({ API_KEY: "sk-agent-specific" });
-  });
-
-  it("returns defaults runtimeEnv when agent entry does not exist", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { runtimeEnv: { API_KEY: "sk-default" } },
-        list: [{ id: "other", workspace: "~/remoteclaw" }],
-      },
-    };
-    expect(resolveAgentRuntimeEnv(cfg, "main")).toEqual({ API_KEY: "sk-default" });
-  });
-});
-
-// Regression coverage for #2310 (Wave 3/6 — "eliminate default agent" initiative).
-// These tests pin the post-migration semantics of listAgentIds and
-// resolveFirstAgentWorkspace so that future refactors cannot silently
-// reintroduce a phantom "main" agent fallback. Fixtures use explicit agent
-// IDs (alpha/beta/gamma/solo) and intentionally never use "main", so a
-// regression that re-adds a DEFAULT_AGENT_ID=main fallback would fail these
-// assertions instead of being masked by the fixture name.
-describe("listAgentIds (regression: #2310)", () => {
-  it("returns empty array for empty config (no phantom main injection)", () => {
-    expect(listAgentIds({})).toEqual([]);
-  });
-
-  it("returns empty array when agents.list is an explicit empty array", () => {
-    const cfg: RemoteClawConfig = { agents: { list: [] } };
-    expect(listAgentIds(cfg)).toEqual([]);
-  });
-
-  it("returns empty array when agents is defined but list is absent", () => {
-    const cfg = { agents: {} } as unknown as RemoteClawConfig;
-    expect(listAgentIds(cfg)).toEqual([]);
-  });
-
-  it("returns all configured agent IDs in declaration order", () => {
+describe("resolveAgentIdByWorkspacePath", () => {
+  it("returns the most specific workspace match for a directory", () => {
+    const workspaceRoot = `/tmp/remoteclaw-agent-scope-${Date.now()}-root`;
+    const opsWorkspace = `${workspaceRoot}/projects/ops`;
     const cfg: RemoteClawConfig = {
       agents: {
         list: [
-          { id: "alpha", workspace: "~/alpha" },
-          { id: "beta", workspace: "~/beta" },
-          { id: "gamma", workspace: "~/gamma" },
+          { id: "main", workspace: workspaceRoot },
+          { id: "ops", workspace: opsWorkspace },
         ],
       },
     };
-    expect(listAgentIds(cfg)).toEqual(["alpha", "beta", "gamma"]);
+
+    expect(resolveAgentIdByWorkspacePath(cfg, `${opsWorkspace}/src`)).toBe("ops");
   });
 
-  it("preserves declaration order when the first entry sorts last alphabetically", () => {
+  it("returns undefined when directory has no matching workspace", () => {
+    const workspaceRoot = `/tmp/remoteclaw-agent-scope-${Date.now()}-root`;
     const cfg: RemoteClawConfig = {
       agents: {
         list: [
-          { id: "zulu", workspace: "~/zulu" },
-          { id: "alpha", workspace: "~/alpha" },
+          { id: "main", workspace: workspaceRoot },
+          { id: "ops", workspace: `${workspaceRoot}-ops` },
         ],
       },
     };
-    expect(listAgentIds(cfg)).toEqual(["zulu", "alpha"]);
+
+    expect(
+      resolveAgentIdByWorkspacePath(cfg, `/tmp/remoteclaw-agent-scope-${Date.now()}-unrelated`),
+    ).toBeUndefined();
   });
 
-  it("normalizes IDs and drops duplicates after normalization", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        list: [
-          { id: "Alpha", workspace: "~/a" },
-          { id: "  ALPHA  ", workspace: "~/a2" },
-          { id: "beta", workspace: "~/b" },
-        ],
-      },
-    };
-    expect(listAgentIds(cfg)).toEqual(["alpha", "beta"]);
-  });
+  it("matches workspace paths through symlink aliases", () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-agent-scope-"));
+    const realWorkspaceRoot = path.join(tempRoot, "real-root");
+    const realOpsWorkspace = path.join(realWorkspaceRoot, "projects", "ops");
+    const aliasWorkspaceRoot = path.join(tempRoot, "alias-root");
+    try {
+      fs.mkdirSync(path.join(realOpsWorkspace, "src"), { recursive: true });
+      fs.symlinkSync(
+        realWorkspaceRoot,
+        aliasWorkspaceRoot,
+        process.platform === "win32" ? "junction" : "dir",
+      );
 
-  it("skips entries with missing or empty id", () => {
-    const cfg = {
-      agents: {
-        list: [
-          { id: "alpha", workspace: "~/a" },
-          { workspace: "~/orphan" },
-          { id: "", workspace: "~/empty" },
-          { id: "beta", workspace: "~/b" },
-        ],
-      },
-    } as unknown as RemoteClawConfig;
-    expect(listAgentIds(cfg)).toEqual(["alpha", "beta"]);
+      const cfg: RemoteClawConfig = {
+        agents: {
+          list: [
+            { id: "main", workspace: realWorkspaceRoot },
+            { id: "ops", workspace: realOpsWorkspace },
+          ],
+        },
+      };
+
+      expect(
+        resolveAgentIdByWorkspacePath(cfg, path.join(aliasWorkspaceRoot, "projects", "ops")),
+      ).toBe("ops");
+      expect(
+        resolveAgentIdByWorkspacePath(cfg, path.join(aliasWorkspaceRoot, "projects", "ops", "src")),
+      ).toBe("ops");
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
   });
 });
 
-describe("resolveFirstAgentWorkspace (regression: #2310)", () => {
-  it("returns the sole agent's workspace in a single-agent config without a 'main' entry", () => {
-    const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "solo", workspace: "/tmp/solo" }] },
-    };
-    expect(resolveFirstAgentWorkspace(cfg)).toBe(path.resolve("/tmp/solo"));
-  });
-
-  it("returns the first agent's workspace in declaration order for multi-agent configs", () => {
+describe("resolveAgentIdsByWorkspacePath", () => {
+  it("returns matching workspaces ordered by specificity", () => {
+    const workspaceRoot = `/tmp/remoteclaw-agent-scope-${Date.now()}-root`;
+    const opsWorkspace = `${workspaceRoot}/projects/ops`;
+    const opsDevWorkspace = `${opsWorkspace}/dev`;
     const cfg: RemoteClawConfig = {
       agents: {
         list: [
-          { id: "alpha", workspace: "/tmp/alpha" },
-          { id: "beta", workspace: "/tmp/beta" },
-          { id: "gamma", workspace: "/tmp/gamma" },
+          { id: "main", workspace: workspaceRoot },
+          { id: "ops", workspace: opsWorkspace },
+          { id: "ops-dev", workspace: opsDevWorkspace },
         ],
       },
     };
-    expect(resolveFirstAgentWorkspace(cfg)).toBe(path.resolve("/tmp/alpha"));
-  });
 
-  it("returns null for empty config", () => {
-    expect(resolveFirstAgentWorkspace({})).toBeNull();
-  });
-
-  it("returns null when agents.list is an explicit empty array", () => {
-    const cfg: RemoteClawConfig = { agents: { list: [] } };
-    expect(resolveFirstAgentWorkspace(cfg)).toBeNull();
-  });
-
-  it("does not depend on an agent named 'main'", () => {
-    // The pre-#2310 code could fall through to resolveAgentWorkspaceDir(cfg, "main")
-    // which would throw "agent 'main' has no workspace configured" for multi-agent
-    // configs without a "main" entry. This fixture is that exact shape.
-    const cfg: RemoteClawConfig = {
-      agents: {
-        list: [
-          { id: "alpha", workspace: "/tmp/alpha" },
-          { id: "beta", workspace: "/tmp/beta" },
-        ],
-      },
-    };
-    const resolved = resolveFirstAgentWorkspace(cfg);
-    expect(resolved).toBe(path.resolve("/tmp/alpha"));
-    expect(resolved).not.toContain("main");
+    expect(resolveAgentIdsByWorkspacePath(cfg, `${opsDevWorkspace}/pkg`)).toEqual([
+      "ops-dev",
+      "ops",
+      "main",
+    ]);
   });
 });

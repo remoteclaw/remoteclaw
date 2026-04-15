@@ -6,7 +6,7 @@ import {
 import type { ReplyPayload } from "../../auto-reply/types.js";
 import { resolveCommandAuthorizedFromAuthorizers } from "../../channels/command-gating.js";
 import { resolveNativeCommandSessionTargets } from "../../channels/native-command-session-targets.js";
-import { resolveNativeCommandsEnabled, resolveNativeSkillsEnabled } from "../../config/commands.js";
+import { resolveNativeCommandsEnabled } from "../../config/commands.js";
 import { danger, logVerbose } from "../../globals.js";
 import { chunkItems } from "../../utils/chunk-items.js";
 import type { ResolvedSlackAccount } from "../accounts.js";
@@ -40,10 +40,6 @@ let slashCommandsRuntimePromise: Promise<typeof import("./slash-commands.runtime
   null;
 let slashDispatchRuntimePromise: Promise<typeof import("./slash-dispatch.runtime.js")> | null =
   null;
-let slashSkillCommandsRuntimePromise: Promise<
-  typeof import("./slash-skill-commands.runtime.js")
-> | null = null;
-
 function loadSlashCommandsRuntime() {
   slashCommandsRuntimePromise ??= import("./slash-commands.runtime.js");
   return slashCommandsRuntimePromise;
@@ -52,11 +48,6 @@ function loadSlashCommandsRuntime() {
 function loadSlashDispatchRuntime() {
   slashDispatchRuntimePromise ??= import("./slash-dispatch.runtime.js");
   return slashDispatchRuntimePromise;
-}
-
-function loadSlashSkillCommandsRuntime() {
-  slashSkillCommandsRuntimePromise ??= import("./slash-skill-commands.runtime.js");
-  return slashSkillCommandsRuntimePromise;
 }
 
 type EncodedMenuChoice = SlackExternalArgMenuChoice;
@@ -660,19 +651,10 @@ export async function registerSlackMonitorSlashCommands(params: {
     providerSetting: account.config.commands?.native,
     globalSetting: cfg.commands?.native,
   });
-  const nativeSkillsEnabled = resolveNativeSkillsEnabled({
-    providerId: "slack",
-    providerSetting: account.config.commands?.nativeSkills,
-    globalSetting: cfg.commands?.nativeSkills,
-  });
-
   let nativeCommands: Array<{ name: string }> = [];
   let slashCommandsRuntime: typeof import("./slash-commands.runtime.js") | null = null;
   if (nativeEnabled) {
     slashCommandsRuntime = await loadSlashCommandsRuntime();
-    const _skillCommands = nativeSkillsEnabled
-      ? (await loadSlashSkillCommandsRuntime()).listSkillCommandsForAgents({ cfg })
-      : [];
     nativeCommands = slashCommandsRuntime.listNativeCommandSpecsForConfig(cfg, {
       provider: "slack",
     });

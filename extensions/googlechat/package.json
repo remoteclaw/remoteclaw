@@ -15,6 +15,11 @@
       "optional": true
     }
   },
+  "releaseChecks": {
+    "rootDependencyMirrorAllowlist": [
+      "google-auth-library"
+    ]
+  },
   "remoteclaw": {
     "extensions": [
       "./index.ts"

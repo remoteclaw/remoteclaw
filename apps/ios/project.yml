@@ -1,4 +1,4 @@
-name: RemoteClaw
+name: OpenClaw
 options:
   bundleIdPrefix: org.remoteclaw
   deploymentTarget:
@@ -11,23 +11,32 @@ settings:
     ENABLE_APP_INTENTS_METADATA_GENERATION: NO
 
 packages:
-  RemoteClawKit:
-    path: ../shared/RemoteClawKit
+  OpenClawKit:
+    path: ../shared/OpenClawKit
   Swabble:
     path: ../../Swabble
 
 schemes:
-  RemoteClaw:
+  OpenClaw:
     shared: true
     build:
       targets:
-        RemoteClaw: all
+        OpenClaw: all
     test:
       targets:
-        - RemoteClawTests
+        - OpenClawTests
+        - OpenClawLogicTests
+  OpenClawLogicTests:
+    shared: true
+    build:
+      targets:
+        OpenClawLogicTests: all
+    test:
+      targets:
+        - OpenClawLogicTests
 
 targets:
-  RemoteClaw:
+  OpenClaw:
     type: application
     platform: iOS
     configFiles:
@@ -36,16 +45,16 @@ targets:
     sources:
       - path: Sources
     dependencies:
-      - target: RemoteClawShareExtension
+      - target: OpenClawShareExtension
         embed: true
-      - target: RemoteClawActivityWidget
+      - target: OpenClawActivityWidget
         embed: true
-      - target: RemoteClawWatchApp
-      - package: RemoteClawKit
-      - package: RemoteClawKit
-        product: RemoteClawChatUI
-      - package: RemoteClawKit
-        product: RemoteClawProtocol
+      - target: OpenClawWatchApp
+      - package: OpenClawKit
+      - package: OpenClawKit
+        product: OpenClawChatUI
+      - package: OpenClawKit
+        product: OpenClawProtocol
       - package: Swabble
         product: SwabbleKit
       - sdk: AppIntents.framework
@@ -78,7 +87,7 @@ targets:
     settings:
       base:
         CODE_SIGN_IDENTITY: "Apple Development"
-        CODE_SIGN_ENTITLEMENTS: Sources/RemoteClaw.entitlements
+        CODE_SIGN_ENTITLEMENTS: Sources/OpenClaw.entitlements
         CODE_SIGN_STYLE: "$(REMOTECLAW_CODE_SIGN_STYLE)"
         DEVELOPMENT_TEAM: "$(REMOTECLAW_DEVELOPMENT_TEAM)"
         PRODUCT_BUNDLE_IDENTIFIER: "$(REMOTECLAW_APP_BUNDLE_ID)"
@@ -92,14 +101,14 @@ targets:
     info:
       path: Sources/Info.plist
       properties:
-        CFBundleDisplayName: RemoteClaw
+        CFBundleDisplayName: OpenClaw
         CFBundleIconName: AppIcon
         CFBundleURLTypes:
           - CFBundleURLName: org.remoteclaw.ios
             CFBundleURLSchemes:
-              - remoteclaw
-        CFBundleShortVersionString: "2026.3.7"
-        CFBundleVersion: "20260307"
+              - openclaw
+        CFBundleShortVersionString: "2026.3.8"
+        CFBundleVersion: "20260308"
         UILaunchScreen: {}
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
@@ -108,17 +117,20 @@ targets:
           - remote-notification
         BGTaskSchedulerPermittedIdentifiers:
           - org.remoteclaw.ios.bgrefresh
-        NSLocalNetworkUsageDescription: RemoteClaw discovers and connects to your RemoteClaw gateway on the local network.
+        NSLocalNetworkUsageDescription: OpenClaw discovers and connects to your RemoteClaw gateway on the local network.
         NSAppTransportSecurity:
           NSAllowsArbitraryLoadsInWebContent: true
         NSBonjourServices:
-          - _remoteclaw-gw._tcp
-        NSCameraUsageDescription: RemoteClaw can capture photos or short video clips when requested via the gateway.
-        NSLocationWhenInUseUsageDescription: RemoteClaw uses your location when you allow location sharing.
-        NSLocationAlwaysAndWhenInUseUsageDescription: RemoteClaw can share your location in the background when you enable Always.
-        NSMicrophoneUsageDescription: RemoteClaw needs microphone access for voice wake.
-        NSSpeechRecognitionUsageDescription: RemoteClaw uses on-device speech recognition for voice wake.
+          - _openclaw-gw._tcp
+        NSCameraUsageDescription: OpenClaw can capture photos or short video clips when requested via the gateway.
+        NSLocationWhenInUseUsageDescription: OpenClaw uses your location when you allow location sharing.
+        NSLocationAlwaysAndWhenInUseUsageDescription: OpenClaw can share your location in the background when you enable Always.
+        NSMicrophoneUsageDescription: OpenClaw needs microphone access for voice wake.
+        NSMotionUsageDescription: OpenClaw may use motion data to support device-aware interactions and automations.
+        NSPhotoLibraryUsageDescription: OpenClaw needs photo library access when you choose existing photos to share with your assistant.
+        NSSpeechRecognitionUsageDescription: OpenClaw uses on-device speech recognition for voice wake.
         NSSupportsLiveActivities: true
+        ITSAppUsesNonExemptEncryption: false
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationPortraitUpsideDown
@@ -130,7 +142,7 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
 
-  RemoteClawShareExtension:
+  OpenClawShareExtension:
     type: app-extension
     platform: iOS
     configFiles:
@@ -139,7 +151,7 @@ targets:
     sources:
       - path: ShareExtension
     dependencies:
-      - package: RemoteClawKit
+      - package: OpenClawKit
       - sdk: AppIntents.framework
     settings:
       base:
@@ -155,9 +167,9 @@ targets:
     info:
       path: ShareExtension/Info.plist
       properties:
-        CFBundleDisplayName: RemoteClaw Share
-        CFBundleShortVersionString: "2026.3.7"
-        CFBundleVersion: "20260307"
+        CFBundleDisplayName: OpenClaw Share
+        CFBundleShortVersionString: "2026.3.8"
+        CFBundleVersion: "20260308"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.share-services
           NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).ShareViewController"
@@ -168,7 +180,7 @@ targets:
               NSExtensionActivationSupportsImageWithMaxCount: 10
               NSExtensionActivationSupportsMovieWithMaxCount: 1
 
-  RemoteClawActivityWidget:
+  OpenClawActivityWidget:
     type: app-extension
     platform: iOS
     configFiles:
@@ -176,7 +188,7 @@ targets:
       Release: Signing.xcconfig
     sources:
       - path: ActivityWidget
-      - path: Sources/LiveActivity/RemoteClawActivityAttributes.swift
+      - path: Sources/LiveActivity/OpenClawActivityAttributes.swift
     dependencies:
       - sdk: WidgetKit.framework
       - sdk: ActivityKit.framework
@@ -192,21 +204,21 @@ targets:
     info:
       path: ActivityWidget/Info.plist
       properties:
-        CFBundleDisplayName: RemoteClaw Activity
-        CFBundleShortVersionString: "2026.3.7"
-        CFBundleVersion: "20260307"
+        CFBundleDisplayName: OpenClaw Activity
+        CFBundleShortVersionString: "2026.3.8"
+        CFBundleVersion: "20260308"
         NSSupportsLiveActivities: true
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
 
-  RemoteClawWatchApp:
+  OpenClawWatchApp:
     type: application.watchapp2
     platform: watchOS
     deploymentTarget: "11.0"
     sources:
       - path: WatchApp
     dependencies:
-      - target: RemoteClawWatchExtension
+      - target: OpenClawWatchExtension
     configFiles:
       Debug: Config/Signing.xcconfig
       Release: Config/Signing.xcconfig
@@ -218,13 +230,13 @@ targets:
     info:
       path: WatchApp/Info.plist
       properties:
-        CFBundleDisplayName: RemoteClaw
-        CFBundleShortVersionString: "2026.3.7"
-        CFBundleVersion: "20260307"
+        CFBundleDisplayName: OpenClaw
+        CFBundleShortVersionString: "2026.3.8"
+        CFBundleVersion: "20260308"
         WKCompanionAppBundleIdentifier: "$(REMOTECLAW_APP_BUNDLE_ID)"
         WKWatchKitApp: true
 
-  RemoteClawWatchExtension:
+  OpenClawWatchExtension:
     type: watchkit2-extension
     platform: watchOS
     deploymentTarget: "11.0"
@@ -243,15 +255,15 @@ targets:
     info:
       path: WatchExtension/Info.plist
       properties:
-        CFBundleDisplayName: RemoteClaw
-        CFBundleShortVersionString: "2026.3.7"
-        CFBundleVersion: "20260307"
+        CFBundleDisplayName: OpenClaw
+        CFBundleShortVersionString: "2026.3.8"
+        CFBundleVersion: "20260308"
         NSExtension:
           NSExtensionAttributes:
             WKAppBundleIdentifier: "$(REMOTECLAW_WATCH_APP_BUNDLE_ID)"
           NSExtensionPointIdentifier: com.apple.watchkit
 
-  RemoteClawTests:
+  OpenClawTests:
     type: bundle.unit-test
     platform: iOS
     configFiles:
@@ -259,8 +271,10 @@ targets:
       Release: Signing.xcconfig
     sources:
       - path: Tests
+        excludes:
+          - Logic
     dependencies:
-      - target: RemoteClaw
+      - target: OpenClaw
       - package: Swabble
         product: SwabbleKit
       - sdk: AppIntents.framework
@@ -273,11 +287,37 @@ targets:
         ENABLE_APP_INTENTS_METADATA_GENERATION: NO
         SWIFT_VERSION: "6.0"
         SWIFT_STRICT_CONCURRENCY: complete
-        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/RemoteClaw.app/RemoteClaw"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/OpenClaw.app/OpenClaw"
         BUNDLE_LOADER: "$(TEST_HOST)"
     info:
       path: Tests/Info.plist
       properties:
-        CFBundleDisplayName: RemoteClawTests
-        CFBundleShortVersionString: "2026.3.7"
-        CFBundleVersion: "20260307"
+        CFBundleDisplayName: OpenClawTests
+        CFBundleShortVersionString: "2026.3.8"
+        CFBundleVersion: "20260308"
+
+  OpenClawLogicTests:
+    type: bundle.unit-test
+    platform: iOS
+    configFiles:
+      Debug: Signing.xcconfig
+      Release: Signing.xcconfig
+    sources:
+      - path: Tests/Logic
+    dependencies:
+      - package: OpenClawKit
+    settings:
+      base:
+        CODE_SIGN_IDENTITY: "Apple Development"
+        CODE_SIGN_STYLE: "$(REMOTECLAW_CODE_SIGN_STYLE)"
+        DEVELOPMENT_TEAM: "$(REMOTECLAW_DEVELOPMENT_TEAM)"
+        PRODUCT_BUNDLE_IDENTIFIER: org.remoteclaw.ios.logic-tests
+        ENABLE_APP_INTENTS_METADATA_GENERATION: NO
+        SWIFT_VERSION: "6.0"
+        SWIFT_STRICT_CONCURRENCY: complete
+    info:
+      path: Tests/Info.plist
+      properties:
+        CFBundleDisplayName: OpenClawLogicTests
+        CFBundleShortVersionString: "2026.3.8"
+        CFBundleVersion: "20260308"

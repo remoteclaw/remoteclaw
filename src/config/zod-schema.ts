@@ -519,8 +519,29 @@ export const RemoteClawSchema = z
         outputFormat: z.string().optional(),
         apiKey: SecretInputSchema.optional().register(sensitive),
         interruptOnSpeech: z.boolean().optional(),
+        silenceTimeoutMs: z.number().int().positive().optional(),
       })
       .strict()
+      .superRefine((talk, ctx) => {
+        // When talk.provider is set and talk.providers exists, provider must be a key in providers.
+        if (talk.provider && talk.providers) {
+          if (!(talk.provider in talk.providers)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ["provider"],
+              message: `talk.provider "${talk.provider}" is missing from talk.providers (available: ${Object.keys(talk.providers).join(", ")})`,
+            });
+          }
+        }
+        // When talk.providers has multiple entries, talk.provider is required.
+        if (talk.providers && Object.keys(talk.providers).length > 1 && !talk.provider) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["provider"],
+            message: `talk.provider is required when talk.providers has multiple entries`,
+          });
+        }
+      })
       .optional(),
     gateway: z
       .object({

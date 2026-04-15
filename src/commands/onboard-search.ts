@@ -10,7 +10,7 @@ import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import type { SecretInputMode } from "./onboard-types.js";
 
-export type SearchProvider = "perplexity" | "brave" | "gemini" | "grok" | "kimi";
+export type SearchProvider = "brave" | "gemini" | "grok" | "kimi" | "perplexity";
 
 type SearchProviderEntry = {
   value: SearchProvider;
@@ -23,17 +23,9 @@ type SearchProviderEntry = {
 
 export const SEARCH_PROVIDER_OPTIONS: readonly SearchProviderEntry[] = [
   {
-    value: "perplexity",
-    label: "Perplexity Search",
-    hint: "Structured results · domain/language/freshness filters",
-    envKeys: ["PERPLEXITY_API_KEY"],
-    placeholder: "pplx-...",
-    signupUrl: "https://www.perplexity.ai/settings/api",
-  },
-  {
     value: "brave",
     label: "Brave Search",
-    hint: "Structured results · region-specific",
+    hint: "Structured results · country/language/time filters",
     envKeys: ["BRAVE_API_KEY"],
     placeholder: "BSA...",
     signupUrl: "https://brave.com/search/api/",
@@ -62,6 +54,14 @@ export const SEARCH_PROVIDER_OPTIONS: readonly SearchProviderEntry[] = [
     placeholder: "sk-...",
     signupUrl: "https://platform.moonshot.cn/",
   },
+  {
+    value: "perplexity",
+    label: "Perplexity Search",
+    hint: "Structured results · domain/country/language/time filters",
+    envKeys: ["PERPLEXITY_API_KEY"],
+    placeholder: "pplx-...",
+    signupUrl: "https://www.perplexity.ai/settings/api",
+  },
 ] as const;
 
 export function hasKeyInEnv(entry: SearchProviderEntry): boolean {
@@ -73,14 +73,14 @@ function rawKeyValue(config: RemoteClawConfig, provider: SearchProvider): unknow
   switch (provider) {
     case "brave":
       return search?.apiKey;
-    case "perplexity":
-      return search?.perplexity?.apiKey;
     case "gemini":
       return search?.gemini?.apiKey;
     case "grok":
       return search?.grok?.apiKey;
     case "kimi":
       return search?.kimi?.apiKey;
+    case "perplexity":
+      return search?.perplexity?.apiKey;
   }
 }
 
@@ -128,22 +128,21 @@ export function applySearchKey(
   key: SecretInput,
 ): RemoteClawConfig {
   const search = { ...config.tools?.web?.search, provider, enabled: true };
-  const keyStr = key as string;
   switch (provider) {
     case "brave":
-      search.apiKey = keyStr;
-      break;
-    case "perplexity":
-      search.perplexity = { ...search.perplexity, apiKey: keyStr };
+      search.apiKey = key;
       break;
     case "gemini":
-      search.gemini = { ...search.gemini, apiKey: keyStr };
+      search.gemini = { ...search.gemini, apiKey: key };
       break;
     case "grok":
-      search.grok = { ...search.grok, apiKey: keyStr };
+      search.grok = { ...search.grok, apiKey: key };
       break;
     case "kimi":
-      search.kimi = { ...search.kimi, apiKey: keyStr };
+      search.kimi = { ...search.kimi, apiKey: key };
+      break;
+    case "perplexity":
+      search.perplexity = { ...search.perplexity, apiKey: key };
       break;
   }
   return {
@@ -203,7 +202,7 @@ export async function setupSearch(
     [
       "Web search lets your agent look things up online.",
       "Choose a provider and paste your API key.",
-      "Docs: https://docs.remoteclaw.ai/tools/web",
+      "Docs: https://docs.remoteclaw.org/tools/web",
     ].join("\n"),
     "Web search",
   );
@@ -226,7 +225,7 @@ export async function setupSearch(
     if (detected) {
       return detected.value;
     }
-    return "perplexity";
+    return SEARCH_PROVIDER_OPTIONS[0].value;
   })();
 
   type PickerValue = SearchProvider | "__skip__";
@@ -267,10 +266,10 @@ export async function setupSearch(
     const ref = buildSearchEnvRef(choice);
     await prompter.note(
       [
-        "Secret references enabled — RemoteClaw will store a reference instead of the API key.",
+        "Secret references enabled — OpenClaw will store a reference instead of the API key.",
         `Env var: ${ref.id}${envAvailable ? " (detected)" : ""}.`,
         ...(envAvailable ? [] : [`Set ${ref.id} in the Gateway environment.`]),
-        "Docs: https://docs.remoteclaw.ai/tools/web",
+        "Docs: https://docs.remoteclaw.org/tools/web",
       ].join("\n"),
       "Web search",
     );
@@ -304,7 +303,7 @@ export async function setupSearch(
     [
       "No API key stored — web_search won't work until a key is available.",
       `Get your key at: ${entry.signupUrl}`,
-      "Docs: https://docs.remoteclaw.ai/tools/web",
+      "Docs: https://docs.remoteclaw.org/tools/web",
     ].join("\n"),
     "Web search",
   );

@@ -1,6 +1,5 @@
 import crypto from "node:crypto";
 import { resolveUserTimezone } from "../../agents/date-time.js";
-import { buildWorkspaceSkillSnapshot } from "../../agents/skills.js";
 import { ensureSkillsWatcher, getSkillsSnapshotVersion } from "../../agents/skills/refresh.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
@@ -151,7 +150,6 @@ export async function ensureSkillSnapshot(params: {
     isFirstTurnInSession,
     workspaceDir,
     cfg,
-    skillFilter,
   } = params;
 
   let nextEntry = sessionEntry;
@@ -167,15 +165,7 @@ export async function ensureSkillSnapshot(params: {
         sessionId: sessionId ?? crypto.randomUUID(),
         updatedAt: Date.now(),
       };
-    const skillSnapshot =
-      isFirstTurnInSession || !current.skillsSnapshot || shouldRefreshSnapshot
-        ? await buildWorkspaceSkillSnapshot(workspaceDir, {
-            config: cfg,
-            skillFilter,
-            eligibility: { remote: {} },
-            snapshotVersion,
-          })
-        : current.skillsSnapshot;
+    const skillSnapshot = current.skillsSnapshot;
     nextEntry = {
       ...current,
       sessionId: sessionId ?? current.sessionId ?? crypto.randomUUID(),
@@ -193,21 +183,8 @@ export async function ensureSkillSnapshot(params: {
   }
 
   const skillsSnapshot = shouldRefreshSnapshot
-    ? await buildWorkspaceSkillSnapshot(workspaceDir, {
-        config: cfg,
-        skillFilter,
-        eligibility: { remote: {} },
-        snapshotVersion,
-      })
-    : (nextEntry?.skillsSnapshot ??
-      (isFirstTurnInSession
-        ? undefined
-        : await buildWorkspaceSkillSnapshot(workspaceDir, {
-            config: cfg,
-            skillFilter,
-            eligibility: { remote: {} },
-            snapshotVersion,
-          })));
+    ? undefined
+    : (nextEntry?.skillsSnapshot ?? (isFirstTurnInSession ? undefined : undefined));
   if (
     skillsSnapshot &&
     sessionStore &&

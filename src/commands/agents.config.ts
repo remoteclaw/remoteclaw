@@ -4,12 +4,6 @@ import {
   resolveAgentWorkspaceDir,
   resolveSoleAgentId,
 } from "../agents/agent-scope.js";
-import type { AgentIdentityFile } from "../agents/identity-file.js";
-import {
-  identityHasValues,
-  loadAgentIdentityFromWorkspace,
-  parseIdentityMarkdown as parseIdentityMarkdownFile,
-} from "../agents/identity-file.js";
 import { listRouteBindings } from "../config/bindings.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { normalizeAgentId } from "../routing/session-key.js";
@@ -32,7 +26,7 @@ export type AgentSummary = {
 
 type AgentEntry = NonNullable<NonNullable<RemoteClawConfig["agents"]>["list"]>[number];
 
-export type AgentIdentity = AgentIdentityFile;
+export type AgentIdentity = Record<string, unknown> | null;
 export { listAgentEntries };
 
 export function findAgentEntryIndex(list: AgentEntry[], agentId: string): number {
@@ -69,16 +63,12 @@ function resolveAgentModel(cfg: RemoteClawConfig, agentId: string) {
   return raw?.primary?.trim() || undefined;
 }
 
-export function parseIdentityMarkdown(content: string): AgentIdentity {
-  return parseIdentityMarkdownFile(content);
+export function parseIdentityMarkdown(_content: string): AgentIdentity {
+  return null;
 }
 
-export function loadAgentIdentity(workspace: string): AgentIdentity {
-  const parsed = loadAgentIdentityFromWorkspace(workspace);
-  if (!parsed) {
-    return null;
-  }
-  return identityHasValues(parsed) ? parsed : null;
+export function loadAgentIdentity(_workspace: string): AgentIdentity {
+  return null;
 }
 
 export function buildAgentSummaries(cfg: RemoteClawConfig): AgentSummary[] {
@@ -99,8 +89,8 @@ export function buildAgentSummaries(cfg: RemoteClawConfig): AgentSummary[] {
     const configIdentity = configuredAgents.find(
       (agent) => normalizeAgentId(agent.id) === id,
     )?.identity;
-    const identityName = identity?.name ?? configIdentity?.name?.trim();
-    const identityEmoji = identity?.emoji ?? configIdentity?.emoji?.trim();
+    const identityName = (identity?.name as string | undefined) ?? configIdentity?.name?.trim();
+    const identityEmoji = (identity?.emoji as string | undefined) ?? configIdentity?.emoji?.trim();
     const identitySource = identity
       ? "identity"
       : configIdentity && (identityName || identityEmoji)

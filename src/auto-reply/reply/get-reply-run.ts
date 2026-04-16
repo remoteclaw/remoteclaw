@@ -1,12 +1,4 @@
 import crypto from "node:crypto";
-import { resolveSessionAuthProfileOverride } from "../../agents/auth-profiles/session-override.js";
-import type { ExecToolDefaults } from "../../agents/bash-tools.js";
-import {
-  abortEmbeddedPiRun,
-  isEmbeddedPiRunActive,
-  isEmbeddedPiRunStreaming,
-  resolveEmbeddedSessionLane,
-} from "../../agents/pi-embedded.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
   resolveGroupSessionKey,
@@ -46,7 +38,7 @@ import type { TypingController } from "./typing.js";
 import { appendUntrustedContext } from "./untrusted-context.js";
 
 type AgentDefaults = NonNullable<RemoteClawConfig["agents"]>["defaults"];
-type ExecOverrides = Pick<ExecToolDefaults, "host" | "security" | "ask" | "node">;
+type ExecOverrides = Record<string, unknown>;
 
 function buildResetSessionNoticeText(params: {
   provider: string;
@@ -399,31 +391,21 @@ export async function runPreparedReply(
     inlineMode: perMessageQueueMode,
     inlineOptions: perMessageQueueOptions,
   });
-  const sessionLaneKey = resolveEmbeddedSessionLane(sessionKey ?? sessionIdFinal);
+  const sessionLaneKey = sessionKey ?? sessionIdFinal;
   const laneSize = getQueueSize(sessionLaneKey);
   if (resolvedQueue.mode === "interrupt" && laneSize > 0) {
     const cleared = clearCommandLane(sessionLaneKey);
-    const aborted = abortEmbeddedPiRun(sessionIdFinal);
-    logVerbose(`Interrupting ${sessionLaneKey} (cleared ${cleared}, aborted=${aborted})`);
+    logVerbose(`Interrupting ${sessionLaneKey} (cleared ${cleared})`);
   }
   const queueKey = sessionKey ?? sessionIdFinal;
-  const isActive = isEmbeddedPiRunActive(sessionIdFinal);
-  const isStreaming = isEmbeddedPiRunStreaming(sessionIdFinal);
+  const isActive = false;
+  const isStreaming = false;
   const shouldSteer = resolvedQueue.mode === "steer" || resolvedQueue.mode === "steer-backlog";
   const shouldFollowup =
     resolvedQueue.mode === "followup" ||
     resolvedQueue.mode === "collect" ||
     resolvedQueue.mode === "steer-backlog";
-  const authProfileId = await resolveSessionAuthProfileOverride({
-    cfg,
-    provider,
-    agentDir,
-    sessionEntry,
-    sessionStore,
-    sessionKey,
-    storePath,
-    isNewSession,
-  });
+  const authProfileId = undefined;
   const authProfileIdSource = sessionEntry?.authProfileOverrideSource;
   const followupRun = {
     prompt: queuedBody,

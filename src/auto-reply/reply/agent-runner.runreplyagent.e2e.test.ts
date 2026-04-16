@@ -38,7 +38,8 @@ const state = vi.hoisted(() => ({
   runCliAgentMock: vi.fn(),
 }));
 
-let modelFallbackModule: typeof import("../../agents/model-fallback.js");
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const modelFallbackModule = { runWithModelFallback: vi.fn() } as any;
 let onAgentEvent: typeof import("../../infra/agent-events.js").onAgentEvent;
 
 let runReplyAgentPromise:
@@ -52,28 +53,6 @@ async function getRunReplyAgent() {
   return await runReplyAgentPromise;
 }
 
-vi.mock("../../agents/model-fallback.js", () => ({
-  runWithModelFallback: async ({
-    provider,
-    model,
-    run,
-  }: {
-    provider: string;
-    model: string;
-    run: (provider: string, model: string) => Promise<unknown>;
-  }) => ({
-    result: await run(provider, model),
-    provider,
-    model,
-    attempts: [],
-  }),
-}));
-
-vi.mock("../../agents/pi-embedded.js", () => ({
-  queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: (params: unknown) => state.runEmbeddedPiAgentMock(params),
-}));
-
 vi.mock("../../agents/cli-runner.js", () => ({
   runCliAgent: (params: unknown) => state.runCliAgentMock(params),
 }));
@@ -85,7 +64,6 @@ vi.mock("./queue.js", () => ({
 
 beforeAll(async () => {
   // Avoid attributing the initial agent-runner import cost to the first test case.
-  modelFallbackModule = await import("../../agents/model-fallback.js");
   ({ onAgentEvent } = await import("../../infra/agent-events.js"));
   await getRunReplyAgent();
 });

@@ -5,24 +5,22 @@ import type { RemoteClawConfig } from "../config/config.js";
 import { withTempHome as withTempHomeHarness } from "../config/home-env.test-harness.js";
 import { getReplyFromConfig } from "./reply.js";
 
-type RunEmbeddedPiAgent = typeof import("../agents/pi-embedded.js").runEmbeddedPiAgent;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RunEmbeddedPiAgentParams = Record<string, unknown> & {
   onBlockReply?: (payload: { text?: string; mediaUrls?: string[] }) => Promise<void> | void;
   onPartialReply?: (payload: { text?: string }) => Promise<void> | void;
 };
-type RunEmbeddedPiAgentReply = Awaited<ReturnType<RunEmbeddedPiAgent>>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RunEmbeddedPiAgentReply = any;
 
 const piEmbeddedMock = vi.hoisted(() => ({
   abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: vi.fn<RunEmbeddedPiAgent>(),
+  runEmbeddedPiAgent: vi.fn(),
   queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
   resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
   isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
   isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
 }));
-
-vi.mock("/src/agents/pi-embedded.js", () => piEmbeddedMock);
-vi.mock("../agents/pi-embedded.js", () => piEmbeddedMock);
 
 type GetReplyOptions = NonNullable<Parameters<typeof getReplyFromConfig>[1]>;
 

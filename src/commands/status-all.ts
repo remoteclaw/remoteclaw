@@ -1,4 +1,3 @@
-import { buildWorkspaceSkillStatus } from "../agents/skills-status.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { resolveCommandSecretRefsViaGateway } from "../cli/command-secret-gateway.js";
 import { getStatusCommandSecretTargetIds } from "../cli/command-secret-targets.js";
@@ -224,18 +223,7 @@ export async function statusAllCommand(
       agentStatus.agents[0]?.workspaceDir ??
       null;
     const skillStatus =
-      defaultWorkspace != null
-        ? (() => {
-            try {
-              return buildWorkspaceSkillStatus(defaultWorkspace, {
-                config: cfg,
-                eligibility: { remote: {} },
-              });
-            } catch {
-              return null;
-            }
-          })()
-        : null;
+      defaultWorkspace != null ? { loaded: false, count: 0, workspaceDir: "", skills: [] } : null;
 
     const controlUiEnabled = cfg.gateway?.controlUi?.enabled ?? true;
     const dashboard = controlUiEnabled

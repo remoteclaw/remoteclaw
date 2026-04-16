@@ -1,34 +1,12 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import type { AssistantMessage } from "../agents/agent-types.js"; // Fork-local type (replaces @mariozechner/pi-ai import)
-import { getApiKeyForModel } from "../agents/model-auth.js";
-import { resolveModel } from "../agents/pi-embedded-runner/model.js";
-import { completeSimple } from "../agents/stream-message-shared.js"; // Fork-local stub (replaces @mariozechner/pi-ai import)
+import type { AssistantMessage } from "../agents/agent-types.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { withEnv } from "../test-utils/env.js";
 import * as tts from "./tts.js";
 
-vi.mock("../agents/stream-message-shared.js", async (importOriginal) => {
-  const orig = await importOriginal<Record<string, unknown>>();
-  return { ...orig, completeSimple: vi.fn() };
-});
-
-vi.mock("../agents/pi-embedded-runner/model.js", () => ({
-  resolveModel: vi.fn((provider: string, modelId: string) => ({
-    model: {
-      provider,
-      id: modelId,
-      name: modelId,
-      api: "openai-completions",
-      reasoning: false,
-      input: ["text"],
-      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-      contextWindow: 128000,
-      maxTokens: 8192,
-    },
-    authStorage: { profiles: {} },
-    modelRegistry: { find: vi.fn() },
-  })),
-}));
+const completeSimple = vi.fn();
+const getApiKeyForModel = vi.fn();
+const resolveModel = vi.fn();
 
 vi.mock("../agents/model-auth.js", () => ({
   getApiKeyForModel: vi.fn(async () => ({

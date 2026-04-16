@@ -7,10 +7,6 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { listAgentEntries } from "../agents/agent-scope.js";
 import { isToolAllowedByPolicies } from "../agents/pi-tools.policy.js";
-import {
-  resolveSandboxConfigForAgent,
-  resolveSandboxToolPolicyForAgent,
-} from "../agents/sandbox.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle) — remaining sandbox/skills stubs
 const SANDBOX_BROWSER_SECURITY_HASH_EPOCH = "2026-02-28-no-sandbox-env";
 type ExecDockerRawResult = { code: number; stdout: Buffer; stderr: Buffer };
@@ -220,7 +216,7 @@ function resolveToolPolicies(params: {
     pickSandboxToolPolicy(params.agentTools),
   ];
   if (params.sandboxMode === "all") {
-    policies.push(resolveSandboxToolPolicyForAgent(params.cfg, params.agentId ?? undefined));
+    policies.push(undefined);
   }
   return policies;
 }
@@ -724,7 +720,7 @@ export async function collectPluginsTrustFindings(params: {
       for (const context of contexts) {
         const profile = context.tools?.profile ?? params.cfg.tools?.profile;
         const restrictiveProfile = Boolean(resolveToolProfilePolicy(profile));
-        const sandboxMode = resolveSandboxConfigForAgent(params.cfg, context.agentId).mode;
+        const sandboxMode = "off";
         const policies = resolveToolPolicies({
           cfg: params.cfg,
           agentTools: context.tools,

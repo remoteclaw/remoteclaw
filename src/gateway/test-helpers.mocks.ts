@@ -505,24 +505,6 @@ vi.mock("../config/config.js", async () => {
   };
 });
 
-vi.mock("../agents/pi-embedded.js", async () => {
-  const actual = await vi.importActual<typeof import("../agents/pi-embedded.js")>(
-    "../agents/pi-embedded.js",
-  );
-  return {
-    ...actual,
-    isEmbeddedPiRunActive: (sessionId: string) => embeddedRunMock.activeIds.has(sessionId),
-    abortEmbeddedPiRun: (sessionId: string) => {
-      embeddedRunMock.abortCalls.push(sessionId);
-      return embeddedRunMock.activeIds.has(sessionId);
-    },
-    waitForEmbeddedPiRunEnd: async (sessionId: string) => {
-      embeddedRunMock.waitCalls.push(sessionId);
-      return embeddedRunMock.waitResults.get(sessionId) ?? true;
-    },
-  };
-});
-
 vi.mock("../commands/health.js", () => ({
   getHealthSnapshot: vi.fn().mockResolvedValue({ ok: true, stub: true }),
 }));

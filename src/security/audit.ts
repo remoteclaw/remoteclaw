@@ -1,6 +1,5 @@
 import { isIP } from "node:net";
 import path from "node:path";
-import { resolveSandboxConfigForAgent } from "../agents/sandbox.js";
 import { execDockerRaw } from "../agents/sandbox/docker.js";
 import { resolveBrowserConfig, resolveProfile } from "../browser/config.js";
 import { resolveBrowserControlAuth } from "../browser/control-auth.js";
@@ -851,7 +850,7 @@ function collectElevatedFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] 
 function collectExecRuntimeFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
   const globalExecHost = cfg.tools?.exec?.host;
-  const defaultSandboxMode = resolveSandboxConfigForAgent(cfg).mode;
+  const defaultSandboxMode = "off";
   const defaultHostIsExplicitSandbox = globalExecHost === "sandbox";
 
   if (defaultHostIsExplicitSandbox && defaultSandboxMode === "off") {
@@ -875,7 +874,7 @@ function collectExecRuntimeFindings(cfg: RemoteClawConfig): SecurityAuditFinding
         typeof entry === "object" &&
         typeof entry.id === "string" &&
         entry.tools?.exec?.host === "sandbox" &&
-        resolveSandboxConfigForAgent(cfg, entry.id).mode === "off",
+        true,
     )
     .map((entry) => entry.id)
     .slice(0, 5);

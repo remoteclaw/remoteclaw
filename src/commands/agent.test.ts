@@ -3,10 +3,7 @@ import path from "node:path";
 import { beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
 import "../cron/isolated-agent.mocks.js";
-import * as cliRunnerModule from "../agents/cli-runner.js";
-import { FailoverError } from "../agents/failover-error.js";
 import * as modelSelectionModule from "../agents/model-selection.js";
-import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
 import * as commandSecretGatewayModule from "../cli/command-secret-gateway.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import * as configModule from "../config/config.js";
@@ -17,6 +14,21 @@ import type { RuntimeEnv } from "../runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../test-utils/channel-plugins.js";
 import { agentCommand, agentCommandFromIngress } from "./agent.js";
 import * as agentDeliveryModule from "./agent/delivery.js";
+
+// Gutted stub replacements for deleted modules
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+class FailoverError extends Error {
+  reason: string;
+  [key: string]: unknown;
+  constructor(message: string, params: Record<string, unknown>) {
+    super(message, { cause: params.cause });
+    this.name = "FailoverError";
+    this.reason = params.reason as string;
+    Object.assign(this, params);
+  }
+}
+const runEmbeddedPiAgent = vi.fn();
+const cliRunnerModule = { runCliAgent: vi.fn() };
 
 vi.mock("../agents/auth-profiles.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../agents/auth-profiles.js")>();

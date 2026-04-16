@@ -1,5 +1,4 @@
 import type { AgentInternalEvent } from "../../agents/internal-events.js";
-import type { ClientToolDefinition } from "../../agents/pi-embedded-runner/run/params.js";
 import type { SpawnedRunMetadata } from "../../agents/spawned-context.js";
 import type { ChannelOutboundTargetMode } from "../../channels/plugins/types.js";
 import type { InputProvenance } from "../../sessions/input-provenance.js";
@@ -34,7 +33,7 @@ export type AgentCommandOpts = {
   /** Optional image attachments for multimodal messages. */
   images?: ImageContent[];
   /** Optional client-provided tools (OpenResponses hosted tools). */
-  clientTools?: ClientToolDefinition[];
+  clientTools?: Array<Record<string, unknown>>;
   /** Agent id override (must exist in config). */
   agentId?: string;
   to?: string;

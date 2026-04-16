@@ -1,9 +1,12 @@
 import { isToolAllowedByPolicies } from "../agents/pi-tools.policy.js";
-import {
-  resolveSandboxConfigForAgent,
-  resolveSandboxToolPolicyForAgent,
-} from "../agents/sandbox.js";
 import { isDangerousNetworkMode, normalizeNetworkMode } from "../agents/sandbox/network-mode.js";
+const GUTTED_SANDBOX_CONFIG = {
+  mode: "off" as "off" | "non-main" | "all",
+  browser: { enabled: false, network: "", cdpSourceRange: "" },
+  docker: {},
+};
+const resolveSandboxConfigForAgent = (_cfg?: unknown, _agentId?: string) => GUTTED_SANDBOX_CONFIG;
+const resolveSandboxToolPolicyForAgent = (..._args: unknown[]) => undefined;
 /**
  * Synchronous security audit collector functions.
  *

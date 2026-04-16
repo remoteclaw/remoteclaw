@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { resolvePathFromInput } from "../../agents/path-policy.js";
 import { assertMediaNotDataUrl, resolveSandboxedMediaSource } from "../../agents/sandbox-paths.js";
-import { ensureSandboxWorkspaceForSession } from "../../agents/sandbox.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { ReplyPayload } from "../types.js";
 
@@ -34,17 +33,8 @@ export function createReplyMediaPathNormalizer(params: {
   sessionKey?: string;
   workspaceDir: string;
 }): (payload: ReplyPayload) => Promise<ReplyPayload> {
-  let sandboxRootPromise: Promise<string | undefined> | undefined;
-
   const resolveSandboxRoot = async (): Promise<string | undefined> => {
-    if (!sandboxRootPromise) {
-      sandboxRootPromise = ensureSandboxWorkspaceForSession({
-        config: params.cfg,
-        sessionKey: params.sessionKey,
-        workspaceDir: params.workspaceDir,
-      }).then((sandbox: any) => sandbox?.workspaceDir);
-    }
-    return await sandboxRootPromise;
+    return undefined;
   };
 
   const normalizeMediaSource = async (raw: string): Promise<string> => {

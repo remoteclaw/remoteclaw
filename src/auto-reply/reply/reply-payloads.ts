@@ -1,5 +1,4 @@
 import { isMessagingToolDuplicate } from "../../agents/agent-helpers/messaging-dedupe.js";
-import type { MessagingToolSend } from "../../agents/pi-embedded-runner.js";
 import { normalizeChannelId } from "../../channels/plugins/index.js";
 import type { ReplyToMode } from "../../config/types.js";
 import { normalizeTargetForProvider } from "../../infra/outbound/target-normalization.js";
@@ -221,7 +220,13 @@ function targetsMatchForSuppression(params: {
 
 export function shouldSuppressMessagingToolReplies(params: {
   messageProvider?: string;
-  messagingToolSentTargets?: MessagingToolSend[];
+  messagingToolSentTargets?: Array<{
+    provider?: string;
+    to?: string;
+    threadId?: string;
+    accountId?: string;
+    [key: string]: unknown;
+  }>;
   originatingTo?: string;
   accountId?: string;
 }): boolean {

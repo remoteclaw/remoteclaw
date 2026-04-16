@@ -3,7 +3,6 @@ import { lookupContextTokens } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import { resolveModelAuthMode } from "../../agents/model-auth.js";
 import { isCliProvider } from "../../agents/model-selection.js";
-import { queueEmbeddedPiMessage } from "../../agents/pi-embedded.js";
 import { hasNonzeroUsage, type NormalizedUsage } from "../../agents/usage.js";
 import {
   resolveAgentIdFromSessionKey,
@@ -192,7 +191,7 @@ export async function runReplyAgent(params: {
   };
 
   if (shouldSteer && isStreaming) {
-    const steered = queueEmbeddedPiMessage(followupRun.run.sessionId, followupRun.prompt);
+    const steered = false;
     if (steered && !shouldFollowup) {
       await touchActiveSessionEntry();
       typing.cleanup();
@@ -480,7 +479,9 @@ export async function runReplyAgent(params: {
       messageProvider: followupRun.run.messageProvider,
       messagingToolSentTexts: runResult.messagingToolSentTexts,
       messagingToolSentMediaUrls: runResult.messagingToolSentMediaUrls,
-      messagingToolSentTargets: runResult.messagingToolSentTargets,
+      messagingToolSentTargets: runResult.messagingToolSentTargets as Parameters<
+        typeof buildReplyPayloads
+      >[0]["messagingToolSentTargets"],
       originatingChannel: sessionCtx.OriginatingChannel,
       originatingTo: resolveOriginMessageTo({
         originatingTo: sessionCtx.OriginatingTo,

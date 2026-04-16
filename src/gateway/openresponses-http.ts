@@ -8,7 +8,8 @@
 
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { ClientToolDefinition } from "../agents/pi-embedded-runner/run/params.js";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ClientToolDefinition = any;
 import { createDefaultDeps } from "../cli/deps.js";
 import { agentCommandFromIngress } from "../commands/agent.js";
 import type { ImageContent } from "../commands/agent/types.js";

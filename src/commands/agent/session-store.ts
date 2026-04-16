@@ -11,9 +11,8 @@ import {
   updateSessionStore,
 } from "../../config/sessions.js";
 
-type RunResult = Awaited<
-  ReturnType<(typeof import("../../agents/pi-embedded.js"))["runEmbeddedPiAgent"]>
->;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RunResult = any;
 
 export async function updateSessionStoreAfterAgentRun(params: {
   cfg: RemoteClawConfig;

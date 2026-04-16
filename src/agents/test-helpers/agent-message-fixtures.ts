@@ -4,7 +4,14 @@ import type {
   ToolResultMessage,
   UserMessage,
 } from "../agent-types.js";
-import { ZERO_USAGE_FIXTURE } from "./usage-fixtures.js";
+const ZERO_USAGE_FIXTURE = {
+  input: 0,
+  output: 0,
+  cacheRead: 0,
+  cacheWrite: 0,
+  totalTokens: 0,
+  cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+};
 
 export function castAgentMessage(message: unknown): AgentMessage {
   return message as AgentMessage;

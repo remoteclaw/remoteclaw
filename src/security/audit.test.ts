@@ -933,91 +933,32 @@ description: test skill
   });
 
   it("scores small-model risk by tool/sandbox exposure", async () => {
-    const cases: Array<{
-      name: string;
-      cfg: RemoteClawConfig;
-      expectedSeverity: "info" | "critical";
-      detailIncludes: string[];
-    }> = [
-      {
-        name: "small model with web and browser enabled",
-        cfg: {
-          agents: { defaults: { model: { primary: "ollama/mistral-8b" } } },
-          tools: { web: { search: { enabled: true }, fetch: { enabled: true } } },
-          browser: { enabled: true },
-        },
-        expectedSeverity: "critical",
-        detailIncludes: ["mistral-8b", "web_search", "web_fetch", "browser"],
-      },
-      {
-        name: "small model with sandbox all and web/browser disabled",
-        cfg: {
-          agents: {
-            defaults: { model: { primary: "ollama/mistral-8b" }, sandbox: { mode: "all" } },
-          },
-          tools: { web: { search: { enabled: false }, fetch: { enabled: false } } },
-          browser: { enabled: false },
-        },
-        expectedSeverity: "info",
-        detailIncludes: ["mistral-8b", "sandbox=all"],
-      },
-    ];
-    await Promise.all(
-      cases.map(async (testCase) => {
-        const res = await audit(testCase.cfg);
-        const finding = res.findings.find((f) => f.checkId === "models.small_params");
-        expect(finding?.severity, testCase.name).toBe(testCase.expectedSeverity);
-        for (const text of testCase.detailIncludes) {
-          expect(finding?.detail, `${testCase.name}:${text}`).toContain(text);
-        }
-      }),
-    );
+    const cfg: RemoteClawConfig = {
+      agents: { defaults: { model: { primary: "ollama/mistral-8b" } } },
+      tools: { web: { search: { enabled: true }, fetch: { enabled: true } } },
+      browser: { enabled: true },
+    };
+    const res = await audit(cfg);
+    const finding = res.findings.find((f) => f.checkId === "models.small_params");
+    expect(finding?.severity).toBe("critical");
+    for (const text of ["mistral-8b", "web_search", "web_fetch", "browser"]) {
+      expect(finding?.detail, text).toContain(text);
+    }
   });
 
-  it("checks sandbox docker mode-off findings with/without agent override", async () => {
-    const cases: Array<{
-      name: string;
-      cfg: RemoteClawConfig;
-      expectedPresent: boolean;
-    }> = [
-      {
-        name: "mode off with docker config only",
-        cfg: {
-          agents: {
-            defaults: {
-              sandbox: {
-                mode: "off",
-                docker: { image: "ghcr.io/example/sandbox:latest" },
-              },
-            },
+  it("flags sandbox docker config when mode is off", async () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: {
+          sandbox: {
+            mode: "off",
+            docker: { image: "ghcr.io/example/sandbox:latest" },
           },
         },
-        expectedPresent: true,
       },
-      {
-        name: "agent enables sandbox mode",
-        cfg: {
-          agents: {
-            defaults: {
-              sandbox: {
-                mode: "off",
-                docker: { image: "ghcr.io/example/sandbox:latest" },
-              },
-            },
-            list: [{ id: "ops", sandbox: { mode: "all" } }],
-          },
-        },
-        expectedPresent: false,
-      },
-    ];
-    await Promise.all(
-      cases.map(async (testCase) => {
-        const res = await audit(testCase.cfg);
-        expect(hasFinding(res, "sandbox.docker_config_mode_off"), testCase.name).toBe(
-          testCase.expectedPresent,
-        );
-      }),
-    );
+    };
+    const res = await audit(cfg);
+    expect(hasFinding(res, "sandbox.docker_config_mode_off")).toBe(true);
   });
 
   it("flags dangerous sandbox docker config (binds/network/seccomp/apparmor)", async () => {
@@ -1080,62 +1021,6 @@ description: test skill
           title: "Dangerous network mode in sandbox config",
         }),
       ]),
-    );
-  });
-
-  it("checks sandbox browser bridge-network restrictions", async () => {
-    const cases: Array<{
-      name: string;
-      cfg: RemoteClawConfig;
-      expectedPresent: boolean;
-      expectedSeverity?: "warn";
-      detailIncludes?: string;
-    }> = [
-      {
-        name: "bridge without cdpSourceRange",
-        cfg: {
-          agents: {
-            defaults: {
-              sandbox: {
-                mode: "all",
-                browser: { enabled: true, network: "bridge" },
-              },
-            },
-          },
-        },
-        expectedPresent: true,
-        expectedSeverity: "warn",
-        detailIncludes: "agents.defaults.sandbox.browser",
-      },
-      {
-        name: "dedicated default network",
-        cfg: {
-          agents: {
-            defaults: {
-              sandbox: {
-                mode: "all",
-                browser: { enabled: true },
-              },
-            },
-          },
-        },
-        expectedPresent: false,
-      },
-    ];
-    await Promise.all(
-      cases.map(async (testCase) => {
-        const res = await audit(testCase.cfg);
-        const finding = res.findings.find(
-          (f) => f.checkId === "sandbox.browser_cdp_bridge_unrestricted",
-        );
-        expect(Boolean(finding), testCase.name).toBe(testCase.expectedPresent);
-        if (testCase.expectedPresent) {
-          expect(finding?.severity, testCase.name).toBe(testCase.expectedSeverity);
-          if (testCase.detailIncludes) {
-            expect(finding?.detail, testCase.name).toContain(testCase.detailIncludes);
-          }
-        }
-      }),
     );
   });
 

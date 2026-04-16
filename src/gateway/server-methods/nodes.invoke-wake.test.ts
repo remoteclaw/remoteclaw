@@ -93,7 +93,6 @@ async function invokeNode(params: {
     respond: respond as never,
     context: {
       nodeRegistry: params.nodeRegistry,
-      execApprovalManager: undefined,
       logGateway,
     } as never,
     client: null,

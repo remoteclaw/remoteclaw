@@ -5,7 +5,6 @@ import { AgentSideConnection, ndJsonStream } from "@agentclientprotocol/sdk";
 import { loadConfig } from "../config/config.js";
 import { buildGatewayConnectionDetails } from "../gateway/call.js";
 import { GatewayClient } from "../gateway/client.js";
-import { resolveGatewayConnectionAuth } from "../gateway/connection-auth.js";
 import { isMainModule } from "../infra/is-main.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import { readSecretFromFile } from "./secret-file.js";
@@ -18,22 +17,8 @@ export async function serveAcpGateway(opts: AcpServerOptions = {}): Promise<void
     config: cfg,
     url: opts.gatewayUrl,
   });
-  const gatewayUrlOverrideSource =
-    connection.urlSource === "cli --url"
-      ? "cli"
-      : connection.urlSource === "env REMOTECLAW_GATEWAY_URL"
-        ? "env"
-        : undefined;
-  const creds = await resolveGatewayConnectionAuth({
-    config: cfg,
-    explicitAuth: {
-      token: opts.gatewayToken,
-      password: opts.gatewayPassword,
-    },
-    env: process.env,
-    urlOverride: gatewayUrlOverrideSource ? connection.url : undefined,
-    urlOverrideSource: gatewayUrlOverrideSource,
-  });
+  // Connection auth gutted in RemoteClaw fork — use explicit opts directly.
+  const creds = { token: opts.gatewayToken, password: opts.gatewayPassword };
 
   let agent: AcpGatewayAgent | null = null;
   let onClosed!: () => void;

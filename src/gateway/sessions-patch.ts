@@ -24,7 +24,6 @@ export async function applySessionsPatchToStore(params: {
   store: Record<string, SessionEntry>;
   storeKey: string;
   patch: SessionsPatchParams;
-  loadGatewayModelCatalog?: (...args: unknown[]) => unknown;
 }): Promise<{ ok: true; entry: SessionEntry } | { ok: false; error: ErrorShape }> {
   const { cfg: _cfg, store, storeKey, patch } = params;
   const now = Date.now();

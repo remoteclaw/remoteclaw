@@ -1,7 +1,6 @@
 import { resolveBrowserConfig } from "../browser/config.js";
 import { loadConfig, type RemoteClawConfig } from "../config/config.js";
 import { GatewayClient } from "../gateway/client.js";
-import { resolveGatewayConnectionAuth } from "../gateway/connection-auth.js";
 import { loadOrCreateDeviceIdentity } from "../infra/device-identity.js";
 import type { SkillBinTrustEntry } from "../infra/exec-approvals.js";
 import { resolveExecutableFromPathEnv } from "../infra/executable-path.js";
@@ -110,36 +109,12 @@ function ensureNodePathEnv(): string {
   return DEFAULT_NODE_PATH;
 }
 
-export async function resolveNodeHostGatewayCredentials(params: {
+export async function resolveNodeHostGatewayCredentials(_params: {
   config: RemoteClawConfig;
   env?: NodeJS.ProcessEnv;
 }): Promise<{ token?: string; password?: string }> {
-  const mode = params.config.gateway?.mode === "remote" ? "remote" : "local";
-  const configForResolution =
-    mode === "local" ? buildNodeHostLocalAuthConfig(params.config) : params.config;
-  return await resolveGatewayConnectionAuth({
-    config: configForResolution,
-    env: params.env,
-    includeLegacyEnv: false,
-    localTokenPrecedence: "env-first",
-    localPasswordPrecedence: "env-first", // pragma: allowlist secret
-    remoteTokenPrecedence: "env-first",
-    remotePasswordPrecedence: "env-first", // pragma: allowlist secret
-  });
-}
-
-function buildNodeHostLocalAuthConfig(config: RemoteClawConfig): RemoteClawConfig {
-  if (!config.gateway?.remote?.token && !config.gateway?.remote?.password) {
-    return config;
-  }
-  const nextConfig = structuredClone(config);
-  if (nextConfig.gateway?.remote) {
-    // Local node-host must not inherit gateway.remote.* auth material, which can
-    // suppress GatewayClient device-token fallback and cause local token mismatches.
-    nextConfig.gateway.remote.token = undefined;
-    nextConfig.gateway.remote.password = undefined;
-  }
-  return nextConfig;
+  // Gutted in RemoteClaw fork (Middleware Boundary Principle)
+  return { token: undefined, password: undefined };
 }
 
 export async function runNodeHost(opts: NodeHostRunOptions): Promise<void> {

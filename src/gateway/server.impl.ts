@@ -27,7 +27,6 @@ import {
 } from "../infra/control-ui-assets.js";
 import { isDiagnosticsEnabled, onDiagnosticEvent } from "../infra/diagnostic-events.js";
 import { logAcceptedEnvOption } from "../infra/env.js";
-import { createExecApprovalForwarder } from "../infra/exec-approval-forwarder.js";
 import { onHeartbeatEvent } from "../infra/heartbeat-events.js";
 import { startHeartbeatRunner, type HeartbeatRunner } from "../infra/heartbeat-runner.js";
 import { getMachineDisplayName } from "../infra/machine-name.js";
@@ -52,7 +51,6 @@ import {
   GATEWAY_EVENT_UPDATE_AVAILABLE,
   type GatewayUpdateAvailableEventPayload,
 } from "./events.js";
-import { ExecApprovalManager } from "./exec-approval-manager.js";
 import { NodeRegistry } from "./node-registry.js";
 import type { startBrowserControlServerIfEnabled } from "./server-browser.js";
 import { createChannelManager } from "./server-channels.js";
@@ -64,10 +62,8 @@ import { applyGatewayLaneConcurrency } from "./server-lanes.js";
 import { startGatewayMaintenanceTimers } from "./server-maintenance.js";
 import { GATEWAY_EVENTS, listGatewayMethods } from "./server-methods-list.js";
 import { coreGatewayHandlers } from "./server-methods.js";
-import { createExecApprovalHandlers } from "./server-methods/exec-approval.js";
 import { safeParseJson } from "./server-methods/nodes.helpers.js";
 import { hasConnectedMobileNode } from "./server-mobile-nodes.js";
-import { loadGatewayModelCatalog } from "./server-model-catalog.js";
 import { createNodeSubscriptionManager } from "./server-node-subscriptions.js";
 import { loadGatewayPlugins, setFallbackGatewayContext } from "./server-plugins.js";
 import { createGatewayReloadHandlers } from "./server-reload-handlers.js";
@@ -89,9 +85,6 @@ import {
 import { createReadinessChecker } from "./server/readiness.js";
 import { loadGatewayTlsRuntime } from "./server/tls.js";
 import { ensureGatewayStartupAuth } from "./startup-auth.js";
-import { maybeSeedControlUiAllowedOriginsAtStartup } from "./startup-control-ui-origins.js";
-
-export { __resetModelCatalogCacheForTest } from "./server-model-catalog.js";
 
 ensureRemoteClawCliOnPath();
 
@@ -301,14 +294,6 @@ export async function startGatewayServer(
   setPreRestartDeferralCheck(
     () => getTotalQueueSize() + getTotalPendingReplies() + getActiveEmbeddedRunCount(),
   );
-  // Unconditional startup migration: seed gateway.controlUi.allowedOrigins for existing
-  // non-loopback installs that upgraded to v2026.2.26+ without required origins.
-  cfgAtStart = await maybeSeedControlUiAllowedOriginsAtStartup({
-    config: cfgAtStart,
-    writeConfig: writeConfigFile,
-    log,
-  });
-
   initSubagentRegistry();
   const defaultWorkspaceDir = resolveFirstAgentWorkspace(cfgAtStart);
   if (!defaultWorkspaceDir) {
@@ -641,20 +626,12 @@ export async function startGatewayServer(
     })().catch((err) => log.error(`Delivery recovery failed: ${String(err)}`));
   }
 
-  const execApprovalManager = new ExecApprovalManager();
-  const execApprovalForwarder = createExecApprovalForwarder();
-  const execApprovalHandlers = createExecApprovalHandlers(execApprovalManager, {
-    forwarder: execApprovalForwarder,
-  });
-
   const canvasHostServerPort = (canvasHostServer as CanvasHostServer | null)?.port;
 
   const gatewayRequestContext: import("./server-methods/types.js").GatewayRequestContext = {
     deps,
     cron,
     cronStorePath,
-    execApprovalManager,
-    loadGatewayModelCatalog,
     getHealthCache,
     refreshHealthSnapshot: refreshGatewayHealthSnapshot,
     logHealth,
@@ -723,7 +700,6 @@ export async function startGatewayServer(
     logWsControl,
     extraHandlers: {
       ...pluginRegistry.gatewayHandlers,
-      ...execApprovalHandlers,
     } as import("./server-methods/types.js").GatewayRequestHandlers,
     broadcast,
     context: gatewayRequestContext,

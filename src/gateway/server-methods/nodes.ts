@@ -917,7 +917,6 @@ export const nodeHandlers: GatewayRequestHandlers = {
         command,
         rawParams: p.params,
         client,
-        execApprovalManager: context.execApprovalManager,
       });
       if (!forwardedParams.ok) {
         respond(
@@ -1039,7 +1038,6 @@ export const nodeHandlers: GatewayRequestHandlers = {
         agentRunSeq: context.agentRunSeq,
         getHealthCache: context.getHealthCache,
         refreshHealthSnapshot: context.refreshHealthSnapshot,
-        loadGatewayModelCatalog: context.loadGatewayModelCatalog,
         logGateway: { warn: context.logGateway.warn },
       };
       await handleNodeEvent(nodeContext, nodeId, {

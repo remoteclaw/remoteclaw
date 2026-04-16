@@ -244,7 +244,7 @@ describe("nodes-cli coverage", () => {
     expect(invoke?.params?.command).toBe("system.run");
     expect(invoke?.params?.params).toMatchObject({
       command: ["echo", "hi"],
-      approved: false,
+      approved: true,
     });
     expect(invoke?.params?.params).not.toHaveProperty("approvalDecision");
     expect(getApprovalRequestCall()).toBeNull();

@@ -10,17 +10,11 @@ type GatewayClientAuth = {
   token?: string;
   password?: string;
 };
-type ResolveGatewayConnectionAuth = (params: unknown) => Promise<GatewayClientAuth>;
-
 const mockState = {
   gateways: [] as MockGatewayClient[],
   gatewayAuth: [] as GatewayClientAuth[],
   agentSideConnectionCtor: vi.fn(),
   agentStart: vi.fn(),
-  resolveGatewayConnectionAuth: vi.fn<ResolveGatewayConnectionAuth>(async (_params) => ({
-    token: undefined,
-    password: undefined,
-  })),
 };
 
 class MockGatewayClient {
@@ -84,10 +78,6 @@ vi.mock("../gateway/call.js", () => ({
   },
 }));
 
-vi.mock("../gateway/connection-auth.js", () => ({
-  resolveGatewayConnectionAuth: (params: unknown) => mockState.resolveGatewayConnectionAuth(params),
-}));
-
 vi.mock("../gateway/client.js", () => ({
   GatewayClient: MockGatewayClient,
 }));
@@ -138,11 +128,6 @@ describe("serveAcpGateway startup", () => {
     mockState.gatewayAuth.length = 0;
     mockState.agentSideConnectionCtor.mockReset();
     mockState.agentStart.mockReset();
-    mockState.resolveGatewayConnectionAuth.mockReset();
-    mockState.resolveGatewayConnectionAuth.mockResolvedValue({
-      token: undefined,
-      password: undefined,
-    });
   });
 
   it("waits for gateway hello before creating AgentSideConnection", async () => {
@@ -186,55 +171,19 @@ describe("serveAcpGateway startup", () => {
     }
   });
 
-  it("passes resolved SecretInput gateway credentials to the ACP gateway client", async () => {
-    mockState.resolveGatewayConnectionAuth.mockResolvedValue({
-      token: undefined,
-      password: "resolved-secret-password", // pragma: allowlist secret
-    });
-    const { signalHandlers, onceSpy } = captureProcessSignalHandlers();
-
-    try {
-      const servePromise = serveAcpGateway({});
-      await Promise.resolve();
-
-      expect(mockState.resolveGatewayConnectionAuth).toHaveBeenCalledWith(
-        expect.objectContaining({
-          env: process.env,
-        }),
-      );
-      expect(mockState.gatewayAuth[0]).toEqual({
-        token: undefined,
-        password: "resolved-secret-password", // pragma: allowlist secret
-      });
-
-      const gateway = getMockGateway();
-      gateway.emitHello();
-      await vi.waitFor(() => {
-        expect(mockState.agentSideConnectionCtor).toHaveBeenCalledTimes(1);
-      });
-      signalHandlers.get("SIGINT")?.();
-      await servePromise;
-    } finally {
-      onceSpy.mockRestore();
-    }
-  });
-
-  it("passes CLI URL override context into shared gateway auth resolution", async () => {
+  it("passes explicit gateway credentials from opts to the ACP gateway client", async () => {
     const { signalHandlers, onceSpy } = captureProcessSignalHandlers();
 
     try {
       const servePromise = serveAcpGateway({
-        gatewayUrl: "wss://override.example/ws",
+        gatewayPassword: "explicit-password", // pragma: allowlist secret
       });
       await Promise.resolve();
 
-      expect(mockState.resolveGatewayConnectionAuth).toHaveBeenCalledWith(
-        expect.objectContaining({
-          env: process.env,
-          urlOverride: "wss://override.example/ws",
-          urlOverrideSource: "cli",
-        }),
-      );
+      expect(mockState.gatewayAuth[0]).toEqual({
+        token: undefined,
+        password: "explicit-password", // pragma: allowlist secret
+      });
 
       const gateway = getMockGateway();
       gateway.emitHello();

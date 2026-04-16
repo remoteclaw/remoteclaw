@@ -163,8 +163,7 @@ async function resetGatewayTestState(options: { uniqueConfigRoot: boolean }) {
   embeddedRunMock.waitResults.clear();
   drainSystemEvents(resolveMainSessionKeyFromConfig());
   resetAgentRunContextForTest();
-  const mod = await getServerModule();
-  mod.__resetModelCatalogCacheForTest();
+  await getServerModule();
 }
 
 async function cleanupGatewayTestHome(options: { restoreEnv: boolean }) {

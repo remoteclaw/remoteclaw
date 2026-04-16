@@ -21,9 +21,7 @@ import { resolveReplyDirectives } from "./get-reply-directives.js";
 import { handleInlineActions } from "./get-reply-inline-actions.js";
 import { runPreparedReply } from "./get-reply-run.js";
 import { finalizeInboundContext } from "./inbound-context.js";
-import { emitPreAgentMessageHooks } from "./message-preprocess-hooks.js";
 import { initSessionState } from "./session.js";
-import { stageSandboxMedia } from "./stage-sandbox-media.js";
 import { createTypingController } from "./typing.js";
 
 function mergeSkillFilters(channelFilter?: string[], agentFilter?: string[]): string[] | undefined {
@@ -119,12 +117,6 @@ export async function getReplyFromConfig(
       cfg,
     });
   }
-  void emitPreAgentMessageHooks({
-    ctx: finalized,
-    cfg,
-    isFastTestEnv,
-  });
-
   const commandAuthorized = finalized.CommandAuthorized;
   resolveCommandAuthorization({
     ctx: finalized,
@@ -275,14 +267,6 @@ export async function getReplyFromConfig(
   await maybeEmitMissingResetHooks();
   directives = inlineActionResult.directives;
   abortedLastRun = inlineActionResult.abortedLastRun ?? abortedLastRun;
-
-  await stageSandboxMedia({
-    ctx,
-    sessionCtx,
-    cfg,
-    sessionKey,
-    workspaceDir,
-  });
 
   return runPreparedReply({
     ctx,

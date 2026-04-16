@@ -16,10 +16,6 @@ export { logInboundDrop, logTypingFailure } from "../channels/logging.js";
 export { resolveAllowlistMatchSimple } from "../channels/plugins/allowlist-match.js";
 export { normalizeProviderId } from "../agents/provider-utils.js";
 export {
-  buildModelsProviderData,
-  type ModelsProviderData,
-} from "../auto-reply/reply/commands-models.js";
-export {
   deleteAccountFromConfigSection,
   setAccountEnabledInConfigSection,
 } from "../channels/plugins/config-helpers.js";

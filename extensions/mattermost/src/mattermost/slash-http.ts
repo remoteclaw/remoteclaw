@@ -7,7 +7,6 @@
 
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
-  buildModelsProviderData,
   createReplyPrefixOptions,
   createTypingCallbacks,
   logTypingFailure,
@@ -387,44 +386,10 @@ async function handleSlashCommandAsync(params: {
   const to = kind === "direct" ? `user:${senderId}` : `channel:${channelId}`;
   const pickerEntry = resolveMattermostModelPickerEntry(commandText);
   if (pickerEntry) {
-    const data = await buildModelsProviderData(cfg, route.agentId);
-    if (data.providers.length === 0) {
-      await sendMessageMattermost(to, "No models available.", {
-        accountId: account.accountId,
-      });
-      return;
-    }
-
-    const currentModel = resolveMattermostModelPickerCurrentModel({
-      cfg,
-      route,
-      data,
-    });
-    const view =
-      pickerEntry.kind === "summary"
-        ? renderMattermostModelSummaryView({
-            ownerUserId: senderId,
-            currentModel,
-          })
-        : pickerEntry.kind === "providers"
-          ? renderMattermostProviderPickerView({
-              ownerUserId: senderId,
-              data,
-              currentModel,
-            })
-          : renderMattermostModelsPickerView({
-              ownerUserId: senderId,
-              data,
-              provider: pickerEntry.provider,
-              page: 1,
-              currentModel,
-            });
-
-    await sendMessageMattermost(to, view.text, {
+    // Model provider data source was gutted — always show "not available".
+    await sendMessageMattermost(to, "No models available.", {
       accountId: account.accountId,
-      buttons: view.buttons,
     });
-    runtime.log?.(`delivered model picker to ${to}`);
     return;
   }
 

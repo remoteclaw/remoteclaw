@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
-import {
-  normalizeProviderId,
-  type ModelsProviderData,
-  type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/mattermost";
+import { normalizeProviderId, type RemoteClawConfig } from "remoteclaw/plugin-sdk/mattermost";
+
+// Gutted in RemoteClaw fork — model provider data source was removed.
+// oxlint-disable-next-line typescript/no-explicit-any
+type ModelsProviderData = any;
 import type { MattermostInteractiveButtonInput } from "./interactions.js";
 
 const MATTERMOST_MODEL_PICKER_CONTEXT_KEY = "oc_model_picker";

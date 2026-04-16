@@ -39,9 +39,6 @@ export function registerGetReplyCommonMocks(): void {
   vi.mock("./inbound-context.js", () => ({
     finalizeInboundContext: vi.fn((ctx: unknown) => ctx),
   }));
-  vi.mock("./stage-sandbox-media.js", () => ({
-    stageSandboxMedia: vi.fn(async () => undefined),
-  }));
   vi.mock("./typing.js", () => ({
     createTypingController: vi.fn(() => ({
       onReplyStart: async () => undefined,

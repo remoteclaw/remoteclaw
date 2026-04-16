@@ -18,7 +18,6 @@ import type { TypingMode } from "../../config/types.js";
 import { emitAgentEvent } from "../../infra/agent-events.js";
 import { emitDiagnosticEvent, isDiagnosticsEnabled } from "../../infra/diagnostic-events.js";
 import { generateSecureUuid } from "../../infra/secure-random.js";
-import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { defaultRuntime } from "../../runtime.js";
 import { estimateUsageCost, resolveModelCostConfig } from "../../utils/usage-format.js";
 import {
@@ -37,7 +36,6 @@ import {
   isAudioPayload,
   signalTypingIfNeeded,
 } from "./agent-runner-helpers.js";
-import { runMemoryFlushIfNeeded } from "./agent-runner-memory.js";
 import { buildReplyPayloads } from "./agent-runner-payloads.js";
 import {
   appendUnscheduledReminderNote,
@@ -49,7 +47,6 @@ import { createAudioAsVoiceBuffer, createBlockReplyPipeline } from "./block-repl
 import { resolveEffectiveBlockStreamingConfig } from "./block-streaming.js";
 import { createFollowupRunner } from "./followup-runner.js";
 import { resolveOriginMessageProvider, resolveOriginMessageTo } from "./origin-routing.js";
-import { readPostCompactionContext } from "./post-compaction-context.js";
 import { resolveActiveRunQueueAction } from "./queue-policy.js";
 import { enqueueFollowupRun, type FollowupRun, type QueueSettings } from "./queue.js";
 import { createReplyMediaPathNormalizer } from "./reply-media-paths.js";
@@ -223,22 +220,6 @@ export async function runReplyAgent(params: {
   }
 
   await typingSignals.signalRunStart();
-
-  activeSessionEntry = (await runMemoryFlushIfNeeded({
-    cfg,
-    followupRun,
-    promptForEstimate: followupRun.prompt,
-    sessionCtx,
-    opts,
-    defaultModel,
-    agentCfgContextTokens,
-    resolvedVerboseLevel,
-    sessionEntry: activeSessionEntry,
-    sessionStore: activeSessionStore,
-    sessionKey,
-    storePath,
-    isHeartbeat,
-  })) as SessionEntry | undefined;
 
   const runFollowupTurn = createFollowupRunner({
     opts,
@@ -673,20 +654,6 @@ export async function runReplyAgent(params: {
         storePath,
         lastCallUsage: runResult.meta?.agentMeta?.lastCallUsage as NormalizedUsage | undefined,
       });
-
-      // Inject post-compaction workspace context for the next agent turn
-      if (sessionKey) {
-        const workspaceDir = process.cwd();
-        readPostCompactionContext(workspaceDir, cfg)
-          .then((contextContent: string | undefined) => {
-            if (contextContent) {
-              enqueueSystemEvent(contextContent, { sessionKey });
-            }
-          })
-          .catch(() => {
-            // Silent failure — post-compaction context is best-effort
-          });
-      }
 
       if (verboseEnabled) {
         const suffix = typeof count === "number" ? ` (count ${count})` : "";

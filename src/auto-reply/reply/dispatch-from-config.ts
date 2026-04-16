@@ -29,7 +29,6 @@ import { getReplyFromConfig } from "../reply.js";
 import type { FinalizedMsgContext } from "../templating.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { formatAbortReplyText, tryFastAbortFromMessage } from "./abort.js";
-import { shouldBypassAcpDispatchForCommand, tryDispatchAcpReply } from "./dispatch-acp.js";
 import { shouldSkipDuplicateInbound } from "./inbound-dedupe.js";
 import type { ReplyDispatcher, ReplyDispatchKind } from "./reply-dispatcher.js";
 import { shouldSuppressReasoningPayload } from "./reply-payloads.js";
@@ -170,7 +169,6 @@ export async function dispatchReplyFromConfig(params: {
   }
 
   const sessionStoreEntry = resolveSessionStoreLookup(ctx, cfg);
-  const acpDispatchSessionKey = sessionStoreEntry.sessionKey ?? sessionKey;
   const inboundAudio = isInboundAudioContext(ctx);
   const sessionTtsAuto = normalizeTtsAutoMode(sessionStoreEntry.entry?.ttsAuto);
   const hookRunner = getGlobalHookRunner();
@@ -312,8 +310,6 @@ export async function dispatchReplyFromConfig(params: {
       return { queuedFinal, counts };
     }
 
-    const bypassAcpForCommand = shouldBypassAcpDispatchForCommand(ctx, cfg);
-
     const sendPolicy = resolveSendPolicy({
       cfg,
       entry: sessionStoreEntry.entry,
@@ -326,7 +322,7 @@ export async function dispatchReplyFromConfig(params: {
         undefined,
       chatType: sessionStoreEntry.entry?.chatType,
     });
-    if (sendPolicy === "deny" && !bypassAcpForCommand) {
+    if (sendPolicy === "deny") {
       logVerbose(
         `Send blocked by policy for session ${sessionStoreEntry.sessionKey ?? sessionKey ?? "unknown"}`,
       );
@@ -337,27 +333,6 @@ export async function dispatchReplyFromConfig(params: {
     }
 
     const shouldSendToolSummaries = ctx.ChatType !== "group" && ctx.CommandSource !== "native";
-    const acpDispatch = await tryDispatchAcpReply({
-      ctx,
-      cfg,
-      dispatcher,
-      sessionKey: acpDispatchSessionKey,
-      inboundAudio,
-      sessionTtsAuto,
-      ttsChannel,
-      shouldRouteToOriginating,
-      originatingChannel,
-      originatingTo,
-      shouldSendToolSummaries,
-      bypassForCommand: bypassAcpForCommand,
-      onReplyStart: params.replyOptions?.onReplyStart,
-      recordProcessed,
-      markIdle,
-    });
-    if (acpDispatch) {
-      return acpDispatch;
-    }
-
     // Track accumulated block text for TTS generation after streaming completes.
     // When block streaming succeeds, there's no final reply, so we need to generate
     // TTS audio separately from the accumulated block content.
@@ -446,32 +421,6 @@ export async function dispatchReplyFromConfig(params: {
       },
       cfg,
     );
-
-    if (ctx.AcpDispatchTailAfterReset === true) {
-      // Command handling prepared a trailing prompt after ACP in-place reset.
-      // Route that tail through ACP now (same turn) instead of embedded dispatch.
-      ctx.AcpDispatchTailAfterReset = false;
-      const acpTailDispatch = await tryDispatchAcpReply({
-        ctx,
-        cfg,
-        dispatcher,
-        sessionKey: acpDispatchSessionKey,
-        inboundAudio,
-        sessionTtsAuto,
-        ttsChannel,
-        shouldRouteToOriginating,
-        originatingChannel,
-        originatingTo,
-        shouldSendToolSummaries,
-        bypassForCommand: false,
-        onReplyStart: params.replyOptions?.onReplyStart,
-        recordProcessed,
-        markIdle,
-      });
-      if (acpTailDispatch) {
-        return acpTailDispatch;
-      }
-    }
 
     const replies = replyResult ? (Array.isArray(replyResult) ? replyResult : [replyResult]) : [];
 

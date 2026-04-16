@@ -29,7 +29,9 @@ import {
 } from "../../config/sessions.js";
 import type { TtsAutoMode } from "../../config/types.tts.js";
 import { archiveSessionTranscripts } from "../../gateway/session-utils.fs.js";
-import { resolveConversationIdFromTargets } from "../../infra/outbound/conversation-id.js";
+// Outbound conversation-id resolver was gutted — always returns undefined.
+// oxlint-disable-next-line typescript/no-explicit-any
+const resolveConversationIdFromTargets = (..._args: unknown[]) => undefined as any;
 import { deliverSessionMaintenanceWarning } from "../../infra/session-maintenance-warning.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";

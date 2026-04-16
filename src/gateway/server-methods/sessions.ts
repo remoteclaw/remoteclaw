@@ -400,7 +400,7 @@ export const sessionsHandlers: GatewayRequestHandlers = {
     }
     respond(true, { ok: true, key: resolved.key }, undefined);
   },
-  "sessions.patch": async ({ params, respond, context, client, isWebchatConnect }) => {
+  "sessions.patch": async ({ params, respond, client, isWebchatConnect }) => {
     if (!assertValidParams(params, validateSessionsPatchParams, "sessions.patch", respond)) {
       return;
     }
@@ -421,7 +421,6 @@ export const sessionsHandlers: GatewayRequestHandlers = {
         store,
         storeKey: primaryKey,
         patch: p,
-        loadGatewayModelCatalog: context.loadGatewayModelCatalog,
       });
     });
     if (!applied.ok) {

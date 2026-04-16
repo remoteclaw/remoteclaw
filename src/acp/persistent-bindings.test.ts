@@ -460,7 +460,7 @@ describe("ensureConfiguredAcpBindingSession", () => {
     expect(managerMocks.initializeSession).not.toHaveBeenCalled();
   });
 
-  it("reinitializes a ready session when binding config explicitly sets mismatched cwd", async () => {
+  it("returns ok without calling control-plane manager when cwd is mismatched (gutted)", async () => {
     const spec = {
       channel: "discord" as const,
       accountId: "default",
@@ -470,19 +470,6 @@ describe("ensureConfiguredAcpBindingSession", () => {
       cwd: "/workspace/repo-a",
     };
     const sessionKey = buildConfiguredAcpSessionKey(spec);
-    managerMocks.resolveSession.mockReturnValue({
-      kind: "ready",
-      sessionKey,
-      meta: {
-        backend: "acpx",
-        agent: "codex",
-        runtimeSessionName: "existing",
-        mode: "persistent",
-        runtimeOptions: { cwd: "/workspace/other-repo" },
-        state: "idle",
-        lastActivityAt: Date.now(),
-      },
-    });
 
     const ensured = await ensureConfiguredAcpBindingSession({
       cfg: baseCfg,
@@ -490,17 +477,11 @@ describe("ensureConfiguredAcpBindingSession", () => {
     });
 
     expect(ensured).toEqual({ ok: true, sessionKey });
-    expect(managerMocks.closeSession).toHaveBeenCalledTimes(1);
-    expect(managerMocks.closeSession).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sessionKey,
-        clearMeta: false,
-      }),
-    );
-    expect(managerMocks.initializeSession).toHaveBeenCalledTimes(1);
+    expect(managerMocks.closeSession).not.toHaveBeenCalled();
+    expect(managerMocks.initializeSession).not.toHaveBeenCalled();
   });
 
-  it("initializes ACP session with runtime agent override when provided", async () => {
+  it("returns ok when runtime agent override is provided (gutted; no manager call)", async () => {
     const spec = {
       channel: "discord" as const,
       accountId: "default",
@@ -509,7 +490,6 @@ describe("ensureConfiguredAcpBindingSession", () => {
       acpAgentId: "codex",
       mode: "persistent" as const,
     };
-    managerMocks.resolveSession.mockReturnValue({ kind: "none" });
 
     const ensured = await ensureConfiguredAcpBindingSession({
       cfg: baseCfg,
@@ -517,16 +497,12 @@ describe("ensureConfiguredAcpBindingSession", () => {
     });
 
     expect(ensured.ok).toBe(true);
-    expect(managerMocks.initializeSession).toHaveBeenCalledWith(
-      expect.objectContaining({
-        agent: "codex",
-      }),
-    );
+    expect(managerMocks.initializeSession).not.toHaveBeenCalled();
   });
 });
 
 describe("resetAcpSessionInPlace", () => {
-  it("reinitializes from configured binding when ACP metadata is missing", async () => {
+  it("returns ok when ACP metadata is missing but configured binding exists (gutted)", async () => {
     const cfg = {
       ...baseCfg,
       bindings: [
@@ -553,7 +529,6 @@ describe("resetAcpSessionInPlace", () => {
       mode: "persistent",
       backend: "acpx",
     });
-    managerMocks.resolveSession.mockReturnValue({ kind: "none" });
 
     const result = await resetAcpSessionInPlace({
       cfg,
@@ -562,17 +537,10 @@ describe("resetAcpSessionInPlace", () => {
     });
 
     expect(result).toEqual({ ok: true });
-    expect(managerMocks.initializeSession).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sessionKey,
-        agent: "claude",
-        mode: "persistent",
-        backendId: "acpx",
-      }),
-    );
+    expect(managerMocks.initializeSession).not.toHaveBeenCalled();
   });
 
-  it("does not clear ACP metadata before reinitialize succeeds", async () => {
+  it("returns ok when meta is present (gutted; no manager calls happen)", async () => {
     const sessionKey = "agent:claude:acp:binding:discord:default:9373ab192b2317f4";
     sessionMetaMocks.readAcpSessionEntry.mockReturnValue({
       acp: {
@@ -582,7 +550,6 @@ describe("resetAcpSessionInPlace", () => {
         runtimeOptions: { cwd: "/home/bob/clawd" },
       },
     });
-    managerMocks.initializeSession.mockRejectedValueOnce(new Error("backend unavailable"));
 
     const result = await resetAcpSessionInPlace({
       cfg: baseCfg,
@@ -590,16 +557,12 @@ describe("resetAcpSessionInPlace", () => {
       reason: "reset",
     });
 
-    expect(result).toEqual({ ok: false, error: "backend unavailable" });
-    expect(managerMocks.closeSession).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sessionKey,
-        clearMeta: false,
-      }),
-    );
+    expect(result).toEqual({ ok: true });
+    expect(managerMocks.closeSession).not.toHaveBeenCalled();
+    expect(managerMocks.initializeSession).not.toHaveBeenCalled();
   });
 
-  it("preserves harness agent ids during in-place reset even when not in agents.list", async () => {
+  it("returns ok during in-place reset when agent id is not in agents.list (gutted)", async () => {
     const cfg = {
       ...baseCfg,
       agents: {
@@ -622,11 +585,6 @@ describe("resetAcpSessionInPlace", () => {
     });
 
     expect(result).toEqual({ ok: true });
-    expect(managerMocks.initializeSession).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sessionKey,
-        agent: "codex",
-      }),
-    );
+    expect(managerMocks.initializeSession).not.toHaveBeenCalled();
   });
 });

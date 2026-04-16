@@ -2,18 +2,6 @@ import type { Command } from "commander";
 import { listAgentIds, resolveAgentConfig, resolveSoleAgentId } from "../../agents/agent-scope.js";
 import { loadConfig } from "../../config/config.js";
 import { randomIdempotencyKey } from "../../gateway/call.js";
-import {
-  DEFAULT_EXEC_APPROVAL_TIMEOUT_MS,
-  type ExecApprovalsFile,
-  type ExecAsk,
-  type ExecSecurity,
-  loadExecApprovals,
-  maxAsk,
-  minSecurity,
-  normalizeExecAsk,
-  normalizeExecSecurity,
-  resolveExecApprovalsFromFile,
-} from "../../infra/exec-approvals.js";
 import { buildNodeShellCommand } from "../../infra/node-shell.js";
 import { applyPathPrepend } from "../../infra/path-prepend.js";
 import { parsePreparedSystemRunPayload } from "../../infra/system-run-approval-context.js";
@@ -23,6 +11,52 @@ import { getNodesTheme, runNodesCommand } from "./cli-utils.js";
 import { parseNodeList } from "./format.js";
 import { callGatewayCli, nodesCallOpts, resolveNodeId, unauthorizedHintForMessage } from "./rpc.js";
 import type { NodesRpcOpts } from "./types.js";
+
+// Exec-approvals subsystem was gutted — inline minimal types and helpers.
+type ExecSecurity = "deny" | "allowlist" | "full";
+type ExecAsk = "off" | "on-miss" | "always";
+type ExecApprovalsFile = Record<string, unknown>;
+const DEFAULT_EXEC_APPROVAL_TIMEOUT_MS = 30000;
+const SECURITY_ORDER: ExecSecurity[] = ["deny", "allowlist", "full"];
+const ASK_ORDER: ExecAsk[] = ["off", "on-miss", "always"];
+function minSecurity(a: ExecSecurity, b: ExecSecurity): ExecSecurity {
+  return SECURITY_ORDER[Math.min(SECURITY_ORDER.indexOf(a), SECURITY_ORDER.indexOf(b))] ?? "deny";
+}
+function maxAsk(a: ExecAsk, b: ExecAsk): ExecAsk {
+  return ASK_ORDER[Math.max(ASK_ORDER.indexOf(a), ASK_ORDER.indexOf(b))] ?? "always";
+}
+function normalizeExecSecurity(v: unknown): ExecSecurity | undefined {
+  return typeof v === "string" && (["deny", "allowlist", "full"] as string[]).includes(v)
+    ? (v as ExecSecurity)
+    : undefined;
+}
+function normalizeExecAsk(v: unknown): ExecAsk | undefined {
+  return typeof v === "string" && (["off", "on-miss", "always"] as string[]).includes(v)
+    ? (v as ExecAsk)
+    : undefined;
+}
+async function resolveExecApprovalsFromFile(params: {
+  file: ExecApprovalsFile;
+  agentId?: string;
+  overrides?: { security?: ExecSecurity; ask?: ExecAsk };
+}) {
+  const file = params.file ?? {};
+  const defaults = file.defaults as
+    | { security?: ExecSecurity; ask?: ExecAsk; askFallback?: string }
+    | undefined;
+  return {
+    file: file as Record<string, unknown>,
+    agent: {
+      security: params.overrides?.security ?? defaults?.security ?? "allowlist",
+      ask: params.overrides?.ask ?? defaults?.ask ?? "on-miss",
+      askFallback: defaults?.askFallback,
+    },
+    allowlist: [] as { pattern: string; type?: string }[],
+    socketPath: undefined as string | undefined,
+    token: undefined as string | undefined,
+    defaults,
+  };
+}
 
 type NodesRunOpts = NodesRpcOpts & {
   node?: string;
@@ -98,8 +132,7 @@ function resolveNodesRunPolicy(opts: NodesRunOpts, execDefaults: ExecDefaults | 
     throw new Error("invalid --security (use deny|allowlist|full)");
   }
   // Keep local exec defaults in sync with exec-approvals.json when tools.exec.ask is unset.
-  const configuredAsk =
-    normalizeExecAsk(execDefaults?.ask) ?? loadExecApprovals().defaults?.ask ?? "on-miss";
+  const configuredAsk = normalizeExecAsk(execDefaults?.ask) ?? "on-miss";
   const requestedAsk = normalizeExecAsk(opts.ask);
   if (opts.ask && !requestedAsk) {
     throw new Error("invalid --ask (use off|on-miss|always)");
@@ -407,8 +440,7 @@ export function registerNodesInvokeCommands(nodes: Command) {
             approvalPlan,
             hostSecurity: approvals.hostSecurity,
             hostAsk: approvals.hostAsk,
-            askFallback: (approvals.askFallback ??
-              "deny") as import("../../infra/exec-approvals.js").ExecSecurity,
+            askFallback: (approvals.askFallback ?? "deny") as ExecSecurity,
           });
           const invokeParams = buildSystemRunInvokeParams({
             nodeId,

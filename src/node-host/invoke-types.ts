@@ -1,4 +1,16 @@
-import type { SkillBinTrustEntry, SystemRunApprovalPlan } from "../infra/exec-approvals.js";
+export type SkillBinTrustEntry = {
+  bin: string;
+  name?: string;
+  resolvedPath?: string;
+  trusted?: boolean;
+};
+
+export type SystemRunApprovalPlan = {
+  approved: boolean;
+  reason?: string;
+  rawCommand?: string;
+  mutableFileOperand?: string;
+};
 
 export type SystemRunParams = {
   command: string[];

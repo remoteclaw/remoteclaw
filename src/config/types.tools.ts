@@ -1,5 +1,7 @@
 import type { ChatType } from "../channels/chat-type.js";
-import type { SafeBinProfileFixture } from "../infra/exec-safe-bin-policy.js";
+// Exec safe-bin policy subsystem was gutted — preserve the config shape.
+// oxlint-disable-next-line typescript/no-explicit-any
+type SafeBinProfileFixture = any;
 import type { AgentElevatedAllowFromConfig, SessionSendPolicyAction } from "./types.base.js";
 import type { SecretInput } from "./types.secrets.js";
 

@@ -1,8 +1,9 @@
 import { Command } from "commander";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ExecApprovalsFile } from "../infra/exec-approvals.js";
 import { buildSystemRunPreparePayload } from "../test-utils/system-run-prepare-payload.js";
 import { createCliRuntimeCapture } from "./test-runtime-capture.js";
+
+type ExecApprovalsFile = Record<string, unknown>;
 
 type NodeInvokeCall = {
   method?: string;
@@ -16,7 +17,6 @@ type NodeInvokeCall = {
 
 let lastNodeInvokeCall: NodeInvokeCall | null = null;
 let lastApprovalRequestCall: { params?: Record<string, unknown> } | null = null;
-let localExecApprovalsFile: ExecApprovalsFile = { version: 1, agents: {} };
 let nodeExecApprovalsFile: ExecApprovalsFile = {
   version: 1,
   defaults: {
@@ -96,16 +96,6 @@ vi.mock("../config/config.js", () => ({
   loadConfig: () => ({ agents: { list: [{ id: "test-agent" }] } }),
 }));
 
-vi.mock("../infra/exec-approvals.js", async () => {
-  const actual = await vi.importActual<typeof import("../infra/exec-approvals.js")>(
-    "../infra/exec-approvals.js",
-  );
-  return {
-    ...actual,
-    loadExecApprovals: () => localExecApprovalsFile,
-  };
-});
-
 describe("nodes-cli coverage", () => {
   let registerNodesCli: (program: Command) => void;
   let sharedProgram: Command;
@@ -138,7 +128,6 @@ describe("nodes-cli coverage", () => {
     randomIdempotencyKey.mockClear();
     lastNodeInvokeCall = null;
     lastApprovalRequestCall = null;
-    localExecApprovalsFile = { version: 1, agents: {} };
     nodeExecApprovalsFile = {
       version: 1,
       defaults: {
@@ -230,16 +219,7 @@ describe("nodes-cli coverage", () => {
     });
   });
 
-  it("inherits ask=off from local exec approvals when tools.exec.ask is unset", async () => {
-    localExecApprovalsFile = {
-      version: 1,
-      defaults: {
-        security: "allowlist",
-        ask: "off",
-        askFallback: "deny",
-      },
-      agents: {},
-    };
+  it("skips approval when --ask off is passed", async () => {
     nodeExecApprovalsFile = {
       version: 1,
       defaults: {
@@ -249,7 +229,16 @@ describe("nodes-cli coverage", () => {
       agents: {},
     };
 
-    const invoke = await runNodesCommand(["nodes", "run", "--node", "mac-1", "echo", "hi"]);
+    const invoke = await runNodesCommand([
+      "nodes",
+      "run",
+      "--node",
+      "mac-1",
+      "--ask",
+      "off",
+      "echo",
+      "hi",
+    ]);
 
     expect(invoke).toBeTruthy();
     expect(invoke?.params?.command).toBe("system.run");

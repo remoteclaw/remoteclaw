@@ -2,23 +2,40 @@ import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { GatewayClient } from "../gateway/client.js";
-import {
-  ensureExecApprovals,
-  mergeExecApprovalsSocketDefaults,
-  normalizeExecApprovals,
-  readExecApprovalsSnapshot,
-  saveExecApprovals,
-  type ExecAsk,
-  type ExecApprovalsFile,
-  type ExecApprovalsResolved,
-  type ExecSecurity,
-} from "../infra/exec-approvals.js";
-import {
-  requestExecHostViaSocket,
-  type ExecHostRequest,
-  type ExecHostResponse,
-} from "../infra/exec-host.js";
 import { sanitizeHostExecEnv } from "../infra/host-env-security.js";
+
+// Exec-approvals and exec-host subsystems were gutted (Middleware Boundary Principle).
+// Inline minimal type aliases to keep call-site shapes stable.
+type ExecSecurity = "deny" | "allowlist" | "full";
+type ExecAsk = "off" | "on-miss" | "always";
+type ExecApprovalsFile = Record<string, unknown>;
+type ExecApprovalsResolved = {
+  file: Record<string, unknown>;
+  agent: { security: ExecSecurity; ask: ExecAsk; askFallback: string | undefined };
+  allowlist: { pattern: string; type?: string }[];
+  socketPath: string | undefined;
+  token: string | undefined;
+  defaults?: { ask?: ExecAsk; security?: ExecSecurity; [key: string]: unknown };
+};
+type ExecHostRequest = {
+  command: string[];
+  rawCommand?: string | null;
+  cwd?: string | null;
+  env?: Record<string, string> | null;
+  timeoutMs?: number | null;
+  needsScreenRecording?: boolean | null;
+  agentId?: string | null;
+  sessionKey?: string | null;
+  approvalDecision?: "allow-once" | "allow-always" | null;
+};
+type ExecHostResponse = {
+  exitCode?: number;
+  timedOut: boolean;
+  success: boolean;
+  stdout: string;
+  stderr: string;
+  signal?: string;
+};
 import { runBrowserProxyCommand } from "./invoke-browser.js";
 import { buildSystemRunApprovalPlan, handleSystemRunInvoke } from "./invoke-system-run.js";
 import type {
@@ -50,11 +67,6 @@ const preferMacAppExecHost = process.platform === "darwin" && execHostEnforced;
 
 type SystemWhichParams = {
   bins: string[];
-};
-
-type SystemExecApprovalsSetParams = {
-  file: ExecApprovalsFile;
-  baseHash?: string | null;
 };
 
 type ExecApprovalsSnapshot = {
@@ -159,33 +171,6 @@ export function decodeCapturedOutputBuffer(params: {
     return new TextDecoder(encoding).decode(params.buffer);
   } catch {
     return utf8;
-  }
-}
-
-function redactExecApprovals(file: ExecApprovalsFile): ExecApprovalsFile {
-  const socketPath = (file as { socket?: { path?: string } }).socket?.path?.trim();
-  return {
-    ...file,
-    socket: socketPath ? { path: socketPath } : undefined,
-  };
-}
-
-function requireExecApprovalsBaseHash(
-  params: SystemExecApprovalsSetParams,
-  snapshot: ExecApprovalsSnapshot,
-) {
-  if (!snapshot.exists) {
-    return;
-  }
-  if (!snapshot.hash) {
-    throw new Error("INVALID_REQUEST: exec approvals base hash unavailable; reload and retry");
-  }
-  const baseHash = typeof params.baseHash === "string" ? params.baseHash.trim() : "";
-  if (!baseHash) {
-    throw new Error("INVALID_REQUEST: exec approvals base hash required; reload and retry");
-  }
-  if (baseHash !== snapshot.hash) {
-    throw new Error("INVALID_REQUEST: exec approvals changed; reload and retry");
   }
 }
 
@@ -359,16 +344,12 @@ async function sendExecFinishedEvent(
   );
 }
 
-async function runViaMacAppExecHost(params: {
+// Exec-host subsystem was gutted — always returns null (no macOS app socket).
+async function runViaMacAppExecHost(_params: {
   approvals: ExecApprovalsResolved;
   request: ExecHostRequest;
 }): Promise<ExecHostResponse | null> {
-  const { approvals, request } = params;
-  return await requestExecHostViaSocket({
-    socketPath: approvals.socketPath,
-    token: approvals.token,
-    request,
-  });
+  return null;
 }
 
 async function sendJsonPayloadResult(
@@ -419,48 +400,16 @@ export async function handleInvoke(
   skillBins: SkillBinsProvider,
 ) {
   const command = String(frame.command ?? "");
+  // Exec-approvals subsystem was gutted — return empty/no-op snapshots.
   if (command === "system.execApprovals.get") {
-    try {
-      ensureExecApprovals();
-      const snapshot = readExecApprovalsSnapshot();
-      const payload: ExecApprovalsSnapshot = {
-        path: snapshot.path,
-        exists: snapshot.exists,
-        hash: snapshot.hash,
-        file: redactExecApprovals(snapshot.file),
-      };
-      await sendJsonPayloadResult(client, frame, payload);
-    } catch (err) {
-      const message = String(err);
-      const code = message.toLowerCase().includes("timed out") ? "TIMEOUT" : "INVALID_REQUEST";
-      await sendErrorResult(client, frame, code, message);
-    }
+    const payload: ExecApprovalsSnapshot = { path: "", exists: false, hash: "", file: {} };
+    await sendJsonPayloadResult(client, frame, payload);
     return;
   }
 
   if (command === "system.execApprovals.set") {
-    try {
-      const params = decodeParams<SystemExecApprovalsSetParams>(frame.paramsJSON);
-      if (!params.file || typeof params.file !== "object") {
-        throw new Error("INVALID_REQUEST: exec approvals file required");
-      }
-      ensureExecApprovals();
-      const snapshot = readExecApprovalsSnapshot();
-      requireExecApprovalsBaseHash(params, snapshot);
-      const normalized = normalizeExecApprovals(params.file);
-      const next = mergeExecApprovalsSocketDefaults({ normalized, current: snapshot.file });
-      await saveExecApprovals(next);
-      const nextSnapshot = readExecApprovalsSnapshot();
-      const payload: ExecApprovalsSnapshot = {
-        path: nextSnapshot.path,
-        exists: nextSnapshot.exists,
-        hash: nextSnapshot.hash,
-        file: redactExecApprovals(nextSnapshot.file),
-      };
-      await sendJsonPayloadResult(client, frame, payload);
-    } catch (err) {
-      await sendInvalidRequestResult(client, frame, err);
-    }
+    const payload: ExecApprovalsSnapshot = { path: "", exists: false, hash: "", file: {} };
+    await sendJsonPayloadResult(client, frame, payload);
     return;
   }
 

@@ -219,7 +219,7 @@ describe("nodes-cli coverage", () => {
     });
   });
 
-  it("skips approval when --ask off is passed", async () => {
+  it("auto-approves when --ask off is passed (exec approvals gutted)", async () => {
     nodeExecApprovalsFile = {
       version: 1,
       defaults: {
@@ -245,9 +245,8 @@ describe("nodes-cli coverage", () => {
     expect(invoke?.params?.params).toMatchObject({
       command: ["echo", "hi"],
       approved: true,
+      approvalDecision: "allow-once",
     });
-    expect(invoke?.params?.params).not.toHaveProperty("approvalDecision");
-    expect(getApprovalRequestCall()).toBeNull();
   });
 
   it("invokes system.notify with provided fields", async () => {

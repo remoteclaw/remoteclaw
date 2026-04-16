@@ -1,16 +1,3 @@
-import {
-  resolveAcpSessionCwd,
-  resolveAcpThreadSessionDetailLines,
-} from "../../../acp/runtime/session-identifiers.js";
-import { readAcpSessionEntry } from "../../../acp/runtime/session-meta.js";
-import {
-  resolveThreadBindingIntroText,
-  resolveThreadBindingThreadName,
-} from "../../../channels/thread-bindings-messages.js";
-import {
-  resolveThreadBindingIdleTimeoutMsForChannel,
-  resolveThreadBindingMaxAgeMsForChannel,
-} from "../../../channels/thread-bindings-policy.js";
 import { getSessionBindingService } from "../../../infra/outbound/session-binding-service.js";
 import type { CommandHandlerResult } from "../commands-types.js";
 import {
@@ -123,13 +110,6 @@ export async function handleSubagentsFocusAction(
   }
 
   const label = focusTarget.label || token;
-  const acpMeta =
-    focusTarget.targetKind === "acp"
-      ? readAcpSessionEntry({
-          cfg: params.cfg,
-          sessionKey: focusTarget.targetSessionKey,
-        })?.acp
-      : undefined;
   if (!capabilities.placements.includes(bindingContext.placement)) {
     return stopWithText(`⚠️ ${channel} bindings are unavailable for this account.`);
   }
@@ -146,35 +126,11 @@ export async function handleSubagentsFocusAction(
       },
       placement: bindingContext.placement,
       metadata: {
-        threadName: resolveThreadBindingThreadName({
-          agentId: focusTarget.agentId,
-          label,
-        }),
+        threadName: "",
         agentId: focusTarget.agentId,
         label,
         boundBy: senderId || "unknown",
-        introText: resolveThreadBindingIntroText({
-          agentId: focusTarget.agentId,
-          label,
-          idleTimeoutMs: resolveThreadBindingIdleTimeoutMsForChannel({
-            cfg: params.cfg,
-            channel: bindingContext.channel,
-            accountId,
-          }),
-          maxAgeMs: resolveThreadBindingMaxAgeMsForChannel({
-            cfg: params.cfg,
-            channel: bindingContext.channel,
-            accountId,
-          }),
-          sessionCwd: focusTarget.targetKind === "acp" ? resolveAcpSessionCwd(acpMeta) : undefined,
-          sessionDetails:
-            focusTarget.targetKind === "acp"
-              ? resolveAcpThreadSessionDetailLines({
-                  sessionKey: focusTarget.targetSessionKey,
-                  meta: acpMeta,
-                })
-              : [],
-        }),
+        introText: "",
       },
     });
   } catch {

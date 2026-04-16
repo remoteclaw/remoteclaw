@@ -16,7 +16,6 @@ const forceFreePortAndWait = vi.fn(async (_port: number, _opts: unknown) => ({
   escalatedToSigkill: false,
 }));
 const waitForPortBindable = vi.fn(async (_port: number, _opts?: unknown) => 0);
-const ensureDevGatewayConfig = vi.fn(async (_opts?: unknown) => {});
 const runGatewayLoop = vi.fn(async ({ start }: { start: () => Promise<unknown> }) => {
   await start();
 });
@@ -108,10 +107,6 @@ vi.mock("../ports.js", () => ({
   waitForPortBindable: (port: number, opts?: unknown) => waitForPortBindable(port, opts),
 }));
 
-vi.mock("./dev.js", () => ({
-  ensureDevGatewayConfig: (opts?: unknown) => ensureDevGatewayConfig(opts),
-}));
-
 vi.mock("./run-loop.js", () => ({
   runGatewayLoop: (params: { start: () => Promise<unknown> }) => runGatewayLoop(params),
 }));
@@ -137,7 +132,6 @@ describe("gateway run option collisions", () => {
     setVerbose.mockClear();
     forceFreePortAndWait.mockClear();
     waitForPortBindable.mockClear();
-    ensureDevGatewayConfig.mockClear();
     runGatewayLoop.mockClear();
   });
 

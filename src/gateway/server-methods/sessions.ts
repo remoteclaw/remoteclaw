@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
-import { getAcpSessionManager } from "../../acp/control-plane/manager.js";
 import { resolveSessionKeyAgentId } from "../../agents/agent-scope.js";
 import { stopSubagentsForRequester } from "../../auto-reply/reply/abort.js";
 import { clearSessionQueues } from "../../auto-reply/reply/queue.js";
@@ -230,10 +229,11 @@ async function closeAcpRuntimeForSession(params: {
   if (!params.entry?.acp) {
     return undefined;
   }
-  const acpManager = getAcpSessionManager();
   const cancelOutcome = await runAcpCleanupStep({
     op: async () => {
-      await acpManager.cancelSession({
+      await (
+        undefined as unknown as { cancelSession: (...args: unknown[]) => Promise<void> }
+      )?.cancelSession({
         cfg: params.cfg,
         sessionKey: params.sessionKey,
         reason: params.reason,
@@ -254,7 +254,9 @@ async function closeAcpRuntimeForSession(params: {
 
   const closeOutcome = await runAcpCleanupStep({
     op: async () => {
-      await acpManager.closeSession({
+      await /* eslint-disable-next-line @typescript-eslint/no-explicit-any */ (
+        undefined as any
+      )?.closeSession({
         cfg: params.cfg,
         sessionKey: params.sessionKey,
         reason: params.reason,

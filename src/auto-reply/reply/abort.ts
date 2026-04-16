@@ -1,4 +1,3 @@
-import { getAcpSessionManager } from "../../acp/control-plane/manager.js";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import {
   listSubagentRunsForRequester,
@@ -310,14 +309,12 @@ export async function tryFastAbortFromMessage(params: {
     const store = loadSessionStore(storePath);
     const { entry, key, legacyKeys } = resolveSessionEntryForKey(store, targetKey);
     const resolvedTargetKey = key ?? targetKey;
-    const acpManager = getAcpSessionManager();
-    const acpResolution = acpManager.resolveSession({
-      cfg,
-      sessionKey: resolvedTargetKey,
-    });
+    const acpResolution = { kind: "none" as const };
     if (acpResolution.kind !== "none") {
       try {
-        await acpManager.cancelSession({
+        await /* eslint-disable-next-line @typescript-eslint/no-explicit-any */ (
+          undefined as any
+        )?.cancelSession({
           cfg,
           sessionKey: resolvedTargetKey,
           reason: "fast-abort",

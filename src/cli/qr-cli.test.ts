@@ -12,10 +12,7 @@ const mocks = vi.hoisted(() => ({
   },
   loadConfig: vi.fn(),
   runCommandWithTimeout: vi.fn(),
-  resolveCommandSecretRefsViaGateway: vi.fn(async ({ config }: { config: unknown }) => ({
-    resolvedConfig: config,
-    diagnostics: [] as string[],
-  })),
+
   qrGenerate: vi.fn((_input: unknown, _opts: unknown, cb: (output: string) => void) => {
     cb("ASCII-QR");
   }),
@@ -24,9 +21,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("../runtime.js", () => ({ defaultRuntime: mocks.runtime }));
 vi.mock("../config/config.js", () => ({ loadConfig: mocks.loadConfig }));
 vi.mock("../process/exec.js", () => ({ runCommandWithTimeout: mocks.runCommandWithTimeout }));
-vi.mock("./command-secret-gateway.js", () => ({
-  resolveCommandSecretRefsViaGateway: mocks.resolveCommandSecretRefsViaGateway,
-}));
+
 vi.mock("qrcode-terminal", () => ({
   default: {
     generate: mocks.qrGenerate,
@@ -36,7 +31,6 @@ vi.mock("qrcode-terminal", () => ({
 const runtime = mocks.runtime;
 const loadConfig = mocks.loadConfig;
 const runCommandWithTimeout = mocks.runCommandWithTimeout;
-const resolveCommandSecretRefsViaGateway = mocks.resolveCommandSecretRefsViaGateway;
 const qrGenerate = mocks.qrGenerate;
 
 const { registerQrCli } = await import("./qr-cli.js");
@@ -160,7 +154,6 @@ describe("registerQrCli", () => {
     });
     expect(runtime.log).toHaveBeenCalledWith(expected);
     expect(qrGenerate).not.toHaveBeenCalled();
-    expect(resolveCommandSecretRefsViaGateway).not.toHaveBeenCalled();
   });
 
   it("renders ASCII QR by default", async () => {
@@ -230,7 +223,6 @@ describe("registerQrCli", () => {
       password: "local-password-secret", // pragma: allowlist secret
     });
     expect(runtime.log).toHaveBeenCalledWith(expected);
-    expect(resolveCommandSecretRefsViaGateway).not.toHaveBeenCalled();
   });
 
   it("uses REMOTECLAW_GATEWAY_PASSWORD without resolving local password SecretRef", async () => {
@@ -248,7 +240,6 @@ describe("registerQrCli", () => {
       password: "password-from-env", // pragma: allowlist secret
     });
     expect(runtime.log).toHaveBeenCalledWith(expected);
-    expect(resolveCommandSecretRefsViaGateway).not.toHaveBeenCalled();
   });
 
   it("does not resolve local password SecretRef when auth mode is token", async () => {
@@ -267,7 +258,6 @@ describe("registerQrCli", () => {
       token: "token-123",
     });
     expect(runtime.log).toHaveBeenCalledWith(expected);
-    expect(resolveCommandSecretRefsViaGateway).not.toHaveBeenCalled();
   });
 
   it("resolves local password SecretRef when auth mode is inferred", async () => {
@@ -285,7 +275,6 @@ describe("registerQrCli", () => {
       password: "inferred-password", // pragma: allowlist secret
     });
     expect(runtime.log).toHaveBeenCalledWith(expected);
-    expect(resolveCommandSecretRefsViaGateway).not.toHaveBeenCalled();
   });
 
   it("fails when token and password SecretRefs are both configured with inferred mode", async () => {
@@ -309,7 +298,6 @@ describe("registerQrCli", () => {
     await expectQrExit(["--setup-code-only"]);
     const output = runtime.error.mock.calls.map((call) => String(call[0] ?? "")).join("\n");
     expect(output).toContain("gateway.auth.mode is unset");
-    expect(resolveCommandSecretRefsViaGateway).not.toHaveBeenCalled();
   });
 
   it("exits with error when gateway config is not pairable", async () => {
@@ -335,20 +323,10 @@ describe("registerQrCli", () => {
       token: "remote-tok",
     });
     expect(runtime.log).toHaveBeenCalledWith(expected);
-    expect(resolveCommandSecretRefsViaGateway).toHaveBeenCalledWith(
-      expect.objectContaining({
-        commandName: "qr --remote",
-        targetIds: new Set(["gateway.remote.token", "gateway.remote.password"]),
-      }),
-    );
   });
 
   it("logs remote secret diagnostics in non-json output mode", async () => {
     loadConfig.mockReturnValue(createRemoteQrConfig());
-    resolveCommandSecretRefsViaGateway.mockResolvedValueOnce({
-      resolvedConfig: createRemoteQrConfig(),
-      diagnostics: ["gateway.remote.token inactive"] as string[],
-    });
 
     await runQr(["--remote"]);
 
@@ -361,10 +339,6 @@ describe("registerQrCli", () => {
 
   it("routes remote secret diagnostics to stderr for setup-code-only output", async () => {
     loadConfig.mockReturnValue(createRemoteQrConfig());
-    resolveCommandSecretRefsViaGateway.mockResolvedValueOnce({
-      resolvedConfig: createRemoteQrConfig(),
-      diagnostics: ["gateway.remote.token inactive"] as string[],
-    });
 
     await runQr(["--setup-code-only", "--remote"]);
 
@@ -398,10 +372,6 @@ describe("registerQrCli", () => {
 
   it("routes remote secret diagnostics to stderr for json output", async () => {
     loadConfig.mockReturnValue(createRemoteQrConfig());
-    resolveCommandSecretRefsViaGateway.mockResolvedValueOnce({
-      resolvedConfig: createRemoteQrConfig(),
-      diagnostics: ["gateway.remote.password inactive"] as string[],
-    });
     mockTailscaleStatusLookup();
 
     await runQr(["--json", "--remote"]);
@@ -427,23 +397,10 @@ describe("registerQrCli", () => {
     await expectQrExit(["--remote"]);
     const output = runtime.error.mock.calls.map((call) => String(call[0] ?? "")).join("\n");
     expect(output).toContain("qr --remote requires");
-    expect(resolveCommandSecretRefsViaGateway).not.toHaveBeenCalled();
   });
 
   it("supports --remote with tailscale serve when remote token ref resolves", async () => {
     loadConfig.mockReturnValue(createTailscaleRemoteRefConfig());
-    resolveCommandSecretRefsViaGateway.mockResolvedValueOnce({
-      resolvedConfig: {
-        gateway: {
-          tailscale: { mode: "serve" },
-          remote: {
-            token: "tailscale-remote-token",
-          },
-          auth: {},
-        },
-      },
-      diagnostics: [],
-    });
     runCommandWithTimeout.mockResolvedValue({
       code: 0,
       stdout: '{"Self":{"DNSName":"ts-host.tailnet.ts.net."}}',

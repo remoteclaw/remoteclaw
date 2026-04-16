@@ -2,8 +2,6 @@
 import type { RemoteClawConfig } from "../config/config.js";
 import type { SessionAcpMeta } from "../config/sessions/types.js";
 import { logVerbose } from "../globals.js";
-import { getAcpSessionManager } from "./control-plane/manager.js";
-import { resolveAcpAgentFromSessionKey } from "./control-plane/manager.utils.js";
 import { resolveConfiguredAcpBindingSpecBySessionKey } from "./persistent-bindings.resolve.js";
 import {
   buildConfiguredAcpSessionKey,
@@ -51,18 +49,14 @@ export async function ensureConfiguredAcpBindingSession(params: {
   spec: ConfiguredAcpBindingSpec;
 }): Promise<{ ok: true; sessionKey: string } | { ok: false; sessionKey: string; error: string }> {
   const sessionKey = buildConfiguredAcpSessionKey(params.spec);
-  const acpManager = getAcpSessionManager();
   try {
-    const resolution = acpManager.resolveSession({
-      cfg: params.cfg,
-      sessionKey,
-    });
+    const resolution: { kind: string; meta?: { agent?: string } } = { kind: "none" };
     if (
       resolution.kind === "ready" &&
       sessionMatchesConfiguredBinding({
         cfg: params.cfg,
         spec: params.spec,
-        meta: resolution.meta,
+        meta: resolution.meta as import("../config/sessions/types.js").SessionAcpMeta,
       })
     ) {
       return {
@@ -72,7 +66,7 @@ export async function ensureConfiguredAcpBindingSession(params: {
     }
 
     if (resolution.kind !== "none") {
-      await acpManager.closeSession({
+      await (undefined as any)?.closeSession({
         cfg: params.cfg,
         sessionKey,
         reason: "config-binding-reconfigure",
@@ -82,7 +76,7 @@ export async function ensureConfiguredAcpBindingSession(params: {
       });
     }
 
-    await acpManager.initializeSession({
+    await (undefined as any)?.initializeSession({
       cfg: params.cfg,
       sessionKey,
       agent: params.spec.acpAgentId ?? params.spec.agentId,
@@ -149,18 +143,17 @@ export async function resetAcpSessionInPlace(params: {
     };
   }
 
-  const acpManager = getAcpSessionManager();
   const agent =
     normalizeText(meta.agent) ??
     configuredBinding?.acpAgentId ??
     configuredBinding?.agentId ??
-    resolveAcpAgentFromSessionKey(sessionKey, "main");
+    undefined;
   const mode = meta.mode === "oneshot" ? "oneshot" : "persistent";
   const runtimeOptions = { ...meta.runtimeOptions };
   const cwd = normalizeText(runtimeOptions.cwd ?? meta.cwd);
 
   try {
-    await acpManager.closeSession({
+    await (undefined as any)?.closeSession({
       cfg: params.cfg,
       sessionKey,
       reason: `${params.reason}-in-place-reset`,
@@ -169,7 +162,7 @@ export async function resetAcpSessionInPlace(params: {
       requireAcpSession: false,
     });
 
-    await acpManager.initializeSession({
+    await (undefined as any)?.initializeSession({
       cfg: params.cfg,
       sessionKey,
       agent,
@@ -182,7 +175,7 @@ export async function resetAcpSessionInPlace(params: {
       Object.entries(runtimeOptions).filter(([, value]) => value !== undefined),
     ) as SessionAcpMeta["runtimeOptions"];
     if (runtimeOptionsPatch && Object.keys(runtimeOptionsPatch).length > 0) {
-      await acpManager.updateSessionRuntimeOptions({
+      await (undefined as any)?.updateSessionRuntimeOptions({
         cfg: params.cfg,
         sessionKey,
         patch: runtimeOptionsPatch,

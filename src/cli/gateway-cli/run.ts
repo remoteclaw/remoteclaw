@@ -25,7 +25,6 @@ import { defaultRuntime } from "../../runtime.js";
 import { formatCliCommand } from "../command-format.js";
 import { inheritOptionFromParent } from "../command-options.js";
 import { forceFreePortAndWait, waitForPortBindable } from "../ports.js";
-import { ensureDevGatewayConfig } from "./dev.js";
 import { runGatewayLoop } from "./run-loop.js";
 import {
   describeUnknownError,
@@ -192,10 +191,6 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
   const rawStreamPath = toOptionString(opts.rawStreamPath);
   if (rawStreamPath) {
     process.env.REMOTECLAW_RAW_STREAM_PATH = rawStreamPath;
-  }
-
-  if (devMode) {
-    await ensureDevGatewayConfig({ reset: Boolean(opts.reset) });
   }
 
   const cfg = loadConfig();

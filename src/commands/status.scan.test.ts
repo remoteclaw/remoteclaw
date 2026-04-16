@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   readBestEffortConfig: vi.fn(),
-  resolveCommandSecretRefsViaGateway: vi.fn(),
   buildChannelsTable: vi.fn(),
   getUpdateCheckResult: vi.fn(),
   getAgentLocalStatuses: vi.fn(),
@@ -18,10 +17,6 @@ vi.mock("../cli/progress.js", () => ({
 
 vi.mock("../config/config.js", () => ({
   readBestEffortConfig: mocks.readBestEffortConfig,
-}));
-
-vi.mock("../cli/command-secret-gateway.js", () => ({
-  resolveCommandSecretRefsViaGateway: mocks.resolveCommandSecretRefsViaGateway,
 }));
 
 vi.mock("./status-all/channels.js", () => ({
@@ -79,15 +74,6 @@ describe("scanStatus", () => {
       session: {},
       plugins: { enabled: false },
       gateway: {},
-    });
-    mocks.resolveCommandSecretRefsViaGateway.mockResolvedValue({
-      resolvedConfig: {
-        marker: "resolved",
-        session: {},
-        plugins: { enabled: false },
-        gateway: {},
-      },
-      diagnostics: [],
     });
     mocks.getUpdateCheckResult.mockResolvedValue({
       installKind: "git",

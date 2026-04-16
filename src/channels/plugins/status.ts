@@ -1,6 +1,5 @@
 import type { RemoteClawConfig } from "../../config/config.js";
 import { projectSafeChannelAccountSnapshotFields } from "../account-snapshot-fields.js";
-import { inspectReadOnlyChannelAccount } from "../read-only-account-inspect.js";
 import type { ChannelAccountSnapshot, ChannelPlugin } from "./types.js";
 
 // Channel docking: status snapshots flow through plugin.status hooks here.
@@ -49,13 +48,7 @@ export async function buildReadOnlySourceChannelAccountSnapshot<ResolvedAccount>
   probe?: unknown;
   audit?: unknown;
 }): Promise<ChannelAccountSnapshot | null> {
-  const inspectedAccount =
-    params.plugin.config.inspectAccount?.(params.cfg, params.accountId) ??
-    inspectReadOnlyChannelAccount({
-      channelId: params.plugin.id,
-      cfg: params.cfg,
-      accountId: params.accountId,
-    });
+  const inspectedAccount = params.plugin.config.inspectAccount?.(params.cfg, params.accountId);
   if (!inspectedAccount) {
     return null;
   }
@@ -73,13 +66,7 @@ export async function buildChannelAccountSnapshot<ResolvedAccount>(params: {
   probe?: unknown;
   audit?: unknown;
 }): Promise<ChannelAccountSnapshot> {
-  const inspectedAccount =
-    params.plugin.config.inspectAccount?.(params.cfg, params.accountId) ??
-    inspectReadOnlyChannelAccount({
-      channelId: params.plugin.id,
-      cfg: params.cfg,
-      accountId: params.accountId,
-    });
+  const inspectedAccount = params.plugin.config.inspectAccount?.(params.cfg, params.accountId);
   const account = (inspectedAccount ??
     params.plugin.config.resolveAccount(params.cfg, params.accountId)) as ResolvedAccount;
   return await buildSnapshotFromAccount({

@@ -44,7 +44,6 @@ import {
   waitForGatewayReachable,
 } from "./onboard-helpers.js";
 import { promptRemoteGatewayConfig } from "./onboard-remote.js";
-import { setupSkills } from "./onboard-skills.js";
 
 type ConfigureSectionChoice = WizardSection | "__continue";
 
@@ -540,11 +539,6 @@ export async function runConfigureWizard(
         await configureChannelsSection();
       }
 
-      if (selected.includes("skills")) {
-        const wsDir = resolveUserPath(workspaceDir);
-        nextConfig = await setupSkills(nextConfig, wsDir, runtime, prompter);
-      }
-
       await persistConfig();
 
       if (selected.includes("daemon")) {
@@ -598,8 +592,6 @@ export async function runConfigureWizard(
         }
 
         if (choice === "skills") {
-          const wsDir = resolveUserPath(workspaceDir);
-          nextConfig = await setupSkills(nextConfig, wsDir, runtime, prompter);
           await persistConfig();
         }
 

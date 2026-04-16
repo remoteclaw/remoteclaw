@@ -2,7 +2,6 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { resolveThreadBindingConversationIdFromBindingId } from "../channels/thread-binding-id.js";
-import { formatThreadBindingDurationLabel } from "../channels/thread-bindings-messages.js";
 import { resolveStateDir } from "../config/paths.js";
 import { logVerbose } from "../globals.js";
 import { writeJsonAtomic } from "../infra/json-files.js";
@@ -227,9 +226,7 @@ function summarizeLifecycleForLog(
   const idleTimeoutMs =
     typeof record.idleTimeoutMs === "number" ? record.idleTimeoutMs : defaults.idleTimeoutMs;
   const maxAgeMs = typeof record.maxAgeMs === "number" ? record.maxAgeMs : defaults.maxAgeMs;
-  const idleLabel = formatThreadBindingDurationLabel(Math.max(0, Math.floor(idleTimeoutMs)));
-  const maxAgeLabel = formatThreadBindingDurationLabel(Math.max(0, Math.floor(maxAgeMs)));
-  return `idle=${idleLabel} maxAge=${maxAgeLabel}`;
+  return `idle=${idleTimeoutMs}ms maxAge=${maxAgeMs}ms`;
 }
 
 function loadBindingsFromDisk(accountId: string): TelegramThreadBindingRecord[] {

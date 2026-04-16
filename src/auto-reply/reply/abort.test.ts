@@ -56,13 +56,6 @@ const acpManagerMocks = vi.hoisted(() => ({
   cancelSession: vi.fn(async () => {}),
 }));
 
-vi.mock("../../acp/control-plane/manager.js", () => ({
-  getAcpSessionManager: () => ({
-    resolveSession: acpManagerMocks.resolveSession,
-    cancelSession: acpManagerMocks.cancelSession,
-  }),
-}));
-
 describe("abort detection", () => {
   async function writeSessionStore(
     storePath: string,

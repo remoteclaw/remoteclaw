@@ -9,8 +9,6 @@ import { runCommandWithTimeout } from "../process/exec.js";
 import { defaultRuntime } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { theme } from "../terminal/theme.js";
-import { resolveCommandSecretRefsViaGateway } from "./command-secret-gateway.js";
-import { getQrRemoteCommandSecretTargetIds } from "./command-secret-targets.js";
 
 type QrCliOptions = {
   json?: boolean;
@@ -137,17 +135,8 @@ export function registerQrCli(program: Command) {
             );
           }
         }
-        let loaded = loadedRaw;
-        let remoteDiagnostics: string[] = [];
-        if (wantsRemote && !token && !password) {
-          const resolvedRemote = await resolveCommandSecretRefsViaGateway({
-            config: loadedRaw,
-            commandName: "qr --remote",
-            targetIds: getQrRemoteCommandSecretTargetIds(),
-          });
-          loaded = resolvedRemote.resolvedConfig;
-          remoteDiagnostics = resolvedRemote.diagnostics;
-        }
+        const loaded = loadedRaw;
+        const remoteDiagnostics: string[] = [];
         const cfg = {
           ...loaded,
           gateway: {

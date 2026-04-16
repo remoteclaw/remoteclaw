@@ -1,7 +1,3 @@
-import {
-  promptSecretRefForOnboarding,
-  resolveSecretInputModeForEnvSelection,
-} from "../../../commands/auth-choice.apply-helpers.js";
 import type { RemoteClawConfig } from "../../../config/config.js";
 import type { DmPolicy, GroupPolicy } from "../../../config/types.js";
 import type { SecretInput } from "../../../config/types.secrets.js";
@@ -529,66 +525,22 @@ export async function promptSingleChannelSecretInput(params: {
   inputPrompt: string;
   preferredEnvVar?: string;
 }): Promise<SingleChannelSecretInputPromptResult> {
-  const selectedMode = await resolveSecretInputModeForEnvSelection({
-    prompter: params.prompter as WizardPrompter,
-    explicitMode: params.secretInputMode,
-    copy: {
-      modeMessage: `How do you want to provide this ${params.credentialLabel}?`,
-      plaintextLabel: `Enter ${params.credentialLabel}`,
-      plaintextHint: "Stores the credential directly in RemoteClaw config",
-      refLabel: "Use external secret provider",
-      refHint: "Stores a reference to env or configured external secret providers",
-    },
+  const plainResult = await promptSingleChannelToken({
+    prompter: params.prompter,
+    accountConfigured: params.accountConfigured,
+    canUseEnv: params.canUseEnv,
+    hasConfigToken: params.hasConfigToken,
+    envPrompt: params.envPrompt,
+    keepPrompt: params.keepPrompt,
+    inputPrompt: params.inputPrompt,
   });
-
-  if (selectedMode === "plaintext") {
-    const plainResult = await promptSingleChannelToken({
-      prompter: params.prompter,
-      accountConfigured: params.accountConfigured,
-      canUseEnv: params.canUseEnv,
-      hasConfigToken: params.hasConfigToken,
-      envPrompt: params.envPrompt,
-      keepPrompt: params.keepPrompt,
-      inputPrompt: params.inputPrompt,
-    });
-    if (plainResult.useEnv) {
-      return { action: "use-env" };
-    }
-    if (plainResult.token) {
-      return { action: "set", value: plainResult.token, resolvedValue: plainResult.token };
-    }
-    return { action: "keep" };
+  if (plainResult.useEnv) {
+    return { action: "use-env" };
   }
-
-  if (params.hasConfigToken && params.accountConfigured) {
-    const keep = await params.prompter.confirm({
-      message: params.keepPrompt,
-      initialValue: true,
-    });
-    if (keep) {
-      return { action: "keep" };
-    }
+  if (plainResult.token) {
+    return { action: "set", value: plainResult.token, resolvedValue: plainResult.token };
   }
-
-  const resolved = await promptSecretRefForOnboarding({
-    provider: params.providerHint,
-    config: params.cfg,
-    prompter: params.prompter as WizardPrompter,
-    preferredEnvVar: params.preferredEnvVar,
-    copy: {
-      sourceMessage: `Where is this ${params.credentialLabel} stored?`,
-      envVarPlaceholder: params.preferredEnvVar ?? "REMOTECLAW_SECRET",
-      envVarFormatError:
-        'Use an env var name like "REMOTECLAW_SECRET" (uppercase letters, numbers, underscores).',
-      noProvidersMessage:
-        "No file/exec secret providers are configured yet. Add one under secrets.providers, or select Environment variable.",
-    },
-  });
-  return {
-    action: "set",
-    value: resolved.ref,
-    resolvedValue: resolved.resolvedValue ?? "",
-  };
+  return { action: "keep" };
 }
 
 type ParsedAllowFromResult = { entries: string[]; error?: string };

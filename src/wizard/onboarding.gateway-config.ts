@@ -1,8 +1,4 @@
 import {
-  promptSecretRefForOnboarding,
-  resolveSecretInputModeForEnvSelection,
-} from "../commands/auth-choice.apply-helpers.js";
-import {
   normalizeGatewayTokenInput,
   randomToken,
   validateGatewayPasswordInput,
@@ -164,45 +160,18 @@ export async function configureGatewayForOnboarding(
       value: quickstartGateway.token,
       defaults: nextConfig.secrets?.defaults,
     }).ref;
-    const tokenMode =
-      flow === "quickstart" && opts.secretInputMode !== "ref" // pragma: allowlist secret
-        ? quickstartTokenRef
-          ? "ref"
-          : "plaintext"
-        : await resolveSecretInputModeForEnvSelection({
-            prompter,
-            explicitMode: opts.secretInputMode,
-            copy: {
-              modeMessage: "How do you want to provide the gateway token?",
-              plaintextLabel: "Generate/store plaintext token",
-              plaintextHint: "Default",
-              refLabel: "Use SecretRef",
-              refHint: "Store a reference instead of plaintext",
-            },
-          });
-    if (tokenMode === "ref") {
-      if (flow === "quickstart" && quickstartTokenRef) {
-        gatewayTokenInput = quickstartTokenRef;
-        gatewayToken = await resolveOnboardingSecretInputString({
-          config: nextConfig,
-          value: quickstartTokenRef,
-          path: "gateway.auth.token",
-          env: process.env,
-        });
-      } else {
-        const resolved = await promptSecretRefForOnboarding({
-          provider: "gateway-auth-token",
-          config: nextConfig,
-          prompter,
-          preferredEnvVar: "REMOTECLAW_GATEWAY_TOKEN",
-          copy: {
-            sourceMessage: "Where is this gateway token stored?",
-            envVarPlaceholder: "REMOTECLAW_GATEWAY_TOKEN",
-          },
-        });
-        gatewayTokenInput = resolved.ref;
-        gatewayToken = resolved.resolvedValue;
-      }
+    if (
+      flow === "quickstart" &&
+      opts.secretInputMode !== "ref" && // pragma: allowlist secret
+      quickstartTokenRef
+    ) {
+      gatewayTokenInput = quickstartTokenRef;
+      gatewayToken = await resolveOnboardingSecretInputString({
+        config: nextConfig,
+        value: quickstartTokenRef,
+        path: "gateway.auth.token",
+        env: process.env,
+      });
     } else if (flow === "quickstart") {
       gatewayToken =
         (quickstartTokenString ??
@@ -227,35 +196,12 @@ export async function configureGatewayForOnboarding(
     let password: SecretInput | undefined =
       flow === "quickstart" && quickstartGateway.password ? quickstartGateway.password : undefined;
     if (!password) {
-      const selectedMode = await resolveSecretInputModeForEnvSelection({
-        prompter,
-        explicitMode: opts.secretInputMode,
-        copy: {
-          modeMessage: "How do you want to provide the gateway password?",
-          plaintextLabel: "Enter password now",
-          plaintextHint: "Stores the password directly in RemoteClaw config",
-        },
-      });
-      if (selectedMode === "ref") {
-        const resolved = await promptSecretRefForOnboarding({
-          provider: "gateway-auth-password",
-          config: nextConfig,
-          prompter,
-          preferredEnvVar: "REMOTECLAW_GATEWAY_PASSWORD",
-          copy: {
-            sourceMessage: "Where is this gateway password stored?",
-            envVarPlaceholder: "REMOTECLAW_GATEWAY_PASSWORD",
-          },
-        });
-        password = resolved.ref;
-      } else {
-        password = String(
-          (await prompter.text({
-            message: "Gateway password",
-            validate: validateGatewayPasswordInput,
-          })) ?? "",
-        ).trim();
-      }
+      password = String(
+        (await prompter.text({
+          message: "Gateway password",
+          validate: validateGatewayPasswordInput,
+        })) ?? "",
+      ).trim();
     }
     nextConfig = {
       ...nextConfig,

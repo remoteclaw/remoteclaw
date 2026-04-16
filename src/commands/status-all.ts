@@ -1,6 +1,4 @@
 import { formatCliCommand } from "../cli/command-format.js";
-import { resolveCommandSecretRefsViaGateway } from "../cli/command-secret-gateway.js";
-import { getStatusCommandSecretTargetIds } from "../cli/command-secret-targets.js";
 import { withProgress } from "../cli/progress.js";
 import {
   readBestEffortConfig,
@@ -41,13 +39,7 @@ export async function statusAllCommand(
 ): Promise<void> {
   await withProgress({ label: "Scanning status --all…", total: 11 }, async (progress) => {
     progress.setLabel("Loading config…");
-    const loadedRaw = await readBestEffortConfig();
-    const { resolvedConfig: cfg } = await resolveCommandSecretRefsViaGateway({
-      config: loadedRaw,
-      commandName: "status --all",
-      targetIds: getStatusCommandSecretTargetIds(),
-      mode: "summary",
-    });
+    const cfg = await readBestEffortConfig();
     const osSummary = resolveOsSummary();
     const snap = await readConfigFileSnapshot().catch(() => null);
     progress.tick();
@@ -161,7 +153,7 @@ export async function statusAllCommand(
     progress.setLabel("Summarizing channels…");
     const channels = await buildChannelsTable(cfg, {
       showSecrets: false,
-      sourceConfig: loadedRaw,
+      sourceConfig: cfg,
     });
     progress.tick();
 

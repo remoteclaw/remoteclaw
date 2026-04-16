@@ -18,14 +18,6 @@ vi.mock("../config/config.js", async (importOriginal) => {
   };
 });
 
-const resolveCommandSecretRefsViaGateway = vi.fn(async ({ config }: { config: unknown }) => ({
-  resolvedConfig: config,
-  diagnostics: [] as string[],
-}));
-vi.mock("../cli/command-secret-gateway.js", () => ({
-  resolveCommandSecretRefsViaGateway,
-}));
-
 const callGatewayMock = vi.fn();
 vi.mock("../gateway/call.js", () => ({
   callGateway: callGatewayMock,
@@ -77,7 +69,6 @@ beforeEach(async () => {
   handleSlackAction.mockClear();
   handleTelegramAction.mockClear();
   handleWhatsAppAction.mockClear();
-  resolveCommandSecretRefsViaGateway.mockClear();
 });
 
 afterEach(() => {
@@ -212,10 +203,6 @@ function mockResolvedCommandConfig(params: {
   diagnostics?: string[];
 }) {
   testConfig = params.rawConfig;
-  resolveCommandSecretRefsViaGateway.mockResolvedValueOnce({
-    resolvedConfig: params.resolvedConfig,
-    diagnostics: params.diagnostics ?? ["resolved channels.telegram.token"],
-  });
 }
 
 async function runTelegramDirectOutboundSend(params: {
@@ -293,13 +280,6 @@ describe("messageCommand", () => {
       },
       deps,
       runtime,
-    );
-
-    expect(resolveCommandSecretRefsViaGateway).toHaveBeenCalledWith(
-      expect.objectContaining({
-        config: rawConfig,
-        commandName: "message",
-      }),
     );
     expect(handleTelegramAction).toHaveBeenCalledWith(
       expect.objectContaining({ action: "send", to: "123456", accountId: undefined }),

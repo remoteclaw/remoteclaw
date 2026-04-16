@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, type MockInstance, vi } from "vitest"
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
 import "../cron/isolated-agent.mocks.js";
 import * as modelSelectionModule from "../agents/model-selection.js";
-import * as commandSecretGatewayModule from "../cli/command-secret-gateway.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import * as configModule from "../config/config.js";
 import * as sessionsModule from "../config/sessions.js";
@@ -337,21 +336,9 @@ describe("agentCommand", () => {
         snapshot: { valid: true, resolved: sourceConfig },
         writeOptions: {},
       } as Awaited<ReturnType<typeof configModule.readConfigFileSnapshotForWrite>>);
-      const resolveSecretsSpy = vi
-        .spyOn(commandSecretGatewayModule, "resolveCommandSecretRefsViaGateway")
-        .mockResolvedValueOnce({
-          resolvedConfig,
-          diagnostics: [],
-        });
-
       await agentCommand({ message: "hello", to: "+1555" }, runtime);
 
-      expect(resolveSecretsSpy).toHaveBeenCalledWith({
-        config: loadedConfig,
-        commandName: "agent",
-        targetIds: expect.any(Set),
-      });
-      expect(setRuntimeConfigSnapshotSpy).toHaveBeenCalledWith(resolvedConfig, sourceConfig);
+      expect(setRuntimeConfigSnapshotSpy).toHaveBeenCalledWith(loadedConfig, sourceConfig);
       expect(
         (
           vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0] as

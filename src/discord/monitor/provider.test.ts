@@ -161,18 +161,6 @@ vi.mock("./commands.js", () => ({
   resolveDiscordSlashCommandConfig: () => ({ ephemeral: false }),
 }));
 
-vi.mock("./exec-approvals.js", () => ({
-  createExecApprovalButton: () => ({ id: "exec-approval" }),
-  DiscordExecApprovalHandler: class DiscordExecApprovalHandler {
-    async start() {
-      return undefined;
-    }
-    async stop() {
-      return undefined;
-    }
-  },
-}));
-
 vi.mock("./gateway-plugin.js", () => ({
   createDiscordGatewayPlugin: () => ({ id: "gateway-plugin" }),
 }));

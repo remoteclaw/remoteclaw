@@ -16,7 +16,6 @@ import type {
   ChannelId,
   ChannelPlugin,
 } from "../../channels/plugins/types.js";
-import { inspectReadOnlyChannelAccount } from "../../channels/read-only-account-inspect.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { sha256HexPrefix } from "../../logging/redact-identifier.js";
 import { formatTimeAgo } from "./format.js";
@@ -92,14 +91,7 @@ function formatTokenHint(token: string, opts: { showSecrets: boolean }): string 
 }
 
 function inspectChannelAccount(plugin: ChannelPlugin, cfg: RemoteClawConfig, accountId: string) {
-  return (
-    plugin.config.inspectAccount?.(cfg, accountId) ??
-    inspectReadOnlyChannelAccount({
-      channelId: plugin.id,
-      cfg,
-      accountId,
-    })
-  );
+  return plugin.config.inspectAccount?.(cfg, accountId) ?? undefined;
 }
 
 async function resolveChannelAccountRow(

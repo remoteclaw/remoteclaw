@@ -10,7 +10,6 @@ import {
 } from "../channels/account-summary.js";
 import { listChannelPlugins } from "../channels/plugins/index.js";
 import type { ChannelAccountSnapshot, ChannelPlugin } from "../channels/plugins/types.js";
-import { inspectReadOnlyChannelAccount } from "../channels/read-only-account-inspect.js";
 import { type RemoteClawConfig, loadConfig } from "../config/config.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 import { theme } from "../terminal/theme.js";
@@ -106,14 +105,7 @@ const buildAccountDetails = (params: {
 };
 
 function inspectChannelAccount(plugin: ChannelPlugin, cfg: RemoteClawConfig, accountId: string) {
-  return (
-    plugin.config.inspectAccount?.(cfg, accountId) ??
-    inspectReadOnlyChannelAccount({
-      channelId: plugin.id,
-      cfg,
-      accountId,
-    })
-  );
+  return plugin.config.inspectAccount?.(cfg, accountId) ?? undefined;
 }
 
 export async function buildChannelSummary(

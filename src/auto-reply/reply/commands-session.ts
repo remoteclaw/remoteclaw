@@ -22,7 +22,6 @@ import { parseActivationCommand } from "../group-activation.js";
 import { parseSendPolicyCommand } from "../send-policy.js";
 import { normalizeUsageDisplay, resolveResponseUsageMode } from "../thinking.js";
 import { isDiscordSurface, isTelegramSurface, resolveChannelAccountId } from "./channel-context.js";
-import { handleAbortTrigger, handleStopCommand } from "./commands-session-abort.js";
 import { persistSessionEntry } from "./commands-session-store.js";
 import type { CommandHandler } from "./commands-types.js";
 import { resolveTelegramConversationId } from "./telegram-context.js";
@@ -549,5 +548,3 @@ export const handleRestartCommand: CommandHandler = async (params, allowTextComm
     },
   };
 };
-
-export { handleAbortTrigger, handleStopCommand };

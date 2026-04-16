@@ -12,11 +12,11 @@ import {
 import type { APISelectMenuOption } from "discord-api-types/v10";
 import { ButtonStyle } from "discord-api-types/v10";
 import { normalizeProviderId } from "../../agents/model-selection.js";
-import {
-  buildModelsProviderData,
-  type ModelsProviderData,
-} from "../../auto-reply/reply/commands-models.js";
 import type { RemoteClawConfig } from "../../config/config.js";
+
+// Gutted in RemoteClaw fork — model provider data source was removed.
+// oxlint-disable-next-line typescript/no-explicit-any
+type ModelsProviderData = any;
 
 export const DISCORD_MODEL_PICKER_CUSTOM_ID_KEY = "mdlpk";
 export const DISCORD_CUSTOM_ID_MAX_CHARS = 100;
@@ -542,10 +542,10 @@ function buildModelRows(params: {
  * same provider/model resolver used by text and Telegram model commands.
  */
 export async function loadDiscordModelPickerData(
-  cfg: RemoteClawConfig,
-  agentId?: string,
+  _cfg: RemoteClawConfig,
+  _agentId?: string,
 ): Promise<ModelsProviderData> {
-  return buildModelsProviderData(cfg, agentId);
+  return {} as ModelsProviderData;
 }
 
 export function buildDiscordModelPickerCustomId(params: {

@@ -3,7 +3,6 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/mattermost";
-import { buildModelsProviderData } from "remoteclaw/plugin-sdk/mattermost";
 import { describe, expect, it } from "vitest";
 import {
   buildMattermostAllowedModelRefs,
@@ -137,7 +136,7 @@ describe("Mattermost model picker", () => {
           ],
         },
       };
-      const providerData = await buildModelsProviderData(cfg, "support");
+      const providerData = {} as Record<string, unknown>;
 
       expect(
         resolveMattermostModelPickerCurrentModel({

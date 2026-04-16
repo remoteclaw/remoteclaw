@@ -1,7 +1,6 @@
 import { serializePayload } from "@buape/carbon";
 import { ComponentType } from "discord-api-types/v10";
-import { describe, expect, it, vi } from "vitest";
-import * as modelsCommandModule from "../../auto-reply/reply/commands-models.js";
+import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
   DISCORD_CUSTOM_ID_MAX_CHARS,
@@ -61,18 +60,10 @@ function renderRecentsViewRows(
 }
 
 describe("loadDiscordModelPickerData", () => {
-  it("reuses buildModelsProviderData as source of truth with agent scope", async () => {
-    const expected = createModelsProviderData({ openai: ["gpt-4o"] });
+  it("returns empty data (model provider data source was gutted)", async () => {
     const cfg = {} as RemoteClawConfig;
-    const spy = vi
-      .spyOn(modelsCommandModule, "buildModelsProviderData")
-      .mockResolvedValue(expected);
-
     const result = await loadDiscordModelPickerData(cfg, "support");
-
-    expect(spy).toHaveBeenCalledTimes(1);
-    expect(spy).toHaveBeenCalledWith(cfg, "support");
-    expect(result).toBe(expected);
+    expect(result).toEqual({});
   });
 });
 

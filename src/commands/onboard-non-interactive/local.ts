@@ -46,18 +46,6 @@ export async function runNonInteractiveOnboardingLocal(params: {
     runtime.exit(1);
     return;
   }
-  const authChoice = opts.authChoice ?? inferredAuthChoice.choice ?? "skip";
-  if (authChoice !== "skip") {
-    const { applyNonInteractiveAuthChoice } = await import("./local/auth-choice.js");
-    await applyNonInteractiveAuthChoice({
-      nextConfig,
-      authChoice,
-      opts,
-      runtime,
-      baseConfig,
-    });
-  }
-
   const gatewayBasePort = resolveGatewayPort(baseConfig);
   const gatewayResult = applyNonInteractiveGatewayConfig({
     nextConfig,

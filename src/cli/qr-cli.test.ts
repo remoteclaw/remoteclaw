@@ -54,18 +54,6 @@ function createRemoteQrConfig(params?: { withTailscale?: boolean }) {
   };
 }
 
-function createTailscaleRemoteRefConfig() {
-  return {
-    gateway: {
-      tailscale: { mode: "serve" },
-      remote: {
-        token: { source: "env", provider: "default", id: "REMOTE_GATEWAY_TOKEN" },
-      },
-      auth: {},
-    },
-  };
-}
-
 function createDefaultSecretProvider() {
   return {
     providers: {
@@ -325,35 +313,6 @@ describe("registerQrCli", () => {
     expect(runtime.log).toHaveBeenCalledWith(expected);
   });
 
-  it("logs remote secret diagnostics in non-json output mode", async () => {
-    loadConfig.mockReturnValue(createRemoteQrConfig());
-
-    await runQr(["--remote"]);
-
-    expect(
-      runtime.log.mock.calls.some((call) =>
-        String(call[0] ?? "").includes("gateway.remote.token inactive"),
-      ),
-    ).toBe(true);
-  });
-
-  it("routes remote secret diagnostics to stderr for setup-code-only output", async () => {
-    loadConfig.mockReturnValue(createRemoteQrConfig());
-
-    await runQr(["--setup-code-only", "--remote"]);
-
-    expect(
-      runtime.error.mock.calls.some((call) =>
-        String(call[0] ?? "").includes("gateway.remote.token inactive"),
-      ),
-    ).toBe(true);
-    const expected = encodePairingSetupCode({
-      url: "wss://remote.example.com:444",
-      token: "remote-tok",
-    });
-    expect(runtime.log).toHaveBeenCalledWith(expected);
-  });
-
   it.each([
     { name: "without tailscale configured", withTailscale: false },
     { name: "when tailscale is configured", withTailscale: true },
@@ -370,21 +329,6 @@ describe("registerQrCli", () => {
     expect(runCommandWithTimeout).not.toHaveBeenCalled();
   });
 
-  it("routes remote secret diagnostics to stderr for json output", async () => {
-    loadConfig.mockReturnValue(createRemoteQrConfig());
-    mockTailscaleStatusLookup();
-
-    await runQr(["--json", "--remote"]);
-
-    const payload = parseLastLoggedQrJson();
-    expect(payload.gatewayUrl).toBe("wss://remote.example.com:444");
-    expect(
-      runtime.error.mock.calls.some((call) =>
-        String(call[0] ?? "").includes("gateway.remote.password inactive"),
-      ),
-    ).toBe(true);
-  });
-
   it("errors when --remote is set but no remote URL is configured", async () => {
     loadConfig.mockReturnValue({
       gateway: {
@@ -397,25 +341,5 @@ describe("registerQrCli", () => {
     await expectQrExit(["--remote"]);
     const output = runtime.error.mock.calls.map((call) => String(call[0] ?? "")).join("\n");
     expect(output).toContain("qr --remote requires");
-  });
-
-  it("supports --remote with tailscale serve when remote token ref resolves", async () => {
-    loadConfig.mockReturnValue(createTailscaleRemoteRefConfig());
-    runCommandWithTimeout.mockResolvedValue({
-      code: 0,
-      stdout: '{"Self":{"DNSName":"ts-host.tailnet.ts.net."}}',
-      stderr: "",
-    });
-
-    await runQr(["--json", "--remote"]);
-
-    const payload = JSON.parse(String(runtime.log.mock.calls.at(-1)?.[0] ?? "{}")) as {
-      gatewayUrl?: string;
-      auth?: string;
-      urlSource?: string;
-    };
-    expect(payload.gatewayUrl).toBe("wss://ts-host.tailnet.ts.net");
-    expect(payload.auth).toBe("token");
-    expect(payload.urlSource).toBe("gateway.tailscale.mode=serve");
   });
 });

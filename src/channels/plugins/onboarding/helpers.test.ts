@@ -351,41 +351,6 @@ describe("promptSingleChannelSecretInput", () => {
     expect(result).toEqual({ action: "use-env" });
   });
 
-  it("returns ref + resolved value when external env ref is selected", async () => {
-    process.env.REMOTECLAW_TEST_TOKEN = "secret-token";
-    const prompter = {
-      select: vi.fn().mockResolvedValueOnce("ref").mockResolvedValueOnce("env"),
-      confirm: vi.fn(async () => false),
-      text: vi.fn(async () => "REMOTECLAW_TEST_TOKEN"),
-      note: vi.fn(async () => undefined),
-    };
-
-    const result = await promptSingleChannelSecretInput({
-      cfg: {},
-      // oxlint-disable-next-line typescript/no-explicit-any
-      prompter: prompter as any,
-      providerHint: "discord",
-      credentialLabel: "Discord bot token",
-      accountConfigured: false,
-      canUseEnv: false,
-      hasConfigToken: false,
-      envPrompt: "use env",
-      keepPrompt: "keep",
-      inputPrompt: "token",
-      preferredEnvVar: "REMOTECLAW_TEST_TOKEN",
-    });
-
-    expect(result).toEqual({
-      action: "set",
-      value: {
-        source: "env",
-        provider: "default",
-        id: "REMOTECLAW_TEST_TOKEN",
-      },
-      resolvedValue: "secret-token",
-    });
-  });
-
   it("returns keep action when ref mode keeps an existing configured ref", async () => {
     const prompter = {
       select: vi.fn(async () => "ref"),

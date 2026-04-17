@@ -20,6 +20,7 @@ const resolveSandboxRuntimeStatus = (..._args: unknown[]) => ({
   mode: "off" as const,
 });
 import { buildSubagentSystemPrompt } from "./subagent-announce.js";
+import { resolveSubagentCapabilities } from "./subagent-capabilities.js";
 import { getSubagentDepthFromSessionStore } from "./subagent-depth.js";
 import { countActiveRunsForSession, registerSubagentRun } from "./subagent-registry.js";
 import {
@@ -393,6 +394,10 @@ export async function spawnSubagentDirect(
   }
   const childDepth = callerDepth + 1;
   const spawnedByKey = requesterInternalKey;
+  const childCapabilities = resolveSubagentCapabilities({
+    depth: childDepth,
+    maxSpawnDepth,
+  });
   const _targetAgentConfig = resolveAgentConfig(cfg, targetAgentId);
   const resolvedModel = undefined as string | undefined;
 
@@ -410,7 +415,11 @@ export async function spawnSubagentDirect(
     }
   };
 
-  const spawnDepthPatchError = await patchChildSession({ spawnDepth: childDepth });
+  const spawnDepthPatchError = await patchChildSession({
+    spawnDepth: childDepth,
+    subagentRole: childCapabilities.role === "main" ? null : childCapabilities.role,
+    subagentControlScope: childCapabilities.controlScope,
+  });
   if (spawnDepthPatchError) {
     return {
       status: "error",
@@ -778,6 +787,7 @@ export async function spawnSubagentDirect(
     registerSubagentRun({
       runId: childRunId,
       childSessionKey,
+      controllerSessionKey: requesterInternalKey,
       requesterSessionKey: requesterInternalKey,
       requesterOrigin,
       requesterDisplayKey,

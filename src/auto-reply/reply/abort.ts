@@ -1,6 +1,6 @@
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import {
-  listSubagentRunsForRequester,
+  listSubagentRunsForController,
   markSubagentRunTerminated,
 } from "../../agents/subagent-registry.js";
 import {
@@ -220,7 +220,7 @@ export function stopSubagentsForRequester(params: {
   if (!requesterKey) {
     return { stopped: 0 };
   }
-  const runs = listSubagentRunsForRequester(requesterKey);
+  const runs = listSubagentRunsForController(requesterKey);
   if (runs.length === 0) {
     return { stopped: 0 };
   }

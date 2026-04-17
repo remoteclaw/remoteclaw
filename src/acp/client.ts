@@ -21,6 +21,14 @@ import {
 } from "../plugin-sdk/windows-spawn.js";
 import { DANGEROUS_ACP_TOOLS } from "../security/dangerous-tools.js";
 
+// Safe-to-auto-approve tool IDs in ACP bridge mode.
+// These tools are read-only or network-scoped such that auto-approval cannot
+// cause destructive filesystem or execution effects:
+//   - read: read-only file access (no write/exec)
+//   - search: local file search (no write/exec)
+//   - web_search: external web query (no local filesystem/exec impact)
+// Any tool performing writes, exec, or credential access requires explicit
+// user confirmation and must NOT be added here without a security review.
 const SAFE_AUTO_APPROVE_TOOL_IDS = new Set(["read", "search", "web_search"]);
 const TRUSTED_SAFE_TOOL_ALIASES = new Set(["search"]);
 const READ_TOOL_PATH_KEYS = ["path", "file_path", "filePath"];

@@ -201,7 +201,7 @@ export function buildGatewayConnectionDetails(
           ? undefined
           : "Break-glass (trusted private networks only): set REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS=1",
         "Doctor: remoteclaw doctor --fix",
-        "Docs: https://docs.remoteclaw.ai/gateway/remote",
+        "Docs: https://docs.remoteclaw.org/gateway/remote",
       ].join("\n"),
     );
   }

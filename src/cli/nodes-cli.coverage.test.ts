@@ -179,7 +179,8 @@ describe("nodes-cli coverage", () => {
     expect(approval?.params?.["systemRunPlan"]).toEqual({
       argv: ["echo", "hi"],
       cwd: "/tmp",
-      rawCommand: null,
+      commandText: "echo hi",
+      commandPreview: null,
       agentId: "test-agent",
       sessionKey: null,
     });
@@ -213,7 +214,8 @@ describe("nodes-cli coverage", () => {
     expect(approval?.params?.["systemRunPlan"]).toEqual({
       argv: ["/bin/sh", "-lc", "echo hi"],
       cwd: null,
-      rawCommand: "echo hi",
+      commandText: '/bin/sh -lc "echo hi"',
+      commandPreview: "echo hi",
       agentId: "test-agent",
       sessionKey: null,
     });

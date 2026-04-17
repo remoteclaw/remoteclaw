@@ -73,6 +73,15 @@ vi.mock("../pairing/pairing-store.js", () => ({
   upsertChannelPairingRequest,
 }));
 
+const skillCommandsHoisted = vi.hoisted(() => ({
+  listSkillCommandsForAgents: vi.fn(() => []),
+}));
+export const listSkillCommandsForAgents = skillCommandsHoisted.listSkillCommandsForAgents;
+
+vi.mock("../auto-reply/skill-commands.js", () => ({
+  listSkillCommandsForAgents,
+}));
+
 const systemEventsHoisted = vi.hoisted(() => ({
   enqueueSystemEventSpy: vi.fn(),
 }));
@@ -102,6 +111,7 @@ export const botCtorSpy: AnyMock = vi.fn();
 export const answerCallbackQuerySpy: AnyAsyncMock = vi.fn(async () => undefined);
 export const sendChatActionSpy: AnyMock = vi.fn();
 export const editMessageTextSpy: AnyAsyncMock = vi.fn(async () => ({ message_id: 88 }));
+export const editMessageReplyMarkupSpy: AnyAsyncMock = vi.fn(async () => ({ message_id: 88 }));
 export const sendMessageDraftSpy: AnyAsyncMock = vi.fn(async () => true);
 export const setMessageReactionSpy: AnyAsyncMock = vi.fn(async () => undefined);
 export const setMyCommandsSpy: AnyAsyncMock = vi.fn(async () => undefined);
@@ -119,6 +129,7 @@ type ApiStub = {
   answerCallbackQuery: typeof answerCallbackQuerySpy;
   sendChatAction: typeof sendChatActionSpy;
   editMessageText: typeof editMessageTextSpy;
+  editMessageReplyMarkup: typeof editMessageReplyMarkupSpy;
   sendMessageDraft: typeof sendMessageDraftSpy;
   setMessageReaction: typeof setMessageReactionSpy;
   setMyCommands: typeof setMyCommandsSpy;
@@ -134,6 +145,7 @@ const apiStub: ApiStub = {
   answerCallbackQuery: answerCallbackQuerySpy,
   sendChatAction: sendChatActionSpy,
   editMessageText: editMessageTextSpy,
+  editMessageReplyMarkup: editMessageReplyMarkupSpy,
   sendMessageDraft: sendMessageDraftSpy,
   setMessageReaction: setMessageReactionSpy,
   setMyCommands: setMyCommandsSpy,
@@ -306,11 +318,15 @@ beforeEach(() => {
   });
   editMessageTextSpy.mockReset();
   editMessageTextSpy.mockResolvedValue({ message_id: 88 });
+  editMessageReplyMarkupSpy.mockReset();
+  editMessageReplyMarkupSpy.mockResolvedValue({ message_id: 88 });
   sendMessageDraftSpy.mockReset();
   sendMessageDraftSpy.mockResolvedValue(true);
   enqueueSystemEventSpy.mockReset();
   wasSentByBot.mockReset();
   wasSentByBot.mockReturnValue(false);
+  listSkillCommandsForAgents.mockReset();
+  listSkillCommandsForAgents.mockReturnValue([]);
   middlewareUseSpy.mockReset();
   sequentializeSpy.mockReset();
   botCtorSpy.mockReset();

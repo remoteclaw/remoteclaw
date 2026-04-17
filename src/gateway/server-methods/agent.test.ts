@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   updateSessionStore: vi.fn(),
   agentCommand: vi.fn(),
   registerAgentRunContext: vi.fn(),
-  sessionsResetHandler: vi.fn(),
+  performGatewaySessionReset: vi.fn(),
   loadConfigReturn: {} as Record<string, unknown>,
 }));
 
@@ -27,7 +27,7 @@ vi.mock("../../config/sessions.js", async () => {
   return {
     ...actual,
     updateSessionStore: mocks.updateSessionStore,
-    resolveAgentIdFromSessionKey: () => "test-agent",
+    resolveAgentIdFromSessionKey: () => "main",
     resolveExplicitAgentSessionKey: () => undefined,
     resolveAgentMainSessionKey: ({
       cfg,
@@ -35,10 +35,7 @@ vi.mock("../../config/sessions.js", async () => {
     }: {
       cfg?: { session?: { mainKey?: string } };
       agentId: string;
-    }) => {
-      const mainKey = cfg?.session?.mainKey ?? "main";
-      return `agent:${agentId}:${mainKey}`;
-    },
+    }) => `agent:${agentId}:${cfg?.session?.mainKey ?? "main"}`,
   };
 });
 
@@ -57,7 +54,7 @@ vi.mock("../../config/config.js", async () => {
 });
 
 vi.mock("../../agents/agent-scope.js", () => ({
-  listAgentIds: () => ["test-agent"],
+  listAgentIds: () => ["main"],
 }));
 
 vi.mock("../../infra/agent-events.js", () => ({
@@ -65,11 +62,9 @@ vi.mock("../../infra/agent-events.js", () => ({
   onAgentEvent: vi.fn(),
 }));
 
-vi.mock("./sessions.js", () => ({
-  sessionsHandlers: {
-    "sessions.reset": (...args: unknown[]) =>
-      (mocks.sessionsResetHandler as (...args: unknown[]) => unknown)(...args),
-  },
+vi.mock("../session-reset-service.js", () => ({
+  performGatewaySessionReset: (...args: unknown[]) =>
+    (mocks.performGatewaySessionReset as (...args: unknown[]) => unknown)(...args),
 }));
 
 vi.mock("../../sessions/send-policy.js", () => ({
@@ -108,7 +103,7 @@ function mockMainSessionEntry(entry: Record<string, unknown>, cfg: Record<string
       updatedAt: Date.now(),
       ...entry,
     },
-    canonicalKey: "agent:test-agent:main",
+    canonicalKey: "agent:main:main",
   });
 }
 
@@ -117,7 +112,7 @@ function captureUpdatedMainEntry() {
   mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
     const store: Record<string, unknown> = {};
     await updater(store);
-    capturedEntry = store["agent:test-agent:main"] as Record<string, unknown>;
+    capturedEntry = store["agent:main:main"] as Record<string, unknown>;
   });
   return () => capturedEntry;
 }
@@ -161,7 +156,7 @@ function resetTimeConfig() {
 
 async function expectResetCall(expectedMessage: string) {
   await vi.waitFor(() => expect(mocks.agentCommand).toHaveBeenCalled());
-  expect(mocks.sessionsResetHandler).toHaveBeenCalledTimes(1);
+  expect(mocks.performGatewaySessionReset).toHaveBeenCalledTimes(1);
   const call = readLastAgentCommandCall();
   expect(call?.message).toBe(expectedMessage);
   return call;
@@ -184,8 +179,8 @@ async function runMainAgent(message: string, idempotencyKey: string) {
   await invokeAgent(
     {
       message,
-      agentId: "test-agent",
-      sessionKey: "agent:test-agent:main",
+      agentId: "main",
+      sessionKey: "agent:main:main",
       idempotencyKey,
     },
     { respond, reqId: idempotencyKey },
@@ -209,20 +204,18 @@ function mockSessionResetSuccess(params: {
   key?: string;
   sessionId?: string;
 }) {
-  const key = params.key ?? "agent:test-agent:main";
+  const key = params.key ?? "agent:main:main";
   const sessionId = params.sessionId ?? "reset-session-id";
-  mocks.sessionsResetHandler.mockImplementation(
-    async (opts: {
-      params: { key: string; reason: string };
-      respond: (ok: boolean, payload?: unknown) => void;
-    }) => {
-      expect(opts.params.key).toBe(key);
-      expect(opts.params.reason).toBe(params.reason);
-      opts.respond(true, {
+  mocks.performGatewaySessionReset.mockImplementation(
+    async (opts: { key: string; reason: string; commandSource: string }) => {
+      expect(opts.key).toBe(key);
+      expect(opts.reason).toBe(params.reason);
+      expect(opts.commandSource).toBe("gateway:agent");
+      return {
         ok: true,
         key,
         entry: { sessionId },
-      });
+      };
     },
   );
 }
@@ -291,10 +284,10 @@ describe("gateway agent handler", () => {
     let capturedEntry: Record<string, unknown> | undefined;
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
       const store: Record<string, unknown> = {
-        "agent:test-agent:main": buildExistingMainStoreEntry({ acp: existingAcpMeta }),
+        "agent:main:main": buildExistingMainStoreEntry({ acp: existingAcpMeta }),
       };
       const result = await updater(store);
-      capturedEntry = store["agent:test-agent:main"] as Record<string, unknown>;
+      capturedEntry = store["agent:main:main"] as Record<string, unknown>;
       return result;
     });
 
@@ -333,8 +326,8 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: "Is it the weekend?",
-        agentId: "test-agent",
-        sessionKey: "agent:test-agent:main",
+        agentId: "main",
+        sessionKey: "agent:main:main",
         idempotencyKey: "test-timestamp-inject",
       },
       { reqId: "ts-1" },
@@ -368,7 +361,7 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: "owner-tools check",
-        sessionKey: "agent:test-agent:main",
+        sessionKey: "agent:main:main",
         idempotencyKey,
       },
       {
@@ -396,8 +389,8 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: "strict delivery",
-        agentId: "test-agent",
-        sessionKey: "agent:test-agent:main",
+        agentId: "main",
+        sessionKey: "agent:main:main",
         deliver: true,
         replyChannel: "telegram",
         to: "123",
@@ -419,7 +412,7 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: "normal run",
-        sessionKey: "agent:test-agent:main",
+        sessionKey: "agent:main:main",
         workspaceDir: "/tmp/ignored",
         idempotencyKey: "workspace-ignored",
       },
@@ -433,8 +426,8 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: "spawned run",
-        sessionKey: "agent:test-agent:main",
-        spawnedBy: "agent:test-agent:subagent:parent",
+        sessionKey: "agent:main:main",
+        spawnedBy: "agent:main:subagent:parent",
         workspaceDir: "/tmp/inherited",
         idempotencyKey: "workspace-forwarded",
       },
@@ -453,7 +446,7 @@ describe("gateway agent handler", () => {
     });
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
       const store: Record<string, unknown> = {
-        "agent:test-agent:main": buildExistingMainStoreEntry({
+        "agent:main:main": buildExistingMainStoreEntry({
           lastChannel: "telegram",
           lastTo: "12345",
         }),
@@ -468,7 +461,7 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: "webchat turn",
-        sessionKey: "agent:test-agent:main",
+        sessionKey: "agent:main:main",
         idempotencyKey: "test-webchat-origin-channel",
       },
       {
@@ -514,14 +507,14 @@ describe("gateway agent handler", () => {
         sessionId: "existing-session-id",
         updatedAt: Date.now(),
       },
-      canonicalKey: "agent:test-agent:work",
+      canonicalKey: "agent:main:work",
     });
 
     let capturedStore: Record<string, unknown> | undefined;
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
       const store: Record<string, unknown> = {
-        "agent:test-agent:work": { sessionId: "existing-session-id", updatedAt: 10 },
-        "agent:test-agent:MAIN": { sessionId: "legacy-session-id", updatedAt: 5 },
+        "agent:main:work": { sessionId: "existing-session-id", updatedAt: 10 },
+        "agent:main:MAIN": { sessionId: "legacy-session-id", updatedAt: 5 },
       };
       await updater(store);
       capturedStore = store;
@@ -535,7 +528,7 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: "test",
-        agentId: "test-agent",
+        agentId: "main",
         sessionKey: "main",
         idempotencyKey: "test-idem-alias-prune",
       },
@@ -544,8 +537,8 @@ describe("gateway agent handler", () => {
 
     expect(mocks.updateSessionStore).toHaveBeenCalled();
     expect(capturedStore).toBeDefined();
-    expect(capturedStore?.["agent:test-agent:work"]).toBeDefined();
-    expect(capturedStore?.["agent:test-agent:MAIN"]).toBeUndefined();
+    expect(capturedStore?.["agent:main:work"]).toBeDefined();
+    expect(capturedStore?.["agent:main:MAIN"]).toBeUndefined();
   });
 
   it("handles bare /new by resetting the same session and sending reset greeting prompt", async () => {
@@ -556,14 +549,14 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: "/new",
-        sessionKey: "agent:test-agent:main",
+        sessionKey: "agent:main:main",
         idempotencyKey: "test-idem-new",
       },
       { reqId: "4" },
     );
 
     await vi.waitFor(() => expect(mocks.agentCommand).toHaveBeenCalled());
-    expect(mocks.sessionsResetHandler).toHaveBeenCalledTimes(1);
+    expect(mocks.performGatewaySessionReset).toHaveBeenCalledTimes(1);
     const call = readLastAgentCommandCall();
     // Message is now dynamically built with current date — check key substrings
     expect(call?.message).toContain("Execute your Session Startup sequence now");
@@ -575,7 +568,7 @@ describe("gateway agent handler", () => {
   it("uses /reset suffix as the post-reset message and still injects timestamp", async () => {
     setupNewYorkTimeConfig("2026-01-29T01:30:00.000Z");
     mockSessionResetSuccess({ reason: "reset" });
-    mocks.sessionsResetHandler.mockClear();
+    mocks.performGatewaySessionReset.mockClear();
     primeMainAgentRun({
       sessionId: "reset-session-id",
       cfg: mocks.loadConfigReturn,
@@ -584,7 +577,7 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: "/reset check status",
-        sessionKey: "agent:test-agent:main",
+        sessionKey: "agent:main:main",
         idempotencyKey: "test-idem-reset-suffix",
       },
       { reqId: "4b" },

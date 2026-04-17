@@ -305,7 +305,10 @@ function buildSystemRunInvokeParams(params: {
     command: "system.run",
     params: {
       command: params.approvalPlan.argv,
-      rawCommand: params.approvalPlan.rawCommand,
+      // commandPreview is the user-supplied raw shell string (only populated
+      // when --raw was used); commandText is the formatted argv which is not
+      // the wire semantic for rawCommand.
+      rawCommand: params.approvalPlan.commandPreview ?? null,
       cwd: params.approvalPlan.cwd,
       env: params.nodeEnv,
       timeoutMs: params.timeoutMs,

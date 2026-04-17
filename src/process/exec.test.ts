@@ -3,6 +3,7 @@ import { EventEmitter } from "node:events";
 import fs from "node:fs";
 import process from "node:process";
 import { describe, expect, it, vi } from "vitest";
+import { REMOTECLAW_CLI_ENV_VALUE } from "../infra/remoteclaw-exec-env.js";
 import { attachChildProcessBridge } from "./child-process-bridge.js";
 import { resolveCommandEnv, runCommandWithTimeout, shouldSpawnWithShell } from "./exec.js";
 
@@ -31,6 +32,7 @@ describe("runCommandWithTimeout", () => {
     expect(resolved.REMOTECLAW_BASE_ENV).toBe("base");
     expect(resolved.REMOTECLAW_TEST_ENV).toBe("ok");
     expect(resolved.REMOTECLAW_TO_REMOVE).toBeUndefined();
+    expect(resolved.REMOTECLAW_CLI).toBe(REMOTECLAW_CLI_ENV_VALUE);
   });
 
   it("suppresses npm fund prompts for npm argv", async () => {

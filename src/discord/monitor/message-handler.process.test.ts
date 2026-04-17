@@ -121,11 +121,11 @@ const { processDiscordMessage } = await import("./message-handler.process.js");
 
 const createBaseContext = createBaseDiscordMessageContext;
 const BASE_CHANNEL_ROUTE = {
-  agentId: "test-agent",
+  agentId: "main",
   channel: "discord",
   accountId: "default",
-  sessionKey: "agent:test-agent:discord:channel:c1",
-  mainSessionKey: "agent:test-agent:main",
+  sessionKey: "agent:main:discord:channel:c1",
+  mainSessionKey: "agent:main:main",
 } as const;
 
 function mockDispatchSingleBlockReply(payload: { text: string; isReasoning?: boolean }) {
@@ -390,7 +390,7 @@ describe("processDiscordMessage session routing", () => {
     await processDiscordMessage(ctx as any);
 
     expect(getLastRouteUpdate()).toEqual({
-      sessionKey: "agent:test-agent:discord:direct:u1",
+      sessionKey: "agent:main:discord:direct:u1",
       channel: "discord",
       to: "user:U1",
       accountId: "default",
@@ -399,7 +399,7 @@ describe("processDiscordMessage session routing", () => {
 
   it("stores group lastRoute with channel target", async () => {
     const ctx = await createBaseContext({
-      baseSessionKey: "agent:test-agent:discord:channel:c1",
+      baseSessionKey: "agent:main:discord:channel:c1",
       route: BASE_CHANNEL_ROUTE,
     });
 
@@ -407,7 +407,7 @@ describe("processDiscordMessage session routing", () => {
     await processDiscordMessage(ctx as any);
 
     expect(getLastRouteUpdate()).toEqual({
-      sessionKey: "agent:test-agent:discord:channel:c1",
+      sessionKey: "agent:main:discord:channel:c1",
       channel: "discord",
       to: "channel:c1",
       accountId: "default",
@@ -424,8 +424,8 @@ describe("processDiscordMessage session routing", () => {
       threadId: "thread-1",
       channelId: "c-parent",
       targetKind: "subagent",
-      targetSessionKey: "agent:test-agent:subagent:child",
-      agentId: "test-agent",
+      targetSessionKey: "agent:main:subagent:child",
+      agentId: "main",
       webhookId: "wh_1",
       webhookToken: "tok_1",
       introText: "",
@@ -434,7 +434,7 @@ describe("processDiscordMessage session routing", () => {
     const ctx = await createBaseContext({
       messageChannelId: "thread-1",
       threadChannel: { id: "thread-1", name: "subagent-thread" },
-      boundSessionKey: "agent:test-agent:subagent:child",
+      boundSessionKey: "agent:main:subagent:child",
       threadBindings,
       route: BASE_CHANNEL_ROUTE,
     });
@@ -443,11 +443,11 @@ describe("processDiscordMessage session routing", () => {
     await processDiscordMessage(ctx as any);
 
     expect(getLastDispatchCtx()).toMatchObject({
-      SessionKey: "agent:test-agent:subagent:child",
+      SessionKey: "agent:main:subagent:child",
       MessageThreadId: "thread-1",
     });
     expect(getLastRouteUpdate()).toEqual({
-      sessionKey: "agent:test-agent:subagent:child",
+      sessionKey: "agent:main:subagent:child",
       channel: "discord",
       to: "channel:thread-1",
       accountId: "default",
@@ -500,6 +500,38 @@ describe("processDiscordMessage draft streaming", () => {
 
     expect(editMessageDiscord).not.toHaveBeenCalled();
     expect(deliverDiscordReply).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses root discord maxLinesPerMessage for preview finalization when runtime config omits it", async () => {
+    const longReply = Array.from({ length: 20 }, (_value, index) => `Line ${index + 1}`).join("\n");
+    dispatchInboundMessage.mockImplementationOnce(async (params?: DispatchInboundParams) => {
+      await params?.dispatcher.sendFinalReply({ text: longReply });
+      return { queuedFinal: true, counts: { final: 1, tool: 0, block: 0 } };
+    });
+
+    const ctx = await createBaseContext({
+      cfg: {
+        messages: { ackReaction: "👀" },
+        session: { store: "/tmp/remoteclaw-discord-process-test-sessions.json" },
+        channels: {
+          discord: {
+            maxLinesPerMessage: 120,
+          },
+        },
+      },
+      discordConfig: { streamMode: "partial" },
+    });
+
+    // oxlint-disable-next-line typescript/no-explicit-any
+    await processDiscordMessage(ctx as any);
+
+    expect(editMessageDiscord).toHaveBeenCalledWith(
+      "c1",
+      "preview-1",
+      { content: longReply },
+      { rest: {} },
+    );
+    expect(deliverDiscordReply).not.toHaveBeenCalled();
   });
 
   it("suppresses reasoning payload delivery to Discord", async () => {

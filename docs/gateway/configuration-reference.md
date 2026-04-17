@@ -42,6 +42,29 @@ Pairing codes expire after 1 hour. Pending DM pairing requests are capped at **3
 If a provider block is missing entirely (`channels.<provider>` absent), runtime group policy falls back to `allowlist` (fail-closed) with a startup warning.
 </Note>
 
+### Channel model overrides
+
+Use `channels.modelByChannel` to pin specific channel IDs to a model. Values accept `provider/model` or configured model aliases. The channel mapping applies when a session does not already have a model override (for example, set via `/model`).
+
+```json5
+{
+  channels: {
+    modelByChannel: {
+      discord: {
+        "123456789012345678": "anthropic/claude-opus-4-6",
+      },
+      slack: {
+        C1234567890: "openai/gpt-4.1",
+      },
+      telegram: {
+        "-1001234567890": "openai/gpt-4.1-mini",
+        "-1001234567890:topic:99": "anthropic/claude-sonnet-4-6",
+      },
+    },
+  },
+}
+```
+
 ### Channel defaults and heartbeat
 
 Use `channels.defaults` for shared group-policy and heartbeat behavior across providers:
@@ -101,8 +124,7 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
 }
 ```
 
-<details>
-<summary>Multi-account WhatsApp</summary>
+<Accordion title="Multi-account WhatsApp">
 
 ```json5
 {
@@ -125,7 +147,7 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
 - Legacy single-account Baileys auth dir is migrated by `remoteclaw doctor` into `whatsapp/default`.
 - Per-account overrides: `channels.whatsapp.accounts.<id>.sendReadReceipts`, `channels.whatsapp.accounts.<id>.dmPolicy`, `channels.whatsapp.accounts.<id>.allowFrom`.
 
-</details>
+</Accordion>
 
 ### Telegram
 
@@ -181,7 +203,7 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
 }
 ```
 
-- Bot token: `channels.telegram.botToken` or `channels.telegram.tokenFile`, with `TELEGRAM_BOT_TOKEN` as fallback for the default account.
+- Bot token: `channels.telegram.botToken` or `channels.telegram.tokenFile` (regular file only; symlinks rejected), with `TELEGRAM_BOT_TOKEN` as fallback for the default account.
 - Optional `channels.telegram.defaultAccount` overrides default account selection when it matches a configured account id.
 - In multi-account setups (2+ account ids), set an explicit default (`channels.telegram.defaultAccount` or `channels.telegram.accounts.default`) to avoid fallback routing; `remoteclaw doctor` warns when this is missing or invalid.
 - `configWrites: false` blocks Telegram-initiated config writes (supergroup ID migrations, `/config set|unset`).
@@ -282,6 +304,7 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
 ```
 
 - Token: `channels.discord.token`, with `DISCORD_BOT_TOKEN` as fallback for the default account.
+- Direct outbound calls that provide an explicit Discord `token` use that token for the call; account retry/policy settings still come from the selected account in the active runtime snapshot.
 - Optional `channels.discord.defaultAccount` overrides default account selection when it matches a configured account id.
 - Use `user:<id>` (DM) or `channel:<id>` (guild channel) for delivery targets; bare numeric IDs are rejected.
 - Guild slugs are lowercase with spaces replaced by `-`; channel keys use the slugged name (no `#`). Prefer guild IDs.
@@ -538,15 +561,14 @@ RemoteClaw spawns `imsg rpc` (JSON-RPC over stdio). No daemon or port required.
 - SCP uses strict host-key checking, so ensure the relay host key already exists in `~/.ssh/known_hosts`.
 - `channels.imessage.configWrites`: allow or deny iMessage-initiated config writes.
 
-<details>
-<summary>iMessage SSH wrapper example</summary>
+<Accordion title="iMessage SSH wrapper example">
 
 ```bash
 #!/usr/bin/env bash
 exec ssh -T gateway-host imsg "$@"
 ```
 
-</details>
+</Accordion>
 
 ### Microsoft Teams
 
@@ -717,8 +739,7 @@ Include your own number in `allowFrom` to enable self-chat mode (ignores native 
 }
 ```
 
-<details>
-<summary>Command details</summary>
+<Accordion title="Command details">
 
 - Text commands must be **standalone** messages with leading `/`.
 - `native: "auto"` turns on native commands for Discord/Telegram, leaves Slack off.
@@ -727,10 +748,11 @@ Include your own number in `allowFrom` to enable self-chat mode (ignores native 
 - `bash: true` enables `! <cmd>` for host shell. Requires `tools.elevated.enabled` and sender in `tools.elevated.allowFrom.<channel>`.
 - `config: true` enables `/config` (reads/writes `remoteclaw.json`). For gateway `chat.send` clients, persistent `/config set|unset` writes also require `operator.admin`; read-only `/config show` stays available to normal write-scoped operator clients.
 - `channels.<provider>.configWrites` gates config mutations per channel (default: true).
+- For multi-account channels, `channels.<provider>.accounts.<id>.configWrites` also gates writes that target that account (for example `/allowlist --config --account <id>` or `/config set channels.<provider>.accounts.<id>...`).
 - `allowFrom` is per-provider. When set, it is the **only** authorization source (channel allowlists/pairing and `useAccessGroups` are ignored).
 - `useAccessGroups: false` allows commands to bypass access-group policies when `allowFrom` is not set.
 
-</details>
+</Accordion>
 
 ---
 
@@ -1029,8 +1051,7 @@ Prunes **old tool results** from in-memory context before sending to the LLM. Do
 }
 ```
 
-<details>
-<summary>cache-ttl mode behavior</summary>
+<Accordion title="cache-ttl mode behavior">
 
 - `mode: "cache-ttl"` enables pruning passes.
 - `ttl` controls how often pruning can run again (after the last cache touch).
@@ -1046,7 +1067,7 @@ Notes:
 - Ratios are character-based (approximate), not exact token counts.
 - If fewer than `keepLastAssistants` assistant messages exist, pruning is skipped.
 
-</details>
+</Accordion>
 
 See [Session Pruning](/concepts/session-pruning) for behavior details.
 
@@ -1172,8 +1193,7 @@ Optional **Docker sandboxing** for the embedded agent. See [Sandboxing](/gateway
 }
 ```
 
-<details>
-<summary>Sandbox details</summary>
+<Accordion title="Sandbox details">
 
 **Workspace access:**
 
@@ -1234,7 +1254,7 @@ noVNC observer access uses VNC auth by default and RemoteClaw emits a short-live
   - Defaults are the container image baseline; use a custom browser image with a custom
     entrypoint to change container defaults.
 
-</details>
+</Accordion>
 
 Build images:
 
@@ -1342,8 +1362,7 @@ For `type: "acp"` entries, RemoteClaw resolves by exact conversation identity (`
 
 ### Per-agent access profiles
 
-<details>
-<summary>Full access (no sandbox)</summary>
+<Accordion title="Full access (no sandbox)">
 
 ```json5
 {
@@ -1359,10 +1378,9 @@ For `type: "acp"` entries, RemoteClaw resolves by exact conversation identity (`
 }
 ```
 
-</details>
+</Accordion>
 
-<details>
-<summary>Read-only tools + workspace</summary>
+<Accordion title="Read-only tools + workspace">
 
 ```json5
 {
@@ -1389,10 +1407,9 @@ For `type: "acp"` entries, RemoteClaw resolves by exact conversation identity (`
 }
 ```
 
-</details>
+</Accordion>
 
-<details>
-<summary>No filesystem access (messaging only)</summary>
+<Accordion title="No filesystem access (messaging only)">
 
 ```json5
 {
@@ -1436,7 +1453,7 @@ For `type: "acp"` entries, RemoteClaw resolves by exact conversation identity (`
 }
 ```
 
-</details>
+</Accordion>
 
 See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for precedence details.
 
@@ -1489,8 +1506,7 @@ See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for preceden
 }
 ```
 
-<details>
-<summary>Session field details</summary>
+<Accordion title="Session field details">
 
 - **`dmScope`**: how DMs are grouped.
   - `main`: all DMs share the main session.
@@ -1518,7 +1534,7 @@ See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for preceden
   - `idleHours`: default inactivity auto-unfocus in hours (`0` disables; providers can override)
   - `maxAgeHours`: default hard max age in hours (`0` disables; providers can override)
 
-</details>
+</Accordion>
 
 ---
 
@@ -1849,8 +1865,7 @@ Configures inbound media understanding (image/audio/video):
 }
 ```
 
-<details>
-<summary>Media model entry fields</summary>
+<Accordion title="Media model entry fields">
 
 **Provider entry** (`type: "provider"` or omitted):
 
@@ -1871,7 +1886,7 @@ Configures inbound media understanding (image/audio/video):
 
 Provider auth follows standard order: `auth-profiles.json` → env vars → `models.providers.*.apiKey`.
 
-</details>
+</Accordion>
 
 ### `tools.agentToAgent`
 
@@ -2026,8 +2041,7 @@ RemoteClaw uses the pi-coding-agent model catalog. Add custom providers via `mod
 
 ### Provider examples
 
-<details>
-<summary>Cerebras (GLM 4.6 / 4.7)</summary>
+<Accordion title="Cerebras (GLM 4.6 / 4.7)">
 
 ```json5
 {
@@ -2063,10 +2077,9 @@ RemoteClaw uses the pi-coding-agent model catalog. Add custom providers via `mod
 
 Use `cerebras/zai-glm-4.7` for Cerebras; `zai/glm-4.7` for Z.AI direct.
 
-</details>
+</Accordion>
 
-<details>
-<summary>OpenCode Zen</summary>
+<Accordion title="OpenCode">
 
 ```json5
 {
@@ -2079,12 +2092,11 @@ Use `cerebras/zai-glm-4.7` for Cerebras; `zai/glm-4.7` for Z.AI direct.
 }
 ```
 
-Set `OPENCODE_API_KEY` (or `OPENCODE_ZEN_API_KEY`). Shortcut: `remoteclaw onboard --auth-choice opencode-zen`.
+Set `OPENCODE_API_KEY` (or `OPENCODE_ZEN_API_KEY`). Use `opencode/...` refs for the Zen catalog or `opencode-go/...` refs for the Go catalog. Shortcut: `remoteclaw onboard --auth-choice opencode-zen` or `remoteclaw onboard --auth-choice opencode-go`.
 
-</details>
+</Accordion>
 
-<details>
-<summary>Z.AI (GLM-4.7)</summary>
+<Accordion title="Z.AI (GLM-4.7)">
 
 ```json5
 {
@@ -2103,10 +2115,9 @@ Set `ZAI_API_KEY`. `z.ai/*` and `z-ai/*` are accepted aliases. Shortcut: `remote
 - Coding endpoint (default): `https://api.z.ai/api/coding/paas/v4`
 - For the general endpoint, define a custom provider with the base URL override.
 
-</details>
+</Accordion>
 
-<details>
-<summary>Moonshot AI (Kimi)</summary>
+<Accordion title="Moonshot AI (Kimi)">
 
 ```json5
 {
@@ -2143,10 +2154,9 @@ Set `ZAI_API_KEY`. `z.ai/*` and `z-ai/*` are accepted aliases. Shortcut: `remote
 
 For the China endpoint: `baseUrl: "https://api.moonshot.cn/v1"` or `remoteclaw onboard --auth-choice moonshot-api-key-cn`.
 
-</details>
+</Accordion>
 
-<details>
-<summary>Kimi Coding</summary>
+<Accordion title="Kimi Coding">
 
 ```json5
 {
@@ -2162,10 +2172,9 @@ For the China endpoint: `baseUrl: "https://api.moonshot.cn/v1"` or `remoteclaw o
 
 Anthropic-compatible, built-in provider. Shortcut: `remoteclaw onboard --auth-choice kimi-code-api-key`.
 
-</details>
+</Accordion>
 
-<details>
-<summary>Synthetic (Anthropic-compatible)</summary>
+<Accordion title="Synthetic (Anthropic-compatible)">
 
 ```json5
 {
@@ -2202,10 +2211,9 @@ Anthropic-compatible, built-in provider. Shortcut: `remoteclaw onboard --auth-ch
 
 Base URL should omit `/v1` (Anthropic client appends it). Shortcut: `remoteclaw onboard --auth-choice synthetic-api-key`.
 
-</details>
+</Accordion>
 
-<details>
-<summary>MiniMax M2.5 (direct)</summary>
+<Accordion title="MiniMax M2.5 (direct)">
 
 ```json5
 {
@@ -2243,14 +2251,13 @@ Base URL should omit `/v1` (Anthropic client appends it). Shortcut: `remoteclaw 
 
 Set `MINIMAX_API_KEY`. Shortcut: `remoteclaw onboard --auth-choice minimax-api`.
 
-</details>
+</Accordion>
 
-<details>
-<summary>Local models (LM Studio)</summary>
+<Accordion title="Local models (LM Studio)">
 
 See [Local Models](/gateway/local-models). TL;DR: run MiniMax M2.5 via LM Studio Responses API on serious hardware; keep hosted models merged for fallback.
 
-</details>
+</Accordion>
 
 ---
 
@@ -2442,8 +2449,7 @@ See [Plugins](/tools/plugin).
 }
 ```
 
-<details>
-<summary>Gateway field details</summary>
+<Accordion title="Gateway field details">
 
 - `mode`: `local` (run gateway) or `remote` (connect to remote gateway). Gateway refuses to start unless `local`.
 - `port`: single multiplexed port for WS + HTTP. Precedence: `--port` > `REMOTECLAW_GATEWAY_PORT` > `gateway.port` > `18789`.
@@ -2464,13 +2470,14 @@ See [Plugins](/tools/plugin).
 - `remote.transport`: `ssh` (default) or `direct` (ws/wss). For `direct`, `remote.url` must be `ws://` or `wss://`.
 - `REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS=1`: client-side break-glass override that allows plaintext `ws://` to trusted private-network IPs; default remains loopback-only for plaintext.
 - `gateway.remote.token` / `.password` are remote-client credential fields. They do not configure gateway auth by themselves.
-- Local gateway call paths can use `gateway.remote.*` as fallback when `gateway.auth.*` is unset.
+- Local gateway call paths can use `gateway.remote.*` as fallback only when `gateway.auth.*` is unset.
+- If `gateway.auth.token` / `gateway.auth.password` is explicitly configured via SecretRef and unresolved, resolution fails closed (no remote fallback masking).
 - `trustedProxies`: reverse proxy IPs that terminate TLS. Only list proxies you control.
 - `allowRealIpFallback`: when `true`, the gateway accepts `X-Real-IP` if `X-Forwarded-For` is missing. Default `false` for fail-closed behavior.
 - `gateway.tools.deny`: extra tool names blocked for HTTP `POST /tools/invoke` (extends default deny list).
 - `gateway.tools.allow`: remove tool names from the default HTTP deny list.
 
-</details>
+</Accordion>
 
 ### OpenAI-compatible endpoints
 
@@ -2541,8 +2548,7 @@ Auth: `Authorization: Bearer <token>` or `x-remoteclaw-token: <token>`.
   - `sessionKey` from request payload is accepted only when `hooks.allowRequestSessionKey=true` (default: `false`).
 - `POST /hooks/<name>` → resolved via `hooks.mappings`
 
-<details>
-<summary>Mapping details</summary>
+<Accordion title="Mapping details">
 
 - `match.path` matches sub-path after `/hooks` (e.g. `/hooks/gmail` → `gmail`).
 - `match.source` matches a payload field for generic paths.
@@ -2557,7 +2563,7 @@ Auth: `Authorization: Bearer <token>` or `x-remoteclaw-token: <token>`.
 - `deliver: true` sends final reply to a channel; `channel` defaults to `last`.
 - `model` overrides LLM for this hook run (must be allowed if model catalog is set).
 
-</details>
+</Accordion>
 
 ### Gmail integration
 
@@ -2709,6 +2715,7 @@ Validation:
 - `source: "env"` id pattern: `^[A-Z][A-Z0-9_]{0,127}$`
 - `source: "file"` id: absolute JSON pointer (for example `"/providers/openai/apiKey"`)
 - `source: "exec"` id pattern: `^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$`
+- `source: "exec"` ids must not contain `.` or `..` slash-delimited path segments (for example `a/../b` is rejected)
 
 ### Supported credential surface
 
@@ -2872,8 +2879,7 @@ Written by the macOS onboarding assistant. Derives defaults:
 
 Current builds no longer include the TCP bridge. Nodes connect over the Gateway WebSocket. `bridge.*` keys are no longer part of the config schema (validation fails until removed; `remoteclaw doctor --fix` can strip unknown keys).
 
-<details>
-<summary>Legacy bridge config (historical reference)</summary>
+<Accordion title="Legacy bridge config (historical reference)">
 
 ```json
 {
@@ -2889,7 +2895,7 @@ Current builds no longer include the TCP bridge. Nodes connect over the Gateway 
 }
 ```
 
-</details>
+</Accordion>
 
 ---
 

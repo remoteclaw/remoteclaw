@@ -372,6 +372,14 @@ export function isValidOpenAIModel(model: string, baseUrl?: string): boolean {
   return OPENAI_TTS_MODELS.includes(model as (typeof OPENAI_TTS_MODELS)[number]);
 }
 
+export function resolveOpenAITtsInstructions(
+  model: string,
+  instructions?: string,
+): string | undefined {
+  const next = instructions?.trim() || undefined;
+  return next && model.includes("gpt-4o-mini-tts") ? next : undefined;
+}
+
 export function isValidOpenAIVoice(voice: string, baseUrl?: string): voice is OpenAiTtsVoice {
   // Allow any voice when using custom endpoint (e.g., Kokoro Chinese voices)
   if (isCustomOpenAIEndpoint(baseUrl)) {
@@ -503,10 +511,14 @@ export async function openaiTTS(params: {
   baseUrl: string;
   model: string;
   voice: string;
+  speed?: number;
+  instructions?: string;
   responseFormat: "mp3" | "opus" | "pcm";
   timeoutMs: number;
 }): Promise<Buffer> {
-  const { text, apiKey, baseUrl, model, voice, responseFormat, timeoutMs } = params;
+  const { text, apiKey, baseUrl, model, voice, speed, instructions, responseFormat, timeoutMs } =
+    params;
+  const effectiveInstructions = resolveOpenAITtsInstructions(model, instructions);
 
   if (!isValidOpenAIModel(model, baseUrl)) {
     throw new Error(`Invalid model: ${model}`);
@@ -530,6 +542,8 @@ export async function openaiTTS(params: {
         input: text,
         voice,
         response_format: responseFormat,
+        ...(speed != null && { speed }),
+        ...(effectiveInstructions != null && { instructions: effectiveInstructions }),
       }),
       signal: controller.signal,
     });

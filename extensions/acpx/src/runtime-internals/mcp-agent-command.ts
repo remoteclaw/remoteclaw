@@ -37,6 +37,10 @@ function quoteCommandPart(value: string): string {
   return `"${value.replace(/["\\]/g, "\\$&")}"`;
 }
 
+export const __testing = {
+  quoteCommandPart,
+};
+
 function toCommandLine(parts: string[]): string {
   return parts.map(quoteCommandPart).join(" ");
 }

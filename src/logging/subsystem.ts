@@ -28,12 +28,12 @@ export type SubsystemLogger = {
 };
 
 function shouldLogToConsole(level: LogLevel, settings: { level: LogLevel }): boolean {
-  if (level === "silent" || settings.level === "silent") {
+  if (settings.level === "silent") {
     return false;
   }
   const current = levelToMinLevel(level);
   const min = levelToMinLevel(settings.level);
-  return current >= min;
+  return current <= min;
 }
 
 type ChalkInstance = InstanceType<typeof Chalk>;
@@ -92,7 +92,9 @@ function getColorForConsole(): ChalkInstance {
 }
 
 const SUBSYSTEM_COLORS = ["cyan", "green", "yellow", "blue", "magenta", "red"] as const;
-const SUBSYSTEM_COLOR_OVERRIDES: Record<string, (typeof SUBSYSTEM_COLORS)[number]> = {};
+const SUBSYSTEM_COLOR_OVERRIDES: Record<string, (typeof SUBSYSTEM_COLORS)[number]> = {
+  "gmail-watcher": "blue",
+};
 const SUBSYSTEM_PREFIXES_TO_DROP = ["gateway", "channels", "providers"] as const;
 const SUBSYSTEM_MAX_SEGMENTS = 2;
 // Keep local to avoid importing channel registry into hot logging paths.
@@ -248,6 +250,38 @@ function writeConsoleLine(level: LogLevel, line: string) {
   }
 }
 
+function shouldSuppressProbeConsoleLine(params: {
+  level: LogLevel;
+  subsystem: string;
+  message: string;
+  meta?: Record<string, unknown>;
+}): boolean {
+  if (isVerbose()) {
+    return false;
+  }
+  if (params.level === "error" || params.level === "fatal") {
+    return false;
+  }
+  const isProbeSuppressedSubsystem =
+    params.subsystem === "agent/embedded" ||
+    params.subsystem.startsWith("agent/embedded/") ||
+    params.subsystem === "model-fallback" ||
+    params.subsystem.startsWith("model-fallback/");
+  if (!isProbeSuppressedSubsystem) {
+    return false;
+  }
+  const runLikeId =
+    typeof params.meta?.runId === "string"
+      ? params.meta.runId
+      : typeof params.meta?.sessionId === "string"
+        ? params.meta.sessionId
+        : undefined;
+  if (runLikeId?.startsWith("probe-")) {
+    return true;
+  }
+  return /(sessionId|runId)=probe-/.test(params.message);
+}
+
 function logToFile(
   fileLogger: TsLogger<LogObj>,
   level: LogLevel,
@@ -307,9 +341,12 @@ export function createSubsystemLogger(subsystem: string): SubsystemLogger {
     }
     const consoleMessage = consoleMessageOverride ?? message;
     if (
-      !isVerbose() &&
-      subsystem === "agent/embedded" &&
-      /(sessionId|runId)=probe-/.test(consoleMessage)
+      shouldSuppressProbeConsoleLine({
+        level,
+        subsystem,
+        message: consoleMessage,
+        meta: fileMeta,
+      })
     ) {
       return;
     }
@@ -353,11 +390,7 @@ export function createSubsystemLogger(subsystem: string): SubsystemLogger {
         logToFile(getFileLogger(), "info", message, { raw: true });
       }
       if (isConsoleEnabled("info")) {
-        if (
-          !isVerbose() &&
-          subsystem === "agent/embedded" &&
-          /(sessionId|runId)=probe-/.test(message)
-        ) {
+        if (shouldSuppressProbeConsoleLine({ level: "info", subsystem, message })) {
           return;
         }
         writeConsoleLine("info", message);

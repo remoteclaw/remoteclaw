@@ -44,7 +44,7 @@ async function postHook(
 
 function setMainAndHooksAgents(): void {
   testState.agentsConfig = {
-    list: [{ id: "primary", default: true }, { id: "hooks" }],
+    list: [{ id: "main", default: true }, { id: "hooks" }],
   };
 }
 
@@ -75,6 +75,10 @@ describe("gateway server hooks", () => {
       expect(resAgent.status).toBe(200);
       const agentEvents = await waitForSystemEvent();
       expect(agentEvents.some((e) => e.includes("Hook Email: done"))).toBe(true);
+      const firstCall = (cronIsolatedRun.mock.calls[0] as unknown[] | undefined)?.[0] as {
+        deliveryContract?: string;
+      };
+      expect(firstCall?.deliveryContract).toBe("shared");
       drainSystemEvents(resolveMainKey());
 
       mockIsolatedRunOkOnce();
@@ -116,7 +120,7 @@ describe("gateway server hooks", () => {
       const fallbackCall = (cronIsolatedRun.mock.calls[0] as unknown[] | undefined)?.[0] as {
         job?: { agentId?: string };
       };
-      expect(fallbackCall?.job?.agentId).toBe("primary");
+      expect(fallbackCall?.job?.agentId).toBe("main");
       drainSystemEvents(resolveMainKey());
 
       const resQuery = await postHook(
@@ -284,7 +288,7 @@ describe("gateway server hooks", () => {
         {
           match: { path: "mapped" },
           action: "agent",
-          agentId: "primary",
+          agentId: "main",
           messageTemplate: "Mapped: {{payload.subject}}",
         },
       ],
@@ -316,7 +320,7 @@ describe("gateway server hooks", () => {
 
       const resDenied = await postHook(port, "/hooks/agent", {
         message: "Denied",
-        agentId: "primary",
+        agentId: "main",
       });
       expect(resDenied.status).toBe(400);
       const deniedBody = (await resDenied.json()) as { error?: string };
@@ -337,7 +341,7 @@ describe("gateway server hooks", () => {
       allowedAgentIds: [],
     };
     testState.agentsConfig = {
-      list: [{ id: "primary", default: true }, { id: "hooks" }],
+      list: [{ id: "main", default: true }, { id: "hooks" }],
     };
     await withGatewayServer(async ({ port }) => {
       const resDenied = await postHook(port, "/hooks/agent", {

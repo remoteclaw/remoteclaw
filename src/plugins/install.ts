@@ -46,7 +46,7 @@ type PackageManifest = PluginPackageManifest & {
 };
 
 const MISSING_EXTENSIONS_ERROR =
-  'package.json missing remoteclaw.extensions; update the plugin package to include remoteclaw.extensions (for example ["./dist/index.js"]). See https://docs.remoteclaw.ai/help/troubleshooting#plugin-install-fails-with-missing-remoteclaw-extensions';
+  'package.json missing remoteclaw.extensions; update the plugin package to include remoteclaw.extensions (for example ["./dist/index.js"]). See https://docs.remoteclaw.org/help/troubleshooting#plugin-install-fails-with-missing-remoteclaw-extensions';
 
 export const PLUGIN_INSTALL_ERROR_CODE = {
   INVALID_NPM_SPEC: "invalid_npm_spec",

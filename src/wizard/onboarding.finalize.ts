@@ -22,7 +22,7 @@ import {
 } from "../commands/onboard-helpers.js";
 import type { OnboardOptions } from "../commands/onboard-types.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import { resolveGatewayService } from "../daemon/service.js";
+import { describeGatewayServiceRestart, resolveGatewayService } from "../daemon/service.js";
 import { isSystemdUserServiceAvailable } from "../daemon/systemd.js";
 import { ensureControlUiAssetsBuilt } from "../infra/control-ui-assets.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -52,14 +52,16 @@ export async function finalizeOnboardingWizard(
 
   const withWizardProgress = async <T>(
     label: string,
-    options: { doneMessage?: string },
+    options: { doneMessage?: string | (() => string | undefined) },
     work: (progress: { update: (message: string) => void }) => Promise<T>,
   ): Promise<T> => {
     const progress = prompter.progress(label);
     try {
       return await work(progress);
     } finally {
-      progress.stop(options.doneMessage);
+      progress.stop(
+        typeof options.doneMessage === "function" ? options.doneMessage() : options.doneMessage,
+      );
     }
   };
 
@@ -127,6 +129,7 @@ export async function finalizeOnboardingWizard(
     }
     const service = resolveGatewayService();
     const loaded = await service.isLoaded({ env: process.env });
+    let restartWasScheduled = false;
     if (loaded) {
       const action = await prompter.select({
         message: "Gateway service already installed",
@@ -137,15 +140,19 @@ export async function finalizeOnboardingWizard(
         ],
       });
       if (action === "restart") {
+        let restartDoneMessage = "Gateway service restarted.";
         await withWizardProgress(
           "Gateway service",
-          { doneMessage: "Gateway service restarted." },
+          { doneMessage: () => restartDoneMessage },
           async (progress) => {
             progress.update("Restarting Gateway service…");
-            await service.restart({
+            const restartResult = await service.restart({
               env: process.env,
               stdout: process.stdout,
             });
+            const restartStatus = describeGatewayServiceRestart("Gateway", restartResult);
+            restartDoneMessage = restartStatus.progressMessage;
+            restartWasScheduled = restartStatus.scheduled;
           },
         );
       } else if (action === "reinstall") {
@@ -160,7 +167,10 @@ export async function finalizeOnboardingWizard(
       }
     }
 
-    if (!loaded || (loaded && !(await service.isLoaded({ env: process.env })))) {
+    if (
+      !loaded ||
+      (!restartWasScheduled && loaded && !(await service.isLoaded({ env: process.env })))
+    ) {
       const progress = prompter.progress("Gateway service");
       let installError: string | null = null;
       try {
@@ -234,8 +244,8 @@ export async function finalizeOnboardingWizard(
       await prompter.note(
         [
           "Docs:",
-          "https://docs.remoteclaw.ai/gateway/health",
-          "https://docs.remoteclaw.ai/gateway/troubleshooting",
+          "https://docs.remoteclaw.org/gateway/health",
+          "https://docs.remoteclaw.org/gateway/troubleshooting",
         ].join("\n"),
         "Health check help",
       );
@@ -319,7 +329,7 @@ export async function finalizeOnboardingWizard(
         : undefined,
       `Gateway WS: ${links.wsUrl}`,
       gatewayStatusLine,
-      "Docs: https://docs.remoteclaw.ai/web/control-ui",
+      "Docs: https://docs.remoteclaw.org/web/control-ui",
     ]
       .filter(Boolean)
       .join("\n"),
@@ -422,13 +432,13 @@ export async function finalizeOnboardingWizard(
   await prompter.note(
     [
       "Back up your agent workspace.",
-      "Docs: https://docs.remoteclaw.ai/concepts/agent-workspace",
+      "Docs: https://docs.remoteclaw.org/concepts/agent-workspace",
     ].join("\n"),
     "Workspace backup",
   );
 
   await prompter.note(
-    "Running agents on your computer is risky — harden your setup: https://docs.remoteclaw.ai/security",
+    "Running agents on your computer is risky — harden your setup: https://docs.remoteclaw.org/security",
     "Security",
   );
 
@@ -497,7 +507,7 @@ export async function finalizeOnboardingWizard(
           "",
           `Provider: ${label}`,
           ...(keySource ? [keySource] : []),
-          "Docs: https://docs.remoteclaw.ai/tools/web",
+          "Docs: https://docs.remoteclaw.org/tools/web",
         ].join("\n"),
         "Web search",
       );
@@ -508,8 +518,8 @@ export async function finalizeOnboardingWizard(
           "web_search will not work until a key is added.",
           `  ${formatCliCommand("remoteclaw configure --section web")}`,
           "",
-          `Get your key at: ${entry?.signupUrl ?? "https://docs.remoteclaw.ai/tools/web"}`,
-          "Docs: https://docs.remoteclaw.ai/tools/web",
+          `Get your key at: ${entry?.signupUrl ?? "https://docs.remoteclaw.org/tools/web"}`,
+          "Docs: https://docs.remoteclaw.org/tools/web",
         ].join("\n"),
         "Web search",
       );
@@ -519,7 +529,7 @@ export async function finalizeOnboardingWizard(
           `Web search (${label}) is configured but disabled.`,
           `Re-enable: ${formatCliCommand("remoteclaw configure --section web")}`,
           "",
-          "Docs: https://docs.remoteclaw.ai/tools/web",
+          "Docs: https://docs.remoteclaw.org/tools/web",
         ].join("\n"),
         "Web search",
       );
@@ -536,7 +546,7 @@ export async function finalizeOnboardingWizard(
       await prompter.note(
         [
           `Web search is available via ${legacyDetected.label} (auto-detected).`,
-          "Docs: https://docs.remoteclaw.ai/tools/web",
+          "Docs: https://docs.remoteclaw.org/tools/web",
         ].join("\n"),
         "Web search",
       );
@@ -546,7 +556,7 @@ export async function finalizeOnboardingWizard(
           "Web search was skipped. You can enable it later:",
           `  ${formatCliCommand("remoteclaw configure --section web")}`,
           "",
-          "Docs: https://docs.remoteclaw.ai/tools/web",
+          "Docs: https://docs.remoteclaw.org/tools/web",
         ].join("\n"),
         "Web search",
       );

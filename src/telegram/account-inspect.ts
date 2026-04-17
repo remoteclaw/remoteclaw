@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import fs from "node:fs";
 import type { RemoteClawConfig } from "../config/config.js";
 import {
   coerceSecretRef,
@@ -7,6 +6,7 @@ import {
   normalizeSecretInputString,
 } from "../config/types.secrets.js";
 import type { TelegramAccountConfig } from "../config/types.telegram.js";
+import { tryReadSecretFileSync } from "../infra/secret-file.js";
 import { resolveAccountWithDefaultFallback } from "../plugin-sdk/account-resolution.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
 import { resolveDefaultSecretProviderAlias } from "../secrets/ref-contract.js";
@@ -38,27 +38,14 @@ function inspectTokenFile(pathValue: unknown): {
   if (!tokenFile) {
     return null;
   }
-  if (!fs.existsSync(tokenFile)) {
-    return {
-      token: "",
-      tokenSource: "tokenFile",
-      tokenStatus: "configured_unavailable",
-    };
-  }
-  try {
-    const token = fs.readFileSync(tokenFile, "utf-8").trim();
-    return {
-      token,
-      tokenSource: "tokenFile",
-      tokenStatus: token ? "available" : "configured_unavailable",
-    };
-  } catch {
-    return {
-      token: "",
-      tokenSource: "tokenFile",
-      tokenStatus: "configured_unavailable",
-    };
-  }
+  const token = tryReadSecretFileSync(tokenFile, "Telegram bot token", {
+    rejectSymlink: true,
+  });
+  return {
+    token: token ?? "",
+    tokenSource: "tokenFile",
+    tokenStatus: token ? "available" : "configured_unavailable",
+  };
 }
 
 function canResolveEnvSecretRefInReadOnlyPath(params: {

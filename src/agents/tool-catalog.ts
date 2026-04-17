@@ -25,7 +25,10 @@ type CoreToolDefinition = {
 };
 
 const CORE_TOOL_SECTION_ORDER: Array<{ id: string; label: string }> = [
+  { id: "fs", label: "Files" },
+  { id: "runtime", label: "Runtime" },
   { id: "web", label: "Web" },
+  { id: "memory", label: "Memory" },
   { id: "sessions", label: "Sessions" },
   { id: "ui", label: "UI" },
   { id: "messaging", label: "Messaging" },
@@ -36,6 +39,80 @@ const CORE_TOOL_SECTION_ORDER: Array<{ id: string; label: string }> = [
 ];
 
 const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
+  {
+    id: "read",
+    label: "read",
+    description: "Read file contents",
+    sectionId: "fs",
+    profiles: ["coding"],
+  },
+  {
+    id: "write",
+    label: "write",
+    description: "Create or overwrite files",
+    sectionId: "fs",
+    profiles: ["coding"],
+  },
+  {
+    id: "edit",
+    label: "edit",
+    description: "Make precise edits",
+    sectionId: "fs",
+    profiles: ["coding"],
+  },
+  {
+    id: "apply_patch",
+    label: "apply_patch",
+    description: "Patch files (OpenAI)",
+    sectionId: "fs",
+    profiles: ["coding"],
+  },
+  {
+    id: "exec",
+    label: "exec",
+    description: "Run shell commands",
+    sectionId: "runtime",
+    profiles: ["coding"],
+  },
+  {
+    id: "process",
+    label: "process",
+    description: "Manage background processes",
+    sectionId: "runtime",
+    profiles: ["coding"],
+  },
+  {
+    id: "web_search",
+    label: "web_search",
+    description: "Search the web",
+    sectionId: "web",
+    profiles: ["coding"],
+    includeInRemoteClawGroup: true,
+  },
+  {
+    id: "web_fetch",
+    label: "web_fetch",
+    description: "Fetch web content",
+    sectionId: "web",
+    profiles: ["coding"],
+    includeInRemoteClawGroup: true,
+  },
+  {
+    id: "memory_search",
+    label: "memory_search",
+    description: "Semantic search",
+    sectionId: "memory",
+    profiles: ["coding"],
+    includeInRemoteClawGroup: true,
+  },
+  {
+    id: "memory_get",
+    label: "memory_get",
+    description: "Read memory files",
+    sectionId: "memory",
+    profiles: ["coding"],
+    includeInRemoteClawGroup: true,
+  },
   {
     id: "sessions_list",
     label: "sessions_list",
@@ -138,6 +215,14 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     description: "List agents",
     sectionId: "agents",
     profiles: [],
+    includeInRemoteClawGroup: true,
+  },
+  {
+    id: "image",
+    label: "image",
+    description: "Image understanding",
+    sectionId: "media",
+    profiles: ["coding"],
     includeInRemoteClawGroup: true,
   },
   {

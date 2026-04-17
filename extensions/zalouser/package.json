@@ -8,11 +8,6 @@
     "zca-js": "2.1.1",
     "zod": "^4.3.6"
   },
-  "releaseChecks": {
-    "rootDependencyMirrorAllowlist": [
-      "zca-js"
-    ]
-  },
   "remoteclaw": {
     "extensions": [
       "./index.ts"
@@ -34,6 +29,11 @@
       "npmSpec": "@remoteclaw/zalouser",
       "localPath": "extensions/zalouser",
       "defaultChoice": "npm"
+    },
+    "releaseChecks": {
+      "rootDependencyMirrorAllowlist": [
+        "zca-js"
+      ]
     }
   }
 }

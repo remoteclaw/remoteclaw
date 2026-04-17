@@ -34,10 +34,76 @@ const ROOT_SECTIONS = [
   "canvasHost",
   "talk",
   "gateway",
+  "memory",
   "plugins",
 ] as const;
 
 const TARGET_KEYS = [
+  "memory.citations",
+  "memory.backend",
+  "memory.qmd.searchMode",
+  "memory.qmd.scope",
+  "memory.qmd.includeDefaultMemory",
+  "memory.qmd.mcporter.enabled",
+  "memory.qmd.mcporter.serverName",
+  "memory.qmd.command",
+  "memory.qmd.mcporter",
+  "memory.qmd.mcporter.startDaemon",
+  "memory.qmd.paths",
+  "memory.qmd.paths.path",
+  "memory.qmd.paths.pattern",
+  "memory.qmd.paths.name",
+  "memory.qmd.sessions.enabled",
+  "memory.qmd.sessions.exportDir",
+  "memory.qmd.sessions.retentionDays",
+  "memory.qmd.update.interval",
+  "memory.qmd.update.debounceMs",
+  "memory.qmd.update.onBoot",
+  "memory.qmd.update.waitForBootSync",
+  "memory.qmd.update.embedInterval",
+  "memory.qmd.update.commandTimeoutMs",
+  "memory.qmd.update.updateTimeoutMs",
+  "memory.qmd.update.embedTimeoutMs",
+  "memory.qmd.limits.maxResults",
+  "memory.qmd.limits.maxSnippetChars",
+  "memory.qmd.limits.maxInjectedChars",
+  "memory.qmd.limits.timeoutMs",
+  "agents.defaults.memorySearch.provider",
+  "agents.defaults.memorySearch.fallback",
+  "agents.defaults.memorySearch.sources",
+  "agents.defaults.memorySearch.extraPaths",
+  "agents.defaults.memorySearch.multimodal",
+  "agents.defaults.memorySearch.multimodal.enabled",
+  "agents.defaults.memorySearch.multimodal.modalities",
+  "agents.defaults.memorySearch.multimodal.maxFileBytes",
+  "agents.defaults.memorySearch.experimental.sessionMemory",
+  "agents.defaults.memorySearch.remote.baseUrl",
+  "agents.defaults.memorySearch.remote.apiKey",
+  "agents.defaults.memorySearch.remote.headers",
+  "agents.defaults.memorySearch.remote.batch.enabled",
+  "agents.defaults.memorySearch.remote.batch.wait",
+  "agents.defaults.memorySearch.remote.batch.concurrency",
+  "agents.defaults.memorySearch.remote.batch.pollIntervalMs",
+  "agents.defaults.memorySearch.remote.batch.timeoutMinutes",
+  "agents.defaults.memorySearch.local.modelPath",
+  "agents.defaults.memorySearch.store.path",
+  "agents.defaults.memorySearch.outputDimensionality",
+  "agents.defaults.memorySearch.store.vector.enabled",
+  "agents.defaults.memorySearch.store.vector.extensionPath",
+  "agents.defaults.memorySearch.query.hybrid.enabled",
+  "agents.defaults.memorySearch.query.hybrid.vectorWeight",
+  "agents.defaults.memorySearch.query.hybrid.textWeight",
+  "agents.defaults.memorySearch.query.hybrid.candidateMultiplier",
+  "agents.defaults.memorySearch.query.hybrid.mmr.enabled",
+  "agents.defaults.memorySearch.query.hybrid.mmr.lambda",
+  "agents.defaults.memorySearch.query.hybrid.temporalDecay.enabled",
+  "agents.defaults.memorySearch.query.hybrid.temporalDecay.halfLifeDays",
+  "agents.defaults.memorySearch.cache.enabled",
+  "agents.defaults.memorySearch.cache.maxEntries",
+  "agents.defaults.memorySearch.sync.onSearch",
+  "agents.defaults.memorySearch.sync.watch",
+  "agents.defaults.memorySearch.sync.sessions.deltaBytes",
+  "agents.defaults.memorySearch.sync.sessions.deltaMessages",
   "models.mode",
   "models.providers.*.auth",
   "models.providers.*.authHeader",
@@ -155,6 +221,10 @@ const TARGET_KEYS = [
   "hooks.mappings[].wakeMode",
   "hooks.mappings[].channel",
   "hooks.mappings[].transform.module",
+  "hooks.gmail",
+  "hooks.gmail.pushToken",
+  "hooks.gmail.tailscale.mode",
+  "hooks.gmail.thinking",
   "hooks.internal",
   "hooks.internal.handlers",
   "hooks.internal.handlers[].event",
@@ -322,6 +392,9 @@ const TARGET_KEYS = [
 ] as const;
 
 const ENUM_EXPECTATIONS: Record<string, string[]> = {
+  "memory.citations": ['"auto"', '"on"', '"off"'],
+  "memory.backend": ['"builtin"', '"qmd"'],
+  "memory.qmd.searchMode": ['"query"', '"search"', '"vsearch"'],
   "models.mode": ['"merge"', '"replace"'],
   "models.providers.*.auth": ['"api-key"', '"token"', '"oauth"', '"aws-sdk"'],
   "gateway.reload.mode": ['"off"', '"restart"', '"hot"', '"hybrid"'],
@@ -330,6 +403,8 @@ const ENUM_EXPECTATIONS: Record<string, string[]> = {
   "broadcast.strategy": ['"parallel"', '"sequential"'],
   "hooks.mappings[].action": ['"wake"', '"agent"'],
   "hooks.mappings[].wakeMode": ['"now"', '"next-heartbeat"'],
+  "hooks.gmail.tailscale.mode": ['"off"', '"serve"', '"funnel"'],
+  "hooks.gmail.thinking": ['"off"', '"minimal"', '"low"', '"medium"', '"high"'],
   "messages.queue.mode": [
     '"steer"',
     '"followup"',
@@ -345,7 +420,7 @@ const ENUM_EXPECTATIONS: Record<string, string[]> = {
   "gateway.bind": ['"auto"', '"lan"', '"loopback"', '"custom"', '"tailnet"'],
   "gateway.auth.mode": ['"none"', '"token"', '"password"', '"trusted-proxy"'],
   "gateway.tailscale.mode": ['"off"', '"serve"', '"funnel"'],
-  "browser.profiles.*.driver": ['"openclaw"', '"clawd"', '"extension"'],
+  "browser.profiles.*.driver": ['"remoteclaw"', '"clawd"', '"extension"'],
   "discovery.mdns.mode": ['"off"', '"minimal"', '"full"'],
   "wizard.lastRunMode": ['"local"', '"remote"'],
   "diagnostics.otel.protocol": ['"http/protobuf"', '"grpc"'],
@@ -368,6 +443,16 @@ const ENUM_EXPECTATIONS: Record<string, string[]> = {
 };
 
 const TOOLS_HOOKS_TARGET_KEYS = [
+  "hooks.gmail.account",
+  "hooks.gmail.allowUnsafeExternalContent",
+  "hooks.gmail.hookUrl",
+  "hooks.gmail.includeBody",
+  "hooks.gmail.label",
+  "hooks.gmail.model",
+  "hooks.gmail.serve",
+  "hooks.gmail.subscription",
+  "hooks.gmail.tailscale",
+  "hooks.gmail.topic",
   "hooks.internal.entries",
   "hooks.internal.installs",
   "hooks.internal.load",
@@ -412,6 +497,14 @@ const TOOLS_HOOKS_TARGET_KEYS = [
 ] as const;
 
 const CHANNELS_AGENTS_TARGET_KEYS = [
+  "agents.defaults.memorySearch.chunking.overlap",
+  "agents.defaults.memorySearch.chunking.tokens",
+  "agents.defaults.memorySearch.enabled",
+  "agents.defaults.memorySearch.model",
+  "agents.defaults.memorySearch.query.maxResults",
+  "agents.defaults.memorySearch.query.minScore",
+  "agents.defaults.memorySearch.sync.onSessionStart",
+  "agents.defaults.memorySearch.sync.watchDebounceMs",
   "agents.defaults.workspace",
   "agents.list[].tools.alsoAllow",
   "agents.list[].tools.byProvider",
@@ -434,6 +527,12 @@ const CHANNELS_AGENTS_TARGET_KEYS = [
   "channels.telegram",
   "channels.telegram.botToken",
   "channels.telegram.capabilities.inlineButtons",
+  "channels.telegram.execApprovals",
+  "channels.telegram.execApprovals.enabled",
+  "channels.telegram.execApprovals.approvers",
+  "channels.telegram.execApprovals.agentFilter",
+  "channels.telegram.execApprovals.sessionFilter",
+  "channels.telegram.execApprovals.target",
   "channels.whatsapp",
 ] as const;
 
@@ -534,6 +633,24 @@ describe("config help copy quality", () => {
         expect(help.includes(token), `missing option ${token} in ${key}`).toBe(true);
       }
     }
+  });
+
+  it("explains memory citations mode semantics", () => {
+    const help = FIELD_HELP["memory.citations"];
+    expect(help.includes('"auto"')).toBe(true);
+    expect(help.includes('"on"')).toBe(true);
+    expect(help.includes('"off"')).toBe(true);
+    expect(/always|always shows/i.test(help)).toBe(true);
+    expect(/hides|hide/i.test(help)).toBe(true);
+  });
+
+  it("includes concrete examples on path and interval fields", () => {
+    expect(FIELD_HELP["memory.qmd.paths.pattern"].includes("**/*.md")).toBe(true);
+    expect(FIELD_HELP["memory.qmd.update.interval"].includes("5m")).toBe(true);
+    expect(FIELD_HELP["memory.qmd.update.embedInterval"].includes("60m")).toBe(true);
+    expect(FIELD_HELP["agents.defaults.memorySearch.store.path"]).toContain(
+      "~/.remoteclaw/memory/{agentId}.sqlite",
+    );
   });
 
   it("documents cron deprecation, migration, and retention formats", () => {

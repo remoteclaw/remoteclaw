@@ -1,3 +1,4 @@
+import type { FailoverReason } from "../agents/agent-helpers.js";
 import type { ChannelId } from "../channels/plugins/types.js";
 import type { CronJobBase } from "./types-shared.js";
 
@@ -116,6 +117,8 @@ export type CronJobState = {
   /** Back-compat alias for lastRunStatus. */
   lastStatus?: "ok" | "error" | "skipped";
   lastError?: string;
+  /** Classified reason for the last error (when available). */
+  lastErrorReason?: FailoverReason;
   lastDurationMs?: number;
   /** Number of consecutive execution errors (reset on success). Used for backoff. */
   consecutiveErrors?: number;

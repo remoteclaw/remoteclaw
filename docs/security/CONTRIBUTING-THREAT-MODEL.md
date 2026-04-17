@@ -21,7 +21,7 @@ Spotted an attack vector or risk we haven't covered? Open an issue on [remotecla
 
 We'll handle the ATLAS mapping, threat IDs, and risk assessment during review. If you want to include those details, great - but it's not expected.
 
-> **This is for adding to the threat model, not reporting live vulnerabilities.** If you've found an exploitable vulnerability, see our [Trust page](https://trust.remoteclaw.ai) for responsible disclosure instructions.
+> **This is for adding to the threat model, not reporting live vulnerabilities.** If you've found an exploitable vulnerability, see our [Trust page](https://trust.remoteclaw.org) for responsible disclosure instructions.
 
 ### Suggest a Mitigation
 
@@ -85,7 +85,7 @@ If you're unsure about the risk level, just describe the impact and we'll assess
 
 ## Contact
 
-- **Security vulnerabilities:** See our [Trust page](https://trust.remoteclaw.ai) for reporting instructions
+- **Security vulnerabilities:** See our [Trust page](https://trust.remoteclaw.org) for reporting instructions
 - **Threat model questions:** Open an issue on [remoteclaw/trust](https://github.com/remoteclaw/trust/issues)
 - **General chat:** Discord #security channel
 

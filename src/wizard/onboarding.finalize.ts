@@ -564,7 +564,7 @@ export async function finalizeOnboardingWizard(
   }
 
   await prompter.note(
-    'What now: https://remoteclaw.ai/showcase ("What People Are Building").',
+    'What now: https://remoteclaw.org/showcase ("What People Are Building").',
     "What now",
   );
 

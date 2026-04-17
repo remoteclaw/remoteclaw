@@ -173,7 +173,7 @@ and points at the pinned multi-arch manifest list for that tag):
 - `org.opencontainers.image.base.name=docker.io/library/node:22-bookworm`
 - `org.opencontainers.image.base.digest=sha256:b501c082306a4f528bc4038cbf2fbb58095d583d0419a259b2114b5ac53d12e9`
 - `org.opencontainers.image.source=https://github.com/remoteclaw/remoteclaw`
-- `org.opencontainers.image.url=https://remoteclaw.ai`
+- `org.opencontainers.image.url=https://remoteclaw.org`
 - `org.opencontainers.image.documentation=https://docs.remoteclaw.org/install/docker`
 - `org.opencontainers.image.licenses=MIT`
 - `org.opencontainers.image.title=RemoteClaw`

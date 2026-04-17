@@ -4,7 +4,9 @@ import { sanitizeForLog, splitGraphemes, stripAnsi, visibleWidth } from "./ansi.
 describe("terminal ansi helpers", () => {
   it("strips ANSI and OSC8 sequences", () => {
     expect(stripAnsi("\u001B[31mred\u001B[0m")).toBe("red");
-    expect(stripAnsi("\u001B]8;;https://remoteclaw.ai\u001B\\link\u001B]8;;\u001B\\")).toBe("link");
+    expect(stripAnsi("\u001B]8;;https://remoteclaw.org\u001B\\link\u001B]8;;\u001B\\")).toBe(
+      "link",
+    );
   });
 
   it("sanitizes control characters for log-safe interpolation", () => {

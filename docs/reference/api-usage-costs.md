@@ -2,26 +2,32 @@
 summary: "Audit what can spend money, which keys are used, and how to view usage"
 read_when:
   - You want to understand which features may call paid APIs
-  - You need to audit keys and usage visibility
-  - You’re explaining /status or /usage reporting
+  - You need to audit keys, costs, and usage visibility
+  - You’re explaining /status or /usage cost reporting
 title: "API Usage and Costs"
 ---
 
 # API usage & costs
 
-This doc lists **features that can invoke API keys** and where their usage shows up. It focuses on
+This doc lists **features that can invoke API keys** and where their costs show up. It focuses on
 RemoteClaw features that can generate provider usage or paid API calls.
 
-## Where usage shows up (chat)
+## Where costs show up (chat + CLI)
 
-**Per-session token snapshot**
+**Per-session cost snapshot**
 
 - `/status` shows the current session model, context usage, and last response tokens.
+- If the model uses **API-key auth**, `/status` also shows **estimated cost** for the last reply.
 
-**Per-message token footer**
+**Per-message cost footer**
 
-- `/usage full` appends a usage footer to every reply.
-- `/usage tokens` shows token counts only.
+- `/usage full` appends a usage footer to every reply, including **estimated cost** (API-key only).
+- `/usage tokens` shows tokens only; OAuth flows hide dollar cost.
+
+**CLI usage windows (provider quotas)**
+
+- `remoteclaw status --usage` and `remoteclaw channels list` show provider **usage windows**
+  (quota snapshots, not per-message costs).
 
 See [Token use & costs](/reference/token-use) for details and examples.
 
@@ -74,10 +80,10 @@ See [Memory](/concepts/memory).
 `web_search` uses API keys and may incur usage charges depending on your provider:
 
 - **Brave Search API**: `BRAVE_API_KEY` or `tools.web.search.apiKey`
-- **Gemini (Google Search)**: `GEMINI_API_KEY`
-- **Grok (xAI)**: `XAI_API_KEY`
-- **Kimi (Moonshot)**: `KIMI_API_KEY` or `MOONSHOT_API_KEY`
-- **Perplexity Search API**: `PERPLEXITY_API_KEY`
+- **Gemini (Google Search)**: `GEMINI_API_KEY` or `tools.web.search.gemini.apiKey`
+- **Grok (xAI)**: `XAI_API_KEY` or `tools.web.search.grok.apiKey`
+- **Kimi (Moonshot)**: `KIMI_API_KEY`, `MOONSHOT_API_KEY`, or `tools.web.search.kimi.apiKey`
+- **Perplexity Search API**: `PERPLEXITY_API_KEY`, `OPENROUTER_API_KEY`, or `tools.web.search.perplexity.apiKey`
 
 **Brave Search free credit:** Each Brave plan includes $5/month in renewing
 free credit. The Search plan costs $5 per 1,000 requests, so the credit covers

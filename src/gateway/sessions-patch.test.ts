@@ -115,6 +115,36 @@ describe("gateway sessions patch", () => {
     expect(res.entry.spawnDepth).toBe(2);
   });
 
+  test("sets spawnedBy for ACP sessions", async () => {
+    const store: Record<string, SessionEntry> = {};
+    const res = await applySessionsPatchToStore({
+      cfg: {} as RemoteClawConfig,
+      store,
+      storeKey: "agent:main:acp:child",
+      patch: { key: "agent:main:acp:child", spawnedBy: "agent:main:main" },
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+    expect(res.entry.spawnedBy).toBe("agent:main:main");
+  });
+
+  test("sets spawnDepth for ACP sessions", async () => {
+    const store: Record<string, SessionEntry> = {};
+    const res = await applySessionsPatchToStore({
+      cfg: {} as RemoteClawConfig,
+      store,
+      storeKey: "agent:main:acp:child",
+      patch: { key: "agent:main:acp:child", spawnDepth: 2 },
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+    expect(res.entry.spawnDepth).toBe(2);
+  });
+
   test("rejects spawnDepth on non-subagent sessions", async () => {
     const store: Record<string, SessionEntry> = {};
     const res = await applySessionsPatchToStore({

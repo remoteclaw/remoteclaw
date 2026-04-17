@@ -22,6 +22,7 @@ type HardeningCase = {
   expectedArgvChanged?: boolean;
   expectedCmdText?: string;
   checkRawCommandMatchesArgv?: boolean;
+  expectedCommandPreview?: string | null;
 };
 
 type ScriptOperandFixture = {
@@ -100,7 +101,8 @@ describe("hardenApprovedExecutionPaths", () => {
       mode: "build-plan",
       argv: ["env", "sh", "-c", "echo SAFE"],
       expectedArgv: () => ["env", "sh", "-c", "echo SAFE"],
-      expectedCmdText: "echo SAFE",
+      expectedCmdText: 'env sh -c "echo SAFE"',
+      expectedCommandPreview: "echo SAFE",
     },
     {
       name: "preserves dispatch-wrapper argv during approval hardening",
@@ -135,6 +137,16 @@ describe("hardenApprovedExecutionPaths", () => {
       withPathToken: true,
       expectedArgv: ({ pathToken }) => [pathToken!.expected, "hello"],
       checkRawCommandMatchesArgv: true,
+      expectedCommandPreview: null,
+    },
+    {
+      name: "stores full approval text and preview for path-qualified env wrappers",
+      mode: "build-plan",
+      argv: ["./env", "sh", "-c", "echo SAFE"],
+      expectedArgv: () => ["./env", "sh", "-c", "echo SAFE"],
+      expectedCmdText: './env sh -c "echo SAFE"',
+      checkRawCommandMatchesArgv: true,
+      expectedCommandPreview: "echo SAFE",
     },
   ];
 
@@ -163,10 +175,13 @@ describe("hardenApprovedExecutionPaths", () => {
           }
           expect(prepared.plan.argv).toEqual(testCase.expectedArgv({ pathToken }));
           if (testCase.expectedCmdText) {
-            expect(prepared.cmdText).toBe(testCase.expectedCmdText);
+            expect(prepared.plan.commandText).toBe(testCase.expectedCmdText);
           }
           if (testCase.checkRawCommandMatchesArgv) {
-            expect(prepared.plan.rawCommand).toBe(formatExecCommand(prepared.plan.argv));
+            expect(prepared.plan.commandText).toBe(formatExecCommand(prepared.plan.argv));
+          }
+          if ("expectedCommandPreview" in testCase) {
+            expect(prepared.plan.commandPreview ?? null).toBe(testCase.expectedCommandPreview);
           }
           return;
         }
@@ -183,9 +198,7 @@ describe("hardenApprovedExecutionPaths", () => {
         }
         expect(hardened.argv).toEqual(testCase.expectedArgv({ pathToken }));
         if (typeof testCase.expectedArgvChanged === "boolean") {
-          expect((hardened as Record<string, unknown>).argvChanged).toBe(
-            testCase.expectedArgvChanged,
-          );
+          expect(hardened.argvChanged).toBe(testCase.expectedArgvChanged);
         }
       } finally {
         if (testCase.withPathToken) {
@@ -201,6 +214,70 @@ describe("hardenApprovedExecutionPaths", () => {
   }
 
   const mutableOperandCases: RuntimeFixture[] = [
+    {
+      name: "python flagged file",
+      binName: "python3",
+      argv: ["python3", "-B", "./run.py"],
+      scriptName: "run.py",
+      initialBody: 'print("SAFE")\n',
+      expectedArgvIndex: 2,
+    },
+    {
+      name: "lua direct file",
+      binName: "lua",
+      argv: ["lua", "./run.lua"],
+      scriptName: "run.lua",
+      initialBody: 'print("SAFE")\n',
+      expectedArgvIndex: 1,
+    },
+    {
+      name: "pypy direct file",
+      binName: "pypy",
+      argv: ["pypy", "./run.py"],
+      scriptName: "run.py",
+      initialBody: 'print("SAFE")\n',
+      expectedArgvIndex: 1,
+    },
+    {
+      name: "versioned node alias file",
+      binName: "node20",
+      argv: ["node20", "./run.js"],
+      scriptName: "run.js",
+      initialBody: 'console.log("SAFE");\n',
+      expectedArgvIndex: 1,
+    },
+    {
+      name: "tsx direct file",
+      binName: "tsx",
+      argv: ["tsx", "./run.ts"],
+      scriptName: "run.ts",
+      initialBody: 'console.log("SAFE");\n',
+      expectedArgvIndex: 1,
+    },
+    {
+      name: "jiti direct file",
+      binName: "jiti",
+      argv: ["jiti", "./run.ts"],
+      scriptName: "run.ts",
+      initialBody: 'console.log("SAFE");\n',
+      expectedArgvIndex: 1,
+    },
+    {
+      name: "ts-node direct file",
+      binName: "ts-node",
+      argv: ["ts-node", "./run.ts"],
+      scriptName: "run.ts",
+      initialBody: 'console.log("SAFE");\n',
+      expectedArgvIndex: 1,
+    },
+    {
+      name: "vite-node direct file",
+      binName: "vite-node",
+      argv: ["vite-node", "./run.ts"],
+      scriptName: "run.ts",
+      initialBody: 'console.log("SAFE");\n',
+      expectedArgvIndex: 1,
+    },
     {
       name: "bun direct file",
       binName: "bun",
@@ -224,6 +301,22 @@ describe("hardenApprovedExecutionPaths", () => {
       scriptName: "run.ts",
       initialBody: 'console.log("SAFE");\n',
       expectedArgvIndex: 5,
+    },
+    {
+      name: "bun test file",
+      binName: "bun",
+      argv: ["bun", "test", "./run.test.ts"],
+      scriptName: "run.test.ts",
+      initialBody: 'console.log("SAFE");\n',
+      expectedArgvIndex: 2,
+    },
+    {
+      name: "deno test file",
+      binName: "deno",
+      argv: ["deno", "test", "./run.test.ts"],
+      scriptName: "run.test.ts",
+      initialBody: 'console.log("SAFE");\n',
+      expectedArgvIndex: 2,
     },
   ];
 
@@ -320,6 +413,28 @@ describe("hardenApprovedExecutionPaths", () => {
             throw new Error("unreachable");
           }
           expect(prepared.plan.mutableFileOperand).toBeUndefined();
+        } finally {
+          fs.rmSync(tmp, { recursive: true, force: true });
+        }
+      },
+    });
+  });
+
+  it("rejects tsx eval invocations that do not bind a concrete file", () => {
+    withFakeRuntimeBin({
+      binName: "tsx",
+      run: () => {
+        const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-tsx-eval-"));
+        try {
+          const prepared = buildSystemRunApprovalPlan({
+            command: ["tsx", "--eval", "console.log('SAFE')"],
+            cwd: tmp,
+          });
+          expect(prepared).toEqual({
+            ok: false,
+            message:
+              "SYSTEM_RUN_DENIED: approval cannot safely bind this interpreter/runtime command",
+          });
         } finally {
           fs.rmSync(tmp, { recursive: true, force: true });
         }

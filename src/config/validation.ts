@@ -1,8 +1,5 @@
 import path from "node:path";
-import {
-  resolveAgentWorkspaceDirOrNull,
-  resolveFirstAgentWorkspace,
-} from "../agents/agent-scope.js";
+import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { CHANNEL_IDS, normalizeChatChannelId } from "../channels/registry.js";
 import {
   normalizePluginsConfig,
@@ -184,11 +181,11 @@ function validateIdentityAvatar(config: RemoteClawConfig): ConfigValidationIssue
       });
       continue;
     }
-    if (!entry.id) {
-      continue;
-    }
-    const workspaceDir = resolveAgentWorkspaceDirOrNull(config, entry.id);
-    if (workspaceDir && !isWorkspaceAvatarPath(avatar, workspaceDir)) {
+    const workspaceDir = resolveAgentWorkspaceDir(
+      config,
+      entry.id ?? resolveDefaultAgentId(config),
+    );
+    if (!isWorkspaceAvatarPath(avatar, workspaceDir)) {
       issues.push({
         path: `agents.list.${index}.identity.avatar`,
         message: "identity.avatar must stay within the agent workspace.",
@@ -302,17 +299,23 @@ type ValidateConfigWithPluginsResult =
       warnings: ConfigValidationIssue[];
     };
 
-export function validateConfigObjectWithPlugins(raw: unknown): ValidateConfigWithPluginsResult {
-  return validateConfigObjectWithPluginsBase(raw, { applyDefaults: true });
+export function validateConfigObjectWithPlugins(
+  raw: unknown,
+  params?: { env?: NodeJS.ProcessEnv },
+): ValidateConfigWithPluginsResult {
+  return validateConfigObjectWithPluginsBase(raw, { applyDefaults: true, env: params?.env });
 }
 
-export function validateConfigObjectRawWithPlugins(raw: unknown): ValidateConfigWithPluginsResult {
-  return validateConfigObjectWithPluginsBase(raw, { applyDefaults: false });
+export function validateConfigObjectRawWithPlugins(
+  raw: unknown,
+  params?: { env?: NodeJS.ProcessEnv },
+): ValidateConfigWithPluginsResult {
+  return validateConfigObjectWithPluginsBase(raw, { applyDefaults: false, env: params?.env });
 }
 
 function validateConfigObjectWithPluginsBase(
   raw: unknown,
-  opts: { applyDefaults: boolean },
+  opts: { applyDefaults: boolean; env?: NodeJS.ProcessEnv },
 ): ValidateConfigWithPluginsResult {
   const base = opts.applyDefaults ? validateConfigObject(raw) : validateConfigObjectRaw(raw);
   if (!base.ok) {
@@ -346,10 +349,11 @@ function validateConfigObjectWithPluginsBase(
       return registryInfo;
     }
 
-    const workspaceDir = resolveFirstAgentWorkspace(config);
+    const workspaceDir = resolveAgentWorkspaceDir(config, resolveDefaultAgentId(config));
     const registry = loadPluginManifestRegistry({
       config,
       workspaceDir: workspaceDir ?? undefined,
+      env: opts.env,
     });
 
     for (const diag of registry.diagnostics) {
@@ -386,7 +390,7 @@ function validateConfigObjectWithPluginsBase(
     return info.normalizedPlugins;
   };
 
-  const allowedChannels = new Set<string>(["defaults", ...CHANNEL_IDS]);
+  const allowedChannels = new Set<string>(["defaults", "modelByChannel", ...CHANNEL_IDS]);
 
   if (config.channels && isRecord(config.channels)) {
     for (const key of Object.keys(config.channels)) {
@@ -527,12 +531,7 @@ function validateConfigObjectWithPluginsBase(
   }
 
   const memorySlot = normalizedPlugins.slots.memory;
-  if (
-    typeof memorySlot === "string" &&
-    memorySlot.trim() &&
-    memorySlot !== "none" &&
-    !knownIds.has(memorySlot)
-  ) {
+  if (typeof memorySlot === "string" && memorySlot.trim() && !knownIds.has(memorySlot)) {
     pushMissingPluginIssue("plugins.slots.memory", memorySlot);
   }
 

@@ -95,7 +95,7 @@ export async function runNonInteractiveOnboardingLocal(params: {
 
   if (!opts.json) {
     runtime.log(
-      `Tip: run \`${formatCliCommand("remoteclaw configure --section web")}\` to store your Brave API key for web_search. Docs: https://docs.remoteclaw.ai/tools/web`,
+      `Tip: run \`${formatCliCommand("remoteclaw configure --section web")}\` to store your Brave API key for web_search. Docs: https://docs.remoteclaw.org/tools/web`,
     );
   }
 }

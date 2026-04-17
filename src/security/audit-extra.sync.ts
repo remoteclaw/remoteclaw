@@ -1,11 +1,53 @@
 import { isToolAllowedByPolicies } from "../agents/pi-tools.policy.js";
 import { isDangerousNetworkMode, normalizeNetworkMode } from "../agents/sandbox/network-mode.js";
-const GUTTED_SANDBOX_CONFIG = {
-  mode: "off" as "off" | "non-main" | "all",
-  browser: { enabled: false, network: "", cdpSourceRange: "" },
-  docker: {},
+type SandboxMode = "off" | "non-main" | "all";
+type ResolvedSandboxForAudit = {
+  mode: SandboxMode;
+  browser: { enabled: boolean; network: string; cdpSourceRange: string };
+  docker: Record<string, unknown>;
 };
-const resolveSandboxConfigForAgent = (_cfg?: unknown, _agentId?: string) => GUTTED_SANDBOX_CONFIG;
+const resolveSandboxConfigForAgent = (
+  cfg?: { agents?: { defaults?: { sandbox?: { mode?: string } }; list?: unknown[] } },
+  agentId?: string,
+): ResolvedSandboxForAudit => {
+  // Audit-only resolver: pick the agent-specific sandbox mode if available,
+  // otherwise fall back to agents.defaults.sandbox.mode. The fork's runtime
+  // sandbox pipeline is gutted (no enforcement), but the audit must still
+  // report findings against the operator-declared config.
+  let resolvedMode: string | undefined;
+  if (agentId && cfg?.agents && Array.isArray(cfg.agents.list)) {
+    for (const entry of cfg.agents.list) {
+      if (
+        entry &&
+        typeof entry === "object" &&
+        (entry as { id?: unknown }).id === agentId &&
+        typeof (entry as { sandbox?: { mode?: unknown } }).sandbox === "object" &&
+        (entry as { sandbox?: { mode?: unknown } }).sandbox
+      ) {
+        const m = (entry as { sandbox: { mode?: unknown } }).sandbox.mode;
+        if (typeof m === "string") {
+          resolvedMode = m;
+        }
+        break;
+      }
+    }
+  }
+  if (resolvedMode === undefined) {
+    const defaultsMode = cfg?.agents?.defaults?.sandbox?.mode;
+    if (typeof defaultsMode === "string") {
+      resolvedMode = defaultsMode;
+    }
+  }
+  const mode: SandboxMode =
+    resolvedMode === "all" || resolvedMode === "non-main" || resolvedMode === "off"
+      ? resolvedMode
+      : "off";
+  return {
+    mode,
+    browser: { enabled: false, network: "", cdpSourceRange: "" },
+    docker: {},
+  };
+};
 const resolveSandboxToolPolicyForAgent = (..._args: unknown[]) => undefined;
 /**
  * Synchronous security audit collector functions.
@@ -308,6 +350,23 @@ function resolveToolPolicies(params: {
   const profilePolicy = resolveToolProfilePolicy(profile);
   if (profilePolicy) {
     policies.push(profilePolicy);
+  }
+
+  // Apply operator-declared allow/deny from global tools and agent tools so that
+  // explicit `deny: ["group:runtime"]` and `allow` restrict the audit view.
+  const globalTools = params.cfg.tools;
+  if (globalTools && (globalTools.allow || globalTools.deny)) {
+    policies.push({
+      allow: Array.isArray(globalTools.allow) ? globalTools.allow : undefined,
+      deny: Array.isArray(globalTools.deny) ? globalTools.deny : undefined,
+    });
+  }
+  const agentTools = params.agentTools;
+  if (agentTools && (agentTools.allow || agentTools.deny)) {
+    policies.push({
+      allow: Array.isArray(agentTools.allow) ? agentTools.allow : undefined,
+      deny: Array.isArray(agentTools.deny) ? agentTools.deny : undefined,
+    });
   }
 
   if (params.sandboxMode === "all") {

@@ -16,12 +16,14 @@ export function registerAppMountHooks() {
   beforeEach(() => {
     window.__REMOTECLAW_CONTROL_UI_BASE_PATH__ = undefined;
     localStorage.clear();
+    sessionStorage.clear();
     document.body.innerHTML = "";
   });
 
   afterEach(() => {
     window.__REMOTECLAW_CONTROL_UI_BASE_PATH__ = undefined;
     localStorage.clear();
+    sessionStorage.clear();
     document.body.innerHTML = "";
   });
 }

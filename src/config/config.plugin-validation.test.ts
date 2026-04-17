@@ -38,12 +38,15 @@ describe("config plugin validation", () => {
   let enumPluginDir = "";
   let bluebubblesPluginDir = "";
   let voiceCallSchemaPluginDir = "";
-  const envSnapshot = {
-    REMOTECLAW_STATE_DIR: process.env.REMOTECLAW_STATE_DIR,
-    REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS: process.env.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS,
-  };
+  const suiteEnv = () =>
+    ({
+      ...process.env,
+      REMOTECLAW_STATE_DIR: path.join(suiteHome, ".remoteclaw"),
+      REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS: "10000",
+    }) satisfies NodeJS.ProcessEnv;
 
-  const validateInSuite = (raw: unknown) => validateConfigObjectWithPlugins(raw);
+  const validateInSuite = (raw: unknown) =>
+    validateConfigObjectWithPlugins(raw, { env: suiteEnv() });
 
   beforeAll(async () => {
     fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-config-plugin-validation-"));
@@ -102,8 +105,6 @@ describe("config plugin validation", () => {
       id: "voice-call-schema-fixture",
       schema: voiceCallManifest.configSchema,
     });
-    process.env.REMOTECLAW_STATE_DIR = path.join(suiteHome, ".remoteclaw");
-    process.env.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS = "10000";
     clearPluginManifestRegistryCache();
     // Warm the plugin manifest cache once so path-based validations can reuse
     // parsed manifests across test cases.
@@ -118,17 +119,6 @@ describe("config plugin validation", () => {
   afterAll(async () => {
     await fs.rm(fixtureRoot, { recursive: true, force: true });
     clearPluginManifestRegistryCache();
-    if (envSnapshot.REMOTECLAW_STATE_DIR === undefined) {
-      delete process.env.REMOTECLAW_STATE_DIR;
-    } else {
-      process.env.REMOTECLAW_STATE_DIR = envSnapshot.REMOTECLAW_STATE_DIR;
-    }
-    if (envSnapshot.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS === undefined) {
-      delete process.env.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS;
-    } else {
-      process.env.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS =
-        envSnapshot.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS;
-    }
   });
 
   it("reports missing plugin refs across load paths, entries, and allowlist surfaces", async () => {
@@ -280,11 +270,43 @@ describe("config plugin validation", () => {
     expect(res.ok).toBe(true);
   });
 
+  it("accepts voice-call OpenAI TTS speed, instructions, and baseUrl config fields", async () => {
+    const res = validateInSuite({
+      agents: { list: [{ id: "pi", workspace: "/tmp/pi" }] },
+      plugins: {
+        enabled: true,
+        load: { paths: [voiceCallSchemaPluginDir] },
+        entries: {
+          "voice-call-schema-fixture": {
+            config: {
+              tts: {
+                openai: {
+                  baseUrl: "http://localhost:8880/v1",
+                  voice: "alloy",
+                  speed: 1.5,
+                  instructions: "Speak in a cheerful tone",
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(res.ok).toBe(true);
+  });
+
   it("accepts known plugin ids and valid channel/heartbeat enums", async () => {
     const res = validateInSuite({
       agents: {
         defaults: { heartbeat: { target: "last", directPolicy: "block" } },
         list: [{ id: "pi", workspace: "/tmp/pi", heartbeat: { directPolicy: "allow" } }],
+      },
+      channels: {
+        modelByChannel: {
+          openai: {
+            whatsapp: "openai/gpt-5.2",
+          },
+        },
       },
       plugins: { enabled: false, entries: { discord: { enabled: true } } },
     });

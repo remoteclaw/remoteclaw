@@ -38,16 +38,42 @@ vi.mock("../config/config.js", async (importOriginal) => {
   };
 });
 
-vi.mock("../auth/index.js", () => ({
+vi.mock("../agents/model-catalog.js", () => ({
+  loadModelCatalog: async () => [
+    {
+      provider: "anthropic",
+      id: "claude-opus-4-5",
+      name: "Opus",
+      contextWindow: 200000,
+    },
+    {
+      provider: "anthropic",
+      id: "claude-sonnet-4-5",
+      name: "Sonnet",
+      contextWindow: 200000,
+    },
+  ],
+}));
+
+vi.mock("../agents/auth-profiles.js", () => ({
   ensureAuthProfileStore: () => ({ profiles: {} }),
-  listProfilesForProvider: () => [],
   resolveAuthProfileDisplayLabel: () => undefined,
+  resolveAuthProfileOrder: () => [],
 }));
 
 vi.mock("../agents/model-auth.js", () => ({
   resolveEnvApiKey: () => null,
-  getCustomProviderApiKey: () => null,
+  resolveUsableCustomProviderApiKey: () => null,
   resolveModelAuthMode: () => "api-key",
+}));
+
+vi.mock("../infra/provider-usage.js", () => ({
+  resolveUsageProviderId: () => undefined,
+  loadProviderUsageSummary: async () => ({
+    updatedAt: Date.now(),
+    providers: [],
+  }),
+  formatUsageSummaryLine: () => null,
 }));
 
 import "./test-helpers/fast-core-tools.js";
@@ -194,6 +220,7 @@ describe("session_status tool", () => {
         updatedAt: 10,
         providerOverride: "anthropic",
         modelOverride: "claude-sonnet-4-5",
+        authProfileOverride: "p1",
       },
     });
 
@@ -208,5 +235,6 @@ describe("session_status tool", () => {
     const saved = savedStore.main as Record<string, unknown>;
     expect(saved.providerOverride).toBeUndefined();
     expect(saved.modelOverride).toBeUndefined();
+    expect(saved.authProfileOverride).toBeUndefined();
   });
 });

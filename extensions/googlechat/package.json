@@ -15,11 +15,6 @@
       "optional": true
     }
   },
-  "releaseChecks": {
-    "rootDependencyMirrorAllowlist": [
-      "google-auth-library"
-    ]
-  },
   "remoteclaw": {
     "extensions": [
       "./index.ts"
@@ -42,6 +37,11 @@
       "npmSpec": "@remoteclaw/googlechat",
       "localPath": "extensions/googlechat",
       "defaultChoice": "npm"
+    },
+    "releaseChecks": {
+      "rootDependencyMirrorAllowlist": [
+        "google-auth-library"
+      ]
     }
   }
 }

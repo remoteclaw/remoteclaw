@@ -25,6 +25,14 @@ export {
 } from "./run-command.js";
 export { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
 
+export {
+  DEFAULT_SECRET_FILE_MAX_BYTES,
+  loadSecretFileSync,
+  readSecretFileSync,
+  tryReadSecretFileSync,
+} from "../infra/secret-file.js";
+export type { SecretFileReadOptions, SecretFileReadResult } from "../infra/secret-file.js";
+
 export { resolveGatewayBindUrl } from "../shared/gateway-bind-url.js";
 export type { GatewayBindUrlResult } from "../shared/gateway-bind-url.js";
 

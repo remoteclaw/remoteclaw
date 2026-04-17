@@ -8,6 +8,7 @@ import QuartzCore
 import SwiftUI
 
 private let webChatSwiftLogger = Logger(subsystem: "org.remoteclaw", category: "WebChatSwiftUI")
+private let webChatThinkingLevelDefaultsKey = "remoteclaw.webchat.thinkingLevel"
 
 private enum WebChatSwiftUILayout {
     static let windowSize = NSSize(width: 500, height: 840)
@@ -19,6 +20,21 @@ private enum WebChatSwiftUILayout {
 struct MacGatewayChatTransport: RemoteClawChatTransport, Sendable {
     func requestHistory(sessionKey: String) async throws -> RemoteClawChatHistoryPayload {
         try await GatewayConnection.shared.chatHistory(sessionKey: sessionKey)
+    }
+
+    func listModels() async throws -> [RemoteClawChatModelChoice] {
+        do {
+            let data = try await GatewayConnection.shared.request(
+                method: "models.list",
+                params: [:],
+                timeoutMs: 15000)
+            let result = try JSONDecoder().decode(ModelsListResult.self, from: data)
+            return result.models.map(Self.mapModelChoice)
+        } catch {
+            webChatSwiftLogger.warning(
+                "models.list failed; hiding model picker: \(error.localizedDescription, privacy: .public)")
+            return []
+        }
     }
 
     func abortRun(sessionKey: String, runId: String) async throws {
@@ -44,6 +60,28 @@ struct MacGatewayChatTransport: RemoteClawChatTransport, Sendable {
             params: params,
             timeoutMs: 15000)
         return try JSONDecoder().decode(RemoteClawChatSessionsListResponse.self, from: data)
+    }
+
+    func setSessionModel(sessionKey: String, model: String?) async throws {
+        var params: [String: AnyCodable] = [
+            "key": AnyCodable(sessionKey),
+        ]
+        params["model"] = model.map(AnyCodable.init) ?? AnyCodable(NSNull())
+        _ = try await GatewayConnection.shared.request(
+            method: "sessions.patch",
+            params: params,
+            timeoutMs: 15000)
+    }
+
+    func setSessionThinking(sessionKey: String, thinkingLevel: String) async throws {
+        let params: [String: AnyCodable] = [
+            "key": AnyCodable(sessionKey),
+            "thinkingLevel": AnyCodable(thinkingLevel),
+        ]
+        _ = try await GatewayConnection.shared.request(
+            method: "sessions.patch",
+            params: params,
+            timeoutMs: 15000)
     }
 
     func sendMessage(
@@ -133,6 +171,14 @@ struct MacGatewayChatTransport: RemoteClawChatTransport, Sendable {
             return .seqGap
         }
     }
+
+    private static func mapModelChoice(_ model: RemoteClawProtocol.ModelChoice) -> RemoteClawChatModelChoice {
+        RemoteClawChatModelChoice(
+            modelID: model.id,
+            name: model.name,
+            provider: model.provider,
+            contextWindow: model.contextwindow)
+    }
 }
 
 // MARK: - Window controller
@@ -155,7 +201,13 @@ final class WebChatSwiftUIWindowController {
     init(sessionKey: String, presentation: WebChatPresentation, transport: any RemoteClawChatTransport) {
         self.sessionKey = sessionKey
         self.presentation = presentation
-        let vm = RemoteClawChatViewModel(sessionKey: sessionKey, transport: transport)
+        let vm = RemoteClawChatViewModel(
+            sessionKey: sessionKey,
+            transport: transport,
+            initialThinkingLevel: Self.persistedThinkingLevel(),
+            onThinkingLevelChanged: { level in
+                UserDefaults.standard.set(level, forKey: webChatThinkingLevelDefaultsKey)
+            })
         let accent = Self.color(fromHex: AppStateStore.shared.seamColorHex)
         self.hosting = NSHostingController(rootView: RemoteClawChatView(
             viewModel: vm,
@@ -255,6 +307,16 @@ final class WebChatSwiftUIWindowController {
             NSEvent.removeMonitor(monitor)
             self.dismissMonitor = nil
         }
+    }
+
+    private static func persistedThinkingLevel() -> String? {
+        let stored = UserDefaults.standard.string(forKey: webChatThinkingLevelDefaultsKey)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        guard let stored, ["off", "minimal", "low", "medium", "high", "xhigh", "adaptive"].contains(stored) else {
+            return nil
+        }
+        return stored
     }
 
     private static func makeWindow(

@@ -2,14 +2,14 @@
 summary: "Web search + fetch tools (Brave, Gemini, Grok, Kimi, and Perplexity providers)"
 read_when:
   - You want to enable web_search or web_fetch
-  - You need Brave or Perplexity Search API key setup
+  - You need provider API key setup
   - You want to use Gemini with Google Search grounding
 title: "Web Tools"
 ---
 
 # Web tools
 
-OpenClaw ships two lightweight web tools:
+RemoteClaw ships two lightweight web tools:
 
 - `web_search` — Search the web using Brave Search API, Gemini with Google Search grounding, Grok, Kimi, or Perplexity Search API.
 - `web_fetch` — HTTP fetch + readable extraction (HTML → markdown/text).
@@ -49,15 +49,21 @@ The table above is alphabetical. If no `provider` is explicitly set, runtime aut
 
 If no keys are found, it falls back to Brave (you'll get a missing-key error prompting you to configure one).
 
+Runtime SecretRef behavior:
+
+- Web tool SecretRefs are resolved atomically at gateway startup/reload.
+- In auto-detect mode, RemoteClaw resolves only the selected provider key. Non-selected provider SecretRefs stay inactive until selected.
+- If the selected provider SecretRef is unresolved and no provider env fallback exists, startup/reload fails fast.
+
 ## Setting up web search
 
-Use `openclaw configure --section web` to set up your API key and choose a provider.
+Use `remoteclaw configure --section web` to set up your API key and choose a provider.
 
 ### Brave Search
 
 1. Create a Brave Search API account at [brave.com/search/api](https://brave.com/search/api/)
 2. In the dashboard, choose the **Search** plan and generate an API key.
-3. Run `openclaw configure --section web` to store the key in config, or set `BRAVE_API_KEY` in your environment.
+3. Run `remoteclaw configure --section web` to store the key in config, or set `BRAVE_API_KEY` in your environment.
 
 Each Brave plan includes **$5/month in free credit** (renewing). The Search
 plan costs $5 per 1,000 requests, so the credit covers 1,000 queries/month. Set
@@ -69,7 +75,7 @@ pricing.
 
 1. Create a Perplexity account at [perplexity.ai/settings/api](https://www.perplexity.ai/settings/api)
 2. Generate an API key in the dashboard
-3. Run `openclaw configure --section web` to store the key in config, or set `PERPLEXITY_API_KEY` in your environment.
+3. Run `remoteclaw configure --section web` to store the key in config, or set `PERPLEXITY_API_KEY` in your environment.
 
 For legacy Sonar/OpenRouter compatibility, set `OPENROUTER_API_KEY` instead, or configure `tools.web.search.perplexity.apiKey` with an `sk-or-...` key. Setting `tools.web.search.perplexity.baseUrl` or `model` also opts Perplexity back into the chat-completions compatibility path.
 
@@ -77,9 +83,25 @@ See [Perplexity Search API Docs](https://docs.perplexity.ai/guides/search-quicks
 
 ### Where to store the key
 
-**Via config:** run `openclaw configure --section web`. It stores the key under `tools.web.search.apiKey` or `tools.web.search.perplexity.apiKey`, depending on provider.
+**Via config:** run `remoteclaw configure --section web`. It stores the key under the provider-specific config path:
 
-**Via environment:** set `PERPLEXITY_API_KEY`, `OPENROUTER_API_KEY`, or `BRAVE_API_KEY` in the Gateway process environment. For a gateway install, put it in `~/.openclaw/.env` (or your service environment). See [Env vars](/help/faq#how-does-openclaw-load-environment-variables).
+- Brave: `tools.web.search.apiKey`
+- Gemini: `tools.web.search.gemini.apiKey`
+- Grok: `tools.web.search.grok.apiKey`
+- Kimi: `tools.web.search.kimi.apiKey`
+- Perplexity: `tools.web.search.perplexity.apiKey`
+
+All of these fields also support SecretRef objects.
+
+**Via environment:** set provider env vars in the Gateway process environment:
+
+- Brave: `BRAVE_API_KEY`
+- Gemini: `GEMINI_API_KEY`
+- Grok: `XAI_API_KEY`
+- Kimi: `KIMI_API_KEY` or `MOONSHOT_API_KEY`
+- Perplexity: `PERPLEXITY_API_KEY` or `OPENROUTER_API_KEY`
+
+For a gateway install, put these in `~/.remoteclaw/.env` (or your service environment). See [Env vars](/help/faq#how-does-remoteclaw-load-environment-variables).
 
 ### Config examples
 
@@ -192,7 +214,7 @@ which returns AI-synthesized answers backed by live Google Search results with c
 ```
 
 **Environment alternative:** set `GEMINI_API_KEY` in the Gateway environment.
-For a gateway install, put it in `~/.openclaw/.env`.
+For a gateway install, put it in `~/.remoteclaw/.env`.
 
 ### Notes
 
@@ -216,6 +238,7 @@ Search the web using your configured provider.
   - **Grok**: `XAI_API_KEY` or `tools.web.search.grok.apiKey`
   - **Kimi**: `KIMI_API_KEY`, `MOONSHOT_API_KEY`, or `tools.web.search.kimi.apiKey`
   - **Perplexity**: `PERPLEXITY_API_KEY`, `OPENROUTER_API_KEY`, or `tools.web.search.perplexity.apiKey`
+- All provider key fields above support SecretRef objects.
 
 ### Config
 
@@ -310,6 +333,7 @@ Fetch a URL and extract readable content.
 
 - `tools.web.fetch.enabled` must not be `false` (default: enabled)
 - Optional Firecrawl fallback: set `tools.web.fetch.firecrawl.apiKey` or `FIRECRAWL_API_KEY`.
+- `tools.web.fetch.firecrawl.apiKey` supports SecretRef objects.
 
 ### web_fetch config
 
@@ -351,6 +375,8 @@ Notes:
 
 - `web_fetch` uses Readability (main-content extraction) first, then Firecrawl (if configured). If both fail, the tool returns an error.
 - Firecrawl requests use bot-circumvention mode and cache results by default.
+- Firecrawl SecretRefs are resolved only when Firecrawl is active (`tools.web.fetch.enabled !== false` and `tools.web.fetch.firecrawl.enabled !== false`).
+- If Firecrawl is active and its SecretRef is unresolved with no `FIRECRAWL_API_KEY` fallback, startup/reload fails fast.
 - `web_fetch` sends a Chrome-like User-Agent and `Accept-Language` by default; override `userAgent` if needed.
 - `web_fetch` blocks private/internal hostnames and re-checks redirects (limit with `maxRedirects`).
 - `maxChars` is clamped to `tools.web.fetch.maxCharsCap`.

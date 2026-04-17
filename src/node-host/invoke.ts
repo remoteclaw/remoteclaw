@@ -340,6 +340,7 @@ async function sendExecFinishedEvent(
       timedOut: params.result.timedOut,
       success: params.result.success,
       output: combined,
+      suppressNotifyOnExit: params.suppressNotifyOnExit,
     }),
   );
 }
@@ -502,6 +503,7 @@ export async function handleInvoke(
       runId,
       cmdText,
       result,
+      suppressNotifyOnExit,
     }: Record<string, unknown>) => {
       await sendExecFinishedEvent({
         client,
@@ -509,6 +511,7 @@ export async function handleInvoke(
         runId,
         cmdText,
         result,
+        suppressNotifyOnExit,
       } as unknown as Parameters<typeof sendExecFinishedEvent>[0]);
     },
     preferMacAppExecHost,

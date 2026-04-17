@@ -47,6 +47,7 @@ This page describes the current CLI behavior. If commands change, update this do
 - [`dns`](/cli/dns)
 - [`docs`](/cli/docs)
 - [`hooks`](/cli/hooks)
+- [`webhooks`](/cli/webhooks)
 - [`pairing`](/cli/pairing)
 - [`qr`](/cli/qr)
 - [`plugins`](/cli/plugins) (plugin commands)
@@ -289,6 +290,14 @@ Manage extensions and their config:
 
 Most plugin changes require a gateway restart. See [/plugin](/tools/plugin).
 
+## Memory
+
+Vector search over `MEMORY.md` + `memory/*.md`:
+
+- `remoteclaw memory status` — show index stats.
+- `remoteclaw memory index` — reindex memory files.
+- `remoteclaw memory search "<query>"` (or `--query "<query>"`) — semantic search over memory.
+
 ## Chat slash commands
 
 Chat messages support `/...` commands (text and native). See [/tools/slash-commands](/tools/slash-commands).
@@ -328,7 +337,7 @@ Options:
 - `--non-interactive`
 - `--mode <local|remote>`
 - `--flow <quickstart|advanced|manual>` (manual is an alias for advanced)
-- `--auth-choice <setup-token|token|chutes|openai-codex|openai-api-key|openrouter-api-key|ai-gateway-api-key|moonshot-api-key|moonshot-api-key-cn|kimi-code-api-key|synthetic-api-key|venice-api-key|gemini-api-key|zai-api-key|mistral-api-key|apiKey|minimax-api|minimax-api-lightning|opencode-zen|custom-api-key|skip>`
+- `--auth-choice <setup-token|token|chutes|openai-codex|openai-api-key|openrouter-api-key|ai-gateway-api-key|moonshot-api-key|moonshot-api-key-cn|kimi-code-api-key|synthetic-api-key|venice-api-key|gemini-api-key|zai-api-key|mistral-api-key|apiKey|minimax-api|minimax-api-lightning|opencode-zen|opencode-go|custom-api-key|skip>`
 - `--token-provider <id>` (non-interactive; used with `--auth-choice token`)
 - `--token <token>` (non-interactive; used with `--auth-choice token`)
 - `--token-profile-id <id>` (non-interactive; default: `<provider>:manual`)
@@ -345,6 +354,7 @@ Options:
 - `--zai-api-key <key>`
 - `--minimax-api-key <key>`
 - `--opencode-zen-api-key <key>`
+- `--opencode-go-api-key <key>`
 - `--custom-base-url <url>` (non-interactive; used with `--auth-choice custom-api-key`)
 - `--custom-model-id <id>` (non-interactive; used with `--auth-choice custom-api-key`)
 - `--custom-api-key <key>` (non-interactive; optional; used with `--auth-choice custom-api-key`; falls back to `CUSTOM_API_KEY` when omitted)
@@ -499,6 +509,15 @@ Subcommands:
 - `devices clear --yes [--pending]`
 - `devices rotate --device <id> --role <role> [--scope <scope...>]`
 - `devices revoke --device <id> --role <role>`
+
+### `webhooks gmail`
+
+Gmail Pub/Sub hook setup + runner. See [/automation/gmail-pubsub](/automation/gmail-pubsub).
+
+Subcommands:
+
+- `webhooks gmail setup` (requires `--account <email>`; supports `--project`, `--topic`, `--subscription`, `--label`, `--hook-url`, `--hook-token`, `--push-token`, `--bind`, `--port`, `--path`, `--include-body`, `--max-bytes`, `--renew-minutes`, `--tailscale`, `--tailscale-path`, `--tailscale-target`, `--push-endpoint`, `--json`)
+- `webhooks gmail run` (runtime overrides for the same flags)
 
 ### `dns setup`
 
@@ -1000,7 +1019,7 @@ Subcommands:
 
 Auth notes:
 
-- `node` resolves gateway auth from env/config (no `--token`/`--password` flags): `REMOTECLAW_GATEWAY_TOKEN` / `REMOTECLAW_GATEWAY_PASSWORD`, then `gateway.auth.*`, with remote-mode support via `gateway.remote.*`.
+- `node` resolves gateway auth from env/config (no `--token`/`--password` flags): `REMOTECLAW_GATEWAY_TOKEN` / `REMOTECLAW_GATEWAY_PASSWORD`, then `gateway.auth.*`. In local mode, node host intentionally ignores `gateway.remote.*`; in `gateway.mode=remote`, `gateway.remote.*` participates per remote precedence rules.
 - Legacy `CLAWDBOT_GATEWAY_*` env vars are intentionally ignored for node-host auth resolution.
 
 ## Nodes

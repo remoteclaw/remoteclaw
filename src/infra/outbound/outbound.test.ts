@@ -72,7 +72,7 @@ describe("delivery-queue", () => {
           gifPlayback: true,
           silent: true,
           mirror: {
-            sessionKey: "agent:test-agent:main",
+            sessionKey: "agent:main:main",
             text: "hello",
             mediaUrls: ["https://example.com/file.png"],
           },
@@ -96,7 +96,7 @@ describe("delivery-queue", () => {
         gifPlayback: true,
         silent: true,
         mirror: {
-          sessionKey: "agent:test-agent:main",
+          sessionKey: "agent:main:main",
           text: "hello",
           mediaUrls: ["https://example.com/file.png"],
         },
@@ -456,7 +456,7 @@ describe("delivery-queue", () => {
           gifPlayback: true,
           silent: true,
           mirror: {
-            sessionKey: "agent:test-agent:main",
+            sessionKey: "agent:main:main",
             text: "a",
             mediaUrls: ["https://example.com/a.png"],
           },
@@ -473,7 +473,7 @@ describe("delivery-queue", () => {
           gifPlayback: true,
           silent: true,
           mirror: {
-            sessionKey: "agent:test-agent:main",
+            sessionKey: "agent:main:main",
             text: "a",
             mediaUrls: ["https://example.com/a.png"],
           },
@@ -964,7 +964,7 @@ describe("resolveOutboundSessionRoute", () => {
         target: "channel:C123",
         replyToId: "456",
         expected: {
-          sessionKey: "agent:test-agent:slack:channel:c123:thread:456",
+          sessionKey: "agent:main:slack:channel:c123:thread:456",
           from: "slack:channel:C123",
           to: "channel:C123",
           threadId: "456",
@@ -976,7 +976,7 @@ describe("resolveOutboundSessionRoute", () => {
         channel: "telegram",
         target: "-100123456:topic:42",
         expected: {
-          sessionKey: "agent:test-agent:telegram:group:-100123456:topic:42",
+          sessionKey: "agent:main:telegram:group:-100123456:topic:42",
           from: "telegram:group:-100123456:topic:42",
           to: "telegram:-100123456",
           threadId: 42,
@@ -988,7 +988,7 @@ describe("resolveOutboundSessionRoute", () => {
         channel: "telegram",
         target: "123456789:topic:99",
         expected: {
-          sessionKey: "agent:test-agent:telegram:direct:123456789:thread:99",
+          sessionKey: "agent:main:telegram:direct:123456789:thread:99",
           from: "telegram:123456789:topic:99",
           to: "telegram:123456789",
           threadId: 99,
@@ -1001,7 +1001,7 @@ describe("resolveOutboundSessionRoute", () => {
         channel: "telegram",
         target: "@alice",
         expected: {
-          sessionKey: "agent:test-agent:telegram:direct:@alice",
+          sessionKey: "agent:main:telegram:direct:@alice",
           chatType: "direct",
         },
       },
@@ -1012,7 +1012,7 @@ describe("resolveOutboundSessionRoute", () => {
         target: "12345",
         threadId: "12345:99",
         expected: {
-          sessionKey: "agent:test-agent:telegram:direct:12345:thread:99",
+          sessionKey: "agent:main:telegram:direct:12345:thread:99",
           from: "telegram:12345:topic:99",
           to: "telegram:12345",
           threadId: 99,
@@ -1025,7 +1025,7 @@ describe("resolveOutboundSessionRoute", () => {
         channel: "discord",
         target: "user:123",
         expected: {
-          sessionKey: "agent:test-agent:direct:alice",
+          sessionKey: "agent:main:direct:alice",
         },
       },
       {
@@ -1034,7 +1034,7 @@ describe("resolveOutboundSessionRoute", () => {
         channel: "bluebubbles",
         target: "chat_guid:ABC123",
         expected: {
-          sessionKey: "agent:test-agent:bluebubbles:group:abc123",
+          sessionKey: "agent:main:bluebubbles:group:abc123",
           from: "group:ABC123",
         },
       },
@@ -1044,7 +1044,7 @@ describe("resolveOutboundSessionRoute", () => {
         channel: "zalouser",
         target: "123456",
         expected: {
-          sessionKey: "agent:test-agent:zalouser:direct:123456",
+          sessionKey: "agent:main:zalouser:direct:123456",
           chatType: "direct",
         },
       },
@@ -1054,7 +1054,7 @@ describe("resolveOutboundSessionRoute", () => {
         channel: "slack",
         target: "channel:G123",
         expected: {
-          sessionKey: "agent:test-agent:slack:group:g123",
+          sessionKey: "agent:main:slack:group:g123",
           from: "slack:group:G123",
         },
       },
@@ -1064,7 +1064,7 @@ describe("resolveOutboundSessionRoute", () => {
         channel: "feishu",
         target: "group:oc_group_chat",
         expected: {
-          sessionKey: "agent:test-agent:feishu:group:oc_group_chat",
+          sessionKey: "agent:main:feishu:group:oc_group_chat",
           from: "feishu:group:oc_group_chat",
           to: "oc_group_chat",
           chatType: "group",
@@ -1076,7 +1076,7 @@ describe("resolveOutboundSessionRoute", () => {
         channel: "feishu",
         target: "dm:oc_dm_chat",
         expected: {
-          sessionKey: "agent:test-agent:feishu:direct:oc_dm_chat",
+          sessionKey: "agent:main:feishu:direct:oc_dm_chat",
           from: "feishu:oc_dm_chat",
           to: "oc_dm_chat",
           chatType: "direct",
@@ -1088,7 +1088,7 @@ describe("resolveOutboundSessionRoute", () => {
         channel: "feishu",
         target: "oc_ambiguous_chat",
         expected: {
-          sessionKey: "agent:test-agent:feishu:direct:oc_ambiguous_chat",
+          sessionKey: "agent:main:feishu:direct:oc_ambiguous_chat",
           from: "feishu:oc_ambiguous_chat",
           to: "oc_ambiguous_chat",
           chatType: "direct",
@@ -1100,7 +1100,7 @@ describe("resolveOutboundSessionRoute", () => {
       const route = await resolveOutboundSessionRoute({
         cfg: testCase.cfg,
         channel: testCase.channel,
-        agentId: "test-agent",
+        agentId: "main",
         target: testCase.target,
         replyToId: testCase.replyToId,
         threadId: testCase.threadId,
@@ -1125,7 +1125,7 @@ describe("resolveOutboundSessionRoute", () => {
     const route = await resolveOutboundSessionRoute({
       cfg: { session: { dmScope: "per-channel-peer" } } as RemoteClawConfig,
       channel: "discord",
-      agentId: "test-agent",
+      agentId: "main",
       target: "123",
       resolvedTarget: {
         to: "user:123",
@@ -1135,9 +1135,31 @@ describe("resolveOutboundSessionRoute", () => {
     });
 
     expect(route).toMatchObject({
-      sessionKey: "agent:test-agent:discord:direct:123",
+      sessionKey: "agent:main:discord:direct:123",
       from: "discord:123",
       to: "user:123",
+      chatType: "direct",
+    });
+  });
+
+  it("uses resolved Mattermost user targets to route bare ids as DMs", async () => {
+    const userId = "dthcxgoxhifn3pwh65cut3ud3w";
+    const route = await resolveOutboundSessionRoute({
+      cfg: { session: { dmScope: "per-channel-peer" } } as RemoteClawConfig,
+      channel: "mattermost",
+      agentId: "main",
+      target: userId,
+      resolvedTarget: {
+        to: `user:${userId}`,
+        kind: "user",
+        source: "directory",
+      },
+    });
+
+    expect(route).toMatchObject({
+      sessionKey: `agent:main:mattermost:direct:${userId}`,
+      from: `mattermost:${userId}`,
+      to: `user:${userId}`,
       chatType: "direct",
     });
   });
@@ -1147,7 +1169,7 @@ describe("resolveOutboundSessionRoute", () => {
       resolveOutboundSessionRoute({
         cfg: { session: { dmScope: "per-channel-peer" } } as RemoteClawConfig,
         channel: "discord",
-        agentId: "test-agent",
+        agentId: "main",
         target: "123",
       }),
     ).rejects.toThrow(/Ambiguous Discord recipient/);

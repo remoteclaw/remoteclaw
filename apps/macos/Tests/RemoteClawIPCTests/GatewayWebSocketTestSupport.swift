@@ -49,6 +49,40 @@ enum GatewayWebSocketTestSupport {
         return Data(json.utf8)
     }
 
+    static func connectAuthFailureData(
+        id: String,
+        detailCode: String,
+        message: String = "gateway auth rejected",
+        canRetryWithDeviceToken: Bool = false,
+        recommendedNextStep: String? = nil) -> Data
+    {
+        let recommendedNextStepJson: String
+        if let recommendedNextStep {
+            recommendedNextStepJson = """
+            ,
+                          "recommendedNextStep": "\(recommendedNextStep)"
+            """
+        } else {
+            recommendedNextStepJson = ""
+        }
+        let json = """
+        {
+          "type": "res",
+          "id": "\(id)",
+          "ok": false,
+          "error": {
+            "message": "\(message)",
+            "details": {
+              "code": "\(detailCode)",
+              "canRetryWithDeviceToken": \(canRetryWithDeviceToken ? "true" : "false")
+              \(recommendedNextStepJson)
+            }
+          }
+        }
+        """
+        return Data(json.utf8)
+    }
+
     static func okResponseData(id: String) -> Data {
         let json = """
         {

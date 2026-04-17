@@ -7,6 +7,7 @@ export {
   resolveEnvApiKey,
   requireApiKey,
 } from "../auth/provider-auth.js";
+export type { ResolvedProviderAuth } from "../auth/provider-auth.js";
 
 import type { RemoteClawConfig } from "../config/config.js";
 import type { ModelProviderConfig } from "../config/types.models.js";

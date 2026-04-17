@@ -9,6 +9,7 @@ import {
   formatResolvedUnresolvedNote,
   mergeAllowFromEntries,
   normalizeAccountId,
+  patchScopedAccountConfig,
   promptChannelAccessConfig,
   resolveAccountIdForConfigure,
   setTopLevelChannelDmPolicyWithAllowFrom,
@@ -36,37 +37,13 @@ function setZalouserAccountScopedConfig(
   defaultPatch: Record<string, unknown>,
   accountPatch: Record<string, unknown> = defaultPatch,
 ): RemoteClawConfig {
-  if (accountId === DEFAULT_ACCOUNT_ID) {
-    return {
-      ...cfg,
-      channels: {
-        ...cfg.channels,
-        zalouser: {
-          ...cfg.channels?.zalouser,
-          enabled: true,
-          ...defaultPatch,
-        },
-      },
-    } as RemoteClawConfig;
-  }
-  return {
-    ...cfg,
-    channels: {
-      ...cfg.channels,
-      zalouser: {
-        ...cfg.channels?.zalouser,
-        enabled: true,
-        accounts: {
-          ...cfg.channels?.zalouser?.accounts,
-          [accountId]: {
-            ...cfg.channels?.zalouser?.accounts?.[accountId],
-            enabled: cfg.channels?.zalouser?.accounts?.[accountId]?.enabled ?? true,
-            ...accountPatch,
-          },
-        },
-      },
-    },
-  } as RemoteClawConfig;
+  return patchScopedAccountConfig({
+    cfg,
+    channelKey: channel,
+    accountId,
+    patch: defaultPatch,
+    accountPatch,
+  }) as RemoteClawConfig;
 }
 
 function setZalouserDmPolicy(
@@ -87,7 +64,7 @@ async function noteZalouserHelp(prompter: WizardPrompter): Promise<void> {
       "",
       "This plugin uses zca-js directly (no external CLI dependency).",
       "",
-      "Docs: https://docs.remoteclaw.ai/channels/zalouser",
+      "Docs: https://docs.remoteclaw.org/channels/zalouser",
     ].join("\n"),
     "Zalo Personal Setup",
   );

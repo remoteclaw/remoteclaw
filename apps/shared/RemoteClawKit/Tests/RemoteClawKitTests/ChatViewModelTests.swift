@@ -27,8 +27,12 @@ private func waitUntil(
 private actor TestChatTransportState {
     var historyCallCount: Int = 0
     var sessionsCallCount: Int = 0
+    var modelsCallCount: Int = 0
     var sentRunIds: [String] = []
+    var sentThinkingLevels: [String] = []
     var abortedRunIds: [String] = []
+    var patchedModels: [String?] = []
+    var patchedThinkingLevels: [String] = []
 }
 
 private final class TestChatTransport: @unchecked Sendable, RemoteClawChatTransport {
@@ -74,12 +78,27 @@ private final class TestChatTransport: @unchecked Sendable, RemoteClawChatTransp
     func sendMessage(
         sessionKey _: String,
         message _: String,
-        thinking _: String,
+        thinking: String,
         idempotencyKey: String,
         attachments _: [RemoteClawChatAttachmentPayload]) async throws -> RemoteClawChatSendResponse
     {
         await self.state.sentRunIdsAppend(idempotencyKey)
+        await self.state.sentThinkingLevelsAppend(thinking)
         return RemoteClawChatSendResponse(runId: idempotencyKey, status: "ok")
+    }
+
+    func listModels() async throws -> [RemoteClawChatModelChoice] {
+        let idx = await self.state.modelsCallCount
+        await self.state.setModelsCallCount(idx + 1)
+        return []
+    }
+
+    func setSessionModel(sessionKey _: String, model: String?) async throws {
+        await self.state.patchedModelsAppend(model)
+    }
+
+    func setSessionThinking(sessionKey _: String, thinkingLevel: String) async throws {
+        await self.state.patchedThinkingLevelsAppend(thinkingLevel)
     }
 
     func abortRun(sessionKey _: String, runId: String) async throws {
@@ -127,12 +146,28 @@ extension TestChatTransportState {
         self.sessionsCallCount = v
     }
 
+    fileprivate func setModelsCallCount(_ v: Int) {
+        self.modelsCallCount = v
+    }
+
     fileprivate func sentRunIdsAppend(_ v: String) {
         self.sentRunIds.append(v)
     }
 
     fileprivate func abortedRunIdsAppend(_ v: String) {
         self.abortedRunIds.append(v)
+    }
+
+    fileprivate func sentThinkingLevelsAppend(_ v: String) {
+        self.sentThinkingLevels.append(v)
+    }
+
+    fileprivate func patchedModelsAppend(_ v: String?) {
+        self.patchedModels.append(v)
+    }
+
+    fileprivate func patchedThinkingLevelsAppend(_ v: String) {
+        self.patchedThinkingLevels.append(v)
     }
 }
 

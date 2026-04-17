@@ -15,4 +15,5 @@ export {
 } from "../infra/http-body.js";
 export { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
 export type { RemoteClawPluginApi } from "../plugins/types.js";
+export { resolveOpenAITtsInstructions } from "../tts/tts-core.js";
 export { sleep } from "../utils.js";

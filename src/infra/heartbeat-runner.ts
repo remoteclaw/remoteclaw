@@ -39,7 +39,11 @@ import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { getQueueSize } from "../process/command-queue.js";
 import { CommandLane } from "../process/lanes.js";
-import { normalizeAgentId, toAgentStoreSessionKey } from "../routing/session-key.js";
+import {
+  normalizeAgentId,
+  parseAgentSessionKey,
+  toAgentStoreSessionKey,
+} from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { escapeRegExp } from "../utils.js";
 import { formatErrorMessage, hasErrnoCode } from "./errors.js";
@@ -54,9 +58,11 @@ import { emitHeartbeatEvent, resolveIndicatorType } from "./heartbeat-events.js"
 import { resolveHeartbeatReasonKind } from "./heartbeat-reason.js";
 import { resolveHeartbeatVisibility } from "./heartbeat-visibility.js";
 import {
+  areHeartbeatsEnabled,
   type HeartbeatRunResult,
   type HeartbeatWakeHandler,
   requestHeartbeatNow,
+  setHeartbeatsEnabled,
   setHeartbeatWakeHandler,
 } from "./heartbeat-wake.js";
 import type { OutboundSendDeps } from "./outbound/deliver.js";
@@ -76,11 +82,8 @@ export type HeartbeatDeps = OutboundSendDeps &
   };
 
 const log = createSubsystemLogger("gateway/heartbeat");
-let heartbeatsEnabled = true;
 
-export function setHeartbeatsEnabled(enabled: boolean) {
-  heartbeatsEnabled = enabled;
-}
+export { areHeartbeatsEnabled, setHeartbeatsEnabled };
 
 type HeartbeatConfig = AgentDefaultsConfig["heartbeat"];
 type HeartbeatAgent = {
@@ -622,9 +625,12 @@ export async function runHeartbeatOnce(opts: {
 }): Promise<HeartbeatRunResult> {
   const cfg = opts.cfg ?? loadConfig();
   const fallbackId = resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
-  const agentId = normalizeAgentId(opts.agentId ?? fallbackId);
+  const explicitAgentId = typeof opts.agentId === "string" ? opts.agentId.trim() : "";
+  const forcedSessionAgentId =
+    explicitAgentId.length > 0 ? undefined : parseAgentSessionKey(opts.sessionKey)?.agentId;
+  const agentId = normalizeAgentId(explicitAgentId || forcedSessionAgentId || fallbackId);
   const heartbeat = opts.heartbeat ?? resolveHeartbeatConfig(cfg, agentId);
-  if (!heartbeatsEnabled) {
+  if (!areHeartbeatsEnabled()) {
     return { status: "skipped", reason: "disabled" };
   }
   if (!isHeartbeatEnabledForAgent(cfg, agentId)) {
@@ -1121,7 +1127,7 @@ export function startHeartbeatRunner(opts: {
         reason: "disabled",
       } satisfies HeartbeatRunResult;
     }
-    if (!heartbeatsEnabled) {
+    if (!areHeartbeatsEnabled()) {
       return {
         status: "skipped",
         reason: "disabled",

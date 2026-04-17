@@ -7,11 +7,6 @@
     "nostr-tools": "^2.23.3",
     "zod": "^4.3.6"
   },
-  "releaseChecks": {
-    "rootDependencyMirrorAllowlist": [
-      "nostr-tools"
-    ]
-  },
   "remoteclaw": {
     "extensions": [
       "./index.ts"
@@ -30,6 +25,11 @@
       "npmSpec": "@remoteclaw/nostr",
       "localPath": "extensions/nostr",
       "defaultChoice": "npm"
+    },
+    "releaseChecks": {
+      "rootDependencyMirrorAllowlist": [
+        "nostr-tools"
+      ]
     }
   }
 }

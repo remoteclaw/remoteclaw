@@ -1,6 +1,66 @@
 # Changelog
 
-## 0.1.0
+## 2026.3.11
+
+### Changes
+
+- Version alignment with core RemoteClaw release numbers.
+
+## 2026.3.10
+
+### Changes
+
+- Version alignment with core RemoteClaw release numbers.
+
+## 2026.3.9
+
+### Changes
+
+- Version alignment with core RemoteClaw release numbers.
+
+## 2026.3.8-beta.1
+
+### Changes
+
+- Version alignment with core RemoteClaw release numbers.
+
+## 2026.3.8
+
+### Changes
+
+- Version alignment with core RemoteClaw release numbers.
+
+## 2026.3.7
+
+### Changes
+
+- Version alignment with core RemoteClaw release numbers.
+
+## 2026.3.3
+
+### Changes
+
+- Version alignment with core RemoteClaw release numbers.
+
+## 2026.3.2
+
+### Changes
+
+- Version alignment with core RemoteClaw release numbers.
+
+## 2026.3.1
+
+### Changes
+
+- Version alignment with core RemoteClaw release numbers.
+
+## 2026.2.26
+
+### Changes
+
+- Version alignment with core RemoteClaw release numbers.
+
+## 2026.2.25
 
 ### Changes
 

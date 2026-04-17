@@ -23,7 +23,7 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
   - [It is stuck on "wake up my friend" / onboarding will not hatch. What now?](#it-is-stuck-on-wake-up-my-friend-onboarding-will-not-hatch-what-now)
   - [Can I migrate my setup to a new machine (Mac mini) without redoing onboarding?](#can-i-migrate-my-setup-to-a-new-machine-mac-mini-without-redoing-onboarding)
   - [Where do I see what is new in the latest version?](#where-do-i-see-what-is-new-in-the-latest-version)
-  - [I can't access docs.remoteclaw.ai (SSL error). What now?](#i-cant-access-docsremoteclawai-ssl-error-what-now)
+  - [I can't access docs.remoteclaw.org (SSL error). What now?](#i-cant-access-docsremoteclaworg-ssl-error-what-now)
   - [What's the difference between stable and beta?](#whats-the-difference-between-stable-and-beta)
   - [How do I install the beta version, and what's the difference between beta and dev?](#how-do-i-install-the-beta-version-and-whats-the-difference-between-beta-and-dev)
   - [How do I try the latest bits?](#how-do-i-try-the-latest-bits)
@@ -445,11 +445,11 @@ Newest entries are at the top. If the top section is marked **Unreleased**, the 
 section is the latest shipped version. Entries are grouped by **Highlights**, **Changes**, and
 **Fixes** (plus docs/other sections when needed).
 
-### I can't access docs.remoteclaw.ai SSL error What now
+### I can't access docs.remoteclaw.org SSL error What now
 
-Some Comcast/Xfinity connections incorrectly block `docs.remoteclaw.ai` via Xfinity
-Advanced Security. Disable it or allowlist `docs.remoteclaw.ai`, then retry. More
-detail: [Troubleshooting](/help/troubleshooting#docsremoteclawai-shows-an-ssl-error-comcastxfinity).
+Some Comcast/Xfinity connections incorrectly block `docs.remoteclaw.org` via Xfinity
+Advanced Security. Disable it or allowlist `docs.remoteclaw.org`, then retry. More
+detail: [Troubleshooting](/help/troubleshooting#docsremoteclaworg-shows-an-ssl-error-comcastxfinity).
 Please help us unblock it by reporting here: [https://spa.xfinity.com/check_url_status](https://spa.xfinity.com/check_url_status).
 
 If you still can't reach the site, the docs are mirrored on GitHub:
@@ -1452,7 +1452,8 @@ Non-loopback binds **require auth**. Configure `gateway.auth.mode` + `gateway.au
 Notes:
 
 - `gateway.remote.token` / `.password` do **not** enable local gateway auth by themselves.
-- Local call paths can use `gateway.remote.*` as fallback when `gateway.auth.*` is unset.
+- Local call paths can use `gateway.remote.*` as fallback only when `gateway.auth.*` is unset.
+- If `gateway.auth.token` / `gateway.auth.password` is explicitly configured via SecretRef and unresolved, resolution fails closed (no remote fallback masking).
 - The Control UI authenticates via `connect.params.auth.token` (stored in app/UI settings). Avoid putting tokens in URLs.
 
 ### Why do I need a token on localhost now
@@ -1489,10 +1490,16 @@ Set `cli.banner.taglineMode` in config:
 
 ### How do I enable web search and web fetch
 
-`web_fetch` works without an API key. `web_search` requires a Brave Search API
-key. **Recommended:** run `remoteclaw configure --section web` to store it in
-`tools.web.search.apiKey`. Environment alternative: set `BRAVE_API_KEY` for the
-Gateway process.
+`web_fetch` works without an API key. `web_search` requires a key for your
+selected provider (Brave, Gemini, Grok, Kimi, or Perplexity).
+**Recommended:** run `remoteclaw configure --section web` and choose a provider.
+Environment alternatives:
+
+- Brave: `BRAVE_API_KEY`
+- Gemini: `GEMINI_API_KEY`
+- Grok: `XAI_API_KEY`
+- Kimi: `KIMI_API_KEY` or `MOONSHOT_API_KEY`
+- Perplexity: `PERPLEXITY_API_KEY` or `OPENROUTER_API_KEY`
 
 ```json5
 {
@@ -1500,6 +1507,7 @@ Gateway process.
     web: {
       search: {
         enabled: true,
+        provider: "brave",
         apiKey: "BRAVE_API_KEY_HERE",
         maxResults: 5,
       },
@@ -2076,8 +2084,21 @@ More context: [Models](/concepts/models).
 
 ### Can I use selfhosted models llamacpp vLLM Ollama
 
-Yes. If your local server exposes an OpenAI-compatible API, you can point a
-custom provider at it. Ollama is supported directly and is the easiest path.
+Yes. Ollama is the easiest path for local models.
+
+Quickest setup:
+
+1. Install Ollama from `https://ollama.com/download`
+2. Pull a local model such as `ollama pull glm-4.7-flash`
+3. If you want Ollama Cloud too, run `ollama signin`
+4. Run `remoteclaw onboard` and choose `Ollama`
+5. Pick `Local` or `Cloud + Local`
+
+Notes:
+
+- `Cloud + Local` gives you Ollama Cloud models plus your local Ollama models
+- cloud models such as `kimi-k2.5:cloud` do not need a local pull
+- for manual switching, use `remoteclaw models list` and `remoteclaw models set ollama/<model>`
 
 Security note: smaller or heavily quantized models are more vulnerable to prompt
 injection. We strongly recommend **large models** for any bot that can use tools.
@@ -2504,7 +2525,8 @@ Your gateway is running with auth enabled (`gateway.auth.*`), but the UI is not 
 
 Facts (from code):
 
-- The Control UI keeps the token in memory for the current tab; it no longer persists gateway tokens in browser localStorage.
+- The Control UI keeps the token in `sessionStorage` for the current browser tab session and selected gateway URL, so same-tab refreshes keep working without restoring long-lived localStorage token persistence.
+- On `AUTH_TOKEN_MISMATCH`, trusted clients can attempt one bounded retry with a cached device token when the gateway returns retry hints (`canRetryWithDeviceToken=true`, `recommendedNextStep=retry_with_device_token`).
 
 Fix:
 
@@ -2513,6 +2535,9 @@ Fix:
 - If remote, tunnel first: `ssh -N -L 18789:127.0.0.1:18789 user@host` then open `http://127.0.0.1:18789/`.
 - Set `gateway.auth.token` (or `REMOTECLAW_GATEWAY_TOKEN`) on the gateway host.
 - In the Control UI settings, paste the same token.
+- If mismatch persists after the one retry, rotate/re-approve the paired device token:
+  - `remoteclaw devices list`
+  - `remoteclaw devices rotate --device <id> --role operator`
 - Still stuck? Run `remoteclaw status --all` and follow [Troubleshooting](/gateway/troubleshooting). See [Dashboard](/web/dashboard) for auth details.
 
 ### I set gatewaybind tailnet but it can't bind nothing listens

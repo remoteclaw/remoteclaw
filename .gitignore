@@ -84,6 +84,7 @@ apps/ios/*.mobileprovision
 # Local untracked files
 .local/
 docs/.local/
+tmp/
 *.local.*
 .tgz
 .idea
@@ -123,3 +124,4 @@ dist/protocol.schema.json
 
 # Synthing
 **/.stfolder/
+.dev-state

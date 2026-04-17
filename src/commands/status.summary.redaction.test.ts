@@ -19,6 +19,7 @@ function createRecentSessionRow() {
 describe("redactSensitiveStatusSummary", () => {
   it("removes sensitive session and path details while preserving summary structure", () => {
     const input: StatusSummary = {
+      runtimeVersion: "2026.3.8",
       heartbeat: {
         defaultAgentId: "test-agent",
         agents: [{ agentId: "test-agent", enabled: true, every: "5m", everyMs: 300_000 }],
@@ -47,6 +48,7 @@ describe("redactSensitiveStatusSummary", () => {
     expect(redacted.sessions.recent).toEqual([]);
     expect(redacted.sessions.byAgent[0]?.path).toBe("[redacted]");
     expect(redacted.sessions.byAgent[0]?.recent).toEqual([]);
+    expect(redacted.runtimeVersion).toBe("2026.3.8");
     expect(redacted.heartbeat).toEqual(input.heartbeat);
     expect(redacted.channelSummary).toEqual(input.channelSummary);
   });

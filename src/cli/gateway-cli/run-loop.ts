@@ -90,7 +90,7 @@ export async function runGatewayLoop(params: {
     exitProcess(0);
   };
 
-  const DRAIN_TIMEOUT_MS = 30_000;
+  const DRAIN_TIMEOUT_MS = 90_000;
   const SHUTDOWN_TIMEOUT_MS = 5_000;
 
   const request = (action: GatewayRunSignalAction, signal: string) => {

@@ -1,0 +1,18 @@
+# remoteclaw.ai allowlist — intentional .ai references exempt from the regression gate.
+#
+# Format (one rule per line; blank lines and `#` comments ignored):
+#   FILE:path       — exempt a single file (exact match, relative to repo root)
+#                     Example: FILE:docs/history/migration-notes.md
+#   FILE:dir/       — exempt an entire directory subtree (trailing slash = prefix match)
+#                     Example: FILE:docs/legacy/
+#   substring       — exempt any match whose full `path:line:content` line contains this
+#                     substring (case-sensitive). Use sparingly; prefer FILE: rules.
+#
+# Gate: pnpm lint:no-remoteclaw-ai
+# Source: scripts/check-no-remoteclaw-ai.mjs
+
+# ---------------------------------------------------------------------------
+# Gate infrastructure (self-referential)
+# ---------------------------------------------------------------------------
+FILE:scripts/check-no-remoteclaw-ai.mjs
+FILE:scripts/ci/remoteclaw-ai-allowlist.txt

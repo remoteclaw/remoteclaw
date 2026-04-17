@@ -53,12 +53,6 @@ vi.mock("./subagent-depth.js", () => ({
   getSubagentDepthFromSessionStore: (sessionKey?: string) => requesterDepthResolver(sessionKey),
 }));
 
-vi.mock("./pi-embedded.js", () => ({
-  isEmbeddedPiRunActive: () => false,
-  queueEmbeddedPiMessage: () => false,
-  waitForEmbeddedPiRunEnd: async () => true,
-}));
-
 vi.mock("./subagent-registry.js", () => ({
   countActiveDescendantRuns: () => 0,
   countPendingDescendantRuns: () => pendingDescendantRuns,

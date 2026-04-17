@@ -281,7 +281,7 @@ setup (PATH, services, permissions, auth files). Give them the **full source che
 the hackable (git) install:
 
 ```bash
-curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --install-method git
+curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --install-method git
 ```
 
 This installs RemoteClaw **from a git checkout**, so the agent can read the code + docs and
@@ -320,7 +320,7 @@ Install docs: [Install](/install), [Installer flags](/install/installer), [Updat
 The repo recommends running from source and using the onboarding wizard:
 
 ```bash
-curl -fsSL https://remoteclaw.ai/install.sh | bash
+curl -fsSL https://remoteclaw.org/install.sh | bash
 remoteclaw onboard --install-daemon
 ```
 
@@ -477,15 +477,15 @@ See what changed:
 One-liners (macOS/Linux):
 
 ```bash
-curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.ai/install.sh | bash -s -- --beta
+curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s -- --beta
 ```
 
 ```bash
-curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.ai/install.sh | bash -s -- --install-method git
+curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s -- --install-method git
 ```
 
 Windows installer (PowerShell):
-[https://remoteclaw.ai/install.ps1](https://remoteclaw.ai/install.ps1)
+[https://remoteclaw.org/install.ps1](https://remoteclaw.org/install.ps1)
 
 More detail: [Development channels](/install/development-channels) and [Installer flags](/install/installer).
 
@@ -514,7 +514,7 @@ This switches to the `main` branch and updates from source.
 2. **Hackable install (from the installer site):**
 
 ```bash
-curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --install-method git
+curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --install-method git
 ```
 
 That gives you a local repo you can edit, then update via git.
@@ -536,19 +536,19 @@ Docs: [Update](/cli/update), [Development channels](/install/development-channel
 Re-run the installer with **verbose output**:
 
 ```bash
-curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --verbose
+curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --verbose
 ```
 
 Beta install with verbose:
 
 ```bash
-curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --beta --verbose
+curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --beta --verbose
 ```
 
 For a hackable (git) install:
 
 ```bash
-curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --install-method git --verbose
+curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --install-method git --verbose
 ```
 
 Windows (PowerShell) equivalent:
@@ -556,7 +556,7 @@ Windows (PowerShell) equivalent:
 ```powershell
 # install.ps1 has no dedicated -Verbose flag yet.
 Set-PSDebug -Trace 1
-& ([scriptblock]::Create((iwr -useb https://remoteclaw.ai/install.ps1))) -NoOnboard
+& ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1))) -NoOnboard
 Set-PSDebug -Trace 0
 ```
 
@@ -620,7 +620,7 @@ Use the **hackable (git) install** so you have the full source and docs locally,
 your bot (or Claude/Codex) _from that folder_ so it can read the repo and answer precisely.
 
 ```bash
-curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --install-method git
+curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --install-method git
 ```
 
 More detail: [Install](/install) and [Installer flags](/install/installer).
@@ -1051,7 +1051,7 @@ Advantages:
 - **Always-on Gateway** (run on a VPS, interact from anywhere)
 - **Nodes** for local browser/screen/camera/exec
 
-Showcase: [https://remoteclaw.ai/showcase](https://remoteclaw.ai/showcase)
+Showcase: [https://remoteclaw.org/showcase](https://remoteclaw.org/showcase)
 
 ## Skills and automation
 

@@ -4,7 +4,7 @@ title: RemoteClaw Security & Trust
 
 # RemoteClaw Security & Trust
 
-**Live:** [trust.remoteclaw.ai](https://trust.remoteclaw.ai)
+**Live:** [trust.remoteclaw.org](https://trust.remoteclaw.org)
 
 ## Documents
 
@@ -13,7 +13,7 @@ title: RemoteClaw Security & Trust
 
 ## Reporting Vulnerabilities
 
-See the [Trust page](https://trust.remoteclaw.ai) for full reporting instructions covering all repos.
+See the [Trust page](https://trust.remoteclaw.org) for full reporting instructions covering all repos.
 
 ## Contact
 

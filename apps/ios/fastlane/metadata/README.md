@@ -36,7 +36,7 @@ Or set `APP_STORE_CONNECT_API_KEY_PATH`.
 ## Notes
 
 - Locale files live under `metadata/en-US/`.
-- `privacy_url.txt` is set to `https://remoteclaw.ai/privacy`.
+- `privacy_url.txt` is set to `https://remoteclaw.org/privacy`.
 - If app lookup fails in `deliver`, set one of:
   - `ASC_APP_IDENTIFIER` (bundle ID)
   - `ASC_APP_ID` (numeric App Store Connect app ID, e.g. from `/apps/<id>/...` URL)

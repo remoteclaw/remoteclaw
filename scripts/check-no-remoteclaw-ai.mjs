@@ -1,15 +1,17 @@
 #!/usr/bin/env node
 
-// Regression gate: forbids `remoteclaw.ai` references in tracked files.
-// The fork owns remoteclaw.org only — `.ai` URLs are stale or upstream drift.
-// Scans all tracked files via `git grep -n "remoteclaw\.ai"`.
+// Regression gate: forbids `.ai` TLD references involving the RemoteClaw name.
+// The fork owns remoteclaw.org only — claims against the `.ai` TLD are stale or
+// upstream drift. Matches both forms:
+//   - forward domain   `remoteclaw.ai`   (URLs, hostnames)
+//   - reverse-DNS      `ai.remoteclaw`   (bundle IDs, launch-agent labels, package names)
 // Exemptions are declared in scripts/ci/remoteclaw-ai-allowlist.txt.
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-const PATTERN = "remoteclaw\\.ai";
+const PATTERN = "(remoteclaw\\.ai|ai\\.remoteclaw)";
 const ALLOWLIST_REL = "scripts/ci/remoteclaw-ai-allowlist.txt";
 
 function resolveRepoRoot() {
@@ -82,7 +84,10 @@ function main() {
   const allowlistPath = path.join(root, ALLOWLIST_REL);
   const allowlist = loadAllowlist(allowlistPath);
 
-  const grep = spawnSync("git", ["grep", "-n", "-I", PATTERN], { cwd: root, encoding: "utf8" });
+  const grep = spawnSync("git", ["grep", "-n", "-I", "-E", PATTERN], {
+    cwd: root,
+    encoding: "utf8",
+  });
   // git grep exit codes: 0 = matches, 1 = no matches, >1 = error.
   if (grep.status !== 0 && grep.status !== 1) {
     console.error(`error: git grep failed (status ${grep.status})`);
@@ -96,19 +101,20 @@ function main() {
   const violations = hits.filter((h) => !isExempt(h, allowlist));
 
   if (violations.length === 0) {
-    console.log("No remoteclaw.ai references detected.");
+    console.log("No forbidden .ai TLD references detected.");
     process.exit(0);
   }
 
   const plural = violations.length === 1 ? "" : "s";
-  console.error(`Forbidden remoteclaw.ai reference${plural} detected (${violations.length}):`);
+  console.error(`Forbidden .ai TLD reference${plural} detected (${violations.length}):`);
   console.error("");
   for (const v of violations) {
     console.error(`  ${v.raw}`);
   }
   console.error("");
-  console.error("Fix: replace the .ai URL with the .org canonical domain (remoteclaw.org),");
-  console.error(`     or add an exemption to ${ALLOWLIST_REL}.`);
+  console.error("Fix: replace with the .org canonical form — `remoteclaw.org` (forward domain)");
+  console.error("     or `org.remoteclaw.*` (reverse-DNS / bundle ID).");
+  console.error(`     For legitimate exceptions, add to ${ALLOWLIST_REL}.`);
   process.exit(1);
 }
 

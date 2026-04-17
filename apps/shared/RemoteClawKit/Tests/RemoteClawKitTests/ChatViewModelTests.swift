@@ -24,6 +24,231 @@ private func waitUntil(
     throw TimeoutError(label: label)
 }
 
+private func chatTextMessage(role: String, text: String, timestamp: Double) -> AnyCodable {
+    AnyCodable([
+        "role": role,
+        "content": [["type": "text", "text": text]],
+        "timestamp": timestamp,
+    ])
+}
+
+private func historyPayload(
+    sessionKey: String = "main",
+    sessionId: String? = "sess-main",
+    messages: [AnyCodable] = []) -> RemoteClawChatHistoryPayload
+{
+    RemoteClawChatHistoryPayload(
+        sessionKey: sessionKey,
+        sessionId: sessionId,
+        messages: messages,
+        thinkingLevel: "off")
+}
+
+private func sessionEntry(key: String, updatedAt: Double) -> RemoteClawChatSessionEntry {
+    RemoteClawChatSessionEntry(
+        key: key,
+        kind: nil,
+        displayName: nil,
+        surface: nil,
+        subject: nil,
+        room: nil,
+        space: nil,
+        updatedAt: updatedAt,
+        sessionId: nil,
+        systemSent: nil,
+        abortedLastRun: nil,
+        thinkingLevel: nil,
+        verboseLevel: nil,
+        inputTokens: nil,
+        outputTokens: nil,
+        totalTokens: nil,
+        modelProvider: nil,
+        model: nil)
+}
+
+private func sessionEntry(
+    key: String,
+    updatedAt: Double,
+    model: String?,
+    modelProvider: String? = nil) -> RemoteClawChatSessionEntry
+{
+    RemoteClawChatSessionEntry(
+        key: key,
+        kind: nil,
+        displayName: nil,
+        surface: nil,
+        subject: nil,
+        room: nil,
+        space: nil,
+        updatedAt: updatedAt,
+        sessionId: nil,
+        systemSent: nil,
+        abortedLastRun: nil,
+        thinkingLevel: nil,
+        verboseLevel: nil,
+        inputTokens: nil,
+        outputTokens: nil,
+        totalTokens: nil,
+        modelProvider: modelProvider,
+        model: model)
+}
+
+private func modelChoice(id: String, name: String, provider: String = "anthropic") -> RemoteClawChatModelChoice {
+    RemoteClawChatModelChoice(modelID: id, name: name, provider: provider, contextWindow: nil)
+}
+
+private func makeViewModel(
+    sessionKey: String = "main",
+    historyResponses: [RemoteClawChatHistoryPayload],
+    sessionsResponses: [RemoteClawChatSessionsListResponse] = [],
+    modelResponses: [[RemoteClawChatModelChoice]] = [],
+    setSessionModelHook: (@Sendable (String?) async throws -> Void)? = nil,
+    setSessionThinkingHook: (@Sendable (String) async throws -> Void)? = nil,
+    initialThinkingLevel: String? = nil,
+    onThinkingLevelChanged: (@MainActor @Sendable (String) -> Void)? = nil) async
+    -> (TestChatTransport, RemoteClawChatViewModel)
+{
+    let transport = TestChatTransport(
+        historyResponses: historyResponses,
+        sessionsResponses: sessionsResponses,
+        modelResponses: modelResponses,
+        setSessionModelHook: setSessionModelHook,
+        setSessionThinkingHook: setSessionThinkingHook)
+    let vm = await MainActor.run {
+        RemoteClawChatViewModel(
+            sessionKey: sessionKey,
+            transport: transport,
+            initialThinkingLevel: initialThinkingLevel,
+            onThinkingLevelChanged: onThinkingLevelChanged)
+    }
+    return (transport, vm)
+}
+
+private func loadAndWaitBootstrap(
+    vm: RemoteClawChatViewModel,
+    sessionId: String? = nil) async throws
+{
+    await MainActor.run { vm.load() }
+    try await waitUntil("bootstrap") {
+        await MainActor.run {
+            vm.healthOK && (sessionId == nil || vm.sessionId == sessionId)
+        }
+    }
+}
+
+private func sendUserMessage(_ vm: RemoteClawChatViewModel, text: String = "hi") async {
+    await MainActor.run {
+        vm.input = text
+        vm.send()
+    }
+}
+
+@discardableResult
+private func sendMessageAndEmitFinal(
+    transport: TestChatTransport,
+    vm: RemoteClawChatViewModel,
+    text: String,
+    sessionKey: String = "main") async throws -> String
+{
+    await sendUserMessage(vm, text: text)
+    try await waitUntil("pending run starts") { await MainActor.run { vm.pendingRunCount == 1 } }
+
+    let runId = try #require(await transport.lastSentRunId())
+    transport.emit(
+        .chat(
+            RemoteClawChatEventPayload(
+                runId: runId,
+                sessionKey: sessionKey,
+                state: "final",
+                message: nil,
+                errorMessage: nil)))
+    return runId
+}
+
+private func emitAssistantText(
+    transport: TestChatTransport,
+    runId: String,
+    text: String,
+    seq: Int = 1)
+{
+    transport.emit(
+        .agent(
+            RemoteClawAgentEventPayload(
+                runId: runId,
+                seq: seq,
+                stream: "assistant",
+                ts: Int(Date().timeIntervalSince1970 * 1000),
+                data: ["text": AnyCodable(text)])))
+}
+
+private func emitToolStart(
+    transport: TestChatTransport,
+    runId: String,
+    seq: Int = 2)
+{
+    transport.emit(
+        .agent(
+            RemoteClawAgentEventPayload(
+                runId: runId,
+                seq: seq,
+                stream: "tool",
+                ts: Int(Date().timeIntervalSince1970 * 1000),
+                data: [
+                    "phase": AnyCodable("start"),
+                    "name": AnyCodable("demo"),
+                    "toolCallId": AnyCodable("t1"),
+                    "args": AnyCodable(["x": 1]),
+                ])))
+}
+
+private func emitExternalFinal(
+    transport: TestChatTransport,
+    runId: String = "other-run",
+    sessionKey: String = "main")
+{
+    transport.emit(
+        .chat(
+            RemoteClawChatEventPayload(
+                runId: runId,
+                sessionKey: sessionKey,
+                state: "final",
+                message: nil,
+                errorMessage: nil)))
+}
+
+@MainActor
+private final class CallbackBox {
+    var values: [String] = []
+}
+
+private actor AsyncGate {
+    private var continuation: CheckedContinuation<Void, Never>?
+
+    func wait() async {
+        await withCheckedContinuation { continuation in
+            self.continuation = continuation
+        }
+    }
+
+    func open() {
+        self.continuation?.resume()
+        self.continuation = nil
+    }
+}
+
+private actor AsyncCounter {
+    private var value: Int
+
+    init(_ initialValue: Int = 0) {
+        self.value = initialValue
+    }
+
+    func increment() -> Int {
+        self.value += 1
+        return self.value
+    }
+}
+
 private actor TestChatTransportState {
     var historyCallCount: Int = 0
     var sessionsCallCount: Int = 0
@@ -39,16 +264,25 @@ private final class TestChatTransport: @unchecked Sendable, RemoteClawChatTransp
     private let state = TestChatTransportState()
     private let historyResponses: [RemoteClawChatHistoryPayload]
     private let sessionsResponses: [RemoteClawChatSessionsListResponse]
+    private let modelResponses: [[RemoteClawChatModelChoice]]
+    private let setSessionModelHook: (@Sendable (String?) async throws -> Void)?
+    private let setSessionThinkingHook: (@Sendable (String) async throws -> Void)?
 
     private let stream: AsyncStream<RemoteClawChatTransportEvent>
     private let continuation: AsyncStream<RemoteClawChatTransportEvent>.Continuation
 
     init(
         historyResponses: [RemoteClawChatHistoryPayload],
-        sessionsResponses: [RemoteClawChatSessionsListResponse] = [])
+        sessionsResponses: [RemoteClawChatSessionsListResponse] = [],
+        modelResponses: [[RemoteClawChatModelChoice]] = [],
+        setSessionModelHook: (@Sendable (String?) async throws -> Void)? = nil,
+        setSessionThinkingHook: (@Sendable (String) async throws -> Void)? = nil)
     {
         self.historyResponses = historyResponses
         self.sessionsResponses = sessionsResponses
+        self.modelResponses = modelResponses
+        self.setSessionModelHook = setSessionModelHook
+        self.setSessionThinkingHook = setSessionThinkingHook
         var cont: AsyncStream<RemoteClawChatTransportEvent>.Continuation!
         self.stream = AsyncStream { c in
             cont = c
@@ -90,15 +324,24 @@ private final class TestChatTransport: @unchecked Sendable, RemoteClawChatTransp
     func listModels() async throws -> [RemoteClawChatModelChoice] {
         let idx = await self.state.modelsCallCount
         await self.state.setModelsCallCount(idx + 1)
-        return []
+        if idx < self.modelResponses.count {
+            return self.modelResponses[idx]
+        }
+        return self.modelResponses.last ?? []
     }
 
     func setSessionModel(sessionKey _: String, model: String?) async throws {
         await self.state.patchedModelsAppend(model)
+        if let setSessionModelHook = self.setSessionModelHook {
+            try await setSessionModelHook(model)
+        }
     }
 
     func setSessionThinking(sessionKey _: String, thinkingLevel: String) async throws {
         await self.state.patchedThinkingLevelsAppend(thinkingLevel)
+        if let setSessionThinkingHook = self.setSessionThinkingHook {
+            try await setSessionThinkingHook(thinkingLevel)
+        }
     }
 
     func abortRun(sessionKey _: String, runId: String) async throws {
@@ -134,6 +377,18 @@ private final class TestChatTransport: @unchecked Sendable, RemoteClawChatTransp
 
     func abortedRunIds() async -> [String] {
         await self.state.abortedRunIds
+    }
+
+    func sentThinkingLevels() async -> [String] {
+        await self.state.sentThinkingLevels
+    }
+
+    func patchedModels() async -> [String?] {
+        await self.state.patchedModels
+    }
+
+    func patchedThinkingLevels() async -> [String] {
+        await self.state.patchedThinkingLevels
     }
 }
 
@@ -526,6 +781,7 @@ extension TestChatTransportState {
                     inputTokens: nil,
                     outputTokens: nil,
                     totalTokens: nil,
+                    modelProvider: nil,
                     model: nil),
                 RemoteClawChatSessionEntry(
                     key: "main",
@@ -544,6 +800,7 @@ extension TestChatTransportState {
                     inputTokens: nil,
                     outputTokens: nil,
                     totalTokens: nil,
+                    modelProvider: nil,
                     model: nil),
                 RemoteClawChatSessionEntry(
                     key: "recent-2",
@@ -562,6 +819,7 @@ extension TestChatTransportState {
                     inputTokens: nil,
                     outputTokens: nil,
                     totalTokens: nil,
+                    modelProvider: nil,
                     model: nil),
                 RemoteClawChatSessionEntry(
                     key: "old-1",
@@ -580,6 +838,7 @@ extension TestChatTransportState {
                     inputTokens: nil,
                     outputTokens: nil,
                     totalTokens: nil,
+                    modelProvider: nil,
                     model: nil),
             ])
 
@@ -625,6 +884,7 @@ extension TestChatTransportState {
                     inputTokens: nil,
                     outputTokens: nil,
                     totalTokens: nil,
+                    modelProvider: nil,
                     model: nil),
             ])
 
@@ -746,5 +1006,521 @@ Hello?
                     errorMessage: nil)))
 
         try await waitUntil("pending run clears") { await MainActor.run { vm.pendingRunCount == 0 } }
+    }
+
+    @Test func bootstrapsModelSelectionFromSessionAndDefaults() async throws {
+        let now = Date().timeIntervalSince1970 * 1000
+        let history = historyPayload()
+        let sessions = RemoteClawChatSessionsListResponse(
+            ts: now,
+            path: nil,
+            count: 1,
+            defaults: RemoteClawChatSessionsDefaults(model: "openai/gpt-4.1-mini"),
+            sessions: [
+                sessionEntry(key: "main", updatedAt: now, model: "anthropic/claude-opus-4-6"),
+            ])
+        let models = [
+            modelChoice(id: "anthropic/claude-opus-4-6", name: "Claude Opus 4.6"),
+            modelChoice(id: "openai/gpt-4.1-mini", name: "GPT-4.1 mini", provider: "openai"),
+        ]
+
+        let (_, vm) = await makeViewModel(
+            historyResponses: [history],
+            sessionsResponses: [sessions],
+            modelResponses: [models])
+
+        try await loadAndWaitBootstrap(vm: vm)
+
+        #expect(await MainActor.run { vm.showsModelPicker })
+        #expect(await MainActor.run { vm.modelSelectionID } == "anthropic/claude-opus-4-6")
+        #expect(await MainActor.run { vm.defaultModelLabel } == "Default: openai/gpt-4.1-mini")
+    }
+
+    @Test func selectingDefaultModelPatchesNilAndUpdatesSelection() async throws {
+        let now = Date().timeIntervalSince1970 * 1000
+        let history = historyPayload()
+        let sessions = RemoteClawChatSessionsListResponse(
+            ts: now,
+            path: nil,
+            count: 1,
+            defaults: RemoteClawChatSessionsDefaults(model: "openai/gpt-4.1-mini"),
+            sessions: [
+                sessionEntry(key: "main", updatedAt: now, model: "anthropic/claude-opus-4-6"),
+            ])
+        let models = [
+            modelChoice(id: "anthropic/claude-opus-4-6", name: "Claude Opus 4.6"),
+            modelChoice(id: "openai/gpt-4.1-mini", name: "GPT-4.1 mini", provider: "openai"),
+        ]
+
+        let (transport, vm) = await makeViewModel(
+            historyResponses: [history],
+            sessionsResponses: [sessions],
+            modelResponses: [models])
+
+        try await loadAndWaitBootstrap(vm: vm)
+
+        await MainActor.run { vm.selectModel(RemoteClawChatViewModel.defaultModelSelectionID) }
+
+        try await waitUntil("session model patched") {
+            let patched = await transport.patchedModels()
+            return patched == [nil]
+        }
+
+        #expect(await MainActor.run { vm.modelSelectionID } == RemoteClawChatViewModel.defaultModelSelectionID)
+    }
+
+    @Test func selectingProviderQualifiedModelDisambiguatesDuplicateModelIDs() async throws {
+        let now = Date().timeIntervalSince1970 * 1000
+        let history = historyPayload()
+        let sessions = RemoteClawChatSessionsListResponse(
+            ts: now,
+            path: nil,
+            count: 1,
+            defaults: RemoteClawChatSessionsDefaults(model: "openrouter/gpt-4.1-mini"),
+            sessions: [
+                sessionEntry(key: "main", updatedAt: now, model: "gpt-4.1-mini", modelProvider: "openrouter"),
+            ])
+        let models = [
+            modelChoice(id: "gpt-4.1-mini", name: "GPT-4.1 mini", provider: "openai"),
+            modelChoice(id: "gpt-4.1-mini", name: "GPT-4.1 mini", provider: "openrouter"),
+        ]
+
+        let (transport, vm) = await makeViewModel(
+            historyResponses: [history],
+            sessionsResponses: [sessions],
+            modelResponses: [models])
+
+        try await loadAndWaitBootstrap(vm: vm)
+
+        #expect(await MainActor.run { vm.modelSelectionID } == "openrouter/gpt-4.1-mini")
+
+        await MainActor.run { vm.selectModel("openai/gpt-4.1-mini") }
+
+        try await waitUntil("provider-qualified model patched") {
+            let patched = await transport.patchedModels()
+            return patched == ["openai/gpt-4.1-mini"]
+        }
+    }
+
+    @Test func slashModelIDsStayProviderQualifiedInSelectionAndPatch() async throws {
+        let now = Date().timeIntervalSince1970 * 1000
+        let history = historyPayload()
+        let sessions = RemoteClawChatSessionsListResponse(
+            ts: now,
+            path: nil,
+            count: 1,
+            defaults: nil,
+            sessions: [
+                sessionEntry(key: "main", updatedAt: now, model: nil),
+            ])
+        let models = [
+            modelChoice(
+                id: "openai/gpt-5.4",
+                name: "GPT-5.4 via Vercel AI Gateway",
+                provider: "vercel-ai-gateway"),
+        ]
+
+        let (transport, vm) = await makeViewModel(
+            historyResponses: [history],
+            sessionsResponses: [sessions],
+            modelResponses: [models])
+
+        try await loadAndWaitBootstrap(vm: vm)
+
+        await MainActor.run { vm.selectModel("vercel-ai-gateway/openai/gpt-5.4") }
+
+        try await waitUntil("slash model patched with provider-qualified ref") {
+            let patched = await transport.patchedModels()
+            return patched == ["vercel-ai-gateway/openai/gpt-5.4"]
+        }
+    }
+
+    @Test func staleModelPatchCompletionsDoNotOverwriteNewerSelection() async throws {
+        let now = Date().timeIntervalSince1970 * 1000
+        let history = historyPayload()
+        let sessions = RemoteClawChatSessionsListResponse(
+            ts: now,
+            path: nil,
+            count: 1,
+            defaults: nil,
+            sessions: [
+                sessionEntry(key: "main", updatedAt: now, model: nil),
+            ])
+        let models = [
+            modelChoice(id: "gpt-5.4", name: "GPT-5.4", provider: "openai"),
+            modelChoice(id: "gpt-5.4-pro", name: "GPT-5.4 Pro", provider: "openai"),
+        ]
+
+        let (transport, vm) = await makeViewModel(
+            historyResponses: [history],
+            sessionsResponses: [sessions],
+            modelResponses: [models],
+            setSessionModelHook: { model in
+                if model == "openai/gpt-5.4" {
+                    try await Task.sleep(for: .milliseconds(200))
+                }
+            })
+
+        try await loadAndWaitBootstrap(vm: vm)
+
+        await MainActor.run {
+            vm.selectModel("openai/gpt-5.4")
+            vm.selectModel("openai/gpt-5.4-pro")
+        }
+
+        try await waitUntil("two model patches complete") {
+            let patched = await transport.patchedModels()
+            return patched == ["openai/gpt-5.4", "openai/gpt-5.4-pro"]
+        }
+
+        #expect(await MainActor.run { vm.modelSelectionID } == "openai/gpt-5.4-pro")
+        #expect(await MainActor.run { vm.sessions.first(where: { $0.key == "main" })?.model } == "gpt-5.4-pro")
+        #expect(await MainActor.run { vm.sessions.first(where: { $0.key == "main" })?.modelProvider } == "openai")
+    }
+
+    @Test func sendWaitsForInFlightModelPatchToFinish() async throws {
+        let now = Date().timeIntervalSince1970 * 1000
+        let history = historyPayload()
+        let sessions = RemoteClawChatSessionsListResponse(
+            ts: now,
+            path: nil,
+            count: 1,
+            defaults: nil,
+            sessions: [
+                sessionEntry(key: "main", updatedAt: now, model: nil),
+            ])
+        let models = [
+            modelChoice(id: "gpt-5.4", name: "GPT-5.4", provider: "openai"),
+        ]
+        let gate = AsyncGate()
+
+        let (transport, vm) = await makeViewModel(
+            historyResponses: [history],
+            sessionsResponses: [sessions],
+            modelResponses: [models],
+            setSessionModelHook: { model in
+                if model == "openai/gpt-5.4" {
+                    await gate.wait()
+                }
+            })
+
+        try await loadAndWaitBootstrap(vm: vm)
+
+        await MainActor.run { vm.selectModel("openai/gpt-5.4") }
+        try await waitUntil("model patch started") {
+            let patched = await transport.patchedModels()
+            return patched == ["openai/gpt-5.4"]
+        }
+
+        await sendUserMessage(vm, text: "hello")
+        try await waitUntil("send entered waiting state") {
+            await MainActor.run { vm.isSending }
+        }
+        #expect(await transport.lastSentRunId() == nil)
+
+        await MainActor.run { vm.selectThinkingLevel("high") }
+        try await waitUntil("thinking level changed while send is blocked") {
+            await MainActor.run { vm.thinkingLevel == "high" }
+        }
+
+        await gate.open()
+
+        try await waitUntil("send released after model patch") {
+            await transport.lastSentRunId() != nil
+        }
+        #expect(await transport.sentThinkingLevels() == ["off"])
+    }
+
+    @Test func failedLatestModelSelectionDoesNotReplayAfterOlderCompletionFinishes() async throws {
+        let now = Date().timeIntervalSince1970 * 1000
+        let history = historyPayload()
+        let sessions = RemoteClawChatSessionsListResponse(
+            ts: now,
+            path: nil,
+            count: 1,
+            defaults: nil,
+            sessions: [
+                sessionEntry(key: "main", updatedAt: now, model: nil),
+            ])
+        let models = [
+            modelChoice(id: "gpt-5.4", name: "GPT-5.4", provider: "openai"),
+            modelChoice(id: "gpt-5.4-pro", name: "GPT-5.4 Pro", provider: "openai"),
+        ]
+
+        let (transport, vm) = await makeViewModel(
+            historyResponses: [history],
+            sessionsResponses: [sessions],
+            modelResponses: [models],
+            setSessionModelHook: { model in
+                if model == "openai/gpt-5.4" {
+                    try await Task.sleep(for: .milliseconds(200))
+                    return
+                }
+                if model == "openai/gpt-5.4-pro" {
+                    throw NSError(domain: "test", code: 1, userInfo: [NSLocalizedDescriptionKey: "boom"])
+                }
+            })
+
+        try await loadAndWaitBootstrap(vm: vm)
+
+        await MainActor.run {
+            vm.selectModel("openai/gpt-5.4")
+            vm.selectModel("openai/gpt-5.4-pro")
+        }
+
+        try await waitUntil("older model completion wins after latest failure") {
+            await MainActor.run {
+                vm.sessions.first(where: { $0.key == "main" })?.model == "gpt-5.4" &&
+                    vm.sessions.first(where: { $0.key == "main" })?.modelProvider == "openai"
+            }
+        }
+
+        #expect(await MainActor.run { vm.modelSelectionID } == "openai/gpt-5.4")
+        #expect(await MainActor.run { vm.sessions.first(where: { $0.key == "main" })?.model } == "gpt-5.4")
+        #expect(await MainActor.run { vm.sessions.first(where: { $0.key == "main" })?.modelProvider } == "openai")
+        #expect(await transport.patchedModels() == ["openai/gpt-5.4", "openai/gpt-5.4-pro"])
+    }
+
+    @Test func failedLatestModelSelectionRestoresEarlierSuccessWithoutReplay() async throws {
+        let now = Date().timeIntervalSince1970 * 1000
+        let history = historyPayload()
+        let sessions = RemoteClawChatSessionsListResponse(
+            ts: now,
+            path: nil,
+            count: 1,
+            defaults: nil,
+            sessions: [
+                sessionEntry(key: "main", updatedAt: now, model: nil),
+            ])
+        let models = [
+            modelChoice(id: "gpt-5.4", name: "GPT-5.4", provider: "openai"),
+            modelChoice(id: "gpt-5.4-pro", name: "GPT-5.4 Pro", provider: "openai"),
+        ]
+
+        let (transport, vm) = await makeViewModel(
+            historyResponses: [history],
+            sessionsResponses: [sessions],
+            modelResponses: [models],
+            setSessionModelHook: { model in
+                if model == "openai/gpt-5.4" {
+                    try await Task.sleep(for: .milliseconds(100))
+                    return
+                }
+                if model == "openai/gpt-5.4-pro" {
+                    try await Task.sleep(for: .milliseconds(200))
+                    throw NSError(domain: "test", code: 1, userInfo: [NSLocalizedDescriptionKey: "boom"])
+                }
+            })
+
+        try await loadAndWaitBootstrap(vm: vm)
+
+        await MainActor.run {
+            vm.selectModel("openai/gpt-5.4")
+            vm.selectModel("openai/gpt-5.4-pro")
+        }
+
+        try await waitUntil("latest failure restores prior successful model") {
+            await MainActor.run {
+                vm.modelSelectionID == "openai/gpt-5.4" &&
+                    vm.sessions.first(where: { $0.key == "main" })?.model == "gpt-5.4" &&
+                    vm.sessions.first(where: { $0.key == "main" })?.modelProvider == "openai"
+            }
+        }
+
+        #expect(await transport.patchedModels() == ["openai/gpt-5.4", "openai/gpt-5.4-pro"])
+    }
+
+    @Test func switchingSessionsIgnoresLateModelPatchCompletionFromPreviousSession() async throws {
+        let now = Date().timeIntervalSince1970 * 1000
+        let sessions = RemoteClawChatSessionsListResponse(
+            ts: now,
+            path: nil,
+            count: 2,
+            defaults: nil,
+            sessions: [
+                sessionEntry(key: "main", updatedAt: now, model: nil),
+                sessionEntry(key: "other", updatedAt: now - 1000, model: nil),
+            ])
+        let models = [
+            modelChoice(id: "gpt-5.4", name: "GPT-5.4", provider: "openai"),
+        ]
+
+        let (transport, vm) = await makeViewModel(
+            historyResponses: [
+                historyPayload(sessionKey: "main", sessionId: "sess-main"),
+                historyPayload(sessionKey: "other", sessionId: "sess-other"),
+            ],
+            sessionsResponses: [sessions, sessions],
+            modelResponses: [models, models],
+            setSessionModelHook: { model in
+                if model == "openai/gpt-5.4" {
+                    try await Task.sleep(for: .milliseconds(200))
+                }
+            })
+
+        try await loadAndWaitBootstrap(vm: vm, sessionId: "sess-main")
+
+        await MainActor.run { vm.selectModel("openai/gpt-5.4") }
+        await MainActor.run { vm.switchSession(to: "other") }
+
+        try await waitUntil("switched sessions") {
+            await MainActor.run { vm.sessionKey == "other" && vm.sessionId == "sess-other" }
+        }
+        try await waitUntil("late model patch finished") {
+            let patched = await transport.patchedModels()
+            return patched == ["openai/gpt-5.4"]
+        }
+
+        #expect(await MainActor.run { vm.modelSelectionID } == RemoteClawChatViewModel.defaultModelSelectionID)
+        #expect(await MainActor.run { vm.sessions.first(where: { $0.key == "other" })?.model } == nil)
+    }
+
+    @Test func lateModelCompletionDoesNotReplayCurrentSessionSelectionIntoPreviousSession() async throws {
+        let now = Date().timeIntervalSince1970 * 1000
+        let initialSessions = RemoteClawChatSessionsListResponse(
+            ts: now,
+            path: nil,
+            count: 2,
+            defaults: nil,
+            sessions: [
+                sessionEntry(key: "main", updatedAt: now, model: nil),
+                sessionEntry(key: "other", updatedAt: now - 1000, model: nil),
+            ])
+        let sessionsAfterOtherSelection = RemoteClawChatSessionsListResponse(
+            ts: now,
+            path: nil,
+            count: 2,
+            defaults: nil,
+            sessions: [
+                sessionEntry(key: "main", updatedAt: now, model: nil),
+                sessionEntry(key: "other", updatedAt: now - 1000, model: "openai/gpt-5.4-pro"),
+            ])
+        let models = [
+            modelChoice(id: "gpt-5.4", name: "GPT-5.4", provider: "openai"),
+            modelChoice(id: "gpt-5.4-pro", name: "GPT-5.4 Pro", provider: "openai"),
+        ]
+
+        let (transport, vm) = await makeViewModel(
+            historyResponses: [
+                historyPayload(sessionKey: "main", sessionId: "sess-main"),
+                historyPayload(sessionKey: "other", sessionId: "sess-other"),
+                historyPayload(sessionKey: "main", sessionId: "sess-main"),
+            ],
+            sessionsResponses: [initialSessions, initialSessions, sessionsAfterOtherSelection],
+            modelResponses: [models, models, models],
+            setSessionModelHook: { model in
+                if model == "openai/gpt-5.4" {
+                    try await Task.sleep(for: .milliseconds(200))
+                }
+            })
+
+        try await loadAndWaitBootstrap(vm: vm, sessionId: "sess-main")
+
+        await MainActor.run { vm.selectModel("openai/gpt-5.4") }
+        await MainActor.run { vm.switchSession(to: "other") }
+        try await waitUntil("switched to other session") {
+            await MainActor.run { vm.sessionKey == "other" && vm.sessionId == "sess-other" }
+        }
+
+        await MainActor.run { vm.selectModel("openai/gpt-5.4-pro") }
+        try await waitUntil("both model patches issued") {
+            let patched = await transport.patchedModels()
+            return patched == ["openai/gpt-5.4", "openai/gpt-5.4-pro"]
+        }
+        await MainActor.run { vm.switchSession(to: "main") }
+        try await waitUntil("switched back to main session") {
+            await MainActor.run { vm.sessionKey == "main" && vm.sessionId == "sess-main" }
+        }
+
+        try await waitUntil("late model completion updates only the original session") {
+            await MainActor.run {
+                vm.sessions.first(where: { $0.key == "main" })?.model == "gpt-5.4" &&
+                    vm.sessions.first(where: { $0.key == "main" })?.modelProvider == "openai"
+            }
+        }
+
+        #expect(await MainActor.run { vm.modelSelectionID } == "openai/gpt-5.4")
+        #expect(await MainActor.run { vm.sessions.first(where: { $0.key == "main" })?.model } == "gpt-5.4")
+        #expect(await MainActor.run { vm.sessions.first(where: { $0.key == "main" })?.modelProvider } == "openai")
+        #expect(await MainActor.run { vm.sessions.first(where: { $0.key == "other" })?.model } == "openai/gpt-5.4-pro")
+        #expect(await MainActor.run { vm.sessions.first(where: { $0.key == "other" })?.modelProvider } == nil)
+        #expect(await transport.patchedModels() == ["openai/gpt-5.4", "openai/gpt-5.4-pro"])
+    }
+
+    @Test func explicitThinkingLevelWinsOverHistoryAndPersistsChanges() async throws {
+        let history = RemoteClawChatHistoryPayload(
+            sessionKey: "main",
+            sessionId: "sess-main",
+            messages: [],
+            thinkingLevel: "off")
+        let callbackState = await MainActor.run { CallbackBox() }
+
+        let (transport, vm) = await makeViewModel(
+            historyResponses: [history],
+            initialThinkingLevel: "high",
+            onThinkingLevelChanged: { level in
+                callbackState.values.append(level)
+            })
+
+        try await loadAndWaitBootstrap(vm: vm, sessionId: "sess-main")
+        #expect(await MainActor.run { vm.thinkingLevel } == "high")
+
+        await MainActor.run { vm.selectThinkingLevel("medium") }
+
+        try await waitUntil("thinking level patched") {
+            let patched = await transport.patchedThinkingLevels()
+            return patched == ["medium"]
+        }
+
+        #expect(await MainActor.run { vm.thinkingLevel } == "medium")
+        #expect(await MainActor.run { callbackState.values } == ["medium"])
+    }
+
+    @Test func serverProvidedThinkingLevelsOutsideMenuArePreservedForSend() async throws {
+        let history = RemoteClawChatHistoryPayload(
+            sessionKey: "main",
+            sessionId: "sess-main",
+            messages: [],
+            thinkingLevel: "xhigh")
+
+        let (transport, vm) = await makeViewModel(historyResponses: [history])
+
+        try await loadAndWaitBootstrap(vm: vm, sessionId: "sess-main")
+        #expect(await MainActor.run { vm.thinkingLevel } == "xhigh")
+
+        await sendUserMessage(vm, text: "hello")
+        try await waitUntil("send uses preserved thinking level") {
+            await transport.sentThinkingLevels() == ["xhigh"]
+        }
+    }
+
+    @Test func staleThinkingPatchCompletionReappliesLatestSelection() async throws {
+        let history = RemoteClawChatHistoryPayload(
+            sessionKey: "main",
+            sessionId: "sess-main",
+            messages: [],
+            thinkingLevel: "off")
+
+        let (transport, vm) = await makeViewModel(
+            historyResponses: [history],
+            setSessionThinkingHook: { level in
+                if level == "medium" {
+                    try await Task.sleep(for: .milliseconds(200))
+                }
+            })
+
+        try await loadAndWaitBootstrap(vm: vm, sessionId: "sess-main")
+
+        await MainActor.run {
+            vm.selectThinkingLevel("medium")
+            vm.selectThinkingLevel("high")
+        }
+
+        try await waitUntil("thinking patch replayed latest selection") {
+            let patched = await transport.patchedThinkingLevels()
+            return patched == ["medium", "high", "high"]
+        }
+
+        #expect(await MainActor.run { vm.thinkingLevel } == "high")
     }
 }

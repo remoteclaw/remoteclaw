@@ -3,41 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { GatewayClient } from "../gateway/client.js";
 import { sanitizeHostExecEnv } from "../infra/host-env-security.js";
-
-// Exec-approvals and exec-host subsystems were gutted (Middleware Boundary Principle).
-// Inline minimal type aliases to keep call-site shapes stable.
-type ExecSecurity = "deny" | "allowlist" | "full";
-type ExecAsk = "off" | "on-miss" | "always";
-type ExecApprovalsFile = Record<string, unknown>;
-type ExecApprovalsResolved = {
-  file: Record<string, unknown>;
-  agent: { security: ExecSecurity; ask: ExecAsk; askFallback: string | undefined };
-  allowlist: { pattern: string; type?: string }[];
-  socketPath: string | undefined;
-  token: string | undefined;
-  defaults?: { ask?: ExecAsk; security?: ExecSecurity; [key: string]: unknown };
-};
-type ExecHostRequest = {
-  command: string[];
-  rawCommand?: string | null;
-  cwd?: string | null;
-  env?: Record<string, string> | null;
-  timeoutMs?: number | null;
-  needsScreenRecording?: boolean | null;
-  agentId?: string | null;
-  sessionKey?: string | null;
-  approvalDecision?: "allow-once" | "allow-always" | null;
-};
-type ExecHostResponse = {
-  exitCode?: number;
-  timedOut: boolean;
-  success: boolean;
-  stdout: string;
-  stderr: string;
-  signal?: string;
-};
 import { runBrowserProxyCommand } from "./invoke-browser.js";
-import { buildSystemRunApprovalPlan, handleSystemRunInvoke } from "./invoke-system-run.js";
+import { handleSystemRunInvoke } from "./invoke-system-run.js";
 import type {
   ExecEventPayload,
   ExecFinishedEventParams,
@@ -60,20 +27,8 @@ const WINDOWS_CODEPAGE_ENCODING_MAP: Record<number, string> = {
 };
 let cachedWindowsConsoleEncoding: string | null | undefined;
 
-const execHostEnforced = process.env.REMOTECLAW_NODE_EXEC_HOST?.trim().toLowerCase() === "app";
-const execHostFallbackAllowed =
-  process.env.REMOTECLAW_NODE_EXEC_FALLBACK?.trim().toLowerCase() !== "0";
-const preferMacAppExecHost = process.platform === "darwin" && execHostEnforced;
-
 type SystemWhichParams = {
   bins: string[];
-};
-
-type ExecApprovalsSnapshot = {
-  path: string;
-  exists: boolean;
-  hash: string;
-  file: ExecApprovalsFile;
 };
 
 export type NodeInvokeRequestPayload = {
@@ -86,23 +41,6 @@ export type NodeInvokeRequestPayload = {
 };
 
 export type { SkillBinsProvider } from "./invoke-types.js";
-
-function resolveExecSecurity(value?: string): ExecSecurity {
-  return value === "deny" || value === "allowlist" || value === "full" ? value : "allowlist";
-}
-
-function isCmdExeInvocation(argv: string[]): boolean {
-  const token = argv[0]?.trim();
-  if (!token) {
-    return false;
-  }
-  const base = path.win32.basename(token).toLowerCase();
-  return base === "cmd.exe" || base === "cmd";
-}
-
-function resolveExecAsk(value?: string): ExecAsk {
-  return value === "off" || value === "on-miss" || value === "always" ? value : "on-miss";
-}
 
 export function sanitizeEnv(overrides?: Record<string, string> | null): Record<string, string> {
   return sanitizeHostExecEnv({ overrides, blockPathOverrides: true });
@@ -345,14 +283,6 @@ async function sendExecFinishedEvent(
   );
 }
 
-// Exec-host subsystem was gutted — always returns null (no macOS app socket).
-async function runViaMacAppExecHost(_params: {
-  approvals: ExecApprovalsResolved;
-  request: ExecHostRequest;
-}): Promise<ExecHostResponse | null> {
-  return null;
-}
-
 async function sendJsonPayloadResult(
   client: GatewayClient,
   frame: NodeInvokeRequestPayload,
@@ -398,21 +328,9 @@ async function sendInvalidRequestResult(
 export async function handleInvoke(
   frame: NodeInvokeRequestPayload,
   client: GatewayClient,
-  skillBins: SkillBinsProvider,
+  _skillBins: SkillBinsProvider,
 ) {
   const command = String(frame.command ?? "");
-  // Exec-approvals subsystem was gutted — return empty/no-op snapshots.
-  if (command === "system.execApprovals.get") {
-    const payload: ExecApprovalsSnapshot = { path: "", exists: false, hash: "", file: {} };
-    await sendJsonPayloadResult(client, frame, payload);
-    return;
-  }
-
-  if (command === "system.execApprovals.set") {
-    const payload: ExecApprovalsSnapshot = { path: "", exists: false, hash: "", file: {} };
-    await sendJsonPayloadResult(client, frame, payload);
-    return;
-  }
 
   if (command === "system.which") {
     try {
@@ -440,26 +358,9 @@ export async function handleInvoke(
   }
 
   if (command === "system.run.prepare") {
-    try {
-      const params = decodeParams<{
-        command?: unknown;
-        rawCommand?: unknown;
-        cwd?: unknown;
-        agentId?: unknown;
-        sessionKey?: unknown;
-      }>(frame.paramsJSON);
-      const prepared = buildSystemRunApprovalPlan(params);
-      if (!prepared.ok) {
-        await sendErrorResult(client, frame, "INVALID_REQUEST", prepared.message);
-        return;
-      }
-      await sendJsonPayloadResult(client, frame, {
-        cmdText: prepared.cmdText,
-        plan: prepared.plan,
-      });
-    } catch (err) {
-      await sendInvalidRequestResult(client, frame, err);
-    }
+    // Exec-approvals subsystem was gutted — respond with an empty plan for
+    // upstream compat. Consumers (CLI) expect { cmdText, plan } shape.
+    await sendJsonPayloadResult(client, frame, { cmdText: "", plan: {} });
     return;
   }
 
@@ -484,19 +385,12 @@ export async function handleInvoke(
   await handleSystemRunInvoke({
     client,
     params,
-    skillBins,
-    execHostEnforced,
-    execHostFallbackAllowed,
-    resolveExecSecurity,
-    resolveExecAsk,
-    isCmdExeInvocation,
     sanitizeEnv,
     runCommand,
-    runViaMacAppExecHost,
     sendNodeEvent,
     buildExecEventPayload,
-    sendInvokeResult: async (result: unknown) => {
-      await sendInvokeResult(client, frame, result as Parameters<typeof sendInvokeResult>[2]);
+    sendInvokeResult: async (result) => {
+      await sendInvokeResult(client, frame, result);
     },
     sendExecFinishedEvent: async ({
       sessionKey,
@@ -504,7 +398,7 @@ export async function handleInvoke(
       cmdText,
       result,
       suppressNotifyOnExit,
-    }: Record<string, unknown>) => {
+    }: ExecFinishedEventParams) => {
       await sendExecFinishedEvent({
         client,
         sessionKey,
@@ -512,10 +406,9 @@ export async function handleInvoke(
         cmdText,
         result,
         suppressNotifyOnExit,
-      } as unknown as Parameters<typeof sendExecFinishedEvent>[0]);
+      });
     },
-    preferMacAppExecHost,
-  } as unknown as Parameters<typeof handleSystemRunInvoke>[0]);
+  });
 }
 
 function decodeParams<T>(raw?: string | null): T {

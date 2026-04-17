@@ -34,7 +34,6 @@ export const resolveConfiguredModelRefMock = createMock();
 export const resolveHooksGmailModelMock = createMock();
 export const resolveThinkingDefaultMock = createMock();
 export const runWithModelFallbackMock = createMock();
-export const runEmbeddedPiAgentMock = createMock();
 export const runCliAgentMock = createMock();
 export const getCliSessionIdMock = createMock();
 export const updateSessionStoreMock = createMock();
@@ -83,10 +82,6 @@ vi.mock("../../agents/model-selection.js", async (importOriginal) => {
 
 vi.mock("../../agents/model-fallback.js", () => ({
   runWithModelFallback: runWithModelFallbackMock,
-}));
-
-vi.mock("../../agents/pi-embedded.js", () => ({
-  runEmbeddedPiAgent: runEmbeddedPiAgentMock,
 }));
 
 vi.mock("../../agents/context.js", () => ({
@@ -234,13 +229,6 @@ function makeDefaultModelFallbackResult() {
   };
 }
 
-function makeDefaultEmbeddedResult() {
-  return {
-    payloads: [{ text: "test output" }],
-    meta: { agentMeta: { usage: { input: 10, output: 20 } } },
-  };
-}
-
 export function resetRunCronIsolatedAgentTurnHarness(): void {
   vi.clearAllMocks();
 
@@ -262,8 +250,6 @@ export function resetRunCronIsolatedAgentTurnHarness(): void {
 
   runWithModelFallbackMock.mockReset();
   runWithModelFallbackMock.mockResolvedValue(makeDefaultModelFallbackResult());
-  runEmbeddedPiAgentMock.mockReset();
-  runEmbeddedPiAgentMock.mockResolvedValue(makeDefaultEmbeddedResult());
 
   runCliAgentMock.mockReset();
   getCliSessionIdMock.mockReturnValue(undefined);

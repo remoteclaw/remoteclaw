@@ -15,11 +15,6 @@ const resetAllLanes = vi.fn();
 const restartGatewayProcessWithFreshPid = vi.fn<
   () => { mode: "spawned" | "supervised" | "disabled" | "failed"; pid?: number; detail?: string }
 >(() => ({ mode: "disabled" }));
-const abortEmbeddedPiRun = vi.fn(
-  (_sessionId?: string, _opts?: { mode?: "all" | "compacting" }) => false,
-);
-const getActiveEmbeddedRunCount = vi.fn(() => 0);
-const waitForActiveEmbeddedRuns = vi.fn(async (_timeoutMs: number) => ({ drained: true }));
 const DRAIN_TIMEOUT_LOG = "drain timeout reached; proceeding with restart";
 const gatewayLog = {
   info: vi.fn(),
@@ -46,13 +41,6 @@ vi.mock("../../process/command-queue.js", () => ({
   markGatewayDraining: () => markGatewayDraining(),
   waitForActiveTasks: (timeoutMs: number) => waitForActiveTasks(timeoutMs),
   resetAllLanes: () => resetAllLanes(),
-}));
-
-vi.mock("../../agents/pi-embedded-runner/runs.js", () => ({
-  abortEmbeddedPiRun: (sessionId?: string, opts?: { mode?: "all" | "compacting" }) =>
-    abortEmbeddedPiRun(sessionId, opts),
-  getActiveEmbeddedRunCount: () => getActiveEmbeddedRunCount(),
-  waitForActiveEmbeddedRuns: (timeoutMs: number) => waitForActiveEmbeddedRuns(timeoutMs),
 }));
 
 vi.mock("../../logging/subsystem.js", () => ({
@@ -198,9 +186,7 @@ describe("runGatewayLoop", () => {
 
     await withIsolatedSignals(async ({ captureSignal }) => {
       getActiveTaskCount.mockReturnValueOnce(2).mockReturnValueOnce(0);
-      getActiveEmbeddedRunCount.mockReturnValueOnce(1).mockReturnValueOnce(0);
       waitForActiveTasks.mockResolvedValueOnce({ drained: false });
-      waitForActiveEmbeddedRuns.mockResolvedValueOnce({ drained: true });
 
       type StartServer = () => Promise<{
         close: (opts: { reason: string; restartExpectedMs: number | null }) => Promise<void>;
@@ -257,9 +243,6 @@ describe("runGatewayLoop", () => {
       expect(start).toHaveBeenCalledTimes(2);
       await new Promise<void>((resolve) => setImmediate(resolve));
 
-      // Embedded Pi runner is gutted in the RemoteClaw fork — no
-      // abortEmbeddedPiRun or waitForActiveEmbeddedRuns hooks exist in
-      // the drain pipeline. Only the task queue drain is exercised.
       expect(waitForActiveTasks).toHaveBeenCalledWith(90_000);
       expect(markGatewayDraining).toHaveBeenCalledTimes(1);
       expect(gatewayLog.warn).toHaveBeenCalledWith(DRAIN_TIMEOUT_LOG);

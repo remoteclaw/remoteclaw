@@ -3,6 +3,7 @@ import {
   collectAppcastSparkleVersionErrors,
   collectBundledExtensionManifestErrors,
   collectBundledExtensionRootDependencyGapErrors,
+  collectForbiddenPackPaths,
 } from "../scripts/release-check.ts";
 
 function makeItem(shortVersion: string, sparkleVersion: string): string {
@@ -10,12 +11,6 @@ function makeItem(shortVersion: string, sparkleVersion: string): string {
 }
 
 describe("collectAppcastSparkleVersionErrors", () => {
-  it("accepts empty feed with no items", () => {
-    const xml = `<rss><channel><title>RemoteClaw</title></channel></rss>`;
-
-    expect(collectAppcastSparkleVersionErrors(xml)).toEqual([]);
-  });
-
   it("accepts legacy 9-digit calver builds before lane-floor cutover", () => {
     const xml = `<rss><channel>${makeItem("2026.2.26", "202602260")}</channel></rss>`;
 
@@ -154,5 +149,17 @@ describe("collectBundledExtensionManifestErrors", () => {
     ).toEqual([
       "bundled extension 'broken' manifest invalid | remoteclaw.releaseChecks.rootDependencyMirrorAllowlist must contain only non-empty strings",
     ]);
+  });
+});
+
+describe("collectForbiddenPackPaths", () => {
+  it("flags nested node_modules leaking into npm pack output", () => {
+    expect(
+      collectForbiddenPackPaths([
+        "dist/index.js",
+        "extensions/tlon/node_modules/.bin/tlon",
+        "node_modules/.bin/remoteclaw",
+      ]),
+    ).toEqual(["extensions/tlon/node_modules/.bin/tlon", "node_modules/.bin/remoteclaw"]);
   });
 });

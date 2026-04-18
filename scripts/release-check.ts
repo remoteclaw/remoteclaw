@@ -57,6 +57,8 @@ const requiredPathGroups = [
   "dist/plugin-sdk/diffs.d.ts",
   "dist/plugin-sdk/feishu.js",
   "dist/plugin-sdk/feishu.d.ts",
+  "dist/plugin-sdk/google-gemini-cli-auth.js",
+  "dist/plugin-sdk/google-gemini-cli-auth.d.ts",
   "dist/plugin-sdk/googlechat.js",
   "dist/plugin-sdk/googlechat.d.ts",
   "dist/plugin-sdk/irc.js",
@@ -69,6 +71,12 @@ const requiredPathGroups = [
   "dist/plugin-sdk/matrix.d.ts",
   "dist/plugin-sdk/mattermost.js",
   "dist/plugin-sdk/mattermost.d.ts",
+  "dist/plugin-sdk/memory-core.js",
+  "dist/plugin-sdk/memory-core.d.ts",
+  "dist/plugin-sdk/memory-lancedb.js",
+  "dist/plugin-sdk/memory-lancedb.d.ts",
+  "dist/plugin-sdk/minimax-portal-auth.js",
+  "dist/plugin-sdk/minimax-portal-auth.d.ts",
   "dist/plugin-sdk/nextcloud-talk.js",
   "dist/plugin-sdk/nextcloud-talk.d.ts",
   "dist/plugin-sdk/nostr.js",
@@ -77,6 +85,8 @@ const requiredPathGroups = [
   "dist/plugin-sdk/open-prose.d.ts",
   "dist/plugin-sdk/phone-control.js",
   "dist/plugin-sdk/phone-control.d.ts",
+  "dist/plugin-sdk/qwen-portal-auth.js",
+  "dist/plugin-sdk/qwen-portal-auth.d.ts",
   "dist/plugin-sdk/synology-chat.js",
   "dist/plugin-sdk/synology-chat.d.ts",
   "dist/plugin-sdk/talk-voice.js",
@@ -208,6 +218,16 @@ function runPackDry(): PackResult[] {
   return JSON.parse(raw) as PackResult[];
 }
 
+export function collectForbiddenPackPaths(paths: Iterable<string>): string[] {
+  return [...paths]
+    .filter(
+      (path) =>
+        forbiddenPrefixes.some((prefix) => path.startsWith(prefix)) ||
+        /(^|\/)node_modules\//.test(path),
+    )
+    .toSorted();
+}
+
 function checkPluginVersions() {
   const rootPackagePath = resolve("package.json");
   const rootPackage = JSON.parse(readFileSync(rootPackagePath, "utf8")) as PackageJson;
@@ -267,6 +287,10 @@ export function collectAppcastSparkleVersionErrors(xml: string): string[] {
   const errors: string[] = [];
   const calverItems: Array<{ title: string; sparkleBuild: number; floors: SparkleBuildFloors }> =
     [];
+
+  if (itemMatches.length === 0) {
+    errors.push("appcast.xml contains no <item> entries.");
+  }
 
   for (const [, item] of itemMatches) {
     const title = extractTag(item, "title") ?? "unknown";
@@ -408,9 +432,7 @@ function main() {
       return paths.has(group) ? [] : [group];
     })
     .toSorted();
-  const forbidden = [...paths].filter((path) =>
-    forbiddenPrefixes.some((prefix) => path.startsWith(prefix)),
-  );
+  const forbidden = collectForbiddenPackPaths(paths);
 
   if (missing.length > 0 || forbidden.length > 0) {
     if (missing.length > 0) {

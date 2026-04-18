@@ -29,7 +29,9 @@
       "defaultChoice": "npm"
     },
     "releaseChecks": {
-      "rootDependencyMirrorAllowlist": []
+      "rootDependencyMirrorAllowlist": [
+        "@microsoft/agents-hosting"
+      ]
     }
   }
 }

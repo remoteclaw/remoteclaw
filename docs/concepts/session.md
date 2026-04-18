@@ -1,5 +1,5 @@
 ---
-description: "Session management rules, keys, and persistence for chats"
+summary: "Session management rules, keys, and persistence for chats"
 read_when:
   - Modifying session handling or storage
 title: "Session Management"
@@ -59,7 +59,7 @@ Notes:
 All session state is **owned by the gateway** (the “master” RemoteClaw). UI clients (macOS app, WebChat, etc.) must query the gateway for session lists and token counts instead of reading local files.
 
 - In **remote mode**, the session store you care about lives on the remote gateway host, not your Mac.
-- Token counts shown in UIs come from the gateway’s store fields (`inputTokens`, `outputTokens`, `totalTokens`). Clients do not parse JSONL transcripts to “fix up” totals.
+- Token counts shown in UIs come from the gateway’s store fields (`inputTokens`, `outputTokens`, `totalTokens`, `contextTokens`). Clients do not parse JSONL transcripts to “fix up” totals.
 
 ## Where state lives
 
@@ -183,7 +183,8 @@ This does **not** rewrite JSONL history. See [/concepts/session-pruning](/concep
 
 When a session nears auto-compaction, RemoteClaw can run a **silent memory flush**
 turn that reminds the model to write durable notes to disk. This only runs when
-the workspace is writable. See [Session management — compaction](/reference/session-management-compaction).
+the workspace is writable. See [Memory](/concepts/memory) and
+[Compaction](/concepts/compaction).
 
 ## Mapping transports → session keys
 
@@ -211,7 +212,7 @@ the workspace is writable. See [Session management — compaction](/reference/se
 - Legacy idle-only: if you set `session.idleMinutes` without any `session.reset`/`resetByType` config, RemoteClaw stays in idle-only mode for backward compatibility.
 - Per-type overrides (optional): `resetByType` lets you override the policy for `direct`, `group`, and `thread` sessions (thread = Slack/Discord threads, Telegram topics, Matrix threads when provided by the connector).
 - Per-channel overrides (optional): `resetByChannel` overrides the reset policy for a channel (applies to all session types for that channel and takes precedence over `reset`/`resetByType`).
-- Reset triggers: exact `/new` or `/reset` (plus any extras in `resetTriggers`) start a fresh session id and pass the remainder of the message through. `/new <runtime>` accepts a runtime name (`claude`, `gemini`, `codex`, `opencode`) to select the CLI runtime for the new session. If `/new` or `/reset` is sent alone, RemoteClaw runs a short “hello” greeting turn to confirm the reset.
+- Reset triggers: exact `/new` or `/reset` (plus any extras in `resetTriggers`) start a fresh session id and pass the remainder of the message through. `/new <model>` accepts a model alias, `provider/model`, or provider name (fuzzy match) to set the new session model. If `/new` or `/reset` is sent alone, RemoteClaw runs a short “hello” greeting turn to confirm the reset.
 - Manual reset: delete specific keys from the store or remove the JSONL transcript; the next message recreates them.
 - Isolated cron jobs always mint a fresh `sessionId` per run (no idle reuse).
 
@@ -280,10 +281,10 @@ Runtime override (owner only):
 - `remoteclaw status` — shows store path and recent sessions.
 - `remoteclaw sessions --json` — dumps every entry (filter with `--active <minutes>`).
 - `remoteclaw gateway call sessions.list --params '{}'` — fetch sessions from the running gateway (use `--url`/`--token` for remote gateway access).
-- Send `/status` as a standalone message in chat to see whether the agent is reachable, how much of the session context is used, current thinking/verbose toggles, and when your WhatsApp web creds were last refreshed (helps spot relink needs).
+- Send `/status` as a standalone message in chat to see whether the agent is reachable, how much of the session context is used, current thinking/fast/verbose toggles, and when your WhatsApp web creds were last refreshed (helps spot relink needs).
 - Send `/context list` or `/context detail` to see what’s in the system prompt and injected workspace files (and the biggest context contributors).
 - Send `/stop` (or standalone abort phrases like `stop`, `stop action`, `stop run`, `stop remoteclaw`) to abort the current run, clear queued followups for that session, and stop any sub-agent runs spawned from it (the reply includes the stopped count).
-- Send `/compact` (optional instructions) as a standalone message to summarize older context and free up window space. See [Session management — compaction](/reference/session-management-compaction).
+- Send `/compact` (optional instructions) as a standalone message to summarize older context and free up window space. See [/concepts/compaction](/concepts/compaction).
 - JSONL transcripts can be opened directly to review full turns.
 
 ## Tips

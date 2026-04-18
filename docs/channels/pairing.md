@@ -1,5 +1,5 @@
 ---
-description: "Pairing overview: approve who can DM you + which nodes can join"
+summary: "Pairing overview: approve who can DM you + which nodes can join"
 read_when:
   - Setting up DM access control
   - Pairing a new iOS/Android node
@@ -72,7 +72,7 @@ If you use the `device-pair` plugin, you can do first-time device pairing entire
 The setup code is a base64-encoded JSON payload that contains:
 
 - `url`: the Gateway WebSocket URL (`ws://...` or `wss://...`)
-- `token`: a short-lived pairing token
+- `bootstrapToken`: a short-lived single-device bootstrap token used for the initial pairing handshake
 
 Treat the setup code like a password while it is valid.
 

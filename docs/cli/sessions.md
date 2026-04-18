@@ -1,5 +1,5 @@
 ---
-description: "CLI reference for `remoteclaw sessions` (list stored sessions + usage)"
+summary: "CLI reference for `remoteclaw sessions` (list stored sessions + usage)"
 read_when:
   - You want to list stored sessions and see recent activity
 title: "sessions"
@@ -24,6 +24,12 @@ Scope selection:
 - `--all-agents`: aggregate all configured agent stores
 - `--store <path>`: explicit store path (cannot be combined with `--agent` or `--all-agents`)
 
+`remoteclaw sessions --all-agents` reads configured agent stores. Gateway and ACP
+session discovery are broader: they also include disk-only stores found under
+the default `agents/` root or a templated `session.store` root. Those
+discovered stores must resolve to regular `sessions.json` files inside the
+agent root; symlinks and out-of-root paths are skipped.
+
 JSON examples:
 
 `remoteclaw sessions --all-agents --json`:
@@ -39,8 +45,8 @@ JSON examples:
   "count": 2,
   "activeMinutes": null,
   "sessions": [
-    { "agentId": "main", "key": "agent:main:main", "runtime": "claude" },
-    { "agentId": "work", "key": "agent:work:main", "runtime": "claude" }
+    { "agentId": "main", "key": "agent:main:main", "model": "gpt-5" },
+    { "agentId": "work", "key": "agent:work:main", "model": "claude-opus-4-5" }
   ]
 }
 ```

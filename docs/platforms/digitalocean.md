@@ -1,5 +1,5 @@
 ---
-description: "RemoteClaw on DigitalOcean (simple paid VPS option)"
+summary: "RemoteClaw on DigitalOcean (simple paid VPS option)"
 read_when:
   - Setting up RemoteClaw on DigitalOcean
   - Looking for cheap VPS hosting for RemoteClaw
@@ -40,9 +40,9 @@ If you want a $0/month option and don’t mind ARM + provider-specific setup, se
 
 ## 1) Create a Droplet
 
-:::caution
+<Warning>
 Use a clean base image (Ubuntu 24.04 LTS). Avoid third-party Marketplace 1-click images unless you have reviewed their startup scripts and firewall defaults.
-:::
+</Warning>
 
 1. Log into [DigitalOcean](https://cloud.digitalocean.com/)
 2. Click **Create → Droplets**
@@ -66,8 +66,8 @@ ssh root@YOUR_DROPLET_IP
 # Update system
 apt update && apt upgrade -y
 
-# Install Node.js 22
-curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+# Install Node.js 24
+curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
 apt install -y nodejs
 
 # Install RemoteClaw
@@ -85,6 +85,7 @@ remoteclaw onboard --install-daemon
 
 The wizard will walk you through:
 
+- Model auth (API keys or OAuth)
 - Channel setup (Telegram, WhatsApp, Discord, etc.)
 - Gateway token (auto-generated)
 - Daemon installation (systemd)
@@ -177,12 +178,12 @@ swapon /swapfile
 echo '/swapfile none swap sw 0 0' >> /etc/fstab
 ```
 
-### Reduce resource usage
+### Use a lighter model
 
 If you're hitting OOMs, consider:
 
-- Reducing the number of concurrent sessions
-- Choosing a lighter CLI agent runtime
+- Using API-based models (Claude, GPT) instead of local models
+- Setting `agents.defaults.model.primary` to a smaller model
 
 ### Monitor memory
 
@@ -198,7 +199,7 @@ htop
 All state lives in:
 
 - `~/.remoteclaw/` — config, credentials, session data
-- `<configured workspace>` — workspace (memory, etc.)
+- `~/.remoteclaw/workspace/` — workspace (SOUL.md, memory, etc.)
 
 These survive reboots. Back them up periodically:
 

@@ -29,7 +29,11 @@
       "defaultChoice": "npm"
     },
     "releaseChecks": {
-      "rootDependencyMirrorAllowlist": []
+      "rootDependencyMirrorAllowlist": [
+        "@tloncorp/api",
+        "@tloncorp/tlon-skill",
+        "@urbit/aura"
+      ]
     }
   }
 }

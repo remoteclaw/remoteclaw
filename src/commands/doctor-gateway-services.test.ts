@@ -2,6 +2,22 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { withEnvAsync } from "../test-utils/env.js";
 
+const fsMocks = vi.hoisted(() => ({
+  realpath: vi.fn(),
+}));
+
+vi.mock("node:fs/promises", async () => {
+  const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+  return {
+    ...actual,
+    default: {
+      ...actual,
+      realpath: fsMocks.realpath,
+    },
+    realpath: fsMocks.realpath,
+  };
+});
+
 const mocks = vi.hoisted(() => ({
   readCommand: vi.fn(),
   install: vi.fn(),
@@ -137,6 +153,7 @@ function setupGatewayTokenRepairScenario() {
 describe("maybeRepairGatewayServiceConfig", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    fsMocks.realpath.mockImplementation(async (value: string) => value);
     mocks.resolveGatewayAuthTokenForService.mockImplementation(
       async (cfg: RemoteClawConfig, env) => {
         const configToken =
@@ -218,6 +235,121 @@ describe("maybeRepairGatewayServiceConfig", () => {
       );
       expect(mocks.install).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it("does not flag entrypoint mismatch when symlink and realpath match", async () => {
+    mocks.readCommand.mockResolvedValue({
+      programArguments: [
+        "/usr/bin/node",
+        "/Users/test/Library/pnpm/global/5/node_modules/remoteclaw/dist/index.js",
+        "gateway",
+        "--port",
+        "18789",
+      ],
+      environment: {},
+    });
+    mocks.auditGatewayServiceConfig.mockResolvedValue({
+      ok: true,
+      issues: [],
+    });
+    mocks.buildGatewayInstallPlan.mockResolvedValue({
+      programArguments: [
+        "/usr/bin/node",
+        "/Users/test/Library/pnpm/global/5/node_modules/.pnpm/remoteclaw@2026.3.12/node_modules/remoteclaw/dist/index.js",
+        "gateway",
+        "--port",
+        "18789",
+      ],
+      environment: {},
+    });
+    fsMocks.realpath.mockImplementation(async (value: string) => {
+      if (value.includes("/global/5/node_modules/remoteclaw/")) {
+        return value.replace(
+          "/global/5/node_modules/remoteclaw/",
+          "/global/5/node_modules/.pnpm/remoteclaw@2026.3.12/node_modules/remoteclaw/",
+        );
+      }
+      return value;
+    });
+
+    await runRepair({ gateway: {} });
+
+    expect(mocks.note).not.toHaveBeenCalledWith(
+      expect.stringContaining("Gateway service entrypoint does not match the current install."),
+      "Gateway service config",
+    );
+    expect(mocks.install).not.toHaveBeenCalled();
+  });
+
+  it("does not flag entrypoint mismatch when realpath fails but normalized absolute paths match", async () => {
+    mocks.readCommand.mockResolvedValue({
+      programArguments: [
+        "/usr/bin/node",
+        "/opt/remoteclaw/../remoteclaw/dist/index.js",
+        "gateway",
+        "--port",
+        "18789",
+      ],
+      environment: {},
+    });
+    mocks.auditGatewayServiceConfig.mockResolvedValue({
+      ok: true,
+      issues: [],
+    });
+    mocks.buildGatewayInstallPlan.mockResolvedValue({
+      programArguments: [
+        "/usr/bin/node",
+        "/opt/remoteclaw/dist/index.js",
+        "gateway",
+        "--port",
+        "18789",
+      ],
+      environment: {},
+    });
+    fsMocks.realpath.mockRejectedValue(new Error("no realpath"));
+
+    await runRepair({ gateway: {} });
+
+    expect(mocks.note).not.toHaveBeenCalledWith(
+      expect.stringContaining("Gateway service entrypoint does not match the current install."),
+      "Gateway service config",
+    );
+    expect(mocks.install).not.toHaveBeenCalled();
+  });
+
+  it("still flags entrypoint mismatch when canonicalized paths differ", async () => {
+    mocks.readCommand.mockResolvedValue({
+      programArguments: [
+        "/usr/bin/node",
+        "/Users/test/.nvm/versions/node/v22.0.0/lib/node_modules/remoteclaw/dist/index.js",
+        "gateway",
+        "--port",
+        "18789",
+      ],
+      environment: {},
+    });
+    mocks.auditGatewayServiceConfig.mockResolvedValue({
+      ok: true,
+      issues: [],
+    });
+    mocks.buildGatewayInstallPlan.mockResolvedValue({
+      programArguments: [
+        "/usr/bin/node",
+        "/Users/test/Library/pnpm/global/5/node_modules/remoteclaw/dist/index.js",
+        "gateway",
+        "--port",
+        "18789",
+      ],
+      environment: {},
+    });
+
+    await runRepair({ gateway: {} });
+
+    expect(mocks.note).toHaveBeenCalledWith(
+      expect.stringContaining("Gateway service entrypoint does not match the current install."),
+      "Gateway service config",
+    );
+    expect(mocks.install).toHaveBeenCalledTimes(1);
   });
 
   it("treats SecretRef-managed gateway token as non-persisted service state", async () => {

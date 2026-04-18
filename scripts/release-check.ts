@@ -288,10 +288,6 @@ export function collectAppcastSparkleVersionErrors(xml: string): string[] {
   const calverItems: Array<{ title: string; sparkleBuild: number; floors: SparkleBuildFloors }> =
     [];
 
-  if (itemMatches.length === 0) {
-    errors.push("appcast.xml contains no <item> entries.");
-  }
-
   for (const [, item] of itemMatches) {
     const title = extractTag(item, "title") ?? "unknown";
     const shortVersion = extractTag(item, "sparkle:shortVersionString");

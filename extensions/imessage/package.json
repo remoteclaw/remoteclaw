@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/imessage",
-  "version": "0.6.0",
+  "version": "2026.3.13",
   "private": true,
   "description": "RemoteClaw iMessage channel plugin",
   "type": "module",

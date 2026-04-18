@@ -22,7 +22,7 @@ actor PortGuardian {
     }
 
     private var records: [Record] = []
-    private let logger = Logger(subsystem: "ai.openclaw", category: "portguard")
+    private let logger = Logger(subsystem: "org.remoteclaw", category: "portguard")
     private nonisolated static let appSupportDir: URL = {
         let base = FileManager().urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         return base.appendingPathComponent("RemoteClaw", isDirectory: true)
@@ -47,12 +47,20 @@ actor PortGuardian {
             let listeners = await self.listeners(on: port)
             guard !listeners.isEmpty else { continue }
             for listener in listeners {
-                if self.isExpected(listener, port: port, mode: mode) {
+                if Self.isExpected(listener, port: port, mode: mode) {
                     let message = """
                     port \(port) already served by expected \(listener.command)
                     (pid \(listener.pid)) — keeping
                     """
                     self.logger.info("\(message, privacy: .public)")
+                    continue
+                }
+                if mode == .remote {
+                    let message = """
+                    port \(port) held by \(listener.command)
+                    (pid \(listener.pid)) in remote mode — not killing
+                    """
+                    self.logger.warning(message)
                     continue
                 }
                 let killed = await self.kill(listener.pid)
@@ -267,12 +275,12 @@ actor PortGuardian {
     {
         let expectedDesc: String
         let okPredicate: (Listener) -> Bool
-        let expectedCommands = ["node", "openclaw", "tsx", "pnpm", "bun"]
+        let expectedCommands = ["node", "remoteclaw", "tsx", "pnpm", "bun"]
 
         switch mode {
         case .remote:
-            expectedDesc = "SSH tunnel to remote gateway"
-            okPredicate = { $0.command.lowercased().contains("ssh") }
+            expectedDesc = "Remote gateway (SSH tunnel, Docker, or direct)"
+            okPredicate = { _ in true }
         case .local:
             expectedDesc = "Gateway websocket (node/tsx)"
             okPredicate = { listener in
@@ -352,19 +360,18 @@ actor PortGuardian {
         return sigkill.ok
     }
 
-    private func isExpected(_ listener: Listener, port: Int, mode: AppState.ConnectionMode) -> Bool {
+    private static func isExpected(_ listener: Listener, port: Int, mode: AppState.ConnectionMode) -> Bool {
         let cmd = listener.command.lowercased()
         let full = listener.fullCommand.lowercased()
         switch mode {
         case .remote:
-            // Remote mode expects an SSH tunnel for the gateway WebSocket port.
-            if port == GatewayEnvironment.gatewayPort() { return cmd.contains("ssh") }
+            if port == GatewayEnvironment.gatewayPort() { return true }
             return false
         case .local:
-            // The gateway daemon may listen as `openclaw` or as its runtime (`node`, `bun`, etc).
+            // The gateway daemon may listen as `remoteclaw` or as its runtime (`node`, `bun`, etc).
             if full.contains("gateway-daemon") { return true }
             // If args are unavailable, treat a CLI listener as expected.
-            if cmd.contains("openclaw"), full == cmd { return true }
+            if cmd.contains("remoteclaw"), full == cmd { return true }
             return false
         case .unconfigured:
             return false
@@ -404,6 +411,16 @@ extension PortGuardian {
         user: String?)]
     {
         self.parseListeners(from: text).map { ($0.pid, $0.command, $0.fullCommand, $0.user) }
+    }
+
+    static func _testIsExpected(
+        command: String,
+        fullCommand: String,
+        port: Int,
+        mode: AppState.ConnectionMode) -> Bool
+    {
+        let listener = Listener(pid: 0, command: command, fullCommand: fullCommand, user: nil)
+        return Self.isExpected(listener, port: port, mode: mode)
     }
 
     static func _testBuildReport(

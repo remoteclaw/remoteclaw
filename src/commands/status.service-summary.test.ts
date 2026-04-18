@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { GatewayService } from "../daemon/service.js";
+import type { GatewayServiceEnvArgs } from "../daemon/service.js";
 import { readServiceStatusSummary } from "./status.service-summary.js";
 
 function createService(overrides: Partial<GatewayService>): GatewayService {
@@ -56,5 +57,43 @@ describe("readServiceStatusSummary", () => {
     expect(summary.managedByRemoteClaw).toBe(false);
     expect(summary.externallyManaged).toBe(false);
     expect(summary.loadedText).toBe("disabled");
+  });
+
+  it("passes command environment to runtime and loaded checks", async () => {
+    const isLoaded = vi.fn(async ({ env }: GatewayServiceEnvArgs) => {
+      return env?.REMOTECLAW_GATEWAY_PORT === "18789";
+    });
+    const readRuntime = vi.fn(async (env?: NodeJS.ProcessEnv) => ({
+      status:
+        env?.REMOTECLAW_GATEWAY_PORT === "18789" ? ("running" as const) : ("unknown" as const),
+    }));
+
+    const summary = await readServiceStatusSummary(
+      createService({
+        isLoaded,
+        readCommand: vi.fn(async () => ({
+          programArguments: ["remoteclaw", "gateway", "run", "--port", "18789"],
+          environment: { REMOTECLAW_GATEWAY_PORT: "18789" },
+        })),
+        readRuntime,
+      }),
+      "Daemon",
+    );
+
+    expect(isLoaded).toHaveBeenCalledWith(
+      expect.objectContaining({
+        env: expect.objectContaining({
+          REMOTECLAW_GATEWAY_PORT: "18789",
+        }),
+      }),
+    );
+    expect(readRuntime).toHaveBeenCalledWith(
+      expect.objectContaining({
+        REMOTECLAW_GATEWAY_PORT: "18789",
+      }),
+    );
+    expect(summary.installed).toBe(true);
+    expect(summary.loaded).toBe(true);
+    expect(summary.runtime).toMatchObject({ status: "running" });
   });
 });

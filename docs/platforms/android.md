@@ -9,6 +9,8 @@ title: "Android App"
 
 # Android App (Node)
 
+> **Note:** The Android app has not been publicly released yet. The source code is available in the [RemoteClaw repository](https://github.com/remoteclaw/remoteclaw) under `apps/android`. You can build it yourself using Java 17 and the Android SDK (`./gradlew :app:assembleDebug`). See [apps/android/README.md](https://github.com/remoteclaw/remoteclaw/blob/main/apps/android/README.md) for build instructions.
+
 ## Support snapshot
 
 - Role: companion node app (Android does not host the Gateway).

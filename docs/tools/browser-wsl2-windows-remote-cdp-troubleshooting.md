@@ -1,7 +1,7 @@
 ---
 summary: "Troubleshoot WSL2 Gateway + Windows Chrome remote CDP and extension-relay setups in layers"
 read_when:
-  - Running OpenClaw Gateway in WSL2 while Chrome lives on Windows
+  - Running RemoteClaw Gateway in WSL2 while Chrome lives on Windows
   - Seeing overlapping browser/control-ui errors across WSL2 and Windows
   - Deciding between raw remote CDP and the Chrome extension relay in split-host setups
 title: "WSL2 + Windows + remote Chrome CDP troubleshooting"
@@ -11,11 +11,11 @@ title: "WSL2 + Windows + remote Chrome CDP troubleshooting"
 
 This guide covers the common split-host setup where:
 
-- OpenClaw Gateway runs inside WSL2
+- RemoteClaw Gateway runs inside WSL2
 - Chrome runs on Windows
 - browser control must cross the WSL2/Windows boundary
 
-It also covers the layered failure pattern from [issue #39369](https://github.com/openclaw/openclaw/issues/39369): several independent problems can show up at once, which makes the wrong layer look broken first.
+It also covers the layered failure pattern from [issue #39369](https://github.com/remoteclaw/remoteclaw/issues/39369): several independent problems can show up at once, which makes the wrong layer look broken first.
 
 ## Choose the right browser mode first
 
@@ -33,7 +33,7 @@ Choose this when:
 
 ### Option 2: Chrome extension relay
 
-Use the built-in `chrome` profile plus the OpenClaw Chrome extension.
+Use the built-in `chrome-relay` profile plus the RemoteClaw Chrome extension.
 
 Choose this when:
 
@@ -51,7 +51,7 @@ Reference shape:
 - Windows opens the Control UI in a normal browser at `http://127.0.0.1:18789/`
 - Windows Chrome exposes a CDP endpoint on port `9222`
 - WSL2 can reach that Windows CDP endpoint
-- OpenClaw points a browser profile at the address that is reachable from WSL2
+- RemoteClaw points a browser profile at the address that is reachable from WSL2
 
 ## Why this setup is confusing
 
@@ -95,7 +95,7 @@ curl http://127.0.0.1:9222/json/version
 curl http://127.0.0.1:9222/json/list
 ```
 
-If this fails on Windows, OpenClaw is not the problem yet.
+If this fails on Windows, RemoteClaw is not the problem yet.
 
 ### Layer 2: Verify WSL2 can reach that Windows endpoint
 
@@ -117,11 +117,11 @@ If this fails:
 - the address is wrong for the WSL2 side
 - firewall / port forwarding / local proxying is still missing
 
-Fix that before touching OpenClaw config.
+Fix that before touching RemoteClaw config.
 
 ### Layer 3: Configure the correct browser profile
 
-For raw remote CDP, point OpenClaw at the address that is reachable from WSL2:
+For raw remote CDP, point RemoteClaw at the address that is reachable from WSL2:
 
 ```json5
 {
@@ -143,7 +143,7 @@ Notes:
 
 - use the WSL2-reachable address, not whatever only works on Windows
 - keep `attachOnly: true` for externally managed browsers
-- test the same URL with `curl` before expecting OpenClaw to succeed
+- test the same URL with `curl` before expecting RemoteClaw to succeed
 
 ### Layer 4: If you use the Chrome extension relay instead
 
@@ -155,7 +155,7 @@ Example:
 {
   browser: {
     enabled: true,
-    defaultProfile: "chrome",
+    defaultProfile: "chrome-relay",
     relayBindHost: "0.0.0.0",
   },
 }
@@ -190,20 +190,20 @@ Helpful page:
 From WSL2:
 
 ```bash
-openclaw browser open https://example.com --browser-profile remote
-openclaw browser tabs --browser-profile remote
+remoteclaw browser open https://example.com --browser-profile remote
+remoteclaw browser tabs --browser-profile remote
 ```
 
 For the extension relay:
 
 ```bash
-openclaw browser tabs --browser-profile chrome
+remoteclaw browser tabs --browser-profile chrome-relay
 ```
 
 Good result:
 
 - the tab opens in Windows Chrome
-- `openclaw browser tabs` returns the target
+- `remoteclaw browser tabs` returns the target
 - later actions (`snapshot`, `screenshot`, `navigate`) work from the same profile
 
 ## Common misleading errors
@@ -227,7 +227,7 @@ Treat each message as a layer-specific clue:
 
 1. Windows: does `curl http://127.0.0.1:9222/json/version` work?
 2. WSL2: does `curl http://WINDOWS_HOST_OR_IP:9222/json/version` work?
-3. OpenClaw config: does `browser.profiles.<name>.cdpUrl` use that exact WSL2-reachable address?
+3. RemoteClaw config: does `browser.profiles.<name>.cdpUrl` use that exact WSL2-reachable address?
 4. Control UI: are you opening `http://127.0.0.1:18789/` instead of a LAN IP?
 5. Extension relay only: do you actually need `browser.relayBindHost`, and if so is it set explicitly?
 
@@ -239,4 +239,4 @@ When in doubt:
 
 - verify the Windows Chrome endpoint locally first
 - verify the same endpoint from WSL2 second
-- only then debug OpenClaw config or Control UI auth
+- only then debug RemoteClaw config or Control UI auth

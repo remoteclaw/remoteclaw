@@ -18,7 +18,7 @@ RemoteClaw assembles its own system prompt on every run. It includes:
 - Tool list + short descriptions
 - Skills list (only metadata; instructions are loaded on demand with `read`)
 - Self-update instructions
-- Workspace + bootstrap files (`AGENTS.md`, `SOUL.md`, `TOOLS.md`, `IDENTITY.md`, `USER.md`, `HEARTBEAT.md`, `BOOTSTRAP.md` when new, plus `MEMORY.md` and/or `memory.md` when present). Large files are truncated by `agents.defaults.bootstrapMaxChars` (default: 20000), and total bootstrap injection is capped by `agents.defaults.bootstrapTotalMaxChars` (default: 150000). `memory/*.md` files are on-demand via memory tools and are not auto-injected.
+- Workspace + bootstrap files (`AGENTS.md`, `SOUL.md`, `TOOLS.md`, `IDENTITY.md`, `USER.md`, `HEARTBEAT.md`, `BOOTSTRAP.md` when new, plus `MEMORY.md` when present or `memory.md` as a lowercase fallback). Large files are truncated by `agents.defaults.bootstrapMaxChars` (default: 20000), and total bootstrap injection is capped by `agents.defaults.bootstrapTotalMaxChars` (default: 150000). `memory/*.md` files are on-demand via memory tools and are not auto-injected.
 - Time (UTC + user timezone)
 - Reply tags + heartbeat behavior
 - Runtime metadata (host/OS/model/thinking)
@@ -49,13 +49,29 @@ For a practical breakdown (per injected file, tools, skills, and system prompt s
 Use these in chat:
 
 - `/status` → **emoji‑rich status card** with the session model, context usage,
-  and last response input/output tokens.
+  last response input/output tokens, and **estimated cost** (API key only).
 - `/usage off|tokens|full` → appends a **per-response usage footer** to every reply.
   - Persists per session (stored as `responseUsage`).
+  - OAuth auth **hides cost** (tokens only).
+- `/usage cost` → shows a local cost summary from RemoteClaw session logs.
 
 Other surfaces:
 
 - **TUI/Web TUI:** `/status` + `/usage` are supported.
+- **CLI:** `remoteclaw status --usage` and `remoteclaw channels list` show
+  provider quota windows (not per-response costs).
+
+## Cost estimation (when shown)
+
+Costs are estimated from your model pricing config:
+
+```
+models.providers.<provider>.models[].cost
+```
+
+These are **USD per 1M tokens** for `input`, `output`, `cacheRead`, and
+`cacheWrite`. If pricing is missing, RemoteClaw shows tokens only. OAuth tokens
+never show dollar cost.
 
 ## Cache TTL and pruning impact
 

@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/tlon",
-  "version": "0.6.0",
+  "version": "2026.3.13",
   "description": "RemoteClaw Tlon/Urbit channel plugin",
   "type": "module",
   "dependencies": {
@@ -29,7 +29,11 @@
       "defaultChoice": "npm"
     },
     "releaseChecks": {
-      "rootDependencyMirrorAllowlist": []
+      "rootDependencyMirrorAllowlist": [
+        "@tloncorp/api",
+        "@tloncorp/tlon-skill",
+        "@urbit/aura"
+      ]
     }
   }
 }

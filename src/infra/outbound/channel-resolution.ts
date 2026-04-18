@@ -1,4 +1,4 @@
-import { resolveFirstAgentWorkspace } from "../../agents/agent-scope.js";
+import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import { getChannelPlugin } from "../../channels/plugins/index.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
@@ -45,7 +45,8 @@ function maybeBootstrapChannelPlugin(params: {
   bootstrapAttempts.add(attemptKey);
 
   const autoEnabled = applyPluginAutoEnable({ config: cfg }).config;
-  const workspaceDir = resolveFirstAgentWorkspace(autoEnabled) ?? undefined;
+  const defaultAgentId = resolveDefaultAgentId(autoEnabled);
+  const workspaceDir = resolveAgentWorkspaceDir(autoEnabled, defaultAgentId);
   try {
     loadRemoteClawPlugins({
       config: autoEnabled,
@@ -55,6 +56,22 @@ function maybeBootstrapChannelPlugin(params: {
     // Allow a follow-up resolution attempt if bootstrap failed transiently.
     bootstrapAttempts.delete(attemptKey);
   }
+}
+
+function resolveDirectFromActiveRegistry(
+  channel: DeliverableMessageChannel,
+): ChannelPlugin | undefined {
+  const activeRegistry = getActivePluginRegistry();
+  if (!activeRegistry) {
+    return undefined;
+  }
+  for (const entry of activeRegistry.channels) {
+    const plugin = entry?.plugin;
+    if (plugin?.id === channel) {
+      return plugin;
+    }
+  }
+  return undefined;
 }
 
 export function resolveOutboundChannelPlugin(params: {
@@ -71,7 +88,11 @@ export function resolveOutboundChannelPlugin(params: {
   if (current) {
     return current;
   }
+  const directCurrent = resolveDirectFromActiveRegistry(normalized);
+  if (directCurrent) {
+    return directCurrent;
+  }
 
   maybeBootstrapChannelPlugin({ channel: normalized, cfg: params.cfg });
-  return resolve();
+  return resolve() ?? resolveDirectFromActiveRegistry(normalized);
 }

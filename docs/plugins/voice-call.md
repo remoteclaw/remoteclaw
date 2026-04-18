@@ -1,5 +1,5 @@
 ---
-description: "Voice Call plugin: outbound + inbound calls via Twilio/Telnyx/Plivo (plugin install + config + CLI)"
+summary: "Voice Call plugin: outbound + inbound calls via Twilio/Telnyx/Plivo (plugin install + config + CLI)"
 read_when:
   - You want to place an outbound voice call from RemoteClaw
   - You are configuring or developing the voice-call plugin
@@ -296,12 +296,17 @@ Inbound policy defaults to `disabled`. To enable inbound calls, set:
 }
 ```
 
+`inboundPolicy: "allowlist"` is a low-assurance caller-ID screen. The plugin
+normalizes the provider-supplied `From` value and compares it to `allowFrom`.
+Webhook verification authenticates provider delivery and payload integrity, but
+it does not prove PSTN/VoIP caller-number ownership. Treat `allowFrom` as
+caller-ID filtering, not strong caller identity.
+
 Auto-responses use the agent system. Tune with:
 
+- `responseModel`
 - `responseSystemPrompt`
 - `responseTimeoutMs`
-
-Model selection is the CLI agent's responsibility and is not configurable here.
 
 ## CLI
 

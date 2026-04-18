@@ -1,5 +1,5 @@
 ---
-description: "Chrome extension: let RemoteClaw drive your existing Chrome tab"
+summary: "Chrome extension: let RemoteClaw drive your existing Chrome tab"
 read_when:
   - You want the agent to drive an existing Chrome tab (toolbar button)
   - You need remote Gateway + local browser automation via Tailscale
@@ -12,6 +12,13 @@ title: "Chrome Extension"
 The RemoteClaw Chrome extension lets the agent control your **existing Chrome tabs** (your normal Chrome window) instead of launching a separate remoteclaw-managed Chrome profile.
 
 Attach/detach happens via a **single Chrome toolbar button**.
+
+If you want Chrome’s official DevTools MCP attach flow instead of the RemoteClaw
+extension relay, use an `existing-session` browser profile instead. See
+[Browser](/tools/browser#chrome-existing-session-via-mcp). For Chrome’s own
+setup docs, see [Chrome for Developers: Use Chrome DevTools MCP with your
+browser session](https://developer.chrome.com/blog/chrome-devtools-mcp-debug-your-browser-session)
+and the [Chrome DevTools MCP README](https://github.com/ChromeDevTools/chrome-devtools-mcp).
 
 ## What it is (concept)
 
@@ -55,7 +62,7 @@ After upgrading RemoteClaw:
 
 ## Use it (set gateway token once)
 
-RemoteClaw ships with a built-in browser profile named `chrome` that targets the extension relay on the default port.
+RemoteClaw ships with a built-in browser profile named `chrome-relay` that targets the extension relay on the default port.
 
 Before first attach, open extension Options and set:
 
@@ -64,8 +71,8 @@ Before first attach, open extension Options and set:
 
 Use it:
 
-- CLI: `remoteclaw browser --browser-profile chrome tabs`
-- Agent tool: `browser` with `profile="chrome"`
+- CLI: `remoteclaw browser --browser-profile chrome-relay tabs`
+- Agent tool: `browser` with `profile="chrome-relay"`
 
 If you want a different name or a different relay port, create your own profile:
 

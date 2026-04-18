@@ -113,6 +113,26 @@ function runDockerSetup(
   });
 }
 
+async function runDockerSetupWithUnsetGatewayToken(
+  sandbox: DockerSetupSandbox,
+  suffix: string,
+  prepare?: (configDir: string) => Promise<void>,
+) {
+  const configDir = join(sandbox.rootDir, `config-${suffix}`);
+  const workspaceDir = join(sandbox.rootDir, `workspace-${suffix}`);
+  await mkdir(configDir, { recursive: true });
+  await prepare?.(configDir);
+
+  const result = runDockerSetup(sandbox, {
+    REMOTECLAW_GATEWAY_TOKEN: undefined,
+    REMOTECLAW_CONFIG_DIR: configDir,
+    REMOTECLAW_WORKSPACE_DIR: workspaceDir,
+  });
+  const envFile = await readFile(join(sandbox.rootDir, ".env"), "utf8");
+
+  return { result, envFile };
+}
+
 async function withUnixSocket<T>(socketPath: string, run: () => Promise<T>): Promise<T> {
   const server = createServer();
   await new Promise<void>((resolve, reject) => {
@@ -205,6 +225,18 @@ describe("docker-setup.sh", () => {
     expect(identityDirStat.isDirectory()).toBe(true);
   });
 
+  it("writes REMOTECLAW_TZ into .env when given a real IANA timezone", async () => {
+    const activeSandbox = requireSandbox(sandbox);
+
+    const result = runDockerSetup(activeSandbox, {
+      REMOTECLAW_TZ: "Asia/Shanghai",
+    });
+
+    expect(result.status).toBe(0);
+    const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
+    expect(envFile).toContain("REMOTECLAW_TZ=Asia/Shanghai");
+  });
+
   it("precreates agent data dirs to avoid EACCES in container", async () => {
     const activeSandbox = requireSandbox(sandbox);
     const configDir = join(activeSandbox.rootDir, "config-agent-dirs");
@@ -216,8 +248,8 @@ describe("docker-setup.sh", () => {
     });
 
     expect(result.status).toBe(0);
-    const agentWorkspaceStat = await stat(join(configDir, "agents", "main", "agent"));
-    expect(agentWorkspaceStat.isDirectory()).toBe(true);
+    const agentDirStat = await stat(join(configDir, "agents", "main", "agent"));
+    expect(agentDirStat.isDirectory()).toBe(true);
     const sessionsDirStat = await stat(join(configDir, "agents", "main", "sessions"));
     expect(sessionsDirStat.isDirectory()).toBe(true);
 
@@ -231,52 +263,39 @@ describe("docker-setup.sh", () => {
 
   it("reuses existing config token when REMOTECLAW_GATEWAY_TOKEN is unset", async () => {
     const activeSandbox = requireSandbox(sandbox);
-    const configDir = join(activeSandbox.rootDir, "config-token-reuse");
-    const workspaceDir = join(activeSandbox.rootDir, "workspace-token-reuse");
-    await mkdir(configDir, { recursive: true });
-    await writeFile(
-      join(configDir, "remoteclaw.json"),
-      JSON.stringify({ gateway: { auth: { mode: "token", token: "config-token-123" } } }),
+    const { result, envFile } = await runDockerSetupWithUnsetGatewayToken(
+      activeSandbox,
+      "token-reuse",
+      async (configDir) => {
+        await writeFile(
+          join(configDir, "remoteclaw.json"),
+          JSON.stringify({ gateway: { auth: { mode: "token", token: "config-token-123" } } }),
+        );
+      },
     );
 
-    const result = runDockerSetup(activeSandbox, {
-      REMOTECLAW_GATEWAY_TOKEN: undefined,
-      REMOTECLAW_CONFIG_DIR: configDir,
-      REMOTECLAW_WORKSPACE_DIR: workspaceDir,
-    });
-
     expect(result.status).toBe(0);
-    const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
     expect(envFile).toContain("REMOTECLAW_GATEWAY_TOKEN=config-token-123"); // pragma: allowlist secret
   });
 
   it("reuses existing .env token when REMOTECLAW_GATEWAY_TOKEN and config token are unset", async () => {
     const activeSandbox = requireSandbox(sandbox);
-    const configDir = join(activeSandbox.rootDir, "config-dotenv-token-reuse");
-    const workspaceDir = join(activeSandbox.rootDir, "workspace-dotenv-token-reuse");
-    await mkdir(configDir, { recursive: true });
     await writeFile(
       join(activeSandbox.rootDir, ".env"),
       "REMOTECLAW_GATEWAY_TOKEN=dotenv-token-123\nREMOTECLAW_GATEWAY_PORT=18789\n", // pragma: allowlist secret
     );
-
-    const result = runDockerSetup(activeSandbox, {
-      REMOTECLAW_GATEWAY_TOKEN: undefined,
-      REMOTECLAW_CONFIG_DIR: configDir,
-      REMOTECLAW_WORKSPACE_DIR: workspaceDir,
-    });
+    const { result, envFile } = await runDockerSetupWithUnsetGatewayToken(
+      activeSandbox,
+      "dotenv-token-reuse",
+    );
 
     expect(result.status).toBe(0);
-    const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
     expect(envFile).toContain("REMOTECLAW_GATEWAY_TOKEN=dotenv-token-123"); // pragma: allowlist secret
     expect(result.stderr).toBe("");
   });
 
   it("reuses the last non-empty .env token and strips CRLF without truncating '='", async () => {
     const activeSandbox = requireSandbox(sandbox);
-    const configDir = join(activeSandbox.rootDir, "config-dotenv-last-wins");
-    const workspaceDir = join(activeSandbox.rootDir, "workspace-dotenv-last-wins");
-    await mkdir(configDir, { recursive: true });
     await writeFile(
       join(activeSandbox.rootDir, ".env"),
       [
@@ -285,15 +304,12 @@ describe("docker-setup.sh", () => {
         "REMOTECLAW_GATEWAY_TOKEN=last=token=value\r", // pragma: allowlist secret
       ].join("\n"),
     );
-
-    const result = runDockerSetup(activeSandbox, {
-      REMOTECLAW_GATEWAY_TOKEN: undefined,
-      REMOTECLAW_CONFIG_DIR: configDir,
-      REMOTECLAW_WORKSPACE_DIR: workspaceDir,
-    });
+    const { result, envFile } = await runDockerSetupWithUnsetGatewayToken(
+      activeSandbox,
+      "dotenv-last-wins",
+    );
 
     expect(result.status).toBe(0);
-    const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
     expect(envFile).toContain("REMOTECLAW_GATEWAY_TOKEN=last=token=value"); // pragma: allowlist secret
     expect(envFile).not.toContain("REMOTECLAW_GATEWAY_TOKEN=first-token");
     expect(envFile).not.toContain("\r");
@@ -411,6 +427,17 @@ describe("docker-setup.sh", () => {
     expect(result.stderr).toContain("REMOTECLAW_HOME_VOLUME must match");
   });
 
+  it("rejects REMOTECLAW_TZ values that are not present in zoneinfo", async () => {
+    const activeSandbox = requireSandbox(sandbox);
+
+    const result = runDockerSetup(activeSandbox, {
+      REMOTECLAW_TZ: "Nope/Bad",
+    });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("REMOTECLAW_TZ must match a timezone in /usr/share/zoneinfo");
+  });
+
   it("avoids associative arrays so the script remains Bash 3.2-compatible", async () => {
     const script = await readFile(join(repoRoot, "docker-setup.sh"), "utf8");
     expect(script).not.toMatch(/^\s*declare -A\b/m);
@@ -454,5 +481,10 @@ describe("docker-setup.sh", () => {
     expect(
       compose.match(/REMOTECLAW_GATEWAY_TOKEN: \$\{REMOTECLAW_GATEWAY_TOKEN:-\}/g),
     ).toHaveLength(2);
+  });
+
+  it("keeps docker-compose timezone env defaults aligned across services", async () => {
+    const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
+    expect(compose.match(/TZ: \$\{REMOTECLAW_TZ:-UTC\}/g)).toHaveLength(2);
   });
 });

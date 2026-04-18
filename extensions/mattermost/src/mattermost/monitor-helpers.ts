@@ -41,12 +41,12 @@ function normalizeAgentId(value: string | undefined | null): string {
 
 type AgentEntry = NonNullable<NonNullable<RemoteClawConfig["agents"]>["list"]>[number];
 
+function isAgentEntry(entry: unknown): entry is AgentEntry {
+  return Boolean(entry && typeof entry === "object");
+}
+
 function listAgents(cfg: RemoteClawConfig): AgentEntry[] {
-  const list = cfg.agents?.list;
-  if (!Array.isArray(list)) {
-    return [];
-  }
-  return list.filter((entry): entry is AgentEntry => Boolean(entry && typeof entry === "object"));
+  return Array.isArray(cfg.agents?.list) ? cfg.agents.list.filter(isAgentEntry) : [];
 }
 
 function resolveAgentEntry(cfg: RemoteClawConfig, agentId: string): AgentEntry | undefined {

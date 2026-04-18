@@ -28,7 +28,7 @@ Good output in one line:
 
 - `remoteclaw status` → shows configured channels and no obvious auth errors.
 - `remoteclaw status --all` → full report is present and shareable.
-- `remoteclaw gateway probe` → expected gateway target is reachable.
+- `remoteclaw gateway probe` → expected gateway target is reachable (`Reachable: yes`). `RPC: limited - missing scope: operator.read` is degraded diagnostics, not a connect failure.
 - `remoteclaw gateway status` → `Runtime: running` and `RPC probe: ok`.
 - `remoteclaw doctor` → no blocking config/service errors.
 - `remoteclaw channels status --probe` → channels report `connected` or `ready`.

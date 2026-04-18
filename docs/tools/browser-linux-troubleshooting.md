@@ -1,5 +1,5 @@
 ---
-description: "Fix Chrome/Brave/Edge/Chromium CDP startup issues for RemoteClaw browser control on Linux"
+summary: "Fix Chrome/Brave/Edge/Chromium CDP startup issues for RemoteClaw browser control on Linux"
 read_when: "Browser control fails on Linux, especially with snap Chromium"
 title: "Browser Troubleshooting"
 ---
@@ -123,7 +123,7 @@ curl -s http://127.0.0.1:18791/tabs
 
 ### Problem: "Chrome extension relay is running, but no tab is connected"
 
-You’re using the `chrome` profile (extension relay). It expects the RemoteClaw
+You’re using the `chrome-relay` profile (extension relay). It expects the RemoteClaw
 browser extension to be attached to a live tab.
 
 Fix options:
@@ -135,5 +135,5 @@ Fix options:
 
 Notes:
 
-- The `chrome` profile uses your **system default Chromium browser** when possible.
+- The `chrome-relay` profile uses your **system default Chromium browser** when possible.
 - Local `remoteclaw` profiles auto-assign `cdpPort`/`cdpUrl`; only set those for remote CDP.

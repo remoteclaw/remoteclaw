@@ -5,7 +5,6 @@ import {
   createAccountStatusSink,
   formatAllowFromLowercase,
   mapAllowFromEntries,
-  runPassiveAccountLifecycle,
 } from "remoteclaw/plugin-sdk/compat";
 import {
   applyAccountNameToChannelSection,
@@ -21,6 +20,7 @@ import {
   type RemoteClawConfig,
   type ChannelSetupInput,
 } from "remoteclaw/plugin-sdk/nextcloud-talk";
+import { runStoppablePassiveMonitor } from "../../shared/passive-monitor.js";
 import {
   listNextcloudTalkAccountIds,
   resolveDefaultNextcloudTalkAccountId,
@@ -344,7 +344,7 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
         setStatus: ctx.setStatus,
       });
 
-      await runPassiveAccountLifecycle({
+      await runStoppablePassiveMonitor({
         abortSignal: ctx.abortSignal,
         start: async () =>
           await monitorNextcloudTalkProvider({
@@ -354,9 +354,6 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
             abortSignal: ctx.abortSignal,
             statusSink,
           }),
-        stop: async (monitor) => {
-          monitor.stop();
-        },
       });
     },
     logoutAccount: async ({ accountId, cfg }) => {

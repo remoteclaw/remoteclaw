@@ -19,6 +19,7 @@ vi.mock("../../agents/agent-scope.js", () => ({
   resolveFirstAgentWorkspace: () => "/tmp/remoteclaw-test-workspace",
   resolveAgentWorkspaceDir: () => "/tmp/remoteclaw-test-workspace",
   resolveAgentRuntime: () => "claude",
+  resolveDefaultAgentId: () => "test-agent",
 }));
 
 vi.mock("../../config/plugin-auto-enable.js", () => ({

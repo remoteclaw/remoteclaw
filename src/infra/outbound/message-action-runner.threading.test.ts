@@ -1,9 +1,10 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { slackPlugin } from "../../../extensions/slack/src/channel.js";
-import { telegramPlugin } from "../../../extensions/telegram/src/channel.js";
-import type { RemoteClawConfig } from "../../config/config.js";
-import { setActivePluginRegistry } from "../../plugins/runtime.js";
-import { createTestRegistry } from "../../test-utils/channel-plugins.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  installMessageActionRunnerTestRegistry,
+  resetMessageActionRunnerTestRegistry,
+  slackConfig,
+  telegramConfig,
+} from "./message-action-runner.test-helpers.js";
 
 const mocks = vi.hoisted(() => ({
   executeSendAction: vi.fn(),
@@ -32,27 +33,8 @@ vi.mock("../../config/sessions.js", async () => {
 
 import { runMessageAction } from "./message-action-runner.js";
 
-const slackConfig = {
-  agents: { list: [{ id: "test-agent", workspace: "/tmp/test-workspace" }] },
-  channels: {
-    slack: {
-      botToken: "xoxb-test",
-      appToken: "xapp-test",
-    },
-  },
-} as RemoteClawConfig;
-
-const telegramConfig = {
-  agents: { list: [{ id: "test-agent", workspace: "/tmp/test-workspace" }] },
-  channels: {
-    telegram: {
-      botToken: "telegram-test",
-    },
-  },
-} as RemoteClawConfig;
-
 async function runThreadingAction(params: {
-  cfg: RemoteClawConfig;
+  cfg: typeof slackConfig;
   actionParams: Record<string, unknown>;
   toolContext?: Record<string, unknown>;
 }) {
@@ -61,7 +43,7 @@ async function runThreadingAction(params: {
     action: "send",
     params: params.actionParams as never,
     toolContext: params.toolContext as never,
-    agentId: "test-agent",
+    agentId: "main",
   });
   return mocks.executeSendAction.mock.calls[0]?.[0] as {
     threadId?: string;
@@ -82,39 +64,13 @@ const defaultTelegramToolContext = {
   currentThreadTs: "42",
 } as const;
 
-let createPluginRuntime: typeof import("../../plugins/runtime/index.js").createPluginRuntime;
-let setSlackRuntime: typeof import("../../../extensions/slack/src/runtime.js").setSlackRuntime;
-let setTelegramRuntime: typeof import("../../../extensions/telegram/src/runtime.js").setTelegramRuntime;
-
 describe("runMessageAction threading auto-injection", () => {
-  beforeAll(async () => {
-    ({ createPluginRuntime } = await import("../../plugins/runtime/index.js"));
-    ({ setSlackRuntime } = await import("../../../extensions/slack/src/runtime.js"));
-    ({ setTelegramRuntime } = await import("../../../extensions/telegram/src/runtime.js"));
-  });
-
   beforeEach(() => {
-    const runtime = createPluginRuntime();
-    setSlackRuntime(runtime);
-    setTelegramRuntime(runtime);
-    setActivePluginRegistry(
-      createTestRegistry([
-        {
-          pluginId: "slack",
-          source: "test",
-          plugin: slackPlugin,
-        },
-        {
-          pluginId: "telegram",
-          source: "test",
-          plugin: telegramPlugin,
-        },
-      ]),
-    );
+    installMessageActionRunnerTestRegistry();
   });
 
   afterEach(() => {
-    setActivePluginRegistry(createTestRegistry([]));
+    resetMessageActionRunnerTestRegistry();
     mocks.executeSendAction.mockClear();
     mocks.recordSessionMetaFromInbound.mockClear();
   });
@@ -124,13 +80,13 @@ describe("runMessageAction threading auto-injection", () => {
       name: "exact channel id",
       target: "channel:C123",
       threadTs: "111.222",
-      expectedSessionKey: "agent:test-agent:slack:channel:c123:thread:111.222",
+      expectedSessionKey: "agent:main:slack:channel:c123:thread:111.222",
     },
     {
       name: "case-insensitive channel id",
       target: "channel:c123",
       threadTs: "333.444",
-      expectedSessionKey: "agent:test-agent:slack:channel:c123:thread:333.444",
+      expectedSessionKey: "agent:main:slack:channel:c123:thread:333.444",
     },
   ] as const)("auto-threads slack using $name", async (testCase) => {
     mockHandledSendAction();
@@ -149,7 +105,7 @@ describe("runMessageAction threading auto-injection", () => {
       },
     });
 
-    expect(call?.ctx?.agentId).toBe("test-agent");
+    expect(call?.ctx?.agentId).toBe("main");
     expect(call?.ctx?.mirror?.sessionKey).toBe(testCase.expectedSessionKey);
   });
 

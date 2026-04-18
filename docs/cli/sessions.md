@@ -60,7 +60,7 @@ remoteclaw sessions cleanup --dry-run
 remoteclaw sessions cleanup --agent work --dry-run
 remoteclaw sessions cleanup --all-agents --dry-run
 remoteclaw sessions cleanup --enforce
-remoteclaw sessions cleanup --enforce --active-key "agent:main:telegram:dm:123"
+remoteclaw sessions cleanup --enforce --active-key "agent:main:telegram:direct:123"
 remoteclaw sessions cleanup --json
 ```
 

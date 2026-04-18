@@ -30,7 +30,7 @@ import { readSessionUpdatedAt, resolveStorePath } from "../../config/sessions.js
 import { danger, logVerbose, shouldLogVerbose } from "../../globals.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { kindFromMime } from "../../media/mime.js";
-import { resolveAgentRouteWithPolicy } from "../../routing/resolve-route.js";
+import { resolveAgentRoute } from "../../routing/resolve-route.js";
 import {
   DM_GROUP_ACCESS_REASON,
   resolvePinnedMainDmOwnerFromAllowlist,
@@ -76,6 +76,24 @@ function formatAttachmentSummaryPlaceholder(contentTypes: Array<string | undefin
   return `[${parts.join(" + ")} attached]`;
 }
 
+function resolveSignalInboundRoute(params: {
+  cfg: SignalEventHandlerDeps["cfg"];
+  accountId: SignalEventHandlerDeps["accountId"];
+  isGroup: boolean;
+  groupId?: string;
+  senderPeerId: string;
+}) {
+  return resolveAgentRoute({
+    cfg: params.cfg,
+    channel: "signal",
+    accountId: params.accountId,
+    peer: {
+      kind: params.isGroup ? "group" : "direct",
+      id: params.isGroup ? (params.groupId ?? "unknown") : params.senderPeerId,
+    },
+  });
+}
+
 export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
   type SignalInboundEntry = {
     senderName: string;
@@ -106,20 +124,13 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
       directLabel: entry.senderName,
       directId: entry.senderDisplay,
     });
-    const route = resolveAgentRouteWithPolicy({
+    const route = resolveSignalInboundRoute({
       cfg: deps.cfg,
-      channel: "signal",
       accountId: deps.accountId,
-      peer: {
-        kind: entry.isGroup ? "group" : "direct",
-        id: entry.isGroup ? (entry.groupId ?? "unknown") : entry.senderPeerId,
-      },
+      isGroup: entry.isGroup,
+      groupId: entry.groupId,
+      senderPeerId: entry.senderPeerId,
     });
-    if (!route) {
-      // Silent drop: routing.unmatched policy dropped the message. Telemetry
-      // already fired via handleUnmatched.
-      return;
-    }
     const storePath = resolveStorePath(deps.cfg.session?.store, {
       agentId: route.agentId,
     });
@@ -417,19 +428,13 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
     }
 
     const senderPeerId = resolveSignalPeerId(params.sender);
-    const route = resolveAgentRouteWithPolicy({
+    const route = resolveSignalInboundRoute({
       cfg: deps.cfg,
-      channel: "signal",
       accountId: deps.accountId,
-      peer: {
-        kind: isGroup ? "group" : "direct",
-        id: isGroup ? (groupId ?? "unknown") : senderPeerId,
-      },
+      isGroup,
+      groupId,
+      senderPeerId,
     });
-    if (!route) {
-      // Silent drop: reaction on a message routed to an unmatched agent.
-      return true;
-    }
     const groupLabel = isGroup ? `${groupName ?? "Signal Group"} id:${groupId}` : undefined;
     const messageId = params.reaction.targetSentTimestamp
       ? String(params.reaction.targetSentTimestamp)
@@ -619,20 +624,13 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
       return;
     }
 
-    const route = resolveAgentRouteWithPolicy({
+    const route = resolveSignalInboundRoute({
       cfg: deps.cfg,
-      channel: "signal",
       accountId: deps.accountId,
-      peer: {
-        kind: isGroup ? "group" : "direct",
-        id: isGroup ? (groupId ?? "unknown") : senderPeerId,
-      },
+      isGroup,
+      groupId,
+      senderPeerId,
     });
-    if (!route) {
-      // Silent drop: routing.unmatched policy dropped the message. Telemetry
-      // already fired via handleUnmatched.
-      return;
-    }
     const mentionRegexes = buildMentionRegexes(deps.cfg, route.agentId);
     const wasMentioned = isGroup && matchesMentionPatterns(messageText, mentionRegexes);
     const requireMention =

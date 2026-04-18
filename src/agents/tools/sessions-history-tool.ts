@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import { loadConfig } from "../../config/config.js";
+import { type RemoteClawConfig, loadConfig } from "../../config/config.js";
 import { callGateway } from "../../gateway/call.js";
 import { capArrayByJsonBytes } from "../../gateway/session-utils.fs.js";
 import { jsonUtf8Bytes } from "../../infra/json-utf8-bytes.js";
@@ -169,6 +169,7 @@ function enforceSessionsHistoryHardCap(params: {
 export function createSessionsHistoryTool(opts?: {
   agentSessionKey?: string;
   sandboxed?: boolean;
+  config?: RemoteClawConfig;
 }): AnyAgentTool {
   return {
     label: "Session History",
@@ -176,11 +177,11 @@ export function createSessionsHistoryTool(opts?: {
     description: "Fetch message history for a session.",
     parameters: SessionsHistoryToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args;
+      const params = args as Record<string, unknown>;
       const sessionKeyParam = readStringParam(params, "sessionKey", {
         required: true,
       });
-      const cfg = loadConfig();
+      const cfg = opts?.config ?? loadConfig();
       const { mainKey, alias, effectiveRequesterKey, restrictToSpawned } =
         resolveSandboxedSessionToolContext({
           cfg,

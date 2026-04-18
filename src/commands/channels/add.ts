@@ -1,5 +1,6 @@
-import { resolveFirstAgentWorkspace } from "../../agents/agent-scope.js";
+import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import { listChannelPluginCatalogEntries } from "../../channels/plugins/catalog.js";
+import { parseOptionalDelimitedEntries } from "../../channels/plugins/helpers.js";
 import { getChannelPlugin, normalizeChannelId } from "../../channels/plugins/index.js";
 import { moveSingleAccountChannelSectionToDefaultAccount } from "../../channels/plugins/setup-helpers.js";
 import type { ChannelId, ChannelSetupInput } from "../../channels/plugins/types.js";
@@ -28,23 +29,12 @@ export type ChannelsAddOptions = {
   dmAllowlist?: string;
 } & Omit<ChannelSetupInput, "groupChannels" | "dmAllowlist" | "initialSyncLimit">;
 
-function parseList(value: string | undefined): string[] | undefined {
-  if (!value?.trim()) {
-    return undefined;
-  }
-  const parsed = value
-    .split(/[\n,;]+/g)
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-  return parsed.length > 0 ? parsed : undefined;
-}
-
 function resolveCatalogChannelEntry(raw: string, cfg: RemoteClawConfig | null) {
   const trimmed = raw.trim().toLowerCase();
   if (!trimmed) {
     return undefined;
   }
-  const workspaceDir = cfg ? (resolveFirstAgentWorkspace(cfg) ?? undefined) : undefined;
+  const workspaceDir = cfg ? resolveAgentWorkspaceDir(cfg, resolveDefaultAgentId(cfg)) : undefined;
   return listChannelPluginCatalogEntries({ workspaceDir }).find((entry) => {
     if (entry.id.toLowerCase() === trimmed) {
       return true;
@@ -134,14 +124,15 @@ export async function channelsAddCommand(
       });
       if (bindNow) {
         const agentSummaries = buildAgentSummaries(nextConfig);
+        const defaultAgentId = resolveDefaultAgentId(nextConfig);
         for (const target of bindTargets) {
           const targetAgentId = await prompter.select({
             message: `Route ${target.channel} account "${target.accountId}" to agent`,
             options: agentSummaries.map((agent) => ({
               value: agent.id,
-              label: agent.id,
+              label: agent.isDefault ? `${agent.id} (default)` : agent.id,
             })),
-            initialValue: agentSummaries[0]?.id,
+            initialValue: defaultAgentId,
           });
           const bindingResult = applyAgentBindings(nextConfig, [
             {
@@ -186,7 +177,7 @@ export async function channelsAddCommand(
 
   if (!channel && catalogEntry) {
     const prompter = createClackPrompter();
-    const workspaceDir = resolveFirstAgentWorkspace(nextConfig) ?? undefined;
+    const workspaceDir = resolveAgentWorkspaceDir(nextConfig, resolveDefaultAgentId(nextConfig));
     const result = await ensureOnboardingPluginInstalled({
       cfg: nextConfig,
       entry: catalogEntry,
@@ -224,8 +215,8 @@ export async function channelsAddCommand(
       : typeof opts.initialSyncLimit === "string" && opts.initialSyncLimit.trim()
         ? Number.parseInt(opts.initialSyncLimit, 10)
         : undefined;
-  const groupChannels = parseList(opts.groupChannels);
-  const dmAllowlist = parseList(opts.dmAllowlist);
+  const groupChannels = parseOptionalDelimitedEntries(opts.groupChannels);
+  const dmAllowlist = parseOptionalDelimitedEntries(opts.dmAllowlist);
 
   const input: ChannelSetupInput = {
     name: opts.name,

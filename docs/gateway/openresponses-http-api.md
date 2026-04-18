@@ -18,77 +18,16 @@ This endpoint is **disabled by default**. Enable it in config first.
 Under the hood, requests are executed as a normal Gateway agent run (same codepath as
 `remoteclaw agent`), so routing/permissions/config match your Gateway.
 
-## Authentication
+## Authentication, security, and routing
 
-Uses the Gateway auth configuration. Send a bearer token:
+Operational behavior matches [OpenAI Chat Completions](/gateway/openai-http-api):
 
-- `Authorization: Bearer <token>`
+- use `Authorization: Bearer <token>` with the normal Gateway auth config
+- treat the endpoint as full operator access for the gateway instance
+- select agents with `model: "remoteclaw:<agentId>"`, `model: "agent:<agentId>"`, or `x-remoteclaw-agent-id`
+- use `x-remoteclaw-session-key` for explicit session routing
 
-Notes:
-
-- When `gateway.auth.mode="token"`, use `gateway.auth.token` (or `REMOTECLAW_GATEWAY_TOKEN`).
-- When `gateway.auth.mode="password"`, use `gateway.auth.password` (or `REMOTECLAW_GATEWAY_PASSWORD`).
-- If `gateway.auth.rateLimit` is configured and too many auth failures occur, the endpoint returns `429` with `Retry-After`.
-
-## Security boundary (important)
-
-Treat this endpoint as a **full operator-access** surface for the gateway instance.
-
-- HTTP bearer auth here is not a narrow per-user scope model.
-- A valid Gateway token/password for this endpoint should be treated like an owner/operator credential.
-- Requests run through the same control-plane agent path as trusted operator actions.
-- There is no separate non-owner/per-user tool boundary on this endpoint; once a caller passes Gateway auth here, RemoteClaw treats that caller as a trusted operator for this gateway.
-- If the target agent policy allows sensitive tools, this endpoint can use them.
-- Keep this endpoint on loopback/tailnet/private ingress only; do not expose it directly to the public internet.
-
-See [Security](/gateway/security) and [Remote access](/gateway/remote).
-
-## Choosing an agent
-
-No custom headers required: encode the agent id in the OpenResponses `model` field:
-
-- `model: "remoteclaw:<agentId>"` (example: `"remoteclaw:main"`, `"remoteclaw:beta"`)
-- `model: "agent:<agentId>"` (alias)
-
-Or target a specific RemoteClaw agent by header:
-
-- `x-remoteclaw-agent-id: <agentId>` (default: `main`)
-
-Advanced:
-
-- `x-remoteclaw-session-key: <sessionKey>` to fully control session routing.
-
-## Enabling the endpoint
-
-Set `gateway.http.endpoints.responses.enabled` to `true`:
-
-```json5
-{
-  gateway: {
-    http: {
-      endpoints: {
-        responses: { enabled: true },
-      },
-    },
-  },
-}
-```
-
-## Disabling the endpoint
-
-Set `gateway.http.endpoints.responses.enabled` to `false`:
-
-```json5
-{
-  gateway: {
-    http: {
-      endpoints: {
-        responses: { enabled: false },
-      },
-    },
-  },
-}
-```
+Enable or disable this endpoint with `gateway.http.endpoints.responses.enabled`.
 
 ## Session behavior
 

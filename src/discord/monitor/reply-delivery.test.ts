@@ -27,6 +27,22 @@ describe("deliverDiscordReply", () => {
   const cfg = {
     channels: { discord: { token: "test-token" } },
   } as RemoteClawConfig;
+  const expectBotSendRetrySuccess = async (status: number, message: string) => {
+    sendMessageDiscordMock
+      .mockRejectedValueOnce(Object.assign(new Error(message), { status }))
+      .mockResolvedValueOnce({ messageId: "msg-1", channelId: "channel-1" });
+
+    await deliverDiscordReply({
+      replies: [{ text: "retry me" }],
+      target: "channel:123",
+      token: "token",
+      runtime,
+      cfg,
+      textLimit: 2000,
+    });
+
+    expect(sendMessageDiscordMock).toHaveBeenCalledTimes(2);
+  };
   const createBoundThreadBindings = async (
     overrides: Partial<{
       threadId: string;
@@ -48,8 +64,8 @@ describe("deliverDiscordReply", () => {
       threadId: "thread-1",
       channelId: "parent-1",
       targetKind: "subagent",
-      targetSessionKey: "agent:test-agent:subagent:child",
-      agentId: "test-agent",
+      targetSessionKey: "agent:main:subagent:child",
+      agentId: "main",
       webhookId: "wh_1",
       webhookToken: "tok_1",
       introText: "",
@@ -319,39 +335,11 @@ describe("deliverDiscordReply", () => {
   });
 
   it("retries bot send on 429 rate limit then succeeds", async () => {
-    const rateLimitErr = Object.assign(new Error("rate limited"), { status: 429 });
-    sendMessageDiscordMock
-      .mockRejectedValueOnce(rateLimitErr)
-      .mockResolvedValueOnce({ messageId: "msg-1", channelId: "channel-1" });
-
-    await deliverDiscordReply({
-      replies: [{ text: "retry me" }],
-      target: "channel:123",
-      token: "token",
-      runtime,
-      cfg,
-      textLimit: 2000,
-    });
-
-    expect(sendMessageDiscordMock).toHaveBeenCalledTimes(2);
+    await expectBotSendRetrySuccess(429, "rate limited");
   });
 
   it("retries bot send on 500 server error then succeeds", async () => {
-    const serverErr = Object.assign(new Error("internal"), { status: 500 });
-    sendMessageDiscordMock
-      .mockRejectedValueOnce(serverErr)
-      .mockResolvedValueOnce({ messageId: "msg-1", channelId: "channel-1" });
-
-    await deliverDiscordReply({
-      replies: [{ text: "retry me" }],
-      target: "channel:123",
-      token: "token",
-      runtime,
-      cfg,
-      textLimit: 2000,
-    });
-
-    expect(sendMessageDiscordMock).toHaveBeenCalledTimes(2);
+    await expectBotSendRetrySuccess(500, "internal");
   });
 
   it("does not retry on 4xx client errors", async () => {
@@ -420,7 +408,7 @@ describe("deliverDiscordReply", () => {
       cfg,
       textLimit: 2000,
       replyToId: "reply-1",
-      sessionKey: "agent:test-agent:subagent:child",
+      sessionKey: "agent:main:subagent:child",
       threadBindings,
     });
 
@@ -453,7 +441,7 @@ describe("deliverDiscordReply", () => {
         runtime,
         cfg,
         textLimit: 2000,
-        sessionKey: "agent:test-agent:subagent:child",
+        sessionKey: "agent:main:subagent:child",
         threadBindings,
       });
 
@@ -477,7 +465,7 @@ describe("deliverDiscordReply", () => {
       runtime,
       cfg,
       textLimit: 2000,
-      sessionKey: "agent:test-agent:subagent:child",
+      sessionKey: "agent:main:subagent:child",
       threadBindings,
     });
 
@@ -502,7 +490,7 @@ describe("deliverDiscordReply", () => {
       runtime,
       cfg,
       textLimit: 2000,
-      sessionKey: "agent:test-agent:subagent:child",
+      sessionKey: "agent:main:subagent:child",
       threadBindings,
     });
 

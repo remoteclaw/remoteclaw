@@ -1,5 +1,5 @@
 ---
-description: "CLI reference for `remoteclaw browser` (profiles, tabs, actions, extension relay)"
+summary: "CLI reference for `remoteclaw browser` (profiles, tabs, actions, extension relay)"
 read_when:
   - You use `remoteclaw browser` and want examples for common tasks
   - You want to control a browser running on another machine via a node host
@@ -27,7 +27,7 @@ Related:
 ## Quick start (local)
 
 ```bash
-remoteclaw browser --browser-profile chrome tabs
+remoteclaw browser profiles
 remoteclaw browser --browser-profile remoteclaw start
 remoteclaw browser --browser-profile remoteclaw open https://example.com
 remoteclaw browser --browser-profile remoteclaw snapshot
@@ -38,7 +38,8 @@ remoteclaw browser --browser-profile remoteclaw snapshot
 Profiles are named browser routing configs. In practice:
 
 - `remoteclaw`: launches/attaches to a dedicated RemoteClaw-managed Chrome instance (isolated user data dir).
-- `chrome`: controls your existing Chrome tab(s) via the Chrome extension relay.
+- `user`: controls your existing signed-in Chrome session via Chrome DevTools MCP.
+- `chrome-relay`: controls your existing Chrome tab(s) via the Chrome extension relay.
 
 ```bash
 remoteclaw browser profiles

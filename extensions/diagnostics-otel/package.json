@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/diagnostics-otel",
-  "version": "0.6.0",
+  "version": "2026.3.13",
   "description": "RemoteClaw diagnostics OpenTelemetry exporter",
   "type": "module",
   "dependencies": {

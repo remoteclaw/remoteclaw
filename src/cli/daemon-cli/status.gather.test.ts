@@ -18,7 +18,12 @@ const readLastGatewayErrorLine = vi.fn(async (_env?: NodeJS.ProcessEnv) => null)
 const auditGatewayServiceConfig = vi.fn(async (_opts?: unknown) => undefined);
 const serviceIsLoaded = vi.fn(async (_opts?: unknown) => true);
 const serviceReadRuntime = vi.fn(async (_env?: NodeJS.ProcessEnv) => ({ status: "running" }));
-const serviceReadCommand = vi.fn(async (_env?: NodeJS.ProcessEnv) => ({
+const serviceReadCommand = vi.fn<
+  (env?: NodeJS.ProcessEnv) => Promise<{
+    programArguments: string[];
+    environment?: Record<string, string>;
+  }>
+>(async (_env?: NodeJS.ProcessEnv) => ({
   programArguments: ["/bin/node", "cli", "gateway", "--port", "19001"],
   environment: {
     REMOTECLAW_STATE_DIR: "/tmp/remoteclaw-daemon",
@@ -188,6 +193,37 @@ describe("gatherDaemonStatus", () => {
     );
     expect(status.gateway?.probeUrl).toBe("wss://override.example:18790");
     expect(status.rpc?.url).toBe("wss://override.example:18790");
+  });
+
+  it("reuses command environment when reading runtime status", async () => {
+    serviceReadCommand.mockResolvedValueOnce({
+      programArguments: ["/bin/node", "cli", "gateway", "--port", "19001"],
+      environment: {
+        REMOTECLAW_GATEWAY_PORT: "19001",
+        REMOTECLAW_CONFIG_PATH: "/tmp/remoteclaw-daemon/remoteclaw.json",
+        REMOTECLAW_STATE_DIR: "/tmp/remoteclaw-daemon",
+      } as Record<string, string>,
+    });
+    serviceReadRuntime.mockImplementationOnce(async (env?: NodeJS.ProcessEnv) => ({
+      status: env?.REMOTECLAW_GATEWAY_PORT === "19001" ? "running" : "unknown",
+      detail: env?.REMOTECLAW_GATEWAY_PORT ?? "missing-port",
+    }));
+
+    const status = await gatherDaemonStatus({
+      rpc: {},
+      probe: false,
+      deep: false,
+    });
+
+    expect(serviceReadRuntime).toHaveBeenCalledWith(
+      expect.objectContaining({
+        REMOTECLAW_GATEWAY_PORT: "19001",
+      }),
+    );
+    expect(status.service.runtime).toMatchObject({
+      status: "running",
+      detail: "19001",
+    });
   });
 
   it("resolves daemon gateway auth password SecretRef values before probing", async () => {

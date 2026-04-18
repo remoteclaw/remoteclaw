@@ -247,6 +247,18 @@ describe("discord guild/channel resolution", () => {
     expect(resolved?.slug).toBe("friends-of-remoteclaw");
   });
 
+  it("resolves guild entry by raw guild id when guild object is missing", () => {
+    const guildEntries = makeEntries({
+      "123": { slug: "friends-of-remoteclaw" },
+    });
+    const resolved = resolveDiscordGuildEntry({
+      guildId: "123",
+      guildEntries,
+    });
+    expect(resolved?.id).toBe("123");
+    expect(resolved?.slug).toBe("friends-of-remoteclaw");
+  });
+
   it("resolves guild entry by slug key", () => {
     const guildEntries = makeEntries({
       "friends-of-remoteclaw": { slug: "friends-of-remoteclaw" },

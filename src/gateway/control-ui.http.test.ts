@@ -3,7 +3,6 @@ import type { IncomingMessage } from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_ASSISTANT_IDENTITY } from "./assistant-identity.js";
 import { CONTROL_UI_BOOTSTRAP_CONFIG_PATH } from "./control-ui-contract.js";
 import { handleControlUiAvatarRequest, handleControlUiHttpRequest } from "./control-ui.js";
 import { makeMockHttpResponse } from "./test-http-response.js";
@@ -84,6 +83,13 @@ describe("handleControlUiHttpRequest", () => {
     const filePath = path.join(assetsDir, filename);
     await fs.writeFile(filePath, contents);
     return { assetsDir, filePath };
+  }
+
+  async function createHardlinkedAssetFile(rootPath: string) {
+    const { filePath } = await writeAssetFile(rootPath, "app.js", "console.log('hi');");
+    const hardlinkPath = path.join(path.dirname(filePath), "app.hl.js");
+    await fs.link(filePath, hardlinkPath);
+    return hardlinkPath;
   }
 
   async function withBasePathRootFixture<T>(params: {
@@ -168,7 +174,7 @@ describe("handleControlUiHttpRequest", () => {
         expect(parsed.basePath).toBe("");
         expect(parsed.assistantName).toBe("</script><script>alert(1)//");
         expect(parsed.assistantAvatar).toBe("/avatar/main");
-        expect(parsed.assistantAgentId).toBe(DEFAULT_ASSISTANT_IDENTITY.agentId);
+        expect(parsed.assistantAgentId).toBe("main");
       },
     });
   });
@@ -197,7 +203,7 @@ describe("handleControlUiHttpRequest", () => {
         expect(parsed.basePath).toBe("/remoteclaw");
         expect(parsed.assistantName).toBe("Ops");
         expect(parsed.assistantAvatar).toBe("/remoteclaw/avatar/main");
-        expect(parsed.assistantAgentId).toBe(DEFAULT_ASSISTANT_IDENTITY.agentId);
+        expect(parsed.assistantAgentId).toBe("main");
       },
     });
   });
@@ -359,10 +365,7 @@ describe("handleControlUiHttpRequest", () => {
   it("rejects hardlinked asset files for custom/resolved roots (security boundary)", async () => {
     await withControlUiRoot({
       fn: async (tmp) => {
-        const assetsDir = path.join(tmp, "assets");
-        await fs.mkdir(assetsDir, { recursive: true });
-        await fs.writeFile(path.join(assetsDir, "app.js"), "console.log('hi');");
-        await fs.link(path.join(assetsDir, "app.js"), path.join(assetsDir, "app.hl.js"));
+        await createHardlinkedAssetFile(tmp);
 
         const { res, end, handled } = runControlUiRequest({
           url: "/assets/app.hl.js",
@@ -380,10 +383,7 @@ describe("handleControlUiHttpRequest", () => {
   it("serves hardlinked asset files for bundled roots (pnpm global install)", async () => {
     await withControlUiRoot({
       fn: async (tmp) => {
-        const assetsDir = path.join(tmp, "assets");
-        await fs.mkdir(assetsDir, { recursive: true });
-        await fs.writeFile(path.join(assetsDir, "app.js"), "console.log('hi');");
-        await fs.link(path.join(assetsDir, "app.js"), path.join(assetsDir, "app.hl.js"));
+        await createHardlinkedAssetFile(tmp);
 
         const { res, end, handled } = runControlUiRequest({
           url: "/assets/app.hl.js",

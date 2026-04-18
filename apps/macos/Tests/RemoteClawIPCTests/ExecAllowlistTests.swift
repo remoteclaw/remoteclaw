@@ -99,10 +99,10 @@ struct ExecAllowlistTests {
     }
 
     @Test func `resolve for allowlist splits shell chains`() {
-        let command = ["/bin/sh", "-lc", "echo allowlisted && /usr/bin/touch /tmp/openclaw-allowlist-test"]
+        let command = ["/bin/sh", "-lc", "echo allowlisted && /usr/bin/touch /tmp/remoteclaw-allowlist-test"]
         let resolutions = ExecCommandResolution.resolveForAllowlist(
             command: command,
-            rawCommand: "echo allowlisted && /usr/bin/touch /tmp/openclaw-allowlist-test",
+            rawCommand: "echo allowlisted && /usr/bin/touch /tmp/remoteclaw-allowlist-test",
             cwd: nil,
             env: ["PATH": "/usr/bin:/bin"])
         #expect(resolutions.count == 2)
@@ -122,20 +122,40 @@ struct ExecAllowlistTests {
     }
 
     @Test func `resolve for allowlist fails closed on command substitution`() {
-        let command = ["/bin/sh", "-lc", "echo $(/usr/bin/touch /tmp/openclaw-allowlist-test-subst)"]
+        let command = ["/bin/sh", "-lc", "echo $(/usr/bin/touch /tmp/remoteclaw-allowlist-test-subst)"]
         let resolutions = ExecCommandResolution.resolveForAllowlist(
             command: command,
-            rawCommand: "echo $(/usr/bin/touch /tmp/openclaw-allowlist-test-subst)",
+            rawCommand: "echo $(/usr/bin/touch /tmp/remoteclaw-allowlist-test-subst)",
             cwd: nil,
             env: ["PATH": "/usr/bin:/bin"])
         #expect(resolutions.isEmpty)
     }
 
     @Test func `resolve for allowlist fails closed on quoted command substitution`() {
-        let command = ["/bin/sh", "-lc", "echo \"ok $(/usr/bin/touch /tmp/openclaw-allowlist-test-quoted-subst)\""]
+        let command = ["/bin/sh", "-lc", "echo \"ok $(/usr/bin/touch /tmp/remoteclaw-allowlist-test-quoted-subst)\""]
         let resolutions = ExecCommandResolution.resolveForAllowlist(
             command: command,
-            rawCommand: "echo \"ok $(/usr/bin/touch /tmp/openclaw-allowlist-test-quoted-subst)\"",
+            rawCommand: "echo \"ok $(/usr/bin/touch /tmp/remoteclaw-allowlist-test-quoted-subst)\"",
+            cwd: nil,
+            env: ["PATH": "/usr/bin:/bin"])
+        #expect(resolutions.isEmpty)
+    }
+
+    @Test func `resolve for allowlist fails closed on line-continued command substitution`() {
+        let command = ["/bin/sh", "-lc", "echo $\\\n(/usr/bin/touch /tmp/remoteclaw-allowlist-test-line-cont-subst)"]
+        let resolutions = ExecCommandResolution.resolveForAllowlist(
+            command: command,
+            rawCommand: "echo $\\\n(/usr/bin/touch /tmp/remoteclaw-allowlist-test-line-cont-subst)",
+            cwd: nil,
+            env: ["PATH": "/usr/bin:/bin"])
+        #expect(resolutions.isEmpty)
+    }
+
+    @Test func `resolve for allowlist fails closed on chained line-continued command substitution`() {
+        let command = ["/bin/sh", "-lc", "echo ok && $\\\n(/usr/bin/touch /tmp/remoteclaw-allowlist-test-chained-line-cont-subst)"]
+        let resolutions = ExecCommandResolution.resolveForAllowlist(
+            command: command,
+            rawCommand: "echo ok && $\\\n(/usr/bin/touch /tmp/remoteclaw-allowlist-test-chained-line-cont-subst)",
             cwd: nil,
             env: ["PATH": "/usr/bin:/bin"])
         #expect(resolutions.isEmpty)
@@ -196,7 +216,7 @@ struct ExecAllowlistTests {
             "/usr/bin/env",
             "/bin/sh",
             "-lc",
-            "echo allowlisted && /usr/bin/touch /tmp/openclaw-allowlist-test",
+            "echo allowlisted && /usr/bin/touch /tmp/remoteclaw-allowlist-test",
         ]
         let resolutions = ExecCommandResolution.resolveForAllowlist(
             command: command,
@@ -206,6 +226,30 @@ struct ExecAllowlistTests {
         #expect(resolutions.count == 2)
         #expect(resolutions[0].executableName == "echo")
         #expect(resolutions[1].executableName == "touch")
+    }
+
+    @Test func `resolve for allowlist unwraps env dispatch wrappers inside shell segments`() {
+        let command = ["/bin/sh", "-lc", "env /usr/bin/touch /tmp/remoteclaw-allowlist-test"]
+        let resolutions = ExecCommandResolution.resolveForAllowlist(
+            command: command,
+            rawCommand: "env /usr/bin/touch /tmp/remoteclaw-allowlist-test",
+            cwd: nil,
+            env: ["PATH": "/usr/bin:/bin"])
+        #expect(resolutions.count == 1)
+        #expect(resolutions[0].resolvedPath == "/usr/bin/touch")
+        #expect(resolutions[0].executableName == "touch")
+    }
+
+    @Test func `resolve for allowlist unwraps env assignments inside shell segments`() {
+        let command = ["/bin/sh", "-lc", "env FOO=bar /usr/bin/touch /tmp/remoteclaw-allowlist-test"]
+        let resolutions = ExecCommandResolution.resolveForAllowlist(
+            command: command,
+            rawCommand: "env FOO=bar /usr/bin/touch /tmp/remoteclaw-allowlist-test",
+            cwd: nil,
+            env: ["PATH": "/usr/bin:/bin"])
+        #expect(resolutions.count == 1)
+        #expect(resolutions[0].resolvedPath == "/usr/bin/touch")
+        #expect(resolutions[0].executableName == "touch")
     }
 
     @Test func `resolve for allowlist unwraps env to effective direct executable`() {

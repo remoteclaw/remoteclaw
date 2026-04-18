@@ -8,6 +8,7 @@ import {
   buildChannelConfigSchema,
   collectWhatsAppStatusIssues,
   createActionGate,
+  createWhatsAppOutboundBase,
   DEFAULT_ACCOUNT_ID,
   getChatChannelMeta,
   listWhatsAppAccountIds,
@@ -258,8 +259,7 @@ export const whatsappPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
       return Array.from(actions);
     },
     supportsAction: ({ action }) => action === "react",
-    handleAction: async (ctx) => {
-      const { action, params, cfg, accountId } = ctx;
+    handleAction: async ({ action, params, cfg, accountId }) => {
       if (action !== "react") {
         throw new Error(`Action ${action} is not supported for provider ${meta.id}.`);
       }
@@ -268,7 +268,7 @@ export const whatsappPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
       });
       const emoji = readStringParam(params, "emoji", { allowEmpty: true });
       const remove = typeof params.remove === "boolean" ? params.remove : undefined;
-      return (await getWhatsAppRuntime().channel.whatsapp.handleWhatsAppAction(
+      return await getWhatsAppRuntime().channel.whatsapp.handleWhatsAppAction(
         {
           action: "react",
           chatJid:
@@ -281,55 +281,19 @@ export const whatsappPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
           fromMe: typeof params.fromMe === "boolean" ? params.fromMe : undefined,
         },
         cfg,
-      )) as import("../../../src/agents/agent-types.js").AgentToolResult<unknown>;
+      );
     },
   },
-  outbound: {
-    deliveryMode: "gateway",
+  outbound: createWhatsAppOutboundBase({
     chunker: (text, limit) => getWhatsAppRuntime().channel.text.chunkText(text, limit),
-    chunkerMode: "text",
-    textChunkLimit: 4000,
-    pollMaxOptions: 12,
+    sendMessageWhatsApp: async (...args) =>
+      await getWhatsAppRuntime().channel.whatsapp.sendMessageWhatsApp(...args),
+    sendPollWhatsApp: async (...args) =>
+      await getWhatsAppRuntime().channel.whatsapp.sendPollWhatsApp(...args),
+    shouldLogVerbose: () => getWhatsAppRuntime().logging.shouldLogVerbose(),
     resolveTarget: ({ to, allowFrom, mode }) =>
       resolveWhatsAppOutboundTarget({ to, allowFrom, mode }),
-    sendText: async ({ cfg, to, text, accountId, deps, gifPlayback }) => {
-      const send = deps?.sendWhatsApp ?? getWhatsAppRuntime().channel.whatsapp.sendMessageWhatsApp;
-      const result = await send(to, text, {
-        verbose: false,
-        cfg,
-        accountId: accountId ?? undefined,
-        gifPlayback,
-      });
-      return { channel: "whatsapp", ...result };
-    },
-    sendMedia: async ({
-      cfg,
-      to,
-      text,
-      mediaUrl,
-      mediaLocalRoots,
-      accountId,
-      deps,
-      gifPlayback,
-    }) => {
-      const send = deps?.sendWhatsApp ?? getWhatsAppRuntime().channel.whatsapp.sendMessageWhatsApp;
-      const result = await send(to, text, {
-        verbose: false,
-        cfg,
-        mediaUrl,
-        mediaLocalRoots,
-        accountId: accountId ?? undefined,
-        gifPlayback,
-      });
-      return { channel: "whatsapp", ...result };
-    },
-    sendPoll: async ({ cfg, to, poll, accountId }) =>
-      await getWhatsAppRuntime().channel.whatsapp.sendPollWhatsApp(to, poll, {
-        verbose: getWhatsAppRuntime().logging.shouldLogVerbose(),
-        accountId: accountId ?? undefined,
-        cfg,
-      }),
-  },
+  }),
   auth: {
     login: async ({ cfg, accountId, runtime, verbose }) => {
       const resolvedAccountId = accountId?.trim() || resolveDefaultWhatsAppAccountId(cfg);

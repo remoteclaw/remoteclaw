@@ -31,7 +31,9 @@
       "defaultChoice": "npm"
     },
     "releaseChecks": {
-      "rootDependencyMirrorAllowlist": []
+      "rootDependencyMirrorAllowlist": [
+        "zca-js"
+      ]
     }
   }
 }

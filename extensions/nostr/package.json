@@ -27,7 +27,9 @@
       "defaultChoice": "npm"
     },
     "releaseChecks": {
-      "rootDependencyMirrorAllowlist": []
+      "rootDependencyMirrorAllowlist": [
+        "nostr-tools"
+      ]
     }
   }
 }

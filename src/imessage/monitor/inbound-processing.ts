@@ -19,14 +19,12 @@ import {
   resolveChannelGroupPolicy,
   resolveChannelGroupRequireMention,
 } from "../../config/group-policy.js";
-import {
-  resolveAgentRouteWithPolicy,
-  type ResolvedAgentRoute,
-} from "../../routing/resolve-route.js";
+import { resolveAgentRoute } from "../../routing/resolve-route.js";
 import {
   DM_GROUP_ACCESS_REASON,
   resolveDmGroupAccessWithLists,
 } from "../../security/dm-policy-shared.js";
+import { sanitizeTerminalText } from "../../terminal/safe-text.js";
 import { truncateUtf16Safe } from "../../utils.js";
 import {
   formatIMessageChatTarget,
@@ -34,6 +32,7 @@ import {
   normalizeIMessageHandle,
 } from "../targets.js";
 import { detectReflectedContent } from "./reflection-guard.js";
+import type { SelfChatCache } from "./self-chat-cache.js";
 import type { MonitorIMessageOpts, IMessagePayload } from "./types.js";
 
 type IMessageReplyContext = {
@@ -73,7 +72,7 @@ export type IMessageInboundDispatchDecision = {
   historyKey?: string;
   sender: string;
   senderNormalized: string;
-  route: ResolvedAgentRoute;
+  route: ReturnType<typeof resolveAgentRoute>;
   bodyText: string;
   createdAt?: number;
   replyContext: IMessageReplyContext | null;
@@ -104,6 +103,7 @@ export function resolveIMessageInboundDecision(params: {
   historyLimit: number;
   groupHistories: Map<string, HistoryEntry[]>;
   echoCache?: { has: (scope: string, lookup: { text?: string; messageId?: string }) => boolean };
+  selfChatCache?: SelfChatCache;
   logVerbose?: (msg: string) => void;
 }): IMessageInboundDecision {
   const senderRaw = params.message.sender ?? "";
@@ -112,13 +112,10 @@ export function resolveIMessageInboundDecision(params: {
     return { kind: "drop", reason: "missing sender" };
   }
   const senderNormalized = normalizeIMessageHandle(sender);
-  if (params.message.is_from_me) {
-    return { kind: "drop", reason: "from me" };
-  }
-
   const chatId = params.message.chat_id ?? undefined;
   const chatGuid = params.message.chat_guid ?? undefined;
   const chatIdentifier = params.message.chat_identifier ?? undefined;
+  const createdAt = params.message.created_at ? Date.parse(params.message.created_at) : undefined;
 
   const groupIdCandidate = chatId !== undefined ? String(chatId) : undefined;
   const groupListPolicy = groupIdCandidate
@@ -141,6 +138,18 @@ export function resolveIMessageInboundDecision(params: {
     groupIdCandidate && groupListPolicy.allowlistEnabled && groupListPolicy.groupConfig,
   );
   const isGroup = Boolean(params.message.is_group) || treatAsGroupByConfig;
+  const selfChatLookup = {
+    accountId: params.accountId,
+    isGroup,
+    chatId,
+    sender,
+    text: params.bodyText,
+    createdAt,
+  };
+  if (params.message.is_from_me) {
+    params.selfChatCache?.remember(selfChatLookup);
+    return { kind: "drop", reason: "from me" };
+  }
   if (isGroup && !chatId) {
     return { kind: "drop", reason: "group without chat_id" };
   }
@@ -202,7 +211,7 @@ export function resolveIMessageInboundDecision(params: {
     return { kind: "drop", reason: "group id not in allowlist" };
   }
 
-  const route = resolveAgentRouteWithPolicy({
+  const route = resolveAgentRoute({
     cfg: params.cfg,
     channel: "imessage",
     accountId: params.accountId,
@@ -211,16 +220,22 @@ export function resolveIMessageInboundDecision(params: {
       id: isGroup ? String(chatId ?? "unknown") : senderNormalized,
     },
   });
-  if (!route) {
-    // Silent drop: routing.unmatched policy dropped the message. Telemetry
-    // already fired via handleUnmatched.
-    return { kind: "drop", reason: "unmatched-binding" };
-  }
   const mentionRegexes = buildMentionRegexes(params.cfg, route.agentId);
   const messageText = params.messageText.trim();
   const bodyText = params.bodyText.trim();
   if (!bodyText) {
     return { kind: "drop", reason: "empty body" };
+  }
+
+  if (
+    params.selfChatCache?.has({
+      ...selfChatLookup,
+      text: bodyText,
+    })
+  ) {
+    const preview = sanitizeTerminalText(truncateUtf16Safe(bodyText, 50));
+    params.logVerbose?.(`imessage: dropping self-chat reflected duplicate: "${preview}"`);
+    return { kind: "drop", reason: "self-chat echo" };
   }
 
   // Echo detection: check if the received message matches a recently sent message.
@@ -258,7 +273,6 @@ export function resolveIMessageInboundDecision(params: {
   }
 
   const replyContext = describeReplyContext(params.message);
-  const createdAt = params.message.created_at ? Date.parse(params.message.created_at) : undefined;
   const historyKey = isGroup
     ? String(chatId ?? chatGuid ?? chatIdentifier ?? "unknown")
     : undefined;

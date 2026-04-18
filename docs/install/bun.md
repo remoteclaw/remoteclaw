@@ -1,5 +1,5 @@
 ---
-description: "Bun workflow (experimental): installs and gotchas vs pnpm"
+summary: "Bun workflow (experimental): installs and gotchas vs pnpm"
 read_when:
   - You want the fastest local dev loop (bun + watch)
   - You hit Bun install/patch/lifecycle script issues
@@ -45,7 +45,7 @@ bun run vitest run
 Bun may block dependency lifecycle scripts unless explicitly trusted (`bun pm untrusted` / `bun pm trust`).
 For this repo, the commonly blocked scripts are not required:
 
-- `@whiskeysockets/baileys` `preinstall`: checks Node major >= 20 (we run Node 22+).
+- `@whiskeysockets/baileys` `preinstall`: checks Node major >= 20 (RemoteClaw defaults to Node 24 and still supports Node 22 LTS, currently `22.16+`).
 - `protobufjs` `postinstall`: emits warnings about incompatible version schemes (no build artifacts).
 
 If you hit a real runtime issue that requires these scripts, trust them explicitly:

@@ -66,6 +66,14 @@
 	<string>RemoteClaw uses on-device speech recognition for voice wake.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
+	<key>RemoteClawPushAPNsEnvironment</key>
+	<string>$(REMOTECLAW_PUSH_APNS_ENVIRONMENT)</string>
+	<key>RemoteClawPushDistribution</key>
+	<string>$(REMOTECLAW_PUSH_DISTRIBUTION)</string>
+	<key>RemoteClawPushRelayBaseURL</key>
+	<string>$(REMOTECLAW_PUSH_RELAY_BASE_URL)</string>
+	<key>RemoteClawPushTransport</key>
+	<string>$(REMOTECLAW_PUSH_TRANSPORT)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

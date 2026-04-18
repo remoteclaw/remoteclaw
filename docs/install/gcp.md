@@ -1,5 +1,5 @@
 ---
-description: "Run RemoteClaw Gateway 24/7 on a GCP Compute Engine VM (Docker) with durable state"
+summary: "Run RemoteClaw Gateway 24/7 on a GCP Compute Engine VM (Docker) with durable state"
 read_when:
   - You want RemoteClaw running 24/7 on GCP
   - You want a production-grade, always-on Gateway on your own VM
@@ -57,8 +57,8 @@ For the generic Docker flow, see [Docker](/install/docker).
 - Basic comfort with SSH + copy/paste
 - ~20-30 minutes
 - Docker and Docker Compose
-- CLI agent credentials (e.g., Anthropic API key for Claude runtime)
-- Optional channel credentials
+- Model auth credentials
+- Optional provider credentials
   - WhatsApp QR
   - Telegram bot token
   - Gmail OAuth
@@ -286,7 +286,7 @@ services:
 Installing binaries inside a running container is a trap.
 Anything installed at runtime will be lost on restart.
 
-All external binaries required by MCP tools or extensions must be installed at image build time.
+All external binaries required by skills must be installed at image build time.
 
 The examples below show three common binaries only:
 
@@ -297,7 +297,7 @@ The examples below show three common binaries only:
 These are examples, not a complete list.
 You may install as many binaries as needed using the same pattern.
 
-If you add new MCP tools or extensions later that depend on additional binaries, you must:
+If you add new skills later that depend on additional binaries, you must:
 
 1. Update the Dockerfile
 2. Rebuild the image
@@ -306,7 +306,7 @@ If you add new MCP tools or extensions later that depend on additional binaries,
 **Example Dockerfile**
 
 ```dockerfile
-FROM node:22-bookworm
+FROM node:24-bookworm
 
 RUN apt-get update && apt-get install -y socat && rm -rf /var/lib/apt/lists/*
 
@@ -427,18 +427,18 @@ docker compose run --rm remoteclaw-cli devices approve <requestId>
 RemoteClaw runs in Docker, but Docker is not the source of truth.
 All long-lived state must survive restarts, rebuilds, and reboots.
 
-| Component           | Location                             | Persistence mechanism  | Notes                              |
-| ------------------- | ------------------------------------ | ---------------------- | ---------------------------------- |
-| Gateway config      | `/home/node/.remoteclaw/`            | Host volume mount      | Includes `remoteclaw.json`, tokens |
-| Channel credentials | `/home/node/.remoteclaw/`            | Host volume mount      | Channel tokens, session state      |
-| Extension configs   | `/home/node/.remoteclaw/extensions/` | Host volume mount      | Extension-level state              |
-| Agent workspace     | `/home/node/.remoteclaw/workspace/`  | Host volume mount      | Code and agent artifacts           |
-| WhatsApp session    | `/home/node/.remoteclaw/`            | Host volume mount      | Preserves QR login                 |
-| Gmail keyring       | `/home/node/.remoteclaw/`            | Host volume + password | Requires `GOG_KEYRING_PASSWORD`    |
-| External binaries   | `/usr/local/bin/`                    | Docker image           | Must be baked at build time        |
-| Node runtime        | Container filesystem                 | Docker image           | Rebuilt every image build          |
-| OS packages         | Container filesystem                 | Docker image           | Do not install at runtime          |
-| Docker container    | Ephemeral                            | Restartable            | Safe to destroy                    |
+| Component           | Location                            | Persistence mechanism  | Notes                              |
+| ------------------- | ----------------------------------- | ---------------------- | ---------------------------------- |
+| Gateway config      | `/home/node/.remoteclaw/`           | Host volume mount      | Includes `remoteclaw.json`, tokens |
+| Model auth profiles | `/home/node/.remoteclaw/`           | Host volume mount      | OAuth tokens, API keys             |
+| Skill configs       | `/home/node/.remoteclaw/skills/`    | Host volume mount      | Skill-level state                  |
+| Agent workspace     | `/home/node/.remoteclaw/workspace/` | Host volume mount      | Code and agent artifacts           |
+| WhatsApp session    | `/home/node/.remoteclaw/`           | Host volume mount      | Preserves QR login                 |
+| Gmail keyring       | `/home/node/.remoteclaw/`           | Host volume + password | Requires `GOG_KEYRING_PASSWORD`    |
+| External binaries   | `/usr/local/bin/`                   | Docker image           | Must be baked at build time        |
+| Node runtime        | Container filesystem                | Docker image           | Rebuilt every image build          |
+| OS packages         | Container filesystem                | Docker image           | Do not install at runtime          |
+| Docker container    | Ephemeral                           | Restartable            | Safe to destroy                    |
 
 ---
 

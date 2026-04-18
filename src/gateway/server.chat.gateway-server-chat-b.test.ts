@@ -273,6 +273,37 @@ describe("gateway server chat", () => {
     });
   });
 
+  test("chat.history preserves usage and cost metadata for assistant messages", async () => {
+    await withGatewayChatHarness(async ({ ws, createSessionDir }) => {
+      await connectOk(ws);
+
+      const sessionDir = await createSessionDir();
+      await writeMainSessionStore();
+
+      await writeMainSessionTranscript(sessionDir, [
+        JSON.stringify({
+          message: {
+            role: "assistant",
+            timestamp: Date.now(),
+            content: [{ type: "text", text: "hello" }],
+            usage: { input: 12, output: 5, totalTokens: 17 },
+            cost: { total: 0.0123 },
+            details: { debug: true },
+          },
+        }),
+      ]);
+
+      const messages = await fetchHistoryMessages(ws);
+      expect(messages).toHaveLength(1);
+      expect(messages[0]).toMatchObject({
+        role: "assistant",
+        usage: { input: 12, output: 5, totalTokens: 17 },
+        cost: { total: 0.0123 },
+      });
+      expect(messages[0]).not.toHaveProperty("details");
+    });
+  });
+
   test("chat.history strips inline directives from displayed message text", async () => {
     await withGatewayChatHarness(async ({ ws, createSessionDir }) => {
       await connectOk(ws);
@@ -284,21 +315,23 @@ describe("gateway server chat", () => {
         JSON.stringify({
           message: {
             role: "assistant",
-            content: [{ type: "text", text: "Hello [[rc:reply]] world [[audio_as_voice]]" }],
+            content: [
+              { type: "text", text: "Hello [[reply_to_current]] world [[audio_as_voice]]" },
+            ],
             timestamp: Date.now(),
           },
         }),
         JSON.stringify({
           message: {
             role: "assistant",
-            content: "A [[rc:reply:abc-123]] B",
+            content: "A [[reply_to:abc-123]] B",
             timestamp: Date.now() + 1,
           },
         }),
         JSON.stringify({
           message: {
             role: "assistant",
-            text: "[[ rc:reply : 456 ]] C",
+            text: "[[ reply_to : 456 ]] C",
             timestamp: Date.now() + 2,
           },
         }),
@@ -315,7 +348,7 @@ describe("gateway server chat", () => {
       expect(messages.length).toBe(4);
 
       const serialized = JSON.stringify(messages);
-      expect(serialized.includes("[[rc:reply")).toBe(false);
+      expect(serialized.includes("[[reply_to")).toBe(false);
       expect(serialized.includes("[[audio_as_voice]]")).toBe(false);
 
       const first = messages[0] as { content?: Array<{ text?: string }> };

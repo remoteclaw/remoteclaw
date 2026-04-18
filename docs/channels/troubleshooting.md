@@ -1,5 +1,5 @@
 ---
-description: "Fast channel level troubleshooting with per channel failure signatures and fixes"
+summary: "Fast channel level troubleshooting with per channel failure signatures and fixes"
 read_when:
   - Channel transport says connected but replies fail
   - You need channel specific checks before deep provider docs
@@ -44,12 +44,13 @@ Full troubleshooting: [/channels/whatsapp#troubleshooting-quick](/channels/whats
 
 ### Telegram failure signatures
 
-| Symptom                           | Fastest check                                     | Fix                                                                           |
-| --------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `/start` but no usable reply flow | `remoteclaw pairing list telegram`                | Approve pairing or change DM policy.                                          |
-| Bot online but group stays silent | Verify mention requirement and bot privacy mode   | Disable privacy mode for group visibility or mention bot.                     |
-| Send failures with network errors | Inspect logs for Telegram API call failures       | Fix DNS/IPv6/proxy routing to `api.telegram.org`.                             |
-| Upgraded and allowlist blocks you | `remoteclaw security audit` and config allowlists | Run `remoteclaw doctor --fix` or replace `@username` with numeric sender IDs. |
+| Symptom                             | Fastest check                                     | Fix                                                                           |
+| ----------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `/start` but no usable reply flow   | `remoteclaw pairing list telegram`                | Approve pairing or change DM policy.                                          |
+| Bot online but group stays silent   | Verify mention requirement and bot privacy mode   | Disable privacy mode for group visibility or mention bot.                     |
+| Send failures with network errors   | Inspect logs for Telegram API call failures       | Fix DNS/IPv6/proxy routing to `api.telegram.org`.                             |
+| `setMyCommands` rejected at startup | Inspect logs for `BOT_COMMANDS_TOO_MUCH`          | Reduce plugin/skill/custom Telegram commands or disable native menus.         |
+| Upgraded and allowlist blocks you   | `remoteclaw security audit` and config allowlists | Run `remoteclaw doctor --fix` or replace `@username` with numeric sender IDs. |
 
 Full troubleshooting: [/channels/telegram#troubleshooting](/channels/telegram#troubleshooting)
 

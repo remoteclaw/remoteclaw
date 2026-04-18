@@ -23,7 +23,7 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
   - [It is stuck on "wake up my friend" / onboarding will not hatch. What now?](#it-is-stuck-on-wake-up-my-friend-onboarding-will-not-hatch-what-now)
   - [Can I migrate my setup to a new machine (Mac mini) without redoing onboarding?](#can-i-migrate-my-setup-to-a-new-machine-mac-mini-without-redoing-onboarding)
   - [Where do I see what is new in the latest version?](#where-do-i-see-what-is-new-in-the-latest-version)
-  - [I can't access docs.remoteclaw.org (SSL error). What now?](#i-cant-access-docsremoteclaworg-ssl-error-what-now)
+  - [I can't access docs.remoteclaw.org (SSL error). What now?](#i-cant-access-docsremoteclawai-ssl-error-what-now)
   - [What's the difference between stable and beta?](#whats-the-difference-between-stable-and-beta)
   - [How do I install the beta version, and what's the difference between beta and dev?](#how-do-i-install-the-beta-version-and-whats-the-difference-between-beta-and-dev)
   - [How do I try the latest bits?](#how-do-i-try-the-latest-bits)
@@ -179,7 +179,7 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
   - [I closed my terminal on Windows - how do I restart RemoteClaw?](#i-closed-my-terminal-on-windows-how-do-i-restart-remoteclaw)
   - [The Gateway is up but replies never arrive. What should I check?](#the-gateway-is-up-but-replies-never-arrive-what-should-i-check)
   - ["Disconnected from gateway: no reason" - what now?](#disconnected-from-gateway-no-reason-what-now)
-  - [Telegram setMyCommands fails with network errors. What should I check?](#telegram-setmycommands-fails-with-network-errors-what-should-i-check)
+  - [Telegram setMyCommands fails. What should I check?](#telegram-setmycommands-fails-what-should-i-check)
   - [TUI shows no output. What should I check?](#tui-shows-no-output-what-should-i-check)
   - [How do I completely stop then start the Gateway?](#how-do-i-completely-stop-then-start-the-gateway)
   - [ELI5: `remoteclaw gateway restart` vs `remoteclaw gateway`](#eli5-remoteclaw-gateway-restart-vs-remoteclaw-gateway)
@@ -449,7 +449,7 @@ section is the latest shipped version. Entries are grouped by **Highlights**, **
 
 Some Comcast/Xfinity connections incorrectly block `docs.remoteclaw.org` via Xfinity
 Advanced Security. Disable it or allowlist `docs.remoteclaw.org`, then retry. More
-detail: [Troubleshooting](/help/troubleshooting#docsremoteclaworg-shows-an-ssl-error-comcastxfinity).
+detail: [Troubleshooting](/help/troubleshooting#docsremoteclawai-shows-an-ssl-error-comcastxfinity).
 Please help us unblock it by reporting here: [https://spa.xfinity.com/check_url_status](https://spa.xfinity.com/check_url_status).
 
 If you still can't reach the site, the docs are mirrored on GitHub:
@@ -2710,7 +2710,7 @@ remoteclaw logs --follow
 
 Docs: [Dashboard](/web/dashboard), [Remote access](/gateway/remote), [Troubleshooting](/gateway/troubleshooting).
 
-### Telegram setMyCommands fails with network errors What should I check
+### Telegram setMyCommands fails What should I check
 
 Start with logs and channel status:
 
@@ -2719,7 +2719,11 @@ remoteclaw channels status
 remoteclaw channels logs --channel telegram
 ```
 
-If you are on a VPS or behind a proxy, confirm outbound HTTPS is allowed and DNS works.
+Then match the error:
+
+- `BOT_COMMANDS_TOO_MUCH`: the Telegram menu has too many entries. RemoteClaw already trims to the Telegram limit and retries with fewer commands, but some menu entries still need to be dropped. Reduce plugin/skill/custom commands, or disable `channels.telegram.commands.native` if you do not need the menu.
+- `TypeError: fetch failed`, `Network request for 'setMyCommands' failed!`, or similar network errors: if you are on a VPS or behind a proxy, confirm outbound HTTPS is allowed and DNS works for `api.telegram.org`.
+
 If the Gateway is remote, make sure you are looking at logs on the Gateway host.
 
 Docs: [Telegram](/channels/telegram), [Channel troubleshooting](/channels/troubleshooting).

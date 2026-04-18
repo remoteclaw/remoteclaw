@@ -1,5 +1,5 @@
 ---
-description: "Gateway runtime on macOS (external launchd service)"
+summary: "Gateway runtime on macOS (external launchd service)"
 read_when:
   - Packaging RemoteClaw.app
   - Debugging the macOS gateway launchd service
@@ -16,7 +16,7 @@ running (or attaches to an existing local Gateway if one is already running).
 
 ## Install the CLI (required for local mode)
 
-You need Node 22+ on the Mac, then install `remoteclaw` globally:
+Node 24 is the default runtime on the Mac. Node 22 LTS, currently `22.16+`, still works for compatibility. Then install `remoteclaw` globally:
 
 ```bash
 npm install -g remoteclaw@<version>

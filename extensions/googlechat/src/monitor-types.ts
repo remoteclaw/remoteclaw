@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/core";
 import type { ResolvedGoogleChatAccount } from "./accounts.js";
 import type { GoogleChatAudienceType } from "./auth.js";
 import { getGoogleChatRuntime } from "./runtime.js";

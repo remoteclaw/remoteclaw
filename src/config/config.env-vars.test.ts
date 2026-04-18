@@ -5,10 +5,12 @@ import { loadDotEnv } from "../infra/dotenv.js";
 import { resolveConfigEnvVars } from "./env-substitution.js";
 import {
   applyConfigEnvVars,
+  collectDurableServiceEnvVars,
   collectConfigRuntimeEnvVars,
   createConfigRuntimeEnv,
+  readStateDirDotEnvVars,
 } from "./env-vars.js";
-import { withEnvOverride, withTempHome } from "./test-helpers.js";
+import { withEnvOverride, withTempHome, writeStateDirDotEnv } from "./test-helpers.js";
 import type { RemoteClawConfig } from "./types.js";
 
 describe("config env vars", () => {
@@ -105,35 +107,96 @@ describe("config env vars", () => {
 
   it("loads ${VAR} substitutions from ~/.remoteclaw/.env on repeated runtime loads", async () => {
     await withTempHome(async (_home) => {
-      await withEnvOverride({ OPENROUTER_API_KEY: undefined }, async () => {
+      await withEnvOverride({ BRAVE_API_KEY: undefined }, async () => {
         const stateDir = process.env.REMOTECLAW_STATE_DIR?.trim();
         if (!stateDir) {
           throw new Error("Expected REMOTECLAW_STATE_DIR to be set by withTempHome");
         }
         await fs.mkdir(stateDir, { recursive: true });
-        await fs.writeFile(
-          path.join(stateDir, ".env"),
-          "OPENROUTER_API_KEY=from-dotenv\n",
-          "utf-8",
-        );
+        await fs.writeFile(path.join(stateDir, ".env"), "BRAVE_API_KEY=from-dotenv\n", "utf-8");
 
         const config: RemoteClawConfig = {
-          env: {
-            vars: {
-              OPENROUTER_API_KEY: "${OPENROUTER_API_KEY}",
+          tools: {
+            web: {
+              search: {
+                apiKey: "${BRAVE_API_KEY}",
+              },
             },
           },
         };
 
         loadDotEnv({ quiet: true });
         const first = resolveConfigEnvVars(config, process.env) as RemoteClawConfig;
-        expect(first.env?.vars?.OPENROUTER_API_KEY).toBe("from-dotenv");
+        expect(first.tools?.web?.search?.apiKey).toBe("from-dotenv");
 
-        delete process.env.OPENROUTER_API_KEY;
+        delete process.env.BRAVE_API_KEY;
         loadDotEnv({ quiet: true });
         const second = resolveConfigEnvVars(config, process.env) as RemoteClawConfig;
-        expect(second.env?.vars?.OPENROUTER_API_KEY).toBe("from-dotenv");
+        expect(second.tools?.web?.search?.apiKey).toBe("from-dotenv");
       });
+    });
+  });
+
+  it("reads key-value pairs from the state-dir .env file", async () => {
+    await withTempHome(async (_home) => {
+      await writeStateDirDotEnv("BRAVE_API_KEY=BSA-test-key\nDISCORD_BOT_TOKEN=discord-tok\n", {
+        env: process.env,
+      });
+      const vars = readStateDirDotEnvVars(process.env);
+      expect(vars.BRAVE_API_KEY).toBe("BSA-test-key");
+      expect(vars.DISCORD_BOT_TOKEN).toBe("discord-tok");
+    });
+  });
+
+  it("returns empty record when the state-dir .env file is missing", async () => {
+    await withTempHome(async (_home) => {
+      expect(readStateDirDotEnvVars(process.env)).toEqual({});
+    });
+  });
+
+  it("drops dangerous and empty values from the state-dir .env file", async () => {
+    await withTempHome(async (_home) => {
+      await writeStateDirDotEnv("NODE_OPTIONS=--require /tmp/evil.js\nEMPTY=\nVALID=ok\n", {
+        env: process.env,
+      });
+      const vars = readStateDirDotEnvVars(process.env);
+      expect(vars.NODE_OPTIONS).toBeUndefined();
+      expect(vars.EMPTY).toBeUndefined();
+      expect(vars.VALID).toBe("ok");
+    });
+  });
+
+  it("respects REMOTECLAW_STATE_DIR when reading state-dir .env vars", async () => {
+    await withTempHome(async (_home) => {
+      const customStateDir = path.join(process.env.REMOTECLAW_STATE_DIR ?? "", "custom-state");
+      await writeStateDirDotEnv("CUSTOM_KEY=from-override\n", {
+        stateDir: customStateDir,
+      });
+      expect(
+        readStateDirDotEnvVars({
+          REMOTECLAW_STATE_DIR: customStateDir,
+        }).CUSTOM_KEY,
+      ).toBe("from-override");
+    });
+  });
+
+  it("lets config service env vars override state-dir .env vars", async () => {
+    await withTempHome(async (_home) => {
+      await writeStateDirDotEnv("MY_KEY=from-dotenv\n", {
+        env: process.env,
+      });
+      expect(
+        collectDurableServiceEnvVars({
+          env: process.env,
+          config: {
+            env: {
+              vars: {
+                MY_KEY: "from-config",
+              },
+            },
+          } as RemoteClawConfig,
+        }).MY_KEY,
+      ).toBe("from-config");
     });
   });
 });

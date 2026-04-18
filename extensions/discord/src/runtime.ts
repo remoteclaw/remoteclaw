@@ -1,5 +1,5 @@
-import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/compat";
-import type { PluginRuntime } from "remoteclaw/plugin-sdk/discord";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk/core";
+import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/runtime-store";
 
 const { setRuntime: setDiscordRuntime, getRuntime: getDiscordRuntime } =
   createPluginRuntimeStore<PluginRuntime>("Discord runtime not initialized");

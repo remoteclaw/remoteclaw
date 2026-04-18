@@ -1,5 +1,5 @@
 ---
-description: "PeekabooBridge integration for macOS UI automation"
+summary: "PeekabooBridge integration for macOS UI automation"
 read_when:
   - Hosting PeekabooBridge in RemoteClaw.app
   - Integrating Peekaboo via Swift Package Manager
@@ -13,7 +13,7 @@ RemoteClaw can host **PeekabooBridge** as a local, permission‑aware UI automat
 broker. This lets the `peekaboo` CLI drive UI automation while reusing the
 macOS app’s TCC permissions.
 
-## What this is (and isn’t)
+## What this is (and is not)
 
 - **Host**: RemoteClaw.app can act as a PeekabooBridge host.
 - **Client**: use the `peekaboo` CLI (no separate `remoteclaw ui ...` surface).

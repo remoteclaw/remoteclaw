@@ -209,7 +209,7 @@ docker ps
 
 - Docker and Docker Compose installed
 - Bash or Zsh shell
-- RemoteClaw project (from `docker-setup.sh`)
+- RemoteClaw project (run `scripts/docker/setup.sh`)
 
 ## Development
 

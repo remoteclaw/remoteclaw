@@ -402,7 +402,6 @@ describe("maybeRepairGatewayServiceConfig", () => {
     await withEnvAsync(
       {
         REMOTECLAW_GATEWAY_TOKEN: undefined,
-        CLAWDBOT_GATEWAY_TOKEN: undefined,
       },
       async () => {
         setupGatewayTokenRepairScenario();
@@ -447,7 +446,6 @@ describe("maybeRepairGatewayServiceConfig", () => {
     await withEnvAsync(
       {
         REMOTECLAW_GATEWAY_TOKEN: undefined,
-        CLAWDBOT_GATEWAY_TOKEN: undefined,
       },
       async () => {
         mocks.readCommand.mockResolvedValue({

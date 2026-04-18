@@ -70,9 +70,9 @@ to apply context-specific rules.
 
 ## UI env vars
 
-- `OPENCLAW_THEME=light`: force the light TUI palette when your terminal has a light background.
-- `OPENCLAW_THEME=dark`: force the dark TUI palette.
-- `COLORFGBG`: if your terminal exports it, OpenClaw uses the background color hint to auto-pick the TUI palette.
+- `REMOTECLAW_THEME=light`: force the light TUI palette when your terminal has a light background.
+- `REMOTECLAW_THEME=dark`: force the dark TUI palette.
+- `COLORFGBG`: if your terminal exports it, RemoteClaw uses the background color hint to auto-pick the TUI palette.
 
 ## Env var substitution in config
 
@@ -90,7 +90,7 @@ You can reference env vars directly in config string values using `${VAR_NAME}` 
 }
 ```
 
-See [Configuration: Env var substitution](/gateway/configuration#env-var-substitution-in-config) for full details.
+See [Configuration: Env var substitution](/gateway/configuration-reference#env-var-substitution) for full details.
 
 ## Secret refs vs `${ENV}` strings
 
@@ -132,6 +132,29 @@ When set, `REMOTECLAW_HOME` replaces the system home directory (`$HOME` / `os.ho
 ```
 
 `REMOTECLAW_HOME` can also be set to a tilde path (e.g. `~/svc`), which gets expanded using `$HOME` before use.
+
+## nvm users: web_fetch TLS failures
+
+If Node.js was installed via **nvm** (not the system package manager), the built-in `fetch()` uses
+nvm's bundled CA store, which may be missing modern root CAs (ISRG Root X1/X2 for Let's Encrypt,
+DigiCert Global Root G2, etc.). This causes `web_fetch` to fail with `"fetch failed"` on most HTTPS sites.
+
+On Linux, RemoteClaw automatically detects nvm and applies the fix in the actual startup environment:
+
+- `remoteclaw gateway install` writes `NODE_EXTRA_CA_CERTS` into the systemd service environment
+- the `remoteclaw` CLI entrypoint re-execs itself with `NODE_EXTRA_CA_CERTS` set before Node startup
+
+**Manual fix (for older versions or direct `node ...` launches):**
+
+Export the variable before starting RemoteClaw:
+
+```bash
+export NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+remoteclaw gateway run
+```
+
+Do not rely on writing only to `~/.remoteclaw/.env` for this variable; Node reads
+`NODE_EXTRA_CA_CERTS` at process startup.
 
 ## Related
 

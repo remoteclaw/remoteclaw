@@ -1,4 +1,4 @@
-import { mapAllowlistResolutionInputs } from "remoteclaw/plugin-sdk/compat";
+import { mapAllowlistResolutionInputs } from "remoteclaw/plugin-sdk/allow-from";
 import { searchGraphUsers } from "./graph-users.js";
 import {
   listChannelsForTeam,

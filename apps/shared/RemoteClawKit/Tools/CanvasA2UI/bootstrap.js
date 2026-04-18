@@ -340,7 +340,7 @@ class RemoteClawA2UIHost extends LitElement {
       reset: () => this.reset(),
       getSurfaces: () => Array.from(this.#processor.getSurfaces().keys()),
     };
-    globalThis.remoteClawA2UI = api;
+    globalThis.remoteclawA2UI = api;
     this.addEventListener("a2uiaction", (evt) => this.#handleA2UIAction(evt));
     this.#statusListener = (evt) => this.#handleActionStatus(evt);
     for (const eventName of ["remoteclaw:a2ui-action-status"]) {
@@ -457,15 +457,15 @@ class RemoteClawA2UIHost extends LitElement {
       ...(Object.keys(context).length ? { context } : {}),
     };
 
-    globalThis.__remoteClawLastA2UIAction = userAction;
+    globalThis.__remoteclawLastA2UIAction = userAction;
 
     const handler =
-      globalThis.webkit?.messageHandlers?.remoteClawCanvasA2UIAction ??
-      globalThis.remoteClawCanvasA2UIAction;
+      globalThis.webkit?.messageHandlers?.remoteclawCanvasA2UIAction ??
+      globalThis.remoteclawCanvasA2UIAction;
     if (handler?.postMessage) {
       try {
         // WebKit message handlers support structured objects; Android's JS interface expects strings.
-        if (handler === globalThis.remoteClawCanvasA2UIAction) {
+        if (handler === globalThis.remoteclawCanvasA2UIAction) {
           handler.postMessage(JSON.stringify({ userAction }));
         } else {
           handler.postMessage({ userAction });

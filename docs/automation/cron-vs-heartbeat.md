@@ -1,5 +1,5 @@
 ---
-description: "Guidance for choosing between heartbeat and cron jobs for automation"
+summary: "Guidance for choosing between heartbeat and cron jobs for automation"
 read_when:
   - Deciding how to schedule recurring tasks
   - Setting up background monitoring or notifications
@@ -18,7 +18,7 @@ Both heartbeats and cron jobs let you run tasks on a schedule. This guide helps 
 | Check inbox every 30 min             | Heartbeat           | Batches with other checks, context-aware |
 | Send daily report at 9am sharp       | Cron (isolated)     | Exact timing needed                      |
 | Monitor calendar for upcoming events | Heartbeat           | Natural fit for periodic awareness       |
-| Run weekly deep analysis             | Cron (isolated)     | Standalone task, isolated session        |
+| Run weekly deep analysis             | Cron (isolated)     | Standalone task, can use different model |
 | Remind me in 20 minutes              | Cron (main, `--at`) | One-shot with precise timing             |
 | Background project health check      | Heartbeat           | Piggybacks on existing cycle             |
 
@@ -82,7 +82,7 @@ per-job offset in a 0-5 minute window.
 
 - **Exact timing required**: "Send this at 9:00 AM every Monday" (not "sometime around 9").
 - **Standalone tasks**: Tasks that don't need conversational context.
-- **Heavy analysis**: Standalone tasks that benefit from isolated sessions.
+- **Different model/thinking**: Heavy analysis that warrants a more powerful model.
 - **One-shot reminders**: "Remind me in 20 minutes" with `--at`.
 - **Noisy/frequent tasks**: Tasks that would clutter main session history.
 - **External triggers**: Tasks that should run independently of whether the agent is otherwise active.
@@ -93,6 +93,7 @@ per-job offset in a 0-5 minute window.
 - **Built-in load spreading**: recurring top-of-hour schedules are staggered by up to 5 minutes by default.
 - **Per-job control**: override stagger with `--stagger <duration>` or force exact timing with `--exact`.
 - **Session isolation**: Runs in `cron:<jobId>` without polluting main history.
+- **Model overrides**: Use a cheaper or more powerful model per job.
 - **Delivery control**: Isolated jobs default to `announce` (summary); choose `none` as needed.
 - **Immediate delivery**: Announce mode posts directly without waiting for heartbeat.
 - **No agent context needed**: Runs even if main session is idle or compacted.
@@ -107,12 +108,13 @@ remoteclaw cron add \
   --tz "America/New_York" \
   --session isolated \
   --message "Generate today's briefing: weather, calendar, top emails, news summary." \
+  --model opus \
   --announce \
   --channel whatsapp \
   --to "+15551234567"
 ```
 
-This runs at exactly 7:00 AM New York time and announces a summary directly to WhatsApp.
+This runs at exactly 7:00 AM New York time, uses Opus for quality, and announces a summary directly to WhatsApp.
 
 ### Cron example: One-shot reminder
 
@@ -147,8 +149,8 @@ Is this a one-shot reminder?
   YES -> Use cron with --at
   NO  -> Continue...
 
-Does it need an isolated session?
-  YES -> Use cron (isolated)
+Does it need a different model or thinking level?
+  YES -> Use cron (isolated) with --model/--thinking
   NO  -> Use heartbeat
 ```
 
@@ -179,23 +181,51 @@ The most efficient setup uses **both**:
 remoteclaw cron add --name "Morning brief" --cron "0 7 * * *" --session isolated --message "..." --announce
 
 # Weekly project review on Mondays at 9am
-remoteclaw cron add --name "Weekly review" --cron "0 9 * * 1" --session isolated --message "..."
+remoteclaw cron add --name "Weekly review" --cron "0 9 * * 1" --session isolated --message "..." --model opus
 
 # One-shot reminder
 remoteclaw cron add --name "Call back" --at "2h" --session main --system-event "Call back the client" --wake now
 ```
 
+## Lobster: Deterministic workflows with approvals
+
+Lobster is the workflow runtime for **multi-step tool pipelines** that need deterministic execution and explicit approvals.
+Use it when the task is more than a single agent turn, and you want a resumable workflow with human checkpoints.
+
+### When Lobster fits
+
+- **Multi-step automation**: You need a fixed pipeline of tool calls, not a one-off prompt.
+- **Approval gates**: Side effects should pause until you approve, then resume.
+- **Resumable runs**: Continue a paused workflow without re-running earlier steps.
+
+### How it pairs with heartbeat and cron
+
+- **Heartbeat/cron** decide _when_ a run happens.
+- **Lobster** defines _what steps_ happen once the run starts.
+
+For scheduled workflows, use cron or heartbeat to trigger an agent turn that calls Lobster.
+For ad-hoc workflows, call Lobster directly.
+
+### Operational notes (from the code)
+
+- Lobster runs as a **local subprocess** (`lobster` CLI) in tool mode and returns a **JSON envelope**.
+- If the tool returns `needs_approval`, you resume with a `resumeToken` and `approve` flag.
+- The tool is an **optional plugin**; enable it additively via `tools.alsoAllow: ["lobster"]` (recommended).
+- Lobster expects the `lobster` CLI to be available on `PATH`.
+
+See [Lobster](/tools/lobster) for full usage and examples.
+
 ## Main Session vs Isolated Session
 
 Both heartbeat and cron can interact with the main session, but differently:
 
-|         | Heartbeat                       | Cron (main)              | Cron (isolated)            |
-| ------- | ------------------------------- | ------------------------ | -------------------------- |
-| Session | Main                            | Main (via system event)  | `cron:<jobId>`             |
-| History | Shared                          | Shared                   | Fresh each run             |
-| Context | Full                            | Full                     | None (starts clean)        |
-| Model   | CLI agent default               | CLI agent default        | CLI agent default          |
-| Output  | Delivered if not `HEARTBEAT_OK` | Heartbeat prompt + event | Announce summary (default) |
+|         | Heartbeat                       | Cron (main)              | Cron (isolated)                                 |
+| ------- | ------------------------------- | ------------------------ | ----------------------------------------------- |
+| Session | Main                            | Main (via system event)  | `cron:<jobId>` or custom session                |
+| History | Shared                          | Shared                   | Fresh each run (isolated) / Persistent (custom) |
+| Context | Full                            | Full                     | None (isolated) / Cumulative (custom)           |
+| Model   | Main session model              | Main session model       | Can override                                    |
+| Output  | Delivered if not `HEARTBEAT_OK` | Heartbeat prompt + event | Announce summary (default)                      |
 
 ### When to use main session cron
 
@@ -219,6 +249,7 @@ remoteclaw cron add \
 Use `--session isolated` when you want:
 
 - A clean slate without prior context
+- Different model or thinking settings
 - Announce summaries directly to a channel
 - History that doesn't clutter main session
 
@@ -228,6 +259,8 @@ remoteclaw cron add \
   --cron "0 6 * * 0" \
   --session isolated \
   --message "Weekly codebase analysis..." \
+  --model opus \
+  --thinking high \
   --announce
 ```
 
@@ -237,14 +270,14 @@ remoteclaw cron add \
 | --------------- | ------------------------------------------------------- |
 | Heartbeat       | One turn every N minutes; scales with HEARTBEAT.md size |
 | Cron (main)     | Adds event to next heartbeat (no isolated turn)         |
-| Cron (isolated) | Full agent turn per job                                 |
+| Cron (isolated) | Full agent turn per job; can use cheaper model          |
 
 **Tips**:
 
 - Keep `HEARTBEAT.md` small to minimize token overhead.
 - Batch similar checks into heartbeat instead of multiple cron jobs.
 - Use `target: "none"` on heartbeat if you only want internal processing.
-- Use isolated cron for routine tasks that don't need main session context.
+- Use isolated cron with a cheaper model for routine tasks.
 
 ## Related
 

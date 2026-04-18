@@ -20,6 +20,11 @@ import { enqueueFollowupRun, getFollowupQueueDepth, type FollowupRun } from "./q
 import { initSessionState } from "./session.js";
 import { buildTestCtx } from "./test-ctx.js";
 
+vi.mock("../../agents/pi-embedded.js", () => ({
+  abortEmbeddedPiRun: vi.fn().mockReturnValue(true),
+  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
+}));
+
 const commandQueueMocks = vi.hoisted(() => ({
   clearCommandLane: vi.fn(),
 }));
@@ -35,6 +40,7 @@ const subagentRegistryMocks = vi.hoisted(() => ({
 
 vi.mock("../../agents/subagent-registry.js", () => ({
   listSubagentRunsForRequester: subagentRegistryMocks.listSubagentRunsForRequester,
+  listSubagentRunsForController: subagentRegistryMocks.listSubagentRunsForRequester,
   markSubagentRunTerminated: subagentRegistryMocks.markSubagentRunTerminated,
 }));
 
@@ -49,6 +55,13 @@ const acpManagerMocks = vi.hoisted(() => ({
         }
   >(() => ({ kind: "none" })),
   cancelSession: vi.fn(async () => {}),
+}));
+
+vi.mock("../../acp/control-plane/manager.js", () => ({
+  getAcpSessionManager: () => ({
+    resolveSession: acpManagerMocks.resolveSession,
+    cancelSession: acpManagerMocks.cancelSession,
+  }),
 }));
 
 describe("abort detection", () => {
@@ -122,7 +135,7 @@ describe("abort detection", () => {
       prompt: "queued",
       enqueuedAt: Date.now(),
       run: {
-        agentId: "test-agent",
+        agentId: "main",
         agentDir: path.join(params.root, "agent"),
         sessionId: params.sessionId,
         sessionKey: params.sessionKey,

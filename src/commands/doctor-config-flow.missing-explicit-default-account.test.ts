@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
-import { collectMissingExplicitDefaultAccountWarnings } from "./doctor-config-flow.js";
+import { collectMissingExplicitDefaultAccountWarnings } from "./doctor/shared/default-account-warnings.js";
 
 describe("collectMissingExplicitDefaultAccountWarnings", () => {
   it("warns when multiple named accounts are configured without default selection", () => {
@@ -122,7 +121,7 @@ describe("collectMissingExplicitDefaultAccountWarnings", () => {
 
     const warnings = collectMissingExplicitDefaultAccountWarnings(cfg);
     expect(warnings).toHaveLength(2);
-    expect(warnings.some((line: any) => line.includes("channels.telegram"))).toBe(true);
-    expect(warnings.some((line: any) => line.includes("channels.slack"))).toBe(true);
+    expect(warnings.some((line) => line.includes("channels.telegram"))).toBe(true);
+    expect(warnings.some((line) => line.includes("channels.slack"))).toBe(true);
   });
 });

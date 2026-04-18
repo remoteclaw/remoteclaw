@@ -1,5 +1,5 @@
 ---
-description: "Platform support overview (Gateway + companion apps)"
+summary: "Platform support overview (Gateway + companion apps)"
 read_when:
   - Looking for OS support or install paths
   - Deciding where to run the Gateway
@@ -29,6 +29,7 @@ Native companion apps for Windows are also planned; the Gateway is recommended v
 - Fly.io: [Fly.io](/install/fly)
 - Hetzner (Docker): [Hetzner](/install/hetzner)
 - GCP (Compute Engine): [GCP](/install/gcp)
+- Azure (Linux VM): [Azure](/install/azure)
 - exe.dev (VM + HTTPS proxy): [exe.dev](/install/exe-dev)
 
 ## Common links

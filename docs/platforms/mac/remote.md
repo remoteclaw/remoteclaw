@@ -1,5 +1,5 @@
 ---
-description: "macOS app flow for controlling a remote RemoteClaw gateway over SSH"
+summary: "macOS app flow for controlling a remote RemoteClaw gateway over SSH"
 read_when:
   - Setting up or debugging remote mac control
 title: "Remote Control"
@@ -7,7 +7,7 @@ title: "Remote Control"
 
 # Remote RemoteClaw (macOS ⇄ remote host)
 
-This flow lets the macOS app act as a full remote control for a RemoteClaw gateway running on another host (desktop/server). It’s the app’s **Remote over SSH** (remote run) feature. All features—health checks, Voice Wake forwarding, and Web Chat—reuse the same remote SSH configuration from _Settings → General_.
+This flow lets the macOS app act as a full remote control for an RemoteClaw gateway running on another host (desktop/server). It’s the app’s **Remote over SSH** (remote run) feature. All features—health checks, Voice Wake forwarding, and Web Chat—reuse the same remote SSH configuration from _Settings → General_.
 
 ## Modes
 

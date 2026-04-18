@@ -1,14 +1,16 @@
 ---
-description: "Curated links to the most used RemoteClaw docs."
+summary: "Curated links to the most used RemoteClaw docs."
 read_when:
   - You want quick access to key docs pages
 title: "Docs directory"
 ---
 
-:::note
+# Docs Directory
+
+<Note>
 This page is a curated index. If you are new, start with [Getting Started](/start/getting-started).
 For a complete map of the docs, see [Docs hubs](/start/hubs).
-:::
+</Note>
 
 ## Start here
 
@@ -22,7 +24,8 @@ For a complete map of the docs, see [Docs hubs](/start/hubs).
 - [Pairing (DM and nodes)](/channels/pairing)
 - [Nix mode](/install/nix)
 - [RemoteClaw assistant setup](/start/remoteclaw)
-- [Plugins](/tools/plugin)
+- [Skills](/tools/skills)
+- [Skills config](/tools/skills-config)
 - [Workspace templates](/reference/templates/AGENTS)
 - [RPC adapters](/reference/rpc)
 - [Gateway runbook](/gateway)
@@ -58,5 +61,6 @@ For a complete map of the docs, see [Docs hubs](/start/hubs).
 - [Sessions](/concepts/session)
 - [Cron jobs](/automation/cron-jobs)
 - [Webhooks](/automation/webhook)
+- [Gmail hooks (Pub/Sub)](/automation/gmail-pubsub)
 - [Security](/gateway/security)
 - [Troubleshooting](/gateway/troubleshooting)

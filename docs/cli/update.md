@@ -1,5 +1,5 @@
 ---
-description: "CLI reference for `remoteclaw update` (safe-ish source update + gateway auto-restart)"
+summary: "CLI reference for `remoteclaw update` (safe-ish source update + gateway auto-restart)"
 read_when:
   - You want to update a source checkout safely
   - You need to understand `--update` shorthand behavior
@@ -21,6 +21,7 @@ remoteclaw update wizard
 remoteclaw update --channel beta
 remoteclaw update --channel dev
 remoteclaw update --tag beta
+remoteclaw update --tag main
 remoteclaw update --dry-run
 remoteclaw update --no-restart
 remoteclaw update --json
@@ -31,7 +32,7 @@ remoteclaw --update
 
 - `--no-restart`: skip restarting the Gateway service after a successful update.
 - `--channel <stable|beta|dev>`: set the update channel (git + npm; persisted in config).
-- `--tag <dist-tag|version>`: override the npm dist-tag or version for this update only.
+- `--tag <dist-tag|version|spec>`: override the package target for this update only. For package installs, `main` maps to `github:remoteclaw/remoteclaw#main`.
 - `--dry-run`: preview planned update actions (channel/tag/target/restart flow) without writing config, installing, syncing plugins, or restarting.
 - `--json`: print machine-readable `UpdateRunResult` JSON.
 - `--timeout <seconds>`: per-step timeout (default is 1200s).

@@ -1,4 +1,4 @@
-import { listAgentIds, resolveSoleAgentId } from "../agents/agent-scope.js";
+import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import type { CliDeps } from "../cli/deps.js";
 import { createOutboundSendDeps } from "../cli/outbound-send-deps.js";
 import { loadConfig } from "../config/config.js";
@@ -155,31 +155,15 @@ export function buildGatewayCronService(params: {
     const runtimeConfig = loadConfig();
     const normalized =
       typeof requested === "string" && requested.trim() ? normalizeAgentId(requested) : undefined;
-    if (normalized !== undefined) {
-      const hasAgent =
-        Array.isArray(runtimeConfig.agents?.list) &&
-        runtimeConfig.agents.list.some(
-          (entry) =>
-            entry && typeof entry.id === "string" && normalizeAgentId(entry.id) === normalized,
-        );
-      if (!hasAgent) {
-        cronLogger.warn(
-          { requestedAgentId: requested, normalized },
-          "cron: specified agentId not found in config — refusing silent fallback",
-        );
-        throw new Error(
-          `cron: agent "${requested}" is not configured. Check agents.list in your config.`,
-        );
-      }
-      return { agentId: normalized, cfg: runtimeConfig };
-    }
-    const sole = resolveSoleAgentId(runtimeConfig);
-    if (!sole) {
-      throw new Error(
-        "cron: no agentId specified and multiple agents configured — set agentId on the cron job or reduce to a single agent.",
+    const hasAgent =
+      normalized !== undefined &&
+      Array.isArray(runtimeConfig.agents?.list) &&
+      runtimeConfig.agents.list.some(
+        (entry) =>
+          entry && typeof entry.id === "string" && normalizeAgentId(entry.id) === normalized,
       );
-    }
-    return { agentId: sole, cfg: runtimeConfig };
+    const agentId = hasAgent ? normalized : resolveDefaultAgentId(runtimeConfig);
+    return { agentId, cfg: runtimeConfig };
   };
 
   const resolveCronSessionKey = (params: {
@@ -236,8 +220,7 @@ export function buildGatewayCronService(params: {
     return { runtimeConfig, agentId, sessionKey };
   };
 
-  const soleAgentId = resolveSoleAgentId(params.cfg);
-  const defaultAgentId = soleAgentId ?? listAgentIds(params.cfg)[0];
+  const defaultAgentId = resolveDefaultAgentId(params.cfg);
   const runLogPrune = resolveCronRunLogPruneOptions(params.cfg.cron?.runLog);
   const resolveSessionStorePath = (agentId?: string) =>
     resolveStorePath(params.cfg.session?.store, {
@@ -251,7 +234,6 @@ export function buildGatewayCronService(params: {
     cronEnabled,
     cronConfig: params.cfg.cron,
     defaultAgentId,
-    soleAgentId,
     resolveSessionStorePath,
     sessionStorePath,
     enqueueSystemEvent: (text, opts) => {
@@ -303,6 +285,13 @@ export function buildGatewayCronService(params: {
     },
     runIsolatedAgentJob: async ({ job, message, abortSignal }) => {
       const { agentId, cfg: runtimeConfig } = resolveCronAgent(job.agentId);
+      let sessionKey = `cron:${job.id}`;
+      if (job.sessionTarget.startsWith("session:")) {
+        const customSessionId = job.sessionTarget.slice(8).trim();
+        if (customSessionId) {
+          sessionKey = customSessionId;
+        }
+      }
       return await runCronIsolatedAgentTurn({
         cfg: runtimeConfig,
         deps: params.deps,
@@ -310,7 +299,7 @@ export function buildGatewayCronService(params: {
         message,
         abortSignal,
         agentId,
-        sessionKey: `cron:${job.id}`,
+        sessionKey,
         lane: "cron",
       });
     },

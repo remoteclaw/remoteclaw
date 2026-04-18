@@ -114,11 +114,13 @@ describe("callGateway url resolution", () => {
     "REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS",
     "REMOTECLAW_GATEWAY_URL",
     "REMOTECLAW_GATEWAY_TOKEN",
-    "CLAWDBOT_GATEWAY_TOKEN",
   ]);
 
   beforeEach(() => {
     envSnapshot.restore();
+    delete process.env.REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS;
+    delete process.env.REMOTECLAW_GATEWAY_URL;
+    delete process.env.REMOTECLAW_GATEWAY_TOKEN;
     resetGatewayCallMocks();
   });
 
@@ -209,7 +211,7 @@ describe("callGateway url resolution", () => {
     expect(lastClientOptions?.token).toBe("explicit-token");
   });
 
-  it("does not attach device identity for local loopback shared-token auth", async () => {
+  it("keeps device identity enabled for local loopback shared-token auth", async () => {
     setLocalLoopbackGatewayConfig();
 
     await callGateway({
@@ -219,7 +221,7 @@ describe("callGateway url resolution", () => {
 
     expect(lastClientOptions?.url).toBe("ws://127.0.0.1:18789");
     expect(lastClientOptions?.token).toBe("explicit-token");
-    expect(lastClientOptions?.deviceIdentity).toBeUndefined();
+    expect(lastClientOptions?.deviceIdentity).toBeDefined();
   });
 
   it("uses REMOTECLAW_GATEWAY_URL env override in remote mode when remote URL is missing", async () => {
@@ -636,9 +638,11 @@ describe("callGateway url override auth requirements", () => {
       "REMOTECLAW_GATEWAY_TOKEN",
       "REMOTECLAW_GATEWAY_PASSWORD",
       "REMOTECLAW_GATEWAY_URL",
-      "CLAWDBOT_GATEWAY_URL",
     ]);
     resetGatewayCallMocks();
+    delete process.env.REMOTECLAW_GATEWAY_TOKEN;
+    delete process.env.REMOTECLAW_GATEWAY_PASSWORD;
+    delete process.env.REMOTECLAW_GATEWAY_URL;
     setGatewayNetworkDefaults(18789);
   });
 

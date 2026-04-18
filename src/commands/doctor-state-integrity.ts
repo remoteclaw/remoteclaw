@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { listAgentIds, resolveSoleAgentId } from "../agents/agent-scope.js";
+import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveOAuthDir, resolveStateDir } from "../config/paths.js";
@@ -26,6 +26,19 @@ type DoctorPrompterLike = {
     initialValue?: boolean;
   }) => Promise<boolean>;
 };
+
+function countLabel(count: number, singular: string, plural = `${singular}s`): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function formatFilePreview(paths: string[], limit = 3): string {
+  const names = paths.slice(0, limit).map((filePath) => path.basename(filePath));
+  const remaining = paths.length - names.length;
+  if (remaining > 0) {
+    return `${names.join(", ")}, and ${remaining} more`;
+  }
+  return names.join(", ");
+}
 
 function existsDir(dir: string): boolean {
   try {
@@ -457,7 +470,7 @@ function shouldRequireOAuthDir(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): b
   }
   // Pairing allowlists are persisted under credentials/<channel>-allowFrom.json.
   for (const [channelId, channelCfg] of Object.entries(channels)) {
-    if (channelId === "defaults") {
+    if (channelId === "defaults" || channelId === "modelByChannel") {
       continue;
     }
     if (hasPairingPolicy(channelCfg)) {
@@ -479,7 +492,7 @@ export async function noteStateIntegrity(
   const stateDir = resolveStateDir(env, homedir);
   const defaultStateDir = path.join(homedir(), ".remoteclaw");
   const oauthDir = resolveOAuthDir(env, stateDir);
-  const agentId = resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
+  const agentId = resolveDefaultAgentId(cfg);
   const sessionsDir = resolveSessionTranscriptsDirForAgent(agentId, env, homedir);
   const storePath = resolveStorePath(cfg.session?.store, { agentId });
   const storeDir = path.dirname(storePath);
@@ -770,11 +783,18 @@ export async function noteStateIntegrity(
       .map((entry) => path.resolve(path.join(sessionsDir, entry.name)))
       .filter((filePath) => !referencedTranscriptPaths.has(filePath));
     if (orphanTranscriptPaths.length > 0) {
+      const orphanCount = countLabel(orphanTranscriptPaths.length, "orphan transcript file");
+      const orphanPreview = formatFilePreview(orphanTranscriptPaths);
       warnings.push(
-        `- Found ${orphanTranscriptPaths.length} orphan transcript file(s) in ${displaySessionsDir}. They are not referenced by sessions.json and can consume disk over time.`,
+        [
+          `- Found ${orphanCount} in ${displaySessionsDir}.`,
+          "  These .jsonl files are no longer referenced by sessions.json, so they are not part of any active session history.",
+          "  Doctor can archive them safely by renaming each file to *.deleted.<timestamp>.",
+          `  Examples: ${orphanPreview}`,
+        ].join("\n"),
       );
       const archiveOrphans = await prompter.confirmSkipInNonInteractive({
-        message: `Archive ${orphanTranscriptPaths.length} orphan transcript file(s) in ${displaySessionsDir}?`,
+        message: `Archive ${orphanCount} in ${displaySessionsDir}? This only renames them to *.deleted.<timestamp>.`,
         initialValue: false,
       });
       if (archiveOrphans) {
@@ -792,7 +812,9 @@ export async function noteStateIntegrity(
           }
         }
         if (archived > 0) {
-          changes.push(`- Archived ${archived} orphan transcript file(s) in ${displaySessionsDir}`);
+          changes.push(
+            `- Archived ${countLabel(archived, "orphan transcript file")} in ${displaySessionsDir} as .deleted timestamped backups.`,
+          );
         }
       }
     }

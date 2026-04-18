@@ -36,7 +36,9 @@ import org.remoteclaw.app.ui.mobileBorderStrong
 import org.remoteclaw.app.ui.mobileCallout
 import org.remoteclaw.app.ui.mobileCaption1
 import org.remoteclaw.app.ui.mobileCaption2
+import org.remoteclaw.app.ui.mobileCardSurface
 import org.remoteclaw.app.ui.mobileCodeBg
+import org.remoteclaw.app.ui.mobileCodeBorder
 import org.remoteclaw.app.ui.mobileCodeText
 import org.remoteclaw.app.ui.mobileHeadline
 import org.remoteclaw.app.ui.mobileText
@@ -194,6 +196,7 @@ fun ChatStreamingAssistantBubble(text: String) {
   }
 }
 
+@Composable
 private fun bubbleStyle(role: String): ChatBubbleStyle {
   return when (role) {
     "user" ->
@@ -215,7 +218,7 @@ private fun bubbleStyle(role: String): ChatBubbleStyle {
     else ->
       ChatBubbleStyle(
         alignEnd = false,
-        containerColor = Color.White,
+        containerColor = mobileCardSurface,
         borderColor = mobileBorderStrong,
         roleColor = mobileTextSecondary,
       )
@@ -239,7 +242,7 @@ private fun ChatBase64Image(base64: String, mimeType: String?) {
     Surface(
       shape = RoundedCornerShape(10.dp),
       border = BorderStroke(1.dp, mobileBorder),
-      color = Color.White,
+      color = mobileCardSurface,
       modifier = Modifier.fillMaxWidth(),
     ) {
       Image(
@@ -277,7 +280,7 @@ fun ChatCodeBlock(code: String, language: String?) {
   Surface(
     shape = RoundedCornerShape(8.dp),
     color = mobileCodeBg,
-    border = BorderStroke(1.dp, Color(0xFF2B2E35)),
+    border = BorderStroke(1.dp, mobileCodeBorder),
     modifier = Modifier.fillMaxWidth(),
   ) {
     Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

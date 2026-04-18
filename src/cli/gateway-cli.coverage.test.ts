@@ -49,10 +49,10 @@ vi.mock("../globals.js", () => ({
   info: (msg: string) => msg,
   isVerbose: () => false,
   setVerbose: (enabled: boolean) => setVerbose(enabled),
-  shouldLogVerbose: vi.fn(() => false),
 }));
 
-vi.mock("../runtime.js", () => ({
+vi.mock("../runtime.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../runtime.js")>()),
   defaultRuntime,
 }));
 
@@ -81,7 +81,8 @@ vi.mock("../daemon/program-args.js", () => ({
   }),
 }));
 
-vi.mock("../infra/bonjour-discovery.js", () => ({
+vi.mock("../infra/bonjour-discovery.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../infra/bonjour-discovery.js")>()),
   discoverGatewayBeacons: (opts: unknown) => discoverGatewayBeacons(opts),
 }));
 
@@ -147,6 +148,7 @@ describe("gateway-cli coverage", () => {
         displayName: "Studio",
         domain: "remoteclaw.internal.",
         host: "studio.remoteclaw.internal",
+        port: 18789,
         lanHost: "studio.local",
         tailnetDns: "studio.tailnet.ts.net",
         gatewayPort: 18789,

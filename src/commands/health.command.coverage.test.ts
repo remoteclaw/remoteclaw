@@ -10,7 +10,7 @@ const logWebSelfIdMock = vi.fn();
 
 function createRecentSessionRows(now = Date.now()) {
   return [
-    { key: "test-agent", updatedAt: now - 60_000, age: 60_000 },
+    { key: "main", updatedAt: now - 60_000, age: 60_000 },
     { key: "foo", updatedAt: null, age: null },
   ];
 }
@@ -19,7 +19,7 @@ vi.mock("../gateway/call.js", () => ({
   callGateway: (...args: unknown[]) => callGatewayMock(...args),
 }));
 
-vi.mock("../web/auth-store.js", () => ({
+vi.mock("../../extensions/whatsapp/src/auth-store.js", () => ({
   webAuthExists: vi.fn(async () => true),
   getWebAuthAgeMs: vi.fn(() => 0),
   logWebSelfId: (...args: unknown[]) => logWebSelfIdMock(...args),
@@ -96,10 +96,10 @@ describe("healthCommand (coverage)", () => {
         discord: "Discord",
       },
       heartbeatSeconds: 60,
-      defaultAgentId: "test-agent",
+      defaultAgentId: "main",
       agents: [
         {
-          agentId: "test-agent",
+          agentId: "main",
           isDefault: true,
           heartbeat: {
             enabled: true,
@@ -107,7 +107,7 @@ describe("healthCommand (coverage)", () => {
             everyMs: 60_000,
             prompt: "hi",
             target: "last",
-            ackMaxChars: 300,
+            ackMaxChars: 160,
           },
           sessions: {
             path: "/tmp/sessions.json",

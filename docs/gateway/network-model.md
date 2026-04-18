@@ -1,9 +1,11 @@
 ---
-description: "How the Gateway, nodes, and canvas host connect."
+summary: "How the Gateway, nodes, and canvas host connect."
 read_when:
   - You want a concise view of the Gateway networking model
 title: "Network model"
 ---
+
+# Network Model
 
 Most operations flow through the Gateway (`remoteclaw gateway`), a single long-running
 process that owns channel connections and the WebSocket control plane.

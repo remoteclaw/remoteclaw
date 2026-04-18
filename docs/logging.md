@@ -1,10 +1,10 @@
 ---
-description: "Logging overview: file logs, console output, CLI tailing, and the Control UI"
+summary: "Logging overview: file logs, console output, CLI tailing, and the Control UI"
 read_when:
   - You need a beginner-friendly overview of logging
   - You want to configure log levels or formats
   - You are troubleshooting and need to find logs quickly
-title: "Logging"
+title: "Logging Overview"
 ---
 
 # Logging
@@ -165,7 +165,7 @@ diagnostics + the exporter plugin are enabled.
 
 Model usage:
 
-- `model.usage`: tokens, duration, context, runtime/model/channel, session ids.
+- `model.usage`: tokens, cost, duration, context, provider/model/channel, session ids.
 
 Message flow:
 
@@ -270,13 +270,13 @@ Notes:
 Model usage:
 
 - `remoteclaw.tokens` (counter, attrs: `remoteclaw.token`, `remoteclaw.channel`,
-  `remoteclaw.runtime`, `remoteclaw.model`)
-- `remoteclaw.cost.usd` (counter, attrs: `remoteclaw.channel`, `remoteclaw.runtime`,
+  `remoteclaw.provider`, `remoteclaw.model`)
+- `remoteclaw.cost.usd` (counter, attrs: `remoteclaw.channel`, `remoteclaw.provider`,
   `remoteclaw.model`)
 - `remoteclaw.run.duration_ms` (histogram, attrs: `remoteclaw.channel`,
-  `remoteclaw.runtime`, `remoteclaw.model`)
+  `remoteclaw.provider`, `remoteclaw.model`)
 - `remoteclaw.context.tokens` (histogram, attrs: `remoteclaw.context`,
-  `remoteclaw.channel`, `remoteclaw.runtime`, `remoteclaw.model`)
+  `remoteclaw.channel`, `remoteclaw.provider`, `remoteclaw.model`)
 
 Message flow:
 
@@ -308,7 +308,7 @@ Queues + sessions:
 ### Exported spans (names + key attributes)
 
 - `remoteclaw.model.usage`
-  - `remoteclaw.channel`, `remoteclaw.runtime`, `remoteclaw.model`
+  - `remoteclaw.channel`, `remoteclaw.provider`, `remoteclaw.model`
   - `remoteclaw.sessionKey`, `remoteclaw.sessionId`
   - `remoteclaw.tokens.*` (input/output/cache_read/cache_write/total)
 - `remoteclaw.webhook.processed`

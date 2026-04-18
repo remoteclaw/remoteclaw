@@ -1,13 +1,11 @@
 ---
-description: "WebSocket gateway architecture, components, and client flows"
+summary: "WebSocket gateway architecture, components, and client flows"
 read_when:
   - Working on gateway protocol, clients, or transports
 title: "Gateway Architecture"
 ---
 
 # Gateway architecture
-
-Last updated: 2026-01-22
 
 ## Overview
 

@@ -1,5 +1,5 @@
 ---
-description: "Run RemoteClaw in a sandboxed macOS VM (local or hosted) when you need isolation or iMessage"
+summary: "Run RemoteClaw in a sandboxed macOS VM (local or hosted) when you need isolation or iMessage"
 read_when:
   - You want RemoteClaw isolated from your main macOS environment
   - You want iMessage integration (BlueBubbles) in a sandbox
@@ -112,7 +112,7 @@ After setup completes, enable SSH:
 
 ---
 
-## 4) Get the VM's IP address
+## 4) Get the VM IP address
 
 ```bash
 lume get remoteclaw
@@ -141,7 +141,7 @@ npm install -g remoteclaw@latest
 remoteclaw onboard --install-daemon
 ```
 
-Follow the onboarding prompts to select an agent runtime and configure channels.
+Follow the onboarding prompts to set up your model provider (Anthropic, OpenAI, etc.).
 
 ---
 
@@ -155,17 +155,17 @@ nano ~/.remoteclaw/remoteclaw.json
 
 Add your channels:
 
-```json
+```json5
 {
-  "channels": {
-    "whatsapp": {
-      "dmPolicy": "allowlist",
-      "allowFrom": ["+15551234567"]
+  channels: {
+    whatsapp: {
+      dmPolicy: "allowlist",
+      allowFrom: ["+15551234567"],
     },
-    "telegram": {
-      "botToken": "YOUR_BOT_TOKEN"
-    }
-  }
+    telegram: {
+      botToken: "YOUR_BOT_TOKEN",
+    },
+  },
 }
 ```
 
@@ -209,15 +209,15 @@ Inside the VM:
 
 Add to your RemoteClaw config:
 
-```json
+```json5
 {
-  "channels": {
-    "bluebubbles": {
-      "serverUrl": "http://localhost:1234",
-      "password": "your-api-password",
-      "webhookPath": "/bluebubbles-webhook"
-    }
-  }
+  channels: {
+    bluebubbles: {
+      serverUrl: "http://localhost:1234",
+      password: "your-api-password",
+      webhookPath: "/bluebubbles-webhook",
+    },
+  },
 }
 ```
 

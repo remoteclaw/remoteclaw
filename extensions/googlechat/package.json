@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/googlechat",
-  "version": "2026.3.13",
+  "version": "0.6.0",
   "private": true,
   "description": "RemoteClaw Google Chat channel plugin",
   "type": "module",
@@ -42,9 +42,7 @@
       "defaultChoice": "npm"
     },
     "releaseChecks": {
-      "rootDependencyMirrorAllowlist": [
-        "google-auth-library"
-      ]
+      "rootDependencyMirrorAllowlist": []
     }
   }
 }

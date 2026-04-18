@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/msteams",
-  "version": "2026.3.13",
+  "version": "0.6.0",
   "description": "RemoteClaw Microsoft Teams channel plugin",
   "type": "module",
   "dependencies": {
@@ -29,9 +29,7 @@
       "defaultChoice": "npm"
     },
     "releaseChecks": {
-      "rootDependencyMirrorAllowlist": [
-        "@microsoft/agents-hosting"
-      ]
+      "rootDependencyMirrorAllowlist": []
     }
   }
 }

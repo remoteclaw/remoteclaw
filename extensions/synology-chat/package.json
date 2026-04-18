@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/synology-chat",
-  "version": "2026.3.13",
+  "version": "0.6.0",
   "description": "Synology Chat channel plugin for RemoteClaw",
   "type": "module",
   "dependencies": {

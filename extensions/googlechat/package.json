@@ -39,9 +39,7 @@
       "defaultChoice": "npm"
     },
     "releaseChecks": {
-      "rootDependencyMirrorAllowlist": [
-        "google-auth-library"
-      ]
+      "rootDependencyMirrorAllowlist": []
     }
   }
 }

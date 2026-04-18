@@ -1,18 +1,19 @@
 ---
-summary: "CLI reference for `remoteclaw plugins` (list, install, uninstall, enable/disable, doctor)"
+summary: "CLI reference for `remoteclaw plugins` (list, install, marketplace, uninstall, enable/disable, doctor)"
 read_when:
-  - You want to install or manage in-process Gateway plugins
+  - You want to install or manage Gateway plugins or compatible bundles
   - You want to debug plugin load failures
 title: "plugins"
 ---
 
 # `remoteclaw plugins`
 
-Manage Gateway plugins/extensions (loaded in-process).
+Manage Gateway plugins/extensions, hook packs, and compatible bundles.
 
 Related:
 
 - Plugin system: [Plugins](/tools/plugin)
+- Bundle compatibility: [Plugin bundles](/plugins/bundles)
 - Plugin manifest + schema: [Plugin manifest](/plugins/manifest)
 - Security hardening: [Security](/gateway/security)
 
@@ -20,30 +21,45 @@ Related:
 
 ```bash
 remoteclaw plugins list
-remoteclaw plugins info <id>
+remoteclaw plugins install <path-or-spec>
+remoteclaw plugins inspect <id>
 remoteclaw plugins enable <id>
 remoteclaw plugins disable <id>
 remoteclaw plugins uninstall <id>
 remoteclaw plugins doctor
 remoteclaw plugins update <id>
 remoteclaw plugins update --all
+remoteclaw plugins marketplace list <marketplace>
 ```
 
 Bundled plugins ship with RemoteClaw but start disabled. Use `plugins enable` to
 activate them.
 
-All plugins must ship a `remoteclaw.plugin.json` file with an inline JSON Schema
-(`configSchema`, even if empty). Missing/invalid manifests or schemas prevent
-the plugin from loading and fail config validation.
+Native RemoteClaw plugins must ship `remoteclaw.plugin.json` with an inline JSON
+Schema (`configSchema`, even if empty). Compatible bundles use their own bundle
+manifests instead.
+
+`plugins list` shows `Format: remoteclaw` or `Format: bundle`. Verbose list/info
+output also shows the bundle subtype (`codex`, `claude`, or `cursor`) plus detected bundle
+capabilities.
 
 ### Install
 
 ```bash
-remoteclaw plugins install <path-or-spec>
-remoteclaw plugins install <npm-spec> --pin
+remoteclaw plugins install <package>                      # ClawHub first, then npm
+remoteclaw plugins install clawhub:<package>              # ClawHub only
+remoteclaw plugins install <package> --pin                # pin version
+remoteclaw plugins install <path>                         # local path
+remoteclaw plugins install <plugin>@<marketplace>         # marketplace
+remoteclaw plugins install <plugin> --marketplace <name>  # marketplace (explicit)
 ```
 
-Security note: treat plugin installs like running code. Prefer pinned versions.
+Bare package names are checked against ClawHub first, then npm. Security note:
+treat plugin installs like running code. Prefer pinned versions.
+
+`plugins install` is also the install surface for hook packs that expose
+`remoteclaw.hooks` in `package.json`. Use `remoteclaw hooks` for filtered hook
+visibility and per-hook enablement, not package installation.
 
 Npm specs are **registry-only** (package name + optional **exact version** or
 **dist-tag**). Git/URL/file specs and semver ranges are rejected. Dependency
@@ -59,6 +75,69 @@ installs the bundled plugin directly. To install an npm package with the same
 name, use an explicit scoped spec (for example `@scope/diffs`).
 
 Supported archives: `.zip`, `.tgz`, `.tar.gz`, `.tar`.
+
+Claude marketplace installs are also supported.
+
+ClawHub installs use an explicit `clawhub:<package>` locator:
+
+```bash
+remoteclaw plugins install clawhub:remoteclaw-codex-app-server
+remoteclaw plugins install clawhub:remoteclaw-codex-app-server@1.2.3
+```
+
+RemoteClaw now also prefers ClawHub for bare npm-safe plugin specs. It only falls
+back to npm if ClawHub does not have that package or version:
+
+```bash
+remoteclaw plugins install remoteclaw-codex-app-server
+```
+
+RemoteClaw downloads the package archive from ClawHub, checks the advertised
+plugin API / minimum gateway compatibility, then installs it through the normal
+archive path. Recorded installs keep their ClawHub source metadata for later
+updates.
+
+Use `plugin@marketplace` shorthand when the marketplace name exists in Claude's
+local registry cache at `~/.claude/plugins/known_marketplaces.json`:
+
+```bash
+remoteclaw plugins marketplace list <marketplace-name>
+remoteclaw plugins install <plugin-name>@<marketplace-name>
+```
+
+Use `--marketplace` when you want to pass the marketplace source explicitly:
+
+```bash
+remoteclaw plugins install <plugin-name> --marketplace <marketplace-name>
+remoteclaw plugins install <plugin-name> --marketplace <owner/repo>
+remoteclaw plugins install <plugin-name> --marketplace ./my-marketplace
+```
+
+Marketplace sources can be:
+
+- a Claude known-marketplace name from `~/.claude/plugins/known_marketplaces.json`
+- a local marketplace root or `marketplace.json` path
+- a GitHub repo shorthand such as `owner/repo`
+- a git URL
+
+For remote marketplaces loaded from GitHub or git, plugin entries must stay
+inside the cloned marketplace repo. RemoteClaw accepts relative path sources from
+that repo and rejects external git, GitHub, URL/archive, and absolute-path
+plugin sources from remote manifests.
+
+For local paths and archives, RemoteClaw auto-detects:
+
+- native RemoteClaw plugins (`remoteclaw.plugin.json`)
+- Codex-compatible bundles (`.codex-plugin/plugin.json`)
+- Claude-compatible bundles (`.claude-plugin/plugin.json` or the default Claude
+  component layout)
+- Cursor-compatible bundles (`.cursor-plugin/plugin.json`)
+
+Compatible bundles install into the normal extensions root and participate in
+the same list/info/enable/disable flow. Today, bundle skills, Claude
+command-skills, Claude `settings.json` defaults, Cursor command-skills, and compatible Codex hook
+directories are supported; other detected bundle capabilities are shown in
+diagnostics/info but are not yet wired into runtime execution.
 
 Use `--link` to avoid copying a local directory (adds to `plugins.load.paths`):
 
@@ -90,13 +169,49 @@ state dir extensions root (`$REMOTECLAW_STATE_DIR/extensions/<id>`). Use
 ### Update
 
 ```bash
-remoteclaw plugins update <id>
+remoteclaw plugins update <id-or-npm-spec>
 remoteclaw plugins update --all
-remoteclaw plugins update <id> --dry-run
+remoteclaw plugins update <id-or-npm-spec> --dry-run
+remoteclaw plugins update @remoteclaw/voice-call@beta
 ```
 
-Updates only apply to plugins installed from npm (tracked in `plugins.installs`).
+Updates apply to tracked installs in `plugins.installs` and tracked hook-pack
+installs in `hooks.internal.installs`.
+
+When you pass a plugin id, RemoteClaw reuses the recorded install spec for that
+plugin. That means previously stored dist-tags such as `@beta` and exact pinned
+versions continue to be used on later `update <id>` runs.
+
+For npm installs, you can also pass an explicit npm package spec with a dist-tag
+or exact version. RemoteClaw resolves that package name back to the tracked plugin
+record, updates that installed plugin, and records the new npm spec for future
+id-based updates.
 
 When a stored integrity hash exists and the fetched artifact hash changes,
 RemoteClaw prints a warning and asks for confirmation before proceeding. Use
 global `--yes` to bypass prompts in CI/non-interactive runs.
+
+### Inspect
+
+```bash
+remoteclaw plugins inspect <id>
+remoteclaw plugins inspect <id> --json
+```
+
+Deep introspection for a single plugin. Shows identity, load status, source,
+registered capabilities, hooks, tools, commands, services, gateway methods,
+HTTP routes, policy flags, diagnostics, and install metadata.
+
+Each plugin is classified by what it actually registers at runtime:
+
+- **plain-capability** — one capability type (e.g. a provider-only plugin)
+- **hybrid-capability** — multiple capability types (e.g. text + speech + images)
+- **hook-only** — only hooks, no capabilities or surfaces
+- **non-capability** — tools/commands/services but no capabilities
+
+See [Plugin shapes](/plugins/architecture#plugin-shapes) for more on the capability model.
+
+The `--json` flag outputs a machine-readable report suitable for scripting and
+auditing.
+
+`info` is an alias for `inspect`.

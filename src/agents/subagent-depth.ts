@@ -1,9 +1,9 @@
 import fs from "node:fs";
-import JSON5 from "json5";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveStorePath } from "../config/sessions/paths.js";
 import { getSubagentDepth, parseAgentSessionKey } from "../sessions/session-key-utils.js";
-import { listAgentIds, resolveSoleAgentId } from "./agent-scope.js";
+import { parseJsonWithJson5Fallback } from "../utils/parse-json-compat.js";
+import { resolveDefaultAgentId } from "./agent-scope.js";
 
 type SessionDepthEntry = {
   sessionId?: unknown;
@@ -37,7 +37,7 @@ function normalizeSessionKey(value: unknown): string | undefined {
 function readSessionStore(storePath: string): Record<string, SessionDepthEntry> {
   try {
     const raw = fs.readFileSync(storePath, "utf-8");
-    const parsed = JSON5.parse(raw);
+    const parsed = parseJsonWithJson5Fallback(raw);
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       return parsed as Record<string, SessionDepthEntry>;
     }
@@ -57,8 +57,8 @@ function buildKeyCandidates(rawKey: string, cfg?: RemoteClawConfig): string[] {
   if (parseAgentSessionKey(rawKey)) {
     return [rawKey];
   }
-  const agentId = resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
-  const prefixed = `agent:${agentId}:${rawKey}`;
+  const defaultAgentId = resolveDefaultAgentId(cfg);
+  const prefixed = `agent:${defaultAgentId}:${rawKey}`;
   return prefixed === rawKey ? [rawKey] : [rawKey, prefixed];
 }
 

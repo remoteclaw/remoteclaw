@@ -12,7 +12,7 @@
   <a href="https://www.npmjs.com/package/remoteclaw"><img src="https://img.shields.io/npm/v/remoteclaw?style=for-the-badge" alt="npm version"></a>
   <a href="https://github.com/remoteclaw/remoteclaw/releases"><img src="https://img.shields.io/github/v/release/remoteclaw/remoteclaw?include_prereleases&display_name=release&style=for-the-badge&label=GITHUB" alt="GitHub release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg?style=for-the-badge" alt="AGPL-3.0-only License"></a>
-  <a href="https://github.com/openclaw/openclaw/releases/tag/v2026.3.12"><img src="https://img.shields.io/badge/upstream-OpenClaw_v2026.3.12-teal?style=for-the-badge" alt="Upstream: OpenClaw v2026.3.12"></a>
+  <a href="https://github.com/openclaw/openclaw/releases/tag/v2026.3.22"><img src="https://img.shields.io/badge/upstream-OpenClaw_v2026.3.22-teal?style=for-the-badge" alt="Upstream: OpenClaw v2026.3.22"></a>
 </p>
 
 **RemoteClaw** is AI agent middleware. It connects agent CLIs you already run — Claude Code, Gemini CLI, Codex, OpenCode — to the messaging channels you already use, so you can reach your agents from anywhere: your phone, your team Slack, your WhatsApp, anywhere.

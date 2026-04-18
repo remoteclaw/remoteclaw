@@ -1,5 +1,5 @@
 ---
-description: "Run multiple RemoteClaw Gateways on one host (isolation, ports, and profiles)"
+summary: "Run multiple RemoteClaw Gateways on one host (isolation, ports, and profiles)"
 read_when:
   - Running more than one Gateway on the same machine
   - You need isolated config/state/ports per Gateway
@@ -70,7 +70,7 @@ remoteclaw --profile rescue onboard
 #   better choose completely different base port, like 19789,
 # - rest of the onboarding is the same as normal
 
-# To install the service (if not happened automatically during onboarding)
+# To install the service (if not happened automatically during setup)
 remoteclaw --profile rescue gateway install
 ```
 

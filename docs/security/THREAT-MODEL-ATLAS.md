@@ -1,5 +1,9 @@
 ---
-title: RemoteClaw Threat Model v1.0
+title: "Threat Model (MITRE ATLAS)"
+summary: "RemoteClaw threat model mapped to the MITRE ATLAS framework"
+read_when:
+  - Reviewing security posture or threat scenarios
+  - Working on security features or audit responses
 ---
 
 # RemoteClaw Threat Model v1.0

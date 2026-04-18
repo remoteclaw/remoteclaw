@@ -6,7 +6,7 @@
 termux-toast "Syncing RemoteClaw auth..."
 
 # Run sync on l36 server
-SERVER="${REMOTECLAW_SERVER:-${CLAWDBOT_SERVER:-l36}}"
+SERVER="${REMOTECLAW_SERVER:-l36}"
 RESULT=$(ssh "$SERVER" '/home/admin/remoteclaw/scripts/sync-claude-code-auth.sh' 2>&1)
 EXIT_CODE=$?
 

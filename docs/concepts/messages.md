@@ -1,5 +1,5 @@
 ---
-description: "Message flow, sessions, queueing, and reasoning visibility"
+summary: "Message flow, sessions, queueing, and reasoning visibility"
 read_when:
   - Explaining how inbound messages become replies
   - Clarifying sessions, queueing modes, or streaming behavior
@@ -142,7 +142,7 @@ RemoteClaw can expose or hide model reasoning:
 - Reasoning content still counts toward token usage when produced by the model.
 - Telegram supports reasoning stream into the draft bubble.
 
-Details: [Token use](/reference/token-use).
+Details: [Thinking + reasoning directives](/tools/thinking) and [Token use](/reference/token-use).
 
 ## Prefixes, threading, and replies
 
@@ -151,4 +151,4 @@ Outbound message formatting is centralized in `messages`:
 - `messages.responsePrefix`, `channels.<channel>.responsePrefix`, and `channels.<channel>.accounts.<id>.responsePrefix` (outbound prefix cascade), plus `channels.whatsapp.messagePrefix` (WhatsApp inbound prefix)
 - Reply threading via `replyToMode` and per-channel defaults
 
-Details: [Configuration](/gateway/configuration#messages) and channel docs.
+Details: [Configuration](/gateway/configuration-reference#messages) and channel docs.

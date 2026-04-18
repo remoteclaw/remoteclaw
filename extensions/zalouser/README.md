@@ -6,7 +6,7 @@ RemoteClaw extension for Zalo Personal Account messaging via native `zca-js` int
 
 ## Features
 
-- Channel plugin integration with onboarding + QR login
+- Channel plugin integration with setup wizard + QR login
 - In-process listener/sender via `zca-js` (no external CLI)
 - Multi-account support
 - Agent tool integration (`zalouser`)

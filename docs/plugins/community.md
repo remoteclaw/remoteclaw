@@ -1,51 +1,145 @@
 ---
-description: "Community plugins: quality bar, hosting requirements, and PR submission path"
+summary: "Community-maintained RemoteClaw plugins: browse, install, and submit your own"
 read_when:
-  - You want to publish a third-party RemoteClaw plugin
-  - You want to propose a plugin for docs listing
-title: "Community plugins"
+  - You want to find third-party RemoteClaw plugins
+  - You want to publish or list your own plugin
+title: "Community Plugins"
 ---
 
-# Community plugins
+# Community Plugins
 
-This page tracks high-quality **community-maintained plugins** for RemoteClaw.
+Community plugins are third-party packages that extend RemoteClaw with new
+channels, tools, providers, or other capabilities. They are built and maintained
+by the community, published on [ClawHub](/tools/clawhub) or npm, and
+installable with a single command.
 
-We accept PRs that add community plugins here when they meet the quality bar.
+```bash
+remoteclaw plugins install <package-name>
+```
 
-## Required for listing
-
-- Plugin package is published on npmjs (installable via `remoteclaw plugins install <npm-spec>`).
-- Source code is hosted on GitHub (public repository).
-- Repository includes setup/use docs and an issue tracker.
-- Plugin has a clear maintenance signal (active maintainer, recent updates, or responsive issue handling).
-
-## How to submit
-
-Open a PR that adds your plugin to this page with:
-
-- Plugin name
-- npm package name
-- GitHub repository URL
-- One-line description
-- Install command
-
-## Review bar
-
-We prefer plugins that are useful, documented, and safe to operate.
-Low-effort wrappers, unclear ownership, or unmaintained packages may be declined.
-
-## Candidate format
-
-Use this format when adding entries:
-
-- **Plugin Name** — short description
-  npm: `@scope/package`
-  repo: `https://github.com/org/repo`
-  install: `remoteclaw plugins install @scope/package`
+RemoteClaw checks ClawHub first and falls back to npm automatically.
 
 ## Listed plugins
 
-- **WeChat** — Connect RemoteClaw to WeChat personal accounts via WeChatPadPro (iPad protocol). Supports text, image, and file exchange with keyword-triggered conversations.
-  npm: `@icesword760/remoteclaw-wechat`
-  repo: `https://github.com/icesword0760/remoteclaw-wechat`
-  install: `remoteclaw plugins install @icesword760/remoteclaw-wechat`
+### Codex App Server Bridge
+
+Independent RemoteClaw bridge for Codex App Server conversations. Bind a chat to
+a Codex thread, talk to it with plain text, and control it with chat-native
+commands for resume, planning, review, model selection, compaction, and more.
+
+- **npm:** `remoteclaw-codex-app-server`
+- **repo:** [github.com/pwrdrvr/remoteclaw-codex-app-server](https://github.com/pwrdrvr/remoteclaw-codex-app-server)
+
+```bash
+remoteclaw plugins install remoteclaw-codex-app-server
+```
+
+### DingTalk
+
+Enterprise robot integration using Stream mode. Supports text, images, and
+file messages via any DingTalk client.
+
+- **npm:** `@largezhou/ddingtalk`
+- **repo:** [github.com/largezhou/remoteclaw-dingtalk](https://github.com/largezhou/remoteclaw-dingtalk)
+
+```bash
+remoteclaw plugins install @largezhou/ddingtalk
+```
+
+### Lossless Claw (LCM)
+
+Lossless Context Management plugin for RemoteClaw. DAG-based conversation
+summarization with incremental compaction — preserves full context fidelity
+while reducing token usage.
+
+- **npm:** `@martian-engineering/lossless-claw`
+- **repo:** [github.com/Martian-Engineering/lossless-claw](https://github.com/Martian-Engineering/lossless-claw)
+
+```bash
+remoteclaw plugins install @martian-engineering/lossless-claw
+```
+
+### Opik
+
+Official plugin that exports agent traces to Opik. Monitor agent behavior,
+cost, tokens, errors, and more.
+
+- **npm:** `@opik/opik-remoteclaw`
+- **repo:** [github.com/comet-ml/opik-remoteclaw](https://github.com/comet-ml/opik-remoteclaw)
+
+```bash
+remoteclaw plugins install @opik/opik-remoteclaw
+```
+
+### QQbot
+
+Connect RemoteClaw to QQ via the QQ Bot API. Supports private chats, group
+mentions, channel messages, and rich media including voice, images, videos,
+and files.
+
+- **npm:** `@sliverp/qqbot`
+- **repo:** [github.com/sliverp/qqbot](https://github.com/sliverp/qqbot)
+
+```bash
+remoteclaw plugins install @sliverp/qqbot
+```
+
+### wecom
+
+RemoteClaw Enterprise WeCom Channel Plugin.
+A bot plugin powered by WeCom AI Bot WebSocket persistent connections,
+supports direct messages & group chats, streaming replies, and proactive messaging.
+
+- **npm:** `@wecom/wecom-remoteclaw-plugin`
+- **repo:** [github.com/WecomTeam/wecom-remoteclaw-plugin](https://github.com/WecomTeam/wecom-remoteclaw-plugin)
+
+```bash
+remoteclaw plugins install @wecom/wecom-remoteclaw-plugin
+```
+
+## Submit your plugin
+
+We welcome community plugins that are useful, documented, and safe to operate.
+
+<Steps>
+  <Step title="Publish to ClawHub or npm">
+    Your plugin must be installable via `remoteclaw plugins install \<package-name\>`.
+    Publish to [ClawHub](/tools/clawhub) (preferred) or npm.
+    See [Building Plugins](/plugins/building-plugins) for the full guide.
+
+  </Step>
+
+  <Step title="Host on GitHub">
+    Source code must be in a public repository with setup docs and an issue
+    tracker.
+
+  </Step>
+
+  <Step title="Open a PR">
+    Add your plugin to this page with:
+
+    - Plugin name
+    - npm package name
+    - GitHub repository URL
+    - One-line description
+    - Install command
+
+  </Step>
+</Steps>
+
+## Quality bar
+
+| Requirement                 | Why                                             |
+| --------------------------- | ----------------------------------------------- |
+| Published on ClawHub or npm | Users need `remoteclaw plugins install` to work |
+| Public GitHub repo          | Source review, issue tracking, transparency     |
+| Setup and usage docs        | Users need to know how to configure it          |
+| Active maintenance          | Recent updates or responsive issue handling     |
+
+Low-effort wrappers, unclear ownership, or unmaintained packages may be declined.
+
+## Related
+
+- [Install and Configure Plugins](/tools/plugin) — how to install any plugin
+- [Building Plugins](/plugins/building-plugins) — create your own
+- [Plugin Manifest](/plugins/manifest) — manifest schema

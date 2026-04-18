@@ -780,6 +780,10 @@ extension MenuSessionsInjector {
 
         menu.addItem(NSMenuItem.separator())
 
+        let thinking = NSMenuItem(title: "Thinking", action: nil, keyEquivalent: "")
+        thinking.submenu = self.buildThinkingMenu(for: row)
+        menu.addItem(thinking)
+
         let verbose = NSMenuItem(title: "Verbose", action: nil, keyEquivalent: "")
         verbose.submenu = self.buildVerboseMenu(for: row)
         menu.addItem(verbose)
@@ -826,6 +830,26 @@ extension MenuSessionsInjector {
             menu.addItem(del)
         }
 
+        return menu
+    }
+
+    private func buildThinkingMenu(for row: SessionRow) -> NSMenu {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        menu.showsStateColumn = true
+        let levels: [String] = ["off", "minimal", "low", "medium", "high"]
+        let current = levels.contains(row.thinkingLevel ?? "") ? row.thinkingLevel ?? "off" : "off"
+        for level in levels {
+            let title = level.capitalized
+            let item = NSMenuItem(title: title, action: #selector(self.patchThinking(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = [
+                "key": row.key,
+                "value": level as Any,
+            ]
+            item.state = (current == level) ? .on : .off
+            menu.addItem(item)
+        }
         return menu
     }
 
@@ -955,6 +979,24 @@ extension MenuSessionsInjector {
     }
 
     @objc
+    private func patchThinking(_ sender: NSMenuItem) {
+        guard let dict = sender.representedObject as? [String: Any],
+              let key = dict["key"] as? String
+        else { return }
+        let value = dict["value"] as? String
+        Task {
+            do {
+                try await SessionActions.patchSession(key: key, thinking: .some(value))
+                await self.refreshCache(force: true)
+            } catch {
+                await MainActor.run {
+                    SessionActions.presentError(title: "Update thinking failed", error: error)
+                }
+            }
+        }
+    }
+
+    @objc
     private func patchVerbose(_ sender: NSMenuItem) {
         guard let dict = sender.representedObject as? [String: Any],
               let key = dict["key"] as? String
@@ -1057,36 +1099,31 @@ extension MenuSessionsInjector {
     // MARK: - Width + placement
 
     private func findInsertIndex(in menu: NSMenu) -> Int? {
-        // Insert right before the separator above "Send Heartbeats".
-        if let idx = menu.items.firstIndex(where: { $0.title == "Send Heartbeats" }) {
-            if let sepIdx = menu.items[..<idx].lastIndex(where: { $0.isSeparatorItem }) {
-                return sepIdx
-            }
-            return idx
-        }
-
-        if let sepIdx = menu.items.firstIndex(where: { $0.isSeparatorItem }) {
-            return sepIdx
-        }
-
-        if menu.items.count >= 1 { return 1 }
-        return menu.items.count
+        self.findDynamicSectionInsertIndex(in: menu)
     }
 
     private func findNodesInsertIndex(in menu: NSMenu) -> Int? {
-        if let idx = menu.items.firstIndex(where: { $0.title == "Send Heartbeats" }) {
-            if let sepIdx = menu.items[..<idx].lastIndex(where: { $0.isSeparatorItem }) {
-                return sepIdx
-            }
-            return idx
+        self.findDynamicSectionInsertIndex(in: menu)
+    }
+
+    private func findDynamicSectionInsertIndex(in menu: NSMenu) -> Int? {
+        // Keep controls and action buttons visible by inserting dynamic rows at the
+        // built-in footer boundary, not by matching localized menu item titles.
+        if let footerSeparatorIndex = menu.items.lastIndex(where: { item in
+            item.isSeparatorItem && !self.isInjectedItem(item)
+        }) {
+            return footerSeparatorIndex
         }
 
-        if let sepIdx = menu.items.firstIndex(where: { $0.isSeparatorItem }) {
-            return sepIdx
+        if let firstBaseItemIndex = menu.items.firstIndex(where: { !self.isInjectedItem($0) }) {
+            return min(firstBaseItemIndex + 1, menu.items.count)
         }
 
-        if menu.items.count >= 1 { return 1 }
         return menu.items.count
+    }
+
+    private func isInjectedItem(_ item: NSMenuItem) -> Bool {
+        item.tag == self.tag || item.tag == self.nodesTag
     }
 
     private func initialWidth(for menu: NSMenu) -> CGFloat {
@@ -1193,6 +1230,14 @@ extension MenuSessionsInjector {
 
     func injectForTesting(into menu: NSMenu) {
         self.inject(into: menu)
+    }
+
+    func testingFindInsertIndex(in menu: NSMenu) -> Int? {
+        self.findInsertIndex(in: menu)
+    }
+
+    func testingFindNodesInsertIndex(in menu: NSMenu) -> Int? {
+        self.findNodesInsertIndex(in: menu)
     }
 }
 #endif

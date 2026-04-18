@@ -54,6 +54,22 @@
       "types": "./dist/plugin-sdk/core.d.ts",
       "default": "./dist/plugin-sdk/core.js"
     },
+    "./plugin-sdk/channel-config-helpers": {
+      "types": "./dist/plugin-sdk/channel-config-helpers.d.ts",
+      "default": "./dist/plugin-sdk/channel-config-helpers.js"
+    },
+    "./plugin-sdk/group-access": {
+      "types": "./dist/plugin-sdk/group-access.d.ts",
+      "default": "./dist/plugin-sdk/group-access.js"
+    },
+    "./plugin-sdk/reply-payload": {
+      "types": "./dist/plugin-sdk/reply-payload.d.ts",
+      "default": "./dist/plugin-sdk/reply-payload.js"
+    },
+    "./plugin-sdk/runtime-store": {
+      "types": "./dist/plugin-sdk/runtime-store.d.ts",
+      "default": "./dist/plugin-sdk/runtime-store.js"
+    },
     "./plugin-sdk/compat": {
       "types": "./dist/plugin-sdk/compat.d.ts",
       "default": "./dist/plugin-sdk/compat.js"
@@ -418,6 +434,6 @@
       "sharp"
     ]
   },
-  "upstreamRepo": "remoteclaw/remoteclaw",
-  "upstreamVersion": "2026.3.12"
+  "upstreamRepo": "openclaw/openclaw",
+  "upstreamVersion": "2026.3.22"
 }

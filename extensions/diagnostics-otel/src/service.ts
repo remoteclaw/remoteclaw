@@ -9,15 +9,8 @@ import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { ParentBasedSampler, TraceIdRatioBasedSampler } from "@opentelemetry/sdk-trace-base";
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
-import type {
-  DiagnosticEventPayload,
-  RemoteClawPluginService,
-} from "remoteclaw/plugin-sdk/diagnostics-otel";
-import {
-  onDiagnosticEvent,
-  redactSensitiveText,
-  registerLogTransport,
-} from "remoteclaw/plugin-sdk/diagnostics-otel";
+import type { DiagnosticEventPayload, RemoteClawPluginService } from "../api.js";
+import { onDiagnosticEvent, redactSensitiveText, registerLogTransport } from "../api.js";
 
 const DEFAULT_SERVICE_NAME = "remoteclaw";
 
@@ -238,10 +231,6 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
       const runAttemptCounter = meter.createCounter("remoteclaw.run.attempt", {
         unit: "1",
         description: "Run attempts",
-      });
-      const routingDropsCounter = meter.createCounter("remoteclaw.routing.drops", {
-        unit: "1",
-        description: "Inbound messages silently dropped by routing policy",
       });
 
       if (logsEnabled) {
@@ -620,15 +609,6 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
         queueDepthHistogram.record(evt.queued, { "remoteclaw.channel": "heartbeat" });
       };
 
-      const recordRoutingDrop = (
-        evt: Extract<DiagnosticEventPayload, { type: "routing.drop" }>,
-      ) => {
-        routingDropsCounter.add(1, {
-          "remoteclaw.channel": evt.channel,
-          "remoteclaw.reason": evt.reason,
-        });
-      };
-
       unsubscribe = onDiagnosticEvent((evt: DiagnosticEventPayload) => {
         try {
           switch (evt.type) {
@@ -667,9 +647,6 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
               return;
             case "diagnostic.heartbeat":
               recordHeartbeat(evt);
-              return;
-            case "routing.drop":
-              recordRoutingDrop(evt);
               return;
           }
         } catch (err) {

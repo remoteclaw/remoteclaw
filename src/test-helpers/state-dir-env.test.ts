@@ -10,19 +10,16 @@ import {
 
 type EnvSnapshot = {
   remoteclaw?: string;
-  legacy?: string;
 };
 
 function snapshotCurrentStateDirVars(): EnvSnapshot {
   return {
     remoteclaw: process.env.REMOTECLAW_STATE_DIR,
-    legacy: process.env.CLAWDBOT_STATE_DIR,
   };
 }
 
 function expectStateDirVars(snapshot: EnvSnapshot) {
   expect(process.env.REMOTECLAW_STATE_DIR).toBe(snapshot.remoteclaw);
-  expect(process.env.CLAWDBOT_STATE_DIR).toBe(snapshot.legacy);
 }
 
 async function expectPathMissing(filePath: string) {
@@ -46,7 +43,6 @@ describe("state-dir-env helpers", () => {
 
     setStateDirEnv("/tmp/remoteclaw-state-dir-test");
     expect(process.env.REMOTECLAW_STATE_DIR).toBe("/tmp/remoteclaw-state-dir-test");
-    expect(process.env.CLAWDBOT_STATE_DIR).toBeUndefined();
 
     restoreStateDirEnv(snapshot);
     expectStateDirVars(prev);
@@ -61,7 +57,6 @@ describe("state-dir-env helpers", () => {
       capturedTempRoot = tempRoot;
       capturedStateDir = stateDir;
       expect(process.env.REMOTECLAW_STATE_DIR).toBe(stateDir);
-      expect(process.env.CLAWDBOT_STATE_DIR).toBeUndefined();
       await fs.writeFile(path.join(stateDir, "probe.txt"), "ok", "utf8");
     });
 
@@ -82,27 +77,5 @@ describe("state-dir-env helpers", () => {
     ).rejects.toThrow("boom");
 
     await expectStateDirEnvRestored({ prev, capturedStateDir, capturedTempRoot });
-  });
-
-  it("withStateDirEnv restores both env vars when legacy var was previously set", async () => {
-    const testSnapshot = snapshotStateDirEnv();
-    process.env.REMOTECLAW_STATE_DIR = "/tmp/original-remoteclaw";
-    process.env.CLAWDBOT_STATE_DIR = "/tmp/original-legacy";
-    const prev = snapshotCurrentStateDirVars();
-
-    let capturedTempRoot = "";
-    let capturedStateDir = "";
-    try {
-      await withStateDirEnv("remoteclaw-state-dir-env-", async ({ tempRoot, stateDir }) => {
-        capturedTempRoot = tempRoot;
-        capturedStateDir = stateDir;
-        expect(process.env.REMOTECLAW_STATE_DIR).toBe(stateDir);
-        expect(process.env.CLAWDBOT_STATE_DIR).toBeUndefined();
-      });
-
-      await expectStateDirEnvRestored({ prev, capturedStateDir, capturedTempRoot });
-    } finally {
-      restoreStateDirEnv(testSnapshot);
-    }
   });
 });

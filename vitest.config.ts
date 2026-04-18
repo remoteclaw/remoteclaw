@@ -11,6 +11,10 @@ const ciWorkers = isWindows ? 2 : 3;
 const pluginSdkSubpaths = [
   "account-id",
   "core",
+  "channel-config-helpers",
+  "group-access",
+  "reply-payload",
+  "runtime-store",
   "compat",
   "telegram",
   "discord",

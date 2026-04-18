@@ -2,6 +2,8 @@ import { writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
+import { clearConfigCache, clearRuntimeConfigSnapshot } from "../config/config.js";
+import { clearSessionStoreCacheForTest } from "../config/sessions/store.js";
 import {
   type DeviceIdentity,
   loadOrCreateDeviceIdentity,
@@ -19,6 +21,7 @@ import {
 import { GatewayClient } from "./client.js";
 import { buildDeviceAuthPayloadV3 } from "./device-auth.js";
 import { PROTOCOL_VERSION } from "./protocol/index.js";
+import { startGatewayServer } from "./server.js";
 
 export async function getFreeGatewayPort(): Promise<number> {
   return await getDeterministicFreePortBlock({ offsets: [0, 1, 2, 3, 4] });
@@ -101,6 +104,10 @@ export async function connectGatewayClient(params: {
     timer.unref();
     client.start();
   });
+}
+
+export async function disconnectGatewayClient(client: GatewayClient): Promise<void> {
+  await client.stopAndWait();
 }
 
 export async function connectDeviceAuthReq(params: { url: string; token?: string }) {
@@ -228,9 +235,11 @@ export async function startGatewayWithClient(params: {
 }) {
   await writeFile(params.configPath, `${JSON.stringify(params.cfg, null, 2)}\n`);
   process.env.REMOTECLAW_CONFIG_PATH = params.configPath;
+  clearRuntimeConfigSnapshot();
+  clearConfigCache();
+  clearSessionStoreCacheForTest();
 
   const port = await getFreeGatewayPort();
-  const { startGatewayServer } = await import("./server.js");
   const server = await startGatewayServer(port, {
     bind: "loopback",
     auth: { mode: "token", token: params.token },

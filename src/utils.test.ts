@@ -208,11 +208,13 @@ describe("resolveJidToE164", () => {
 
 describe("resolveUserPath", () => {
   it("expands ~ to home dir", () => {
-    expect(resolveUserPath("~")).toBe(path.resolve(os.homedir()));
+    expect(resolveUserPath("~", {}, () => "/Users/thoffman")).toBe(path.resolve("/Users/thoffman"));
   });
 
   it("expands ~/ to home dir", () => {
-    expect(resolveUserPath("~/remoteclaw")).toBe(path.resolve(os.homedir(), "remoteclaw"));
+    expect(resolveUserPath("~/remoteclaw", {}, () => "/Users/thoffman")).toBe(
+      path.resolve("/Users/thoffman", "remoteclaw"),
+    );
   });
 
   it("resolves relative paths", () => {

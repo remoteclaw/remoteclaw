@@ -18,11 +18,21 @@ export type ChannelHeartbeatVisibilityConfig = {
   useIndicator?: boolean;
 };
 
+export type ChannelHealthMonitorConfig = {
+  /**
+   * Enable channel-health-monitor restarts for this channel or account.
+   * Inherits the global gateway setting when omitted.
+   */
+  enabled?: boolean;
+};
+
 export type ChannelDefaultsConfig = {
   groupPolicy?: GroupPolicy;
   /** Default heartbeat visibility for all channels. */
   heartbeat?: ChannelHeartbeatVisibilityConfig;
 };
+
+export type ChannelModelByChannelConfig = Record<string, Record<string, string>>;
 
 /**
  * Base type for extension channel config sections.
@@ -37,12 +47,15 @@ export type ExtensionChannelConfig = {
   defaultAccount?: string;
   dmPolicy?: string;
   groupPolicy?: GroupPolicy;
+  healthMonitor?: ChannelHealthMonitorConfig;
   accounts?: Record<string, unknown>;
   [key: string]: unknown;
 };
 
 export type ChannelsConfig = {
   defaults?: ChannelDefaultsConfig;
+  /** Map provider -> channel id -> model override. */
+  modelByChannel?: ChannelModelByChannelConfig;
   whatsapp?: WhatsAppConfig;
   telegram?: TelegramConfig;
   discord?: DiscordConfig;

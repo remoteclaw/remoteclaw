@@ -7,6 +7,7 @@ import {
   archiveSessionTranscripts,
   readFirstUserMessageFromTranscript,
   readLastMessagePreviewFromTranscript,
+  readLatestSessionUsageFromTranscript,
   readSessionMessages,
   readSessionTitleFieldsFromTranscript,
   readSessionPreviewItemsFromTranscript,
@@ -339,7 +340,7 @@ describe("readLastMessagePreviewFromTranscript", () => {
       JSON.stringify({
         message: {
           role: "assistant",
-          content: "Hello [[rc:reply]] world [[audio_as_voice]]",
+          content: "Hello [[reply_to_current]] world [[audio_as_voice]]",
         },
       }),
     ];
@@ -465,9 +466,44 @@ describe("readSessionTitleFieldsFromTranscript cache", () => {
 
 describe("readSessionMessages", () => {
   let tmpDir: string;
+  let storePath: string;
 
-  registerTempSessionStore("remoteclaw-session-fs-test-", (nextTmpDir) => {
+  registerTempSessionStore("remoteclaw-session-fs-test-", (nextTmpDir, nextStorePath) => {
     tmpDir = nextTmpDir;
+    storePath = nextStorePath;
+  });
+
+  test("includes synthetic compaction markers for compaction entries", () => {
+    const sessionId = "test-session-compaction";
+    const transcriptPath = path.join(tmpDir, `${sessionId}.jsonl`);
+    const lines = [
+      JSON.stringify({ type: "session", version: 1, id: sessionId }),
+      JSON.stringify({ message: { role: "user", content: "Hello" } }),
+      JSON.stringify({
+        type: "compaction",
+        id: "comp-1",
+        timestamp: "2026-02-07T00:00:00.000Z",
+        summary: "Compacted history",
+        firstKeptEntryId: "x",
+        tokensBefore: 123,
+      }),
+      JSON.stringify({ message: { role: "assistant", content: "World" } }),
+    ];
+    fs.writeFileSync(transcriptPath, lines.join("\n"), "utf-8");
+
+    const out = readSessionMessages(sessionId, storePath);
+    expect(out).toHaveLength(3);
+    const marker = out[1] as {
+      role: string;
+      content?: Array<{ text?: string }>;
+      __remoteclaw?: { kind?: string; id?: string };
+      timestamp?: number;
+    };
+    expect(marker.role).toBe("system");
+    expect(marker.content?.[0]?.text).toBe("Compaction");
+    expect(marker.__remoteclaw?.kind).toBe("compaction");
+    expect(marker.__remoteclaw?.id).toBe("comp-1");
+    expect(typeof marker.timestamp).toBe("number");
   });
 
   test("reads cross-agent absolute sessionFile across store-root layouts", () => {
@@ -515,8 +551,43 @@ describe("readSessionMessages", () => {
         testCase.wrongStorePath,
         testCase.sessionFile,
       );
-      expect(out).toEqual([testCase.message]);
+      expect(out).toHaveLength(1);
+      expect(out[0]).toMatchObject(testCase.message);
+      expect((out[0] as { __remoteclaw?: { seq?: number } }).__remoteclaw?.seq).toBe(1);
     }
+  });
+
+  test("preserves raw assistant transcript content on disk reads", () => {
+    const sessionId = "assistant-scaffolding";
+    const transcriptPath = path.join(tmpDir, `${sessionId}.jsonl`);
+    fs.writeFileSync(
+      transcriptPath,
+      [
+        JSON.stringify({ type: "session", version: 1, id: sessionId }),
+        JSON.stringify({
+          message: {
+            role: "assistant",
+            text: "<think>hidden</think>Visible top-level",
+            content: [
+              { type: "text", text: "<think>secret</think>Visible content" },
+              { type: "tool_result", text: "<think>keep?</think>Visible tool text" },
+            ],
+          },
+        }),
+      ].join("\n"),
+      "utf-8",
+    );
+
+    const out = readSessionMessages(sessionId, storePath);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({
+      role: "assistant",
+      text: "<think>hidden</think>Visible top-level",
+      content: [
+        { type: "text", text: "<think>secret</think>Visible content" },
+        { type: "tool_result", text: "<think>keep?</think>Visible tool text" },
+      ],
+    });
   });
 });
 
@@ -601,7 +672,7 @@ describe("readSessionPreviewItemsFromTranscript", () => {
       JSON.stringify({
         message: {
           role: "assistant",
-          content: "A [[rc:reply:abc-123]] B [[audio_as_voice]]",
+          content: "A [[reply_to:abc-123]] B [[audio_as_voice]]",
         },
       }),
     ];
@@ -610,6 +681,156 @@ describe("readSessionPreviewItemsFromTranscript", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]?.text).toBe("A  B");
+  });
+});
+
+describe("readLatestSessionUsageFromTranscript", () => {
+  let tmpDir: string;
+  let storePath: string;
+
+  registerTempSessionStore("remoteclaw-session-usage-test-", (nextTmpDir, nextStorePath) => {
+    tmpDir = nextTmpDir;
+    storePath = nextStorePath;
+  });
+
+  test("returns the latest assistant usage snapshot and skips delivery mirrors", () => {
+    const sessionId = "usage-session";
+    writeTranscript(tmpDir, sessionId, [
+      { type: "session", version: 1, id: sessionId },
+      {
+        message: {
+          role: "assistant",
+          provider: "openai",
+          model: "gpt-5.4",
+          usage: {
+            input: 1200,
+            output: 300,
+            cacheRead: 50,
+            cost: { total: 0.0042 },
+          },
+        },
+      },
+      {
+        message: {
+          role: "assistant",
+          provider: "remoteclaw",
+          model: "delivery-mirror",
+          usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+        },
+      },
+    ]);
+
+    expect(readLatestSessionUsageFromTranscript(sessionId, storePath)).toEqual({
+      modelProvider: "openai",
+      model: "gpt-5.4",
+      inputTokens: 1200,
+      outputTokens: 300,
+      cacheRead: 50,
+      totalTokens: 1250,
+      totalTokensFresh: true,
+      costUsd: 0.0042,
+    });
+  });
+
+  test("aggregates assistant usage across the full transcript and keeps the latest context snapshot", () => {
+    const sessionId = "usage-aggregate";
+    writeTranscript(tmpDir, sessionId, [
+      { type: "session", version: 1, id: sessionId },
+      {
+        message: {
+          role: "assistant",
+          provider: "anthropic",
+          model: "claude-sonnet-4-6",
+          usage: {
+            input: 1_800,
+            output: 400,
+            cacheRead: 600,
+            cost: { total: 0.0055 },
+          },
+        },
+      },
+      {
+        message: {
+          role: "assistant",
+          usage: {
+            input: 2_400,
+            output: 250,
+            cacheRead: 900,
+            cost: { total: 0.006 },
+          },
+        },
+      },
+    ]);
+
+    const snapshot = readLatestSessionUsageFromTranscript(sessionId, storePath);
+    expect(snapshot).toMatchObject({
+      modelProvider: "anthropic",
+      model: "claude-sonnet-4-6",
+      inputTokens: 4200,
+      outputTokens: 650,
+      cacheRead: 1500,
+      totalTokens: 3300,
+      totalTokensFresh: true,
+    });
+    expect(snapshot?.costUsd).toBeCloseTo(0.0115, 8);
+  });
+
+  test("reads earlier assistant usage outside the old tail window", () => {
+    const sessionId = "usage-full-transcript";
+    const filler = "x".repeat(20_000);
+    writeTranscript(tmpDir, sessionId, [
+      { type: "session", version: 1, id: sessionId },
+      {
+        message: {
+          role: "assistant",
+          provider: "openai",
+          model: "gpt-5.4",
+          usage: {
+            input: 1_000,
+            output: 200,
+            cacheRead: 100,
+            cost: { total: 0.0042 },
+          },
+        },
+      },
+      ...Array.from({ length: 80 }, () => ({ message: { role: "user", content: filler } })),
+      {
+        message: {
+          role: "assistant",
+          provider: "openai",
+          model: "gpt-5.4",
+          usage: {
+            input: 500,
+            output: 150,
+            cacheRead: 50,
+            cost: { total: 0.0021 },
+          },
+        },
+      },
+    ]);
+
+    const snapshot = readLatestSessionUsageFromTranscript(sessionId, storePath);
+    expect(snapshot).toMatchObject({
+      modelProvider: "openai",
+      model: "gpt-5.4",
+      inputTokens: 1500,
+      outputTokens: 350,
+      cacheRead: 150,
+      totalTokens: 550,
+      totalTokensFresh: true,
+    });
+    expect(snapshot?.costUsd).toBeCloseTo(0.0063, 8);
+  });
+
+  test("returns null when the transcript has no assistant usage snapshot", () => {
+    const sessionId = "usage-empty";
+    writeTranscript(tmpDir, sessionId, [
+      { type: "session", version: 1, id: sessionId },
+      { message: { role: "user", content: "hello" } },
+      { message: { role: "assistant", content: "hi" } },
+    ]);
+
+    expect(readLatestSessionUsageFromTranscript(sessionId, storePath)).toBeNull();
   });
 });
 

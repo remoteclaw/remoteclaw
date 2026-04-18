@@ -1,4 +1,5 @@
-import { DEFAULT_ACCOUNT_ID, type RemoteClawConfig } from "remoteclaw/plugin-sdk/bluebubbles";
+import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/account-id";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/core";
 
 type BlueBubblesConfigPatch = {
   serverUrl?: string;

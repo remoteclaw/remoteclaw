@@ -39,7 +39,7 @@ function restoreEnv(snapshot: EnvSnapshot) {
 }
 
 function setupSessionState(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv, homeDir: string) {
-  const agentId = "test-agent";
+  const agentId = "main";
   const sessionsDir = resolveSessionTranscriptsDirForAgent(agentId, env, () => homeDir);
   const storePath = resolveStorePath(cfg.session?.store, { agentId });
   fs.mkdirSync(sessionsDir, { recursive: true });
@@ -70,7 +70,7 @@ function writeSessionStore(
   sessions: Record<string, { sessionId: string; updatedAt: number }>,
 ) {
   setupSessionState(cfg, process.env, process.env.HOME ?? "");
-  const storePath = resolveStorePath(cfg.session?.store, { agentId: "test-agent" });
+  const storePath = resolveStorePath(cfg.session?.store, { agentId: "main" });
   fs.writeFileSync(storePath, JSON.stringify(sessions, null, 2));
 }
 
@@ -142,20 +142,19 @@ describe("doctor state integrity oauth dir checks", () => {
   it("detects orphan transcripts and offers archival remediation", async () => {
     const cfg: RemoteClawConfig = {};
     setupSessionState(cfg, process.env, process.env.HOME ?? "");
-    const sessionsDir = resolveSessionTranscriptsDirForAgent(
-      "test-agent",
-      process.env,
-      () => tempHome,
-    );
+    const sessionsDir = resolveSessionTranscriptsDirForAgent("main", process.env, () => tempHome);
     fs.writeFileSync(path.join(sessionsDir, "orphan-session.jsonl"), '{"type":"session"}\n');
     const confirmSkipInNonInteractive = vi.fn(async (params: { message: string }) =>
-      params.message.includes("orphan transcript file"),
+      params.message.includes("This only renames them to *.deleted.<timestamp>."),
     );
     await noteStateIntegrity(cfg, { confirmSkipInNonInteractive });
-    expect(stateIntegrityText()).toContain("orphan transcript file");
+    expect(stateIntegrityText()).toContain(
+      "These .jsonl files are no longer referenced by sessions.json",
+    );
+    expect(stateIntegrityText()).toContain("Examples: orphan-session.jsonl");
     expect(confirmSkipInNonInteractive).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: expect.stringContaining("orphan transcript file"),
+        message: expect.stringContaining("This only renames them to *.deleted.<timestamp>."),
       }),
     );
     const files = fs.readdirSync(sessionsDir);

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 import {
   clearInternalHooks,
   createInternalHookEvent,
@@ -15,6 +16,8 @@ import {
   type MessageReceivedHookContext,
   type MessageSentHookContext,
 } from "./internal-hooks.js";
+
+const INTERNAL_HOOK_HANDLERS_KEY = Symbol.for("remoteclaw.internalHookHandlers");
 
 describe("hooks", () => {
   beforeEach(() => {
@@ -144,9 +147,10 @@ describe("hooks", () => {
     });
 
     it("stores handlers in the global singleton registry", async () => {
-      const globalHooks = globalThis as typeof globalThis & {
-        __remoteclaw_internal_hook_handlers__?: Map<string, Array<(event: unknown) => unknown>>;
-      };
+      const globalHooks = resolveGlobalSingleton<Map<string, Array<(event: unknown) => unknown>>>(
+        INTERNAL_HOOK_HANDLERS_KEY,
+        () => new Map<string, Array<(event: unknown) => unknown>>(),
+      );
       const handler = vi.fn();
       registerInternalHook("command:new", handler);
 
@@ -154,10 +158,10 @@ describe("hooks", () => {
       await triggerInternalHook(event);
 
       expect(handler).toHaveBeenCalledWith(event);
-      expect(globalHooks.__remoteclaw_internal_hook_handlers__?.has("command:new")).toBe(true);
+      expect(globalHooks.has("command:new")).toBe(true);
 
       const injectedHandler = vi.fn();
-      globalHooks.__remoteclaw_internal_hook_handlers__?.set("command:new", [injectedHandler]);
+      globalHooks.set("command:new", [injectedHandler]);
       await triggerInternalHook(event);
       expect(injectedHandler).toHaveBeenCalledWith(event);
     });

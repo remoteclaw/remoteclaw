@@ -73,6 +73,36 @@ private struct ExecHostResponse: Codable {
     var error: ExecHostError?
 }
 
+private func readLineFromHandle(_ handle: FileHandle, maxBytes: Int) throws -> String? {
+    var buffer = Data()
+    while buffer.count < maxBytes {
+        let chunk = try handle.read(upToCount: 4096) ?? Data()
+        if chunk.isEmpty { break }
+        buffer.append(chunk)
+        if buffer.contains(0x0A) { break }
+    }
+    guard let newlineIndex = buffer.firstIndex(of: 0x0A) else {
+        guard !buffer.isEmpty else { return nil }
+        return String(data: buffer, encoding: .utf8)
+    }
+    let lineData = buffer.subdata(in: 0..<newlineIndex)
+    return String(data: lineData, encoding: .utf8)
+}
+
+func timingSafeHexStringEquals(_ lhs: String, _ rhs: String) -> Bool {
+    let lhsBytes = Array(lhs.utf8)
+    let rhsBytes = Array(rhs.utf8)
+    guard lhsBytes.count == rhsBytes.count else {
+        return false
+    }
+
+    var diff: UInt8 = 0
+    for index in lhsBytes.indices {
+        diff |= lhsBytes[index] ^ rhsBytes[index]
+    }
+    return diff == 0
+}
+
 enum ExecApprovalsSocketClient {
     private struct TimeoutError: LocalizedError {
         var message: String
@@ -159,27 +189,11 @@ enum ExecApprovalsSocketClient {
         payload.append(0x0A)
         try handle.write(contentsOf: payload)
 
-        guard let line = try self.readLine(from: handle, maxBytes: 256_000),
+        guard let line = try readLineFromHandle(handle, maxBytes: 256_000),
               let lineData = line.data(using: .utf8)
         else { return nil }
         let response = try JSONDecoder().decode(ExecApprovalSocketDecision.self, from: lineData)
         return response.decision
-    }
-
-    private static func readLine(from handle: FileHandle, maxBytes: Int) throws -> String? {
-        var buffer = Data()
-        while buffer.count < maxBytes {
-            let chunk = try handle.read(upToCount: 4096) ?? Data()
-            if chunk.isEmpty { break }
-            buffer.append(chunk)
-            if buffer.contains(0x0A) { break }
-        }
-        guard let newlineIndex = buffer.firstIndex(of: 0x0A) else {
-            guard !buffer.isEmpty else { return nil }
-            return String(data: buffer, encoding: .utf8)
-        }
-        let lineData = buffer.subdata(in: 0..<newlineIndex)
-        return String(data: lineData, encoding: .utf8)
     }
 }
 
@@ -257,7 +271,7 @@ enum ExecApprovalsPromptPresenter {
         commandText.drawsBackground = true
         commandText.backgroundColor = NSColor.textBackgroundColor
         commandText.font = NSFont.monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
-        commandText.string = request.command
+        commandText.string = ExecApprovalCommandDisplaySanitizer.sanitize(request.command)
         commandText.textContainerInset = NSSize(width: 6, height: 6)
         commandText.textContainer?.lineFragmentPadding = 0
         commandText.textContainer?.widthTracksTextView = true
@@ -364,7 +378,7 @@ private enum ExecHostExecutor {
         let context = await self.buildContext(
             request: request,
             command: validatedRequest.command,
-            rawCommand: validatedRequest.displayCommand)
+            rawCommand: validatedRequest.evaluationRawCommand)
 
         switch ExecHostRequestEvaluator.evaluate(
             context: context,
@@ -462,13 +476,7 @@ private enum ExecHostExecutor {
     {
         guard decision == .allowAlways, context.security == .allowlist else { return }
         var seenPatterns = Set<String>()
-        for candidate in context.allowlistResolutions {
-            guard let pattern = ExecApprovalHelpers.allowlistPattern(
-                command: context.command,
-                resolution: candidate)
-            else {
-                continue
-            }
+        for pattern in context.allowAlwaysPatterns {
             if seenPatterns.insert(pattern).inserted {
                 ExecApprovalsStore.addAllowlistEntry(agentId: context.agentId, pattern: pattern)
             }
@@ -781,7 +789,7 @@ private final class ExecApprovalsSocketServer: @unchecked Sendable {
                 try self.sendApprovalResponse(handle: handle, id: UUID().uuidString, decision: .deny)
                 return
             }
-            guard let line = try self.readLine(from: handle, maxBytes: 256_000),
+            guard let line = try readLineFromHandle(handle, maxBytes: 256_000),
                   let data = line.data(using: .utf8)
             else {
                 return
@@ -813,22 +821,6 @@ private final class ExecApprovalsSocketServer: @unchecked Sendable {
         } catch {
             self.logger.error("exec approvals socket handling failed: \(error.localizedDescription, privacy: .public)")
         }
-    }
-
-    private func readLine(from handle: FileHandle, maxBytes: Int) throws -> String? {
-        var buffer = Data()
-        while buffer.count < maxBytes {
-            let chunk = try handle.read(upToCount: 4096) ?? Data()
-            if chunk.isEmpty { break }
-            buffer.append(chunk)
-            if buffer.contains(0x0A) { break }
-        }
-        guard let newlineIndex = buffer.firstIndex(of: 0x0A) else {
-            guard !buffer.isEmpty else { return nil }
-            return String(data: buffer, encoding: .utf8)
-        }
-        let lineData = buffer.subdata(in: 0..<newlineIndex)
-        return String(data: lineData, encoding: .utf8)
     }
 
     private func sendApprovalResponse(
@@ -870,7 +862,7 @@ private final class ExecApprovalsSocketServer: @unchecked Sendable {
                 error: ExecHostError(code: "INVALID_REQUEST", message: "expired request", reason: "ttl"))
         }
         let expected = self.hmacHex(nonce: request.nonce, ts: request.ts, requestJson: request.requestJson)
-        if expected != request.hmac {
+        if !timingSafeHexStringEquals(expected, request.hmac) {
             return ExecHostResponse(
                 type: "exec-res",
                 id: request.id,

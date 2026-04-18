@@ -110,6 +110,8 @@ function createRuntimeWithExitSignal(exitCallOrder?: string[]) {
       exitCallOrder?.push("exit");
       resolveExit(code);
     }),
+    writeStdout: vi.fn(),
+    writeJson: vi.fn(),
   };
   return { runtime, exited };
 }
@@ -119,6 +121,8 @@ type LoopRuntime = {
   log: (...args: unknown[]) => void;
   error: (...args: unknown[]) => void;
   exit: (code: number) => void;
+  writeStdout: (value: string) => void;
+  writeJson: (value: unknown, space?: number) => void;
 };
 
 function createSignaledStart(close: GatewayCloseFn) {

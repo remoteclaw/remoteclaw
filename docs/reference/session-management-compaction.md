@@ -1,12 +1,13 @@
 ---
-description: "Deep dive: session store + transcripts, lifecycle, and silent housekeeping"
+summary: "Deep dive: session store + transcripts, lifecycle, and (auto)compaction internals"
 read_when:
   - You need to debug session ids, transcript JSONL, or sessions.json fields
-  - You want to implement silent system turns
+  - You are changing auto-compaction behavior or adding “pre-compaction” housekeeping
+  - You want to implement memory flushes or silent system turns
 title: "Session Management Deep Dive"
 ---
 
-# Session Management (Deep Dive)
+# Session Management & Compaction (Deep Dive)
 
 This document explains how RemoteClaw manages sessions end-to-end:
 
@@ -15,11 +16,13 @@ This document explains how RemoteClaw manages sessions end-to-end:
 - **Transcript persistence** (`*.jsonl`) and its structure
 - **Transcript hygiene** (provider-specific fixups before runs)
 - **Context limits** (context window vs tracked tokens)
+- **Compaction** (manual + auto-compaction) and where to hook pre-compaction work
 - **Silent housekeeping** (e.g. memory writes that shouldn’t produce user-visible output)
 
 If you want a higher-level overview first, start with:
 
 - [/concepts/session](/concepts/session)
+- [/concepts/compaction](/concepts/compaction)
 - [/concepts/session-pruning](/concepts/session-pruning)
 - [/reference/transcript-hygiene](/reference/transcript-hygiene)
 
@@ -30,7 +33,7 @@ If you want a higher-level overview first, start with:
 RemoteClaw is designed around a single **Gateway process** that owns session state.
 
 - UIs (macOS app, web Control UI, TUI) should query the Gateway for session lists and token counts.
-- In remote mode, session files are on the remote host; "checking your local Mac files" won’t reflect what the Gateway is using.
+- In remote mode, session files are on the remote host; “checking your local Mac files” won’t reflect what the Gateway is using.
 
 ---
 
@@ -143,13 +146,15 @@ Key fields (not exhaustive):
 - `chatType`: `direct | group | room` (helps UIs and send policy)
 - `provider`, `subject`, `room`, `space`, `displayName`: metadata for group/channel labeling
 - Toggles:
-  - `verboseLevel`
+  - `thinkingLevel`, `verboseLevel`, `reasoningLevel`, `elevatedLevel`
   - `sendPolicy` (per-session override)
-- Model selection (per-session overrides for provider routing and CLI runtime flags):
-  - `modelOverride`: model to pass to the CLI runtime (e.g. `--model` flag)
-  - `providerOverride`: which provider to route to (e.g. `anthropic`, `openai`)
+- Model selection:
+  - `providerOverride`, `modelOverride`, `authProfileOverride`
 - Token counters (best-effort / provider-dependent):
-  - `inputTokens`, `outputTokens`, `totalTokens`
+  - `inputTokens`, `outputTokens`, `totalTokens`, `contextTokens`
+- `compactionCount`: how often auto-compaction completed for this session key
+- `memoryFlushAt`: timestamp for the last pre-compaction memory flush
+- `memoryFlushCompactionCount`: compaction count when the last flush ran
 
 The store is safe to edit, but the Gateway is the authority: it may rewrite or rehydrate entries as sessions run.
 
@@ -157,7 +162,7 @@ The store is safe to edit, but the Gateway is the authority: it may rewrite or r
 
 ## Transcript structure (`*.jsonl`)
 
-Transcripts are managed by RemoteClaw’s `SessionManager`.
+Transcripts are managed by `@mariozechner/pi-coding-agent`’s `SessionManager`.
 
 The file is JSONL:
 
@@ -172,7 +177,7 @@ Notable entry types:
 - `compaction`: persisted compaction summary with `firstKeptEntryId` and `tokensBefore`
 - `branch_summary`: persisted summary when navigating a tree branch
 
-RemoteClaw intentionally does **not** "fix up" transcripts; the Gateway uses `SessionManager` to read/write them.
+RemoteClaw intentionally does **not** “fix up” transcripts; the Gateway uses `SessionManager` to read/write them.
 
 ---
 
@@ -185,22 +190,126 @@ Two different concepts matter:
 
 If you’re tuning limits:
 
-- The context window is determined by the CLI runtime (e.g., the model the CLI agent is using).
+- The context window comes from the model catalog (and can be overridden via config).
+- `contextTokens` in the store is a runtime estimate/reporting value; don’t treat it as a strict guarantee.
 
 For more, see [/token-use](/reference/token-use).
 
 ---
 
+## Compaction: what it is
+
+Compaction summarizes older conversation into a persisted `compaction` entry in the transcript and keeps recent messages intact.
+
+After compaction, future turns see:
+
+- The compaction summary
+- Messages after `firstKeptEntryId`
+
+Compaction is **persistent** (unlike session pruning). See [/concepts/session-pruning](/concepts/session-pruning).
+
+---
+
+## When auto-compaction happens (Pi runtime)
+
+In the embedded Pi agent, auto-compaction triggers in two cases:
+
+1. **Overflow recovery**: the model returns a context overflow error → compact → retry.
+2. **Threshold maintenance**: after a successful turn, when:
+
+`contextTokens > contextWindow - reserveTokens`
+
+Where:
+
+- `contextWindow` is the model’s context window
+- `reserveTokens` is headroom reserved for prompts + the next model output
+
+These are Pi runtime semantics (RemoteClaw consumes the events, but Pi decides when to compact).
+
+---
+
+## Compaction settings (`reserveTokens`, `keepRecentTokens`)
+
+Pi’s compaction settings live in Pi settings:
+
+```json5
+{
+  compaction: {
+    enabled: true,
+    reserveTokens: 16384,
+    keepRecentTokens: 20000,
+  },
+}
+```
+
+RemoteClaw also enforces a safety floor for embedded runs:
+
+- If `compaction.reserveTokens < reserveTokensFloor`, RemoteClaw bumps it.
+- Default floor is `20000` tokens.
+- Set `agents.defaults.compaction.reserveTokensFloor: 0` to disable the floor.
+- If it’s already higher, RemoteClaw leaves it alone.
+
+Why: leave enough headroom for multi-turn “housekeeping” (like memory writes) before compaction becomes unavoidable.
+
+Implementation: `ensurePiCompactionReserveTokens()` in `src/agents/pi-settings.ts`
+(called from `src/agents/pi-embedded-runner.ts`).
+
+---
+
+## User-visible surfaces
+
+You can observe compaction and session state via:
+
+- `/status` (in any chat session)
+- `remoteclaw status` (CLI)
+- `remoteclaw sessions` / `sessions --json`
+- Verbose mode: `🧹 Auto-compaction complete` + compaction count
+
+---
+
 ## Silent housekeeping (`NO_REPLY`)
 
-RemoteClaw supports "silent" turns for background tasks where the user should not see intermediate output.
+RemoteClaw supports “silent” turns for background tasks where the user should not see intermediate output.
 
 Convention:
 
-- The assistant starts its output with `NO_REPLY` to indicate "do not deliver a reply to the user".
+- The assistant starts its output with `NO_REPLY` to indicate “do not deliver a reply to the user”.
 - RemoteClaw strips/suppresses this in the delivery layer.
 
 As of `2026.1.10`, RemoteClaw also suppresses **draft/typing streaming** when a partial chunk begins with `NO_REPLY`, so silent operations don’t leak partial output mid-turn.
+
+---
+
+## Pre-compaction "memory flush" (implemented)
+
+Goal: before auto-compaction happens, run a silent agentic turn that writes durable
+state to disk (e.g. `memory/YYYY-MM-DD.md` in the agent workspace) so compaction can’t
+erase critical context.
+
+RemoteClaw uses the **pre-threshold flush** approach:
+
+1. Monitor session context usage.
+2. When it crosses a “soft threshold” (below Pi’s compaction threshold), run a silent
+   “write memory now” directive to the agent.
+3. Use `NO_REPLY` so the user sees nothing.
+
+Config (`agents.defaults.compaction.memoryFlush`):
+
+- `enabled` (default: `true`)
+- `softThresholdTokens` (default: `4000`)
+- `prompt` (user message for the flush turn)
+- `systemPrompt` (extra system prompt appended for the flush turn)
+
+Notes:
+
+- The default prompt/system prompt include a `NO_REPLY` hint to suppress delivery.
+- The flush runs once per compaction cycle (tracked in `sessions.json`).
+- The flush runs only for embedded Pi sessions (CLI backends skip it).
+- The flush is skipped when the session workspace is read-only (`workspaceAccess: "ro"` or `"none"`).
+- See [Memory](/concepts/memory) for the workspace file layout and write patterns.
+
+Pi also exposes a `session_before_compact` hook in the extension API, but RemoteClaw’s
+flush logic lives on the Gateway side today.
 
 ---
 
@@ -208,4 +317,8 @@ As of `2026.1.10`, RemoteClaw also suppresses **draft/typing streaming** when a 
 
 - Session key wrong? Start with [/concepts/session](/concepts/session) and confirm the `sessionKey` in `/status`.
 - Store vs transcript mismatch? Confirm the Gateway host and the store path from `remoteclaw status`.
+- Compaction spam? Check:
+  - model context window (too small)
+  - compaction settings (`reserveTokens` too high for the model window can cause earlier compaction)
+  - tool-result bloat: enable/tune session pruning
 - Silent turns leaking? Confirm the reply starts with `NO_REPLY` (exact token) and you’re on a build that includes the streaming suppression fix.

@@ -1,5 +1,5 @@
-import { normalizeChannelId } from "../channels/plugins/index.js";
 import type { ChannelId } from "../channels/plugins/types.js";
+import { normalizeChannelId } from "../channels/registry.js";
 import { isPlainObject } from "../infra/plain-object.js";
 import type { CommandsConfig, NativeCommandsSetting } from "./types.js";
 
@@ -19,6 +19,14 @@ function resolveAutoDefault(providerId?: ChannelId): boolean {
     return false;
   }
   return false;
+}
+
+export function resolveNativeSkillsEnabled(params: {
+  providerId: ChannelId;
+  providerSetting?: NativeCommandsSetting;
+  globalSetting?: NativeCommandsSetting;
+}): boolean {
+  return resolveNativeCommandSetting(params);
 }
 
 export function resolveNativeCommandsEnabled(params: {
@@ -79,12 +87,4 @@ export function isCommandFlagEnabled(
 
 export function isRestartEnabled(config?: { commands?: unknown }): boolean {
   return getOwnCommandFlagValue(config, "restart") !== false;
-}
-
-export function resolveNativeSkillsEnabled(params: {
-  providerId: ChannelId;
-  providerSetting?: NativeCommandsSetting;
-  globalSetting?: NativeCommandsSetting;
-}): boolean {
-  return resolveNativeCommandSetting(params);
 }

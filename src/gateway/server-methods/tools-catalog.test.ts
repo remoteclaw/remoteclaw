@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { resolvePluginTools } from "../../plugins/tools.js";
 import { ErrorCodes } from "../protocol/index.js";
 import { toolsCatalogHandlers } from "./tools-catalog.js";
 
@@ -7,11 +8,10 @@ vi.mock("../../config/config.js", () => ({
 }));
 
 vi.mock("../../agents/agent-scope.js", () => ({
-  listAgentIds: vi.fn(() => ["test-agent"]),
-  resolveSoleAgentId: vi.fn(() => "test-agent"),
+  listAgentIds: vi.fn(() => ["main"]),
+  resolveDefaultAgentId: vi.fn(() => "main"),
   resolveAgentWorkspaceDir: vi.fn(() => "/tmp/workspace-main"),
   resolveAgentDir: vi.fn(() => "/tmp/agents/main/agent"),
-  resolveAgentRuntime: vi.fn(() => "claude"),
 }));
 
 const pluginToolMetaState = new Map<string, { pluginId: string; optional: boolean }>();
@@ -82,7 +82,7 @@ describe("tools.catalog handler", () => {
           }>;
         }
       | undefined;
-    expect(payload?.agentId).toBe("test-agent");
+    expect(payload?.agentId).toBe("main");
     expect(payload?.groups.some((group) => group.source === "plugin")).toBe(false);
     const media = payload?.groups.find((group) => group.id === "media");
     expect(media?.tools.some((tool) => tool.id === "tts" && tool.source === "core")).toBe(true);
@@ -117,5 +117,17 @@ describe("tools.catalog handler", () => {
       pluginId: "voice-call",
       optional: true,
     });
+  });
+
+  it("opts plugin tool catalog loads into gateway subagent binding", async () => {
+    const { invoke } = createInvokeParams({});
+
+    await invoke();
+
+    expect(vi.mocked(resolvePluginTools)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        allowGatewaySubagentBinding: true,
+      }),
+    );
   });
 });

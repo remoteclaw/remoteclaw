@@ -3,7 +3,7 @@ summary: "RemoteClaw on DigitalOcean (simple paid VPS option)"
 read_when:
   - Setting up RemoteClaw on DigitalOcean
   - Looking for cheap VPS hosting for RemoteClaw
-title: "DigitalOcean"
+title: "DigitalOcean (Platform)"
 ---
 
 # RemoteClaw on DigitalOcean
@@ -231,7 +231,7 @@ For the full setup guide, see [Oracle Cloud](/platforms/oracle). For signup tips
 
 ## Troubleshooting
 
-### Gateway won't start
+### Gateway will not start
 
 ```bash
 remoteclaw gateway status

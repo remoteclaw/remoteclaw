@@ -1,5 +1,5 @@
 ---
-description: "Run RemoteClaw Gateway on exe.dev (VM + HTTPS proxy) for remote access"
+summary: "Run RemoteClaw Gateway on exe.dev (VM + HTTPS proxy) for remote access"
 read_when:
   - You want a cheap always-on Linux host for the Gateway
   - You want remote Control UI access without running your own VPS
@@ -16,9 +16,9 @@ This page assumes exe.dev's default **exeuntu** image. If you picked a different
 
 1. [https://exe.new/remoteclaw](https://exe.new/remoteclaw)
 2. Fill in your auth key/token as needed
-3. Click on "Agent" next to your VM, and wait...
-4. ???
-5. Profit
+3. Click on "Agent" next to your VM and wait for Shelley to finish provisioning
+4. Open `https://<vm-name>.exe.xyz/` and paste your gateway token to authenticate
+5. Approve any pending device pairing requests with `remoteclaw devices approve <requestId>`
 
 ## What you need
 

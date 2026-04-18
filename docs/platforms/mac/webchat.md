@@ -1,8 +1,8 @@
 ---
-description: "How the mac app embeds the gateway WebChat and how to debug it"
+summary: "How the mac app embeds the gateway WebChat and how to debug it"
 read_when:
   - Debugging mac WebChat view or loopback port
-title: "WebChat"
+title: "WebChat (macOS)"
 ---
 
 # WebChat (macOS app)
@@ -17,7 +17,7 @@ agent (with a session switcher for other sessions).
 
 ## Launch & debugging
 
-- Manual: Menu bar → “Open Chat”.
+- Manual: Lobster menu → “Open Chat”.
 - Auto‑open for testing:
 
   ```bash
@@ -26,7 +26,7 @@ agent (with a session switcher for other sessions).
 
 - Logs: `./scripts/clawlog.sh` (subsystem `org.remoteclaw`, category `WebChatSwiftUI`).
 
-## How it’s wired
+## How it is wired
 
 - Data plane: Gateway WS methods `chat.history`, `chat.send`, `chat.abort`,
   `chat.inject` and events `chat`, `agent`, `presence`, `tick`, `health`.

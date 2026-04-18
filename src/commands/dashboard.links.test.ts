@@ -72,7 +72,6 @@ describe("dashboardCommand", () => {
     formatControlUiSshHintMock.mockClear();
     copyToClipboardMock.mockClear();
     delete process.env.REMOTECLAW_GATEWAY_TOKEN;
-    delete process.env.CLAWDBOT_GATEWAY_TOKEN;
   });
 
   it("opens and copies the dashboard link by default", async () => {

@@ -1,8 +1,8 @@
 ---
-description: "How the macOS app reports gateway/Baileys health states"
+summary: "How the macOS app reports gateway/Baileys health states"
 read_when:
   - Debugging mac app health indicators
-title: "Health Checks"
+title: "Health Checks (macOS)"
 ---
 
 # Health Checks on macOS

@@ -43,6 +43,10 @@ function nodeBuildConfig(config: Record<string, unknown>) {
 const pluginSdkEntrypoints = [
   "index",
   "core",
+  "channel-config-helpers",
+  "group-access",
+  "reply-payload",
+  "runtime-store",
   "compat",
   "telegram",
   "discord",

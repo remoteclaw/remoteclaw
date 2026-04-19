@@ -104,6 +104,9 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Validate release artifact (early signal — runs again in publish-next)
+        run: pnpm release:check
+
   test:
     runs-on: ubuntu-latest
     steps:

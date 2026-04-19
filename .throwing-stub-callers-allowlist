@@ -1,0 +1,13 @@
+# Known throwing-stub-with-live-callers violations awaiting remediation.
+#
+# Each non-comment line: <file>::<symbol>  # <remediation-tracking-issue>
+#
+# The CI gate (scripts/check-throwing-stub-callers.mjs) passes these entries
+# through without failure but reports them in the inventory. Remove a line
+# once the stub has been either (a) replaced with a working implementation or
+# (b) deleted after migrating all callers.
+#
+# New entries require a tracking issue AND justification in the PR
+# description.
+
+src/agents/agent-scope.ts::resolveAgentRuntimeOrThrow  # #2408

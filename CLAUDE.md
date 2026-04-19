@@ -111,6 +111,20 @@ GitHub Actions (`.github/workflows/ci.yml`):
 - Both run on `ubuntu-latest` with Node 22 and pnpm 10.23.0
 - Branch protection requires `build`, `test`, `lint`, and `docs` to pass
 
+### Fork-integrity gates
+
+Standalone scripts in `scripts/` each run as their own CI job. They guard
+against regressions specific to the fork-sync lifecycle:
+
+- **rebrand-gate**: `openclaw`/`OpenClaw` leakage into files the fork owns.
+- **zombie-import-gate**: imports from modules that have been gutted.
+- **stub-debt-gate** (`.stub-debt-baseline`): bounds `@ts-expect-error`
+  suppressions so fork-sync type-assertion debt can't grow silently.
+- **throwing-stub-callers-gate** (`.throwing-stub-callers-allowlist`):
+  detects throwing stubs with live non-test callers — see § Fork Stub
+  Conventions.
+- **obsolescence-audit-gate**: retrospective audit sentinels for gut waves.
+
 ### Release publishing
 
 - **Trigger**: `publish-latest` runs on `release: [published]` event —
@@ -136,6 +150,58 @@ GitHub Actions (`.github/workflows/ci.yml`):
 - Dependency patching (pnpm patches, overrides, vendored changes) requires
   explicit approval
 - Any dependency in `pnpm.patchedDependencies` must use exact version (no `^`/`~`)
+
+## Fork Stub Conventions
+
+During upstream sync, functions whose implementation depends on gutted
+subsystems (Pi-era provider/model catalogs, skills marketplace, etc.) are
+replaced with **stubs** that throw at call time. Every stub is either:
+
+1. **Dead** — no live callers. Safe and idiomatic; typically paired with a
+   `// Gutted in RemoteClaw fork` marker comment for grep-ability.
+2. **Live regression** — has live non-test callers in production paths. Ships
+   the "unavailable in RemoteClaw fork" error to users. This is an outage
+   vector (see #2408) and the **throwing-stub-callers-gate** catches it.
+
+### Legitimate upstream-compat stub
+
+Use the pattern below for case (1). The CI gate accepts it because there are
+no callers outside of test files:
+
+```ts
+// Gutted in RemoteClaw fork — CLI runtimes own model selection.
+export function listProviderModels(..._args: unknown[]): never {
+  throw new Error("listProviderModels is not available in RemoteClaw fork");
+}
+```
+
+### Shipping a new caller of an existing stub
+
+Don't. Either migrate the stub to a working implementation first, or route
+the caller to a live alternative. If you genuinely need a short-lived window
+where a live regression exists, file a remediation issue and add a line to
+`.throwing-stub-callers-allowlist`:
+
+```text
+src/agents/agent-scope.ts::resolveAgentRuntimeOrThrow  # #2408
+```
+
+Do not add allowlist entries without a tracking issue — the allowlist is a
+debt ledger, not an escape hatch.
+
+### Detecting the pattern locally
+
+```bash
+# Reports known violations (same as CI default):
+node scripts/check-throwing-stub-callers.mjs
+
+# Strict mode — fails even on allowlisted entries (useful before closing a
+# remediation issue, to prove the allowlist line can be removed):
+node scripts/check-throwing-stub-callers.mjs --strict
+
+# Inventory only — never fails, lists every detected stub:
+node scripts/check-throwing-stub-callers.mjs --inventory
+```
 
 ## Fork Context
 

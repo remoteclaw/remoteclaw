@@ -434,7 +434,7 @@ export function resolveAgentWorkspaceDirOrNull(
   }
 }
 
-// ── Upstream-compat stubs (gutted in fork) ───────────────────────────
+// ── Fork-native runtime & auth resolvers ─────────────────────────────
 
 /** Resolve per-agent runtime (fork-specific CLI runtime identifier). */
 export function resolveAgentRuntime(cfg: RemoteClawConfig, agentId: string): string | undefined {
@@ -487,9 +487,18 @@ export function resolveAgentRuntimeEnv(
   return undefined;
 }
 
-/** Stub: agent runtime-or-throw gutted in RemoteClaw fork. */
-export function resolveAgentRuntimeOrThrow(..._args: unknown[]): never {
-  throw new Error("resolveAgentRuntimeOrThrow is not available in RemoteClaw fork");
+/**
+ * Resolve per-agent runtime (CLI identifier) — throws if neither per-agent
+ * config nor defaults define a runtime.
+ */
+export function resolveAgentRuntimeOrThrow(cfg: RemoteClawConfig, agentId: string): string {
+  const runtime = resolveAgentRuntime(cfg, agentId);
+  if (!runtime) {
+    throw new Error(
+      `No runtime configured for agent "${agentId}". Set agents.defaults.runtime to one of: claude, gemini, codex, opencode`,
+    );
+  }
+  return runtime;
 }
 
 /** Resolve per-agent auth profile (fork-specific auth profile reference). */

@@ -321,6 +321,8 @@
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "0.16.1",
+    "@aws-sdk/client-s3": "3.1000.0",
+    "@aws-sdk/s3-request-presigner": "3.1000.0",
     "@buape/carbon": "0.0.0-beta-20260216184201",
     "@clack/prompts": "^1.1.0",
     "@discordjs/voice": "^0.19.1",

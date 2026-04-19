@@ -13,6 +13,7 @@ import {
   resolveEffectiveModelFallbacks,
   resolveAgentModelFallbacksOverride,
   resolveAgentModelPrimary,
+  resolveAgentRuntimeOrThrow,
   resolveRunModelFallbacksOverride,
   resolveAgentWorkspaceDir,
   resolveAgentIdByWorkspacePath,
@@ -519,5 +520,52 @@ describe("resolveAgentIdsByWorkspacePath", () => {
       "ops",
       "main",
     ]);
+  });
+});
+
+describe("resolveAgentRuntimeOrThrow", () => {
+  it("returns runtime string when per-agent runtime is configured", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [{ id: "main", runtime: "gemini" }],
+      },
+    };
+    expect(resolveAgentRuntimeOrThrow(cfg, "main")).toBe("gemini");
+  });
+
+  it("returns runtime string when only defaults.runtime is configured", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [{ id: "main" }],
+        defaults: { runtime: "claude" },
+      },
+    };
+    expect(resolveAgentRuntimeOrThrow(cfg, "main")).toBe("claude");
+  });
+
+  it("prefers per-agent runtime over defaults.runtime", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [{ id: "main", runtime: "codex" }],
+        defaults: { runtime: "claude" },
+      },
+    };
+    expect(resolveAgentRuntimeOrThrow(cfg, "main")).toBe("codex");
+  });
+
+  it("throws when no runtime is configured", () => {
+    const cfg: RemoteClawConfig = {
+      agents: { list: [{ id: "main" }] },
+    };
+    expect(() => resolveAgentRuntimeOrThrow(cfg, "main")).toThrow(
+      /No runtime configured for agent "main"/,
+    );
+  });
+
+  it("throws message names the agent id and points to agents.defaults.runtime", () => {
+    const cfg: RemoteClawConfig = {};
+    expect(() => resolveAgentRuntimeOrThrow(cfg, "worker-42")).toThrow(
+      /agent "worker-42".*agents\.defaults\.runtime/s,
+    );
   });
 });

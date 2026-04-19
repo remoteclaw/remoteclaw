@@ -26,6 +26,12 @@ importers:
       '@agentclientprotocol/sdk':
         specifier: 0.16.1
         version: 0.16.1(zod@4.3.6)
+      '@aws-sdk/client-s3':
+        specifier: 3.1000.0
+        version: 3.1000.0
+      '@aws-sdk/s3-request-presigner':
+        specifier: 3.1000.0
+        version: 3.1000.0
       '@buape/carbon':
         specifier: 0.0.0-beta-20260216184201
         version: 0.0.0-beta-20260216184201(@discordjs/opus@0.10.0)(hono@4.12.8)(opusscript@0.1.1)

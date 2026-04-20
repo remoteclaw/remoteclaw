@@ -12,6 +12,11 @@
  *     "gutted", "upstream-compat"
  *   - A "// Gutted in RemoteClaw fork" marker comment immediately preceding
  *     the declaration
+ *   - `: never` return type AND no typed non-variadic-unknown parameters
+ *     (added for ADR 0005 H7, remoteclaw#2435): catches uncalibrated
+ *     throwing-stub regressions like `function foo(): never { throw ... }`
+ *     without flagging legitimate typed error-throw helpers such as
+ *     `exitHooksCliWithError(err: unknown): never`.
  *
  * A "live caller" is an import of the stub symbol in any non-test TypeScript
  * file in `src/`, `extensions/`, or `ui/` where the bound local name is
@@ -111,37 +116,74 @@ function isSingleThrowBody(body) {
   return ts.isThrowStatement(body.statements[0]);
 }
 
+/** Is the parameter's type annotation `unknown[]` / `readonly unknown[]` / `Array<unknown>`? */
+function isUnknownArrayType(type) {
+  if (ts.isArrayTypeNode(type) && type.elementType.kind === ts.SyntaxKind.UnknownKeyword) {
+    return true;
+  }
+  if (
+    ts.isTypeOperatorNode(type) &&
+    type.operator === ts.SyntaxKind.ReadonlyKeyword &&
+    ts.isArrayTypeNode(type.type) &&
+    type.type.elementType.kind === ts.SyntaxKind.UnknownKeyword
+  ) {
+    return true;
+  }
+  if (
+    ts.isTypeReferenceNode(type) &&
+    ts.isIdentifier(type.typeName) &&
+    type.typeName.text === "Array" &&
+    type.typeArguments?.length === 1 &&
+    type.typeArguments[0].kind === ts.SyntaxKind.UnknownKeyword
+  ) {
+    return true;
+  }
+  return false;
+}
+
 /** Does the parameter list declare variadic `...args: unknown[]` or `..._args: unknown[]`? */
 function hasVariadicUnknownArgs(parameters) {
   for (const param of parameters) {
     if (!param.dotDotDotToken) {
       continue;
     }
-    const type = param.type;
-    if (!type) {
+    if (!param.type) {
       continue;
     }
-    // Accept `unknown[]` and `readonly unknown[]` and `Array<unknown>`.
-    if (ts.isArrayTypeNode(type) && type.elementType.kind === ts.SyntaxKind.UnknownKeyword) {
+    if (isUnknownArrayType(param.type)) {
       return true;
     }
-    if (
-      ts.isTypeOperatorNode(type) &&
-      type.operator === ts.SyntaxKind.ReadonlyKeyword &&
-      ts.isArrayTypeNode(type.type) &&
-      type.type.elementType.kind === ts.SyntaxKind.UnknownKeyword
-    ) {
+  }
+  return false;
+}
+
+/** Is the return type annotation an explicit `: never` TypeNode? (Does not match inferred or union types.) */
+function hasNeverReturnType(returnType) {
+  return returnType !== undefined && returnType.kind === ts.SyntaxKind.NeverKeyword;
+}
+
+/**
+ * Does the parameter list contain any typed parameter that is NOT variadic-unknown?
+ * Typed error-throw helpers like `(err: unknown)`, `(reason: string)`,
+ * `(params: {...})` match. Empty parameter lists, untyped parameters, and
+ * variadic-unknown signatures do not.
+ *
+ * Used to preserve the implicit typed-helper exclusion when `: never` return
+ * type fires as a calibration signal — typed helpers retain their legitimate
+ * `: never` signature without being classified as stubs.
+ */
+function hasTypedNonVariadicUnknownParams(parameters) {
+  for (const param of parameters) {
+    if (!param.type) {
+      continue;
+    }
+    if (param.dotDotDotToken) {
+      if (isUnknownArrayType(param.type)) {
+        continue;
+      }
       return true;
     }
-    if (
-      ts.isTypeReferenceNode(type) &&
-      ts.isIdentifier(type.typeName) &&
-      type.typeName.text === "Array" &&
-      type.typeArguments?.length === 1 &&
-      type.typeArguments[0].kind === ts.SyntaxKind.UnknownKeyword
-    ) {
-      return true;
-    }
+    return true;
   }
   return false;
 }
@@ -162,7 +204,7 @@ function hasMarkerComment(sourceFile, node, fullText) {
 }
 
 /** Build the candidate record if the function declaration matches a stub pattern. */
-function classifyStubFunction({ sourceFile, fullText, name, body, parameters, node }) {
+function classifyStubFunction({ sourceFile, fullText, name, body, parameters, returnType, node }) {
   if (!isSingleThrowBody(body)) {
     return null;
   }
@@ -173,7 +215,16 @@ function classifyStubFunction({ sourceFile, fullText, name, body, parameters, no
   const forkMessage = message !== null && forkMessagePattern.test(message);
   const markerComment = hasMarkerComment(sourceFile, node, fullText);
 
-  if (!variadicUnknown && !forkMessage && !markerComment) {
+  // `: never` return type fires as a calibration signal only when the function
+  // has no typed non-variadic-unknown parameters. This preserves the implicit
+  // typed-helper exclusion: `exitHooksCliWithError(err: unknown): never`,
+  // `throwPathEscapesBoundary(params: {...}): never`, etc. remain unflagged
+  // while `function foo(): never { throw ... }` (uncalibrated stub) fires.
+  const neverReturn = hasNeverReturnType(returnType);
+  const hasTypedParams = hasTypedNonVariadicUnknownParams(parameters);
+  const neverReturnSignal = neverReturn && !hasTypedParams;
+
+  if (!variadicUnknown && !forkMessage && !markerComment && !neverReturnSignal) {
     return null;
   }
 
@@ -186,6 +237,9 @@ function classifyStubFunction({ sourceFile, fullText, name, body, parameters, no
   }
   if (markerComment) {
     signals.push("marker-comment");
+  }
+  if (neverReturnSignal) {
+    signals.push("never-return");
   }
 
   return {
@@ -216,6 +270,7 @@ function findStubsInFile({ filePath, sourceFile }) {
         name: statement.name.text,
         body: statement.body,
         parameters: statement.parameters,
+        returnType: statement.type,
         node: statement,
       });
       if (stub) {
@@ -244,6 +299,7 @@ function findStubsInFile({ filePath, sourceFile }) {
             name: declaration.name.text,
             body: initializer.body,
             parameters: initializer.parameters,
+            returnType: initializer.type,
             node: statement,
           });
           if (stub) {
@@ -504,6 +560,11 @@ export async function main(argv = process.argv.slice(2), io) {
   const strict = argv.includes("--strict");
   const inventoryOnly = argv.includes("--inventory");
   const json = argv.includes("--json");
+  const selfTest = argv.includes("--self-test");
+
+  if (selfTest) {
+    return runSelfTests(streams);
+  }
 
   const result = await runCheck({ strict });
 
@@ -578,6 +639,124 @@ export async function main(argv = process.argv.slice(2), io) {
     `\nThrowing-stub-callers check passed (${result.stubs.length} stub${result.stubs.length === 1 ? "" : "s"} scanned, ${result.matched.length} allowlisted, ${result.unexpected.length} unexpected).`,
   );
   return 0;
+}
+
+/**
+ * Classify every exported throwing-stub-shaped function in a TypeScript source
+ * text. Used by self-tests and available for external callers that want to
+ * exercise the classifier without the full codebase scan.
+ */
+export function classifyFixture(sourceText, fileName = "fixture.ts") {
+  const sourceFile = ts.createSourceFile(
+    fileName,
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  return findStubsInFile({ filePath: fileName, sourceFile });
+}
+
+const SELF_TEST_FIXTURES = [
+  {
+    name: "uncalibrated never-return stub (no params)",
+    source: `export function foo(): never {\n  throw new Error("bar");\n}\n`,
+    expectedFlagged: true,
+    expectedSignals: ["never-return"],
+  },
+  {
+    name: "typed error-throw helper with unknown param (exitHooksCliWithError shape)",
+    source: `export function exitWithError(err: unknown): never {\n  throw new Error(String(err));\n}\n`,
+    expectedFlagged: false,
+  },
+  {
+    name: "typed error-throw helper with string param (throwGatewayAuthResolutionError shape)",
+    source: `export function throwReason(reason: string): never {\n  throw new Error(reason);\n}\n`,
+    expectedFlagged: false,
+  },
+  {
+    name: "typed error-throw helper with object param (throwPathEscapesBoundary shape)",
+    source: `export function throwOnBoundary(params: { label: string }): never {\n  throw new Error(params.label);\n}\n`,
+    expectedFlagged: false,
+  },
+  {
+    name: "variadic-unknown with never-return (upstream-compat pattern)",
+    source: `export function listProviderModels(..._args: unknown[]): never {\n  throw new Error("not available in RemoteClaw fork");\n}\n`,
+    expectedFlagged: true,
+    expectedSignalsIncludes: ["variadic-unknown", "never-return"],
+  },
+  {
+    name: "never-return without throw body (not a stub — loops forever)",
+    source: `export function spinForever(): never {\n  while (true) {\n    // nothing\n  }\n}\n`,
+    expectedFlagged: false,
+  },
+  {
+    name: "never-return with multi-statement body (not a single-throw)",
+    source: `export function maybeThrow(): never {\n  const x = 1;\n  throw new Error(String(x));\n}\n`,
+    expectedFlagged: false,
+  },
+  {
+    name: "exported arrow function, uncalibrated never-return",
+    source: `export const fail = (): never => {\n  throw new Error("fail");\n};\n`,
+    expectedFlagged: true,
+    expectedSignalsIncludes: ["never-return"],
+  },
+  {
+    name: "exported arrow function with typed param and never-return (local fail shape)",
+    source: `export const fail = (reason: string): never => {\n  throw new Error(reason);\n};\n`,
+    expectedFlagged: false,
+  },
+  {
+    name: "non-exported never-return throwing function (not a stub, not exported)",
+    source: `function internalFail(): never {\n  throw new Error("internal");\n}\n`,
+    expectedFlagged: false,
+  },
+];
+
+function runSelfTests(streams) {
+  let failures = 0;
+  writeLine(streams.stdout, `Running ${SELF_TEST_FIXTURES.length} classifier self-tests...\n`);
+
+  for (const fixture of SELF_TEST_FIXTURES) {
+    const stubs = classifyFixture(fixture.source);
+    const flagged = stubs.length > 0;
+    let passed = flagged === fixture.expectedFlagged;
+    let detail = "";
+
+    if (passed && flagged && fixture.expectedSignals !== undefined) {
+      const actual = stubs[0].signals.toSorted();
+      const expected = fixture.expectedSignals.toSorted();
+      if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+        passed = false;
+        detail = ` (signals mismatch: got ${JSON.stringify(actual)}, expected ${JSON.stringify(expected)})`;
+      }
+    }
+    if (passed && flagged && fixture.expectedSignalsIncludes !== undefined) {
+      const actual = new Set(stubs[0].signals);
+      const missing = fixture.expectedSignalsIncludes.filter((s) => !actual.has(s));
+      if (missing.length > 0) {
+        passed = false;
+        detail = ` (missing signals: ${JSON.stringify(missing)}, got ${JSON.stringify([...actual])})`;
+      }
+    }
+
+    const status = passed ? "PASS" : "FAIL";
+    writeLine(
+      streams.stdout,
+      `  [${status}] ${fixture.name}${passed ? "" : ` — expected ${fixture.expectedFlagged ? "flagged" : "unflagged"}, got ${flagged ? "flagged" : "unflagged"}${detail}`}`,
+    );
+    if (!passed) {
+      failures += 1;
+    }
+  }
+
+  writeLine(streams.stdout, "");
+  if (failures === 0) {
+    writeLine(streams.stdout, `All ${SELF_TEST_FIXTURES.length} self-tests passed.`);
+    return 0;
+  }
+  writeLine(streams.stderr, `${failures} self-test${failures === 1 ? "" : "s"} failed.`);
+  return 1;
 }
 
 runAsScript(import.meta.url, async () => {

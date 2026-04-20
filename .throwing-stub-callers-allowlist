@@ -10,4 +10,3 @@
 # New entries require a tracking issue AND justification in the PR
 # description.
 
-src/agents/agent-scope.ts::resolveAgentRuntimeOrThrow  # #2408

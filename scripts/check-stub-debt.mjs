@@ -10,7 +10,7 @@
  * To add a legitimate new suppression: increment the number in
  * .stub-debt-baseline and justify the increase in your PR description.
  *
- * Reference: ADR 0005 H5 (engineering/decisions/0005-fork-sync-hardening.md)
+ * Reference: ADR 0005 H5
  */
 
 import { promises as fs } from "node:fs";

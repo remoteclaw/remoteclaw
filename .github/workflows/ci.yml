@@ -69,6 +69,9 @@ jobs:
         with:
           install-bun: "false"
 
+      - name: Self-test classifier (fixture-based)
+        run: node scripts/check-throwing-stub-callers.mjs --self-test
+
       - name: Check throwing-stub-with-live-callers
         run: node scripts/check-throwing-stub-callers.mjs
 

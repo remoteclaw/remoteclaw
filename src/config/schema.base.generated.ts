@@ -9310,6 +9310,11 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 minimum: 0,
                 maximum: 9007199254740991,
               },
+              deferralTimeoutMs: {
+                type: "integer",
+                minimum: 0,
+                maximum: 9007199254740991,
+              },
             },
             additionalProperties: false,
           },
@@ -11297,6 +11302,11 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     "gateway.reload.debounceMs": {
       label: "Config Reload Debounce (ms)",
       help: "Debounce window (ms) before applying config changes.",
+      tags: ["network", "reliability", "performance"],
+    },
+    "gateway.reload.deferralTimeoutMs": {
+      label: "Config Reload Deferral Timeout (ms)",
+      help: "Maximum time (ms) to wait for in-flight operations to complete before forcing a SIGUSR1 restart. Default: 300000 (5 minutes). Lower values risk aborting active subagent LLM calls.",
       tags: ["network", "reliability", "performance"],
     },
     "gateway.nodes.browser.mode": {

@@ -31,7 +31,7 @@
  *     wiring and broken contract instances
  *   .obsolescence-baseline — expected total finding count (stubs + known patterns)
  *
- * Reference: ADR 0005 H6 (engineering/decisions/0005-fork-sync-hardening.md)
+ * Reference: ADR 0005 H6
  */
 
 import { promises as fs } from "node:fs";
@@ -354,7 +354,7 @@ export async function main() {
         "  1. Fix the regression (delete/rewire the dead code)\n" +
         "  2. If the finding is tracked debt, update .obsolescence-baseline\n" +
         "     and justify the increase in your PR description\n\n" +
-        "Reference: ADR 0005 H6, engineering/notes/provider-model-obsolescence-audit.md\n",
+        "Reference: ADR 0005 H6\n",
     );
     hasFailure = true;
   } else if (totalFindings < baseline) {

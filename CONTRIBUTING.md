@@ -122,3 +122,24 @@ We take security reports seriously. See [`SECURITY.md`](SECURITY.md) for full re
 ## Fork Context
 
 RemoteClaw is forked from [RemoteClaw](https://github.com/remoteclaw/remoteclaw).
+
+## Fork-boundary mocks
+
+Tests that mock modules under `src/agents/` or `src/middleware/` can mask
+production throwing-stubs — the test exercises the mock, production hits a
+broken stub. This is the test-side cause of the #2408-class regression.
+
+The `check-stub-debt` CI gate tracks the count of `vi.mock(...)` calls
+targeting these prefixes via `.fork-boundary-mock-baseline`. Increases
+require justification in the PR description categorized by one of:
+
+| Category             | When it applies                                                                                                                                                                                                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **isolation**        | Mocking a dependency with side effects (network, filesystem, global state) to unit-test logic that would otherwise require full integration setup.                                                                                                                             |
+| **performance**      | Mocking an expensive real implementation to keep the test suite fast. Use sparingly; prefer sharing test fixtures.                                                                                                                                                             |
+| **stub-placeholder** | **RED FLAG.** Mocking a function because the real implementation is a throwing-stub or otherwise non-functional. This is the anti-pattern the gate exists to catch — open a tracking issue for the stub, reference it in the PR, and add the mock only as a short-term bridge. |
+
+When decreasing the baseline (e.g., refactoring a test to hit the real
+module), update `.fork-boundary-mock-baseline` to lock in the improvement.
+
+Reference: ADR 0005 H8 (hq-internal, rule name is stable).

@@ -6,6 +6,23 @@
  * that was stubbed to false/0 during engine removal (b27cecc795, #76/#77).
  */
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  isSessionRunActive: "live",
+  getActiveSessionRunCount: "live",
+  registerSessionRun: "live",
+  unregisterSessionRun: "live",
+  getSessionRunHandle: "live",
+  killSessionRun: "live",
+  waitForSessionRunEnd: "live",
+  resetSessionRunRegistryForTest: "live",
+} as const;
+
 export type SessionRunHandle = {
   startedAt: number;
   pid?: number;

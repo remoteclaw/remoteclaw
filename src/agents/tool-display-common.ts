@@ -1,3 +1,29 @@
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  normalizeToolName: "live",
+  defaultTitle: "live",
+  normalizeVerb: "live",
+  resolveActionArg: "live",
+  resolveToolVerbAndDetailForArgs: "live",
+  coerceDisplayValue: "live",
+  lookupValueByPath: "live",
+  formatDetailKey: "live",
+  resolvePathArg: "live",
+  resolveReadDetail: "live",
+  resolveWriteDetail: "live",
+  resolveWebSearchDetail: "live",
+  resolveWebFetchDetail: "live",
+  resolveExecDetail: "live",
+  resolveActionSpec: "live",
+  resolveDetailFromKeys: "live",
+  resolveToolVerbAndDetail: "live",
+  formatToolDetailText: "live",
+} as const;
 export type ToolDisplayActionSpec = {
   label?: string;
   detailKeys?: string[];

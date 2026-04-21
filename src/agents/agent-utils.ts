@@ -4,6 +4,21 @@ import { sanitizeUserFacingText } from "./agent-helpers.js";
 import type { AgentMessage, AssistantMessage } from "./agent-types.js";
 import { formatToolDetail, resolveToolDisplay } from "./tool-display.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  isAssistantMessage: "live",
+  stripMinimaxToolCallXml: "live",
+  stripDowngradedToolCallText: "live",
+  stripThinkingTagsFromText: "live",
+  extractAssistantText: "live",
+  inferToolMetaFromArgs: "live",
+} as const;
+
 export function isAssistantMessage(msg: AgentMessage | undefined): msg is AssistantMessage {
   return msg?.role === "assistant";
 }

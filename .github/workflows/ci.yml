@@ -75,6 +75,25 @@ jobs:
       - name: Check throwing-stub-with-live-callers
         run: node scripts/check-throwing-stub-callers.mjs
 
+  attestation-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+
+      - name: Setup Node environment
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+
+      - name: Self-test classifier (fixture-based)
+        run: node scripts/check-attestations.mjs --self-test
+
+      - name: Check module attestations
+        run: node scripts/check-attestations.mjs
+
   obsolescence-audit-gate:
     runs-on: ubuntu-latest
     steps:

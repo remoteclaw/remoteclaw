@@ -13,6 +13,17 @@
  * - This is intentionally lossy; it trades edge-case path fidelity for prompt integrity.
  * - If you need lossless representation, escape instead of stripping.
  */
+
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  sanitizeForPromptLiteral: "live",
+  wrapUntrustedPromptDataBlock: "live",
+} as const;
 export function sanitizeForPromptLiteral(value: string): string {
   return value.replace(/[\p{Cc}\p{Cf}\u2028\u2029]/gu, "");
 }

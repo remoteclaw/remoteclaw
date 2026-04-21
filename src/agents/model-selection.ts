@@ -17,6 +17,22 @@ import type { RemoteClawConfig } from "../config/config.js";
 import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
 import { type ModelRef, modelKey, normalizeProviderId, parseModelRef } from "./provider-utils.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  buildModelAliasIndex: "live",
+  resolveModelRefFromString: "live",
+  resolveConfiguredModelRef: "live",
+  resolveDefaultModelForAgent: "live",
+  resolveThinkingDefault: "partial", // returns undefined; callers tolerate
+  getModelRefStatus: "partial", // returns undefined; callers tolerate
+  inferUniqueProviderFromConfiguredModels: "partial", // returns undefined; callers tolerate
+} as const;
+
 const DEFAULT_PROVIDER = "openai";
 const DEFAULT_MODEL = "gpt-4o-mini";
 

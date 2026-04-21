@@ -24,6 +24,17 @@ import { createSubsystemLogger } from "../logging/subsystem.js";
 import { replaceSubagentRunAfterSteer } from "./subagent-registry.js";
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  recoverOrphanedSubagentSessions: "live",
+  scheduleOrphanRecovery: "live",
+} as const;
+
 const log = createSubsystemLogger("subagent-orphan-recovery");
 
 /** Delay before attempting recovery to let the gateway finish bootstrapping. */

@@ -1,0 +1,11 @@
+# CODEOWNERS for remoteclaw/remoteclaw
+#
+# Fork-boundary modules carrying `MODULE_ATTESTATIONS` require explicit
+# review when their attestations change. See ADR 0005 H9 / CONTRIBUTING.md
+# § Module attestations.
+#
+# Initial scope per remoteclaw#2437: src/agents/ depth-1. Expand to other
+# fork-boundary directories (src/middleware/, src/gateway/) in follow-up
+# if the pattern proves valuable.
+
+/src/agents/ @alexey-pelykh

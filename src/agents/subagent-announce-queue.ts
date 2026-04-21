@@ -19,6 +19,17 @@ import {
 } from "../utils/queue-helpers.js";
 import type { AgentInternalEvent } from "./internal-events.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  resetAnnounceQueuesForTests: "live",
+  enqueueAnnounce: "live",
+} as const;
+
 export type AnnounceQueueItem = {
   // Stable announce identity shared by direct + queued delivery paths.
   // Optional for backward compatibility with previously queued items.

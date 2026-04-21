@@ -1,6 +1,21 @@
 import type { ModelDefinitionConfig } from "../config/types.models.js";
 import { OLLAMA_DEFAULT_BASE_URL } from "./ollama-defaults.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  resolveOllamaApiBase: "live",
+  queryOllamaContextWindow: "live",
+  enrichOllamaModelsWithContext: "live",
+  isReasoningModelHeuristic: "live",
+  buildOllamaModelDefinition: "live",
+  fetchOllamaModels: "live",
+} as const;
+
 export const OLLAMA_DEFAULT_CONTEXT_WINDOW = 128000;
 export const OLLAMA_DEFAULT_MAX_TOKENS = 8192;
 export const OLLAMA_DEFAULT_COST = {

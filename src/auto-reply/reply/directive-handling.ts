@@ -6,7 +6,7 @@ export { persistInlineDirectives } from "./directive-handling.persist.js";
 export { formatDirectiveAck } from "./directive-handling.shared.js";
 
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-import type { ModelAliasIndex } from "../../agents/model-selection.js";
+import type { ModelAliasIndex } from "../../agents/provider-utils.js";
 
 export const resolveDefaultModel = (
   ..._args: unknown[]

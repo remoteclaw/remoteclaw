@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { lookupContextTokens } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import { resolveModelAuthMode } from "../../agents/model-auth.js";
-import { isCliProvider } from "../../agents/model-selection.js";
+import { isCliProvider } from "../../agents/provider-utils.js";
 import { hasNonzeroUsage, type NormalizedUsage } from "../../agents/usage.js";
 import {
   resolveAgentIdFromSessionKey,

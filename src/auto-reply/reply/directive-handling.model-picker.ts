@@ -1,4 +1,4 @@
-import { type ModelRef, normalizeProviderId } from "../../agents/model-selection.js";
+import { type ModelRef, normalizeProviderId } from "../../agents/provider-utils.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 
 export type ModelPickerCatalogEntry = {

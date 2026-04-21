@@ -5,23 +5,8 @@
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
   },
   {
-    "callsite": "src/auto-reply/reply/agent-runner.ts:5",
-    "pattern": "agents/model-selection",
-    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
-  },
-  {
     "callsite": "src/auto-reply/reply/commands-subagents-focus.test.ts:55",
     "pattern": "acp/runtime/session-meta",
-    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
-  },
-  {
-    "callsite": "src/auto-reply/reply/directive-handling.model-picker.ts:1",
-    "pattern": "agents/model-selection",
-    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
-  },
-  {
-    "callsite": "src/auto-reply/reply/directive-handling.ts:9",
-    "pattern": "agents/model-selection",
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
   },
   {
@@ -35,53 +20,13 @@
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
   },
   {
-    "callsite": "src/commands/agent.test.ts:6",
-    "pattern": "agents/model-selection",
-    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
-  },
-  {
-    "callsite": "src/commands/agent/session-store.ts:4",
-    "pattern": "agents/model-selection",
-    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
-  },
-  {
-    "callsite": "src/commands/status.summary.ts:3",
-    "pattern": "agents/model-selection",
-    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
-  },
-  {
-    "callsite": "src/config/defaults.ts:2",
-    "pattern": "agents/model-selection",
-    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
-  },
-  {
     "callsite": "src/config/zod-schema.agent-runtime.ts:2",
     "pattern": "agents/sandbox",
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
   },
   {
-    "callsite": "src/cron/isolated-agent/run.test-harness.ts:71",
-    "pattern": "agents/model-selection",
-    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
-  },
-  {
     "callsite": "src/discord/monitor/thread-bindings.lifecycle.ts:1",
     "pattern": "acp/runtime/session-meta",
-    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
-  },
-  {
-    "callsite": "src/gateway/gateway-cli-backend.live.test.ts:7",
-    "pattern": "agents/model-selection",
-    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
-  },
-  {
-    "callsite": "src/gateway/server-methods/chat.ts:4",
-    "pattern": "agents/model-selection",
-    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
-  },
-  {
-    "callsite": "src/gateway/session-utils.ts:16",
-    "pattern": "agents/model-selection",
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
   },
   {
@@ -107,11 +52,6 @@
   {
     "callsite": "src/security/audit.ts:3",
     "pattern": "agents/sandbox",
-    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
-  },
-  {
-    "callsite": "src/telegram/sticker-cache.ts:4",
-    "pattern": "agents/model-selection",
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
   }
 ]

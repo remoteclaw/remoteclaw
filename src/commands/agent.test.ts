@@ -3,7 +3,7 @@ import path from "node:path";
 import { beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
 import "../cron/isolated-agent.mocks.js";
-import * as modelSelectionModule from "../agents/model-selection.js";
+import * as providerUtilsModule from "../agents/provider-utils.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import * as configModule from "../config/config.js";
 import * as sessionsModule from "../config/sessions.js";
@@ -276,7 +276,7 @@ beforeEach(() => {
   configModule.clearRuntimeConfigSnapshot();
   runCliAgentSpy.mockResolvedValue(createDefaultAgentResult() as never);
   vi.mocked(runEmbeddedPiAgent).mockResolvedValue(createDefaultAgentResult());
-  vi.mocked(modelSelectionModule.isCliProvider).mockImplementation(() => false);
+  vi.mocked(providerUtilsModule.isCliProvider).mockImplementation(() => false);
   readConfigFileSnapshotForWriteSpy.mockResolvedValue({
     snapshot: { valid: false, resolved: {} as RemoteClawConfig },
     writeOptions: {},
@@ -751,7 +751,7 @@ describe("agentCommand", () => {
   });
 
   it("clears stale Claude CLI legacy session IDs before retrying after session expiration", async () => {
-    vi.mocked(modelSelectionModule.isCliProvider).mockImplementation(
+    vi.mocked(providerUtilsModule.isCliProvider).mockImplementation(
       (provider) => provider.trim().toLowerCase() === "claude-cli",
     );
     try {
@@ -806,7 +806,7 @@ describe("agentCommand", () => {
         expect(entry?.claudeCliSessionId).toBeUndefined();
       });
     } finally {
-      vi.mocked(modelSelectionModule.isCliProvider).mockImplementation(() => false);
+      vi.mocked(providerUtilsModule.isCliProvider).mockImplementation(() => false);
     }
   });
 

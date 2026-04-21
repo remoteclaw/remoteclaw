@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
-import { resolveThinkingDefault } from "../../agents/model-selection.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { dispatchInboundMessage } from "../../auto-reply/dispatch.js";
 import { createReplyDispatcher } from "../../auto-reply/reply/reply-dispatcher.js";
@@ -50,12 +49,7 @@ import {
 } from "../protocol/index.js";
 import { CHAT_SEND_SESSION_KEY_MAX_LENGTH } from "../protocol/schema/primitives.js";
 import { getMaxChatHistoryMessagesBytes } from "../server-constants.js";
-import {
-  capArrayByJsonBytes,
-  loadSessionEntry,
-  readSessionMessages,
-  resolveSessionModelRef,
-} from "../session-utils.js";
+import { capArrayByJsonBytes, loadSessionEntry, readSessionMessages } from "../session-utils.js";
 import { formatForLog } from "../ws-log.js";
 import { injectTimestamp, timestampOptsFromConfig } from "./agent-timestamp.js";
 import { setGatewayDedupeEntry } from "./agent-wait-dedupe.js";
@@ -781,18 +775,7 @@ export const chatHandlers: GatewayRequestHandlers = {
         `chat.history omitted oversized payloads placeholders=${placeholderCount} total=${chatHistoryPlaceholderEmitCount}`,
       );
     }
-    let thinkingLevel = entry?.thinkingLevel;
-    if (!thinkingLevel) {
-      const sessionAgentId = resolveSessionAgentId({ sessionKey, config: cfg });
-      const { provider, model } = resolveSessionModelRef(cfg, entry, sessionAgentId);
-      const catalog = undefined;
-      thinkingLevel = resolveThinkingDefault({
-        cfg,
-        provider,
-        model,
-        catalog,
-      });
-    }
+    const thinkingLevel = entry?.thinkingLevel;
     const verboseLevel = entry?.verboseLevel ?? cfg.agents?.defaults?.verboseDefault;
     respond(true, {
       sessionKey,

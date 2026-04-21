@@ -1,4 +1,4 @@
-import { normalizeProviderId } from "./model-selection.js";
+import { normalizeProviderId } from "./provider-utils.js";
 
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status

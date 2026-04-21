@@ -9,7 +9,6 @@ import type {
   ExecEventPayload,
   ExecFinishedEventParams,
   RunResult,
-  SkillBinsProvider,
   SystemRunParams,
 } from "./invoke-types.js";
 
@@ -39,8 +38,6 @@ export type NodeInvokeRequestPayload = {
   timeoutMs?: number | null;
   idempotencyKey?: string | null;
 };
-
-export type { SkillBinsProvider } from "./invoke-types.js";
 
 export function sanitizeEnv(overrides?: Record<string, string> | null): Record<string, string> {
   return sanitizeHostExecEnv({ overrides, blockPathOverrides: true });
@@ -325,11 +322,7 @@ async function sendInvalidRequestResult(
   await sendErrorResult(client, frame, "INVALID_REQUEST", String(err));
 }
 
-export async function handleInvoke(
-  frame: NodeInvokeRequestPayload,
-  client: GatewayClient,
-  _skillBins: SkillBinsProvider,
-) {
+export async function handleInvoke(frame: NodeInvokeRequestPayload, client: GatewayClient) {
   const command = String(frame.command ?? "");
 
   if (command === "system.which") {

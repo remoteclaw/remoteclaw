@@ -26,7 +26,6 @@ const NODE_ROLE_METHODS = new Set([
   "node.canvas.capability.refresh",
   "node.pending.pull",
   "node.pending.ack",
-  "skills.bins",
 ]);
 
 const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
@@ -59,7 +58,6 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "usage.cost",
     "tts.status",
     "tts.providers",
-    "models.list",
     "tools.catalog",
     "agents.list",
     "agent.identity.get",

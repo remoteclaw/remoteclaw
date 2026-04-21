@@ -170,21 +170,6 @@
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
   },
   {
-    "callsite": "src/discord/monitor/model-picker.test.ts:4",
-    "pattern": "auto-reply/reply/commands-models",
-    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
-  },
-  {
-    "callsite": "src/discord/monitor/model-picker.ts:14",
-    "pattern": "agents/model-selection",
-    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
-  },
-  {
-    "callsite": "src/discord/monitor/model-picker.ts:18",
-    "pattern": "auto-reply/reply/commands-models",
-    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
-  },
-  {
     "callsite": "src/discord/monitor/thread-bindings.lifecycle.ts:1",
     "pattern": "acp/runtime",
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"

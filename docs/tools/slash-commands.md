@@ -181,7 +181,6 @@ Examples:
 Notes:
 
 - `/model` and `/model list` show a compact, numbered picker (model family + available providers).
-- On Discord, `/model` and `/models` open an interactive picker with provider and model dropdowns plus a Submit step.
 - `/model <#>` selects from that picker (and prefers the current provider when possible).
 - `/model status` shows the detailed view, including configured provider endpoint (`baseUrl`) and API mode (`api`) when available.
 

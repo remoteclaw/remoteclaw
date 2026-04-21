@@ -190,3 +190,52 @@ When sync or a refactor changes a module's surface:
 4. CODEOWNERS will require explicit review for any `MODULE_ATTESTATIONS` change
 
 Reference: ADR 0005 H9 (hq-internal, rule name is stable).
+
+## Sync PR workflow
+
+Upstream sync PRs (`sync: upstream to v<version>`) are categorically more
+dangerous than feature PRs — they touch 500–2,500 commits at once and can
+re-introduce previously-gutted code as semantic or throwing stubs. The
+`.github/workflows/sync-pr-audit.yml` workflow runs a composite audit ONLY
+on sync PRs, aggregating the universal H7/H8/H9 gates into a single
+reviewer-facing check with verbose output.
+
+### What triggers the audit
+
+- PR title starts with `sync:` (case-sensitive)
+- Events: `opened`, `synchronize`, `reopened`, `edited`
+
+Non-sync PRs skip this workflow entirely. The underlying H7/H8/H9 gates
+still run on every PR via `ci.yml` — the sync-PR audit is **additive**
+reporting, not a bypass.
+
+### What the audit reports
+
+| Section                                       | Source                                    |
+| --------------------------------------------- | ----------------------------------------- |
+| H7 throwing-stub-callers (strict + inventory) | `scripts/check-throwing-stub-callers.mjs` |
+| H8 stub-debt + fork-boundary-mock baselines   | `scripts/check-stub-debt.mjs`             |
+| H9 module attestations                        | `scripts/check-attestations.mjs`          |
+| H9 attestation diff (base...HEAD)             | `scripts/check-attestations-diff.mjs`     |
+| Composite summary                             | step summary in GitHub Actions            |
+
+The attestation diff is the signal most specific to sync PRs: it shows
+which `MODULE_ATTESTATIONS` entries changed category, were added, or were
+removed between the base branch and the sync PR head. Reviewers should
+scrutinize every downgrade (`"live"` → `"stub"` / `"partial"`) and every
+new `"stub"` entry.
+
+### Branch protection
+
+The composite check is **advisory** by default. It cannot be a blanket
+required check because skipped jobs (on non-sync PRs) block merge under
+standard GitHub branch protection. Two options for enforcement:
+
+1. **Rulesets (recommended)**: use GitHub's per-branch rulesets with
+   conditional requirements to mark the audit required only when the PR
+   title matches `sync:*`.
+2. **Advisory only**: leave unenforced; treat the summary as reviewer
+   guidance. The underlying H7/H8/H9 gates on `ci.yml` remain enforced
+   universally, so merge is still blocked when they fail.
+
+Reference: ADR 0005 H10 (hq-internal, rule name is stable).

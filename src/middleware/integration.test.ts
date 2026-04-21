@@ -125,8 +125,8 @@ describe("M2 middleware integration", () => {
       // This test documents the contract: workspaceDir must be a string.
       // If ensureAgentWorkspace() returns { dir: string }, callers must
       // extract .dir before passing to ChannelBridge. The TypeScript
-      // compiler enforces this — this test guards against @ts-expect-error
-      // or type assertion bypasses.
+      // compiler enforces this — this test guards against type suppression
+      // comments or `as`-cast bypasses.
       const opts: ChannelBridgeOptions = {
         provider: "claude",
         sessionMap,

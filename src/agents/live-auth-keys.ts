@@ -1,5 +1,20 @@
 import { normalizeProviderId } from "./provider-utils.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  collectProviderApiKeys: "live",
+  collectAnthropicApiKeys: "live",
+  collectGeminiApiKeys: "live",
+  isApiKeyRateLimitError: "live",
+  isAnthropicRateLimitError: "live",
+  isAnthropicBillingError: "live",
+} as const;
+
 const KEY_SPLIT_RE = /[\s,;]+/g;
 const GOOGLE_LIVE_SINGLE_KEY = "REMOTECLAW_LIVE_GEMINI_KEY";
 

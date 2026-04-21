@@ -13,6 +13,43 @@ import { resolveUserPath } from "../utils.js";
 import { normalizeSkillFilter } from "./skills/filter.js";
 import { resolveDefaultAgentWorkspaceDir } from "./workspace.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  listAgentEntries: "live",
+  listAgentIds: "live",
+  resolveDefaultAgentId: "live",
+  resolveSessionAgentIds: "live",
+  resolveSessionAgentId: "live",
+  resolveAgentConfig: "live",
+  resolveAgentSkillsFilter: "live",
+  resolveAgentExplicitModelPrimary: "live",
+  resolveAgentEffectiveModelPrimary: "live",
+  resolveAgentModelPrimary: "live",
+  resolveAgentModelFallbacksOverride: "live",
+  resolveFallbackAgentId: "live",
+  resolveRunModelFallbacksOverride: "live",
+  hasConfiguredModelFallbacks: "live",
+  resolveEffectiveModelFallbacks: "live",
+  resolveAgentWorkspaceDir: "live",
+  resolveAgentIdsByWorkspacePath: "live",
+  resolveAgentIdByWorkspacePath: "live",
+  resolveAgentDir: "live",
+  resolveSessionKeyAgentId: "live",
+  resolveSoleAgentId: "live",
+  resolveFirstAgentWorkspace: "live",
+  resolveAgentWorkspaceDirOrNull: "live",
+  resolveAgentRuntime: "live",
+  resolveAgentRuntimeArgs: "live",
+  resolveAgentRuntimeEnv: "live",
+  resolveAgentRuntimeOrThrow: "live",
+  resolveAgentAuth: "live",
+} as const;
+
 /** Default agent ID used when no explicit agent is configured. */
 const DEFAULT_AGENT_ID = "default";
 const log = createSubsystemLogger("agent-scope");

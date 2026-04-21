@@ -5,6 +5,20 @@ import { assertNoPathAliasEscape, type PathAliasPolicy } from "../infra/path-ali
 import { isPathInside } from "../infra/path-guards.js";
 import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  resolveSandboxInputPath: "live",
+  resolveSandboxPath: "live",
+  assertSandboxPath: "live",
+  assertMediaNotDataUrl: "live",
+  resolveSandboxedMediaSource: "live",
+} as const;
+
 const UNICODE_SPACES = /[\u00A0\u2000-\u200A\u202F\u205F\u3000]/g;
 const HTTP_URL_RE = /^https?:\/\//i;
 const DATA_URL_RE = /^data:/i;

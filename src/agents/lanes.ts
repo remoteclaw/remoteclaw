@@ -1,5 +1,15 @@
 import { CommandLane } from "../process/lanes.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  resolveNestedAgentLane: "live",
+} as const;
+
 export const AGENT_LANE_NESTED = CommandLane.Nested;
 export const AGENT_LANE_SUBAGENT = CommandLane.Subagent;
 

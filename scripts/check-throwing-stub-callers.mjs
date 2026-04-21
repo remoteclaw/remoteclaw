@@ -33,6 +33,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
+import { classifyThrowingStubShape } from "./lib/throwing-stub-shape.mjs";
 import {
   collectTypeScriptFilesFromRoots,
   isTestLikeTypeScriptFile,
@@ -48,12 +49,6 @@ const sourceRoots = ["src", "extensions", "ui"];
 // these are excluded from both stub-detection and caller-detection: mock
 // files and test helpers reference stubs but are not production callers.
 const extraTestSuffixes = [".test-helpers.ts", ".test-mocks.ts", ".e2e.test.ts", ".live.test.ts"];
-
-// Regex for fork-attributed throw messages (Patterns B and C from #2409).
-const forkMessagePattern = /not available in RemoteClaw fork|\bgutted\b|upstream-compat/i;
-
-// Marker-comment pattern for explicit upstream-compat stubs.
-const markerCommentPattern = /Gutted in RemoteClaw fork/i;
 
 function normalizePath(filePath) {
   return path.relative(repoRoot, filePath).split(path.sep).join("/");
@@ -88,165 +83,23 @@ async function loadSourceFiles({ includeTests }) {
   return out;
 }
 
-/** Extract throw-message text from a throw statement, or null if not a literal string. */
-function throwMessageOf(throwStatement) {
-  const expr = throwStatement.expression;
-  if (!expr || !ts.isNewExpression(expr)) {
-    return null;
-  }
-  const args = expr.arguments ?? [];
-  if (args.length === 0) {
-    return null;
-  }
-  const first = args[0];
-  if (ts.isStringLiteral(first) || ts.isNoSubstitutionTemplateLiteral(first)) {
-    return first.text;
-  }
-  return null;
-}
-
-/** A function body is a "single throw" if it contains exactly one statement that is a ThrowStatement. */
-function isSingleThrowBody(body) {
-  if (!body || !ts.isBlock(body)) {
-    return false;
-  }
-  if (body.statements.length !== 1) {
-    return false;
-  }
-  return ts.isThrowStatement(body.statements[0]);
-}
-
-/** Is the parameter's type annotation `unknown[]` / `readonly unknown[]` / `Array<unknown>`? */
-function isUnknownArrayType(type) {
-  if (ts.isArrayTypeNode(type) && type.elementType.kind === ts.SyntaxKind.UnknownKeyword) {
-    return true;
-  }
-  if (
-    ts.isTypeOperatorNode(type) &&
-    type.operator === ts.SyntaxKind.ReadonlyKeyword &&
-    ts.isArrayTypeNode(type.type) &&
-    type.type.elementType.kind === ts.SyntaxKind.UnknownKeyword
-  ) {
-    return true;
-  }
-  if (
-    ts.isTypeReferenceNode(type) &&
-    ts.isIdentifier(type.typeName) &&
-    type.typeName.text === "Array" &&
-    type.typeArguments?.length === 1 &&
-    type.typeArguments[0].kind === ts.SyntaxKind.UnknownKeyword
-  ) {
-    return true;
-  }
-  return false;
-}
-
-/** Does the parameter list declare variadic `...args: unknown[]` or `..._args: unknown[]`? */
-function hasVariadicUnknownArgs(parameters) {
-  for (const param of parameters) {
-    if (!param.dotDotDotToken) {
-      continue;
-    }
-    if (!param.type) {
-      continue;
-    }
-    if (isUnknownArrayType(param.type)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/** Is the return type annotation an explicit `: never` TypeNode? (Does not match inferred or union types.) */
-function hasNeverReturnType(returnType) {
-  return returnType !== undefined && returnType.kind === ts.SyntaxKind.NeverKeyword;
-}
-
-/**
- * Does the parameter list contain any typed parameter that is NOT variadic-unknown?
- * Typed error-throw helpers like `(err: unknown)`, `(reason: string)`,
- * `(params: {...})` match. Empty parameter lists, untyped parameters, and
- * variadic-unknown signatures do not.
- *
- * Used to preserve the implicit typed-helper exclusion when `: never` return
- * type fires as a calibration signal — typed helpers retain their legitimate
- * `: never` signature without being classified as stubs.
- */
-function hasTypedNonVariadicUnknownParams(parameters) {
-  for (const param of parameters) {
-    if (!param.type) {
-      continue;
-    }
-    if (param.dotDotDotToken) {
-      if (isUnknownArrayType(param.type)) {
-        continue;
-      }
-      return true;
-    }
-    return true;
-  }
-  return false;
-}
-
-/** Does the text immediately preceding `node` contain the "Gutted in RemoteClaw fork" marker? */
-function hasMarkerComment(sourceFile, node, fullText) {
-  const ranges = ts.getLeadingCommentRanges(fullText, node.getFullStart());
-  if (!ranges) {
-    return false;
-  }
-  for (const range of ranges) {
-    const commentText = fullText.slice(range.pos, range.end);
-    if (markerCommentPattern.test(commentText)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 /** Build the candidate record if the function declaration matches a stub pattern. */
 function classifyStubFunction({ sourceFile, fullText, name, body, parameters, returnType, node }) {
-  if (!isSingleThrowBody(body)) {
+  const shape = classifyThrowingStubShape({
+    body,
+    parameters,
+    returnType,
+    ownerNode: node,
+    fullText,
+  });
+  if (!shape) {
     return null;
   }
-  const throwStatement = body.statements[0];
-  const message = throwMessageOf(throwStatement);
-
-  const variadicUnknown = hasVariadicUnknownArgs(parameters);
-  const forkMessage = message !== null && forkMessagePattern.test(message);
-  const markerComment = hasMarkerComment(sourceFile, node, fullText);
-
-  // `: never` return type fires as a calibration signal only when the function
-  // has no typed non-variadic-unknown parameters. This preserves the implicit
-  // typed-helper exclusion: `exitHooksCliWithError(err: unknown): never`,
-  // `throwPathEscapesBoundary(params: {...}): never`, etc. remain unflagged
-  // while `function foo(): never { throw ... }` (uncalibrated stub) fires.
-  const neverReturn = hasNeverReturnType(returnType);
-  const hasTypedParams = hasTypedNonVariadicUnknownParams(parameters);
-  const neverReturnSignal = neverReturn && !hasTypedParams;
-
-  if (!variadicUnknown && !forkMessage && !markerComment && !neverReturnSignal) {
-    return null;
-  }
-
-  const signals = [];
-  if (variadicUnknown) {
-    signals.push("variadic-unknown");
-  }
-  if (forkMessage) {
-    signals.push("fork-message");
-  }
-  if (markerComment) {
-    signals.push("marker-comment");
-  }
-  if (neverReturnSignal) {
-    signals.push("never-return");
-  }
-
   return {
     symbol: name,
     line: toLine(sourceFile, node),
-    signals,
-    message,
+    signals: shape.signals,
+    message: shape.message,
   };
 }
 

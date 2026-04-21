@@ -10,6 +10,21 @@ import type { AnyAgentTool } from "./agent-tool-types.js";
 import { compileGlobPatterns, matchesAnyGlobPattern } from "./glob-pattern.js";
 import { expandToolGroups, normalizeToolName } from "./tool-policy.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  resolveSubagentToolPolicy: "live",
+  isToolAllowedByPolicyName: "live",
+  filterToolsByPolicy: "live",
+  resolveEffectiveToolPolicy: "live",
+  resolveGroupToolPolicy: "live",
+  isToolAllowedByPolicies: "live",
+} as const;
+
 // Tool policy types and helpers for allow/deny resolution.
 type ToolPolicy = { allow?: string[]; deny?: string[] };
 

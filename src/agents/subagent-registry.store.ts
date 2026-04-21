@@ -5,6 +5,18 @@ import { loadJsonFile, saveJsonFile } from "../infra/json-file.js";
 import { normalizeDeliveryContext } from "../utils/delivery-context.js";
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  resolveSubagentRegistryPath: "live",
+  loadSubagentRegistryFromDisk: "live",
+  saveSubagentRegistryToDisk: "live",
+} as const;
+
 type PersistedSubagentRegistry = {
   version: 2;
   runs: Record<string, SubagentRunRecord>;

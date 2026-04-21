@@ -3,6 +3,21 @@ import { homedir, platform } from "node:os";
 import { join } from "node:path";
 import { normalizeOptionalSecretInput } from "../utils/normalize-secret-input.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  resolveAnthropicVertexProjectId: "live",
+  resolveAnthropicVertexRegion: "live",
+  resolveAnthropicVertexRegionFromBaseUrl: "live",
+  resolveAnthropicVertexClientRegion: "live",
+  hasAnthropicVertexCredentials: "live",
+  hasAnthropicVertexAvailableAuth: "live",
+} as const;
+
 const ANTHROPIC_VERTEX_DEFAULT_REGION = "global";
 const ANTHROPIC_VERTEX_REGION_RE = /^[a-z0-9-]+$/;
 const GCLOUD_DEFAULT_ADC_PATH = join(

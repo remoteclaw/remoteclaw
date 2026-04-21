@@ -1,5 +1,26 @@
 import { normalizeProviderId } from "./model-selection.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  resolveProviderCapabilities: "live",
+  preservesAnthropicThinkingSignatures: "live",
+  requiresOpenAiCompatibleAnthropicToolPayload: "live",
+  usesOpenAiFunctionAnthropicToolSchema: "live",
+  usesOpenAiStringModeAnthropicToolChoice: "live",
+  supportsOpenAiCompatTurnValidation: "live",
+  sanitizesGeminiThoughtSignatures: "live",
+  isOpenAiProviderFamily: "live",
+  isAnthropicProviderFamily: "live",
+  shouldDropThinkingBlocksForModel: "live",
+  shouldSanitizeGeminiThoughtSignaturesForModel: "live",
+  resolveTranscriptToolCallIdMode: "live",
+} as const;
+
 export type ProviderCapabilities = {
   anthropicToolSchemaMode: "native" | "openai-functions";
   anthropicToolChoiceMode: "native" | "openai-string-modes";

@@ -143,3 +143,50 @@ When decreasing the baseline (e.g., refactoring a test to hit the real
 module), update `.fork-boundary-mock-baseline` to lock in the improvement.
 
 Reference: ADR 0005 H8 (hq-internal, rule name is stable).
+
+## Module attestations
+
+Every fork-boundary module (initial scope: `src/agents/` depth-1) exports a
+`MODULE_ATTESTATIONS` constant that declares the runtime status of each
+export. The attestation-gate CI job (`scripts/check-attestations.mjs`)
+enforces structural consistency; human reviewers (via CODEOWNERS) enforce
+semantic correctness.
+
+```ts
+export const MODULE_ATTESTATIONS = {
+  resolveFoo: "live", // real implementation, safe to call
+  listBars: "stub", // gutted; MUST have zero non-test callers
+  resolveBaz: "partial", // works for some inputs, gutted for others
+  legacyQux: "deprecated", // do not use in new code; scheduled for removal
+} as const;
+```
+
+### Categories
+
+| Category       | Meaning                                                                                                                                                                                                                                                                           |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **live**       | Real implementation. Safe to call, returns correct results. Gate fails if the function body matches a throwing-stub pattern (variadic-unknown + throw, fork-attributed throw message, `Gutted in RemoteClaw fork` marker comment, or `: never` return type with no typed params). |
+| **stub**       | Gutted function. Must have zero non-test importers (the gate fails if any live caller exists, because calling the stub would crash production). Use while the stub is awaiting replacement; link a tracking issue in the PR description.                                          |
+| **partial**    | Works for some inputs but has gutted branches. No automatic validation — reviewer discipline only. Document the partial behavior in a code comment.                                                                                                                               |
+| **deprecated** | Scheduled for removal. Discourage new callers, plan migration. No automatic validation.                                                                                                                                                                                           |
+
+### When this fires
+
+The gate fails CI when:
+
+1. A new runtime export is added without a `MODULE_ATTESTATIONS` entry
+2. An attestation entry references a symbol that is no longer exported (stale)
+3. An attestation says `"live"` but the function matches a throwing-stub pattern
+4. An attestation says `"stub"` but the function has live (non-test) callers
+5. An attestation uses an invalid category (not one of the four above)
+
+### How to update
+
+When sync or a refactor changes a module's surface:
+
+1. Edit the `MODULE_ATTESTATIONS` entries in the module (inline, top of file after imports)
+2. If re-attesting from `"live"` to `"stub"` / `"partial"` / `"deprecated"`: link a tracking issue in the PR description
+3. If re-attesting from `"stub"` to `"live"`: verify the real implementation is restored; run `node scripts/check-throwing-stub-callers.mjs --inventory` to confirm no violations
+4. CODEOWNERS will require explicit review for any `MODULE_ATTESTATIONS` change
+
+Reference: ADR 0005 H9 (hq-internal, rule name is stable).

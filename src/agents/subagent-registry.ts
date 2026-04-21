@@ -49,6 +49,34 @@ import {
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
 import { resolveAgentTimeoutMs } from "./timeout.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  markSubagentRunForSteerRestart: "live",
+  clearSubagentRunSteerRestart: "live",
+  replaceSubagentRunAfterSteer: "live",
+  registerSubagentRun: "live",
+  resetSubagentRegistryForTests: "live",
+  addSubagentRunForTests: "live",
+  releaseSubagentRun: "live",
+  resolveRequesterForChildSession: "live",
+  isSubagentSessionRunActive: "live",
+  markSubagentRunTerminated: "live",
+  listSubagentRunsForRequester: "live",
+  listSubagentRunsForController: "live",
+  countActiveRunsForSession: "live",
+  countActiveDescendantRuns: "live",
+  countPendingDescendantRuns: "live",
+  countPendingDescendantRunsExcludingRun: "live",
+  listDescendantRunsForRequester: "live",
+  initSubagentRegistry: "live",
+  shouldIgnorePostCompletionAnnounceForSession: "partial", // returns undefined; callers tolerate
+} as const;
+
 export type { SubagentRunRecord } from "./subagent-registry.types.js";
 
 const subagentRuns = new Map<string, SubagentRunRecord>();

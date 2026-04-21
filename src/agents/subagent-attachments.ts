@@ -4,6 +4,17 @@ import path from "node:path";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveAgentWorkspaceDir } from "./agent-scope.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  decodeStrictBase64: "live",
+  materializeSubagentAttachments: "live",
+} as const;
+
 export function decodeStrictBase64(value: string, maxDecodedBytes: number): Buffer | null {
   const maxEncodedBytes = Math.ceil(maxDecodedBytes / 3) * 4;
   if (value.length > maxEncodedBytes * 2) {

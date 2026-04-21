@@ -1,10 +1,3 @@
-export type SkillBinTrustEntry = {
-  bin: string;
-  name?: string;
-  resolvedPath?: string;
-  trusted?: boolean;
-};
-
 export type SystemRunApprovalPlan = {
   approved: boolean;
   reason?: string;
@@ -66,8 +59,4 @@ export type ExecFinishedEventParams = {
   cmdText: string;
   result: ExecFinishedResult;
   suppressNotifyOnExit?: boolean;
-};
-
-export type SkillBinsProvider = {
-  current(force?: boolean): Promise<SkillBinTrustEntry[]>;
 };

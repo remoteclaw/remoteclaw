@@ -1,0 +1,129 @@
+name: Sync PR Audit
+
+# Composite audit workflow for upstream sync PRs (ADR 0005 H10,
+# remoteclaw#2441). The underlying H7/H8/H9 gates are universal and run
+# on every PR via `ci.yml`. This workflow runs ONLY on sync PRs — it
+# re-invokes the same gates in verbose-inventory mode and aggregates
+# their outputs into a single composite check so reviewers can triage
+# a 500-to-2500-commit sync PR in one place.
+#
+# Trigger heuristic: PR title starts with `sync:` (matches the project
+# convention established in PR #2298, #2360, #2398, #2400, etc.).
+# Bypassing the title convention only loses verbose reporting — the
+# underlying H7/H8/H9 gates still run universally via ci.yml.
+#
+# Branch protection note: this workflow is advisory, not required. It
+# skips on non-sync PRs, and GitHub branch protection treats skipped
+# required checks as blocking — so it cannot be a blanket required check.
+# Configure it as a required check conditionally (via GitHub rulesets)
+# for sync PRs only, or treat the output as advisory reporting.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+concurrency:
+  group: sync-pr-audit-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  sync-pr-audit:
+    # Only run on sync PRs, detected by title prefix. Matches the
+    # existing project convention (e.g., "sync: upstream to v2026.3.22").
+    if: startsWith(github.event.pull_request.title, 'sync:')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Setup Node environment
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+
+      # Each gate runs with continue-on-error so a single failure does
+      # NOT short-circuit the other gates — the whole point of the
+      # composite view is to surface all three verdicts in one place.
+      # Exit codes are captured via step outputs; the final "Composite
+      # summary + exit" step translates them into a single pass/fail.
+
+      - name: H7 — Throwing-stub-callers (strict)
+        id: h7
+        continue-on-error: true
+        run: |
+          set +e
+          node scripts/check-throwing-stub-callers.mjs
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+
+      - name: H7 — Inventory
+        if: always()
+        continue-on-error: true
+        run: node scripts/check-throwing-stub-callers.mjs --inventory
+
+      - name: H8 — Stub-debt + fork-boundary-mock baselines
+        id: h8
+        if: always()
+        continue-on-error: true
+        run: |
+          set +e
+          node scripts/check-stub-debt.mjs
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+
+      - name: H9 — Module attestations
+        id: h9
+        if: always()
+        continue-on-error: true
+        run: |
+          set +e
+          node scripts/check-attestations.mjs
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+
+      # The diff script is advisory (always exits 0) — its markdown output
+      # goes to the action log for reviewer inspection. Parses
+      # MODULE_ATTESTATIONS blocks at BASE and HEAD via TypeScript AST and
+      # reports per-entry changes (added / removed / category transitioned).
+      - name: H9 — Attestation diff (base...HEAD)
+        if: always()
+        continue-on-error: true
+        run: |
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          node scripts/check-attestations-diff.mjs "$BASE_SHA" "$HEAD_SHA"
+
+      - name: Composite summary + exit
+        if: always()
+        run: |
+          H7="${{ steps.h7.outputs.exit }}"
+          H8="${{ steps.h8.outputs.exit }}"
+          H9="${{ steps.h9.outputs.exit }}"
+          failed=
+          if [ "${H7:-1}" != "0" ] || [ "${H8:-1}" != "0" ] || [ "${H9:-1}" != "0" ]; then
+            failed=1
+          fi
+          fmt() { [ "$1" = "0" ] && echo "PASS" || echo "**FAIL** — review log"; }
+          {
+            echo "# Sync PR Audit — Composite Summary"
+            echo ""
+            echo "| Gate | Exit | Notes |"
+            echo "| --- | --- | --- |"
+            echo "| H7 throwing-stub-callers | \`${H7:-?}\` | $(fmt "${H7:-1}") |"
+            echo "| H8 stub-debt + fork-boundary-mock | \`${H8:-?}\` | $(fmt "${H8:-1}") |"
+            echo "| H9 module-attestations | \`${H9:-?}\` | $(fmt "${H9:-1}") |"
+            echo ""
+            echo "**Underlying gates (H7/H8/H9) run on every PR via \`ci.yml\`. This composite view re-invokes them with sync-PR-tailored reporting so reviewers can triage the full audit in one place.**"
+            echo ""
+            if [ -n "$failed" ]; then
+              echo "> ⚠️ One or more underlying gates failed. Address the failure before proceeding — the universal \`ci.yml\` job will also block merge."
+            fi
+          } | tee "$GITHUB_STEP_SUMMARY"
+
+          if [ -n "$failed" ]; then
+            echo "::error::Sync PR audit failed: H7=${H7:-?} H8=${H8:-?} H9=${H9:-?}"
+            exit 1
+          fi

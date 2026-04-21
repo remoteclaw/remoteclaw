@@ -24,13 +24,6 @@ import {
   type MattermostChannel,
 } from "./client.js";
 import {
-  renderMattermostModelSummaryView,
-  renderMattermostModelsPickerView,
-  renderMattermostProviderPickerView,
-  resolveMattermostModelPickerCurrentModel,
-  resolveMattermostModelPickerEntry,
-} from "./model-picker.js";
-import {
   authorizeMattermostCommandInvocation,
   normalizeMattermostAllowList,
 } from "./monitor-auth.js";
@@ -385,14 +378,6 @@ async function handleSlashCommandAsync(params: {
       : `Mattermost message in ${roomLabel} from ${senderName}`;
 
   const to = kind === "direct" ? `user:${senderId}` : `channel:${channelId}`;
-  const pickerEntry = resolveMattermostModelPickerEntry(commandText);
-  if (pickerEntry) {
-    // Model provider data source was gutted — always show "not available".
-    await sendMessageMattermost(to, "No models available.", {
-      accountId: account.accountId,
-    });
-    return;
-  }
 
   // Build inbound context — the command text is the body
   const ctxPayload = core.channel.reply.finalizeInboundContext({

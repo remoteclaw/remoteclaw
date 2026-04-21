@@ -39,26 +39,18 @@ import {
   fetchMattermostUserTeams,
   normalizeMattermostBaseUrl,
   sendMattermostTyping,
-  updateMattermostPost,
   type MattermostChannel,
   type MattermostPost,
   type MattermostUser,
 } from "./client.js";
 import {
-  buildButtonProps,
   computeInteractionCallbackUrl,
   createMattermostInteractionHandler,
   resolveInteractionCallbackPath,
   setInteractionCallbackUrl,
   setInteractionSecret,
-  type MattermostInteractionResponse,
 } from "./interactions.js";
-import { parseMattermostModelPickerContext } from "./model-picker.js";
-import {
-  authorizeMattermostCommandInvocation,
-  isMattermostSenderAllowed,
-  normalizeMattermostAllowList,
-} from "./monitor-auth.js";
+import { isMattermostSenderAllowed, normalizeMattermostAllowList } from "./monitor-auth.js";
 import {
   createDedupeCache,
   formatInboundFromLabel,
@@ -493,7 +485,6 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
       allowedSourceIps: effectiveInteractionSourceIps,
       trustedProxies: cfg.gateway?.trustedProxies,
       allowRealIpFallback: cfg.gateway?.allowRealIpFallback === true,
-      handleInteraction: handleModelPickerInteraction,
       resolveSessionKey: async (channelId: string, userId: string) => {
         const channelInfo = await resolveChannelInfo(channelId);
         const kind = mapMattermostChannelTypeToChatType(channelInfo?.type);
@@ -756,122 +747,6 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
       return null;
     }
   };
-
-  const buildModelPickerProps = (
-    channelId: string,
-    buttons: Array<unknown>,
-  ): Record<string, unknown> | undefined =>
-    buildButtonProps({
-      callbackUrl,
-      accountId: account.accountId,
-      channelId,
-      buttons,
-    });
-
-  const updateModelPickerPost = async (params: {
-    channelId: string;
-    postId: string;
-    message: string;
-    buttons?: Array<unknown>;
-  }): Promise<MattermostInteractionResponse> => {
-    const props = buildModelPickerProps(params.channelId, params.buttons ?? []) ?? {
-      attachments: [],
-    };
-    await updateMattermostPost(client, params.postId, {
-      message: params.message,
-      props,
-    });
-    return {};
-  };
-
-  async function handleModelPickerInteraction(params: {
-    payload: {
-      channel_id: string;
-      post_id: string;
-      team_id?: string;
-      user_id: string;
-    };
-    userName: string;
-    context: Record<string, unknown>;
-  }): Promise<MattermostInteractionResponse | null> {
-    const pickerState = parseMattermostModelPickerContext(params.context);
-    if (!pickerState) {
-      return null;
-    }
-
-    if (pickerState.ownerUserId !== params.payload.user_id) {
-      return {
-        ephemeral_text: "Only the person who opened this picker can use it.",
-      };
-    }
-
-    const channelInfo = await resolveChannelInfo(params.payload.channel_id);
-    const pickerCommandText =
-      pickerState.action === "select"
-        ? `/model ${pickerState.provider}/${pickerState.model}`
-        : pickerState.action === "list"
-          ? `/models ${pickerState.provider}`
-          : "/models";
-    const allowTextCommands = core.channel.commands.shouldHandleTextCommands({
-      cfg,
-      surface: "mattermost",
-    });
-    const hasControlCommand = core.channel.text.hasControlCommand(pickerCommandText, cfg);
-    const dmPolicy = account.config.dmPolicy ?? "pairing";
-    const storeAllowFrom = normalizeMattermostAllowList(
-      await readStoreAllowFromForDmPolicy({
-        provider: "mattermost",
-        accountId: account.accountId,
-        dmPolicy,
-        readStore: pairing.readStoreForDmPolicy,
-      }),
-    );
-    const auth = authorizeMattermostCommandInvocation({
-      account,
-      cfg,
-      senderId: params.payload.user_id,
-      senderName: params.userName,
-      channelId: params.payload.channel_id,
-      channelInfo,
-      storeAllowFrom,
-      allowTextCommands,
-      hasControlCommand,
-    });
-    if (!auth.ok) {
-      if (auth.denyReason === "dm-pairing") {
-        const { code } = await pairing.upsertPairingRequest({
-          id: params.payload.user_id,
-          meta: { name: params.userName },
-        });
-        return {
-          ephemeral_text: core.channel.pairing.buildPairingReply({
-            channel: "mattermost",
-            idLine: `Your Mattermost user id: ${params.payload.user_id}`,
-            code,
-          }),
-        };
-      }
-      const denyText =
-        auth.denyReason === "unknown-channel"
-          ? "Temporary error: unable to determine channel type. Please try again."
-          : auth.denyReason === "dm-disabled"
-            ? "This bot is not accepting direct messages."
-            : auth.denyReason === "channels-disabled"
-              ? "Model picker actions are disabled in channels."
-              : auth.denyReason === "channel-no-allowlist"
-                ? "Model picker actions are not configured for this channel."
-                : "Unauthorized.";
-      return {
-        ephemeral_text: denyText,
-      };
-    }
-    // Model provider data source was gutted — always show "not available".
-    return await updateModelPickerPost({
-      channelId: params.payload.channel_id,
-      postId: params.payload.post_id,
-      message: "No models available.",
-    });
-  }
 
   const handlePost = async (
     post: MattermostPost,

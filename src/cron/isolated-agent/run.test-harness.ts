@@ -27,12 +27,8 @@ export const buildWorkspaceSkillSnapshotMock = createMock();
 export const resolveAgentConfigMock = createMock();
 export const resolveAgentModelFallbacksOverrideMock = createMock();
 export const resolveAgentSkillsFilterMock = createMock();
-export const getModelRefStatusMock = createMock();
 export const isCliProviderMock = createMock();
-export const resolveAllowedModelRefMock = createMock();
 export const resolveConfiguredModelRefMock = createMock();
-export const resolveHooksGmailModelMock = createMock();
-export const resolveThinkingDefaultMock = createMock();
 export const runWithModelFallbackMock = createMock();
 export const runCliAgentMock = createMock();
 export const getCliSessionIdMock = createMock();
@@ -67,16 +63,12 @@ vi.mock("../../agents/workspace.js", () => ({
   ensureAgentWorkspace: vi.fn().mockResolvedValue({ dir: "/tmp/workspace" }),
 }));
 
-vi.mock("../../agents/model-selection.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../agents/model-selection.js")>();
+vi.mock("../../agents/provider-utils.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../agents/provider-utils.js")>();
   return {
     ...actual,
-    getModelRefStatus: getModelRefStatusMock,
     isCliProvider: isCliProviderMock,
-    resolveAllowedModelRef: resolveAllowedModelRefMock,
     resolveConfiguredModelRef: resolveConfiguredModelRefMock,
-    resolveHooksGmailModel: resolveHooksGmailModelMock,
-    resolveThinkingDefault: resolveThinkingDefaultMock,
   };
 });
 
@@ -242,10 +234,6 @@ export function resetRunCronIsolatedAgentTurnHarness(): void {
   resolveAgentSkillsFilterMock.mockReturnValue(undefined);
 
   resolveConfiguredModelRefMock.mockReturnValue({ provider: "openai", model: "gpt-4" });
-  resolveAllowedModelRefMock.mockReturnValue({ ref: { provider: "openai", model: "gpt-4" } });
-  resolveHooksGmailModelMock.mockReturnValue(null);
-  resolveThinkingDefaultMock.mockReturnValue(undefined);
-  getModelRefStatusMock.mockReturnValue({ allowed: false });
   isCliProviderMock.mockReturnValue(false);
 
   runWithModelFallbackMock.mockReset();

@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { resolveApiKeyForProvider } from "../agents/model-auth.js";
-import { resolveDefaultModelForAgent } from "../agents/model-selection.js";
+import { resolveDefaultModelForAgent } from "../agents/provider-utils.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { STATE_DIR } from "../config/paths.js";
 import { logVerbose } from "../globals.js";

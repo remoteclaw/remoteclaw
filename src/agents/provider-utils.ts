@@ -2,11 +2,16 @@
  * Provider utility functions extracted from model-selection.ts.
  *
  * These are the surviving utilities after the in-process LLM model management
- * layer was removed. Provider normalization and model ref parsing are still
- * needed by auth-profiles, config, plugin-auto-enable, and similar infrastructure.
+ * layer was removed. Provider normalization, model ref parsing, and
+ * config-reading model resolution are still needed by auth-profiles, config,
+ * plugin-auto-enable, status reporting, session defaults, and similar
+ * middleware infrastructure. CLI runtimes own model SELECTION; middleware
+ * still reads the configured default from RemoteClawConfig.
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { RemoteClawConfig } from "../config/config.js";
+import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
 
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status
@@ -23,6 +28,9 @@ export const MODULE_ATTESTATIONS = {
   normalizeGoogleModelId: "live",
   normalizeModelRef: "live",
   parseModelRef: "live",
+  buildModelAliasIndex: "live",
+  resolveConfiguredModelRef: "live",
+  resolveDefaultModelForAgent: "live",
 } as const;
 
 export type ModelRef = {
@@ -198,4 +206,89 @@ export function parseModelRef(raw: string, defaultProvider: string): ModelRef | 
     return null;
   }
   return normalizeModelRef(providerRaw, model);
+}
+
+// ---------------------------------------------------------------------------
+// Configured-default model resolution (middleware reads cfg.agents.defaults.*)
+// ---------------------------------------------------------------------------
+
+const DEFAULT_PROVIDER = "openai";
+const DEFAULT_MODEL = "gpt-4o-mini";
+
+export type ModelAliasIndex = {
+  byAlias: Map<string, { alias: string; ref: ModelRef }>;
+  byKey: Map<string, string[]>;
+};
+
+function normalizeAliasKey(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+export function buildModelAliasIndex(params: {
+  cfg: RemoteClawConfig;
+  defaultProvider: string;
+  allowPluginNormalization?: boolean;
+}): ModelAliasIndex {
+  const byAlias = new Map<string, { alias: string; ref: ModelRef }>();
+  const byKey = new Map<string, string[]>();
+
+  const rawModels = (params.cfg as any).agents?.defaults?.models ?? {};
+  for (const [keyRaw, entryRaw] of Object.entries(rawModels)) {
+    const parsed = parseModelRef(String(keyRaw ?? ""), params.defaultProvider);
+    if (!parsed) {
+      continue;
+    }
+    const alias = String((entryRaw as { alias?: string } | undefined)?.alias ?? "").trim();
+    if (!alias) {
+      continue;
+    }
+    const aliasKey = normalizeAliasKey(alias);
+    byAlias.set(aliasKey, { alias, ref: parsed });
+    const key = modelKey(parsed.provider, parsed.model);
+    const existing = byKey.get(key) ?? [];
+    existing.push(alias);
+    byKey.set(key, existing);
+  }
+
+  return { byAlias, byKey };
+}
+
+export function resolveConfiguredModelRef(params: {
+  cfg: RemoteClawConfig;
+  defaultProvider: string;
+  defaultModel: string;
+  allowPluginNormalization?: boolean;
+}): ModelRef {
+  const rawModel = resolveAgentModelPrimaryValue(params.cfg.agents?.defaults?.model) ?? "";
+  if (rawModel) {
+    const trimmed = rawModel.trim();
+    const aliasIndex = buildModelAliasIndex({
+      cfg: params.cfg,
+      defaultProvider: params.defaultProvider,
+      allowPluginNormalization: params.allowPluginNormalization,
+    });
+    if (!trimmed.includes("/")) {
+      const aliasKey = normalizeAliasKey(trimmed);
+      const aliasMatch = aliasIndex.byAlias.get(aliasKey);
+      if (aliasMatch) {
+        return aliasMatch.ref;
+      }
+    }
+    const parsed = parseModelRef(trimmed, params.defaultProvider);
+    if (parsed) {
+      return parsed;
+    }
+  }
+  return { provider: params.defaultProvider, model: params.defaultModel };
+}
+
+export function resolveDefaultModelForAgent(params: {
+  cfg: RemoteClawConfig;
+  agentId?: string;
+}): ModelRef {
+  return resolveConfiguredModelRef({
+    cfg: params.cfg,
+    defaultProvider: DEFAULT_PROVIDER,
+    defaultModel: DEFAULT_MODEL,
+  });
 }

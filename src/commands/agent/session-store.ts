@@ -1,7 +1,7 @@
 import { setCliSessionId } from "../../agents/cli-session.js";
 import { resolveContextTokensForModel } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
-import { isCliProvider } from "../../agents/model-selection.js";
+import { isCliProvider } from "../../agents/provider-utils.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {

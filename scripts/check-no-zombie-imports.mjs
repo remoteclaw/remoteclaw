@@ -46,16 +46,9 @@ function resolveRepoRootFromScript(importMetaUrl) {
 // surface re-exported by `src/plugin-sdk`. Only the stub files
 // (`session-meta`, `session-identifiers`) are genuinely dead within that
 // namespace.
-//
-// `agents/model-selection` is KEPT as a broad pattern even though
-// `src/agents/model-selection.ts` has live functions (per H9 attestations),
-// because those live functions are pending gutting per the Middleware
-// Boundary Principle — imports of them are tracked debt, not false
-// positives. Follow-up gutting is tracked separately.
 const fallbackDeadModulePatterns = [
   "agents/model-catalog",
   "agents/model-fallback",
-  "agents/model-selection",
   "agents/skills",
   "agents/sandbox",
   "memory/",

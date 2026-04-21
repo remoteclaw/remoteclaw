@@ -9,11 +9,10 @@ import {
 import { lookupContextTokens } from "../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import {
-  inferUniqueProviderFromConfiguredModels,
   parseModelRef,
   resolveConfiguredModelRef,
   resolveDefaultModelForAgent,
-} from "../agents/model-selection.js";
+} from "../agents/provider-utils.js";
 import { type RemoteClawConfig, loadConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import {
@@ -702,13 +701,6 @@ export function resolveSessionModelIdentityRef(
   if (runtimeModel) {
     if (runtimeProvider) {
       return { provider: runtimeProvider, model: runtimeModel };
-    }
-    const inferredProvider = inferUniqueProviderFromConfiguredModels({
-      cfg,
-      model: runtimeModel,
-    });
-    if (inferredProvider) {
-      return { provider: inferredProvider, model: runtimeModel };
     }
     if (runtimeModel.includes("/")) {
       const parsedRuntime = parseModelRef(runtimeModel, DEFAULT_PROVIDER);

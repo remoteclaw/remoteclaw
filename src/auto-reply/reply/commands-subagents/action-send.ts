@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { AGENT_LANE_SUBAGENT } from "../../../agents/lanes.js";
+import { killSessionRun } from "../../../agents/session-run-registry.js";
 import {
   clearSubagentRunSteerRestart,
   replaceSubagentRunAfterSteer,
@@ -63,6 +64,8 @@ export async function handleSubagentsSendAction(
 
   if (steerRequested) {
     markSubagentRunForSteerRestart(targetResolution.entry.runId);
+
+    killSessionRun(targetResolution.entry.childSessionKey);
 
     const cleared = clearSessionQueues([targetResolution.entry.childSessionKey, targetSessionId]);
     if (cleared.followupCleared > 0 || cleared.laneCleared > 0) {

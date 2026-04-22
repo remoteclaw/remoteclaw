@@ -27,6 +27,7 @@ import {
 import { INTERNAL_MESSAGE_CHANNEL } from "../../utils/message-channel.js";
 import { AGENT_LANE_SUBAGENT } from "../lanes.js";
 import { optionalStringEnum } from "../schema/typebox.js";
+import { killSessionRun } from "../session-run-registry.js";
 import { getSubagentDepthFromSessionStore } from "../subagent-depth.js";
 import {
   clearSubagentRunSteerRestart,
@@ -248,7 +249,7 @@ async function killSubagentRun(params: {
     cache: params.cache,
   });
   const sessionId = resolved.entry?.sessionId;
-  const aborted = false;
+  const aborted = killSessionRun(childSessionKey);
   const cleared = clearSessionQueues([childSessionKey, sessionId]);
   if (cleared.followupCleared > 0 || cleared.laneCleared > 0) {
     logVerbose(
@@ -619,6 +620,8 @@ export function createSubagentsTool(opts?: { agentSessionKey?: string }): AnyAge
           typeof targetSession.entry?.sessionId === "string" && targetSession.entry.sessionId.trim()
             ? targetSession.entry.sessionId.trim()
             : undefined;
+
+        killSessionRun(resolved.entry.childSessionKey);
 
         const cleared = clearSessionQueues([resolved.entry.childSessionKey, sessionId]);
         if (cleared.followupCleared > 0 || cleared.laneCleared > 0) {

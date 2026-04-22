@@ -1857,7 +1857,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 },
                 additionalProperties: false,
               },
-              embeddedPi: {},
               verboseDefault: {
                 anyOf: [
                   {
@@ -12162,16 +12161,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Compaction Memory Flush System Prompt",
       help: "System-prompt override for the pre-compaction memory flush turn to control extraction style and safety constraints. Use carefully so custom instructions do not reduce memory quality or leak sensitive context.",
       tags: ["advanced"],
-    },
-    "agents.defaults.embeddedPi": {
-      label: "Embedded Pi",
-      help: "Embedded Pi runner hardening controls for how workspace-local Pi settings are trusted and applied in RemoteClaw sessions.",
-      tags: ["advanced"],
-    },
-    "agents.defaults.embeddedPi.projectSettingsPolicy": {
-      label: "Embedded Pi Project Settings Policy",
-      help: 'How embedded Pi handles workspace-local `.pi/config/settings.json`: "sanitize" (default) strips shellPath/shellCommandPrefix, "ignore" disables project settings entirely, and "trusted" applies project settings as-is.',
-      tags: ["access"],
     },
     "agents.defaults.heartbeat.directPolicy": {
       label: "Heartbeat Direct Policy",

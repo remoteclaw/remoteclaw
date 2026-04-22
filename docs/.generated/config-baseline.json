@@ -1320,17 +1320,6 @@
       "hasChildren": false
     },
     {
-      "path": "agents.defaults.embeddedPi",
-      "kind": "core",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": ["advanced"],
-      "label": "Embedded Pi",
-      "help": "Embedded Pi runner hardening controls for how workspace-local Pi settings are trusted and applied in RemoteClaw sessions.",
-      "hasChildren": false
-    },
-    {
       "path": "agents.defaults.envelopeElapsed",
       "kind": "core",
       "type": "string",

@@ -123,7 +123,6 @@ function createMinimalRun(params?: {
       skillsSnapshot: {},
       provider: "anthropic",
       model: "claude",
-      thinkLevel: "low",
       verboseLevel: params?.resolvedVerboseLevel ?? "off",
       elevatedLevel: "off",
       bashElevated: {
@@ -213,7 +212,6 @@ function createBaseRun(params: {
       skillsSnapshot: {},
       provider: "anthropic",
       model: "claude",
-      thinkLevel: "low",
       verboseLevel: "off",
       elevatedLevel: "off",
       bashElevated: {

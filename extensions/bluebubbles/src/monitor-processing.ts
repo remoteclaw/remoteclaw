@@ -1171,7 +1171,7 @@ export async function processMessage(
     }, typingRestartDelayMs);
   };
   try {
-    const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+    const prefixOptions = createReplyPrefixOptions({
       cfg: config,
       agentId: route.agentId,
       channel: "bluebubbles",
@@ -1332,7 +1332,6 @@ export async function processMessage(
         },
       },
       replyOptions: {
-        onModelSelected,
         disableBlockStreaming:
           typeof account.config.blockStreaming === "boolean"
             ? !account.config.blockStreaming

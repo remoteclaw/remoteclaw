@@ -76,7 +76,6 @@ describe("runReplyAgent media path normalization", () => {
           config: {},
           provider: "anthropic",
           model: "claude",
-          thinkLevel: "low",
           verboseLevel: "off",
           elevatedLevel: "off",
           bashElevated: {

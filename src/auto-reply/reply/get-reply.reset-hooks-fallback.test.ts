@@ -77,7 +77,6 @@ function createContinueDirectivesResult(resetHookTriggered: boolean) {
       elevatedAllowed: false,
       elevatedFailures: [],
       defaultActivation: "always",
-      resolvedThinkLevel: undefined,
       resolvedVerboseLevel: "off",
       resolvedReasoningLevel: "off",
       resolvedElevatedLevel: "off",

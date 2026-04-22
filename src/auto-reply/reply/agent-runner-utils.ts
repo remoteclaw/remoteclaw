@@ -189,7 +189,6 @@ export function buildEmbeddedRunBaseParams(params: {
     provider: params.provider,
     model: params.model,
     ...params.authProfile,
-    thinkLevel: params.run.thinkLevel,
     verboseLevel: params.run.verboseLevel,
     reasoningLevel: params.run.reasoningLevel,
     execOverrides: params.run.execOverrides,

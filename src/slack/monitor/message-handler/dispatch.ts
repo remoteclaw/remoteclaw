@@ -193,7 +193,7 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
     },
   });
 
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+  const prefixOptions = createReplyPrefixOptions({
     cfg,
     agentId: route.agentId,
     channel: "slack",
@@ -440,7 +440,7 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
         : typeof account.config.blockStreaming === "boolean"
           ? !account.config.blockStreaming
           : undefined,
-      onModelSelected,
+
       onPartialReply: useStreaming
         ? undefined
         : !previewStreamingEnabled

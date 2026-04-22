@@ -960,7 +960,7 @@ async function dispatchDiscordCommandInteraction(params: {
     sender: { id: sender.id, name: sender.name, tag: sender.tag },
   });
 
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+  const prefixOptions = createReplyPrefixOptions({
     cfg,
     agentId: effectiveRoute.agentId,
     channel: "discord",
@@ -1011,7 +1011,6 @@ async function dispatchDiscordCommandInteraction(params: {
         typeof discordConfig?.blockStreaming === "boolean"
           ? !discordConfig.blockStreaming
           : undefined,
-      onModelSelected,
     },
   });
 

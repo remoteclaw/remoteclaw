@@ -303,7 +303,7 @@ async function processMessageWithPipeline(params: {
     }
   }
 
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+  const prefixOptions = createReplyPrefixOptions({
     cfg: config,
     agentId: route.agentId,
     channel: "googlechat",
@@ -335,9 +335,7 @@ async function processMessageWithPipeline(params: {
         );
       },
     },
-    replyOptions: {
-      onModelSelected,
-    },
+    replyOptions: {},
   });
 }
 

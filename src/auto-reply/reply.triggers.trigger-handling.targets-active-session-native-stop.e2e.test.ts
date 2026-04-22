@@ -195,51 +195,6 @@ describe("trigger handling", () => {
         expect(runAgentMock).toHaveBeenCalledOnce();
       }
 
-      const thinkCases = [
-        {
-          label: "context-wrapper",
-          request: {
-            Body: [
-              "[Chat messages since your last reply - for context]",
-              "Peter: /thinking high [2025-12-05T21:45:00.000Z]",
-              "",
-              "[Current message - respond to this]",
-              "Give me the status",
-            ].join("\n"),
-            From: "+1002",
-            To: "+2000",
-          },
-          options: {},
-          assertPrompt: true,
-        },
-        {
-          label: "heartbeat",
-          request: {
-            Body: "HEARTBEAT /think:high",
-            From: "+1003",
-            To: "+1003",
-          },
-          options: { isHeartbeat: true },
-          assertPrompt: false,
-        },
-      ] as const;
-      runAgentMock.mockClear();
-      for (const testCase of thinkCases) {
-        mockRunAgentOk();
-        const res = await getReplyFromConfig(testCase.request, testCase.options, makeCfg(home));
-        const text = maybeReplyText(res);
-        expect(text, testCase.label).toBe("ok");
-        expect(text, testCase.label).not.toMatch(/Thinking level set/i);
-        expect(getRunAgentMock(), testCase.label).toHaveBeenCalledOnce();
-        if (testCase.assertPrompt) {
-          const prompt = getRunAgentMock().mock.calls[0]?.[0]?.prompt ?? "";
-          expect(prompt).toContain("Give me the status");
-          expect(prompt).not.toContain("/thinking high");
-          expect(prompt).not.toContain("/think high");
-        }
-        getRunAgentMock().mockClear();
-      }
-
       const modelCases = [
         {
           label: "stored-override",

@@ -258,7 +258,7 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
       logVerbose(`signal inbound: from=${ctxPayload.From} len=${body.length} preview="${preview}"`);
     }
 
-    const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+    const prefixOptions = createReplyPrefixOptions({
       cfg: deps.cfg,
       agentId: route.agentId,
       channel: "signal",
@@ -315,7 +315,6 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
         ...replyOptions,
         disableBlockStreaming:
           typeof deps.blockStreaming === "boolean" ? !deps.blockStreaming : undefined,
-        onModelSelected,
       },
     });
     markDispatchIdle();

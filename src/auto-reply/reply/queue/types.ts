@@ -71,7 +71,6 @@ export type FollowupRun = {
     skillsSnapshot?: unknown;
     authProfileId?: string;
     authProfileIdSource?: string;
-    thinkLevel?: unknown;
     reasoningLevel?: unknown;
     elevatedLevel?: unknown;
     execOverrides?: unknown;

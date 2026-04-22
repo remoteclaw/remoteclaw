@@ -84,7 +84,7 @@ export function createMSTeamsReplyDispatcher(params: {
       });
     },
   });
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+  const prefixOptions = createReplyPrefixOptions({
     cfg: params.cfg,
     agentId: params.agentId,
     channel: "msteams",
@@ -154,7 +154,7 @@ export function createMSTeamsReplyDispatcher(params: {
 
   return {
     dispatcher,
-    replyOptions: { ...replyOptions, onModelSelected },
+    replyOptions: { ...replyOptions },
     markDispatchIdle,
   };
 }

@@ -1,28 +1,22 @@
+import { resolveAgentEffectiveModelPrimary } from "../agents/agent-scope.js";
 import { resolveEffectiveMessagesConfig, resolveIdentityName } from "../agents/identity.js";
 import {
   extractShortModelName,
   type ResponsePrefixContext,
 } from "../auto-reply/reply/response-prefix-template.js";
-import type { GetReplyOptions } from "../auto-reply/types.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { isSlackInteractiveRepliesEnabled } from "../slack/interactive-replies.js";
-
-type ModelSelectionContext = Parameters<NonNullable<GetReplyOptions["onModelSelected"]>>[0];
 
 export type ReplyPrefixContextBundle = {
   prefixContext: ResponsePrefixContext;
   responsePrefix?: string;
   enableSlackInteractiveReplies?: boolean;
   responsePrefixContextProvider: () => ResponsePrefixContext;
-  onModelSelected: (ctx: ModelSelectionContext) => void;
 };
 
 export type ReplyPrefixOptions = Pick<
   ReplyPrefixContextBundle,
-  | "responsePrefix"
-  | "enableSlackInteractiveReplies"
-  | "responsePrefixContextProvider"
-  | "onModelSelected"
+  "responsePrefix" | "enableSlackInteractiveReplies" | "responsePrefixContextProvider"
 >;
 
 export function createReplyPrefixContext(params: {
@@ -32,16 +26,15 @@ export function createReplyPrefixContext(params: {
   accountId?: string;
 }): ReplyPrefixContextBundle {
   const { cfg, agentId } = params;
+  const effectiveModel = resolveAgentEffectiveModelPrimary(cfg, agentId);
+  const slash = effectiveModel?.indexOf("/") ?? -1;
+  const provider = slash > 0 ? effectiveModel?.slice(0, slash) : undefined;
+  const modelId = slash > 0 ? effectiveModel?.slice(slash + 1) : effectiveModel;
   const prefixContext: ResponsePrefixContext = {
     identityName: resolveIdentityName(cfg, agentId),
-  };
-
-  const onModelSelected = (ctx: ModelSelectionContext) => {
-    // Mutate the object directly instead of reassigning to ensure closures see updates.
-    prefixContext.provider = ctx.provider;
-    prefixContext.model = extractShortModelName(ctx.model);
-    prefixContext.modelFull = `${ctx.provider}/${ctx.model}`;
-    prefixContext.thinkingLevel = ctx.thinkLevel ?? "off";
+    provider,
+    model: modelId ? extractShortModelName(modelId) : undefined,
+    modelFull: effectiveModel,
   };
 
   return {
@@ -55,7 +48,6 @@ export function createReplyPrefixContext(params: {
         ? isSlackInteractiveRepliesEnabled({ cfg, accountId: params.accountId })
         : undefined,
     responsePrefixContextProvider: () => prefixContext,
-    onModelSelected,
   };
 }
 
@@ -65,16 +57,11 @@ export function createReplyPrefixOptions(params: {
   channel?: string;
   accountId?: string;
 }): ReplyPrefixOptions {
-  const {
-    responsePrefix,
-    enableSlackInteractiveReplies,
-    responsePrefixContextProvider,
-    onModelSelected,
-  } = createReplyPrefixContext(params);
+  const { responsePrefix, enableSlackInteractiveReplies, responsePrefixContextProvider } =
+    createReplyPrefixContext(params);
   return {
     responsePrefix,
     enableSlackInteractiveReplies,
     responsePrefixContextProvider,
-    onModelSelected,
   };
 }

@@ -680,7 +680,7 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
         channel: "matrix",
         accountId: route.accountId,
       });
-      const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+      const prefixOptions = createReplyPrefixOptions({
         cfg,
         agentId: route.agentId,
         channel: "matrix",
@@ -743,7 +743,6 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
         replyOptions: {
           ...replyOptions,
           skillFilter: roomConfig?.skills,
-          onModelSelected,
         },
       });
       if (!queuedFinal) {

@@ -23,8 +23,6 @@ export type InlineDirectives = {
   rawCap?: string;
   rawDrop?: string;
   hasQueueOptions: boolean;
-  hasThinkDirective?: boolean;
-  thinkLevel?: string;
 };
 
 export function parseInlineDirectives(

@@ -341,7 +341,7 @@ export const dispatchTelegramMessage = async ({
           ? true
           : undefined;
 
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+  const prefixOptions = createReplyPrefixOptions({
     cfg,
     agentId: route.agentId,
     channel: "telegram",
@@ -664,7 +664,6 @@ export const dispatchTelegramMessage = async ({
               await statusReactionController.setTool(payload.name);
             }
           : undefined,
-        onModelSelected,
       },
     }));
   } catch (err) {

@@ -269,7 +269,7 @@ export async function processMessage(params: {
     ? await resolveWhatsAppCommandAuthorized({ cfg: params.cfg, msg: params.msg })
     : undefined;
   const configuredResponsePrefix = params.cfg.messages?.responsePrefix;
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+  const prefixOptions = createReplyPrefixOptions({
     cfg: params.cfg,
     agentId: params.route.agentId,
     channel: "whatsapp",
@@ -453,7 +453,6 @@ export async function processMessage(params: {
       // WhatsApp delivery intentionally suppresses non-final payloads.
       // Keep block streaming disabled so final replies are still produced.
       disableBlockStreaming: true,
-      onModelSelected,
     },
   });
 

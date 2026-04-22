@@ -14,7 +14,6 @@ export function registerTuiCli(program: Command) {
     .option("--password <password>", "Gateway password (if required)")
     .option("--session <key>", 'Session key (default: "main", or "global" when scope is global)')
     .option("--deliver", "Deliver assistant replies", false)
-    .option("--thinking <level>", "Thinking level override")
     .option("--message <text>", "Send an initial message after connecting")
     .option("--timeout-ms <ms>", "Agent timeout in ms (defaults to agents.defaults.timeoutSeconds)")
     .option("--history-limit <n>", "History entries to load", "200")
@@ -38,7 +37,6 @@ export function registerTuiCli(program: Command) {
           password: opts.password as string | undefined,
           session: opts.session as string | undefined,
           deliver: Boolean(opts.deliver),
-          thinking: opts.thinking as string | undefined,
           message: opts.message as string | undefined,
           timeoutMs,
           historyLimit: Number.isNaN(historyLimit) ? undefined : historyLimit,

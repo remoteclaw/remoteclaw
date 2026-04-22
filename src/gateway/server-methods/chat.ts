@@ -871,7 +871,6 @@ export const chatHandlers: GatewayRequestHandlers = {
     const p = params as {
       sessionKey: string;
       message: string;
-      thinking?: string;
       deliver?: boolean;
       attachments?: Array<{
         type?: string;
@@ -1007,11 +1006,7 @@ export const chatHandlers: GatewayRequestHandlers = {
       };
       respond(true, ackPayload, undefined, { runId: clientRunId });
 
-      const trimmedMessage = parsedMessage.trim();
-      const injectThinking = Boolean(
-        p.thinking && trimmedMessage && !trimmedMessage.startsWith("/"),
-      );
-      const commandBody = injectThinking ? `/think ${p.thinking} ${parsedMessage}` : parsedMessage;
+      const commandBody = parsedMessage;
       const messageForAgent = systemProvenanceReceipt
         ? [systemProvenanceReceipt, parsedMessage].filter(Boolean).join("\n\n")
         : parsedMessage;
@@ -1063,7 +1058,7 @@ export const chatHandlers: GatewayRequestHandlers = {
         sessionKey,
         config: cfg,
       });
-      const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+      const prefixOptions = createReplyPrefixOptions({
         cfg,
         agentId,
         channel: INTERNAL_MESSAGE_CHANNEL,
@@ -1114,7 +1109,6 @@ export const chatHandlers: GatewayRequestHandlers = {
               }
             }
           },
-          onModelSelected,
         },
       })
         .then(() => {

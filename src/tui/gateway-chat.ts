@@ -30,7 +30,6 @@ export type GatewayConnectionOptions = {
 export type ChatSendOptions = {
   sessionKey: string;
   message: string;
-  thinking?: string;
   deliver?: boolean;
   timeoutMs?: number;
   runId?: string;
@@ -198,7 +197,6 @@ export class GatewayChatClient {
     await this.client.request("chat.send", {
       sessionKey: opts.sessionKey,
       message: opts.message,
-      thinking: opts.thinking,
       deliver: opts.deliver,
       timeoutMs: opts.timeoutMs,
       idempotencyKey: runId,

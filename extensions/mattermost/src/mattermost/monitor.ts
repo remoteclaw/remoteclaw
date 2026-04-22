@@ -561,7 +561,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
           channel: "mattermost",
           accountId: account.accountId,
         });
-        const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+        const prefixOptions = createReplyPrefixOptions({
           cfg,
           agentId: route.agentId,
           channel: "mattermost",
@@ -610,7 +610,6 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
             ...replyOptions,
             disableBlockStreaming:
               typeof account.blockStreaming === "boolean" ? !account.blockStreaming : undefined,
-            onModelSelected,
           },
         });
         markDispatchIdle();
@@ -1172,7 +1171,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
       accountId: account.accountId,
     });
 
-    const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+    const prefixOptions = createReplyPrefixOptions({
       cfg,
       agentId: route.agentId,
       channel: "mattermost",
@@ -1232,7 +1231,6 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
             ...replyOptions,
             disableBlockStreaming:
               typeof account.blockStreaming === "boolean" ? !account.blockStreaming : undefined,
-            onModelSelected,
           },
         }),
     });

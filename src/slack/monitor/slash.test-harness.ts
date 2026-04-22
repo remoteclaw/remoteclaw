@@ -70,7 +70,7 @@ export function resetSlackSlashMocks() {
   });
   mocks.finalizeInboundContextMock.mockReset().mockImplementation((ctx: unknown) => ctx);
   mocks.resolveConversationLabelMock.mockReset().mockReturnValue(undefined);
-  mocks.createReplyPrefixOptionsMock.mockReset().mockReturnValue({ onModelSelected: () => {} });
+  mocks.createReplyPrefixOptionsMock.mockReset().mockReturnValue({});
   mocks.recordSessionMetaFromInboundMock.mockReset().mockResolvedValue(undefined);
   mocks.resolveStorePathMock.mockReset().mockReturnValue("/tmp/remoteclaw-sessions.json");
 }

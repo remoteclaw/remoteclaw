@@ -26,7 +26,7 @@ export async function handleDirectiveOnly(
   const queueAck = maybeHandleQueueDirective({
     directives,
     cfg: params.cfg,
-    channel: params.provider,
+    channel: params.messageProviderKey ?? "",
     sessionEntry,
   });
   if (queueAck) {

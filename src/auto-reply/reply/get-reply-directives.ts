@@ -119,8 +119,8 @@ export async function resolveReplyDirectives(params: {
   // Model selection: use new upstream params if available, fall back to runtimeId for back-compat.
   const defaultProvider = params.defaultProvider ?? params.runtimeId ?? "anthropic";
   const defaultModel = params.defaultModel ?? "default";
-  let provider = params.provider ?? params.runtimeId ?? defaultProvider;
-  let model = defaultModel;
+  const provider = params.provider ?? params.runtimeId ?? defaultProvider;
+  const model = defaultModel;
 
   // Prefer CommandBody/RawBody (clean message without structural context) for directive parsing.
   // Keep `Body`/`BodyStripped` as the best-available prompt text (may include context).
@@ -284,9 +284,6 @@ export async function resolveReplyDirectives(params: {
     ? resolveBlockStreamingChunking(cfg, sessionCtx.Provider, sessionCtx.AccountId)
     : undefined;
 
-  const initialModelLabel = `${provider}/${model}`;
-  const formatModelSwitchEvent = (label: string, alias?: string) =>
-    alias ? `Model switched to ${alias} (${label}).` : `Model switched to ${label}.`;
   const inlineStatusRequested = hasInlineStatus && allowTextCommands && command.isAuthorizedSender;
 
   const applyResult = await applyInlineDirectiveOverrides({
@@ -311,8 +308,6 @@ export async function resolveReplyDirectives(params: {
     runtimeId: params.runtimeId ?? defaultProvider,
     provider,
     model,
-    initialModelLabel,
-    formatModelSwitchEvent,
     defaultActivation: () => defaultActivation,
     typing,
   });
@@ -320,8 +315,6 @@ export async function resolveReplyDirectives(params: {
     return { kind: "reply", reply: applyResult.reply };
   }
   directives = applyResult.directives;
-  provider = applyResult.provider;
-  model = applyResult.model;
   const { directiveAck, perMessageQueueMode, perMessageQueueOptions } = applyResult;
   const execOverrides = resolveExecOverrides({ directives, sessionEntry });
 

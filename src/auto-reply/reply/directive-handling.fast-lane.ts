@@ -6,7 +6,7 @@ import { isDirectiveOnly } from "./directive-handling.parse.js";
 
 export async function applyInlineDirectivesFastLane(
   params: ApplyInlineDirectivesFastLaneParams,
-): Promise<{ directiveAck?: ReplyPayload; provider: string; model: string }> {
+): Promise<{ directiveAck?: ReplyPayload }> {
   const {
     directives,
     commandAuthorized,
@@ -19,16 +19,8 @@ export async function applyInlineDirectivesFastLane(
     sessionKey,
     storePath,
     messageProviderKey,
-    defaultProvider,
-    defaultModel,
-    aliasIndex,
-    allowedModelKeys,
-    allowedModelCatalog,
-    resetModelOverride,
-    formatModelSwitchEvent,
   } = params;
 
-  let { provider, model } = params;
   if (
     !commandAuthorized ||
     isDirectiveOnly({
@@ -40,7 +32,7 @@ export async function applyInlineDirectivesFastLane(
       isGroup,
     })
   ) {
-    return { directiveAck: undefined, provider, model };
+    return { directiveAck: undefined };
   }
 
   const agentCfg = params.agentCfg;
@@ -56,25 +48,8 @@ export async function applyInlineDirectivesFastLane(
     sessionKey,
     storePath,
     messageProviderKey,
-    defaultProvider,
-    defaultModel,
-    aliasIndex,
-    allowedModelKeys,
-    allowedModelCatalog,
-    resetModelOverride,
-    provider,
-    model,
-    initialModelLabel: params.initialModelLabel,
-    formatModelSwitchEvent,
     currentVerboseLevel,
   });
 
-  if (sessionEntry?.providerOverride) {
-    provider = sessionEntry.providerOverride;
-  }
-  if (sessionEntry?.modelOverride) {
-    model = sessionEntry.modelOverride;
-  }
-
-  return { directiveAck, provider, model };
+  return { directiveAck };
 }

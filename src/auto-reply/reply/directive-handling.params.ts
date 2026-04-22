@@ -12,21 +12,10 @@ export type HandleDirectiveOnlyCoreParams = {
   sessionKey: string;
   storePath?: string;
   messageProviderKey?: string;
-  defaultProvider: string;
-  defaultModel: string;
-  aliasIndex: Map<string, { provider: string; model: string }>;
-  allowedModelKeys: Set<string>;
-  allowedModelCatalog: Array<{ id: string; provider: string }>;
-  resetModelOverride: boolean;
-  provider: string;
-  model: string;
-  initialModelLabel: string;
-  formatModelSwitchEvent: (label: string, alias?: string) => string;
 };
 
 export type HandleDirectiveOnlyParams = HandleDirectiveOnlyCoreParams & {
   currentVerboseLevel?: VerboseLevel;
-  surface?: string;
 };
 
 export type ApplyInlineDirectivesFastLaneParams = HandleDirectiveOnlyCoreParams & {

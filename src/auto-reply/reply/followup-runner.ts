@@ -34,7 +34,6 @@ export function createFollowupRunner(params: {
       if (queued.run.sessionKey) {
         registerAgentRunContext(runId, {
           sessionKey: queued.run.sessionKey,
-          verboseLevel: queued.run.verboseLevel,
           isControlUiVisible: shouldSurfaceToControlUi,
         });
       }

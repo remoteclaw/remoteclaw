@@ -3,11 +3,16 @@
 /**
  * Stub debt gate — prevents fork-sync debt from growing silently.
  *
- * Runs two baseline-gated counters in a single pass:
+ * Runs two counters in a single pass:
  *
  * 1. `@ts-expect-error` occurrences across `src/`, `extensions/`, and
- *    `ui/` (the primary fork-sync suppression pattern). Baseline:
- *    `.stub-debt-baseline`. Reference: ADR 0005 H5.
+ *    `ui/` (the primary fork-sync suppression pattern). **Zero tolerance**:
+ *    any hit fails the gate. Reference: ADR 0005 H5.
+ *
+ *    Fix the type mismatch, narrow with `X as unknown as Y` at the call
+ *    site, or rework the mock scaffold — do not suppress. See PR #2458
+ *    (Bite B of #2354) for the typed-mock pattern applied to `vi.fn<T>()`
+ *    / `vi.spyOn` mocks.
  *
  * 2. `vi.mock(...)` calls in test files that target modules under
  *    `src/agents/` or `src/middleware/`. Baseline:
@@ -22,11 +27,11 @@
  *    CONTRIBUTING.md § Fork-boundary mocks for the three acceptable mock
  *    categories (isolation / performance / stub-placeholder).
  *
- * To bump a baseline: justify in the PR description and update the baseline
- * file to the new count.
+ * To bump the H8 baseline: justify in the PR description and update the
+ * baseline file to the new count.
  *
- * To ratchet a baseline DOWN: when a counter decreases, the script reports
- * it and tells you to update the baseline to lock in the improvement.
+ * To ratchet the H8 baseline DOWN: when the counter decreases, the script
+ * reports it and tells you to update the baseline to lock in the improvement.
  */
 
 import { promises as fs } from "node:fs";
@@ -201,29 +206,32 @@ export async function main() {
 
   let allPassed = true;
 
-  // Counter 1: @ts-expect-error (ADR 0005 H5).
-  const tsExpectErrorBaseline = await readBaseline(
-    path.join(repoRoot, ".stub-debt-baseline"),
-    "stub-debt",
-    tsExpectErrors.length,
-  );
-  const tsExpectErrorOk = reportCounter({
-    name: "stub-debt",
-    baselineFilename: ".stub-debt-baseline",
-    count: tsExpectErrors.length,
-    baseline: tsExpectErrorBaseline,
-    inventoryHeader: "@ts-expect-error inventory",
-    inventoryLines: tsExpectErrors
-      .toSorted((a, b) => a.path.localeCompare(b.path) || a.line - b.line)
-      .map((o) => `${o.path}:${o.line}  ${o.text}`),
-    failHint:
-      "New suppressions require justification:\n" +
-      "  1. Fork-sync stubs MUST have a tracked remediation issue (ADR 0005 H5)\n" +
-      "  2. Update .stub-debt-baseline to the new count\n" +
-      "  3. Explain the increase in your PR description\n",
-  });
-  if (!tsExpectErrorOk) {
+  // Counter 1: @ts-expect-error — zero tolerance (ADR 0005 H5).
+  if (tsExpectErrors.length > 0) {
+    const sorted = tsExpectErrors.toSorted(
+      (a, b) => a.path.localeCompare(b.path) || a.line - b.line,
+    );
+    console.log(`@ts-expect-error inventory (${sorted.length} total):\n`);
+    for (const hit of sorted) {
+      console.log(`  ${hit.path}:${hit.line}  ${hit.text}`);
+    }
+    console.log();
+    const suffix = sorted.length === 1 ? "" : "s";
+    console.error(
+      `FAIL: stub-debt gate — ${sorted.length} @ts-expect-error ` +
+        `suppression${suffix} in src/, extensions/, or ui/.\n\n` +
+        "The gate is zero-tolerance: @ts-expect-error is not allowed in\n" +
+        "fork-owned or test code. Either:\n" +
+        "  1. Fix the underlying type mismatch.\n" +
+        "  2. Narrow with `as unknown as T` at the call site (see PR #2457,\n" +
+        "     Bite A of #2354, for the cast pattern).\n" +
+        "  3. Rework the mock scaffold to properly type the spy (see PR #2458,\n" +
+        "     Bite B of #2354, for the `vi.fn<Fn>()` pattern).\n\n" +
+        "Reference: ADR 0005 H5.\n",
+    );
     allPassed = false;
+  } else {
+    console.log("stub-debt check passed: 0 @ts-expect-error suppressions.");
   }
 
   console.log();

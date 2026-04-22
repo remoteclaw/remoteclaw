@@ -214,7 +214,7 @@ reporting, not a bypass.
 | Section                                       | Source                                    |
 | --------------------------------------------- | ----------------------------------------- |
 | H7 throwing-stub-callers (strict + inventory) | `scripts/check-throwing-stub-callers.mjs` |
-| H8 stub-debt + fork-boundary-mock baselines   | `scripts/check-stub-debt.mjs`             |
+| H5 stub-debt (strict) + H8 fork-boundary-mock | `scripts/check-stub-debt.mjs`             |
 | H9 module attestations                        | `scripts/check-attestations.mjs`          |
 | H9 attestation diff (base...HEAD)             | `scripts/check-attestations-diff.mjs`     |
 | Composite summary                             | step summary in GitHub Actions            |

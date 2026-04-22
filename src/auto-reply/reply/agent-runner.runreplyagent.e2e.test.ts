@@ -123,13 +123,6 @@ function createMinimalRun(params?: {
       skillsSnapshot: {},
       provider: "anthropic",
       model: "claude",
-      verboseLevel: params?.resolvedVerboseLevel ?? "off",
-      elevatedLevel: "off",
-      bashElevated: {
-        enabled: false,
-        allowed: false,
-        defaultLevel: "off",
-      },
       timeoutMs: 1_000,
       blockReplyBreak: "message_end",
       ...params?.runOverrides,
@@ -210,13 +203,6 @@ function createBaseRun(params: {
       skillsSnapshot: {},
       provider: "anthropic",
       model: "claude",
-      verboseLevel: "off",
-      elevatedLevel: "off",
-      bashElevated: {
-        enabled: false,
-        allowed: false,
-        defaultLevel: "off",
-      },
       timeoutMs: 1_000,
       blockReplyBreak: "message_end",
     },
@@ -484,7 +470,6 @@ describe("runReplyAgent typing (heartbeat)", () => {
 
     const { run } = createMinimalRun({
       opts: { onPartialReply, onReasoningStream },
-      runOverrides: { reasoningLevel: "stream" },
     });
     await run();
 

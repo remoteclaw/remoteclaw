@@ -174,8 +174,6 @@ export async function runPreparedReply(
     commandSource,
     allowTextCommands,
     defaultActivation,
-    elevatedEnabled,
-    elevatedAllowed,
     blockStreamingEnabled,
     blockReplyChunking,
     resolvedBlockStreamingBreak,
@@ -197,14 +195,7 @@ export async function runPreparedReply(
     workspaceDir,
     sessionStore,
   } = params;
-  let {
-    sessionEntry,
-    resolvedVerboseLevel,
-    resolvedReasoningLevel,
-    resolvedElevatedLevel,
-    execOverrides,
-    abortedLastRun,
-  } = params;
+  let { sessionEntry, resolvedVerboseLevel, abortedLastRun } = params;
   let currentSystemSent = systemSent;
 
   const isFirstTurnInSession = isNewSession || !currentSystemSent;
@@ -436,15 +427,6 @@ export async function runPreparedReply(
       model,
       authProfileId,
       authProfileIdSource,
-      verboseLevel: resolvedVerboseLevel,
-      reasoningLevel: resolvedReasoningLevel,
-      elevatedLevel: resolvedElevatedLevel,
-      execOverrides,
-      bashElevated: {
-        enabled: elevatedEnabled,
-        allowed: elevatedAllowed,
-        defaultLevel: resolvedElevatedLevel ?? "off",
-      },
       timeoutMs,
       blockReplyBreak: resolvedBlockStreamingBreak,
       ownerNumbers: command.ownerList.length > 0 ? command.ownerList : undefined,

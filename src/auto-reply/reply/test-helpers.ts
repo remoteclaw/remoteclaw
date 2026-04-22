@@ -42,13 +42,6 @@ export function createMockFollowupRun(
       },
       provider: "anthropic",
       model: "claude",
-      verboseLevel: "off",
-      elevatedLevel: "off",
-      bashElevated: {
-        enabled: false,
-        allowed: false,
-        defaultLevel: "off",
-      },
       timeoutMs: 1_000,
       blockReplyBreak: "message_end",
     },

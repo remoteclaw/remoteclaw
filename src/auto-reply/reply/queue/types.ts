@@ -2,7 +2,6 @@ import type { RemoteClawConfig } from "../../../config/config.js";
 import type { SessionEntry } from "../../../config/sessions.js";
 import type { InputProvenance } from "../../../sessions/input-provenance.js";
 import type { OriginatingChannelType } from "../../templating.js";
-import type { VerboseLevel } from "../directives.js";
 
 export type QueueMode = "steer" | "followup" | "collect" | "steer-backlog" | "interrupt" | "queue";
 
@@ -60,7 +59,6 @@ export type FollowupRun = {
     config: RemoteClawConfig;
     provider: string;
     model: string;
-    verboseLevel?: VerboseLevel;
     timeoutMs: number;
     blockReplyBreak: "text_end" | "message_end";
     ownerNumbers?: string[];
@@ -71,10 +69,6 @@ export type FollowupRun = {
     skillsSnapshot?: unknown;
     authProfileId?: string;
     authProfileIdSource?: string;
-    reasoningLevel?: unknown;
-    elevatedLevel?: unknown;
-    execOverrides?: unknown;
-    bashElevated?: unknown;
   };
 };
 

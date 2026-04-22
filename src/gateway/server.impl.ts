@@ -1,5 +1,6 @@
 import path from "node:path";
 import { resolveFirstAgentWorkspace } from "../agents/agent-scope.js";
+import { getActiveSessionRunCount } from "../agents/session-run-registry.js";
 import { initSubagentRegistry } from "../agents/subagent-registry.js";
 import { getTotalPendingReplies } from "../auto-reply/reply/dispatcher-registry.js";
 import type { CanvasHostServer } from "../canvas-host/server.js";
@@ -290,7 +291,9 @@ export async function startGatewayServer(
     startDiagnosticHeartbeat();
   }
   setGatewaySigusr1RestartPolicy({ allowExternal: isRestartEnabled(cfgAtStart) });
-  setPreRestartDeferralCheck(() => getTotalQueueSize() + getTotalPendingReplies());
+  setPreRestartDeferralCheck(
+    () => getTotalQueueSize() + getTotalPendingReplies() + getActiveSessionRunCount(),
+  );
   initSubagentRegistry();
   const defaultWorkspaceDir = resolveFirstAgentWorkspace(cfgAtStart);
   if (!defaultWorkspaceDir) {

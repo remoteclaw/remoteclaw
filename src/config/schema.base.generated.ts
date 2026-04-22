@@ -1299,13 +1299,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     alias: {
                       type: "string",
                     },
-                    params: {
-                      type: "object",
-                      propertyNames: {
-                        type: "string",
-                      },
-                      additionalProperties: {},
-                    },
                     streaming: {
                       type: "boolean",
                     },

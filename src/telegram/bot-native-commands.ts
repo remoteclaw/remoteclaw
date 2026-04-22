@@ -715,7 +715,7 @@ export const registerTelegramNativeCommands = ({
             skippedNonSilent: 0,
           };
 
-          const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+          const prefixOptions = createReplyPrefixOptions({
             cfg,
             agentId: route.agentId,
             channel: "telegram",
@@ -748,7 +748,6 @@ export const registerTelegramNativeCommands = ({
             replyOptions: {
               skillFilter,
               disableBlockStreaming,
-              onModelSelected,
             },
           });
           if (!deliveryState.delivered && deliveryState.skippedNonSilent > 0) {

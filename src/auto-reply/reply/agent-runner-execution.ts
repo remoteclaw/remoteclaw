@@ -220,18 +220,9 @@ export async function runAgentTurnWithFallback(params: {
       const blockReplyPipeline = params.blockReplyPipeline;
       const onToolResult = params.opts?.onToolResult;
       const provider = params.followupRun.run.provider;
-      const model = params.followupRun.run.model;
 
       // Model fallback gutted in RemoteClaw — CLI agents handle their own model
       // selection and fallback. Run the agent directly with the configured model.
-
-      // Notify that model selection is complete.
-      // This allows responsePrefix template interpolation with the actual model.
-      params.opts?.onModelSelected?.({
-        provider,
-        model,
-        thinkLevel: undefined,
-      });
 
       const startedAt = Date.now();
       notifyAgentRunStart();

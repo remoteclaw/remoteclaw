@@ -430,7 +430,7 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
     ? deliverTarget.slice("channel:".length)
     : messageChannelId;
 
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+  const prefixOptions = createReplyPrefixOptions({
     cfg,
     agentId: route.agentId,
     channel: "discord",
@@ -773,7 +773,7 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
               draftChunker?.reset();
             }
           : undefined,
-        onModelSelected,
+
         onReasoningStream: async () => {
           await statusReactions.setThinking();
         },

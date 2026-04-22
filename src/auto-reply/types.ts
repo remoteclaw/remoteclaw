@@ -9,13 +9,6 @@ export type BlockReplyContext = {
   timeoutMs?: number;
 };
 
-/** Context passed to onModelSelected callback with actual model used. */
-export type ModelSelectedContext = {
-  provider: string;
-  model: string;
-  thinkLevel: string | undefined;
-};
-
 export type TypingPolicy =
   | "auto"
   | "user_message"
@@ -55,9 +48,6 @@ export type GetReplyOptions = {
   onToolResult?: (payload: ReplyPayload) => Promise<void> | void;
   /** Called when a tool phase starts/updates, before summary payloads are emitted. */
   onToolStart?: (payload: { name?: string; phase?: string }) => Promise<void> | void;
-  /** Called when the actual model is selected (including after fallback).
-   * Use this to get model/provider/thinkLevel for responsePrefix template interpolation. */
-  onModelSelected?: (ctx: ModelSelectedContext) => void;
   disableBlockStreaming?: boolean;
   /** Timeout for block reply delivery (ms). */
   blockReplyTimeoutMs?: number;

@@ -10,10 +10,7 @@ import { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { createNormalizedOutboundDeliverer, type OutboundReplyPayload } from "./reply-payload.js";
 
-type ReplyOptionsWithoutModelSelected = Omit<
-  Omit<GetReplyOptions, "onToolResult" | "onBlockReply">,
-  "onModelSelected"
->;
+type ReplyOptionsWithoutModelSelected = Omit<GetReplyOptions, "onToolResult" | "onBlockReply">;
 type RecordInboundSessionFn = typeof import("../channels/session.js").recordInboundSession;
 type DispatchReplyWithBufferedBlockDispatcherFn =
   typeof import("../auto-reply/reply/provider-dispatcher.js").dispatchReplyWithBufferedBlockDispatcher;
@@ -119,7 +116,7 @@ export async function recordInboundSessionAndDispatchReply(params: {
     onRecordError: params.onRecordError,
   });
 
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+  const prefixOptions = createReplyPrefixOptions({
     cfg: params.cfg,
     agentId: params.agentId,
     channel: params.channel,
@@ -137,7 +134,6 @@ export async function recordInboundSessionAndDispatchReply(params: {
     },
     replyOptions: {
       ...params.replyOptions,
-      onModelSelected,
     },
   });
 }

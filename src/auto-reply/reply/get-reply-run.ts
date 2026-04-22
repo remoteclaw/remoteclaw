@@ -13,12 +13,7 @@ import { isReasoningTagProvider } from "../../utils/provider-utils.js";
 import { hasControlCommand } from "../command-detection.js";
 import { buildInboundMediaNote } from "../media-note.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
-import {
-  type ElevatedLevel,
-  type ReasoningLevel,
-  type ThinkLevel,
-  type VerboseLevel,
-} from "../thinking.js";
+import { type ElevatedLevel, type ReasoningLevel, type VerboseLevel } from "../thinking.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { runReplyAgent } from "./agent-runner.js";
@@ -124,7 +119,6 @@ type RunPreparedReplyParams = {
   allowTextCommands: boolean;
   directives: InlineDirectives;
   defaultActivation: Parameters<typeof buildGroupIntro>[0]["defaultActivation"];
-  resolvedThinkLevel: ThinkLevel | undefined;
   resolvedVerboseLevel: VerboseLevel | undefined;
   resolvedReasoningLevel: ReasoningLevel;
   resolvedElevatedLevel: ElevatedLevel;
@@ -205,7 +199,6 @@ export async function runPreparedReply(
   } = params;
   let {
     sessionEntry,
-    resolvedThinkLevel,
     resolvedVerboseLevel,
     resolvedReasoningLevel,
     resolvedElevatedLevel,
@@ -447,7 +440,6 @@ export async function runPreparedReply(
       model,
       authProfileId,
       authProfileIdSource,
-      thinkLevel: resolvedThinkLevel,
       verboseLevel: resolvedVerboseLevel,
       reasoningLevel: resolvedReasoningLevel,
       elevatedLevel: resolvedElevatedLevel,

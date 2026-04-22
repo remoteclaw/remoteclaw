@@ -1,10 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Component, SelectItem, TUI } from "@mariozechner/pi-tui";
-import {
-  formatThinkingLevels,
-  normalizeUsageDisplay,
-  resolveResponseUsageMode,
-} from "../auto-reply/thinking.js";
+import { normalizeUsageDisplay, resolveResponseUsageMode } from "../auto-reply/thinking.js";
 import type { SessionsPatchResult } from "../gateway/protocol/index.js";
 import { formatRelativeTimestamp } from "../infra/format-time/format-relative.ts";
 import { normalizeAgentId } from "../routing/session-key.js";
@@ -270,28 +266,6 @@ export function createCommandHandlers(context: CommandHandlerContext) {
           }
         }
         break;
-      case "think":
-        if (!args) {
-          const levels = formatThinkingLevels(
-            state.sessionInfo.modelProvider,
-            state.sessionInfo.model,
-            "|",
-          );
-          chatLog.addSystem(`usage: /think <${levels}>`);
-          break;
-        }
-        try {
-          const result = await client.patchSession({
-            key: state.currentSessionKey,
-            thinkingLevel: args,
-          });
-          chatLog.addSystem(`thinking set to ${args}`);
-          applySessionInfoFromPatch(result);
-          await refreshSessionInfo();
-        } catch (err) {
-          chatLog.addSystem(`think failed: ${String(err)}`);
-        }
-        break;
       case "verbose":
         if (!args) {
           chatLog.addSystem("usage: /verbose <on|off>");
@@ -455,7 +429,6 @@ export function createCommandHandlers(context: CommandHandlerContext) {
       await client.sendChat({
         sessionKey: state.currentSessionKey,
         message: text,
-        thinking: opts.thinking,
         deliver: deliverDefault,
         timeoutMs: opts.timeoutMs,
         runId,

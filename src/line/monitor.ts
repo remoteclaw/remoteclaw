@@ -192,7 +192,7 @@ export async function monitorLineProvider(
       try {
         const textLimit = 5000; // LINE max message length
         let replyTokenUsed = false; // Track if we've used the one-time reply token
-        const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+        const prefixOptions = createReplyPrefixOptions({
           cfg: config,
           agentId: route.agentId,
           channel: "line",
@@ -255,9 +255,7 @@ export async function monitorLineProvider(
               runtime.error?.(danger(`line ${info.kind} reply failed: ${String(err)}`));
             },
           },
-          replyOptions: {
-            onModelSelected,
-          },
+          replyOptions: {},
         });
 
         if (!queuedFinal) {

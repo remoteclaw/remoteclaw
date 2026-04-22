@@ -419,7 +419,7 @@ async function handleSlashCommandAsync(params: {
     accountId: account.accountId,
   });
 
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+  const prefixOptions = createReplyPrefixOptions({
     cfg,
     agentId: route.agentId,
     channel: "mattermost",
@@ -476,7 +476,6 @@ async function handleSlashCommandAsync(params: {
           ...replyOptions,
           disableBlockStreaming:
             typeof account.blockStreaming === "boolean" ? !account.blockStreaming : undefined,
-          onModelSelected,
         },
       }),
   });

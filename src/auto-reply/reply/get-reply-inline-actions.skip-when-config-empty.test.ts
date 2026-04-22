@@ -70,7 +70,6 @@ const createHandleInlineActionsInput = (params: {
     elevatedAllowed: false,
     elevatedFailures: [],
     defaultActivation: () => "always",
-    resolvedThinkLevel: undefined,
     resolvedVerboseLevel: undefined,
     resolvedReasoningLevel: "off",
     resolvedElevatedLevel: "off",

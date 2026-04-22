@@ -4,7 +4,6 @@ export type TuiOptions = {
   password?: string;
   session?: string;
   deliver?: boolean;
-  thinking?: string;
   timeoutMs?: number;
   historyLimit?: number;
   message?: string;

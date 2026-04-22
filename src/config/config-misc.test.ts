@@ -302,8 +302,10 @@ describe("broadcast", () => {
   });
 });
 
-describe("model compat config schema", () => {
-  it("accepts full openai-completions compat fields", () => {
+describe("model api/compat legacy fields (compat stubs)", () => {
+  // Fork — CLI runtimes own model API routing and capability detection.
+  // This test guards that configs from the pre-fork era (carrying `api` / `compat`) still parse.
+  it("accepts legacy api and compat fields without error", () => {
     const res = validateConfigObject({
       models: {
         providers: {

@@ -358,7 +358,6 @@ const TARGET_KEYS = [
   "models.providers",
   "models.providers.*.baseUrl",
   "models.providers.*.apiKey",
-  "models.providers.*.api",
   "models.providers.*.headers",
   "models.providers.*.models",
   "models.bedrockDiscovery",

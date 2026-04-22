@@ -48,7 +48,7 @@ import {
 import { inspectTelegramAccount } from "../telegram/account-inspect.js";
 import { listTelegramAccountIds, resolveTelegramAccount } from "../telegram/accounts.js";
 import { note } from "../terminal/note.js";
-import { isRecord, resolveHomeDir } from "../utils.js";
+import { resolveHomeDir } from "../utils.js";
 import { normalizeCompatibilityConfigValues } from "./doctor-legacy-config.js";
 import type { DoctorOptions } from "./doctor-prompter.js";
 import { autoMigrateLegacyStateDir } from "./doctor-state-migrations.js";
@@ -160,17 +160,9 @@ function noteOpencodeProviderOverrides(cfg: RemoteClawConfig) {
     return;
   }
 
-  const lines = overrides.flatMap((id) => {
-    const providerEntry = providers[id];
-    const api =
-      isRecord(providerEntry) && typeof providerEntry.api === "string"
-        ? providerEntry.api
-        : undefined;
-    return [
-      `- models.providers.${id} is set; this overrides the built-in OpenCode Zen catalog.`,
-      api ? `- models.providers.${id}.api=${api}` : null,
-    ].filter((line): line is string => Boolean(line));
-  });
+  const lines = overrides.map(
+    (id) => `- models.providers.${id} is set; this overrides the built-in OpenCode Zen catalog.`,
+  );
 
   lines.push(
     "- Remove these entries to restore per-model API routing + costs (then re-run onboarding if needed).",

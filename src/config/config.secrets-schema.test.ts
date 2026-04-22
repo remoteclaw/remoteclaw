@@ -53,7 +53,9 @@ describe("config secret refs schema", () => {
     expect(result.ok).toBe(true);
   });
 
-  it("accepts openai-codex-responses as a model api value", () => {
+  it("tolerates legacy model provider api field (compat stub)", () => {
+    // Fork — CLI runtimes own model API routing.
+    // Guard that configs from the pre-fork era carrying `api` still parse.
     const result = validateConfigObjectRaw({
       models: {
         providers: {

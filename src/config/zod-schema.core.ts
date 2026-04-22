@@ -6,7 +6,6 @@ import {
   isValidExecSecretRefId,
   isValidFileSecretRefId,
 } from "../secrets/ref-contract.js";
-import { MODEL_APIS } from "./types.models.js";
 import { createAllowDenyChannelRulesSchema } from "./zod-schema.allowdeny.js";
 import { sensitive } from "./zod-schema.sensitive.js";
 
@@ -178,34 +177,10 @@ export const SecretsConfigSchema = z
   .strict()
   .optional();
 
-export const ModelApiSchema = z.enum(MODEL_APIS);
-
-export const ModelCompatSchema = z
-  .object({
-    supportsStore: z.boolean().optional(),
-    supportsDeveloperRole: z.boolean().optional(),
-    supportsReasoningEffort: z.boolean().optional(),
-    supportsUsageInStreaming: z.boolean().optional(),
-    supportsTools: z.boolean().optional(),
-    supportsStrictMode: z.boolean().optional(),
-    maxTokensField: z
-      .union([z.literal("max_completion_tokens"), z.literal("max_tokens")])
-      .optional(),
-    thinkingFormat: z.union([z.literal("openai"), z.literal("zai"), z.literal("qwen")]).optional(),
-    requiresToolResultName: z.boolean().optional(),
-    requiresAssistantAfterToolResult: z.boolean().optional(),
-    requiresThinkingAsText: z.boolean().optional(),
-    requiresMistralToolIds: z.boolean().optional(),
-    requiresOpenAiAnthropicToolPayload: z.boolean().optional(),
-  })
-  .strict()
-  .optional();
-
 export const ModelDefinitionSchema = z
   .object({
     id: z.string().min(1),
     name: z.string().min(1),
-    api: ModelApiSchema.optional(),
     reasoning: z.boolean().optional(),
     input: z.array(z.union([z.literal("text"), z.literal("image")])).optional(),
     cost: z
@@ -220,7 +195,10 @@ export const ModelDefinitionSchema = z
     contextWindow: z.number().positive().optional(),
     maxTokens: z.number().positive().optional(),
     headers: z.record(z.string(), z.string()).optional(),
-    compat: ModelCompatSchema,
+    // Model API routing and capability detection gutted — CLI runtimes own this.
+    // Stubs kept for config parse compatibility (existing configs still parse).
+    api: z.unknown().optional(),
+    compat: z.unknown().optional(),
   })
   .strict();
 
@@ -231,11 +209,13 @@ export const ModelProviderSchema = z
     auth: z
       .union([z.literal("api-key"), z.literal("aws-sdk"), z.literal("oauth"), z.literal("token")])
       .optional(),
-    api: ModelApiSchema.optional(),
     injectNumCtxForOpenAICompat: z.boolean().optional(),
     headers: z.record(z.string(), SecretInputSchema.register(sensitive)).optional(),
     authHeader: z.boolean().optional(),
     models: z.array(ModelDefinitionSchema),
+    // Model API routing gutted — CLI runtimes own this.
+    // Stub kept for config parse compatibility (existing configs still parse).
+    api: z.unknown().optional(),
   })
   .strict();
 

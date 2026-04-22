@@ -717,8 +717,6 @@ export const FIELD_HELP: Record<string, string> = {
     "Provider credential used for API-key based authentication when the provider requires direct key auth. Use secret/env substitution and avoid storing real keys in committed config files.",
   "models.providers.*.auth":
     'Selects provider auth style: "api-key" for API key auth, "token" for bearer token auth, "oauth" for OAuth credentials, and "aws-sdk" for AWS credential resolution. Match this to your provider requirements.',
-  "models.providers.*.api":
-    "Provider API adapter selection controlling request/response compatibility handling for model calls. Use the adapter that matches your upstream provider protocol to avoid feature mismatch.",
   "models.providers.*.injectNumCtxForOpenAICompat":
     "Controls whether RemoteClaw injects `options.num_ctx` for Ollama providers configured with the OpenAI-compatible adapter (`openai-completions`). Default is true. Set false only if your proxy/upstream rejects unknown `options` payload fields.",
   "models.providers.*.headers":
@@ -726,7 +724,7 @@ export const FIELD_HELP: Record<string, string> = {
   "models.providers.*.authHeader":
     "When true, credentials are sent via the HTTP Authorization header even if alternate auth is possible. Use this only when your provider or proxy explicitly requires Authorization forwarding.",
   "models.providers.*.models":
-    "Declared model list for a provider including identifiers, metadata, and optional compatibility/cost hints. Keep IDs exact to provider catalog values so selection and fallback resolve correctly.",
+    "Declared model list for a provider including identifiers, metadata, and optional cost hints. Keep IDs exact to provider catalog values so selection and fallback resolve correctly.",
   "models.bedrockDiscovery":
     "Automatic AWS Bedrock model discovery settings used to synthesize provider model entries from account visibility. Keep discovery scoped and refresh intervals conservative to reduce API churn.",
   "models.bedrockDiscovery.enabled":

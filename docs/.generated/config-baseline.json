@@ -19948,23 +19948,10 @@
     {
       "path": "models.providers.*.api",
       "kind": "core",
-      "type": "string",
       "required": false,
-      "enumValues": [
-        "openai-completions",
-        "openai-responses",
-        "openai-codex-responses",
-        "anthropic-messages",
-        "google-generative-ai",
-        "github-copilot",
-        "bedrock-converse-stream",
-        "ollama"
-      ],
       "deprecated": false,
       "sensitive": false,
-      "tags": ["models"],
-      "label": "Model Provider API Adapter",
-      "help": "Provider API adapter selection controlling request/response compatibility handling for model calls. Use the adapter that matches your upstream provider protocol to avoid feature mismatch.",
+      "tags": [],
       "hasChildren": false
     },
     {
@@ -20118,7 +20105,7 @@
       "sensitive": false,
       "tags": ["models"],
       "label": "Model Provider Model List",
-      "help": "Declared model list for a provider including identifiers, metadata, and optional compatibility/cost hints. Keep IDs exact to provider catalog values so selection and fallback resolve correctly.",
+      "help": "Declared model list for a provider including identifiers, metadata, and optional cost hints. Keep IDs exact to provider catalog values so selection and fallback resolve correctly.",
       "hasChildren": true
     },
     {
@@ -20134,18 +20121,7 @@
     {
       "path": "models.providers.*.models.*.api",
       "kind": "core",
-      "type": "string",
       "required": false,
-      "enumValues": [
-        "openai-completions",
-        "openai-responses",
-        "openai-codex-responses",
-        "anthropic-messages",
-        "google-generative-ai",
-        "github-copilot",
-        "bedrock-converse-stream",
-        "ollama"
-      ],
       "deprecated": false,
       "sensitive": false,
       "tags": [],
@@ -20154,137 +20130,6 @@
     {
       "path": "models.providers.*.models.*.compat",
       "kind": "core",
-      "type": "object",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": true
-    },
-    {
-      "path": "models.providers.*.models.*.compat.maxTokensField",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "models.providers.*.models.*.compat.requiresAssistantAfterToolResult",
-      "kind": "core",
-      "type": "boolean",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "models.providers.*.models.*.compat.requiresMistralToolIds",
-      "kind": "core",
-      "type": "boolean",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "models.providers.*.models.*.compat.requiresOpenAiAnthropicToolPayload",
-      "kind": "core",
-      "type": "boolean",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "models.providers.*.models.*.compat.requiresThinkingAsText",
-      "kind": "core",
-      "type": "boolean",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "models.providers.*.models.*.compat.requiresToolResultName",
-      "kind": "core",
-      "type": "boolean",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "models.providers.*.models.*.compat.supportsDeveloperRole",
-      "kind": "core",
-      "type": "boolean",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "models.providers.*.models.*.compat.supportsReasoningEffort",
-      "kind": "core",
-      "type": "boolean",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "models.providers.*.models.*.compat.supportsStore",
-      "kind": "core",
-      "type": "boolean",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "models.providers.*.models.*.compat.supportsStrictMode",
-      "kind": "core",
-      "type": "boolean",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "models.providers.*.models.*.compat.supportsTools",
-      "kind": "core",
-      "type": "boolean",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "models.providers.*.models.*.compat.supportsUsageInStreaming",
-      "kind": "core",
-      "type": "boolean",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "models.providers.*.models.*.compat.thinkingFormat",
-      "kind": "core",
-      "type": "string",
       "required": false,
       "deprecated": false,
       "sensitive": false,

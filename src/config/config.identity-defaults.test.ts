@@ -137,7 +137,6 @@ describe("config identity defaults", () => {
             minimax: {
               baseUrl: "https://api.minimax.io/anthropic",
               apiKey: "",
-              api: "anthropic-messages",
               models: [
                 {
                   id: "MiniMax-M2.5",
@@ -170,7 +169,6 @@ describe("config identity defaults", () => {
           providers: {
             openai: {
               baseUrl: "https://api.openai.com/v1",
-              api: "openai-completions",
               headers: {
                 Authorization: {
                   source: "env",

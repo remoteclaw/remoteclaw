@@ -73,7 +73,7 @@ function expectOpenAiCompatResult(params: {
 }) {
   expect(params.prompter.text).toHaveBeenCalledTimes(params.textCalls);
   expect(params.prompter.select).toHaveBeenCalledTimes(params.selectCalls);
-  expect(params.result.config.models?.providers?.custom?.api).toBe("openai-completions");
+  expect(params.result.config.models?.providers?.custom?.baseUrl).toBeDefined();
 }
 
 function buildCustomProviderConfig(contextWindow?: number) {
@@ -84,7 +84,6 @@ function buildCustomProviderConfig(contextWindow?: number) {
     models: {
       providers: {
         custom: {
-          api: "openai-completions" as const,
           baseUrl: "https://llm.example.com/v1",
           models: [
             {

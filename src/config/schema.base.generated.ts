@@ -1021,19 +1021,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     },
                   ],
                 },
-                api: {
-                  type: "string",
-                  enum: [
-                    "openai-completions",
-                    "openai-responses",
-                    "openai-codex-responses",
-                    "anthropic-messages",
-                    "google-generative-ai",
-                    "github-copilot",
-                    "bedrock-converse-stream",
-                    "ollama",
-                  ],
-                },
                 injectNumCtxForOpenAICompat: {
                   type: "boolean",
                 },
@@ -1125,19 +1112,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                         type: "string",
                         minLength: 1,
                       },
-                      api: {
-                        type: "string",
-                        enum: [
-                          "openai-completions",
-                          "openai-responses",
-                          "openai-codex-responses",
-                          "anthropic-messages",
-                          "google-generative-ai",
-                          "github-copilot",
-                          "bedrock-converse-stream",
-                          "ollama",
-                        ],
-                      },
                       reasoning: {
                         type: "boolean",
                       },
@@ -1191,78 +1165,14 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                           type: "string",
                         },
                       },
-                      compat: {
-                        type: "object",
-                        properties: {
-                          supportsStore: {
-                            type: "boolean",
-                          },
-                          supportsDeveloperRole: {
-                            type: "boolean",
-                          },
-                          supportsReasoningEffort: {
-                            type: "boolean",
-                          },
-                          supportsUsageInStreaming: {
-                            type: "boolean",
-                          },
-                          supportsTools: {
-                            type: "boolean",
-                          },
-                          supportsStrictMode: {
-                            type: "boolean",
-                          },
-                          maxTokensField: {
-                            anyOf: [
-                              {
-                                type: "string",
-                                const: "max_completion_tokens",
-                              },
-                              {
-                                type: "string",
-                                const: "max_tokens",
-                              },
-                            ],
-                          },
-                          thinkingFormat: {
-                            anyOf: [
-                              {
-                                type: "string",
-                                const: "openai",
-                              },
-                              {
-                                type: "string",
-                                const: "zai",
-                              },
-                              {
-                                type: "string",
-                                const: "qwen",
-                              },
-                            ],
-                          },
-                          requiresToolResultName: {
-                            type: "boolean",
-                          },
-                          requiresAssistantAfterToolResult: {
-                            type: "boolean",
-                          },
-                          requiresThinkingAsText: {
-                            type: "boolean",
-                          },
-                          requiresMistralToolIds: {
-                            type: "boolean",
-                          },
-                          requiresOpenAiAnthropicToolPayload: {
-                            type: "boolean",
-                          },
-                        },
-                        additionalProperties: false,
-                      },
+                      api: {},
+                      compat: {},
                     },
                     required: ["id", "name"],
                     additionalProperties: false,
                   },
                 },
+                api: {},
               },
               required: ["baseUrl", "models"],
               additionalProperties: false,
@@ -12003,11 +11913,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: 'Selects provider auth style: "api-key" for API key auth, "token" for bearer token auth, "oauth" for OAuth credentials, and "aws-sdk" for AWS credential resolution. Match this to your provider requirements.',
       tags: ["models"],
     },
-    "models.providers.*.api": {
-      label: "Model Provider API Adapter",
-      help: "Provider API adapter selection controlling request/response compatibility handling for model calls. Use the adapter that matches your upstream provider protocol to avoid feature mismatch.",
-      tags: ["models"],
-    },
     "models.providers.*.injectNumCtxForOpenAICompat": {
       label: "Model Provider Inject num_ctx (OpenAI Compat)",
       help: "Controls whether RemoteClaw injects `options.num_ctx` for Ollama providers configured with the OpenAI-compatible adapter (`openai-completions`). Default is true. Set false only if your proxy/upstream rejects unknown `options` payload fields.",
@@ -12025,7 +11930,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "models.providers.*.models": {
       label: "Model Provider Model List",
-      help: "Declared model list for a provider including identifiers, metadata, and optional compatibility/cost hints. Keep IDs exact to provider catalog values so selection and fallback resolve correctly.",
+      help: "Declared model list for a provider including identifiers, metadata, and optional cost hints. Keep IDs exact to provider catalog values so selection and fallback resolve correctly.",
       tags: ["models"],
     },
     "models.bedrockDiscovery": {

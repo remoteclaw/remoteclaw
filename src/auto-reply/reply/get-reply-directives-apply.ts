@@ -20,8 +20,6 @@ export type ApplyDirectiveResult =
   | {
       kind: "continue";
       directives: InlineDirectives;
-      provider: string;
-      model: string;
       directiveAck?: ReplyPayload;
       perMessageQueueMode?: InlineDirectives["queueMode"];
       perMessageQueueOptions?: {
@@ -50,8 +48,6 @@ export async function applyInlineDirectiveOverrides(params: {
   runtimeId: string;
   provider: string;
   model: string;
-  initialModelLabel: string;
-  formatModelSwitchEvent: (label: string, alias?: string) => string;
   defaultActivation: () => ReturnType<
     Parameters<typeof buildStatusReply>[0]["defaultGroupActivation"]
   >;
@@ -77,40 +73,11 @@ export async function applyInlineDirectiveOverrides(params: {
     allowTextCommands,
     command,
     messageProviderKey,
-    runtimeId,
-    initialModelLabel,
-    formatModelSwitchEvent,
     defaultActivation,
     typing,
   } = params;
   let { directives } = params;
-  let { provider, model } = params;
-  // Model selection gutted in RemoteClaw — derive from runtimeId and pass empty lookups.
-  const defaultProvider = runtimeId;
-  const defaultModel = "default";
-  const aliasIndex = new Map<string, { provider: string; model: string }>();
-  const directiveModelState = {
-    allowedModelKeys: new Set<string>(),
-    allowedModelCatalog: [] as Array<{ id: string; provider: string }>,
-    resetModelOverride: false,
-  };
-  const createDirectiveHandlingBase = () => ({
-    cfg,
-    directives,
-    sessionEntry,
-    sessionStore,
-    sessionKey,
-    storePath,
-    messageProviderKey,
-    defaultProvider,
-    defaultModel,
-    aliasIndex,
-    ...directiveModelState,
-    provider,
-    model,
-    initialModelLabel,
-    formatModelSwitchEvent,
-  });
+  const { provider, model } = params;
 
   let directiveAck: ReplyPayload | undefined;
 
@@ -136,9 +103,14 @@ export async function applyInlineDirectiveOverrides(params: {
       (sessionEntry?.verboseLevel as import("../thinking.js").VerboseLevel | undefined) ??
       (agentCfg?.verboseDefault as import("../thinking.js").VerboseLevel | undefined);
     const directiveReply = await handleDirectiveOnly({
-      ...createDirectiveHandlingBase(),
+      cfg,
+      directives,
+      sessionEntry,
+      sessionStore,
+      sessionKey,
+      storePath,
+      messageProviderKey,
       currentVerboseLevel,
-      surface: ctx.Surface,
     });
     let statusReply: ReplyPayload | undefined;
     if (directives.hasStatusDirective && allowTextCommands && command.isAuthorizedSender) {
@@ -182,19 +154,9 @@ export async function applyInlineDirectiveOverrides(params: {
       sessionKey,
       storePath,
       messageProviderKey,
-      defaultProvider,
-      defaultModel,
-      aliasIndex,
-      ...directiveModelState,
-      provider,
-      model,
-      initialModelLabel,
-      formatModelSwitchEvent,
       agentCfg,
     });
     directiveAck = fastLane.directiveAck;
-    provider = fastLane.provider;
-    model = fastLane.model;
   }
 
   await persistInlineDirectives({
@@ -219,8 +181,6 @@ export async function applyInlineDirectiveOverrides(params: {
   return {
     kind: "continue",
     directives,
-    provider,
-    model,
     directiveAck,
     perMessageQueueMode,
     perMessageQueueOptions,

@@ -4,7 +4,6 @@ import type { RemoteClawConfig } from "../config/config.js";
 import { CONFIG_PATH } from "../config/config.js";
 import { RemoteClawSchema } from "../config/zod-schema.js";
 import { note } from "../terminal/note.js";
-import { isRecord } from "../utils.js";
 
 type UnrecognizedKeysIssue = ZodIssue & {
   code: "unrecognized_keys";
@@ -112,17 +111,9 @@ export function noteOpencodeProviderOverrides(cfg: RemoteClawConfig): void {
     return;
   }
 
-  const lines = overrides.flatMap((id) => {
+  const lines = overrides.map((id) => {
     const providerLabel = id === "opencode-go" ? "OpenCode Go" : "OpenCode Zen";
-    const providerEntry = providers[id];
-    const api =
-      isRecord(providerEntry) && typeof providerEntry.api === "string"
-        ? providerEntry.api
-        : undefined;
-    return [
-      `- models.providers.${id} is set; this overrides the built-in ${providerLabel} catalog.`,
-      api ? `- models.providers.${id}.api=${api}` : null,
-    ].filter((line): line is string => Boolean(line));
+    return `- models.providers.${id} is set; this overrides the built-in ${providerLabel} catalog.`;
   });
 
   lines.push(

@@ -42,7 +42,7 @@ const MISTRAL_MODEL_HINTS = [
   "ministral",
   "mistralai",
 ];
-const OPENAI_MODEL_APIS = new Set([
+const OPENAI_API_VARIANTS = new Set([
   "openai",
   "openai-completions",
   "openai-responses",
@@ -55,7 +55,7 @@ function isOpenAiApi(modelApi?: string | null): boolean {
   if (!modelApi) {
     return false;
   }
-  return OPENAI_MODEL_APIS.has(modelApi);
+  return OPENAI_API_VARIANTS.has(modelApi);
 }
 
 function isOpenAiProvider(provider?: string | null): boolean {

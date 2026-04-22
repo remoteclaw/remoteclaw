@@ -174,7 +174,6 @@ describe("redactConfigSnapshot", () => {
                 id: "gpt-5",
                 maxTokens: 65536,
                 contextTokens: 200000,
-                maxTokensField: "max_completion_tokens",
               },
             ],
             apiKey: "sk-proj-abcdef1234567890ghij",
@@ -200,7 +199,6 @@ describe("redactConfigSnapshot", () => {
     ).models ?? []) as Array<Record<string, unknown>>;
     expect(providerList[0]?.maxTokens).toBe(65536);
     expect(providerList[0]?.contextTokens).toBe(200000);
-    expect(providerList[0]?.maxTokensField).toBe("max_completion_tokens");
 
     const providers = (models.providers as Record<string, Record<string, unknown>>) ?? {};
     expect(providers.openai.apiKey).toBe(REDACTED_SENTINEL);

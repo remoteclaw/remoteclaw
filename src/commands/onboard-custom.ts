@@ -483,12 +483,6 @@ async function applyCustomApiRetryChoice(params: {
   return { baseUrl, apiKey, resolvedApiKey, modelId };
 }
 
-function resolveProviderApi(
-  compatibility: CustomApiCompatibility,
-): "openai-completions" | "anthropic-messages" {
-  return compatibility === "anthropic" ? "anthropic-messages" : "openai-completions";
-}
-
 function parseCustomApiCompatibility(raw?: string): CustomApiCompatibility {
   const compatibilityRaw = raw?.trim().toLowerCase();
   if (!compatibilityRaw) {
@@ -645,7 +639,6 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
         [providerId]: {
           ...existingProviderRest,
           baseUrl: resolvedBaseUrl,
-          api: resolveProviderApi(params.compatibility),
           ...(normalizedApiKey ? { apiKey: normalizedApiKey } : {}),
           models: mergedModels.length > 0 ? mergedModels : [nextModel],
         },

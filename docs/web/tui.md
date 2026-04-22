@@ -91,7 +91,6 @@ Core:
 
 Session controls:
 
-- `/think <off|minimal|low|medium|high>`
 - `/fast <status|on|off>`
 - `/verbose <on|full|off>`
 - `/reasoning <on|off|stream>`

@@ -61,10 +61,8 @@ export async function runReplyAgent(params: {
   followupRun: FollowupRun;
   queueKey: string;
   resolvedQueue: QueueSettings;
-  shouldSteer: boolean;
   shouldFollowup: boolean;
   isActive: boolean;
-  isStreaming: boolean;
   opts?: GetReplyOptions;
   typing: TypingController;
   sessionEntry?: SessionEntry;
@@ -92,10 +90,8 @@ export async function runReplyAgent(params: {
     followupRun,
     queueKey,
     resolvedQueue,
-    shouldSteer,
     shouldFollowup,
     isActive,
-    isStreaming,
     opts,
     typing,
     sessionEntry,
@@ -189,15 +185,6 @@ export async function runReplyAgent(params: {
       });
     }
   };
-
-  if (shouldSteer && isStreaming) {
-    const steered = false;
-    if (steered && !shouldFollowup) {
-      await touchActiveSessionEntry();
-      typing.cleanup();
-      return undefined;
-    }
-  }
 
   const activeRunQueueAction = resolveActiveRunQueueAction({
     isActive,

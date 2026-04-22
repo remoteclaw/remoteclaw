@@ -89,10 +89,8 @@ describe("runReplyAgent media path normalization", () => {
       } as unknown as FollowupRun,
       queueKey: "test-agent",
       resolvedQueue: { mode: "interrupt" } as QueueSettings,
-      shouldSteer: false,
       shouldFollowup: false,
       isActive: false,
-      isStreaming: false,
       typing: createMockTypingController(),
       sessionCtx: {
         Provider: "telegram",

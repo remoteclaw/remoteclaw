@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { isSessionRunActive, killSessionRun } from "../../agents/session-run-registry.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
   resolveGroupSessionKey,
@@ -7,7 +8,6 @@ import {
   type SessionEntry,
 } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
-import { clearCommandLane, getQueueSize } from "../../process/command-queue.js";
 import { normalizeMainKey } from "../../routing/session-key.js";
 import { isReasoningTagProvider } from "../../utils/provider-utils.js";
 import { hasControlCommand } from "../command-detection.js";
@@ -384,16 +384,12 @@ export async function runPreparedReply(
     inlineMode: perMessageQueueMode,
     inlineOptions: perMessageQueueOptions,
   });
-  const sessionLaneKey = sessionKey ?? sessionIdFinal;
-  const laneSize = getQueueSize(sessionLaneKey);
-  if (resolvedQueue.mode === "interrupt" && laneSize > 0) {
-    const cleared = clearCommandLane(sessionLaneKey);
-    logVerbose(`Interrupting ${sessionLaneKey} (cleared ${cleared})`);
-  }
   const queueKey = sessionKey ?? sessionIdFinal;
-  const isActive = false;
-  const isStreaming = false;
-  const shouldSteer = resolvedQueue.mode === "steer" || resolvedQueue.mode === "steer-backlog";
+  const isActive = isSessionRunActive(queueKey);
+  if (resolvedQueue.mode === "interrupt" && isActive) {
+    const aborted = killSessionRun(queueKey);
+    logVerbose(`Interrupting ${queueKey} (aborted=${aborted})`);
+  }
   const shouldFollowup =
     resolvedQueue.mode === "followup" ||
     resolvedQueue.mode === "collect" ||
@@ -463,10 +459,8 @@ export async function runPreparedReply(
     followupRun,
     queueKey,
     resolvedQueue,
-    shouldSteer,
     shouldFollowup,
     isActive,
-    isStreaming,
     opts,
     typing,
     sessionEntry,

@@ -4,7 +4,6 @@ const redirects = {
   "/AGENTS.default": "/reference/AGENTS.default",
   "/RELEASING": "/reference/RELEASING",
   "/agent": "/concepts/agent",
-  "/agent-loop": "/concepts/agent-loop",
   "/agent-send": "/tools/agent-send",
   "/agent-workspace": "/concepts/agent-workspace",
   "/android": "/platforms/android",
@@ -287,7 +286,6 @@ export default defineConfig({
               items: [
                 { slug: "concepts/architecture" },
                 { slug: "concepts/agent" },
-                { slug: "concepts/agent-loop" },
                 { slug: "concepts/system-prompt" },
                 { slug: "concepts/context" },
                 { slug: "concepts/agent-workspace" },

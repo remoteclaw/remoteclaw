@@ -242,17 +242,10 @@ Pi’s compaction settings live in Pi settings:
 }
 ```
 
-RemoteClaw also enforces a safety floor for embedded runs:
-
-- If `compaction.reserveTokens < reserveTokensFloor`, RemoteClaw bumps it.
-- Default floor is `20000` tokens.
-- Set `agents.defaults.compaction.reserveTokensFloor: 0` to disable the floor.
-- If it’s already higher, RemoteClaw leaves it alone.
-
-Why: leave enough headroom for multi-turn “housekeeping” (like memory writes) before compaction becomes unavoidable.
-
-Implementation: `ensurePiCompactionReserveTokens()` in `src/agents/pi-settings.ts`
-(called from `src/agents/pi-embedded-runner.ts`).
+RemoteClaw forwards compaction config to the CLI subprocess; the CLI agent
+(Claude Code, Gemini CLI, Codex CLI, OpenCode) enforces its own compaction
+policy. The `compaction.reserveTokensFloor` setting is carried through the
+session config for agents that respect it.
 
 ---
 

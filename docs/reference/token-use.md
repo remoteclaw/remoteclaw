@@ -21,7 +21,7 @@ RemoteClaw assembles its own system prompt on every run. It includes:
 - Workspace + bootstrap files (`AGENTS.md`, `SOUL.md`, `TOOLS.md`, `IDENTITY.md`, `USER.md`, `HEARTBEAT.md`, `BOOTSTRAP.md` when new, plus `MEMORY.md` when present or `memory.md` as a lowercase fallback). Large files are truncated by `agents.defaults.bootstrapMaxChars` (default: 20000), and total bootstrap injection is capped by `agents.defaults.bootstrapTotalMaxChars` (default: 150000). `memory/*.md` files are on-demand via memory tools and are not auto-injected.
 - Time (UTC + user timezone)
 - Reply tags + heartbeat behavior
-- Runtime metadata (host/OS/model/thinking)
+- Runtime metadata (channel/user/timezone)
 
 See the full breakdown in [System Prompt](/concepts/system-prompt).
 

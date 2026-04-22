@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { resolveSessionKey } from "../config/sessions.js";
 import {
-  getRunAgentMock as getRunEmbeddedPiAgentMock,
+  getRunAgentMock,
   makeCfg,
   requireSessionStorePath,
   withTempHome,
@@ -31,7 +31,7 @@ export function registerTriggerHandlingUsageSummaryCases(params: {
   describe("usage and status command handling", () => {
     it("handles status, usage cycles, and auth-profile status details", async () => {
       await withTempHome(async (home) => {
-        const runEmbeddedPiAgentMock = getRunEmbeddedPiAgentMock();
+        const runAgentMock = getRunAgentMock();
         const getReplyFromConfig = getReplyFromConfigNow(params.getReplyFromConfig);
 
         {
@@ -51,7 +51,7 @@ export function registerTriggerHandlingUsageSummaryCases(params: {
           const text = Array.isArray(res) ? res[0]?.text : res?.text;
           expect(text).toContain("Model:");
           expect(text).toContain("RemoteClaw");
-          expect(runEmbeddedPiAgentMock).not.toHaveBeenCalled();
+          expect(runAgentMock).not.toHaveBeenCalled();
         }
 
         {
@@ -125,11 +125,11 @@ export function registerTriggerHandlingUsageSummaryCases(params: {
           expect(pickFirstStoreEntry<{ responseUsage?: string }>(finalStore)?.responseUsage).toBe(
             "tokens",
           );
-          expect(runEmbeddedPiAgentMock).not.toHaveBeenCalled();
+          expect(runAgentMock).not.toHaveBeenCalled();
         }
 
         {
-          runEmbeddedPiAgentMock.mockClear();
+          runAgentMock.mockClear();
           const cfg = makeCfg(home);
           cfg.session = { ...cfg.session, store: join(home, "auth-profile-status.sessions.json") };
           const agentDir = join(home, ".remoteclaw", "agents", "main", "agent");
@@ -196,7 +196,7 @@ export function registerTriggerHandlingUsageSummaryCases(params: {
           expect(text).not.toContain("1234567890abcdef"); // pragma: allowlist secret
           expect(text).toContain("(anthropic:work)");
           expect(text).not.toContain("mixed");
-          expect(runEmbeddedPiAgentMock).not.toHaveBeenCalled();
+          expect(runAgentMock).not.toHaveBeenCalled();
         }
       });
     });

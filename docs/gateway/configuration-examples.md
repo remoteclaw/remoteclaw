@@ -396,7 +396,6 @@ Save to `~/.remoteclaw/remoteclaw.json` and you can DM the bot from that number.
         deliver: true,
         channel: "last",
         to: "+15555550123",
-        thinking: "low",
         timeoutSeconds: 300,
         transform: {
           module: "gmail.js",

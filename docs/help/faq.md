@@ -2351,7 +2351,7 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
     Cause: the session history contains **thinking blocks without signatures** (often from
     an aborted/partial stream). Google Antigravity requires signatures for thinking blocks.
 
-    Fix: RemoteClaw now strips unsigned thinking blocks for Google Antigravity Claude. If it still appears, start a **new session** or set `/thinking off` for that agent.
+    Fix: RemoteClaw now strips unsigned thinking blocks for Google Antigravity Claude. If it still appears, start a **new session** for that agent.
 
   </Accordion>
 </AccordionGroup>
@@ -2898,7 +2898,7 @@ Related: [/concepts/oauth](/concepts/oauth) (OAuth flows, token storage, multi-a
     to **inherit**. Also confirm you are not using a bot profile with `verboseDefault` set
     to `on` in config.
 
-    Docs: [Thinking and verbose](/tools/thinking), [Security](/gateway/security#reasoning-verbose-output-in-groups).
+    Docs: [Security](/gateway/security#reasoning-verbose-output-in-groups).
 
   </Accordion>
 

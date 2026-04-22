@@ -77,28 +77,21 @@ is a small, self-contained module with a clear purpose and documented contract.
     ```
 
     For host-side helpers, use the injected plugin runtime instead of importing
-    directly:
-
-    ```typescript
-    // Before (deprecated extension-api bridge)
-    import { runEmbeddedPiAgent } from "remoteclaw/extension-api";
-    const result = await runEmbeddedPiAgent({ sessionId, prompt });
-
-    // After (injected runtime)
-    const result = await api.runtime.agent.runEmbeddedPiAgent({ sessionId, prompt });
-    ```
-
-    The same pattern applies to other legacy bridge helpers:
+    directly. Legacy bridge helpers map to the modern runtime surface:
 
     | Old import | Modern equivalent |
     | --- | --- |
     | `resolveAgentDir` | `api.runtime.agent.resolveAgentDir` |
     | `resolveAgentWorkspaceDir` | `api.runtime.agent.resolveAgentWorkspaceDir` |
     | `resolveAgentIdentity` | `api.runtime.agent.resolveAgentIdentity` |
-    | `resolveThinkingDefault` | `api.runtime.agent.resolveThinkingDefault` |
     | `resolveAgentTimeoutMs` | `api.runtime.agent.resolveAgentTimeoutMs` |
     | `ensureAgentWorkspace` | `api.runtime.agent.ensureAgentWorkspace` |
     | session store helpers | `api.runtime.agent.session.*` |
+
+    Note: the pre-fork embedded execution bridge (`runEmbeddedPiAgent`) has no
+    RemoteClaw equivalent — CLI runtimes (Claude, Gemini, Codex, OpenCode) own
+    agent execution; plugins that need to invoke an agent should use the
+    gateway RPC surface (`agent.send`) instead of a host-side bridge.
 
   </Step>
 

@@ -142,7 +142,7 @@ RemoteClaw can expose or hide model reasoning:
 - Reasoning content still counts toward token usage when produced by the model.
 - Telegram supports reasoning stream into the draft bubble.
 
-Details: [Thinking + reasoning directives](/tools/thinking) and [Token use](/reference/token-use).
+Details: [Token use](/reference/token-use).
 
 ## Prefixes, threading, and replies
 

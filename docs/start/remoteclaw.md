@@ -100,7 +100,6 @@ Optional: choose a different workspace with `agents.defaults.workspace` (support
 RemoteClaw defaults to a good assistant setup, but you’ll usually want to tune:
 
 - persona/instructions via native agent config (e.g. `CLAUDE.md`)
-- thinking defaults (if desired)
 - heartbeats (once you trust it)
 
 Example:

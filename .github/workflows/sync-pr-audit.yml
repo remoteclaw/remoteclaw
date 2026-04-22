@@ -113,7 +113,7 @@ jobs:
             echo "| Gate | Exit | Notes |"
             echo "| --- | --- | --- |"
             echo "| H7 throwing-stub-callers | \`${H7:-?}\` | $(fmt "${H7:-1}") |"
-            echo "| H8 stub-debt + fork-boundary-mock | \`${H8:-?}\` | $(fmt "${H8:-1}") |"
+            echo "| H5 stub-debt (strict) + H8 fork-boundary-mock | \`${H8:-?}\` | $(fmt "${H8:-1}") |"
             echo "| H9 module-attestations | \`${H9:-?}\` | $(fmt "${H9:-1}") |"
             echo ""
             echo "**Underlying gates (H7/H8/H9) run on every PR via \`ci.yml\`. This composite view re-invokes them with sync-PR-tailored reporting so reviewers can triage the full audit in one place.**"

@@ -118,8 +118,12 @@ against regressions specific to the fork-sync lifecycle:
 
 - **rebrand-gate**: `openclaw`/`OpenClaw` leakage into files the fork owns.
 - **zombie-import-gate**: imports from modules that have been gutted.
-- **stub-debt-gate** (`.stub-debt-baseline`): bounds `@ts-expect-error`
-  suppressions so fork-sync type-assertion debt can't grow silently.
+- **stub-debt-gate**: rejects any `@ts-expect-error` suppression under
+  `src/`, `extensions/`, or `ui/` (zero-tolerance — fork-sync type debt
+  must be fixed, not suppressed). Also tracks `vi.mock(...)` calls
+  targeting `src/agents/` or `src/middleware/` via
+  `.fork-boundary-mock-baseline` — see `CONTRIBUTING.md` § Fork-boundary
+  mocks.
 - **throwing-stub-callers-gate** (`.throwing-stub-callers-allowlist`):
   detects throwing stubs with live non-test callers — see § Fork Stub
   Conventions.

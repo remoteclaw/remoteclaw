@@ -1948,38 +1948,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 additionalProperties: false,
               },
               embeddedPi: {},
-              thinkingDefault: {
-                anyOf: [
-                  {
-                    type: "string",
-                    const: "off",
-                  },
-                  {
-                    type: "string",
-                    const: "minimal",
-                  },
-                  {
-                    type: "string",
-                    const: "low",
-                  },
-                  {
-                    type: "string",
-                    const: "medium",
-                  },
-                  {
-                    type: "string",
-                    const: "high",
-                  },
-                  {
-                    type: "string",
-                    const: "xhigh",
-                  },
-                  {
-                    type: "string",
-                    const: "adaptive",
-                  },
-                ],
-              },
               verboseDefault: {
                 anyOf: [
                   {

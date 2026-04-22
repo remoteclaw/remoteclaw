@@ -754,7 +754,6 @@ export async function runTui(opts: TuiOptions) {
         : sessionInfo.model
       : "unknown";
     const tokens = formatTokens(sessionInfo.totalTokens ?? null, sessionInfo.contextTokens ?? null);
-    const think = sessionInfo.thinkingLevel ?? "off";
     const verbose = sessionInfo.verboseLevel ?? "off";
     const reasoning = sessionInfo.reasoningLevel ?? "off";
     const reasoningLabel =
@@ -763,7 +762,6 @@ export async function runTui(opts: TuiOptions) {
       `agent ${agentLabel}`,
       `session ${sessionLabel}`,
       modelLabel,
-      think !== "off" ? `think ${think}` : null,
       verbose !== "off" ? `verbose ${verbose}` : null,
       reasoningLabel,
       tokens,

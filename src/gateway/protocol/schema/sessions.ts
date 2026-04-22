@@ -98,7 +98,6 @@ export const SessionsPatchParamsSchema = Type.Object(
   {
     key: NonEmptyString,
     label: Type.Optional(Type.Union([SessionLabelString, Type.Null()])),
-    thinkingLevel: Type.Optional(Type.Union([NonEmptyString, Type.Null()])),
     fastMode: Type.Optional(Type.Union([Type.Boolean(), Type.Null()])),
     verboseLevel: Type.Optional(Type.Union([NonEmptyString, Type.Null()])),
     reasoningLevel: Type.Optional(Type.Union([NonEmptyString, Type.Null()])),

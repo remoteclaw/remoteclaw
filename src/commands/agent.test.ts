@@ -217,18 +217,6 @@ async function runAgentWithSessionKey(sessionKey: string): Promise<void> {
   await agentCommand({ message: "hi", sessionKey }, runtime);
 }
 
-async function expectDefaultThinkLevel(params: {
-  agentOverrides?: Partial<NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]>>;
-  expected: string;
-}) {
-  await withTempHome(async (home) => {
-    const store = path.join(home, "sessions.json");
-    mockConfig(home, store, params.agentOverrides);
-    await agentCommand({ message: "hi", to: "+1555" }, runtime);
-    expect(getLastEmbeddedCall()?.thinkLevel).toBe(params.expected);
-  });
-}
-
 function createTelegramOutboundPlugin() {
   const sendWithTelegram = async (
     ctx: {
@@ -365,25 +353,23 @@ describe("agentCommand", () => {
     });
   });
 
-  it("persists thinking and verbose overrides", async () => {
+  it("persists verbose overrides", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store);
 
-      await agentCommand({ message: "hi", to: "+1222", thinking: "high", verbose: "on" }, runtime);
+      await agentCommand({ message: "hi", to: "+1222", verbose: "on" }, runtime);
 
       const saved = JSON.parse(fs.readFileSync(store, "utf-8")) as Record<
         string,
-        { thinkingLevel?: string; verboseLevel?: string }
+        { verboseLevel?: string }
       >;
       const entry = Object.values(saved)[0];
-      expect(entry.thinkingLevel).toBe("high");
       expect(entry.verboseLevel).toBe("on");
 
       const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0] as
         | Record<string, unknown>
         | undefined;
-      expect(callArgs?.thinkLevel).toBe("high");
       expect(callArgs?.verboseLevel).toBe("on");
     });
   });
@@ -818,36 +804,6 @@ describe("agentCommand", () => {
       await expect(agentCommand({ message: "hi", agentId: "ghost" }, runtime)).rejects.toThrow(
         'Unknown agent id "ghost"',
       );
-    });
-  });
-
-  it("defaults thinking to low for reasoning-capable models", async () => {
-    await expectDefaultThinkLevel({
-      expected: "low",
-    });
-  });
-
-  it("defaults thinking to adaptive for Anthropic Claude 4.6 models", async () => {
-    await expectDefaultThinkLevel({
-      agentOverrides: {
-        model: { primary: "anthropic/claude-opus-4-6" },
-        models: { "anthropic/claude-opus-4-6": {} },
-      },
-      expected: "adaptive",
-    });
-  });
-
-  it("prefers per-model thinking over global thinkingDefault", async () => {
-    await expectDefaultThinkLevel({
-      agentOverrides: {
-        thinkingDefault: "low",
-        models: {
-          "anthropic/claude-opus-4-5": {
-            params: { thinking: "high" },
-          },
-        },
-      },
-      expected: "high",
     });
   });
 

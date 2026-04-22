@@ -383,9 +383,6 @@
       case "model_change":
         parts.push("model", entry.modelId);
         break;
-      case "thinking_level_change":
-        parts.push("thinking", entry.thinkingLevel);
-        break;
     }
 
     return parts.join(" ").toLowerCase();
@@ -419,9 +416,7 @@
       }
 
       // Apply filter mode
-      const isSettingsEntry = ["label", "custom", "model_change", "thinking_level_change"].includes(
-        entry.type,
-      );
+      const isSettingsEntry = ["label", "custom", "model_change"].includes(entry.type);
       let passesFilter = true;
 
       switch (filterMode) {
@@ -786,8 +781,6 @@
       }
       case "model_change":
         return labelHtml + `<span class="tree-muted">[model: ${escapeHtml(entry.modelId)}]</span>`;
-      case "thinking_level_change":
-        return labelHtml + `<span class="tree-muted">[thinking: ${escapeHtml(entry.thinkingLevel)}]</span>`;
       default:
         return labelHtml + `<span class="tree-muted">[${escapeHtml(entry.type)}]</span>`;
     }

@@ -98,7 +98,6 @@ export type SessionEntry = {
   /** Epoch ms cutoff paired with abortCutoffMessageSid when available. */
   abortCutoffTimestamp?: number;
   chatType?: SessionChatType;
-  thinkingLevel?: string;
   verboseLevel?: string;
   reasoningLevel?: string;
   elevatedLevel?: string;

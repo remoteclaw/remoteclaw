@@ -884,7 +884,6 @@ Time format in system prompt. Default: `auto` (OS preference).
       },
       pdfMaxBytesMb: 10,
       pdfMaxPages: 20,
-      thinkingDefault: "low",
       verboseDefault: "off",
       elevatedDefault: "on",
       timeoutSeconds: 600,
@@ -1372,7 +1371,6 @@ scripts/sandbox-browser-setup.sh   # optional browser image
         workspace: "~/.remoteclaw/workspace",
         agentDir: "~/.remoteclaw/agents/main/agent",
         model: "anthropic/claude-opus-4-6", // or { primary, fallbacks }
-        thinkingDefault: "high", // per-agent thinking level override
         reasoningDefault: "on", // per-agent reasoning visibility override
         fastModeDefault: false, // per-agent fast mode override
         params: { cacheRetention: "none" }, // overrides matching defaults.models params by key
@@ -1410,7 +1408,6 @@ scripts/sandbox-browser-setup.sh   # optional browser image
 - `default`: when multiple are set, first wins (warning logged). If none set, first list entry is default.
 - `model`: string form overrides `primary` only; object form `{ primary, fallbacks }` overrides both (`[]` disables global fallbacks). Cron jobs that only override `primary` still inherit default fallbacks unless you set `fallbacks: []`.
 - `params`: per-agent stream params merged over the selected model entry in `agents.defaults.models`. Use this for agent-specific overrides like `cacheRetention`, `temperature`, or `maxTokens` without duplicating the whole model catalog.
-- `thinkingDefault`: optional per-agent default thinking level (`off | minimal | low | medium | high | xhigh | adaptive`). Overrides `agents.defaults.thinkingDefault` for this agent when no per-message or session override is set.
 - `reasoningDefault`: optional per-agent default reasoning visibility (`on | off | stream`). Applies when no per-message or session reasoning override is set.
 - `fastModeDefault`: optional per-agent default for fast mode (`true | false`). Applies when no per-message or session fast-mode override is set.
 - `runtime`: optional per-agent runtime descriptor. Use `type: "acp"` with `runtime.acp` defaults (`agent`, `backend`, `mode`, `cwd`) when the agent should default to ACP harness sessions.
@@ -1678,15 +1675,14 @@ Resolution (most specific wins): account → channel → global. `""` disables a
 
 **Template variables:**
 
-| Variable          | Description            | Example                     |
-| ----------------- | ---------------------- | --------------------------- |
-| `{model}`         | Short model name       | `claude-opus-4-6`           |
-| `{modelFull}`     | Full model identifier  | `anthropic/claude-opus-4-6` |
-| `{provider}`      | Provider name          | `anthropic`                 |
-| `{thinkingLevel}` | Current thinking level | `high`, `low`, `off`        |
-| `{identity.name}` | Agent identity name    | (same as `"auto"`)          |
+| Variable          | Description           | Example                     |
+| ----------------- | --------------------- | --------------------------- |
+| `{model}`         | Short model name      | `claude-opus-4-6`           |
+| `{modelFull}`     | Full model identifier | `anthropic/claude-opus-4-6` |
+| `{provider}`      | Provider name         | `anthropic`                 |
+| `{identity.name}` | Agent identity name   | (same as `"auto"`)          |
 
-Variables are case-insensitive. `{think}` is an alias for `{thinkingLevel}`.
+Variables are case-insensitive.
 
 ### Ack reaction
 

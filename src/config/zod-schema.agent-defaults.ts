@@ -129,17 +129,6 @@ export const AgentDefaultsSchema = z
     // Embedded Pi config gutted — Pi orchestrator replaced by AgentRuntime.
     // Stub kept for config parse compatibility (existing configs still parse).
     embeddedPi: z.unknown().optional(),
-    thinkingDefault: z
-      .union([
-        z.literal("off"),
-        z.literal("minimal"),
-        z.literal("low"),
-        z.literal("medium"),
-        z.literal("high"),
-        z.literal("xhigh"),
-        z.literal("adaptive"),
-      ])
-      .optional(),
     verboseDefault: z.union([z.literal("off"), z.literal("on"), z.literal("full")]).optional(),
     elevatedDefault: z
       .union([z.literal("off"), z.literal("on"), z.literal("ask"), z.literal("full")])

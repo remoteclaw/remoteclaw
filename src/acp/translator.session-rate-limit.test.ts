@@ -6,7 +6,6 @@ import type {
   SetSessionModeRequest,
 } from "@agentclientprotocol/sdk";
 import { describe, expect, it, vi } from "vitest";
-import { listThinkingLevels } from "../auto-reply/thinking.js";
 import type { GatewayClient } from "../gateway/client.js";
 import type { EventFrame } from "../gateway/protocol/index.js";
 import { createInMemorySessionStore } from "./session.js";
@@ -203,7 +202,7 @@ describe("acp unsupported bridge session setup", () => {
 });
 
 describe("acp session UX bridge behavior", () => {
-  it("returns initial modes and thought-level config options for new sessions", async () => {
+  it("returns empty modes and non-thought config options for new sessions", async () => {
     const sessionStore = createInMemorySessionStore();
     const agent = new AcpGatewayAgent(createAcpConnection(), createAcpGateway(), {
       sessionStore,
@@ -211,15 +210,13 @@ describe("acp session UX bridge behavior", () => {
 
     const result = await agent.newSession(createNewSessionRequest());
 
-    expect(result.modes?.currentModeId).toBe("adaptive");
-    expect(result.modes?.availableModes.map((mode) => mode.id)).toContain("adaptive");
+    // Thought-level mode presentation was removed together with SessionEntry.thinkingLevel
+    // (#2464 / #2336 Area 3). ACP bridge now exposes no modes; CLIs own reasoning depth.
+    expect(result.modes?.currentModeId).toBe("");
+    expect(result.modes?.availableModes).toEqual([]);
+    expect(result.configOptions?.map((option) => option.id)).not.toContain("thought_level");
     expect(result.configOptions).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({
-          id: "thought_level",
-          currentValue: "adaptive",
-          category: "thought_level",
-        }),
         expect.objectContaining({
           id: "verbose_level",
           currentValue: "off",
@@ -265,7 +262,6 @@ describe("acp session UX bridge behavior", () => {
               derivedTitle: "Fix ACP bridge",
               kind: "direct",
               updatedAt: 1_710_000_000_000,
-              thinkingLevel: "high",
               modelProvider: "openai",
               model: "gpt-5.4",
               verboseLevel: "full",
@@ -303,16 +299,12 @@ describe("acp session UX bridge behavior", () => {
 
     const result = await agent.loadSession(createLoadSessionRequest("agent:main:work"));
 
-    expect(result.modes?.currentModeId).toBe("high");
-    expect(result.modes?.availableModes.map((mode) => mode.id)).toEqual(
-      listThinkingLevels("openai", "gpt-5.4"),
-    );
+    // Thought-level mode presentation gutted (#2464 / #2336 Area 3).
+    expect(result.modes?.currentModeId).toBe("");
+    expect(result.modes?.availableModes).toEqual([]);
+    expect(result.configOptions?.map((option) => option.id)).not.toContain("thought_level");
     expect(result.configOptions).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({
-          id: "thought_level",
-          currentValue: "high",
-        }),
         expect.objectContaining({
           id: "verbose_level",
           currentValue: "full",
@@ -404,7 +396,6 @@ describe("acp session UX bridge behavior", () => {
               displayName: "Recover session",
               kind: "direct",
               updatedAt: 1_710_000_000_000,
-              thinkingLevel: "adaptive",
               modelProvider: "openai",
               model: "gpt-5.4",
             },
@@ -422,7 +413,8 @@ describe("acp session UX bridge behavior", () => {
 
     const result = await agent.loadSession(createLoadSessionRequest("agent:main:recover"));
 
-    expect(result.modes?.currentModeId).toBe("adaptive");
+    // Thought-level mode presentation gutted (#2464 / #2336 Area 3).
+    expect(result.modes?.currentModeId).toBe("");
     expect(sessionUpdate).toHaveBeenCalledWith({
       sessionId: "agent:main:recover",
       update: expect.objectContaining({
@@ -441,160 +433,34 @@ describe("acp session UX bridge behavior", () => {
 });
 
 describe("acp setSessionMode bridge behavior", () => {
-  it("surfaces gateway mode patch failures instead of succeeding silently", async () => {
+  // Thought-level mode presentation and its gateway patch flow were gutted
+  // (#2464 / #2336 Area 3). setSessionMode is now a no-op; prior tests that
+  // exercised gateway failure propagation and mode-change snapshot updates no
+  // longer have behavior to assert. See translator.set-session-mode.test.ts
+  // for the replacement no-op contract.
+  it("is a no-op and never calls the gateway", async () => {
     const sessionStore = createInMemorySessionStore();
-    const request = vi.fn(async (method: string) => {
-      if (method === "sessions.patch") {
-        throw new Error("gateway rejected mode");
-      }
-      return { ok: true };
-    }) as GatewayClient["request"];
+    const request = vi.fn(async () => ({ ok: true })) as GatewayClient["request"];
     const agent = new AcpGatewayAgent(createAcpConnection(), createAcpGateway(request), {
       sessionStore,
     });
 
     await agent.loadSession(createLoadSessionRequest("mode-session"));
+    vi.mocked(request).mockClear();
 
     await expect(
       agent.setSessionMode(createSetSessionModeRequest("mode-session", "high")),
-    ).rejects.toThrow(/gateway rejected mode/i);
-
-    sessionStore.clearAllSessionsForTest();
-  });
-
-  it("emits current mode and thought-level config updates after a successful mode change", async () => {
-    const sessionStore = createInMemorySessionStore();
-    const connection = createAcpConnection();
-    const sessionUpdate = connection.__sessionUpdateMock;
-    const request = vi.fn(async (method: string) => {
-      if (method === "sessions.list") {
-        return {
-          ts: Date.now(),
-          path: "/tmp/sessions.json",
-          count: 1,
-          defaults: {
-            modelProvider: null,
-            model: null,
-            contextTokens: null,
-          },
-          sessions: [
-            {
-              key: "mode-session",
-              kind: "direct",
-              updatedAt: Date.now(),
-              thinkingLevel: "high",
-              modelProvider: "openai",
-              model: "gpt-5.4",
-            },
-          ],
-        };
-      }
-      return { ok: true };
-    }) as GatewayClient["request"];
-    const agent = new AcpGatewayAgent(connection, createAcpGateway(request), {
-      sessionStore,
-    });
-
-    await agent.loadSession(createLoadSessionRequest("mode-session"));
-    sessionUpdate.mockClear();
-
-    await agent.setSessionMode(createSetSessionModeRequest("mode-session", "high"));
-
-    expect(sessionUpdate).toHaveBeenCalledWith({
-      sessionId: "mode-session",
-      update: {
-        sessionUpdate: "current_mode_update",
-        currentModeId: "high",
-      },
-    });
-    expect(sessionUpdate).toHaveBeenCalledWith({
-      sessionId: "mode-session",
-      update: {
-        sessionUpdate: "config_option_update",
-        configOptions: expect.arrayContaining([
-          expect.objectContaining({
-            id: "thought_level",
-            currentValue: "high",
-          }),
-        ]),
-      },
-    });
+    ).resolves.toEqual({});
+    expect(request).not.toHaveBeenCalledWith("sessions.patch", expect.any(Object));
 
     sessionStore.clearAllSessionsForTest();
   });
 });
 
 describe("acp setSessionConfigOption bridge behavior", () => {
-  it("updates the thought-level config option and returns refreshed options", async () => {
-    const sessionStore = createInMemorySessionStore();
-    const connection = createAcpConnection();
-    const sessionUpdate = connection.__sessionUpdateMock;
-    const request = vi.fn(async (method: string) => {
-      if (method === "sessions.list") {
-        return {
-          ts: Date.now(),
-          path: "/tmp/sessions.json",
-          count: 1,
-          defaults: {
-            modelProvider: null,
-            model: null,
-            contextTokens: null,
-          },
-          sessions: [
-            {
-              key: "config-session",
-              kind: "direct",
-              updatedAt: Date.now(),
-              thinkingLevel: "minimal",
-              modelProvider: "openai",
-              model: "gpt-5.4",
-            },
-          ],
-        };
-      }
-      return { ok: true };
-    }) as GatewayClient["request"];
-    const agent = new AcpGatewayAgent(connection, createAcpGateway(request), {
-      sessionStore,
-    });
-
-    await agent.loadSession(createLoadSessionRequest("config-session"));
-    sessionUpdate.mockClear();
-
-    const result = await agent.setSessionConfigOption(
-      createSetSessionConfigOptionRequest("config-session", "thought_level", "minimal"),
-    );
-
-    expect(result.configOptions).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: "thought_level",
-          currentValue: "minimal",
-        }),
-      ]),
-    );
-    expect(sessionUpdate).toHaveBeenCalledWith({
-      sessionId: "config-session",
-      update: {
-        sessionUpdate: "current_mode_update",
-        currentModeId: "minimal",
-      },
-    });
-    expect(sessionUpdate).toHaveBeenCalledWith({
-      sessionId: "config-session",
-      update: {
-        sessionUpdate: "config_option_update",
-        configOptions: expect.arrayContaining([
-          expect.objectContaining({
-            id: "thought_level",
-            currentValue: "minimal",
-          }),
-        ]),
-      },
-    });
-
-    sessionStore.clearAllSessionsForTest();
-  });
+  // thought_level setSessionConfigOption flow was gutted (#2464 / #2336 Area 3).
+  // Remaining tests cover the non-thought config options (verbose, reasoning,
+  // response_usage, elevated, fast_mode) which remain load-bearing.
 
   it("updates non-mode ACP config options through gateway session patches", async () => {
     const sessionStore = createInMemorySessionStore();
@@ -616,7 +482,6 @@ describe("acp setSessionConfigOption bridge behavior", () => {
               key: "reasoning-session",
               kind: "direct",
               updatedAt: Date.now(),
-              thinkingLevel: "minimal",
               modelProvider: "openai",
               model: "gpt-5.4",
               reasoningLevel: "stream",
@@ -681,7 +546,6 @@ describe("acp setSessionConfigOption bridge behavior", () => {
               key: "fast-session",
               kind: "direct",
               updatedAt: Date.now(),
-              thinkingLevel: "minimal",
               modelProvider: "openai",
               model: "gpt-5.4",
               fastMode: true,
@@ -751,7 +615,6 @@ describe("acp setSessionConfigOption bridge behavior", () => {
               key: "bool-config-session",
               kind: "direct",
               updatedAt: Date.now(),
-              thinkingLevel: "minimal",
               modelProvider: "openai",
               model: "gpt-5.4",
             },
@@ -768,10 +631,10 @@ describe("acp setSessionConfigOption bridge behavior", () => {
 
     await expect(
       agent.setSessionConfigOption(
-        createSetSessionConfigOptionRequest("bool-config-session", "thought_level", false),
+        createSetSessionConfigOptionRequest("bool-config-session", "verbose_level", false),
       ),
     ).rejects.toThrow(
-      'ACP bridge does not support non-string session config option values for "thought_level".',
+      'ACP bridge does not support non-string session config option values for "verbose_level".',
     );
     expect(request).not.toHaveBeenCalledWith(
       "sessions.patch",
@@ -915,7 +778,6 @@ describe("acp session metadata and usage updates", () => {
               displayName: "Usage session",
               kind: "direct",
               updatedAt: 1_710_000_123_000,
-              thinkingLevel: "adaptive",
               modelProvider: "openai",
               model: "gpt-5.4",
               totalTokens: 1200,
@@ -986,7 +848,6 @@ describe("acp session metadata and usage updates", () => {
               displayName: "Usage session",
               kind: "direct",
               updatedAt: 1_710_000_123_000,
-              thinkingLevel: "adaptive",
               modelProvider: "openai",
               model: "gpt-5.4",
               totalTokens: 1200,

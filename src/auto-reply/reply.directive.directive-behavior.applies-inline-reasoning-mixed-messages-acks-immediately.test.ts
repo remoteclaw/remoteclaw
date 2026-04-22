@@ -46,7 +46,6 @@ async function runThinkDirectiveAndGetText(home: string): Promise<string | undef
     {},
     makeWhatsAppDirectiveConfig(home, {
       model: "anthropic/claude-opus-4-5",
-      thinkingDefault: "high",
     }),
   );
   return replyText(res);

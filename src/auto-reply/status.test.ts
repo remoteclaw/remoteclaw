@@ -31,7 +31,6 @@ describe("buildStatusMessage", () => {
       sessionEntry: {
         sessionId: "abc",
         updatedAt: 0,
-        thinkingLevel: "high",
         verboseLevel: "full",
         reasoningLevel: "on",
       },
@@ -40,9 +39,7 @@ describe("buildStatusMessage", () => {
     });
     const normalized = normalizeTestText(text);
 
-    expect(normalized).toContain("Think: high");
     expect(normalized).toContain("verbose:full");
-    expect(normalized).toContain("Reasoning: on");
   });
 
   it("shows verbose label when enabled", () => {

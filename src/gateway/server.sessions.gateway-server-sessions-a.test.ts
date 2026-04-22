@@ -233,7 +233,6 @@ describe("gateway server sessions", () => {
           model: "claude-sonnet-4-6",
           inputTokens: 10,
           outputTokens: 20,
-          thinkingLevel: "low",
           verboseLevel: "on",
           lastChannel: "whatsapp",
           lastTo: "+1555",
@@ -287,7 +286,6 @@ describe("gateway server sessions", () => {
         key: string;
         totalTokens?: number;
         totalTokensFresh?: boolean;
-        thinkingLevel?: string;
         verboseLevel?: string;
         lastAccountId?: string;
         deliveryContext?: { channel?: string; to?: string; accountId?: string };
@@ -301,7 +299,6 @@ describe("gateway server sessions", () => {
     const main = list1.payload?.sessions.find((s) => s.key === "agent:test-agent:main");
     expect(main?.totalTokens).toBeUndefined();
     expect(main?.totalTokensFresh).toBe(false);
-    expect(main?.thinkingLevel).toBe("low");
     expect(main?.verboseLevel).toBe("on");
     expect(main?.lastAccountId).toBe("work");
     expect(main?.deliveryContext).toEqual({
@@ -333,7 +330,6 @@ describe("gateway server sessions", () => {
 
     const patched = await rpcReq<{ ok: true; key: string }>(ws, "sessions.patch", {
       key: "agent:test-agent:main",
-      thinkingLevel: "medium",
       verboseLevel: "off",
     });
     expect(patched.ok).toBe(true);
@@ -366,7 +362,6 @@ describe("gateway server sessions", () => {
     const list2 = await rpcReq<{
       sessions: Array<{
         key: string;
-        thinkingLevel?: string;
         verboseLevel?: string;
         sendPolicy?: string;
         label?: string;
@@ -375,7 +370,6 @@ describe("gateway server sessions", () => {
     }>(ws, "sessions.list", {});
     expect(list2.ok).toBe(true);
     const main2 = list2.payload?.sessions.find((s) => s.key === "agent:test-agent:main");
-    expect(main2?.thinkingLevel).toBe("medium");
     expect(main2?.verboseLevel).toBe("off");
     expect(main2?.sendPolicy).toBe("deny");
     const subagent = list2.payload?.sessions.find((s) => s.key === "agent:test-agent:subagent:one");
@@ -517,15 +511,6 @@ describe("gateway server sessions", () => {
     const filesAfterReset = await fs.readdir(dir);
     expect(filesAfterReset.some((f) => f.startsWith("sess-main.jsonl.reset."))).toBe(true);
 
-    const badThinking = await rpcReq(ws, "sessions.patch", {
-      key: "agent:test-agent:main",
-      thinkingLevel: "banana",
-    });
-    expect(badThinking.ok).toBe(false);
-    expect((badThinking.error as { message?: unknown } | undefined)?.message ?? "").toMatch(
-      /invalid thinkinglevel/i,
-    );
-
     ws.close();
   });
 
@@ -627,13 +612,13 @@ describe("gateway server sessions", () => {
     });
     const patched = await rpcReq<{ ok: true; key: string }>(ws, "sessions.patch", {
       key: "main",
-      thinkingLevel: "medium",
+      verboseLevel: "full",
     });
     expect(patched.ok).toBe(true);
     expect(patched.payload?.key).toBe("agent:ops:work");
     store = await readStore();
     expect(Object.keys(store).toSorted()).toEqual(["agent:ops:work"]);
-    expect(store["agent:ops:work"]?.thinkingLevel).toBe("medium");
+    expect(store["agent:ops:work"]?.verboseLevel).toBe("full");
 
     await writeRawStore({
       ...store,

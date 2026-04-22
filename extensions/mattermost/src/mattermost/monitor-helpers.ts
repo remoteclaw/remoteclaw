@@ -9,7 +9,6 @@ export type ResponsePrefixContext = {
   model?: string;
   modelFull?: string;
   provider?: string;
-  thinkingLevel?: string;
   identityName?: string;
 };
 

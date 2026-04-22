@@ -146,7 +146,7 @@ Key fields (not exhaustive):
 - `chatType`: `direct | group | room` (helps UIs and send policy)
 - `provider`, `subject`, `room`, `space`, `displayName`: metadata for group/channel labeling
 - Toggles:
-  - `thinkingLevel`, `verboseLevel`, `reasoningLevel`, `elevatedLevel`
+  - `verboseLevel`, `reasoningLevel`, `elevatedLevel`
   - `sendPolicy` (per-session override)
 - Model selection:
   - `providerOverride`, `modelOverride`, `authProfileOverride`

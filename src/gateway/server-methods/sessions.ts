@@ -495,7 +495,6 @@ export const sessionsHandlers: GatewayRequestHandlers = {
         updatedAt: now,
         systemSent: false,
         abortedLastRun: false,
-        thinkingLevel: entry?.thinkingLevel,
         verboseLevel: entry?.verboseLevel,
         reasoningLevel: entry?.reasoningLevel,
         responseUsage: entry?.responseUsage,

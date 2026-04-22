@@ -54,7 +54,6 @@ export type SessionListRow = {
   sessionId?: string;
   model?: string;
   totalTokens?: number | null;
-  thinkingLevel?: string;
   verboseLevel?: string;
   systemSent?: boolean;
   abortedLastRun?: boolean;

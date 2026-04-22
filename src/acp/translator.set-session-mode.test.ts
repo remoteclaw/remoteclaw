@@ -24,31 +24,23 @@ function createAgentWithSession(request: GatewayClient["request"]) {
   });
 }
 
+// ACP bridge exposes no modes after thought-level removal (#2464 / #2336 Area 3).
+// setSessionMode is now a no-op — it never touches the gateway.
 describe("acp setSessionMode", () => {
-  it("setSessionMode propagates gateway error", async () => {
-    const request = vi.fn(async () => {
-      throw new Error("gateway rejected mode change");
-    }) as GatewayClient["request"];
+  it("setSessionMode is a no-op and never calls the gateway", async () => {
+    const request = vi.fn(async () => ({ ok: true })) as GatewayClient["request"];
     const agent = createAgentWithSession(request);
 
-    await expect(agent.setSessionMode(createSetSessionModeRequest("high"))).rejects.toThrow(
-      "gateway rejected mode change",
-    );
-    expect(request).toHaveBeenCalledWith("sessions.patch", {
-      key: "agent:main:main",
-      thinkingLevel: "high",
-    });
+    await expect(agent.setSessionMode(createSetSessionModeRequest("high"))).resolves.toEqual({});
+    expect(request).not.toHaveBeenCalled();
   });
 
-  it("setSessionMode succeeds when gateway accepts", async () => {
+  it("setSessionMode returns empty response for any modeId", async () => {
     const request = vi.fn(async () => ({ ok: true })) as GatewayClient["request"];
     const agent = createAgentWithSession(request);
 
     await expect(agent.setSessionMode(createSetSessionModeRequest("low"))).resolves.toEqual({});
-    expect(request).toHaveBeenCalledWith("sessions.patch", {
-      key: "agent:main:main",
-      thinkingLevel: "low",
-    });
+    expect(request).not.toHaveBeenCalled();
   });
 
   it("setSessionMode returns early for empty modeId", async () => {

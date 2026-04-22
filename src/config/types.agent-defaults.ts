@@ -174,8 +174,6 @@ export type AgentDefaultsConfig = {
   embeddedPi?: unknown;
   /** @deprecated Memory search config gutted — parsed but ignored. */
   memorySearch?: unknown;
-  /** Default thinking level when no /think directive is present. */
-  thinkingDefault?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "adaptive";
   /** Default verbose level when no /verbose directive is present. */
   verboseDefault?: "off" | "on" | "full";
   /** Default elevated level when no /elevated directive is present. */

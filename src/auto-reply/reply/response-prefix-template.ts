@@ -12,8 +12,6 @@ export type ResponsePrefixContext = {
   modelFull?: string;
   /** Provider name (e.g., "openai-codex", "anthropic") */
   provider?: string;
-  /** Current thinking level (e.g., "high", "low", "off") */
-  thinkingLevel?: string;
   /** Agent identity name */
   identityName?: string;
 };
@@ -53,9 +51,6 @@ export function resolveResponsePrefixTemplate(
         return context.modelFull ?? match;
       case "provider":
         return context.provider ?? match;
-      case "thinkinglevel":
-      case "think":
-        return context.thinkingLevel ?? match;
       case "identity.name":
       case "identityname":
         return context.identityName ?? match;

@@ -17,7 +17,6 @@ type SessionEntry = {
   customType?: string;
   provider?: string;
   modelId?: string;
-  thinkingLevel?: string;
 };
 
 type SessionData = {
@@ -159,15 +158,8 @@ describe("export html security hardening", () => {
         modelId: attack,
       },
       {
-        id: "5",
-        parentId: "4",
-        timestamp: now(),
-        type: "thinking_level_change",
-        thinkingLevel: attack,
-      },
-      {
         id: "6",
-        parentId: "5",
+        parentId: "4",
         timestamp: now(),
         type: attack,
       },

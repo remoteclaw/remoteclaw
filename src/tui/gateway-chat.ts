@@ -77,7 +77,6 @@ export type GatewaySessionList = {
   sessions: Array<
     Pick<
       SessionInfo,
-      | "thinkingLevel"
       | "verboseLevel"
       | "reasoningLevel"
       | "model"

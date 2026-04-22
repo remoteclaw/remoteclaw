@@ -7,7 +7,6 @@ export type SessionStatus = {
   sessionId?: string;
   updatedAt: number | null;
   age: number | null;
-  thinkingLevel?: string;
   verboseLevel?: string;
   reasoningLevel?: string;
   elevatedLevel?: string;

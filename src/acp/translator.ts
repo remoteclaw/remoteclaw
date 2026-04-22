@@ -27,7 +27,6 @@ import type {
   ToolKind,
 } from "@agentclientprotocol/sdk";
 import { PROTOCOL_VERSION } from "@agentclientprotocol/sdk";
-import { listThinkingLevels } from "../auto-reply/thinking.js";
 import type { GatewayClient } from "../gateway/client.js";
 import type { EventFrame } from "../gateway/protocol/index.js";
 import type { GatewaySessionRow, SessionsListResult } from "../gateway/session-utils.js";
@@ -52,7 +51,6 @@ import { ACP_AGENT_INFO, type AcpServerOptions } from "./types.js";
 
 // Maximum allowed prompt size (2MB) to prevent DoS via memory exhaustion (CWE-400, GHSA-cxpw-2g23-2vgw)
 const MAX_PROMPT_BYTES = 2 * 1024 * 1024;
-const ACP_THOUGHT_LEVEL_CONFIG_ID = "thought_level";
 const ACP_FAST_MODE_CONFIG_ID = "fast_mode";
 const ACP_VERBOSE_LEVEL_CONFIG_ID = "verbose_level";
 const ACP_REASONING_LEVEL_CONFIG_ID = "reasoning_level";
@@ -90,7 +88,6 @@ type GatewaySessionPresentationRow = Pick<
   | "label"
   | "derivedTitle"
   | "updatedAt"
-  | "thinkingLevel"
   | "fastMode"
   | "modelProvider"
   | "model"
@@ -142,31 +139,8 @@ type ReplayChunk = {
 const SESSION_CREATE_RATE_LIMIT_DEFAULT_MAX_REQUESTS = 120;
 const SESSION_CREATE_RATE_LIMIT_DEFAULT_WINDOW_MS = 10_000;
 
-function formatThinkingLevelName(level: string): string {
-  switch (level) {
-    case "xhigh":
-      return "Extra High";
-    case "adaptive":
-      return "Adaptive";
-    default:
-      return level.length > 0 ? `${level[0].toUpperCase()}${level.slice(1)}` : "Unknown";
-  }
-}
-
-function buildThinkingModeDescription(level: string): string | undefined {
-  if (level === "adaptive") {
-    return "Use the Gateway session default thought level.";
-  }
-  return undefined;
-}
-
 function formatConfigValueName(value: string): string {
-  switch (value) {
-    case "xhigh":
-      return "Extra High";
-    default:
-      return value.length > 0 ? `${value[0].toUpperCase()}${value.slice(1)}` : "Unknown";
-  }
+  return value.length > 0 ? `${value[0].toUpperCase()}${value.slice(1)}` : "Unknown";
 }
 
 function buildSelectConfigOption(params: {
@@ -199,31 +173,15 @@ function buildSessionPresentation(params: {
     ...params.row,
     ...params.overrides,
   };
-  const availableLevelIds: string[] = [...listThinkingLevels(row.modelProvider, row.model)];
-  const currentModeId = row.thinkingLevel?.trim() || "adaptive";
-  if (!availableLevelIds.includes(currentModeId)) {
-    availableLevelIds.push(currentModeId);
-  }
 
+  // Thought-level mode presentation was removed together with SessionEntry.thinkingLevel.
+  // ACP bridge exposes no modes — CLI runtimes own reasoning depth (#2464 / #2336 Area 3).
   const modes: SessionModeState = {
-    currentModeId,
-    availableModes: availableLevelIds.map((level) => ({
-      id: level,
-      name: formatThinkingLevelName(level),
-      description: buildThinkingModeDescription(level),
-    })),
+    currentModeId: "",
+    availableModes: [],
   };
 
   const configOptions: SessionConfigOption[] = [
-    buildSelectConfigOption({
-      id: ACP_THOUGHT_LEVEL_CONFIG_ID,
-      name: "Thought level",
-      category: "thought_level",
-      description:
-        "Controls how much deliberate reasoning RemoteClaw requests from the Gateway model.",
-      currentValue: currentModeId,
-      values: availableLevelIds,
-    }),
     buildSelectConfigOption({
       id: ACP_FAST_MODE_CONFIG_ID,
       name: "Fast mode",
@@ -549,24 +507,10 @@ export class AcpGatewayAgent implements Agent {
     if (!session) {
       throw new Error(`Session ${params.sessionId} not found`);
     }
-    if (!params.modeId) {
-      return {};
-    }
-    try {
-      await this.gateway.request("sessions.patch", {
-        key: session.sessionKey,
-        thinkingLevel: params.modeId,
-      });
-      this.log(`setSessionMode: ${session.sessionId} -> ${params.modeId}`);
-      const sessionSnapshot = await this.getSessionSnapshot(session.sessionKey, {
-        thinkingLevel: params.modeId,
-      });
-      await this.sendSessionSnapshotUpdate(session.sessionId, sessionSnapshot, {
-        includeControls: true,
-      });
-    } catch (err) {
-      this.log(`setSessionMode error: ${String(err)}`);
-      throw err instanceof Error ? err : new Error(String(err));
+    // ACP bridge exposes no modes after thought-level removal (#2464 / #2336 Area 3).
+    // Clients should not invoke setSessionMode; if one does, ignore silently.
+    if (params.modeId) {
+      this.log(`setSessionMode: ${session.sessionId} -> ${params.modeId} (no modes exposed)`);
     }
     return {};
   }
@@ -660,7 +604,7 @@ export class AcpGatewayAgent implements Agent {
             message,
             attachments: attachments.length > 0 ? attachments : undefined,
             idempotencyKey: runId,
-            thinking: readString(params._meta, ["thinking", "thinkingLevel"]),
+            thinking: readString(params._meta, ["thinking"]),
             deliver: readBool(params._meta, ["deliver"]),
             timeoutMs: readNumber(params._meta, ["timeoutMs"]),
             systemInputProvenance,
@@ -998,7 +942,6 @@ export class AcpGatewayAgent implements Agent {
       label: session.label,
       derivedTitle: session.derivedTitle,
       updatedAt: session.updatedAt,
-      thinkingLevel: session.thinkingLevel,
       modelProvider: session.modelProvider,
       model: session.model,
       fastMode: session.fastMode,
@@ -1025,11 +968,6 @@ export class AcpGatewayAgent implements Agent {
       );
     }
     switch (configId) {
-      case ACP_THOUGHT_LEVEL_CONFIG_ID:
-        return {
-          patch: { thinkingLevel: value },
-          overrides: { thinkingLevel: value },
-        };
       case ACP_FAST_MODE_CONFIG_ID:
         return {
           patch: { fastMode: value === "on" },

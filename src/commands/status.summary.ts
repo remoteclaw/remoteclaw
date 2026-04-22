@@ -28,10 +28,6 @@ const buildFlags = (entry?: SessionEntry): string[] => {
     return [];
   }
   const flags: string[] = [];
-  const think = entry?.thinkingLevel;
-  if (typeof think === "string" && think.length > 0) {
-    flags.push(`think:${think}`);
-  }
   const verbose = entry?.verboseLevel;
   if (typeof verbose === "string" && verbose.length > 0) {
     flags.push(`verbose:${verbose}`);
@@ -170,7 +166,6 @@ export async function getStatusSummary(
           sessionId: entry?.sessionId,
           updatedAt,
           age,
-          thinkingLevel: entry?.thinkingLevel,
           verboseLevel: entry?.verboseLevel,
           reasoningLevel: entry?.reasoningLevel,
           elevatedLevel: entry?.elevatedLevel,

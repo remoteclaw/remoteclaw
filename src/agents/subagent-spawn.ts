@@ -451,18 +451,6 @@ export async function spawnSubagentDirect(
     }
     modelApplied = true;
   }
-  if (thinkingOverride !== undefined) {
-    const thinkingPatchError = await patchChildSession({
-      thinkingLevel: thinkingOverride === "off" ? null : thinkingOverride,
-    });
-    if (thinkingPatchError) {
-      return {
-        status: "error",
-        error: thinkingPatchError,
-        childSessionKey,
-      };
-    }
-  }
   if (requestThreadBinding) {
     const bindResult = await ensureThreadBindingForSubagentSpawn({
       hookRunner,

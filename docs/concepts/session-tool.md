@@ -52,7 +52,7 @@ Row shape (JSON):
 - `updatedAt` (ms)
 - `sessionId`
 - `model`, `contextTokens`, `totalTokens`
-- `thinkingLevel`, `verboseLevel`, `systemSent`, `abortedLastRun`
+- `verboseLevel`, `systemSent`, `abortedLastRun`
 - `sendPolicy` (session override if set)
 - `lastChannel`, `lastTo`
 - `deliveryContext` (normalized `{ channel, to, accountId }` when available)

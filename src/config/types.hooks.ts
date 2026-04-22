@@ -36,7 +36,6 @@ export type HookMappingConfig = {
   to?: string;
   /** Override model for this hook (provider/model or alias). */
   model?: string;
-  thinking?: string;
   timeoutSeconds?: number;
   transform?: HookMappingTransform;
 };

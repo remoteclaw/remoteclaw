@@ -33,7 +33,7 @@ What works well on native Windows today:
 - embedded local-agent/provider smoke such as:
 
 ```powershell
-remoteclaw agent --local --agent main --thinking low -m "Reply with exactly WINDOWS-HATCH-OK."
+remoteclaw agent --local --agent main -m "Reply with exactly WINDOWS-HATCH-OK."
 ```
 
 Current caveats:

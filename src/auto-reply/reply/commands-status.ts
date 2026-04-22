@@ -44,7 +44,6 @@ export async function buildStatusReply(params: {
   isGroup: boolean;
   defaultGroupActivation: () => "always" | "mention";
   contextTokens?: number;
-  resolvedThinkLevel?: unknown;
   resolvedReasoningLevel?: unknown;
   resolvedElevatedLevel?: unknown;
   mediaDecisions?: unknown;

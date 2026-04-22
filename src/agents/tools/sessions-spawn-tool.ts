@@ -24,7 +24,6 @@ const SessionsSpawnToolSchema = Type.Object({
   runtime: optionalStringEnum(SESSIONS_SPAWN_RUNTIMES),
   agentId: Type.Optional(Type.String()),
   model: Type.Optional(Type.String()),
-  thinking: Type.Optional(Type.String()),
   runTimeoutSeconds: Type.Optional(Type.Number({ minimum: 0 })),
   // Back-compat: older callers used timeoutSeconds for this tool.
   timeoutSeconds: Type.Optional(Type.Number({ minimum: 0 })),
@@ -88,7 +87,6 @@ export function createSessionsSpawnTool(opts?: {
       const label = typeof params.label === "string" ? params.label.trim() : "";
       const requestedAgentId = readStringParam(params, "agentId");
       const modelOverride = readStringParam(params, "model");
-      const thinkingOverrideRaw = readStringParam(params, "thinking");
       const mode = params.mode === "run" || params.mode === "session" ? params.mode : undefined;
       const cleanup =
         params.cleanup === "keep" || params.cleanup === "delete" ? params.cleanup : "keep";
@@ -120,7 +118,6 @@ export function createSessionsSpawnTool(opts?: {
           label: label || undefined,
           agentId: requestedAgentId,
           model: modelOverride,
-          thinking: thinkingOverrideRaw,
           runTimeoutSeconds,
           thread,
           mode,

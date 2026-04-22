@@ -99,7 +99,6 @@ function coercePayload(payload: UnknownRecord) {
     const hasText = typeof next.text === "string" && next.text.trim().length > 0;
     const hasAgentTurnHint =
       typeof next.model === "string" ||
-      typeof next.thinking === "string" ||
       typeof next.timeoutSeconds === "number" ||
       typeof next.allowUnsafeExternalContent === "boolean";
     if (hasMessage) {
@@ -133,18 +132,6 @@ function coercePayload(payload: UnknownRecord) {
       }
     } else {
       delete next.model;
-    }
-  }
-  if ("thinking" in next) {
-    if (typeof next.thinking === "string") {
-      const trimmed = next.thinking.trim();
-      if (trimmed) {
-        next.thinking = trimmed;
-      } else {
-        delete next.thinking;
-      }
-    } else {
-      delete next.thinking;
     }
   }
   if ("timeoutSeconds" in next) {
@@ -247,7 +234,7 @@ function normalizeWakeMode(raw: unknown) {
 }
 
 function copyTopLevelAgentTurnFields(next: UnknownRecord, payload: UnknownRecord) {
-  const copyString = (field: "model" | "thinking") => {
+  const copyString = (field: "model") => {
     if (typeof payload[field] === "string" && payload[field].trim()) {
       return;
     }
@@ -257,7 +244,6 @@ function copyTopLevelAgentTurnFields(next: UnknownRecord, payload: UnknownRecord
     }
   };
   copyString("model");
-  copyString("thinking");
 
   if (typeof payload.timeoutSeconds !== "number" && typeof next.timeoutSeconds === "number") {
     payload.timeoutSeconds = next.timeoutSeconds;
@@ -301,7 +287,6 @@ function copyTopLevelLegacyDeliveryFields(next: UnknownRecord, payload: UnknownR
 
 function stripLegacyTopLevelFields(next: UnknownRecord) {
   delete next.model;
-  delete next.thinking;
   delete next.timeoutSeconds;
   delete next.allowUnsafeExternalContent;
   delete next.message;

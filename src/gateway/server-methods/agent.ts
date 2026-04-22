@@ -242,7 +242,6 @@ export const agentHandlers: GatewayRequestHandlers = {
       replyTo?: string;
       sessionId?: string;
       sessionKey?: string;
-      thinking?: string;
       deliver?: boolean;
       attachments?: Array<{
         type?: string;
@@ -677,7 +676,6 @@ export const agentHandlers: GatewayRequestHandlers = {
         to: resolvedTo,
         sessionId: resolvedSessionId,
         sessionKey: resolvedSessionKey,
-        thinking: request.thinking,
         deliver,
         deliveryTargetMode,
         channel: resolvedChannel,

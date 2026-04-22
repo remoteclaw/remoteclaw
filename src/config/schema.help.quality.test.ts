@@ -224,7 +224,6 @@ const TARGET_KEYS = [
   "hooks.gmail",
   "hooks.gmail.pushToken",
   "hooks.gmail.tailscale.mode",
-  "hooks.gmail.thinking",
   "hooks.internal",
   "hooks.internal.handlers",
   "hooks.internal.handlers[].event",
@@ -404,7 +403,6 @@ const ENUM_EXPECTATIONS: Record<string, string[]> = {
   "hooks.mappings[].action": ['"wake"', '"agent"'],
   "hooks.mappings[].wakeMode": ['"now"', '"next-heartbeat"'],
   "hooks.gmail.tailscale.mode": ['"off"', '"serve"', '"funnel"'],
-  "hooks.gmail.thinking": ['"off"', '"minimal"', '"low"', '"medium"', '"high"'],
   "messages.queue.mode": [
     '"steer"',
     '"followup"',
@@ -464,7 +462,6 @@ const TOOLS_HOOKS_TARGET_KEYS = [
   "hooks.mappings[].model",
   "hooks.mappings[].name",
   "hooks.mappings[].textTemplate",
-  "hooks.mappings[].thinking",
   "hooks.mappings[].transform",
   "tools.alsoAllow",
   "tools.byProvider",

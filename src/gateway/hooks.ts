@@ -231,7 +231,6 @@ export type HookAgentPayload = {
   channel: HookMessageChannel;
   to?: string;
   model?: string;
-  thinking?: string;
   timeoutSeconds?: number;
 };
 
@@ -407,9 +406,6 @@ export function normalizeAgentPayload(payload: Record<string, unknown>):
     return { ok: false, error: "model required" };
   }
   const deliver = resolveHookDeliver(payload.deliver);
-  const thinkingRaw = payload.thinking;
-  const thinking =
-    typeof thinkingRaw === "string" && thinkingRaw.trim() ? thinkingRaw.trim() : undefined;
   const timeoutRaw = payload.timeoutSeconds;
   const timeoutSeconds =
     typeof timeoutRaw === "number" && Number.isFinite(timeoutRaw) && timeoutRaw > 0
@@ -428,7 +424,6 @@ export function normalizeAgentPayload(payload: Record<string, unknown>):
       channel,
       to,
       model,
-      thinking,
       timeoutSeconds,
     },
   };

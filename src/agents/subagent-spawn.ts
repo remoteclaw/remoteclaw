@@ -73,7 +73,6 @@ export type SpawnSubagentParams = {
   label?: string;
   agentId?: string;
   model?: string;
-  thinking?: string;
   runTimeoutSeconds?: number;
   thread?: boolean;
   mode?: SpawnSubagentMode;
@@ -276,7 +275,6 @@ export async function spawnSubagentDirect(
     };
   }
   const _modelOverride = params.model;
-  const _thinkingOverrideRaw = params.thinking;
   const requestThreadBinding = params.thread === true;
   const sandboxMode = params.sandbox === "require" ? "require" : "inherit";
   const spawnMode = resolveSpawnMode({
@@ -413,7 +411,6 @@ export async function spawnSubagentDirect(
   const _targetAgentConfig = resolveAgentConfig(cfg, targetAgentId);
   const resolvedModel = undefined as string | undefined;
 
-  const thinkingOverride = undefined as string | undefined;
   const patchChildSession = async (patch: Record<string, unknown>): Promise<string | undefined> => {
     try {
       await callGateway({
@@ -710,7 +707,6 @@ export async function spawnSubagentDirect(
         deliver: false,
         lane: AGENT_LANE_SUBAGENT,
         extraSystemPrompt: childSystemPrompt,
-        thinking: thinkingOverride,
         timeout: runTimeoutSeconds,
         label: label || undefined,
         spawnedBy: spawnedByKey,

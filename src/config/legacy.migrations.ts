@@ -42,6 +42,73 @@ export const LEGACY_CONFIG_MIGRATIONS: LegacyConfigMigration[] = [
     },
   },
   {
+    id: "strip-thinking-level-fields",
+    describe:
+      "Strip obsolete thinkingDefault, subagents.thinking, and hooks.mappings[].thinking fields (#2480)",
+    apply(raw, changes) {
+      const agents = getRecord(raw.agents);
+      const defaults = agents ? getRecord(agents.defaults) : null;
+      if (defaults) {
+        if (Object.prototype.hasOwnProperty.call(defaults, "thinkingDefault")) {
+          delete defaults.thinkingDefault;
+          changes.push(
+            "Stripped obsolete agents.defaults.thinkingDefault field — CLI runtimes own reasoning depth.",
+          );
+        }
+        const defaultsSubagents = getRecord(defaults.subagents);
+        if (
+          defaultsSubagents &&
+          Object.prototype.hasOwnProperty.call(defaultsSubagents, "thinking")
+        ) {
+          delete defaultsSubagents.thinking;
+          changes.push(
+            "Stripped obsolete agents.defaults.subagents.thinking field — CLI runtimes own reasoning depth.",
+          );
+        }
+      }
+      const agentsList = getAgentsList(agents);
+      let strippedPerAgentSubagent = false;
+      for (const entry of agentsList) {
+        const entryRecord = getRecord(entry);
+        if (!entryRecord) {
+          continue;
+        }
+        const entrySubagents = getRecord(entryRecord.subagents);
+        if (entrySubagents && Object.prototype.hasOwnProperty.call(entrySubagents, "thinking")) {
+          delete entrySubagents.thinking;
+          strippedPerAgentSubagent = true;
+        }
+      }
+      if (strippedPerAgentSubagent) {
+        changes.push(
+          "Stripped obsolete agents.list[].subagents.thinking field(s) — CLI runtimes own reasoning depth.",
+        );
+      }
+      const hooks = getRecord(raw.hooks);
+      const mappings = Array.isArray(hooks?.mappings) ? hooks.mappings : [];
+      let strippedHookMapping = false;
+      for (const mapping of mappings) {
+        const mappingRecord = getRecord(mapping);
+        if (mappingRecord && Object.prototype.hasOwnProperty.call(mappingRecord, "thinking")) {
+          delete mappingRecord.thinking;
+          strippedHookMapping = true;
+        }
+      }
+      if (strippedHookMapping) {
+        changes.push(
+          "Stripped obsolete hooks.mappings[].thinking field(s) — CLI runtimes own reasoning depth.",
+        );
+      }
+      const gmail = getRecord(hooks?.gmail);
+      if (gmail && Object.prototype.hasOwnProperty.call(gmail, "thinking")) {
+        delete gmail.thinking;
+        changes.push(
+          "Stripped obsolete hooks.gmail.thinking field — CLI runtimes own reasoning depth.",
+        );
+      }
+    },
+  },
+  {
     id: "telegram-require-mention",
     describe: "Move telegram.requireMention to channels.telegram.groups.*.requireMention",
     apply(raw, changes) {

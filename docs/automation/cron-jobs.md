@@ -639,7 +639,6 @@ remoteclaw cron add \
   --session isolated \
   --message "Weekly deep analysis of project progress." \
   --model "opus" \
-  --thinking high \
   --announce \
   --channel whatsapp \
   --to "+15551234567"
@@ -670,8 +669,7 @@ Edit an existing job (patch fields):
 ```bash
 remoteclaw cron edit <jobId> \
   --message "Updated prompt" \
-  --model "opus" \
-  --thinking low
+  --model "opus"
 ```
 
 Force an existing cron job to run exactly on schedule (no stagger):

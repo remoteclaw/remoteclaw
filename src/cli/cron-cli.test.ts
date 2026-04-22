@@ -40,7 +40,6 @@ type CronUpdatePatch = {
       kind?: string;
       message?: string;
       model?: string;
-      thinking?: string;
       lightContext?: boolean;
     };
     delivery?: {
@@ -55,7 +54,7 @@ type CronUpdatePatch = {
 
 type CronAddParams = {
   schedule?: { kind?: string; staggerMs?: number };
-  payload?: { model?: string; thinking?: string; lightContext?: boolean };
+  payload?: { model?: string; lightContext?: boolean };
   delivery?: { mode?: string; accountId?: string };
   deleteAfterRun?: boolean;
   agentId?: string;
@@ -216,7 +215,7 @@ describe("cron cli", () => {
     expect(exitSpy).toHaveBeenCalledWith(expectedExitCode);
   });
 
-  it("trims model and thinking on cron add", { timeout: CRON_CLI_TEST_TIMEOUT_MS }, async () => {
+  it("trims model on cron add", { timeout: CRON_CLI_TEST_TIMEOUT_MS }, async () => {
     await runCronCommand([
       "cron",
       "add",
@@ -230,17 +229,14 @@ describe("cron cli", () => {
       "hello",
       "--model",
       "  opus  ",
-      "--thinking",
-      "  low  ",
     ]);
 
     const addCall = callGatewayFromCli.mock.calls.find((call) => call[0] === "cron.add");
     const params = addCall?.[2] as {
-      payload?: { model?: string; thinking?: string };
+      payload?: { model?: string };
     };
 
     expect(params?.payload?.model).toBe("opus");
-    expect(params?.payload?.thinking).toBe("low");
   });
 
   it("defaults isolated cron add to announce delivery", async () => {
@@ -398,21 +394,18 @@ describe("cron cli", () => {
 
   it.each([
     {
-      label: "omits empty model and thinking",
-      args: ["--message", "hello", "--model", "   ", "--thinking", "  "],
+      label: "omits empty model",
+      args: ["--message", "hello", "--model", "   "],
       expectedModel: undefined,
-      expectedThinking: undefined,
     },
     {
-      label: "trims model and thinking",
-      args: ["--message", "hello", "--model", "  opus  ", "--thinking", "  high  "],
+      label: "trims model",
+      args: ["--message", "hello", "--model", "  opus  "],
       expectedModel: "opus",
-      expectedThinking: "high",
     },
-  ])("cron edit $label", async ({ args, expectedModel, expectedThinking }) => {
+  ])("cron edit $label", async ({ args, expectedModel }) => {
     const patch = await runCronEditAndGetPatch(args);
     expect(patch?.patch?.payload?.model).toBe(expectedModel);
-    expect(patch?.patch?.payload?.thinking).toBe(expectedThinking);
   });
 
   it("sets and clears agent id on cron edit", async () => {
@@ -426,16 +419,15 @@ describe("cron cli", () => {
     expect(clearPatch?.patch?.agentId).toBeNull();
   });
 
-  it("allows model/thinking updates without --message", async () => {
-    await runCronCommand(["cron", "edit", "job-1", "--model", "opus", "--thinking", "low"]);
+  it("allows model updates without --message", async () => {
+    await runCronCommand(["cron", "edit", "job-1", "--model", "opus"]);
 
     const patch = getGatewayCallParams<{
-      patch?: { payload?: { kind?: string; model?: string; thinking?: string } };
+      patch?: { payload?: { kind?: string; model?: string } };
     }>("cron.update");
 
     expect(patch?.patch?.payload?.kind).toBe("agentTurn");
     expect(patch?.patch?.payload?.model).toBe("opus");
-    expect(patch?.patch?.payload?.thinking).toBe("low");
   });
 
   it("sets and clears lightContext on cron edit", async () => {

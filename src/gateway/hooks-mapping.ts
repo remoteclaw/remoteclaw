@@ -20,7 +20,6 @@ export type HookMappingResolved = {
   channel?: HookMessageChannel;
   to?: string;
   model?: string;
-  thinking?: string;
   timeoutSeconds?: number;
   transform?: HookMappingTransformResolved;
 };
@@ -55,7 +54,6 @@ export type HookAction =
       channel?: HookMessageChannel;
       to?: string;
       model?: string;
-      thinking?: string;
       timeoutSeconds?: number;
     };
 
@@ -82,7 +80,6 @@ type HookTransformResult = Partial<{
   channel: HookMessageChannel;
   to: string;
   model: string;
-  thinking: string;
   timeoutSeconds: number;
 }> | null;
 
@@ -192,7 +189,6 @@ function normalizeHookMapping(
     channel: mapping.channel,
     to: mapping.to,
     model: mapping.model,
-    thinking: mapping.thinking,
     timeoutSeconds: mapping.timeoutSeconds,
     transform,
   };
@@ -243,7 +239,6 @@ function buildActionFromMapping(
       channel: mapping.channel,
       to: renderOptional(mapping.to, ctx),
       model: renderOptional(mapping.model, ctx),
-      thinking: renderOptional(mapping.thinking, ctx),
       timeoutSeconds: mapping.timeoutSeconds,
     },
   };
@@ -284,7 +279,6 @@ function mergeAction(
     channel: override.channel ?? baseAgent?.channel,
     to: override.to ?? baseAgent?.to,
     model: override.model ?? baseAgent?.model,
-    thinking: override.thinking ?? baseAgent?.thinking,
     timeoutSeconds: override.timeoutSeconds ?? baseAgent?.timeoutSeconds,
   });
 }

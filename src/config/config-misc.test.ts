@@ -372,6 +372,86 @@ describe("agents.defaults.embeddedPi legacy field (#2479)", () => {
   });
 });
 
+describe("thinking-level legacy fields (#2480)", () => {
+  // The thinkingLevel/thinkingDefault/subagents.thinking input pipeline was removed;
+  // CLI runtimes own reasoning depth. These tests guard the rule+migration channel
+  // that lets pre-gut configs still load (strict zod schemas would otherwise reject
+  // unknown keys).
+  it("flags agents.defaults.thinkingDefault and agents.defaults.subagents.thinking as legacy issues", async () => {
+    await withTempHome(async (home) => {
+      await writeRemoteClawConfig(home, {
+        agents: {
+          list: [{ id: "ops" }],
+          defaults: {
+            thinkingDefault: "high",
+            subagents: { thinking: "medium" },
+          },
+        },
+      });
+
+      const snap = await readConfigFileSnapshot();
+      const paths = snap.legacyIssues.map((i) => i.path);
+      expect(paths).toContain("agents.defaults.thinkingDefault");
+      expect(paths).toContain("agents.defaults.subagents.thinking");
+    });
+  });
+
+  it("auto-migration strips top-level and subagents thinking fields", () => {
+    const res = migrateLegacyConfig({
+      agents: {
+        list: [
+          {
+            id: "ops",
+            workspace: "/tmp/ops",
+            subagents: { thinking: "low" },
+          },
+        ],
+        defaults: {
+          thinkingDefault: "high",
+          subagents: { thinking: "medium" },
+        },
+      },
+    });
+
+    expect(res.changes).toContain(
+      "Stripped obsolete agents.defaults.thinkingDefault field — CLI runtimes own reasoning depth.",
+    );
+    expect(res.changes).toContain(
+      "Stripped obsolete agents.defaults.subagents.thinking field — CLI runtimes own reasoning depth.",
+    );
+    expect(res.changes).toContain(
+      "Stripped obsolete agents.list[].subagents.thinking field(s) — CLI runtimes own reasoning depth.",
+    );
+    expect(res.config).not.toBeNull();
+    const defaults = res.config?.agents?.defaults as
+      | { thinkingDefault?: unknown; subagents?: { thinking?: unknown } }
+      | undefined;
+    expect(defaults?.thinkingDefault).toBeUndefined();
+    expect(defaults?.subagents?.thinking).toBeUndefined();
+    const list = res.config?.agents?.list as
+      | Array<{ subagents?: { thinking?: unknown } }>
+      | undefined;
+    expect(list?.[0]?.subagents?.thinking).toBeUndefined();
+  });
+
+  it("auto-migration strips hooks.mappings[].thinking", () => {
+    const res = migrateLegacyConfig({
+      agents: { list: [{ id: "ops", workspace: "/tmp/ops" }] },
+      hooks: {
+        mappings: [{ id: "m1", match: { path: "/x" }, action: "wake", thinking: "high" }],
+      },
+    });
+
+    expect(res.changes).toContain(
+      "Stripped obsolete hooks.mappings[].thinking field(s) — CLI runtimes own reasoning depth.",
+    );
+    expect(res.config).not.toBeNull();
+    const mappings = (res.config?.hooks as { mappings?: Array<{ thinking?: unknown }> } | undefined)
+      ?.mappings;
+    expect(mappings?.[0]?.thinking).toBeUndefined();
+  });
+});
+
 describe("config paths", () => {
   it("rejects empty and blocked paths", () => {
     expect(parseConfigPath("")).toEqual({

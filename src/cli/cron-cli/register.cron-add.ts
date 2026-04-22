@@ -81,10 +81,6 @@ export function registerCronAddCommand(cron: Command) {
       .option("--exact", "Disable cron staggering (set stagger to 0)", false)
       .option("--system-event <text>", "System event payload (main session)")
       .option("--message <text>", "Agent message payload")
-      .option(
-        "--thinking <level>",
-        "Thinking level for agent jobs (off|minimal|low|medium|high|xhigh)",
-      )
       .option("--model <model>", "Model override for agent jobs (provider/model or alias)")
       .option("--timeout-seconds <n>", "Timeout seconds for agent jobs")
       .option("--light-context", "Use lightweight bootstrap context for agent jobs", false)
@@ -175,10 +171,6 @@ export function registerCronAddCommand(cron: Command) {
               message,
               model:
                 typeof opts.model === "string" && opts.model.trim() ? opts.model.trim() : undefined,
-              thinking:
-                typeof opts.thinking === "string" && opts.thinking.trim()
-                  ? opts.thinking.trim()
-                  : undefined,
               timeoutSeconds:
                 timeoutSeconds && Number.isFinite(timeoutSeconds) ? timeoutSeconds : undefined,
               lightContext: opts.lightContext === true ? true : undefined,

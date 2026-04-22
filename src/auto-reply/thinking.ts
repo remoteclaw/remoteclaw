@@ -4,33 +4,6 @@ export type ElevatedLevel = "off" | "on" | "ask" | "full";
 export type ElevatedMode = "off" | "ask" | "full";
 export type ReasoningLevel = "off" | "on" | "stream";
 export type UsageDisplayLevel = "off" | "tokens" | "full";
-export type ThinkingCatalogEntry = {
-  provider: string;
-  id: string;
-  reasoning?: boolean;
-};
-
-function normalizeProviderId(provider?: string | null): string {
-  if (!provider) {
-    return "";
-  }
-  const normalized = provider.trim().toLowerCase();
-  if (normalized === "z.ai" || normalized === "z-ai") {
-    return "zai";
-  }
-  if (normalized === "bedrock" || normalized === "aws-bedrock") {
-    return "amazon-bedrock";
-  }
-  return normalized;
-}
-
-export function isBinaryThinkingProvider(provider?: string | null): boolean {
-  return normalizeProviderId(provider) === "zai";
-}
-
-export function listThinkingLevels(_provider?: string | null, _model?: string | null): string[] {
-  return ["off", "minimal", "low", "medium", "high", "adaptive"];
-}
 
 type OnOffFullLevel = "off" | "on" | "full";
 

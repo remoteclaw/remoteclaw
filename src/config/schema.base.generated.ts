@@ -2163,9 +2163,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                       },
                     ],
                   },
-                  thinking: {
-                    type: "string",
-                  },
                   runTimeoutSeconds: {
                     type: "integer",
                     minimum: 0,
@@ -3162,9 +3159,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                           additionalProperties: false,
                         },
                       ],
-                    },
-                    thinking: {
-                      type: "string",
                     },
                   },
                   additionalProperties: false,
@@ -8173,9 +8167,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 model: {
                   type: "string",
                 },
-                thinking: {
-                  type: "string",
-                },
                 timeoutSeconds: {
                   type: "integer",
                   exclusiveMinimum: 0,
@@ -12751,11 +12742,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Optional model override for mapping-triggered runs when automation should use a different model than agent defaults. Use this sparingly so behavior remains predictable across mapping executions.",
       tags: ["models"],
     },
-    "hooks.mappings[].thinking": {
-      label: "Hook Mapping Thinking Override",
-      help: "Optional thinking-effort override for mapping-triggered runs to tune latency versus reasoning depth. Keep low or minimal for high-volume hooks unless deeper reasoning is clearly required.",
-      tags: ["advanced"],
-    },
     "hooks.mappings[].timeoutSeconds": {
       label: "Hook Mapping Timeout (sec)",
       help: "Maximum runtime allowed for mapping action execution before timeout handling applies. Use tighter limits for high-volume webhook sources to prevent queue pileups.",
@@ -12875,11 +12861,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Gmail Hook Model Override",
       help: "Optional model override for Gmail-triggered runs when mailbox automations should use dedicated model behavior. Keep unset to inherit agent defaults unless mailbox tasks need specialization.",
       tags: ["models"],
-    },
-    "hooks.gmail.thinking": {
-      label: "Gmail Hook Thinking Override",
-      help: 'Thinking effort override for Gmail-driven agent runs: "off", "minimal", "low", "medium", or "high". Keep modest defaults for routine inbox automations to control cost and latency.',
-      tags: ["advanced"],
     },
     "hooks.internal": {
       label: "Internal Hooks",

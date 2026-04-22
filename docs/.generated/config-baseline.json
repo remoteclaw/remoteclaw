@@ -2577,16 +2577,6 @@
       "hasChildren": false
     },
     {
-      "path": "agents.defaults.subagents.thinking",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
       "path": "agents.defaults.timeFormat",
       "kind": "core",
       "type": "string",
@@ -4581,16 +4571,6 @@
     },
     {
       "path": "agents.list.*.subagents.model.primary",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.list.*.subagents.thinking",
       "kind": "core",
       "type": "string",
       "required": false,
@@ -18336,18 +18316,6 @@
       "tags": ["advanced"],
       "label": "Hook Mapping Text Template",
       "help": "Text-only fallback template used when rich payload rendering is not desired or not supported. Use this to provide a concise, consistent summary string for chat delivery surfaces.",
-      "hasChildren": false
-    },
-    {
-      "path": "hooks.mappings.*.thinking",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": ["advanced"],
-      "label": "Hook Mapping Thinking Override",
-      "help": "Optional thinking-effort override for mapping-triggered runs to tune latency versus reasoning depth. Keep low or minimal for high-volume hooks unless deeper reasoning is clearly required.",
       "hasChildren": false
     },
     {

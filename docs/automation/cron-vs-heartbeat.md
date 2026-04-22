@@ -149,8 +149,8 @@ Is this a one-shot reminder?
   YES -> Use cron with --at
   NO  -> Continue...
 
-Does it need a different model or thinking level?
-  YES -> Use cron (isolated) with --model/--thinking
+Does it need a different model?
+  YES -> Use cron (isolated) with --model
   NO  -> Use heartbeat
 ```
 
@@ -260,7 +260,6 @@ remoteclaw cron add \
   --session isolated \
   --message "Weekly codebase analysis..." \
   --model opus \
-  --thinking high \
   --announce
 ```
 

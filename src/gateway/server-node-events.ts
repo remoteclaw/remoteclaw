@@ -307,7 +307,6 @@ export const handleNodeEvent = async (ctx: NodeEventContext, nodeId: string, evt
           message: text,
           sessionId,
           sessionKey: canonicalKey,
-          thinking: "low",
           deliver: false,
           messageChannel: "node",
           inputProvenance: {
@@ -331,7 +330,6 @@ export const handleNodeEvent = async (ctx: NodeEventContext, nodeId: string, evt
       type AgentDeepLink = {
         message?: string;
         sessionKey?: string | null;
-        thinking?: string | null;
         deliver?: boolean;
         attachments?: Array<{
           type?: string;
@@ -439,7 +437,6 @@ export const handleNodeEvent = async (ctx: NodeEventContext, nodeId: string, evt
           images,
           sessionId,
           sessionKey: canonicalKey,
-          thinking: link?.thinking ?? undefined,
           deliver,
           to: deliveryTo,
           channel: deliveryChannel,

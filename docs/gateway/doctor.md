@@ -201,7 +201,7 @@ Current cron cleanups include:
 
 - `jobId` → `id`
 - `schedule.cron` → `schedule.expr`
-- top-level payload fields (`message`, `model`, `thinking`, ...) → `payload`
+- top-level payload fields (`message`, `model`, ...) → `payload`
 - top-level delivery fields (`deliver`, `channel`, `to`, `provider`, ...) → `delivery`
 - payload `provider` delivery aliases → explicit `delivery.channel`
 - simple legacy `notify: true` webhook fallback jobs → explicit `delivery.mode="webhook"` with `delivery.to=cron.webhook`

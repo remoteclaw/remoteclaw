@@ -95,7 +95,7 @@ The system prompt is **RemoteClaw-owned** and rebuilt each run. It includes:
 - Skills list (metadata only; see below).
 - Workspace location.
 - Time (UTC + converted user time if configured).
-- Runtime metadata (host/OS/model/thinking).
+- Runtime metadata (channel/user/timezone).
 - Injected workspace bootstrap files under **Project Context**.
 
 Full breakdown: [System Prompt](/concepts/system-prompt).

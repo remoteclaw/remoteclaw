@@ -82,7 +82,7 @@ per-job offset in a 0-5 minute window.
 
 - **Exact timing required**: "Send this at 9:00 AM every Monday" (not "sometime around 9").
 - **Standalone tasks**: Tasks that don't need conversational context.
-- **Different model/thinking**: Heavy analysis that warrants a more powerful model.
+- **Different model**: Heavy analysis that warrants a more powerful model.
 - **One-shot reminders**: "Remind me in 20 minutes" with `--at`.
 - **Noisy/frequent tasks**: Tasks that would clutter main session history.
 - **External triggers**: Tasks that should run independently of whether the agent is otherwise active.
@@ -249,7 +249,7 @@ remoteclaw cron add \
 Use `--session isolated` when you want:
 
 - A clean slate without prior context
-- Different model or thinking settings
+- Different model settings
 - Announce summaries directly to a channel
 - History that doesn't clutter main session
 

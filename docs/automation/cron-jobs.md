@@ -186,7 +186,7 @@ Two payload kinds are supported:
 Common `agentTurn` fields:
 
 - `message`: required text prompt.
-- `model` / `thinking`: optional overrides (see below).
+- `model`: optional model override (see below).
 - `timeoutSeconds`: optional timeout override.
 - `lightContext`: optional lightweight bootstrap mode for jobs that do not need workspace bootstrap file injection.
 
@@ -231,12 +231,11 @@ Behavior details:
 - If `cron.webhookToken` is set, auth header is `Authorization: Bearer <cron.webhookToken>`.
 - Deprecated fallback: stored legacy jobs with `notify: true` still post to `cron.webhook` (if configured), with a warning so you can migrate to `delivery.mode = "webhook"`.
 
-### Model and thinking overrides
+### Model overrides
 
-Isolated jobs (`agentTurn`) can override the model and thinking level:
+Isolated jobs (`agentTurn`) can override the model:
 
 - `model`: Provider/model string (e.g., `anthropic/claude-sonnet-4-20250514`) or alias (e.g., `opus`)
-- `thinking`: Thinking level (`off`, `minimal`, `low`, `medium`, `high`, `xhigh`; GPT-5.2 + Codex models only)
 
 Note: You can set `model` on main-session jobs too, but it changes the shared main
 session model. We recommend model overrides only for isolated jobs to avoid
@@ -629,7 +628,7 @@ remoteclaw cron add \
   --to "-1001234567890:topic:123"
 ```
 
-Isolated job with model and thinking override:
+Isolated job with model override:
 
 ```bash
 remoteclaw cron add \

@@ -27,7 +27,7 @@ The prompt is intentionally compact and uses fixed sections:
 - **Current Date & Time**: user-local time, timezone, and time format.
 - **Reply Tags**: optional reply tag syntax for supported providers.
 - **Heartbeats**: heartbeat prompt and ack behavior.
-- **Runtime**: host, OS, node, model, repo root (when detected), thinking level (one line).
+- **Runtime**: channel, user, timezone (one line).
 - **Reasoning**: current visibility level + /reasoning toggle hint.
 
 Safety guardrails in the system prompt are advisory. They guide model behavior but do not enforce policy. Use tool policy, exec approvals, sandboxing, and channel allowlists for hard enforcement; operators can disable these by design.

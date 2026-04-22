@@ -393,7 +393,7 @@ export default handler;
 
 These hooks are not event-stream listeners; they let plugins synchronously adjust tool results before RemoteClaw persists them.
 
-- **`tool_result_persist`**: transform tool results before they are written to the session transcript. Must be synchronous; return the updated tool result payload or `undefined` to keep it as-is. See [Agent Loop](/concepts/agent-loop).
+- **`tool_result_persist`**: transform tool results before they are written to the session transcript. Must be synchronous; return the updated tool result payload or `undefined` to keep it as-is.
 
 ### Plugin Hook Events
 

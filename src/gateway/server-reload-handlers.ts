@@ -1,3 +1,4 @@
+import { getActiveSessionRunCount } from "../agents/session-run-registry.js";
 import { getTotalPendingReplies } from "../auto-reply/reply/dispatcher-registry.js";
 import type { CliDeps } from "../cli/deps.js";
 import { resolveAgentMaxConcurrent, resolveSubagentMaxConcurrent } from "../config/agent-limits.js";
@@ -150,10 +151,12 @@ export function createGatewayReloadHandlers(params: {
     const getActiveCounts = () => {
       const queueSize = getTotalQueueSize();
       const pendingReplies = getTotalPendingReplies();
+      const activeCliRuns = getActiveSessionRunCount();
       return {
         queueSize,
         pendingReplies,
-        totalActive: queueSize + pendingReplies,
+        activeCliRuns,
+        totalActive: queueSize + pendingReplies + activeCliRuns,
       };
     };
     const formatActiveDetails = (counts: ReturnType<typeof getActiveCounts>) => {
@@ -163,6 +166,9 @@ export function createGatewayReloadHandlers(params: {
       }
       if (counts.pendingReplies > 0) {
         details.push(`${counts.pendingReplies} reply(ies)`);
+      }
+      if (counts.activeCliRuns > 0) {
+        details.push(`${counts.activeCliRuns} active CLI run(s)`);
       }
       return details;
     };

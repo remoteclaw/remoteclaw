@@ -34,7 +34,6 @@ export type FallbackIndicatorStatus = {
 export type ChatProps = {
   sessionKey: string;
   onSessionKeyChange: (next: string) => void;
-  thinkingLevel: string | null;
   showThinking: boolean;
   loading: boolean;
   sending: boolean;

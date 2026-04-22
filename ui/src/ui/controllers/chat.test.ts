@@ -11,7 +11,6 @@ function createState(overrides: Partial<ChatState> = {}): ChatState {
     chatSending: false,
     chatStream: null,
     chatStreamStartedAt: null,
-    chatThinkingLevel: null,
     client: null,
     connected: true,
     lastError: null,
@@ -503,7 +502,7 @@ describe("loadChatHistory", () => {
       { role: "assistant", text: "  NO_REPLY  " },
     ];
     const mockClient = {
-      request: vi.fn().mockResolvedValue({ messages, thinkingLevel: "low" }),
+      request: vi.fn().mockResolvedValue({ messages }),
     };
     const state = createState({
       client: mockClient as unknown as ChatState["client"],
@@ -515,7 +514,6 @@ describe("loadChatHistory", () => {
     expect(state.chatMessages).toHaveLength(2);
     expect(state.chatMessages[0]).toEqual(messages[0]);
     expect(state.chatMessages[1]).toEqual(messages[2]);
-    expect(state.chatThinkingLevel).toBe("low");
     expect(state.chatLoading).toBe(false);
   });
 
@@ -544,7 +542,6 @@ describe("loadChatHistory", () => {
         { role: "assistant", content: [{ type: "text", text: "visible answer" }] },
         { role: "user", content: [{ type: "text", text: "NO_REPLY" }] },
       ],
-      thinkingLevel: "low",
     });
     const state = createState({
       connected: true,
@@ -561,7 +558,6 @@ describe("loadChatHistory", () => {
       { role: "assistant", content: [{ type: "text", text: "visible answer" }] },
       { role: "user", content: [{ type: "text", text: "NO_REPLY" }] },
     ]);
-    expect(state.chatThinkingLevel).toBe("low");
     expect(state.chatLoading).toBe(false);
     expect(state.lastError).toBeNull();
   });

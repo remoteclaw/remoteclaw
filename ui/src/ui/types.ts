@@ -423,7 +423,6 @@ export type GatewaySessionRow = {
   sessionId?: string;
   systemSent?: boolean;
   abortedLastRun?: boolean;
-  thinkingLevel?: string;
   verboseLevel?: string;
   reasoningLevel?: string;
   elevatedLevel?: string;
@@ -449,7 +448,6 @@ export type SessionsPatchResult = {
   entry: {
     sessionId: string;
     updatedAt?: number;
-    thinkingLevel?: string;
     verboseLevel?: string;
     reasoningLevel?: string;
     elevatedLevel?: string;

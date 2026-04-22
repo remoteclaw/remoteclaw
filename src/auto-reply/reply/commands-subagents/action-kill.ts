@@ -1,3 +1,4 @@
+import { killSessionRun } from "../../../agents/session-run-registry.js";
 import { markSubagentRunTerminated } from "../../../agents/subagent-registry.js";
 import {
   loadSessionStore,
@@ -49,6 +50,7 @@ export async function handleSubagentsKillAction(
     loadSessionStore,
     resolveStorePath,
   });
+  killSessionRun(childKey);
   const cleared = clearSessionQueues([childKey, entry?.sessionId]);
   if (cleared.followupCleared > 0 || cleared.laneCleared > 0) {
     logVerbose(

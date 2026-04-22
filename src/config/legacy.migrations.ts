@@ -27,6 +27,21 @@ export const LEGACY_CONFIG_MIGRATIONS: LegacyConfigMigration[] = [
     },
   },
   {
+    id: "strip-agents-defaults-embedded-pi",
+    describe: "Strip obsolete agents.defaults.embeddedPi field (#2479)",
+    apply(raw, changes) {
+      const agents = getRecord(raw.agents);
+      const defaults = agents ? getRecord(agents.defaults) : null;
+      if (!defaults || !Object.prototype.hasOwnProperty.call(defaults, "embeddedPi")) {
+        return;
+      }
+      delete defaults.embeddedPi;
+      changes.push(
+        "Stripped obsolete agents.defaults.embeddedPi field — the Pi orchestrator was replaced by AgentRuntime.",
+      );
+    },
+  },
+  {
     id: "telegram-require-mention",
     describe: "Move telegram.requireMention to channels.telegram.groups.*.requireMention",
     apply(raw, changes) {

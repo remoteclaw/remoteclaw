@@ -217,4 +217,9 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
           entry.default === true,
       ),
   },
+  {
+    path: ["agents", "defaults", "embeddedPi"],
+    message:
+      "agents.defaults.embeddedPi is obsolete and ignored — the Pi orchestrator was replaced by AgentRuntime. Remove it from your config (auto-migrated on load).",
+  },
 ];

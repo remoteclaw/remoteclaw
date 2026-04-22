@@ -170,8 +170,6 @@ export type AgentDefaultsConfig = {
   contextPruning?: AgentContextPruningConfig;
   /** Compaction tuning and pre-compaction memory flush behavior. */
   compaction?: AgentCompactionConfig;
-  /** @deprecated Embedded Pi config gutted — parsed but ignored. */
-  embeddedPi?: unknown;
   /** @deprecated Memory search config gutted — parsed but ignored. */
   memorySearch?: unknown;
   /** Default verbose level when no /verbose directive is present. */

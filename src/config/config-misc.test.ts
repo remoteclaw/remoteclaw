@@ -5,7 +5,7 @@ import {
   setConfigValueAtPath,
   unsetConfigValueAtPath,
 } from "./config-paths.js";
-import { readConfigFileSnapshot, validateConfigObject } from "./config.js";
+import { migrateLegacyConfig, readConfigFileSnapshot, validateConfigObject } from "./config.js";
 import {
   buildWebSearchProviderConfig,
   withTempHome,
@@ -333,6 +333,42 @@ describe("model api/compat legacy fields (compat stubs)", () => {
     });
 
     expect(res.ok).toBe(true);
+  });
+});
+
+describe("agents.defaults.embeddedPi legacy field (#2479)", () => {
+  // The Pi orchestrator was replaced by AgentRuntime; the config stub was removed.
+  // These tests guard the rule+migration channel that lets pre-gut configs still load.
+  it("flags agents.defaults.embeddedPi as a legacy issue", async () => {
+    await withTempHome(async (home) => {
+      await writeRemoteClawConfig(home, {
+        agents: {
+          list: [{ id: "pi" }],
+          defaults: { embeddedPi: { projectSettingsPolicy: "sanitize" } },
+        },
+      });
+
+      const snap = await readConfigFileSnapshot();
+
+      expect(snap.legacyIssues.some((i) => i.path === "agents.defaults.embeddedPi")).toBe(true);
+    });
+  });
+
+  it("auto-migration strips agents.defaults.embeddedPi and the migrated config validates", () => {
+    const res = migrateLegacyConfig({
+      agents: {
+        list: [{ id: "pi", workspace: "/tmp/pi" }],
+        defaults: { embeddedPi: { projectSettingsPolicy: "sanitize" } },
+      },
+    });
+
+    expect(res.changes).toContain(
+      "Stripped obsolete agents.defaults.embeddedPi field — the Pi orchestrator was replaced by AgentRuntime.",
+    );
+    expect(res.config).not.toBeNull();
+    expect(
+      (res.config?.agents?.defaults as { embeddedPi?: unknown } | undefined)?.embeddedPi,
+    ).toBeUndefined();
   });
 });
 

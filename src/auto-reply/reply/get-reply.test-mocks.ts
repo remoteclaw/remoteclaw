@@ -21,18 +21,33 @@ export function registerGetReplyCommonMocks(): void {
     defaultRuntime: { log: vi.fn() },
   }));
   vi.mock("../command-auth.js", () => ({
-    resolveCommandAuthorization: vi.fn(() => ({ isAuthorizedSender: true })),
-  }));
-  vi.mock("./directive-handling.js", () => ({
-    resolveDefaultModel: vi.fn(() => ({
-      defaultProvider: "openai",
-      defaultModel: "gpt-4o-mini",
-      aliasIndex: new Map(),
+    resolveCommandAuthorization: vi.fn(() => ({
+      isAuthorizedSender: true,
+      ownerList: [],
+      senderIsOwner: false,
     })),
   }));
-  vi.mock("./get-reply-run.js", () => ({
-    runPreparedReply: vi.fn(async () => undefined),
-  }));
+  // Preserve real directive parsing (parseInlineDirectives, isDirectiveOnly, etc.)
+  // so tests driving the real resolveReplyDirectives chain can compile directives.
+  // Only `resolveDefaultModel` is stubbed to avoid config/model catalog I/O.
+  vi.mock("./directive-handling.js", async () => {
+    const actual =
+      await vi.importActual<typeof import("./directive-handling.js")>("./directive-handling.js");
+    return {
+      ...actual,
+      resolveDefaultModel: vi.fn(() => ({
+        defaultProvider: "openai",
+        defaultModel: "gpt-4o-mini",
+        aliasIndex: new Map(),
+      })),
+    };
+  });
+  // Note: We deliberately do NOT mock `./get-reply-run.js` → `runPreparedReply`.
+  // A global shield at this boundary was one of the five blindspots that hid #2334
+  // from CI (see #2468). Tests that need to short-circuit before `runPreparedReply`
+  // should mock `./get-reply-inline-actions.js` or `./get-reply-directives.js`
+  // locally to return `{ kind: "reply", ... }`. Tests that drive the full chain
+  // should mock only the CLI boundary (`./agent-runner.js` → `runReplyAgent`).
   vi.mock("./inbound-context.js", () => ({
     finalizeInboundContext: vi.fn((ctx: unknown) => ctx),
   }));

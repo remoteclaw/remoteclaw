@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { resolveSessionKeyAgentId } from "../../agents/agent-scope.js";
+import { killSessionRun, waitForSessionRunEnd } from "../../agents/session-run-registry.js";
 import { stopSubagentsForRequester } from "../../auto-reply/reply/abort.js";
 import { clearSessionQueues } from "../../auto-reply/reply/queue.js";
 import { loadConfig } from "../../config/config.js";
@@ -174,6 +175,9 @@ async function emitSessionUnboundLifecycleEvent(params: {
   );
 }
 
+const SESSION_RUN_TERMINATION_TIMEOUT_MS = 15_000;
+const ACP_RUNTIME_CLEANUP_TIMEOUT_MS = 15_000;
+
 async function ensureSessionRuntimeCleanup(params: {
   cfg: ReturnType<typeof loadConfig>;
   key: string;
@@ -187,10 +191,11 @@ async function ensureSessionRuntimeCleanup(params: {
   }
   clearSessionQueues([...queueKeys]);
   stopSubagentsForRequester({ cfg: params.cfg, requesterSessionKey: params.target.canonicalKey });
-  if (!params.sessionId) {
-    return undefined;
-  }
-  const ended = true;
+  killSessionRun(params.target.canonicalKey);
+  const ended = await waitForSessionRunEnd(
+    params.target.canonicalKey,
+    SESSION_RUN_TERMINATION_TIMEOUT_MS,
+  );
   if (ended) {
     return undefined;
   }
@@ -199,8 +204,6 @@ async function ensureSessionRuntimeCleanup(params: {
     `Session ${params.key} is still active; try again in a moment.`,
   );
 }
-
-const ACP_RUNTIME_CLEANUP_TIMEOUT_MS = 15_000;
 
 async function runAcpCleanupStep(params: {
   op: () => Promise<void>;

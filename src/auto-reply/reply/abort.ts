@@ -1,4 +1,5 @@
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
+import { killSessionRun } from "../../agents/session-run-registry.js";
 import {
   listSubagentRunsForController,
   markSubagentRunTerminated,
@@ -245,7 +246,7 @@ export function stopSubagentsForRequester(params: {
         store = loadSessionStore(storePath);
         storeCache.set(storePath, store);
       }
-      const aborted = false;
+      const aborted = killSessionRun(childKey);
       const markedTerminated =
         markSubagentRunTerminated({
           runId: run.runId,
@@ -326,7 +327,7 @@ export async function tryFastAbortFromMessage(params: {
       }
     }
     const sessionId = entry?.sessionId;
-    const aborted = false;
+    const aborted = killSessionRun(resolvedTargetKey);
     const cleared = clearSessionQueues([resolvedTargetKey, sessionId]);
     if (cleared.followupCleared > 0 || cleared.laneCleared > 0) {
       logVerbose(

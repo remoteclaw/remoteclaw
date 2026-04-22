@@ -452,6 +452,68 @@ describe("thinking-level legacy fields (#2480)", () => {
   });
 });
 
+describe("agent params bag legacy fields (#2481)", () => {
+  // Per-agent and per-model params bags were placeholders for LLM request
+  // parameters (temperature, cacheRetention, etc.) that the middleware never
+  // read — CLI runtimes own those knobs. These tests guard the rule+migration
+  // channel that lets pre-gut configs still load (strict zod schemas would
+  // otherwise reject unknown keys).
+  it("flags agents.list[].params and agents.defaults.models[<id>].params as legacy issues", async () => {
+    await withTempHome(async (home) => {
+      await writeRemoteClawConfig(home, {
+        agents: {
+          list: [{ id: "ops", params: { temperature: 0.7 } }],
+          defaults: {
+            models: {
+              "gpt-4o": { alias: "gpt4o", params: { thinking: "medium" } },
+            },
+          },
+        },
+      });
+
+      const snap = await readConfigFileSnapshot();
+      const paths = snap.legacyIssues.map((i) => i.path);
+      expect(paths).toContain("agents.list");
+      expect(paths).toContain("agents.defaults.models");
+    });
+  });
+
+  it("auto-migration strips per-agent and per-model params fields", () => {
+    const res = migrateLegacyConfig({
+      agents: {
+        list: [
+          {
+            id: "ops",
+            workspace: "/tmp/ops",
+            params: { temperature: 0.7, cacheRetention: "5m" },
+          },
+        ],
+        defaults: {
+          models: {
+            "gpt-4o": { alias: "gpt4o", params: { thinking: "medium" } },
+            "claude-4-5": { params: { reasoning: "high" } },
+          },
+        },
+      },
+    });
+
+    expect(res.changes).toContain(
+      "Stripped obsolete agents.list[].params field(s) — LLM request parameters are the CLI runtime's concern.",
+    );
+    expect(res.changes).toContain(
+      "Stripped obsolete agents.defaults.models[<id>].params field(s) — LLM request parameters are the CLI runtime's concern.",
+    );
+    expect(res.config).not.toBeNull();
+    const list = res.config?.agents?.list as Array<{ params?: unknown }> | undefined;
+    expect(list?.[0]?.params).toBeUndefined();
+    const models = (
+      res.config?.agents?.defaults as { models?: Record<string, { params?: unknown }> }
+    )?.models;
+    expect(models?.["gpt-4o"]?.params).toBeUndefined();
+    expect(models?.["claude-4-5"]?.params).toBeUndefined();
+  });
+});
+
 describe("config paths", () => {
   it("rejects empty and blocked paths", () => {
     expect(parseConfigPath("")).toEqual({

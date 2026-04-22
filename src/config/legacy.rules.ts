@@ -232,4 +232,24 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
     message:
       "agents.defaults.subagents.thinking is obsolete and ignored (#2480) — CLI runtimes own reasoning depth. Remove it from your config (auto-migrated on load).",
   },
+  {
+    path: ["agents", "list"],
+    message:
+      "agents.list[].params is obsolete and ignored (#2481) — LLM request parameters are the CLI runtime's concern, not middleware's. Remove it from your config (auto-migrated on load).",
+    match: (value) =>
+      Array.isArray(value) &&
+      value.some(
+        (entry) => isRecord(entry) && Object.prototype.hasOwnProperty.call(entry, "params"),
+      ),
+  },
+  {
+    path: ["agents", "defaults", "models"],
+    message:
+      "agents.defaults.models[<id>].params is obsolete and ignored (#2481) — LLM request parameters are the CLI runtime's concern, not middleware's. Remove it from your config (auto-migrated on load).",
+    match: (value) =>
+      isRecord(value) &&
+      Object.values(value).some(
+        (entry) => isRecord(entry) && Object.prototype.hasOwnProperty.call(entry, "params"),
+      ),
+  },
 ];

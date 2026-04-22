@@ -83,8 +83,6 @@ export type AgentConfig = {
   };
   /** Optional per-agent sandbox overrides. */
   sandbox?: AgentSandboxConfig;
-  /** Optional per-agent stream params (e.g. cacheRetention, temperature). */
-  params?: Record<string, unknown>;
   tools?: AgentToolsConfig;
   /** Optional runtime descriptor for this agent (object form or CLI runtime name). */
   runtime?: AgentRuntimeConfig | "claude" | "gemini" | "codex" | "opencode";

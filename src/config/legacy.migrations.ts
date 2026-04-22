@@ -109,6 +109,45 @@ export const LEGACY_CONFIG_MIGRATIONS: LegacyConfigMigration[] = [
     },
   },
   {
+    id: "strip-agent-params-bags",
+    describe:
+      "Strip obsolete agents.list[].params and agents.defaults.models[<id>].params fields (#2481)",
+    apply(raw, changes) {
+      const agents = getRecord(raw.agents);
+      const agentsList = getAgentsList(agents);
+      let strippedAgentParams = false;
+      for (const entry of agentsList) {
+        const entryRecord = getRecord(entry);
+        if (entryRecord && Object.prototype.hasOwnProperty.call(entryRecord, "params")) {
+          delete entryRecord.params;
+          strippedAgentParams = true;
+        }
+      }
+      if (strippedAgentParams) {
+        changes.push(
+          "Stripped obsolete agents.list[].params field(s) — LLM request parameters are the CLI runtime's concern.",
+        );
+      }
+      const defaults = agents ? getRecord(agents.defaults) : null;
+      const models = defaults ? getRecord(defaults.models) : null;
+      let strippedModelParams = false;
+      if (models) {
+        for (const entry of Object.values(models)) {
+          const entryRecord = getRecord(entry);
+          if (entryRecord && Object.prototype.hasOwnProperty.call(entryRecord, "params")) {
+            delete entryRecord.params;
+            strippedModelParams = true;
+          }
+        }
+      }
+      if (strippedModelParams) {
+        changes.push(
+          "Stripped obsolete agents.defaults.models[<id>].params field(s) — LLM request parameters are the CLI runtime's concern.",
+        );
+      }
+    },
+  },
+  {
     id: "telegram-require-mention",
     describe: "Move telegram.requireMention to channels.telegram.groups.*.requireMention",
     apply(raw, changes) {

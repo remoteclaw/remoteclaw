@@ -38,8 +38,17 @@ const state = vi.hoisted(() => ({
   runCliAgentMock: vi.fn(),
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const modelFallbackModule = { runWithModelFallback: vi.fn() } as any;
+type ModelFallbackFn = (params: {
+  provider: string;
+  model: string;
+  run: (provider: string, model: string, options?: unknown) => Promise<unknown>;
+}) => Promise<{
+  result: unknown;
+  provider: string;
+  model: string;
+  attempts?: { provider: string; model: string; error?: string; reason?: string }[];
+}>;
+const modelFallbackModule = { runWithModelFallback: vi.fn<ModelFallbackFn>() };
 let onAgentEvent: typeof import("../../infra/agent-events.js").onAgentEvent;
 
 let runReplyAgentPromise:
@@ -730,7 +739,6 @@ describe("runReplyAgent typing (heartbeat)", () => {
         meta: {},
       });
       vi.spyOn(modelFallbackModule, "runWithModelFallback").mockImplementationOnce(
-        // @ts-expect-error -- fork stub typing mismatch
         async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
           result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
           provider: "deepinfra",
@@ -789,22 +797,23 @@ describe("runReplyAgent typing (heartbeat)", () => {
       payloads: [{ text: "final" }],
       meta: {},
     });
-    const fallbackSpy = vi.spyOn(modelFallbackModule, "runWithModelFallback").mockImplementation(
-      // @ts-expect-error -- fork stub typing mismatch
-      async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
-        result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
-        provider: "deepinfra",
-        model: "moonshotai/Kimi-K2.5",
-        attempts: [
-          {
-            provider: "fireworks",
-            model: "fireworks/minimax-m2p5",
-            error: "Provider fireworks is in cooldown (all profiles unavailable)",
-            reason: "rate_limit",
-          },
-        ],
-      }),
-    );
+    const fallbackSpy = vi
+      .spyOn(modelFallbackModule, "runWithModelFallback")
+      .mockImplementation(
+        async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+          result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
+          provider: "deepinfra",
+          model: "moonshotai/Kimi-K2.5",
+          attempts: [
+            {
+              provider: "fireworks",
+              model: "fireworks/minimax-m2p5",
+              error: "Provider fireworks is in cooldown (all profiles unavailable)",
+              reason: "rate_limit",
+            },
+          ],
+        }),
+      );
     try {
       const { run } = createMinimalRun({
         resolvedVerboseLevel: "on",
@@ -844,41 +853,42 @@ describe("runReplyAgent typing (heartbeat)", () => {
       payloads: [{ text: "final" }],
       meta: {},
     });
-    const fallbackSpy = vi.spyOn(modelFallbackModule, "runWithModelFallback").mockImplementation(
-      // @ts-expect-error -- fork stub typing mismatch
-      async ({
-        provider,
-        model,
-        run,
-      }: {
-        provider: string;
-        model: string;
-        run: (provider: string, model: string) => Promise<unknown>;
-      }) => {
-        callCount += 1;
-        if (callCount === 2) {
+    const fallbackSpy = vi
+      .spyOn(modelFallbackModule, "runWithModelFallback")
+      .mockImplementation(
+        async ({
+          provider,
+          model,
+          run,
+        }: {
+          provider: string;
+          model: string;
+          run: (provider: string, model: string) => Promise<unknown>;
+        }) => {
+          callCount += 1;
+          if (callCount === 2) {
+            return {
+              result: await run(provider, model),
+              provider,
+              model,
+              attempts: [],
+            };
+          }
           return {
-            result: await run(provider, model),
-            provider,
-            model,
-            attempts: [],
+            result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
+            provider: "deepinfra",
+            model: "moonshotai/Kimi-K2.5",
+            attempts: [
+              {
+                provider: "fireworks",
+                model: "fireworks/minimax-m2p5",
+                error: "Provider fireworks is in cooldown (all profiles unavailable)",
+                reason: "rate_limit",
+              },
+            ],
           };
-        }
-        return {
-          result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
-          provider: "deepinfra",
-          model: "moonshotai/Kimi-K2.5",
-          attempts: [
-            {
-              provider: "fireworks",
-              model: "fireworks/minimax-m2p5",
-              error: "Provider fireworks is in cooldown (all profiles unavailable)",
-              reason: "rate_limit",
-            },
-          ],
-        };
-      },
-    );
+        },
+      );
     try {
       const { run } = createMinimalRun({
         resolvedVerboseLevel: "on",
@@ -913,41 +923,42 @@ describe("runReplyAgent typing (heartbeat)", () => {
       payloads: [{ text: "final" }],
       meta: {},
     });
-    const fallbackSpy = vi.spyOn(modelFallbackModule, "runWithModelFallback").mockImplementation(
-      // @ts-expect-error -- fork stub typing mismatch
-      async ({
-        provider,
-        model,
-        run,
-      }: {
-        provider: string;
-        model: string;
-        run: (provider: string, model: string) => Promise<unknown>;
-      }) => {
-        callCount += 1;
-        if (callCount === 1) {
-          return {
-            result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
-            provider: "deepinfra",
-            model: "moonshotai/Kimi-K2.5",
-            attempts: [
-              {
-                provider: "fireworks",
-                model: "fireworks/minimax-m2p5",
-                error: "Provider fireworks is in cooldown (all profiles unavailable)",
-                reason: "rate_limit",
-              },
-            ],
-          };
-        }
-        return {
-          result: await run(provider, model),
+    const fallbackSpy = vi
+      .spyOn(modelFallbackModule, "runWithModelFallback")
+      .mockImplementation(
+        async ({
           provider,
           model,
-          attempts: [],
-        };
-      },
-    );
+          run,
+        }: {
+          provider: string;
+          model: string;
+          run: (provider: string, model: string) => Promise<unknown>;
+        }) => {
+          callCount += 1;
+          if (callCount === 1) {
+            return {
+              result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
+              provider: "deepinfra",
+              model: "moonshotai/Kimi-K2.5",
+              attempts: [
+                {
+                  provider: "fireworks",
+                  model: "fireworks/minimax-m2p5",
+                  error: "Provider fireworks is in cooldown (all profiles unavailable)",
+                  reason: "rate_limit",
+                },
+              ],
+            };
+          }
+          return {
+            result: await run(provider, model),
+            provider,
+            model,
+            attempts: [],
+          };
+        },
+      );
     try {
       const { run } = createMinimalRun({
         resolvedVerboseLevel: "on",
@@ -992,41 +1003,42 @@ describe("runReplyAgent typing (heartbeat)", () => {
       payloads: [{ text: "final" }],
       meta: {},
     });
-    const fallbackSpy = vi.spyOn(modelFallbackModule, "runWithModelFallback").mockImplementation(
-      // @ts-expect-error -- fork stub typing mismatch
-      async ({
-        provider,
-        model,
-        run,
-      }: {
-        provider: string;
-        model: string;
-        run: (provider: string, model: string) => Promise<unknown>;
-      }) => {
-        callCount += 1;
-        if (callCount === 1) {
-          return {
-            result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
-            provider: "deepinfra",
-            model: "moonshotai/Kimi-K2.5",
-            attempts: [
-              {
-                provider: "fireworks",
-                model: "fireworks/minimax-m2p5",
-                error: "Provider fireworks is in cooldown (all profiles unavailable)",
-                reason: "rate_limit",
-              },
-            ],
-          };
-        }
-        return {
-          result: await run(provider, model),
+    const fallbackSpy = vi
+      .spyOn(modelFallbackModule, "runWithModelFallback")
+      .mockImplementation(
+        async ({
           provider,
           model,
-          attempts: [],
-        };
-      },
-    );
+          run,
+        }: {
+          provider: string;
+          model: string;
+          run: (provider: string, model: string) => Promise<unknown>;
+        }) => {
+          callCount += 1;
+          if (callCount === 1) {
+            return {
+              result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
+              provider: "deepinfra",
+              model: "moonshotai/Kimi-K2.5",
+              attempts: [
+                {
+                  provider: "fireworks",
+                  model: "fireworks/minimax-m2p5",
+                  error: "Provider fireworks is in cooldown (all profiles unavailable)",
+                  reason: "rate_limit",
+                },
+              ],
+            };
+          }
+          return {
+            result: await run(provider, model),
+            provider,
+            model,
+            attempts: [],
+          };
+        },
+      );
     try {
       const { run } = createMinimalRun({
         resolvedVerboseLevel: "off",
@@ -1091,22 +1103,23 @@ describe("runReplyAgent typing (heartbeat)", () => {
         payloads: [{ text: "final" }],
         meta: {},
       });
-      const fallbackSpy = vi.spyOn(modelFallbackModule, "runWithModelFallback").mockImplementation(
-        // @ts-expect-error -- fork stub typing mismatch
-        async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
-          result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
-          provider: "deepinfra",
-          model: "moonshotai/Kimi-K2.5",
-          attempts: [
-            {
-              provider: "anthropic",
-              model: "claude",
-              error: "Provider anthropic is in cooldown (all profiles unavailable)",
-              reason: testCase.reportedReason,
-            },
-          ],
-        }),
-      );
+      const fallbackSpy = vi
+        .spyOn(modelFallbackModule, "runWithModelFallback")
+        .mockImplementation(
+          async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+            result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
+            provider: "deepinfra",
+            model: "moonshotai/Kimi-K2.5",
+            attempts: [
+              {
+                provider: "anthropic",
+                model: "claude",
+                error: "Provider anthropic is in cooldown (all profiles unavailable)",
+                reason: testCase.reportedReason,
+              },
+            ],
+          }),
+        );
       try {
         const { run } = createMinimalRun({
           resolvedVerboseLevel: "on",

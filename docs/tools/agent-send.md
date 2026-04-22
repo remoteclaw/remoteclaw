@@ -65,7 +65,6 @@ programmatic delivery.
 | `--reply-to \<target\>`       | Delivery target override                                    |
 | `--reply-channel \<name\>`    | Delivery channel override                                   |
 | `--reply-account \<id\>`      | Delivery account id override                                |
-| `--thinking \<level\>`        | Set thinking level (off, minimal, low, medium, high, xhigh) |
 | `--verbose \<on\|full\|off\>` | Set verbose level                                           |
 | `--timeout \<seconds\>`       | Override agent timeout                                      |
 | `--json`                      | Output structured JSON                                      |
@@ -77,7 +76,7 @@ programmatic delivery.
 - If the Gateway is unreachable, the CLI **falls back** to the local embedded run.
 - Session selection: `--to` derives the session key (group/channel targets
   preserve isolation; direct chats collapse to `main`).
-- Thinking and verbose flags persist into the session store.
+- Verbose flag persists into the session store.
 - Output: plain text by default, or `--json` for structured payload + metadata.
 
 ## Examples
@@ -86,8 +85,8 @@ programmatic delivery.
 # Simple turn with JSON output
 remoteclaw agent --to +15555550123 --message "Trace logs" --verbose on --json
 
-# Turn with thinking level
-remoteclaw agent --session-id 1234 --message "Summarize inbox" --thinking medium
+# Reuse an existing session by id
+remoteclaw agent --session-id 1234 --message "Summarize inbox"
 
 # Deliver to a different channel than the session
 remoteclaw agent --agent ops --message "Alert" --deliver --reply-channel telegram --reply-to "@admin"

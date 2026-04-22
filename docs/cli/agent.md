@@ -19,7 +19,7 @@ Related:
 ```bash
 remoteclaw agent --to +15555550123 --message "status update" --deliver
 remoteclaw agent --agent ops --message "Summarize logs"
-remoteclaw agent --session-id 1234 --message "Summarize inbox" --thinking medium
+remoteclaw agent --session-id 1234 --message "Summarize inbox"
 remoteclaw agent --agent ops --message "Generate report" --deliver --reply-channel slack --reply-to "#reports"
 ```
 

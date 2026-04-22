@@ -146,7 +146,6 @@ Other Gateway slash commands (for example, `/context`) are forwarded to the Gate
 - `--password <password>`: Gateway password (if required)
 - `--session <key>`: Session key (default: `main`, or `global` when scope is global)
 - `--deliver`: Deliver assistant replies to the provider (default off)
-- `--thinking <level>`: Override thinking level for sends
 - `--timeout-ms <ms>`: Agent timeout in ms (defaults to `agents.defaults.timeoutSeconds`)
 
 Note: when you set `--url`, the TUI does not fall back to config or environment credentials.

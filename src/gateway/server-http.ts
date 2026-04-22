@@ -527,7 +527,6 @@ export function createHooksRequestHandler(
             channel,
             to: mapped.action.to,
             model: mapped.action.model,
-            thinking: mapped.action.thinking,
             timeoutSeconds: mapped.action.timeoutSeconds,
             allowUnsafeExternalContent: mapped.action.allowUnsafeExternalContent,
           });

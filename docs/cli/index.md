@@ -578,7 +578,6 @@ Options:
 
 - `--to <dest>` (for session key and optional delivery)
 - `--session-id <id>`
-- `--thinking <off|minimal|low|medium|high|xhigh>` (GPT-5.2 + Codex models only)
 - `--verbose <on|full|off>`
 - `--channel <whatsapp|telegram|discord|slack|mattermost|signal|imessage|msteams>`
 - `--local`
@@ -1144,7 +1143,6 @@ Options:
 - `--password <password>`
 - `--session <key>`
 - `--deliver`
-- `--thinking <level>`
 - `--message <text>`
 - `--timeout-ms <ms>` (defaults to `agents.defaults.timeoutSeconds`)
 - `--history-limit <n>`

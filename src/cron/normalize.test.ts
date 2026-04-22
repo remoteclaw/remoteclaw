@@ -359,20 +359,18 @@ describe("normalizeCronJobCreate", () => {
     expect(typeof normalized.name).toBe("string");
   });
 
-  it("maps top-level model/thinking/timeout into payload for legacy add params", () => {
+  it("maps top-level model/timeout into payload for legacy add params", () => {
     const normalized = normalizeCronJobCreate({
       name: "legacy root fields",
       schedule: { kind: "every", everyMs: 60_000 },
       payload: { kind: "agentTurn", message: "hello" },
       model: " openrouter/deepseek/deepseek-r1 ",
-      thinking: " high ",
       timeoutSeconds: 45,
       allowUnsafeExternalContent: true,
     }) as unknown as Record<string, unknown>;
 
     const payload = normalized.payload as Record<string, unknown>;
     expect(payload.model).toBe("openrouter/deepseek/deepseek-r1");
-    expect(payload.thinking).toBe("high");
     expect(payload.timeoutSeconds).toBe(45);
     expect(payload.allowUnsafeExternalContent).toBe(true);
   });

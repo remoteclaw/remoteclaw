@@ -71,7 +71,7 @@ function copyTopLevelAgentTurnFields(
 ) {
   let mutated = false;
 
-  const copyTrimmedString = (field: "model" | "thinking") => {
+  const copyTrimmedString = (field: "model") => {
     const existing = payload[field];
     if (typeof existing === "string" && existing.trim()) {
       return;
@@ -83,7 +83,6 @@ function copyTopLevelAgentTurnFields(
     }
   };
   copyTrimmedString("model");
-  copyTrimmedString("thinking");
 
   if (
     typeof payload.timeoutSeconds !== "number" &&
@@ -140,9 +139,6 @@ function copyTopLevelAgentTurnFields(
 function stripLegacyTopLevelFields(raw: Record<string, unknown>) {
   if ("model" in raw) {
     delete raw.model;
-  }
-  if ("thinking" in raw) {
-    delete raw.thinking;
   }
   if ("timeoutSeconds" in raw) {
     delete raw.timeoutSeconds;
@@ -308,7 +304,6 @@ export function normalizeStoredCronJobs(
 
     const hadLegacyTopLevelPayloadFields =
       "model" in raw ||
-      "thinking" in raw ||
       "timeoutSeconds" in raw ||
       "allowUnsafeExternalContent" in raw ||
       "message" in raw ||

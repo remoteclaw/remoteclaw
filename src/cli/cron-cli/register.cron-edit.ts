@@ -49,10 +49,6 @@ export function registerCronEditCommand(cron: Command) {
       .option("--exact", "Disable cron staggering (set stagger to 0)")
       .option("--system-event <text>", "Set systemEvent payload")
       .option("--message <text>", "Set agentTurn payload message")
-      .option(
-        "--thinking <level>",
-        "Thinking level for agent jobs (off|minimal|low|medium|high|xhigh)",
-      )
       .option("--model <model>", "Model override for agent jobs")
       .option("--timeout-seconds <n>", "Timeout seconds for agent jobs")
       .option("--light-context", "Enable lightweight bootstrap context for agent jobs")
@@ -208,10 +204,6 @@ export function registerCronEditCommand(cron: Command) {
           const hasSystemEventPatch = typeof opts.systemEvent === "string";
           const model =
             typeof opts.model === "string" && opts.model.trim() ? opts.model.trim() : undefined;
-          const thinking =
-            typeof opts.thinking === "string" && opts.thinking.trim()
-              ? opts.thinking.trim()
-              : undefined;
           const timeoutSeconds = opts.timeoutSeconds
             ? Number.parseInt(String(opts.timeoutSeconds), 10)
             : undefined;
@@ -223,7 +215,6 @@ export function registerCronEditCommand(cron: Command) {
           const hasAgentTurnPatch =
             typeof opts.message === "string" ||
             Boolean(model) ||
-            Boolean(thinking) ||
             hasTimeoutSeconds ||
             typeof opts.lightContext === "boolean" ||
             hasDeliveryModeFlag ||
@@ -242,7 +233,6 @@ export function registerCronEditCommand(cron: Command) {
             const payload: Record<string, unknown> = { kind: "agentTurn" };
             assignIf(payload, "message", String(opts.message), typeof opts.message === "string");
             assignIf(payload, "model", model, Boolean(model));
-            assignIf(payload, "thinking", thinking, Boolean(thinking));
             assignIf(payload, "timeoutSeconds", timeoutSeconds, hasTimeoutSeconds);
             assignIf(
               payload,

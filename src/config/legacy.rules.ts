@@ -222,4 +222,14 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
     message:
       "agents.defaults.embeddedPi is obsolete and ignored — the Pi orchestrator was replaced by AgentRuntime. Remove it from your config (auto-migrated on load).",
   },
+  {
+    path: ["agents", "defaults", "thinkingDefault"],
+    message:
+      "agents.defaults.thinkingDefault is obsolete and ignored (#2480) — CLI runtimes own reasoning depth. Remove it from your config (auto-migrated on load).",
+  },
+  {
+    path: ["agents", "defaults", "subagents", "thinking"],
+    message:
+      "agents.defaults.subagents.thinking is obsolete and ignored (#2480) — CLI runtimes own reasoning depth. Remove it from your config (auto-migrated on load).",
+  },
 ];

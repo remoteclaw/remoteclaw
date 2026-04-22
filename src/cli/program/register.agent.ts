@@ -27,7 +27,6 @@ export function registerAgentCommands(program: Command, args: { agentChannelOpti
     .option("-t, --to <number>", "Recipient number in E.164 used to derive the session key")
     .option("--session-id <id>", "Use an explicit session id")
     .option("--agent <id>", "Agent id (overrides routing bindings)")
-    .option("--thinking <level>", "Thinking level: off | minimal | low | medium | high")
     .option("--verbose <on|off>", "Persist agent verbose level for the session")
     .option(
       "--channel <channel>",
@@ -55,10 +54,6 @@ ${theme.heading("Examples:")}
 ${formatHelpExamples([
   ['remoteclaw agent --to +15555550123 --message "status update"', "Start a new session."],
   ['remoteclaw agent --agent ops --message "Summarize logs"', "Use a specific agent."],
-  [
-    'remoteclaw agent --session-id 1234 --message "Summarize inbox" --thinking medium',
-    "Target a session with explicit thinking level.",
-  ],
   [
     'remoteclaw agent --to +15555550123 --message "Trace logs" --verbose on --json',
     "Enable verbose logging and JSON output.",

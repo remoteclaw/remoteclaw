@@ -89,7 +89,6 @@ type CronAgentTurnPayloadFields = {
   model?: string;
   /** Optional per-job fallback models; overrides agent/global fallbacks when defined. */
   fallbacks?: string[];
-  thinking?: string;
   timeoutSeconds?: number;
   allowUnsafeExternalContent?: boolean;
   /** If true, run with lightweight bootstrap context. */

@@ -483,51 +483,102 @@ function countHiddenCronSessions(sessionKey: string, sessions: SessionsListResul
   return sessions.sessions.filter((s) => isCronSessionKey(s.key) && s.key !== sessionKey).length;
 }
 
-const THEME_ORDER: ThemeMode[] = ["system", "light", "dark"];
+type ThemeModeOption = { id: ThemeMode; label: string };
+
+const THEME_MODE_OPTIONS: ThemeModeOption[] = [
+  { id: "system", label: "System" },
+  { id: "light", label: "Light" },
+  { id: "dark", label: "Dark" },
+];
+
+function renderThemeModeIcon(mode: ThemeMode) {
+  if (mode === "light") {
+    return renderSunIcon();
+  }
+  if (mode === "dark") {
+    return renderMoonIcon();
+  }
+  return renderMonitorIcon();
+}
 
 export function renderThemeToggle(state: AppViewState) {
-  const index = Math.max(0, THEME_ORDER.indexOf(state.theme));
-  const applyTheme = (next: ThemeMode) => (event: MouseEvent) => {
-    const element = event.currentTarget as HTMLElement;
+  const setOpen = (orb: HTMLElement, nextOpen: boolean) => {
+    orb.classList.toggle("theme-orb--open", nextOpen);
+    const trigger = orb.querySelector<HTMLButtonElement>(".theme-orb__trigger");
+    const menu = orb.querySelector<HTMLElement>(".theme-orb__menu");
+    if (trigger) {
+      trigger.setAttribute("aria-expanded", nextOpen ? "true" : "false");
+    }
+    if (menu) {
+      menu.setAttribute("aria-hidden", nextOpen ? "false" : "true");
+    }
+  };
+
+  const toggleOpen = (event: MouseEvent) => {
+    const orb = (event.currentTarget as HTMLElement).closest<HTMLElement>(".theme-orb");
+    if (!orb) {
+      return;
+    }
+    const isOpen = orb.classList.contains("theme-orb--open");
+    if (isOpen) {
+      setOpen(orb, false);
+      return;
+    }
+    setOpen(orb, true);
+    const close = (evt: MouseEvent) => {
+      if (!orb.contains(evt.target as Node)) {
+        setOpen(orb, false);
+        document.removeEventListener("click", close);
+      }
+    };
+    requestAnimationFrame(() => document.addEventListener("click", close));
+  };
+
+  const pickMode = (mode: ThemeMode) => (event: MouseEvent) => {
+    const orb = (event.currentTarget as HTMLElement).closest<HTMLElement>(".theme-orb");
+    if (orb) {
+      setOpen(orb, false);
+    }
+    if (mode === state.theme) {
+      return;
+    }
+    const element = orb ?? (event.currentTarget as HTMLElement);
     const context: ThemeTransitionContext = { element };
     if (event.clientX || event.clientY) {
       context.pointerClientX = event.clientX;
       context.pointerClientY = event.clientY;
     }
-    state.setTheme(next, context);
+    state.setTheme(mode, context);
   };
 
   return html`
-    <div class="theme-toggle" style="--theme-index: ${index};">
-      <div class="theme-toggle__track" role="group" aria-label="Theme">
-        <span class="theme-toggle__indicator"></span>
-        <button
-          class="theme-toggle__button ${state.theme === "system" ? "active" : ""}"
-          @click=${applyTheme("system")}
-          aria-pressed=${state.theme === "system"}
-          aria-label="System theme"
-          title="System"
-        >
-          ${renderMonitorIcon()}
-        </button>
-        <button
-          class="theme-toggle__button ${state.theme === "light" ? "active" : ""}"
-          @click=${applyTheme("light")}
-          aria-pressed=${state.theme === "light"}
-          aria-label="Light theme"
-          title="Light"
-        >
-          ${renderSunIcon()}
-        </button>
-        <button
-          class="theme-toggle__button ${state.theme === "dark" ? "active" : ""}"
-          @click=${applyTheme("dark")}
-          aria-pressed=${state.theme === "dark"}
-          aria-label="Dark theme"
-          title="Dark"
-        >
-          ${renderMoonIcon()}
-        </button>
+    <div class="theme-orb" aria-label="Theme">
+      <button
+        type="button"
+        class="theme-orb__trigger"
+        title="Theme"
+        aria-haspopup="menu"
+        aria-expanded="false"
+        @click=${toggleOpen}
+      >
+        ${renderThemeModeIcon(state.theme)}
+      </button>
+      <div class="theme-orb__menu" role="menu" aria-hidden="true">
+        ${THEME_MODE_OPTIONS.map(
+          (opt) => html`
+            <button
+              type="button"
+              class="theme-orb__option ${opt.id === state.theme ? "theme-orb__option--active" : ""}"
+              title=${opt.label}
+              role="menuitemradio"
+              aria-checked=${opt.id === state.theme}
+              aria-label="${opt.label} theme"
+              @click=${pickMode(opt.id)}
+            >
+              ${renderThemeModeIcon(opt.id)}
+            </button>
+          `,
+        )}
       </div>
     </div>
   `;

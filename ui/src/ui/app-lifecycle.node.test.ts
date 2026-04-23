@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { handleDisconnected } from "./app-lifecycle.ts";
+import type { RemoteClawApp } from "./app.ts";
 
 function createHost() {
   return {
@@ -20,6 +21,11 @@ function createHost() {
     logsAutoFollow: false,
     logsAtBottom: true,
     logsEntries: [],
+    nodesPollInterval: null,
+    logsPollInterval: null,
+    debugPollInterval: null,
+    themeMedia: null,
+    themeMediaHandler: null,
     popStateHandler: vi.fn(),
     topbarObserver: { disconnect: vi.fn() } as unknown as ResizeObserver,
   };
@@ -33,7 +39,7 @@ describe("handleDisconnected", () => {
       host.topbarObserver as unknown as { disconnect: ReturnType<typeof vi.fn> }
     ).disconnect;
 
-    handleDisconnected(host as unknown as Parameters<typeof handleDisconnected>[0]);
+    handleDisconnected(host as unknown as RemoteClawApp);
 
     expect(removeSpy).toHaveBeenCalledWith("popstate", host.popStateHandler);
     expect(host.connectGeneration).toBe(1);

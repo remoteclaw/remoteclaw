@@ -106,7 +106,7 @@ function resolveOnboardingMode(): boolean {
 
 @customElement("remoteclaw-app")
 export class RemoteClawApp extends LitElement {
-  private i18nController = new I18nController(this);
+  i18nController = new I18nController(this);
   clientInstanceId = generateUUID();
   @state() settings: UiSettings = loadSettings();
   constructor() {
@@ -126,9 +126,9 @@ export class RemoteClawApp extends LitElement {
   @state() lastError: string | null = null;
   @state() lastErrorCode: string | null = null;
   @state() eventLog: EventLogEntry[] = [];
-  private eventLogBuffer: EventLogEntry[] = [];
-  private toolStreamSyncTimer: number | null = null;
-  private sidebarCloseTimer: number | null = null;
+  eventLogBuffer: EventLogEntry[] = [];
+  toolStreamSyncTimer: number | null = null;
+  sidebarCloseTimer: number | null = null;
 
   @state() assistantName = bootAssistantIdentity.name;
   @state() assistantAvatar = bootAssistantIdentity.avatar;
@@ -139,7 +139,7 @@ export class RemoteClawApp extends LitElement {
   @state() chatSending = false;
   @state() chatMessage = "";
   @state() chatMessages: unknown[] = [];
-  @state() chatToolMessages: unknown[] = [];
+  @state() chatToolMessages: Record<string, unknown>[] = [];
   @state() chatStream: string | null = null;
   @state() chatStreamStartedAt: number | null = null;
   @state() chatStreamSegments: Array<{ text: string; ts: number }> = [];
@@ -303,25 +303,24 @@ export class RemoteClawApp extends LitElement {
   @state() logsAtBottom = true;
 
   client: GatewayBrowserClient | null = null;
-  private chatScrollFrame: number | null = null;
-  private chatScrollTimeout: number | null = null;
-  private chatHasAutoScrolled = false;
-  private connectGeneration = 0;
-  private chatUserNearBottom = true;
+  chatScrollFrame: number | null = null;
+  chatScrollTimeout: number | null = null;
+  chatHasAutoScrolled = false;
+  connectGeneration = 0;
+  chatUserNearBottom = true;
   @state() chatNewMessagesBelow = false;
-  private nodesPollInterval: number | null = null;
-  private logsPollInterval: number | null = null;
-  private debugPollInterval: number | null = null;
-  private logsScrollFrame: number | null = null;
-  private toolStreamById = new Map<string, ToolStreamEntry>();
-  private toolStreamOrder: string[] = [];
+  nodesPollInterval: number | null = null;
+  logsPollInterval: number | null = null;
+  debugPollInterval: number | null = null;
+  logsScrollFrame: number | null = null;
+  toolStreamById = new Map<string, ToolStreamEntry>();
+  toolStreamOrder: string[] = [];
   refreshSessionsAfterChat = new Set<string>();
   basePath = "";
-  private popStateHandler = () =>
-    onPopStateInternal(this as unknown as Parameters<typeof onPopStateInternal>[0]);
-  private themeMedia: MediaQueryList | null = null;
-  private themeMediaHandler: ((event: MediaQueryListEvent) => void) | null = null;
-  private topbarObserver: ResizeObserver | null = null;
+  popStateHandler = () => onPopStateInternal(this);
+  themeMedia: MediaQueryList | null = null;
+  themeMediaHandler: ((event: MediaQueryListEvent) => void) | null = null;
+  topbarObserver: ResizeObserver | null = null;
 
   createRenderRoot() {
     return this;
@@ -329,38 +328,32 @@ export class RemoteClawApp extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    handleConnected(this as unknown as Parameters<typeof handleConnected>[0]);
+    handleConnected(this);
   }
 
   protected firstUpdated() {
-    handleFirstUpdated(this as unknown as Parameters<typeof handleFirstUpdated>[0]);
+    handleFirstUpdated(this);
   }
 
   disconnectedCallback() {
-    handleDisconnected(this as unknown as Parameters<typeof handleDisconnected>[0]);
+    handleDisconnected(this);
     super.disconnectedCallback();
   }
 
   protected updated(changed: Map<PropertyKey, unknown>) {
-    handleUpdated(this as unknown as Parameters<typeof handleUpdated>[0], changed);
+    handleUpdated(this, changed);
   }
 
   connect() {
-    connectGatewayInternal(this as unknown as Parameters<typeof connectGatewayInternal>[0]);
+    connectGatewayInternal(this);
   }
 
   handleChatScroll(event: Event) {
-    handleChatScrollInternal(
-      this as unknown as Parameters<typeof handleChatScrollInternal>[0],
-      event,
-    );
+    handleChatScrollInternal(this, event);
   }
 
   handleLogsScroll(event: Event) {
-    handleLogsScrollInternal(
-      this as unknown as Parameters<typeof handleLogsScrollInternal>[0],
-      event,
-    );
+    handleLogsScrollInternal(this, event);
   }
 
   exportLogs(lines: string[], label: string) {
@@ -368,20 +361,16 @@ export class RemoteClawApp extends LitElement {
   }
 
   resetToolStream() {
-    resetToolStreamInternal(this as unknown as Parameters<typeof resetToolStreamInternal>[0]);
+    resetToolStreamInternal(this);
   }
 
   resetChatScroll() {
-    resetChatScrollInternal(this as unknown as Parameters<typeof resetChatScrollInternal>[0]);
+    resetChatScrollInternal(this);
   }
 
   scrollToBottom(opts?: { smooth?: boolean }) {
-    resetChatScrollInternal(this as unknown as Parameters<typeof resetChatScrollInternal>[0]);
-    scheduleChatScrollInternal(
-      this as unknown as Parameters<typeof scheduleChatScrollInternal>[0],
-      true,
-      Boolean(opts?.smooth),
-    );
+    resetChatScrollInternal(this);
+    scheduleChatScrollInternal(this, true, Boolean(opts?.smooth));
   }
 
   async loadAssistantIdentity() {
@@ -389,45 +378,38 @@ export class RemoteClawApp extends LitElement {
   }
 
   applySettings(next: UiSettings) {
-    applySettingsInternal(this as unknown as Parameters<typeof applySettingsInternal>[0], next);
+    applySettingsInternal(this, next);
   }
 
   setTab(next: Tab) {
-    setTabInternal(this as unknown as Parameters<typeof setTabInternal>[0], next);
+    setTabInternal(this, next);
   }
 
   setTheme(next: ThemeMode, context?: Parameters<typeof setThemeInternal>[2]) {
-    setThemeInternal(this as unknown as Parameters<typeof setThemeInternal>[0], next, context);
+    setThemeInternal(this, next, context);
   }
 
   async loadOverview() {
-    await loadOverviewInternal(this as unknown as Parameters<typeof loadOverviewInternal>[0]);
+    await loadOverviewInternal(this);
   }
 
   async loadCron() {
-    await loadCronInternal(this as unknown as Parameters<typeof loadCronInternal>[0]);
+    await loadCronInternal(this);
   }
 
   async handleAbortChat() {
-    await handleAbortChatInternal(this as unknown as Parameters<typeof handleAbortChatInternal>[0]);
+    await handleAbortChatInternal(this);
   }
 
   removeQueuedMessage(id: string) {
-    removeQueuedMessageInternal(
-      this as unknown as Parameters<typeof removeQueuedMessageInternal>[0],
-      id,
-    );
+    removeQueuedMessageInternal(this, id);
   }
 
   async handleSendChat(
     messageOverride?: string,
     opts?: Parameters<typeof handleSendChatInternal>[2],
   ) {
-    await handleSendChatInternal(
-      this as unknown as Parameters<typeof handleSendChatInternal>[0],
-      messageOverride,
-      opts,
-    );
+    await handleSendChatInternal(this, messageOverride, opts);
   }
 
   async handleWhatsAppStart(force: boolean) {
@@ -502,7 +484,7 @@ export class RemoteClawApp extends LitElement {
     const nextToken = this.pendingGatewayToken?.trim() || "";
     this.pendingGatewayUrl = null;
     this.pendingGatewayToken = null;
-    applySettingsInternal(this as unknown as Parameters<typeof applySettingsInternal>[0], {
+    applySettingsInternal(this, {
       ...this.settings,
       gatewayUrl: nextGatewayUrl,
       token: nextToken,

@@ -1,11 +1,12 @@
-import { refreshChat } from "./app-chat.ts";
+import { refreshChat, type ChatHost } from "./app-chat.ts";
 import {
   startLogsPolling,
   stopLogsPolling,
   startDebugPolling,
   stopDebugPolling,
+  type PollingHost,
 } from "./app-polling.ts";
-import { scheduleChatScroll, scheduleLogsScroll } from "./app-scroll.ts";
+import { scheduleChatScroll, scheduleLogsScroll, type ScrollHost } from "./app-scroll.ts";
 import type { RemoteClawApp } from "./app.ts";
 import { loadAgentIdentities, loadAgentIdentity } from "./controllers/agent-identity.ts";
 import { loadAgents, loadToolsCatalog } from "./controllers/agents.ts";
@@ -37,28 +38,24 @@ import { startThemeTransition, type ThemeTransitionContext } from "./theme-trans
 import { resolveTheme, type ResolvedTheme, type ThemeMode } from "./theme.ts";
 import type { AgentsListResult } from "./types.ts";
 
-type SettingsHost = {
-  settings: UiSettings;
-  password?: string;
-  theme: ThemeMode;
-  themeResolved: ResolvedTheme;
-  applySessionKey: string;
-  sessionKey: string;
-  tab: Tab;
-  connected: boolean;
-  chatHasAutoScrolled: boolean;
-  logsAtBottom: boolean;
-  eventLog: unknown[];
-  eventLogBuffer: unknown[];
-  basePath: string;
-  agentsList?: AgentsListResult | null;
-  agentsSelectedId?: string | null;
-  agentsPanel?: "overview" | "files" | "tools" | "channels" | "cron";
-  themeMedia: MediaQueryList | null;
-  themeMediaHandler: ((event: MediaQueryListEvent) => void) | null;
-  pendingGatewayUrl?: string | null;
-  pendingGatewayToken?: string | null;
-};
+export type SettingsHost = PollingHost &
+  ScrollHost &
+  ChatHost & {
+    settings: UiSettings;
+    password?: string;
+    theme: ThemeMode;
+    themeResolved: ResolvedTheme;
+    applySessionKey: string;
+    eventLog: unknown[];
+    eventLogBuffer: unknown[];
+    agentsList?: AgentsListResult | null;
+    agentsSelectedId?: string | null;
+    agentsPanel?: "overview" | "files" | "tools" | "channels" | "cron";
+    themeMedia: MediaQueryList | null;
+    themeMediaHandler: ((event: MediaQueryListEvent) => void) | null;
+    pendingGatewayUrl?: string | null;
+    pendingGatewayToken?: string | null;
+  };
 
 export function applySettings(host: SettingsHost, next: UiSettings) {
   const normalized = {
@@ -168,14 +165,14 @@ export function setTab(host: SettingsHost, next: Tab) {
     host.chatHasAutoScrolled = false;
   }
   if (next === "logs") {
-    startLogsPolling(host as unknown as Parameters<typeof startLogsPolling>[0]);
+    startLogsPolling(host);
   } else {
-    stopLogsPolling(host as unknown as Parameters<typeof stopLogsPolling>[0]);
+    stopLogsPolling(host);
   }
   if (next === "debug") {
-    startDebugPolling(host as unknown as Parameters<typeof startDebugPolling>[0]);
+    startDebugPolling(host);
   } else {
-    stopDebugPolling(host as unknown as Parameters<typeof stopDebugPolling>[0]);
+    stopDebugPolling(host);
   }
   void refreshActiveTab(host);
   syncUrlWithTab(host, next, false);
@@ -238,11 +235,8 @@ export async function refreshActiveTab(host: SettingsHost) {
     await loadExecApprovals(host as unknown as RemoteClawApp);
   }
   if (host.tab === "chat") {
-    await refreshChat(host as unknown as Parameters<typeof refreshChat>[0]);
-    scheduleChatScroll(
-      host as unknown as Parameters<typeof scheduleChatScroll>[0],
-      !host.chatHasAutoScrolled,
-    );
+    await refreshChat(host);
+    scheduleChatScroll(host, !host.chatHasAutoScrolled);
   }
   if (host.tab === "config") {
     await loadConfigSchema(host as unknown as RemoteClawApp);
@@ -255,7 +249,7 @@ export async function refreshActiveTab(host: SettingsHost) {
   if (host.tab === "logs") {
     host.logsAtBottom = true;
     await loadLogs(host as unknown as RemoteClawApp, { reset: true });
-    scheduleLogsScroll(host as unknown as Parameters<typeof scheduleLogsScroll>[0], true);
+    scheduleLogsScroll(host, true);
   }
 }
 
@@ -362,14 +356,14 @@ export function setTabFromRoute(host: SettingsHost, next: Tab) {
     host.chatHasAutoScrolled = false;
   }
   if (next === "logs") {
-    startLogsPolling(host as unknown as Parameters<typeof startLogsPolling>[0]);
+    startLogsPolling(host);
   } else {
-    stopLogsPolling(host as unknown as Parameters<typeof stopLogsPolling>[0]);
+    stopLogsPolling(host);
   }
   if (next === "debug") {
-    startDebugPolling(host as unknown as Parameters<typeof startDebugPolling>[0]);
+    startDebugPolling(host);
   } else {
-    stopDebugPolling(host as unknown as Parameters<typeof stopDebugPolling>[0]);
+    stopDebugPolling(host);
   }
   if (host.connected) {
     void refreshActiveTab(host);

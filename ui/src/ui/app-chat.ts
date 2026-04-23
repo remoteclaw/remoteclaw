@@ -1,7 +1,7 @@
 import { parseAgentSessionKey } from "../../../src/sessions/session-key-utils.js";
-import { scheduleChatScroll } from "./app-scroll.ts";
-import { setLastActiveSessionKey } from "./app-settings.ts";
-import { resetToolStream } from "./app-tool-stream.ts";
+import { scheduleChatScroll, type ScrollHost } from "./app-scroll.ts";
+import { setLastActiveSessionKey, type SettingsHost } from "./app-settings.ts";
+import { resetToolStream, type ToolStreamHost } from "./app-tool-stream.ts";
 import type { RemoteClawApp } from "./app.ts";
 import { abortChatRun, loadChatHistory, sendChatMessage } from "./controllers/chat.ts";
 import { loadSessions } from "./controllers/sessions.ts";
@@ -92,7 +92,7 @@ function enqueueChatMessage(
 }
 
 async function sendChatMessageNow(
-  host: ChatHost,
+  host: SettingsHost & ToolStreamHost,
   message: string,
   opts?: {
     previousDraft?: string;
@@ -103,7 +103,7 @@ async function sendChatMessageNow(
     refreshSessions?: boolean;
   },
 ) {
-  resetToolStream(host as unknown as Parameters<typeof resetToolStream>[0]);
+  resetToolStream(host);
   const runId = await sendChatMessage(host as unknown as RemoteClawApp, message, opts?.attachments);
   const ok = Boolean(runId);
   if (!ok && opts?.previousDraft != null) {
@@ -113,10 +113,7 @@ async function sendChatMessageNow(
     host.chatAttachments = opts.previousAttachments;
   }
   if (ok) {
-    setLastActiveSessionKey(
-      host as unknown as Parameters<typeof setLastActiveSessionKey>[0],
-      host.sessionKey,
-    );
+    setLastActiveSessionKey(host, host.sessionKey);
   }
   if (ok && opts?.restoreDraft && opts.previousDraft?.trim()) {
     host.chatMessage = opts.previousDraft;
@@ -124,7 +121,7 @@ async function sendChatMessageNow(
   if (ok && opts?.restoreAttachments && opts.previousAttachments?.length) {
     host.chatAttachments = opts.previousAttachments;
   }
-  scheduleChatScroll(host as unknown as Parameters<typeof scheduleChatScroll>[0]);
+  scheduleChatScroll(host);
   if (ok && !host.chatRunId) {
     void flushChatQueue(host);
   }
@@ -134,7 +131,7 @@ async function sendChatMessageNow(
   return ok;
 }
 
-async function flushChatQueue(host: ChatHost) {
+async function flushChatQueue(host: SettingsHost & ToolStreamHost) {
   if (!host.connected || isChatBusy(host)) {
     return;
   }
@@ -157,7 +154,7 @@ export function removeQueuedMessage(host: ChatHost, id: string) {
 }
 
 export async function handleSendChat(
-  host: ChatHost,
+  host: SettingsHost & ToolStreamHost,
   messageOverride?: string,
   opts?: { restoreDraft?: boolean },
 ) {
@@ -202,7 +199,10 @@ export async function handleSendChat(
   });
 }
 
-export async function refreshChat(host: ChatHost, opts?: { scheduleScroll?: boolean }) {
+export async function refreshChat(
+  host: ChatHost & ScrollHost,
+  opts?: { scheduleScroll?: boolean },
+) {
   await Promise.all([
     loadChatHistory(host as unknown as RemoteClawApp),
     loadSessions(host as unknown as RemoteClawApp, {
@@ -211,7 +211,7 @@ export async function refreshChat(host: ChatHost, opts?: { scheduleScroll?: bool
     refreshChatAvatar(host),
   ]);
   if (opts?.scheduleScroll !== false) {
-    scheduleChatScroll(host as unknown as Parameters<typeof scheduleChatScroll>[0]);
+    scheduleChatScroll(host);
   }
 }
 

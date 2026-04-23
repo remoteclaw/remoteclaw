@@ -75,7 +75,7 @@ export function renderNostrCard(params: {
           </div>
           <div>
             <span class="label">Public Key</span>
-            <span class="monospace" title="${publicKey ?? ""}">${truncatePubkey(publicKey)}</span>
+            <span class="mono" title="${publicKey ?? ""}">${truncatePubkey(publicKey)}</span>
           </div>
           <div>
             <span class="label">Last inbound</span>
@@ -207,7 +207,7 @@ export function renderNostrCard(params: {
               </div>
               <div>
                 <span class="label">Public Key</span>
-                <span class="monospace" title="${summaryPublicKey ?? ""}"
+                <span class="mono" title="${summaryPublicKey ?? ""}"
                   >${truncatePubkey(summaryPublicKey)}</span
                 >
               </div>

@@ -1,0 +1,372 @@
+/* ===========================================
+   Config Page — Fork-owned sidebar layout
+   ===========================================
+   Upstream v2026.3.22 sync (0667aa5596, #2400) replaced the config
+   sidebar+nav+subnav+tag-picker family with a flat .config-top-tabs
+   horizontal bar as part of a dashboard-v2 redesign. The fork's
+   ui/src/ui/views/config.ts kept the vertical sidebar layout (with
+   icons, tag picker, and two-level subsection nav) — features upstream
+   removed entirely.
+
+   This file restores the pre-sync rules for all 21 orphaned class
+   references surfaced by scripts/audit-css-class-drift.mjs cluster 1.
+   Same hybrid pattern as topbar-brand.css (#2506): migrate where
+   upstream has a direct replacement, fork-own where upstream removed
+   the concept. Here, ALL 21 orphans fall in the "fork-own" category
+   because sidebar vs top-tabs is a layout redesign, not a rename.
+
+   Import order in styles.css places this file AFTER styles/config.css
+   so the .config-layout grid override cascades correctly.
+
+   Related: #2501 (v2026.3.13-1 nav/topbar drift), #2502 (audit issue),
+   #2503 (build-time CSS drift gate), remoteclaw/hq#57 (post-mortem).
+   =========================================== */
+
+/* Restore two-column grid (upstream reduced to single-column for top-tabs). */
+.config-layout {
+  grid-template-columns: 260px minmax(0, 1fr);
+}
+
+/* ===========================================
+   Sidebar
+   =========================================== */
+
+.config-sidebar {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-accent);
+  border-right: 1px solid var(--border);
+  min-height: 0;
+  overflow: hidden;
+}
+
+:root[data-theme-mode="light"] .config-sidebar {
+  background: var(--bg-hover);
+}
+
+.config-sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.config-sidebar__title {
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+.config-sidebar__footer {
+  margin-top: auto;
+  padding: 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* ===========================================
+   Tag filter picker (inside .config-search)
+   =========================================== */
+
+.config-search__hint {
+  display: grid;
+  gap: 6px;
+}
+
+.config-search__hint-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.config-search__tag-picker {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  transition:
+    border-color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease,
+    background var(--duration-fast) ease;
+}
+
+.config-search__tag-picker[open] {
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+  background: var(--bg-hover);
+}
+
+:root[data-theme-mode="light"] .config-search__tag-picker {
+  background: white;
+}
+
+.config-search__tag-trigger {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 30px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+.config-search__tag-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.config-search__tag-placeholder {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.config-search__tag-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.config-search__tag-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.config-search__tag-chip--count {
+  color: var(--muted);
+}
+
+.config-search__tag-caret {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.config-search__tag-picker[open] .config-search__tag-caret {
+  transform: rotate(180deg);
+}
+
+.config-search__tag-menu {
+  max-height: 104px;
+  overflow-y: auto;
+  border-top: 1px solid var(--border);
+  padding: 6px;
+  display: grid;
+  gap: 6px;
+}
+
+.config-search__tag-option {
+  display: block;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease;
+}
+
+.config-search__tag-option:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.config-search__tag-option.active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+}
+
+/* ===========================================
+   Sidebar section nav
+   =========================================== */
+
+.config-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.config-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 14px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) ease,
+    color var(--duration-fast) ease;
+}
+
+.config-nav__item:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+:root[data-theme-mode="light"] .config-nav__item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.config-nav__item.active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.config-nav__icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  opacity: 0.7;
+}
+
+.config-nav__item:hover .config-nav__icon,
+.config-nav__item.active .config-nav__icon {
+  opacity: 1;
+}
+
+.config-nav__icon svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+}
+
+.config-nav__label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===========================================
+   Subsection nav
+   =========================================== */
+
+.config-subnav {
+  display: flex;
+  gap: 8px;
+  padding: 12px 22px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-accent);
+  overflow-x: auto;
+}
+
+:root[data-theme-mode="light"] .config-subnav {
+  background: var(--bg-hover);
+}
+
+.config-subnav__item {
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--bg-elevated);
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease;
+  white-space: nowrap;
+}
+
+:root[data-theme-mode="light"] .config-subnav__item {
+  background: white;
+}
+
+.config-subnav__item:hover {
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.config-subnav__item.active {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: var(--accent-subtle);
+}
+
+/* ===========================================
+   Mobile responsiveness
+   =========================================== */
+
+@media (max-width: 768px) {
+  .config-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .config-sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .config-sidebar__header {
+    padding: 14px 16px;
+  }
+
+  .config-nav {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 10px 14px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .config-nav__item {
+    flex: 0 0 auto;
+    padding: 9px 14px;
+    white-space: nowrap;
+  }
+
+  .config-nav__label {
+    display: inline;
+  }
+
+  .config-sidebar__footer {
+    display: none;
+  }
+
+  .config-subnav {
+    padding: 10px 16px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .config-nav__icon {
+    width: 26px;
+    height: 26px;
+    font-size: 17px;
+  }
+
+  .config-nav__label {
+    display: none;
+  }
+}

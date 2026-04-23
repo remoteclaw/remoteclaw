@@ -17,9 +17,6 @@ export const AgentDefaultsSchema = z
   .object({
     model: AgentModelSchema.optional(),
     imageModel: AgentModelSchema.optional(),
-    pdfModel: z.unknown().optional(),
-    pdfMaxBytesMb: z.unknown().optional(),
-    pdfMaxPages: z.unknown().optional(),
     models: z
       .record(
         z.string(),
@@ -47,9 +44,6 @@ export const AgentDefaultsSchema = z
     envelopeElapsed: z.union([z.literal("on"), z.literal("off")]).optional(),
     contextTokens: z.number().int().positive().optional(),
     cliBackends: z.record(z.string(), CliBackendSchema).optional(),
-    // Memory search config gutted — agents bring their own memory.
-    // Stub kept for config parse compatibility (existing configs still parse).
-    memorySearch: z.unknown().optional(),
     contextPruning: z
       .object({
         mode: z.union([z.literal("off"), z.literal("cache-ttl")]).optional(),

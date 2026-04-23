@@ -53,24 +53,6 @@ describe("config secret refs schema", () => {
     expect(result.ok).toBe(true);
   });
 
-  it("tolerates legacy model provider api field (compat stub)", () => {
-    // Fork — CLI runtimes own model API routing.
-    // Guard that configs from the pre-fork era carrying `api` still parse.
-    const result = validateConfigObjectRaw({
-      models: {
-        providers: {
-          "openai-codex": {
-            baseUrl: "https://chatgpt.com/backend-api",
-            api: "openai-codex-responses",
-            models: [{ id: "gpt-5.4", name: "gpt-5.4" }],
-          },
-        },
-      },
-    });
-
-    expect(result.ok).toBe(true);
-  });
-
   it("accepts googlechat serviceAccount refs", () => {
     const result = validateConfigObjectRaw({
       channels: {

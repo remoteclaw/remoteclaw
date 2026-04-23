@@ -30,22 +30,6 @@ describe("config schema regressions", () => {
     expect(res.ok).toBe(true);
   });
 
-  it("still parses legacy memorySearch fields without error (compat stub)", () => {
-    const res = validateConfigObject({
-      agents: {
-        list: [{ id: "main", workspace: "/tmp/main" }],
-        defaults: {
-          memorySearch: {
-            fallback: "voyage",
-            provider: "mistral",
-          },
-        },
-      },
-    });
-
-    expect(res.ok).toBe(true);
-  });
-
   it("accepts safe iMessage remoteHost", () => {
     const res = validateConfigObject({
       channels: {
@@ -109,40 +93,6 @@ describe("config schema regressions", () => {
       },
     });
 
-    expect(res.ok).toBe(true);
-  });
-
-  it("accepts pdf default model and limits", () => {
-    const res = validateConfigObject({
-      agents: {
-        list: [{ id: "main", workspace: "/tmp/main" }],
-        defaults: {
-          pdfModel: {
-            primary: "anthropic/claude-opus-4-6",
-            fallbacks: ["openai/gpt-5-mini"],
-          },
-          pdfMaxBytesMb: 12,
-          pdfMaxPages: 25,
-        },
-      },
-    });
-
-    expect(res.ok).toBe(true);
-  });
-
-  it("accepts legacy pdf limits (compat stubs)", () => {
-    const res = validateConfigObject({
-      agents: {
-        list: [{ id: "main", workspace: "/tmp/main" }],
-        defaults: {
-          pdfModel: { primary: "openai/gpt-5-mini" },
-          pdfMaxBytesMb: 0,
-          pdfMaxPages: 0,
-        },
-      },
-    });
-
-    // Model selection config gutted — fields are z.unknown() compat stubs.
     expect(res.ok).toBe(true);
   });
 

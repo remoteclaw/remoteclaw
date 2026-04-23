@@ -70,7 +70,7 @@ describe("runServiceRestart config pre-flight (#35862)", () => {
     setConfigSnapshot({
       exists: true,
       valid: false,
-      issues: [{ path: "agents.defaults.pdfModel", message: "Unrecognized key" }],
+      issues: [{ path: "agents.defaults.bogusField", message: "Unrecognized key" }],
     });
 
     await expect(runServiceRestart(createServiceRunArgs())).rejects.toThrow("__exit__:1");
@@ -124,7 +124,7 @@ describe("runServiceStart config pre-flight (#35862)", () => {
     setConfigSnapshot({
       exists: true,
       valid: false,
-      issues: [{ path: "agents.defaults.pdfModel", message: "Unrecognized key" }],
+      issues: [{ path: "agents.defaults.bogusField", message: "Unrecognized key" }],
     });
 
     await expect(runServiceStart(createServiceRunArgs())).rejects.toThrow("__exit__:1");

@@ -195,10 +195,6 @@ export const ModelDefinitionSchema = z
     contextWindow: z.number().positive().optional(),
     maxTokens: z.number().positive().optional(),
     headers: z.record(z.string(), z.string()).optional(),
-    // Model API routing and capability detection gutted — CLI runtimes own this.
-    // Stubs kept for config parse compatibility (existing configs still parse).
-    api: z.unknown().optional(),
-    compat: z.unknown().optional(),
   })
   .strict();
 
@@ -213,9 +209,6 @@ export const ModelProviderSchema = z
     headers: z.record(z.string(), SecretInputSchema.register(sensitive)).optional(),
     authHeader: z.boolean().optional(),
     models: z.array(ModelDefinitionSchema),
-    // Model API routing gutted — CLI runtimes own this.
-    // Stub kept for config parse compatibility (existing configs still parse).
-    api: z.unknown().optional(),
   })
   .strict();
 

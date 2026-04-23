@@ -685,9 +685,6 @@ export const RemoteClawSchema = z
       })
       .strict()
       .optional(),
-    // Memory config tree gutted — agents bring their own memory.
-    // Stub kept for config parse compatibility (existing configs still parse).
-    memory: z.unknown().optional(),
     skills: z
       .object({
         allowBundled: z.array(z.string()).optional(),

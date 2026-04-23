@@ -57,32 +57,28 @@ describe("realredactConfigSnapshot_real", () => {
     const hints = mainSchemaHints;
 
     const snapshot = makeSnapshot({
-      agents: {
-        defaults: {
-          memorySearch: {
-            remote: {
-              apiKey: "1234",
-            },
+      models: {
+        providers: {
+          openai: {
+            baseUrl: "https://api.openai.com",
+            apiKey: "1234",
+            models: [],
+          },
+          anthropic: {
+            baseUrl: "https://api.anthropic.com",
+            apiKey: "6789",
+            models: [],
           },
         },
-        list: [
-          {
-            memorySearch: {
-              remote: {
-                apiKey: "6789",
-              },
-            },
-          },
-        ],
       },
     });
 
     const result = redactConfigSnapshot(snapshot, hints);
     const config = result.config as typeof snapshot.config;
-    expect(config.agents.defaults.memorySearch.remote.apiKey).toBe(REDACTED_SENTINEL);
-    expect(config.agents.list[0].memorySearch.remote.apiKey).toBe(REDACTED_SENTINEL);
+    expect(config.models.providers.openai.apiKey).toBe(REDACTED_SENTINEL);
+    expect(config.models.providers.anthropic.apiKey).toBe(REDACTED_SENTINEL);
     const restored = restoreRedactedValues(result.config, snapshot.config, hints);
-    expect(restored.agents.defaults.memorySearch.remote.apiKey).toBe("1234");
-    expect(restored.agents.list[0].memorySearch.remote.apiKey).toBe("6789");
+    expect(restored.models.providers.openai.apiKey).toBe("1234");
+    expect(restored.models.providers.anthropic.apiKey).toBe("6789");
   });
 });

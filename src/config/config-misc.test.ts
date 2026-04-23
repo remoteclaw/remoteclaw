@@ -302,40 +302,6 @@ describe("broadcast", () => {
   });
 });
 
-describe("model api/compat legacy fields (compat stubs)", () => {
-  // Fork — CLI runtimes own model API routing and capability detection.
-  // This test guards that configs from the pre-fork era (carrying `api` / `compat`) still parse.
-  it("accepts legacy api and compat fields without error", () => {
-    const res = validateConfigObject({
-      models: {
-        providers: {
-          local: {
-            baseUrl: "http://127.0.0.1:1234/v1",
-            api: "openai-completions",
-            models: [
-              {
-                id: "qwen3-32b",
-                name: "Qwen3 32B",
-                compat: {
-                  supportsUsageInStreaming: true,
-                  supportsStrictMode: false,
-                  thinkingFormat: "qwen",
-                  requiresToolResultName: true,
-                  requiresAssistantAfterToolResult: false,
-                  requiresThinkingAsText: false,
-                  requiresMistralToolIds: false,
-                },
-              },
-            ],
-          },
-        },
-      },
-    });
-
-    expect(res.ok).toBe(true);
-  });
-});
-
 describe("agents.defaults.embeddedPi legacy field (#2479)", () => {
   // The Pi orchestrator was replaced by AgentRuntime; the config stub was removed.
   // These tests guard the rule+migration channel that lets pre-gut configs still load.
@@ -594,5 +560,117 @@ describe("config strict validation", () => {
       expect(snap.valid).toBe(false);
       expect(snap.legacyIssues.some((issue) => issue.path === "gateway.bind")).toBe(true);
     });
+  });
+});
+
+describe("gutted LLM-platform fields are rejected (#2489)", () => {
+  it("rejects top-level memory backend config", () => {
+    const result = RemoteClawSchema.safeParse({
+      memory: { backend: "builtin" },
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((i) => /Unrecognized key.*memory/.test(i.message))).toBe(
+        true,
+      );
+    }
+  });
+
+  it("rejects agents.defaults.memorySearch", () => {
+    const result = RemoteClawSchema.safeParse({
+      agents: {
+        list: [{ id: "main", workspace: "/tmp/main" }],
+        defaults: {
+          memorySearch: { provider: "mistral" },
+        },
+      },
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some((i) => /Unrecognized key.*memorySearch/.test(i.message)),
+      ).toBe(true);
+    }
+  });
+
+  it("rejects per-agent memorySearch on agents.list[]", () => {
+    const result = RemoteClawSchema.safeParse({
+      agents: {
+        list: [
+          {
+            id: "main",
+            workspace: "/tmp/main",
+            memorySearch: { provider: "openai" },
+          },
+        ],
+      },
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some((i) => /Unrecognized key.*memorySearch/.test(i.message)),
+      ).toBe(true);
+    }
+  });
+
+  it("rejects agents.defaults.pdfModel and pdf limits", () => {
+    const result = RemoteClawSchema.safeParse({
+      agents: {
+        list: [{ id: "main", workspace: "/tmp/main" }],
+        defaults: {
+          pdfModel: { primary: "openai/gpt-5-mini" },
+          pdfMaxBytesMb: 10,
+          pdfMaxPages: 20,
+        },
+      },
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const messages = result.error.issues.map((i) => i.message).join("\n");
+      expect(/Unrecognized key.*pdfModel/.test(messages)).toBe(true);
+    }
+  });
+
+  it("rejects api and compat on a model definition", () => {
+    const result = RemoteClawSchema.safeParse({
+      models: {
+        providers: {
+          openai: {
+            baseUrl: "https://api.openai.com",
+            models: [
+              {
+                id: "gpt-4",
+                name: "GPT-4",
+                api: "openai-completions",
+                compat: { supportsTools: true },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const messages = result.error.issues.map((i) => i.message).join("\n");
+      expect(/Unrecognized key.*(api|compat)/.test(messages)).toBe(true);
+    }
+  });
+
+  it("rejects api on a model provider", () => {
+    const result = RemoteClawSchema.safeParse({
+      models: {
+        providers: {
+          openai: {
+            baseUrl: "https://api.openai.com",
+            api: "openai-completions",
+            models: [],
+          },
+        },
+      },
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((i) => /Unrecognized key.*api/.test(i.message))).toBe(true);
+    }
   });
 });

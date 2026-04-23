@@ -125,7 +125,7 @@ export function renderDebug(props: DebugProps) {
               <div class="muted" style="margin-top: 12px">No events yet.</div>
             `
           : html`
-            <div class="list debug-event-log" style="margin-top: 12px;">
+            <div class="list" style="margin-top: 12px;">
               ${props.eventLog.map(
                 (evt) => html`
                   <div class="list-item debug-event-log__item">

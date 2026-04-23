@@ -1723,8 +1723,8 @@ function renderRun(entry: CronRunLogEntry, basePath: string) {
         : null;
   return html`
     <div class="list-item cron-run-entry">
-      <div class="list-main cron-run-entry__main">
-        <div class="list-title cron-run-entry__title">
+      <div class="list-main">
+        <div class="list-title">
           ${entry.jobName ?? entry.jobId}
           <span class="muted"> · ${status}</span>
         </div>

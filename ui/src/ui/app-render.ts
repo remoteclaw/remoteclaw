@@ -275,13 +275,13 @@ export function renderApp(state: AppViewState) {
             </div>
           `;
         })}
-        <div class="nav-section nav-section--links">
+        <div class="nav-section">
           <div class="nav-section__label nav-section__label--static">
             <span class="nav-section__label-text">${t("common.resources")}</span>
           </div>
           <div class="nav-section__items">
             <a
-              class="nav-item nav-item--external"
+              class="nav-item"
               href="https://docs.remoteclaw.org"
               target=${EXTERNAL_LINK_TARGET}
               rel=${buildExternalLinkRel()}

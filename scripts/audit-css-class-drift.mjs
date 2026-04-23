@@ -238,14 +238,12 @@ function extractClassReferences(src, relPath, refs) {
     }
     // Template-literal form `class=${\`...\`}` — extract STATIC fragments of
     // the template (the ${...} interpolations inside are dynamic, out of
-    // scope). This mirrors how class="a ${x} b" handles static fragments.
+    // scope). This mirrors how class="a ${x} b" handles static fragments,
+    // including the adjacency rule that drops partial tokens touching an
+    // interpolation without separating whitespace.
     const templateFragments = matchSingleTemplateLiteralFragments(expr);
     if (templateFragments !== null) {
-      for (const frag of templateFragments) {
-        for (const t of tokenize(frag)) {
-          recordRef(refs, t, relPath, lineNo);
-        }
-      }
+      emitFragmentTokens(templateFragments, relPath, lineNo, refs);
     }
   }
 }
@@ -414,26 +412,76 @@ function skipTemplateLiteral(src, start) {
  * interpolations is scope-out per #2502 — the issue explicitly flags
  * dynamic class composition as too noisy for the first pass.
  *
- * Interpolation removal is brace-and-string-aware (not a naive regex)
+ * Interpolation splitting is brace-and-string-aware (not a naive regex)
  * so nested `${...}`, string literals containing `}`, and interpolations
  * inside template literals all skip correctly.
+ *
+ * Adjacency rule: a static fragment that touches an interpolation with no
+ * separating whitespace contributes a PARTIAL class name at the boundary
+ * (e.g. `class="language-${lang}"` — the static `language-` is a prefix,
+ * not a standalone class). Drop the adjacent boundary token so the audit
+ * does not report `.language-` as an orphan.
  */
 function addTokensFromLitClass(value, file, lineNo, refs) {
-  let stripped = "";
+  emitFragmentTokens(splitStaticFragments(value), file, lineNo, refs);
+}
+
+/**
+ * Emit class tokens from a sequence of static fragments (as produced by
+ * splitting around `${...}` interpolations), applying the adjacency rule:
+ * a boundary token on either end of a fragment is dropped when the
+ * fragment touches an interpolation without separating whitespace, because
+ * in that position the static text is a prefix/suffix of a dynamically
+ * composed class, not a standalone reference.
+ */
+function emitFragmentTokens(fragments, file, lineNo, refs) {
+  for (let f = 0; f < fragments.length; f += 1) {
+    const fragment = fragments[f];
+    const precededByInterp = f > 0;
+    const followedByInterp = f < fragments.length - 1;
+    const startsWithSpace = /^\s/.test(fragment);
+    const endsWithSpace = /\s$/.test(fragment);
+    const tokens = tokenize(fragment);
+    if (tokens.length === 0) {
+      continue;
+    }
+    let start = 0;
+    let end = tokens.length;
+    if (precededByInterp && !startsWithSpace) {
+      start += 1;
+    }
+    if (followedByInterp && !endsWithSpace) {
+      end -= 1;
+    }
+    for (let t = start; t < end; t += 1) {
+      recordRef(refs, tokens[t], file, lineNo);
+    }
+  }
+}
+
+/**
+ * Split a class-attribute value into the static fragments between its
+ * `${...}` interpolations, preserving each fragment verbatim so adjacency
+ * to an interpolation (no separating whitespace) can be detected. Returns
+ * an array with at least one entry; interpolations themselves are dropped.
+ */
+function splitStaticFragments(value) {
+  const fragments = [];
+  let current = "";
   let i = 0;
   while (i < value.length) {
     if (value[i] === "$" && value[i + 1] === "{") {
+      fragments.push(current);
+      current = "";
       const end = scanExpression(value, i + 2);
       i = end === -1 ? value.length : end;
-      stripped += " ";
       continue;
     }
-    stripped += value[i];
+    current += value[i];
     i += 1;
   }
-  for (const t of tokenize(stripped)) {
-    recordRef(refs, t, file, lineNo);
-  }
+  fragments.push(current);
+  return fragments;
 }
 
 function tokenize(value) {

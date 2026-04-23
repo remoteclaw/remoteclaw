@@ -1,0 +1,77 @@
+/* ===========================================
+   Fork-owned: Topbar brand block
+   ===========================================
+   Restores rules for `.topbar-left` / `.brand*` that upstream removed
+   in the v2026.3.13-1 sync (commit 04a7853f0f). Upstream deleted them
+   as part of a dashboard-v2 redesign that does not include a brand
+   block; the fork's topbar still renders REMOTECLAW + Gateway
+   Dashboard, so these rules live in a fork-owned file to stay
+   conflict-free against future syncs of `layout.css`.
+
+   Also defines `.nav-section__label--static` (fork-owned modifier) for
+   the Resources section's non-interactive label.
+*/
+
+.topbar {
+  justify-content: space-between;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.brand-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--text-strong);
+}
+
+.brand-sub {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+/* Static (non-clickable) nav section labels — used for the Resources
+   group that has external links instead of in-app tabs. Upstream's
+   `.nav-section__label` is styled as a button; this modifier strips the
+   interactive affordances without duplicating the full rule set. */
+.nav-section__label--static {
+  cursor: default;
+}
+
+.nav-section__label--static:hover {
+  color: color-mix(in srgb, var(--muted) 72%, var(--text) 28%);
+  background: transparent;
+}

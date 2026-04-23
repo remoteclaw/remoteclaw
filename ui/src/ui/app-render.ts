@@ -253,9 +253,9 @@ export function renderApp(state: AppViewState) {
           const isGroupCollapsed = state.settings.navGroupsCollapsed[group.label] ?? false;
           const hasActiveTab = group.tabs.some((tab) => tab === state.tab);
           return html`
-            <div class="nav-group ${isGroupCollapsed && !hasActiveTab ? "nav-group--collapsed" : ""}">
+            <div class="nav-section ${isGroupCollapsed && !hasActiveTab ? "nav-section--collapsed" : ""}">
               <button
-                class="nav-label"
+                class="nav-section__label"
                 @click=${() => {
                   const next = { ...state.settings.navGroupsCollapsed };
                   next[group.label] = !isGroupCollapsed;
@@ -266,20 +266,20 @@ export function renderApp(state: AppViewState) {
                 }}
                 aria-expanded=${!isGroupCollapsed}
               >
-                <span class="nav-label__text">${t(`nav.${group.label}`)}</span>
-                <span class="nav-label__chevron">${isGroupCollapsed ? "+" : "−"}</span>
+                <span class="nav-section__label-text">${t(`nav.${group.label}`)}</span>
+                <span class="nav-section__chevron">${icons.chevronDown}</span>
               </button>
-              <div class="nav-group__items">
+              <div class="nav-section__items">
                 ${group.tabs.map((tab) => renderTab(state, tab))}
               </div>
             </div>
           `;
         })}
-        <div class="nav-group nav-group--links">
-          <div class="nav-label nav-label--static">
-            <span class="nav-label__text">${t("common.resources")}</span>
+        <div class="nav-section nav-section--links">
+          <div class="nav-section__label nav-section__label--static">
+            <span class="nav-section__label-text">${t("common.resources")}</span>
           </div>
-          <div class="nav-group__items">
+          <div class="nav-section__items">
             <a
               class="nav-item nav-item--external"
               href="https://docs.remoteclaw.org"

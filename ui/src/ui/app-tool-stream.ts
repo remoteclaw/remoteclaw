@@ -25,7 +25,7 @@ export type ToolStreamEntry = {
   message: Record<string, unknown>;
 };
 
-type ToolStreamHost = {
+export type ToolStreamHost = {
   sessionKey: string;
   chatRunId: string | null;
   chatStream: string | null;

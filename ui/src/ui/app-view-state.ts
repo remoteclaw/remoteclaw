@@ -53,7 +53,7 @@ export type AppViewState = {
   chatMessage: string;
   chatAttachments: ChatAttachment[];
   chatMessages: unknown[];
-  chatToolMessages: unknown[];
+  chatToolMessages: Record<string, unknown>[];
   chatStreamSegments: Array<{ text: string; ts: number }>;
   chatStream: string | null;
   chatStreamStartedAt: number | null;

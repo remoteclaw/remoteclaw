@@ -1,11 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { setTabFromRoute } from "./app-settings.ts";
+import { setTabFromRoute, type SettingsHost } from "./app-settings.ts";
 import type { Tab } from "./navigation.ts";
-
-type SettingsHost = Parameters<typeof setTabFromRoute>[0] & {
-  logsPollInterval: number | null;
-  debugPollInterval: number | null;
-};
 
 const createHost = (tab: Tab): SettingsHost => ({
   settings: {
@@ -33,8 +28,28 @@ const createHost = (tab: Tab): SettingsHost => ({
   basePath: "",
   themeMedia: null,
   themeMediaHandler: null,
+  nodesPollInterval: null,
   logsPollInterval: null,
   debugPollInterval: null,
+  // ChatHost fields (unused by setTabFromRoute; required by SettingsHost intersection)
+  chatMessage: "",
+  chatAttachments: [],
+  chatQueue: [],
+  chatRunId: null,
+  chatSending: false,
+  hello: null,
+  chatAvatarUrl: null,
+  refreshSessionsAfterChat: new Set<string>(),
+  // ScrollHost fields (unused by setTabFromRoute; required by SettingsHost intersection)
+  updateComplete: Promise.resolve(true),
+  querySelector: () => null,
+  style: {} as CSSStyleDeclaration,
+  chatScrollFrame: null,
+  chatScrollTimeout: null,
+  chatUserNearBottom: true,
+  chatNewMessagesBelow: false,
+  logsScrollFrame: null,
+  topbarObserver: null,
 });
 
 describe("setTabFromRoute", () => {

@@ -193,11 +193,7 @@ export function renderChatControls(state: AppViewState) {
               lastActiveSessionKey: next,
             });
             void state.loadAssistantIdentity();
-            syncUrlWithSessionKey(
-              state as unknown as Parameters<typeof syncUrlWithSessionKey>[0],
-              next,
-              true,
-            );
+            syncUrlWithSessionKey(state as unknown as RemoteClawApp, next, true);
             void loadChatHistory(state as unknown as ChatState);
           }}
         >
@@ -221,7 +217,7 @@ export function renderChatControls(state: AppViewState) {
           await app.updateComplete;
           app.resetToolStream();
           try {
-            await refreshChat(state as unknown as Parameters<typeof refreshChat>[0], {
+            await refreshChat(state as unknown as RemoteClawApp, {
               scheduleScroll: false,
             });
             app.scrollToBottom({ smooth: true });

@@ -10,8 +10,14 @@ import {
   loadCron,
   refreshActiveTab,
   setLastActiveSessionKey,
+  type SettingsHost,
 } from "./app-settings.ts";
-import { handleAgentEvent, resetToolStream, type AgentEventPayload } from "./app-tool-stream.ts";
+import {
+  handleAgentEvent,
+  resetToolStream,
+  type AgentEventPayload,
+  type ToolStreamHost,
+} from "./app-tool-stream.ts";
 import type { RemoteClawApp } from "./app.ts";
 import { shouldReloadHistoryForFinalEvent } from "./chat-event-reload.ts";
 import { loadAgents, loadToolsCatalog } from "./controllers/agents.ts";
@@ -34,15 +40,7 @@ import {
   type GatewayHelloOk,
 } from "./gateway.ts";
 import { GatewayBrowserClient } from "./gateway.ts";
-import type { Tab } from "./navigation.ts";
-import type { UiSettings } from "./storage.ts";
-import type {
-  AgentsListResult,
-  PresenceEntry,
-  HealthSnapshot,
-  StatusSummary,
-  UpdateAvailable,
-} from "./types.ts";
+import type { AgentsListResult, PresenceEntry, HealthSnapshot, UpdateAvailable } from "./types.ts";
 
 function isGenericBrowserFetchFailure(message: string): boolean {
   return /^(?:typeerror:\s*)?(?:fetch failed|failed to fetch)$/i.test(message.trim());
@@ -62,40 +60,34 @@ function formatAuthCloseErrorMessage(code: string | null, fallback: string): str
   return fallback;
 }
 
-type GatewayHost = {
-  settings: UiSettings;
-  password: string;
-  clientInstanceId: string;
-  client: GatewayBrowserClient | null;
-  connected: boolean;
-  hello: GatewayHelloOk | null;
-  lastError: string | null;
-  lastErrorCode: string | null;
-  onboarding?: boolean;
-  eventLogBuffer: EventLogEntry[];
-  eventLog: EventLogEntry[];
-  tab: Tab;
-  presenceEntries: PresenceEntry[];
-  presenceError: string | null;
-  presenceStatus: StatusSummary | null;
-  agentsLoading: boolean;
-  agentsList: AgentsListResult | null;
-  agentsError: string | null;
-  toolsCatalogLoading: boolean;
-  toolsCatalogError: string | null;
-  toolsCatalogResult: import("./types.ts").ToolsCatalogResult | null;
-  debugHealth: HealthSnapshot | null;
-  assistantName: string;
-  assistantAvatar: string | null;
-  assistantAgentId: string | null;
-  serverVersion: string | null;
-  sessionKey: string;
-  chatRunId: string | null;
-  refreshSessionsAfterChat: Set<string>;
-  execApprovalQueue: ExecApprovalRequest[];
-  execApprovalError: string | null;
-  updateAvailable: UpdateAvailable | null;
-};
+export type GatewayHost = SettingsHost &
+  ToolStreamHost & {
+    password: string;
+    clientInstanceId: string;
+    client: GatewayBrowserClient | null;
+    lastError: string | null;
+    lastErrorCode: string | null;
+    onboarding?: boolean;
+    eventLogBuffer: EventLogEntry[];
+    eventLog: EventLogEntry[];
+    presenceEntries: PresenceEntry[];
+    presenceError: string | null;
+    presenceStatus: string | null;
+    agentsLoading: boolean;
+    agentsList: AgentsListResult | null;
+    agentsError: string | null;
+    toolsCatalogLoading: boolean;
+    toolsCatalogError: string | null;
+    toolsCatalogResult: import("./types.ts").ToolsCatalogResult | null;
+    debugHealth: HealthSnapshot | null;
+    assistantName: string;
+    assistantAvatar: string | null;
+    assistantAgentId: string | null;
+    serverVersion: string | null;
+    execApprovalQueue: ExecApprovalRequest[];
+    execApprovalError: string | null;
+    updateAvailable: UpdateAvailable | null;
+  };
 
 type SessionDefaultsSnapshot = {
   defaultAgentId?: string;
@@ -179,7 +171,7 @@ function applySessionDefaults(host: GatewayHost, defaults?: SessionDefaultsSnaps
     host.sessionKey = nextSessionKey;
   }
   if (shouldUpdateSettings) {
-    applySettings(host as unknown as Parameters<typeof applySettings>[0], nextSettings);
+    applySettings(host, nextSettings);
   }
 }
 
@@ -218,13 +210,13 @@ export function connectGateway(host: GatewayHost) {
       host.chatRunId = null;
       (host as unknown as { chatStream: string | null }).chatStream = null;
       (host as unknown as { chatStreamStartedAt: number | null }).chatStreamStartedAt = null;
-      resetToolStream(host as unknown as Parameters<typeof resetToolStream>[0]);
+      resetToolStream(host);
       void loadAssistantIdentity(host as unknown as RemoteClawApp);
       void loadAgents(host as unknown as RemoteClawApp);
       void loadToolsCatalog(host as unknown as RemoteClawApp);
       void loadNodes(host as unknown as RemoteClawApp, { quiet: true });
       void loadDevices(host as unknown as RemoteClawApp, { quiet: true });
-      void refreshActiveTab(host as unknown as Parameters<typeof refreshActiveTab>[0]);
+      void refreshActiveTab(host);
     },
     onClose: ({ code, reason, error }) => {
       if (host.client !== client) {
@@ -285,10 +277,9 @@ function handleTerminalChatEvent(
     return false;
   }
   // Check if tool events were seen before resetting (resetToolStream clears toolStreamOrder).
-  const toolHost = host as unknown as Parameters<typeof resetToolStream>[0];
-  const hadToolEvents = toolHost.toolStreamOrder.length > 0;
-  resetToolStream(toolHost);
-  void flushChatQueueForEvent(host as unknown as Parameters<typeof flushChatQueueForEvent>[0]);
+  const hadToolEvents = host.toolStreamOrder.length > 0;
+  resetToolStream(host);
+  void flushChatQueueForEvent(host);
   const runId = payload?.runId;
   if (runId && host.refreshSessionsAfterChat.has(runId)) {
     host.refreshSessionsAfterChat.delete(runId);
@@ -309,10 +300,7 @@ function handleTerminalChatEvent(
 
 function handleChatGatewayEvent(host: GatewayHost, payload: ChatEventPayload | undefined) {
   if (payload?.sessionKey) {
-    setLastActiveSessionKey(
-      host as unknown as Parameters<typeof setLastActiveSessionKey>[0],
-      payload.sessionKey,
-    );
+    setLastActiveSessionKey(host, payload.sessionKey);
   }
   const state = handleChatEvent(host as unknown as RemoteClawApp, payload);
   const historyReloaded = handleTerminalChatEvent(host, payload, state);
@@ -334,10 +322,7 @@ function handleGatewayEventUnsafe(host: GatewayHost, evt: GatewayEventFrame) {
     if (host.onboarding) {
       return;
     }
-    handleAgentEvent(
-      host as unknown as Parameters<typeof handleAgentEvent>[0],
-      evt.payload as AgentEventPayload | undefined,
-    );
+    handleAgentEvent(host, evt.payload as AgentEventPayload | undefined);
     // Reload history after each tool result so the persisted text + tool
     // output replaces any truncated streaming fragments.
     const agentPayload = evt.payload as AgentEventPayload | undefined;
@@ -368,7 +353,7 @@ function handleGatewayEventUnsafe(host: GatewayHost, evt: GatewayEventFrame) {
   }
 
   if (evt.event === "cron" && host.tab === "cron") {
-    void loadCron(host as unknown as Parameters<typeof loadCron>[0]);
+    void loadCron(host);
   }
 
   if (evt.event === "device.pair.requested" || evt.event === "device.pair.resolved") {

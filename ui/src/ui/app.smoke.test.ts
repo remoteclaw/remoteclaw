@@ -147,8 +147,8 @@ const SETTINGS_HOST_FIELDS = [
   "themeMediaHandler",
 ] as const;
 
-// CompactionHost extends ToolStreamHost with four optional fields
-// (compactionStatus, compactionClearTimer, fallbackStatus, fallbackClearTimer).
+// CompactionHost extends ToolStreamHost with two optional fields
+// (compactionStatus, compactionClearTimer).
 // Only the inherited ToolStreamHost members are required — asserting those
 // via the existing TOOL_STREAM_HOST_FIELDS would duplicate a test, so the
 // CompactionHost-specific case exists to document that the interface was

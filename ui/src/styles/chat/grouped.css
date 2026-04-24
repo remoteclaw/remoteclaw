@@ -378,48 +378,6 @@ img.chat-avatar {
   }
 }
 
-/* ── Message metadata (tokens, cost, model, context %) ── */
-.msg-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  line-height: 1;
-  color: var(--muted);
-  margin-top: 4px;
-  flex-wrap: wrap;
-}
-
-.msg-meta__tokens,
-.msg-meta__cache,
-.msg-meta__cost,
-.msg-meta__ctx,
-.msg-meta__model {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  white-space: nowrap;
-}
-
-.msg-meta__model {
-  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
-  padding: 1px 6px;
-  border-radius: var(--radius-sm, 4px);
-  font-family: var(--font-mono, monospace);
-}
-
-.msg-meta__cost {
-  color: var(--ok);
-}
-
-.msg-meta__ctx--warn {
-  color: var(--warn);
-}
-
-.msg-meta__ctx--danger {
-  color: var(--danger);
-}
-
 /* ── Delete confirmation popover ── */
 .chat-delete-wrap {
   position: relative;

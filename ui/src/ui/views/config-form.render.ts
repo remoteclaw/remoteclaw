@@ -242,6 +242,31 @@ export const SECTION_META: Record<string, { label: string; description: string }
   discovery: { label: "Discovery", description: "Service discovery and networking" },
   talk: { label: "Talk", description: "Voice and speech settings" },
   plugins: { label: "Plugins", description: "Plugin management and extensions" },
+  acp: {
+    label: "ACP",
+    description: "Agent Client Protocol sessions for external coding harnesses",
+  },
+  approvals: {
+    label: "Approvals",
+    description: "Execution approval forwarding for sensitive actions",
+  },
+  canvasHost: {
+    label: "Canvas Host",
+    description: "Canvas host server for UI and live-reload delivery",
+  },
+  cli: { label: "CLI", description: "CLI banner and tagline preferences" },
+  diagnostics: {
+    label: "Diagnostics",
+    description: "Diagnostic flags, OpenTelemetry export, and cache tracing",
+  },
+  media: {
+    label: "Media",
+    description: "Attachment handling (filename preservation, retention)",
+  },
+  nodeHost: {
+    label: "Node Host",
+    description: "Node.js host runtime (browser proxy settings)",
+  },
 };
 
 function getSectionIcon(key: string) {

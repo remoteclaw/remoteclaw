@@ -252,13 +252,14 @@ RemoteClaw is an active fork of OpenClaw. The codebase currently contains
 upstream OpenClaw naming (`openclaw` in package.json, env vars, paths).
 A comprehensive rebrand is planned but not yet executed.
 
-**What stays**: Channel adapters, gateway, messaging infrastructure.
+**What stays**: Channel adapters, gateway, messaging infrastructure, plugin
+system (plugin SDK plus bundled channel and tool plugins in `extensions/*`).
 
 **What's being replaced**: Execution engine (Pi-based orchestrator replaced
 with AgentRuntime supporting CLI-only agents: Claude, Gemini, Codex, OpenCode).
 
-**What's being removed**: Skills marketplace, plugin system, model provider
-ecosystem, consumer onboarding UX.
+**What's being removed**: Skills marketplace, model provider ecosystem,
+consumer onboarding UX.
 
 When encountering `openclaw` references in code, understand they are upstream
 artifacts. New code should use `remoteclaw` naming where possible.

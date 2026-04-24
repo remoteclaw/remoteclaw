@@ -373,8 +373,6 @@ export type ToolsCatalogResult = {
   groups: ToolCatalogGroup[];
 };
 
-export type SkillStatusReport = Record<string, unknown>;
-
 export type AgentIdentityResult = {
   agentId: string;
   name: string;

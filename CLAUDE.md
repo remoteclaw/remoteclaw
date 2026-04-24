@@ -63,6 +63,12 @@ must run before tests (CI does this automatically).
 
 - **Formatter**: oxfmt (2-space indent, sorted imports)
 - **Linter**: oxlint (type-aware, categories: correctness, perf, suspicious)
+- **CSS class drift**: `pnpm check` cross-references `class="..."` tokens in
+  `ui/src/**/*.{ts,tsx,html}` against the CSS rule definitions reachable from
+  `ui/src/styles.css`. Fails when a template-string class reference has no
+  matching rule. Prevents the regression class seen in the v2026.3.13-1 and
+  v2026.3.22 syncs (#2501, #2508-#2511) where upstream renames silently
+  desync from fork-side template strings. See § Fork-integrity gates.
 - Run `pnpm check` before committing
 
 ### File Organization
@@ -128,6 +134,14 @@ against regressions specific to the fork-sync lifecycle:
   detects throwing stubs with live non-test callers — see § Fork Stub
   Conventions.
 - **obsolescence-audit-gate**: retrospective audit sentinels for gut waves.
+- **css-class-drift-gate** (`pnpm lint:ui:no-css-class-drift`, part of
+  `pnpm check`): cross-references `class="..."` tokens in
+  `ui/src/**/*.{ts,tsx,html}` against the CSS rule definitions reachable
+  from `ui/src/styles.css`; fails when a template-string class reference
+  has no matching rule. Runs inside the `lint` CI job (via `pnpm check`),
+  not as a standalone job. Surfaces upstream class renames that silently
+  desync from fork-side call sites — the regression shape that produced
+  #2501, #2508-#2511.
 
 ### Release publishing
 

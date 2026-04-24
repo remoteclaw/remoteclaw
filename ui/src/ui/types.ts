@@ -353,8 +353,7 @@ export type ToolCatalogEntry = {
   id: string;
   label: string;
   description: string;
-  source: "core" | "plugin";
-  pluginId?: string;
+  source: "core";
   optional?: boolean;
   defaultProfiles: Array<"minimal" | "coding" | "messaging" | "full">;
 };
@@ -362,8 +361,7 @@ export type ToolCatalogEntry = {
 export type ToolCatalogGroup = {
   id: string;
   label: string;
-  source: "core" | "plugin";
-  pluginId?: string;
+  source: "core";
   tools: ToolCatalogEntry[];
 };
 

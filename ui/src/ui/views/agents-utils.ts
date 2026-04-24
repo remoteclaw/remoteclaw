@@ -101,10 +101,6 @@ export function resolveAgentEmoji(
   return "";
 }
 
-export function agentBadgeText(agentId: string, defaultId: string | null) {
-  return defaultId && agentId === defaultId ? "default" : null;
-}
-
 export function formatBytes(bytes?: number) {
   if (bytes == null || !Number.isFinite(bytes)) {
     return "-";
@@ -144,7 +140,6 @@ export function buildAgentContext(
   agent: AgentsListResult["agents"][number],
   configForm: Record<string, unknown> | null,
   agentFilesList: AgentsFilesListResult | null,
-  defaultId: string | null,
   agentIdentity?: AgentIdentityResult | null,
 ): AgentContext {
   const config = resolveAgentConfig(configForm, agent.id);

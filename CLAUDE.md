@@ -264,6 +264,18 @@ consumer onboarding UX.
 When encountering `openclaw` references in code, understand they are upstream
 artifacts. New code should use `remoteclaw` naming where possible.
 
+**User state boundary.** The fork boundary is also a user boundary. Users of
+upstream OpenClaw or pre-rebrand RemoteClaw are not RemoteClaw users — their
+persisted state (`openclaw.*` localStorage keys, config files, stored
+preferences, URL schemes, any artifact touched by the rebrand) is NOT
+RemoteClaw legacy. No migration path is owed; do not open issues proposing
+one. When auditing for "legacy values that need migration," filter each hit
+by asking: *was this artifact ever written by shipped, post-rebrand
+RemoteClaw code?* If the only writer is upstream OpenClaw or pre-rebrand
+internal state, classify as ACCURATE/HISTORICAL — not as "fragility" or
+"needs migration." The rebrand was a clean break, not a backward-compat
+lapse.
+
 ## PR Submission Workflow
 
 When submitting PRs on this project:

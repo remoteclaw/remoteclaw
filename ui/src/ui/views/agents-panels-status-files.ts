@@ -39,10 +39,6 @@ function renderAgentContextCard(context: AgentContext, subtitle: string) {
           <div class="label">Identity Emoji</div>
           <div>${context.identityEmoji}</div>
         </div>
-        <div class="agent-kv">
-          <div class="label">Skills Filter</div>
-          <div>${context.skillsLabel}</div>
-        </div>
       </div>
     </section>
   `;

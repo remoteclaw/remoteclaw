@@ -126,7 +126,6 @@ export const zh_CN: TranslationMap = {
     },
     cards: {
       cost: "费用",
-      skills: "技能",
       recentSessions: "最近会话",
     },
     attention: {

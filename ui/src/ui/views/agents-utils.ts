@@ -25,7 +25,6 @@ type AgentConfigEntry = {
   workspace?: string;
   agentDir?: string;
   model?: unknown;
-  skills?: string[];
   tools?: {
     profile?: string;
     allow?: string[];
@@ -139,7 +138,6 @@ export type AgentContext = {
   model: string;
   identityName: string;
   identityEmoji: string;
-  skillsLabel: string;
 };
 
 export function buildAgentContext(
@@ -164,14 +162,11 @@ export function buildAgentContext(
     config.entry?.name ||
     agent.id;
   const identityEmoji = resolveAgentEmoji(agent, agentIdentity) || "-";
-  const skillFilter = Array.isArray(config.entry?.skills) ? config.entry?.skills : null;
-  const skillCount = skillFilter?.length ?? null;
   return {
     workspace,
     model: modelLabel,
     identityName,
     identityEmoji,
-    skillsLabel: skillFilter ? `${skillCount} selected` : "all skills",
   };
 }
 

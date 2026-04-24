@@ -50,7 +50,7 @@ export type SettingsHost = PollingHost &
     eventLogBuffer: unknown[];
     agentsList?: AgentsListResult | null;
     agentsSelectedId?: string | null;
-    agentsPanel?: "overview" | "files" | "tools" | "channels" | "cron";
+    agentsPanel?: "overview" | "files" | "channels" | "cron";
     themeMedia: MediaQueryList | null;
     themeMediaHandler: ((event: MediaQueryListEvent) => void) | null;
     pendingGatewayUrl?: string | null;

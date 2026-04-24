@@ -587,9 +587,6 @@ export function renderApp(state: AppViewState) {
                   state.agentFileContents = {};
                   state.agentFileDrafts = {};
                   void loadAgentIdentity(state, agentId);
-                  if (state.agentsPanel === "tools") {
-                    void loadToolsCatalog(state, agentId);
-                  }
                   if (state.agentsPanel === "files") {
                     void loadAgentFiles(state, agentId);
                   }
@@ -605,9 +602,6 @@ export function renderApp(state: AppViewState) {
                       state.agentFileDrafts = {};
                       void loadAgentFiles(state, resolvedAgentId);
                     }
-                  }
-                  if (panel === "tools") {
-                    void loadToolsCatalog(state, resolvedAgentId);
                   }
                   if (panel === "channels") {
                     void loadChannels(state, false);

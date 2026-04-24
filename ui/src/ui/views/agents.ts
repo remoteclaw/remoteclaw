@@ -27,7 +27,7 @@ import {
   resolveModelPrimary,
 } from "./agents-utils.ts";
 
-export type AgentsPanel = "overview" | "files" | "tools" | "skills" | "channels" | "cron";
+export type AgentsPanel = "overview" | "files" | "skills" | "channels" | "cron";
 
 export type AgentsProps = {
   loading: boolean;
@@ -192,7 +192,6 @@ export function renderAgents(props: AgentsProps) {
                       })
                     : nothing
                 }
-                ${nothing /* tools panel removed — skills/tools UI gutted */}
                 ${
                   props.activePanel === "channels"
                     ? renderAgentChannels({
@@ -268,7 +267,6 @@ function renderAgentTabs(active: AgentsPanel, onSelect: (panel: AgentsPanel) => 
   const tabs: Array<{ id: AgentsPanel; label: string }> = [
     { id: "overview", label: "Overview" },
     { id: "files", label: "Files" },
-    { id: "tools", label: "Tools" },
     { id: "channels", label: "Channels" },
     { id: "cron", label: "Cron Jobs" },
   ];

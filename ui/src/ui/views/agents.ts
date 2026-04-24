@@ -14,7 +14,6 @@ import {
   renderAgentCron,
 } from "./agents-panels-status-files.ts";
 import {
-  agentBadgeText,
   buildAgentContext,
   buildModelOptions,
   normalizeAgentLabel,
@@ -117,7 +116,6 @@ export function renderAgents(props: AgentsProps) {
                   <div class="muted">No agents found.</div>
                 `
               : agents.map((agent) => {
-                  const badge = agentBadgeText(agent.id, defaultId);
                   const emoji = resolveAgentEmoji(agent, props.agentIdentityById[agent.id] ?? null);
                   return html`
                     <button
@@ -130,7 +128,6 @@ export function renderAgents(props: AgentsProps) {
                         <div class="agent-title">${normalizeAgentLabel(agent)}</div>
                         <div class="agent-sub mono">${agent.id}</div>
                       </div>
-                      ${badge ? html`<span class="agent-pill">${badge}</span>` : nothing}
                     </button>
                   `;
                 })
@@ -149,7 +146,6 @@ export function renderAgents(props: AgentsProps) {
             : html`
                 ${renderAgentHeader(
                   selectedAgent,
-                  defaultId,
                   props.agentIdentityById[selectedAgent.id] ?? null,
                 )}
                 ${renderAgentTabs(props.activePanel, (panel) => props.onSelectPanel(panel))}
@@ -157,7 +153,6 @@ export function renderAgents(props: AgentsProps) {
                   props.activePanel === "overview"
                     ? renderAgentOverview({
                         agent: selectedAgent,
-                        defaultId,
                         configForm: props.configForm,
                         agentFilesList: props.agentFilesList,
                         agentIdentity: props.agentIdentityById[selectedAgent.id] ?? null,
@@ -199,7 +194,6 @@ export function renderAgents(props: AgentsProps) {
                           selectedAgent,
                           props.configForm,
                           props.agentFilesList,
-                          defaultId,
                           props.agentIdentityById[selectedAgent.id] ?? null,
                         ),
                         configForm: props.configForm,
@@ -218,7 +212,6 @@ export function renderAgents(props: AgentsProps) {
                           selectedAgent,
                           props.configForm,
                           props.agentFilesList,
-                          defaultId,
                           props.agentIdentityById[selectedAgent.id] ?? null,
                         ),
                         agentId: selectedAgent.id,
@@ -239,10 +232,8 @@ export function renderAgents(props: AgentsProps) {
 
 function renderAgentHeader(
   agent: AgentsListResult["agents"][number],
-  defaultId: string | null,
   agentIdentity: AgentIdentityResult | null,
 ) {
-  const badge = agentBadgeText(agent.id, defaultId);
   const displayName = normalizeAgentLabel(agent);
   const subtitle = agent.identity?.theme?.trim() || "Agent workspace and routing.";
   const emoji = resolveAgentEmoji(agent, agentIdentity);
@@ -257,7 +248,6 @@ function renderAgentHeader(
       </div>
       <div class="agent-header-meta">
         <div class="mono">${agent.id}</div>
-        ${badge ? html`<span class="agent-pill">${badge}</span>` : nothing}
       </div>
     </section>
   `;
@@ -289,7 +279,6 @@ function renderAgentTabs(active: AgentsPanel, onSelect: (panel: AgentsPanel) => 
 
 function renderAgentOverview(params: {
   agent: AgentsListResult["agents"][number];
-  defaultId: string | null;
   configForm: Record<string, unknown> | null;
   agentFilesList: AgentsFilesListResult | null;
   agentIdentity: AgentIdentityResult | null;

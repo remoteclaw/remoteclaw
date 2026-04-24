@@ -248,51 +248,59 @@ export function renderApp(state: AppViewState) {
           ${renderThemeToggle(state)}
         </div>
       </header>
-      <aside class="sidebar ${state.settings.navCollapsed ? "sidebar--collapsed" : ""}">
-        ${TAB_GROUPS.map((group) => {
-          const isGroupCollapsed = state.settings.navGroupsCollapsed[group.label] ?? false;
-          const hasActiveTab = group.tabs.some((tab) => tab === state.tab);
-          return html`
-            <div class="nav-section ${isGroupCollapsed && !hasActiveTab ? "nav-section--collapsed" : ""}">
-              <button
-                class="nav-section__label"
-                @click=${() => {
-                  const next = { ...state.settings.navGroupsCollapsed };
-                  next[group.label] = !isGroupCollapsed;
-                  state.applySettings({
-                    ...state.settings,
-                    navGroupsCollapsed: next,
-                  });
-                }}
-                aria-expanded=${!isGroupCollapsed}
-              >
-                <span class="nav-section__label-text">${t(`nav.${group.label}`)}</span>
-                <span class="nav-section__chevron">${icons.chevronDown}</span>
-              </button>
-              <div class="nav-section__items">
-                ${group.tabs.map((tab) => renderTab(state, tab))}
-              </div>
+      <div class="shell-nav">
+        <aside class="sidebar ${state.settings.navCollapsed ? "sidebar--collapsed" : ""}">
+          <div class="sidebar-shell">
+            <div class="sidebar-shell__body">
+              <nav class="sidebar-nav">
+                ${TAB_GROUPS.map((group) => {
+                  const isGroupCollapsed = state.settings.navGroupsCollapsed[group.label] ?? false;
+                  const hasActiveTab = group.tabs.some((tab) => tab === state.tab);
+                  return html`
+                    <div class="nav-section ${isGroupCollapsed && !hasActiveTab ? "nav-section--collapsed" : ""}">
+                      <button
+                        class="nav-section__label"
+                        @click=${() => {
+                          const next = { ...state.settings.navGroupsCollapsed };
+                          next[group.label] = !isGroupCollapsed;
+                          state.applySettings({
+                            ...state.settings,
+                            navGroupsCollapsed: next,
+                          });
+                        }}
+                        aria-expanded=${!isGroupCollapsed}
+                      >
+                        <span class="nav-section__label-text">${t(`nav.${group.label}`)}</span>
+                        <span class="nav-section__chevron">${icons.chevronDown}</span>
+                      </button>
+                      <div class="nav-section__items">
+                        ${group.tabs.map((tab) => renderTab(state, tab))}
+                      </div>
+                    </div>
+                  `;
+                })}
+                <div class="nav-section">
+                  <div class="nav-section__label nav-section__label--static">
+                    <span class="nav-section__label-text">${t("common.resources")}</span>
+                  </div>
+                  <div class="nav-section__items">
+                    <a
+                      class="nav-item"
+                      href="https://docs.remoteclaw.org"
+                      target=${EXTERNAL_LINK_TARGET}
+                      rel=${buildExternalLinkRel()}
+                      title="${t("common.docs")} (opens in new tab)"
+                    >
+                      <span class="nav-item__icon" aria-hidden="true">${icons.book}</span>
+                      <span class="nav-item__text">${t("common.docs")}</span>
+                    </a>
+                  </div>
+                </div>
+              </nav>
             </div>
-          `;
-        })}
-        <div class="nav-section">
-          <div class="nav-section__label nav-section__label--static">
-            <span class="nav-section__label-text">${t("common.resources")}</span>
           </div>
-          <div class="nav-section__items">
-            <a
-              class="nav-item"
-              href="https://docs.remoteclaw.org"
-              target=${EXTERNAL_LINK_TARGET}
-              rel=${buildExternalLinkRel()}
-              title="${t("common.docs")} (opens in new tab)"
-            >
-              <span class="nav-item__icon" aria-hidden="true">${icons.book}</span>
-              <span class="nav-item__text">${t("common.docs")}</span>
-            </a>
-          </div>
-        </div>
-      </aside>
+        </aside>
+      </div>
       <main class="content ${isChat ? "content--chat" : ""}">
         ${
           availableUpdate

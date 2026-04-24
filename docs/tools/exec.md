@@ -132,9 +132,6 @@ allowlisted or a safe bin. Chaining (`;`, `&&`, `||`) and redirections are rejec
 allowlist mode unless every top-level segment satisfies the allowlist (including safe bins).
 Redirections remain unsupported.
 
-`autoAllowSkills` is a separate convenience path in exec approvals. It is not the same as
-manual path allowlist entries. For strict explicit trust, keep `autoAllowSkills` disabled.
-
 Use the two controls for different jobs:
 
 - `tools.exec.safeBins`: small, stdin-only stream filters.

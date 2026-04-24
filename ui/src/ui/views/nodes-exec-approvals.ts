@@ -18,7 +18,6 @@ type ExecApprovalsResolvedDefaults = {
   security: ExecSecurity;
   ask: ExecAsk;
   askFallback: ExecSecurity;
-  autoAllowSkills: boolean;
 };
 
 type ExecApprovalsAgentOption = {
@@ -87,7 +86,6 @@ function resolveExecApprovalsDefaults(
     security: normalizeSecurity(defaults.security),
     ask: normalizeAsk(defaults.ask),
     askFallback: normalizeSecurity(defaults.askFallback ?? "deny"),
-    autoAllowSkills: Boolean(defaults.autoAllowSkills ?? false),
   };
 }
 
@@ -337,10 +335,6 @@ function renderExecApprovalsPolicy(state: ExecApprovalsState) {
   const securityValue = isDefaults ? defaults.security : (agentSecurity ?? "__default__");
   const askValue = isDefaults ? defaults.ask : (agentAsk ?? "__default__");
   const askFallbackValue = isDefaults ? defaults.askFallback : (agentAskFallback ?? "__default__");
-  const autoOverride =
-    typeof agent.autoAllowSkills === "boolean" ? agent.autoAllowSkills : undefined;
-  const autoEffective = autoOverride ?? defaults.autoAllowSkills;
-  const autoIsDefault = autoOverride == null;
 
   return html`
     <div class="list" style="margin-top: 16px;">
@@ -474,46 +468,6 @@ function renderExecApprovalsPolicy(state: ExecApprovalsState) {
               )}
             </select>
           </label>
-        </div>
-      </div>
-
-      <div class="list-item">
-        <div class="list-main">
-          <div class="list-title">Auto-allow skill CLIs</div>
-          <div class="list-sub">
-            ${
-              isDefaults
-                ? "Allow skill executables listed by the Gateway."
-                : autoIsDefault
-                  ? `Using default (${defaults.autoAllowSkills ? "on" : "off"}).`
-                  : `Override (${autoEffective ? "on" : "off"}).`
-            }
-          </div>
-        </div>
-        <div class="list-meta">
-          <label class="field">
-            <span>Enabled</span>
-            <input
-              type="checkbox"
-              ?disabled=${state.disabled}
-              .checked=${autoEffective}
-              @change=${(event: Event) => {
-                const target = event.target as HTMLInputElement;
-                state.onPatch([...basePath, "autoAllowSkills"], target.checked);
-              }}
-            />
-          </label>
-          ${
-            !isDefaults && !autoIsDefault
-              ? html`<button
-                class="btn btn--sm"
-                ?disabled=${state.disabled}
-                @click=${() => state.onRemove([...basePath, "autoAllowSkills"])}
-              >
-                Use default
-              </button>`
-              : nothing
-          }
         </div>
       </div>
     </div>

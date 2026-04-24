@@ -5,7 +5,6 @@ export type ExecApprovalsDefaults = {
   security?: string;
   ask?: string;
   askFallback?: string;
-  autoAllowSkills?: boolean;
 };
 
 export type ExecApprovalsAllowlistEntry = {

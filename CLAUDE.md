@@ -109,12 +109,37 @@ type(scope): imperative description (#issue)
   `vitest.gateway.config.ts`, `vitest.live.config.ts`
 - **CI env vars**: `REMOTECLAW_TEST_WORKERS=2`, `REMOTECLAW_TEST_MAX_OLD_SPACE_SIZE_MB=4096`
 
+### Browser-mode smoke tests
+
+`ui/src/ui/app.smoke.test.ts` (#2495, #2496) and `ui/src/ui/app.computed-style.test.ts`
+(#2519) form a defense-in-depth lane against the sync-regression class —
+production class drifts from fork-side markup/CSS contracts after an
+upstream migration. They run in real Chromium via
+`@vitest/browser-playwright` with `ui/vitest.config.ts`. The class-instance
+suite asserts every required host-interface field is initialized on the
+`RemoteClawApp` instance. The computed-style suite mounts the app, forces
+a desktop viewport (`page.viewport(1280, 720)` from `vitest/browser`),
+waits for layout (`updateComplete` + double `requestAnimationFrame`),
+and asserts `getBoundingClientRect` dimensions —
+catching "production renders but layout is broken" regressions like #2517.
+
+- **Run locally**: `pnpm test:ui:smoke` (root) or
+  `pnpm --dir ui exec vitest run --config vitest.config.ts src/ui/app.smoke.test.ts src/ui/app.computed-style.test.ts`
+- **CI**: scoped `test-ui-smoke` job; installs Chromium via
+  `pnpm --dir ui exec playwright install --with-deps chromium`
+- **Scope discipline**: scoped to the two smoke suites specifically —
+  other `ui/**/*.test.ts` suites are NOT run by this lane. `pnpm test:ui`
+  (the broader UI lane) is not in CI and has pre-existing failures
+  unrelated to the sync-regression class
+
 ## CI
 
 GitHub Actions (`.github/workflows/ci.yml`):
 - **build** job: checkout, setup Node env, `pnpm build`
 - **test** job: checkout, setup Node env, canvas bundle, `pnpm test`
-- Both run on `ubuntu-latest` with Node 22 and pnpm 10.23.0
+- **test-ui-smoke** job: browser-mode RemoteClawApp smoke lane (see
+  § Testing → Browser-mode smoke tests)
+- Jobs run on `ubuntu-latest` with Node 22 and pnpm 10.23.0
 - Branch protection requires `build`, `test`, `lint`, and `docs` to pass
 
 ### Fork-integrity gates

@@ -312,6 +312,7 @@
     "test:live": "REMOTECLAW_LIVE_TEST=1 vitest run --config vitest.live.config.ts",
     "test:macmini": "REMOTECLAW_TEST_VM_FORKS=0 REMOTECLAW_TEST_PROFILE=serial node scripts/test-parallel.mjs",
     "test:ui": "pnpm lint:ui:no-raw-window-open && pnpm --dir ui test",
+    "test:ui:smoke": "pnpm --dir ui exec vitest run --config vitest.config.ts src/ui/app.smoke.test.ts src/ui/app.computed-style.test.ts",
     "test:voicecall:closedloop": "vitest run extensions/voice-call/src/manager.test.ts extensions/voice-call/src/media-stream.test.ts src/plugins/voice-call.plugin.test.ts --maxWorkers=1",
     "test:watch": "vitest",
     "tui": "node scripts/run-node.mjs tui",

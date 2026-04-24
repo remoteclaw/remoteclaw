@@ -167,6 +167,31 @@ jobs:
           REMOTECLAW_TEST_WORKERS: 1
           REMOTECLAW_TEST_MAX_OLD_SPACE_SIZE_MB: 1536
 
+  test-ui-smoke:
+    # Browser-mode smoke lane for the RemoteClawApp host class. Scoped to
+    # the two sync-regression defense-in-depth suites — class-instance
+    # presence (#2495 / #2496) and computed-style layout (#2519). Kept
+    # separate from `pnpm test` because (a) browser-mode needs a real
+    # browser binary and (b) the rest of `ui/**/*.test.ts` has out-of-scope
+    # failures tracked separately from the sync-regression class.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+
+      - name: Setup Node environment
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+
+      - name: Install Playwright Chromium
+        run: pnpm --dir ui exec playwright install --with-deps chromium
+
+      - name: UI smoke tests (browser-mode)
+        run: pnpm test:ui:smoke
+
   CI:
     if: always()
     needs:
@@ -179,12 +204,13 @@ jobs:
         lint,
         build,
         test,
+        test-ui-smoke,
       ]
     runs-on: ubuntu-latest
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.test.result }}" != "success" ]]; then
+          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" ]]; then
             echo "::error::One or more required jobs failed"
             exit 1
           fi

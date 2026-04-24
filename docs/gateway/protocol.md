@@ -169,11 +169,6 @@ The Gateway treats these as **claims** and enforces server-side allowlists.
 - Presence entries include `deviceId`, `roles`, and `scopes` so UIs can show a single row per device
   even when it connects as both **operator** and **node**.
 
-### Node helper methods
-
-- Nodes may call `skills.bins` to fetch the current list of skill executables
-  for auto-allow checks.
-
 ### Operator helper methods
 
 - Operators may call `tools.catalog` (`operator.read`) to fetch the runtime tool catalog for an

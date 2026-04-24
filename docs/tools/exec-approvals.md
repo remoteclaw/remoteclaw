@@ -62,15 +62,13 @@ Example schema:
   "defaults": {
     "security": "deny",
     "ask": "on-miss",
-    "askFallback": "deny",
-    "autoAllowSkills": false
+    "askFallback": "deny"
   },
   "agents": {
     "main": {
       "security": "allowlist",
       "ask": "on-miss",
       "askFallback": "deny",
-      "autoAllowSkills": true,
       "allowlist": [
         {
           "id": "B0C8C0B3-2C2D-4F8A-9A3C-5A4B3C2D1E0F",
@@ -127,18 +125,6 @@ Each allowlist entry tracks:
 - **last used command**
 - **last resolved path**
 
-## Auto-allow skill CLIs
-
-When **Auto-allow skill CLIs** is enabled, executables referenced by known skills
-are treated as allowlisted on nodes (macOS node or headless node host). This uses
-`skills.bins` over the Gateway RPC to fetch the skill bin list. Disable this if you want strict manual allowlists.
-
-Important trust notes:
-
-- This is an **implicit convenience allowlist**, separate from manual path allowlist entries.
-- It is intended for trusted operator environments where Gateway and node are in the same trust boundary.
-- If you require strict explicit trust, keep `autoAllowSkills: false` and use manual path allowlist entries only.
-
 ## Safe bins (stdin-only)
 
 `tools.exec.safeBins` defines a small list of **stdin-only** binaries (for example `jq`)
@@ -180,7 +166,7 @@ to `tools.exec.safeBinTrustedDirs`.
 Shell chaining and redirections are not auto-allowed in allowlist mode.
 
 Shell chaining (`&&`, `||`, `;`) is allowed when every top-level segment satisfies the allowlist
-(including safe bins or skill auto-allow). Redirections remain unsupported in allowlist mode.
+(including safe bins). Redirections remain unsupported in allowlist mode.
 Command substitution (`$()` / backticks) is rejected during allowlist parsing, including inside
 double quotes; use single quotes if you need literal `$()` text.
 On macOS companion-app approvals, raw shell text containing shell control or expansion syntax

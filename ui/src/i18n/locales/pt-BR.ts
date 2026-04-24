@@ -129,7 +129,6 @@ export const pt_BR: TranslationMap = {
     },
     cards: {
       cost: "Custo",
-      skills: "Habilidades",
       recentSessions: "Sessões Recentes",
     },
     attention: {

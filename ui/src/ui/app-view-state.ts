@@ -4,8 +4,6 @@ import type { CronModelSuggestionsState, CronState } from "./controllers/cron.ts
 import type { DevicePairingList } from "./controllers/devices.ts";
 import type { ExecApprovalRequest } from "./controllers/exec-approval.ts";
 import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exec-approvals.ts";
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- gutted type stub (MBP)
-type SkillMessage = any;
 import type { GatewayBrowserClient, GatewayHelloOk } from "./gateway.ts";
 import type { Tab } from "./navigation.ts";
 import type { UiSettings } from "./storage.ts";
@@ -182,12 +180,6 @@ export type AppViewState = {
   | "cronBusy"
 > &
   Pick<CronModelSuggestionsState, "cronModelSuggestions"> & {
-    skillsLoading: boolean;
-    skillsError: string | null;
-    skillsFilter: string;
-    skillEdits: Record<string, string>;
-    skillMessages: Record<string, SkillMessage>;
-    skillsBusyKey: string | null;
     debugLoading: boolean;
     debugStatus: StatusSummary | null;
     debugHealth: HealthSnapshot | null;
@@ -240,11 +232,6 @@ export type AppViewState = {
     handleConfigFormUpdate: (path: string, value: unknown) => void;
     handleConfigFormModeChange: (mode: "form" | "raw") => void;
     handleConfigRawChange: (raw: string) => void;
-    handleInstallSkill: (key: string) => Promise<void>;
-    handleUpdateSkill: (key: string) => Promise<void>;
-    handleToggleSkillEnabled: (key: string, enabled: boolean) => Promise<void>;
-    handleUpdateSkillEdit: (key: string, value: string) => void;
-    handleSaveSkillApiKey: (key: string, apiKey: string) => Promise<void>;
     handleCronToggle: (jobId: string, enabled: boolean) => Promise<void>;
     handleCronRun: (jobId: string) => Promise<void>;
     handleCronRemove: (jobId: string) => Promise<void>;
@@ -255,7 +242,6 @@ export type AppViewState = {
     handleSessionsPatch: (key: string, patch: unknown) => Promise<void>;
     handleLoadNodes: () => Promise<void>;
     handleLoadPresence: () => Promise<void>;
-    handleLoadSkills: () => Promise<void>;
     handleLoadDebug: () => Promise<void>;
     handleLoadLogs: () => Promise<void>;
     handleDebugCall: () => Promise<void>;

@@ -24,7 +24,6 @@ import type {
   NostrProfile,
   PresenceEntry,
   SessionsListResult,
-  SkillStatusReport,
   ToolsCatalogResult,
   StatusSummary,
 } from "./types.ts";
@@ -128,7 +127,7 @@ export type AppViewState = {
   toolsCatalogLoading: boolean;
   toolsCatalogError: string | null;
   toolsCatalogResult: ToolsCatalogResult | null;
-  agentsPanel: "overview" | "files" | "skills" | "channels" | "cron";
+  agentsPanel: "overview" | "files" | "channels" | "cron";
   agentFilesLoading: boolean;
   agentFilesError: string | null;
   agentFilesList: AgentsFilesListResult | null;
@@ -139,10 +138,6 @@ export type AppViewState = {
   agentIdentityLoading: boolean;
   agentIdentityError: string | null;
   agentIdentityById: Record<string, AgentIdentityResult>;
-  agentSkillsLoading: boolean;
-  agentSkillsError: string | null;
-  agentSkillsReport: SkillStatusReport | null;
-  agentSkillsAgentId: string | null;
   sessionsLoading: boolean;
   sessionsResult: SessionsListResult | null;
   sessionsError: string | null;
@@ -188,7 +183,6 @@ export type AppViewState = {
 > &
   Pick<CronModelSuggestionsState, "cronModelSuggestions"> & {
     skillsLoading: boolean;
-    skillsReport: SkillStatusReport | null;
     skillsError: string | null;
     skillsFilter: string;
     skillEdits: Record<string, string>;

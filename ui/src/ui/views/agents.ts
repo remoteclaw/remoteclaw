@@ -27,7 +27,7 @@ import {
   resolveModelPrimary,
 } from "./agents-utils.ts";
 
-export type AgentsPanel = "overview" | "files" | "skills" | "channels" | "cron";
+export type AgentsPanel = "overview" | "files" | "channels" | "cron";
 
 export type AgentsProps = {
   loading: boolean;

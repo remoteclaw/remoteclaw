@@ -16,6 +16,7 @@
     "extensions/signal/src/**/*.ts",
     "extensions/slack/src/**/*.ts",
     "extensions/telegram/src/**/*.ts",
+    "extensions/whatsapp/src/**/*.ts",
     "src/plugin-sdk/index.ts",
     "src/plugin-sdk/core.ts",
     "src/plugin-sdk/compat.ts",

@@ -18,7 +18,8 @@ export function createWhatsAppLoginTool(): ChannelAgentTool {
       force: Type.Optional(Type.Boolean()),
     }),
     execute: async (_toolCallId, args) => {
-      const { startWebLoginWithQr, waitForWebLogin } = await import("../../../web/login-qr.js");
+      const { startWebLoginWithQr, waitForWebLogin } =
+        await import("../../../../extensions/whatsapp/src/login-qr.js");
       const action = (args as { action?: string })?.action ?? "start";
       if (action === "wait") {
         const result = await waitForWebLogin({

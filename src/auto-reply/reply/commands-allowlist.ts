@@ -5,6 +5,7 @@ import { resolveSignalAccount } from "../../../extensions/signal/src/accounts.js
 import { resolveSlackAccount } from "../../../extensions/slack/src/accounts.js";
 import { resolveSlackUserAllowlist } from "../../../extensions/slack/src/resolve-users.js";
 import { resolveTelegramAccount } from "../../../extensions/telegram/src/accounts.js";
+import { resolveWhatsAppAccount } from "../../../extensions/whatsapp/src/accounts.js";
 import { getChannelDock } from "../../channels/dock.js";
 import {
   authorizeConfigWrite,
@@ -33,7 +34,6 @@ import {
   normalizeOptionalAccountId,
 } from "../../routing/session-key.js";
 import { normalizeStringEntries } from "../../shared/string-normalization.js";
-import { resolveWhatsAppAccount } from "../../web/accounts.js";
 import { rejectUnauthorizedCommand, requireCommandFlagEnabled } from "./command-gates.js";
 import type { CommandHandler } from "./commands-types.js";
 

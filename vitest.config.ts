@@ -178,6 +178,7 @@ export default defineConfig({
         "extensions/imessage/src/**",
         "extensions/signal/src/**",
         "extensions/slack/src/**",
+        "extensions/whatsapp/src/**",
         "src/browser/**",
         "src/channels/web/**",
         "src/webchat/**",

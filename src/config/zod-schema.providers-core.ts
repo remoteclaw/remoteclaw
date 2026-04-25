@@ -302,7 +302,7 @@ export const TelegramAccountSchema = TelegramAccountSchemaBase.superRefine((valu
   normalizeTelegramStreamingConfig(value);
   // Account-level schemas skip allowFrom validation because accounts inherit
   // allowFrom from the parent channel config at runtime (resolveTelegramAccount
-  // shallow-merges top-level and account values in src/telegram/accounts.ts).
+  // shallow-merges top-level and account values in extensions/telegram/src/accounts.ts).
   // Validation is enforced at the top-level TelegramConfigSchema instead.
   validateTelegramCustomCommands(value, ctx);
 });

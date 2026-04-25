@@ -24,7 +24,7 @@ vi.mock("../channels/web/index.js", () => {
   return { sendMessageWhatsApp: sendFns.whatsapp };
 });
 
-vi.mock("../telegram/send.js", () => {
+vi.mock("../../extensions/telegram/src/send.js", () => {
   moduleLoads.telegram();
   return { sendMessageTelegram: sendFns.telegram };
 });

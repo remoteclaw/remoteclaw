@@ -8,12 +8,7 @@ export default defineConfig({
   ...base,
   test: {
     ...baseTest,
-    include: [
-      "src/telegram/**/*.test.ts",
-      "src/web/**/*.test.ts",
-      "src/browser/**/*.test.ts",
-      "src/line/**/*.test.ts",
-    ],
+    include: ["src/web/**/*.test.ts", "src/browser/**/*.test.ts", "src/line/**/*.test.ts"],
     exclude: [...(baseTest.exclude ?? []), "src/gateway/**", "extensions/**"],
   },
 });

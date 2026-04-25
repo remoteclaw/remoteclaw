@@ -1,4 +1,7 @@
-import { normalizeTelegramLookupTarget, parseTelegramTarget } from "../../../telegram/targets.js";
+import {
+  normalizeTelegramLookupTarget,
+  parseTelegramTarget,
+} from "../../../../extensions/telegram/src/targets.js";
 
 const TELEGRAM_PREFIX_RE = /^(telegram|tg):/i;
 

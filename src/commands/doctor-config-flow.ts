@@ -1,6 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { ZodIssue } from "zod";
+import { inspectTelegramAccount } from "../../extensions/telegram/src/account-inspect.js";
+import {
+  listTelegramAccountIds,
+  resolveTelegramAccount,
+} from "../../extensions/telegram/src/accounts.js";
 import { normalizeChatChannelId } from "../channels/registry.js";
 import {
   isNumericTelegramUserId,
@@ -45,8 +50,6 @@ import {
   isMattermostMutableAllowEntry,
   isSlackMutableAllowEntry,
 } from "../security/mutable-allowlist-detectors.js";
-import { inspectTelegramAccount } from "../telegram/account-inspect.js";
-import { listTelegramAccountIds, resolveTelegramAccount } from "../telegram/accounts.js";
 import { note } from "../terminal/note.js";
 import { resolveHomeDir } from "../utils.js";
 import { normalizeCompatibilityConfigValues } from "./doctor-legacy-config.js";

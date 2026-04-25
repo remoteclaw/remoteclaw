@@ -1,12 +1,12 @@
-import type { ReplyPayload } from "../../../auto-reply/types.js";
-import type { OutboundSendDeps } from "../../../infra/outbound/deliver.js";
-import type { TelegramInlineButtons } from "../../../telegram/button-types.js";
-import { markdownToTelegramHtmlChunks } from "../../../telegram/format.js";
+import type { TelegramInlineButtons } from "../../../../extensions/telegram/src/button-types.js";
+import { markdownToTelegramHtmlChunks } from "../../../../extensions/telegram/src/format.js";
 import {
   parseTelegramReplyToMessageId,
   parseTelegramThreadId,
-} from "../../../telegram/outbound-params.js";
-import { sendMessageTelegram } from "../../../telegram/send.js";
+} from "../../../../extensions/telegram/src/outbound-params.js";
+import { sendMessageTelegram } from "../../../../extensions/telegram/src/send.js";
+import type { ReplyPayload } from "../../../auto-reply/types.js";
+import type { OutboundSendDeps } from "../../../infra/outbound/deliver.js";
 import type { ChannelOutboundAdapter } from "../types.js";
 import { resolvePayloadMediaUrls, sendPayloadMediaSequence } from "./direct-text-media.js";
 

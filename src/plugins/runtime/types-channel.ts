@@ -109,13 +109,13 @@ export type PluginRuntimeChannel = {
     handleSlackAction: typeof import("../../agents/tools/slack-actions.js").handleSlackAction;
   };
   telegram: {
-    auditGroupMembership: typeof import("../../telegram/audit.js").auditTelegramGroupMembership;
-    collectUnmentionedGroupIds: typeof import("../../telegram/audit.js").collectTelegramUnmentionedGroupIds;
-    probeTelegram: typeof import("../../telegram/probe.js").probeTelegram;
-    resolveTelegramToken: typeof import("../../telegram/token.js").resolveTelegramToken;
-    sendMessageTelegram: typeof import("../../telegram/send.js").sendMessageTelegram;
-    sendPollTelegram: typeof import("../../telegram/send.js").sendPollTelegram;
-    monitorTelegramProvider: typeof import("../../telegram/monitor.js").monitorTelegramProvider;
+    auditGroupMembership: typeof import("../../../extensions/telegram/src/audit.js").auditTelegramGroupMembership;
+    collectUnmentionedGroupIds: typeof import("../../../extensions/telegram/src/audit.js").collectTelegramUnmentionedGroupIds;
+    probeTelegram: typeof import("../../../extensions/telegram/src/probe.js").probeTelegram;
+    resolveTelegramToken: typeof import("../../../extensions/telegram/src/token.js").resolveTelegramToken;
+    sendMessageTelegram: typeof import("../../../extensions/telegram/src/send.js").sendMessageTelegram;
+    sendPollTelegram: typeof import("../../../extensions/telegram/src/send.js").sendPollTelegram;
+    monitorTelegramProvider: typeof import("../../../extensions/telegram/src/monitor.js").monitorTelegramProvider;
     messageActions: typeof import("../../channels/plugins/actions/telegram.js").telegramMessageActions;
   };
   signal: {

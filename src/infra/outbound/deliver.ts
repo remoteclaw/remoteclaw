@@ -1,4 +1,5 @@
 import type { sendMessageDiscord } from "../../../extensions/discord/src/send.js";
+import type { sendMessageTelegram } from "../../../extensions/telegram/src/send.js";
 import {
   chunkByParagraph,
   chunkMarkdownTextWithMode,
@@ -33,7 +34,6 @@ import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { markdownToSignalTextChunks, type SignalTextStyleRange } from "../../signal/format.js";
 import { sendMessageSignal } from "../../signal/send.js";
 import type { sendMessageSlack } from "../../slack/send.js";
-import type { sendMessageTelegram } from "../../telegram/send.js";
 import type { sendMessageWhatsApp } from "../../web/outbound.js";
 import { throwIfAborted } from "./abort.js";
 import { ackDelivery, enqueueDelivery, failDelivery } from "./delivery-queue.js";

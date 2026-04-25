@@ -1,8 +1,8 @@
-import { createAccountListHelpers } from "../channels/plugins/account-helpers.js";
-import type { RemoteClawConfig } from "../config/config.js";
-import type { IMessageAccountConfig } from "../config/types.js";
-import { resolveAccountEntry } from "../routing/account-lookup.js";
-import { normalizeAccountId } from "../routing/session-key.js";
+import { createAccountListHelpers } from "../../../src/channels/plugins/account-helpers.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
+import type { IMessageAccountConfig } from "../../../src/config/types.js";
+import { resolveAccountEntry } from "../../../src/routing/account-lookup.js";
+import { normalizeAccountId } from "../../../src/routing/session-key.js";
 
 export type ResolvedIMessageAccount = {
   accountId: string;

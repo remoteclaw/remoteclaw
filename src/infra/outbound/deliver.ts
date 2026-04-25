@@ -1,4 +1,5 @@
 import type { sendMessageDiscord } from "../../../extensions/discord/src/send.js";
+import type { sendMessageIMessage } from "../../../extensions/imessage/src/send.js";
 import {
   markdownToSignalTextChunks,
   type SignalTextStyleRange,
@@ -33,7 +34,6 @@ import {
   toPluginMessageContext,
   toPluginMessageSentEvent,
 } from "../../hooks/message-hook-mappers.js";
-import type { sendMessageIMessage } from "../../imessage/send.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";

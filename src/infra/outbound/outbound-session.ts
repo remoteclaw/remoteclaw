@@ -3,6 +3,10 @@ import {
   type DiscordTargetKind,
 } from "../../../extensions/discord/src/targets.js";
 import {
+  parseIMessageTarget,
+  normalizeIMessageHandle,
+} from "../../../extensions/imessage/src/targets.js";
+import {
   looksLikeUuid,
   resolveSignalPeerId,
   resolveSignalRecipient,
@@ -22,7 +26,6 @@ import { getChannelPlugin } from "../../channels/plugins/index.js";
 import type { ChannelId } from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { recordSessionMetaFromInbound, resolveStorePath } from "../../config/sessions.js";
-import { parseIMessageTarget, normalizeIMessageHandle } from "../../imessage/targets.js";
 import { buildAgentSessionKey, type RoutePeer } from "../../routing/resolve-route.js";
 import { resolveThreadSessionKeys } from "../../routing/session-key.js";
 import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../whatsapp/normalize.js";

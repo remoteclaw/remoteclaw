@@ -1,1 +1,1 @@
-export { sendMessageIMessage } from "../imessage/send.js";
+export { sendMessageIMessage } from "../../extensions/imessage/src/send.js";

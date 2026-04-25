@@ -1,5 +1,5 @@
-import type { RemoteClawConfig } from "../../config/config.js";
-import type { RuntimeEnv } from "../../runtime.js";
+import type { RemoteClawConfig } from "../../../../src/config/config.js";
+import type { RuntimeEnv } from "../../../../src/runtime.js";
 
 export type IMessageAttachment = {
   original_path?: string | null;

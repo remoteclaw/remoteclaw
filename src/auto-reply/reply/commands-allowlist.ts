@@ -1,5 +1,6 @@
 import { resolveDiscordAccount } from "../../../extensions/discord/src/accounts.js";
 import { resolveDiscordUserAllowlist } from "../../../extensions/discord/src/resolve-users.js";
+import { resolveIMessageAccount } from "../../../extensions/imessage/src/accounts.js";
 import { resolveSignalAccount } from "../../../extensions/signal/src/accounts.js";
 import { resolveSlackAccount } from "../../../extensions/slack/src/accounts.js";
 import { resolveSlackUserAllowlist } from "../../../extensions/slack/src/resolve-users.js";
@@ -20,7 +21,6 @@ import {
   validateConfigObjectWithPlugins,
   writeConfigFile,
 } from "../../config/config.js";
-import { resolveIMessageAccount } from "../../imessage/accounts.js";
 import { isBlockedObjectKey } from "../../infra/prototype-keys.js";
 import {
   addChannelAllowFromStoreEntry,

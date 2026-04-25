@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { RemoteClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
 import {
   buildIMessageInboundContext,
   resolveIMessageInboundDecision,

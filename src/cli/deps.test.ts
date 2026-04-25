@@ -44,7 +44,7 @@ vi.mock("../../extensions/signal/src/send.js", () => {
   return { sendMessageSignal: sendFns.signal };
 });
 
-vi.mock("../imessage/send.js", () => {
+vi.mock("../../extensions/imessage/src/send.js", () => {
   moduleLoads.imessage();
   return { sendMessageIMessage: sendFns.imessage };
 });

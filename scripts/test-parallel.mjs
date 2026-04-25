@@ -77,7 +77,7 @@ const unitIsolatedFilesRaw = [
   // Slack slash registration tests are setup-heavy and can bottleneck unit-fast.
   "extensions/slack/src/monitor/slash.test.ts",
   // Uses process-level unhandledRejection listeners; keep it off vmForks to avoid cross-file leakage.
-  "src/imessage/monitor.shutdown.unhandled-rejection.test.ts",
+  "extensions/imessage/src/monitor.shutdown.unhandled-rejection.test.ts",
 ];
 const unitIsolatedFiles = unitIsolatedFilesRaw.filter((file) => fs.existsSync(file));
 

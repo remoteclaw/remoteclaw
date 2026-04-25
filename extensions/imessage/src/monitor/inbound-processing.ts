@@ -1,31 +1,34 @@
-import { hasControlCommand } from "../../auto-reply/command-detection.js";
+import { hasControlCommand } from "../../../../src/auto-reply/command-detection.js";
 import {
   formatInboundEnvelope,
   formatInboundFromLabel,
   resolveEnvelopeFormatOptions,
   type EnvelopeFormatOptions,
-} from "../../auto-reply/envelope.js";
+} from "../../../../src/auto-reply/envelope.js";
 import {
   buildPendingHistoryContextFromMap,
   recordPendingHistoryEntryIfEnabled,
   type HistoryEntry,
-} from "../../auto-reply/reply/history.js";
-import { finalizeInboundContext } from "../../auto-reply/reply/inbound-context.js";
-import { buildMentionRegexes, matchesMentionPatterns } from "../../auto-reply/reply/mentions.js";
-import { resolveDualTextControlCommandGate } from "../../channels/command-gating.js";
-import { logInboundDrop } from "../../channels/logging.js";
-import type { RemoteClawConfig } from "../../config/config.js";
+} from "../../../../src/auto-reply/reply/history.js";
+import { finalizeInboundContext } from "../../../../src/auto-reply/reply/inbound-context.js";
+import {
+  buildMentionRegexes,
+  matchesMentionPatterns,
+} from "../../../../src/auto-reply/reply/mentions.js";
+import { resolveDualTextControlCommandGate } from "../../../../src/channels/command-gating.js";
+import { logInboundDrop } from "../../../../src/channels/logging.js";
+import type { RemoteClawConfig } from "../../../../src/config/config.js";
 import {
   resolveChannelGroupPolicy,
   resolveChannelGroupRequireMention,
-} from "../../config/group-policy.js";
-import { resolveAgentRoute } from "../../routing/resolve-route.js";
+} from "../../../../src/config/group-policy.js";
+import { resolveAgentRoute } from "../../../../src/routing/resolve-route.js";
 import {
   DM_GROUP_ACCESS_REASON,
   resolveDmGroupAccessWithLists,
-} from "../../security/dm-policy-shared.js";
-import { sanitizeTerminalText } from "../../terminal/safe-text.js";
-import { truncateUtf16Safe } from "../../utils.js";
+} from "../../../../src/security/dm-policy-shared.js";
+import { sanitizeTerminalText } from "../../../../src/terminal/safe-text.js";
+import { truncateUtf16Safe } from "../../../../src/utils.js";
 import {
   formatIMessageChatTarget,
   isAllowedIMessageSender,

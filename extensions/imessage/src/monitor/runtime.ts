@@ -1,5 +1,5 @@
-import { createNonExitingRuntime, type RuntimeEnv } from "../../runtime.js";
-import { normalizeStringEntries } from "../../shared/string-normalization.js";
+import { createNonExitingRuntime, type RuntimeEnv } from "../../../../src/runtime.js";
+import { normalizeStringEntries } from "../../../../src/shared/string-normalization.js";
 import type { MonitorIMessageOpts } from "./types.js";
 
 export function resolveRuntime(opts: MonitorIMessageOpts): RuntimeEnv {

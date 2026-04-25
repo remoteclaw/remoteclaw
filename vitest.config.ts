@@ -177,7 +177,7 @@ export default defineConfig({
         // Channel surfaces are largely integration-tested (or manually validated).
         "src/imessage/**",
         "src/signal/**",
-        "src/slack/**",
+        "extensions/slack/src/**",
         "src/browser/**",
         "src/channels/web/**",
         "src/webchat/**",

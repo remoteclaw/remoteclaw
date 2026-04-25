@@ -1,3 +1,4 @@
+import { isSlackInteractiveRepliesEnabled } from "../../extensions/slack/src/interactive-replies.js";
 import { resolveAgentEffectiveModelPrimary } from "../agents/agent-scope.js";
 import { resolveEffectiveMessagesConfig, resolveIdentityName } from "../agents/identity.js";
 import {
@@ -5,7 +6,6 @@ import {
   type ResponsePrefixContext,
 } from "../auto-reply/reply/response-prefix-template.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import { isSlackInteractiveRepliesEnabled } from "../slack/interactive-replies.js";
 
 export type ReplyPrefixContextBundle = {
   prefixContext: ResponsePrefixContext;

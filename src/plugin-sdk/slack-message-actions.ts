@@ -1,9 +1,9 @@
+import { parseSlackBlocksInput } from "../../extensions/slack/src/blocks-input.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
 // import ... from "@mariozechner/pi-agent-core";
 import type { AgentToolResult } from "../agents/agent-types.js";
 import { readNumberParam, readStringParam } from "../agents/tools/common.js";
 import type { ChannelMessageActionContext } from "../channels/plugins/types.js";
-import { parseSlackBlocksInput } from "../slack/blocks-input.js";
 
 type SlackActionInvoke = (
   action: Record<string, unknown>,

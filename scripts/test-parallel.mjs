@@ -75,7 +75,7 @@ const unitIsolatedFilesRaw = [
   // Medium-heavy bot behavior suite; move off unit-fast critical path.
   "extensions/telegram/src/bot.test.ts",
   // Slack slash registration tests are setup-heavy and can bottleneck unit-fast.
-  "src/slack/monitor/slash.test.ts",
+  "extensions/slack/src/monitor/slash.test.ts",
   // Uses process-level unhandledRejection listeners; keep it off vmForks to avoid cross-file leakage.
   "src/imessage/monitor.shutdown.unhandled-rejection.test.ts",
 ];

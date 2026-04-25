@@ -1,4 +1,5 @@
 import { parseDiscordTarget } from "../../../extensions/discord/src/targets.js";
+import { parseSlackTarget } from "../../../extensions/slack/src/targets.js";
 import {
   parseTelegramTarget,
   resolveTelegramTargetChatType,
@@ -11,7 +12,6 @@ import type { SessionEntry } from "../../config/sessions.js";
 import type { AgentDefaultsConfig } from "../../config/types.agent-defaults.js";
 import { mapAllowFromEntries } from "../../plugin-sdk/channel-config-helpers.js";
 import { normalizeAccountId } from "../../routing/session-key.js";
-import { parseSlackTarget } from "../../slack/targets.js";
 import { deliveryContextFromSession } from "../../utils/delivery-context.js";
 import type {
   DeliverableMessageChannel,

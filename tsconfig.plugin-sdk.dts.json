@@ -12,6 +12,7 @@
   },
   "include": [
     "extensions/discord/src/**/*.ts",
+    "extensions/slack/src/**/*.ts",
     "extensions/telegram/src/**/*.ts",
     "src/plugin-sdk/index.ts",
     "src/plugin-sdk/core.ts",

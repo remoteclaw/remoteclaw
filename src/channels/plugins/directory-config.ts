@@ -1,8 +1,8 @@
 import { inspectDiscordAccount } from "../../../extensions/discord/src/account-inspect.js";
+import { inspectSlackAccount } from "../../../extensions/slack/src/account-inspect.js";
 import { inspectTelegramAccount } from "../../../extensions/telegram/src/account-inspect.js";
 import type { RemoteClawConfig } from "../../config/types.js";
 import { mapAllowFromEntries } from "../../plugin-sdk/channel-config-helpers.js";
-import { inspectSlackAccount } from "../../slack/account-inspect.js";
 import { resolveWhatsAppAccount } from "../../web/accounts.js";
 import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../whatsapp/normalize.js";
 import { applyDirectoryQueryAndLimit, toDirectoryEntries } from "./directory-config-helpers.js";

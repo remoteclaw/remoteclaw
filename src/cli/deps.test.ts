@@ -34,7 +34,7 @@ vi.mock("../../extensions/discord/src/send.js", () => {
   return { sendMessageDiscord: sendFns.discord };
 });
 
-vi.mock("../slack/send.js", () => {
+vi.mock("../../extensions/slack/src/send.js", () => {
   moduleLoads.slack();
   return { sendMessageSlack: sendFns.slack };
 });

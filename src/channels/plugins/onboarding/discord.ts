@@ -1,18 +1,18 @@
-import type { RemoteClawConfig } from "../../../config/config.js";
-import type { DiscordGuildEntry } from "../../../config/types.discord.js";
-import { hasConfiguredSecretInput } from "../../../config/types.secrets.js";
-import { inspectDiscordAccount } from "../../../discord/account-inspect.js";
+import { inspectDiscordAccount } from "../../../../extensions/discord/src/account-inspect.js";
 import {
   listDiscordAccountIds,
   resolveDefaultDiscordAccountId,
   resolveDiscordAccount,
-} from "../../../discord/accounts.js";
-import { normalizeDiscordSlug } from "../../../discord/monitor/allow-list.js";
+} from "../../../../extensions/discord/src/accounts.js";
+import { normalizeDiscordSlug } from "../../../../extensions/discord/src/monitor/allow-list.js";
 import {
   resolveDiscordChannelAllowlist,
   type DiscordChannelResolution,
-} from "../../../discord/resolve-channels.js";
-import { resolveDiscordUserAllowlist } from "../../../discord/resolve-users.js";
+} from "../../../../extensions/discord/src/resolve-channels.js";
+import { resolveDiscordUserAllowlist } from "../../../../extensions/discord/src/resolve-users.js";
+import type { RemoteClawConfig } from "../../../config/config.js";
+import type { DiscordGuildEntry } from "../../../config/types.discord.js";
+import { hasConfiguredSecretInput } from "../../../config/types.secrets.js";
 import { DEFAULT_ACCOUNT_ID } from "../../../routing/session-key.js";
 import { formatDocsLink } from "../../../terminal/links.js";
 import type { WizardPrompter } from "../../../wizard/prompts.js";

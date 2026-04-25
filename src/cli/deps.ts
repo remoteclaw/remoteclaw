@@ -1,5 +1,5 @@
+import type { sendMessageDiscord } from "../../extensions/discord/src/send.js";
 import type { sendMessageWhatsApp } from "../channels/web/index.js";
-import type { sendMessageDiscord } from "../discord/send.js";
 import type { sendMessageIMessage } from "../imessage/send.js";
 import type { OutboundSendDeps } from "../infra/outbound/deliver.js";
 import type { sendMessageSignal } from "../signal/send.js";

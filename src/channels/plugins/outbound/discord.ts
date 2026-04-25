@@ -1,13 +1,13 @@
-import type { RemoteClawConfig } from "../../../config/config.js";
 import {
   getThreadBindingManager,
   type ThreadBindingRecord,
-} from "../../../discord/monitor/thread-bindings.js";
+} from "../../../../extensions/discord/src/monitor/thread-bindings.js";
 import {
   sendMessageDiscord,
   sendPollDiscord,
   sendWebhookMessageDiscord,
-} from "../../../discord/send.js";
+} from "../../../../extensions/discord/src/send.js";
+import type { RemoteClawConfig } from "../../../config/config.js";
 import type { OutboundIdentity } from "../../../infra/outbound/identity.js";
 import { normalizeDiscordOutboundTarget } from "../normalize/discord.js";
 import type { ChannelOutboundAdapter } from "../types.js";

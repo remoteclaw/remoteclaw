@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
+import { unbindThreadBindingsBySessionKey } from "../../../extensions/discord/src/monitor/thread-bindings.js";
 import { resolveSessionKeyAgentId } from "../../agents/agent-scope.js";
 import { killSessionRun, waitForSessionRunEnd } from "../../agents/session-run-registry.js";
 import { stopSubagentsForRequester } from "../../auto-reply/reply/abort.js";
@@ -12,7 +13,6 @@ import {
   type SessionEntry,
   updateSessionStore,
 } from "../../config/sessions.js";
-import { unbindThreadBindingsBySessionKey } from "../../discord/monitor/thread-bindings.js";
 import { logVerbose } from "../../globals.js";
 import { createInternalHookEvent, triggerInternalHook } from "../../hooks/internal-hooks.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";

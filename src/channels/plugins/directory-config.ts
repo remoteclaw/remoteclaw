@@ -1,5 +1,5 @@
+import { inspectDiscordAccount } from "../../../extensions/discord/src/account-inspect.js";
 import type { RemoteClawConfig } from "../../config/types.js";
-import { inspectDiscordAccount } from "../../discord/account-inspect.js";
 import { mapAllowFromEntries } from "../../plugin-sdk/channel-config-helpers.js";
 import { inspectSlackAccount } from "../../slack/account-inspect.js";
 import { inspectTelegramAccount } from "../../telegram/account-inspect.js";

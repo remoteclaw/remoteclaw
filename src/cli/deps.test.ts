@@ -29,7 +29,7 @@ vi.mock("../telegram/send.js", () => {
   return { sendMessageTelegram: sendFns.telegram };
 });
 
-vi.mock("../discord/send.js", () => {
+vi.mock("../../extensions/discord/src/send.js", () => {
   moduleLoads.discord();
   return { sendMessageDiscord: sendFns.discord };
 });

@@ -1,3 +1,5 @@
+import { resolveDiscordAccount } from "../../../extensions/discord/src/accounts.js";
+import { resolveDiscordUserAllowlist } from "../../../extensions/discord/src/resolve-users.js";
 import { getChannelDock } from "../../channels/dock.js";
 import {
   authorizeConfigWrite,
@@ -14,8 +16,6 @@ import {
   validateConfigObjectWithPlugins,
   writeConfigFile,
 } from "../../config/config.js";
-import { resolveDiscordAccount } from "../../discord/accounts.js";
-import { resolveDiscordUserAllowlist } from "../../discord/resolve-users.js";
 import { resolveIMessageAccount } from "../../imessage/accounts.js";
 import { isBlockedObjectKey } from "../../infra/prototype-keys.js";
 import {

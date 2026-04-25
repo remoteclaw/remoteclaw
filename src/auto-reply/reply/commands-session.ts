@@ -1,5 +1,3 @@
-import { parseDurationMs } from "../../cli/parse-duration.js";
-import { isRestartEnabled } from "../../config/commands.js";
 import {
   formatThreadBindingDurationLabel,
   getThreadBindingManager,
@@ -9,7 +7,9 @@ import {
   resolveThreadBindingMaxAgeMs,
   setThreadBindingIdleTimeoutBySessionKey,
   setThreadBindingMaxAgeBySessionKey,
-} from "../../discord/monitor/thread-bindings.js";
+} from "../../../extensions/discord/src/monitor/thread-bindings.js";
+import { parseDurationMs } from "../../cli/parse-duration.js";
+import { isRestartEnabled } from "../../config/commands.js";
 import { logVerbose } from "../../globals.js";
 import { getSessionBindingService } from "../../infra/outbound/session-binding-service.js";
 import type { SessionBindingRecord } from "../../infra/outbound/session-binding-service.js";

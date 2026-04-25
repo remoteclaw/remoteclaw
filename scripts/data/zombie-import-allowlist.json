@@ -25,7 +25,7 @@
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
   },
   {
-    "callsite": "src/discord/monitor/thread-bindings.lifecycle.ts:1",
+    "callsite": "extensions/discord/src/monitor/thread-bindings.lifecycle.ts:4",
     "pattern": "acp/runtime/session-meta",
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
   },

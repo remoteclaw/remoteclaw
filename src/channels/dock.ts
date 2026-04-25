@@ -1,8 +1,8 @@
+import { inspectDiscordAccount } from "../../extensions/discord/src/account-inspect.js";
 import {
   resolveChannelGroupRequireMention,
   resolveChannelGroupToolsPolicy,
 } from "../config/group-policy.js";
-import { inspectDiscordAccount } from "../discord/account-inspect.js";
 import {
   formatAllowFromLowercase,
   formatNormalizedAllowFromEntries,

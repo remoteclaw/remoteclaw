@@ -1,3 +1,4 @@
+import type { sendMessageDiscord } from "../../../extensions/discord/src/send.js";
 import {
   chunkByParagraph,
   chunkMarkdownTextWithMode,
@@ -17,7 +18,6 @@ import {
   appendAssistantMessageToSessionTranscript,
   resolveMirroredTranscriptText,
 } from "../../config/sessions.js";
-import type { sendMessageDiscord } from "../../discord/send.js";
 import { fireAndForgetHook } from "../../hooks/fire-and-forget.js";
 import { createInternalHookEvent, triggerInternalHook } from "../../hooks/internal-hooks.js";
 import {

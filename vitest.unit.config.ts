@@ -18,7 +18,6 @@ export default defineConfig({
       "src/gateway/**",
       "extensions/**",
       "src/telegram/**",
-      "src/discord/**",
       "src/web/**",
       "src/browser/**",
       "src/line/**",

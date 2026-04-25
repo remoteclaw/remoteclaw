@@ -88,15 +88,15 @@ export type PluginRuntimeChannel = {
   };
   discord: {
     messageActions: typeof import("../../channels/plugins/actions/discord.js").discordMessageActions;
-    auditChannelPermissions: typeof import("../../discord/audit.js").auditDiscordChannelPermissions;
-    listDirectoryGroupsLive: typeof import("../../discord/directory-live.js").listDiscordDirectoryGroupsLive;
-    listDirectoryPeersLive: typeof import("../../discord/directory-live.js").listDiscordDirectoryPeersLive;
-    probeDiscord: typeof import("../../discord/probe.js").probeDiscord;
-    resolveChannelAllowlist: typeof import("../../discord/resolve-channels.js").resolveDiscordChannelAllowlist;
-    resolveUserAllowlist: typeof import("../../discord/resolve-users.js").resolveDiscordUserAllowlist;
-    sendMessageDiscord: typeof import("../../discord/send.js").sendMessageDiscord;
-    sendPollDiscord: typeof import("../../discord/send.js").sendPollDiscord;
-    monitorDiscordProvider: typeof import("../../discord/monitor.js").monitorDiscordProvider;
+    auditChannelPermissions: typeof import("../../../extensions/discord/src/audit.js").auditDiscordChannelPermissions;
+    listDirectoryGroupsLive: typeof import("../../../extensions/discord/src/directory-live.js").listDiscordDirectoryGroupsLive;
+    listDirectoryPeersLive: typeof import("../../../extensions/discord/src/directory-live.js").listDiscordDirectoryPeersLive;
+    probeDiscord: typeof import("../../../extensions/discord/src/probe.js").probeDiscord;
+    resolveChannelAllowlist: typeof import("../../../extensions/discord/src/resolve-channels.js").resolveDiscordChannelAllowlist;
+    resolveUserAllowlist: typeof import("../../../extensions/discord/src/resolve-users.js").resolveDiscordUserAllowlist;
+    sendMessageDiscord: typeof import("../../../extensions/discord/src/send.js").sendMessageDiscord;
+    sendPollDiscord: typeof import("../../../extensions/discord/src/send.js").sendPollDiscord;
+    monitorDiscordProvider: typeof import("../../../extensions/discord/src/monitor.js").monitorDiscordProvider;
   };
   slack: {
     listDirectoryGroupsLive: typeof import("../../slack/directory-live.js").listSlackDirectoryGroupsLive;

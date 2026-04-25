@@ -1,3 +1,13 @@
+import { auditDiscordChannelPermissions } from "../../../extensions/discord/src/audit.js";
+import {
+  listDiscordDirectoryGroupsLive,
+  listDiscordDirectoryPeersLive,
+} from "../../../extensions/discord/src/directory-live.js";
+import { monitorDiscordProvider } from "../../../extensions/discord/src/monitor.js";
+import { probeDiscord } from "../../../extensions/discord/src/probe.js";
+import { resolveDiscordChannelAllowlist } from "../../../extensions/discord/src/resolve-channels.js";
+import { resolveDiscordUserAllowlist } from "../../../extensions/discord/src/resolve-users.js";
+import { sendMessageDiscord, sendPollDiscord } from "../../../extensions/discord/src/send.js";
 import { resolveEffectiveMessagesConfig, resolveHumanDelayConfig } from "../../agents/identity.js";
 import { handleSlackAction } from "../../agents/tools/slack-actions.js";
 import {
@@ -51,16 +61,6 @@ import {
   resolveStorePath,
   updateLastRoute,
 } from "../../config/sessions.js";
-import { auditDiscordChannelPermissions } from "../../discord/audit.js";
-import {
-  listDiscordDirectoryGroupsLive,
-  listDiscordDirectoryPeersLive,
-} from "../../discord/directory-live.js";
-import { monitorDiscordProvider } from "../../discord/monitor.js";
-import { probeDiscord } from "../../discord/probe.js";
-import { resolveDiscordChannelAllowlist } from "../../discord/resolve-channels.js";
-import { resolveDiscordUserAllowlist } from "../../discord/resolve-users.js";
-import { sendMessageDiscord, sendPollDiscord } from "../../discord/send.js";
 import { monitorIMessageProvider } from "../../imessage/monitor.js";
 import { probeIMessage } from "../../imessage/probe.js";
 import { sendMessageIMessage } from "../../imessage/send.js";

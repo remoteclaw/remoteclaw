@@ -1,6 +1,4 @@
-import type { DiscordActionConfig } from "../../config/config.js";
-import type { RemoteClawConfig } from "../../config/config.js";
-import { readDiscordComponentSpec } from "../../discord/components.js";
+import { readDiscordComponentSpec } from "../../../extensions/discord/src/components.js";
 import {
   createThreadDiscord,
   deleteMessageDiscord,
@@ -22,9 +20,14 @@ import {
   sendStickerDiscord,
   sendVoiceMessageDiscord,
   unpinMessageDiscord,
-} from "../../discord/send.js";
-import type { DiscordSendComponents, DiscordSendEmbeds } from "../../discord/send.shared.js";
-import { resolveDiscordChannelId } from "../../discord/targets.js";
+} from "../../../extensions/discord/src/send.js";
+import type {
+  DiscordSendComponents,
+  DiscordSendEmbeds,
+} from "../../../extensions/discord/src/send.shared.js";
+import { resolveDiscordChannelId } from "../../../extensions/discord/src/targets.js";
+import type { DiscordActionConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { readBooleanParam } from "../../plugin-sdk/boolean-param.js";
 import { resolvePollMaxSelections } from "../../polls.js";
 import type { AgentToolResult } from "../agent-types.js";

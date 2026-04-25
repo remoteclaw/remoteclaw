@@ -10,7 +10,6 @@ export default defineConfig({
     ...baseTest,
     include: [
       "src/telegram/**/*.test.ts",
-      "src/discord/**/*.test.ts",
       "src/web/**/*.test.ts",
       "src/browser/**/*.test.ts",
       "src/line/**/*.test.ts",

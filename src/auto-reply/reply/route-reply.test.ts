@@ -33,7 +33,7 @@ vi.mock("../../../extensions/discord/src/send.js", () => ({
 vi.mock("../../imessage/send.js", () => ({
   sendMessageIMessage: mocks.sendMessageIMessage,
 }));
-vi.mock("../../signal/send.js", () => ({
+vi.mock("../../../extensions/signal/src/send.js", () => ({
   sendMessageSignal: mocks.sendMessageSignal,
 }));
 vi.mock("../../../extensions/slack/src/send.js", () => ({

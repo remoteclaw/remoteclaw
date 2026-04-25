@@ -1,8 +1,12 @@
-import type { HistoryEntry } from "../../auto-reply/reply/history.js";
-import type { ReplyPayload } from "../../auto-reply/types.js";
-import type { RemoteClawConfig } from "../../config/config.js";
-import type { DmPolicy, GroupPolicy, SignalReactionNotificationMode } from "../../config/types.js";
-import type { RuntimeEnv } from "../../runtime.js";
+import type { HistoryEntry } from "../../../../src/auto-reply/reply/history.js";
+import type { ReplyPayload } from "../../../../src/auto-reply/types.js";
+import type { RemoteClawConfig } from "../../../../src/config/config.js";
+import type {
+  DmPolicy,
+  GroupPolicy,
+  SignalReactionNotificationMode,
+} from "../../../../src/config/types.js";
+import type { RuntimeEnv } from "../../../../src/runtime.js";
 import type { SignalSender } from "../identity.js";
 
 export type SignalEnvelope = {

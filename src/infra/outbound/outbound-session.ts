@@ -2,6 +2,12 @@ import {
   parseDiscordTarget,
   type DiscordTargetKind,
 } from "../../../extensions/discord/src/targets.js";
+import {
+  looksLikeUuid,
+  resolveSignalPeerId,
+  resolveSignalRecipient,
+  resolveSignalSender,
+} from "../../../extensions/signal/src/identity.js";
 import { resolveSlackAccount } from "../../../extensions/slack/src/accounts.js";
 import { createSlackWebClient } from "../../../extensions/slack/src/client.js";
 import { normalizeAllowListLower } from "../../../extensions/slack/src/monitor/allow-list.js";
@@ -19,12 +25,6 @@ import { recordSessionMetaFromInbound, resolveStorePath } from "../../config/ses
 import { parseIMessageTarget, normalizeIMessageHandle } from "../../imessage/targets.js";
 import { buildAgentSessionKey, type RoutePeer } from "../../routing/resolve-route.js";
 import { resolveThreadSessionKeys } from "../../routing/session-key.js";
-import {
-  looksLikeUuid,
-  resolveSignalPeerId,
-  resolveSignalRecipient,
-  resolveSignalSender,
-} from "../../signal/identity.js";
 import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../whatsapp/normalize.js";
 import type { ResolvedMessagingTarget } from "./target-resolver.js";
 

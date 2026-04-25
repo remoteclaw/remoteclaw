@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildDispatchInboundCaptureMock } from "../../../test/helpers/dispatch-inbound-capture.js";
-import type { MsgContext } from "../../auto-reply/templating.js";
-import type { RemoteClawConfig } from "../../config/types.js";
+import type { MsgContext } from "../../../../src/auto-reply/templating.js";
+import type { RemoteClawConfig } from "../../../../src/config/types.js";
+import { buildDispatchInboundCaptureMock } from "../../../../test/helpers/dispatch-inbound-capture.js";
 import {
   createBaseSignalEventHandlerDeps,
   createSignalReceiveEvent,
@@ -18,8 +18,8 @@ function getCapturedCtx() {
   return capturedCtx as SignalMsgContext;
 }
 
-vi.mock("../../auto-reply/dispatch.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../auto-reply/dispatch.js")>();
+vi.mock("../../../../src/auto-reply/dispatch.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../../src/auto-reply/dispatch.js")>();
   return buildDispatchInboundCaptureMock(actual, (ctx) => {
     capturedCtx = ctx as SignalMsgContext;
   });

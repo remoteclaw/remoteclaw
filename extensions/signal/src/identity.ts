@@ -1,5 +1,5 @@
-import { evaluateSenderGroupAccessForPolicy } from "../plugin-sdk/group-access.js";
-import { normalizeE164 } from "../utils.js";
+import { evaluateSenderGroupAccessForPolicy } from "../../../src/plugin-sdk/group-access.js";
+import { normalizeE164 } from "../../../src/utils.js";
 
 export type SignalSender =
   | { kind: "phone"; raw: string; e164: string }

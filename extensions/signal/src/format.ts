@@ -1,10 +1,10 @@
-import type { MarkdownTableMode } from "../config/types.base.js";
+import type { MarkdownTableMode } from "../../../src/config/types.base.js";
 import {
   chunkMarkdownIR,
   markdownToIR,
   type MarkdownIR,
   type MarkdownStyle,
-} from "../markdown/ir.js";
+} from "../../../src/markdown/ir.js";
 
 type SignalTextStyle = "BOLD" | "ITALIC" | "STRIKETHROUGH" | "MONOSPACE" | "SPOILER";
 

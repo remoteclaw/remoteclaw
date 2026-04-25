@@ -1,4 +1,4 @@
-import { loadConfig } from "../config/config.js";
+import { loadConfig } from "../../../src/config/config.js";
 import { resolveSignalAccount } from "./accounts.js";
 
 export function resolveSignalRpcContext(

@@ -1,7 +1,7 @@
-import { logVerbose, shouldLogVerbose } from "../globals.js";
-import type { BackoffPolicy } from "../infra/backoff.js";
-import { computeBackoff, sleepWithAbort } from "../infra/backoff.js";
-import type { RuntimeEnv } from "../runtime.js";
+import { logVerbose, shouldLogVerbose } from "../../../src/globals.js";
+import type { BackoffPolicy } from "../../../src/infra/backoff.js";
+import { computeBackoff, sleepWithAbort } from "../../../src/infra/backoff.js";
+import type { RuntimeEnv } from "../../../src/runtime.js";
 import { type SignalSseEvent, streamSignalEvents } from "./client.js";
 
 const DEFAULT_RECONNECT_POLICY: BackoffPolicy = {

@@ -1,4 +1,5 @@
 import { inspectDiscordAccount } from "../../extensions/discord/src/account-inspect.js";
+import { resolveSignalAccount } from "../../extensions/signal/src/accounts.js";
 import { inspectSlackAccount } from "../../extensions/slack/src/account-inspect.js";
 import { resolveSlackReplyToMode } from "../../extensions/slack/src/accounts.js";
 import { buildSlackThreadingToolContext } from "../../extensions/slack/src/threading-tool-context.js";
@@ -23,7 +24,6 @@ import {
 } from "../plugin-sdk/channel-config-helpers.js";
 import { requireActivePluginRegistry } from "../plugins/runtime.js";
 import { normalizeAccountId } from "../routing/session-key.js";
-import { resolveSignalAccount } from "../signal/accounts.js";
 import { normalizeE164 } from "../utils.js";
 import {
   resolveDiscordGroupRequireMention,

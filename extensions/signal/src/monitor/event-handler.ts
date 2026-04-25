@@ -1,41 +1,44 @@
-import { resolveHumanDelayConfig } from "../../agents/identity.js";
-import { hasControlCommand } from "../../auto-reply/command-detection.js";
-import { dispatchInboundMessage } from "../../auto-reply/dispatch.js";
+import { resolveHumanDelayConfig } from "../../../../src/agents/identity.js";
+import { hasControlCommand } from "../../../../src/auto-reply/command-detection.js";
+import { dispatchInboundMessage } from "../../../../src/auto-reply/dispatch.js";
 import {
   formatInboundEnvelope,
   formatInboundFromLabel,
   resolveEnvelopeFormatOptions,
-} from "../../auto-reply/envelope.js";
+} from "../../../../src/auto-reply/envelope.js";
 import {
   buildPendingHistoryContextFromMap,
   clearHistoryEntriesIfEnabled,
   recordPendingHistoryEntryIfEnabled,
-} from "../../auto-reply/reply/history.js";
-import { finalizeInboundContext } from "../../auto-reply/reply/inbound-context.js";
-import { buildMentionRegexes, matchesMentionPatterns } from "../../auto-reply/reply/mentions.js";
-import { createReplyDispatcherWithTyping } from "../../auto-reply/reply/reply-dispatcher.js";
-import { resolveControlCommandGate } from "../../channels/command-gating.js";
+} from "../../../../src/auto-reply/reply/history.js";
+import { finalizeInboundContext } from "../../../../src/auto-reply/reply/inbound-context.js";
+import {
+  buildMentionRegexes,
+  matchesMentionPatterns,
+} from "../../../../src/auto-reply/reply/mentions.js";
+import { createReplyDispatcherWithTyping } from "../../../../src/auto-reply/reply/reply-dispatcher.js";
+import { resolveControlCommandGate } from "../../../../src/channels/command-gating.js";
 import {
   createChannelInboundDebouncer,
   shouldDebounceTextInbound,
-} from "../../channels/inbound-debounce-policy.js";
-import { logInboundDrop, logTypingFailure } from "../../channels/logging.js";
-import { resolveMentionGatingWithBypass } from "../../channels/mention-gating.js";
-import { normalizeSignalMessagingTarget } from "../../channels/plugins/normalize/signal.js";
-import { createReplyPrefixOptions } from "../../channels/reply-prefix.js";
-import { recordInboundSession } from "../../channels/session.js";
-import { createTypingCallbacks } from "../../channels/typing.js";
-import { resolveChannelGroupRequireMention } from "../../config/group-policy.js";
-import { readSessionUpdatedAt, resolveStorePath } from "../../config/sessions.js";
-import { danger, logVerbose, shouldLogVerbose } from "../../globals.js";
-import { enqueueSystemEvent } from "../../infra/system-events.js";
-import { kindFromMime } from "../../media/mime.js";
-import { resolveAgentRoute } from "../../routing/resolve-route.js";
+} from "../../../../src/channels/inbound-debounce-policy.js";
+import { logInboundDrop, logTypingFailure } from "../../../../src/channels/logging.js";
+import { resolveMentionGatingWithBypass } from "../../../../src/channels/mention-gating.js";
+import { normalizeSignalMessagingTarget } from "../../../../src/channels/plugins/normalize/signal.js";
+import { createReplyPrefixOptions } from "../../../../src/channels/reply-prefix.js";
+import { recordInboundSession } from "../../../../src/channels/session.js";
+import { createTypingCallbacks } from "../../../../src/channels/typing.js";
+import { resolveChannelGroupRequireMention } from "../../../../src/config/group-policy.js";
+import { readSessionUpdatedAt, resolveStorePath } from "../../../../src/config/sessions.js";
+import { danger, logVerbose, shouldLogVerbose } from "../../../../src/globals.js";
+import { enqueueSystemEvent } from "../../../../src/infra/system-events.js";
+import { kindFromMime } from "../../../../src/media/mime.js";
+import { resolveAgentRoute } from "../../../../src/routing/resolve-route.js";
 import {
   DM_GROUP_ACCESS_REASON,
   resolvePinnedMainDmOwnerFromAllowlist,
-} from "../../security/dm-policy-shared.js";
-import { normalizeE164 } from "../../utils.js";
+} from "../../../../src/security/dm-policy-shared.js";
+import { normalizeE164 } from "../../../../src/utils.js";
 import {
   formatSignalPairingIdLine,
   formatSignalSenderDisplay,

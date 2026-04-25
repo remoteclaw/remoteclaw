@@ -1,20 +1,27 @@
-import { chunkTextWithMode, resolveChunkMode, resolveTextChunkLimit } from "../auto-reply/chunk.js";
-import { DEFAULT_GROUP_HISTORY_LIMIT, type HistoryEntry } from "../auto-reply/reply/history.js";
-import type { ReplyPayload } from "../auto-reply/types.js";
-import type { RemoteClawConfig } from "../config/config.js";
-import { loadConfig } from "../config/config.js";
+import {
+  chunkTextWithMode,
+  resolveChunkMode,
+  resolveTextChunkLimit,
+} from "../../../src/auto-reply/chunk.js";
+import {
+  DEFAULT_GROUP_HISTORY_LIMIT,
+  type HistoryEntry,
+} from "../../../src/auto-reply/reply/history.js";
+import type { ReplyPayload } from "../../../src/auto-reply/types.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
+import { loadConfig } from "../../../src/config/config.js";
 import {
   resolveAllowlistProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
   warnMissingProviderGroupPolicyFallbackOnce,
-} from "../config/runtime-group-policy.js";
-import type { SignalReactionNotificationMode } from "../config/types.js";
-import type { BackoffPolicy } from "../infra/backoff.js";
-import { waitForTransportReady } from "../infra/transport-ready.js";
-import { saveMediaBuffer } from "../media/store.js";
-import { createNonExitingRuntime, type RuntimeEnv } from "../runtime.js";
-import { normalizeStringEntries } from "../shared/string-normalization.js";
-import { normalizeE164 } from "../utils.js";
+} from "../../../src/config/runtime-group-policy.js";
+import type { SignalReactionNotificationMode } from "../../../src/config/types.js";
+import type { BackoffPolicy } from "../../../src/infra/backoff.js";
+import { waitForTransportReady } from "../../../src/infra/transport-ready.js";
+import { saveMediaBuffer } from "../../../src/media/store.js";
+import { createNonExitingRuntime, type RuntimeEnv } from "../../../src/runtime.js";
+import { normalizeStringEntries } from "../../../src/shared/string-normalization.js";
+import { normalizeE164 } from "../../../src/utils.js";
 import { resolveSignalAccount } from "./accounts.js";
 import { signalCheck, signalRpcRequest } from "./client.js";
 import { formatSignalDaemonExit, spawnSignalDaemon, type SignalDaemonHandle } from "./daemon.js";

@@ -8,6 +8,9 @@ import { probeDiscord } from "../../../extensions/discord/src/probe.js";
 import { resolveDiscordChannelAllowlist } from "../../../extensions/discord/src/resolve-channels.js";
 import { resolveDiscordUserAllowlist } from "../../../extensions/discord/src/resolve-users.js";
 import { sendMessageDiscord, sendPollDiscord } from "../../../extensions/discord/src/send.js";
+import { monitorSignalProvider } from "../../../extensions/signal/src/index.js";
+import { probeSignal } from "../../../extensions/signal/src/probe.js";
+import { sendMessageSignal } from "../../../extensions/signal/src/send.js";
 import {
   listSlackDirectoryGroupsLive,
   listSlackDirectoryPeersLive,
@@ -110,9 +113,6 @@ import {
   upsertChannelPairingRequest,
 } from "../../pairing/pairing-store.js";
 import { buildAgentSessionKey, resolveAgentRoute } from "../../routing/resolve-route.js";
-import { monitorSignalProvider } from "../../signal/index.js";
-import { probeSignal } from "../../signal/probe.js";
-import { sendMessageSignal } from "../../signal/send.js";
 import { createRuntimeWhatsApp } from "./runtime-whatsapp.js";
 import type { PluginRuntime } from "./types.js";
 

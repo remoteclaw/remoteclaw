@@ -1,1 +1,1 @@
-export { sendMessageSignal } from "../signal/send.js";
+export { sendMessageSignal } from "../../extensions/signal/src/send.js";

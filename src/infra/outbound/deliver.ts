@@ -7,6 +7,7 @@ import {
 import { sendMessageSignal } from "../../../extensions/signal/src/send.js";
 import type { sendMessageSlack } from "../../../extensions/slack/src/send.js";
 import type { sendMessageTelegram } from "../../../extensions/telegram/src/send.js";
+import type { sendMessageWhatsApp } from "../../../extensions/whatsapp/src/outbound.js";
 import {
   chunkByParagraph,
   chunkMarkdownTextWithMode,
@@ -37,7 +38,6 @@ import {
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
-import type { sendMessageWhatsApp } from "../../web/outbound.js";
 import { throwIfAborted } from "./abort.js";
 import { ackDelivery, enqueueDelivery, failDelivery } from "./delivery-queue.js";
 import type { OutboundIdentity } from "./identity.js";

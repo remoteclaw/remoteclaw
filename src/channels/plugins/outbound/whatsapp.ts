@@ -1,6 +1,6 @@
+import { sendPollWhatsApp } from "../../../../extensions/whatsapp/src/outbound.js";
 import { chunkText } from "../../../auto-reply/chunk.js";
 import { shouldLogVerbose } from "../../../globals.js";
-import { sendPollWhatsApp } from "../../../web/outbound.js";
 import type { ChannelOutboundAdapter } from "../types.js";
 import { createWhatsAppOutboundBase } from "../whatsapp-shared.js";
 import { sendTextMediaPayload } from "./direct-text-media.js";
@@ -13,7 +13,9 @@ export const whatsappOutbound: ChannelOutboundAdapter = {
   ...createWhatsAppOutboundBase({
     chunker: chunkText,
     sendMessageWhatsApp: async (...args) =>
-      (await import("../../../web/outbound.js")).sendMessageWhatsApp(...args),
+      (await import("../../../../extensions/whatsapp/src/outbound.js")).sendMessageWhatsApp(
+        ...args,
+      ),
     sendPollWhatsApp,
     shouldLogVerbose,
     normalizeText: trimLeadingWhitespace,

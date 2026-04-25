@@ -748,9 +748,12 @@ export {
   resolveDefaultWhatsAppAccountId,
   resolveWhatsAppAccount,
   type ResolvedWhatsAppAccount,
-} from "../web/accounts.js";
-export { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../whatsapp/normalize.js";
-export { resolveWhatsAppOutboundTarget } from "../whatsapp/resolve-outbound-target.js";
+} from "../../extensions/whatsapp/src/accounts.js";
+export {
+  isWhatsAppGroupJid,
+  normalizeWhatsAppTarget,
+} from "../../extensions/whatsapp/src/normalize.js";
+export { resolveWhatsAppOutboundTarget } from "../../extensions/whatsapp/src/resolve-outbound-target.js";
 export { whatsappOnboardingAdapter } from "../channels/plugins/onboarding/whatsapp.js";
 export { resolveWhatsAppHeartbeatRecipients } from "../channels/plugins/whatsapp-heartbeat.js";
 export {
@@ -798,7 +801,7 @@ export {
 export type { ProcessedLineMessage } from "../line/markdown-to-line.js";
 
 // Media utilities
-export { loadWebMedia, type WebMediaResult } from "../web/media.js";
+export { loadWebMedia, type WebMediaResult } from "../../extensions/whatsapp/src/media.js";
 
 // Context engine
 export type {

@@ -130,17 +130,17 @@ export type PluginRuntimeChannel = {
     sendMessageIMessage: typeof import("../../../extensions/imessage/src/send.js").sendMessageIMessage;
   };
   whatsapp: {
-    getActiveWebListener: typeof import("../../web/active-listener.js").getActiveWebListener;
-    getWebAuthAgeMs: typeof import("../../web/auth-store.js").getWebAuthAgeMs;
-    logoutWeb: typeof import("../../web/auth-store.js").logoutWeb;
-    logWebSelfId: typeof import("../../web/auth-store.js").logWebSelfId;
-    readWebSelfId: typeof import("../../web/auth-store.js").readWebSelfId;
-    webAuthExists: typeof import("../../web/auth-store.js").webAuthExists;
-    sendMessageWhatsApp: typeof import("../../web/outbound.js").sendMessageWhatsApp;
-    sendPollWhatsApp: typeof import("../../web/outbound.js").sendPollWhatsApp;
-    loginWeb: typeof import("../../web/login.js").loginWeb;
-    startWebLoginWithQr: typeof import("../../web/login-qr.js").startWebLoginWithQr;
-    waitForWebLogin: typeof import("../../web/login-qr.js").waitForWebLogin;
+    getActiveWebListener: typeof import("../../../extensions/whatsapp/src/active-listener.js").getActiveWebListener;
+    getWebAuthAgeMs: typeof import("../../../extensions/whatsapp/src/auth-store.js").getWebAuthAgeMs;
+    logoutWeb: typeof import("../../../extensions/whatsapp/src/auth-store.js").logoutWeb;
+    logWebSelfId: typeof import("../../../extensions/whatsapp/src/auth-store.js").logWebSelfId;
+    readWebSelfId: typeof import("../../../extensions/whatsapp/src/auth-store.js").readWebSelfId;
+    webAuthExists: typeof import("../../../extensions/whatsapp/src/auth-store.js").webAuthExists;
+    sendMessageWhatsApp: typeof import("../../../extensions/whatsapp/src/outbound.js").sendMessageWhatsApp;
+    sendPollWhatsApp: typeof import("../../../extensions/whatsapp/src/outbound.js").sendPollWhatsApp;
+    loginWeb: typeof import("../../../extensions/whatsapp/src/login.js").loginWeb;
+    startWebLoginWithQr: typeof import("../../../extensions/whatsapp/src/login-qr.js").startWebLoginWithQr;
+    waitForWebLogin: typeof import("../../../extensions/whatsapp/src/login-qr.js").waitForWebLogin;
     monitorWebChannel: typeof import("../../channels/web/index.js").monitorWebChannel;
     handleWhatsAppAction: typeof import("../../agents/tools/whatsapp-actions.js").handleWhatsAppAction;
     createLoginTool: typeof import("../../channels/plugins/agent-tools/whatsapp-login.js").createWhatsAppLoginTool;

@@ -38,8 +38,6 @@ const unitIsolatedFilesRaw = [
   "src/cli/program.smoke.test.ts",
   "src/media/store.test.ts",
   "src/media/store.header-ext.test.ts",
-  "src/web/media.test.ts",
-  "src/web/auto-reply.web-auto-reply.falls-back-text-media-send-fails.test.ts",
   "src/browser/server.covers-additional-endpoint-branches.test.ts",
   "src/browser/server.post-tabs-open-profile-unknown-returns-404.test.ts",
   "src/browser/server.agent-contract-snapshot-endpoints.test.ts",
@@ -69,7 +67,7 @@ const unitIsolatedFilesRaw = [
   "src/agents/models-config.normalizes-gemini-3-ids-preview-google-providers.test.ts",
   // Auth profile rotation suite is retry-heavy and high-variance under vmForks contention.
   "src/agents/pi-embedded-runner.run-embedded-pi-agent.auth-profile-rotation.test.ts",
-  "src/web/auto-reply.web-auto-reply.compresses-common-formats-jpeg-cap.test.ts",
+  "extensions/whatsapp/src/auto-reply.web-auto-reply.compresses-common-formats-jpeg-cap.test.ts",
   // Setup-heavy bot bootstrap suite.
   "extensions/telegram/src/bot.create-telegram-bot.test.ts",
   // Medium-heavy bot behavior suite; move off unit-fast critical path.

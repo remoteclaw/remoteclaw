@@ -8,7 +8,7 @@ export default defineConfig({
   ...base,
   test: {
     ...baseTest,
-    include: ["src/web/**/*.test.ts", "src/browser/**/*.test.ts", "src/line/**/*.test.ts"],
+    include: ["src/browser/**/*.test.ts", "src/line/**/*.test.ts"],
     exclude: [...(baseTest.exclude ?? []), "src/gateway/**", "extensions/**"],
   },
 });

@@ -1,7 +1,7 @@
 export type { ChannelMessageActionName } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export type { RemoteClawConfig } from "../config/config.js";
-export type { ResolvedWhatsAppAccount } from "../web/accounts.js";
+export type { ResolvedWhatsAppAccount } from "../../extensions/whatsapp/src/accounts.js";
 export type { PluginRuntime } from "../plugins/runtime/types.js";
 export type { RemoteClawPluginApi } from "../plugins/types.js";
 
@@ -21,7 +21,7 @@ export {
   listWhatsAppAccountIds,
   resolveDefaultWhatsAppAccountId,
   resolveWhatsAppAccount,
-} from "../web/accounts.js";
+} from "../../extensions/whatsapp/src/accounts.js";
 export {
   formatWhatsAppConfigAllowFromEntries,
   resolveWhatsAppConfigAllowFrom,
@@ -35,7 +35,7 @@ export {
   looksLikeWhatsAppTargetId,
   normalizeWhatsAppMessagingTarget,
 } from "../channels/plugins/normalize/whatsapp.js";
-export { resolveWhatsAppOutboundTarget } from "../whatsapp/resolve-outbound-target.js";
+export { resolveWhatsAppOutboundTarget } from "../../extensions/whatsapp/src/resolve-outbound-target.js";
 
 export {
   resolveAllowlistProviderRuntimeGroupPolicy,

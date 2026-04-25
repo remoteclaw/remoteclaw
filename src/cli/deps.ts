@@ -91,4 +91,4 @@ export function createOutboundSendDeps(deps: CliDeps): OutboundSendDeps {
   return createOutboundSendDepsFromCliSource(deps);
 }
 
-export { logWebSelfId } from "../web/auth-store.js";
+export { logWebSelfId } from "../../extensions/whatsapp/src/auth-store.js";

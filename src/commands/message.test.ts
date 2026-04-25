@@ -26,7 +26,7 @@ vi.mock("../gateway/call.js", () => ({
 }));
 
 const webAuthExists = vi.fn(async () => false);
-vi.mock("../web/session.js", () => ({
+vi.mock("../../extensions/whatsapp/src/session.js", () => ({
   webAuthExists,
 }));
 

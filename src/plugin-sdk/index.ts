@@ -666,7 +666,7 @@ export {
   resolveDefaultIMessageAccountId,
   resolveIMessageAccount,
   type ResolvedIMessageAccount,
-} from "../imessage/accounts.js";
+} from "../../extensions/imessage/src/accounts.js";
 export { imessageOnboardingAdapter } from "../channels/plugins/onboarding/imessage.js";
 export {
   looksLikeIMessageTargetId,
@@ -680,11 +680,11 @@ export {
   resolveServicePrefixedAllowTarget,
   resolveServicePrefixedOrChatAllowTarget,
   resolveServicePrefixedTarget,
-} from "../imessage/target-parsing-helpers.js";
+} from "../../extensions/imessage/src/target-parsing-helpers.js";
 export type {
   ChatSenderAllowParams,
   ParsedChatTarget,
-} from "../imessage/target-parsing-helpers.js";
+} from "../../extensions/imessage/src/target-parsing-helpers.js";
 
 // Channel: Slack
 export {

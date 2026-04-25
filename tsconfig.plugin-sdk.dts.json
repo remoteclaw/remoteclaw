@@ -12,6 +12,7 @@
   },
   "include": [
     "extensions/discord/src/**/*.ts",
+    "extensions/imessage/src/**/*.ts",
     "extensions/signal/src/**/*.ts",
     "extensions/slack/src/**/*.ts",
     "extensions/telegram/src/**/*.ts",

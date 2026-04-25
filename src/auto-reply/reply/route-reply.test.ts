@@ -30,7 +30,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("../../../extensions/discord/src/send.js", () => ({
   sendMessageDiscord: mocks.sendMessageDiscord,
 }));
-vi.mock("../../imessage/send.js", () => ({
+vi.mock("../../../extensions/imessage/src/send.js", () => ({
   sendMessageIMessage: mocks.sendMessageIMessage,
 }));
 vi.mock("../../../extensions/signal/src/send.js", () => ({

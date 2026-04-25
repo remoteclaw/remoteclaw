@@ -1,4 +1,4 @@
-import { isAllowedParsedChatSender } from "../plugin-sdk/allow-from.js";
+import { isAllowedParsedChatSender } from "../../../src/plugin-sdk/allow-from.js";
 
 export type ServicePrefix<TService extends string> = { prefix: string; service: TService };
 

@@ -125,9 +125,9 @@ export type PluginRuntimeChannel = {
     messageActions: typeof import("../../channels/plugins/actions/signal.js").signalMessageActions;
   };
   imessage: {
-    monitorIMessageProvider: typeof import("../../imessage/monitor.js").monitorIMessageProvider;
-    probeIMessage: typeof import("../../imessage/probe.js").probeIMessage;
-    sendMessageIMessage: typeof import("../../imessage/send.js").sendMessageIMessage;
+    monitorIMessageProvider: typeof import("../../../extensions/imessage/src/monitor.js").monitorIMessageProvider;
+    probeIMessage: typeof import("../../../extensions/imessage/src/probe.js").probeIMessage;
+    sendMessageIMessage: typeof import("../../../extensions/imessage/src/send.js").sendMessageIMessage;
   };
   whatsapp: {
     getActiveWebListener: typeof import("../../web/active-listener.js").getActiveWebListener;

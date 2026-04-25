@@ -1,8 +1,8 @@
-import { loadConfig } from "../config/config.js";
-import { resolveMarkdownTableMode } from "../config/markdown-tables.js";
-import { convertMarkdownTables } from "../markdown/tables.js";
-import { kindFromMime } from "../media/mime.js";
-import { resolveOutboundAttachmentFromUrl } from "../media/outbound-attachment.js";
+import { loadConfig } from "../../../src/config/config.js";
+import { resolveMarkdownTableMode } from "../../../src/config/markdown-tables.js";
+import { convertMarkdownTables } from "../../../src/markdown/tables.js";
+import { kindFromMime } from "../../../src/media/mime.js";
+import { resolveOutboundAttachmentFromUrl } from "../../../src/media/outbound-attachment.js";
 import { resolveIMessageAccount, type ResolvedIMessageAccount } from "./accounts.js";
 import { createIMessageRpcClient, type IMessageRpcClient } from "./client.js";
 import { formatIMessageChatTarget, type IMessageService, parseIMessageTarget } from "./targets.js";

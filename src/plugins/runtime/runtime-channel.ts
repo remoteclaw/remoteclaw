@@ -8,6 +8,14 @@ import { probeDiscord } from "../../../extensions/discord/src/probe.js";
 import { resolveDiscordChannelAllowlist } from "../../../extensions/discord/src/resolve-channels.js";
 import { resolveDiscordUserAllowlist } from "../../../extensions/discord/src/resolve-users.js";
 import { sendMessageDiscord, sendPollDiscord } from "../../../extensions/discord/src/send.js";
+import {
+  auditTelegramGroupMembership,
+  collectTelegramUnmentionedGroupIds,
+} from "../../../extensions/telegram/src/audit.js";
+import { monitorTelegramProvider } from "../../../extensions/telegram/src/monitor.js";
+import { probeTelegram } from "../../../extensions/telegram/src/probe.js";
+import { sendMessageTelegram, sendPollTelegram } from "../../../extensions/telegram/src/send.js";
+import { resolveTelegramToken } from "../../../extensions/telegram/src/token.js";
 import { resolveEffectiveMessagesConfig, resolveHumanDelayConfig } from "../../agents/identity.js";
 import { handleSlackAction } from "../../agents/tools/slack-actions.js";
 import {
@@ -105,14 +113,6 @@ import { probeSlack } from "../../slack/probe.js";
 import { resolveSlackChannelAllowlist } from "../../slack/resolve-channels.js";
 import { resolveSlackUserAllowlist } from "../../slack/resolve-users.js";
 import { sendMessageSlack } from "../../slack/send.js";
-import {
-  auditTelegramGroupMembership,
-  collectTelegramUnmentionedGroupIds,
-} from "../../telegram/audit.js";
-import { monitorTelegramProvider } from "../../telegram/monitor.js";
-import { probeTelegram } from "../../telegram/probe.js";
-import { sendMessageTelegram, sendPollTelegram } from "../../telegram/send.js";
-import { resolveTelegramToken } from "../../telegram/token.js";
 import { createRuntimeWhatsApp } from "./runtime-whatsapp.js";
 import type { PluginRuntime } from "./types.js";
 

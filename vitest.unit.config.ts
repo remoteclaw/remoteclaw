@@ -17,7 +17,6 @@ export default defineConfig({
       ...exclude,
       "src/gateway/**",
       "extensions/**",
-      "src/telegram/**",
       "src/web/**",
       "src/browser/**",
       "src/line/**",

@@ -71,9 +71,9 @@ const unitIsolatedFilesRaw = [
   "src/agents/pi-embedded-runner.run-embedded-pi-agent.auth-profile-rotation.test.ts",
   "src/web/auto-reply.web-auto-reply.compresses-common-formats-jpeg-cap.test.ts",
   // Setup-heavy bot bootstrap suite.
-  "src/telegram/bot.create-telegram-bot.test.ts",
+  "extensions/telegram/src/bot.create-telegram-bot.test.ts",
   // Medium-heavy bot behavior suite; move off unit-fast critical path.
-  "src/telegram/bot.test.ts",
+  "extensions/telegram/src/bot.test.ts",
   // Slack slash registration tests are setup-heavy and can bottleneck unit-fast.
   "src/slack/monitor/slash.test.ts",
   // Uses process-level unhandledRejection listeners; keep it off vmForks to avoid cross-file leakage.

@@ -2,6 +2,10 @@ import {
   parseDiscordTarget,
   type DiscordTargetKind,
 } from "../../../extensions/discord/src/targets.js";
+import { buildTelegramGroupPeerId } from "../../../extensions/telegram/src/bot/helpers.js";
+import { resolveTelegramTargetChatType } from "../../../extensions/telegram/src/inline-buttons.js";
+import { parseTelegramThreadId } from "../../../extensions/telegram/src/outbound-params.js";
+import { parseTelegramTarget } from "../../../extensions/telegram/src/targets.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import type { ChatType } from "../../channels/chat-type.js";
 import { getChannelPlugin } from "../../channels/plugins/index.js";
@@ -21,10 +25,6 @@ import { resolveSlackAccount } from "../../slack/accounts.js";
 import { createSlackWebClient } from "../../slack/client.js";
 import { normalizeAllowListLower } from "../../slack/monitor/allow-list.js";
 import { parseSlackTarget } from "../../slack/targets.js";
-import { buildTelegramGroupPeerId } from "../../telegram/bot/helpers.js";
-import { resolveTelegramTargetChatType } from "../../telegram/inline-buttons.js";
-import { parseTelegramThreadId } from "../../telegram/outbound-params.js";
-import { parseTelegramTarget } from "../../telegram/targets.js";
 import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../whatsapp/normalize.js";
 import type { ResolvedMessagingTarget } from "./target-resolver.js";
 

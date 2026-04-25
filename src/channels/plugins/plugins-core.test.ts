@@ -4,14 +4,14 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it } from "vitest";
 import type { DiscordProbe } from "../../../extensions/discord/src/probe.js";
 import type { DiscordTokenResolution } from "../../../extensions/discord/src/token.js";
+import type { TelegramProbe } from "../../../extensions/telegram/src/probe.js";
+import type { TelegramTokenResolution } from "../../../extensions/telegram/src/token.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { IMessageProbe } from "../../imessage/probe.js";
 import type { LineProbeResult } from "../../line/types.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import type { SignalProbe } from "../../signal/probe.js";
 import type { SlackProbe } from "../../slack/probe.js";
-import type { TelegramProbe } from "../../telegram/probe.js";
-import type { TelegramTokenResolution } from "../../telegram/token.js";
 import {
   createChannelTestPluginBase,
   createMSTeamsTestPluginBase,

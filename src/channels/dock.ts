@@ -1,4 +1,5 @@
 import { inspectDiscordAccount } from "../../extensions/discord/src/account-inspect.js";
+import { inspectTelegramAccount } from "../../extensions/telegram/src/account-inspect.js";
 import {
   resolveChannelGroupRequireMention,
   resolveChannelGroupToolsPolicy,
@@ -23,7 +24,6 @@ import { resolveSignalAccount } from "../signal/accounts.js";
 import { inspectSlackAccount } from "../slack/account-inspect.js";
 import { resolveSlackReplyToMode } from "../slack/accounts.js";
 import { buildSlackThreadingToolContext } from "../slack/threading-tool-context.js";
-import { inspectTelegramAccount } from "../telegram/account-inspect.js";
 import { normalizeE164 } from "../utils.js";
 import {
   resolveDiscordGroupRequireMention,

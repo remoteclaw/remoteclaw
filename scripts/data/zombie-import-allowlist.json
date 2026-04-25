@@ -30,7 +30,7 @@
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
   },
   {
-    "callsite": "src/infra/outbound/message-action-params.ts:3",
+    "callsite": "src/infra/outbound/message-action-params.ts:4",
     "pattern": "agents/sandbox",
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
   },

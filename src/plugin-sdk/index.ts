@@ -711,9 +711,9 @@ export {
   resolveDefaultTelegramAccountId,
   resolveTelegramAccount,
   type ResolvedTelegramAccount,
-} from "../telegram/accounts.js";
-export { inspectTelegramAccount } from "../telegram/account-inspect.js";
-export type { InspectedTelegramAccount } from "../telegram/account-inspect.js";
+} from "../../extensions/telegram/src/accounts.js";
+export { inspectTelegramAccount } from "../../extensions/telegram/src/account-inspect.js";
+export type { InspectedTelegramAccount } from "../../extensions/telegram/src/account-inspect.js";
 export { telegramOnboardingAdapter } from "../channels/plugins/onboarding/telegram.js";
 export {
   looksLikeTelegramTargetId,
@@ -723,8 +723,8 @@ export { collectTelegramStatusIssues } from "../channels/plugins/status-issues/t
 export {
   parseTelegramReplyToMessageId,
   parseTelegramThreadId,
-} from "../telegram/outbound-params.js";
-export { type TelegramProbe } from "../telegram/probe.js";
+} from "../../extensions/telegram/src/outbound-params.js";
+export { type TelegramProbe } from "../../extensions/telegram/src/probe.js";
 
 // Channel: Signal
 export {

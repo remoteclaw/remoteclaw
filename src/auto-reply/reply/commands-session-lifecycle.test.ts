@@ -33,7 +33,8 @@ vi.mock("../../../extensions/discord/src/monitor/thread-bindings.js", async (imp
 });
 
 vi.mock("../../telegram/thread-bindings.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../telegram/thread-bindings.js")>();
+  const actual =
+    await importOriginal<typeof import("../../../extensions/telegram/src/thread-bindings.js")>();
   return {
     ...actual,
     setTelegramThreadBindingIdleTimeoutBySessionKey:

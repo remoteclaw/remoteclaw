@@ -7,10 +7,11 @@
     "noEmit": false,
     "noEmitOnError": true,
     "outDir": "dist/plugin-sdk",
-    "rootDir": "src",
+    "rootDir": ".",
     "tsBuildInfoFile": "dist/plugin-sdk/.tsbuildinfo"
   },
   "include": [
+    "extensions/discord/src/**/*.ts",
     "src/plugin-sdk/index.ts",
     "src/plugin-sdk/core.ts",
     "src/plugin-sdk/compat.ts",
@@ -57,5 +58,5 @@
     "src/plugin-sdk/zalouser.ts",
     "src/types/**/*.d.ts"
   ],
-  "exclude": ["node_modules", "dist", "src/**/*.test.ts"]
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts", "extensions/**/*.test.ts"]
 }

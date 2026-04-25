@@ -176,7 +176,7 @@ export default defineConfig({
         "src/wizard/**",
         // Channel surfaces are largely integration-tested (or manually validated).
         "src/imessage/**",
-        "src/signal/**",
+        "extensions/signal/src/**",
         "extensions/slack/src/**",
         "src/browser/**",
         "src/channels/web/**",

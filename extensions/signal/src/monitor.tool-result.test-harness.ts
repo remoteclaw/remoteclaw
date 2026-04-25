@@ -1,7 +1,7 @@
 import { beforeEach, vi } from "vitest";
-import { resetInboundDedupe } from "../auto-reply/reply/inbound-dedupe.js";
-import { resetSystemEventsForTest } from "../infra/system-events.js";
-import type { MockFn } from "../test-utils/vitest-mock-fn.js";
+import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
+import { resetSystemEventsForTest } from "../../../src/infra/system-events.js";
+import type { MockFn } from "../../../src/test-utils/vitest-mock-fn.js";
 import type { SignalDaemonExitEvent, SignalDaemonHandle } from "./daemon.js";
 
 type SignalToolResultTestMocks = {
@@ -68,15 +68,15 @@ export function createMockSignalDaemonHandle(
   };
 }
 
-vi.mock("../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/config.js")>();
+vi.mock("../../../src/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../src/config/config.js")>();
   return {
     ...actual,
     loadConfig: () => config,
   };
 });
 
-vi.mock("../auto-reply/reply.js", () => ({
+vi.mock("../../../src/auto-reply/reply.js", () => ({
   getReplyFromConfig: (...args: unknown[]) => replyMock(...args),
 }));
 
@@ -86,12 +86,12 @@ vi.mock("./send.js", () => ({
   sendReadReceiptSignal: vi.fn().mockResolvedValue(true),
 }));
 
-vi.mock("../pairing/pairing-store.js", () => ({
+vi.mock("../../../src/pairing/pairing-store.js", () => ({
   readChannelAllowFromStore: (...args: unknown[]) => readAllowFromStoreMock(...args),
   upsertChannelPairingRequest: (...args: unknown[]) => upsertPairingRequestMock(...args),
 }));
 
-vi.mock("../config/sessions.js", () => ({
+vi.mock("../../../src/config/sessions.js", () => ({
   resolveStorePath: vi.fn(() => "/tmp/remoteclaw-sessions.json"),
   updateLastRoute: (...args: unknown[]) => updateLastRouteMock(...args),
   readSessionUpdatedAt: vi.fn(() => undefined),
@@ -112,7 +112,7 @@ vi.mock("./daemon.js", async (importOriginal) => {
   };
 });
 
-vi.mock("../infra/transport-ready.js", () => ({
+vi.mock("../../../src/infra/transport-ready.js", () => ({
   waitForTransportReady: (...args: unknown[]) => waitForTransportReadyMock(...args),
 }));
 

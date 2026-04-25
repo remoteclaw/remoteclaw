@@ -1,6 +1,6 @@
-import { resolveFetch } from "../infra/fetch.js";
-import { generateSecureUuid } from "../infra/secure-random.js";
-import { fetchWithTimeout } from "../utils/fetch-timeout.js";
+import { resolveFetch } from "../../../src/infra/fetch.js";
+import { generateSecureUuid } from "../../../src/infra/secure-random.js";
+import { fetchWithTimeout } from "../../../src/utils/fetch-timeout.js";
 
 export type SignalRpcOptions = {
   baseUrl: string;

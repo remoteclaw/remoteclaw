@@ -1,7 +1,7 @@
-import { loadConfig, type RemoteClawConfig } from "../config/config.js";
-import { resolveMarkdownTableMode } from "../config/markdown-tables.js";
-import { kindFromMime } from "../media/mime.js";
-import { resolveOutboundAttachmentFromUrl } from "../media/outbound-attachment.js";
+import { loadConfig, type RemoteClawConfig } from "../../../src/config/config.js";
+import { resolveMarkdownTableMode } from "../../../src/config/markdown-tables.js";
+import { kindFromMime } from "../../../src/media/mime.js";
+import { resolveOutboundAttachmentFromUrl } from "../../../src/media/outbound-attachment.js";
 import { resolveSignalAccount } from "./accounts.js";
 import { signalRpcRequest } from "./client.js";
 import { markdownToSignalText, type SignalTextStyleRange } from "./format.js";

@@ -119,9 +119,9 @@ export type PluginRuntimeChannel = {
     messageActions: typeof import("../../channels/plugins/actions/telegram.js").telegramMessageActions;
   };
   signal: {
-    probeSignal: typeof import("../../signal/probe.js").probeSignal;
-    sendMessageSignal: typeof import("../../signal/send.js").sendMessageSignal;
-    monitorSignalProvider: typeof import("../../signal/index.js").monitorSignalProvider;
+    probeSignal: typeof import("../../../extensions/signal/src/probe.js").probeSignal;
+    sendMessageSignal: typeof import("../../../extensions/signal/src/send.js").sendMessageSignal;
+    monitorSignalProvider: typeof import("../../../extensions/signal/src/index.js").monitorSignalProvider;
     messageActions: typeof import("../../channels/plugins/actions/signal.js").signalMessageActions;
   };
   imessage: {

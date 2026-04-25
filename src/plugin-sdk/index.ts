@@ -735,7 +735,7 @@ export {
   resolveDefaultSignalAccountId,
   resolveSignalAccount,
   type ResolvedSignalAccount,
-} from "../signal/accounts.js";
+} from "../../extensions/signal/src/accounts.js";
 export { signalOnboardingAdapter } from "../channels/plugins/onboarding/signal.js";
 export {
   looksLikeSignalTargetId,

@@ -1,10 +1,5 @@
 [
   {
-    "callsite": "src/agents/acp-spawn-parent-stream.ts:3",
-    "pattern": "acp/runtime/session-meta",
-    "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
-  },
-  {
     "callsite": "src/auto-reply/reply/commands-subagents-focus.test.ts:55",
     "pattern": "acp/runtime/session-meta",
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"

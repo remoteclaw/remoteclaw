@@ -9,6 +9,15 @@ import { resolveDiscordChannelAllowlist } from "../../../extensions/discord/src/
 import { resolveDiscordUserAllowlist } from "../../../extensions/discord/src/resolve-users.js";
 import { sendMessageDiscord, sendPollDiscord } from "../../../extensions/discord/src/send.js";
 import {
+  listSlackDirectoryGroupsLive,
+  listSlackDirectoryPeersLive,
+} from "../../../extensions/slack/src/directory-live.js";
+import { monitorSlackProvider } from "../../../extensions/slack/src/index.js";
+import { probeSlack } from "../../../extensions/slack/src/probe.js";
+import { resolveSlackChannelAllowlist } from "../../../extensions/slack/src/resolve-channels.js";
+import { resolveSlackUserAllowlist } from "../../../extensions/slack/src/resolve-users.js";
+import { sendMessageSlack } from "../../../extensions/slack/src/send.js";
+import {
   auditTelegramGroupMembership,
   collectTelegramUnmentionedGroupIds,
 } from "../../../extensions/telegram/src/audit.js";
@@ -104,15 +113,6 @@ import { buildAgentSessionKey, resolveAgentRoute } from "../../routing/resolve-r
 import { monitorSignalProvider } from "../../signal/index.js";
 import { probeSignal } from "../../signal/probe.js";
 import { sendMessageSignal } from "../../signal/send.js";
-import {
-  listSlackDirectoryGroupsLive,
-  listSlackDirectoryPeersLive,
-} from "../../slack/directory-live.js";
-import { monitorSlackProvider } from "../../slack/index.js";
-import { probeSlack } from "../../slack/probe.js";
-import { resolveSlackChannelAllowlist } from "../../slack/resolve-channels.js";
-import { resolveSlackUserAllowlist } from "../../slack/resolve-users.js";
-import { sendMessageSlack } from "../../slack/send.js";
 import { createRuntimeWhatsApp } from "./runtime-whatsapp.js";
 import type { PluginRuntime } from "./types.js";
 

@@ -1,1 +1,1 @@
-export { sendMessageSlack } from "../slack/send.js";
+export { sendMessageSlack } from "../../extensions/slack/src/send.js";

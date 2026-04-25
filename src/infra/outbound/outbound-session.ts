@@ -2,6 +2,10 @@ import {
   parseDiscordTarget,
   type DiscordTargetKind,
 } from "../../../extensions/discord/src/targets.js";
+import { resolveSlackAccount } from "../../../extensions/slack/src/accounts.js";
+import { createSlackWebClient } from "../../../extensions/slack/src/client.js";
+import { normalizeAllowListLower } from "../../../extensions/slack/src/monitor/allow-list.js";
+import { parseSlackTarget } from "../../../extensions/slack/src/targets.js";
 import { buildTelegramGroupPeerId } from "../../../extensions/telegram/src/bot/helpers.js";
 import { resolveTelegramTargetChatType } from "../../../extensions/telegram/src/inline-buttons.js";
 import { parseTelegramThreadId } from "../../../extensions/telegram/src/outbound-params.js";
@@ -21,10 +25,6 @@ import {
   resolveSignalRecipient,
   resolveSignalSender,
 } from "../../signal/identity.js";
-import { resolveSlackAccount } from "../../slack/accounts.js";
-import { createSlackWebClient } from "../../slack/client.js";
-import { normalizeAllowListLower } from "../../slack/monitor/allow-list.js";
-import { parseSlackTarget } from "../../slack/targets.js";
 import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../whatsapp/normalize.js";
 import type { ResolvedMessagingTarget } from "./target-resolver.js";
 

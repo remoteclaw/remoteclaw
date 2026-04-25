@@ -694,16 +694,19 @@ export {
   resolveSlackAccount,
   resolveSlackReplyToMode,
   type ResolvedSlackAccount,
-} from "../slack/accounts.js";
-export { inspectSlackAccount } from "../slack/account-inspect.js";
-export type { InspectedSlackAccount } from "../slack/account-inspect.js";
-export { extractSlackToolSend, listSlackMessageActions } from "../slack/message-actions.js";
+} from "../../extensions/slack/src/accounts.js";
+export { inspectSlackAccount } from "../../extensions/slack/src/account-inspect.js";
+export type { InspectedSlackAccount } from "../../extensions/slack/src/account-inspect.js";
+export {
+  extractSlackToolSend,
+  listSlackMessageActions,
+} from "../../extensions/slack/src/message-actions.js";
 export { slackOnboardingAdapter } from "../channels/plugins/onboarding/slack.js";
 export {
   looksLikeSlackTargetId,
   normalizeSlackMessagingTarget,
 } from "../channels/plugins/normalize/slack.js";
-export { buildSlackThreadingToolContext } from "../slack/threading-tool-context.js";
+export { buildSlackThreadingToolContext } from "../../extensions/slack/src/threading-tool-context.js";
 
 // Channel: Telegram
 export {

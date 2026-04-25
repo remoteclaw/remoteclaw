@@ -1,5 +1,7 @@
 import { resolveDiscordAccount } from "../../../extensions/discord/src/accounts.js";
 import { resolveDiscordUserAllowlist } from "../../../extensions/discord/src/resolve-users.js";
+import { resolveSlackAccount } from "../../../extensions/slack/src/accounts.js";
+import { resolveSlackUserAllowlist } from "../../../extensions/slack/src/resolve-users.js";
 import { resolveTelegramAccount } from "../../../extensions/telegram/src/accounts.js";
 import { getChannelDock } from "../../channels/dock.js";
 import {
@@ -31,8 +33,6 @@ import {
 } from "../../routing/session-key.js";
 import { normalizeStringEntries } from "../../shared/string-normalization.js";
 import { resolveSignalAccount } from "../../signal/accounts.js";
-import { resolveSlackAccount } from "../../slack/accounts.js";
-import { resolveSlackUserAllowlist } from "../../slack/resolve-users.js";
 import { resolveWhatsAppAccount } from "../../web/accounts.js";
 import { rejectUnauthorizedCommand, requireCommandFlagEnabled } from "./command-gates.js";
 import type { CommandHandler } from "./commands-types.js";

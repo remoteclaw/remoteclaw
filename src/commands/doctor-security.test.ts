@@ -121,21 +121,6 @@ describe("noteSecurityWarnings gateway exposure", () => {
     expect(message).toContain('config set session.dmScope "per-channel-peer"');
   });
 
-  it("clarifies approvals.exec forwarding-only behavior", async () => {
-    const cfg = {
-      approvals: {
-        exec: {
-          enabled: false,
-        },
-      },
-    } as RemoteClawConfig;
-    await noteSecurityWarnings(cfg);
-    const message = lastMessage();
-    expect(message).toContain("disables approval forwarding only");
-    expect(message).toContain("exec-approvals.json");
-    expect(message).toContain("remoteclaw approvals get --gateway");
-  });
-
   it("warns when heartbeat delivery relies on implicit directPolicy defaults", async () => {
     const cfg = {
       agents: {

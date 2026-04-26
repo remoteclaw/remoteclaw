@@ -43,14 +43,12 @@ type DiscordGuildRule = {
 type DiscordAccountRule = {
   allowFrom?: string[];
   dm?: { allowFrom: string[]; groupChannels: string[] };
-  execApprovals?: { approvers: string[] };
   guilds?: Record<string, DiscordGuildRule>;
 };
 
 type RepairedDiscordPolicy = {
   allowFrom?: string[];
   dm: { allowFrom: string[]; groupChannels: string[] };
-  execApprovals: { approvers: string[] };
   guilds: Record<string, DiscordGuildRule>;
   accounts: Record<string, DiscordAccountRule>;
 };
@@ -345,7 +343,6 @@ describe("doctor config flow", () => {
               discord: {
                 allowFrom: [123],
                 dm: { allowFrom: [456], groupChannels: [789] },
-                execApprovals: { approvers: [321] },
                 guilds: {
                   "100": {
                     users: [111],
@@ -359,7 +356,6 @@ describe("doctor config flow", () => {
                   work: {
                     allowFrom: [555],
                     dm: { allowFrom: [666], groupChannels: [777] },
-                    execApprovals: { approvers: [888] },
                     guilds: {
                       "200": {
                         users: [999],
@@ -394,7 +390,6 @@ describe("doctor config flow", () => {
               work: {
                 allowFrom: string[];
                 dm: { allowFrom: string[]; groupChannels: string[] };
-                execApprovals: { approvers: string[] };
                 guilds: Record<string, DiscordGuildRule>;
               };
             };
@@ -405,7 +400,6 @@ describe("doctor config flow", () => {
       expect(cfg.channels.discord.allowFrom).toBeUndefined();
       expect(cfg.channels.discord.dm.allowFrom).toEqual(["456"]);
       expect(cfg.channels.discord.dm.groupChannels).toEqual(["789"]);
-      expect(cfg.channels.discord.execApprovals.approvers).toEqual(["321"]);
       expect(cfg.channels.discord.guilds["100"].users).toEqual(["111"]);
       expect(cfg.channels.discord.guilds["100"].roles).toEqual(["222"]);
       expect(cfg.channels.discord.guilds["100"].channels.general.users).toEqual(["333"]);
@@ -414,7 +408,6 @@ describe("doctor config flow", () => {
       expect(cfg.channels.discord.accounts.work.allowFrom).toEqual(["555"]);
       expect(cfg.channels.discord.accounts.work.dm.allowFrom).toEqual(["666"]);
       expect(cfg.channels.discord.accounts.work.dm.groupChannels).toEqual(["777"]);
-      expect(cfg.channels.discord.accounts.work.execApprovals.approvers).toEqual(["888"]);
       expect(cfg.channels.discord.accounts.work.guilds["200"].users).toEqual(["999"]);
       expect(cfg.channels.discord.accounts.work.guilds["200"].roles).toEqual(["1010"]);
       expect(cfg.channels.discord.accounts.work.guilds["200"].channels.help.users).toEqual([

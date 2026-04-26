@@ -74,7 +74,6 @@ describe("config discord", () => {
               },
             },
           },
-          execApprovals: { approvers: [555] },
         },
       },
     });

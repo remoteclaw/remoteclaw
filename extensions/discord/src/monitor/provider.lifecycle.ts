@@ -10,11 +10,6 @@ import type { DiscordVoiceManager } from "../voice/manager.js";
 import { registerGateway, unregisterGateway } from "./gateway-registry.js";
 import type { DiscordMonitorStatusSink } from "./status.js";
 
-type ExecApprovalsHandler = {
-  start: () => Promise<void>;
-  stop: () => Promise<void>;
-};
-
 export async function runDiscordGatewayLifecycle(params: {
   accountId: string;
   client: Client;
@@ -23,7 +18,6 @@ export async function runDiscordGatewayLifecycle(params: {
   isDisallowedIntentsError: (err: unknown) => boolean;
   voiceManager: DiscordVoiceManager | null;
   voiceManagerRef: { current: DiscordVoiceManager | null };
-  execApprovalsHandler: ExecApprovalsHandler | null;
   threadBindings: { stop: () => void };
   pendingGatewayErrors?: unknown[];
   releaseEarlyGatewayErrorGuard?: () => void;
@@ -278,10 +272,6 @@ export async function runDiscordGatewayLifecycle(params: {
     );
   };
   try {
-    if (params.execApprovalsHandler) {
-      await params.execApprovalsHandler.start();
-    }
-
     // Drain gateway errors emitted before lifecycle listeners were attached.
     const pendingGatewayErrors = params.pendingGatewayErrors ?? [];
     if (pendingGatewayErrors.length > 0) {
@@ -334,9 +324,6 @@ export async function runDiscordGatewayLifecycle(params: {
     if (params.voiceManager) {
       await params.voiceManager.destroy();
       params.voiceManagerRef.current = null;
-    }
-    if (params.execApprovalsHandler) {
-      await params.execApprovalsHandler.stop();
     }
     params.threadBindings.stop();
   }

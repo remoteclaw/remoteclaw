@@ -227,17 +227,6 @@ describe("dispatchTelegramMessage draft streaming", () => {
     await dispatchWithContext({
       context: createContext(),
       streamMode: "off",
-      cfg: {
-        channels: {
-          telegram: {
-            execApprovals: {
-              enabled: true,
-              approvers: ["123"],
-              target: "dm",
-            },
-          },
-        },
-      },
     });
 
     expect(deliverReplies).toHaveBeenCalledWith(

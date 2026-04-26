@@ -43,7 +43,6 @@ const {
         commands: { native: true },
         voice: { enabled: false },
         agentComponents: { enabled: false },
-        execApprovals: { enabled: false },
       },
     })),
     resolveDiscordAllowlistConfigMock: vi.fn(async () => ({

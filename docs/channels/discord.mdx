@@ -844,24 +844,6 @@ Default slash command settings:
 
 </details>
 
-  <details>
-<summary>Exec approvals in Discord</summary>
-
-    Discord supports button-based exec approvals in DMs and can optionally post approval prompts in the originating channel.
-
-    Config path:
-
-    - `channels.discord.execApprovals.enabled`
-    - `channels.discord.execApprovals.approvers`
-    - `channels.discord.execApprovals.target` (`dm` | `channel` | `both`, default: `dm`)
-    - `agentFilter`, `sessionFilter`, `cleanupAfterResolve`
-
-    When `target` is `channel` or `both`, the approval prompt is visible in the channel. Only configured approvers can use the buttons; other users receive an ephemeral denial. Approval prompts include the command text, so only enable channel delivery in trusted channels. If the channel ID cannot be derived from the session key, RemoteClaw falls back to DM delivery.
-
-    If approvals fail with unknown approval IDs, verify approver list and feature enablement.
-
-</details>
-
 ## Tools and action gates
 
 Discord message actions include messaging, channel admin, moderation, presence, and metadata actions.
@@ -886,7 +868,7 @@ Default gate behavior:
 
 ## Components v2 UI
 
-RemoteClaw uses Discord components v2 for exec approvals and cross-context markers. Discord message actions can also accept `components` for custom UI (advanced; requires Carbon component instances), while legacy `embeds` remain available but are not recommended.
+RemoteClaw uses Discord components v2 for cross-context markers. Discord message actions can also accept `components` for custom UI (advanced; requires Carbon component instances), while legacy `embeds` remain available but are not recommended.
 
 - `channels.discord.ui.components.accentColor` sets the accent color used by Discord component containers (hex).
 - Set per account with `channels.discord.accounts.<id>.ui.components.accentColor`.
@@ -1069,7 +1051,7 @@ High-signal Discord fields:
 - actions: `actions.*`
 - presence: `activity`, `status`, `activityType`, `activityUrl`
 - UI: `ui.components.accentColor`
-- features: `pluralkit`, `execApprovals`, `intents`, `agentComponents`, `heartbeat`, `responsePrefix`
+- features: `pluralkit`, `intents`, `agentComponents`, `heartbeat`, `responsePrefix`
 
 ## Safety and operations
 

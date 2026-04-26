@@ -638,14 +638,6 @@ function collectDiscordIdLists(
     refs.push({ pathLabel: `${prefix}.dm.allowFrom`, holder: dm, key: "allowFrom" });
     refs.push({ pathLabel: `${prefix}.dm.groupChannels`, holder: dm, key: "groupChannels" });
   }
-  const execApprovals = asObjectRecord(account.execApprovals);
-  if (execApprovals) {
-    refs.push({
-      pathLabel: `${prefix}.execApprovals.approvers`,
-      holder: execApprovals,
-      key: "approvers",
-    });
-  }
   const guilds = asObjectRecord(account.guilds);
   if (!guilds) {
     return refs;

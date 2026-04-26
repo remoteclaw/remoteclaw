@@ -6,7 +6,6 @@ const TEST_GATEWAY_TOKEN = "test-gateway-token-1234567890";
 
 let cfg: Record<string, unknown> = {};
 const alwaysAuthorized = async () => ({ ok: true as const });
-const disableDefaultMemorySlot = () => false;
 const noPluginToolMeta = () => undefined;
 const noWarnLog = () => {};
 
@@ -24,10 +23,6 @@ vi.mock("./auth.js", () => ({
 
 vi.mock("../logger.js", () => ({
   logWarn: noWarnLog,
-}));
-
-vi.mock("../plugins/config-state.js", () => ({
-  isTestDefaultMemorySlotDisabled: disableDefaultMemorySlot,
 }));
 
 vi.mock("../plugins/tools.js", () => ({

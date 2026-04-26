@@ -10,14 +10,10 @@ type SlotPluginRecord = {
 };
 
 const SLOT_BY_KIND: Record<PluginKind, PluginSlotKey> = {
-  memory: "memory",
   "context-engine": "contextEngine",
 };
 
 const DEFAULT_SLOT_BY_KEY: Record<PluginSlotKey, string> = {
-  // Memory was gutted in RemoteClaw fork (Middleware Boundary Principle).
-  // Default to "none" so config validation doesn't look for a deleted plugin.
-  memory: "none",
   contextEngine: "legacy",
 };
 

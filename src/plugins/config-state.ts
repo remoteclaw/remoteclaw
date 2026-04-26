@@ -1,16 +1,12 @@
 import { normalizeChatChannelId } from "../channels/registry.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { PluginRecord } from "./registry.js";
-import { defaultSlotIdForKey } from "./slots.js";
 
 export type NormalizedPluginsConfig = {
   enabled: boolean;
   allow: string[];
   deny: string[];
   loadPaths: string[];
-  slots: {
-    memory?: string | null;
-  };
   entries: Record<
     string,
     {
@@ -34,20 +30,6 @@ const normalizeList = (value: unknown): string[] => {
     return [];
   }
   return value.map((entry) => (typeof entry === "string" ? entry.trim() : "")).filter(Boolean);
-};
-
-const normalizeSlotValue = (value: unknown): string | null | undefined => {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return undefined;
-  }
-  if (trimmed.toLowerCase() === "none") {
-    return null;
-  }
-  return trimmed;
 };
 
 const normalizePluginEntries = (entries: unknown): NormalizedPluginsConfig["entries"] => {
@@ -90,27 +72,14 @@ const normalizePluginEntries = (entries: unknown): NormalizedPluginsConfig["entr
 export const normalizePluginsConfig = (
   config?: RemoteClawConfig["plugins"],
 ): NormalizedPluginsConfig => {
-  const memorySlot = normalizeSlotValue(config?.slots?.memory);
   return {
     enabled: config?.enabled !== false,
     allow: normalizeList(config?.allow),
     deny: normalizeList(config?.deny),
     loadPaths: normalizeList(config?.load?.paths),
-    slots: {
-      memory:
-        memorySlot === undefined
-          ? (normalizeSlotValue(defaultSlotIdForKey("memory")) ?? null)
-          : memorySlot,
-    },
     entries: normalizePluginEntries(config?.entries),
   };
 };
-
-const hasExplicitMemorySlot = (plugins?: RemoteClawConfig["plugins"]) =>
-  Boolean(plugins?.slots && Object.prototype.hasOwnProperty.call(plugins.slots, "memory"));
-
-const hasExplicitMemoryEntry = (plugins?: RemoteClawConfig["plugins"]) =>
-  Boolean(plugins?.entries && Object.prototype.hasOwnProperty.call(plugins.entries, "memory-core"));
 
 const hasExplicitPluginConfig = (plugins?: RemoteClawConfig["plugins"]) => {
   if (!plugins) {
@@ -144,49 +113,16 @@ export function applyTestPluginDefaults(
   if (!env.VITEST) {
     return cfg;
   }
-  const plugins = cfg.plugins;
-  const explicitConfig = hasExplicitPluginConfig(plugins);
-  if (explicitConfig) {
-    if (hasExplicitMemorySlot(plugins) || hasExplicitMemoryEntry(plugins)) {
-      return cfg;
-    }
-    return {
-      ...cfg,
-      plugins: {
-        ...plugins,
-        slots: {
-          ...plugins?.slots,
-          memory: "none",
-        },
-      },
-    };
+  if (hasExplicitPluginConfig(cfg.plugins)) {
+    return cfg;
   }
-
   return {
     ...cfg,
     plugins: {
-      ...plugins,
+      ...cfg.plugins,
       enabled: false,
-      slots: {
-        ...plugins?.slots,
-        memory: "none",
-      },
     },
   };
-}
-
-export function isTestDefaultMemorySlotDisabled(
-  cfg: RemoteClawConfig,
-  env: NodeJS.ProcessEnv = process.env,
-): boolean {
-  if (!env.VITEST) {
-    return false;
-  }
-  const plugins = cfg.plugins;
-  if (hasExplicitMemorySlot(plugins) || hasExplicitMemoryEntry(plugins)) {
-    return false;
-  }
-  return true;
 }
 
 export function resolveEnableState(
@@ -203,9 +139,6 @@ export function resolveEnableState(
   const entry = config.entries[id];
   if (entry?.enabled === false) {
     return { enabled: false, reason: "disabled in config" };
-  }
-  if (config.slots.memory === id) {
-    return { enabled: true };
   }
   if (config.allow.length > 0 && !config.allow.includes(id)) {
     return { enabled: false, reason: "not in allowlist" };
@@ -256,34 +189,4 @@ export function resolveEffectiveEnableState(params: {
     return { enabled: true };
   }
   return base;
-}
-
-export function resolveMemorySlotDecision(params: {
-  id: string;
-  kind?: string;
-  slot: string | null | undefined;
-  selectedId: string | null;
-}): { enabled: boolean; reason?: string; selected?: boolean } {
-  if (params.kind !== "memory") {
-    return { enabled: true };
-  }
-  if (params.slot === null) {
-    return { enabled: false, reason: "memory slot disabled" };
-  }
-  if (typeof params.slot === "string") {
-    if (params.slot === params.id) {
-      return { enabled: true, selected: true };
-    }
-    return {
-      enabled: false,
-      reason: `memory slot set to "${params.slot}"`,
-    };
-  }
-  if (params.selectedId && params.selectedId !== params.id) {
-    return {
-      enabled: false,
-      reason: `memory slot already filled by "${params.selectedId}"`,
-    };
-  }
-  return { enabled: true, selected: true };
 }

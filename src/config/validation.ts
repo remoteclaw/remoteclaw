@@ -1,11 +1,7 @@
 import path from "node:path";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { CHANNEL_IDS, normalizeChatChannelId } from "../channels/registry.js";
-import {
-  normalizePluginsConfig,
-  resolveEffectiveEnableState,
-  resolveMemorySlotDecision,
-} from "../plugins/config-state.js";
+import { normalizePluginsConfig, resolveEffectiveEnableState } from "../plugins/config-state.js";
 import { loadPluginManifestRegistry } from "../plugins/manifest-registry.js";
 import { validateJsonSchemaValue } from "../plugins/schema-validator.js";
 import {
@@ -530,12 +526,6 @@ function validateConfigObjectWithPluginsBase(
     }
   }
 
-  const memorySlot = normalizedPlugins.slots.memory;
-  if (typeof memorySlot === "string" && memorySlot.trim() && !knownIds.has(memorySlot)) {
-    pushMissingPluginIssue("plugins.slots.memory", memorySlot);
-  }
-
-  let selectedMemoryPluginId: string | null = null;
   const seenPlugins = new Set<string>();
   for (const record of registry.plugins) {
     const pluginId = record.id;
@@ -546,30 +536,12 @@ function validateConfigObjectWithPluginsBase(
     const entry = normalizedPlugins.entries[pluginId];
     const entryHasConfig = Boolean(entry?.config);
 
-    const enableState = resolveEffectiveEnableState({
+    const { enabled, reason } = resolveEffectiveEnableState({
       id: pluginId,
       origin: record.origin,
       config: normalizedPlugins,
       rootConfig: config,
     });
-    let enabled = enableState.enabled;
-    let reason = enableState.reason;
-
-    if (enabled) {
-      const memoryDecision = resolveMemorySlotDecision({
-        id: pluginId,
-        kind: record.kind,
-        slot: memorySlot,
-        selectedId: selectedMemoryPluginId,
-      });
-      if (!memoryDecision.enabled) {
-        enabled = false;
-        reason = memoryDecision.reason;
-      }
-      if (memoryDecision.selected && record.kind === "memory") {
-        selectedMemoryPluginId = pluginId;
-      }
-    }
 
     const shouldValidate = enabled || entryHasConfig;
     if (shouldValidate) {

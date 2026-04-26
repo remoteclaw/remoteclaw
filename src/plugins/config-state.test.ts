@@ -1,60 +1,7 @@
 import { describe, expect, it } from "vitest";
-import {
-  normalizePluginsConfig,
-  resolveEffectiveEnableState,
-  resolveEnableState,
-} from "./config-state.js";
+import { normalizePluginsConfig, resolveEffectiveEnableState } from "./config-state.js";
 
 describe("normalizePluginsConfig", () => {
-  it("uses default memory slot when not specified", () => {
-    const result = normalizePluginsConfig({});
-    // Memory gutted in RemoteClaw fork — default is "none" (resolves to null)
-    expect(result.slots.memory).toBeNull();
-  });
-
-  it("respects explicit memory slot value", () => {
-    const result = normalizePluginsConfig({
-      slots: { memory: "custom-memory" },
-    });
-    expect(result.slots.memory).toBe("custom-memory");
-  });
-
-  it("disables memory slot when set to 'none' (case insensitive)", () => {
-    expect(
-      normalizePluginsConfig({
-        slots: { memory: "none" },
-      }).slots.memory,
-    ).toBeNull();
-    expect(
-      normalizePluginsConfig({
-        slots: { memory: "None" },
-      }).slots.memory,
-    ).toBeNull();
-  });
-
-  it("trims whitespace from memory slot value", () => {
-    const result = normalizePluginsConfig({
-      slots: { memory: "  custom-memory  " },
-    });
-    expect(result.slots.memory).toBe("custom-memory");
-  });
-
-  it("uses default when memory slot is empty string", () => {
-    const result = normalizePluginsConfig({
-      slots: { memory: "" },
-    });
-    // Memory gutted in RemoteClaw fork — default is "none" (resolves to null)
-    expect(result.slots.memory).toBeNull();
-  });
-
-  it("uses default when memory slot is whitespace only", () => {
-    const result = normalizePluginsConfig({
-      slots: { memory: "   " },
-    });
-    // Memory gutted in RemoteClaw fork — default is "none" (resolves to null)
-    expect(result.slots.memory).toBeNull();
-  });
-
   it("normalizes plugin hook policy flags", () => {
     const result = normalizePluginsConfig({
       entries: {
@@ -115,37 +62,6 @@ describe("resolveEffectiveEnableState", () => {
         },
       },
     });
-    expect(state).toEqual({ enabled: false, reason: "disabled in config" });
-  });
-});
-
-describe("resolveEnableState", () => {
-  it("keeps the selected memory slot plugin enabled even when omitted from plugins.allow", () => {
-    const state = resolveEnableState(
-      "memory-core",
-      "bundled",
-      normalizePluginsConfig({
-        allow: ["telegram"],
-        slots: { memory: "memory-core" },
-      }),
-    );
-    expect(state).toEqual({ enabled: true });
-  });
-
-  it("keeps explicit disable authoritative for the selected memory slot plugin", () => {
-    const state = resolveEnableState(
-      "memory-core",
-      "bundled",
-      normalizePluginsConfig({
-        allow: ["telegram"],
-        slots: { memory: "memory-core" },
-        entries: {
-          "memory-core": {
-            enabled: false,
-          },
-        },
-      }),
-    );
     expect(state).toEqual({ enabled: false, reason: "disabled in config" });
   });
 });

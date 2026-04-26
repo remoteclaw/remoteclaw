@@ -117,21 +117,21 @@ Those belong in your plugin code and `package.json`.
 
 ## Top-level field reference
 
-| Field                 | Required | Type                             | What it means                                                                                                                |
-| --------------------- | -------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `id`                  | Yes      | `string`                         | Canonical plugin id. This is the id used in `plugins.entries.<id>`.                                                          |
-| `configSchema`        | Yes      | `object`                         | Inline JSON Schema for this plugin's config.                                                                                 |
-| `enabledByDefault`    | No       | `true`                           | Marks a bundled plugin as enabled by default. Omit it, or set any non-`true` value, to leave the plugin disabled by default. |
-| `kind`                | No       | `"memory"` \| `"context-engine"` | Declares an exclusive plugin kind used by `plugins.slots.*`.                                                                 |
-| `channels`            | No       | `string[]`                       | Channel ids owned by this plugin. Used for discovery and config validation.                                                  |
-| `providers`           | No       | `string[]`                       | Provider ids owned by this plugin.                                                                                           |
-| `providerAuthEnvVars` | No       | `Record<string, string[]>`       | Cheap provider-auth env metadata that RemoteClaw can inspect without loading plugin code.                                    |
-| `providerAuthChoices` | No       | `object[]`                       | Cheap auth-choice metadata for onboarding pickers, preferred-provider resolution, and simple CLI flag wiring.                |
-| `skills`              | No       | `string[]`                       | Skill directories to load, relative to the plugin root.                                                                      |
-| `name`                | No       | `string`                         | Human-readable plugin name.                                                                                                  |
-| `description`         | No       | `string`                         | Short summary shown in plugin surfaces.                                                                                      |
-| `version`             | No       | `string`                         | Informational plugin version.                                                                                                |
-| `uiHints`             | No       | `Record<string, object>`         | UI labels, placeholders, and sensitivity hints for config fields.                                                            |
+| Field                 | Required | Type                       | What it means                                                                                                                |
+| --------------------- | -------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | Yes      | `string`                   | Canonical plugin id. This is the id used in `plugins.entries.<id>`.                                                          |
+| `configSchema`        | Yes      | `object`                   | Inline JSON Schema for this plugin's config.                                                                                 |
+| `enabledByDefault`    | No       | `true`                     | Marks a bundled plugin as enabled by default. Omit it, or set any non-`true` value, to leave the plugin disabled by default. |
+| `kind`                | No       | `"context-engine"`         | Declares an exclusive plugin kind used by `plugins.slots.*`.                                                                 |
+| `channels`            | No       | `string[]`                 | Channel ids owned by this plugin. Used for discovery and config validation.                                                  |
+| `providers`           | No       | `string[]`                 | Provider ids owned by this plugin.                                                                                           |
+| `providerAuthEnvVars` | No       | `Record<string, string[]>` | Cheap provider-auth env metadata that RemoteClaw can inspect without loading plugin code.                                    |
+| `providerAuthChoices` | No       | `object[]`                 | Cheap auth-choice metadata for onboarding pickers, preferred-provider resolution, and simple CLI flag wiring.                |
+| `skills`              | No       | `string[]`                 | Skill directories to load, relative to the plugin root.                                                                      |
+| `name`                | No       | `string`                   | Human-readable plugin name.                                                                                                  |
+| `description`         | No       | `string`                   | Short summary shown in plugin surfaces.                                                                                      |
+| `version`             | No       | `string`                   | Informational plugin version.                                                                                                |
+| `uiHints`             | No       | `Record<string, object>`   | UI labels, placeholders, and sensitivity hints for config fields.                                                            |
 
 ## providerAuthChoices reference
 
@@ -231,7 +231,6 @@ See [Configuration reference](/gateway/configuration) for the full `plugins.*` s
   metadata that requires provider code, see
   [Provider runtime hooks](/plugins/architecture#provider-runtime-hooks).
 - Exclusive plugin kinds are selected through `plugins.slots.*`.
-  - `kind: "memory"` is selected by `plugins.slots.memory`.
   - `kind: "context-engine"` is selected by `plugins.slots.contextEngine`
     (default: built-in `legacy`).
 - `channels`, `providers`, and `skills` can be omitted when a plugin does not

@@ -639,9 +639,6 @@ export function registerPluginsCli(program: Command) {
       ) {
         preview.push("load path");
       }
-      if (cfg.plugins?.slots?.memory === pluginId) {
-        preview.push(`memory slot (will reset to "memory-core")`);
-      }
       const deleteTarget = !keepFiles
         ? resolveUninstallDirectoryTarget({
             pluginId,
@@ -702,9 +699,6 @@ export function registerPluginsCli(program: Command) {
       }
       if (result.actions.loadPath) {
         removed.push("load path");
-      }
-      if (result.actions.memorySlot) {
-        removed.push("memory slot");
       }
       if (result.actions.directory) {
         removed.push("directory");

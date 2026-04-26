@@ -841,9 +841,7 @@ export const FIELD_HELP: Record<string, string> = {
   "plugins.load.paths":
     "Additional plugin files or directories scanned by the loader beyond built-in defaults. Use dedicated extension directories and avoid broad paths with unrelated executable content.",
   "plugins.slots":
-    "Selects which plugins own exclusive runtime slots such as memory so only one plugin provides that capability. Use explicit slot ownership to avoid overlapping providers with conflicting behavior.",
-  "plugins.slots.memory":
-    'Select the active memory plugin by id, or "none" to disable memory plugins.',
+    "Selects which plugins own exclusive runtime slots so only one plugin provides that capability. Use explicit slot ownership to avoid overlapping providers with conflicting behavior.",
   "plugins.slots.contextEngine":
     "Selects the active context engine plugin by id so one plugin provides context orchestration behavior.",
   "plugins.entries":

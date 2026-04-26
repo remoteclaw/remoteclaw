@@ -3,14 +3,12 @@ import path from "node:path";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { resolvePluginInstallDir } from "./install.js";
-import { defaultSlotIdForKey } from "./slots.js";
 
 export type UninstallActions = {
   entry: boolean;
   install: boolean;
   allowlist: boolean;
   loadPath: boolean;
-  memorySlot: boolean;
   directory: boolean;
 };
 
@@ -60,7 +58,7 @@ export function resolveUninstallDirectoryTarget(params: {
 
 /**
  * Remove plugin references from config (pure config mutation).
- * Returns a new config with the plugin removed from entries, installs, allow, load.paths, and slots.
+ * Returns a new config with the plugin removed from entries, installs, allow, and load.paths.
  */
 export function removePluginFromConfig(
   cfg: RemoteClawConfig,
@@ -71,7 +69,6 @@ export function removePluginFromConfig(
     install: false,
     allowlist: false,
     loadPath: false,
-    memorySlot: false,
   };
 
   const pluginsConfig = cfg.plugins ?? {};
@@ -115,16 +112,9 @@ export function removePluginFromConfig(
     }
   }
 
-  // Reset memory slot if this plugin was selected
+  // Drop slots if empty (slots may legitimately exist for contextEngine,
+  // but an empty {} should not leak into the config output).
   let slots = pluginsConfig.slots;
-  if (slots?.memory === pluginId) {
-    const defaultMemory = defaultSlotIdForKey("memory");
-    slots = {
-      ...slots,
-      ...(defaultMemory != null ? { memory: defaultMemory } : {}),
-    };
-    actions.memorySlot = true;
-  }
   if (slots && Object.keys(slots).length === 0) {
     slots = undefined;
   }

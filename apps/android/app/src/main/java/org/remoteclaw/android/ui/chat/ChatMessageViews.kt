@@ -1,7 +1,5 @@
 package org.remoteclaw.android.ui.chat
 
-import android.graphics.BitmapFactory
-import android.util.Base64
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -16,16 +14,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -43,7 +36,9 @@ import org.remoteclaw.android.ui.mobileBorderStrong
 import org.remoteclaw.android.ui.mobileCallout
 import org.remoteclaw.android.ui.mobileCaption1
 import org.remoteclaw.android.ui.mobileCaption2
+import org.remoteclaw.android.ui.mobileCardSurface
 import org.remoteclaw.android.ui.mobileCodeBg
+import org.remoteclaw.android.ui.mobileCodeBorder
 import org.remoteclaw.android.ui.mobileCodeText
 import org.remoteclaw.android.ui.mobileHeadline
 import org.remoteclaw.android.ui.mobileText
@@ -51,8 +46,6 @@ import org.remoteclaw.android.ui.mobileTextSecondary
 import org.remoteclaw.android.ui.mobileWarning
 import org.remoteclaw.android.ui.mobileWarningSoft
 import java.util.Locale
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 private data class ChatBubbleStyle(
   val alignEnd: Boolean,
@@ -160,7 +153,7 @@ fun ChatPendingToolsBubble(toolCalls: List<ChatPendingToolCall>) {
 
   ChatBubbleContainer(
     style = bubbleStyle("assistant"),
-    roleLabel = "TOOLS",
+    roleLabel = "Tools",
   ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
       Text("Running tools...", style = mobileCaption1.copy(fontWeight = FontWeight.SemiBold), color = mobileTextSecondary)
@@ -197,12 +190,13 @@ fun ChatPendingToolsBubble(toolCalls: List<ChatPendingToolCall>) {
 fun ChatStreamingAssistantBubble(text: String) {
   ChatBubbleContainer(
     style = bubbleStyle("assistant").copy(borderColor = mobileAccent),
-    roleLabel = "ASSISTANT · LIVE",
+    roleLabel = "RemoteClaw · Live",
   ) {
     ChatMarkdown(text = text, textColor = mobileText)
   }
 }
 
+@Composable
 private fun bubbleStyle(role: String): ChatBubbleStyle {
   return when (role) {
     "user" ->
@@ -224,7 +218,7 @@ private fun bubbleStyle(role: String): ChatBubbleStyle {
     else ->
       ChatBubbleStyle(
         alignEnd = false,
-        containerColor = Color.White,
+        containerColor = mobileCardSurface,
         borderColor = mobileBorderStrong,
         roleColor = mobileTextSecondary,
       )
@@ -233,37 +227,22 @@ private fun bubbleStyle(role: String): ChatBubbleStyle {
 
 private fun roleLabel(role: String): String {
   return when (role) {
-    "user" -> "USER"
-    "system" -> "SYSTEM"
-    else -> "ASSISTANT"
+    "user" -> "You"
+    "system" -> "System"
+    else -> "RemoteClaw"
   }
 }
 
 @Composable
 private fun ChatBase64Image(base64: String, mimeType: String?) {
-  var image by remember(base64) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
-  var failed by remember(base64) { mutableStateOf(false) }
-
-  LaunchedEffect(base64) {
-    failed = false
-    image =
-      withContext(Dispatchers.Default) {
-        try {
-          val bytes = Base64.decode(base64, Base64.DEFAULT)
-          val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@withContext null
-          bitmap.asImageBitmap()
-        } catch (_: Throwable) {
-          null
-        }
-      }
-    if (image == null) failed = true
-  }
+  val imageState = rememberBase64ImageState(base64)
+  val image = imageState.image
 
   if (image != null) {
     Surface(
       shape = RoundedCornerShape(10.dp),
       border = BorderStroke(1.dp, mobileBorder),
-      color = Color.White,
+      color = mobileCardSurface,
       modifier = Modifier.fillMaxWidth(),
     ) {
       Image(
@@ -273,7 +252,7 @@ private fun ChatBase64Image(base64: String, mimeType: String?) {
         modifier = Modifier.fillMaxWidth(),
       )
     }
-  } else if (failed) {
+  } else if (imageState.failed) {
     Text("Unsupported attachment", style = mobileCaption1, color = mobileTextSecondary)
   }
 }
@@ -301,7 +280,7 @@ fun ChatCodeBlock(code: String, language: String?) {
   Surface(
     shape = RoundedCornerShape(8.dp),
     color = mobileCodeBg,
-    border = BorderStroke(1.dp, Color(0xFF2B2E35)),
+    border = BorderStroke(1.dp, mobileCodeBorder),
     modifier = Modifier.fillMaxWidth(),
   ) {
     Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

@@ -240,15 +240,11 @@ resolved for a given run or compaction operation. Other enabled
 code; `plugins.slots.contextEngine` only selects which registered engine id
 RemoteClaw resolves when it needs a context engine.
 
-## Relationship to compaction and memory
+## Relationship to compaction
 
 - **Compaction** is one responsibility of the context engine. The legacy engine
   delegates to RemoteClaw's built-in summarization. Plugin engines can implement
   any compaction strategy (DAG summaries, vector retrieval, etc.).
-- **Memory plugins** (`plugins.slots.memory`) are separate from context engines.
-  Memory plugins provide search/retrieval; context engines control what the
-  model sees. They can work together — a context engine might use memory
-  plugin data during assembly.
 - **Session pruning** (trimming old tool results in-memory) still runs
   regardless of which context engine is active.
 

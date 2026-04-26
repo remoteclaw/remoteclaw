@@ -13,7 +13,6 @@ import {
   applyTestPluginDefaults,
   normalizePluginsConfig,
   resolveEffectiveEnableState,
-  resolveMemorySlotDecision,
   type NormalizedPluginsConfig,
 } from "./config-state.js";
 import { discoverRemoteClawPlugins } from "./discovery.js";
@@ -562,9 +561,6 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
   );
 
   const seenIds = new Map<string, PluginRecord["origin"]>();
-  const memorySlot = normalized.slots.memory;
-  let selectedMemoryPluginId: string | null = null;
-  let memorySlotMatched = false;
 
   for (const candidate of discovery.candidates) {
     const manifestRecord = manifestByRoot.get(candidate.rootDir);
@@ -633,25 +629,6 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
       continue;
     }
 
-    // Fast-path bundled memory plugins that are guaranteed disabled by slot policy.
-    // This avoids opening/importing heavy memory plugin modules that will never register.
-    if (candidate.origin === "bundled" && manifestRecord.kind === "memory") {
-      const earlyMemoryDecision = resolveMemorySlotDecision({
-        id: record.id,
-        kind: "memory",
-        slot: memorySlot,
-        selectedId: selectedMemoryPluginId,
-      });
-      if (!earlyMemoryDecision.enabled) {
-        record.enabled = false;
-        record.status = "disabled";
-        record.error = earlyMemoryDecision.reason;
-        registry.plugins.push(record);
-        seenIds.set(pluginId, candidate.origin);
-        continue;
-      }
-    }
-
     if (!manifestRecord.configSchema) {
       pushPluginLoadError("missing config schema");
       continue;
@@ -718,30 +695,6 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
     }
     record.kind = definition?.kind ?? record.kind;
 
-    if (record.kind === "memory" && memorySlot === record.id) {
-      memorySlotMatched = true;
-    }
-
-    const memoryDecision = resolveMemorySlotDecision({
-      id: record.id,
-      kind: record.kind,
-      slot: memorySlot,
-      selectedId: selectedMemoryPluginId,
-    });
-
-    if (!memoryDecision.enabled) {
-      record.enabled = false;
-      record.status = "disabled";
-      record.error = memoryDecision.reason;
-      registry.plugins.push(record);
-      seenIds.set(pluginId, candidate.origin);
-      continue;
-    }
-
-    if (memoryDecision.selected && record.kind === "memory") {
-      selectedMemoryPluginId = record.id;
-    }
-
     const validatedConfig = validatePluginConfig({
       schema: manifestRecord.configSchema,
       cacheKey: manifestRecord.schemaCacheKey,
@@ -797,13 +750,6 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
         diagnosticMessagePrefix: "plugin failed during register: ",
       });
     }
-  }
-
-  if (typeof memorySlot === "string" && !memorySlotMatched) {
-    registry.diagnostics.push({
-      level: "warn",
-      message: `memory slot plugin not found or not marked as memory: ${memorySlot}`,
-    });
   }
 
   warnAboutUntrackedLoadedPlugins({

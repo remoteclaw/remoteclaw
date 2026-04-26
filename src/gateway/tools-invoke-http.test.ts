@@ -42,10 +42,6 @@ vi.mock("../logger.js", () => ({
   logWarn: () => {},
 }));
 
-vi.mock("../plugins/config-state.js", () => ({
-  isTestDefaultMemorySlotDisabled: () => false,
-}));
-
 vi.mock("../plugins/tools.js", () => ({
   getPluginToolMeta: () => undefined,
 }));

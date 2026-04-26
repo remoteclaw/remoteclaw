@@ -13,12 +13,12 @@ describe("enablePluginInConfig", () => {
   it("adds plugin to allowlist when allowlist is configured", () => {
     const cfg: RemoteClawConfig = {
       plugins: {
-        allow: ["memory-core"],
+        allow: ["voice-call"],
       },
     };
     const result = enablePluginInConfig(cfg, "google");
     expect(result.enabled).toBe(true);
-    expect(result.config.plugins?.allow).toEqual(["memory-core", "google"]);
+    expect(result.config.plugins?.allow).toEqual(["voice-call", "google"]);
   });
 
   it("refuses enable when plugin is denylisted", () => {
@@ -43,13 +43,13 @@ describe("enablePluginInConfig", () => {
   it("adds built-in channel id to allowlist when allowlist is configured", () => {
     const cfg: RemoteClawConfig = {
       plugins: {
-        allow: ["memory-core"],
+        allow: ["voice-call"],
       },
     };
     const result = enablePluginInConfig(cfg, "telegram");
     expect(result.enabled).toBe(true);
     expect(result.config.channels?.telegram?.enabled).toBe(true);
-    expect(result.config.plugins?.allow).toEqual(["memory-core", "telegram"]);
+    expect(result.config.plugins?.allow).toEqual(["voice-call", "telegram"]);
   });
 
   it("re-enables built-in channels after explicit plugin-level disable", () => {

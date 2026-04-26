@@ -9057,9 +9057,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
           slots: {
             type: "object",
             properties: {
-              memory: {
-                type: "string",
-              },
               contextEngine: {
                 type: "string",
               },
@@ -13228,12 +13225,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "plugins.slots": {
       label: "Plugin Slots",
-      help: "Selects which plugins own exclusive runtime slots such as memory so only one plugin provides that capability. Use explicit slot ownership to avoid overlapping providers with conflicting behavior.",
-      tags: ["advanced"],
-    },
-    "plugins.slots.memory": {
-      label: "Memory Plugin",
-      help: 'Select the active memory plugin by id, or "none" to disable memory plugins.',
+      help: "Selects which plugins own exclusive runtime slots so only one plugin provides that capability. Use explicit slot ownership to avoid overlapping providers with conflicting behavior.",
       tags: ["advanced"],
     },
     "plugins.slots.contextEngine": {

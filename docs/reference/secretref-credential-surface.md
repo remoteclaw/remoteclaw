@@ -97,18 +97,15 @@ Scope intent:
 - `channels.googlechat.serviceAccount` via sibling `serviceAccountRef` (compatibility exception)
 - `channels.googlechat.accounts.*.serviceAccount` via sibling `serviceAccountRef` (compatibility exception)
 
-### `auth-profiles.json` targets (`secrets configure` + `secrets apply` + `secrets audit`)
-
-- `profiles.*.keyRef` (`type: "api_key"`)
-- `profiles.*.tokenRef` (`type: "token"`)
-
 [//]: # "secretref-supported-list-end"
 
 Notes:
 
-- Auth-profile plan targets require `agentId`.
-- Plan entries target `profiles.*.key` / `profiles.*.token` and write sibling refs (`keyRef` / `tokenRef`).
-- Auth-profile refs are included in runtime resolution and audit coverage.
+- Auth-profile credentials (provider API keys / OAuth tokens for CLI agents) are **not** in the SecretRef surface.
+  They use inline `key` / `token` values in `auth-profiles.json` and are injected into the CLI subprocess as
+  provider-specific env vars (`ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, etc.) by `src/auth/env-injection.ts`.
+  See [`docs/refactor/agentruntime-credential-injection.md`](/refactor/agentruntime-credential-injection) (#2574)
+  for the rationale.
 - For SecretRef-managed model providers, generated `agents/*/agent/models.json` entries persist non-secret markers (not resolved secret values) for `apiKey`/header surfaces.
 - Marker persistence is source-authoritative: RemoteClaw writes markers from the active source config snapshot (pre-resolution), not from resolved runtime secret values.
 - For web search:
@@ -129,6 +126,8 @@ Out-of-scope credentials include:
 - `hooks.token`
 - `hooks.gmail.pushToken`
 - `hooks.mappings[].sessionKey`
+- `auth-profiles.profiles.*.key` (auth-profile inline credentials — see Notes above)
+- `auth-profiles.profiles.*.token` (auth-profile inline credentials — see Notes above)
 - `auth-profiles.oauth.*`
 - `discord.threadBindings.*.webhookToken`
 - `whatsapp.creds.json`

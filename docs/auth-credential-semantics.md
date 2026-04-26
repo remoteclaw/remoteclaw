@@ -23,26 +23,25 @@ The goal is to keep selection-time and runtime behavior aligned.
 - `missing_credential`
 - `invalid_expires`
 - `expired`
-- `unresolved_ref`
 
 ## Token Credentials
 
-Token credentials (`type: "token"`) support inline `token` and/or `tokenRef`.
+Token credentials (`type: "token"`) carry an inline `token` string.
 
 ### Eligibility rules
 
-1. A token profile is ineligible when both `token` and `tokenRef` are absent.
+1. A token profile is ineligible when `token` is absent or empty.
 2. `expires` is optional.
 3. If `expires` is present, it must be a finite number greater than `0`.
 4. If `expires` is invalid (`NaN`, `0`, negative, non-finite, or wrong type), the profile is ineligible with `invalid_expires`.
 5. If `expires` is in the past, the profile is ineligible with `expired`.
-6. `tokenRef` does not bypass `expires` validation.
 
 ### Resolution rules
 
 1. Resolver semantics match eligibility semantics for `expires`.
-2. For eligible profiles, token material may be resolved from inline value or `tokenRef`.
-3. Unresolvable refs produce `unresolved_ref` in `models status --probe` output.
+2. Token material is read inline from `cred.token`. SecretRef indirection is not part of the
+   AgentRuntime credential injection path — see
+   [`docs/refactor/agentruntime-credential-injection.md`](/refactor/agentruntime-credential-injection) (#2574).
 
 ## Legacy-Compatible Messaging
 

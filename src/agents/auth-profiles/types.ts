@@ -1,5 +1,7 @@
-// Stub — types from upstream for barrel re-export compatibility
-import type { SecretRef } from "../../config/types.secrets.js";
+// Stub — types from upstream for barrel re-export compatibility.
+// Auth-profile credentials use inline `key` / `token` only. SecretRef indirection
+// is not part of the AgentRuntime credential injection path — see
+// `docs/refactor/agentruntime-credential-injection.md` (#2574).
 
 export type OAuthProvider = string;
 export type ExternalOAuthManager = "codex-cli" | "minimax-cli";
@@ -19,7 +21,6 @@ export type ApiKeyCredential = {
   type: "api_key";
   provider: string;
   key?: string;
-  keyRef?: SecretRef;
   email?: string;
   displayName?: string;
   metadata?: Record<string, string>;
@@ -29,7 +30,6 @@ export type TokenCredential = {
   type: "token";
   provider: string;
   token?: string;
-  tokenRef?: SecretRef;
   expires?: number;
   email?: string;
   displayName?: string;

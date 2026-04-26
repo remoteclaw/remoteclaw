@@ -30,32 +30,46 @@ describe("resolveTokenExpiryState", () => {
 describe("evaluateStoredCredentialEligibility", () => {
   const now = 1_700_000_000_000;
 
-  it("marks api_key with keyRef as eligible", () => {
+  it("marks api_key with inline key as eligible", () => {
     const result = evaluateStoredCredentialEligibility({
       credential: {
         type: "api_key",
         provider: "anthropic",
-        keyRef: {
-          source: "env",
-          provider: "default",
-          id: "ANTHROPIC_API_KEY",
-        },
+        key: "sk-test",
       },
       now,
     });
     expect(result).toEqual({ eligible: true, reasonCode: "ok" });
   });
 
-  it("marks tokenRef with missing expires as eligible", () => {
+  it("marks api_key with missing key as ineligible", () => {
+    const result = evaluateStoredCredentialEligibility({
+      credential: {
+        type: "api_key",
+        provider: "anthropic",
+      },
+      now,
+    });
+    expect(result).toEqual({ eligible: false, reasonCode: "missing_credential" });
+  });
+
+  it("marks token with missing token as ineligible", () => {
     const result = evaluateStoredCredentialEligibility({
       credential: {
         type: "token",
         provider: "github-copilot",
-        tokenRef: {
-          source: "env",
-          provider: "default",
-          id: "GITHUB_TOKEN",
-        },
+      },
+      now,
+    });
+    expect(result).toEqual({ eligible: false, reasonCode: "missing_credential" });
+  });
+
+  it("marks token with inline value and missing expires as eligible", () => {
+    const result = evaluateStoredCredentialEligibility({
+      credential: {
+        type: "token",
+        provider: "github-copilot",
+        token: "tok",
       },
       now,
     });

@@ -24,7 +24,6 @@ const ROOT_SECTIONS = [
   "media",
   "messages",
   "commands",
-  "approvals",
   "session",
   "cron",
   "hooks",
@@ -132,17 +131,6 @@ const TARGET_KEYS = [
   "session.maintenance.resetArchiveRetention",
   "session.maintenance.maxDiskBytes",
   "session.maintenance.highWaterBytes",
-  "approvals",
-  "approvals.exec",
-  "approvals.exec.enabled",
-  "approvals.exec.mode",
-  "approvals.exec.agentFilter",
-  "approvals.exec.sessionFilter",
-  "approvals.exec.targets",
-  "approvals.exec.targets[].channel",
-  "approvals.exec.targets[].to",
-  "approvals.exec.targets[].accountId",
-  "approvals.exec.targets[].threadId",
   "nodeHost",
   "nodeHost.browserProxy",
   "nodeHost.browserProxy.enabled",
@@ -360,7 +348,6 @@ const ENUM_EXPECTATIONS: Record<string, string[]> = {
   "models.mode": ['"merge"', '"replace"'],
   "models.providers.*.auth": ['"api-key"', '"token"', '"oauth"', '"aws-sdk"'],
   "gateway.reload.mode": ['"off"', '"restart"', '"hot"', '"hybrid"'],
-  "approvals.exec.mode": ['"session"', '"targets"', '"both"'],
   "bindings[].match.peer.kind": ['"direct"', '"group"', '"channel"', '"dm"'],
   "broadcast.strategy": ['"parallel"', '"sequential"'],
   "hooks.mappings[].action": ['"wake"', '"agent"'],
@@ -479,12 +466,6 @@ const CHANNELS_AGENTS_TARGET_KEYS = [
   "channels.telegram",
   "channels.telegram.botToken",
   "channels.telegram.capabilities.inlineButtons",
-  "channels.telegram.execApprovals",
-  "channels.telegram.execApprovals.enabled",
-  "channels.telegram.execApprovals.approvers",
-  "channels.telegram.execApprovals.agentFilter",
-  "channels.telegram.execApprovals.sessionFilter",
-  "channels.telegram.execApprovals.target",
   "channels.whatsapp",
 ] as const;
 
@@ -665,21 +646,6 @@ describe("config help copy quality", () => {
 
     const keepLines = FIELD_HELP["cron.runLog.keepLines"];
     expect(keepLines.includes("2000")).toBe(true);
-  });
-
-  it("documents approvals filters and target semantics", () => {
-    const sessionFilter = FIELD_HELP["approvals.exec.sessionFilter"];
-    expect(/substring|regex/i.test(sessionFilter)).toBe(true);
-    expect(sessionFilter.includes("discord:")).toBe(true);
-    expect(sessionFilter.includes("^agent:ops:")).toBe(true);
-
-    const agentFilter = FIELD_HELP["approvals.exec.agentFilter"];
-    expect(agentFilter.includes("primary")).toBe(true);
-    expect(agentFilter.includes("ops-agent")).toBe(true);
-
-    const targetTo = FIELD_HELP["approvals.exec.targets[].to"];
-    expect(/channel ID|user ID|thread root/i.test(targetTo)).toBe(true);
-    expect(/differs|per provider/i.test(targetTo)).toBe(true);
   });
 
   it("documents broadcast and audio command examples", () => {

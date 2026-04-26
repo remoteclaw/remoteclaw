@@ -316,11 +316,6 @@ describe("deliverOutboundPayloads", () => {
         channels: {
           telegram: {
             botToken: "tok-1",
-            execApprovals: {
-              enabled: true,
-              approvers: ["123"],
-              target: "dm",
-            },
           },
         },
       },
@@ -337,13 +332,7 @@ describe("deliverOutboundPayloads", () => {
     const sendTelegram = vi.fn().mockResolvedValue({ messageId: "m1", chatId: "c1" });
     const cfg: RemoteClawConfig = {
       channels: {
-        telegram: {
-          execApprovals: {
-            enabled: true,
-            approvers: ["123"],
-            target: "dm",
-          },
-        },
+        telegram: {},
       },
     };
 

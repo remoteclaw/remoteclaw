@@ -3,7 +3,6 @@ import { parseByteSize } from "../cli/parse-bytes.js";
 import { parseDurationMs } from "../cli/parse-duration.js";
 import { ToolsSchema } from "./zod-schema.agent-runtime.js";
 import { AgentsSchema, AudioSchema, BindingsSchema, BroadcastSchema } from "./zod-schema.agents.js";
-import { ApprovalsSchema } from "./zod-schema.approvals.js";
 import {
   HexColorSchema,
   ModelsConfigSchema,
@@ -361,7 +360,6 @@ export const RemoteClawSchema = z
       .optional(),
     messages: MessagesSchema,
     commands: CommandsSchema,
-    approvals: ApprovalsSchema,
     session: SessionSchema,
     cron: z
       .object({

@@ -52,14 +52,6 @@ export async function noteSecurityWarnings(cfg: RemoteClawConfig) {
   const warnings: string[] = [];
   const auditHint = `- Run: ${formatCliCommand("remoteclaw security audit --deep")}`;
 
-  if (cfg.approvals?.exec?.enabled === false) {
-    warnings.push(
-      "- Note: approvals.exec.enabled=false disables approval forwarding only.",
-      "  Host exec gating still comes from ~/.remoteclaw/exec-approvals.json.",
-      `  Check local policy with: ${formatCliCommand("remoteclaw approvals get --gateway")}`,
-    );
-  }
-
   warnings.push(...collectImplicitHeartbeatDirectPolicyWarnings(cfg));
 
   // ===========================================

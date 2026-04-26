@@ -6850,80 +6850,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
         required: ["native", "nativeSkills", "restart", "ownerDisplay"],
         additionalProperties: false,
       },
-      approvals: {
-        type: "object",
-        properties: {
-          exec: {
-            type: "object",
-            properties: {
-              enabled: {
-                type: "boolean",
-              },
-              mode: {
-                anyOf: [
-                  {
-                    type: "string",
-                    const: "session",
-                  },
-                  {
-                    type: "string",
-                    const: "targets",
-                  },
-                  {
-                    type: "string",
-                    const: "both",
-                  },
-                ],
-              },
-              agentFilter: {
-                type: "array",
-                items: {
-                  type: "string",
-                },
-              },
-              sessionFilter: {
-                type: "array",
-                items: {
-                  type: "string",
-                },
-              },
-              targets: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    channel: {
-                      type: "string",
-                      minLength: 1,
-                    },
-                    to: {
-                      type: "string",
-                      minLength: 1,
-                    },
-                    accountId: {
-                      type: "string",
-                    },
-                    threadId: {
-                      anyOf: [
-                        {
-                          type: "string",
-                        },
-                        {
-                          type: "number",
-                        },
-                      ],
-                    },
-                  },
-                  required: ["channel", "to"],
-                  additionalProperties: false,
-                },
-              },
-            },
-            additionalProperties: false,
-          },
-        },
-        additionalProperties: false,
-      },
       session: {
         type: "object",
         properties: {
@@ -10357,61 +10283,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Optional per-binary safe-bin profiles (positional limits + allowed/denied flags).",
       tags: ["storage", "tools"],
     },
-    approvals: {
-      label: "Approvals",
-      help: "Approval routing controls for forwarding exec approval requests to chat destinations outside the originating session. Keep this disabled unless operators need explicit out-of-band approval visibility.",
-      tags: ["advanced"],
-    },
-    "approvals.exec": {
-      label: "Exec Approval Forwarding",
-      help: "Groups exec-approval forwarding behavior including enablement, routing mode, filters, and explicit targets. Configure here when approval prompts must reach operational channels instead of only the origin thread.",
-      tags: ["advanced"],
-    },
-    "approvals.exec.enabled": {
-      label: "Forward Exec Approvals",
-      help: "Enables forwarding of exec approval requests to configured delivery destinations (default: false). Keep disabled in low-risk setups and enable only when human approval responders need channel-visible prompts.",
-      tags: ["advanced"],
-    },
-    "approvals.exec.mode": {
-      label: "Approval Forwarding Mode",
-      help: 'Controls where approval prompts are sent: "session" uses origin chat, "targets" uses configured targets, and "both" sends to both paths. Use "session" as baseline and expand only when operational workflow requires redundancy.',
-      tags: ["advanced"],
-    },
-    "approvals.exec.agentFilter": {
-      label: "Approval Agent Filter",
-      help: 'Optional allowlist of agent IDs eligible for forwarded approvals, for example `["primary", "ops-agent"]`. Use this to limit forwarding blast radius and avoid notifying channels for unrelated agents.',
-      tags: ["advanced"],
-    },
-    "approvals.exec.sessionFilter": {
-      label: "Approval Session Filter",
-      help: 'Optional session-key filters matched as substring or regex-style patterns, for example `["discord:", "^agent:ops:"]`. Use narrow patterns so only intended approval contexts are forwarded to shared destinations.',
-      tags: ["storage"],
-    },
-    "approvals.exec.targets": {
-      label: "Approval Forwarding Targets",
-      help: "Explicit delivery targets used when forwarding mode includes targets, each with channel and destination details. Keep target lists least-privilege and validate each destination before enabling broad forwarding.",
-      tags: ["advanced"],
-    },
-    "approvals.exec.targets[].channel": {
-      label: "Approval Target Channel",
-      help: "Channel/provider ID used for forwarded approval delivery, such as discord, slack, or a plugin channel id. Use valid channel IDs only so approvals do not silently fail due to unknown routes.",
-      tags: ["advanced"],
-    },
-    "approvals.exec.targets[].to": {
-      label: "Approval Target Destination",
-      help: "Destination identifier inside the target channel (channel ID, user ID, or thread root depending on provider). Verify semantics per provider because destination format differs across channel integrations.",
-      tags: ["advanced"],
-    },
-    "approvals.exec.targets[].accountId": {
-      label: "Approval Target Account ID",
-      help: "Optional account selector for multi-account channel setups when approvals must route through a specific account context. Use this only when the target channel has multiple configured identities.",
-      tags: ["advanced"],
-    },
-    "approvals.exec.targets[].threadId": {
-      label: "Approval Target Thread ID",
-      help: "Optional thread/topic target for channels that support threaded delivery of forwarded approvals. Use this to keep approval traffic contained in operational threads instead of main channels.",
-      tags: ["advanced"],
-    },
     "tools.message.allowCrossContextSend": {
       label: "Allow Cross-Context Messaging",
       help: "Legacy override: allow cross-context sends across all providers.",
@@ -12687,36 +12558,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     "channels.telegram.capabilities.inlineButtons": {
       label: "Telegram Inline Buttons",
       help: "Enable Telegram inline button components for supported command and interaction surfaces. Disable if your deployment needs plain-text-only compatibility behavior.",
-      tags: ["network", "channels"],
-    },
-    "channels.telegram.execApprovals": {
-      label: "Telegram Exec Approvals",
-      help: "Telegram-native exec approval routing and approver authorization. Enable this only when Telegram should act as an explicit exec-approval client for the selected bot account.",
-      tags: ["network", "channels"],
-    },
-    "channels.telegram.execApprovals.enabled": {
-      label: "Telegram Exec Approvals Enabled",
-      help: "Enable Telegram exec approvals for this account. When false or unset, Telegram messages/buttons cannot approve exec requests.",
-      tags: ["network", "channels"],
-    },
-    "channels.telegram.execApprovals.approvers": {
-      label: "Telegram Exec Approval Approvers",
-      help: "Telegram user IDs allowed to approve exec requests for this bot account. Use numeric Telegram user IDs; prompts are only delivered to these approvers when target includes dm.",
-      tags: ["network", "channels"],
-    },
-    "channels.telegram.execApprovals.agentFilter": {
-      label: "Telegram Exec Approval Agent Filter",
-      help: 'Optional allowlist of agent IDs eligible for Telegram exec approvals, for example `["main", "ops-agent"]`. Use this to keep approval prompts scoped to the agents you actually operate from Telegram.',
-      tags: ["network", "channels"],
-    },
-    "channels.telegram.execApprovals.sessionFilter": {
-      label: "Telegram Exec Approval Session Filter",
-      help: "Optional session-key filters matched as substring or regex-style patterns before Telegram approval routing is used. Use narrow patterns so Telegram approvals only appear for intended sessions.",
-      tags: ["network", "storage", "channels"],
-    },
-    "channels.telegram.execApprovals.target": {
-      label: "Telegram Exec Approval Target",
-      help: 'Controls where Telegram approval prompts are sent: "dm" sends to approver DMs (default), "channel" sends to the originating Telegram chat/topic, and "both" sends to both. Channel delivery exposes the command text to the chat, so only use it in trusted groups/topics.',
       tags: ["network", "channels"],
     },
     "channels.telegram.threadBindings.enabled": {

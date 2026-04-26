@@ -1,4 +1,3 @@
-import { coerceSecretRef } from "../../config/types.secrets.js";
 import { loadJsonFile, saveJsonFile } from "../../infra/json-file.js";
 import { AUTH_STORE_VERSION, log } from "./constants.js";
 import { resolveAuthStorePath, resolveLegacyAuthStorePath } from "./paths.js";
@@ -69,20 +68,11 @@ export function clearRuntimeAuthProfileStoreSnapshots(): void {
   runtimeAuthStoreSnapshots.clear();
 }
 
-function normalizeSecretBackedField(params: {
-  entry: Record<string, unknown>;
-  valueField: "key" | "token";
-  refField: "keyRef" | "tokenRef";
-}): void {
-  const value = params.entry[params.valueField];
-  if (value == null || typeof value === "string") {
-    return;
+function dropNonStringField(entry: Record<string, unknown>, field: "key" | "token"): void {
+  const value = entry[field];
+  if (value != null && typeof value !== "string") {
+    delete entry[field];
   }
-  const ref = coerceSecretRef(value);
-  if (ref && !coerceSecretRef(params.entry[params.refField])) {
-    params.entry[params.refField] = ref;
-  }
-  delete params.entry[params.valueField];
 }
 
 function normalizeRawCredentialEntry(raw: Record<string, unknown>): Partial<AuthProfileCredential> {
@@ -93,8 +83,8 @@ function normalizeRawCredentialEntry(raw: Record<string, unknown>): Partial<Auth
   if (!("key" in entry) && typeof entry["apiKey"] === "string") {
     entry["key"] = entry["apiKey"];
   }
-  normalizeSecretBackedField({ entry, valueField: "key", refField: "keyRef" });
-  normalizeSecretBackedField({ entry, valueField: "token", refField: "tokenRef" });
+  dropNonStringField(entry, "key");
+  dropNonStringField(entry, "token");
   return entry as Partial<AuthProfileCredential>;
 }
 

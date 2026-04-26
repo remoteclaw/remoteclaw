@@ -53,7 +53,7 @@ remoteclaw onboard --non-interactive \
 ```
 
 With `--secret-input-mode ref`, onboarding writes env-backed refs instead of plaintext key values.
-For auth-profile backed providers this writes `keyRef` entries; for custom providers this writes `models.providers.<id>.apiKey` as an env ref (for example `{ source: "env", provider: "default", id: "CUSTOM_API_KEY" }`).
+For custom providers this writes `models.providers.<id>.apiKey` as an env ref (for example `{ source: "env", provider: "default", id: "CUSTOM_API_KEY" }`). Auth-profile credentials (Claude, Gemini, Codex, OpenCode) use inline `key` / `token` only — see [`docs/refactor/agentruntime-credential-injection.md`](/refactor/agentruntime-credential-injection) (#2574); operators secure provider env vars at the gateway process level instead.
 
 Non-interactive `ref` mode contract:
 

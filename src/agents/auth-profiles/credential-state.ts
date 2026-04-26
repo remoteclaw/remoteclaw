@@ -1,12 +1,6 @@
-import { coerceSecretRef, normalizeSecretInputString } from "../../config/types.secrets.js";
 import type { AuthProfileCredential } from "./types.js";
 
-export type AuthCredentialReasonCode =
-  | "ok"
-  | "missing_credential"
-  | "invalid_expires"
-  | "expired"
-  | "unresolved_ref";
+export type AuthCredentialReasonCode = "ok" | "missing_credential" | "invalid_expires" | "expired";
 
 export type TokenExpiryState = "missing" | "valid" | "expired" | "invalid_expires";
 
@@ -23,12 +17,8 @@ export function resolveTokenExpiryState(expires: unknown, now = Date.now()): Tok
   return now >= expires ? "expired" : "valid";
 }
 
-function hasConfiguredSecretRef(value: unknown): boolean {
-  return coerceSecretRef(value) !== null;
-}
-
-function hasConfiguredSecretString(value: unknown): boolean {
-  return normalizeSecretInputString(value) !== undefined;
+function hasNonEmptyString(value: unknown): boolean {
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 export function evaluateStoredCredentialEligibility(params: {
@@ -39,18 +29,14 @@ export function evaluateStoredCredentialEligibility(params: {
   const credential = params.credential;
 
   if (credential.type === "api_key") {
-    const hasKey = hasConfiguredSecretString(credential.key);
-    const hasKeyRef = hasConfiguredSecretRef(credential.keyRef);
-    if (!hasKey && !hasKeyRef) {
+    if (!hasNonEmptyString(credential.key)) {
       return { eligible: false, reasonCode: "missing_credential" };
     }
     return { eligible: true, reasonCode: "ok" };
   }
 
   if (credential.type === "token") {
-    const hasToken = hasConfiguredSecretString(credential.token);
-    const hasTokenRef = hasConfiguredSecretRef(credential.tokenRef);
-    if (!hasToken && !hasTokenRef) {
+    if (!hasNonEmptyString(credential.token)) {
       return { eligible: false, reasonCode: "missing_credential" };
     }
 
@@ -64,10 +50,7 @@ export function evaluateStoredCredentialEligibility(params: {
     return { eligible: true, reasonCode: "ok" };
   }
 
-  if (
-    normalizeSecretInputString(credential.access) === undefined &&
-    normalizeSecretInputString(credential.refresh) === undefined
-  ) {
+  if (!hasNonEmptyString(credential.access) && !hasNonEmptyString(credential.refresh)) {
     return { eligible: false, reasonCode: "missing_credential" };
   }
   return { eligible: true, reasonCode: "ok" };

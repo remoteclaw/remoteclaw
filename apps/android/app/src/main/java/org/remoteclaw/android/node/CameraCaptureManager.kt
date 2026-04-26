@@ -33,10 +33,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.contentOrNull
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.concurrent.Executor
@@ -101,7 +98,7 @@ class CameraCaptureManager(private val context: Context) {
     withContext(Dispatchers.Main) {
       ensureCameraPermission()
       val owner = lifecycleOwner ?: throw IllegalStateException("UNAVAILABLE: camera not ready")
-      val params = parseParamsObject(paramsJson)
+      val params = parseJsonParamsObject(paramsJson)
       val facing = parseFacing(params) ?: "front"
       val quality = (parseQuality(params) ?: 0.95).coerceIn(0.1, 1.0)
       val maxWidth = parseMaxWidth(params) ?: 1600
@@ -124,42 +121,48 @@ class CameraCaptureManager(private val context: Context) {
             (rotated.height.toDouble() * (maxWidth.toDouble() / rotated.width.toDouble()))
               .toInt()
               .coerceAtLeast(1)
-          rotated.scale(maxWidth, h)
+          val s = rotated.scale(maxWidth, h)
+          if (s !== rotated) rotated.recycle()
+          s
         } else {
           rotated
         }
 
-      val maxPayloadBytes = 5 * 1024 * 1024
-      // Base64 inflates payloads by ~4/3; cap encoded bytes so the payload stays under 5MB (API limit).
-      val maxEncodedBytes = (maxPayloadBytes / 4) * 3
-      val result =
-        JpegSizeLimiter.compressToLimit(
-          initialWidth = scaled.width,
-          initialHeight = scaled.height,
-          startQuality = (quality * 100.0).roundToInt().coerceIn(10, 100),
-          maxBytes = maxEncodedBytes,
-          encode = { width, height, q ->
-            val bitmap =
-              if (width == scaled.width && height == scaled.height) {
-                scaled
-              } else {
-                scaled.scale(width, height)
+      try {
+        val maxPayloadBytes = 5 * 1024 * 1024
+        // Base64 inflates payloads by ~4/3; cap encoded bytes so the payload stays under 5MB (API limit).
+        val maxEncodedBytes = (maxPayloadBytes / 4) * 3
+        val result =
+          JpegSizeLimiter.compressToLimit(
+            initialWidth = scaled.width,
+            initialHeight = scaled.height,
+            startQuality = (quality * 100.0).roundToInt().coerceIn(10, 100),
+            maxBytes = maxEncodedBytes,
+            encode = { width, height, q ->
+              val bitmap =
+                if (width == scaled.width && height == scaled.height) {
+                  scaled
+                } else {
+                  scaled.scale(width, height)
+                }
+              val out = ByteArrayOutputStream()
+              if (!bitmap.compress(Bitmap.CompressFormat.JPEG, q, out)) {
+                if (bitmap !== scaled) bitmap.recycle()
+                throw IllegalStateException("UNAVAILABLE: failed to encode JPEG")
               }
-            val out = ByteArrayOutputStream()
-            if (!bitmap.compress(Bitmap.CompressFormat.JPEG, q, out)) {
-              if (bitmap !== scaled) bitmap.recycle()
-              throw IllegalStateException("UNAVAILABLE: failed to encode JPEG")
-            }
-            if (bitmap !== scaled) {
-              bitmap.recycle()
-            }
-            out.toByteArray()
-          },
+              if (bitmap !== scaled) {
+                bitmap.recycle()
+              }
+              out.toByteArray()
+            },
+          )
+        val base64 = Base64.encodeToString(result.bytes, Base64.NO_WRAP)
+        Payload(
+          """{"format":"jpg","base64":"$base64","width":${result.width},"height":${result.height}}""",
         )
-      val base64 = Base64.encodeToString(result.bytes, Base64.NO_WRAP)
-      Payload(
-        """{"format":"jpg","base64":"$base64","width":${result.width},"height":${result.height}}""",
-      )
+      } finally {
+        scaled.recycle()
+      }
     }
 
   @SuppressLint("MissingPermission")
@@ -167,7 +170,7 @@ class CameraCaptureManager(private val context: Context) {
     withContext(Dispatchers.Main) {
       ensureCameraPermission()
       val owner = lifecycleOwner ?: throw IllegalStateException("UNAVAILABLE: camera not ready")
-      val params = parseParamsObject(paramsJson)
+      val params = parseJsonParamsObject(paramsJson)
       val facing = parseFacing(params) ?: "front"
       val durationMs = (parseDurationMs(params) ?: 3_000).coerceIn(200, 60_000)
       val includeAudio = parseIncludeAudio(params) ?: true
@@ -293,20 +296,8 @@ class CameraCaptureManager(private val context: Context) {
     return rotated
   }
 
-  private fun parseParamsObject(paramsJson: String?): JsonObject? {
-    if (paramsJson.isNullOrBlank()) return null
-    return try {
-      Json.parseToJsonElement(paramsJson).asObjectOrNull()
-    } catch (_: Throwable) {
-      null
-    }
-  }
-
-  private fun readPrimitive(params: JsonObject?, key: String): JsonPrimitive? =
-    params?.get(key) as? JsonPrimitive
-
   private fun parseFacing(params: JsonObject?): String? {
-    val value = readPrimitive(params, "facing")?.contentOrNull?.trim()?.lowercase() ?: return null
+    val value = parseJsonString(params, "facing")?.trim()?.lowercase() ?: return null
     return when (value) {
       "front", "back" -> value
       else -> null
@@ -314,31 +305,21 @@ class CameraCaptureManager(private val context: Context) {
   }
 
   private fun parseQuality(params: JsonObject?): Double? =
-    readPrimitive(params, "quality")?.contentOrNull?.toDoubleOrNull()
+    parseJsonDouble(params, "quality")
 
   private fun parseMaxWidth(params: JsonObject?): Int? =
-    readPrimitive(params, "maxWidth")
-      ?.contentOrNull
-      ?.toIntOrNull()
+    parseJsonInt(params, "maxWidth")
       ?.takeIf { it > 0 }
 
   private fun parseDurationMs(params: JsonObject?): Int? =
-    readPrimitive(params, "durationMs")?.contentOrNull?.toIntOrNull()
+    parseJsonInt(params, "durationMs")
 
   private fun parseDeviceId(params: JsonObject?): String? =
-    readPrimitive(params, "deviceId")
-      ?.contentOrNull
+    parseJsonString(params, "deviceId")
       ?.trim()
       ?.takeIf { it.isNotEmpty() }
 
-  private fun parseIncludeAudio(params: JsonObject?): Boolean? {
-    val value = readPrimitive(params, "includeAudio")?.contentOrNull?.trim()?.lowercase()
-    return when (value) {
-      "true" -> true
-      "false" -> false
-      else -> null
-    }
-  }
+  private fun parseIncludeAudio(params: JsonObject?): Boolean? = parseJsonBooleanFlag(params, "includeAudio")
 
   private fun Context.mainExecutor(): Executor = ContextCompat.getMainExecutor(this)
 

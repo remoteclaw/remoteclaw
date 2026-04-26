@@ -2,6 +2,7 @@ import Foundation
 
 public enum RemoteClawCapability: String, Codable, Sendable {
     case canvas
+    case browser
     case camera
     case screen
     case voiceWake

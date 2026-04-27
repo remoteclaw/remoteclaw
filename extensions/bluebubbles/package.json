@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/bluebubbles",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "RemoteClaw BlueBubbles channel plugin",
   "type": "module",
   "dependencies": {

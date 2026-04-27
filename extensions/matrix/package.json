@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/matrix",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "RemoteClaw Matrix channel plugin",
   "type": "module",
   "dependencies": {

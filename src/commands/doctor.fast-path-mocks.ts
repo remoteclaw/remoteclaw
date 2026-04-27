@@ -29,6 +29,7 @@ vi.mock("./doctor-platform-notes.js", () => ({
   noteStartupOptimizationHints: vi.fn(),
   noteMacLaunchAgentOverrides: vi.fn().mockResolvedValue(undefined),
   noteMacLaunchctlGatewayEnvOverrides: vi.fn().mockResolvedValue(undefined),
+  noteDeprecatedLegacyEnvVars: vi.fn(),
 }));
 
 vi.mock("./doctor-sandbox.js", () => ({

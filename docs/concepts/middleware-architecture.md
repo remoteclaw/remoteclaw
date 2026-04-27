@@ -89,18 +89,29 @@ injection, and MCP tool bridging to the gateway.
 RemoteClaw documents and provides capabilities that **require RemoteClaw
 infrastructure**:
 
-| RemoteClaw's responsibility         | Agent's responsibility                       |
-| ----------------------------------- | -------------------------------------------- |
-| Session persistence across messages | Conversation memory within a session         |
-| Message delivery to channels        | Deciding what to say                         |
-| System prompt with channel context  | Tool execution (web search, file I/O, shell) |
-| MCP tools bridging to the gateway   | Model selection and inference                |
-| Cron scheduling                     | Code generation and analysis                 |
-| Cross-channel message routing       | Any capability the CLI provides natively     |
+| RemoteClaw's responsibility                                          | Agent's responsibility                                           |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Session persistence across messages                                  | Conversation memory within a session                             |
+| Message delivery to channels                                         | Deciding what to say                                             |
+| System prompt with channel context                                   | Tool execution (web search, file I/O, shell)                     |
+| MCP tools bridging to the gateway                                    | Model selection and inference                                    |
+| Cron scheduling                                                      | Code generation and analysis                                     |
+| Cross-channel message routing                                        | Any capability the CLI provides natively                         |
+| AgentRuntime tool-approval routing (capture and surface to channels) | Tool-execution decisions and the actual invocation post-approval |
 
 This principle governs what belongs in RemoteClaw's codebase and
 documentation. If a capability works without RemoteClaw infrastructure, it
 belongs to the agent CLI, not to RemoteClaw.
+
+**Approval routing is the same principle, applied to permission UX.** The
+agent decides which tool to invoke; RemoteClaw routes the resulting
+permission request through the user's chat for approval. Tool execution
+itself (the actual call to web search / file I/O / shell / etc.) remains
+the agent CLI's responsibility — RemoteClaw only mediates the approval UX.
+The "requires RemoteClaw infrastructure?" test is satisfied because the
+user is reachable only via RemoteClaw's channel adapters
+(see [#2616](https://github.com/remoteclaw/remoteclaw/issues/2616) for
+the implementation tracking).
 
 ## Key Components
 

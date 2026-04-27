@@ -10,8 +10,23 @@ title: "Exec-approvals architecture (decision record)"
 
 # Exec-approvals architecture
 
+> ⚠️ **ICED 2026-04-27** — The architecture described here is **not currently
+> implemented**. The gateway handlers for `exec.approval.{request,waitDecision,resolve}`
+> were deleted by [PR #2375](https://github.com/remoteclaw/remoteclaw/pull/2375)
+> in 2026-04-16; the macOS-mediated path is broken (verified by
+> [#2606](https://github.com/remoteclaw/remoteclaw/issues/2606) audit, see
+> [`docs/refactor/exec-approval-singular-audit-2606.md`](../refactor/exec-approval-singular-audit-2606.md)).
+> The cleanup of stranded callers + protocol declarations is tracked in
+> [#2618](https://github.com/remoteclaw/remoteclaw/issues/2618).
+>
+> RemoteClaw is committing to a future channel-mediated approval surface for
+> node-host exec (sister to the AgentRuntime tool-approval routing being
+> designed separately in [#2616](https://github.com/remoteclaw/remoteclaw/issues/2616)).
+> This doc is preserved for historical context only and will be replaced when
+> the new approach ships.
+
 Decision: 2026-04-26 (issue [#2573](https://github.com/remoteclaw/remoteclaw/issues/2573)).
-Status: **Accepted** — Path A.
+Status: **Iced** (was: Accepted — Path A; superseded by ongoing redesign).
 
 ## Context
 

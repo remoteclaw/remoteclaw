@@ -28,6 +28,34 @@ describe("applyModelDefaults", () => {
     } satisfies RemoteClawConfig;
   }
 
+  function buildMistralProviderConfig(overrides?: {
+    modelId?: string;
+    contextWindow?: number;
+    maxTokens?: number;
+  }) {
+    return {
+      models: {
+        providers: {
+          mistral: {
+            baseUrl: "https://api.mistral.ai/v1",
+            apiKey: "sk-mistral", // pragma: allowlist secret
+            models: [
+              {
+                id: overrides?.modelId ?? "mistral-large-latest",
+                name: "Mistral",
+                reasoning: false,
+                input: ["text", "image"],
+                cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                contextWindow: overrides?.contextWindow ?? 262_144,
+                maxTokens: overrides?.maxTokens ?? 262_144,
+              },
+            ],
+          },
+        },
+      },
+    } satisfies RemoteClawConfig;
+  }
+
   it("adds default aliases when models are present", () => {
     const cfg = {
       agents: {
@@ -106,5 +134,15 @@ describe("applyModelDefaults", () => {
 
     expect(model?.contextWindow).toBe(32768);
     expect(model?.maxTokens).toBe(32768);
+  });
+
+  it("normalizes stale mistral maxTokens that matched the full context window", () => {
+    const cfg = buildMistralProviderConfig();
+
+    const next = applyModelDefaults(cfg);
+    const model = next.models?.providers?.mistral?.models?.[0];
+
+    expect(model?.contextWindow).toBe(262144);
+    expect(model?.maxTokens).toBe(16384);
   });
 });

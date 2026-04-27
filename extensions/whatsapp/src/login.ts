@@ -7,6 +7,8 @@ import { defaultRuntime, type RuntimeEnv } from "../../../src/runtime.js";
 import { resolveWhatsAppAccount } from "./accounts.js";
 import { createWaSocket, formatError, logoutWeb, waitForWaConnection } from "./session.js";
 
+const LOGGED_OUT_STATUS = DisconnectReason?.loggedOut ?? 401;
+
 export async function loginWeb(
   verbose: boolean,
   waitForConnection?: typeof waitForWaConnection,
@@ -49,7 +51,7 @@ export async function loginWeb(
         setTimeout(() => retry.ws?.close(), 500);
       }
     }
-    if (code === DisconnectReason.loggedOut) {
+    if (code === LOGGED_OUT_STATUS) {
       await logoutWeb({
         authDir: account.authDir,
         isLegacyAuthDir: account.isLegacyAuthDir,

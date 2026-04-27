@@ -512,7 +512,7 @@ function validateConfigObjectWithPluginsBase(
       continue;
     }
     if (!knownIds.has(pluginId)) {
-      pushMissingPluginIssue("plugins.allow", pluginId);
+      pushMissingPluginIssue("plugins.allow", pluginId, { warnOnly: true });
     }
   }
 

@@ -1,13 +1,13 @@
 import { EventEmitter } from "node:events";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../src/globals.js", () => ({
   logVerbose: vi.fn(),
   shouldLogVerbose: vi.fn(() => false),
 }));
 
-import { logVerbose } from "../../../src/globals.js";
-import { attachDiscordGatewayLogging } from "./gateway-logging.js";
+let logVerbose: typeof import("../../../src/globals.js").logVerbose;
+let attachDiscordGatewayLogging: typeof import("./gateway-logging.js").attachDiscordGatewayLogging;
 
 const makeRuntime = () => ({
   log: vi.fn(),
@@ -16,6 +16,12 @@ const makeRuntime = () => ({
 });
 
 describe("attachDiscordGatewayLogging", () => {
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ logVerbose } = await import("../../../src/globals.js"));
+    ({ attachDiscordGatewayLogging } = await import("./gateway-logging.js"));
+  });
+
   afterEach(() => {
     vi.clearAllMocks();
   });

@@ -9,6 +9,7 @@ export type AuthChoice =
   | "claude-cli"
   | "token"
   | "chutes"
+  | "deepseek-api-key"
   | "vllm"
   | "ollama"
   | "openai-codex"
@@ -52,6 +53,8 @@ export type AuthChoice =
   | "volcengine-api-key"
   | "byteplus-api-key"
   | "qianfan-api-key"
+  | "modelstudio-standard-api-key-cn"
+  | "modelstudio-standard-api-key"
   | "modelstudio-api-key-cn"
   | "modelstudio-api-key"
   | "custom-api-key"
@@ -60,6 +63,7 @@ export type AuthChoiceGroupId =
   | "openai"
   | "anthropic"
   | "chutes"
+  | "deepseek"
   | "vllm"
   | "ollama"
   | "google"
@@ -125,6 +129,7 @@ export type OnboardOptions = {
   /** API key persistence mode for onboarding flows (default: plaintext). */
   secretInputMode?: SecretInputMode;
   anthropicApiKey?: string;
+  deepseekApiKey?: string;
   openaiApiKey?: string;
   geminiApiKey?: string;
   cloudflareAiGatewayAccountId?: string;

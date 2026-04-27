@@ -214,6 +214,16 @@ describe("control UI assets helpers (fs-mocked)", () => {
     expect(resolveControlUiRootSync({ moduleUrl })).toBe(uiDir);
   });
 
+  it("prefers packaged app Control UI assets in Contents/Resources", () => {
+    const execPath = abs("fixtures/RemoteClaw.app/Contents/MacOS/RemoteClaw");
+    const bundledUiDir = abs("fixtures/RemoteClaw.app/Contents/Resources/control-ui");
+    setFile(path.join(bundledUiDir, "index.html"), "<html></html>\n");
+
+    state.realpaths.set(execPath, execPath);
+
+    expect(resolveControlUiRootSync({ execPath })).toBe(bundledUiDir);
+  });
+
   it("resolves control-ui root for symlinked argv1 via realpath", () => {
     const pkgRoot = abs("fixtures/bun-global/remoteclaw");
     const wrapperArgv1 = abs("fixtures/bin/remoteclaw");

@@ -72,7 +72,7 @@ enum HealthState: Equatable {
 final class HealthStore {
     static let shared = HealthStore()
 
-    private static let logger = Logger(subsystem: "ai.openclaw", category: "health")
+    private static let logger = Logger(subsystem: "org.remoteclaw", category: "health")
 
     private(set) var snapshot: HealthSnapshot?
     private(set) var lastSuccess: Date?
@@ -221,9 +221,9 @@ final class HealthStore {
             if let fallback = self.resolveFallbackChannel(snap, excluding: link.id) {
                 let fallbackLabel = snap.channelLabels?[fallback.id] ?? fallback.id.capitalized
                 let fallbackState = (fallback.summary.probe?.ok ?? true) ? "ok" : "degraded"
-                return "\(fallbackLabel) \(fallbackState) · Not linked — run openclaw login"
+                return "\(fallbackLabel) \(fallbackState) · Not linked — run remoteclaw login"
             }
-            return "Not linked — run openclaw login"
+            return "Not linked — run remoteclaw login"
         }
         let auth = link.summary.authAgeMs.map { msToAge($0) } ?? "unknown"
         if let probe = link.summary.probe, probe.ok == false {
@@ -253,7 +253,7 @@ final class HealthStore {
 
     func describeFailure(from snap: HealthSnapshot, fallback: String?) -> String {
         if let link = self.resolveLinkChannel(snap), link.summary.linked != true {
-            return "Not linked — run openclaw login"
+            return "Not linked — run remoteclaw login"
         }
         if let link = self.resolveLinkChannel(snap), let probe = link.summary.probe, probe.ok == false {
             return Self.describeProbeFailure(probe)

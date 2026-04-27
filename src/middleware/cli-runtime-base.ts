@@ -204,34 +204,35 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
       logDebug(`[agent-runtime] caller env keys: ${Object.keys(callerEnv).join(", ")}`);
     }
 
-    // ── In-flight gauge: increment BEFORE spawn so a spawn failure still
-    //    surfaces the contention level that preceded it. Decremented in the
-    //    outer `finally` so it balances on every code path (early throws,
-    //    aborts, generator break).
-    const inflightAfterIncrement = (CLIRuntimeBase.inflightCounts.get(this.command) ?? 0) + 1;
-    CLIRuntimeBase.inflightCounts.set(this.command, inflightAfterIncrement);
-    this.emitMetric("inflight_subprocesses", inflightAfterIncrement);
-
-    // Capture spawn-attempt timestamp BEFORE the spawn syscall so the
-    // cold-start histogram includes process-creation cost.
-    const spawnAtMs = Date.now();
-
-    const child = spawn(this.command, args, {
-      cwd: params.workingDirectory,
-      env,
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-
-    logDebug(`[agent-runtime] spawned pid=${child.pid}`);
-
-    const startMs = spawnAtMs;
-    const stderrChunks: string[] = [];
-    let aborted = false;
-    let yieldedEvents = false;
-    let coldStartEmitted = false;
+    // ── In-flight gauge: increment goes INSIDE the outer `try` so a
+    //    synchronous throw from `spawn()` (rare — most spawn errors are
+    //    async via `error` event, but invalid options can throw) still
+    //    runs the decrement in the matching `finally`.
     let rssTimer: ReturnType<typeof setInterval> | undefined;
 
     try {
+      const inflightAfterIncrement = (CLIRuntimeBase.inflightCounts.get(this.command) ?? 0) + 1;
+      CLIRuntimeBase.inflightCounts.set(this.command, inflightAfterIncrement);
+      this.emitMetric("inflight_subprocesses", inflightAfterIncrement);
+
+      // Capture spawn-attempt timestamp BEFORE the spawn syscall so the
+      // cold-start histogram includes process-creation cost.
+      const spawnAtMs = Date.now();
+
+      const child = spawn(this.command, args, {
+        cwd: params.workingDirectory,
+        env,
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+
+      logDebug(`[agent-runtime] spawned pid=${child.pid}`);
+
+      const startMs = spawnAtMs;
+      const stderrChunks: string[] = [];
+      let aborted = false;
+      let yieldedEvents = false;
+      let coldStartEmitted = false;
+
       // ── SIGKILL escalation helper ──────────────────────────────────────
       let escalationTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -295,10 +296,6 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
           clearTimeout(startupTimer);
           startupTimer = undefined;
         }
-        if (!coldStartEmitted) {
-          coldStartEmitted = true;
-          this.emitMetric("cold_start_ms", Date.now() - spawnAtMs);
-        }
         if (!line.trim()) {
           return;
         }
@@ -308,6 +305,14 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
         } catch {
           // Malformed line — skip (not fatal).
           return;
+        }
+
+        // Cold-start metric: emit on the first VALID NDJSON line, not any
+        // raw readline event. This matches the README's "first NDJSON line"
+        // contract and excludes leading blank lines or malformed garbage.
+        if (!coldStartEmitted) {
+          coldStartEmitted = true;
+          this.emitMetric("cold_start_ms", Date.now() - spawnAtMs);
         }
 
         const event = this.extractEvent(line);

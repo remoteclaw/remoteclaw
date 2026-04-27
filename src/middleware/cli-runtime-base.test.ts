@@ -804,6 +804,26 @@ describe("CLIRuntimeBase", () => {
       expect(coldStart.length).toBe(0);
     });
 
+    it("does not emit cold_start_ms for blank or malformed lines (only valid NDJSON)", async () => {
+      const runtime = new TestRuntime("test-cli");
+
+      const promise = collectEvents(runtime.execute(defaultParams));
+
+      // Leading garbage and blank lines should NOT trip the metric — the
+      // contract is "first VALID NDJSON line".
+      mockChild.stdout.write("\n");
+      mockChild.stdout.write("   \n");
+      mockChild.stdout.write("not valid json\n");
+      mockChild.stdout.write('{"type":"text","text":"first valid"}\n');
+      mockChild.stdout.end();
+      mockChild.emit("exit", 0, null);
+
+      await promise;
+
+      const coldStart = metricLines(logSpy).filter((l) => l.includes("metric=cold_start_ms"));
+      expect(coldStart.length).toBe(1);
+    });
+
     it("emits inflight_subprocesses gauge balanced (increment then decrement)", async () => {
       const runtime = new TestRuntime("test-cli");
 
@@ -887,6 +907,18 @@ describe("CLIRuntimeBase", () => {
       expect(teardownMetrics[0]).toMatch(/backend=mcp-cli value=\d+/);
     });
 
+    it("emits mcp_config_teardown_ms even when teardown() throws", async () => {
+      const runtime = new TestRuntime("mcp-cli");
+      const teardown = vi.fn().mockRejectedValue(new Error("teardown boom"));
+
+      await expect(runtime.testTimedMcpTeardown({ teardown })).rejects.toThrow("teardown boom");
+
+      const teardownMetrics = metricLines(logSpy).filter((l) =>
+        l.includes("metric=mcp_config_teardown_ms"),
+      );
+      expect(teardownMetrics.length).toBe(1);
+    });
+
     it("timedMcpSetup is a no-op when manager is null", async () => {
       const runtime = new TestRuntime("mcp-cli");
 
@@ -896,6 +928,17 @@ describe("CLIRuntimeBase", () => {
         l.includes("metric=mcp_config_setup_ms"),
       );
       expect(setupMetrics.length).toBe(0);
+    });
+
+    it("timedMcpTeardown is a no-op when manager is null", async () => {
+      const runtime = new TestRuntime("mcp-cli");
+
+      await runtime.testTimedMcpTeardown(null);
+
+      const teardownMetrics = metricLines(logSpy).filter((l) =>
+        l.includes("metric=mcp_config_teardown_ms"),
+      );
+      expect(teardownMetrics.length).toBe(0);
     });
   });
 });

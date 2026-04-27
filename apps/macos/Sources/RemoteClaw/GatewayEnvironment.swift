@@ -70,7 +70,7 @@ struct GatewayCommandResolution {
 }
 
 enum GatewayEnvironment {
-    private static let logger = Logger(subsystem: "ai.openclaw", category: "gateway.env")
+    private static let logger = Logger(subsystem: "org.remoteclaw", category: "gateway.env")
     private static let supportedBindModes: Set<String> = ["loopback", "tailnet", "lan", "auto"]
 
     static func gatewayPort() -> Int {
@@ -125,7 +125,7 @@ enum GatewayEnvironment {
                 requiredGateway: expectedString,
                 message: RuntimeLocator.describeFailure(err))
         case let .success(runtime):
-            let gatewayBin = CommandResolver.openclawExecutable()
+            let gatewayBin = CommandResolver.remoteclawExecutable()
 
             if gatewayBin == nil, projectEntrypoint == nil {
                 return GatewayEnvironmentStatus(
@@ -133,7 +133,7 @@ enum GatewayEnvironment {
                     nodeVersion: runtime.version.description,
                     gatewayVersion: nil,
                     requiredGateway: expectedString,
-                    message: "openclaw CLI not found in PATH; install the CLI.")
+                    message: "remoteclaw CLI not found in PATH; install the CLI.")
             }
 
             let installed = gatewayBin.flatMap { self.readGatewayVersion(binary: $0) }
@@ -183,7 +183,7 @@ enum GatewayEnvironment {
         let projectRoot = CommandResolver.projectRoot()
         let projectEntrypoint = CommandResolver.gatewayEntrypoint(in: projectRoot)
         let status = self.check()
-        let gatewayBin = CommandResolver.openclawExecutable()
+        let gatewayBin = CommandResolver.remoteclawExecutable()
         let runtime = RuntimeLocator.resolve(searchPaths: CommandResolver.preferredPaths())
 
         guard case .ok = status.kind else {
@@ -249,16 +249,16 @@ enum GatewayEnvironment {
         let bun = CommandResolver.findExecutable(named: "bun")
         let (label, cmd): (String, [String]) =
             if let npm {
-                ("npm", [npm, "install", "-g", "openclaw@\(target)"])
+                ("npm", [npm, "install", "-g", "remoteclaw@\(target)"])
             } else if let pnpm {
-                ("pnpm", [pnpm, "add", "-g", "openclaw@\(target)"])
+                ("pnpm", [pnpm, "add", "-g", "remoteclaw@\(target)"])
             } else if let bun {
-                ("bun", [bun, "add", "-g", "openclaw@\(target)"])
+                ("bun", [bun, "add", "-g", "remoteclaw@\(target)"])
             } else {
-                ("npm", ["npm", "install", "-g", "openclaw@\(target)"])
+                ("npm", ["npm", "install", "-g", "remoteclaw@\(target)"])
             }
 
-        statusHandler("Installing openclaw@\(target) via \(label)…")
+        statusHandler("Installing remoteclaw@\(target) via \(label)…")
 
         func summarize(_ text: String) -> String? {
             let lines = text
@@ -272,7 +272,7 @@ enum GatewayEnvironment {
 
         let response = await ShellExecutor.runDetailed(command: cmd, cwd: nil, env: ["PATH": preferred], timeout: 300)
         if response.success {
-            statusHandler("Installed openclaw@\(target)")
+            statusHandler("Installed remoteclaw@\(target)")
         } else {
             if response.timedOut {
                 statusHandler("Install failed: timed out. Check your internet connection and try again.")

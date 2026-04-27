@@ -4,7 +4,7 @@ import RemoteClawKit
 import RemoteClawProtocol
 import OSLog
 
-private let gatewayConnectionLogger = Logger(subsystem: "ai.openclaw", category: "gateway.connection")
+private let gatewayConnectionLogger = Logger(subsystem: "org.remoteclaw", category: "gateway.connection")
 
 enum GatewayAgentChannel: String, Codable, CaseIterable {
     case last

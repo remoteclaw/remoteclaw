@@ -52,6 +52,12 @@ export class CodexCliRuntime extends CLIRuntimeBase {
     return false;
   }
 
+  // ── RSS sampling: opt-in for multi-process backend ────────────────────
+
+  protected override get shouldSampleRss(): boolean {
+    return true;
+  }
+
   // ── execute() override: state reset + MCP config + done enrichment ────
 
   async *execute(params: AgentExecuteParams): AsyncIterable<AgentEvent> {
@@ -63,7 +69,7 @@ export class CodexCliRuntime extends CLIRuntimeBase {
         : null;
 
     try {
-      await mcpConfigManager?.setup();
+      await this.timedMcpSetup(mcpConfigManager);
 
       for await (const event of super.execute(params)) {
         if (event.type === "done") {
@@ -72,7 +78,7 @@ export class CodexCliRuntime extends CLIRuntimeBase {
         yield event;
       }
     } finally {
-      await mcpConfigManager?.teardown();
+      await this.timedMcpTeardown(mcpConfigManager);
     }
   }
 

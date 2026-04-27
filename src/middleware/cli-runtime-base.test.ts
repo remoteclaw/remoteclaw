@@ -1,6 +1,7 @@
 import EventEmitter from "node:events";
 import { PassThrough } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as logger from "../logger.js";
 import { CLIRuntimeBase } from "./cli-runtime-base.js";
 import type { AgentEvent, AgentExecuteParams } from "./types.js";
 
@@ -59,6 +60,21 @@ class TestRuntime extends CLIRuntimeBase {
   public testComposePrompt(params: AgentExecuteParams): string {
     return this.composePrompt(params);
   }
+
+  public testTimedMcpSetup(manager: { setup(): Promise<void> } | null) {
+    return this.timedMcpSetup(manager);
+  }
+
+  public testTimedMcpTeardown(manager: { teardown(): Promise<void> } | null) {
+    return this.timedMcpTeardown(manager);
+  }
+}
+
+/** Helper: extract metric lines from logDebug spy. */
+function metricLines(spy: ReturnType<typeof vi.spyOn>): string[] {
+  return spy.mock.calls
+    .map((c: unknown[]) => String(c[0]))
+    .filter((l: string) => l.startsWith("[agent-runtime] metric="));
 }
 
 /** Collect all events from the async iterable. */
@@ -728,6 +744,158 @@ describe("CLIRuntimeBase", () => {
         threadContext: "[Thread starter - for context]\nAlice: Hi",
       });
       expect(result).toBe("[Thread starter - for context]\nAlice: Hi\n\nhello");
+    });
+  });
+
+  describe("instrumentation", () => {
+    let logSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      logSpy = vi.spyOn(logger, "logDebug").mockImplementation(() => {});
+    });
+
+    it("emits cold_start_ms on the first NDJSON line", async () => {
+      const runtime = new TestRuntime("test-cli");
+
+      const promise = collectEvents(runtime.execute(defaultParams));
+
+      // Advance time before first line so cold-start has a non-zero value.
+      await vi.advanceTimersByTimeAsync(120);
+      mockChild.stdout.write('{"type":"text","text":"first"}\n');
+      mockChild.stdout.end();
+      mockChild.emit("exit", 0, null);
+
+      await promise;
+
+      const coldStart = metricLines(logSpy).filter((l) => l.includes("metric=cold_start_ms"));
+      expect(coldStart.length).toBe(1);
+      expect(coldStart[0]).toMatch(/backend=test-cli value=\d+/);
+    });
+
+    it("emits cold_start_ms exactly once even with many lines", async () => {
+      const runtime = new TestRuntime("test-cli");
+
+      const promise = collectEvents(runtime.execute(defaultParams));
+
+      mockChild.stdout.write('{"type":"text","text":"a"}\n');
+      mockChild.stdout.write('{"type":"text","text":"b"}\n');
+      mockChild.stdout.write('{"type":"text","text":"c"}\n');
+      mockChild.stdout.end();
+      mockChild.emit("exit", 0, null);
+
+      await promise;
+
+      const coldStart = metricLines(logSpy).filter((l) => l.includes("metric=cold_start_ms"));
+      expect(coldStart.length).toBe(1);
+    });
+
+    it("does not emit cold_start_ms when no NDJSON line arrives", async () => {
+      const runtime = new TestRuntime("test-cli");
+
+      const promise = collectEvents(runtime.execute(defaultParams));
+
+      // No stdout output; exit immediately.
+      mockChild.stdout.end();
+      mockChild.emit("exit", 0, null);
+
+      await promise;
+
+      const coldStart = metricLines(logSpy).filter((l) => l.includes("metric=cold_start_ms"));
+      expect(coldStart.length).toBe(0);
+    });
+
+    it("emits inflight_subprocesses gauge balanced (increment then decrement)", async () => {
+      const runtime = new TestRuntime("test-cli");
+
+      const promise = collectEvents(runtime.execute(defaultParams));
+
+      mockChild.stdout.write('{"type":"text","text":"x"}\n');
+      mockChild.stdout.end();
+      mockChild.emit("exit", 0, null);
+
+      await promise;
+
+      const inflight = metricLines(logSpy).filter((l) =>
+        l.includes("metric=inflight_subprocesses"),
+      );
+      expect(inflight.length).toBe(2);
+      // First emission: increment (>=1). Second: decrement (one less).
+      const firstValue = Number(inflight[0].match(/value=(\d+)/)?.[1]);
+      const secondValue = Number(inflight[1].match(/value=(\d+)/)?.[1]);
+      expect(firstValue).toBeGreaterThanOrEqual(1);
+      expect(secondValue).toBe(firstValue - 1);
+    });
+
+    it("emits inflight_subprocesses decrement on abort path", async () => {
+      const runtime = new TestRuntime("test-cli");
+      const controller = new AbortController();
+
+      const promise = collectEvents(
+        runtime.execute({ ...defaultParams, abortSignal: controller.signal }),
+      );
+
+      controller.abort();
+      // Mock kill ends stdout and emits exit, so promise resolves.
+      await promise;
+
+      const inflight = metricLines(logSpy).filter((l) =>
+        l.includes("metric=inflight_subprocesses"),
+      );
+      expect(inflight.length).toBe(2);
+      const firstValue = Number(inflight[0].match(/value=(\d+)/)?.[1]);
+      const secondValue = Number(inflight[1].match(/value=(\d+)/)?.[1]);
+      expect(secondValue).toBe(firstValue - 1);
+    });
+
+    it("emits mcp_config_setup_ms via timedMcpSetup helper", async () => {
+      const runtime = new TestRuntime("mcp-cli");
+      const setup = vi.fn().mockResolvedValue(undefined);
+
+      await runtime.testTimedMcpSetup({ setup });
+
+      expect(setup).toHaveBeenCalledOnce();
+      const setupMetrics = metricLines(logSpy).filter((l) =>
+        l.includes("metric=mcp_config_setup_ms"),
+      );
+      expect(setupMetrics.length).toBe(1);
+      expect(setupMetrics[0]).toMatch(/backend=mcp-cli value=\d+/);
+    });
+
+    it("emits mcp_config_setup_ms even when setup() throws", async () => {
+      const runtime = new TestRuntime("mcp-cli");
+      const setup = vi.fn().mockRejectedValue(new Error("boom"));
+
+      await expect(runtime.testTimedMcpSetup({ setup })).rejects.toThrow("boom");
+
+      const setupMetrics = metricLines(logSpy).filter((l) =>
+        l.includes("metric=mcp_config_setup_ms"),
+      );
+      expect(setupMetrics.length).toBe(1);
+    });
+
+    it("emits mcp_config_teardown_ms via timedMcpTeardown helper", async () => {
+      const runtime = new TestRuntime("mcp-cli");
+      const teardown = vi.fn().mockResolvedValue(undefined);
+
+      await runtime.testTimedMcpTeardown({ teardown });
+
+      expect(teardown).toHaveBeenCalledOnce();
+      const teardownMetrics = metricLines(logSpy).filter((l) =>
+        l.includes("metric=mcp_config_teardown_ms"),
+      );
+      expect(teardownMetrics.length).toBe(1);
+      expect(teardownMetrics[0]).toMatch(/backend=mcp-cli value=\d+/);
+    });
+
+    it("timedMcpSetup is a no-op when manager is null", async () => {
+      const runtime = new TestRuntime("mcp-cli");
+
+      await runtime.testTimedMcpSetup(null);
+
+      const setupMetrics = metricLines(logSpy).filter((l) =>
+        l.includes("metric=mcp_config_setup_ms"),
+      );
+      expect(setupMetrics.length).toBe(0);
     });
   });
 });

@@ -46,6 +46,12 @@ export class OpenCodeCliRuntime extends CLIRuntimeBase {
     super("opencode");
   }
 
+  // ── RSS sampling: opt-in for multi-process backend ────────────────────
+
+  protected override get shouldSampleRss(): boolean {
+    return true;
+  }
+
   // ── execute() override: state reset + MCP config + pending drain + done enrichment ──
 
   async *execute(params: AgentExecuteParams): AsyncIterable<AgentEvent> {
@@ -57,7 +63,7 @@ export class OpenCodeCliRuntime extends CLIRuntimeBase {
         : null;
 
     try {
-      await mcpConfigManager?.setup();
+      await this.timedMcpSetup(mcpConfigManager);
 
       for await (const event of super.execute(params)) {
         if (event.type === "done") {
@@ -71,7 +77,7 @@ export class OpenCodeCliRuntime extends CLIRuntimeBase {
         }
       }
     } finally {
-      await mcpConfigManager?.teardown();
+      await this.timedMcpTeardown(mcpConfigManager);
     }
   }
 

@@ -20,6 +20,8 @@ export const MODULE_ATTESTATIONS = {
   listAllChannelSupportedActions: "live",
   listChannelAgentTools: "live",
   resolveChannelMessageToolHints: "live",
+  getChannelAgentToolMeta: "live",
+  copyChannelAgentToolMeta: "live",
 } as const;
 
 type ChannelAgentToolMeta = {

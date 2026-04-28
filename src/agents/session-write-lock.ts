@@ -15,6 +15,7 @@ export const MODULE_ATTESTATIONS = {
   cleanStaleLockFiles: "live",
   acquireSessionWriteLock: "live",
   resetSessionWriteLockStateForTest: "live",
+  drainSessionWriteLockStateForTest: "live",
 } as const;
 
 type LockFilePayload = {

@@ -8,6 +8,7 @@ import { isTruthyEnvValue } from "../infra/env.js";
  */
 export const MODULE_ATTESTATIONS = {
   isLiveTestEnabled: "live",
+  isLiveProfileKeyModeEnabled: "live",
   createSingleUserPromptMessage: "live",
   extractNonEmptyAssistantText: "live",
 } as const;

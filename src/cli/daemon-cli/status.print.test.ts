@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { formatCliCommand } from "../command-format.js";
 
 const runtime = vi.hoisted(() => ({
   log: vi.fn<(line: string) => void>(),
@@ -58,6 +59,7 @@ vi.mock("./shared.js", () => ({
   filterDaemonEnv: () => ({}),
   formatRuntimeStatus: () => "running (pid 8000)",
   resolveRuntimeStatusColor: () => "",
+  resolveDaemonContainerContext: () => null,
   renderRuntimeHints: () => [],
   safeDaemonEnv: () => [],
 }));
@@ -116,7 +118,7 @@ describe("printDaemonStatus", () => {
       expect.stringContaining("Gateway runtime PID does not own the listening port"),
     );
     expect(runtime.error).toHaveBeenCalledWith(
-      expect.stringContaining("remoteclaw gateway restart"),
+      expect.stringContaining(formatCliCommand("remoteclaw gateway restart")),
     );
   });
 });

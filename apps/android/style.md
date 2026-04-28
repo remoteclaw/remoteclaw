@@ -104,10 +104,10 @@ Hard rule: avoid ultra-thin weights on light backgrounds.
 
 ## 11. Source Of Truth
 
-- `app/src/main/java/ai/remoteclaw/android/ui/RemoteClawTheme.kt`
-- `app/src/main/java/ai/remoteclaw/android/ui/OnboardingFlow.kt`
-- `app/src/main/java/ai/remoteclaw/android/ui/RootScreen.kt`
-- `app/src/main/java/ai/remoteclaw/android/ui/SettingsSheet.kt`
-- `app/src/main/java/ai/remoteclaw/android/MainViewModel.kt`
+- `app/src/main/java/org/remoteclaw/android/ui/RemoteClawTheme.kt`
+- `app/src/main/java/org/remoteclaw/android/ui/OnboardingFlow.kt`
+- `app/src/main/java/org/remoteclaw/android/ui/RootScreen.kt`
+- `app/src/main/java/org/remoteclaw/android/ui/SettingsSheet.kt`
+- `app/src/main/java/org/remoteclaw/android/MainViewModel.kt`
 
 If style and implementation diverge, update both in the same change.

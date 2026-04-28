@@ -4,10 +4,6 @@ const { callGatewayMock } = vi.hoisted(() => ({
   callGatewayMock: vi.fn(),
 }));
 
-vi.mock("../../gateway/call.js", () => ({
-  callGateway: (opts: unknown) => callGatewayMock(opts),
-}));
-
 vi.mock("../agent-scope.js", () => ({
   resolveSessionAgentId: () => "agent-123",
   resolveAgentRuntime: () => "claude",
@@ -16,6 +12,15 @@ vi.mock("../agent-scope.js", () => ({
 import { createCronTool } from "./cron-tool.js";
 
 describe("cron tool", () => {
+  function createTestCronTool(
+    opts?: Parameters<typeof createCronTool>[0],
+  ): ReturnType<typeof createCronTool> {
+    return createCronTool(opts, {
+      callGatewayTool: async (method, _gatewayOpts, params) =>
+        await callGatewayMock({ method, params }),
+    });
+  }
+
   function readGatewayCall(index = 0): { method?: string; params?: Record<string, unknown> } {
     return (
       (callGatewayMock.mock.calls[index]?.[0] as
@@ -55,7 +60,7 @@ describe("cron tool", () => {
     agentSessionKey: string;
     delivery?: { mode?: string; channel?: string; to?: string } | null;
   }) {
-    const tool = createCronTool({ agentSessionKey: params.agentSessionKey });
+    const tool = createTestCronTool({ agentSessionKey: params.agentSessionKey });
     await tool.execute(params.callId, {
       action: "add",
       job: {
@@ -75,7 +80,7 @@ describe("cron tool", () => {
     agentSessionKey: string;
     jobSessionKey?: string;
   }): Promise<string | undefined> {
-    const tool = createCronTool({ agentSessionKey: params.agentSessionKey });
+    const tool = createTestCronTool({ agentSessionKey: params.agentSessionKey });
     await tool.execute(params.callId, {
       action: "add",
       job: {
@@ -91,7 +96,7 @@ describe("cron tool", () => {
   }
 
   async function executeAddWithContextMessages(callId: string, contextMessages: number) {
-    const tool = createCronTool({ agentSessionKey: "main" });
+    const tool = createTestCronTool({ agentSessionKey: "main" });
     await tool.execute(callId, {
       action: "add",
       contextMessages,
@@ -109,7 +114,7 @@ describe("cron tool", () => {
   });
 
   it("marks cron as owner-only", async () => {
-    const tool = createCronTool();
+    const tool = createTestCronTool();
     expect(tool.ownerOnly).toBe(true);
   });
 
@@ -131,7 +136,7 @@ describe("cron tool", () => {
     ["runs", { action: "runs", jobId: "job-1" }, { id: "job-1" }],
     ["runs", { action: "runs", id: "job-2" }, { id: "job-2" }],
   ])("%s sends id to gateway", async (action, args, expectedParams) => {
-    const tool = createCronTool();
+    const tool = createTestCronTool();
     await tool.execute("call1", args);
 
     const params = expectSingleGatewayCallMethod(`cron.${action}`);
@@ -139,7 +144,7 @@ describe("cron tool", () => {
   });
 
   it("prefers jobId over id when both are provided", async () => {
-    const tool = createCronTool();
+    const tool = createTestCronTool();
     await tool.execute("call1", {
       action: "run",
       jobId: "job-primary",
@@ -150,7 +155,7 @@ describe("cron tool", () => {
   });
 
   it("supports due-only run mode", async () => {
-    const tool = createCronTool();
+    const tool = createTestCronTool();
     await tool.execute("call-due", {
       action: "run",
       jobId: "job-due",
@@ -161,7 +166,7 @@ describe("cron tool", () => {
   });
 
   it("normalizes cron.add job payloads", async () => {
-    const tool = createCronTool();
+    const tool = createTestCronTool();
     await tool.execute("call2", {
       action: "add",
       job: {
@@ -186,7 +191,7 @@ describe("cron tool", () => {
   });
 
   it("does not default agentId when job.agentId is null", async () => {
-    const tool = createCronTool({ agentSessionKey: "main" });
+    const tool = createTestCronTool({ agentSessionKey: "main" });
     await tool.execute("call-null", {
       action: "add",
       job: {
@@ -278,7 +283,7 @@ describe("cron tool", () => {
   it("does not add context when contextMessages is 0 (default)", async () => {
     callGatewayMock.mockResolvedValueOnce({ ok: true });
 
-    const tool = createCronTool({ agentSessionKey: "main" });
+    const tool = createTestCronTool({ agentSessionKey: "main" });
     await tool.execute("call4", {
       action: "add",
       job: {
@@ -299,7 +304,7 @@ describe("cron tool", () => {
   it("preserves explicit agentId null on add", async () => {
     callGatewayMock.mockResolvedValueOnce({ ok: true });
 
-    const tool = createCronTool({ agentSessionKey: "main" });
+    const tool = createTestCronTool({ agentSessionKey: "main" });
     await tool.execute("call6", {
       action: "add",
       job: {
@@ -362,7 +367,7 @@ describe("cron tool", () => {
   it("recovers flat params when job is missing", async () => {
     callGatewayMock.mockResolvedValueOnce({ ok: true });
 
-    const tool = createCronTool();
+    const tool = createTestCronTool();
     await tool.execute("call-flat", {
       action: "add",
       name: "flat-job",
@@ -382,7 +387,7 @@ describe("cron tool", () => {
   it("recovers flat params when job is empty object", async () => {
     callGatewayMock.mockResolvedValueOnce({ ok: true });
 
-    const tool = createCronTool();
+    const tool = createTestCronTool();
     await tool.execute("call-empty-job", {
       action: "add",
       job: {},
@@ -403,7 +408,7 @@ describe("cron tool", () => {
   it("recovers flat message shorthand as agentTurn payload", async () => {
     callGatewayMock.mockResolvedValueOnce({ ok: true });
 
-    const tool = createCronTool();
+    const tool = createTestCronTool();
     await tool.execute("call-msg-shorthand", {
       action: "add",
       schedule: { kind: "at", at: new Date(456).toISOString() },
@@ -420,7 +425,7 @@ describe("cron tool", () => {
   });
 
   it("does not recover flat params when no meaningful job field is present", async () => {
-    const tool = createCronTool();
+    const tool = createTestCronTool();
     await expect(
       tool.execute("call-no-signal", {
         action: "add",
@@ -433,7 +438,7 @@ describe("cron tool", () => {
   it("prefers existing non-empty job over flat params", async () => {
     callGatewayMock.mockResolvedValueOnce({ ok: true });
 
-    const tool = createCronTool();
+    const tool = createTestCronTool();
     await tool.execute("call-nested-wins", {
       action: "add",
       job: {
@@ -475,7 +480,7 @@ describe("cron tool", () => {
   });
 
   it("fails fast when webhook mode is missing delivery.to", async () => {
-    const tool = createCronTool({ agentSessionKey: "agent:main:discord:dm:buddy" });
+    const tool = createTestCronTool({ agentSessionKey: "agent:main:discord:dm:buddy" });
 
     await expect(
       tool.execute("call-webhook-missing", {
@@ -490,7 +495,7 @@ describe("cron tool", () => {
   });
 
   it("fails fast when webhook mode uses a non-http URL", async () => {
-    const tool = createCronTool({ agentSessionKey: "agent:main:discord:dm:buddy" });
+    const tool = createTestCronTool({ agentSessionKey: "agent:main:discord:dm:buddy" });
 
     await expect(
       tool.execute("call-webhook-invalid", {
@@ -507,7 +512,7 @@ describe("cron tool", () => {
   it("recovers flat patch params for update action", async () => {
     callGatewayMock.mockResolvedValueOnce({ ok: true });
 
-    const tool = createCronTool();
+    const tool = createTestCronTool();
     await tool.execute("call-update-flat", {
       action: "update",
       jobId: "job-1",
@@ -526,7 +531,7 @@ describe("cron tool", () => {
   it("recovers additional flat patch params for update action", async () => {
     callGatewayMock.mockResolvedValueOnce({ ok: true });
 
-    const tool = createCronTool();
+    const tool = createTestCronTool();
     await tool.execute("call-update-flat-extra", {
       action: "update",
       id: "job-2",

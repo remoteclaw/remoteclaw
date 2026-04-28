@@ -14,6 +14,7 @@ vi.mock("./client.js", () => ({
 
 vi.mock("./accounts.js", () => ({
   resolveFeishuAccount: mockResolveFeishuAccount,
+  resolveFeishuRuntimeAccount: mockResolveFeishuAccount,
 }));
 
 describe("getMessageFeishu", () => {

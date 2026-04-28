@@ -22,6 +22,23 @@ export const MODULE_ATTESTATIONS = {
   resolveChannelMessageToolHints: "live",
 } as const;
 
+type ChannelAgentToolMeta = {
+  channelId: string;
+};
+
+const channelAgentToolMeta = new WeakMap<ChannelAgentTool, ChannelAgentToolMeta>();
+
+export function getChannelAgentToolMeta(tool: ChannelAgentTool): ChannelAgentToolMeta | undefined {
+  return channelAgentToolMeta.get(tool);
+}
+
+export function copyChannelAgentToolMeta(source: ChannelAgentTool, target: ChannelAgentTool): void {
+  const meta = channelAgentToolMeta.get(source);
+  if (meta) {
+    channelAgentToolMeta.set(target, meta);
+  }
+}
+
 /**
  * Get the list of supported message actions for a specific channel.
  * Returns an empty array if channel is not found or has no actions configured.
@@ -71,6 +88,9 @@ export function listChannelAgentTools(params: { cfg?: RemoteClawConfig }): Chann
     }
     const resolved = typeof entry === "function" ? entry(params) : entry;
     if (Array.isArray(resolved)) {
+      for (const tool of resolved) {
+        channelAgentToolMeta.set(tool, { channelId: plugin.id });
+      }
       tools.push(...resolved);
     }
   }

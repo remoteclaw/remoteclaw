@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import { handleFeishuCardAction, type FeishuCardActionEvent } from "./card-action.js";
 
-// Mock resolveFeishuAccount
+// Mock account resolution
 vi.mock("./accounts.js", () => ({
   resolveFeishuAccount: vi.fn().mockReturnValue({ accountId: "mock-account" }),
+  resolveFeishuRuntimeAccount: vi.fn().mockReturnValue({ accountId: "mock-account" }),
 }));
 
 // Mock bot.js to verify handleFeishuMessage call

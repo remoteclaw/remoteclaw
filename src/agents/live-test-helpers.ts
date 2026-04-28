@@ -23,6 +23,10 @@ export function isLiveTestEnabled(
   );
 }
 
+export function isLiveProfileKeyModeEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  return isTruthyEnvValue(env.REMOTECLAW_LIVE_REQUIRE_PROFILE_KEYS);
+}
+
 export function createSingleUserPromptMessage(content = LIVE_OK_PROMPT) {
   return [
     {

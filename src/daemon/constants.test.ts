@@ -133,18 +133,18 @@ describe("resolveGatewayServiceDescription", () => {
 });
 
 describe("LEGACY_GATEWAY_LAUNCH_AGENT_LABELS", () => {
-  it("contains the old ai.remoteclaw.gateway label", () => {
-    expect(LEGACY_GATEWAY_LAUNCH_AGENT_LABELS).toEqual(["ai.remoteclaw.gateway"]);
+  it("contains the old org.remoteclaw.gateway label", () => {
+    expect(LEGACY_GATEWAY_LAUNCH_AGENT_LABELS).toEqual(["org.remoteclaw.gateway"]);
   });
 });
 
 describe("resolveLegacyGatewayLaunchAgentLabels", () => {
   it("returns the legacy default label when no profile is set", () => {
-    expect(resolveLegacyGatewayLaunchAgentLabels()).toEqual(["ai.remoteclaw.gateway"]);
+    expect(resolveLegacyGatewayLaunchAgentLabels()).toEqual(["org.remoteclaw.gateway"]);
   });
 
   it("returns the legacy profile-specific label when profile is set", () => {
-    expect(resolveLegacyGatewayLaunchAgentLabels("dev")).toEqual(["ai.remoteclaw.dev"]);
+    expect(resolveLegacyGatewayLaunchAgentLabels("dev")).toEqual(["org.remoteclaw.dev"]);
   });
 });
 

@@ -165,7 +165,17 @@ describe("argv helpers", () => {
   it("extracts command path while skipping known root option values", () => {
     expect(
       getCommandPathWithRootOptions(
-        ["node", "remoteclaw", "--profile", "work", "--no-color", "config", "validate"],
+        [
+          "node",
+          "remoteclaw",
+          "--profile",
+          "work",
+          "--container",
+          "demo",
+          "--no-color",
+          "config",
+          "validate",
+        ],
         2,
       ),
     ).toEqual(["config", "validate"]);

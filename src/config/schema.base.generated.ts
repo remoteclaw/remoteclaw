@@ -336,10 +336,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
               },
               {
                 type: "string",
-                const: "next",
-              },
-              {
-                type: "string",
                 const: "dev",
               },
             ],
@@ -470,15 +466,22 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 cdpUrl: {
                   type: "string",
                 },
+                userDataDir: {
+                  type: "string",
+                },
                 driver: {
                   anyOf: [
+                    {
+                      type: "string",
+                      const: "remoteclaw",
+                    },
                     {
                       type: "string",
                       const: "clawd",
                     },
                     {
                       type: "string",
-                      const: "extension",
+                      const: "existing-session",
                     },
                   ],
                 },
@@ -739,6 +742,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   ],
                 },
                 email: {
+                  type: "string",
+                },
+                displayName: {
                   type: "string",
                 },
               },
@@ -1021,6 +1027,19 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     },
                   ],
                 },
+                api: {
+                  type: "string",
+                  enum: [
+                    "openai-completions",
+                    "openai-responses",
+                    "openai-codex-responses",
+                    "anthropic-messages",
+                    "google-generative-ai",
+                    "github-copilot",
+                    "bedrock-converse-stream",
+                    "ollama",
+                  ],
+                },
                 injectNumCtxForOpenAICompat: {
                   type: "boolean",
                 },
@@ -1112,6 +1131,19 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                         type: "string",
                         minLength: 1,
                       },
+                      api: {
+                        type: "string",
+                        enum: [
+                          "openai-completions",
+                          "openai-responses",
+                          "openai-codex-responses",
+                          "anthropic-messages",
+                          "google-generative-ai",
+                          "github-copilot",
+                          "bedrock-converse-stream",
+                          "ollama",
+                        ],
+                      },
                       reasoning: {
                         type: "boolean",
                       },
@@ -1164,6 +1196,92 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                         additionalProperties: {
                           type: "string",
                         },
+                      },
+                      compat: {
+                        type: "object",
+                        properties: {
+                          supportsStore: {
+                            type: "boolean",
+                          },
+                          supportsDeveloperRole: {
+                            type: "boolean",
+                          },
+                          supportsReasoningEffort: {
+                            type: "boolean",
+                          },
+                          supportsUsageInStreaming: {
+                            type: "boolean",
+                          },
+                          supportsTools: {
+                            type: "boolean",
+                          },
+                          supportsStrictMode: {
+                            type: "boolean",
+                          },
+                          maxTokensField: {
+                            anyOf: [
+                              {
+                                type: "string",
+                                const: "max_completion_tokens",
+                              },
+                              {
+                                type: "string",
+                                const: "max_tokens",
+                              },
+                            ],
+                          },
+                          thinkingFormat: {
+                            anyOf: [
+                              {
+                                type: "string",
+                                const: "openai",
+                              },
+                              {
+                                type: "string",
+                                const: "openrouter",
+                              },
+                              {
+                                type: "string",
+                                const: "zai",
+                              },
+                              {
+                                type: "string",
+                                const: "qwen",
+                              },
+                              {
+                                type: "string",
+                                const: "qwen-chat-template",
+                              },
+                            ],
+                          },
+                          requiresToolResultName: {
+                            type: "boolean",
+                          },
+                          requiresAssistantAfterToolResult: {
+                            type: "boolean",
+                          },
+                          requiresThinkingAsText: {
+                            type: "boolean",
+                          },
+                          toolSchemaProfile: {
+                            type: "string",
+                            const: "xai",
+                          },
+                          nativeWebSearchTool: {
+                            type: "boolean",
+                          },
+                          toolCallArgumentsEncoding: {
+                            type: "string",
+                            const: "html-entities",
+                          },
+                          requiresMistralToolIds: {
+                            type: "boolean",
+                          },
+                          requiresOpenAiAnthropicToolPayload: {
+                            type: "boolean",
+                          },
+                        },
+                        additionalProperties: false,
                       },
                     },
                     required: ["id", "name"],
@@ -1282,6 +1400,59 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   },
                 ],
               },
+              imageGenerationModel: {
+                anyOf: [
+                  {
+                    type: "string",
+                  },
+                  {
+                    type: "object",
+                    properties: {
+                      primary: {
+                        type: "string",
+                      },
+                      fallbacks: {
+                        type: "array",
+                        items: {
+                          type: "string",
+                        },
+                      },
+                    },
+                    additionalProperties: false,
+                  },
+                ],
+              },
+              pdfModel: {
+                anyOf: [
+                  {
+                    type: "string",
+                  },
+                  {
+                    type: "object",
+                    properties: {
+                      primary: {
+                        type: "string",
+                      },
+                      fallbacks: {
+                        type: "array",
+                        items: {
+                          type: "string",
+                        },
+                      },
+                    },
+                    additionalProperties: false,
+                  },
+                ],
+              },
+              pdfMaxBytesMb: {
+                type: "number",
+                exclusiveMinimum: 0,
+              },
+              pdfMaxPages: {
+                type: "integer",
+                exclusiveMinimum: 0,
+                maximum: 9007199254740991,
+              },
               models: {
                 type: "object",
                 propertyNames: {
@@ -1292,6 +1463,13 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   properties: {
                     alias: {
                       type: "string",
+                    },
+                    params: {
+                      type: "object",
+                      propertyNames: {
+                        type: "string",
+                      },
+                      additionalProperties: {},
                     },
                     streaming: {
                       type: "boolean",
@@ -1634,6 +1812,436 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   additionalProperties: false,
                 },
               },
+              memorySearch: {
+                type: "object",
+                properties: {
+                  enabled: {
+                    type: "boolean",
+                  },
+                  sources: {
+                    type: "array",
+                    items: {
+                      anyOf: [
+                        {
+                          type: "string",
+                          const: "memory",
+                        },
+                        {
+                          type: "string",
+                          const: "sessions",
+                        },
+                      ],
+                    },
+                  },
+                  extraPaths: {
+                    type: "array",
+                    items: {
+                      type: "string",
+                    },
+                  },
+                  multimodal: {
+                    type: "object",
+                    properties: {
+                      enabled: {
+                        type: "boolean",
+                      },
+                      modalities: {
+                        type: "array",
+                        items: {
+                          anyOf: [
+                            {
+                              type: "string",
+                              const: "image",
+                            },
+                            {
+                              type: "string",
+                              const: "audio",
+                            },
+                            {
+                              type: "string",
+                              const: "all",
+                            },
+                          ],
+                        },
+                      },
+                      maxFileBytes: {
+                        type: "integer",
+                        exclusiveMinimum: 0,
+                        maximum: 9007199254740991,
+                      },
+                    },
+                    additionalProperties: false,
+                  },
+                  experimental: {
+                    type: "object",
+                    properties: {
+                      sessionMemory: {
+                        type: "boolean",
+                      },
+                    },
+                    additionalProperties: false,
+                  },
+                  provider: {
+                    anyOf: [
+                      {
+                        type: "string",
+                        const: "openai",
+                      },
+                      {
+                        type: "string",
+                        const: "local",
+                      },
+                      {
+                        type: "string",
+                        const: "gemini",
+                      },
+                      {
+                        type: "string",
+                        const: "voyage",
+                      },
+                      {
+                        type: "string",
+                        const: "mistral",
+                      },
+                      {
+                        type: "string",
+                        const: "ollama",
+                      },
+                    ],
+                  },
+                  remote: {
+                    type: "object",
+                    properties: {
+                      baseUrl: {
+                        type: "string",
+                      },
+                      apiKey: {
+                        anyOf: [
+                          {
+                            type: "string",
+                          },
+                          {
+                            oneOf: [
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "env",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "file",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "exec",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                      headers: {
+                        type: "object",
+                        propertyNames: {
+                          type: "string",
+                        },
+                        additionalProperties: {
+                          type: "string",
+                        },
+                      },
+                      batch: {
+                        type: "object",
+                        properties: {
+                          enabled: {
+                            type: "boolean",
+                          },
+                          wait: {
+                            type: "boolean",
+                          },
+                          concurrency: {
+                            type: "integer",
+                            exclusiveMinimum: 0,
+                            maximum: 9007199254740991,
+                          },
+                          pollIntervalMs: {
+                            type: "integer",
+                            minimum: 0,
+                            maximum: 9007199254740991,
+                          },
+                          timeoutMinutes: {
+                            type: "integer",
+                            exclusiveMinimum: 0,
+                            maximum: 9007199254740991,
+                          },
+                        },
+                        additionalProperties: false,
+                      },
+                    },
+                    additionalProperties: false,
+                  },
+                  fallback: {
+                    anyOf: [
+                      {
+                        type: "string",
+                        const: "openai",
+                      },
+                      {
+                        type: "string",
+                        const: "gemini",
+                      },
+                      {
+                        type: "string",
+                        const: "local",
+                      },
+                      {
+                        type: "string",
+                        const: "voyage",
+                      },
+                      {
+                        type: "string",
+                        const: "mistral",
+                      },
+                      {
+                        type: "string",
+                        const: "ollama",
+                      },
+                      {
+                        type: "string",
+                        const: "none",
+                      },
+                    ],
+                  },
+                  model: {
+                    type: "string",
+                  },
+                  outputDimensionality: {
+                    type: "integer",
+                    exclusiveMinimum: 0,
+                    maximum: 9007199254740991,
+                  },
+                  local: {
+                    type: "object",
+                    properties: {
+                      modelPath: {
+                        type: "string",
+                      },
+                      modelCacheDir: {
+                        type: "string",
+                      },
+                    },
+                    additionalProperties: false,
+                  },
+                  store: {
+                    type: "object",
+                    properties: {
+                      driver: {
+                        type: "string",
+                        const: "sqlite",
+                      },
+                      path: {
+                        type: "string",
+                      },
+                      vector: {
+                        type: "object",
+                        properties: {
+                          enabled: {
+                            type: "boolean",
+                          },
+                          extensionPath: {
+                            type: "string",
+                          },
+                        },
+                        additionalProperties: false,
+                      },
+                    },
+                    additionalProperties: false,
+                  },
+                  chunking: {
+                    type: "object",
+                    properties: {
+                      tokens: {
+                        type: "integer",
+                        exclusiveMinimum: 0,
+                        maximum: 9007199254740991,
+                      },
+                      overlap: {
+                        type: "integer",
+                        minimum: 0,
+                        maximum: 9007199254740991,
+                      },
+                    },
+                    additionalProperties: false,
+                  },
+                  sync: {
+                    type: "object",
+                    properties: {
+                      onSessionStart: {
+                        type: "boolean",
+                      },
+                      onSearch: {
+                        type: "boolean",
+                      },
+                      watch: {
+                        type: "boolean",
+                      },
+                      watchDebounceMs: {
+                        type: "integer",
+                        minimum: 0,
+                        maximum: 9007199254740991,
+                      },
+                      intervalMinutes: {
+                        type: "integer",
+                        minimum: 0,
+                        maximum: 9007199254740991,
+                      },
+                      sessions: {
+                        type: "object",
+                        properties: {
+                          deltaBytes: {
+                            type: "integer",
+                            minimum: 0,
+                            maximum: 9007199254740991,
+                          },
+                          deltaMessages: {
+                            type: "integer",
+                            minimum: 0,
+                            maximum: 9007199254740991,
+                          },
+                          postCompactionForce: {
+                            type: "boolean",
+                          },
+                        },
+                        additionalProperties: false,
+                      },
+                    },
+                    additionalProperties: false,
+                  },
+                  query: {
+                    type: "object",
+                    properties: {
+                      maxResults: {
+                        type: "integer",
+                        exclusiveMinimum: 0,
+                        maximum: 9007199254740991,
+                      },
+                      minScore: {
+                        type: "number",
+                        minimum: 0,
+                        maximum: 1,
+                      },
+                      hybrid: {
+                        type: "object",
+                        properties: {
+                          enabled: {
+                            type: "boolean",
+                          },
+                          vectorWeight: {
+                            type: "number",
+                            minimum: 0,
+                            maximum: 1,
+                          },
+                          textWeight: {
+                            type: "number",
+                            minimum: 0,
+                            maximum: 1,
+                          },
+                          candidateMultiplier: {
+                            type: "integer",
+                            exclusiveMinimum: 0,
+                            maximum: 9007199254740991,
+                          },
+                          mmr: {
+                            type: "object",
+                            properties: {
+                              enabled: {
+                                type: "boolean",
+                              },
+                              lambda: {
+                                type: "number",
+                                minimum: 0,
+                                maximum: 1,
+                              },
+                            },
+                            additionalProperties: false,
+                          },
+                          temporalDecay: {
+                            type: "object",
+                            properties: {
+                              enabled: {
+                                type: "boolean",
+                              },
+                              halfLifeDays: {
+                                type: "integer",
+                                exclusiveMinimum: 0,
+                                maximum: 9007199254740991,
+                              },
+                            },
+                            additionalProperties: false,
+                          },
+                        },
+                        additionalProperties: false,
+                      },
+                    },
+                    additionalProperties: false,
+                  },
+                  cache: {
+                    type: "object",
+                    properties: {
+                      enabled: {
+                        type: "boolean",
+                      },
+                      maxEntries: {
+                        type: "integer",
+                        exclusiveMinimum: 0,
+                        maximum: 9007199254740991,
+                      },
+                    },
+                    additionalProperties: false,
+                  },
+                },
+                additionalProperties: false,
+              },
               contextPruning: {
                 type: "object",
                 properties: {
@@ -1761,6 +2369,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     minimum: 0.1,
                     maximum: 0.9,
                   },
+                  customInstructions: {
+                    type: "string",
+                  },
                   identifierPolicy: {
                     anyOf: [
                       {
@@ -1799,6 +2410,10 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     },
                     additionalProperties: false,
                   },
+                  postIndexSync: {
+                    type: "string",
+                    enum: ["off", "async", "await"],
+                  },
                   postCompactionSections: {
                     type: "array",
                     items: {
@@ -1807,6 +2422,11 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   },
                   model: {
                     type: "string",
+                  },
+                  timeoutSeconds: {
+                    type: "integer",
+                    exclusiveMinimum: 0,
+                    maximum: 9007199254740991,
                   },
                   memoryFlush: {
                     type: "object",
@@ -1842,6 +2462,60 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   },
                 },
                 additionalProperties: false,
+              },
+              embeddedPi: {
+                type: "object",
+                properties: {
+                  projectSettingsPolicy: {
+                    anyOf: [
+                      {
+                        type: "string",
+                        const: "trusted",
+                      },
+                      {
+                        type: "string",
+                        const: "sanitize",
+                      },
+                      {
+                        type: "string",
+                        const: "ignore",
+                      },
+                    ],
+                  },
+                },
+                additionalProperties: false,
+              },
+              thinkingDefault: {
+                anyOf: [
+                  {
+                    type: "string",
+                    const: "off",
+                  },
+                  {
+                    type: "string",
+                    const: "minimal",
+                  },
+                  {
+                    type: "string",
+                    const: "low",
+                  },
+                  {
+                    type: "string",
+                    const: "medium",
+                  },
+                  {
+                    type: "string",
+                    const: "high",
+                  },
+                  {
+                    type: "string",
+                    const: "xhigh",
+                  },
+                  {
+                    type: "string",
+                    const: "adaptive",
+                  },
+                ],
               },
               verboseDefault: {
                 anyOf: [
@@ -2092,6 +2766,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   lightContext: {
                     type: "boolean",
                   },
+                  isolatedSession: {
+                    type: "boolean",
+                  },
                 },
                 additionalProperties: false,
               },
@@ -2124,7 +2801,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   },
                   archiveAfterMinutes: {
                     type: "integer",
-                    exclusiveMinimum: 0,
+                    minimum: 0,
                     maximum: 9007199254740991,
                   },
                   model: {
@@ -2148,6 +2825,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                         additionalProperties: false,
                       },
                     ],
+                  },
+                  thinking: {
+                    type: "string",
                   },
                   runTimeoutSeconds: {
                     type: "integer",
@@ -2180,6 +2860,10 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                         const: "all",
                       },
                     ],
+                  },
+                  backend: {
+                    type: "string",
+                    minLength: 1,
                   },
                   workspaceAccess: {
                     anyOf: [
@@ -2371,6 +3055,240 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     },
                     additionalProperties: false,
                   },
+                  ssh: {
+                    type: "object",
+                    properties: {
+                      target: {
+                        type: "string",
+                        minLength: 1,
+                      },
+                      command: {
+                        type: "string",
+                        minLength: 1,
+                      },
+                      workspaceRoot: {
+                        type: "string",
+                        minLength: 1,
+                      },
+                      strictHostKeyChecking: {
+                        type: "boolean",
+                      },
+                      updateHostKeys: {
+                        type: "boolean",
+                      },
+                      identityFile: {
+                        type: "string",
+                        minLength: 1,
+                      },
+                      certificateFile: {
+                        type: "string",
+                        minLength: 1,
+                      },
+                      knownHostsFile: {
+                        type: "string",
+                        minLength: 1,
+                      },
+                      identityData: {
+                        anyOf: [
+                          {
+                            type: "string",
+                          },
+                          {
+                            oneOf: [
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "env",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "file",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "exec",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                      certificateData: {
+                        anyOf: [
+                          {
+                            type: "string",
+                          },
+                          {
+                            oneOf: [
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "env",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "file",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "exec",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                      knownHostsData: {
+                        anyOf: [
+                          {
+                            type: "string",
+                          },
+                          {
+                            oneOf: [
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "env",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "file",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "exec",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                    additionalProperties: false,
+                  },
                   browser: {
                     type: "object",
                     properties: {
@@ -2449,63 +3367,10 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 },
                 additionalProperties: false,
               },
-              auth: {
-                anyOf: [
-                  {
-                    type: "string",
-                  },
-                  {
-                    type: "array",
-                    items: {
-                      type: "string",
-                    },
-                  },
-                  {
-                    type: "boolean",
-                    const: false,
-                  },
-                ],
-              },
-              runtime: {
-                anyOf: [
-                  {
-                    type: "string",
-                    const: "claude",
-                  },
-                  {
-                    type: "string",
-                    const: "gemini",
-                  },
-                  {
-                    type: "string",
-                    const: "codex",
-                  },
-                  {
-                    type: "string",
-                    const: "opencode",
-                  },
-                ],
-              },
-              runtimeArgs: {
-                type: "array",
-                items: {
-                  type: "string",
-                },
-              },
-              runtimeEnv: {
-                type: "object",
-                propertyNames: {
-                  type: "string",
-                },
-                additionalProperties: {
-                  type: "string",
-                },
-              },
             },
             additionalProperties: false,
           },
           list: {
-            minItems: 1,
             type: "array",
             items: {
               type: "object",
@@ -2547,11 +3412,452 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     },
                   ],
                 },
+                thinkingDefault: {
+                  type: "string",
+                  enum: ["off", "minimal", "low", "medium", "high", "xhigh", "adaptive"],
+                },
+                reasoningDefault: {
+                  type: "string",
+                  enum: ["on", "off", "stream"],
+                },
+                fastModeDefault: {
+                  type: "boolean",
+                },
                 skills: {
                   type: "array",
                   items: {
                     type: "string",
                   },
+                },
+                memorySearch: {
+                  type: "object",
+                  properties: {
+                    enabled: {
+                      type: "boolean",
+                    },
+                    sources: {
+                      type: "array",
+                      items: {
+                        anyOf: [
+                          {
+                            type: "string",
+                            const: "memory",
+                          },
+                          {
+                            type: "string",
+                            const: "sessions",
+                          },
+                        ],
+                      },
+                    },
+                    extraPaths: {
+                      type: "array",
+                      items: {
+                        type: "string",
+                      },
+                    },
+                    multimodal: {
+                      type: "object",
+                      properties: {
+                        enabled: {
+                          type: "boolean",
+                        },
+                        modalities: {
+                          type: "array",
+                          items: {
+                            anyOf: [
+                              {
+                                type: "string",
+                                const: "image",
+                              },
+                              {
+                                type: "string",
+                                const: "audio",
+                              },
+                              {
+                                type: "string",
+                                const: "all",
+                              },
+                            ],
+                          },
+                        },
+                        maxFileBytes: {
+                          type: "integer",
+                          exclusiveMinimum: 0,
+                          maximum: 9007199254740991,
+                        },
+                      },
+                      additionalProperties: false,
+                    },
+                    experimental: {
+                      type: "object",
+                      properties: {
+                        sessionMemory: {
+                          type: "boolean",
+                        },
+                      },
+                      additionalProperties: false,
+                    },
+                    provider: {
+                      anyOf: [
+                        {
+                          type: "string",
+                          const: "openai",
+                        },
+                        {
+                          type: "string",
+                          const: "local",
+                        },
+                        {
+                          type: "string",
+                          const: "gemini",
+                        },
+                        {
+                          type: "string",
+                          const: "voyage",
+                        },
+                        {
+                          type: "string",
+                          const: "mistral",
+                        },
+                        {
+                          type: "string",
+                          const: "ollama",
+                        },
+                      ],
+                    },
+                    remote: {
+                      type: "object",
+                      properties: {
+                        baseUrl: {
+                          type: "string",
+                        },
+                        apiKey: {
+                          anyOf: [
+                            {
+                              type: "string",
+                            },
+                            {
+                              oneOf: [
+                                {
+                                  type: "object",
+                                  properties: {
+                                    source: {
+                                      type: "string",
+                                      const: "env",
+                                    },
+                                    provider: {
+                                      type: "string",
+                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                    },
+                                    id: {
+                                      type: "string",
+                                      pattern: "^[A-Z][A-Z0-9_]{0,127}$",
+                                    },
+                                  },
+                                  required: ["source", "provider", "id"],
+                                  additionalProperties: false,
+                                },
+                                {
+                                  type: "object",
+                                  properties: {
+                                    source: {
+                                      type: "string",
+                                      const: "file",
+                                    },
+                                    provider: {
+                                      type: "string",
+                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                    },
+                                    id: {
+                                      type: "string",
+                                    },
+                                  },
+                                  required: ["source", "provider", "id"],
+                                  additionalProperties: false,
+                                },
+                                {
+                                  type: "object",
+                                  properties: {
+                                    source: {
+                                      type: "string",
+                                      const: "exec",
+                                    },
+                                    provider: {
+                                      type: "string",
+                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                    },
+                                    id: {
+                                      type: "string",
+                                    },
+                                  },
+                                  required: ["source", "provider", "id"],
+                                  additionalProperties: false,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                        headers: {
+                          type: "object",
+                          propertyNames: {
+                            type: "string",
+                          },
+                          additionalProperties: {
+                            type: "string",
+                          },
+                        },
+                        batch: {
+                          type: "object",
+                          properties: {
+                            enabled: {
+                              type: "boolean",
+                            },
+                            wait: {
+                              type: "boolean",
+                            },
+                            concurrency: {
+                              type: "integer",
+                              exclusiveMinimum: 0,
+                              maximum: 9007199254740991,
+                            },
+                            pollIntervalMs: {
+                              type: "integer",
+                              minimum: 0,
+                              maximum: 9007199254740991,
+                            },
+                            timeoutMinutes: {
+                              type: "integer",
+                              exclusiveMinimum: 0,
+                              maximum: 9007199254740991,
+                            },
+                          },
+                          additionalProperties: false,
+                        },
+                      },
+                      additionalProperties: false,
+                    },
+                    fallback: {
+                      anyOf: [
+                        {
+                          type: "string",
+                          const: "openai",
+                        },
+                        {
+                          type: "string",
+                          const: "gemini",
+                        },
+                        {
+                          type: "string",
+                          const: "local",
+                        },
+                        {
+                          type: "string",
+                          const: "voyage",
+                        },
+                        {
+                          type: "string",
+                          const: "mistral",
+                        },
+                        {
+                          type: "string",
+                          const: "ollama",
+                        },
+                        {
+                          type: "string",
+                          const: "none",
+                        },
+                      ],
+                    },
+                    model: {
+                      type: "string",
+                    },
+                    outputDimensionality: {
+                      type: "integer",
+                      exclusiveMinimum: 0,
+                      maximum: 9007199254740991,
+                    },
+                    local: {
+                      type: "object",
+                      properties: {
+                        modelPath: {
+                          type: "string",
+                        },
+                        modelCacheDir: {
+                          type: "string",
+                        },
+                      },
+                      additionalProperties: false,
+                    },
+                    store: {
+                      type: "object",
+                      properties: {
+                        driver: {
+                          type: "string",
+                          const: "sqlite",
+                        },
+                        path: {
+                          type: "string",
+                        },
+                        vector: {
+                          type: "object",
+                          properties: {
+                            enabled: {
+                              type: "boolean",
+                            },
+                            extensionPath: {
+                              type: "string",
+                            },
+                          },
+                          additionalProperties: false,
+                        },
+                      },
+                      additionalProperties: false,
+                    },
+                    chunking: {
+                      type: "object",
+                      properties: {
+                        tokens: {
+                          type: "integer",
+                          exclusiveMinimum: 0,
+                          maximum: 9007199254740991,
+                        },
+                        overlap: {
+                          type: "integer",
+                          minimum: 0,
+                          maximum: 9007199254740991,
+                        },
+                      },
+                      additionalProperties: false,
+                    },
+                    sync: {
+                      type: "object",
+                      properties: {
+                        onSessionStart: {
+                          type: "boolean",
+                        },
+                        onSearch: {
+                          type: "boolean",
+                        },
+                        watch: {
+                          type: "boolean",
+                        },
+                        watchDebounceMs: {
+                          type: "integer",
+                          minimum: 0,
+                          maximum: 9007199254740991,
+                        },
+                        intervalMinutes: {
+                          type: "integer",
+                          minimum: 0,
+                          maximum: 9007199254740991,
+                        },
+                        sessions: {
+                          type: "object",
+                          properties: {
+                            deltaBytes: {
+                              type: "integer",
+                              minimum: 0,
+                              maximum: 9007199254740991,
+                            },
+                            deltaMessages: {
+                              type: "integer",
+                              minimum: 0,
+                              maximum: 9007199254740991,
+                            },
+                            postCompactionForce: {
+                              type: "boolean",
+                            },
+                          },
+                          additionalProperties: false,
+                        },
+                      },
+                      additionalProperties: false,
+                    },
+                    query: {
+                      type: "object",
+                      properties: {
+                        maxResults: {
+                          type: "integer",
+                          exclusiveMinimum: 0,
+                          maximum: 9007199254740991,
+                        },
+                        minScore: {
+                          type: "number",
+                          minimum: 0,
+                          maximum: 1,
+                        },
+                        hybrid: {
+                          type: "object",
+                          properties: {
+                            enabled: {
+                              type: "boolean",
+                            },
+                            vectorWeight: {
+                              type: "number",
+                              minimum: 0,
+                              maximum: 1,
+                            },
+                            textWeight: {
+                              type: "number",
+                              minimum: 0,
+                              maximum: 1,
+                            },
+                            candidateMultiplier: {
+                              type: "integer",
+                              exclusiveMinimum: 0,
+                              maximum: 9007199254740991,
+                            },
+                            mmr: {
+                              type: "object",
+                              properties: {
+                                enabled: {
+                                  type: "boolean",
+                                },
+                                lambda: {
+                                  type: "number",
+                                  minimum: 0,
+                                  maximum: 1,
+                                },
+                              },
+                              additionalProperties: false,
+                            },
+                            temporalDecay: {
+                              type: "object",
+                              properties: {
+                                enabled: {
+                                  type: "boolean",
+                                },
+                                halfLifeDays: {
+                                  type: "integer",
+                                  exclusiveMinimum: 0,
+                                  maximum: 9007199254740991,
+                                },
+                              },
+                              additionalProperties: false,
+                            },
+                          },
+                          additionalProperties: false,
+                        },
+                      },
+                      additionalProperties: false,
+                    },
+                    cache: {
+                      type: "object",
+                      properties: {
+                        enabled: {
+                          type: "boolean",
+                        },
+                        maxEntries: {
+                          type: "integer",
+                          exclusiveMinimum: 0,
+                          maximum: 9007199254740991,
+                        },
+                      },
+                      additionalProperties: false,
+                    },
+                  },
+                  additionalProperties: false,
                 },
                 humanDelay: {
                   type: "object",
@@ -2650,6 +3956,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     lightContext: {
                       type: "boolean",
                     },
+                    isolatedSession: {
+                      type: "boolean",
+                    },
                   },
                   additionalProperties: false,
                 },
@@ -2719,6 +4028,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                         },
                       ],
                     },
+                    thinking: {
+                      type: "string",
+                    },
                   },
                   additionalProperties: false,
                 },
@@ -2740,6 +4052,10 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                           const: "all",
                         },
                       ],
+                    },
+                    backend: {
+                      type: "string",
+                      minLength: 1,
                     },
                     workspaceAccess: {
                       anyOf: [
@@ -2931,6 +4247,240 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                       },
                       additionalProperties: false,
                     },
+                    ssh: {
+                      type: "object",
+                      properties: {
+                        target: {
+                          type: "string",
+                          minLength: 1,
+                        },
+                        command: {
+                          type: "string",
+                          minLength: 1,
+                        },
+                        workspaceRoot: {
+                          type: "string",
+                          minLength: 1,
+                        },
+                        strictHostKeyChecking: {
+                          type: "boolean",
+                        },
+                        updateHostKeys: {
+                          type: "boolean",
+                        },
+                        identityFile: {
+                          type: "string",
+                          minLength: 1,
+                        },
+                        certificateFile: {
+                          type: "string",
+                          minLength: 1,
+                        },
+                        knownHostsFile: {
+                          type: "string",
+                          minLength: 1,
+                        },
+                        identityData: {
+                          anyOf: [
+                            {
+                              type: "string",
+                            },
+                            {
+                              oneOf: [
+                                {
+                                  type: "object",
+                                  properties: {
+                                    source: {
+                                      type: "string",
+                                      const: "env",
+                                    },
+                                    provider: {
+                                      type: "string",
+                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                    },
+                                    id: {
+                                      type: "string",
+                                      pattern: "^[A-Z][A-Z0-9_]{0,127}$",
+                                    },
+                                  },
+                                  required: ["source", "provider", "id"],
+                                  additionalProperties: false,
+                                },
+                                {
+                                  type: "object",
+                                  properties: {
+                                    source: {
+                                      type: "string",
+                                      const: "file",
+                                    },
+                                    provider: {
+                                      type: "string",
+                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                    },
+                                    id: {
+                                      type: "string",
+                                    },
+                                  },
+                                  required: ["source", "provider", "id"],
+                                  additionalProperties: false,
+                                },
+                                {
+                                  type: "object",
+                                  properties: {
+                                    source: {
+                                      type: "string",
+                                      const: "exec",
+                                    },
+                                    provider: {
+                                      type: "string",
+                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                    },
+                                    id: {
+                                      type: "string",
+                                    },
+                                  },
+                                  required: ["source", "provider", "id"],
+                                  additionalProperties: false,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                        certificateData: {
+                          anyOf: [
+                            {
+                              type: "string",
+                            },
+                            {
+                              oneOf: [
+                                {
+                                  type: "object",
+                                  properties: {
+                                    source: {
+                                      type: "string",
+                                      const: "env",
+                                    },
+                                    provider: {
+                                      type: "string",
+                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                    },
+                                    id: {
+                                      type: "string",
+                                      pattern: "^[A-Z][A-Z0-9_]{0,127}$",
+                                    },
+                                  },
+                                  required: ["source", "provider", "id"],
+                                  additionalProperties: false,
+                                },
+                                {
+                                  type: "object",
+                                  properties: {
+                                    source: {
+                                      type: "string",
+                                      const: "file",
+                                    },
+                                    provider: {
+                                      type: "string",
+                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                    },
+                                    id: {
+                                      type: "string",
+                                    },
+                                  },
+                                  required: ["source", "provider", "id"],
+                                  additionalProperties: false,
+                                },
+                                {
+                                  type: "object",
+                                  properties: {
+                                    source: {
+                                      type: "string",
+                                      const: "exec",
+                                    },
+                                    provider: {
+                                      type: "string",
+                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                    },
+                                    id: {
+                                      type: "string",
+                                    },
+                                  },
+                                  required: ["source", "provider", "id"],
+                                  additionalProperties: false,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                        knownHostsData: {
+                          anyOf: [
+                            {
+                              type: "string",
+                            },
+                            {
+                              oneOf: [
+                                {
+                                  type: "object",
+                                  properties: {
+                                    source: {
+                                      type: "string",
+                                      const: "env",
+                                    },
+                                    provider: {
+                                      type: "string",
+                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                    },
+                                    id: {
+                                      type: "string",
+                                      pattern: "^[A-Z][A-Z0-9_]{0,127}$",
+                                    },
+                                  },
+                                  required: ["source", "provider", "id"],
+                                  additionalProperties: false,
+                                },
+                                {
+                                  type: "object",
+                                  properties: {
+                                    source: {
+                                      type: "string",
+                                      const: "file",
+                                    },
+                                    provider: {
+                                      type: "string",
+                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                    },
+                                    id: {
+                                      type: "string",
+                                    },
+                                  },
+                                  required: ["source", "provider", "id"],
+                                  additionalProperties: false,
+                                },
+                                {
+                                  type: "object",
+                                  properties: {
+                                    source: {
+                                      type: "string",
+                                      const: "exec",
+                                    },
+                                    provider: {
+                                      type: "string",
+                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                    },
+                                    id: {
+                                      type: "string",
+                                    },
+                                  },
+                                  required: ["source", "provider", "id"],
+                                  additionalProperties: false,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                      additionalProperties: false,
+                    },
                     browser: {
                       type: "object",
                       properties: {
@@ -3008,6 +4558,13 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     },
                   },
                   additionalProperties: false,
+                },
+                params: {
+                  type: "object",
+                  propertyNames: {
+                    type: "string",
+                  },
+                  additionalProperties: {},
                 },
                 tools: {
                   type: "object",
@@ -3157,6 +4714,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                           items: {
                             type: "string",
                           },
+                        },
+                        strictInlineEval: {
+                          type: "boolean",
                         },
                         safeBinTrustedDirs: {
                           type: "array",
@@ -3334,26 +4894,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 runtime: {
                   anyOf: [
                     {
-                      anyOf: [
-                        {
-                          type: "string",
-                          const: "claude",
-                        },
-                        {
-                          type: "string",
-                          const: "gemini",
-                        },
-                        {
-                          type: "string",
-                          const: "codex",
-                        },
-                        {
-                          type: "string",
-                          const: "opencode",
-                        },
-                      ],
-                    },
-                    {
                       type: "object",
                       properties: {
                         type: {
@@ -3396,45 +4936,12 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     },
                   ],
                 },
-                auth: {
-                  anyOf: [
-                    {
-                      type: "string",
-                    },
-                    {
-                      type: "array",
-                      items: {
-                        type: "string",
-                      },
-                    },
-                    {
-                      type: "boolean",
-                      const: false,
-                    },
-                  ],
-                },
-                runtimeArgs: {
-                  type: "array",
-                  items: {
-                    type: "string",
-                  },
-                },
-                runtimeEnv: {
-                  type: "object",
-                  propertyNames: {
-                    type: "string",
-                  },
-                  additionalProperties: {
-                    type: "string",
-                  },
-                },
               },
-              required: ["id", "workspace"],
+              required: ["id"],
               additionalProperties: false,
             },
           },
         },
-        required: ["list"],
         additionalProperties: false,
       },
       tools: {
@@ -3538,28 +5045,21 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     type: "boolean",
                   },
                   provider: {
-                    anyOf: [
-                      {
-                        type: "string",
-                        const: "brave",
-                      },
-                      {
-                        type: "string",
-                        const: "perplexity",
-                      },
-                      {
-                        type: "string",
-                        const: "grok",
-                      },
-                      {
-                        type: "string",
-                        const: "gemini",
-                      },
-                      {
-                        type: "string",
-                        const: "kimi",
-                      },
-                    ],
+                    type: "string",
+                  },
+                  maxResults: {
+                    type: "integer",
+                    exclusiveMinimum: 0,
+                    maximum: 9007199254740991,
+                  },
+                  timeoutSeconds: {
+                    type: "integer",
+                    exclusiveMinimum: 0,
+                    maximum: 9007199254740991,
+                  },
+                  cacheTtlMinutes: {
+                    type: "number",
+                    minimum: 0,
                   },
                   apiKey: {
                     anyOf: [
@@ -3627,21 +5127,166 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                       },
                     ],
                   },
-                  maxResults: {
-                    type: "integer",
-                    exclusiveMinimum: 0,
-                    maximum: 9007199254740991,
+                  brave: {
+                    type: "object",
+                    properties: {
+                      apiKey: {
+                        anyOf: [
+                          {
+                            type: "string",
+                          },
+                          {
+                            oneOf: [
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "env",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "file",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "exec",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                      baseUrl: {
+                        type: "string",
+                      },
+                      model: {
+                        type: "string",
+                      },
+                      mode: {
+                        type: "string",
+                      },
+                    },
+                    additionalProperties: false,
                   },
-                  timeoutSeconds: {
-                    type: "integer",
-                    exclusiveMinimum: 0,
-                    maximum: 9007199254740991,
+                  firecrawl: {
+                    type: "object",
+                    properties: {
+                      apiKey: {
+                        anyOf: [
+                          {
+                            type: "string",
+                          },
+                          {
+                            oneOf: [
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "env",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "file",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "exec",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                      baseUrl: {
+                        type: "string",
+                      },
+                      model: {
+                        type: "string",
+                      },
+                    },
+                    additionalProperties: false,
                   },
-                  cacheTtlMinutes: {
-                    type: "number",
-                    minimum: 0,
-                  },
-                  perplexity: {
+                  gemini: {
                     type: "object",
                     properties: {
                       apiKey: {
@@ -3788,86 +5433,14 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                           },
                         ],
                       },
+                      baseUrl: {
+                        type: "string",
+                      },
                       model: {
                         type: "string",
                       },
                       inlineCitations: {
                         type: "boolean",
-                      },
-                    },
-                    additionalProperties: false,
-                  },
-                  gemini: {
-                    type: "object",
-                    properties: {
-                      apiKey: {
-                        anyOf: [
-                          {
-                            type: "string",
-                          },
-                          {
-                            oneOf: [
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "env",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "file",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "exec",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                            ],
-                          },
-                        ],
-                      },
-                      model: {
-                        type: "string",
                       },
                     },
                     additionalProperties: false,
@@ -3950,20 +5523,80 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     },
                     additionalProperties: false,
                   },
-                  brave: {
+                  perplexity: {
                     type: "object",
                     properties: {
-                      mode: {
+                      apiKey: {
                         anyOf: [
                           {
                             type: "string",
-                            const: "web",
                           },
                           {
-                            type: "string",
-                            const: "llm-context",
+                            oneOf: [
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "env",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "file",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "exec",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                            ],
                           },
                         ],
+                      },
+                      baseUrl: {
+                        type: "string",
+                      },
+                      model: {
+                        type: "string",
                       },
                     },
                     additionalProperties: false,
@@ -4003,6 +5636,100 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   },
                   userAgent: {
                     type: "string",
+                  },
+                  readability: {
+                    type: "boolean",
+                  },
+                  firecrawl: {
+                    type: "object",
+                    properties: {
+                      enabled: {
+                        type: "boolean",
+                      },
+                      apiKey: {
+                        anyOf: [
+                          {
+                            type: "string",
+                          },
+                          {
+                            oneOf: [
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "env",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "file",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "exec",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                      baseUrl: {
+                        type: "string",
+                      },
+                      onlyMainContent: {
+                        type: "boolean",
+                      },
+                      maxAgeMs: {
+                        type: "integer",
+                        minimum: 0,
+                        maximum: 9007199254740991,
+                      },
+                      timeoutSeconds: {
+                        type: "integer",
+                        exclusiveMinimum: 0,
+                        maximum: 9007199254740991,
+                      },
+                    },
+                    additionalProperties: false,
                   },
                 },
                 additionalProperties: false,
@@ -5470,6 +7197,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   type: "string",
                 },
               },
+              strictInlineEval: {
+                type: "boolean",
+              },
               safeBinTrustedDirs: {
                 type: "array",
                 items: {
@@ -5820,30 +7550,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
             },
           ],
         },
-      },
-      routing: {
-        type: "object",
-        properties: {
-          unmatched: {
-            anyOf: [
-              {
-                type: "string",
-                const: "reject",
-              },
-              {
-                type: "object",
-                properties: {
-                  agent: {
-                    type: "string",
-                  },
-                },
-                required: ["agent"],
-                additionalProperties: false,
-              },
-            ],
-          },
-        },
-        additionalProperties: false,
       },
       broadcast: {
         type: "object",
@@ -6390,6 +8096,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   stallHard: {
                     type: "string",
                   },
+                  compacting: {
+                    type: "string",
+                  },
                 },
                 additionalProperties: false,
               },
@@ -6446,7 +8155,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
               },
               provider: {
                 type: "string",
-                enum: ["elevenlabs", "openai", "edge"],
+                minLength: 1,
               },
               summaryModel: {
                 type: "string",
@@ -6730,6 +8439,44 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 },
                 additionalProperties: false,
               },
+              microsoft: {
+                type: "object",
+                properties: {
+                  enabled: {
+                    type: "boolean",
+                  },
+                  voice: {
+                    type: "string",
+                  },
+                  lang: {
+                    type: "string",
+                  },
+                  outputFormat: {
+                    type: "string",
+                  },
+                  pitch: {
+                    type: "string",
+                  },
+                  rate: {
+                    type: "string",
+                  },
+                  volume: {
+                    type: "string",
+                  },
+                  saveSubtitles: {
+                    type: "boolean",
+                  },
+                  proxy: {
+                    type: "string",
+                  },
+                  timeoutMs: {
+                    type: "integer",
+                    minimum: 1000,
+                    maximum: 120000,
+                  },
+                },
+                additionalProperties: false,
+              },
               prefsPath: {
                 type: "string",
               },
@@ -6796,6 +8543,12 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
           config: {
             type: "boolean",
           },
+          mcp: {
+            type: "boolean",
+          },
+          plugins: {
+            type: "boolean",
+          },
           debug: {
             type: "boolean",
           },
@@ -6848,6 +8601,80 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
           },
         },
         required: ["native", "nativeSkills", "restart", "ownerDisplay"],
+        additionalProperties: false,
+      },
+      approvals: {
+        type: "object",
+        properties: {
+          exec: {
+            type: "object",
+            properties: {
+              enabled: {
+                type: "boolean",
+              },
+              mode: {
+                anyOf: [
+                  {
+                    type: "string",
+                    const: "session",
+                  },
+                  {
+                    type: "string",
+                    const: "targets",
+                  },
+                  {
+                    type: "string",
+                    const: "both",
+                  },
+                ],
+              },
+              agentFilter: {
+                type: "array",
+                items: {
+                  type: "string",
+                },
+              },
+              sessionFilter: {
+                type: "array",
+                items: {
+                  type: "string",
+                },
+              },
+              targets: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    channel: {
+                      type: "string",
+                      minLength: 1,
+                    },
+                    to: {
+                      type: "string",
+                      minLength: 1,
+                    },
+                    accountId: {
+                      type: "string",
+                    },
+                    threadId: {
+                      anyOf: [
+                        {
+                          type: "string",
+                        },
+                        {
+                          type: "number",
+                        },
+                      ],
+                    },
+                  },
+                  required: ["channel", "to"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            additionalProperties: false,
+          },
+        },
         additionalProperties: false,
       },
       session: {
@@ -7652,6 +9479,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 model: {
                   type: "string",
                 },
+                thinking: {
+                  type: "string",
+                },
                 timeoutSeconds: {
                   type: "integer",
                   exclusiveMinimum: 0,
@@ -7673,6 +9503,118 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
               },
               additionalProperties: false,
             },
+          },
+          gmail: {
+            type: "object",
+            properties: {
+              account: {
+                type: "string",
+              },
+              label: {
+                type: "string",
+              },
+              topic: {
+                type: "string",
+              },
+              subscription: {
+                type: "string",
+              },
+              pushToken: {
+                type: "string",
+              },
+              hookUrl: {
+                type: "string",
+              },
+              includeBody: {
+                type: "boolean",
+              },
+              maxBytes: {
+                type: "integer",
+                exclusiveMinimum: 0,
+                maximum: 9007199254740991,
+              },
+              renewEveryMinutes: {
+                type: "integer",
+                exclusiveMinimum: 0,
+                maximum: 9007199254740991,
+              },
+              allowUnsafeExternalContent: {
+                type: "boolean",
+              },
+              serve: {
+                type: "object",
+                properties: {
+                  bind: {
+                    type: "string",
+                  },
+                  port: {
+                    type: "integer",
+                    exclusiveMinimum: 0,
+                    maximum: 9007199254740991,
+                  },
+                  path: {
+                    type: "string",
+                  },
+                },
+                additionalProperties: false,
+              },
+              tailscale: {
+                type: "object",
+                properties: {
+                  mode: {
+                    anyOf: [
+                      {
+                        type: "string",
+                        const: "off",
+                      },
+                      {
+                        type: "string",
+                        const: "serve",
+                      },
+                      {
+                        type: "string",
+                        const: "funnel",
+                      },
+                    ],
+                  },
+                  path: {
+                    type: "string",
+                  },
+                  target: {
+                    type: "string",
+                  },
+                },
+                additionalProperties: false,
+              },
+              model: {
+                type: "string",
+              },
+              thinking: {
+                anyOf: [
+                  {
+                    type: "string",
+                    const: "off",
+                  },
+                  {
+                    type: "string",
+                    const: "minimal",
+                  },
+                  {
+                    type: "string",
+                    const: "low",
+                  },
+                  {
+                    type: "string",
+                    const: "medium",
+                  },
+                  {
+                    type: "string",
+                    const: "high",
+                  },
+                ],
+              },
+            },
+            additionalProperties: false,
           },
           internal: {
             type: "object",
@@ -7903,6 +9845,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
             properties: {
               enabled: {
                 type: "boolean",
+              },
+              domain: {
+                type: "string",
               },
             },
             additionalProperties: false,
@@ -8448,6 +10393,16 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
             minimum: 0,
             maximum: 9007199254740991,
           },
+          channelStaleEventThresholdMinutes: {
+            type: "integer",
+            minimum: 1,
+            maximum: 9007199254740991,
+          },
+          channelMaxRestartsPerHour: {
+            type: "integer",
+            minimum: 1,
+            maximum: 9007199254740991,
+          },
           tailscale: {
             type: "object",
             properties: {
@@ -8695,6 +10650,189 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
           http: {
             type: "object",
             properties: {
+              endpoints: {
+                type: "object",
+                properties: {
+                  chatCompletions: {
+                    type: "object",
+                    properties: {
+                      enabled: {
+                        type: "boolean",
+                      },
+                      maxBodyBytes: {
+                        type: "integer",
+                        exclusiveMinimum: 0,
+                        maximum: 9007199254740991,
+                      },
+                      maxImageParts: {
+                        type: "integer",
+                        minimum: 0,
+                        maximum: 9007199254740991,
+                      },
+                      maxTotalImageBytes: {
+                        type: "integer",
+                        exclusiveMinimum: 0,
+                        maximum: 9007199254740991,
+                      },
+                      images: {
+                        type: "object",
+                        properties: {
+                          allowUrl: {
+                            type: "boolean",
+                          },
+                          urlAllowlist: {
+                            type: "array",
+                            items: {
+                              type: "string",
+                            },
+                          },
+                          allowedMimes: {
+                            type: "array",
+                            items: {
+                              type: "string",
+                            },
+                          },
+                          maxBytes: {
+                            type: "integer",
+                            exclusiveMinimum: 0,
+                            maximum: 9007199254740991,
+                          },
+                          maxRedirects: {
+                            type: "integer",
+                            minimum: 0,
+                            maximum: 9007199254740991,
+                          },
+                          timeoutMs: {
+                            type: "integer",
+                            exclusiveMinimum: 0,
+                            maximum: 9007199254740991,
+                          },
+                        },
+                        additionalProperties: false,
+                      },
+                    },
+                    additionalProperties: false,
+                  },
+                  responses: {
+                    type: "object",
+                    properties: {
+                      enabled: {
+                        type: "boolean",
+                      },
+                      maxBodyBytes: {
+                        type: "integer",
+                        exclusiveMinimum: 0,
+                        maximum: 9007199254740991,
+                      },
+                      maxUrlParts: {
+                        type: "integer",
+                        minimum: 0,
+                        maximum: 9007199254740991,
+                      },
+                      files: {
+                        type: "object",
+                        properties: {
+                          allowUrl: {
+                            type: "boolean",
+                          },
+                          urlAllowlist: {
+                            type: "array",
+                            items: {
+                              type: "string",
+                            },
+                          },
+                          allowedMimes: {
+                            type: "array",
+                            items: {
+                              type: "string",
+                            },
+                          },
+                          maxBytes: {
+                            type: "integer",
+                            exclusiveMinimum: 0,
+                            maximum: 9007199254740991,
+                          },
+                          maxRedirects: {
+                            type: "integer",
+                            minimum: 0,
+                            maximum: 9007199254740991,
+                          },
+                          timeoutMs: {
+                            type: "integer",
+                            exclusiveMinimum: 0,
+                            maximum: 9007199254740991,
+                          },
+                          maxChars: {
+                            type: "integer",
+                            exclusiveMinimum: 0,
+                            maximum: 9007199254740991,
+                          },
+                          pdf: {
+                            type: "object",
+                            properties: {
+                              maxPages: {
+                                type: "integer",
+                                exclusiveMinimum: 0,
+                                maximum: 9007199254740991,
+                              },
+                              maxPixels: {
+                                type: "integer",
+                                exclusiveMinimum: 0,
+                                maximum: 9007199254740991,
+                              },
+                              minTextChars: {
+                                type: "integer",
+                                minimum: 0,
+                                maximum: 9007199254740991,
+                              },
+                            },
+                            additionalProperties: false,
+                          },
+                        },
+                        additionalProperties: false,
+                      },
+                      images: {
+                        type: "object",
+                        properties: {
+                          allowUrl: {
+                            type: "boolean",
+                          },
+                          urlAllowlist: {
+                            type: "array",
+                            items: {
+                              type: "string",
+                            },
+                          },
+                          allowedMimes: {
+                            type: "array",
+                            items: {
+                              type: "string",
+                            },
+                          },
+                          maxBytes: {
+                            type: "integer",
+                            exclusiveMinimum: 0,
+                            maximum: 9007199254740991,
+                          },
+                          maxRedirects: {
+                            type: "integer",
+                            minimum: 0,
+                            maximum: 9007199254740991,
+                          },
+                          timeoutMs: {
+                            type: "integer",
+                            exclusiveMinimum: 0,
+                            maximum: 9007199254740991,
+                          },
+                        },
+                        additionalProperties: false,
+                      },
+                    },
+                    additionalProperties: false,
+                  },
+                },
+                additionalProperties: false,
+              },
               securityHeaders: {
                 type: "object",
                 properties: {
@@ -8708,6 +10846,32 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                         const: false,
                       },
                     ],
+                  },
+                },
+                additionalProperties: false,
+              },
+            },
+            additionalProperties: false,
+          },
+          push: {
+            type: "object",
+            properties: {
+              apns: {
+                type: "object",
+                properties: {
+                  relay: {
+                    type: "object",
+                    properties: {
+                      baseUrl: {
+                        type: "string",
+                      },
+                      timeoutMs: {
+                        type: "integer",
+                        exclusiveMinimum: 0,
+                        maximum: 9007199254740991,
+                      },
+                    },
+                    additionalProperties: false,
                   },
                 },
                 additionalProperties: false,
@@ -8757,6 +10921,314 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
               },
             },
             additionalProperties: false,
+          },
+        },
+        additionalProperties: false,
+      },
+      memory: {
+        type: "object",
+        properties: {
+          backend: {
+            anyOf: [
+              {
+                type: "string",
+                const: "builtin",
+              },
+              {
+                type: "string",
+                const: "qmd",
+              },
+            ],
+          },
+          citations: {
+            anyOf: [
+              {
+                type: "string",
+                const: "auto",
+              },
+              {
+                type: "string",
+                const: "on",
+              },
+              {
+                type: "string",
+                const: "off",
+              },
+            ],
+          },
+          qmd: {
+            type: "object",
+            properties: {
+              command: {
+                type: "string",
+              },
+              mcporter: {
+                type: "object",
+                properties: {
+                  enabled: {
+                    type: "boolean",
+                  },
+                  serverName: {
+                    type: "string",
+                  },
+                  startDaemon: {
+                    type: "boolean",
+                  },
+                },
+                additionalProperties: false,
+              },
+              searchMode: {
+                anyOf: [
+                  {
+                    type: "string",
+                    const: "query",
+                  },
+                  {
+                    type: "string",
+                    const: "search",
+                  },
+                  {
+                    type: "string",
+                    const: "vsearch",
+                  },
+                ],
+              },
+              includeDefaultMemory: {
+                type: "boolean",
+              },
+              paths: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    path: {
+                      type: "string",
+                    },
+                    name: {
+                      type: "string",
+                    },
+                    pattern: {
+                      type: "string",
+                    },
+                  },
+                  required: ["path"],
+                  additionalProperties: false,
+                },
+              },
+              sessions: {
+                type: "object",
+                properties: {
+                  enabled: {
+                    type: "boolean",
+                  },
+                  exportDir: {
+                    type: "string",
+                  },
+                  retentionDays: {
+                    type: "integer",
+                    minimum: 0,
+                    maximum: 9007199254740991,
+                  },
+                },
+                additionalProperties: false,
+              },
+              update: {
+                type: "object",
+                properties: {
+                  interval: {
+                    type: "string",
+                  },
+                  debounceMs: {
+                    type: "integer",
+                    minimum: 0,
+                    maximum: 9007199254740991,
+                  },
+                  onBoot: {
+                    type: "boolean",
+                  },
+                  waitForBootSync: {
+                    type: "boolean",
+                  },
+                  embedInterval: {
+                    type: "string",
+                  },
+                  commandTimeoutMs: {
+                    type: "integer",
+                    minimum: 0,
+                    maximum: 9007199254740991,
+                  },
+                  updateTimeoutMs: {
+                    type: "integer",
+                    minimum: 0,
+                    maximum: 9007199254740991,
+                  },
+                  embedTimeoutMs: {
+                    type: "integer",
+                    minimum: 0,
+                    maximum: 9007199254740991,
+                  },
+                },
+                additionalProperties: false,
+              },
+              limits: {
+                type: "object",
+                properties: {
+                  maxResults: {
+                    type: "integer",
+                    exclusiveMinimum: 0,
+                    maximum: 9007199254740991,
+                  },
+                  maxSnippetChars: {
+                    type: "integer",
+                    exclusiveMinimum: 0,
+                    maximum: 9007199254740991,
+                  },
+                  maxInjectedChars: {
+                    type: "integer",
+                    exclusiveMinimum: 0,
+                    maximum: 9007199254740991,
+                  },
+                  timeoutMs: {
+                    type: "integer",
+                    minimum: 0,
+                    maximum: 9007199254740991,
+                  },
+                },
+                additionalProperties: false,
+              },
+              scope: {
+                type: "object",
+                properties: {
+                  default: {
+                    anyOf: [
+                      {
+                        type: "string",
+                        const: "allow",
+                      },
+                      {
+                        type: "string",
+                        const: "deny",
+                      },
+                    ],
+                  },
+                  rules: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        action: {
+                          anyOf: [
+                            {
+                              type: "string",
+                              const: "allow",
+                            },
+                            {
+                              type: "string",
+                              const: "deny",
+                            },
+                          ],
+                        },
+                        match: {
+                          type: "object",
+                          properties: {
+                            channel: {
+                              type: "string",
+                            },
+                            chatType: {
+                              anyOf: [
+                                {
+                                  type: "string",
+                                  const: "direct",
+                                },
+                                {
+                                  type: "string",
+                                  const: "group",
+                                },
+                                {
+                                  type: "string",
+                                  const: "channel",
+                                },
+                                {
+                                  type: "string",
+                                  const: "dm",
+                                },
+                              ],
+                            },
+                            keyPrefix: {
+                              type: "string",
+                            },
+                            rawKeyPrefix: {
+                              type: "string",
+                            },
+                          },
+                          additionalProperties: false,
+                        },
+                      },
+                      required: ["action"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                additionalProperties: false,
+              },
+            },
+            additionalProperties: false,
+          },
+        },
+        additionalProperties: false,
+      },
+      mcp: {
+        type: "object",
+        properties: {
+          servers: {
+            type: "object",
+            propertyNames: {
+              type: "string",
+            },
+            additionalProperties: {
+              type: "object",
+              properties: {
+                command: {
+                  type: "string",
+                },
+                args: {
+                  type: "array",
+                  items: {
+                    type: "string",
+                  },
+                },
+                env: {
+                  type: "object",
+                  propertyNames: {
+                    type: "string",
+                  },
+                  additionalProperties: {
+                    anyOf: [
+                      {
+                        type: "string",
+                      },
+                      {
+                        type: "number",
+                      },
+                      {
+                        type: "boolean",
+                      },
+                    ],
+                  },
+                },
+                cwd: {
+                  type: "string",
+                },
+                workingDirectory: {
+                  type: "string",
+                },
+                url: {
+                  type: "string",
+                  format: "uri",
+                },
+              },
+              additionalProperties: {},
+            },
           },
         },
         additionalProperties: false,
@@ -8983,6 +11455,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
           slots: {
             type: "object",
             properties: {
+              memory: {
+                type: "string",
+              },
               contextEngine: {
                 type: "string",
               },
@@ -9009,6 +11484,21 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                   },
                   additionalProperties: false,
                 },
+                subagent: {
+                  type: "object",
+                  properties: {
+                    allowModelOverride: {
+                      type: "boolean",
+                    },
+                    allowedModels: {
+                      type: "array",
+                      items: {
+                        type: "string",
+                      },
+                    },
+                  },
+                  additionalProperties: false,
+                },
                 config: {
                   type: "object",
                   propertyNames: {
@@ -9031,20 +11521,28 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 source: {
                   anyOf: [
                     {
-                      type: "string",
-                      const: "npm",
+                      anyOf: [
+                        {
+                          type: "string",
+                          const: "npm",
+                        },
+                        {
+                          type: "string",
+                          const: "archive",
+                        },
+                        {
+                          type: "string",
+                          const: "path",
+                        },
+                        {
+                          type: "string",
+                          const: "clawhub",
+                        },
+                      ],
                     },
                     {
                       type: "string",
-                      const: "archive",
-                    },
-                    {
-                      type: "string",
-                      const: "path",
-                    },
-                    {
-                      type: "string",
-                      const: "clawhub",
+                      const: "marketplace",
                     },
                   ],
                 },
@@ -9115,6 +11613,15 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     },
                   ],
                 },
+                marketplaceName: {
+                  type: "string",
+                },
+                marketplaceSource: {
+                  type: "string",
+                },
+                marketplacePlugin: {
+                  type: "string",
+                },
               },
               required: ["source"],
               additionalProperties: false,
@@ -9133,7 +11640,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Setup Wizard State",
       group: "Wizard",
       order: 20,
-      help: "Setup wizard state tracking fields that record the most recent guided onboarding run details. Keep these fields for observability and troubleshooting of setup flows across upgrades.",
+      help: "Setup wizard state tracking fields that record the most recent guided setup run details. Keep these fields for observability and troubleshooting of setup flows across upgrades.",
       tags: ["advanced"],
     },
     update: {
@@ -9350,27 +11857,27 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "wizard.lastRunAt": {
       label: "Wizard Last Run Timestamp",
-      help: "ISO timestamp for when the setup wizard most recently completed on this host. Use this to confirm onboarding recency during support and operational audits.",
+      help: "ISO timestamp for when the setup wizard most recently completed on this host. Use this to confirm setup recency during support and operational audits.",
       tags: ["advanced"],
     },
     "wizard.lastRunVersion": {
       label: "Wizard Last Run Version",
-      help: "RemoteClaw version recorded at the time of the most recent wizard run on this config. Use this when diagnosing behavior differences across version-to-version onboarding changes.",
+      help: "RemoteClaw version recorded at the time of the most recent wizard run on this config. Use this when diagnosing behavior differences across version-to-version setup changes.",
       tags: ["advanced"],
     },
     "wizard.lastRunCommit": {
       label: "Wizard Last Run Commit",
-      help: "Source commit identifier recorded for the last wizard execution in development builds. Use this to correlate onboarding behavior with exact source state during debugging.",
+      help: "Source commit identifier recorded for the last wizard execution in development builds. Use this to correlate setup behavior with exact source state during debugging.",
       tags: ["advanced"],
     },
     "wizard.lastRunCommand": {
       label: "Wizard Last Run Command",
-      help: "Command invocation recorded for the latest wizard run to preserve execution context. Use this to reproduce onboarding steps when verifying setup regressions.",
+      help: "Command invocation recorded for the latest wizard run to preserve execution context. Use this to reproduce setup steps when verifying setup regressions.",
       tags: ["advanced"],
     },
     "wizard.lastRunMode": {
       label: "Wizard Last Run Mode",
-      help: 'Wizard execution mode recorded as "local" or "remote" for the most recent onboarding flow. Use this to understand whether setup targeted direct local runtime or remote gateway topology.',
+      help: 'Wizard execution mode recorded as "local" or "remote" for the most recent setup flow. Use this to understand whether setup targeted direct local runtime or remote gateway topology.',
       tags: ["advanced"],
     },
     "diagnostics.otel": {
@@ -9588,6 +12095,21 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Optional default working directory for this agent's ACP sessions.",
       tags: ["advanced"],
     },
+    "agents.list[].thinkingDefault": {
+      label: "Agent Thinking Default",
+      help: "Optional per-agent default thinking level. Overrides agents.defaults.thinkingDefault for this agent when no per-message or session override is set.",
+      tags: ["advanced"],
+    },
+    "agents.list[].reasoningDefault": {
+      label: "Agent Reasoning Default",
+      help: "Optional per-agent default reasoning visibility (on|off|stream). Applies when no per-message or session reasoning override is set.",
+      tags: ["advanced"],
+    },
+    "agents.list[].fastModeDefault": {
+      label: "Agent Fast Mode Default",
+      help: "Optional per-agent default for fast mode. Applies when no per-message or session fast-mode override is set.",
+      tags: ["advanced"],
+    },
     "agents.defaults": {
       label: "Agent Defaults",
       help: "Shared default settings inherited by agents unless overridden per entry in agents.list. Use defaults to enforce consistent baseline behavior and reduce duplicated per-agent configuration.",
@@ -9682,6 +12204,16 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Gateway Channel Health Check Interval (min)",
       help: "Interval in minutes for automatic channel health probing and status updates. Use lower intervals for faster detection, or higher intervals to reduce periodic probe noise.",
       tags: ["network", "reliability"],
+    },
+    "gateway.channelStaleEventThresholdMinutes": {
+      label: "Gateway Channel Stale Event Threshold (min)",
+      help: "How many minutes a connected channel can go without receiving any event before the health monitor treats it as a stale socket and triggers a restart. Default: 30.",
+      tags: ["network"],
+    },
+    "gateway.channelMaxRestartsPerHour": {
+      label: "Gateway Channel Max Restarts Per Hour",
+      help: "Maximum number of health-monitor-initiated channel restarts allowed within a rolling one-hour window. Once hit, further restarts are skipped until the window expires. Default: 10.",
+      tags: ["network", "performance"],
     },
     "gateway.tailscale": {
       label: "Gateway Tailscale",
@@ -9855,11 +12387,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Default browser profile name selected when callers do not explicitly choose a profile. Use a stable low-privilege profile as the default to reduce accidental cross-context state use.",
       tags: ["storage"],
     },
-    "browser.relayBindHost": {
-      label: "Browser Relay Bind Address",
-      help: "Bind IP address for the Chrome extension relay listener. Leave unset for loopback-only access, or set an explicit non-loopback IP such as 0.0.0.0 only when the relay must be reachable across network namespaces (for example WSL2) and the surrounding network is already trusted.",
-      tags: ["advanced"],
-    },
     "browser.profiles": {
       label: "Browser Profiles",
       help: "Named browser profile connection map used for explicit routing to CDP ports or URLs with optional metadata. Keep profile names consistent and avoid overlapping endpoint definitions.",
@@ -9875,9 +12402,14 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Per-profile CDP websocket URL used for explicit remote browser routing by profile name. Use this when profile connections terminate on remote hosts or tunnels.",
       tags: ["storage"],
     },
+    "browser.profiles.*.userDataDir": {
+      label: "Browser Profile User Data Dir",
+      help: "Per-profile Chromium user data directory for existing-session attachment through Chrome DevTools MCP. Use this for host-local Brave, Edge, Chromium, or non-default Chrome profiles when the built-in auto-connect path would pick the wrong browser data directory.",
+      tags: ["storage"],
+    },
     "browser.profiles.*.driver": {
       label: "Browser Profile Driver",
-      help: 'Per-profile browser driver mode: "remoteclaw" (or legacy "clawd") or "extension" depending on connection/runtime strategy. Use the driver that matches your browser control stack to avoid protocol mismatches.',
+      help: 'Per-profile browser driver mode. Use "remoteclaw" (or legacy "clawd") for CDP-based profiles, or use "existing-session" for host-local Chrome DevTools MCP attachment.',
       tags: ["storage"],
     },
     "browser.profiles.*.attachOnly": {
@@ -10118,7 +12650,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     "tools.exec.applyPatch.workspaceOnly": {
       label: "apply_patch Workspace-Only",
       help: "Restrict apply_patch paths to the workspace directory (default: true). Set false to allow writing outside the workspace (dangerous).",
-      tags: ["tools"],
+      tags: ["security", "access", "tools", "advanced"],
     },
     "tools.exec.applyPatch.allowModels": {
       label: "apply_patch Model Allowlist",
@@ -10270,6 +12802,11 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Allow stdin-only safe binaries to run without explicit allowlist entries.",
       tags: ["tools"],
     },
+    "tools.exec.strictInlineEval": {
+      label: "Require Inline-Eval Approval",
+      help: "Require explicit approval for interpreter inline-eval forms such as `python -c`, `node -e`, `ruby -e`, or `osascript -e`. Prevents silent allowlist reuse and downgrades allow-always to ask-each-time for those forms.",
+      tags: ["tools"],
+    },
     "tools.exec.safeBinTrustedDirs": {
       label: "Exec Safe Bin Trusted Dirs",
       help: "Additional explicit directories trusted for safe-bin path checks (PATH entries are never auto-trusted).",
@@ -10279,6 +12816,61 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Exec Safe Bin Profiles",
       help: "Optional per-binary safe-bin profiles (positional limits + allowed/denied flags).",
       tags: ["storage", "tools"],
+    },
+    approvals: {
+      label: "Approvals",
+      help: "Approval routing controls for forwarding exec approval requests to chat destinations outside the originating session. Keep this disabled unless operators need explicit out-of-band approval visibility.",
+      tags: ["advanced"],
+    },
+    "approvals.exec": {
+      label: "Exec Approval Forwarding",
+      help: "Groups exec-approval forwarding behavior including enablement, routing mode, filters, and explicit targets. Configure here when approval prompts must reach operational channels instead of only the origin thread.",
+      tags: ["advanced"],
+    },
+    "approvals.exec.enabled": {
+      label: "Forward Exec Approvals",
+      help: "Enables forwarding of exec approval requests to configured delivery destinations (default: false). Keep disabled in low-risk setups and enable only when human approval responders need channel-visible prompts.",
+      tags: ["advanced"],
+    },
+    "approvals.exec.mode": {
+      label: "Approval Forwarding Mode",
+      help: 'Controls where approval prompts are sent: "session" uses origin chat, "targets" uses configured targets, and "both" sends to both paths. Use "session" as baseline and expand only when operational workflow requires redundancy.',
+      tags: ["advanced"],
+    },
+    "approvals.exec.agentFilter": {
+      label: "Approval Agent Filter",
+      help: 'Optional allowlist of agent IDs eligible for forwarded approvals, for example `["primary", "ops-agent"]`. Use this to limit forwarding blast radius and avoid notifying channels for unrelated agents.',
+      tags: ["advanced"],
+    },
+    "approvals.exec.sessionFilter": {
+      label: "Approval Session Filter",
+      help: 'Optional session-key filters matched as substring or regex-style patterns, for example `["discord:", "^agent:ops:"]`. Use narrow patterns so only intended approval contexts are forwarded to shared destinations.',
+      tags: ["storage"],
+    },
+    "approvals.exec.targets": {
+      label: "Approval Forwarding Targets",
+      help: "Explicit delivery targets used when forwarding mode includes targets, each with channel and destination details. Keep target lists least-privilege and validate each destination before enabling broad forwarding.",
+      tags: ["advanced"],
+    },
+    "approvals.exec.targets[].channel": {
+      label: "Approval Target Channel",
+      help: "Channel/provider ID used for forwarded approval delivery, such as discord, slack, or a plugin channel id. Use valid channel IDs only so approvals do not silently fail due to unknown routes.",
+      tags: ["advanced"],
+    },
+    "approvals.exec.targets[].to": {
+      label: "Approval Target Destination",
+      help: "Destination identifier inside the target channel (channel ID, user ID, or thread root depending on provider). Verify semantics per provider because destination format differs across channel integrations.",
+      tags: ["advanced"],
+    },
+    "approvals.exec.targets[].accountId": {
+      label: "Approval Target Account ID",
+      help: "Optional account selector for multi-account channel setups when approvals must route through a specific account context. Use this only when the target channel has multiple configured identities.",
+      tags: ["advanced"],
+    },
+    "approvals.exec.targets[].threadId": {
+      label: "Approval Target Thread ID",
+      help: "Optional thread/topic target for channels that support threaded delivery of forwarded approvals. Use this to keep approval traffic contained in operational threads instead of main channels.",
+      tags: ["advanced"],
     },
     "tools.message.allowCrossContextSend": {
       label: "Allow Cross-Context Messaging",
@@ -10322,14 +12914,8 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "tools.web.search.provider": {
       label: "Web Search Provider",
-      help: 'Search provider ("brave", "gemini", "grok", "kimi", or "perplexity"). Auto-detected from available API keys if omitted.',
+      help: "Search provider id. Auto-detected from available API keys if omitted.",
       tags: ["tools"],
-    },
-    "tools.web.search.apiKey": {
-      label: "Brave Search API Key",
-      help: "Brave Search API key (fallback: BRAVE_API_KEY env var).",
-      tags: ["security", "auth", "tools"],
-      sensitive: true,
     },
     "tools.web.search.maxResults": {
       label: "Web Search Max Results",
@@ -10345,65 +12931,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Web Search Cache TTL (min)",
       help: "Cache TTL in minutes for web_search results.",
       tags: ["performance", "storage", "tools"],
-    },
-    "tools.web.search.brave.mode": {
-      label: "Brave Search Mode",
-      help: 'Brave Search mode: "web" (URL results) or "llm-context" (pre-extracted page content for LLM grounding).',
-      tags: ["tools"],
-    },
-    "tools.web.search.gemini.apiKey": {
-      label: "Gemini Search API Key",
-      help: "Gemini API key for Google Search grounding (fallback: GEMINI_API_KEY env var).",
-      tags: ["security", "auth", "tools"],
-      sensitive: true,
-    },
-    "tools.web.search.gemini.model": {
-      label: "Gemini Search Model",
-      help: 'Gemini model override (default: "gemini-2.5-flash").',
-      tags: ["models", "tools"],
-    },
-    "tools.web.search.grok.apiKey": {
-      label: "Grok Search API Key",
-      help: "Grok (xAI) API key (fallback: XAI_API_KEY env var).",
-      tags: ["security", "auth", "tools"],
-      sensitive: true,
-    },
-    "tools.web.search.grok.model": {
-      label: "Grok Search Model",
-      help: 'Grok model override (default: "grok-4-1-fast").',
-      tags: ["models", "tools"],
-    },
-    "tools.web.search.kimi.apiKey": {
-      label: "Kimi Search API Key",
-      help: "Moonshot/Kimi API key (fallback: KIMI_API_KEY or MOONSHOT_API_KEY env var).",
-      tags: ["security", "auth", "tools"],
-      sensitive: true,
-    },
-    "tools.web.search.kimi.baseUrl": {
-      label: "Kimi Search Base URL",
-      help: 'Kimi base URL override (default: "https://api.moonshot.ai/v1").',
-      tags: ["tools"],
-    },
-    "tools.web.search.kimi.model": {
-      label: "Kimi Search Model",
-      help: 'Kimi model override (default: "moonshot-v1-128k").',
-      tags: ["models", "tools"],
-    },
-    "tools.web.search.perplexity.apiKey": {
-      label: "Perplexity API Key",
-      help: "Perplexity or OpenRouter API key (fallback: PERPLEXITY_API_KEY or OPENROUTER_API_KEY env var). Direct Perplexity keys default to the Search API; OpenRouter keys use Sonar chat completions.",
-      tags: ["security", "auth", "tools"],
-      sensitive: true,
-    },
-    "tools.web.search.perplexity.baseUrl": {
-      label: "Perplexity Base URL",
-      help: "Optional Perplexity/OpenRouter chat-completions base URL override. Setting this opts Perplexity into the legacy Sonar/OpenRouter compatibility path.",
-      tags: ["tools"],
-    },
-    "tools.web.search.perplexity.model": {
-      label: "Perplexity Model",
-      help: 'Optional Sonar/OpenRouter model override (default: "perplexity/sonar-pro"). Setting this opts Perplexity into the legacy chat-completions compatibility path.',
-      tags: ["models", "tools"],
     },
     "tools.web.fetch.enabled": {
       label: "Enable Web Fetch Tool",
@@ -10454,6 +12981,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Firecrawl API Key",
       help: "Firecrawl API key (fallback: FIRECRAWL_API_KEY env var).",
       tags: ["security", "auth", "tools"],
+      sensitive: true,
     },
     "tools.web.fetch.firecrawl.baseUrl": {
       label: "Firecrawl Base URL",
@@ -10489,7 +13017,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "gateway.controlUi.allowedOrigins": {
       label: "Control UI Allowed Origins",
-      help: "Allowed browser origins for Control UI/WebChat websocket connections (full origins only, e.g. https://control.example.com). Required for non-loopback Control UI deployments unless dangerous Host-header fallback is explicitly enabled.",
+      help: 'Allowed browser origins for Control UI/WebChat websocket connections (full origins only, e.g. https://control.example.com). Required for non-loopback Control UI deployments unless dangerous Host-header fallback is explicitly enabled. Setting ["*"] means allow any browser origin and should be avoided outside tightly controlled local testing.',
       placeholder: "https://control.example.com",
       tags: ["access", "network"],
     },
@@ -10526,7 +13054,8 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     "gateway.push.apns.relay.baseUrl": {
       label: "Gateway APNs Relay Base URL",
       help: "Base HTTPS URL for the external APNs relay service used by official/TestFlight iOS builds. Keep this aligned with the relay URL baked into the iOS build so registration and send traffic hit the same deployment.",
-      tags: ["network"],
+      placeholder: "https://relay.example.com",
+      tags: ["network", "advanced"],
     },
     "gateway.push.apns.relay.timeoutMs": {
       label: "Gateway APNs Relay Timeout (ms)",
@@ -10560,12 +13089,12 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "gateway.http.endpoints.chatCompletions.images.allowUrl": {
       label: "OpenAI Chat Completions Allow Image URLs",
-      help: "Allow server-side URL fetches for `image_url` parts (default: false; data URIs remain supported).",
+      help: "Allow server-side URL fetches for `image_url` parts (default: false; data URIs remain supported). Set this to `false` to disable URL fetching entirely.",
       tags: ["access", "network", "media"],
     },
     "gateway.http.endpoints.chatCompletions.images.urlAllowlist": {
       label: "OpenAI Chat Completions Image URL Allowlist",
-      help: "Optional hostname allowlist for `image_url` URL fetches; supports exact hosts and `*.example.com` wildcards.",
+      help: "Optional hostname allowlist for `image_url` URL fetches; supports exact hosts and `*.example.com` wildcards. Empty or omitted lists mean no hostname allowlist restriction.",
       tags: ["access", "network", "media"],
     },
     "gateway.http.endpoints.chatCompletions.images.allowedMimes": {
@@ -10599,7 +13128,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       tags: ["network", "reliability", "performance"],
     },
     "gateway.reload.deferralTimeoutMs": {
-      label: "Config Reload Deferral Timeout (ms)",
+      label: "Restart Deferral Timeout (ms)",
       help: "Maximum time (ms) to wait for in-flight operations to complete before forcing a SIGUSR1 restart. Default: 300000 (5 minutes). Lower values risk aborting active subagent LLM calls.",
       tags: ["network", "reliability", "performance"],
     },
@@ -10635,7 +13164,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "nodeHost.browserProxy.allowProfiles": {
       label: "Node Browser Proxy Allowed Profiles",
-      help: "Optional allowlist of browser profile names exposed through node proxy routing. Leave empty to expose all configured profiles, or use a tight list to enforce least-privilege profile access.",
+      help: "Optional allowlist of browser profile names exposed through node proxy routing. Leave empty to preserve the default full profile surface, including profile create/delete routes. When set, RemoteClaw enforces least-privilege profile access and blocks persistent profile create/delete through the proxy.",
       tags: ["access", "network", "storage"],
     },
     media: {
@@ -10811,6 +13340,242 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     "agents.defaults.envelopeElapsed": {
       label: "Envelope Elapsed",
       help: 'Include elapsed time in message envelopes ("on" or "off").',
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch": {
+      label: "Memory Search",
+      help: "Vector search over MEMORY.md and memory/*.md (per-agent overrides supported).",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.enabled": {
+      label: "Enable Memory Search",
+      help: "Master toggle for memory search indexing and retrieval behavior on this agent profile. Keep enabled for semantic recall, and disable when you want fully stateless responses.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.sources": {
+      label: "Memory Search Sources",
+      help: 'Chooses which sources are indexed: "memory" reads MEMORY.md + memory files, and "sessions" includes transcript history. Keep ["memory"] unless you need recall from prior chat transcripts.',
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.extraPaths": {
+      label: "Extra Memory Paths",
+      help: "Adds extra directories or .md files to the memory index beyond default memory files. Use this when key reference docs live elsewhere in your repo; when multimodal memory is enabled, matching image/audio files under these paths are also eligible for indexing.",
+      tags: ["storage"],
+    },
+    "agents.defaults.memorySearch.multimodal": {
+      label: "Memory Search Multimodal",
+      help: 'Optional multimodal memory settings for indexing image and audio files from configured extra paths. Keep this off unless your embedding model explicitly supports cross-modal embeddings, and set `memorySearch.fallback` to "none" while it is enabled. Matching files are uploaded to the configured remote embedding provider during indexing.',
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.multimodal.enabled": {
+      label: "Enable Memory Search Multimodal",
+      help: "Enables image/audio memory indexing from extraPaths. This currently requires Gemini embedding-2, keeps the default memory roots Markdown-only, disables memory-search fallback providers, and uploads matching binary content to the configured remote embedding provider.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.multimodal.modalities": {
+      label: "Memory Search Multimodal Modalities",
+      help: 'Selects which multimodal file types are indexed from extraPaths: "image", "audio", or "all". Keep this narrow to avoid indexing large binary corpora unintentionally.',
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.multimodal.maxFileBytes": {
+      label: "Memory Search Multimodal Max File Bytes",
+      help: "Sets the maximum bytes allowed per multimodal file before it is skipped during memory indexing. Use this to cap upload cost and indexing latency, or raise it for short high-quality audio clips.",
+      tags: ["performance", "storage"],
+    },
+    "agents.defaults.memorySearch.experimental.sessionMemory": {
+      label: "Memory Search Session Index (Experimental)",
+      help: "Indexes session transcripts into memory search so responses can reference prior chat turns. Keep this off unless transcript recall is needed, because indexing cost and storage usage both increase.",
+      tags: ["security", "storage", "advanced"],
+    },
+    "agents.defaults.memorySearch.provider": {
+      label: "Memory Search Provider",
+      help: 'Selects the embedding backend used to build/query memory vectors: "openai", "gemini", "voyage", "mistral", "ollama", or "local". Keep your most reliable provider here and configure fallback for resilience.',
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.remote.baseUrl": {
+      label: "Remote Embedding Base URL",
+      help: "Overrides the embedding API endpoint, such as an OpenAI-compatible proxy or custom Gemini base URL. Use this only when routing through your own gateway or vendor endpoint; keep provider defaults otherwise.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.remote.apiKey": {
+      label: "Remote Embedding API Key",
+      help: "Supplies a dedicated API key for remote embedding calls used by memory indexing and query-time embeddings. Use this when memory embeddings should use different credentials than global defaults or environment variables.",
+      tags: ["security", "auth"],
+      sensitive: true,
+    },
+    "agents.defaults.memorySearch.remote.headers": {
+      label: "Remote Embedding Headers",
+      help: "Adds custom HTTP headers to remote embedding requests, merged with provider defaults. Use this for proxy auth and tenant routing headers, and keep values minimal to avoid leaking sensitive metadata.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.remote.batch.enabled": {
+      label: "Remote Batch Embedding Enabled",
+      help: "Enables provider batch APIs for embedding jobs when supported (OpenAI/Gemini), improving throughput on larger index runs. Keep this enabled unless debugging provider batch failures or running very small workloads.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.remote.batch.wait": {
+      label: "Remote Batch Wait for Completion",
+      help: "Waits for batch embedding jobs to fully finish before the indexing operation completes. Keep this enabled for deterministic indexing state; disable only if you accept delayed consistency.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.remote.batch.concurrency": {
+      label: "Remote Batch Concurrency",
+      help: "Limits how many embedding batch jobs run at the same time during indexing (default: 2). Increase carefully for faster bulk indexing, but watch provider rate limits and queue errors.",
+      tags: ["performance"],
+    },
+    "agents.defaults.memorySearch.remote.batch.pollIntervalMs": {
+      label: "Remote Batch Poll Interval (ms)",
+      help: "Controls how often the system polls provider APIs for batch job status in milliseconds (default: 2000). Use longer intervals to reduce API chatter, or shorter intervals for faster completion detection.",
+      tags: ["performance"],
+    },
+    "agents.defaults.memorySearch.remote.batch.timeoutMinutes": {
+      label: "Remote Batch Timeout (min)",
+      help: "Sets the maximum wait time for a full embedding batch operation in minutes (default: 60). Increase for very large corpora or slower providers, and lower it to fail fast in automation-heavy flows.",
+      tags: ["performance"],
+    },
+    "agents.defaults.memorySearch.model": {
+      label: "Memory Search Model",
+      help: "Embedding model override used by the selected memory provider when a non-default model is required. Set this only when you need explicit recall quality/cost tuning beyond provider defaults.",
+      tags: ["models"],
+    },
+    "agents.defaults.memorySearch.outputDimensionality": {
+      label: "Memory Search Output Dimensionality",
+      help: "Gemini embedding-2 only: chooses the output vector size for memory embeddings. Use 768, 1536, or 3072 (default), and expect a full reindex when you change it because stored vector dimensions must stay consistent.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.fallback": {
+      label: "Memory Search Fallback",
+      help: 'Backup provider used when primary embeddings fail: "openai", "gemini", "voyage", "mistral", "ollama", "local", or "none". Set a real fallback for production reliability; use "none" only if you prefer explicit failures.',
+      tags: ["reliability"],
+    },
+    "agents.defaults.memorySearch.local.modelPath": {
+      label: "Local Embedding Model Path",
+      help: "Specifies the local embedding model source for local memory search, such as a GGUF file path or `hf:` URI. Use this only when provider is `local`, and verify model compatibility before large index rebuilds.",
+      tags: ["storage"],
+    },
+    "agents.defaults.memorySearch.store.path": {
+      label: "Memory Search Index Path",
+      help: "Sets where the SQLite memory index is stored on disk for each agent. Keep the default `~/.remoteclaw/memory/{agentId}.sqlite` unless you need custom storage placement or backup policy alignment.",
+      tags: ["storage"],
+    },
+    "agents.defaults.memorySearch.store.vector.enabled": {
+      label: "Memory Search Vector Index",
+      help: "Enables the sqlite-vec extension used for vector similarity queries in memory search (default: true). Keep this enabled for normal semantic recall; disable only for debugging or fallback-only operation.",
+      tags: ["storage"],
+    },
+    "agents.defaults.memorySearch.store.vector.extensionPath": {
+      label: "Memory Search Vector Extension Path",
+      help: "Overrides the auto-discovered sqlite-vec extension library path (`.dylib`, `.so`, or `.dll`). Use this when your runtime cannot find sqlite-vec automatically or you pin a known-good build.",
+      tags: ["storage"],
+    },
+    "agents.defaults.memorySearch.chunking.tokens": {
+      label: "Memory Chunk Tokens",
+      help: "Chunk size in tokens used when splitting memory sources before embedding/indexing. Increase for broader context per chunk, or lower to improve precision on pinpoint lookups.",
+      tags: ["security", "auth"],
+    },
+    "agents.defaults.memorySearch.chunking.overlap": {
+      label: "Memory Chunk Overlap Tokens",
+      help: "Token overlap between adjacent memory chunks to preserve context continuity near split boundaries. Use modest overlap to reduce boundary misses without inflating index size too aggressively.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.sync.onSessionStart": {
+      label: "Index on Session Start",
+      help: "Triggers a memory index sync when a session starts so early turns see fresh memory content. Keep enabled when startup freshness matters more than initial turn latency.",
+      tags: ["storage", "automation"],
+    },
+    "agents.defaults.memorySearch.sync.onSearch": {
+      label: "Index on Search (Lazy)",
+      help: "Uses lazy sync by scheduling reindex on search after content changes are detected. Keep enabled for lower idle overhead, or disable if you require pre-synced indexes before any query.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.sync.watch": {
+      label: "Watch Memory Files",
+      help: "Watches memory files and schedules index updates from file-change events (chokidar). Enable for near-real-time freshness; disable on very large workspaces if watch churn is too noisy.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.sync.watchDebounceMs": {
+      label: "Memory Watch Debounce (ms)",
+      help: "Debounce window in milliseconds for coalescing rapid file-watch events before reindex runs. Increase to reduce churn on frequently-written files, or lower for faster freshness.",
+      tags: ["performance", "automation"],
+    },
+    "agents.defaults.memorySearch.sync.sessions.deltaBytes": {
+      label: "Session Delta Bytes",
+      help: "Requires at least this many newly appended bytes before session transcript changes trigger reindex (default: 100000). Increase to reduce frequent small reindexes, or lower for faster transcript freshness.",
+      tags: ["storage"],
+    },
+    "agents.defaults.memorySearch.sync.sessions.deltaMessages": {
+      label: "Session Delta Messages",
+      help: "Requires at least this many appended transcript messages before reindex is triggered (default: 50). Lower this for near-real-time transcript recall, or raise it to reduce indexing churn.",
+      tags: ["storage"],
+    },
+    "agents.defaults.memorySearch.sync.sessions.postCompactionForce": {
+      label: "Force Reindex After Compaction",
+      help: "Forces a session memory-search reindex after compaction-triggered transcript updates (default: true). Keep enabled when compacted summaries must be immediately searchable, or disable to reduce write-time indexing pressure.",
+      tags: ["storage"],
+    },
+    "agents.defaults.memorySearch.query.maxResults": {
+      label: "Memory Search Max Results",
+      help: "Maximum number of memory hits returned from search before downstream reranking and prompt injection. Raise for broader recall, or lower for tighter prompts and faster responses.",
+      tags: ["performance"],
+    },
+    "agents.defaults.memorySearch.query.minScore": {
+      label: "Memory Search Min Score",
+      help: "Minimum relevance score threshold for including memory results in final recall output. Increase to reduce weak/noisy matches, or lower when you need more permissive retrieval.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.query.hybrid.enabled": {
+      label: "Memory Search Hybrid",
+      help: "Combines BM25 keyword matching with vector similarity for better recall on mixed exact + semantic queries. Keep enabled unless you are isolating ranking behavior for troubleshooting.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.query.hybrid.vectorWeight": {
+      label: "Memory Search Vector Weight",
+      help: "Controls how strongly semantic similarity influences hybrid ranking (0-1). Increase when paraphrase matching matters more than exact terms; decrease for stricter keyword emphasis.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.query.hybrid.textWeight": {
+      label: "Memory Search Text Weight",
+      help: "Controls how strongly BM25 keyword relevance influences hybrid ranking (0-1). Increase for exact-term matching; decrease when semantic matches should rank higher.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.query.hybrid.candidateMultiplier": {
+      label: "Memory Search Hybrid Candidate Multiplier",
+      help: "Expands the candidate pool before reranking (default: 4). Raise this for better recall on noisy corpora, but expect more compute and slightly slower searches.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.query.hybrid.mmr.enabled": {
+      label: "Memory Search MMR Re-ranking",
+      help: "Adds MMR reranking to diversify results and reduce near-duplicate snippets in a single answer window. Enable when recall looks repetitive; keep off for strict score ordering.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.query.hybrid.mmr.lambda": {
+      label: "Memory Search MMR Lambda",
+      help: "Sets MMR relevance-vs-diversity balance (0 = most diverse, 1 = most relevant, default: 0.7). Lower values reduce repetition; higher values keep tightly relevant but may duplicate.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.query.hybrid.temporalDecay.enabled": {
+      label: "Memory Search Temporal Decay",
+      help: "Applies recency decay so newer memory can outrank older memory when scores are close. Enable when timeliness matters; keep off for timeless reference knowledge.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.query.hybrid.temporalDecay.halfLifeDays": {
+      label: "Memory Search Temporal Decay Half-life (Days)",
+      help: "Controls how fast older memory loses rank when temporal decay is enabled (half-life in days, default: 30). Lower values prioritize recent context more aggressively.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.memorySearch.cache.enabled": {
+      label: "Memory Search Embedding Cache",
+      help: "Caches computed chunk embeddings in SQLite so reindexing and incremental updates run faster (default: true). Keep this enabled unless investigating cache correctness or minimizing disk usage.",
+      tags: ["storage"],
+    },
+    "agents.defaults.memorySearch.cache.maxEntries": {
+      label: "Memory Search Embedding Cache Max Entries",
+      help: "Sets a best-effort upper bound on cached embeddings kept in SQLite for memory search. Use this when controlling disk growth matters more than peak reindex speed.",
+      tags: ["performance", "storage"],
+    },
+    memory: {
+      label: "Memory",
+      help: "Memory backend configuration (global).",
       tags: ["advanced"],
     },
     "memory.backend": {
@@ -11094,6 +13859,11 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: 'Selects provider auth style: "api-key" for API key auth, "token" for bearer token auth, "oauth" for OAuth credentials, and "aws-sdk" for AWS credential resolution. Match this to your provider requirements.',
       tags: ["models"],
     },
+    "models.providers.*.api": {
+      label: "Model Provider API Adapter",
+      help: "Provider API adapter selection controlling request/response compatibility handling for model calls. Use the adapter that matches your upstream provider protocol to avoid feature mismatch.",
+      tags: ["models"],
+    },
     "models.providers.*.injectNumCtxForOpenAICompat": {
       label: "Model Provider Inject num_ctx (OpenAI Compat)",
       help: "Controls whether RemoteClaw injects `options.num_ctx` for Ollama providers configured with the OpenAI-compatible adapter (`openai-completions`). Default is true. Set false only if your proxy/upstream rejects unknown `options` payload fields.",
@@ -11111,7 +13881,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "models.providers.*.models": {
       label: "Model Provider Model List",
-      help: "Declared model list for a provider including identifiers, metadata, and optional cost hints. Keep IDs exact to provider catalog values so selection and fallback resolve correctly.",
+      help: "Declared model list for a provider including identifiers, metadata, and optional compatibility/cost hints. Keep IDs exact to provider catalog values so selection and fallback resolve correctly.",
       tags: ["models"],
     },
     "models.bedrockDiscovery": {
@@ -11193,6 +13963,36 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Image Model Fallbacks",
       help: "Ordered fallback image models (provider/model).",
       tags: ["reliability", "models", "media"],
+    },
+    "agents.defaults.imageGenerationModel.primary": {
+      label: "Image Generation Model",
+      help: "Optional image-generation model (provider/model) used by the shared image generation capability.",
+      tags: ["media"],
+    },
+    "agents.defaults.imageGenerationModel.fallbacks": {
+      label: "Image Generation Model Fallbacks",
+      help: "Ordered fallback image-generation models (provider/model).",
+      tags: ["reliability", "media"],
+    },
+    "agents.defaults.pdfModel.primary": {
+      label: "PDF Model",
+      help: "Optional PDF model (provider/model) for the PDF analysis tool. Defaults to imageModel, then session model.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.pdfModel.fallbacks": {
+      label: "PDF Model Fallbacks",
+      help: "Ordered fallback PDF models (provider/model).",
+      tags: ["reliability"],
+    },
+    "agents.defaults.pdfMaxBytesMb": {
+      label: "PDF Max Size (MB)",
+      help: "Maximum PDF file size in megabytes for the PDF tool (default: 10).",
+      tags: ["performance"],
+    },
+    "agents.defaults.pdfMaxPages": {
+      label: "PDF Max Pages",
+      help: "Maximum number of PDF pages to process for the PDF tool (default: 20).",
+      tags: ["performance"],
     },
     "agents.defaults.imageMaxDimensionPx": {
       label: "Image Max Dimension (px)",
@@ -11289,10 +14089,20 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: 'AGENTS.md H2/H3 section names re-injected after compaction so the agent reruns critical startup guidance. Leave unset to use "Session Startup"/"Red Lines" with legacy fallback to "Every Session"/"Safety"; set to [] to disable reinjection entirely.',
       tags: ["advanced"],
     },
+    "agents.defaults.compaction.timeoutSeconds": {
+      label: "Compaction Timeout (Seconds)",
+      help: "Maximum time in seconds allowed for a single compaction operation before it is aborted (default: 900). Increase this for very large sessions that need more time to summarize, or decrease it to fail faster on unresponsive models.",
+      tags: ["performance"],
+    },
     "agents.defaults.compaction.model": {
       label: "Compaction Model Override",
       help: "Optional provider/model override used only for compaction summarization. Set this when you want compaction to run on a different model than the session default, and leave it unset to keep using the primary agent model.",
       tags: ["models"],
+    },
+    "agents.defaults.compaction.truncateAfterCompaction": {
+      label: "Truncate After Compaction",
+      help: "When enabled, rewrites the session JSONL file after compaction to remove entries that were summarized. Prevents unbounded file growth in long-running sessions with many compaction cycles. Default: false.",
+      tags: ["advanced"],
     },
     "agents.defaults.compaction.memoryFlush": {
       label: "Compaction Memory Flush",
@@ -11323,6 +14133,16 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Compaction Memory Flush System Prompt",
       help: "System-prompt override for the pre-compaction memory flush turn to control extraction style and safety constraints. Use carefully so custom instructions do not reduce memory quality or leak sensitive context.",
       tags: ["advanced"],
+    },
+    "agents.defaults.embeddedPi": {
+      label: "Embedded Pi",
+      help: "Embedded Pi runner hardening controls for how workspace-local Pi settings are trusted and applied in RemoteClaw sessions.",
+      tags: ["advanced"],
+    },
+    "agents.defaults.embeddedPi.projectSettingsPolicy": {
+      label: "Embedded Pi Project Settings Policy",
+      help: 'How embedded Pi handles workspace-local `.pi/config/settings.json`: "sanitize" (default) strips shellPath/shellCommandPrefix, "ignore" disables project settings entirely, and "trusted" applies project settings as-is.',
+      tags: ["access"],
     },
     "agents.defaults.heartbeat.directPolicy": {
       label: "Heartbeat Direct Policy",
@@ -11384,6 +14204,16 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Allow /config chat command to read/write config on disk (default: false).",
       tags: ["advanced"],
     },
+    "commands.mcp": {
+      label: "Allow /mcp",
+      help: "Allow /mcp chat command to manage RemoteClaw MCP server config under mcp.servers (default: false).",
+      tags: ["advanced"],
+    },
+    "commands.plugins": {
+      label: "Allow /plugins",
+      help: "Allow /plugins chat command to list discovered plugins and toggle plugin enablement in config (default: false).",
+      tags: ["advanced"],
+    },
     "commands.debug": {
       label: "Allow /debug",
       help: "Allow /debug chat command for runtime-only overrides (default: false).",
@@ -11420,9 +14250,19 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Defines elevated command allow rules by channel and sender for owner-level command surfaces. Use narrow provider-specific identities so privileged commands are not exposed to broad chat audiences.",
       tags: ["access"],
     },
+    mcp: {
+      label: "MCP",
+      help: "Global MCP server definitions managed by RemoteClaw. Embedded Pi and other runtime adapters can consume these servers without storing them inside Pi-owned project settings.",
+      tags: ["advanced"],
+    },
+    "mcp.servers": {
+      label: "MCP Servers",
+      help: "Named MCP server definitions. RemoteClaw stores them in its own config and runtime adapters decide which transports are supported at execution time.",
+      tags: ["advanced"],
+    },
     "ui.seamColor": {
       label: "Accent Color",
-      help: "Primary accent/seam color used by UI surfaces for emphasis, badges, and visual identity cues. Use high-contrast values that remain readable across light/dark themes.",
+      help: "Primary accent color used by UI surfaces for emphasis, badges, and visual identity cues. Use high-contrast values that remain readable across light/dark themes.",
       tags: ["advanced"],
     },
     "ui.assistant": {
@@ -11788,7 +14628,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "hooks.token": {
       label: "Hooks Auth Token",
-      help: "Shared bearer token checked by hooks ingress for request authentication before mappings run. Use environment substitution and rotate regularly when webhook endpoints are internet-accessible.",
+      help: "Shared bearer token checked by hooks ingress for request authentication before mappings run. Treat holders as full-trust callers for the hook ingress surface, not as a separate non-owner role. Use environment substitution and rotate regularly when webhook endpoints are internet-accessible.",
       tags: ["security", "auth"],
       sensitive: true,
     },
@@ -11809,7 +14649,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "hooks.allowedAgentIds": {
       label: "Hooks Allowed Agent IDs",
-      help: "Allowlist of agent IDs that hook mappings are allowed to target when selecting execution agents. Use this to constrain automation events to dedicated service agents.",
+      help: "Allowlist of agent IDs that hook mappings are allowed to target when selecting execution agents. Use this to constrain automation events to dedicated service agents and reduce blast radius if a hook token is exposed.",
       tags: ["access"],
     },
     "hooks.maxBodyBytes": {
@@ -11913,6 +14753,11 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Optional model override for mapping-triggered runs when automation should use a different model than agent defaults. Use this sparingly so behavior remains predictable across mapping executions.",
       tags: ["models"],
     },
+    "hooks.mappings[].thinking": {
+      label: "Hook Mapping Thinking Override",
+      help: "Optional thinking-effort override for mapping-triggered runs to tune latency versus reasoning depth. Keep low or minimal for high-volume hooks unless deeper reasoning is clearly required.",
+      tags: ["advanced"],
+    },
     "hooks.mappings[].timeoutSeconds": {
       label: "Hook Mapping Timeout (sec)",
       help: "Maximum runtime allowed for mapping action execution before timeout handling applies. Use tighter limits for high-volume webhook sources to prevent queue pileups.",
@@ -11962,6 +14807,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Gmail Hook Push Token",
       help: "Shared secret token required on Gmail push hook callbacks before processing notifications. Use env substitution and rotate if callback endpoints are exposed externally.",
       tags: ["security", "auth"],
+      sensitive: true,
     },
     "hooks.gmail.hookUrl": {
       label: "Gmail Hook Callback URL",
@@ -12032,6 +14878,11 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Gmail Hook Model Override",
       help: "Optional model override for Gmail-triggered runs when mailbox automations should use dedicated model behavior. Keep unset to inherit agent defaults unless mailbox tasks need specialization.",
       tags: ["models"],
+    },
+    "hooks.gmail.thinking": {
+      label: "Gmail Hook Thinking Override",
+      help: 'Thinking effort override for Gmail-driven agent runs: "off", "minimal", "low", "medium", or "high". Keep modest defaults for routine inbox automations to control cost and latency.',
+      tags: ["advanced"],
     },
     "hooks.internal": {
       label: "Internal Hooks",
@@ -12220,7 +15071,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "messages.groupChat.mentionPatterns": {
       label: "Group Mention Patterns",
-      help: "Regex-like patterns used to detect explicit mentions/trigger phrases in group chats. Use precise patterns to reduce false positives in high-volume channels.",
+      help: "Safe case-insensitive regex patterns used to detect explicit mentions/trigger phrases in group chats. Use precise patterns to reduce false positives in high-volume channels; invalid or unsafe nested-repetition patterns are ignored.",
       tags: ["advanced"],
     },
     "messages.groupChat.historyLimit": {
@@ -12552,9 +15403,64 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Max seconds before Telegram API requests are aborted (default: 500 per grammY).",
       tags: ["network", "performance", "channels"],
     },
+    "channels.telegram.silentErrorReplies": {
+      label: "Telegram Silent Error Replies",
+      help: "When true, Telegram bot replies marked as errors are sent silently (no notification sound). Default: false.",
+      tags: ["network", "channels"],
+    },
+    "channels.telegram.apiRoot": {
+      label: "Telegram API Root URL",
+      help: "Custom Telegram Bot API root URL. Use for self-hosted Bot API servers (https://github.com/tdlib/telegram-bot-api) or reverse proxies in regions where api.telegram.org is blocked.",
+      tags: ["network", "channels"],
+    },
+    "channels.telegram.autoTopicLabel": {
+      label: "Telegram Auto Topic Label",
+      help: "Auto-rename DM forum topics on first message using LLM. Default: true. Set to false to disable, or use object form { enabled: true, prompt: '...' } for custom prompt.",
+      tags: ["network", "channels"],
+    },
+    "channels.telegram.autoTopicLabel.enabled": {
+      label: "Telegram Auto Topic Label Enabled",
+      help: "Whether auto topic labeling is enabled. Default: true.",
+      tags: ["network", "channels"],
+    },
+    "channels.telegram.autoTopicLabel.prompt": {
+      label: "Telegram Auto Topic Label Prompt",
+      help: "Custom prompt for LLM-based topic naming. The user message is appended after the prompt.",
+      tags: ["network", "channels"],
+    },
     "channels.telegram.capabilities.inlineButtons": {
       label: "Telegram Inline Buttons",
       help: "Enable Telegram inline button components for supported command and interaction surfaces. Disable if your deployment needs plain-text-only compatibility behavior.",
+      tags: ["network", "channels"],
+    },
+    "channels.telegram.execApprovals": {
+      label: "Telegram Exec Approvals",
+      help: "Telegram-native exec approval routing and approver authorization. Enable this only when Telegram should act as an explicit exec-approval client for the selected bot account.",
+      tags: ["network", "channels"],
+    },
+    "channels.telegram.execApprovals.enabled": {
+      label: "Telegram Exec Approvals Enabled",
+      help: "Enable Telegram exec approvals for this account. When false or unset, Telegram messages/buttons cannot approve exec requests.",
+      tags: ["network", "channels"],
+    },
+    "channels.telegram.execApprovals.approvers": {
+      label: "Telegram Exec Approval Approvers",
+      help: "Telegram user IDs allowed to approve exec requests for this bot account. Use numeric Telegram user IDs; prompts are only delivered to these approvers when target includes dm.",
+      tags: ["network", "channels"],
+    },
+    "channels.telegram.execApprovals.agentFilter": {
+      label: "Telegram Exec Approval Agent Filter",
+      help: 'Optional allowlist of agent IDs eligible for Telegram exec approvals, for example `["main", "ops-agent"]`. Use this to keep approval prompts scoped to the agents you actually operate from Telegram.',
+      tags: ["network", "channels"],
+    },
+    "channels.telegram.execApprovals.sessionFilter": {
+      label: "Telegram Exec Approval Session Filter",
+      help: "Optional session-key filters matched as substring or regex-style patterns before Telegram approval routing is used. Use narrow patterns so Telegram approvals only appear for intended sessions.",
+      tags: ["network", "storage", "channels"],
+    },
+    "channels.telegram.execApprovals.target": {
+      label: "Telegram Exec Approval Target",
+      help: 'Controls where Telegram approval prompts are sent: "dm" sends to approver DMs (default), "channel" sends to the originating Telegram chat/topic, and "both" sends to both. Channel delivery exposes the command text to the chat, so only use it in trusted groups/topics.',
       tags: ["network", "channels"],
     },
     "channels.telegram.threadBindings.enabled": {
@@ -12898,6 +15804,11 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: 'Allow bot-authored messages to trigger Discord replies (default: false). Set "mentions" to only accept bot messages that mention the bot.',
       tags: ["access", "network", "channels"],
     },
+    "channels.matrix.allowBots": {
+      label: "Matrix Allow Bot Messages",
+      help: 'Allow messages from other configured Matrix bot accounts to trigger replies (default: false). Set "mentions" to only accept bot messages that visibly mention this bot.',
+      tags: ["access", "network", "channels"],
+    },
     "channels.discord.token": {
       label: "Discord Bot Token",
       help: "Discord bot token used for gateway and REST API authentication for this provider account. Keep this secret out of committed config and rotate immediately after any leak.",
@@ -13066,7 +15977,12 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "plugins.slots": {
       label: "Plugin Slots",
-      help: "Selects which plugins own exclusive runtime slots so only one plugin provides that capability. Use explicit slot ownership to avoid overlapping providers with conflicting behavior.",
+      help: "Selects which plugins own exclusive runtime slots such as memory so only one plugin provides that capability. Use explicit slot ownership to avoid overlapping providers with conflicting behavior.",
+      tags: ["advanced"],
+    },
+    "plugins.slots.memory": {
+      label: "Memory Plugin",
+      help: 'Select the active memory plugin by id, or "none" to disable memory plugins.',
       tags: ["advanced"],
     },
     "plugins.slots.contextEngine": {
@@ -13092,6 +16008,21 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     "plugins.entries.*.hooks.allowPromptInjection": {
       label: "Allow Prompt Injection Hooks",
       help: "Controls whether this plugin may mutate prompts through typed hooks. Set false to block `before_prompt_build` and ignore prompt-mutating fields from legacy `before_agent_start`, while preserving legacy `modelOverride` and `providerOverride` behavior.",
+      tags: ["access"],
+    },
+    "plugins.entries.*.subagent": {
+      label: "Plugin Subagent Policy",
+      help: "Per-plugin subagent runtime controls for model override trust and allowlists. Keep this unset unless a plugin must explicitly steer subagent model selection.",
+      tags: ["advanced"],
+    },
+    "plugins.entries.*.subagent.allowModelOverride": {
+      label: "Allow Plugin Subagent Model Override",
+      help: "Explicitly allows this plugin to request provider/model overrides in background subagent runs. Keep false unless the plugin is trusted to steer model selection.",
+      tags: ["access"],
+    },
+    "plugins.entries.*.subagent.allowedModels": {
+      label: "Plugin Subagent Allowed Models",
+      help: 'Allowed override targets for trusted plugin subagent runs as canonical "provider/model" refs. Use "*" only when you intentionally allow any model.',
       tags: ["access"],
     },
     "plugins.entries.*.apiKey": {
@@ -13174,9 +16105,80 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "ISO timestamp of last install/update.",
       tags: ["advanced"],
     },
+    "plugins.installs.*.marketplaceName": {
+      label: "Plugin Marketplace Name",
+      help: "Marketplace display name recorded for marketplace-backed plugin installs (if available).",
+      tags: ["advanced"],
+    },
+    "plugins.installs.*.marketplaceSource": {
+      label: "Plugin Marketplace Source",
+      help: "Original marketplace source used to resolve the install (for example a repo path or Git URL).",
+      tags: ["advanced"],
+    },
+    "plugins.installs.*.marketplacePlugin": {
+      label: "Plugin Marketplace Plugin",
+      help: "Plugin entry name inside the source marketplace, used for later updates.",
+      tags: ["advanced"],
+    },
     "models.providers.*.headers.*": {
       sensitive: true,
       tags: ["security", "models"],
+    },
+    "agents.defaults.sandbox.ssh.identityData": {
+      sensitive: true,
+      tags: ["security", "storage"],
+    },
+    "agents.defaults.sandbox.ssh.certificateData": {
+      sensitive: true,
+      tags: ["security", "storage"],
+    },
+    "agents.defaults.sandbox.ssh.knownHostsData": {
+      sensitive: true,
+      tags: ["security", "storage"],
+    },
+    "agents.list[].memorySearch.remote.apiKey": {
+      sensitive: true,
+      tags: ["security", "auth"],
+    },
+    "agents.list[].sandbox.ssh.identityData": {
+      sensitive: true,
+      tags: ["security", "storage"],
+    },
+    "agents.list[].sandbox.ssh.certificateData": {
+      sensitive: true,
+      tags: ["security", "storage"],
+    },
+    "agents.list[].sandbox.ssh.knownHostsData": {
+      sensitive: true,
+      tags: ["security", "storage"],
+    },
+    "tools.web.search.apiKey": {
+      sensitive: true,
+      tags: ["security", "auth", "tools"],
+    },
+    "tools.web.search.brave.apiKey": {
+      sensitive: true,
+      tags: ["security", "auth", "tools"],
+    },
+    "tools.web.search.firecrawl.apiKey": {
+      sensitive: true,
+      tags: ["security", "auth", "tools"],
+    },
+    "tools.web.search.gemini.apiKey": {
+      sensitive: true,
+      tags: ["security", "auth", "tools"],
+    },
+    "tools.web.search.grok.apiKey": {
+      sensitive: true,
+      tags: ["security", "auth", "tools"],
+    },
+    "tools.web.search.kimi.apiKey": {
+      sensitive: true,
+      tags: ["security", "auth", "tools"],
+    },
+    "tools.web.search.perplexity.apiKey": {
+      sensitive: true,
+      tags: ["security", "auth", "tools"],
     },
     "messages.tts.elevenlabs.apiKey": {
       sensitive: true,

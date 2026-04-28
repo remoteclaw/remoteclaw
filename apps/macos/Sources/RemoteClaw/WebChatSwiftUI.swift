@@ -17,7 +17,7 @@ private enum WebChatSwiftUILayout {
     static let anchorPadding: CGFloat = 8
 }
 
-struct MacGatewayChatTransport: RemoteClawChatTransport, Sendable {
+struct MacGatewayChatTransport: RemoteClawChatTransport {
     func requestHistory(sessionKey: String) async throws -> RemoteClawChatHistoryPayload {
         try await GatewayConnection.shared.chatHistory(sessionKey: sessionKey)
     }
@@ -59,7 +59,23 @@ struct MacGatewayChatTransport: RemoteClawChatTransport, Sendable {
             method: "sessions.list",
             params: params,
             timeoutMs: 15000)
-        return try JSONDecoder().decode(RemoteClawChatSessionsListResponse.self, from: data)
+        let decoded = try JSONDecoder().decode(RemoteClawChatSessionsListResponse.self, from: data)
+        let mainSessionKey = await GatewayConnection.shared.cachedMainSessionKey()
+        let defaults = decoded.defaults.map {
+            RemoteClawChatSessionsDefaults(
+                model: $0.model,
+                contextTokens: $0.contextTokens,
+                mainSessionKey: mainSessionKey)
+        } ?? RemoteClawChatSessionsDefaults(
+            model: nil,
+            contextTokens: nil,
+            mainSessionKey: mainSessionKey)
+        return RemoteClawChatSessionsListResponse(
+            ts: decoded.ts,
+            path: decoded.path,
+            count: decoded.count,
+            defaults: defaults,
+            sessions: decoded.sessions)
     }
 
     func setSessionModel(sessionKey: String, model: String?) async throws {
@@ -101,6 +117,20 @@ struct MacGatewayChatTransport: RemoteClawChatTransport, Sendable {
 
     func requestHealth(timeoutMs: Int) async throws -> Bool {
         try await GatewayConnection.shared.healthOK(timeoutMs: timeoutMs)
+    }
+
+    func resetSession(sessionKey: String) async throws {
+        _ = try await GatewayConnection.shared.request(
+            method: "sessions.reset",
+            params: ["key": AnyCodable(sessionKey)],
+            timeoutMs: 10000)
+    }
+
+    func compactSession(sessionKey: String) async throws {
+        _ = try await GatewayConnection.shared.request(
+            method: "sessions.compact",
+            params: ["key": AnyCodable(sessionKey)],
+            timeoutMs: 10000)
     }
 
     func events() -> AsyncStream<RemoteClawChatTransportEvent> {
@@ -303,10 +333,7 @@ final class WebChatSwiftUIWindowController {
     }
 
     private func removeDismissMonitor() {
-        if let monitor = self.dismissMonitor {
-            NSEvent.removeMonitor(monitor)
-            self.dismissMonitor = nil
-        }
+        OverlayPanelFactory.clearGlobalEventMonitor(&self.dismissMonitor)
     }
 
     private static func persistedThinkingLevel() -> String? {
@@ -433,13 +460,6 @@ final class WebChatSwiftUIWindowController {
     }
 
     private static func color(fromHex raw: String?) -> Color? {
-        let trimmed = (raw ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
-        let hex = trimmed.hasPrefix("#") ? String(trimmed.dropFirst()) : trimmed
-        guard hex.count == 6, let value = Int(hex, radix: 16) else { return nil }
-        let r = Double((value >> 16) & 0xFF) / 255.0
-        let g = Double((value >> 8) & 0xFF) / 255.0
-        let b = Double(value & 0xFF) / 255.0
-        return Color(red: r, green: g, blue: b)
+        ColorHexSupport.color(fromHex: raw)
     }
 }

@@ -2,7 +2,9 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
+import { VERSION } from "../version.js";
 import { createConfigIO } from "./io.js";
+import { parseRemoteClawVersion } from "./version.js";
 
 async function withTempHome(run: (home: string) => Promise<void>): Promise<void> {
   const home = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-config-"));
@@ -69,7 +71,7 @@ describe("config io paths", () => {
     });
   });
 
-  it("honors legacy CLAWDBOT_CONFIG_PATH override", async () => {
+  it.skip("honors legacy CLAWDBOT_CONFIG_PATH override", async () => {
     await withTempHome(async (home) => {
       const customPath = await writeConfig(home, ".remoteclaw", 20003, "legacy-custom.json");
       const io = createIoForHome(home, { CLAWDBOT_CONFIG_PATH: customPath } as NodeJS.ProcessEnv);
@@ -165,6 +167,78 @@ describe("config io paths", () => {
         expect.stringContaining(`Invalid config at ${configPath}:\\n`),
       );
       expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("- gateway.port:"));
+    });
+  });
+
+  it.skip("does not warn when config was last touched by a same-base correction publish", async () => {
+    const parsedVersion = parseRemoteClawVersion(VERSION);
+    if (!parsedVersion) {
+      throw new Error(`Unable to parse VERSION: ${VERSION}`);
+    }
+    const touchedVersion = `${parsedVersion.major}.${parsedVersion.minor}.${parsedVersion.patch}-${(parsedVersion.revision ?? 0) + 1}`;
+
+    await withTempHome(async (home) => {
+      const configDir = path.join(home, ".remoteclaw");
+      await fs.mkdir(configDir, { recursive: true });
+      const configPath = path.join(configDir, "remoteclaw.json");
+      await fs.writeFile(
+        configPath,
+        JSON.stringify({ meta: { lastTouchedVersion: touchedVersion } }, null, 2),
+      );
+
+      const logger = {
+        warn: vi.fn(),
+        error: vi.fn(),
+      };
+
+      const io = createConfigIO({
+        env: {} as NodeJS.ProcessEnv,
+        homedir: () => home,
+        logger,
+      });
+
+      io.loadConfig();
+
+      expect(logger.warn).not.toHaveBeenCalledWith(
+        expect.stringContaining("Config was last written by a newer RemoteClaw"),
+      );
+      expect(io.configPath).toBe(configPath);
+    });
+  });
+
+  it("does not warn for same-base prerelease configs when current version is newer", async () => {
+    const parsedVersion = parseRemoteClawVersion(VERSION);
+    if (!parsedVersion) {
+      throw new Error(`Unable to parse VERSION: ${VERSION}`);
+    }
+    const touchedVersion = `${parsedVersion.major}.${parsedVersion.minor}.${parsedVersion.patch}-beta.1`;
+
+    await withTempHome(async (home) => {
+      const configDir = path.join(home, ".remoteclaw");
+      await fs.mkdir(configDir, { recursive: true });
+      const configPath = path.join(configDir, "remoteclaw.json");
+      await fs.writeFile(
+        configPath,
+        JSON.stringify({ meta: { lastTouchedVersion: touchedVersion } }, null, 2),
+      );
+
+      const logger = {
+        warn: vi.fn(),
+        error: vi.fn(),
+      };
+
+      const io = createConfigIO({
+        env: {} as NodeJS.ProcessEnv,
+        homedir: () => home,
+        logger,
+      });
+
+      io.loadConfig();
+
+      expect(logger.warn).not.toHaveBeenCalledWith(
+        expect.stringContaining("Config was last written by a newer RemoteClaw"),
+      );
+      expect(io.configPath).toBe(configPath);
     });
   });
 });

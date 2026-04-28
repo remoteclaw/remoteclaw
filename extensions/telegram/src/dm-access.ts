@@ -6,6 +6,7 @@ import { issuePairingChallenge } from "../../../src/pairing/pairing-challenge.js
 import { upsertChannelPairingRequest } from "../../../src/pairing/pairing-store.js";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import { resolveSenderAllowMatch, type NormalizedAllowFrom } from "./bot-access.js";
+import { renderTelegramHtmlText } from "./format.js";
 
 type TelegramDmAccessLogger = {
   info: (obj: Record<string, unknown>, msg: string) => void;
@@ -101,9 +102,10 @@ export async function enforceTelegramDmAccess(params: {
           );
         },
         sendPairingReply: async (text) => {
+          const html = renderTelegramHtmlText(text);
           await withTelegramApiErrorLogging({
             operation: "sendMessage",
-            fn: () => bot.api.sendMessage(chatId, text),
+            fn: () => bot.api.sendMessage(chatId, html, { parse_mode: "HTML" }),
           });
         },
         onReplyError: (err) => {

@@ -4,7 +4,7 @@
 // The fork owns remoteclaw.org only — claims against the `.ai` TLD are stale or
 // upstream drift. Matches both forms:
 //   - forward domain   `remoteclaw.ai`   (URLs, hostnames)
-//   - reverse-DNS      `ai.remoteclaw`   (bundle IDs, launch-agent labels, package names)
+//   - reverse-DNS      `org.remoteclaw`   (bundle IDs, launch-agent labels, package names)
 // Exemptions are declared in scripts/ci/remoteclaw-ai-allowlist.txt.
 
 import { spawnSync } from "node:child_process";

@@ -14,6 +14,13 @@ This endpoint is **disabled by default**. Enable it in config first.
 - `POST /v1/chat/completions`
 - Same port as the Gateway (WS + HTTP multiplex): `http://<gateway-host>:<port>/v1/chat/completions`
 
+When the Gateway’s OpenAI-compatible HTTP surface is enabled, it also serves:
+
+- `GET /v1/models`
+- `GET /v1/models/{id}`
+- `POST /v1/embeddings`
+- `POST /v1/responses`
+
 Under the hood, requests are executed as a normal Gateway agent run (same codepath as `remoteclaw agent`), so routing/permissions/config match your Gateway.
 
 ## Authentication
@@ -41,20 +48,25 @@ Treat this endpoint as a **full operator-access** surface for the gateway instan
 
 See [Security](/gateway/security) and [Remote access](/gateway/remote).
 
-## Choosing an agent
+## Agent-first model contract
 
-No custom headers required: encode the agent id in the OpenAI `model` field:
+RemoteClaw treats the OpenAI `model` field as an **agent target**, not a raw provider model id.
 
-- `model: "remoteclaw:<agentId>"` (example: `"remoteclaw:main"`, `"remoteclaw:beta"`)
-- `model: "agent:<agentId>"` (alias)
+- `model: "remoteclaw"` routes to the configured default agent.
+- `model: "remoteclaw/default"` also routes to the configured default agent.
+- `model: "remoteclaw/<agentId>"` routes to a specific agent.
 
-Or target a specific RemoteClaw agent by header:
+Optional request headers:
 
-- `x-remoteclaw-agent-id: <agentId>` (default: `main`)
+- `x-remoteclaw-model: <provider/model-or-bare-id>` overrides the backend model for the selected agent.
+- `x-remoteclaw-agent-id: <agentId>` remains supported as a compatibility override.
+- `x-remoteclaw-session-key: <sessionKey>` fully controls session routing.
+- `x-remoteclaw-message-channel: <channel>` sets the synthetic ingress channel context for channel-aware prompts and policies.
 
-Advanced:
+Compatibility aliases still accepted:
 
-- `x-remoteclaw-session-key: <sessionKey>` to fully control session routing.
+- `model: "remoteclaw:<agentId>"`
+- `model: "agent:<agentId>"`
 
 ## Enabling the endpoint
 
@@ -94,6 +106,57 @@ By default the endpoint is **stateless per request** (a new session key is gener
 
 If the request includes an OpenAI `user` string, the Gateway derives a stable session key from it, so repeated calls can share an agent session.
 
+## Why this surface matters
+
+This is the highest-leverage compatibility set for self-hosted frontends and tooling:
+
+- Most Open WebUI, LobeChat, and LibreChat setups expect `/v1/models`.
+- Many RAG systems expect `/v1/embeddings`.
+- Existing OpenAI chat clients can usually start with `/v1/chat/completions`.
+- More agent-native clients increasingly prefer `/v1/responses`.
+
+## Model list and agent routing
+
+<AccordionGroup>
+  <Accordion title="What does `/v1/models` return?">
+    An RemoteClaw agent-target list.
+
+    The returned ids are `remoteclaw`, `remoteclaw/default`, and `remoteclaw/<agentId>` entries.
+    Use them directly as OpenAI `model` values.
+
+  </Accordion>
+  <Accordion title="Does `/v1/models` list agents or sub-agents?">
+    It lists top-level agent targets, not backend provider models and not sub-agents.
+
+    Sub-agents remain internal execution topology. They do not appear as pseudo-models.
+
+  </Accordion>
+  <Accordion title="Why is `remoteclaw/default` included?">
+    `remoteclaw/default` is the stable alias for the configured default agent.
+
+    That means clients can keep using one predictable id even if the real default agent id changes between environments.
+
+  </Accordion>
+  <Accordion title="How do I override the backend model?">
+    Use `x-remoteclaw-model`.
+
+    Examples:
+    `x-remoteclaw-model: openai/gpt-5.4`
+    `x-remoteclaw-model: gpt-5.4`
+
+    If you omit it, the selected agent runs with its normal configured model choice.
+
+  </Accordion>
+  <Accordion title="How do embeddings fit this contract?">
+    `/v1/embeddings` uses the same agent-target `model` ids.
+
+    Use `model: "remoteclaw/default"` or `model: "remoteclaw/<agentId>"`.
+    When you need a specific embedding model, send it in `x-remoteclaw-model`.
+    Without that header, the request passes through to the selected agent's normal embedding setup.
+
+  </Accordion>
+</AccordionGroup>
+
 ## Streaming (SSE)
 
 Set `stream: true` to receive Server-Sent Events (SSE):
@@ -101,6 +164,30 @@ Set `stream: true` to receive Server-Sent Events (SSE):
 - `Content-Type: text/event-stream`
 - Each event line is `data: <json>`
 - Stream ends with `data: [DONE]`
+
+## Open WebUI quick setup
+
+For a basic Open WebUI connection:
+
+- Base URL: `http://127.0.0.1:18789/v1`
+- Docker on macOS base URL: `http://host.docker.internal:18789/v1`
+- API key: your Gateway bearer token
+- Model: `remoteclaw/default`
+
+Expected behavior:
+
+- `GET /v1/models` should list `remoteclaw/default`
+- Open WebUI should use `remoteclaw/default` as the chat model id
+- If you want a specific backend provider/model for that agent, set the agent's normal default model or send `x-remoteclaw-model`
+
+Quick smoke:
+
+```bash
+curl -sS http://127.0.0.1:18789/v1/models \
+  -H 'Authorization: Bearer YOUR_TOKEN'
+```
+
+If that returns `remoteclaw/default`, most Open WebUI setups can connect with the same base URL and token.
 
 ## Examples
 
@@ -110,9 +197,8 @@ Non-streaming:
 curl -sS http://127.0.0.1:18789/v1/chat/completions \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
-  -H 'x-remoteclaw-agent-id: main' \
   -d '{
-    "model": "remoteclaw",
+    "model": "remoteclaw/default",
     "messages": [{"role":"user","content":"hi"}]
   }'
 ```
@@ -123,10 +209,44 @@ Streaming:
 curl -N http://127.0.0.1:18789/v1/chat/completions \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
-  -H 'x-remoteclaw-agent-id: main' \
+  -H 'x-remoteclaw-model: openai/gpt-5.4' \
   -d '{
-    "model": "remoteclaw",
+    "model": "remoteclaw/research",
     "stream": true,
     "messages": [{"role":"user","content":"hi"}]
   }'
 ```
+
+List models:
+
+```bash
+curl -sS http://127.0.0.1:18789/v1/models \
+  -H 'Authorization: Bearer YOUR_TOKEN'
+```
+
+Fetch one model:
+
+```bash
+curl -sS http://127.0.0.1:18789/v1/models/remoteclaw%2Fdefault \
+  -H 'Authorization: Bearer YOUR_TOKEN'
+```
+
+Create embeddings:
+
+```bash
+curl -sS http://127.0.0.1:18789/v1/embeddings \
+  -H 'Authorization: Bearer YOUR_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -H 'x-remoteclaw-model: openai/text-embedding-3-small' \
+  -d '{
+    "model": "remoteclaw/default",
+    "input": ["alpha", "beta"]
+  }'
+```
+
+Notes:
+
+- `/v1/models` returns RemoteClaw agent targets, not raw provider catalogs.
+- `remoteclaw/default` is always present so one stable id works across environments.
+- Backend provider/model overrides belong in `x-remoteclaw-model`, not the OpenAI `model` field.
+- `/v1/embeddings` supports `input` as a string or array of strings.

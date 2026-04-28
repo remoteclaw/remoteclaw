@@ -1,5 +1,5 @@
 # remoteclaw .ai-TLD allowlist — intentional `remoteclaw.ai` (forward) and
-# `ai.remoteclaw` (reverse-DNS) references exempt from the regression gate.
+# `org.remoteclaw` (reverse-DNS) references exempt from the regression gate.
 #
 # Format (one rule per line; blank lines and `#` comments ignored):
 #   FILE:path       — exempt a single file (exact match, relative to repo root)
@@ -20,7 +20,7 @@ FILE:scripts/ci/remoteclaw-ai-allowlist.txt
 
 # ---------------------------------------------------------------------------
 # Legacy launch-agent labels (macOS daemon)
-# `ai.remoteclaw.*` bundle IDs remembered for backward-compat migration; the
+# `org.remoteclaw.*` bundle IDs remembered for backward-compat migration; the
 # daemon recognizes these old labels to clean them up on upgrade. The current
 # canonical form is `org.remoteclaw.*`.
 # ---------------------------------------------------------------------------

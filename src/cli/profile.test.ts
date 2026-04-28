@@ -19,6 +19,29 @@ describe("parseCliProfileArgs", () => {
     expect(res.argv).toEqual(["node", "remoteclaw", "gateway", "--dev", "--allow-unconfigured"]);
   });
 
+  it("leaves gateway --dev for subcommands after leading root options", () => {
+    const res = parseCliProfileArgs([
+      "node",
+      "remoteclaw",
+      "--no-color",
+      "gateway",
+      "--dev",
+      "--allow-unconfigured",
+    ]);
+    if (!res.ok) {
+      throw new Error(res.error);
+    }
+    expect(res.profile).toBeNull();
+    expect(res.argv).toEqual([
+      "node",
+      "remoteclaw",
+      "--no-color",
+      "gateway",
+      "--dev",
+      "--allow-unconfigured",
+    ]);
+  });
+
   it("still accepts global --dev before subcommand", () => {
     const res = parseCliProfileArgs(["node", "remoteclaw", "--dev", "gateway"]);
     if (!res.ok) {
@@ -164,5 +187,31 @@ describe("formatCliCommand", () => {
     expect(formatCliCommand("pnpm remoteclaw doctor", { REMOTECLAW_PROFILE: "work" })).toBe(
       "pnpm remoteclaw --profile work doctor",
     );
+  });
+
+  it("inserts --container when a container hint is set", () => {
+    expect(
+      formatCliCommand("remoteclaw gateway status --deep", { REMOTECLAW_CONTAINER_HINT: "demo" }),
+    ).toBe("remoteclaw --container demo gateway status --deep");
+  });
+
+  it("preserves both --container and --profile hints", () => {
+    expect(
+      formatCliCommand("remoteclaw doctor", {
+        REMOTECLAW_CONTAINER_HINT: "demo",
+        REMOTECLAW_PROFILE: "work",
+      }),
+    ).toBe("remoteclaw --container demo doctor");
+  });
+
+  it("does not prepend --container for update commands", () => {
+    expect(formatCliCommand("remoteclaw update", { REMOTECLAW_CONTAINER_HINT: "demo" })).toBe(
+      "remoteclaw update",
+    );
+    expect(
+      formatCliCommand("pnpm remoteclaw update --channel beta", {
+        REMOTECLAW_CONTAINER_HINT: "demo",
+      }),
+    ).toBe("pnpm remoteclaw update --channel beta");
   });
 });

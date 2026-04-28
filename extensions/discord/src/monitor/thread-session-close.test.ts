@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const hoisted = vi.hoisted(() => {
   const updateSessionStore = vi.fn();
@@ -26,9 +26,11 @@ const MATCHED_KEY = `agent:main:discord:channel:${THREAD_ID}`;
 const UNMATCHED_KEY = `agent:main:discord:channel:${OTHER_ID}`;
 
 describe("closeDiscordThreadSessions", () => {
-  beforeEach(async () => {
-    vi.resetModules();
+  beforeAll(async () => {
     ({ closeDiscordThreadSessions } = await import("./thread-session-close.js"));
+  });
+
+  beforeEach(() => {
     hoisted.updateSessionStore.mockClear();
     hoisted.resolveStorePath.mockClear();
     hoisted.resolveStorePath.mockReturnValue("/tmp/remoteclaw-sessions.json");

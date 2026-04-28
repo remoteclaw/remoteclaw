@@ -8,6 +8,7 @@ import { isTruthyEnvValue } from "../infra/env.js";
  */
 export const MODULE_ATTESTATIONS = {
   isLiveTestEnabled: "live",
+  isLiveProfileKeyModeEnabled: "live",
   createSingleUserPromptMessage: "live",
   extractNonEmptyAssistantText: "live",
 } as const;
@@ -21,6 +22,10 @@ export function isLiveTestEnabled(
   return [...extraEnvVars, "LIVE", "REMOTECLAW_LIVE_TEST"].some((name) =>
     isTruthyEnvValue(env[name]),
   );
+}
+
+export function isLiveProfileKeyModeEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  return isTruthyEnvValue(env.REMOTECLAW_LIVE_REQUIRE_PROFILE_KEYS);
 }
 
 export function createSingleUserPromptMessage(content = LIVE_OK_PROMPT) {

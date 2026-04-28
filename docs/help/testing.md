@@ -59,6 +59,17 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
   - The channel suite (`vitest.channels.config.ts`) now also defaults to `threads`; the March 22, 2026 direct full-suite control run passed clean without channel-specific fork exceptions.
   - The wrapper peels the heaviest measured files into dedicated lanes instead of relying on a growing hand-maintained exclusion list.
   - Refresh the timing snapshot with `pnpm test:perf:update-timings` after major suite shape changes.
+- Embedded runner note:
+  - When you change message-tool discovery inputs or compaction runtime context,
+    keep both levels of coverage.
+  - Add focused helper regressions for pure routing/normalization boundaries.
+  - Also keep the embedded runner integration suites healthy:
+    `src/agents/pi-embedded-runner/compact.hooks.test.ts`,
+    `src/agents/pi-embedded-runner/run.overflow-compaction.test.ts`, and
+    `src/agents/pi-embedded-runner/run.overflow-compaction.loop.test.ts`.
+  - Those suites verify that scoped ids and compaction behavior still flow
+    through the real `run.ts` / `compact.ts` paths; helper-only tests are not a
+    sufficient substitute for those integration paths.
 - Pool note:
   - Base Vitest config still defaults to `forks`.
   - Unit wrapper lanes default to `threads`, with explicit manifest fork-only exceptions.
@@ -413,10 +424,16 @@ If you want to rely on env keys (e.g. exported in your `~/.profile`), run local 
 
 ## Docker runners (optional "works in Linux" checks)
 
-These run `pnpm test:live` inside the repo Docker image, mounting your local config dir and workspace (and sourcing `~/.profile` if mounted). They also bind-mount only the needed CLI auth homes (or all supported ones when the run is not narrowed), then copy them into the container home before the run so external-CLI OAuth can refresh tokens without mutating the host auth store:
+These Docker runners split into two buckets:
+
+- Live-model runners: `test:docker:live-models` and `test:docker:live-gateway` run `pnpm test:live` inside the repo Docker image, mounting your local config dir and workspace (and sourcing `~/.profile` if mounted).
+- Container smoke runners: `test:docker:openwebui`, `test:docker:onboard`, `test:docker:gateway-network`, and `test:docker:plugins` boot one or more real containers and verify higher-level integration paths.
+
+The live-model Docker runners also bind-mount only the needed CLI auth homes (or all supported ones when the run is not narrowed), then copy them into the container home before the run so external-CLI OAuth can refresh tokens without mutating the host auth store:
 
 - Direct models: `pnpm test:docker:live-models` (script: `scripts/test-live-models-docker.sh`)
 - Gateway + dev agent: `pnpm test:docker:live-gateway` (script: `scripts/test-live-gateway-models-docker.sh`)
+- Open WebUI live smoke: `pnpm test:docker:openwebui` (script: `scripts/e2e/openwebui-docker.sh`)
 - Onboarding wizard (TTY, full scaffolding): `pnpm test:docker:onboard` (script: `scripts/e2e/onboard-docker.sh`)
 - Gateway networking (two containers, WS auth + health): `pnpm test:docker:gateway-network` (script: `scripts/e2e/gateway-network-docker.sh`)
 - Plugins (install smoke + `/plugin` alias + Claude-bundle restart semantics): `pnpm test:docker:plugins` (script: `scripts/e2e/plugins-docker.sh`)
@@ -429,6 +446,17 @@ real Telegram/Discord/etc. channel workers inside the container.
 `test:docker:live-models` still runs `pnpm test:live`, so pass through
 `REMOTECLAW_LIVE_GATEWAY_*` as well when you need to narrow or exclude gateway
 live coverage from that Docker lane.
+`test:docker:openwebui` is a higher-level compatibility smoke: it starts an
+RemoteClaw gateway container with the OpenAI-compatible HTTP endpoints enabled,
+starts a pinned Open WebUI container against that gateway, signs in through
+Open WebUI, verifies `/api/models` exposes `remoteclaw/default`, then sends a
+real chat request through Open WebUI's `/api/chat/completions` proxy.
+The first run can be noticeably slower because Docker may need to pull the
+Open WebUI image and Open WebUI may need to finish its own cold-start setup.
+This lane expects a usable live model key, and `REMOTECLAW_PROFILE_FILE`
+(`~/.profile` by default) is the primary way to provide it in Dockerized runs.
+Successful runs print a small JSON payload like `{ "ok": true, "model":
+"remoteclaw/default", ... }`.
 
 Manual ACP plain-language thread smoke (not CI):
 
@@ -447,6 +475,9 @@ Useful env vars:
 - `REMOTECLAW_LIVE_GATEWAY_MODELS=...` / `REMOTECLAW_LIVE_MODELS=...` to narrow the run
 - `REMOTECLAW_LIVE_GATEWAY_PROVIDERS=...` / `REMOTECLAW_LIVE_PROVIDERS=...` to filter providers in-container
 - `REMOTECLAW_LIVE_REQUIRE_PROFILE_KEYS=1` to ensure creds come from the profile store (not env)
+- `REMOTECLAW_OPENWEBUI_MODEL=...` to choose the model exposed by the gateway for the Open WebUI smoke
+- `REMOTECLAW_OPENWEBUI_PROMPT=...` to override the nonce-check prompt used by the Open WebUI smoke
+- `OPENWEBUI_IMAGE=...` to override the pinned Open WebUI image tag
 
 ## Docs sanity
 

@@ -77,6 +77,9 @@ export async function emitSubagentEndedHookOnce(params: {
   params.inFlightRunIds.add(runId);
   try {
     const hookRunner = getGlobalHookRunner();
+    if (!hookRunner) {
+      return false;
+    }
     if (hookRunner?.hasHooks("subagent_ended")) {
       await hookRunner.runSubagentEnded(
         {

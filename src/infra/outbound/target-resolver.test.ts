@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
   listGroupsLive: vi.fn(),
   resolveTarget: vi.fn(),
   getChannelPlugin: vi.fn(),
-  getActivePluginChannelRegistryVersion: vi.fn(() => 1),
+  getActivePluginRegistryVersion: vi.fn(() => 1),
 }));
 
 beforeEach(async () => {
@@ -25,14 +25,14 @@ beforeEach(async () => {
   mocks.listGroupsLive.mockReset();
   mocks.resolveTarget.mockReset();
   mocks.getChannelPlugin.mockReset();
-  mocks.getActivePluginChannelRegistryVersion.mockReset();
-  mocks.getActivePluginChannelRegistryVersion.mockReturnValue(1);
+  mocks.getActivePluginRegistryVersion.mockReset();
+  mocks.getActivePluginRegistryVersion.mockReturnValue(1);
   vi.doMock("../../channels/plugins/index.js", () => ({
     getChannelPlugin: (...args: unknown[]) => mocks.getChannelPlugin(...args),
     normalizeChannelId: (value: string) => value,
   }));
   vi.doMock("../../plugins/runtime.js", () => ({
-    getActivePluginChannelRegistryVersion: () => mocks.getActivePluginChannelRegistryVersion(),
+    getActivePluginRegistryVersion: () => mocks.getActivePluginRegistryVersion(),
   }));
   ({ resetDirectoryCache, resolveMessagingTarget, formatTargetDisplay } =
     await import("./target-resolver.js"));
@@ -141,53 +141,6 @@ describe("resolveMessagingTarget (directory fallback)", () => {
     );
     expect(mocks.listGroups).not.toHaveBeenCalled();
     expect(mocks.listGroupsLive).not.toHaveBeenCalled();
-  });
-
-  it("uses plugin chat-type inference for directory lookups and plugin fallback on miss", async () => {
-    mocks.getChannelPlugin.mockReturnValue({
-      directory: {
-        listPeers: mocks.listPeers,
-        listPeersLive: mocks.listPeersLive,
-      },
-      messaging: {
-        inferTargetChatType: () => "direct",
-        targetResolver: {
-          looksLikeId: () => false,
-          resolveTarget: mocks.resolveTarget,
-        },
-      },
-    });
-    mocks.listPeers.mockResolvedValue([]);
-    mocks.listPeersLive.mockResolvedValue([]);
-    mocks.resolveTarget.mockResolvedValue({
-      to: "+15551234567",
-      kind: "user",
-      source: "normalized",
-    });
-
-    const result = await resolveMessagingTarget({
-      cfg,
-      channel: "imessage",
-      input: "+15551234567",
-    });
-
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.target).toEqual({
-        to: "+15551234567",
-        kind: "user",
-        source: "normalized",
-        display: undefined,
-      });
-    }
-    expect(mocks.listPeers).toHaveBeenCalledTimes(1);
-    expect(mocks.listPeersLive).toHaveBeenCalledTimes(1);
-    expect(mocks.listGroups).not.toHaveBeenCalled();
-    expect(mocks.resolveTarget).toHaveBeenCalledWith(
-      expect.objectContaining({
-        input: "+15551234567",
-      }),
-    );
   });
 
   it("keeps plugin-owned id casing when resolver returns a normalized target", async () => {

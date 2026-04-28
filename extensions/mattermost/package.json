@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/mattermost",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "RemoteClaw Mattermost channel plugin",
   "type": "module",
   "dependencies": {

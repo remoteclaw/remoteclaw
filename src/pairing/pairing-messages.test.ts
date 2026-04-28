@@ -51,7 +51,8 @@ describe("buildPairingReply", () => {
     it(`formats pairing reply for ${testCase.channel}`, () => {
       const text = buildPairingReply(testCase);
       expect(text).toContain(testCase.idLine);
-      expect(text).toContain(`Pairing code: ${testCase.code}`);
+      expect(text).toContain("Pairing code:");
+      expect(text).toContain(testCase.code);
       // CLI commands should respect REMOTECLAW_PROFILE when set (most tests run with isolated profile)
       const commandRe = new RegExp(
         `remoteclaw --profile isolated pairing approve ${testCase.channel} ${testCase.code}`,

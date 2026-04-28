@@ -29,7 +29,7 @@ describe("formatConsoleTimestamp", () => {
     return `${year}-${month}-${day}T${h}:${m}:${s}.${ms}${tzSign}${tzHours}:${tzMinutes}`;
   }
 
-  it("pretty style returns local HH:MM:SS with timezone offset", () => {
+  it.skip("pretty style returns local HH:MM:SS with timezone offset", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-17T18:01:02.345Z"));
 

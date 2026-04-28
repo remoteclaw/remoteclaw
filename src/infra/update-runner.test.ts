@@ -69,6 +69,15 @@ describe("runGatewayUpdate", () => {
     return runWithCommand(runner, options);
   }
 
+  const SIDECAR_PATHS = [
+    "dist/extensions/whatsapp/light-runtime-api.js",
+    "dist/extensions/whatsapp/runtime-api.js",
+    "dist/extensions/matrix/helper-api.js",
+    "dist/extensions/matrix/runtime-api.js",
+    "dist/extensions/matrix/thread-bindings-runtime.js",
+    "dist/extensions/msteams/runtime-api.js",
+  ];
+
   async function seedGlobalPackageRoot(pkgRoot: string, version = "1.0.0") {
     await fs.mkdir(pkgRoot, { recursive: true });
     await fs.writeFile(
@@ -76,6 +85,11 @@ describe("runGatewayUpdate", () => {
       JSON.stringify({ name: "remoteclaw", version }),
       "utf-8",
     );
+    for (const sidecar of SIDECAR_PATHS) {
+      const sidecarPath = path.join(pkgRoot, sidecar);
+      await fs.mkdir(path.dirname(sidecarPath), { recursive: true });
+      await fs.writeFile(sidecarPath, "// stub", "utf-8");
+    }
   }
 
   function createGlobalNpmUpdateRunner(params: {

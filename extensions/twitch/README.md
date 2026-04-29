@@ -80,7 +80,7 @@ Multi-account config (advanced):
 
 ## Full documentation
 
-See https://docs.remoteclaw.com/channels/twitch for:
+See https://docs.remoteclaw.org/channels/twitch for:
 
 - Token refresh setup
 - Access control patterns

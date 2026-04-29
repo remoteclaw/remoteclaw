@@ -27,7 +27,6 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [Configuration examples](/gateway/configuration-examples)
 - [RemoteClaw assistant](/start/remoteclaw)
 - [Showcase](/start/showcase)
-- [Lore](/start/lore)
 
 ## Installation + updates
 

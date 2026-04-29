@@ -424,7 +424,7 @@ export function buildStatusMessage(args: StatusArgs): string {
   const modelNote = channelModelNote ? ` · ${channelModelNote}` : "";
   const modelLine = `🧠 Model: ${selectedModelLabel}${selectedAuthLabel}${modelNote}`;
   const commit = resolveCommitHash();
-  const versionLine = `🦞 RemoteClaw ${VERSION}${commit ? ` (${commit})` : ""}`;
+  const versionLine = `🦀 RemoteClaw ${VERSION}${commit ? ` (${commit})` : ""}`;
   const usagePair = formatUsagePair(inputTokens, outputTokens);
   const cacheLine = formatCacheLine(inputTokens, cacheRead, cacheWrite);
   const voiceLine = formatVoiceModeLine(args.config, args.sessionEntry);

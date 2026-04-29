@@ -14,7 +14,7 @@ async function writeJsonSchema() {
 
   const rootSchema = {
     $schema: "http://json-schema.org/draft-07/schema#",
-    $id: "https://remoteclaw.com/protocol.schema.json",
+    $id: "https://remoteclaw.org/protocol.schema.json",
     title: "RemoteClaw Gateway Protocol",
     description: "Handshake, request/response, and event frames for the Gateway WebSocket.",
     oneOf: [

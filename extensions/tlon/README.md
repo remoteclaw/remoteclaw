@@ -2,4 +2,4 @@
 
 Tlon/Urbit channel plugin for RemoteClaw. Supports DMs, group mentions, and thread replies.
 
-Docs: https://docs.remoteclaw.com/channels/tlon
+Docs: https://docs.remoteclaw.org/channels/tlon

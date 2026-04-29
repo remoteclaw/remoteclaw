@@ -119,4 +119,4 @@ At minimum, set:
 
 ---
 
-_Next: [Group Chats](/channels/group-messages)_ 🦞
+_Next: [Group Chats](/channels/group-messages)_ 🦀

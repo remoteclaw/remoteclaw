@@ -49,7 +49,6 @@ const redirects = {
   "/linux": "/platforms/linux",
   "/location": "/channels/location",
   "/location-command": "/nodes/location-command",
-  "/lore": "/start/lore",
   "/mac/bun": "/platforms/mac/bundled-gateway",
   "/mac/canvas": "/platforms/mac/canvas",
   "/mac/child-process": "/platforms/mac/child-process",
@@ -587,7 +586,6 @@ export default defineConfig({
                 { slug: "help/faq" },
               ],
             },
-            { label: "Community", items: [{ slug: "start/lore" }] },
             {
               label: "Environment and debugging",
               items: [

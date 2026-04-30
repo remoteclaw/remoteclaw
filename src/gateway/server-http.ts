@@ -52,6 +52,7 @@ import {
 } from "./hooks.js";
 import { sendGatewayAuthFailure, setDefaultSecurityHeaders } from "./http-common.js";
 import { getBearerToken } from "./http-utils.js";
+import { resolveRequestClientIp } from "./net.js";
 import { handleOpenAiHttpRequest } from "./openai-http.js";
 import { handleOpenResponsesHttpRequest } from "./openresponses-http.js";
 import {
@@ -60,6 +61,7 @@ import {
   type PluginHttpRequestHandler,
   type PluginRoutePathContext,
 } from "./server/plugins-http.js";
+import type { PreauthConnectionBudget } from "./server/preauth-connection-budget.js";
 import type { ReadinessChecker } from "./server/readiness.js";
 import type { GatewayWsClient } from "./server/ws-types.js";
 import { handleToolsInvokeHttpRequest } from "./tools-invoke-http.js";
@@ -257,6 +259,22 @@ function writeUpgradeAuthFailure(
     return;
   }
   socket.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");
+}
+
+function writeUpgradeServiceUnavailable(
+  socket: { write: (chunk: string) => void },
+  message: string,
+) {
+  socket.write(
+    [
+      "HTTP/1.1 503 Service Unavailable",
+      "Content-Type: text/plain; charset=utf-8",
+      `Content-Length: ${Buffer.byteLength(message)}`,
+      "Connection: close",
+      "",
+      message,
+    ].join("\r\n"),
+  );
 }
 
 export type HooksRequestHandler = (req: IncomingMessage, res: ServerResponse) => Promise<boolean>;
@@ -755,11 +773,18 @@ export function attachGatewayUpgradeHandler(opts: {
   wss: WebSocketServer;
   canvasHost: CanvasHostHandler | null;
   clients: Set<GatewayWsClient>;
+  /**
+   * Per-IP budget that bounds the number of in-flight pre-auth WebSocket
+   * connections. A new upgrade is rejected with 503 once the limit is
+   * reached; the budget is released when the socket closes (whether the
+   * handshake completes or fails).
+   */
+  preauthConnectionBudget: PreauthConnectionBudget;
   resolvedAuth: ResolvedGatewayAuth;
   /** Optional rate limiter for auth brute-force protection. */
   rateLimiter?: AuthRateLimiter;
 }) {
-  const { httpServer, wss, canvasHost } = opts;
+  const { httpServer, wss, canvasHost, preauthConnectionBudget } = opts;
   httpServer.on("upgrade", (req, socket, head) => {
     void (async () => {
       const scopedCanvas = normalizeCanvasScopedUrl(req.url ?? "/");
@@ -786,9 +811,54 @@ export function attachGatewayUpgradeHandler(opts: {
           return;
         }
       }
-      wss.handleUpgrade(req, socket, head, (ws) => {
-        wss.emit("connection", ws, req);
-      });
+      // Reject the upgrade if the WSS has not yet attached its connection
+      // listener — handlers are wired in `attachGatewayWsConnectionHandler`,
+      // which runs after `server-runtime-state` finishes assembly. Without
+      // this gate we would silently 1006 on the racing connection.
+      if (wss.listenerCount("connection") === 0) {
+        writeUpgradeServiceUnavailable(socket, "Gateway websocket handlers unavailable");
+        socket.destroy();
+        return;
+      }
+      const cfgSnapshot = (() => {
+        try {
+          return loadConfig();
+        } catch {
+          return undefined;
+        }
+      })();
+      const trustedProxies = cfgSnapshot?.gateway?.trustedProxies ?? [];
+      const allowRealIpFallback = cfgSnapshot?.gateway?.allowRealIpFallback === true;
+      const preauthBudgetKey = resolveRequestClientIp(req, trustedProxies, allowRealIpFallback);
+      if (!preauthConnectionBudget.acquire(preauthBudgetKey)) {
+        writeUpgradeServiceUnavailable(socket, "Too many unauthenticated sockets");
+        socket.destroy();
+        return;
+      }
+      let budgetReleased = false;
+      const releasePreauthBudget = () => {
+        if (budgetReleased) {
+          return;
+        }
+        budgetReleased = true;
+        preauthConnectionBudget.release(preauthBudgetKey);
+      };
+      socket.once("close", releasePreauthBudget);
+      try {
+        wss.handleUpgrade(req, socket, head, (ws) => {
+          // Hand off budget release to the WS lifecycle: the WS `close` event
+          // fires whether or not the handshake succeeds, so removing the raw
+          // socket listener here avoids a double-release.
+          socket.off("close", releasePreauthBudget);
+          ws.once("close", releasePreauthBudget);
+          wss.emit("connection", ws, req);
+        });
+      } catch (err) {
+        socket.off("close", releasePreauthBudget);
+        releasePreauthBudget();
+        socket.destroy();
+        throw err;
+      }
     })().catch(() => {
       socket.destroy();
     });

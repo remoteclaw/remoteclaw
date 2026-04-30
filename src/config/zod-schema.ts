@@ -611,6 +611,7 @@ export const RemoteClawSchema = z
           .strict()
           .optional(),
         channelHealthCheckMinutes: z.number().int().min(0).optional(),
+        handshakeTimeoutMs: z.number().int().positive().optional(),
         tailscale: z
           .object({
             mode: z.union([z.literal("off"), z.literal("serve"), z.literal("funnel")]).optional(),

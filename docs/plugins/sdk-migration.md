@@ -77,21 +77,28 @@ is a small, self-contained module with a clear purpose and documented contract.
     ```
 
     For host-side helpers, use the injected plugin runtime instead of importing
-    directly. Legacy bridge helpers map to the modern runtime surface:
+    directly:
+
+    ```typescript
+    // Before (deprecated extension-api bridge)
+    import { runEmbeddedPiAgent } from "remoteclaw/extension-api";
+    const result = await runEmbeddedPiAgent({ sessionId, prompt });
+
+    // After (injected runtime)
+    const result = await api.runtime.agent.runEmbeddedPiAgent({ sessionId, prompt });
+    ```
+
+    The same pattern applies to other legacy bridge helpers:
 
     | Old import | Modern equivalent |
     | --- | --- |
     | `resolveAgentDir` | `api.runtime.agent.resolveAgentDir` |
     | `resolveAgentWorkspaceDir` | `api.runtime.agent.resolveAgentWorkspaceDir` |
     | `resolveAgentIdentity` | `api.runtime.agent.resolveAgentIdentity` |
+    | `resolveThinkingDefault` | `api.runtime.agent.resolveThinkingDefault` |
     | `resolveAgentTimeoutMs` | `api.runtime.agent.resolveAgentTimeoutMs` |
     | `ensureAgentWorkspace` | `api.runtime.agent.ensureAgentWorkspace` |
     | session store helpers | `api.runtime.agent.session.*` |
-
-    Note: the pre-fork embedded execution bridge (`runEmbeddedPiAgent`) has no
-    RemoteClaw equivalent — CLI runtimes (Claude, Gemini, Codex, OpenCode) own
-    agent execution; plugins that need to invoke an agent should use the
-    gateway RPC surface (`agent.send`) instead of a host-side bridge.
 
   </Step>
 
@@ -120,11 +127,19 @@ is a small, self-contained module with a clear purpose and documented contract.
   | `plugin-sdk/channel-runtime` | Runtime wiring helpers | Channel runtime utilities |
   | `plugin-sdk/channel-send-result` | Send result types | Reply result types |
   | `plugin-sdk/runtime-store` | Persistent plugin storage | `createPluginRuntimeStore` |
+  | `plugin-sdk/approval-runtime` | Approval prompt helpers | Exec/plugin approval payload and reply helpers |
+  | `plugin-sdk/collection-runtime` | Bounded cache helpers | `pruneMapToMaxSize` |
+  | `plugin-sdk/diagnostic-runtime` | Diagnostic gating helpers | `isDiagnosticFlagEnabled`, `isDiagnosticsEnabled` |
+  | `plugin-sdk/error-runtime` | Error formatting helpers | `formatUncaughtError`, error graph helpers |
+  | `plugin-sdk/fetch-runtime` | Wrapped fetch/proxy helpers | `resolveFetch`, proxy helpers |
+  | `plugin-sdk/host-runtime` | Host normalization helpers | `normalizeHostname`, `normalizeScpRemoteHost` |
+  | `plugin-sdk/retry-runtime` | Retry helpers | `RetryConfig`, `retryAsync`, policy runners |
   | `plugin-sdk/allow-from` | Allowlist formatting | `formatAllowFromLowercase` |
   | `plugin-sdk/allowlist-resolution` | Allowlist input mapping | `mapAllowlistResolutionInputs` |
   | `plugin-sdk/command-auth` | Command gating | `resolveControlCommandGate` |
   | `plugin-sdk/secret-input` | Secret input parsing | Secret input helpers |
   | `plugin-sdk/webhook-ingress` | Webhook request helpers | Webhook target utilities |
+  | `plugin-sdk/webhook-request-guards` | Webhook body guard helpers | Request body read/limit helpers |
   | `plugin-sdk/reply-payload` | Message reply types | Reply payload types |
   | `plugin-sdk/provider-onboard` | Provider onboarding patches | Onboarding config helpers |
   | `plugin-sdk/keyed-async-queue` | Ordered async queue | `KeyedAsyncQueue` |

@@ -8,150 +8,161 @@ import {
   validateRegistryNpmSpec,
 } from "./npm-registry-spec.js";
 
+function parseSpecOrThrow(spec: string) {
+  const parsed = parseRegistryNpmSpec(spec);
+  expect(parsed).not.toBeNull();
+  return parsed!;
+}
+
 describe("npm registry spec validation", () => {
-  it("accepts bare package names, exact versions, and dist-tags", () => {
-    expect(validateRegistryNpmSpec("@remoteclaw/voice-call")).toBeNull();
-    expect(validateRegistryNpmSpec("@remoteclaw/voice-call@1.2.3")).toBeNull();
-    expect(validateRegistryNpmSpec("@remoteclaw/voice-call@1.2.3-beta.4")).toBeNull();
-    expect(validateRegistryNpmSpec("@remoteclaw/voice-call@latest")).toBeNull();
-    expect(validateRegistryNpmSpec("@remoteclaw/voice-call@beta")).toBeNull();
+  it.each([
+    "@remoteclaw/voice-call",
+    "@remoteclaw/voice-call@1.2.3",
+    "@remoteclaw/voice-call@1.2.3-beta.4",
+    "@remoteclaw/voice-call@latest",
+    "@remoteclaw/voice-call@beta",
+  ])("accepts %s", (spec) => {
+    expect(validateRegistryNpmSpec(spec)).toBeNull();
   });
 
-  it("rejects semver ranges", () => {
-    expect(validateRegistryNpmSpec("@remoteclaw/voice-call@^1.2.3")).toContain(
-      "exact version or dist-tag",
-    );
-    expect(validateRegistryNpmSpec("@remoteclaw/voice-call@~1.2.3")).toContain(
-      "exact version or dist-tag",
-    );
-  });
-
-  it("rejects unsupported registry protocols and malformed selectors", () => {
-    expect(validateRegistryNpmSpec("https://npmjs.org/pkg.tgz")).toContain("URLs are not allowed");
-    expect(validateRegistryNpmSpec("git+ssh://github.com/remoteclaw/remoteclaw")).toContain(
-      "URLs are not allowed",
-    );
-    expect(validateRegistryNpmSpec("@remoteclaw/voice-call@")).toContain(
-      "missing version/tag after @",
-    );
-    expect(validateRegistryNpmSpec("@remoteclaw/voice-call@../beta")).toContain(
-      "invalid version/tag",
-    );
+  it.each([
+    {
+      spec: "@remoteclaw/voice-call@^1.2.3",
+      expected: "exact version or dist-tag",
+    },
+    {
+      spec: "@remoteclaw/voice-call@~1.2.3",
+      expected: "exact version or dist-tag",
+    },
+    {
+      spec: "https://npmjs.org/pkg.tgz",
+      expected: "URLs are not allowed",
+    },
+    {
+      spec: "git+ssh://github.com/remoteclaw/remoteclaw",
+      expected: "URLs are not allowed",
+    },
+    {
+      spec: "@remoteclaw/voice-call@",
+      expected: "missing version/tag after @",
+    },
+    {
+      spec: "@remoteclaw/voice-call@../beta",
+      expected: "invalid version/tag",
+    },
+  ])("rejects %s", ({ spec, expected }) => {
+    expect(validateRegistryNpmSpec(spec)).toContain(expected);
   });
 });
 
 describe("npm registry spec parsing helpers", () => {
-  it("parses bare, tag, and exact prerelease specs", () => {
-    expect(parseRegistryNpmSpec("@remoteclaw/voice-call")).toEqual({
-      name: "@remoteclaw/voice-call",
-      raw: "@remoteclaw/voice-call",
-      selectorKind: "none",
-      selectorIsPrerelease: false,
-    });
-    expect(parseRegistryNpmSpec("@remoteclaw/voice-call@beta")).toEqual({
-      name: "@remoteclaw/voice-call",
-      raw: "@remoteclaw/voice-call@beta",
-      selector: "beta",
-      selectorKind: "tag",
-      selectorIsPrerelease: false,
-    });
-    expect(parseRegistryNpmSpec("@remoteclaw/voice-call@1.2.3-beta.1")).toEqual({
-      name: "@remoteclaw/voice-call",
-      raw: "@remoteclaw/voice-call@1.2.3-beta.1",
-      selector: "1.2.3-beta.1",
-      selectorKind: "exact-version",
-      selectorIsPrerelease: true,
-    });
+  it.each([
+    {
+      spec: "@remoteclaw/voice-call",
+      expected: {
+        name: "@remoteclaw/voice-call",
+        raw: "@remoteclaw/voice-call",
+        selectorKind: "none",
+        selectorIsPrerelease: false,
+      },
+    },
+    {
+      spec: "@remoteclaw/voice-call@beta",
+      expected: {
+        name: "@remoteclaw/voice-call",
+        raw: "@remoteclaw/voice-call@beta",
+        selector: "beta",
+        selectorKind: "tag",
+        selectorIsPrerelease: false,
+      },
+    },
+    {
+      spec: "@remoteclaw/voice-call@1.2.3-beta.1",
+      expected: {
+        name: "@remoteclaw/voice-call",
+        raw: "@remoteclaw/voice-call@1.2.3-beta.1",
+        selector: "1.2.3-beta.1",
+        selectorKind: "exact-version",
+        selectorIsPrerelease: true,
+      },
+    },
+  ])("parses %s", ({ spec, expected }) => {
+    expect(parseRegistryNpmSpec(spec)).toEqual(expected);
   });
 
-  it("detects exact and prerelease semver versions", () => {
-    expect(isExactSemverVersion("v1.2.3")).toBe(true);
-    expect(isExactSemverVersion("1.2")).toBe(false);
-    expect(isPrereleaseSemverVersion("1.2.3-beta.1")).toBe(true);
-    expect(isPrereleaseSemverVersion("1.2.3")).toBe(false);
+  it.each([
+    { value: "v1.2.3", expected: true },
+    { value: "1.2", expected: false },
+  ])("detects exact semver versions for %s", ({ value, expected }) => {
+    expect(isExactSemverVersion(value)).toBe(expected);
+  });
+
+  it.each([
+    { value: "1.2.3-beta.1", expected: true },
+    { value: "1.2.3", expected: false },
+  ])("detects prerelease semver versions for %s", ({ value, expected }) => {
+    expect(isPrereleaseSemverVersion(value)).toBe(expected);
   });
 });
 
 describe("npm prerelease resolution policy", () => {
-  it("blocks prerelease resolutions for bare specs", () => {
-    const spec = parseRegistryNpmSpec("@remoteclaw/voice-call");
-    expect(spec).not.toBeNull();
+  it.each([
+    {
+      spec: "@remoteclaw/voice-call",
+      resolvedVersion: "1.2.3-beta.1",
+      expected: false,
+    },
+    {
+      spec: "@remoteclaw/voice-call@latest",
+      resolvedVersion: "1.2.3-rc.1",
+      expected: false,
+    },
+    {
+      spec: "@remoteclaw/voice-call@beta",
+      resolvedVersion: "1.2.3-beta.4",
+      expected: true,
+    },
+    {
+      spec: "@remoteclaw/voice-call@1.2.3-beta.1",
+      resolvedVersion: "1.2.3-beta.1",
+      expected: true,
+    },
+    {
+      spec: "@remoteclaw/voice-call",
+      resolvedVersion: "1.2.3",
+      expected: true,
+    },
+    {
+      spec: "@remoteclaw/voice-call@latest",
+      resolvedVersion: undefined,
+      expected: true,
+    },
+  ])("decides prerelease resolution for %s -> %s", ({ spec, resolvedVersion, expected }) => {
     expect(
       isPrereleaseResolutionAllowed({
-        spec: spec!,
-        resolvedVersion: "1.2.3-beta.1",
+        spec: parseSpecOrThrow(spec),
+        resolvedVersion,
       }),
-    ).toBe(false);
+    ).toBe(expected);
   });
 
-  it("blocks prerelease resolutions for latest", () => {
-    const spec = parseRegistryNpmSpec("@remoteclaw/voice-call@latest");
-    expect(spec).not.toBeNull();
-    expect(
-      isPrereleaseResolutionAllowed({
-        spec: spec!,
-        resolvedVersion: "1.2.3-rc.1",
-      }),
-    ).toBe(false);
-  });
-
-  it("allows prerelease resolutions when the user explicitly opted in", () => {
-    const tagSpec = parseRegistryNpmSpec("@remoteclaw/voice-call@beta");
-    const versionSpec = parseRegistryNpmSpec("@remoteclaw/voice-call@1.2.3-beta.1");
-
-    expect(tagSpec).not.toBeNull();
-    expect(versionSpec).not.toBeNull();
-    expect(
-      isPrereleaseResolutionAllowed({
-        spec: tagSpec!,
-        resolvedVersion: "1.2.3-beta.4",
-      }),
-    ).toBe(true);
-    expect(
-      isPrereleaseResolutionAllowed({
-        spec: versionSpec!,
-        resolvedVersion: "1.2.3-beta.1",
-      }),
-    ).toBe(true);
-  });
-
-  it("allows stable resolutions even for bare and latest specs", () => {
-    const bareSpec = parseRegistryNpmSpec("@remoteclaw/voice-call");
-    const latestSpec = parseRegistryNpmSpec("@remoteclaw/voice-call@latest");
-
-    expect(bareSpec).not.toBeNull();
-    expect(latestSpec).not.toBeNull();
-    expect(
-      isPrereleaseResolutionAllowed({
-        spec: bareSpec!,
-        resolvedVersion: "1.2.3",
-      }),
-    ).toBe(true);
-    expect(
-      isPrereleaseResolutionAllowed({
-        spec: latestSpec!,
-        resolvedVersion: undefined,
-      }),
-    ).toBe(true);
-  });
-
-  it("formats prerelease resolution guidance based on selector intent", () => {
-    const bareSpec = parseRegistryNpmSpec("@remoteclaw/voice-call");
-    const tagSpec = parseRegistryNpmSpec("@remoteclaw/voice-call@beta");
-
-    expect(bareSpec).not.toBeNull();
-    expect(tagSpec).not.toBeNull();
+  it.each([
+    {
+      spec: "@remoteclaw/voice-call",
+      resolvedVersion: "1.2.3-beta.1",
+      expected: `Use "@remoteclaw/voice-call@beta"`,
+    },
+    {
+      spec: "@remoteclaw/voice-call@beta",
+      resolvedVersion: "1.2.3-rc.1",
+      expected: "Use an explicit prerelease tag or exact prerelease version",
+    },
+  ])("formats prerelease guidance for %s", ({ spec, resolvedVersion, expected }) => {
     expect(
       formatPrereleaseResolutionError({
-        spec: bareSpec!,
-        resolvedVersion: "1.2.3-beta.1",
+        spec: parseSpecOrThrow(spec),
+        resolvedVersion,
       }),
-    ).toContain(`Use "@remoteclaw/voice-call@beta"`);
-    expect(
-      formatPrereleaseResolutionError({
-        spec: tagSpec!,
-        resolvedVersion: "1.2.3-rc.1",
-      }),
-    ).toContain("Use an explicit prerelease tag or exact prerelease version");
+    ).toContain(expected);
   });
 });

@@ -1,15 +1,8 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-
-let buildTelegramMessageContextForTest: typeof import("./bot-message-context.test-harness.js").buildTelegramMessageContextForTest;
-let clearRuntimeConfigSnapshot: typeof import("../../../src/config/config.js").clearRuntimeConfigSnapshot;
-let setRuntimeConfigSnapshot: typeof import("../../../src/config/config.js").setRuntimeConfigSnapshot;
-
-beforeAll(async () => {
-  vi.resetModules();
-  ({ buildTelegramMessageContextForTest } = await import("./bot-message-context.test-harness.js"));
-  ({ clearRuntimeConfigSnapshot, setRuntimeConfigSnapshot } =
-    await import("../../../src/config/config.js"));
-});
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+const { buildTelegramMessageContextForTest } =
+  await import("./bot-message-context.test-harness.js");
+const { clearRuntimeConfigSnapshot, setRuntimeConfigSnapshot } =
+  await import("../../../src/config/config.js");
 
 beforeEach(() => {
   clearRuntimeConfigSnapshot();
@@ -37,8 +30,7 @@ describe("buildTelegramMessageContext dm thread sessions", () => {
 
     expect(ctx).not.toBeNull();
     expect(ctx?.ctxPayload?.MessageThreadId).toBe(42);
-    // Upstream changed: DM thread session keys now use raw threadId (not chatId:threadId)
-    expect(ctx?.ctxPayload?.SessionKey).toBe("agent:main:main:thread:42");
+    expect(ctx?.ctxPayload?.SessionKey).toBe("agent:main:main:thread:1234:42");
   });
 
   it("keeps legacy dm session key when no thread id", async () => {

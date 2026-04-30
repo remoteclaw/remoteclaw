@@ -91,7 +91,7 @@ Custom profiles use `~/.remoteclaw-<profile>/` or a path set via `REMOTECLAW_STA
 
   <Accordion title="Remote mode">
     If your UI points at a **remote** gateway, the remote host owns sessions and workspace.
-    Migrate the gateway host itself, not your local laptop. See [FAQ](/help/faq#where-does-remoteclaw-store-its-data).
+    Migrate the gateway host itself, not your local laptop. See [FAQ](/help/faq#where-things-live-on-disk).
   </Accordion>
 
   <Accordion title="Secrets in backups">

@@ -90,8 +90,13 @@ and the [Plugin SDK Overview](/plugins/sdk-overview).
     `anthropic`, `byteplus`, `cloudflare-ai-gateway`, `github-copilot`, `google`,
     `huggingface`, `kilocode`, `kimi-coding`, `minimax`, `mistral`, `modelstudio`,
     `moonshot`, `nvidia`, `openai`, `opencode`, `opencode-go`, `openrouter`,
-    `qianfan`, `qwen-portal-auth`, `synthetic`, `together`, `venice`,
+    `qianfan`, `synthetic`, `together`, `venice`,
     `vercel-ai-gateway`, `volcengine`, `xiaomi`, `zai`
+  </Accordion>
+
+  <Accordion title="Memory plugins">
+    - `memory-core` — bundled memory search (default via `plugins.slots.memory`)
+    - `memory-lancedb` — install-on-demand long-term memory with auto-recall/capture (set `plugins.slots.memory = "memory-lancedb"`)
   </Accordion>
 
   <Accordion title="Speech providers (enabled by default)">
@@ -99,6 +104,7 @@ and the [Plugin SDK Overview](/plugins/sdk-overview).
   </Accordion>
 
   <Accordion title="Other">
+    - `browser` — bundled browser plugin for the browser tool, `remoteclaw browser` CLI, `browser.request` gateway method, browser runtime, and default browser control service (enabled by default; disable before replacing it)
     - `copilot-proxy` — VS Code Copilot Proxy bridge (disabled by default)
   </Accordion>
 </AccordionGroup>
@@ -121,14 +127,14 @@ Looking for third-party plugins? See [Community Plugins](/plugins/community).
 }
 ```
 
-| Field            | Description                                     |
-| ---------------- | ----------------------------------------------- |
-| `enabled`        | Master toggle (default: `true`)                 |
-| `allow`          | Plugin allowlist (optional)                     |
-| `deny`           | Plugin denylist (optional; deny wins)           |
-| `load.paths`     | Extra plugin files/directories                  |
-| `slots`          | Exclusive slot selectors (e.g. `contextEngine`) |
-| `entries.\<id\>` | Per-plugin toggles + config                     |
+| Field            | Description                                               |
+| ---------------- | --------------------------------------------------------- |
+| `enabled`        | Master toggle (default: `true`)                           |
+| `allow`          | Plugin allowlist (optional)                               |
+| `deny`           | Plugin denylist (optional; deny wins)                     |
+| `load.paths`     | Extra plugin files/directories                            |
+| `slots`          | Exclusive slot selectors (e.g. `memory`, `contextEngine`) |
+| `entries.\<id\>` | Per-plugin toggles + config                               |
 
 Config changes **require a gateway restart**. If the Gateway is running with config
 watch + in-process restart enabled (the default `remoteclaw gateway` path), that
@@ -180,6 +186,7 @@ Some categories are exclusive (only one active at a time):
 {
   plugins: {
     slots: {
+      memory: "memory-core", // or "none" to disable
       contextEngine: "legacy", // or a plugin id
     },
   },
@@ -188,6 +195,7 @@ Some categories are exclusive (only one active at a time):
 
 | Slot            | What it controls      | Default             |
 | --------------- | --------------------- | ------------------- |
+| `memory`        | Active memory plugin  | `memory-core`       |
 | `contextEngine` | Active context engine | `legacy` (built-in) |
 
 ## CLI reference

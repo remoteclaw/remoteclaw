@@ -15,6 +15,11 @@ Note: The **Model** section now includes a multi-select for the
 Tip: `remoteclaw config` without a subcommand opens the same wizard. Use
 `remoteclaw config get|set|unset` for non-interactive edits.
 
+For web search, `remoteclaw configure --section web` lets you choose a provider
+and configure its credentials. If you choose **Grok**, configure can also show
+a separate follow-up step to enable `x_search` with the same `XAI_API_KEY` and
+pick an `x_search` model. Other web-search providers do not show that step.
+
 Related:
 
 - Gateway configuration reference: [Configuration](/gateway/configuration)
@@ -32,5 +37,6 @@ Notes:
 
 ```bash
 remoteclaw configure
+remoteclaw configure --section web
 remoteclaw configure --section model --section channels
 ```

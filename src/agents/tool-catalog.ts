@@ -10,6 +10,7 @@ export const MODULE_ATTESTATIONS = {
   resolveCoreToolProfiles: "live",
   isKnownCoreToolId: "live",
 } as const;
+
 export type ToolProfileId = "minimal" | "coding" | "messaging" | "full";
 
 type ToolProfilePolicy = {
@@ -75,7 +76,7 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
   {
     id: "apply_patch",
     label: "apply_patch",
-    description: "Patch files (OpenAI)",
+    description: "Patch files",
     sectionId: "fs",
     profiles: ["coding"],
   },
@@ -94,6 +95,14 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     profiles: ["coding"],
   },
   {
+    id: "code_execution",
+    label: "code_execution",
+    description: "Run sandboxed remote analysis",
+    sectionId: "runtime",
+    profiles: ["coding"],
+    includeInRemoteClawGroup: true,
+  },
+  {
     id: "web_search",
     label: "web_search",
     description: "Search the web",
@@ -105,6 +114,14 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     id: "web_fetch",
     label: "web_fetch",
     description: "Fetch web content",
+    sectionId: "web",
+    profiles: ["coding"],
+    includeInRemoteClawGroup: true,
+  },
+  {
+    id: "x_search",
+    label: "x_search",
+    description: "Search X posts",
     sectionId: "web",
     profiles: ["coding"],
     includeInRemoteClawGroup: true,

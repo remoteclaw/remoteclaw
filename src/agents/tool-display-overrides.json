@@ -72,6 +72,11 @@
       "title": "Agents",
       "detailKeys": []
     },
+    "memory_search": {
+      "emoji": "🧠",
+      "title": "Memory Search",
+      "detailKeys": ["query"]
+    },
     "memory_get": {
       "emoji": "📓",
       "title": "Memory Get",
@@ -86,6 +91,11 @@
       "emoji": "📄",
       "title": "Web Fetch",
       "detailKeys": ["url", "extractMode", "maxChars"]
+    },
+    "code_execution": {
+      "emoji": "🧮",
+      "title": "Code Execution",
+      "detailKeys": ["task"]
     },
     "message": {
       "emoji": "✉️",

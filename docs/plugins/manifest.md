@@ -46,6 +46,8 @@ Use it for:
 - config validation
 - auth and onboarding metadata that should be available without booting plugin
   runtime
+- static capability ownership snapshots used for bundled compat wiring and
+  contract coverage
 - config UI hints
 
 Do not use it for:
@@ -78,6 +80,7 @@ Those belong in your plugin code and `package.json`.
   "description": "OpenRouter provider plugin",
   "version": "1.0.0",
   "providers": ["openrouter"],
+  "cliBackends": ["openrouter-cli"],
   "providerAuthEnvVars": {
     "openrouter": ["OPENROUTER_API_KEY"]
   },
@@ -117,21 +120,23 @@ Those belong in your plugin code and `package.json`.
 
 ## Top-level field reference
 
-| Field                 | Required | Type                       | What it means                                                                                                                |
-| --------------------- | -------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `id`                  | Yes      | `string`                   | Canonical plugin id. This is the id used in `plugins.entries.<id>`.                                                          |
-| `configSchema`        | Yes      | `object`                   | Inline JSON Schema for this plugin's config.                                                                                 |
-| `enabledByDefault`    | No       | `true`                     | Marks a bundled plugin as enabled by default. Omit it, or set any non-`true` value, to leave the plugin disabled by default. |
-| `kind`                | No       | `"context-engine"`         | Declares an exclusive plugin kind used by `plugins.slots.*`.                                                                 |
-| `channels`            | No       | `string[]`                 | Channel ids owned by this plugin. Used for discovery and config validation.                                                  |
-| `providers`           | No       | `string[]`                 | Provider ids owned by this plugin.                                                                                           |
-| `providerAuthEnvVars` | No       | `Record<string, string[]>` | Cheap provider-auth env metadata that RemoteClaw can inspect without loading plugin code.                                    |
-| `providerAuthChoices` | No       | `object[]`                 | Cheap auth-choice metadata for onboarding pickers, preferred-provider resolution, and simple CLI flag wiring.                |
-| `skills`              | No       | `string[]`                 | Skill directories to load, relative to the plugin root.                                                                      |
-| `name`                | No       | `string`                   | Human-readable plugin name.                                                                                                  |
-| `description`         | No       | `string`                   | Short summary shown in plugin surfaces.                                                                                      |
-| `version`             | No       | `string`                   | Informational plugin version.                                                                                                |
-| `uiHints`             | No       | `Record<string, object>`   | UI labels, placeholders, and sensitivity hints for config fields.                                                            |
+| Field                 | Required | Type                             | What it means                                                                                                                |
+| --------------------- | -------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | Yes      | `string`                         | Canonical plugin id. This is the id used in `plugins.entries.<id>`.                                                          |
+| `configSchema`        | Yes      | `object`                         | Inline JSON Schema for this plugin's config.                                                                                 |
+| `enabledByDefault`    | No       | `true`                           | Marks a bundled plugin as enabled by default. Omit it, or set any non-`true` value, to leave the plugin disabled by default. |
+| `kind`                | No       | `"memory"` \| `"context-engine"` | Declares an exclusive plugin kind used by `plugins.slots.*`.                                                                 |
+| `channels`            | No       | `string[]`                       | Channel ids owned by this plugin. Used for discovery and config validation.                                                  |
+| `providers`           | No       | `string[]`                       | Provider ids owned by this plugin.                                                                                           |
+| `cliBackends`         | No       | `string[]`                       | CLI inference backend ids owned by this plugin. Used for startup auto-activation from explicit config refs.                  |
+| `providerAuthEnvVars` | No       | `Record<string, string[]>`       | Cheap provider-auth env metadata that RemoteClaw can inspect without loading plugin code.                                    |
+| `providerAuthChoices` | No       | `object[]`                       | Cheap auth-choice metadata for onboarding pickers, preferred-provider resolution, and simple CLI flag wiring.                |
+| `contracts`           | No       | `object`                         | Static bundled capability snapshot for speech, media-understanding, image-generation, web search, and tool ownership.        |
+| `skills`              | No       | `string[]`                       | Skill directories to load, relative to the plugin root.                                                                      |
+| `name`                | No       | `string`                         | Human-readable plugin name.                                                                                                  |
+| `description`         | No       | `string`                         | Short summary shown in plugin surfaces.                                                                                      |
+| `version`             | No       | `string`                         | Informational plugin version.                                                                                                |
+| `uiHints`             | No       | `Record<string, object>`         | UI labels, placeholders, and sensitivity hints for config fields.                                                            |
 
 ## providerAuthChoices reference
 
@@ -182,6 +187,38 @@ Each field hint can include:
 | `sensitive`   | `boolean`  | Marks the field as secret or sensitive. |
 | `placeholder` | `string`   | Placeholder text for form inputs.       |
 
+## contracts reference
+
+Use `contracts` only for static capability ownership metadata that RemoteClaw can
+read without importing the plugin runtime.
+
+```json
+{
+  "contracts": {
+    "speechProviders": ["openai"],
+    "mediaUnderstandingProviders": ["openai", "openai-codex"],
+    "imageGenerationProviders": ["openai"],
+    "webSearchProviders": ["gemini"],
+    "tools": ["firecrawl_search", "firecrawl_scrape"]
+  }
+}
+```
+
+Each list is optional:
+
+| Field                         | Type       | What it means                                                  |
+| ----------------------------- | ---------- | -------------------------------------------------------------- |
+| `speechProviders`             | `string[]` | Speech provider ids this plugin owns.                          |
+| `mediaUnderstandingProviders` | `string[]` | Media-understanding provider ids this plugin owns.             |
+| `imageGenerationProviders`    | `string[]` | Image-generation provider ids this plugin owns.                |
+| `webSearchProviders`          | `string[]` | Web-search provider ids this plugin owns.                      |
+| `tools`                       | `string[]` | Agent tool names this plugin owns for bundled contract checks. |
+
+Legacy top-level `speechProviders`, `mediaUnderstandingProviders`, and
+`imageGenerationProviders` are deprecated. Use `remoteclaw doctor --fix` to move
+them under `contracts`; normal manifest loading no longer treats them as
+capability ownership.
+
 ## Manifest versus package.json
 
 The two files serve different jobs:
@@ -231,10 +268,11 @@ See [Configuration reference](/gateway/configuration) for the full `plugins.*` s
   metadata that requires provider code, see
   [Provider runtime hooks](/plugins/architecture#provider-runtime-hooks).
 - Exclusive plugin kinds are selected through `plugins.slots.*`.
+  - `kind: "memory"` is selected by `plugins.slots.memory`.
   - `kind: "context-engine"` is selected by `plugins.slots.contextEngine`
     (default: built-in `legacy`).
-- `channels`, `providers`, and `skills` can be omitted when a plugin does not
-  need them.
+- `channels`, `providers`, `cliBackends`, and `skills` can be omitted when a
+  plugin does not need them.
 - If your plugin depends on native modules, document the build steps and any
   package-manager allowlist requirements (for example, pnpm `allow-build-scripts`
   - `pnpm rebuild <package>`).

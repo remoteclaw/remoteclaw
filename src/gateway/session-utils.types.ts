@@ -18,6 +18,11 @@ export type SessionRunStatus = "running" | "done" | "failed" | "killed" | "timeo
 export type GatewaySessionRow = {
   key: string;
   spawnedBy?: string;
+  spawnedWorkspaceDir?: string;
+  forkedFromParent?: boolean;
+  spawnDepth?: number;
+  subagentRole?: SessionEntry["subagentRole"];
+  subagentControlScope?: SessionEntry["subagentControlScope"];
   kind: "direct" | "group" | "global" | "unknown";
   label?: string;
   displayName?: string;
@@ -33,6 +38,7 @@ export type GatewaySessionRow = {
   sessionId?: string;
   systemSent?: boolean;
   abortedLastRun?: boolean;
+  thinkingLevel?: string;
   fastMode?: boolean;
   verboseLevel?: string;
   reasoningLevel?: string;
@@ -57,6 +63,7 @@ export type GatewaySessionRow = {
   lastChannel?: SessionEntry["lastChannel"];
   lastTo?: string;
   lastAccountId?: string;
+  lastThreadId?: SessionEntry["lastThreadId"];
 };
 
 export type GatewayAgentRow = SharedGatewayAgentRow;

@@ -27,6 +27,7 @@ title: "Tests"
 - `pnpm test:e2e`: Runs gateway end-to-end smoke tests (multi-instance WS/HTTP/node pairing). Defaults to `forks` + adaptive workers in `vitest.e2e.config.ts`; tune with `REMOTECLAW_E2E_WORKERS=<n>` and set `REMOTECLAW_E2E_VERBOSE=1` for verbose logs.
 - `pnpm test:live`: Runs provider live tests (minimax/zai). Requires API keys and `LIVE=1` (or provider-specific `*_LIVE_TEST=1`) to unskip.
 - `pnpm test:docker:openwebui`: Starts Dockerized RemoteClaw + Open WebUI, signs in through Open WebUI, checks `/api/models`, then runs a real proxied chat through `/api/chat/completions`. Requires a usable live model key (for example OpenAI in `~/.profile`), pulls an external Open WebUI image, and is not expected to be CI-stable like the normal unit/e2e suites.
+- `pnpm test:docker:mcp-channels`: Starts a seeded Gateway container and a second client container that spawns `remoteclaw mcp serve`, then verifies routed conversation discovery, transcript reads, attachment metadata, live event queue behavior, outbound send routing, and Claude-style channel + permission notifications over the real stdio bridge. The Claude notification assertion reads the raw stdio MCP frames directly so the smoke reflects what the bridge actually emits.
 
 ## Local PR gate
 
@@ -40,7 +41,7 @@ For local PR land/gate checks, run:
 If `pnpm test` flakes on a loaded host, rerun once before treating it as a regression, then isolate with `pnpm vitest run <path/to/test>`. For memory-constrained hosts, use:
 
 - `REMOTECLAW_TEST_PROFILE=low REMOTECLAW_TEST_SERIAL_GATEWAY=1 pnpm test`
-- `REMOTECLAW_VITEST_FS_MODULE_CACHE=0 pnpm test:changed`
+- `REMOTECLAW_VITEST_FS_MODULE_CACHE_PATH=/tmp/remoteclaw-vitest-cache pnpm test:changed`
 
 ## Model latency bench (local keys)
 

@@ -169,7 +169,7 @@ Look for:
 
 Common signatures:
 
-- `Gateway start blocked: set gateway.mode=local` → local gateway mode is not enabled. Fix: set `gateway.mode="local"` in your config (or run `remoteclaw configure`). If you are running RemoteClaw via Podman using the dedicated `remoteclaw` user, the config lives at `~remoteclaw/.remoteclaw/remoteclaw.json`.
+- `Gateway start blocked: set gateway.mode=local` → local gateway mode is not enabled. Fix: set `gateway.mode="local"` in your config (or run `remoteclaw configure`). If you are running RemoteClaw via Podman, the default config path is `~/.remoteclaw/remoteclaw.json`.
 - `refusing to bind gateway ... without auth` → non-loopback bind without token/password.
 - `another gateway instance is already listening` / `EADDRINUSE` → port conflict.
 

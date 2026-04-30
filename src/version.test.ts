@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   VERSION,
   readVersionFromBuildInfoForModuleUrl,
+  resolveCompatibilityHostVersion,
   readVersionFromPackageJsonForModuleUrl,
   resolveBinaryVersion,
   resolveRuntimeServiceVersion,
@@ -141,6 +142,32 @@ describe("version resolution", () => {
         npm_package_version: "1.1.1",
       }),
     ).toBe("9.9.9");
+  });
+
+  it("prefers runtime VERSION over stale REMOTECLAW_VERSION for compatibility checks", () => {
+    const previous = process.env.REMOTECLAW_VERSION;
+    const previousService = process.env.REMOTECLAW_SERVICE_VERSION;
+    const previousPackage = process.env.npm_package_version;
+    try {
+      process.env.REMOTECLAW_VERSION = "2026.3.25";
+      process.env.REMOTECLAW_SERVICE_VERSION = "2026.3.25-service";
+      process.env.npm_package_version = "2026.3.25-package";
+      expect(resolveCompatibilityHostVersion()).toBe(VERSION);
+    } finally {
+      process.env.REMOTECLAW_VERSION = previous;
+      process.env.REMOTECLAW_SERVICE_VERSION = previousService;
+      process.env.npm_package_version = previousPackage;
+    }
+  });
+
+  it("keeps explicit env-object overrides for compatibility checks in tests", () => {
+    expect(
+      resolveCompatibilityHostVersion({
+        REMOTECLAW_VERSION: "2026.3.99",
+        REMOTECLAW_SERVICE_VERSION: "2026.3.98",
+        npm_package_version: "2026.3.97",
+      }),
+    ).toBe("2026.3.99");
   });
 
   it("normalizes runtime version candidate for fallback handling", () => {

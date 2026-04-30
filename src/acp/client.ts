@@ -20,6 +20,7 @@ import {
   materializeWindowsSpawnProgram,
 } from "../plugin-sdk/windows-spawn.js";
 import { DANGEROUS_ACP_TOOLS } from "../security/dangerous-tools.js";
+import { sanitizeTerminalText } from "../terminal/safe-text.js";
 
 // Safe-to-auto-approve tool IDs in ACP bridge mode.
 // These tools are read-only or network-scoped such that auto-approval cannot
@@ -284,7 +285,7 @@ export async function resolvePermissionRequest(
   const prompt = deps.prompt ?? promptUserPermission;
   const cwd = deps.cwd ?? process.cwd();
   const options = params.options ?? [];
-  const toolTitle = params.toolCall?.title ?? "tool";
+  const toolTitle = sanitizeTerminalText(params.toolCall?.title ?? "tool");
   const toolName = resolveToolNameForPermission(params);
   const toolKind = resolveToolKindForPermission(toolName);
 

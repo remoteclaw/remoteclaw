@@ -20,6 +20,7 @@ async function runOpenAiMessageChannelRequest(params?: { messageChannelHeader?: 
       const headers: Record<string, string> = {
         "content-type": "application/json",
         authorization: "Bearer secret",
+        "x-remoteclaw-scopes": "operator.write",
       };
       if (params?.messageChannelHeader) {
         headers["x-remoteclaw-message-channel"] = params.messageChannelHeader;

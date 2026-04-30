@@ -10,10 +10,15 @@ const localWorkers = Math.max(4, Math.min(16, os.cpus().length));
 const ciWorkers = isWindows ? 2 : 3;
 const pluginSdkSubpaths = [
   "account-id",
+  "allow-from",
+  "channel-lifecycle",
   "core",
   "channel-config-helpers",
   "group-access",
+  "json-store",
   "reply-payload",
+  "runtime",
+  "runtime-env",
   "runtime-store",
   "compat",
   "telegram",

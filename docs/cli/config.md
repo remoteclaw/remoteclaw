@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw config` (get/set/unset/file/validate)"
+summary: "CLI reference for `remoteclaw config` (get/set/unset/file/schema/validate)"
 read_when:
   - You want to read or edit config non-interactively
 title: "config"
@@ -7,7 +7,7 @@ title: "config"
 
 # `remoteclaw config`
 
-Config helpers for non-interactive edits in `remoteclaw.json`: get/set/unset/validate
+Config helpers for non-interactive edits in `remoteclaw.json`: get/set/unset/file/schema/validate
 values by path and print the active config file. Run without a subcommand to
 open the configure wizard (same as `remoteclaw configure`).
 
@@ -15,6 +15,7 @@ open the configure wizard (same as `remoteclaw configure`).
 
 ```bash
 remoteclaw config file
+remoteclaw config schema
 remoteclaw config get browser.executablePath
 remoteclaw config set browser.executablePath "/usr/bin/google-chrome"
 remoteclaw config set agents.defaults.heartbeat.every "2h"
@@ -27,7 +28,21 @@ remoteclaw config validate
 remoteclaw config validate --json
 ```
 
-## Paths
+### `config schema`
+
+Print the generated JSON schema for `remoteclaw.json` to stdout as plain text.
+
+```bash
+remoteclaw config schema
+```
+
+Pipe it into a file when you want to inspect or validate it with other tools:
+
+```bash
+remoteclaw config schema > remoteclaw.schema.json
+```
+
+### Paths
 
 Paths use dot or bracket notation:
 

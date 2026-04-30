@@ -4,20 +4,6 @@ import path from "node:path";
 import { getProcessStartTime, isPidAlive } from "../shared/pid-alive.js";
 import { resolveProcessScopedMap } from "../shared/process-scoped-map.js";
 
-/**
- * Runtime attestation (ADR 0005 H9). Declares the implementation status
- * of each runtime export in this module. See CONTRIBUTING.md § Module
- * attestations for the category definitions and the convention for
- * updating these when sync or rebrand changes the surface.
- */
-export const MODULE_ATTESTATIONS = {
-  resolveSessionLockMaxHoldFromTimeout: "live",
-  cleanStaleLockFiles: "live",
-  acquireSessionWriteLock: "live",
-  resetSessionWriteLockStateForTest: "live",
-  drainSessionWriteLockStateForTest: "live",
-} as const;
-
 type LockFilePayload = {
   pid?: number;
   createdAt?: string;
@@ -212,9 +198,8 @@ async function runLockWatchdogCheck(nowMs = Date.now()): Promise<number> {
       continue;
     }
 
-    // eslint-disable-next-line no-console
-    console.warn(
-      `[session-write-lock] releasing lock held for ${heldForMs}ms (max=${held.maxHoldMs}ms): ${held.lockPath}`,
+    process.stderr.write(
+      `[session-write-lock] releasing lock held for ${heldForMs}ms (max=${held.maxHoldMs}ms): ${held.lockPath}\n`,
     );
 
     const didRelease = await releaseHeldLock(sessionFile, held, { force: true });

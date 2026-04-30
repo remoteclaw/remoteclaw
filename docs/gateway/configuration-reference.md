@@ -523,6 +523,7 @@ BlueBubbles is the recommended iMessage path (plugin-backed, configured under `c
 
 - Core key paths covered here: `channels.bluebubbles`, `channels.bluebubbles.dmPolicy`.
 - Optional `channels.bluebubbles.defaultAccount` overrides default account selection when it matches a configured account id.
+- Top-level `bindings[]` entries with `type: "acp"` can bind BlueBubbles conversations to persistent ACP sessions. Use a BlueBubbles handle or target string (`chat_id:*`, `chat_guid:*`, `chat_identifier:*`) in `match.peer.id`. Shared field semantics: [ACP Agents](/tools/acp-agents#channel-specific-settings).
 - Full BlueBubbles channel configuration is documented in [BlueBubbles](/channels/bluebubbles).
 
 ### iMessage
@@ -559,6 +560,7 @@ RemoteClaw spawns `imsg rpc` (JSON-RPC over stdio). No daemon or port required.
 - `attachmentRoots` and `remoteAttachmentRoots` restrict inbound attachment paths (default: `/Users/*/Library/Messages/Attachments`).
 - SCP uses strict host-key checking, so ensure the relay host key already exists in `~/.ssh/known_hosts`.
 - `channels.imessage.configWrites`: allow or deny iMessage-initiated config writes.
+- Top-level `bindings[]` entries with `type: "acp"` can bind iMessage conversations to persistent ACP sessions. Use a normalized handle or explicit chat target (`chat_id:*`, `chat_guid:*`, `chat_identifier:*`) in `match.peer.id`. Shared field semantics: [ACP Agents](/tools/acp-agents#channel-specific-settings).
 
 <Accordion title="iMessage SSH wrapper example">
 
@@ -884,6 +886,7 @@ Time format in system prompt. Default: `auto` (OS preference).
       },
       pdfMaxBytesMb: 10,
       pdfMaxPages: 20,
+      thinkingDefault: "low",
       verboseDefault: "off",
       elevatedDefault: "on",
       timeoutSeconds: 600,
@@ -931,8 +934,9 @@ Time format in system prompt. Default: `auto` (OS preference).
 
 Your configured aliases always win over defaults.
 
-Z.AI GLM-4.x models automatically enable thinking mode unless you define `agents.defaults.models["zai/<model>"].params.thinking` yourself.
+Z.AI GLM-4.x models automatically enable thinking mode unless you set `--thinking off` or define `agents.defaults.models["zai/<model>"].params.thinking` yourself.
 Z.AI models enable `tool_stream` by default for tool call streaming. Set `agents.defaults.models["zai/<model>"].params.tool_stream` to `false` to disable it.
+Anthropic Claude 4.6 models default to `adaptive` thinking when no explicit thinking level is set.
 
 ### `agents.defaults.cliBackends`
 
@@ -1370,6 +1374,7 @@ scripts/sandbox-browser-setup.sh   # optional browser image
         workspace: "~/.remoteclaw/workspace",
         agentDir: "~/.remoteclaw/agents/main/agent",
         model: "anthropic/claude-opus-4-6", // or { primary, fallbacks }
+        thinkingDefault: "high", // per-agent thinking level override
         reasoningDefault: "on", // per-agent reasoning visibility override
         fastModeDefault: false, // per-agent fast mode override
         params: { cacheRetention: "none" }, // overrides matching defaults.models params by key
@@ -1407,6 +1412,7 @@ scripts/sandbox-browser-setup.sh   # optional browser image
 - `default`: when multiple are set, first wins (warning logged). If none set, first list entry is default.
 - `model`: string form overrides `primary` only; object form `{ primary, fallbacks }` overrides both (`[]` disables global fallbacks). Cron jobs that only override `primary` still inherit default fallbacks unless you set `fallbacks: []`.
 - `params`: per-agent stream params merged over the selected model entry in `agents.defaults.models`. Use this for agent-specific overrides like `cacheRetention`, `temperature`, or `maxTokens` without duplicating the whole model catalog.
+- `thinkingDefault`: optional per-agent default thinking level (`off | minimal | low | medium | high | xhigh | adaptive`). Overrides `agents.defaults.thinkingDefault` for this agent when no per-message or session override is set.
 - `reasoningDefault`: optional per-agent default reasoning visibility (`on | off | stream`). Applies when no per-message or session reasoning override is set.
 - `fastModeDefault`: optional per-agent default for fast mode (`true | false`). Applies when no per-message or session fast-mode override is set.
 - `runtime`: optional per-agent runtime descriptor. Use `type: "acp"` with `runtime.acp` defaults (`agent`, `backend`, `mode`, `cwd`) when the agent should default to ACP harness sessions.
@@ -1674,14 +1680,15 @@ Resolution (most specific wins): account → channel → global. `""` disables a
 
 **Template variables:**
 
-| Variable          | Description           | Example                     |
-| ----------------- | --------------------- | --------------------------- |
-| `{model}`         | Short model name      | `claude-opus-4-6`           |
-| `{modelFull}`     | Full model identifier | `anthropic/claude-opus-4-6` |
-| `{provider}`      | Provider name         | `anthropic`                 |
-| `{identity.name}` | Agent identity name   | (same as `"auto"`)          |
+| Variable          | Description            | Example                     |
+| ----------------- | ---------------------- | --------------------------- |
+| `{model}`         | Short model name       | `claude-opus-4-6`           |
+| `{modelFull}`     | Full model identifier  | `anthropic/claude-opus-4-6` |
+| `{provider}`      | Provider name          | `anthropic`                 |
+| `{thinkingLevel}` | Current thinking level | `high`, `low`, `off`        |
+| `{identity.name}` | Agent identity name    | (same as `"auto"`)          |
 
-Variables are case-insensitive.
+Variables are case-insensitive. `{think}` is an alias for `{thinkingLevel}`.
 
 ### Ack reaction
 
@@ -2121,6 +2128,7 @@ RemoteClaw uses the pi-coding-agent model catalog. Add custom providers via `mod
 
 - `models.mode`: provider catalog behavior (`merge` or `replace`).
 - `models.providers`: custom provider map keyed by provider id.
+- `models.providers.*.api`: request adapter (`openai-completions`, `openai-responses`, `anthropic-messages`, `google-generative-ai`, etc).
 - `models.providers.*.apiKey`: provider credential (prefer SecretRef/env substitution).
 - `models.providers.*.auth`: auth strategy (`api-key`, `token`, `oauth`, `aws-sdk`).
 - `models.providers.*.injectNumCtxForOpenAICompat`: for Ollama + `openai-completions`, inject `options.num_ctx` into requests (default: `true`).
@@ -2128,6 +2136,7 @@ RemoteClaw uses the pi-coding-agent model catalog. Add custom providers via `mod
 - `models.providers.*.baseUrl`: upstream API base URL.
 - `models.providers.*.headers`: extra static headers for proxy/tenant routing.
 - `models.providers.*.models`: explicit provider model catalog entries.
+- `models.providers.*.models.*.compat.supportsDeveloperRole`: optional compatibility hint. For `api: "openai-completions"` with a non-empty non-native `baseUrl` (host not `api.openai.com`), RemoteClaw forces this to `false` at runtime. Empty/omitted `baseUrl` keeps default OpenAI behavior.
 - `models.bedrockDiscovery`: Bedrock auto-discovery settings root.
 - `models.bedrockDiscovery.enabled`: turn discovery polling on/off.
 - `models.bedrockDiscovery.region`: AWS region for discovery.
@@ -2425,6 +2434,7 @@ See [Local Models](/gateway/local-models). TL;DR: run MiniMax M2.5 via LM Studio
 - `plugins.entries.<id>.subagent.allowedModels`: optional allowlist of canonical `provider/model` targets for trusted subagent overrides. Use `"*"` only when you intentionally want to allow any model.
 - `plugins.entries.<id>.config`: plugin-defined config object (validated by native RemoteClaw plugin schema when available).
 - Enabled Claude bundle plugins can also contribute embedded Pi defaults from `settings.json`; RemoteClaw applies those as sanitized agent settings, not as raw RemoteClaw config patches.
+- `plugins.slots.memory`: pick the active memory plugin id, or `"none"` to disable memory plugins.
 - `plugins.slots.contextEngine`: pick the active context engine plugin id; defaults to `"legacy"` unless you install and select another engine.
 - `plugins.installs`: CLI-managed install metadata used by `remoteclaw plugins update`.
   - Includes `source`, `spec`, `sourcePath`, `installPath`, `version`, `resolvedName`, `resolvedVersion`, `resolvedSpec`, `integrity`, `shasum`, `resolvedAt`, `installedAt`.
@@ -2674,7 +2684,7 @@ Auth: `Authorization: Bearer <token>` or `x-remoteclaw-token: <token>`.
 **Endpoints:**
 
 - `POST /hooks/wake` → `{ text, mode?: "now"|"next-heartbeat" }`
-- `POST /hooks/agent` → `{ message, name?, agentId?, sessionKey?, wakeMode?, deliver?, channel?, to?, model?, timeoutSeconds? }`
+- `POST /hooks/agent` → `{ message, name?, agentId?, sessionKey?, wakeMode?, deliver?, channel?, to?, model?, thinking?, timeoutSeconds? }`
   - `sessionKey` from request payload is accepted only when `hooks.allowRequestSessionKey=true` (default: `false`).
 - `POST /hooks/<name>` → resolved via `hooks.mappings`
 
@@ -2712,6 +2722,7 @@ Auth: `Authorization: Bearer <token>` or `x-remoteclaw-token: <token>`.
       serve: { bind: "127.0.0.1", port: 8788, path: "/" },
       tailscale: { mode: "funnel", path: "/gmail-pubsub" },
       model: "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+      thinking: "off",
     },
   },
 }

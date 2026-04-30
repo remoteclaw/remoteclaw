@@ -7,127 +7,261 @@ title: "Podman"
 
 # Podman
 
-Run the RemoteClaw Gateway in a **rootless** Podman container. Uses the same image as Docker (built from the repo [Dockerfile](https://github.com/remoteclaw/remoteclaw/blob/main/Dockerfile)).
+Run the RemoteClaw Gateway in a rootless Podman container, managed by your current non-root user.
+
+The intended model is:
+
+- Podman runs the gateway container.
+- Your host `remoteclaw` CLI is the control plane.
+- Persistent state lives on the host under `~/.remoteclaw` by default.
+- Day-to-day management uses `remoteclaw --container <name> ...` instead of `sudo -u remoteclaw`, `podman exec`, or a separate service user.
 
 ## Prerequisites
 
-- **Podman** (rootless mode)
-- **sudo** access for one-time setup (creating the dedicated user and building the image)
+- **Podman** in rootless mode
+- **RemoteClaw CLI** installed on the host
+- **Optional:** `systemd --user` if you want Quadlet-managed auto-start
+- **Optional:** `sudo` only if you want `loginctl enable-linger "$(whoami)"` for boot persistence on a headless host
 
 ## Quick start
 
 <Steps>
   <Step title="One-time setup">
-    From the repo root, run the setup script. It creates a dedicated `remoteclaw` user, builds the container image, and installs the launch script:
-
-    ```bash
-    ./scripts/podman/setup.sh
-    ```
-
-    This also creates a minimal config at `~remoteclaw/.remoteclaw/remoteclaw.json` (sets `gateway.mode` to `"local"`) so the Gateway can start without running the wizard.
-
-    By default the container is **not** installed as a systemd service -- you start it manually in the next step. For a production-style setup with auto-start and restarts, pass `--quadlet` instead:
-
-    ```bash
-    ./scripts/podman/setup.sh --quadlet
-    ```
-
-    (Or set `REMOTECLAW_PODMAN_QUADLET=1`. Use `--container` to install only the container and launch script.)
-
-    **Optional build-time env vars** (set before running `scripts/podman/setup.sh`):
-
-    - `REMOTECLAW_DOCKER_APT_PACKAGES` -- install extra apt packages during image build.
-    - `REMOTECLAW_EXTENSIONS` -- pre-install extension dependencies (space-separated names, e.g. `diagnostics-otel matrix`).
-
+    From the repo root, run `./scripts/podman/setup.sh`.
   </Step>
 
-  <Step title="Start the Gateway">
-    For a quick manual launch:
-
-    ```bash
-    ./scripts/run-remoteclaw-podman.sh launch
-    ```
-
+  <Step title="Start the Gateway container">
+    Start the container with `./scripts/run-remoteclaw-podman.sh launch`.
   </Step>
 
-  <Step title="Run the onboarding wizard">
-    To add channels or providers interactively:
+  <Step title="Run onboarding inside the container">
+    Run `./scripts/run-remoteclaw-podman.sh launch setup`, then open `http://127.0.0.1:18789/`.
+  </Step>
 
-    ```bash
-    ./scripts/run-remoteclaw-podman.sh launch setup
-    ```
-
-    Then open `http://127.0.0.1:18789/` and use the token from `~remoteclaw/.remoteclaw/.env` (or the value printed by setup).
-
+  <Step title="Manage the running container from the host CLI">
+    Set `REMOTECLAW_CONTAINER=remoteclaw`, then use normal `remoteclaw` commands from the host.
   </Step>
 </Steps>
 
+Setup details:
+
+- `./scripts/podman/setup.sh` builds `remoteclaw:local` in your rootless Podman store by default, or uses `REMOTECLAW_IMAGE` / `REMOTECLAW_PODMAN_IMAGE` if you set one.
+- It creates `~/.remoteclaw/remoteclaw.json` with `gateway.mode: "local"` if missing.
+- It creates `~/.remoteclaw/.env` with `REMOTECLAW_GATEWAY_TOKEN` if missing.
+- For manual launches, the helper reads only a small allowlist of Podman-related keys from `~/.remoteclaw/.env` and passes explicit runtime env vars to the container; it does not hand the full env file to Podman.
+
+Quadlet-managed setup:
+
+```bash
+./scripts/podman/setup.sh --quadlet
+```
+
+Quadlet is a Linux-only option because it depends on systemd user services.
+
+You can also set `REMOTECLAW_PODMAN_QUADLET=1`.
+
+Optional build/setup env vars:
+
+- `REMOTECLAW_IMAGE` or `REMOTECLAW_PODMAN_IMAGE` -- use an existing/pulled image instead of building `remoteclaw:local`
+- `REMOTECLAW_DOCKER_APT_PACKAGES` -- install extra apt packages during image build
+- `REMOTECLAW_EXTENSIONS` -- pre-install extension dependencies at build time
+
+Container start:
+
+```bash
+./scripts/run-remoteclaw-podman.sh launch
+```
+
+The script starts the container as your current uid/gid with `--userns=keep-id` and bind-mounts your RemoteClaw state into the container.
+
+Onboarding:
+
+```bash
+./scripts/run-remoteclaw-podman.sh launch setup
+```
+
+Then open `http://127.0.0.1:18789/` and use the token from `~/.remoteclaw/.env`.
+
+Host CLI default:
+
+```bash
+export REMOTECLAW_CONTAINER=remoteclaw
+```
+
+Then commands such as these will run inside that container automatically:
+
+```bash
+remoteclaw dashboard --no-open
+remoteclaw gateway status --deep
+remoteclaw doctor
+remoteclaw channels login
+```
+
+On macOS, Podman machine may make the browser appear non-local to the gateway.
+If the Control UI reports device-auth errors after launch, prefer the SSH
+tunnel flow in [macOS Podman SSH tunnel](#macos-podman-ssh-tunnel). For
+remote HTTPS access, use the Tailscale guidance in
+[Podman + Tailscale](#podman--tailscale).
+
+## macOS Podman SSH tunnel
+
+On macOS, Podman machine can make the browser appear non-local to the gateway even when the published port is only on `127.0.0.1`.
+
+For local browser access, use an SSH tunnel into the Podman VM and open the tunneled localhost port instead.
+
+Recommended local tunnel port:
+
+- `28889` on the Mac host
+- forwarded to `127.0.0.1:18789` inside the Podman VM
+
+Start the tunnel in a separate terminal:
+
+```bash
+ssh -N \
+  -i ~/.local/share/containers/podman/machine/machine \
+  -p <podman-vm-ssh-port> \
+  -L 28889:127.0.0.1:18789 \
+  core@127.0.0.1
+```
+
+In that command, `<podman-vm-ssh-port>` is the Podman VM's SSH port on the Mac host. Check your current value with:
+
+```bash
+podman system connection list
+```
+
+Allow the tunneled browser origin once. This is required the first time you use the tunnel because the launcher can auto-seed the Podman-published port, but it cannot infer your chosen browser tunnel port:
+
+```bash
+REMOTECLAW_CONTAINER=remoteclaw remoteclaw config set gateway.controlUi.allowedOrigins \
+  '["http://127.0.0.1:18789","http://localhost:18789","http://127.0.0.1:28889","http://localhost:28889"]' \
+  --strict-json
+podman restart remoteclaw
+```
+
+That is a one-time step for the default `28889` tunnel.
+
+Then open:
+
+```text
+http://127.0.0.1:28889/
+```
+
+Notes:
+
+- `18789` is usually already occupied on the Mac host by the Podman-published gateway port, so the tunnel uses `28889` as the local browser port.
+- If the UI asks for pairing approval, prefer explicit container-targeted or explicit-URL commands so the host CLI does not fall back to local pairing files:
+
+```bash
+remoteclaw --container remoteclaw devices list
+remoteclaw --container remoteclaw devices approve --latest
+```
+
+- Equivalent explicit-URL form:
+
+```bash
+remoteclaw devices list \
+  --url ws://127.0.0.1:28889 \
+  --token "$(sed -n 's/^REMOTECLAW_GATEWAY_TOKEN=//p' ~/.remoteclaw/.env | head -n1)"
+```
+
+## Podman + Tailscale
+
+For HTTPS or remote browser access, follow the main Tailscale docs.
+
+Podman-specific note:
+
+- Keep the Podman publish host at `127.0.0.1`.
+- Prefer host-managed `tailscale serve` over `remoteclaw gateway --tailscale serve`.
+- For local macOS browser access without HTTPS, prefer the SSH tunnel section above.
+
+See:
+
+- [Tailscale](/gateway/tailscale)
+- [Control UI](/web/control-ui)
+
 ## Systemd (Quadlet, optional)
 
-If you ran `./scripts/podman/setup.sh --quadlet` (or `REMOTECLAW_PODMAN_QUADLET=1`), a [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html) unit is installed so the gateway runs as a systemd user service for the remoteclaw user. The service is enabled and started at the end of setup.
+If you ran `./scripts/podman/setup.sh --quadlet`, setup installs a Quadlet file at:
 
-- **Start:** `sudo systemctl --machine remoteclaw@ --user start remoteclaw.service`
-- **Stop:** `sudo systemctl --machine remoteclaw@ --user stop remoteclaw.service`
-- **Status:** `sudo systemctl --machine remoteclaw@ --user status remoteclaw.service`
-- **Logs:** `sudo journalctl --machine remoteclaw@ --user -u remoteclaw.service -f`
+```bash
+~/.config/containers/systemd/remoteclaw.container
+```
 
-The quadlet file lives at `~remoteclaw/.config/containers/systemd/remoteclaw.container`. To change ports or env, edit that file (or the `.env` it sources), then `sudo systemctl --machine remoteclaw@ --user daemon-reload` and restart the service. On boot, the service starts automatically if lingering is enabled for remoteclaw (setup does this when loginctl is available).
+Useful commands:
 
-To add quadlet **after** an initial setup that did not use it, re-run: `./scripts/podman/setup.sh --quadlet`.
+- **Start:** `systemctl --user start remoteclaw.service`
+- **Stop:** `systemctl --user stop remoteclaw.service`
+- **Status:** `systemctl --user status remoteclaw.service`
+- **Logs:** `journalctl --user -u remoteclaw.service -f`
 
-## The remoteclaw user (non-login)
+After editing the Quadlet file:
 
-`scripts/podman/setup.sh` creates a dedicated system user `remoteclaw`:
+```bash
+systemctl --user daemon-reload
+systemctl --user restart remoteclaw.service
+```
 
-- **Shell:** `nologin` — no interactive login; reduces attack surface.
-- **Home:** e.g. `/home/remoteclaw` — holds `~/.remoteclaw` (config, workspace) and the launch script `run-remoteclaw-podman.sh`.
-- **Rootless Podman:** The user must have a **subuid** and **subgid** range. Many distros assign these automatically when the user is created. If setup prints a warning, add lines to `/etc/subuid` and `/etc/subgid`:
+For boot persistence on SSH/headless hosts, enable lingering for your current user:
 
-  ```text
-  remoteclaw:100000:65536
-  ```
+```bash
+sudo loginctl enable-linger "$(whoami)"
+```
 
-  Then start the gateway as that user (e.g. from cron or systemd):
+## Config, env, and storage
 
-  ```bash
-  sudo -u remoteclaw /home/remoteclaw/run-remoteclaw-podman.sh
-  sudo -u remoteclaw /home/remoteclaw/run-remoteclaw-podman.sh setup
-  ```
+- **Config dir:** `~/.remoteclaw`
+- **Workspace dir:** `~/.remoteclaw/workspace`
+- **Token file:** `~/.remoteclaw/.env`
+- **Launch helper:** `./scripts/run-remoteclaw-podman.sh`
 
-- **Config:** Only `remoteclaw` and root can access `/home/remoteclaw/.remoteclaw`. To edit config: use the Control UI once the gateway is running, or `sudo -u remoteclaw $EDITOR /home/remoteclaw/.remoteclaw/remoteclaw.json`.
+The launch script and Quadlet bind-mount host state into the container:
 
-## Environment and config
+- `REMOTECLAW_CONFIG_DIR` -> `/home/node/.remoteclaw`
+- `REMOTECLAW_WORKSPACE_DIR` -> `/home/node/.remoteclaw/workspace`
 
-- **Token:** Stored in `~remoteclaw/.remoteclaw/.env` as `REMOTECLAW_GATEWAY_TOKEN`. `scripts/podman/setup.sh` and `run-remoteclaw-podman.sh` generate it if missing (uses `openssl`, `python3`, or `od`).
-- **Optional:** In that `.env` you can set provider keys (e.g. `GROQ_API_KEY`, `OLLAMA_API_KEY`) and other RemoteClaw env vars.
-- **Host ports:** By default the script maps `18789` (gateway) and `18790` (bridge). Override the **host** port mapping with `REMOTECLAW_PODMAN_GATEWAY_HOST_PORT` and `REMOTECLAW_PODMAN_BRIDGE_HOST_PORT` when launching.
-- **Gateway bind:** By default, `run-remoteclaw-podman.sh` starts the gateway with `--bind loopback` for safe local access. To expose on LAN, set `REMOTECLAW_GATEWAY_BIND=lan` and configure `gateway.controlUi.allowedOrigins` (or explicitly enable host-header fallback) in `remoteclaw.json`.
-- **Paths:** Host config and workspace default to `~remoteclaw/.remoteclaw` and `~remoteclaw/.remoteclaw/workspace`. Override the host paths used by the launch script with `REMOTECLAW_CONFIG_DIR` and `REMOTECLAW_WORKSPACE_DIR`.
+By default those are host directories, not anonymous container state, so config and workspace survive container replacement.
+The Podman setup also seeds `gateway.controlUi.allowedOrigins` for `127.0.0.1` and `localhost` on the published gateway port so the local dashboard works with the container's non-loopback bind.
 
-## Storage model
+Useful env vars for the manual launcher:
 
-- **Persistent host data:** `REMOTECLAW_CONFIG_DIR` and `REMOTECLAW_WORKSPACE_DIR` are bind-mounted into the container and retain state on the host.
-- **Ephemeral sandbox tmpfs:** if you enable `agents.defaults.sandbox`, the tool sandbox containers mount `tmpfs` at `/tmp`, `/var/tmp`, and `/run`. Those paths are memory-backed and disappear with the sandbox container; the top-level Podman container setup does not add its own tmpfs mounts.
-- **Disk growth hotspots:** the main paths to watch are `media/`, `agents/<agentId>/sessions/sessions.json`, transcript JSONL files, `cron/runs/*.jsonl`, and rolling file logs under `/tmp/remoteclaw/` (or your configured `logging.file`).
+- `REMOTECLAW_PODMAN_CONTAINER` -- container name (`remoteclaw` by default)
+- `REMOTECLAW_PODMAN_IMAGE` / `REMOTECLAW_IMAGE` -- image to run
+- `REMOTECLAW_PODMAN_GATEWAY_HOST_PORT` -- host port mapped to container `18789`
+- `REMOTECLAW_PODMAN_BRIDGE_HOST_PORT` -- host port mapped to container `18790`
+- `REMOTECLAW_PODMAN_PUBLISH_HOST` -- host interface for published ports; default is `127.0.0.1`
+- `REMOTECLAW_GATEWAY_BIND` -- gateway bind mode inside the container; default is `lan`
+- `REMOTECLAW_PODMAN_USERNS` -- `keep-id` (default), `auto`, or `host`
 
-`scripts/podman/setup.sh` now stages the image tar in a private temp directory and prints the chosen base dir during setup. For non-root runs it accepts `TMPDIR` only when that base is safe to use; otherwise it falls back to `/var/tmp`, then `/tmp`. The saved tar stays owner-only and is streamed into the target user’s `podman load`, so private caller temp dirs do not block setup.
+The manual launcher reads `~/.remoteclaw/.env` before finalizing container/image defaults, so you can persist these there.
+
+If you use a non-default `REMOTECLAW_CONFIG_DIR` or `REMOTECLAW_WORKSPACE_DIR`, set the same variables for both `./scripts/podman/setup.sh` and later `./scripts/run-remoteclaw-podman.sh launch` commands. The repo-local launcher does not persist custom path overrides across shells.
+
+Quadlet note:
+
+- The generated Quadlet service intentionally keeps a fixed, hardened default shape: `127.0.0.1` published ports, `--bind lan` inside the container, and `keep-id` user namespace.
+- It still reads `~/.remoteclaw/.env` for gateway runtime env such as `REMOTECLAW_GATEWAY_TOKEN`, but it does not consume the manual launcher's Podman-specific override allowlist.
+- If you need custom publish ports, publish host, or other container-run flags, use the manual launcher or edit `~/.config/containers/systemd/remoteclaw.container` directly, then reload and restart the service.
 
 ## Useful commands
 
-- **Logs:** With quadlet: `sudo journalctl --machine remoteclaw@ --user -u remoteclaw.service -f`. With script: `sudo -u remoteclaw podman logs -f remoteclaw`
-- **Stop:** With quadlet: `sudo systemctl --machine remoteclaw@ --user stop remoteclaw.service`. With script: `sudo -u remoteclaw podman stop remoteclaw`
-- **Start again:** With quadlet: `sudo systemctl --machine remoteclaw@ --user start remoteclaw.service`. With script: re-run the launch script or `podman start remoteclaw`
-- **Remove container:** `sudo -u remoteclaw podman rm -f remoteclaw` — config and workspace on the host are kept
+- **Container logs:** `podman logs -f remoteclaw`
+- **Stop container:** `podman stop remoteclaw`
+- **Remove container:** `podman rm -f remoteclaw`
+- **Open dashboard URL from host CLI:** `remoteclaw dashboard --no-open`
+- **Health/status via host CLI:** `remoteclaw gateway status --deep`
 
 ## Troubleshooting
 
-- **Permission denied (EACCES) on config or auth-profiles:** The container defaults to `--userns=keep-id` and runs as the same uid/gid as the host user running the script. Ensure your host `REMOTECLAW_CONFIG_DIR` and `REMOTECLAW_WORKSPACE_DIR` are owned by that user.
-- **Gateway start blocked (missing `gateway.mode=local`):** Ensure `~remoteclaw/.remoteclaw/remoteclaw.json` exists and sets `gateway.mode="local"`. `scripts/podman/setup.sh` creates this file if missing.
-- **Rootless Podman fails for user remoteclaw:** Check `/etc/subuid` and `/etc/subgid` contain a line for `remoteclaw` (e.g. `remoteclaw:100000:65536`). Add it if missing and restart.
-- **Container name in use:** The launch script uses `podman run --replace`, so the existing container is replaced when you start again. To clean up manually: `podman rm -f remoteclaw`.
-- **Script not found when running as remoteclaw:** Ensure `scripts/podman/setup.sh` was run so that `run-remoteclaw-podman.sh` is copied to remoteclaw’s home (e.g. `/home/remoteclaw/run-remoteclaw-podman.sh`).
-- **Quadlet service not found or fails to start:** Run `sudo systemctl --machine remoteclaw@ --user daemon-reload` after editing the `.container` file. Quadlet requires cgroups v2: `podman info --format '{{.Host.CgroupsVersion}}'` should show `2`.
+- **Permission denied (EACCES) on config or workspace:** The container runs with `--userns=keep-id` and `--user <your uid>:<your gid>` by default. Ensure the host config/workspace paths are owned by your current user.
+- **Gateway start blocked (missing `gateway.mode=local`):** Ensure `~/.remoteclaw/remoteclaw.json` exists and sets `gateway.mode="local"`. `scripts/podman/setup.sh` creates this if missing.
+- **Container CLI commands hit the wrong target:** Use `remoteclaw --container <name> ...` explicitly, or export `REMOTECLAW_CONTAINER=<name>` in your shell.
+- **`remoteclaw update` fails with `--container`:** Expected. Rebuild/pull the image, then restart the container or the Quadlet service.
+- **Quadlet service does not start:** Run `systemctl --user daemon-reload`, then `systemctl --user start remoteclaw.service`. On headless systems you may also need `sudo loginctl enable-linger "$(whoami)"`.
+- **SELinux blocks bind mounts:** Leave the default mount behavior alone; the launcher auto-adds `:Z` on Linux when SELinux is enforcing or permissive.
 
-## Optional: run as your own user
+## Related
 
-To run the gateway as your normal user (no dedicated remoteclaw user): build the image, create `~/.remoteclaw/.env` with `REMOTECLAW_GATEWAY_TOKEN`, and run the container with `--userns=keep-id` and mounts to your `~/.remoteclaw`. The launch script is designed for the remoteclaw-user flow; for a single-user setup you can instead run the `podman run` command from the script manually, pointing config and workspace to your home. Recommended for most users: use `scripts/podman/setup.sh` and run as the remoteclaw user so config and process are isolated.
+- [Docker](/install/docker)
+- [Gateway background process](/gateway/background-process)
+- [Gateway troubleshooting](/gateway/troubleshooting)

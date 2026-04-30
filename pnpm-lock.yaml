@@ -361,9 +361,6 @@ importers:
       ws:
         specifier: ^8.19.0
         version: 8.19.0
-      zod:
-        specifier: ^4.3.6
-        version: 4.3.6
 
   extensions/msteams:
     dependencies:
@@ -374,11 +371,7 @@ importers:
         specifier: ^5.2.1
         version: 5.2.1
 
-  extensions/nextcloud-talk:
-    dependencies:
-      zod:
-        specifier: ^4.3.6
-        version: 4.3.6
+  extensions/nextcloud-talk: {}
 
   extensions/nostr:
     dependencies:
@@ -393,11 +386,7 @@ importers:
 
   extensions/slack: {}
 
-  extensions/synology-chat:
-    dependencies:
-      zod:
-        specifier: ^4.3.6
-        version: 4.3.6
+  extensions/synology-chat: {}
 
   extensions/telegram: {}
 
@@ -430,9 +419,6 @@ importers:
       '@twurple/chat':
         specifier: ^8.0.3
         version: 8.0.3(@twurple/auth@8.0.3)
-      zod:
-        specifier: ^4.3.6
-        version: 4.3.6
 
   extensions/voice-call:
     dependencies:

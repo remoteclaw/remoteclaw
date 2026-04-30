@@ -24,6 +24,19 @@ function makeZoneOpts(overrides: Partial<WideAreaGatewayZoneOpts> = {}): WideAre
   return { ...baseZoneOpts, ...overrides };
 }
 
+function renderZoneText(overrides: Partial<WideAreaGatewayZoneOpts> = {}): string {
+  return renderWideAreaGatewayZoneText({
+    ...makeZoneOpts(overrides),
+    serial: 2025121701,
+  });
+}
+
+function expectZoneRecords(text: string, records: string[]): void {
+  for (const record of records) {
+    expect(text).toContain(record);
+  }
+}
+
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
@@ -79,68 +92,56 @@ describe("wide-area DNS discovery domain helpers", () => {
 
 describe("wide-area DNS-SD zone rendering", () => {
   it("renders a zone with gateway PTR/SRV/TXT records", () => {
-    const txt = renderWideAreaGatewayZoneText({
-      domain: "remoteclaw.internal.",
-      serial: 2025121701,
-      gatewayPort: 18789,
-      displayName: "Mac Studio (RemoteClaw)",
-      tailnetIPv4: "100.123.224.76",
+    const txt = renderZoneText({
       tailnetIPv6: "fd7a:115c:a1e0::8801:e04c",
-      hostLabel: "studio-london",
-      instanceLabel: "studio-london",
       sshPort: 22,
       cliPath: "/opt/homebrew/bin/remoteclaw",
     });
 
-    expect(txt).toContain(`$ORIGIN remoteclaw.internal.`);
-    expect(txt).toContain(`studio-london IN A 100.123.224.76`);
-    expect(txt).toContain(`studio-london IN AAAA fd7a:115c:a1e0::8801:e04c`);
-    expect(txt).toContain(`_remoteclaw-gw._tcp IN PTR studio-london._remoteclaw-gw._tcp`);
-    expect(txt).toContain(`studio-london._remoteclaw-gw._tcp IN SRV 0 0 18789 studio-london`);
-    expect(txt).toContain(`displayName=Mac Studio (RemoteClaw)`);
-    expect(txt).toContain(`gatewayPort=18789`);
-    expect(txt).toContain(`sshPort=22`);
-    expect(txt).toContain(`cliPath=/opt/homebrew/bin/remoteclaw`);
+    expectZoneRecords(txt, [
+      `$ORIGIN remoteclaw.internal.`,
+      `studio-london IN A 100.123.224.76`,
+      `studio-london IN AAAA fd7a:115c:a1e0::8801:e04c`,
+      `_remoteclaw-gw._tcp IN PTR studio-london._remoteclaw-gw._tcp`,
+      `studio-london._remoteclaw-gw._tcp IN SRV 0 0 18789 studio-london`,
+      `displayName=Mac Studio (RemoteClaw)`,
+      `gatewayPort=18789`,
+      `sshPort=22`,
+      `cliPath=/opt/homebrew/bin/remoteclaw`,
+    ]);
   });
 
-  it("includes tailnetDns when provided", () => {
-    const txt = renderWideAreaGatewayZoneText({
-      domain: "remoteclaw.internal.",
-      serial: 2025121701,
-      gatewayPort: 18789,
-      displayName: "Mac Studio (RemoteClaw)",
-      tailnetIPv4: "100.123.224.76",
-      tailnetDns: "peters-mac-studio-1.sheep-coho.ts.net",
-      hostLabel: "studio-london",
-      instanceLabel: "studio-london",
-    });
-
-    expect(txt).toContain(`tailnetDns=peters-mac-studio-1.sheep-coho.ts.net`);
-  });
-
-  it("includes gateway TLS TXT fields and trims display metadata", () => {
-    const txt = renderWideAreaGatewayZoneText({
-      domain: "remoteclaw.internal",
-      serial: 2025121701,
-      gatewayPort: 18789,
-      displayName: "  Mac Studio (RemoteClaw)  ",
-      tailnetIPv4: "100.123.224.76",
-      hostLabel: " Studio London ",
-      instanceLabel: " Studio London ",
-      gatewayTlsEnabled: true,
-      gatewayTlsFingerprintSha256: "abc123",
-      tailnetDns: " tailnet.ts.net ",
-      cliPath: " /opt/homebrew/bin/remoteclaw ",
-    });
-
-    expect(txt).toContain(`$ORIGIN remoteclaw.internal.`);
-    expect(txt).toContain(`studio-london IN A 100.123.224.76`);
-    expect(txt).toContain(`studio-london._remoteclaw-gw._tcp IN TXT`);
-    expect(txt).toContain(`displayName=Mac Studio (RemoteClaw)`);
-    expect(txt).toContain(`gatewayTls=1`);
-    expect(txt).toContain(`gatewayTlsSha256=abc123`);
-    expect(txt).toContain(`tailnetDns=tailnet.ts.net`);
-    expect(txt).toContain(`cliPath=/opt/homebrew/bin/remoteclaw`);
+  it.each([
+    {
+      name: "includes tailnetDns when provided",
+      overrides: { tailnetDns: "peters-mac-studio-1.sheep-coho.ts.net" },
+      records: [`tailnetDns=peters-mac-studio-1.sheep-coho.ts.net`],
+    },
+    {
+      name: "includes gateway TLS TXT fields and trims display metadata",
+      overrides: {
+        domain: "remoteclaw.internal",
+        displayName: "  Mac Studio (RemoteClaw)  ",
+        hostLabel: " Studio London ",
+        instanceLabel: " Studio London ",
+        gatewayTlsEnabled: true,
+        gatewayTlsFingerprintSha256: "abc123",
+        tailnetDns: " tailnet.ts.net ",
+        cliPath: " /opt/homebrew/bin/remoteclaw ",
+      },
+      records: [
+        `$ORIGIN remoteclaw.internal.`,
+        `studio-london IN A 100.123.224.76`,
+        `studio-london._remoteclaw-gw._tcp IN TXT`,
+        `displayName=Mac Studio (RemoteClaw)`,
+        `gatewayTls=1`,
+        `gatewayTlsSha256=abc123`,
+        `tailnetDns=tailnet.ts.net`,
+        `cliPath=/opt/homebrew/bin/remoteclaw`,
+      ],
+    },
+  ])("$name", ({ overrides, records }) => {
+    expectZoneRecords(renderZoneText(overrides), records);
   });
 });
 

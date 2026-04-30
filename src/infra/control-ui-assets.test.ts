@@ -34,10 +34,9 @@ vi.mock("node:fs", async (importOriginal) => {
     ...actual,
     existsSync: (p: string) =>
       isFixturePath(p) ? state.entries.has(absInMock(p)) : actual.existsSync(p),
-    readFileSync: (p: string, encoding?: unknown) => {
+    readFileSync: (p: string, encoding?: BufferEncoding) => {
       if (!isFixturePath(p)) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return actual.readFileSync(p as any, encoding as any) as unknown;
+        return actual.readFileSync(p, encoding);
       }
       const entry = readFixtureEntry(p);
       if (entry?.kind === "file") {
@@ -47,8 +46,7 @@ vi.mock("node:fs", async (importOriginal) => {
     },
     statSync: (p: string) => {
       if (!isFixturePath(p)) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return actual.statSync(p as any) as unknown;
+        return actual.statSync(p);
       }
       const entry = readFixtureEntry(p);
       if (entry?.kind === "file") {
@@ -79,7 +77,7 @@ let resolveControlUiDistIndexHealth: typeof import("./control-ui-assets.js").res
 let isPackageProvenControlUiRootSync: typeof import("./control-ui-assets.js").isPackageProvenControlUiRootSync;
 let resolveControlUiRootOverrideSync: typeof import("./control-ui-assets.js").resolveControlUiRootOverrideSync;
 let resolveControlUiRootSync: typeof import("./control-ui-assets.js").resolveControlUiRootSync;
-let remoteClawRoot: typeof import("./remoteclaw-root.js");
+let remoteclawRoot: typeof import("./remoteclaw-root.js");
 
 describe("control UI assets helpers (fs-mocked)", () => {
   beforeAll(async () => {
@@ -91,7 +89,7 @@ describe("control UI assets helpers (fs-mocked)", () => {
       resolveControlUiRootOverrideSync,
       resolveControlUiRootSync,
     } = await import("./control-ui-assets.js"));
-    remoteClawRoot = await import("./remoteclaw-root.js");
+    remoteclawRoot = await import("./remoteclaw-root.js");
   });
 
   beforeEach(() => {
@@ -140,7 +138,7 @@ describe("control UI assets helpers (fs-mocked)", () => {
   it("uses resolveRemoteClawPackageRoot when available", async () => {
     const pkgRoot = abs("fixtures/remoteclaw");
     (
-      remoteClawRoot.resolveRemoteClawPackageRoot as unknown as ReturnType<typeof vi.fn>
+      remoteclawRoot.resolveRemoteClawPackageRoot as unknown as ReturnType<typeof vi.fn>
     ).mockResolvedValueOnce(pkgRoot);
 
     await expect(resolveControlUiDistIndexPath(abs("fixtures/bin/remoteclaw"))).resolves.toBe(
@@ -198,7 +196,7 @@ describe("control UI assets helpers (fs-mocked)", () => {
   it("resolves control-ui root for dist bundle argv1 and moduleUrl candidates", async () => {
     const pkgRoot = abs("fixtures/remoteclaw-bundle");
     (
-      remoteClawRoot.resolveRemoteClawPackageRootSync as unknown as ReturnType<typeof vi.fn>
+      remoteclawRoot.resolveRemoteClawPackageRootSync as unknown as ReturnType<typeof vi.fn>
     ).mockReturnValueOnce(pkgRoot);
 
     const uiDir = path.join(pkgRoot, "dist", "control-ui");
@@ -242,7 +240,7 @@ describe("control UI assets helpers (fs-mocked)", () => {
     setDir(uiDir);
     setFile(path.join(uiDir, "index.html"), "<html></html>\n");
     (
-      remoteClawRoot.resolveRemoteClawPackageRootSync as unknown as ReturnType<typeof vi.fn>
+      remoteclawRoot.resolveRemoteClawPackageRootSync as unknown as ReturnType<typeof vi.fn>
     ).mockReturnValueOnce(pkgRoot);
 
     expect(
@@ -258,7 +256,7 @@ describe("control UI assets helpers (fs-mocked)", () => {
     setDir(fallbackRoot);
     setFile(path.join(fallbackRoot, "index.html"), "<html></html>\n");
     (
-      remoteClawRoot.resolveRemoteClawPackageRootSync as unknown as ReturnType<typeof vi.fn>
+      remoteclawRoot.resolveRemoteClawPackageRootSync as unknown as ReturnType<typeof vi.fn>
     ).mockReturnValueOnce(pkgRoot);
 
     expect(

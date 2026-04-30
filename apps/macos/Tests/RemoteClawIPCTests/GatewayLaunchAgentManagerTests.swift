@@ -7,7 +7,7 @@ import Testing
         let url = FileManager().temporaryDirectory
             .appendingPathComponent("remoteclaw-launchd-\(UUID().uuidString).plist")
         let plist: [String: Any] = [
-            "ProgramArguments": ["remoteclaw", "gateway-daemon", "--port", "18789", "--bind", "loopback"],
+            "ProgramArguments": ["remoteclaw", "gateway", "--port", "18789", "--bind", "loopback"],
             "EnvironmentVariables": [
                 "REMOTECLAW_GATEWAY_TOKEN": " secret ",
                 "REMOTECLAW_GATEWAY_PASSWORD": "pw",
@@ -28,7 +28,7 @@ import Testing
         let url = FileManager().temporaryDirectory
             .appendingPathComponent("remoteclaw-launchd-\(UUID().uuidString).plist")
         let plist: [String: Any] = [
-            "ProgramArguments": ["remoteclaw", "gateway-daemon", "--port", "18789"],
+            "ProgramArguments": ["remoteclaw", "gateway", "--port", "18789"],
         ]
         let data = try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
         try data.write(to: url, options: [.atomic])

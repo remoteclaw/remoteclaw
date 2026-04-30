@@ -48,7 +48,7 @@ update **without** changing your persisted channel:
 
 ```bash
 # Install a specific version
-remoteclaw update --tag 2026.3.22
+remoteclaw update --tag 2026.3.28-beta.1
 
 # Install from the beta dist-tag (one-off, does not persist)
 remoteclaw update --tag beta
@@ -57,7 +57,7 @@ remoteclaw update --tag beta
 remoteclaw update --tag main
 
 # Install a specific npm package spec
-remoteclaw update --tag remoteclaw@2026.3.22
+remoteclaw update --tag remoteclaw@2026.3.28-beta.1
 ```
 
 Notes:
@@ -75,7 +75,7 @@ Preview what `remoteclaw update` would do without making changes:
 ```bash
 remoteclaw update --dry-run
 remoteclaw update --channel beta --dry-run
-remoteclaw update --tag 2026.3.22 --dry-run
+remoteclaw update --tag 2026.3.28-beta.1 --dry-run
 remoteclaw update --dry-run --json
 ```
 

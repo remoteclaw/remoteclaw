@@ -27,6 +27,7 @@ This page describes the current CLI behavior. If commands change, update this do
 - [`agent`](/cli/agent)
 - [`agents`](/cli/agents)
 - [`acp`](/cli/acp)
+- [`mcp`](/cli/mcp)
 - [`status`](/cli/status)
 - [`health`](/cli/health)
 - [`sessions`](/cli/sessions)
@@ -155,6 +156,7 @@ remoteclaw [--dev] [--profile <name>] <command>
     add
     delete
   acp
+  mcp
   status
   health
   sessions
@@ -396,7 +398,7 @@ Interactive configuration wizard (models, channels, skills, gateway).
 
 ### `config`
 
-Non-interactive config helpers (get/set/unset/file/validate). Running `remoteclaw config` with no
+Non-interactive config helpers (get/set/unset/file/schema/validate). Running `remoteclaw config` with no
 subcommand launches the wizard.
 
 Subcommands:
@@ -413,6 +415,7 @@ Subcommands:
 - `config set --strict-json`: require JSON5 parsing for path/value input. `--json` remains a legacy alias for strict parsing outside dry-run output mode.
 - `config unset <path>`: remove a value.
 - `config file`: print the active config file path.
+- `config schema`: print the generated JSON schema for `remoteclaw.json`.
 - `config validate`: validate the current config against the schema without starting the gateway.
 - `config validate --json`: emit machine-readable JSON output.
 
@@ -585,6 +588,7 @@ Options:
 
 - `--to <dest>` (for session key and optional delivery)
 - `--session-id <id>`
+- `--thinking <off|minimal|low|medium|high|xhigh>` (GPT-5.2 + Codex models only)
 - `--verbose <on|full|off>`
 - `--channel <whatsapp|telegram|discord|slack|mattermost|signal|imessage|msteams>`
 - `--local`
@@ -778,7 +782,8 @@ Options:
 - `--reset` (reset dev config + credentials + sessions + workspace)
 - `--force` (kill existing listener on port)
 - `--verbose`
-- `--claude-cli-logs`
+- `--cli-backend-logs`
+- `--claude-cli-logs` (deprecated alias)
 - `--ws-log <auto|full|compact>`
 - `--compact` (alias for `--ws-log compact`)
 - `--raw-stream`
@@ -868,6 +873,13 @@ remoteclaw models status
 Policy note: this is technical compatibility. Anthropic has blocked some
 subscription usage outside Claude Code in the past; verify current Anthropic
 terms before relying on setup-token in production.
+
+Anthropic Claude CLI migration:
+
+```bash
+remoteclaw models auth login --provider anthropic --method cli --set-default
+remoteclaw onboard --auth-choice anthropic-cli
+```
 
 ### `models` (root)
 
@@ -1150,6 +1162,7 @@ Options:
 - `--password <password>`
 - `--session <key>`
 - `--deliver`
+- `--thinking <level>`
 - `--message <text>`
 - `--timeout-ms <ms>` (defaults to `agents.defaults.timeoutSeconds`)
 - `--history-limit <n>`

@@ -15,7 +15,7 @@ describe("setupCommand", () => {
 
       await setupCommand(undefined, runtime);
 
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
+      const configPath = path.join(home, ".remoteclaw", "remoteclaw.json");
       const raw = await fs.readFile(configPath, "utf-8");
 
       expect(raw).toContain('"mode": "local"');
@@ -30,8 +30,8 @@ describe("setupCommand", () => {
         error: vi.fn(),
         exit: vi.fn(),
       };
-      const configDir = path.join(home, ".openclaw");
-      const configPath = path.join(configDir, "openclaw.json");
+      const configDir = path.join(home, ".remoteclaw");
+      const configPath = path.join(configDir, "remoteclaw.json");
       const workspace = path.join(home, "custom-workspace");
 
       await fs.mkdir(configDir, { recursive: true });
@@ -54,6 +54,31 @@ describe("setupCommand", () => {
       };
 
       expect(raw.agents?.defaults?.workspace).toBe(workspace);
+      expect(raw.gateway?.mode).toBe("local");
+    });
+  });
+
+  it("treats non-object config roots as empty config", async () => {
+    await withTempHome(async (home) => {
+      const runtime = {
+        log: vi.fn(),
+        error: vi.fn(),
+        exit: vi.fn(),
+      };
+      const configDir = path.join(home, ".remoteclaw");
+      const configPath = path.join(configDir, "remoteclaw.json");
+
+      await fs.mkdir(configDir, { recursive: true });
+      await fs.writeFile(configPath, '"not-an-object"', "utf-8");
+
+      await setupCommand(undefined, runtime);
+
+      const raw = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
+        agents?: { defaults?: { workspace?: string } };
+        gateway?: { mode?: string };
+      };
+
+      expect(raw.agents?.defaults?.workspace).toBeTruthy();
       expect(raw.gateway?.mode).toBe("local");
     });
   });

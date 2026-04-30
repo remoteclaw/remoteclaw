@@ -77,7 +77,7 @@ class GatewayClientRequestError extends Error {
 
 export type GatewayClientOptions = {
   url?: string; // ws://127.0.0.1:18789
-  connectDelayMs?: number;
+  connectChallengeTimeoutMs?: number;
   tickWatchMinIntervalMs?: number;
   requestTimeoutMs?: number;
   token?: string;
@@ -697,10 +697,11 @@ export class GatewayClient {
   private queueConnect() {
     this.connectNonce = null;
     this.connectSent = false;
-    const rawConnectDelayMs = this.opts.connectDelayMs;
+    const rawConnectChallengeTimeoutMs = this.opts.connectChallengeTimeoutMs;
     const connectChallengeTimeoutMs =
-      typeof rawConnectDelayMs === "number" && Number.isFinite(rawConnectDelayMs)
-        ? Math.max(250, Math.min(10_000, rawConnectDelayMs))
+      typeof rawConnectChallengeTimeoutMs === "number" &&
+      Number.isFinite(rawConnectChallengeTimeoutMs)
+        ? Math.max(250, Math.min(10_000, rawConnectChallengeTimeoutMs))
         : 2_000;
     if (this.connectTimer) {
       clearTimeout(this.connectTimer);

@@ -111,3 +111,8 @@ export {
   resolveWebhookTargetWithAuthOrRejectSync,
   withResolvedWebhookRequestPipeline,
 } from "./webhook-targets.js";
+export {
+  WEBHOOK_RATE_LIMIT_DEFAULTS,
+  createFixedWindowRateLimiter,
+} from "./webhook-memory-guards.js";
+export { resolveRequestClientIp } from "../gateway/net.js";

@@ -1,9 +1,12 @@
 import { timingSafeEqual } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
+  WEBHOOK_RATE_LIMIT_DEFAULTS,
+  createFixedWindowRateLimiter,
   createWebhookInFlightLimiter,
   registerWebhookTargetWithPluginRoute,
   readWebhookBodyOrReject,
+  resolveRequestClientIp,
   resolveWebhookTargetWithAuthOrRejectSync,
   withResolvedWebhookRequestPipeline,
 } from "remoteclaw/plugin-sdk/bluebubbles";
@@ -25,8 +28,18 @@ import { fetchBlueBubblesServerInfo } from "./probe.js";
 import { getBlueBubblesRuntime } from "./runtime.js";
 
 const webhookTargets = new Map<string, WebhookTarget[]>();
+const webhookRateLimiter = createFixedWindowRateLimiter({
+  windowMs: WEBHOOK_RATE_LIMIT_DEFAULTS.windowMs,
+  maxRequests: WEBHOOK_RATE_LIMIT_DEFAULTS.maxRequests,
+  maxTrackedKeys: WEBHOOK_RATE_LIMIT_DEFAULTS.maxTrackedKeys,
+});
 const webhookInFlightLimiter = createWebhookInFlightLimiter();
 const debounceRegistry = createBlueBubblesDebounceRegistry({ processMessage });
+
+export function clearBlueBubblesWebhookSecurityStateForTest(): void {
+  webhookRateLimiter.clear();
+  webhookInFlightLimiter.clear();
+}
 
 export function registerBlueBubblesWebhookTarget(target: WebhookTarget): () => void {
   const registered = registerWebhookTargetWithPluginRoute({
@@ -117,18 +130,63 @@ function safeEqualSecret(aRaw: string, bRaw: string): boolean {
   return timingSafeEqual(bufA, bufB);
 }
 
+function collectTrustedProxies(targets: readonly WebhookTarget[]): string[] {
+  const proxies = new Set<string>();
+  for (const target of targets) {
+    for (const proxy of target.config.gateway?.trustedProxies ?? []) {
+      const normalized = proxy.trim();
+      if (normalized) {
+        proxies.add(normalized);
+      }
+    }
+  }
+  return [...proxies];
+}
+
+function resolveWebhookAllowRealIpFallback(targets: readonly WebhookTarget[]): boolean {
+  return targets.some((target) => target.config.gateway?.allowRealIpFallback === true);
+}
+
+function resolveWebhookClientIp(
+  req: IncomingMessage,
+  trustedProxies: readonly string[],
+  allowRealIpFallback: boolean,
+): string {
+  if (!req.headers["x-forwarded-for"] && !(allowRealIpFallback && req.headers["x-real-ip"])) {
+    return req.socket.remoteAddress ?? "unknown";
+  }
+
+  // Mirror gateway client-IP trust rules so limiter buckets follow configured proxy hops.
+  return (
+    resolveRequestClientIp(req, [...trustedProxies], allowRealIpFallback) ??
+    req.socket.remoteAddress ??
+    "unknown"
+  );
+}
+
 export async function handleBlueBubblesWebhookRequest(
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<boolean> {
+  const requestUrl = new URL(req.url ?? "/", "http://localhost");
+  const normalizedPath = normalizeWebhookPath(requestUrl.pathname);
+  const pathTargets = webhookTargets.get(normalizedPath) ?? [];
+  const trustedProxies = collectTrustedProxies(pathTargets);
+  const allowRealIpFallback = resolveWebhookAllowRealIpFallback(pathTargets);
+  const clientIp = resolveWebhookClientIp(req, trustedProxies, allowRealIpFallback);
+  // Both limiters partition by (path, client IP) — share one key so the buckets stay aligned.
+  const clientKey = `${normalizedPath}:${clientIp}`;
   return await withResolvedWebhookRequestPipeline({
     req,
     res,
     targetsByPath: webhookTargets,
     allowMethods: ["POST"],
+    rateLimiter: webhookRateLimiter,
+    rateLimitKey: clientKey,
     inFlightLimiter: webhookInFlightLimiter,
+    inFlightKey: clientKey,
     handle: async ({ path, targets }) => {
-      const url = new URL(req.url ?? "/", "http://localhost");
+      const url = requestUrl;
       const guidParam = url.searchParams.get("guid") ?? url.searchParams.get("password");
       const headerToken =
         req.headers["x-guid"] ??

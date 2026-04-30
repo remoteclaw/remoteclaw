@@ -72,6 +72,7 @@ export {
   ReplyRuntimeConfigSchemaShape,
   requireOpenAllowFrom,
 } from "../config/zod-schema.core.js";
+export { createAuthRateLimiter } from "../gateway/auth-rate-limit.js";
 export {
   isRequestBodyLimitError,
   readRequestBodyWithLimit,

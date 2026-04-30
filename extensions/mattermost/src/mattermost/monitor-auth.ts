@@ -198,10 +198,11 @@ export function authorizeMattermostCommandInvocation(params: {
     hasControlCommand: allowTextCommands && hasControlCommand,
   });
 
+  // Direct command authorization always requires a sender-allowlist match; the prior
+  // `dmPolicy === "open"` permissive bypass was withdrawn upstream (#74112) because an
+  // open DM policy does not imply that any sender may invoke control commands.
   const commandAuthorized =
-    kind === "direct"
-      ? dmPolicy === "open" || senderAllowedForCommands
-      : commandGate.commandAuthorized;
+    kind === "direct" ? senderAllowedForCommands : commandGate.commandAuthorized;
 
   if (kind === "direct") {
     if (dmPolicy === "disabled") {
@@ -218,7 +219,7 @@ export function authorizeMattermostCommandInvocation(params: {
       };
     }
 
-    if (dmPolicy !== "open" && !senderAllowedForCommands) {
+    if (!senderAllowedForCommands) {
       return {
         ok: false,
         denyReason: dmPolicy === "pairing" ? "dm-pairing" : "unauthorized",

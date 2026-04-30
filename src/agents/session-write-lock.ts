@@ -4,6 +4,20 @@ import path from "node:path";
 import { getProcessStartTime, isPidAlive } from "../shared/pid-alive.js";
 import { resolveProcessScopedMap } from "../shared/process-scoped-map.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  resolveSessionLockMaxHoldFromTimeout: "live",
+  cleanStaleLockFiles: "live",
+  acquireSessionWriteLock: "live",
+  drainSessionWriteLockStateForTest: "live",
+  resetSessionWriteLockStateForTest: "live",
+} as const;
+
 type LockFilePayload = {
   pid?: number;
   createdAt?: string;

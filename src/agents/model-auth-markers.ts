@@ -1,6 +1,24 @@
 import type { SecretRefSource } from "../config/types.secrets.js";
 import { listKnownProviderEnvApiKeyNames } from "./model-auth-env-vars.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  isAwsSdkAuthMarker: "live",
+  isKnownEnvApiKeyMarker: "live",
+  resolveOAuthApiKeyMarker: "live",
+  isOAuthApiKeyMarker: "live",
+  resolveNonEnvSecretRefApiKeyMarker: "live",
+  resolveNonEnvSecretRefHeaderValueMarker: "live",
+  resolveEnvSecretRefHeaderValueMarker: "live",
+  isSecretRefHeaderValueMarker: "live",
+  isNonSecretApiKeyMarker: "live",
+} as const;
+
 export const MINIMAX_OAUTH_MARKER = "minimax-oauth";
 export const OAUTH_API_KEY_MARKER_PREFIX = "oauth:";
 export const OLLAMA_LOCAL_AUTH_MARKER = "ollama-local";

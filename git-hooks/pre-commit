@@ -46,7 +46,7 @@ if [ "${#format_files[@]}" -gt 0 ]; then
   "$RUN_NODE_TOOL" oxfmt --write --no-error-on-unmatched-pattern "${format_files[@]}"
 fi
 
-git add -- "${files[@]}"
+git add --force -- "${files[@]}"
 
 # This hook is also exercised from lightweight temp repos in tests, where the
 # staged-file safety behavior matters but the full RemoteClaw workspace does not

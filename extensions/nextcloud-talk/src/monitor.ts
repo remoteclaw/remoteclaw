@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import os from "node:os";
 import {
   type RuntimeEnv,
+  createAuthRateLimiter,
   isRequestBodyLimitError,
   readRequestBodyWithLimit,
   requestBodyErrorToText,
@@ -25,6 +26,9 @@ const DEFAULT_WEBHOOK_HOST = "0.0.0.0";
 const DEFAULT_WEBHOOK_PATH = "/nextcloud-talk-webhook";
 const DEFAULT_WEBHOOK_MAX_BODY_BYTES = 1024 * 1024;
 const DEFAULT_WEBHOOK_BODY_TIMEOUT_MS = 30_000;
+const DEFAULT_AUTH_RATE_LIMIT_MAX_REQUESTS = 120;
+const DEFAULT_AUTH_RATE_LIMIT_WINDOW_MS = 60_000;
+const WEBHOOK_AUTH_RATE_LIMIT_SCOPE = "nextcloud-talk-webhook-auth";
 const HEALTH_PATH = "/healthz";
 const WEBHOOK_ERRORS = {
   missingSignatureHeaders: "Missing signature headers",
@@ -115,6 +119,8 @@ function verifyWebhookSignature(params: {
   body: string;
   secret: string;
   res: ServerResponse;
+  clientIp: string;
+  authRateLimiter: ReturnType<typeof createAuthRateLimiter>;
 }): boolean {
   const isValid = verifyNextcloudTalkSignature({
     signature: params.headers.signature,
@@ -123,9 +129,11 @@ function verifyWebhookSignature(params: {
     secret: params.secret,
   });
   if (!isValid) {
+    params.authRateLimiter.recordFailure(params.clientIp, WEBHOOK_AUTH_RATE_LIMIT_SCOPE);
     writeWebhookError(params.res, 401, WEBHOOK_ERRORS.invalidSignature);
     return false;
   }
+  params.authRateLimiter.reset(params.clientIp, WEBHOOK_AUTH_RATE_LIMIT_SCOPE);
   return true;
 }
 
@@ -191,6 +199,25 @@ export function createNextcloudTalkWebhookServer(opts: NextcloudTalkWebhookServe
   const readBody = opts.readBody ?? readNextcloudTalkWebhookBody;
   const isBackendAllowed = opts.isBackendAllowed;
   const shouldProcessMessage = opts.shouldProcessMessage;
+  const authRateLimitMaxRequests =
+    typeof opts.authRateLimit?.maxRequests === "number"
+      ? opts.authRateLimit.maxRequests
+      : DEFAULT_AUTH_RATE_LIMIT_MAX_REQUESTS;
+  const authRateLimitWindowMs =
+    typeof opts.authRateLimit?.windowMs === "number"
+      ? opts.authRateLimit.windowMs
+      : DEFAULT_AUTH_RATE_LIMIT_WINDOW_MS;
+  // exemptLoopback: false — in production a same-host reverse proxy forwards
+  // webhook traffic with socket.remoteAddress=127.0.0.1, so loopback cannot be
+  // treated as trusted local-CLI traffic; exempting it would let abusive
+  // requests bypass rate limiting via the proxy.
+  const webhookAuthRateLimiter = createAuthRateLimiter({
+    maxAttempts: authRateLimitMaxRequests,
+    windowMs: authRateLimitWindowMs,
+    lockoutMs: authRateLimitWindowMs,
+    exemptLoopback: false,
+    pruneIntervalMs: authRateLimitWindowMs,
+  });
 
   const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
     if (req.url === HEALTH_PATH) {
@@ -202,6 +229,13 @@ export function createNextcloudTalkWebhookServer(opts: NextcloudTalkWebhookServe
     if (req.url !== path || req.method !== "POST") {
       res.writeHead(404);
       res.end();
+      return;
+    }
+
+    const clientIp = req.socket.remoteAddress ?? "unknown";
+    if (!webhookAuthRateLimiter.check(clientIp, WEBHOOK_AUTH_RATE_LIMIT_SCOPE).allowed) {
+      res.writeHead(429);
+      res.end("Too Many Requests");
       return;
     }
 
@@ -222,6 +256,8 @@ export function createNextcloudTalkWebhookServer(opts: NextcloudTalkWebhookServe
         body,
         secret,
         res,
+        clientIp,
+        authRateLimiter: webhookAuthRateLimiter,
       });
       if (!hasValidSignature) {
         return;
@@ -287,6 +323,7 @@ export function createNextcloudTalkWebhookServer(opts: NextcloudTalkWebhookServe
     } catch {
       // ignore close races while shutting down
     }
+    webhookAuthRateLimiter.dispose();
   };
 
   if (abortSignal) {

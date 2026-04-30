@@ -69,7 +69,7 @@ describe("GatewayClient", () => {
     const closed = new Promise<{ code: number; reason: string }>((resolve) => {
       const client = new GatewayClient({
         url: `ws://127.0.0.1:${port}`,
-        connectDelayMs: 0,
+        connectChallengeTimeoutMs: 0,
         tickWatchMinIntervalMs: 5,
         onClose: (code, reason) => resolve({ code, reason }),
       });
@@ -320,7 +320,7 @@ r1USnb+wUdA7Zoj/mQ==
       }, 2000);
       client = new GatewayClient({
         url: `wss://127.0.0.1:${port}`,
-        connectDelayMs: 0,
+        connectChallengeTimeoutMs: 0,
         tlsFingerprint: "deadbeef",
         onConnectError: (err) => {
           clearTimeout(timeout);

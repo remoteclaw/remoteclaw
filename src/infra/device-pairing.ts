@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { normalizeDeviceAuthScopes } from "../shared/device-auth.js";
-import { roleScopesAllow } from "../shared/operator-scope-compat.js";
+import { resolveMissingRequestedScope, roleScopesAllow } from "../shared/operator-scope-compat.js";
 import {
   createAsyncLock,
   pruneExpiredPending,
@@ -586,6 +586,7 @@ export async function rotateDeviceToken(params: {
   deviceId: string;
   role: string;
   scopes?: string[];
+  callerScopes?: readonly string[];
   baseDir?: string;
 }): Promise<DeviceAuthToken | null> {
   return await withLock(async () => {
@@ -612,6 +613,16 @@ export async function rotateDeviceToken(params: {
     ) {
       return null;
     }
+    if (params.callerScopes) {
+      const missingScope = resolveMissingRequestedScope({
+        role,
+        requestedScopes,
+        allowedScopes: params.callerScopes,
+      });
+      if (missingScope) {
+        return null;
+      }
+    }
     const now = Date.now();
     const next = buildDeviceAuthToken({
       role,
@@ -631,6 +642,7 @@ export async function rotateDeviceToken(params: {
 export async function revokeDeviceToken(params: {
   deviceId: string;
   role: string;
+  callerScopes?: readonly string[];
   baseDir?: string;
 }): Promise<DeviceAuthToken | null> {
   return await withLock(async () => {
@@ -643,8 +655,22 @@ export async function revokeDeviceToken(params: {
     if (!role) {
       return null;
     }
-    if (!device.tokens?.[role]) {
+    const existing = device.tokens?.[role];
+    if (!existing) {
       return null;
+    }
+    if (params.callerScopes) {
+      const targetScopes = normalizeDeviceAuthScopes(
+        Array.isArray(existing.scopes) ? existing.scopes : device.scopes,
+      );
+      const missingScope = resolveMissingRequestedScope({
+        role,
+        requestedScopes: targetScopes,
+        allowedScopes: params.callerScopes,
+      });
+      if (missingScope) {
+        return null;
+      }
     }
     const tokens = { ...device.tokens };
     const entry = { ...tokens[role], revokedAtMs: Date.now() };

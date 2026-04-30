@@ -167,6 +167,35 @@ jobs:
           REMOTECLAW_TEST_WORKERS: 1
           REMOTECLAW_TEST_MAX_OLD_SPACE_SIZE_MB: 1536
 
+  test-gateway-preauth:
+    # Scoped gateway lane for the pre-auth hardening defense-in-depth
+    # suite (#2644). The full gateway suite is gated behind
+    # REMOTECLAW_TEST_INCLUDE_GATEWAY=1 because of orthogonal pre-existing
+    # failures unrelated to this slice; running only the hardening file
+    # gives the new 1009 close-code + diagnostic event + connection budget
+    # behavior continuous CI coverage without enabling the full suite.
+    # Tracked separately from `test` so a hardening regression surfaces
+    # cleanly.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+
+      - name: Setup Node environment
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+
+      - name: Build canvas bundle
+        run: pnpm canvas:a2ui:bundle
+
+      - name: Run pre-auth hardening tests
+        run: pnpm exec vitest run --config vitest.gateway.config.ts --pool=forks src/gateway/server.preauth-hardening.test.ts
+        env:
+          REMOTECLAW_TEST_INCLUDE_GATEWAY: "1"
+
   test-ui-smoke:
     # Browser-mode smoke lane for the RemoteClawApp host class. Scoped to
     # the two sync-regression defense-in-depth suites — class-instance
@@ -204,13 +233,14 @@ jobs:
         lint,
         build,
         test,
+        test-gateway-preauth,
         test-ui-smoke,
       ]
     runs-on: ubuntu-latest
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" ]]; then
+          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway-preauth.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" ]]; then
             echo "::error::One or more required jobs failed"
             exit 1
           fi

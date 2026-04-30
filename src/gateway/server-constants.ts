@@ -22,7 +22,29 @@ export const __setMaxChatHistoryMessagesBytesForTest = (value?: number) => {
   }
 };
 export const DEFAULT_HANDSHAKE_TIMEOUT_MS = 10_000;
-export const getHandshakeTimeoutMs = () => {
+
+type GatewayHandshakeTimeoutSource = {
+  gateway?: { handshakeTimeoutMs?: number };
+};
+
+const isPositiveFinite = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value) && value > 0;
+
+/**
+ * Resolve the pre-auth handshake timeout (ms) for idle unauthenticated
+ * sockets.
+ *
+ * Order of precedence:
+ *   1. `config.gateway.handshakeTimeoutMs`, when supplied and positive.
+ *   2. `REMOTECLAW_HANDSHAKE_TIMEOUT_MS` (user-facing env var, all envs).
+ *   3. `REMOTECLAW_TEST_HANDSHAKE_TIMEOUT_MS` (test-only, gated by VITEST).
+ *   4. `DEFAULT_HANDSHAKE_TIMEOUT_MS` (10 000 ms).
+ */
+export const getHandshakeTimeoutMs = (config?: GatewayHandshakeTimeoutSource) => {
+  const fromConfig = config?.gateway?.handshakeTimeoutMs;
+  if (isPositiveFinite(fromConfig)) {
+    return fromConfig;
+  }
   // User-facing env var (works in all environments); test-only var gated behind VITEST
   const envKey =
     process.env.REMOTECLAW_HANDSHAKE_TIMEOUT_MS ||

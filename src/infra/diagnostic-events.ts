@@ -164,6 +164,26 @@ export type DiagnosticRoutingDropEvent = DiagnosticBaseEvent & {
   target?: string;
 };
 
+export type DiagnosticPayloadLargeEvent = DiagnosticBaseEvent & {
+  type: "payload.large";
+  /** Origin surface for the oversized payload (e.g. "gateway.ws.preauth"). */
+  surface: string;
+  /** What the surface did with the payload. */
+  action: "rejected" | "truncated" | "chunked";
+  /** Observed payload size, when known. */
+  bytes?: number;
+  /** Configured limit that triggered the action, when known. */
+  limitBytes?: number;
+  /** Cumulative count of similar events on this surface, when tracked. */
+  count?: number;
+  /** Channel id (chat-extension contexts), when applicable. */
+  channel?: string;
+  /** Plugin id, when applicable. */
+  pluginId?: string;
+  /** Stable reason code (e.g. "preauth_frame_limit"). */
+  reason?: string;
+};
+
 export type DiagnosticEventPayload =
   | DiagnosticUsageEvent
   | DiagnosticWebhookReceivedEvent
@@ -178,7 +198,8 @@ export type DiagnosticEventPayload =
   | DiagnosticRunAttemptEvent
   | DiagnosticHeartbeatEvent
   | DiagnosticToolLoopEvent
-  | DiagnosticRoutingDropEvent;
+  | DiagnosticRoutingDropEvent
+  | DiagnosticPayloadLargeEvent;
 
 export type DiagnosticEventInput = DiagnosticEventPayload extends infer Event
   ? Event extends DiagnosticEventPayload

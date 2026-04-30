@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { WebSocket, WebSocketServer } from "ws";
+import { loadConfig } from "../../config/config.js";
 import { resolveCanvasHostUrl } from "../../infra/canvas-host-url.js";
 import { upsertPresence } from "../../infra/system-presence.js";
 import type { createSubsystemLogger } from "../../logging/subsystem.js";
@@ -262,7 +263,14 @@ export function attachGatewayWsConnectionHandler(params: AttachGatewayWsConnecti
       close();
     });
 
-    const handshakeTimeoutMs = getHandshakeTimeoutMs();
+    let cfgForHandshake: ReturnType<typeof loadConfig> | undefined;
+    try {
+      cfgForHandshake = loadConfig();
+    } catch {
+      // Config load can fail during early boot or in tests with malformed
+      // fixtures; fall back to env + default.
+    }
+    const handshakeTimeoutMs = getHandshakeTimeoutMs(cfgForHandshake);
     const handshakeTimer = setTimeout(() => {
       if (!client) {
         handshakeState = "failed";

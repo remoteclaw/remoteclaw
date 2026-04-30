@@ -450,4 +450,14 @@ export type GatewayConfig = {
    * the rolling window expires. Default: 10.
    */
   channelMaxRestartsPerHour?: number;
+  /**
+   * Maximum time in milliseconds an unauthenticated WebSocket connection
+   * may remain idle before being closed. Defaults to
+   * DEFAULT_HANDSHAKE_TIMEOUT_MS (10 000) if unset. The
+   * `REMOTECLAW_HANDSHAKE_TIMEOUT_MS` env var (and the
+   * `REMOTECLAW_TEST_HANDSHAKE_TIMEOUT_MS` test-only override under VITEST)
+   * are honored as fallbacks for backward compatibility — config takes
+   * precedence when both are set.
+   */
+  handshakeTimeoutMs?: number;
 };

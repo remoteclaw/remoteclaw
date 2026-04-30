@@ -15,6 +15,7 @@ import {
   updatePairedDeviceMetadata,
   verifyDeviceToken,
 } from "../../../infra/device-pairing.js";
+import { emitDiagnosticEvent } from "../../../infra/diagnostic-events.js";
 import { updatePairedNodeMetadata } from "../../../infra/node-pairing.js";
 import { upsertPresence } from "../../../infra/system-presence.js";
 import { loadVoiceWakeConfig } from "../../../infra/voicewake.js";
@@ -61,7 +62,12 @@ import {
   validateRequestFrame,
 } from "../../protocol/index.js";
 import { parseGatewayRole } from "../../role-policy.js";
-import { MAX_BUFFERED_BYTES, MAX_PAYLOAD_BYTES, TICK_INTERVAL_MS } from "../../server-constants.js";
+import {
+  MAX_BUFFERED_BYTES,
+  MAX_PAYLOAD_BYTES,
+  MAX_PREAUTH_PAYLOAD_BYTES,
+  TICK_INTERVAL_MS,
+} from "../../server-constants.js";
 import { handleGatewayRequest } from "../../server-methods.js";
 import type { GatewayRequestContext, GatewayRequestHandlers } from "../../server-methods/types.js";
 import { formatError } from "../../server-utils.js";
@@ -362,6 +368,31 @@ export function attachGatewayWsMessageHandler(params: {
   socket.on("message", async (data) => {
     if (isClosed()) {
       return;
+    }
+    // Defense-in-depth: cap inbound frame size on the pre-auth path before
+    // attempting JSON parse / schema validation. Surfaces a structured
+    // `payload.large` diagnostic event and closes with code 1009 (Message
+    // Too Big) so operators can distinguish oversized frames from generic
+    // policy violations (1008).
+    if (!getClient()) {
+      const preauthPayloadBytes = getRawDataByteLength(data);
+      if (preauthPayloadBytes > MAX_PREAUTH_PAYLOAD_BYTES) {
+        emitDiagnosticEvent({
+          type: "payload.large",
+          surface: "gateway.ws.preauth",
+          action: "rejected",
+          bytes: preauthPayloadBytes,
+          limitBytes: MAX_PREAUTH_PAYLOAD_BYTES,
+          reason: "preauth_frame_limit",
+        });
+        setHandshakeState("failed");
+        setCloseCause("preauth-payload-too-large", {
+          payloadBytes: preauthPayloadBytes,
+          limitBytes: MAX_PREAUTH_PAYLOAD_BYTES,
+        });
+        close(1009, "preauth payload too large");
+        return;
+      }
     }
     const text = rawDataToString(data);
     try {
@@ -1220,4 +1251,25 @@ export function attachGatewayWsMessageHandler(params: {
       }
     }
   });
+}
+
+function getRawDataByteLength(data: unknown): number {
+  if (Buffer.isBuffer(data)) {
+    return data.byteLength;
+  }
+  if (Array.isArray(data)) {
+    return data.reduce<number>((total, chunk) => {
+      if (Buffer.isBuffer(chunk)) {
+        return total + chunk.byteLength;
+      }
+      if (chunk instanceof ArrayBuffer) {
+        return total + chunk.byteLength;
+      }
+      return total + Buffer.byteLength(String(chunk));
+    }, 0);
+  }
+  if (data instanceof ArrayBuffer) {
+    return data.byteLength;
+  }
+  return Buffer.byteLength(String(data));
 }

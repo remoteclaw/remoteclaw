@@ -1,4 +1,9 @@
-import type { RemoteClawConfig, RemoteClawPluginApi } from "remoteclaw/plugin-sdk/thread-ownership";
+import {
+  fetchWithSsrFGuard,
+  ssrfPolicyFromAllowPrivateNetwork,
+  type RemoteClawConfig,
+  type RemoteClawPluginApi,
+} from "remoteclaw/plugin-sdk/thread-ownership";
 
 type ThreadOwnershipConfig = {
   forwarderUrl?: string;
@@ -102,29 +107,40 @@ export default function register(api: RemoteClawPluginApi) {
 
     // Try to claim ownership via the forwarder HTTP API.
     try {
-      const resp = await fetch(`${forwarderUrl}/api/v1/ownership/${channelId}/${threadTs}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agent_id: agentId }),
-        signal: AbortSignal.timeout(3000),
+      // The forwarder is an internal service (e.g. a Docker container); allow private-network
+      // access but pin DNS so DNS-rebinding attacks cannot pivot to a different internal host.
+      const { response: resp, release } = await fetchWithSsrFGuard({
+        url: `${forwarderUrl}/api/v1/ownership/${channelId}/${threadTs}`,
+        init: {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agent_id: agentId }),
+        },
+        timeoutMs: 3000,
+        policy: ssrfPolicyFromAllowPrivateNetwork(true),
+        auditContext: "thread-ownership",
       });
 
-      if (resp.ok) {
-        // We own it (or just claimed it), proceed.
-        return;
-      }
+      try {
+        if (resp.ok) {
+          // We own it (or just claimed it), proceed.
+          return;
+        }
 
-      if (resp.status === 409) {
-        // Another agent owns this thread — cancel the send.
-        const body = (await resp.json()) as { owner?: string };
-        api.logger.info?.(
-          `thread-ownership: cancelled send to ${channelId}:${threadTs} — owned by ${body.owner}`,
-        );
-        return { cancel: true };
-      }
+        if (resp.status === 409) {
+          // Another agent owns this thread — cancel the send.
+          const body = (await resp.json()) as { owner?: string };
+          api.logger.info?.(
+            `thread-ownership: cancelled send to ${channelId}:${threadTs} — owned by ${body.owner}`,
+          );
+          return { cancel: true };
+        }
 
-      // Unexpected status — fail open.
-      api.logger.warn?.(`thread-ownership: unexpected status ${resp.status}, allowing send`);
+        // Unexpected status — fail open.
+        api.logger.warn?.(`thread-ownership: unexpected status ${resp.status}, allowing send`);
+      } finally {
+        await release();
+      }
     } catch (err) {
       // Network error — fail open.
       api.logger.warn?.(`thread-ownership: ownership check failed (${String(err)}), allowing send`);

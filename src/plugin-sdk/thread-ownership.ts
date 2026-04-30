@@ -3,3 +3,5 @@
 
 export type { RemoteClawConfig } from "../config/config.js";
 export type { RemoteClawPluginApi } from "../plugins/types.js";
+export { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
+export { ssrfPolicyFromAllowPrivateNetwork } from "./ssrf-policy.js";
